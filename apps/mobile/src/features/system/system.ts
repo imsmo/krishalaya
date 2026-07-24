@@ -4,6 +4,7 @@
 // and DPDP delete-confirmation validation. The SERVER owns search authority, DPDP export/erasure, and the minimum
 // supported version — these helpers only drive the UI.
 import type { ListingCard, OrderListItem, SearchHit as UnifiedSearchHit } from '@krishi-verse/sdk-js';
+import { COMING_SOON_LANGUAGES } from '@krishi-verse/i18n';
 
 // --- global search ---
 // The unified index (P1-14) covers `listings` + `products` today; the design's Sellers/Tips/Mandi/Crop-guide rows
@@ -131,9 +132,14 @@ export function permissionWhyKey(key: string): string { return `system.permissio
 
 // --- language switcher (screen 187) ---
 // Design order (Gujarati → Hindi → English) differs from the LANGUAGES registry order; this orders the SUPPORTED
-// codes for display without inventing any language. `COMING_LANGUAGES` are shown as disabled "coming soon" rows.
+// codes for display without inventing any language.
+//
+// DEV-21: `COMING_LANGUAGES` is now DERIVED from the shared `@krishi-verse/i18n` registry's own
+// `COMING_SOON_LANGUAGES` (was a hardcoded `['mr']` before this batch — a single entry that silently omitted the
+// other 10 canon-shipped target languages, bn/te/ta/as/pa/kn/ml/or/ar/ur). The registry is now the single source
+// of truth for "what's coming" everywhere (web pickers + this screen) — no per-app list to keep in sync by hand.
 const LANG_DISPLAY_ORDER = ['gu', 'hi', 'en'];
-export const COMING_LANGUAGES = ['mr'] as const;
+export const COMING_LANGUAGES: readonly string[] = COMING_SOON_LANGUAGES.map((l) => l.code);
 /** Order the available (supported) language codes into the design's display order; unknown codes keep their
  *  original relative order at the end. Pure. */
 export function orderedLanguageCodes(available: readonly string[]): string[] {

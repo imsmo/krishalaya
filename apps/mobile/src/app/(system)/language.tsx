@@ -1,21 +1,30 @@
 // apps/mobile/src/app/(system)/language.tsx · screen 187 (language switcher) — rebuilt to the Phase-1 design
 // (screens/187-language-switcher.html): a 🌐 hero, the supported languages (Gujarati / Hindi / English, in design
-// order) each with a sub-label and a ✓ on the active one, a disabled "coming soon" row (Marathi), a "Language
-// settings" group, and Apply. Picking a language applies + persists INSTANTLY via the auth store (matches "changes
-// instantly · no app restart"); Apply just confirms and returns. Static (no backend) — renders regardless of flags.
+// order) each with a sub-label and a ✓ on the active one, a disabled "coming soon" row per target language, a
+// "Language settings" group, and Apply. Picking a language applies + persists INSTANTLY via the auth store
+// (matches "changes instantly · no app restart"); Apply just confirms and returns. Static (no backend) — renders
+// regardless of flags.
 //
-// §13 (NOT faked): only the registry's SUPPORTED languages (hi/en/gu) are selectable — Marathi is shown as a real
-// disabled "coming soon" row (never selectable/faked). The "Language settings" switches (SMS-in-language / voice-TTS
-// / English-for-technical-terms) have no per-user persistence contract yet, so they're LOCAL toggles here (honest
-// UI, not saved server-side) — they'll bind to a preference endpoint when one lands.
+// §13 (NOT faked): only the registry's SUPPORTED languages (hi/en/gu) are selectable — every target language is
+// shown as a real disabled "coming soon" row (never selectable/faked). The "Language settings" switches
+// (SMS-in-language / voice-TTS / English-for-technical-terms) have no per-user persistence contract yet, so
+// they're LOCAL toggles here (honest UI, not saved server-side) — they'll bind to a preference endpoint when one
+// lands.
+//
+// DEV-21: extended from a single hardcoded "coming soon" row (Marathi only) to the FULL 11-language target set
+// from the shared `@krishi-verse/i18n` registry (`COMING_SOON_LANGUAGES`) — native name + script rendered
+// directly from the registry (never a per-language translated string, since a native name IS the same string in
+// every locale). Dropped the previous Marathi row's invented "Coming Q1 2027" date claim (no rollout date is
+// known/verified for ANY of the 11 target languages — Golden Law 12, "no fabricated metric presented as current
+// fact") in favor of one honest, generic "Coming soon" sub-label shared by all 11 rows.
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LANGUAGES } from '@krishi-verse/i18n';
+import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishi-verse/i18n';
 import { Button, Card, StatusPill, Toggle, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
-import { orderedLanguageCodes, languageSubKey, COMING_LANGUAGES } from '../../features/system/system';
+import { orderedLanguageCodes, languageSubKey } from '../../features/system/system';
 
 const SETTINGS = ['sms', 'tts', 'english'] as const;
 
@@ -61,13 +70,14 @@ export default function LanguageSwitcher() {
           );
         })}
 
-        {/* Coming soon (disabled) */}
-        {COMING_LANGUAGES.map((code) => (
-          <Card key={code} style={styles.card}>
+        {/* Coming soon (disabled) — the full 11-language target set, straight from the shared registry. Native
+            name/script are DATA (same string in every locale), never a per-language translated key. */}
+        {COMING_SOON_LANGUAGES.map((l) => (
+          <Card key={l.code} style={styles.card}>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.name, styles.soonName]}>{t(`system.language.soon.${code}.name`)}</Text>
-                <Text style={styles.sub}>{t(`system.language.soon.${code}.sub`)}</Text>
+                <Text style={[styles.name, styles.soonName]}>{l.nameNative}</Text>
+                <Text style={styles.sub}>{l.nameEnglish} · {t('system.language.comingSoonSub')}</Text>
               </View>
               <StatusPill label={t('system.language.soonBadge')} tone="neutral" />
             </View>

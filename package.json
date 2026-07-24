@@ -19,7 +19,12 @@
     "db:partitions": "node db/scripts/ensure-partitions.js",
     "db:archive": "node db/scripts/archive-partitions.js",
     "db:verify-rls": "node db/scripts/verify-rls-coverage.js",
-    "db:slow": "node db/scripts/explain-top-queries.js"
+    "db:slow": "node db/scripts/explain-top-queries.js",
+    "i18n:detect-strings": "node tools/scripts/i18n/detect-hardcoded-strings.js",
+    "i18n:detect-strings:json": "node tools/scripts/i18n/detect-hardcoded-strings.js --json",
+    "i18n:check-font-budget": "node tools/scripts/i18n/check-font-budget.js",
+    "i18n:check-rtl-logical": "node tools/scripts/i18n/check-rtl-logical-properties.js",
+    "i18n:test-scripts": "node --test tools/scripts/i18n/__tests__/*.test.js"
   },
   "dependencies": {
     "pg": "^8.12.0"

@@ -67,6 +67,9 @@ a { color: inherit; text-decoration: none; }
 .kv-locale__label { color: var(--kv-neutral-600); font-size: 13px; }
 .kv-locale__btn { min-height: 44px; padding: 6px 10px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); background: var(--kv-neutral-0); cursor: pointer; font: inherit; }
 .kv-locale__btn.is-active { border-color: var(--kv-brand-500); color: var(--kv-brand-700); font-weight: 600; }
+/* DEV-21: honest "coming soon" chips (canon screen 187 pattern) — non-interactive, dashed border, muted text. */
+.kv-locale__soon-group { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-inline-start: 6px; padding-inline-start: 6px; border-inline-start: 1px dashed var(--kv-neutral-200); }
+.kv-locale__soon { font-size: 12px; color: var(--kv-neutral-600); border: 1px dashed var(--kv-neutral-200); border-radius: var(--kv-radius); padding: 3px 7px; cursor: default; }
 .kv-btn--muted { background: var(--kv-neutral-100); color: var(--kv-neutral-900); }
 .kv-btn--link { display: inline-block; min-height: 44px; padding: 10px 0; color: var(--kv-brand-700); font-weight: 600; }
 

@@ -1,0 +1,107 @@
+# .github/workflows/canon-fidelity.yml · DEV-21 — the code-side canon-fidelity harness (contract §5 gates 7/9/10,
+# automated). Runs per-PR: the Law-3 hardcoded-string detector (census + ratchet, not a mass-fix gate), the Q35
+# font-pack budget check, the RTL logical-CSS-property grep (gate 10's automated form), and packages/ui's own
+# test suite (the ported design-system components the canon-fidelity spot check in gate 7 depends on). Mirrors
+# this repo's other 9 workflows' conventions (checkout → pnpm/setup-node → run script; no secrets needed for any
+# job here). Scoped with `paths:` so it only runs when i18n/font/RTL-relevant code actually changed.
+name: canon-fidelity
+
+on:
+  pull_request:
+    paths:
+      - 'packages/i18n/**'
+      - 'packages/ui/**'
+      - 'apps/web-tenant/**'
+      - 'apps/web-admin/**'
+      - 'apps/web-partner/**'
+      - 'apps/web-storefront/**'
+      - 'apps/mobile/**'
+      - 'tools/scripts/i18n/**'
+      - '.github/workflows/canon-fidelity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/i18n/**'
+      - 'packages/ui/**'
+      - 'tools/scripts/i18n/**'
+
+concurrency:
+  group: canon-fidelity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hardcoded-strings-census:
+    # Law 3 enforcement (contract §3): "All user-facing text is an i18n key, zero exceptions." This job is a
+    # RATCHET, not a hard zero-tolerance gate — DEV-21's own census found 49 pre-existing findings across the web
+    # apps + mobile (see dev21_report.md for the full breakdown), a real backlog this batch is scoped to CENSUS,
+    # not mass-fix (per the founder brief: "don't mass-fix — census + top offenders list; fixing is follow-up
+    # batches"). `--max 49` fails the build only if a NEW PR pushes the count higher than today's honest baseline —
+    # regression-proof without demanding the debt be zero first. Lower this ceiling as follow-up batches fix
+    # findings (never raise it without a founder-approved reason, same discipline as any other ratchet in this repo).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Law-3 hardcoded-string census (ratchet ceiling = 49, DEV-21 baseline)
+        run: pnpm i18n:detect-strings -- --max 49
+
+  font-budget:
+    # Q35 ruling: "Font pack per language | ≤120KB WOFF2, subsetted, weights 400/700 initially". Checks any
+    # .woff2 under a conventional font-output directory; honestly reports "nothing to check yet" (exit 0) while
+    # this repo carries zero font binaries (see tools/scripts/i18n/FONT_PIPELINE.md for the full boundary
+    # statement) — the gate is real and CI-wired now, ready the moment a real font pack lands.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Q35 font-pack budget check (≤120KB WOFF2)
+        run: pnpm i18n:check-font-budget -- --dir apps/mobile/assets/fonts
+
+  rtl-logical-properties:
+    # gate 10's automated form: RTL/logical-CSS-property grep. Zero-tolerance (unlike the string census) — the
+    # 4 web apps' globals.css + packages/ui's own styles are already fully logical-property-converted (DEV-19),
+    # so this is a real regression gate, not a debt-tolerant ratchet.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: RTL logical-CSS-property grep (physical left/right/margin-left/etc. → should be logical)
+        run: pnpm i18n:check-rtl-logical
+
+  packages-ui-tests:
+    # gate 7 (canon-fidelity spot check) depends on packages/ui's ported components actually matching canon —
+    # its own test suite is the closest automated proxy available in CI (a pixel/DOM diff harness is a larger,
+    # separate investment not in this batch's scope, per the founder brief's framing of "the standing gates,
+    # automated" rather than a net-new visual-regression tool).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: packages/ui test suite
+        run: pnpm --filter @krishi-verse/ui test
+      - name: packages/i18n test suite (registry + formatters)
+        run: pnpm --filter @krishi-verse/i18n test
+
+  script-tests:
+    # Proves the 3 detector/checker scripts above are themselves correct (synthetic fixtures, planted violations,
+    # allowlist behavior) — the tests that back this workflow's own gates, per contract §5 gate 9 ("tests are the
+    # proof").
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: i18n tooling script tests
+        run: node --test tools/scripts/i18n/__tests__/*.test.js

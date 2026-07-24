@@ -2,7 +2,7 @@
   "name": "@krishi-verse/i18n",
   "version": "0.1.0",
   "private": true,
-  "description": "Internationalisation runtime + locale resources (12 launch languages).",
+  "description": "Internationalisation runtime + locale resources. 14-entry language registry (DEV-21): 3 LIVE (hi/en/gu) + 11 machine-draft-pending-review target languages mirroring the 11 canon language dirs (mr/bn/te/ta/as/pa/kn/ml/or/ar/ur).",
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
