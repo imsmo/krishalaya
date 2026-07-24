@@ -1,3 +1,30 @@
 // apps/mobile/src/features/dairy/screens/MccSlipScreen.tsx · screen · [P2]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// DEV-11 (2026-07-24, Group-B EmptyState pass set 1): canon ref `screens/223-farmer-mcc-slot-detail.html`
+// ("223 · My MCC Detail" — the nearest canon MCC-collection-detail concept to this stub's "slip" name; no
+// separate literal "collection slip" canon screen exists, grep-verified, cited honestly rather than invented).
+// Behind `dairy` (DEV-08 census §2 Group-B genuine gap — zero `(dairy)` route group anywhere in `app/**`;
+// master-plan §2.2 row 4 "Dairy/MCC... GA Wave 3", pilot-OFF). Golden Law 8: flag-gated honest EmptyState,
+// mirroring the QA-verified pattern at `app/(farmer)/create-auction.tsx` (`useFlag('auctions')` + real
+// `EmptyState` on OFF). PLACEMENT (DEV-11 decision, see dev11_report.md §1): un-routed in `features/` on
+// purpose — zero nav entry exists anywhere for `dairy` (grep-verified) — this is the honest component-level fix,
+// not new routing the pilot IA never called for.
+import React from 'react';
+import { ScreenScaffold, EmptyState } from '@krishi-verse/ui-native';
+import { useTranslation } from '../../../core/i18n/useTranslation';
+import { useFlag } from '../../../core/flags/useFlag';
+import { offModuleState } from '../../../core/flags/off-module-state';
+
+export default function MccSlipScreen() {
+  const { t } = useTranslation();
+  const enabled = useFlag('dairy');
+  const state = offModuleState(enabled);
+  return (
+    <ScreenScaffold title={t('dairyMccSlip.title')}>
+      <EmptyState
+        title={state === 'off' ? t('common.unavailable') : t('common.comingSoon')}
+        message={state === 'comingSoon' ? t('dairy.comingSoonMsg') : undefined}
+        testID="mcc-slip-empty-state"
+      />
+    </ScreenScaffold>
+  );
+}

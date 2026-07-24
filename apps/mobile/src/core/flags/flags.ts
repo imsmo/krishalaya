@@ -45,7 +45,15 @@ export type FlagKey =
   | 'notifications'     // push + in-app notification center (P-04) — OFF until staging-verified
   | 'ambassador_app'    // village ambassador: home + referral-led farmer onboarding + earnings (P-15) — OFF
   | 'ambassador_training' // ambassador commissions + withdraw + training/courses/quiz + profile (P-16) — OFF
-  | 'buyer_app' | 'worker_app' | 'trader_app' | 'tenant_admin_lite'; // future verticals — OFF
+  | 'buyer_app' | 'worker_app' | 'trader_app' | 'tenant_admin_lite' // future verticals — OFF
+  // [DEV-11, 2026-07-24] the 3 keys below did not exist before this batch — added so the Group-B genuine-gap
+  // screens (features/{fintech,dairy,livestock}/screens/*, DEV-08 census §2) can gate honestly per Golden Law 8
+  // instead of rendering with no flag at all. Master-plan §2.2 rows 2/4/5 name these pilot-OFF ("GA Wave 2"/
+  // "GA Wave 3"); no module exists behind any of the three yet, so ON also degrades to a coming-soon EmptyState
+  // (see core/flags/off-module-state.ts), never a fabricated real screen.
+  | 'fintech'           // loans/credit-score/insurance (P-2.2 row 2) — OFF, GA Wave 2
+  | 'dairy'             // MCC/milk-diary/bill/D2C subscription (P-2.2 row 4) — OFF, GA Wave 3
+  | 'livestock';        // animal profile/health log/vet booking (P-2.2 row 5) — OFF, GA Wave 3
 
 // Defaults: OFF unless the vertical is built AND verified. Flip a future vertical's default to true only when it
 // ships; production can still kill any of these via remote config.
@@ -79,6 +87,9 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   ambassador_app: false,
   ambassador_training: false,
   tenant_admin_lite: false,
+  fintech: false,
+  dairy: false,
+  livestock: false,
 };
 
 function parseEnvOverrides(raw: string | undefined): Partial<Record<FlagKey, boolean>> {
