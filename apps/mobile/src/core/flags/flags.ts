@@ -53,7 +53,31 @@ export type FlagKey =
   // (see core/flags/off-module-state.ts), never a fabricated real screen.
   | 'fintech'           // loans/credit-score/insurance (P-2.2 row 2) — OFF, GA Wave 2
   | 'dairy'             // MCC/milk-diary/bill/D2C subscription (P-2.2 row 4) — OFF, GA Wave 3
-  | 'livestock';        // animal profile/health log/vet booking (P-2.2 row 5) — OFF, GA Wave 3
+  | 'livestock'         // animal profile/health log/vet booking (P-2.2 row 5) — OFF, GA Wave 3
+  // [DEV-12, 2026-07-24] the 6 keys below did not exist before this batch — founder-approved mirror of DEV-11
+  // (Founder Review Queue item 2, DEV-S1 sitting 2026-07-24): 6 operator-role feature dirs
+  // (features/{mcc-operator,vet,store-owner,vyapari-home,delivery-partner,fpo-coordinator}/screens/*, DEV-08
+  // census §2 Group-B genuine gap — zero matching `app/**` route group for any, none named in master-plan
+  // §2.1/§2.2) gate honestly per Golden Law 8 instead of rendering with no flag at all. None of these 6 operator
+  // roles has a mobile module built yet, so ON also degrades to a coming-soon EmptyState (see
+  // core/flags/off-module-state.ts), never a fabricated real screen.
+  | 'mcc_operator'      // MCC (milk chiller centre) operator console: BMC status/member lookup/shift close/
+                        // collection slip — no mobile route group exists; a web partner-console equivalent may
+                        // exist per the Design Program (W-D41 MCC POS/BMC screens) — OFF
+  | 'vet'               // veterinarian professional console: bookings/calendar/prescriptions/earnings — distinct
+                        // from the farmer-facing `livestock` flag's vet-BOOKING screen (that's the farmer booking
+                        // a vet; this is the vet's OWN practice-management console) — no mobile route group
+                        // exists; a web partner console exists per Design Program (screens 450-460) — OFF
+  | 'store_owner'       // agri-input store owner console: inventory/orders/licence renewal/batch expiry — no
+                        // mobile route group exists, no web partner console found either — OFF
+  | 'vyapari'           // vyapari (wholesale trader) home console: market dashboard/requirements
+                        // inbox/supplier shortlist — no mobile route group exists — OFF
+  | 'delivery_partner'  // delivery/last-mile partner console: route map/tasks/pickup OTP/PoD/earnings — no
+                        // mobile route group exists; a web logistics partner console exists per Design Program
+                        // (W-D26/27) — OFF
+  | 'fpo_coordinator';  // FPO group-lot coordinator console: create group lot/member pledges/settlement/members
+                        // — no mobile route group exists; DEV-08 census register cross-ref row 18 (screen 261
+                        // area) notes no FPO directory/search screen exists in the canon either — OFF
 
 // Defaults: OFF unless the vertical is built AND verified. Flip a future vertical's default to true only when it
 // ships; production can still kill any of these via remote config.
@@ -90,6 +114,12 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   fintech: false,
   dairy: false,
   livestock: false,
+  mcc_operator: false,
+  vet: false,
+  store_owner: false,
+  vyapari: false,
+  delivery_partner: false,
+  fpo_coordinator: false,
 };
 
 function parseEnvOverrides(raw: string | undefined): Partial<Record<FlagKey, boolean>> {
