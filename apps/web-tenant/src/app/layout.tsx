@@ -19,6 +19,7 @@ import { env } from '../lib/env';
 import { getLanguageDef, getTranslator } from '../lib/i18n';
 import { hasSessionCookie } from '../lib/auth';
 import { tenantClient } from '../lib/api-client';
+import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
 import type { UserProfile } from '@krishi-verse/sdk-js';
 import { AppShell, KvUiGlobalStyles } from '@krishi-verse/ui';
 import { Sidebar } from '../components/Sidebar';
@@ -37,8 +38,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   if (authed) {
     try { me = await tenantClient().auth.me(); } catch { me = null; }
   }
+  // DEV-19: theme (dark/light/system) + senior-mode attrs, resolved SERVER-SIDE from cookies (see
+  // `lib/mechanism.ts`) — rendered directly into the initial HTML, so there is no client-side flash/hydration
+  // mismatch to guard against (see `@krishi-verse/ui`'s `mechanisms/theme.ts` header comment for the full
+  // SSR-strategy rationale). `data-senior` mirrors the same cookie-driven, zero-client-JS pattern.
+  const themeAttrs = getThemeHtmlAttrs();
+  const senior = getSeniorMode();
   return (
-    <html lang={lang.code} dir={lang.dir}>
+    <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}>
       <head>
         <KvUiGlobalStyles />
       </head>

@@ -90,3 +90,17 @@ export type { FileUploadProps, FileUploadItemProps } from './components/FileUplo
 
 export { Toolbar } from './components/Toolbar';
 export type { ToolbarProps } from './components/Toolbar';
+
+// --- DEV-19 (Phase D4, "implement the 4 UI mechanisms" batch) — pure mechanism resolvers, consumed by each
+// app's own cookie-reading `lib/*.ts` (see dev19_report.md's SSR-strategy section for why these stay
+// framework-agnostic rather than importing next/headers directly). CSS fragments are already wired into
+// `KvUiGlobalStyles` (see GlobalStyles.tsx) — re-exported here too for apps that want to consume the raw
+// fragment string without pulling in the whole component library's CSS (e.g. web-admin/web-partner, which
+// don't render `<KvUiGlobalStyles />` at all — see those apps' own layout.tsx wiring).
+export {
+  parseThemePreference, resolveThemeHtmlAttrs, THEME_PREFERENCES,
+} from './mechanisms/theme';
+export type { ThemePreference, ThemeHtmlAttrs } from './mechanisms/theme';
+
+export { isSeniorOn, seniorConsoleStyles } from './mechanisms/seniorMode';
+export { densityStyles } from './mechanisms/density';

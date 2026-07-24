@@ -6,17 +6,46 @@
   --kv-danger: #c62828; --kv-radius: 8px; --kv-space: 16px;
   --kv-font: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gujarati', system-ui, sans-serif;
 }
+/* DEV-19: dark-mode remap of this app's OWN legacy --kv-* vars (this file predates @krishi-verse/ui's port —
+   only the packages/ui-ported shell (AppShell/Sidebar/Topbar, wired at DEV-18) responds to [data-theme="dark"]
+   out of the box; individual page content across this app still renders through these --kv-* vars, so without
+   this block dark mode would be a no-op for every page body). Values are NOT invented: every hex below is
+   copied verbatim from @krishi-verse/tokens's generated `darkColors` export (the same DEV-19 tokens-bridge
+   this batch built) — --kv-neutral-0/50/100/200 map to darkColors.surface.card/page + earth.100/border.subtle,
+   --kv-neutral-600/900 map to darkColors.ink.500/700. --kv-brand-500/700 and --kv-danger are left UNCHANGED: the canon's
+   own dark scope only remaps primary-50/100 and leaves primary-500+/danger-base untouched (verified against
+   web-tokens.css's dark block — neither appears in the remap list), so this app's brand-green/danger-red stay
+   the same saturated values in both modes, matching canon behavior exactly. DISCLOSED BOUNDARY (see
+   dev19_report.md): this is a bounded, mechanical token remap of the ~6 vars this file already defines — it is
+   NOT a full page-by-page dark-mode redesign of every .kv-* class (out of this L batch's scope, same "ship the
+   mechanism, don't force-retrofit every markup file" precedent the design canon itself used at APPLY-8/9). */
+[data-theme="dark"] {
+  --kv-neutral-0: #1b232b; --kv-neutral-50: #12171d; --kv-neutral-100: #202832; --kv-neutral-200: #29323c;
+  --kv-neutral-600: #aab4bd; --kv-neutral-900: #e8ebee;
+}
+/* DEV-19: senior-mode extension of this app's own legacy vars — engineering-owed console extension of Q48's
+   ratified 1.30x multiplier (see @krishi-verse/ui's mechanisms/seniorMode.ts header comment for the full
+   scope statement: canon's own senior-mode mechanism is mobile-only). `html[data-senior="true"] { font-size:
+   130% }` correctly scales every element in this file that inherits its font-size from the document default
+   (nearly all of them — this file sets NO element-level font-size except the 2 explicit px values noted
+   below) via the standard CSS cascade, with zero risk of double-scaling since no --kv-* var itself encodes a
+   font-size. DISCLOSED RESIDUAL: `.kv-table th` and `.kv-badge` hardcode a literal `font-size: 14px`/`12px`
+   respectively (not relative units) — those 2 rules do NOT scale under this mechanism, a real, bounded, stated
+   gap (2 rules in 1 file), not silently smoothed over. */
+html[data-senior="true"] { font-size: 130%; }
+html[data-senior="true"] .kv-btn, html[data-senior="true"] .kv-input, html[data-senior="true"] .kv-locale__btn,
+html[data-senior="true"] .kv-sidebar a { min-height: 56px; }
 * { box-sizing: border-box; }
 html, body { margin: 0; font-family: var(--kv-font); color: var(--kv-neutral-900); background: var(--kv-neutral-50); }
 a { color: inherit; text-decoration: none; }
 .kv-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-.kv-sidebar { background: var(--kv-neutral-0); border-right: 1px solid var(--kv-neutral-200); padding: var(--kv-space); }
+.kv-sidebar { background: var(--kv-neutral-0); border-inline-end: 1px solid var(--kv-neutral-200); padding: var(--kv-space); }
 .kv-sidebar a { display: block; padding: 10px 12px; border-radius: var(--kv-radius); min-height: 44px; }
 .kv-sidebar a:hover { background: var(--kv-neutral-100); }
 .kv-brand { font-weight: 700; color: var(--kv-brand-700); margin-bottom: var(--kv-space); display: block; }
 .kv-content { padding: 24px; max-width: 1100px; }
 .kv-table { width: 100%; border-collapse: collapse; }
-.kv-table th, .kv-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); }
+.kv-table th, .kv-table td { text-align: start; padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); }
 .kv-table th { color: var(--kv-neutral-600); font-weight: 600; font-size: 14px; }
 .kv-input { padding: 10px; min-height: 44px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); width: min(360px, 100%); }
 .kv-btn { padding: 10px 16px; min-height: 44px; border: 0; border-radius: var(--kv-radius); background: var(--kv-brand-500); color: #fff; font-weight: 600; cursor: pointer; }
@@ -25,8 +54,8 @@ a { color: inherit; text-decoration: none; }
 .kv-badge { font-size: 12px; padding: 2px 8px; border-radius: 9999px; background: var(--kv-neutral-100); }
 
 /* --- TC-W0-01 foundation: skip-link, bare login surface, sidebar chrome, locale switcher, boundaries --- */
-.kv-skip { position: absolute; left: -9999px; top: 0; background: var(--kv-brand-700); color: #fff; padding: 10px 16px; border-radius: var(--kv-radius); z-index: 100; }
-.kv-skip:focus { left: 8px; top: 8px; }
+.kv-skip { position: absolute; inset-inline-start: -9999px; top: 0; background: var(--kv-brand-700); color: #fff; padding: 10px 16px; border-radius: var(--kv-radius); z-index: 100; }
+.kv-skip:focus { inset-inline-start: 8px; top: 8px; }
 .kv-content--bare { display: block; margin: 48px auto; max-width: 420px; }
 
 .kv-sidebar { display: flex; flex-direction: column; }
@@ -99,7 +128,7 @@ details.kv-card > summary { cursor: pointer; }
 .kv-btn--link.is-active { font-weight: 700; color: var(--kv-brand-700); }
 .kv-notif-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .kv-notif-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
-.kv-notif-item--unread { border-left: 3px solid var(--kv-brand-500); background: var(--kv-neutral-50); }
+.kv-notif-item--unread { border-inline-start: 3px solid var(--kv-brand-500); background: var(--kv-neutral-50); }
 .kv-notif-main { display: grid; gap: 4px; }
 .kv-notif-title { font-weight: 600; }
 .kv-notif-meta { display: flex; gap: 12px; align-items: center; font-size: 13px; }
@@ -117,7 +146,7 @@ details.kv-card > summary { cursor: pointer; }
 .kv-review { padding: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); display: grid; gap: 6px; max-width: 560px; }
 .kv-review__head { display: flex; gap: 10px; align-items: center; margin: 0; }
 .kv-review__body { margin: 0; }
-.kv-review__response { border-left: 3px solid var(--kv-brand-500); padding-left: 10px; background: var(--kv-neutral-50); }
+.kv-review__response { border-inline-start: 3px solid var(--kv-brand-500); padding-inline-start: 10px; background: var(--kv-neutral-50); }
 .kv-review__response-label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--kv-neutral-500); margin: 0 0 2px; }
 .kv-review__form { display: grid; gap: 4px; }
 

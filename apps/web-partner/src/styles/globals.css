@@ -6,17 +6,38 @@
   --kv-danger: #c62828; --kv-radius: 8px; --kv-space: 16px;
   --kv-font: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gujarati', system-ui, sans-serif;
 }
+/* DEV-19: dark-mode remap of this app's OWN legacy --kv-* vars, same bounded/mechanical approach as
+   apps/web-tenant/src/styles/globals.css (see that file's own header comment for the full rationale). Values
+   copied verbatim from @krishi-verse/tokens's generated `darkColors` export. --kv-brand-500/700 and --kv-danger
+   are left UNCHANGED (canon's own dark scope doesn't remap either). */
+[data-theme="dark"] {
+  --kv-neutral-0: #1b232b; --kv-neutral-50: #12171d; --kv-neutral-100: #202832; --kv-neutral-200: #29323c;
+  --kv-neutral-600: #aab4bd; --kv-neutral-900: #e8ebee;
+}
+/* DEV-19: senior-mode extension (engineering-owed Q48 console extension, see @krishi-verse/ui's
+   mechanisms/seniorMode.ts). Disclosed residual: .kv-table th's literal 14px font-size does not scale. */
+html[data-senior="true"] { font-size: 130%; }
+html[data-senior="true"] .kv-btn, html[data-senior="true"] .kv-input,
+html[data-senior="true"] .kv-sidebar a, html[data-senior="true"] .kv-sidebar__link { min-height: 56px; }
+/* DEV-19 / DELTA-001: pointer/hover density gating for this app's OWN 44px control floor (this app is not yet
+   on @krishi-verse/ui's ported shell, so packages/ui's densityStyles never reaches it — this is the same rule
+   duplicated locally). This is an ops/B2B console realm, in scope per DELTA-001's own console framing. Rule
+   Zero preserved: the 44px rural-tap floor NEVER shrinks on coarse-pointer/no-hover (touch) input; only
+   fine-pointer + hover (mouse/trackpad) devices get the denser 36px control height. */
+@media (pointer: fine) and (hover: hover) {
+  .kv-btn, .kv-input, .kv-sidebar a, .kv-sidebar__link { min-height: 36px; }
+}
 * { box-sizing: border-box; }
 html, body { margin: 0; font-family: var(--kv-font); color: var(--kv-neutral-900); background: var(--kv-neutral-50); }
 a { color: inherit; text-decoration: none; }
 .kv-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-.kv-sidebar { background: var(--kv-neutral-0); border-right: 1px solid var(--kv-neutral-200); padding: var(--kv-space); }
+.kv-sidebar { background: var(--kv-neutral-0); border-inline-end: 1px solid var(--kv-neutral-200); padding: var(--kv-space); }
 .kv-sidebar a { display: block; padding: 10px 12px; border-radius: var(--kv-radius); min-height: 44px; }
 .kv-sidebar a:hover { background: var(--kv-neutral-100); }
 .kv-brand { font-weight: 700; color: var(--kv-brand-700); margin-bottom: var(--kv-space); display: block; }
 .kv-content { padding: 24px; max-width: 1100px; }
 .kv-table { width: 100%; border-collapse: collapse; }
-.kv-table th, .kv-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); }
+.kv-table th, .kv-table td { text-align: start; padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); }
 .kv-table th { color: var(--kv-neutral-600); font-weight: 600; font-size: 14px; }
 .kv-input { padding: 10px; min-height: 44px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); width: min(360px, 100%); }
 .kv-btn { padding: 10px 16px; min-height: 44px; border: 0; border-radius: var(--kv-radius); background: var(--kv-brand-500); color: #fff; font-weight: 600; cursor: pointer; }
@@ -25,8 +46,8 @@ a { color: inherit; text-decoration: none; }
 .kv-badge { font-size: 12px; padding: 2px 8px; border-radius: 9999px; background: var(--kv-neutral-100); }
 
 /* PR-W0-01 foundation refit — app shell, persona-aware sidebar, boundaries, forms, status chips (token-driven) */
-.kv-skip { position: absolute; left: -9999px; top: 0; background: var(--kv-neutral-0); padding: 8px 12px; }
-.kv-skip:focus { left: 8px; z-index: 10; }
+.kv-skip { position: absolute; inset-inline-start: -9999px; top: 0; background: var(--kv-neutral-0); padding: 8px 12px; }
+.kv-skip:focus { inset-inline-start: 8px; z-index: 10; }
 .kv-content--bare { margin: 0 auto; }
 .kv-muted { color: var(--kv-neutral-600); }
 

@@ -1113,4 +1113,18 @@ export const en: Messages = {
   'air.decision.rejected': 'Reject',
   'air.action.claim': 'Claim',
   'air.action.resolve': 'Resolve',
+
+  // --- DEV-19: display preferences (dark mode / senior mode) — settings-surface toggle, canon shows no
+  // topbar theme-toggle affordance today (grep-verified), so controls live here per the batch's own brief.
+  'settings.display.title': 'Display preferences',
+  'settings.display.help': 'Changes apply after you save — this uses a real page reload, not a live preview.',
+  'settings.display.theme.label': 'Theme',
+  'settings.display.theme.light': 'Light',
+  'settings.display.theme.dark': 'Dark',
+  'settings.display.theme.system': 'Match device',
+  'settings.display.senior.label': 'Larger text & buttons',
+  'settings.display.senior.help': 'Increases text size (~30%) and button size across the console.',
+  'settings.display.senior.on': 'On',
+  'settings.display.senior.off': 'Off',
+  'settings.display.save': 'Save display preferences',
 };

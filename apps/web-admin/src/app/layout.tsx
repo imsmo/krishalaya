@@ -4,8 +4,10 @@
 import type { Metadata } from 'next';
 import '../styles/globals.css';
 import { env } from '../lib/env';
-import { getTranslator } from '../lib/i18n';
+import { getTranslator, ADMIN_LANG } from '../lib/i18n';
 import { isAdminAuthenticated } from '../lib/admin-auth';
+import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
+import { resolveLanguage } from '@krishi-verse/i18n';
 import { Sidebar } from '../components/Sidebar';
 
 export const metadata: Metadata = {
@@ -16,8 +18,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const t = getTranslator();
   const authed = isAdminAuthenticated();
+  // DEV-19: minimal mechanism wiring for this not-yet-on-packages/ui app (see lib/mechanism.ts's own header
+  // comment for the disclosed boundary). `dir` is now derived from the real @krishi-verse/i18n LanguageDef
+  // (previously hardcoded absent entirely — a real gap closed here, not just cosmetic: if hi/gu/an RTL
+  // language is ever registered for this realm, `dir` already flows correctly with zero further changes).
+  const lang = resolveLanguage(ADMIN_LANG);
+  const themeAttrs = getThemeHtmlAttrs();
+  const senior = getSeniorMode();
   return (
-    <html lang="en">
+    <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}>
       <body>
         <a href="#main" className="kv-skip">{t.t('nav.skipToContent')}</a>
         {authed ? (

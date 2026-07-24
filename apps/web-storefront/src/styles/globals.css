@@ -5,6 +5,24 @@
   --kv-neutral-600: #757575; --kv-neutral-900: #212121; --kv-success: #2e7d32; --kv-radius: 12px; --kv-space: 16px;
   --kv-font: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gujarati', system-ui, sans-serif;
 }
+/* DEV-19: dark-mode remap of this app's OWN legacy --kv-* vars, same bounded/mechanical approach as
+   apps/web-tenant/src/styles/globals.css (see that file's own header comment for the full rationale). Values
+   copied verbatim from @krishi-verse/tokens's generated `darkColors` export. --kv-brand-500/700 and --kv-success
+   left UNCHANGED (canon's own dark scope doesn't remap either). Disclosed residual: the single inline
+   `var(--kv-neutral-50, #f7f7f5)` fallback on .kv-review__response is not a real custom property in this file's
+   :root and is not remapped here (matches the bounded-mechanical-remap scope, not a full redesign). */
+[data-theme="dark"] {
+  --kv-neutral-0: #1b232b; --kv-neutral-100: #202832; --kv-neutral-600: #aab4bd; --kv-neutral-900: #e8ebee;
+}
+/* DEV-19: senior-mode extension (engineering-owed Q48 console extension, see @krishi-verse/ui's
+   mechanisms/seniorMode.ts). Disclosed residual: several literal-px font-size rules (e.g. .kv-badge 12px,
+   .kv-table th 13px) do not scale under this mechanism. Density (DELTA-001 pointer/hover gating) is
+   deliberately NOT applied to this app — see lib/mechanism.ts's own header comment: storefront is
+   farmer/consumer-facing commerce, not an ops/B2B console, so DELTA-001's console-scoped rationale doesn't
+   extend here. */
+html[data-senior="true"] { font-size: 130%; }
+html[data-senior="true"] .kv-btn, html[data-senior="true"] .kv-btn--link, html[data-senior="true"] .kv-field__input,
+html[data-senior="true"] .kv-locale__btn { min-height: 56px; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; font-family: var(--kv-font); color: var(--kv-neutral-900); background: var(--kv-neutral-0); line-height: 1.5; }
 a { color: inherit; text-decoration: none; }
@@ -19,13 +37,13 @@ a { color: inherit; text-decoration: none; }
 .kv-card__meta { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
 .kv-badge { font-size: 12px; padding: 2px 8px; border-radius: 9999px; background: var(--kv-neutral-100); }
 .kv-badge--organic { background: #dcedc8; color: var(--kv-success); }
-.kv-trace__event { border-left: 3px solid var(--kv-brand-500); padding: 4px 12px; margin: 8px 0; display: flex; flex-direction: column; }
+.kv-trace__event { border-inline-start: 3px solid var(--kv-brand-500); padding: 4px 12px; margin: 8px 0; display: flex; flex-direction: column; }
 .kv-trace__list { list-style: none; padding: 0; }
 .kv-trace__code { text-transform: capitalize; }
 
 /* ---- skip link (a11y) ---- */
-.kv-skip { position: absolute; left: -9999px; top: 0; background: var(--kv-brand-700); color: #fff; padding: 8px 12px; border-radius: 0 0 var(--kv-radius) 0; z-index: 100; }
-.kv-skip:focus { left: 0; }
+.kv-skip { position: absolute; inset-inline-start: -9999px; top: 0; background: var(--kv-brand-700); color: #fff; padding: 8px 12px; border-radius: 0 0 var(--kv-radius) 0; z-index: 100; }
+.kv-skip:focus { inset-inline-start: 0; }
 
 /* ---- header ---- */
 .kv-header__bar { display: flex; align-items: center; gap: var(--kv-space); flex-wrap: wrap; }
@@ -34,7 +52,7 @@ a { color: inherit; text-decoration: none; }
 .kv-header__link:hover { color: var(--kv-brand-700); text-decoration: underline; }
 .kv-header__actions { display: flex; gap: 12px; align-items: center; }
 .kv-header__cart { position: relative; }
-.kv-header__badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9999px; background: var(--kv-brand-500); color: #fff; font-size: 12px; text-align: center; }
+.kv-header__badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-inline-start: 4px; border-radius: 9999px; background: var(--kv-brand-500); color: #fff; font-size: 12px; text-align: center; }
 .kv-header__login { font-weight: 600; color: var(--kv-brand-700); }
 
 /* ---- locale switcher ---- */
@@ -56,7 +74,7 @@ a { color: inherit; text-decoration: none; }
 .kv-prose { max-width: 72ch; }
 .kv-prose__lead { font-size: 18px; color: var(--kv-neutral-600); }
 .kv-prose__note { margin-top: var(--kv-space); color: var(--kv-neutral-600); font-size: 14px; }
-.kv-bullets { padding-left: 20px; }
+.kv-bullets { padding-inline-start: 20px; }
 .kv-bullets li { margin: 6px 0; }
 .kv-empty { color: var(--kv-neutral-600); }
 
@@ -76,8 +94,8 @@ a { color: inherit; text-decoration: none; }
 /* ---- data table ---- */
 .kv-table__wrap { overflow-x: auto; }
 .kv-table { width: 100%; border-collapse: collapse; }
-.kv-table__caption { text-align: left; color: var(--kv-neutral-600); font-size: 13px; padding-bottom: 8px; }
-.kv-table th, .kv-table td { padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); text-align: left; }
+.kv-table__caption { text-align: start; color: var(--kv-neutral-600); font-size: 13px; padding-bottom: 8px; }
+.kv-table th, .kv-table td { padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); text-align: start; }
 .kv-table th { color: var(--kv-neutral-600); font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
 .kv-table__empty { color: var(--kv-neutral-600); padding: var(--kv-space) 0; }
 .kv-table__pager { margin-top: var(--kv-space); }
@@ -98,7 +116,7 @@ a { color: inherit; text-decoration: none; }
 .kv-field__hint { color: var(--kv-neutral-600); font-size: 13px; margin: 0; }
 .kv-form__notice { background: #dcedc8; color: var(--kv-success); padding: 10px 12px; border-radius: var(--kv-radius); margin: 0; }
 .kv-form__error { background: #fdecea; color: #b71c1c; padding: 10px 12px; border-radius: var(--kv-radius); margin: 0; }
-.kv-btn--link { background: none; border: none; color: var(--kv-brand-700); font: inherit; font-weight: 600; padding: 8px 0; min-height: 44px; cursor: pointer; text-align: left; }
+.kv-btn--link { background: none; border: none; color: var(--kv-brand-700); font: inherit; font-weight: 600; padding: 8px 0; min-height: 44px; cursor: pointer; text-align: start; }
 .kv-btn--link:hover { text-decoration: underline; }
 .kv-btn:disabled, .kv-btn--link:disabled { opacity: .6; cursor: progress; }
 
@@ -112,7 +130,7 @@ a { color: inherit; text-decoration: none; }
 .kv-filters__field--check { justify-content: flex-end; min-width: auto; }
 .kv-filters__label { font-size: 13px; font-weight: 600; color: var(--kv-neutral-600); }
 .kv-filters__check { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; font-weight: 600; }
-.kv-filters__actions { display: flex; gap: 12px; align-items: center; margin-left: auto; }
+.kv-filters__actions { display: flex; gap: 12px; align-items: center; margin-inline-start: auto; }
 .kv-results-count { color: var(--kv-neutral-600); font-size: 14px; margin: 8px 0; }
 .kv-loadmore { margin-top: var(--kv-space); }
 
@@ -139,7 +157,7 @@ a { color: inherit; text-decoration: none; }
 .kv-review { border-top: 1px solid var(--kv-neutral-100); padding-top: 12px; }
 .kv-review:first-child { border-top: 0; padding-top: 0; }
 .kv-review__head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 4px; }
-.kv-review__date { margin-left: auto; font-size: 13px; }
+.kv-review__date { margin-inline-start: auto; font-size: 13px; }
 .kv-review__body { margin: 4px 0; }
 .kv-badge--verified { background: #e3f2fd; color: #1565c0; }
 .kv-review__response { margin: 8px 0 0; padding: 8px 12px; background: var(--kv-neutral-50, #f7f7f5); border-radius: var(--kv-radius); }
@@ -162,7 +180,7 @@ a { color: inherit; text-decoration: none; }
 .kv-cart__warn { color: #b71c1c; font-size: 13px; }
 .kv-cart__qtyform { display: flex; gap: 8px; align-items: center; }
 .kv-cart__qty { width: 84px; }
-.kv-cart__line { font-weight: 700; color: var(--kv-brand-700); min-width: 96px; text-align: right; }
+.kv-cart__line { font-weight: 700; color: var(--kv-brand-700); min-width: 96px; text-align: end; }
 .kv-cart__remove { color: #b71c1c; }
 .kv-cart__foot { margin-top: var(--kv-space); }
 .kv-cart__subtotal { display: flex; justify-content: space-between; font-size: 18px; max-width: 320px; }
@@ -181,7 +199,7 @@ a { color: inherit; text-decoration: none; }
 .kv-checkout__coupon-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .kv-checkout__methods { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .kv-checkout__method { display: flex; gap: 10px; align-items: center; min-height: 44px; }
-.kv-checkout__method-fee { margin-left: auto; font-weight: 600; }
+.kv-checkout__method-fee { margin-inline-start: auto; font-weight: 600; }
 .kv-checkout__bill { width: 100%; max-width: 360px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .kv-checkout__bill > div { display: flex; justify-content: space-between; gap: 16px; }
 .kv-checkout__bill dt, .kv-checkout__bill dd { margin: 0; }
@@ -272,7 +290,7 @@ a { color: inherit; text-decoration: none; }
 .kv-notif__filters .is-active { text-decoration: underline; color: var(--kv-brand-700); }
 .kv-notif__list { list-style: none; padding: 0; margin: 0; }
 .kv-notif__item { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--kv-neutral-100); }
-.kv-notif__item--unread { border-left: 3px solid var(--kv-brand-500); padding-left: 10px; background: #f1f8e9; }
+.kv-notif__item--unread { border-inline-start: 3px solid var(--kv-brand-500); padding-inline-start: 10px; background: #f1f8e9; }
 .kv-notif__main { display: flex; flex-direction: column; gap: 2px; }
 .kv-notif__ntitle { font-weight: 600; }
 .kv-notif__body { color: var(--kv-neutral-900); }

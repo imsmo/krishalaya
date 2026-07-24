@@ -9,6 +9,7 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
+import { getThemePreference, getSeniorMode } from '../../lib/mechanism';
 import { formatMoneyMinor } from '@krishi-verse/i18n';
 import { formatBps, settingString, settingList, PLATFORM_LANGUAGES, COMMISSION_SOURCES } from '../../features/settings/config';
 import {
@@ -46,6 +47,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
 
   const enabledLangs = settingList(settings, 'languages.enabled', ['en']);
   const defaultLang = settingString(settings, 'languages.default', 'en') || 'en';
+  const themePref = getThemePreference();
+  const seniorOn = getSeniorMode();
 
   return (
     <section>
@@ -53,6 +56,46 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
       <p className="kv-muted">{t.t('settings.subtitle')} · <Link href="/settings/integrations">{t.t('integrations.title')} →</Link> · <Link href="/settings/webhooks">{t.t('webhooks.title')} →</Link></p>
       {okKey && <p className="kv-success" role="status">{t.t('settings.ok')}</p>}
       {errorKey && <p className="kv-error" role="alert">{t.t('settings.error')}: {errorKey}</p>}
+
+      {/* ---- display preferences (DEV-19: dark mode / senior mode mechanism) ----
+          No-JS form, mirrors LocaleSwitcher's own convention: posts to /api/mechanism, which sets the
+          kvt_theme/kvt_senior cookies (read server-side by layout.tsx's getThemeHtmlAttrs/getSeniorMode) and
+          redirects back here via the Referer header — a real page reload, not a live client-side toggle (see
+          apps/web-tenant/src/app/api/mechanism/route.ts's own header comment for why). Canon shows no
+          topbar/header theme-toggle affordance for the console realm (grep-verified against web-screens/ —
+          0 hits for a theme-toggle control) — placed in the settings surface per this batch's own brief. */}
+      <h2 className="kv-section-title">{t.t('settings.display.title')}</h2>
+      <p className="kv-muted">{t.t('settings.display.help')}</p>
+      <form action="/api/mechanism" method="post" className="kv-form kv-form--grid">
+        <fieldset className="kv-fieldset">
+          <legend>{t.t('settings.display.theme.label')}</legend>
+          <label className="kv-check">
+            <input type="radio" name="theme" value="light" defaultChecked={themePref === 'light'} />
+            {t.t('settings.display.theme.light')}
+          </label>
+          <label className="kv-check">
+            <input type="radio" name="theme" value="dark" defaultChecked={themePref === 'dark'} />
+            {t.t('settings.display.theme.dark')}
+          </label>
+          <label className="kv-check">
+            <input type="radio" name="theme" value="system" defaultChecked={themePref === 'system'} />
+            {t.t('settings.display.theme.system')}
+          </label>
+        </fieldset>
+        <fieldset className="kv-fieldset">
+          <legend>{t.t('settings.display.senior.label')}</legend>
+          <p className="kv-muted">{t.t('settings.display.senior.help')}</p>
+          <label className="kv-check">
+            <input type="radio" name="senior" value="on" defaultChecked={seniorOn} />
+            {t.t('settings.display.senior.on')}
+          </label>
+          <label className="kv-check">
+            <input type="radio" name="senior" value="off" defaultChecked={!seniorOn} />
+            {t.t('settings.display.senior.off')}
+          </label>
+        </fieldset>
+        <button type="submit" className="kv-btn">{t.t('settings.display.save')}</button>
+      </form>
 
       {/* ---- commission rules ---- */}
       <h2 className="kv-section-title">{t.t('settings.commission.title')}</h2>

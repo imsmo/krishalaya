@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import '../styles/globals.css';
 import { env } from '../lib/env';
 import { getLanguageDef, getTranslator } from '../lib/i18n';
+import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
 import { SiteHeader } from '../components/SiteHeader';
 import { SiteFooter } from '../components/SiteFooter';
 
@@ -21,8 +22,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = getLanguageDef();
   const t = getTranslator();
+  // DEV-19: theme + senior-mode attrs, resolved server-side from cookies (see lib/mechanism.ts) — same
+  // SSR-safe, zero-client-JS convention as web-tenant's own wiring. Density (DELTA-001) deliberately NOT
+  // applied here — see lib/mechanism.ts's own header comment (storefront is not an ops/B2B console realm).
+  const themeAttrs = getThemeHtmlAttrs();
+  const senior = getSeniorMode();
   return (
-    <html lang={lang.code} dir={lang.dir}>
+    <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}>
       <body>
         <a href="#main" className="kv-skip">{t.t('common.skipToContent')}</a>
         <SiteHeader />

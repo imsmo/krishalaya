@@ -1112,4 +1112,17 @@ export const hi: Messages = {
   'air.decision.rejected': 'अस्वीकारें',
   'air.action.claim': 'लें',
   'air.action.resolve': 'सुलझाएँ',
+
+  // --- DEV-19: display preferences (dark mode / senior mode) ---
+  'settings.display.title': 'डिस्प्ले प्राथमिकताएँ',
+  'settings.display.help': 'सेव करने के बाद बदलाव लागू होंगे — यह पेज को फिर से लोड करता है, लाइव प्रीव्यू नहीं।',
+  'settings.display.theme.label': 'थीम',
+  'settings.display.theme.light': 'हल्का',
+  'settings.display.theme.dark': 'गहरा',
+  'settings.display.theme.system': 'डिवाइस जैसा',
+  'settings.display.senior.label': 'बड़ा टेक्स्ट और बटन',
+  'settings.display.senior.help': 'कंसोल में टेक्स्ट का आकार (~30%) और बटन का आकार बढ़ाता है।',
+  'settings.display.senior.on': 'चालू',
+  'settings.display.senior.off': 'बंद',
+  'settings.display.save': 'डिस्प्ले प्राथमिकताएँ सेव करें',
 };

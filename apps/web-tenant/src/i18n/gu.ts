@@ -1112,4 +1112,17 @@ export const gu: Messages = {
   'air.decision.rejected': 'નકારો',
   'air.action.claim': 'લો',
   'air.action.resolve': 'ઉકેલો',
+
+  // --- DEV-19: display preferences (dark mode / senior mode) ---
+  'settings.display.title': 'ડિસ્પ્લે પસંદગીઓ',
+  'settings.display.help': 'સેવ કર્યા પછી ફેરફારો લાગુ થશે — આ પેજને ફરીથી લોડ કરે છે, લાઇવ પ્રીવ્યૂ નહીં.',
+  'settings.display.theme.label': 'થીમ',
+  'settings.display.theme.light': 'હલકી',
+  'settings.display.theme.dark': 'ઘાટી',
+  'settings.display.theme.system': 'ડિવાઇસ પ્રમાણે',
+  'settings.display.senior.label': 'મોટું લખાણ અને બટન',
+  'settings.display.senior.help': 'કન્સોલમાં લખાણનું કદ (~30%) અને બટનનું કદ વધારે છે.',
+  'settings.display.senior.on': 'ચાલુ',
+  'settings.display.senior.off': 'બંધ',
+  'settings.display.save': 'ડિસ્પ્લે પસંદગીઓ સેવ કરો',
 };

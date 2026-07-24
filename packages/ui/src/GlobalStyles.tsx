@@ -56,6 +56,8 @@ import { diffViewerStyles } from './components/DiffViewer';
 import { wizardStyles } from './components/Wizard';
 import { fileUploadStyles } from './components/FileUpload';
 import { toolbarStyles } from './components/Toolbar';
+import { seniorConsoleStyles } from './mechanisms/seniorMode';
+import { densityStyles } from './mechanisms/density';
 
 // DEV-16: appended 5 new data-display fragments (EmptyState/KpiCard/Callout/Chip/Skeleton). Several
 // contain disclosed byte-identical duplicate rules with DataTable's own fragment (`.kvw-table-state`,
@@ -70,12 +72,17 @@ import { toolbarStyles } from './components/Toolbar';
 // canon rule — safe to load twice, same precedent) since both components share that class name but at
 // DIFFERENT correct z-index contexts (Drawer disclosed its own `.kvw-drawer-backdrop` override at DEV-17;
 // Modal reuses `.kvw-backdrop` unmodified, see `Modal.tsx`'s own header comment for why that's correct here).
+// DEV-19: appended the 2 new mechanism fragments (senior-mode console extension + pointer/hover density
+// gating). Both MUST load after the base :root block below (kvUiCss's own ordering already guarantees this —
+// toCssVarBlock(':root', lightVars) is emitted first, allComponentStyles second) so their attribute/media-
+// scoped overrides win the cascade at equal specificity, per each file's own header comment.
 const allComponentStyles = [
   buttonStyles, inputStyles, statusPillStyles, aiBadgeStyles, moneyTextStyles, dataTableStyles,
   emptyStateStyles, kpiCardStyles, calloutStyles, chipStyles, skeletonStyles,
   appShellStyles, sidebarStyles, topbarStyles, breadcrumbsStyles, pageHeaderStyles, tabsStyles,
   drawerStyles, treeViewStyles, dateRangePickerStyles,
   modalStyles, toastStyles, diffViewerStyles, wizardStyles, fileUploadStyles, toolbarStyles,
+  seniorConsoleStyles, densityStyles,
 ].join('\n');
 
 export const kvUiCss = [
