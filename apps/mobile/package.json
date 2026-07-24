@@ -14,7 +14,9 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "test": "jest --passWithNoTests --runInBand"
+    "test": "jest --passWithNoTests --runInBand",
+    "test:core": "jest --selectProjects core --passWithNoTests --runInBand",
+    "test:render": "jest --selectProjects render --passWithNoTests --runInBand"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",
@@ -62,6 +64,7 @@
     "eslint-config-expo": "~7.1.2",
     "jest": "^29.7.0",
     "jest-expo": "~51.0.0",
+    "react-test-renderer": "18.2.0",
     "typescript": "^5.5.4"
   }
 }
