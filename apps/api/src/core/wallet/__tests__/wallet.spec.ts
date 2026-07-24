@@ -36,7 +36,15 @@ function fakeLedger() {
   } as any;
 }
 
-const tx = {} as any;
+// [DEV-02 2026-07-23] test-debt fix, BR-3 (DEV-01 P0 escalation, founder-authorized test-only repair):
+// this fixture predates migration 0065 / wallet.client.inprocess.ts's SET LOCAL ROLE kv_wallet …
+// RESET ROLE wrapper (see wallet.client.inprocess.ts:42,66,73,78), which calls tx.query() around
+// every money-write and every balance read. `{} as any` had no .query(), so all 4 tests below that
+// reach a real post() (balanced-txn, idempotent-replay, overdraw-refusal, frozen-account-refusal)
+// failed with "tx.query is not a function" — test debt, not a money-logic regression (DEV-01
+// diagnosis, DEV-01_BASELINE.md §7). The 2 tests that throw during validate() before tx.query is
+// ever reached (unbalanced-legs, single-leg) were unaffected either way. No production code touched.
+const tx = { query: async () => ({ rows: [], rowCount: 0 }) } as any;
 const buyer = 'u-buyer';
 
 describe('InProcessWalletClient — money invariants', () => {
