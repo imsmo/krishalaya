@@ -229,6 +229,9 @@ importers:
       '@krishi-verse/sdk-js':
         specifier: workspace:*
         version: link:../../packages/sdk-js
+      '@krishi-verse/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       '@krishi-verse/ui-native':
         specifier: workspace:*
         version: link:../../packages/ui-native

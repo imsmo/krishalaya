@@ -21,6 +21,11 @@ import { useTranslation } from '../core/i18n/useTranslation';
 import { initObservability, rotateCorrelationId, flushAnalytics } from '../core/observability';
 import { ForcedUpdateGate, checkAndFetchOta } from '../core/release';
 import { isEnabled } from '../core/flags/flags';
+import { hydrateMechanismPreferences } from '../core/mechanisms/mechanismStore.runtime';
+import { useThemeMode } from '../core/mechanisms/useThemeMode';
+import { statusBarStyleFor } from '../core/mechanisms/theme';
+import { applyRtlForDirection } from '../core/mechanisms/rtlBoot';
+import { resolveLanguage } from '@krishi-verse/i18n';
 import '../core/offline/handlers'; // register offline replay handlers (media.upload, listing.create)
 import '../core/config'; // fail-closed env validation at boot
 
@@ -50,20 +55,38 @@ export default function RootLayout() {
     Hind_Semibold: Hind_600SemiBold,
   });
 
+  // DEV-20: resolved color-scheme drives the OS status-bar icon color (the one real, canon-independent effect —
+  // see core/mechanisms/theme.ts's own header for why this does NOT yet repaint any screen). `lang` is read once
+  // below for the RTL boot mechanism.
+  const { scheme } = useThemeMode();
+  const { lang } = useTranslation();
+
   const onLayout = useCallback(() => { /* hook point for SplashScreen.hideAsync once ready */ }, []);
   // Boot: hydrate remote flags (best-effort), then start the sync engine (replays queued writes on reconnect).
   useEffect(() => {
     initObservability(); // crash + analytics providers (no-op without a DSN; never breaks boot) — §6
     void hydrateFlags();
+    void hydrateMechanismPreferences(); // DEV-20: restore theme-mode + senior-mode preferences (best-effort)
+    // DEV-20 RTL mechanism: apply RN's forced-RTL flag for the CURRENT boot language. Every live app language
+    // (hi/en/gu) is `ltr` today (see core/mechanisms/rtl.ts's own header) so this is inert in production right
+    // now — real once a live RTL language ships. Deliberately read once at boot, not on every language switch,
+    // since I18nManager.forceRTL only fully takes effect after a JS reload (see rtlBoot.ts) — re-applying it
+    // mid-session would half-mirror the running screen tree, worse than doing nothing.
+    applyRtlForDirection(resolveLanguage(lang).dir);
     const stop = startSyncEngine();
     return stop;
+    // Deliberately empty deps: this boot effect runs exactly once (see the RTL comment above for why re-running
+    // it on every `lang` change would be wrong). No `eslint-disable` comment here — this project's ESLint config
+    // doesn't register `react-hooks/exhaustive-deps` at all (5 pre-existing files already show the resulting
+    // "Definition for rule ... was not found" error for the same reason; a disable comment for an unregistered
+    // rule is itself a lint error, not a suppression, per that disclosed baseline gate-quality debt).
   }, []);
   if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: color.page }} />;
 
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor: color.page }} onLayout={onLayout}>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyleFor(scheme)} />
         <AuthProvider>
           <ConnectivityBanner />
           <AppErrorBoundary>

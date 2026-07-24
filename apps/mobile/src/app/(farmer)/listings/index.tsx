@@ -9,15 +9,26 @@
 // the owner box. Per-card engagement (👁 views · inq · bids) + sold final price live in the per-listing
 // ListingAnalytics read (one call PER card = N+1, forbidden on a list) — shown on the DETAIL screen, omitted
 // here and FLAGGED (§13): the owner list read-model should return lightweight view/offer counts inline.
+//
+// DEV-20 (APPLY-9/Q49, honest-minimum): on a tablet-eligible viewport (`useSplitLayout` — ≥768px + coarse
+// pointer), this screen renders the SAME list capped to `listColumnWidth` alongside a second pane. Tapping a row
+// sets `selectedId` (never navigates away) so the pane can show a real preview built ONLY from fields already on
+// the loaded `ListingCard` (title/badge/qty/price) — no per-row API call (would be the exact N+1 the comment
+// above already flags as forbidden). A "View full details →" button in the pane does the real navigation this
+// screen always did. On a phone-width viewport this is byte-behavior-identical to pre-DEV-20 (single column,
+// tap-to-navigate). The full "make each row's real detail live in the second pane" behavior is DEV-28's own
+// scoped follow-up (per `00_DEV_PENDING_MASTER.md` row 266) — this batch ships the mechanism, not a duplicate
+// detail screen.
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { ListingCard } from '@krishi-verse/sdk-js';
-import { EmptyState, MoneyText, SkeletonCard, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { EmptyState, MoneyText, SkeletonCard, Button, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { myListings } from '../../../features/listings/listings.api';
 import { walletEarnings } from '../../../features/wallet/wallet.api';
+import { useSplitLayout } from '../../../core/mechanisms/useSplitLayout';
 import { LISTING_FILTERS, badgeFor, countByStatus, filterListings, auctionCountdown, cropEmoji, type ListingFilter, type BadgeKind } from '../../../features/listings/my-listings';
 
 // Badge palette per status — design tones, mapped to the theme ramps (kept here so the card stays presentational).
@@ -33,6 +44,8 @@ const BADGE_STYLE: Record<BadgeKind, { bg: string; fg: string }> = {
 export default function MyListings() {
   const router = useRouter();
   const { t, lang } = useTranslation();
+  const { isSplit, listColumnWidth, maxWidth } = useSplitLayout();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [items, setItems] = useState<ListingCard[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   // R2-01 (founder screenshot review): walletEarnings() is degrade-never-die (it self-catches to an EMPTY_INSIGHTS
@@ -65,6 +78,11 @@ export default function MyListings() {
     if (badgeFor(l) === 'draft') router.push({ pathname: '/(farmer)/listings/preview', params: { id: l.id } });
     else router.push(`/(farmer)/listings/${l.id}`);
   };
+  // DEV-20 (APPLY-9/Q49): on a split-eligible viewport, a tap selects (shows the inline preview pane) instead of
+  // navigating away, so the list stays visible next to the detail — the two-pane point of the mechanism. On a
+  // phone viewport this is unreachable (isSplit is false) so behavior is unchanged from pre-DEV-20.
+  const onCardPress = (l: ListingCard) => { if (isSplit) setSelectedId(l.id); else openListing(l); };
+  const selectedItem = isSplit ? items.find((i) => i.id === selectedId) ?? null : null;
 
   const Header = (
     <View>
@@ -97,6 +115,10 @@ export default function MyListings() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.appbar}><Text style={styles.appbarTitle}>{t('listings.title')}</Text></View>
 
+      {/* DEV-20: split-eligible viewport wraps the list in a fixed-width left column + a preview pane; a phone
+          viewport renders the plain single-column body unchanged (isSplit false → styles resolve to no-ops). */}
+      <View style={[styles.body, isSplit && { maxWidth, alignSelf: 'center', width: '100%' }]}>
+      <View style={isSplit ? { width: listColumnWidth } : styles.flex1}>
       {loading ? (
         <View style={{ paddingHorizontal: space[5], gap: space[3], paddingTop: space[2] }}><SkeletonCard /><SkeletonCard /><SkeletonCard /></View>
       ) : (
@@ -123,7 +145,7 @@ export default function MyListings() {
             const countdown = kind === 'auction' ? auctionCountdown(item.auctionEndsAt) : null;
             const bs = BADGE_STYLE[kind];
             return (
-              <Pressable style={styles.card} onPress={() => openListing(item)} accessibilityRole="button" accessibilityLabel={item.title}>
+              <Pressable style={styles.card} onPress={() => onCardPress(item)} accessibilityRole="button" accessibilityLabel={item.title} accessibilityState={{ selected: isSplit && selectedId === item.id }}>
                 <View style={[styles.emoji, isDraft && styles.emojiDraft]}><Text style={styles.emojiTxt}>{isDraft ? '📝' : cropEmoji(item.title)}</Text></View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={styles.cardTop}>
@@ -153,6 +175,33 @@ export default function MyListings() {
           }}
         />
       )}
+      </View>
+
+      {isSplit ? (
+        <View style={styles.splitDetail}>
+          {selectedItem ? (
+            <View>
+              <View style={styles.cardTop}>
+                <Text style={styles.cardTitle}>{selectedItem.title}</Text>
+                <View style={[styles.badge, { backgroundColor: BADGE_STYLE[badgeFor(selectedItem)].bg }]}>
+                  <Text style={[styles.badgeTxt, { color: BADGE_STYLE[badgeFor(selectedItem)].fg }]}>{t(`listings.badge.${badgeFor(selectedItem)}`)}</Text>
+                </View>
+              </View>
+              <Text style={styles.meta}>{selectedItem.quantityAvailable} {selectedItem.unitCode}</Text>
+              <View style={styles.priceRow}>
+                <MoneyText minor={selectedItem.priceMinor} currencyCode={selectedItem.currencyCode} langCode={lang} size="lg" />
+                <Text style={styles.perUnit}>/{selectedItem.unitCode}</Text>
+              </View>
+              <View style={{ marginTop: space[4] }}>
+                <Button title={t('listings.viewFullDetails')} onPress={() => openListing(selectedItem)} fullWidth={false} />
+              </View>
+            </View>
+          ) : (
+            <EmptyState title={t('listings.splitSelectPrompt')} />
+          )}
+        </View>
+      ) : null}
+      </View>
 
       <Pressable style={styles.fab} onPress={() => router.push('/(farmer)/listings/new')} accessibilityRole="button" accessibilityLabel={t('listings.create')}>
         <Text style={styles.fabPlus}>＋</Text>
@@ -174,6 +223,13 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.page },
   appbar: { paddingHorizontal: space[5], paddingTop: space[3], paddingBottom: space[2] },
   appbarTitle: { fontFamily: font.display, fontSize: font.size['2xl'], fontWeight: font.weight.bold, color: color.ink800, letterSpacing: -0.3 },
+  // DEV-20 (APPLY-9/Q49): `body` is a no-op single-column flex container on phone; on a split-eligible viewport
+  // it becomes a row (list column + preview pane) via the inline maxWidth/alignSelf override applied at the call
+  // site — kept as two separate style objects (not merged here) so the phone-path style object is unchanged from
+  // pre-DEV-20 (regression-safe).
+  body: { flex: 1, flexDirection: 'row' },
+  flex1: { flex: 1 },
+  splitDetail: { flex: 1, borderLeftWidth: 1, borderLeftColor: color.earth200, padding: space[5] },
   list: { paddingHorizontal: space[5], paddingBottom: 96 },
 
   stats: { flexDirection: 'row', gap: space[2], marginBottom: space[3] },

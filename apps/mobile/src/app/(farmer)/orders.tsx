@@ -20,6 +20,12 @@
 // HONEST GAPS (§13, never faked): delivery-ETA / rating still live on OrderDetail (fetching per card would be an
 // N+1, forbidden §5); the thumb stays a neutral 📦 (no product-image field on the list contract). No fabricated
 // ETA or "you rated N" — those show on the order DETAIL screen (tap the card).
+//
+// DEV-20 (APPLY-9/Q49, honest-minimum): same tablet two-pane wiring as `listings/index.tsx` — on a split-eligible
+// viewport, tapping a card sets `selectedId` (no navigation) and a second pane shows a REAL preview built only
+// from the already-loaded `OrderListItem` fields (order no/status/primary item/price — zero extra API calls).
+// The pane's own CTA (pay/track/rate) still runs the real `onCta` handler. A phone viewport is unaffected
+// (isSplit false → single column, tap navigates, byte-identical to pre-DEV-20).
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,6 +36,7 @@ import { EmptyState, MoneyText, StatusPill, SkeletonCard, Button, color, font, s
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { listOrders } from '../../features/orders/orders.api';
 import { payForOrder } from '../../features/payments/payments.api';
+import { useSplitLayout } from '../../core/mechanisms/useSplitLayout';
 import { orderStatusTone, matchesOrderFilter, orderProgress, orderListCta, counterpartyLabel, moreItemsCount, type OrderFilter, type OrderListCta } from '../../features/orders/order-status';
 
 const ROLES: OrderRole[] = ['buyer', 'seller'];
@@ -38,6 +45,8 @@ const FILTERS: OrderFilter[] = ['all', 'in_transit', 'delivered', 'completed', '
 export default function Orders() {
   const { t, lang } = useTranslation();
   const router = useRouter();
+  const { isSplit, listColumnWidth, maxWidth } = useSplitLayout();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [role, setRole] = useState<OrderRole>('buyer');
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [byRole, setByRole] = useState<Record<OrderRole, OrderListItem[]>>({ buyer: [], seller: [] });
@@ -80,6 +89,12 @@ export default function Orders() {
     }
   };
 
+  // DEV-20 (APPLY-9/Q49): real navigation, unchanged; onCardPress below decides whether to run it immediately
+  // (phone) or defer to a tap on the pane's own CTA (split).
+  const openOrder = (o: OrderListItem) => router.push({ pathname: '/(farmer)/orders/[id]', params: { id: o.id, role, party: o.counterparty ?? '' } });
+  const onCardPress = (o: OrderListItem) => { if (isSplit) setSelectedId(o.id); else openOrder(o); };
+  const selectedItem = isSplit ? filtered.find((o) => o.id === selectedId) ?? null : null;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.appbar}>
@@ -120,6 +135,10 @@ export default function Orders() {
         })}
       </ScrollView>
 
+      {/* DEV-20: split-eligible viewport wraps the list in a fixed-width left column + a preview pane; a phone
+          viewport renders the plain single-column body unchanged (isSplit false → styles resolve to no-ops). */}
+      <View style={[styles.splitRow, isSplit && { maxWidth, alignSelf: 'center', width: '100%' }]}>
+      <View style={isSplit ? { width: listColumnWidth } : styles.flex1}>
       {loading ? (
         <View style={styles.body}><SkeletonCard lines={3} /><View style={{ height: space[3] }} /><SkeletonCard lines={3} /></View>
       ) : (
@@ -132,12 +151,41 @@ export default function Orders() {
           ListEmptyComponent={<View style={styles.body}><EmptyState title={t('orders.empty.title')} message={t('orders.empty.message')} /></View>}
           renderItem={({ item }) => (
             <OrderCard item={item} role={role} t={t} lang={lang} busyPay={busyPay === item.id}
-              onOpen={() => router.push({ pathname: '/(farmer)/orders/[id]', params: { id: item.id, role, party: item.counterparty ?? '' } })}
+              onOpen={() => onCardPress(item)}
               onCta={onCta}
             />
           )}
         />
       )}
+      </View>
+
+      {isSplit ? (
+        <View style={styles.splitDetail}>
+          {selectedItem ? (
+            <View>
+              <View style={styles.cardHead}>
+                <Text style={styles.cardId}>{t('orders.orderNo', { id: selectedItem.orderNo })}</Text>
+                <StatusPill label={t(`orders.status.${selectedItem.status}`)} tone={orderStatusTone(selectedItem.status)} />
+              </View>
+              {selectedItem.primaryItem ? (
+                <Text style={styles.cardTitle}>
+                  {selectedItem.primaryItem.title}
+                  {moreItemsCount(selectedItem.itemCount) > 0 ? <Text style={styles.cardMore}>  {t('ordersRecv.moreItems', { n: moreItemsCount(selectedItem.itemCount) })}</Text> : null}
+                </Text>
+              ) : (
+                <Text style={styles.cardTitle}>{counterpartyLabel(selectedItem.counterparty) ?? t('orders.orderNo', { id: selectedItem.orderNo })}</Text>
+              )}
+              <MoneyText minor={selectedItem.totalMinor} langCode={lang} size="lg" tone="default" style={styles.cardPrice} />
+              <View style={{ marginTop: space[4] }}>
+                <Button title={t('orders.viewFullDetails')} onPress={() => openOrder(selectedItem)} fullWidth={false} />
+              </View>
+            </View>
+          ) : (
+            <EmptyState title={t('orders.splitSelectPrompt')} />
+          )}
+        </View>
+      ) : null}
+      </View>
     </SafeAreaView>
   );
 }
@@ -204,6 +252,12 @@ function OrderCard({ item, role, t, lang, busyPay, onOpen, onCta }: {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: color.page },
   appbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space[5], paddingTop: space[2], paddingBottom: space[2] },
+  // DEV-20 (APPLY-9/Q49): `splitRow` is a no-op single-column flex container on phone; on a split-eligible
+  // viewport it becomes a row (list column + preview pane) via the inline maxWidth/alignSelf override applied
+  // at the call site — kept separate from the pre-existing `body` style (loading/empty container) on purpose.
+  splitRow: { flex: 1, flexDirection: 'row' },
+  flex1: { flex: 1 },
+  splitDetail: { flex: 1, borderLeftWidth: 1, borderLeftColor: color.earth200, padding: space[5] },
   appbarTitle: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800 },
   appbarLink: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.primary700 },
 

@@ -9,15 +9,24 @@
 // are all REAL. The design's masked PHONE ("+91 98765 ●●●●●") + LOCATION ("Anand, Gujarat") are NOT on the profile
 // contract (and the phone is deliberately never held client-side, §4) → the header omits them rather than
 // fabricating. "★ Verified Seller" has no seller-verified flag → omitted. "App PIN · On" has no app-PIN contract →
-// shown as a coming-soon info row, never a fake toggle. "App Theme · System" is the real current behaviour (the app
-// follows the OS theme; no in-app theme store yet). The build number ("Build 142") isn't in config → only the real
-// version is shown.
+// shown as a coming-soon info row, never a fake toggle. The build number ("Build 142") isn't in config → only the
+// real version is shown.
+//
+// DEV-20 (2026-07-24): "App Theme" is now a REAL 3-way preference (system/light/dark, `core/mechanisms/theme.ts` +
+// `useThemeMode`), persisted via AsyncStorage and applied to the OS status-bar icon color at boot (`_layout.tsx`).
+// HONEST BOUNDARY (unchanged from this batch's own theme.ts header): the mobile canon has not ratified a
+// farmer-app dark PALETTE (grep-verified zero `data-theme`/dark rules in `system/screen.css`) — so choosing
+// "Dark" here changes the resolved scheme + status-bar icon color, not a screen repaint. "Senior Mode" is a new
+// real toggle (`useSeniorMode`, Q48: 1.30x type + 56px taps) — this screen's own `Row` component consumes it
+// directly, so every row on THIS screen genuinely scales when it's on (the honest-minimum wiring scope for this
+// batch; other screens are not retrofitted, same "ship the mechanism, don't force every markup file" precedent
+// DEV-19 used for its own dark/senior CSS overrides).
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { KycDocument, BankAccount } from '@krishi-verse/sdk-js';
 import { LANGUAGES } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, Toggle, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';
@@ -25,6 +34,11 @@ import { useSecureScreen } from '../../core/security/screen-guard';
 import { config } from '../../core/config';
 import { myDocuments, myBankAccounts } from '../../features/profile/profile.api';
 import { initials, hasVerifiedKyc, bankCodeFromIfsc } from '../../features/profile/profile';
+import { useThemeMode } from '../../core/mechanisms/useThemeMode';
+import { useSeniorMode } from '../../core/mechanisms/useSeniorMode';
+import type { ThemeMode } from '../../core/mechanisms/theme';
+
+const THEME_CYCLE: ThemeMode[] = ['system', 'light', 'dark'];
 
 export default function Settings() {
   useSecureScreen();
@@ -33,6 +47,8 @@ export default function Settings() {
   const enabled = useFlag('system_screens');
   const notifOn = useFlag('notifications');
   const { state, signOut } = useAuth();
+  const { mode: themeMode, setMode: setThemeMode } = useThemeMode();
+  const { enabled: seniorOn, setEnabled: setSeniorOn } = useSeniorMode();
   const [docs, setDocs] = useState<KycDocument[]>([]);
   const [banks, setBanks] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +63,9 @@ export default function Settings() {
   if (!enabled) return <ScreenScaffold title={t('settings.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   const onSignOut = async () => { await signOut(); router.replace('/(auth)/welcome'); };
+
+  const themeLabel = ({ system: t('settings.themeSystem'), light: t('settings.themeLight'), dark: t('settings.themeDark') } as Record<ThemeMode, string>)[themeMode];
+  const cycleTheme = () => setThemeMode(THEME_CYCLE[(THEME_CYCLE.indexOf(themeMode) + 1) % THEME_CYCLE.length]);
 
   const name = state.profile?.displayName ?? t('home.defaultName');
   const kycVerified = hasVerifiedKyc(docs);
@@ -88,8 +107,13 @@ export default function Settings() {
           <Card>
             <Row title={t('settings.language')} value={langLabel} onPress={() => router.push('/(system)/language')} />
             {notifOn ? <Row title={t('settings.notifications')} sub={t('settings.notificationsSub')} onPress={() => router.push('/(farmer)/notifications/settings')} divide /> : null}
-            {/* §13: app follows the OS theme; no in-app theme store yet → static "System". */}
-            <Row title={t('settings.theme')} value={t('settings.themeSystem')} divide />
+            {/* DEV-20: real 3-way preference, tap cycles system → light → dark. See file header's honest boundary
+                on why "Dark" changes the resolved scheme/status-bar icon, not a screen repaint yet. */}
+            <Row title={t('settings.theme')} value={themeLabel} onPress={cycleTheme} divide />
+            {/* DEV-20 (Q48): real senior-mode toggle — this screen's own Row honors it (scaled type + 56px taps). */}
+            <View style={[styles.divide, { paddingHorizontal: 0 }]}>
+              <Toggle label={t('settings.seniorMode')} hint={t('settings.seniorModeSub')} value={seniorOn} onValueChange={setSeniorOn} />
+            </View>
           </Card>
 
           {/* Security & Privacy */}
@@ -119,12 +143,16 @@ export default function Settings() {
   );
 }
 
+// DEV-20: Row reads senior mode itself (no prop drilling needed) — this makes EVERY row on this screen honor
+// Q48's 1.30x type-scale + 56px tap floor the instant the toggle above is on, real and screen-wide, not just the
+// one row that owns the toggle.
 function Row({ title, sub, value, onPress, divide }: { title: string; sub?: string; value?: string; onPress?: () => void; divide?: boolean }) {
+  const { enabled: seniorOn, fontSize, tapMin } = useSeniorMode();
   const body = (
-    <View style={[styles.row, divide && styles.divide]}>
+    <View style={[styles.row, divide && styles.divide, seniorOn && { minHeight: tapMin }]}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        {sub ? <Text style={styles.rowSub}>{sub}</Text> : null}
+        <Text style={[styles.rowTitle, seniorOn && { fontSize: fontSize.md }]}>{title}</Text>
+        {sub ? <Text style={[styles.rowSub, seniorOn && { fontSize: fontSize.xs }]}>{sub}</Text> : null}
       </View>
       {value ? <Text style={styles.rowValue}>{value}</Text> : null}
       {onPress ? <Text style={styles.chev}>›</Text> : null}

@@ -25,6 +25,7 @@
     "@expo-google-fonts/plus-jakarta-sans": "^0.2.3",
     "@krishi-verse/i18n": "workspace:*",
     "@krishi-verse/sdk-js": "workspace:*",
+    "@krishi-verse/tokens": "workspace:*",
     "@krishi-verse/ui-native": "workspace:*",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "11.3.1",
