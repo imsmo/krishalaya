@@ -21,7 +21,7 @@ function build(opts: { tokens?: { token: string; platform: string }[]; sendResul
   // only deliverPush is exercised → the other ctor deps are never touched
   const svc = new NotificationService(
     undefined as any, undefined as any, metrics as any, undefined as any, pushSender as any, devices as any,
-    undefined as any, undefined as any, undefined as any, undefined as any, undefined as any,
+    undefined as any, undefined as any, undefined as any, undefined as any, undefined as any, undefined as any,
   );
   return { svc, devices, pushSender, deactivated };
 }

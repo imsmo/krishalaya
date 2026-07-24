@@ -16,6 +16,8 @@ import { PgUnitOfWork } from '../../../core/database/unit-of-work.pg';
 import { PgReadReplicaProvider } from '../../../core/database/read-replica.pg';
 import { PgOutboxWriter } from '../../../core/outbox/outbox.writer.pg';
 import { PromMetrics } from '../../../core/observability/metrics.prom';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { NoopNotificationGateway } from '../gateway/noop.gateway';
 import { NoopPushSender } from '../gateway/noop-push.sender';
 import { PushDeviceRepository } from '../repositories/push-device.repository';
@@ -53,7 +55,8 @@ run('communication spine (integration, real Postgres + RLS + seeded catalog)', (
     const prefs = new NotificationPreferenceRepository(replica as any);
     const quiet = new QuietHoursRepository(replica as any);
     notifRepo = new NotificationRepository(replica as any);
-    notifications = new NotificationService(uow, outbox, metrics, gateway, pushSender, pushDevices, events, templates, prefs, quiet, notifRepo);
+    const flags = new FlagsService(pools, new InMemoryCacheService());   // DB-backed; unseeded flag ⇒ OFF (old behavior), matching production default
+    notifications = new NotificationService(uow, outbox, metrics, gateway, pushSender, pushDevices, events, templates, prefs, quiet, notifRepo, flags);
     prefsSvc = new PreferenceService(uow, outbox, events, prefs, quiet);
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);

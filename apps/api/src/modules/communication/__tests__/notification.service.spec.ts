@@ -14,7 +14,7 @@ import { NotifChannel } from '../domain/communication.events';
 const catalog = (over: Partial<any> = {}) => NotificationEvent.rehydrate({ code: 'order.delivered', defaultName: 'Delivered', priority: 'important', defaultChannels: ['sms', 'inapp'] as NotifChannel[], userCanOptOut: true, batchable: false, ...over });
 const template = (channel: NotifChannel) => NotificationTemplate.rehydrate({ id: `tmpl-${channel}`, eventCode: 'order.delivered', channel, languageCode: 'en', tenantId: null, subject: null, body: 'Order {{orderNo}} delivered', providerTemplateRef: null, isActive: true });
 
-function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationPreference[]; gatewayStatus?: 'accepted' | 'failed' } = {}) {
+function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationPreference[]; gatewayStatus?: 'accepted' | 'failed'; routineFlagOn?: boolean } = {}) {
   const inserted: any[] = [];
   const tx = { query: jest.fn() };
   const uow = { run: jest.fn(async (_t: string, fn: any) => fn(tx)) };
@@ -28,8 +28,11 @@ function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationP
   const pushSender = { providerCode: 'fake', send: jest.fn(async () => ({ sent: 1, invalidTokens: [] })) };
   const devices = { activeTokensForUser: jest.fn(async () => [{ token: 'tok', platform: 'android' }]), deactivate: jest.fn(async () => 1) };
   const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
-  const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, pushSender as any, devices as any, events as any, templates as any, prefs as any, quiet as any, notifications as any);
-  return { svc, tx, gateway, pushSender, devices, notifications, inserted, metrics };
+  // DEV-07/Q24: default OFF (Golden Law 8) unless a test opts in — preserves every pre-existing assertion in
+  // this file untouched (they exercise the pre-DEV-07 multi-channel behavior, exactly as before this batch).
+  const flags = { isEnabled: jest.fn(async () => opts.routineFlagOn ?? false) };
+  const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, pushSender as any, devices as any, events as any, templates as any, prefs as any, quiet as any, notifications as any, flags as any);
+  return { svc, tx, gateway, pushSender, devices, notifications, inserted, metrics, flags };
 }
 
 describe('NotificationService.fanout', () => {

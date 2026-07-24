@@ -26,6 +26,7 @@ const ORDER = [
   'core/0007_notification_events_templates.sql','core/0008_setting_definitions.sql','core/0009_feature_flags.sql','core/0010_integration_providers.sql',
   'core/0011_labour_taxonomy.sql','core/0012_livestock_taxonomy.sql',
   'core/0013_selfserve_onboarding_flag.sql','core/0014_payout_failure_reasons.sql',
+  'core/0015_dev07_routine_fanout_flag.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

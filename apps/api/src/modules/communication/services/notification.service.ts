@@ -13,12 +13,14 @@ import { createHash } from 'node:crypto';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { METRICS, Metrics } from '../../../core/observability/metrics';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { NOTIFICATION_GATEWAY, NotificationGateway, NotifyChannel } from '../gateway/notification-gateway.port';
 import { PUSH_SENDER, PushSender } from '../gateway/push-sender.port';
 import { PushDeviceRepository } from '../repositories/push-device.repository';
 import { Notification } from '../domain/notification.entity';
 import { DomainEvent, NotifChannel } from '../domain/communication.events';
-import { resolveChannels } from '../domain/channel-resolution';
+import { resolveChannels, applyRoutinePolicy } from '../domain/channel-resolution';
+import { NotifStatus } from '../domain/notification.state';
 import { NotificationEventRepository } from '../repositories/notification-event.repository';
 import { NotificationTemplateRepository } from '../repositories/notification-template.repository';
 import { NotificationPreferenceRepository } from '../repositories/notification-preference.repository';
@@ -28,6 +30,12 @@ import { NotificationNotFoundError, CommForbiddenError } from '../domain/communi
 
 export interface FanoutInput { tenantId: string | null; eventCode: string; recipients: string[]; payload: Record<string, unknown>; dedupeKey: string; languageCode?: string; }
 const FALLBACK_LANGS = ['en', 'hi'];
+
+/** Q24/DELTA-059 (decided G0-4 2026-07-22, see channel-resolution.ts's own header for the full ruling + tier
+ *  mapping). Law 8: OFF by default — the founder flips this per Design_Program/12_G0-2_DECISION_REGISTER.md's own
+ *  standing "feature-flagged by default" rule. Flip OFF at any time is the kill-switch back to the pre-existing
+ *  multi-channel-for-everything behavior (zero code branch needed — same flag, same rows, same tests). */
+export const ROUTINE_FANOUT_FLAG = 'notification_routine_single_channel';
 
 /** Deterministic notification id (stable across relay retries → gateway dedups). */
 function deriveId(dedupeKey: string, userId: string, channel: string): string {
@@ -51,6 +59,7 @@ export class NotificationService {
     private readonly prefs: NotificationPreferenceRepository,
     private readonly quiet: QuietHoursRepository,
     private readonly notifications: NotificationRepository,
+    private readonly flags: FlagsService,
   ) {}
 
   /** Fan a single domain event out to its recipients' channels. Runs inside the relay tx (tenant context set). */
@@ -59,19 +68,42 @@ export class NotificationService {
     if (!event) { this.metrics.inc('comm.fanout.unknown_event', { event: input.eventCode }); return; }   // fail-closed: never spam an uncatalogued event
     const lang = input.languageCode ?? FALLBACK_LANGS[0];
     const recipients = [...new Set(input.recipients.filter(Boolean))];
+    // Q24/DELTA-059: per-recipient flag check (rollout can stage by tenant/user — Law 8), read once per fanout
+    // call (not per-recipient-and-channel) since the flag targets tenant/event scope, not a per-channel choice.
+    const routineFlagOn = await this.flags.isEnabled(ROUTINE_FANOUT_FLAG, { tenantId: input.tenantId ?? undefined });
     for (const userId of recipients) {
       const prefRows = await this.prefs.listForUser(userId, event.code, tx);
       const prefMap = new Map<NotifChannel, boolean>(prefRows.map((p) => [p.channel, p.isEnabled]));
       const quiet = await this.quiet.getForUser(userId, tx);
       const decision = resolveChannels(event.toCatalog(), prefMap, quiet, new Date());
       for (const { channel } of decision.suppressed) this.metrics.inc('comm.suppressed', { event: event.code, channel });
-      for (const channel of decision.channels) {
-        await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel, lang, payload: input.payload, dedupeKey: input.dedupeKey });
+
+      // Flag OFF (default) → old behavior, unchanged: every resolved channel is dispatched (multi-channel).
+      // Flag ON → routine tiers (informational/promotional) collapse to ONE primary + passive channels
+      // (inapp); critical/important pass through unaffected (applyRoutinePolicy() is a no-op for them).
+      const policy = routineFlagOn
+        ? applyRoutinePolicy(event.priority, decision.channels, prefMap)
+        : { toSendNow: decision.channels, primary: null, fallback: null };
+      this.metrics.inc('comm.routine_policy', { event: event.code, applied: String(routineFlagOn && policy.primary !== null) });
+
+      let primaryStatus: NotifStatus | null = null;
+      for (const channel of policy.toSendNow) {
+        const status = await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel, lang, payload: input.payload, dedupeKey: input.dedupeKey });
+        if (channel === policy.primary) primaryStatus = status;
+      }
+      // SMS fallback: only when the routine policy proposed one AND the primary genuinely failed to deliver
+      // (never on a mere suppression — there was nothing to "fall back" from). Idempotent: the fallback
+      // notification id is derived the SAME way as any other channel — deterministic per (dedupeKey, userId,
+      // 'sms') — so a relay retry of this exact fanout re-derives the identical id (gateway-level dedup, same
+      // guarantee the module already documents for every other channel; see deriveId() below).
+      if (policy.fallback && primaryStatus === 'failed') {
+        this.metrics.inc('comm.routine_fallback_sms', { event: event.code });
+        await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel: policy.fallback, lang, payload: input.payload, dedupeKey: input.dedupeKey });
       }
     }
   }
 
-  private async deliver(tx: TxContext, a: { tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string }): Promise<void> {
+  private async deliver(tx: TxContext, a: { tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string }): Promise<NotifStatus> {
     const id = deriveId(a.dedupeKey, a.userId, a.channel);
     // template resolution: requested language, then platform fallbacks
     let template = await this.templates.resolve(a.tenantId, a.event, a.channel, a.lang, tx);
@@ -97,6 +129,7 @@ export class NotificationService {
     await this.notifications.insert(tx, n);
     await this.flush(tx, a.tenantId, n.id, n.pullEvents());
     this.metrics.inc('comm.delivered', { event: a.event, channel: a.channel, status: n.status });
+    return n.status;
   }
 
   /** Send a rendered notification to the recipient's registered push devices (P0-10). The token is the

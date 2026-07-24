@@ -115,7 +115,7 @@ async function main(): Promise<void> {
   const quietRepo = new QuietHoursRepository(replica as any);
   const notifRepo = new NotificationRepository(replica as any);
   const notificationService = new NotificationService(
-    uow, outbox, metrics, gateway, pushSender, pushDeviceRepo, eventsRepo, templatesRepo, prefsRepo, quietRepo, notifRepo,
+    uow, outbox, metrics, gateway, pushSender, pushDeviceRepo, eventsRepo, templatesRepo, prefsRepo, quietRepo, notifRepo, flags,
   );
 
   const registry = new OutboxHandlerRegistry();
