@@ -1,3 +1,83 @@
-// packages/ui/src/components/MoneyText.tsx · minor→display, Indic format · [P1]
-// TODO: implement per CLAUDE.md laws + module README
-export {};
+// packages/ui/src/components/MoneyText.tsx · DEV-15 (Phase D3, packages/ui port batch 1).
+// LAW 3 FLAGSHIP. Ports canon classes `.kvw-money` / `.kvw-money small` / `.kvw-money.in` / `.kvw-money.out`
+// / `.kvw-money-code` verbatim from
+// `Phase-1 all screen design/Krishi_Verse_Design_System/system/web/web-components.css` lines 60/74/142-145.
+//
+// Golden Law 2 (money is BIGINT + explicit currency_code, never a float/assumed ₹) and Golden Law 3
+// (currency renders through the locale/token formatter, NEVER a hardcoded literal): this component takes
+// `amountMinor` (the smallest currency unit — paise/fils, matching the ledger's own `amount_minor BIGINT`
+// column) + `currencyCode` (ISO 4217) and renders through `Intl.NumberFormat` — there is NO `₹` literal,
+// NO default currency, and NO fallback symbol anywhere in this file. Proven by `MoneyText.test.tsx`:
+// the exact same component renders correctly for INR AND AED from the SAME code path.
+import * as React from 'react';
+
+/**
+ * ISO 4217 minor-unit exponents (the number of digits after the decimal point a currency actually has).
+ * This is a fixed, universal numeric standard (not a design/vocabulary decision — Golden Law 3 governs
+ * business vocabulary/status text, not the ISO spec) — most currencies are 2; a few are 0 or 3. Kept
+ * minimal (the set BRAND-024/APPLY-10 actually named — INR/AED/SAR/LKR — plus the well-known 0- and
+ * 3-decimal outliers) with a safe default of 2 for anything unlisted.
+ */
+const MINOR_UNIT_EXPONENT: Record<string, number> = {
+  INR: 2, AED: 2, SAR: 2, LKR: 2, USD: 2, EUR: 2, GBP: 2,
+  JPY: 0, KRW: 0, VND: 0,
+  BHD: 3, KWD: 3, OMR: 3, JOD: 3, TND: 3,
+};
+
+export interface MoneyTextProps {
+  /** Smallest currency unit (paise/fils/etc.) — matches the ledger's `amount_minor BIGINT` column exactly.
+   * Accepts `bigint` directly (Law 2 native type) or `number` for already-JS-safe call sites. */
+  amountMinor: number | bigint;
+  /** ISO 4217 currency code — always required, there is no default (Law 3: never assume ₹). */
+  currencyCode: string;
+  /** BCP-47 locale for Intl formatting (default 'en-IN'; pass the screen's active locale for real i18n). */
+  locale?: string;
+  /** 'in' (credit, canon success-green) / 'out' (debit, canon neutral ink) — a UI tone hint only, not a
+   * business meaning encoded here; the ledger's own sign/type decides which to pass. */
+  direction?: 'in' | 'out';
+  /** BRAND-024 symbol-vs-code disambiguation: force ISO-code display (e.g. "AED 1,250") instead of the
+   * locale-default symbol for currencies with no unambiguous glyph. Defaults to Intl's own 'symbol'. */
+  currencyDisplay?: 'symbol' | 'code';
+  /** Small trailing caption (canon `.kvw-money small`, e.g. "excl. fees") — plain caller-supplied text. */
+  suffix?: string;
+  className?: string;
+}
+
+export function MoneyText(props: MoneyTextProps): React.ReactElement {
+  const { amountMinor, currencyCode, locale = 'en-IN', direction, currencyDisplay = 'symbol', suffix, className } = props;
+
+  const exponent = MINOR_UNIT_EXPONENT[currencyCode] ?? 2;
+  const majorAmount = Number(amountMinor) / 10 ** exponent;
+
+  const formatted = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currencyCode,
+    currencyDisplay: currencyDisplay === 'code' ? 'code' : 'symbol',
+  }).format(majorAmount);
+
+  const classes = ['kvw-money', direction || '', className || ''].filter(Boolean).join(' ');
+
+  return (
+    <span className={classes} data-kv-component="money-text" data-currency={currencyCode}>
+      {formatted}
+      {suffix ? <small>{suffix}</small> : null}
+    </span>
+  );
+}
+
+/** CSS fragment, ported verbatim from web-components.css lines 60/74/142-145 (`.kvw-money`/`small`/`.in`/
+ * `.out`/`.kvw-money-code`, cited in this file's header). `.kvw-input-money` (canon line 60) is ALSO
+ * emitted here — it is the same rule Input.tsx exports (and cites in its own header, lines 43-74) for its
+ * money-affixed text input; MoneyText re-emits it verbatim (byte-identical, not re-typed) because a
+ * `.kvw-money`-only consumer that never renders `<Input money=…>` still needs this rule for numeric
+ * end-alignment. Duplicate-but-identical, same "safe to load twice" pattern AiBadge.tsx documents for its
+ * shared `.kvw-badge-ai` rule with StatusPill.tsx — disclosed here, not a silent citation gap. */
+export const moneyTextStyles = `
+.kvw-money { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; }
+.kvw-money small { font-family: var(--font-body-en); font-weight: 500; color: var(--color-ink-400); }
+.kvw-money.in { color: var(--color-success-dark); }
+.kvw-money.out { color: var(--color-ink-700); }
+[data-theme="dark"] .kvw-money.in { color: var(--color-success-text-dark); }
+.kvw-input-money { font-family: var(--font-mono); font-weight: 700; text-align: end; }
+.kvw-money-code::before { content: var(--currency-code-display); }
+`;
