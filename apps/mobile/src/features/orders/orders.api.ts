@@ -14,6 +14,30 @@ import { newId } from '../../core/util/ids';
 
 export interface OrdersPage { items: OrderListItem[]; nextCursor: string | null }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Today's tenant-wide order summary for the owner's Today's Orders worklist (screen 547, DEV-45). Reuses the
+ * ALREADY-BUILT + already-integrated `tenancy.analytics` read-model over a real start-of-day window (same
+ * computation `(owner)/home.tsx` already makes for its "Today's GMV" KPI — not a new endpoint, just a thin,
+ * purpose-named wrapper). `orders` = tenant-wide count for the window (moderator-scoped server-side); `gmvMinor`
+ * is bigint-minor (Law 2). Degrades to null on failure (screen shows retry).
+ * §13 (NOT faked): there is no tenant-wide PER-ORDER read-model yet — `GET orders` (`OrderTimelineReadModel`) is
+ * hardcoded to the CALLING user's own buyer/seller identity only (confirmed by reading
+ * `apps/api/src/modules/orders/repositories/order.repository.ts`'s `listFor` + the controller), unlike
+ * `GET orders/stats`'s moderator-aware path. So this function returns AGGREGATE counts only — the screen does not
+ * (and cannot honestly) render individual order rows/farmer names/accept-pack-ready actions from this call; see
+ * the screen's own header comment + `dev45_report.md` for the residual. */
+export interface TodayOrderSummary { orders: number; gmvMinor: string; currencyCode: string; disputesOpen: number; refundedOrders: number }
+export async function todayTenantOrderSummary(): Promise<TodayOrderSummary | null> {
+  try {
+    const now = Date.now();
+    const from = new Date(now - (now % DAY_MS)).toISOString(); // start of the current UTC day — same calc as home.tsx
+    const to = new Date(now).toISOString();
+    const an = await apiClient().tenancy.analytics({ from, to });
+    return { orders: an.orders, gmvMinor: an.gmvMinor, currencyCode: an.currencyCode, disputesOpen: an.disputesOpen, refundedOrders: an.refundedOrders };
+  } catch { return null; }
+}
+
 /** Orders as buyer or seller (optionally status-filtered). Read-through SWR cache; degrades to an empty page. */
 export async function listOrders(params: { role: OrderRole; status?: string; cursor?: string; limit?: number }): Promise<OrdersPage> {
   try {

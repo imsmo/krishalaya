@@ -49,6 +49,7 @@ export default function OwnerTabsLayout() {
       <Tabs.Screen name="analytics" options={{ href: null }} />
       <Tabs.Screen name="farmer-analytics" options={{ href: null }} />
       <Tabs.Screen name="order-analytics" options={{ href: null }} />
+      <Tabs.Screen name="today-orders" options={{ href: null }} />
       <Tabs.Screen name="worker-analytics" options={{ href: null }} />
       <Tabs.Screen name="custom-report" options={{ href: null }} />
       <Tabs.Screen name="export" options={{ href: null }} />
