@@ -87,6 +87,13 @@ export class AppConfig {
     if (env.NOTIFY_GATEWAY_URL && weak16(env.NOTIFY_WEBHOOK_SECRET)) p.push('NOTIFY_WEBHOOK_SECRET (strong) required when NOTIFY_GATEWAY_URL is set');
     if (env.MASKING_PROVIDER_URL && weak16(env.MASKING_WEBHOOK_SECRET)) p.push('MASKING_WEBHOOK_SECRET (strong) required when MASKING_PROVIDER_URL is set');
 
+    // --- insurance Wave 7 external integrations (DEV-25, KV-BL-057): if a real provider URL is configured,
+    // its api key must be a real secret, not a placeholder — these are outbound-only calls (no inbound
+    // webhook in this integration-layer batch, so no webhook-secret check applies yet).
+    if (env.PMFBY_PORTAL_URL && weak16(env.PMFBY_PORTAL_API_KEY)) p.push('PMFBY_PORTAL_API_KEY (strong) required when PMFBY_PORTAL_URL is set');
+    if (env.SURVEYOR_DISPATCH_URL && weak16(env.SURVEYOR_DISPATCH_API_KEY)) p.push('SURVEYOR_DISPATCH_API_KEY (strong) required when SURVEYOR_DISPATCH_URL is set');
+    if (env.VET_CERT_PROVIDER_URL && weak16(env.VET_CERT_PROVIDER_API_KEY)) p.push('VET_CERT_PROVIDER_API_KEY (strong) required when VET_CERT_PROVIDER_URL is set');
+
     // --- SMS/OTP: a real provider must be wired (noop drops messages → no real user can log in) ---
     if (env.SMS_PROVIDER === 'noop') p.push('SMS_PROVIDER must be msg91 or twilio in production (noop drops OTP texts — login impossible)');
     if (env.SMS_PROVIDER === 'msg91' && (!env.MSG91_AUTH_KEY || !env.MSG91_OTP_TEMPLATE_ID || !env.MSG91_SENDER_ID)) p.push('MSG91_AUTH_KEY + MSG91_OTP_TEMPLATE_ID + MSG91_SENDER_ID required when SMS_PROVIDER=msg91');
@@ -397,6 +404,16 @@ export class AppConfig {
       providerUrl: this.env.MASKING_PROVIDER_URL || null,   // null ⇒ noop masking provider
       providerApiKey: this.env.MASKING_PROVIDER_API_KEY,
       webhookSecret: this.env.MASKING_WEBHOOK_SECRET,
+    };
+  }
+  get insurance() {
+    // Wave 7 external integrations (DEV-25, KV-BL-057): PMFBY govt portal sync, surveyor-network dispatch,
+    // vet-certificate verification. Each is OFF (noop, honest degrade) until a URL is configured — no named
+    // commercial partner is contracted in this environment, per the founder's own §8 provider-account rule.
+    return {
+      pmfby: { baseUrl: this.env.PMFBY_PORTAL_URL || null, apiKey: this.env.PMFBY_PORTAL_API_KEY },
+      surveyorDispatch: { baseUrl: this.env.SURVEYOR_DISPATCH_URL || null, apiKey: this.env.SURVEYOR_DISPATCH_API_KEY },
+      vetCert: { baseUrl: this.env.VET_CERT_PROVIDER_URL || null, apiKey: this.env.VET_CERT_PROVIDER_API_KEY },
     };
   }
   get streaming() {

@@ -7,7 +7,10 @@ const minorUnits = z.string().regex(/^[1-9]\d{0,15}$/, 'maxAmountMinor must be a
 
 export const RegisterMandateSchema = z.object({
   vpa: z.string().regex(/^[a-zA-Z0-9.\-_]{2,64}@[a-zA-Z][a-zA-Z0-9.\-]{1,30}$/, 'vpa must look like handle@psp'),
-  purpose: z.enum(['membership', 'loan_emi', 'general']),
+  // 'insurance_premium' added DEV-25/KV-BL-057 (§8 FLAGGED — payments-module gap fix): the insurance
+  // Wave-7 auto-debit THIN LINK (InsurancePolicyService.linkAutopayMandate) needs a real purpose value to
+  // validate against; additive only, no existing mandate's purpose is affected.
+  purpose: z.enum(['membership', 'loan_emi', 'general', 'insurance_premium']),
   maxAmountMinor: minorUnits,
   currencyCode: z.string().length(3).default('INR'),
   frequency: z.enum(['as_presented', 'daily', 'weekly', 'monthly']).default('as_presented'),

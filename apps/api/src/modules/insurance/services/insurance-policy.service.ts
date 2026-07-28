@@ -20,11 +20,14 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { InsurancePolicy } from '../domain/insurance-policy.entity';
 import { DomainEvent, SubjectType } from '../domain/insurance.events';
 import { computeTotalPremiumMinor, splitPremium } from '../domain/premium-calc';
-import { InsurancePolicyNotFoundError, InsuranceForbiddenError, InvalidSumInsuredError, PolicyNotAwaitingPremiumError } from '../domain/insurance.errors';
+import { InsurancePolicyNotFoundError, InsuranceForbiddenError, InvalidSumInsuredError, PolicyNotAwaitingPremiumError, AutopayLinkDisabledError, AutopayMandateInvalidError } from '../domain/insurance.errors';
 import { InsurancePolicyRepository } from '../repositories/insurance-policy.repository';
 import { InsuranceProductService } from './insurance-product.service';
 import { CreatePolicyEnrolmentDto } from '../dto/create-insurance-policy.dto';
+import { LinkAutopayMandateDto } from '../dto/link-autopay-mandate.dto';
 import { PaymentService } from '../../payments/services/payment.service';
+import { MandateService } from '../../payments/services/mandate.service';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 
 const QUOTA_METRIC = 'insurance_policies';
 export interface InsuranceActor { userId: string; canManage: boolean; }
@@ -42,6 +45,8 @@ export class InsurancePolicyService {
     private readonly repo: InsurancePolicyRepository,
     private readonly productSvc: InsuranceProductService,
     private readonly payments: PaymentService,
+    private readonly mandates: MandateService,
+    private readonly flags: FlagsService,
   ) {}
 
   private async flush(tx: TxContext, tenantId: string, id: string, events: DomainEvent[]) {
@@ -126,6 +131,41 @@ export class InsurancePolicyService {
         });
         return { policyId: policy.id, ...intent };
       }));
+  }
+
+  /** AUTO-DEBIT THIN LINK (DEV-25/KV-BL-057, Wave 7 external integration #4) — CONSUMES the EXISTING
+   *  UPI-AutoPay mandate machinery (payments module), builds NO new money-movement code (Laws 2/6). Records
+   *  which mandate the holder wants premium renewals collected against. The mandate itself is registered
+   *  through the payments module's own endpoints (this only links an ALREADY-REGISTERED mandate). Gated
+   *  behind the EXISTING `autopay_execution` flag (reused + disclosed per the founder's own instruction — no
+   *  4th flag invented for a thin link onto machinery that flag already gates the real execution of).
+   *
+   *  PERSISTENCE GAP (disclosed, §8/founder decision needed — NOT invented around): insurance_policies has
+   *  no column to durably store `mandateId` (the DDL doesn't anticipate one — verified against
+   *  0011_fintech_schemes.sql). The link is recorded via `audit_log` ONLY — real productionisation needs
+   *  either a new column (migration) or a founder ruling that audit-log-only is acceptable for this
+   *  integration-layer phase. This method does NOT execute any collection — the real auto-debit chain
+   *  (mandate execute -> wallet credit -> renewal-policy creation -> activation) needs a live UPI-AutoPay PSP
+   *  that does not exist in this environment and is explicitly out of scope here. */
+  async linkAutopayMandate(tenantId: string, actor: InsuranceActor, policyId: string, dto: LinkAutopayMandateDto) {
+    if (!(await this.flags.isEnabled('autopay_execution', { tenantId, userId: actor.userId }))) throw new AutopayLinkDisabledError();
+    const policy = await this.repo.getById(tenantId, policyId);
+    if (!policy) throw new InsurancePolicyNotFoundError(policyId); // 404, no IDOR
+    if (policy.holderUserId !== actor.userId && !actor.canManage) throw new InsurancePolicyNotFoundError(policyId);
+
+    const mandate = await this.mandates.getById(tenantId, { userId: actor.userId, canModerate: actor.canManage }, dto.mandateId);
+    if (mandate.purpose !== 'insurance_premium') throw new AutopayMandateInvalidError(`purpose must be 'insurance_premium' (got '${mandate.purpose}')`);
+    if (mandate.status === 'cancelled') throw new AutopayMandateInvalidError('mandate is cancelled');
+
+    return this.uow.run(tenantId, async (tx) => {
+      await this.audit.write(tx, {
+        tenantId, actorUserId: actor.userId, action: 'insurance.policy.autopay_mandate_linked',
+        entityType: 'insurance_policy', entityId: policyId,
+        newValue: { mandateId: mandate.id, mandateStatus: mandate.status, vpaMasked: mandate.vpaMasked },
+        ip: null,
+      });
+      return { policyId, mandateId: mandate.id, mandateStatus: mandate.status };
+    }, { userId: actor.userId });
   }
 
   async getById(tenantId: string, actor: InsuranceActor, id: string) {

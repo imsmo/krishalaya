@@ -37,8 +37,10 @@ function harness() {
     countEvidence: jest.fn(async () => 0),
   };
   const policies = { getById: jest.fn(async () => freshActivePolicy()), getForUpdate: jest.fn(async () => freshActivePolicy()), update: jest.fn() };
-  const svc = new InsuranceClaimService(uow as any, outbox as any, idem as any, quota as any, metrics as any, wallet as any, audit as any, repo as any, policies as any);
-  return { svc, repo, policies, outbox, quota, idem, wallet, audit };
+  const vetCert = { verify: jest.fn(async () => ({ status: 'verified', providerRef: 'ref-1' })) };
+  const flags = { isEnabled: jest.fn(async () => true), assertEnabled: jest.fn(async () => true) };
+  const svc = new InsuranceClaimService(uow as any, outbox as any, idem as any, quota as any, metrics as any, wallet as any, vetCert as any, flags as any, audit as any, repo as any, policies as any);
+  return { svc, repo, policies, outbox, quota, idem, wallet, audit, vetCert, flags };
 }
 const farmer = { userId: 'u1', canManage: false };
 const insurer = { userId: 'agent1', canManage: true };
@@ -191,5 +193,53 @@ describe('anti-IDOR: getById returns 404 (not 403) to a non-owner non-manager', 
     const c = InsuranceClaim.file({ id: 'c1', tenantId: 't1', policyId: 'p1', claimantUserId: 'someone-else', eventDate: '2026-06-30', eventTypeId: 'evt-flood', description: null });
     (repo.getById as jest.Mock).mockResolvedValue(c);
     await expect(svc.getById('t1', farmer, 'c1')).rejects.toMatchObject({ code: 'INSURANCE_CLAIM_NOT_FOUND' });
+  });
+});
+
+// ---- DEV-25/KV-BL-057 (Wave 7 external integration #3): verifyVetCert — advisory-only, livestock-only ----
+function livestockPolicy() {
+  return InsurancePolicy.rehydrate({
+    id: 'p1', tenantId: 't1', holderUserId: 'u1', productId: 'pr-livestock', policyNo: null,
+    subjectType: 'animal', subjectId: 'animal-1', sumInsuredMinor: 50_000_00n, premiumMinor: 1_000_00n,
+    premiumPaymentId: 'pay-1', status: 'active', validFrom: '2026-06-15', validUntil: '2026-11-30', parametricTriggers: null,
+  });
+}
+describe('verifyVetCert (DEV-25, Wave 7 external integration #3)', () => {
+  const livestockClaim = InsuranceClaim.file({ id: 'c1', tenantId: 't1', policyId: 'p1', claimantUserId: 'u1', eventDate: '2026-06-30', eventTypeId: 'evt-death', description: null });
+  it('requires insurance.manage', async () => {
+    const { svc } = harness();
+    await expect(svc.verifyVetCert('t1', farmer, 'c1', { certRef: 'cert-1' })).rejects.toBeInstanceOf(InsuranceForbiddenError);
+  });
+  it('rejects a non-livestock claim (policy subjectType !== animal) — not applicable', async () => {
+    const { svc, repo, policies } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(livestockClaim);
+    (policies.getById as jest.Mock).mockResolvedValue(freshActivePolicy()); // crop_season
+    await expect(svc.verifyVetCert('t1', insurer, 'c1', { certRef: 'cert-1' })).rejects.toMatchObject({ code: 'INSURANCE_VET_CERT_NOT_APPLICABLE' });
+  });
+  it('flag OFF: returns unavailable/manual-review WITHOUT calling the external provider at all', async () => {
+    const { svc, repo, policies, flags, vetCert } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(livestockClaim);
+    (policies.getById as jest.Mock).mockResolvedValue(livestockPolicy());
+    (flags.isEnabled as jest.Mock).mockResolvedValue(false);
+    const out = await svc.verifyVetCert('t1', insurer, 'c1', { certRef: 'cert-1' });
+    expect(vetCert.verify).not.toHaveBeenCalled();
+    expect(out).toMatchObject({ status: 'unavailable', manualReviewRequired: true });
+  });
+  it('flag ON: calls the provider and NEVER auto-transitions the claim status (advisory-only)', async () => {
+    const { svc, repo, policies, vetCert } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(livestockClaim);
+    (policies.getById as jest.Mock).mockResolvedValue(livestockPolicy());
+    const out = await svc.verifyVetCert('t1', insurer, 'c1', { certRef: 'cert-1' });
+    expect(vetCert.verify).toHaveBeenCalledWith(expect.objectContaining({ claimId: 'c1', certRef: 'cert-1', tenantId: 't1' }));
+    expect(out).toMatchObject({ status: 'verified', manualReviewRequired: false });
+    expect(repo.update).not.toHaveBeenCalled(); // advisory-only — never mutates claim status
+  });
+  it('a rejected/unavailable provider result always sets manualReviewRequired=true (never auto-verified)', async () => {
+    const { svc, repo, policies, vetCert } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(livestockClaim);
+    (policies.getById as jest.Mock).mockResolvedValue(livestockPolicy());
+    (vetCert.verify as jest.Mock).mockResolvedValue({ status: 'unavailable', failureReason: 'vet_cert_provider_unavailable' });
+    const out = await svc.verifyVetCert('t1', insurer, 'c1', { certRef: 'cert-1' });
+    expect(out.manualReviewRequired).toBe(true);
   });
 });

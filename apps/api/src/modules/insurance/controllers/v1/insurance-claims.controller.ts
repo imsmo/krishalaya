@@ -13,6 +13,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { InsuranceClaimService } from '../../services/insurance-claim.service';
 import { CreateInsuranceClaimSchema, CreateInsuranceClaimDto, AddClaimEvidenceSchema, AddClaimEvidenceDto, AcknowledgeAssessmentSchema, AcknowledgeAssessmentDto } from '../../dto/create-insurance-claim.dto';
 import { ScheduleSurveySchema, ScheduleSurveyDto, RecordSurveySchema, RecordSurveyDto, DecideClaimSchema, DecideClaimDto } from '../../dto/insurance-claim-actions.dto';
+import { VerifyVetCertSchema, VerifyVetCertDto } from '../../dto/verify-vet-cert.dto';
 import { QueryInsuranceClaimsSchema, QueryInsuranceClaimsDto } from '../../dto/query-insurance-claim.dto';
 import { InsurancePermissions, canManageInsurance } from '../../policies/insurance.policies';
 
@@ -60,6 +61,14 @@ export class InsuranceClaimsController {
   @Post(':id/request-documents') @RequirePermissions(InsurancePermissions.Manage)
   requestDocuments(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.svc.requestDocuments(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
+  /** VET-CERT VERIFICATION (DEV-25/KV-BL-057) — advisory-only, livestock (animal) claims only. Flag
+   *  `vet_cert_verification` gates whether the external provider is even called (OFF -> honest 'unavailable'
+   *  without a network call); NEVER auto-transitions the claim — the insurer still decides via decide(). */
+  @Post(':id/verify-vet-cert') @RequirePermissions(InsurancePermissions.Manage)
+  verifyVetCert(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(VerifyVetCertSchema) dto: VerifyVetCertDto) {
+    return this.svc.verifyVetCert(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
   }
 
   @Post(':id/schedule-survey') @RequirePermissions(InsurancePermissions.Manage)

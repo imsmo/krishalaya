@@ -78,3 +78,25 @@ export class ClaimNotAwaitingAcknowledgementError extends DomainError {
 export class ClaimEvidenceNotAttachableError extends DomainError {
   constructor(mediaId: string) { super('INSURANCE_CLAIM_EVIDENCE_NOT_ATTACHABLE', `Media ${mediaId} is not attachable to this claim`, 422, { mediaId }); }
 }
+
+// ---- DEV-25 (KV-BL-057, Wave 7): external-integration errors -------------------------------------------
+
+/** Vet-cert verification only applies to a livestock claim (policy subjectType==='animal') — a crop/
+ *  equipment/person/shipment claim has no veterinary certificate to check (Law 12: never call an
+ *  irrelevant "verification" on an unrelated claim type just because the endpoint exists). */
+export class VetCertNotApplicableError extends DomainError {
+  constructor(claimId: string) { super('INSURANCE_VET_CERT_NOT_APPLICABLE', 'Vet-certificate verification only applies to a livestock (animal) claim', 422, { claimId }); }
+}
+
+/** The autopay-link endpoint is gated behind the EXISTING `autopay_execution` flag (reused + disclosed per
+ *  the founder's own instruction — no 4th flag invented for a thin link onto existing money machinery). */
+export class AutopayLinkDisabledError extends DomainError {
+  constructor() { super('INSURANCE_AUTOPAY_LINK_DISABLED', 'Autopay mandate linking is disabled (autopay_execution flag is OFF)', 403); }
+}
+
+/** The mandate cited for an autopay link must belong to the SAME user as the policy holder, be registered
+ *  for the 'insurance_premium' purpose, and not already be cancelled — never silently link a stranger's or
+ *  wrong-purpose mandate (money-safety, Law 2/6). */
+export class AutopayMandateInvalidError extends DomainError {
+  constructor(reason: string) { super('INSURANCE_AUTOPAY_MANDATE_INVALID', `Mandate cannot be linked for premium autopay: ${reason}`, 422, { reason }); }
+}

@@ -24,8 +24,10 @@ function harness() {
   const repo = { insert: jest.fn(), getForUpdate: jest.fn(), update: jest.fn(), getById: jest.fn(), listFor: jest.fn() };
   const productSvc = { getActiveProductForEnrolment: jest.fn(async () => cropProduct) };
   const payments = { createIntent: jest.fn(async () => ({ paymentId: 'pay-1', gatewayOrderId: 'gw-1', provider: 'sandbox', amountMinor: '200000', status: 'initiated' })) };
-  const svc = new InsurancePolicyService(uow as any, outbox as any, idem as any, quota as any, metrics as any, audit as any, repo as any, productSvc as any, payments as any);
-  return { svc, repo, outbox, quota, productSvc, idem, payments };
+  const mandates = { getById: jest.fn(async () => ({ id: 'mandate-1', status: 'active', purpose: 'insurance_premium', vpaMasked: 'ab***@psp' })) };
+  const flags = { isEnabled: jest.fn(async () => true), assertEnabled: jest.fn(async () => true) };
+  const svc = new InsurancePolicyService(uow as any, outbox as any, idem as any, quota as any, metrics as any, audit as any, repo as any, productSvc as any, payments as any, mandates as any, flags as any);
+  return { svc, repo, outbox, quota, productSvc, idem, payments, mandates, flags, audit };
 }
 const farmer = { userId: 'u1', canManage: false };
 
@@ -123,5 +125,44 @@ describe('initiatePremiumPayment — DEV-23 (KV-BL-053, screen 288)', () => {
     (repo.getById as jest.Mock).mockResolvedValue(proposedPolicy());
     await svc.initiatePremiumPayment('t1', farmer, 'idem-pp4', 'p1');
     expect(idem.remember).toHaveBeenCalledWith('idem-pp4', 'u1', 'insurance.policy.initiate_premium_payment', expect.any(Function));
+  });
+});
+
+// ---- DEV-25/KV-BL-057 (Wave 7 external integration #4): linkAutopayMandate — thin link only, NO money code ----
+describe('linkAutopayMandate (DEV-25, Wave 7 auto-debit thin link)', () => {
+  const ownPolicy = () => InsurancePolicy.rehydrate({
+    id: 'p1', tenantId: 't1', holderUserId: 'u1', productId: 'pr1', policyNo: null,
+    subjectType: 'crop_season', subjectId: 'plot1', sumInsuredMinor: 100000n, premiumMinor: 200000n,
+    premiumPaymentId: null, status: 'proposed', validFrom: '2026-06-15', validUntil: '2026-11-30', parametricTriggers: null,
+  });
+  it('is gated behind the EXISTING `autopay_execution` flag — OFF throws (reused + disclosed, no 4th flag)', async () => {
+    const { svc, flags } = harness();
+    (flags.isEnabled as jest.Mock).mockResolvedValue(false);
+    await expect(svc.linkAutopayMandate('t1', farmer, 'p1', { mandateId: 'mandate-1' })).rejects.toMatchObject({ code: 'INSURANCE_AUTOPAY_LINK_DISABLED' });
+  });
+  it('a non-owner non-manager gets 404 (anti-IDOR)', async () => {
+    const { svc, repo } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(InsurancePolicy.rehydrate({ ...ownPolicy().toProps(), holderUserId: 'someone-else' }));
+    await expect(svc.linkAutopayMandate('t1', farmer, 'p1', { mandateId: 'mandate-1' })).rejects.toBeInstanceOf(InsurancePolicyNotFoundError);
+  });
+  it('rejects a mandate whose purpose is not insurance_premium (never links a wrong-purpose mandate)', async () => {
+    const { svc, repo, mandates } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(ownPolicy());
+    (mandates.getById as jest.Mock).mockResolvedValue({ id: 'mandate-1', status: 'active', purpose: 'loan_emi', vpaMasked: 'ab***@psp' });
+    await expect(svc.linkAutopayMandate('t1', farmer, 'p1', { mandateId: 'mandate-1' })).rejects.toMatchObject({ code: 'INSURANCE_AUTOPAY_MANDATE_INVALID' });
+  });
+  it('rejects a cancelled mandate', async () => {
+    const { svc, repo, mandates } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(ownPolicy());
+    (mandates.getById as jest.Mock).mockResolvedValue({ id: 'mandate-1', status: 'cancelled', purpose: 'insurance_premium', vpaMasked: 'ab***@psp' });
+    await expect(svc.linkAutopayMandate('t1', farmer, 'p1', { mandateId: 'mandate-1' })).rejects.toMatchObject({ code: 'INSURANCE_AUTOPAY_MANDATE_INVALID' });
+  });
+  it('links a valid own mandate — records via audit ONLY (no schema invented), returns the link result, moves no money', async () => {
+    const { svc, repo, mandates, audit } = harness();
+    (repo.getById as jest.Mock).mockResolvedValue(ownPolicy());
+    (mandates.getById as jest.Mock).mockResolvedValue({ id: 'mandate-1', status: 'active', purpose: 'insurance_premium', vpaMasked: 'ab***@psp' });
+    const out = await svc.linkAutopayMandate('t1', farmer, 'p1', { mandateId: 'mandate-1' });
+    expect(out).toEqual({ policyId: 'p1', mandateId: 'mandate-1', mandateStatus: 'active' });
+    expect(audit.write).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'insurance.policy.autopay_mandate_linked', entityId: 'p1', newValue: expect.objectContaining({ mandateId: 'mandate-1' }) }));
   });
 });

@@ -42,4 +42,13 @@ export class InsuranceProductRepository {
       `SELECT ${COLS} FROM insurance_products WHERE ${where} ORDER BY id ASC LIMIT ${limitIdx}`, params);
     return r.rows.map(toDomain);
   }
+
+  /** Resolve a product's `product_kind_id` to its `lookup_values.code` (e.g. 'pmfby') — GLOBAL reference data,
+   *  no tenant scoping needed (mirrors resolveEventTypeId's own code<->id lookup convention). Used by the PMFBY
+   *  sync handler (DEV-25/KV-BL-057) to build the external port's `productCode` field honestly, instead of a
+   *  nonexistent `insurance_products.code` column (see the port file's own corrected comment). */
+  async resolveInsuranceKindCode(tx: TxContext, productKindId: string): Promise<string | null> {
+    const r = await tx.query<{ code: string }>(`SELECT code FROM lookup_values WHERE id=$1 AND type_code='insurance_kind'`, [productKindId]);
+    return r.rows[0]?.code ?? null;
+  }
 }

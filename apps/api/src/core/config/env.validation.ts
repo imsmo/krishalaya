@@ -104,6 +104,17 @@ export const EnvSchema = z.object({
   MASKING_WEBHOOK_SECRET: z.string().default(''),       // HMAC secret for the call-status callback
   STREAM_PROVIDER_URL: z.string().default(''),          // external live-streaming provider; absent ⇒ noop
   STREAM_PROVIDER_API_KEY: z.string().default(''),
+  // --- insurance Wave 7 external integrations (DEV-25, KV-BL-057): PMFBY govt portal, surveyor-network
+  // dispatch, vet-certificate verification. No named commercial partner is contracted yet (§8) — every
+  // adapter below is OUR domain-shaped port; absent URL ⇒ the honest noop adapter (never a fabricated
+  // success). Auto-debit/e-NACH reuses the EXISTING payments-module UPI-AutoPay mandate machinery
+  // (MANDATE_GATEWAY/autopay_execution) — no separate provider env is introduced for it.
+  PMFBY_PORTAL_URL: z.string().default(''),             // govt PMFBY portal base URL; absent ⇒ noop (no invented gov API)
+  PMFBY_PORTAL_API_KEY: z.string().default(''),
+  SURVEYOR_DISPATCH_URL: z.string().default(''),        // external surveyor-network dispatch base URL; absent ⇒ noop
+  SURVEYOR_DISPATCH_API_KEY: z.string().default(''),
+  VET_CERT_PROVIDER_URL: z.string().default(''),        // veterinary-certificate verification service base URL; absent ⇒ noop
+  VET_CERT_PROVIDER_API_KEY: z.string().default(''),
   // --- geocoded weather forecast (P0-12) ---
   WEATHER_PROVIDER_KIND: z.string().default('open-meteo'),   // 'open-meteo' (default, free) | 'imd' | 'none' (degrade)
   WEATHER_PROVIDER_URL: z.string().default(''),              // override base URL (aggregator); default open-meteo public

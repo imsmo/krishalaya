@@ -28,13 +28,16 @@ import { isOnCover } from '../domain/insurance-policy.state';
 import {
   InsuranceClaimNotFoundError, InsuranceForbiddenError, PolicyNotOnCoverError, InvalidClaimEventTypeError,
   InvalidClaimDecisionError, ClaimNotAwaitingAcknowledgementError, ClaimEvidenceNotAttachableError,
-  InsurancePolicyNotFoundError,
+  InsurancePolicyNotFoundError, VetCertNotApplicableError,
 } from '../domain/insurance.errors';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { VET_CERT_PROVIDER, VetCertProvider } from '../gateway/vet-cert-provider.port';
 import { InsuranceClaimRepository } from '../repositories/insurance-claim.repository';
 import { InsurancePolicyRepository } from '../repositories/insurance-policy.repository';
 import { InsuranceActor } from './insurance-policy.service';
 import { CreateInsuranceClaimDto, AddClaimEvidenceDto, AcknowledgeAssessmentDto } from '../dto/create-insurance-claim.dto';
 import { ScheduleSurveyDto, RecordSurveyDto, DecideClaimDto } from '../dto/insurance-claim-actions.dto';
+import { VerifyVetCertDto } from '../dto/verify-vet-cert.dto';
 
 const QUOTA_METRIC = 'insurance_claims';
 
@@ -47,6 +50,8 @@ export class InsuranceClaimService {
     @Inject(QUOTA_SERVICE) private readonly quota: QuotaService,
     @Inject(METRICS) private readonly metrics: Metrics,
     @Inject(WALLET_SERVICE) private readonly wallet: WalletPort,
+    @Inject(VET_CERT_PROVIDER) private readonly vetCert: VetCertProvider,
+    private readonly flags: FlagsService,
     private readonly audit: AuditWriter,
     private readonly repo: InsuranceClaimRepository,
     private readonly policies: InsurancePolicyRepository,
@@ -129,6 +134,41 @@ export class InsuranceClaimService {
   async requestDocuments(tenantId: string, actor: InsuranceActor, claimId: string) {
     if (!actor.canManage) throw new InsuranceForbiddenError('requires insurance.manage');
     return this.mutate(tenantId, actor, claimId, (c) => c.requestDocuments(), 'insurance.claim.documents_requested', {});
+  }
+
+  /** VET-CERT VERIFICATION (DEV-25/KV-BL-057, Wave 7 external integration #3) — ADVISORY ONLY: this NEVER
+   *  auto-transitions the claim's status (Law 12: a livestock claim settlement decision is always made by
+   *  the insurer via decide(), never automated on a provider signal). Only applicable to a livestock claim
+   *  (the underlying policy's subjectType==='animal'). Flag-gated (`vet_cert_verification`, default OFF, §8) —
+   *  OFF -> returns an honest 'unavailable' WITHOUT calling the external provider at all (no named vet-cert
+   *  verification provider is contracted in this environment). Result is recorded via audit only (no column
+   *  on insurance_claims anticipates a persisted vet-cert verification status — disclosed, not invented). */
+  async verifyVetCert(tenantId: string, actor: InsuranceActor, claimId: string, dto: VerifyVetCertDto) {
+    if (!actor.canManage) throw new InsuranceForbiddenError('requires insurance.manage');
+    const claim = await this.repo.getById(tenantId, claimId);
+    if (!claim) throw new InsuranceClaimNotFoundError(claimId);
+    const claimProps = claim.toJSON();
+    const policy = await this.policies.getById(tenantId, claimProps.policyId);
+    if (!policy || policy.toJSON().subjectType !== 'animal') throw new VetCertNotApplicableError(claimId);
+
+    const enabled = await this.flags.isEnabled('vet_cert_verification', { tenantId });
+    const result = enabled
+      ? await this.vetCert.verify({ idempotencyKey: `${claimId}:${dto.certRef}`, tenantId, claimId, certRef: dto.certRef })
+      : { status: 'unavailable' as const, failureReason: 'vet_cert_verification_disabled' };
+
+    return this.uow.run(tenantId, async (tx) => {
+      await this.audit.write(tx, {
+        tenantId, actorUserId: actor.userId, action: 'insurance.claim.vet_cert_verify_attempted',
+        entityType: 'insurance_claim', entityId: claimId,
+        newValue: { certRef: dto.certRef, status: result.status, providerRef: (result as any).providerRef ?? null, failureReason: result.failureReason ?? null },
+        ip: null,
+      });
+      return {
+        claimId, certRef: dto.certRef, status: result.status,
+        providerRef: (result as any).providerRef ?? null, failureReason: result.failureReason ?? null,
+        manualReviewRequired: result.status !== 'verified',   // never auto-verified — insurer still decides via decide()
+      };
+    }, { userId: actor.userId });
   }
 
   async scheduleSurvey(tenantId: string, actor: InsuranceActor, claimId: string, dto: ScheduleSurveyDto) {
