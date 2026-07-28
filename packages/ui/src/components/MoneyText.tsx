@@ -6,23 +6,23 @@
 // Golden Law 2 (money is BIGINT + explicit currency_code, never a float/assumed ₹) and Golden Law 3
 // (currency renders through the locale/token formatter, NEVER a hardcoded literal): this component takes
 // `amountMinor` (the smallest currency unit — paise/fils, matching the ledger's own `amount_minor BIGINT`
-// column) + `currencyCode` (ISO 4217) and renders through `Intl.NumberFormat` — there is NO `₹` literal,
-// NO default currency, and NO fallback symbol anywhere in this file. Proven by `MoneyText.test.tsx`:
-// the exact same component renders correctly for INR AND AED from the SAME code path.
+// column) + `currencyCode` (ISO 4217) — there is NO `₹` literal, NO default currency, and NO fallback symbol
+// anywhere in this file. Proven by `MoneyText.test.tsx`: the exact same component renders correctly for INR
+// AND AED from the SAME code path.
+//
+// DEV-26/Q15: the actual formatting now delegates to `@krishi-verse/i18n`'s `formatMoneyMinor` — the platform's
+// ONE canonical money formatter (mobile's `packages/ui-native/MoneyText.tsx` already used it; this web
+// component previously hand-rolled its own `Number(amountMinor) / 10**exponent` conversion, which silently lost
+// precision for any amount beyond `Number.MAX_SAFE_INTEGER` — a real Law-2 gap, now closed, with ZERO change to
+// this component's own public props/output). The `locale` prop stays a raw BCP-47 Intl tag (unchanged contract
+// for every existing caller) and is passed through via `formatMoneyMinor`'s `opts.intlLocale` escape hatch —
+// `@krishi-verse/i18n`'s own `formatMoneyMinor` normally takes a LANGUAGE_REGISTRY code, not a raw Intl locale,
+// so a full prop-signature unification with mobile's `MoneyText` was evaluated and rejected here (it would have
+// silently changed behavior for the `locale='ja-JP'`/`'ar-AE'` style callers this component's own tests exercise)
+// — the underlying bigint-exact/no-float ALGORITHM is now shared; only the two components' distinct
+// locale-parameter conventions remain separate, disclosed rather than silently forced together.
 import * as React from 'react';
-
-/**
- * ISO 4217 minor-unit exponents (the number of digits after the decimal point a currency actually has).
- * This is a fixed, universal numeric standard (not a design/vocabulary decision — Golden Law 3 governs
- * business vocabulary/status text, not the ISO spec) — most currencies are 2; a few are 0 or 3. Kept
- * minimal (the set BRAND-024/APPLY-10 actually named — INR/AED/SAR/LKR — plus the well-known 0- and
- * 3-decimal outliers) with a safe default of 2 for anything unlisted.
- */
-const MINOR_UNIT_EXPONENT: Record<string, number> = {
-  INR: 2, AED: 2, SAR: 2, LKR: 2, USD: 2, EUR: 2, GBP: 2,
-  JPY: 0, KRW: 0, VND: 0,
-  BHD: 3, KWD: 3, OMR: 3, JOD: 3, TND: 3,
-};
+import { formatMoneyMinor } from '@krishi-verse/i18n';
 
 export interface MoneyTextProps {
   /** Smallest currency unit (paise/fils/etc.) — matches the ledger's `amount_minor BIGINT` column exactly.
@@ -46,14 +46,9 @@ export interface MoneyTextProps {
 export function MoneyText(props: MoneyTextProps): React.ReactElement {
   const { amountMinor, currencyCode, locale = 'en-IN', direction, currencyDisplay = 'symbol', suffix, className } = props;
 
-  const exponent = MINOR_UNIT_EXPONENT[currencyCode] ?? 2;
-  const majorAmount = Number(amountMinor) / 10 ** exponent;
-
-  const formatted = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currencyCode,
-    currencyDisplay: currencyDisplay === 'code' ? 'code' : 'symbol',
-  }).format(majorAmount);
+  // Bigint-exact, no float at any step (DEV-26/Q15) — see this file's header for why this delegates to
+  // `@krishi-verse/i18n`'s canonical formatter instead of its own former `Number(amountMinor)` conversion.
+  const formatted = formatMoneyMinor(BigInt(amountMinor), currencyCode, undefined, { currencyDisplay, intlLocale: locale });
 
   const classes = ['kvw-money', direction || '', className || ''].filter(Boolean).join(' ');
 

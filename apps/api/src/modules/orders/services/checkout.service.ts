@@ -11,6 +11,11 @@ import { QUOTA_SERVICE, QuotaService } from '../../../core/quota/quota.service';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
+// [QA-FIX 2026-07-28] DEV-26/Q15: both `platformFeeBpsOverride` sites below inlined the identical
+// `(amount * BigInt(bps)) / 10000n` floor-division formula the batch's grep was supposed to find and
+// consolidate — missed here (2 call sites). Delegated to the one canonical helper; identical bigint math, zero
+// behavior change.
+import { applyBpsFloor } from '../../../core/money/rounding';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
 import { ChargePricingService } from '../../payments/services/charge-pricing.service';
@@ -134,7 +139,7 @@ export class CheckoutService {
               const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
               if (ben) {
                 if (ben.freeDelivery) deliveryFeeMinor = 0n;
-                if (ben.platformFeeBpsOverride != null) platformFeeMinor = (subtotal * BigInt(ben.platformFeeBpsOverride)) / 10000n;
+                if (ben.platformFeeBpsOverride != null) platformFeeMinor = applyBpsFloor(subtotal, ben.platformFeeBpsOverride);
               }
             }
             // coupon discount: redeemed atomically in THIS tx against the primary order (promotions flag)
@@ -204,7 +209,7 @@ export class CheckoutService {
           const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
           if (ben) {
             if (ben.freeDelivery) deliveryFeeMinor = 0n;
-            if (ben.platformFeeBpsOverride != null) platformFeeMinor = (g.subtotalMinor * BigInt(ben.platformFeeBpsOverride)) / 10000n;
+            if (ben.platformFeeBpsOverride != null) platformFeeMinor = applyBpsFloor(g.subtotalMinor, ben.platformFeeBpsOverride);
           }
         }
         // coupon DRY-RUN against the primary seller only (never redeemed here).

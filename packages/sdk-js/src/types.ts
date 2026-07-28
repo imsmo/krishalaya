@@ -24,6 +24,12 @@ export interface LookupValue { id: string; code: string; name: string; sortOrder
 /** An admin-region node (state→district→…), LOCALE-RESOLVED `name`. `lat`/`lng` are the centroid when known. */
 export interface RegionNode { id: string; code: string | null; level: number; parentId: string | null; name: string; lat: number | null; lng: number | null; }
 
+/** DEV-26/Q20: a tenant's public white-label branding for the active request's tenant context (resolved via
+ *  `X-Tenant-Slug`, same as `categories()`/listings browse). `null` when no tenant context resolved OR the
+ *  tenant hasn't configured a logo — `logoUrl: null` is a real absence, never a fabricated value (Law 12); the
+ *  caller applies LOGO-4's own fallback (name-block / initial-tile), never the platform's own mark. */
+export interface TenantBranding { displayName: string; logoUrl: string | null; }
+
 export interface ListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;
   quantityAvailable: number; organicClaim: boolean; saleType: string; regionId: string | null;

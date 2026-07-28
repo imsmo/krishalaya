@@ -17,6 +17,32 @@ describe('formatMoneyMinor (bigint-string minor units, no float)', () => {
   it('falls back safely on a bad amount', () => {
     expect(formatMoneyMinor('not-a-number', 'INR', 'en')).toBe('₹0.00');
   });
+  it('handles a zero-decimal currency (JPY) via Intl\'s own ISO 4217 exponent — no hardcoded /100 (DEV-26/Q15)', () => {
+    // 500 minor units of a 0-decimal currency IS 500 whole units, never "5.00" (that would be a real Law-2 bug).
+    const out = formatMoneyMinor('500', 'JPY', 'en');
+    expect(out).not.toMatch(/5\.00/);
+    expect(out.replace(/[^0-9]/g, '')).toBe('500');
+  });
+  it('handles a 3-decimal currency (BHD) exactly — no hardcoded /100 (DEV-26/Q15)', () => {
+    // 1234 fils = 1.234 BHD (3 minor-unit digits).
+    const out = formatMoneyMinor('1234', 'BHD', 'en');
+    expect(out).toMatch(/1\.234/);
+  });
+  it('currencyDisplay:"code" forces the ISO code instead of a symbol (BRAND-024)', () => {
+    const out = formatMoneyMinor('125000', 'AED', 'en', { currencyDisplay: 'code' });
+    expect(out).toContain('AED');
+    expect(out).not.toContain('₹');
+  });
+  it('zero amount formats exactly, at any exponent', () => {
+    expect(formatMoneyMinor('0', 'INR', 'en')).toBe('₹0.00');
+    expect(formatMoneyMinor('0', 'JPY', 'en').replace(/[^0-9]/g, '')).toBe('0');
+  });
+  it('an unrecognized langCode is treated as a raw Intl locale tag, never silently collapsed to en (DEV-26/Q15)', () => {
+    // 'ja-JP' is not an @krishi-verse/i18n LANGUAGE_REGISTRY code — formatMoneyMinor must still honor it directly
+    // (this is exactly the contract packages/ui's MoneyText relies on via opts.intlLocale).
+    const out = formatMoneyMinor('500', 'JPY', 'ja-JP');
+    expect(out).toMatch(/[¥￥]/);
+  });
 });
 
 describe('languages + numbers', () => {

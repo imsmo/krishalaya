@@ -4,11 +4,12 @@
 // facets live in the URL searchParams (shareable, bookmarkable), parsed through the pure features/discovery
 // helpers into a typed SDK query. SSR + ISR. Degrades to an empty state if the API is unavailable (Law 12).
 import type { Metadata } from 'next';
-import type { ListingCard as ListingCardData, CategoryNode } from '@krishi-verse/sdk-js';
+import type { ListingCard as ListingCardData, CategoryNode, TenantBranding } from '@krishi-verse/sdk-js';
 import { publicClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { ListingCard } from '../../components/ListingCard';
 import { SearchFilters } from '../../components/SearchFilters';
+import { TenantBrandMark } from '../../components/TenantBrandMark';
 import { toListingQuery, loadMoreHref, hasActiveFilters, type RawSearchParams } from '../../features/discovery/query';
 import { flattenCategoryNav } from '../../features/discovery/categories';
 
@@ -47,11 +48,18 @@ export default async function TenantStorefront(
     categoryNav = flattenCategoryNav(cats);
   } catch { categoryNav = []; }
 
+  // DEV-26/Q20: the tenant's white-label branding (display name + logo). Degrades to null → TenantBrandMark
+  // falls back to the LOGO-4 name-block (tenantSlug), never a 500 for "branding not configured" (Law 12).
+  let branding: TenantBranding | null = null;
+  try {
+    branding = await publicClient(params.tenantSlug).lookups.tenantBranding();
+  } catch { branding = null; }
+
   const cardLabels = { organic: t.t('card.organic'), available: t.t('card.available') };
 
   return (
     <section>
-      <h1 className="kv-storefront__title">{params.tenantSlug}</h1>
+      <TenantBrandMark branding={branding} tenantSlug={params.tenantSlug} />
 
       <SearchFilters basePath={basePath} sp={searchParams} categories={categoryNav} />
 

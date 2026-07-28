@@ -124,6 +124,10 @@ a { color: inherit; text-decoration: none; }
 .kv-btn:disabled, .kv-btn--link:disabled { opacity: .6; cursor: progress; }
 
 .kv-storefront__title { text-transform: capitalize; }
+/* DEV-26/Q20: tenant logo mark (LOGO-4 name-block tier — wide slot, >=160px). Bounded so an arbitrary tenant-
+   supplied image can never blow out the page header's layout; object-fit preserves aspect ratio. */
+.kv-storefront__title--logo { text-transform: none; }
+.kv-storefront__logo { max-height: 56px; max-width: 100%; height: auto; width: auto; object-fit: contain; display: block; }
 
 /* ---- discovery filters ---- */
 .kv-filters { display: flex; flex-direction: column; gap: 12px; margin: var(--kv-space) 0; padding: var(--kv-space); border: 1px solid var(--kv-neutral-100); border-radius: var(--kv-radius); }

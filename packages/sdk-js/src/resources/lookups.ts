@@ -4,7 +4,7 @@
 // (anonymous storefront facets use them) and locale-resolved server-side from the caller's language. None move
 // money or mutate anything. Unknown ids resolve to null client-side via `nameById` (never a fabricated label).
 import { HttpClient } from '../http';
-import { CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode } from '../types';
+import { CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding } from '../types';
 
 export class LookupsResource {
   constructor(private readonly http: HttpClient) {}
@@ -32,6 +32,12 @@ export class LookupsResource {
   /** A controlled vocabulary by type code (e.g. 'doc_type'), platform + tenant values, locale-resolved names. */
   async values(type: string, signal?: AbortSignal): Promise<LookupValue[]> {
     return (await this.http.request<LookupValue[]>('GET', 'lookups/values', { query: { type }, anonymous: true, signal })).data;
+  }
+
+  /** DEV-26/Q20: the active request's tenant white-label branding (display name + logo URL), or `null` when no
+   *  tenant context resolved. Anonymous — the same public read every storefront page already makes. */
+  async tenantBranding(signal?: AbortSignal): Promise<TenantBranding | null> {
+    return (await this.http.request<TenantBranding | null>('GET', 'storefront/branding', { anonymous: true, signal })).data;
   }
 }
 

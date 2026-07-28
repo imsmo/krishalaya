@@ -17,6 +17,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PgPoolProvider } from '../database/pg-pool.provider';
 
 interface CacheEntry { tenantId: string | null; expiresAt: number; }
+interface BrandingCacheEntry { branding: TenantBranding | null; expiresAt: number; }
 
 const POSITIVE_TTL_MS = 60_000;
 const NEGATIVE_TTL_MS = 10_000;
@@ -57,4 +58,42 @@ export class TenantSlugResolver {
     this.cache.set(key, { tenantId, expiresAt: now + (tenantId ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS) });
     return tenantId;
   }
+
+  /** DEV-26/Q20: the public white-label branding for an already-resolved tenant (display_name + logo_url,
+   *  migration 0075). Read-only, same "no RLS needed" reasoning as `resolve()` above (`tenants` has no
+   *  `tenant_id` column). Cached alongside the slug cache (same TTL discipline: a positive hit for
+   *  `POSITIVE_TTL_MS`, a miss for `NEGATIVE_TTL_MS`; a DB error degrades to `null` WITHOUT caching, so the next
+   *  request retries) — a SEPARATE cache map from `resolve()`'s own (keyed by tenantId, not slug; the two never
+   *  collide, but sharing one map risked confusing a slug string with a uuid string). Never throws. */
+  private readonly brandingCache = new Map<string, BrandingCacheEntry>();
+
+  async getBranding(tenantId: string): Promise<TenantBranding | null> {
+    const now = Date.now();
+    const hit = this.brandingCache.get(tenantId);
+    if (hit && hit.expiresAt > now) return hit.branding;
+
+    let branding: TenantBranding | null = null;
+    try {
+      const res = await this.pools.writer(0).query(
+        `SELECT display_name, logo_url FROM tenants WHERE id = $1 AND status IN ('trial','active','grace') LIMIT 1`,
+        [tenantId],
+      );
+      const row = res.rows[0] as { display_name?: string; logo_url?: string | null } | undefined;
+      branding = row ? { displayName: row.display_name ?? '', logoUrl: row.logo_url ?? null } : null;
+    } catch (e) {
+      this.log.error(`tenant branding read failed for "${tenantId}": ${(e as Error).message}`);
+      return null; // degrade, do not cache (transient DB error must not pin "no branding" for the whole TTL)
+    }
+
+    this.brandingCache.set(tenantId, { branding, expiresAt: now + (branding ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS) });
+    return branding;
+  }
+}
+
+/** DEV-26/Q20: the shape a public storefront render needs — never more than this (no PII, no internal fields). */
+export interface TenantBranding {
+  displayName: string;
+  /** https-only (DB CHECK, migration 0075) or null — a null/missing value means "render the LOGO-4 fallback"
+   *  (name-block / initial-tile), NEVER the platform's own mark (see migration 0075's own header + LOGO-4). */
+  logoUrl: string | null;
 }

@@ -14,7 +14,10 @@
     "clean": "rm -rf dist"
   },
   "peerDependencies": { "react": "^18.3.1" },
-  "dependencies": { "@krishi-verse/tokens": "workspace:*" },
+  "dependencies": {
+    "@krishi-verse/tokens": "workspace:*",
+    "@krishi-verse/i18n": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.5.4",
     "@types/react": "^18.3.5",

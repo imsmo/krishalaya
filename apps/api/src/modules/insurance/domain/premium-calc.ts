@@ -6,6 +6,7 @@
 // all arithmetic is bigint, government-subsidy split truncates toward zero and the farmer share absorbs the
 // remainder so total premium is always farmerShare + govtShare, never off by a paisa.
 import { InvalidPremiumCalcError } from './insurance.errors';
+import { applyBpsFloor } from '../../../core/money/rounding';
 
 export type PremiumCalc =
   | { kind: 'pct_of_sum_insured'; bps: number }   // premium = sumInsuredMinor * bps / 10000
@@ -34,14 +35,15 @@ export function parsePremiumCalc(raw: unknown): PremiumCalc {
 /** Computes the total premium for a given sum insured under the product's premium_calc. */
 export function computeTotalPremiumMinor(calc: PremiumCalc, sumInsuredMinor: bigint): bigint {
   if (calc.kind === 'flat_minor') return BigInt(calc.amountMinor);
-  return (sumInsuredMinor * BigInt(calc.bps)) / 10000n;
+  return applyBpsFloor(sumInsuredMinor, calc.bps);
 }
 
 /** Splits the total premium into the govt-subsidised share and the farmer's collectible share (Law 2: exact,
- *  no drift — farmerShare = total - govtShare, never independently rounded). */
+ *  no drift — farmerShare = total - govtShare, never independently rounded; govtShare via the platform's
+ *  canonical `applyBpsFloor`, DEV-26/Q15). */
 export function splitPremium(totalPremiumMinor: bigint, govtSubsidyBps: number): PremiumSplit {
   if (totalPremiumMinor < 0n) throw new InvalidPremiumCalcError();
-  const govtShareMinor = (totalPremiumMinor * BigInt(govtSubsidyBps)) / 10000n;
+  const govtShareMinor = applyBpsFloor(totalPremiumMinor, govtSubsidyBps);
   const farmerShareMinor = totalPremiumMinor - govtShareMinor;
   return { totalPremiumMinor, govtShareMinor, farmerShareMinor };
 }

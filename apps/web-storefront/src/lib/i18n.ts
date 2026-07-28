@@ -9,6 +9,8 @@ import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 
+// DEV-26/Q16: this exact string is ALSO hardcoded (disclosed, not re-imported — see that file's own comment) in
+// `../middleware.ts`, which cannot safely import this `server-only` + `next/headers` module. Keep both in sync.
 export const LANG_COOKIE = 'kv_lang';
 
 /** The active language code for this request (cookie → Accept-Language → default). */

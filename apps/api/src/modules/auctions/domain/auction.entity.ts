@@ -7,10 +7,15 @@
 import { AuctionStatus, assertTransition, isBiddable } from './auction.state';
 import { AuctionEventType, DomainEvent } from './auctions.events';
 import { BidTooLowError, InvalidAuctionError, AuctionNotBiddableError } from './auctions.errors';
+// [QA-FIX 2026-07-28] DEV-26/Q15: this file's own `emdForBid()` inlined the identical
+// `(amountMinor * BigInt(bps)) / 10000n` floor-division formula that the batch's own grep was supposed to find
+// and consolidate (spec_dev26.md §1 names `auctions/read-models/my-bids.read-model.ts` as the auctions-module
+// site fixed, but missed this domain-entity duplicate of the SAME calculation) — now delegates to the one
+// canonical helper, closing the gap without changing behavior (identical bigint floor math).
+import { applyBpsFloor } from '../../../core/money/rounding';
 
 export type AuctionKind = 'english_open' | 'sealed' | 'reverse' | 'dutch';
 const SUPPORTED: AuctionKind[] = ['english_open', 'sealed'];
-const BPS = 10000n;
 
 export interface AuctionProps {
   id: string; tenantId: string; listingId: string; kind: AuctionKind;
@@ -67,7 +72,7 @@ export class Auction {
   /** EMD to hold for a bid of `amountMinor` (flat emdMinor, else % of the bid). */
   emdForBid(amountMinor: bigint): bigint {
     if (this.props.emdMinor > 0n) return this.props.emdMinor;
-    if (this.props.emdPctBps) return (amountMinor * BigInt(this.props.emdPctBps)) / BPS;
+    if (this.props.emdPctBps) return applyBpsFloor(amountMinor, this.props.emdPctBps);
     return 0n;
   }
 

@@ -62,11 +62,12 @@ import { ResponseInterceptor } from './http/response.interceptor';
 
 import { HealthController } from './health/health.controller';
 import { MetricsController } from './observability/metrics.controller';
+import { StorefrontBrandingController } from './tenancy-context/storefront-branding.controller';
 
 @Global()
 @Module({
   imports: [ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule, FeatureFlagsModule, I18nModule],
-  controllers: [HealthController, MetricsController],
+  controllers: [HealthController, MetricsController, StorefrontBrandingController],
   providers: [
     { provide: OUTBOX_WRITER, useClass: PgOutboxWriter },
     { provide: QUOTA_SERVICE, useClass: PgQuotaService },

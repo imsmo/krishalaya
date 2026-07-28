@@ -5,11 +5,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { BidRepository } from '../repositories/bid.repository';
+import { applyBpsFloor } from '../../../core/money/rounding';
 
 /** PURE: the EMD held for a bid — a % of the bid amount (basis points) when configured, else the auction's
- *  fixed emd_minor. Integer math only (Law 2): bps path truncates, never floats. Exported for unit tests. */
+ *  fixed emd_minor. Integer math only (Law 2): bps path truncates via the platform's canonical `applyBpsFloor`
+ *  (DEV-26/Q15), never floats. Exported for unit tests. */
 export function emdHeldMinor(amountMinor: bigint, emdMinor: bigint, emdPctBps: number | null): bigint {
-  if (emdPctBps != null && emdPctBps > 0) return (amountMinor * BigInt(emdPctBps)) / 10000n;
+  if (emdPctBps != null && emdPctBps > 0) return applyBpsFloor(amountMinor, emdPctBps);
   return emdMinor;
 }
 

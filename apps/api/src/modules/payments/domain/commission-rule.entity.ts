@@ -4,10 +4,12 @@
 // seller's net is the RESIDUAL (gross − commission − gst − tds) so rounding can never break the
 // zero-sum invariant — the split always sums back to the gross.
 import { SettlementConfigError } from './commission.errors';
+import { applyBpsFloor } from '../../../core/money/rounding';
 
-const BPS = 10000n;
-/** floor(amount * bps / 10000) in bigint. */
-export function applyBps(amountMinor: bigint, bps: number): bigint { return (amountMinor * BigInt(bps)) / BPS; }
+/** floor(amount * bps / 10000) in bigint. DEV-26/Q15: re-exports the platform's ONE canonical bps helper
+ *  (`core/money/rounding.ts`) under this module's pre-existing name — every existing importer of `applyBps`
+ *  from this file (this module's own `charge.calculator.ts`, and any future one) keeps working unchanged. */
+export const applyBps = applyBpsFloor;
 
 export interface CommissionRuleValues { rateBps: number; fixedMinor: bigint; capMinor: bigint | null; platformShareBps: number; chargedTo: 'seller' | 'buyer'; }
 export interface TaxRuleValues { rateBps: number; thresholdMinor: bigint | null; }

@@ -3,6 +3,7 @@
 import { CourseStatus, CourseLevel, DomainEvent, EducationEventType } from './education.events';
 import { assertTransition } from './course.state';
 import { InvalidCourseError } from './education.errors';
+import { applyBpsFloor } from '../../../core/money/rounding';
 
 export interface CourseProps {
   id: string; tenantId: string | null; instructorId: string; defaultTitle: string; topicId: string | null;
@@ -20,10 +21,11 @@ export class Course {
   }
   static rehydrate(p: CourseProps): Course { return new Course(p); }
 
-  /** Split paid-course revenue: instructor keeps royalty_bps (floored), platform takes the remainder.
-   *  Zero-sum by construction (instructor + platform === price). */
+  /** Split paid-course revenue: instructor keeps royalty_bps (floored via the platform's canonical
+   *  `applyBpsFloor`, DEV-26/Q15), platform takes the remainder. Zero-sum by construction (instructor +
+   *  platform === price — the residual pattern Q15 ratifies, never two independently-floored shares). */
   static splitRevenue(priceMinor: bigint, royaltyBps: number): { instructorMinor: bigint; platformMinor: bigint } {
-    const instructorMinor = (priceMinor * BigInt(royaltyBps)) / 10000n;   // floor
+    const instructorMinor = applyBpsFloor(priceMinor, royaltyBps);
     return { instructorMinor, platformMinor: priceMinor - instructorMinor };
   }
 
