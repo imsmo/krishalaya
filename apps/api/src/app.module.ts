@@ -37,6 +37,7 @@ import { ContractFarmingModule } from './modules/contract-farming/contract-farmi
 import { ExportsModule } from './modules/exports/exports.module';
 import { LandSoilWeatherModule } from './modules/land-soil-weather/land-soil-weather.module';
 import { FintechModule } from './modules/fintech/fintech.module';
+import { InsuranceModule } from './modules/insurance/insurance.module';
 import { SchemesModule } from './modules/schemes/schemes.module';
 import { ServicesMarketplaceModule } from './modules/services-marketplace/services-marketplace.module';
 import { CommunicationModule } from './modules/communication/communication.module';
@@ -54,7 +55,7 @@ import { TenantIntegrationsModule } from './modules/tenant-integrations/tenant-i
 import { TenantWebhooksModule } from './modules/tenant-webhooks/tenant-webhooks.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, AssistantModule, UnifiedSearchModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, InsuranceModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, AssistantModule, UnifiedSearchModule],
 })
 export class AppModule implements NestModule {
   // security-headers (every response, incl. error paths) THEN request-id THEN tenant-context (Law 1) on every route.

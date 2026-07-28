@@ -35,6 +35,7 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('exports','Export compliance: exporter registrations + shipments + document checklist — OFF until launch', false, 100, '{}'),
   ('land_soil_weather','Land parcels + crop seasons + soil tests + weather advisory browse — OFF until launch', false, 100, '{}'),
   ('fintech','Agri-fintech lending: loan applications + disbursement + repayment (FPO lender) — OFF until launch', false, 100, '{}'),
+  ('insurance','Agri-insurance (DEV-22, KV-BL-051/052): IRDAI-partner product catalogue + policy enrolment (proposed state only — premium collection/activation is DEV-23) — OFF until launch', false, 100, '{}'),
   ('schemes','Government scheme applications + eligibility + observed DBT records — OFF until launch', false, 100, '{}'),
   ('services_marketplace','P2P service marketplace: offerings + bookings + fee settlement (customer→provider) — OFF until launch', false, 100, '{}'),
   ('communication','Notification spine: event catalog + templates + preferences + quiet hours + delivery log + domain-event fanout (external notifier) — OFF until launch', false, 100, '{}'),
