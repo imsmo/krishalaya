@@ -5,7 +5,7 @@
 // links; not-yet-built surfaces render as a non-link "(soon)" label until their wave lands. Partner RBAC + RLS are
 // enforced by the platform API per call — this nav reflects route existence + persona, never grants access.
 
-export type NavGroup = 'common' | 'lending' | 'fleet';
+export type NavGroup = 'common' | 'lending' | 'fleet' | 'insurance';
 
 export interface PartnerNavItem {
   href: string;
@@ -20,6 +20,11 @@ export interface PartnerNavItem {
 /** Permission strings that unlock each persona group (mirrors apps/api policies). `*` is the platform wildcard. */
 export const LENDING_PERM = 'loan.manage';
 export const FLEET_PERM = 'logistics.manage';
+/** Mirrors apps/api's InsurancePermissions.Manage (modules/insurance/policies/insurance.policies.ts) — the
+ *  insurer-side console permission (request-documents/schedule-survey/record-survey/decide/settle/close +
+ *  the read-only claims/policies lists). NOTE: unlike LENDING_PERM/FLEET_PERM, the API does not RLS-scope this
+ *  to a specific insurance partner (see features/insurance/insurance.ts's header) — it is tenant-wide. */
+export const INSURANCE_PERM = 'insurance.manage';
 export const WILDCARD_PERM = '*';
 
 /** The full partner surface map. Flip `live: true` as each wave ships its route (links only to built routes). */
@@ -36,6 +41,9 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/zones', labelKey: 'nav.zones', group: 'fleet', live: true },
   { href: '/routes', labelKey: 'nav.routes', group: 'fleet', live: true },
   { href: '/cold-chain', labelKey: 'nav.coldChain', group: 'fleet', live: true },
+  // insurance vertical (insurer partners, KV-BL-056/DEV-24)
+  { href: '/insurance-claims', labelKey: 'nav.insuranceClaims', group: 'insurance', live: true },
+  { href: '/insurance-policies', labelKey: 'nav.insurancePolicies', group: 'insurance', live: true },
 ];
 
 export function hasLending(perms: ReadonlySet<string>): boolean {
@@ -44,11 +52,15 @@ export function hasLending(perms: ReadonlySet<string>): boolean {
 export function hasFleet(perms: ReadonlySet<string>): boolean {
   return perms.has(FLEET_PERM) || perms.has(WILDCARD_PERM);
 }
+export function hasInsurance(perms: ReadonlySet<string>): boolean {
+  return perms.has(INSURANCE_PERM) || perms.has(WILDCARD_PERM);
+}
 /** Which persona groups this partner can see (common is always visible). */
 export function visibleGroups(perms: ReadonlySet<string>): NavGroup[] {
   const groups: NavGroup[] = ['common'];
   if (hasLending(perms)) groups.push('lending');
   if (hasFleet(perms)) groups.push('fleet');
+  if (hasInsurance(perms)) groups.push('insurance');
   return groups;
 }
 /** Nav items the partner may see at all (their persona groups), preserving map order. */

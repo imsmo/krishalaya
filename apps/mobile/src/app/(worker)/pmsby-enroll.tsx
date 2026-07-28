@@ -3,10 +3,20 @@
 // age-verified profile, a linked bank account, a verified Aadhaar KYC), and a nominee form. Behind `worker_app`.
 // FLAG_SECURE (collects a nominee + optional Aadhaar). Money via MoneyText (Law 2). Degrade-never-die.
 //
-// §13 — REAL: eligibility booleans (worker/bank/KYC), and the auto-debit bank (bankLabel + last4). HONESTLY
-// degraded (NEVER faked): there is NO PMSBY enrolment/policy/nominee endpoint in the contract yet → the "Enroll"
-// CTA collects the form but surfaces a coming-soon notice instead of calling a non-existent endpoint or minting a
-// fake policy; the auto-debit date/bank line falls back to a generic "your bank account" when none is linked.
+// DEV-24 (KV-BL-055): "Enroll" now drives the REAL flow against DEV-22/23's insurance module: product select
+// (the single PMSBY product, resolved server-side via `findPmsbyProduct()` — no picker UI needed, matching this
+// screen's own single-product design) → consent (the new "I confirm..." checkbox below; the platform's other
+// enrolment flows equivalently gate on an explicit consent step per canon 283-285) → `proposePmsbyPolicy()`
+// (creates the policy row, `status='proposed'`) → `payPmsbyPremium()` (Law 6: a REAL, online, direct premium
+// payment — the SAME Razorpay-checkout-or-sandbox-then-poll loop `features/payments/payments.api.ts`'s
+// `addMoney` already uses; it either succeeds or fails visibly in this one call, NEVER queued offline).
+// §13 — the nominee NAME/RELATIONSHIP/AADHAAR fields are still captured on-screen but have NO backing column
+// anywhere in `insurance_policies` (DEV-22's own flagged schema gap, `KV-BL-036` "PMSBY nominee edit... new
+// `policy_nominees`... depends on E5 insurance module existing at all" — still unbuilt; confirmed by grep,
+// 0 hits for `policy_nominees` in `db/migrations`). This batch does NOT invent that table or silently drop the
+// field the canon calls for — the form still captures it (useful for a future migration + this screen needing
+// zero rework) but it is NOT sent to `POST /v1/insurance/policies` (whose `.strict()` DTO has no nominee field)
+// and a note discloses this honestly, matching the pre-existing convention this screen already used.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -23,8 +33,9 @@ import { bankLabel } from '../../features/profile/profile';
 import { bankAccount } from '../../features/labour/worker-documents';
 import {
   NOMINEE_RELATIONSHIPS, PMSBY_COVER_MINOR, PMSBY_PARTIAL_MINOR, PMSBY_PREMIUM_MINOR,
-  normalizeAadhaar, canEnroll, pmsbyEligibility, type NomineeRelationship,
+  normalizeAadhaar, canEnroll, pmsbyEligibility, pmsbyCoverageWindow, type NomineeRelationship,
 } from '../../features/labour/pmsby-enroll';
+import { findPmsbyProduct, proposePmsbyPolicy, payPmsbyPremium } from '../../features/insurance/insurance.api';
 
 export default function PmsbyEnroll() {
   const { t, lang } = useTranslation();
@@ -40,6 +51,8 @@ export default function PmsbyEnroll() {
   const [name, setName] = useState('');
   const [rel, setRel] = useState<NomineeRelationship | null>(null);
   const [aadhaar, setAadhaar] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setFailed(false);
@@ -56,10 +69,34 @@ export default function PmsbyEnroll() {
   const bank = bankAccount(banks);
   const debitBank = bank ? bankLabel(bank) : null;
 
-  const enroll = () => {
-    if (!canEnroll(name, rel)) return;
-    // §13: no PMSBY enrolment endpoint → do not fabricate a policy; capture the intent + surface coming-soon.
-    Alert.alert(t('pmsbyEnroll.title'), t('pmsbyEnroll.comingSoon'));
+  /** REAL enrolment (Law 6: online, direct, never queued). product select (the single PMSBY product) →
+   * propose (policy row, 'proposed') → initiate + drive the premium payment. Throws surface as a friendly
+   * alert — this is a mutation, not a silent failure. On success, returns to Insurance (39) which re-fetches
+   * the caller's own policy from the server (never assumes success from this screen's own state). */
+  const enroll = async () => {
+    if (!canEnroll(name, rel, aadhaar) || !consent || enrolling) return;
+    setEnrolling(true);
+    try {
+      const product = await findPmsbyProduct();
+      if (!product) { Alert.alert(t('pmsbyEnroll.title'), t('pmsbyEnroll.unavailable')); return; }
+      const { validFrom, validUntil } = pmsbyCoverageWindow();
+      const { policies } = await proposePmsbyPolicy({ productId: product.id, sumInsuredMinor: PMSBY_COVER_MINOR, validFrom, validUntil });
+      const policyId = policies[0]?.id;
+      if (!policyId) { Alert.alert(t('pmsbyEnroll.title'), t('pmsbyEnroll.enrollFailed')); return; }
+      const payment = await payPmsbyPremium(policyId, worker ? { name: undefined, contact: undefined } : undefined);
+      if (payment.outcome === 'success') {
+        router.replace({ pathname: '/(worker)/insurance', params: { notice: t('pmsbyEnroll.enrolledNotice') } });
+      } else if (payment.outcome === 'pending') {
+        Alert.alert(t('pmsbyEnroll.title'), t('pmsbyEnroll.paymentPending'));
+        router.replace('/(worker)/insurance');
+      } else {
+        Alert.alert(t('pmsbyEnroll.title'), t('pmsbyEnroll.paymentFailed'));
+      }
+    } catch {
+      Alert.alert(t('pmsbyEnroll.title'), t('pmsbyEnroll.enrollFailed'));
+    } finally {
+      setEnrolling(false);
+    }
   };
 
   const benefits: Array<{ key: string; icon: string; minor: string }> = [
@@ -70,9 +107,15 @@ export default function PmsbyEnroll() {
 
   const footer = (
     <View style={styles.footerRow}>
-      <Button title={t('pmsbyEnroll.later')} variant="outline" onPress={() => router.back()} />
+      <Button title={t('pmsbyEnroll.later')} variant="outline" onPress={() => router.back()} disabled={enrolling} />
       <View style={{ flex: 1 }}>
-        <Button title={t('pmsbyEnroll.enrollCta', { amount: formatMoneyMinor(PMSBY_PREMIUM_MINOR, 'INR', lang) })} onPress={enroll} disabled={!canEnroll(name, rel, aadhaar)} fullWidth />
+        <Button
+          title={enrolling ? t('pmsbyEnroll.enrolling') : t('pmsbyEnroll.enrollCta', { amount: formatMoneyMinor(PMSBY_PREMIUM_MINOR, 'INR', lang) })}
+          onPress={enroll}
+          loading={enrolling}
+          disabled={!canEnroll(name, rel, aadhaar) || !consent || !elig.qualifies || enrolling}
+          fullWidth
+        />
       </View>
     </View>
   );
@@ -137,7 +180,19 @@ export default function PmsbyEnroll() {
             <View style={{ marginTop: space[3] }}>
               <Input label={t('pmsbyEnroll.nomineeAadhaar')} value={aadhaar} onChangeText={(v) => setAadhaar(normalizeAadhaar(v))} placeholder={t('pmsbyEnroll.aadhaarPh')} keyboardType="number-pad" maxLength={12} />
             </View>
+            <Text style={[styles.note, { marginTop: space[2] }]}>{t('pmsbyEnroll.nomineeSchemaNote')}</Text>
           </Card>
+
+          {/* Consent — required before the real propose+pay call fires */}
+          <Pressable
+            onPress={() => setConsent((v) => !v)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: consent }}
+            style={styles.consentRow}
+          >
+            <View style={[styles.checkbox, consent && styles.checkboxOn]}>{consent ? <Text style={styles.checkboxTick}>✓</Text> : null}</View>
+            <Text style={styles.consentTxt}>{t('pmsbyEnroll.consent')}</Text>
+          </Pressable>
 
           {/* Auto-debit mandate note */}
           <View style={styles.mandate}>
@@ -181,4 +236,10 @@ const styles = StyleSheet.create({
   mandate: { backgroundColor: color.ink50, borderRadius: radius.md, padding: space[3] },
   mandateTxt: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink600, lineHeight: font.size.xs * 1.5 },
   footerRow: { flexDirection: 'row', gap: space[3], alignItems: 'center' },
+  note: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, lineHeight: font.size.xs * 1.5 },
+  consentRow: { flexDirection: 'row', gap: space[3], alignItems: 'flex-start', paddingHorizontal: space[1] },
+  checkbox: { width: 22, height: 22, borderRadius: radius.sm, borderWidth: 1.5, borderColor: color.ink300, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  checkboxOn: { borderColor: color.primary600, backgroundColor: color.primary600 },
+  checkboxTick: { color: color.white, fontSize: 14, fontWeight: '700' },
+  consentTxt: { flex: 1, fontFamily: font.body, fontSize: font.size.sm, color: color.ink700, lineHeight: font.size.sm * 1.4 },
 });

@@ -1,7 +1,7 @@
 // apps/web-partner/src/test/nav-model.spec.ts · unit tests for the pure persona-aware nav model + notice mapping.
 import {
-  PARTNER_NAV, hasLending, hasFleet, visibleGroups, navForPartner, liveNavForPartner, soonNavForPartner,
-  partnerNoticeKey, LENDING_PERM, FLEET_PERM, WILDCARD_PERM,
+  PARTNER_NAV, hasLending, hasFleet, hasInsurance, visibleGroups, navForPartner, liveNavForPartner, soonNavForPartner,
+  partnerNoticeKey, LENDING_PERM, FLEET_PERM, INSURANCE_PERM, WILDCARD_PERM,
 } from '../features/nav/nav-model';
 
 const set = (...p: string[]) => new Set(p);
@@ -25,9 +25,19 @@ describe('partner nav model (persona-aware)', () => {
     expect(soonNavForPartner(perms)).toEqual([]); // logistics vertical fully built
   });
 
-  it('wildcard sees both verticals', () => {
+  it('insurer persona (KV-BL-056/DEV-24) sees common + insurance only', () => {
+    const perms = set(INSURANCE_PERM);
+    expect(hasInsurance(perms)).toBe(true);
+    expect(hasLending(perms)).toBe(false);
+    expect(hasFleet(perms)).toBe(false);
+    expect(visibleGroups(perms)).toEqual(['common', 'insurance']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/insurance-claims', '/insurance-policies']);
+    expect(soonNavForPartner(perms)).toEqual([]); // insurer console fully built this batch
+  });
+
+  it('wildcard sees all three verticals', () => {
     const perms = set(WILDCARD_PERM);
-    expect(visibleGroups(perms)).toEqual(['common', 'lending', 'fleet']);
+    expect(visibleGroups(perms)).toEqual(['common', 'lending', 'fleet', 'insurance']);
     expect(navForPartner(perms).length).toBe(PARTNER_NAV.length);
   });
 
@@ -42,7 +52,7 @@ describe('partner nav model (persona-aware)', () => {
     for (const i of PARTNER_NAV) {
       expect(i.href).toMatch(/^\//);
       expect(i.labelKey).toMatch(/^nav\./);
-      expect(['common', 'lending', 'fleet']).toContain(i.group);
+      expect(['common', 'lending', 'fleet', 'insurance']).toContain(i.group);
     }
   });
 });

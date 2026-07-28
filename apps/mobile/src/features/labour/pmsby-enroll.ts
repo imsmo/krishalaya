@@ -3,8 +3,10 @@
 // constants (public government-scheme facts — same for every worker, bigint minor per Law 2 — NOT per-user data),
 // the nominee-relationship options, the nominee-form validators (name/optional-Aadhaar), and the REAL eligibility
 // derivation from the worker profile + bank accounts + verified Aadhaar KYC.
-// §13: there is NO PMSBY enrolment / policy / nominee endpoint in the contract yet → the screen collects the form
-// but the "Enroll" CTA degrades to a coming-soon notice; nothing is faked and no per-user policy is invented.
+// DEV-24 (KV-BL-055): the enrolment/premium-payment endpoints are now REAL (`apps/api/src/modules/insurance`,
+// DEV-22/23) — `pmsbyCoverageWindow()` adds the pure ISO date-range helper the screen needs to call
+// `POST /v1/insurance/policies` (`validFrom`/`validUntil`), matching PMSBY's real annual cycle (1 June - 31 May,
+// per screen 145's own auto-debit mandate copy "on 1 June each year").
 import type { WorkerProfile, BankAccount, KycDocument, KycDocType } from '@krishi-verse/sdk-js';
 
 // PMSBY statutory figures (public scheme constants — bigint minor, Law 2; not per-user/seed data).
@@ -56,4 +58,17 @@ export function pmsbyEligibility(
   const aadhaarType = (docTypes ?? []).find((d) => d.code.toLowerCase().includes('aadhaar'));
   const aadhaarOk = !!aadhaarType && (kyc ?? []).some((k) => k.docTypeId === aadhaarType.id && k.status === 'verified');
   return { ageOk, bankOk, aadhaarOk, qualifies: ageOk && bankOk && aadhaarOk };
+}
+
+/** PMSBY's real annual cover cycle: 1 June - 31 May (screen 145's own mandate copy: "auto-debited ... on 1 June
+ * each year"). Pure, deterministic given `now` (unit-tested; the screen always calls with `new Date()`). If
+ * today is on/after 1 June, the current cycle runs this-year-June → next-year-May; otherwise the cycle already
+ * in force runs last-year-June → this-year-May. Returned as `YYYY-MM-DD` (the API's `isoDate` DTO shape). */
+export function pmsbyCoverageWindow(now: Date = new Date()): { validFrom: string; validUntil: string } {
+  const y = now.getUTCFullYear();
+  const juneFirstThisYear = Date.UTC(y, 5, 1); // month 5 = June (0-indexed)
+  const startYear = now.getTime() >= juneFirstThisYear ? y : y - 1;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const iso = (yy: number, mm: number, dd: number) => `${yy}-${pad(mm)}-${pad(dd)}`;
+  return { validFrom: iso(startYear, 6, 1), validUntil: iso(startYear + 1, 5, 31) };
 }

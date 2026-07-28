@@ -46,6 +46,12 @@ const MONEY_DATA_LAYER_FILES = [
   'features/tenant/tenant.api.ts', // resolveDispute (refund amount) + applyForPlan (tenant subscription)
   'features/kyc/bank.api.ts', // addBank/addFullBank (payout destination — gates future withdrawals)
   'features/offers/offers.api.ts', // makeOffer/counterOffer/acceptOffer (price commitment → converts to an order)
+  // [QA-FIX 2026-07-28, DEV-24 QA]: features/insurance/insurance.api.ts (DEV-24, KV-BL-055) added payPmsbyPremium
+  // (premium payment initiation) — a real, direct money mutation per the same "never queued" contract as every
+  // file above. Was structurally already caught by the repo-wide reachability test below (it never calls
+  // enqueueOp/registerOpHandler), but had not been added to THIS itemized census — closing that documentation
+  // gap explicitly rather than relying only on the repo-wide net.
+  'features/insurance/insurance.api.ts', // payPmsbyPremium (PMSBY premium payment initiation, DEV-24/KV-BL-055)
 ];
 
 describe('DEV-14 · Golden Law 6 — money data-layer files never call enqueueOp', () => {

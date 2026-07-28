@@ -1,9 +1,11 @@
 // apps/mobile/src/features/labour/insurance-claim.ts · PURE logic for the worker File-Insurance-Claim screen (146).
 // No React / no SDK I/O → unit-tested. It holds the claim-type options, the required-document checklist, and the
 // incident-form validators.
-// §13: there is NO PMSBY claim / policy / document-upload endpoint in the contract yet → the screen collects the
-// form but Submit/Save-Draft/Upload degrade to a coming-soon notice; no claim id, policy number or FIR status is
-// ever fabricated.
+// DEV-24 (KV-BL-055): `POST /v1/insurance/claims` is now REAL (DEV-23) and requires an `eventTypeCode` drawn from
+// the platform-wide `claim_event` lookup vocabulary (`drought|flood|hail|pest|death|theft|fire|accident` — seeded
+// in `0005_lookup_vocabularies.sql`, shared across every insurance vertical, never invented per-module). This
+// screen's own claim types (`injury`/`death`) map onto that vocabulary via `CLAIM_EVENT_CODE` below — worker
+// accidental-injury claims are the platform's generic `accident` event; death is a direct 1:1 match.
 
 /** Claim types, in design order → i18n `insuranceClaim.type.<key>.title` / `.sub`. */
 export const CLAIM_TYPES = [
@@ -11,6 +13,14 @@ export const CLAIM_TYPES = [
   { key: 'death', icon: '⚱' },
 ] as const;
 export type ClaimTypeKey = (typeof CLAIM_TYPES)[number]['key'];
+
+/** Maps this screen's own claim-type key onto the shared `claim_event` lookup CODE the API's
+ * `CreateInsuranceClaimSchema.eventTypeCode` expects (resolved server-side to `event_type_id` — never a raw
+ * UUID from the client). Pure, exhaustive over `ClaimTypeKey`. */
+export const CLAIM_EVENT_CODE: Record<ClaimTypeKey, string> = {
+  injury: 'accident',
+  death: 'death',
+};
 
 /** Supporting documents, in design order. `required` drives the `*` marker + submit gate. */
 export const CLAIM_DOCS = [

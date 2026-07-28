@@ -4,28 +4,47 @@
 // static content with money via MoneyText (Law 2, program constants — not per-user values). Behind `worker_app`.
 // Degrade-never-die.
 //
-// §13 — FLAGGED: the labour/fintech contract has NO worker insurance/PMSBY enrolment, policy, nominee or claim
-// endpoint yet. So this screen NEVER fabricates a per-user policy — the design's policy number (SBI-PMSBY-7842156),
-// provider, coverage dates, nominee (Vikas Kumar · ****8245) and "ACTIVE" status are seed data with no source, so
-// the per-user "Your policy" + nominee sections show an honest "appears once you're enrolled" state, and File-a-
-// Claim / Download-PDF surface a coming-soon notice rather than calling a non-existent endpoint.
-import React from 'react';
+// DEV-24 (KV-BL-055): the API is now REAL (`apps/api/src/modules/insurance`, DEV-22/23, flag `insurance` — a
+// separate, server-side-only switch, see `insurance.api.ts`'s own header note). "Your policy" fetches the
+// caller's OWN real PMSBY policy (if any) and renders its real status/validity/policy-number — never the
+// design's seed data (SBI-PMSBY-7842156 / Vikas Kumar was never real and is not rendered). Nominee display is
+// still an honest gap: `insurance_policies` carries no nominee column (DEV-22's own flagged schema gap,
+// `KV-BL-036`, still unbuilt) — the nominee section stays the pre-existing honest "not on this schema yet" note.
+// Download-policy-PDF has no endpoint anywhere in the module — stays an honest coming-soon, not invented.
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, EmptyState, MoneyText, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
 import { formatMoneyMinor } from '@krishi-verse/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
-
-// PMSBY statutory figures (public government scheme constants — bigint minor, Law 2; not per-user/seed data).
-const COVER_MINOR = '20000000';        // ₹2,00,000 accidental death / total disability
-const PARTIAL_MINOR = '10000000';      // ₹1,00,000 partial disability
-const PREMIUM_MINOR = '2000';          // ₹20 / year
+import { findPmsbyProduct, myPmsbyPolicy, type InsurancePolicyView } from '../../features/insurance/insurance.api';
+// [QA-FIX 2026-07-28, DEV-24 QA]: these three PMSBY statutory constants were being re-declared locally here,
+// duplicating the SAME values already defined once in features/labour/pmsby-enroll.ts (screen 145's own
+// source-of-truth for the enrolment flow). Two independent literal copies of a "public scheme fact" is exactly
+// the drift risk Law 3/Law 11 warn about — one file could get updated on a future PMSBY premium/cover revision
+// (this has happened before: the premium moved ₹12→₹20 in 2022) while the other silently goes stale. Importing
+// the single existing source instead; no behavior change (same literal values).
+import { PMSBY_COVER_MINOR as COVER_MINOR, PMSBY_PARTIAL_MINOR as PARTIAL_MINOR, PMSBY_PREMIUM_MINOR as PREMIUM_MINOR } from '../../features/labour/pmsby-enroll';
 
 export default function WorkerInsurance() {
   const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('worker_app');
+  const [policy, setPolicy] = useState<InsurancePolicyView | null>(null);
+  const [loadingPolicy, setLoadingPolicy] = useState(true);
+
+  const loadPolicy = useCallback(async () => {
+    setLoadingPolicy(true);
+    try {
+      const product = await findPmsbyProduct();
+      setPolicy(product ? await myPmsbyPolicy(product.id) : null);
+    } finally {
+      setLoadingPolicy(false);
+    }
+  }, []);
+  useEffect(() => { if (enabled) loadPolicy(); }, [enabled, loadPolicy]);
+
   if (!enabled) return <ScreenScaffold title={t('worker.insurance.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   const covered: Array<{ key: string; minor?: string }> = [
@@ -42,7 +61,14 @@ export default function WorkerInsurance() {
       footer={
         <View style={styles.actions}>
           <Button title={t('worker.insurance.download')} variant="outline" onPress={() => Alert.alert(t('worker.insurance.title'), t('worker.insurance.comingSoon'))} />
-          <View style={{ flex: 1 }}><Button title={t('worker.insurance.fileClaim')} onPress={() => router.push('/(worker)/claim')} fullWidth /></View>
+          <View style={{ flex: 1 }}>
+            <Button
+              title={t('worker.insurance.fileClaim')}
+              onPress={() => router.push('/(worker)/claim')}
+              disabled={policy?.status !== 'active'}
+              fullWidth
+            />
+          </View>
         </View>
       }
     >
@@ -64,8 +90,10 @@ export default function WorkerInsurance() {
           </View>
         </View>
 
-        {/* Enroll CTA → PMSBY enrollment (145) */}
-        <Button title={t('worker.insurance.enroll')} onPress={() => router.push('/(worker)/pmsby-enroll')} fullWidth />
+        {/* Enroll CTA → PMSBY enrollment (145). Hidden once an active/proposed policy already exists. */}
+        {!policy || policy.status === 'cancelled' || policy.status === 'expired' ? (
+          <Button title={t('worker.insurance.enroll')} onPress={() => router.push('/(worker)/pmsby-enroll')} fullWidth />
+        ) : null}
 
         {/* What's covered — program facts */}
         <Card>
@@ -80,10 +108,34 @@ export default function WorkerInsurance() {
           ))}
         </Card>
 
-        {/* Your policy — §13 no per-user policy contract */}
+        {/* Your policy — DEV-24: the caller's OWN real policy, once enrolled. */}
         <Card>
           <Text style={styles.h3}>{t('worker.insurance.yourPolicy')}</Text>
-          <Text style={styles.note}>{t('worker.insurance.policyNote')}</Text>
+          {loadingPolicy ? (
+            <SkeletonCard lines={3} />
+          ) : policy ? (
+            <View style={{ gap: 4 }}>
+              <View style={styles.coverRow}>
+                <Text style={styles.tick}>•</Text>
+                <Text style={styles.coverText}>{t('worker.insurance.status')}: {t(`worker.insurance.policyStatus.${policy.status}`)}</Text>
+              </View>
+              {policy.policyNo ? (
+                <View style={styles.coverRow}>
+                  <Text style={styles.tick}>•</Text>
+                  <Text style={styles.coverText}>{t('worker.insurance.policyNumber')}: {policy.policyNo}</Text>
+                </View>
+              ) : null}
+              <View style={styles.coverRow}>
+                <Text style={styles.tick}>•</Text>
+                <Text style={styles.coverText}>{t('worker.insurance.validity')}: {policy.validFrom} — {policy.validUntil}</Text>
+              </View>
+              {policy.status === 'proposed' ? (
+                <Text style={[styles.note, { marginTop: space[2] }]}>{t('worker.insurance.awaitingPayment')}</Text>
+              ) : null}
+            </View>
+          ) : (
+            <Text style={styles.note}>{t('worker.insurance.policyNote')}</Text>
+          )}
         </Card>
 
         {/* Nominee — §13 */}
