@@ -13,6 +13,9 @@ const en = {
   'error.OTP_INVALID': 'Invalid or expired code.',
   'error.REFRESH_INVALID': 'Your session has expired. Please sign in again.',
   'error.LISTING_NOT_FOUND': 'Listing not found.',
+  // DEV-27 (Q23, G0-4 founder ruling 2026-07-22): billing-document header badge — TS-002 §a "Documents"
+  // row + DOC-000 §a/§b. Rendered alongside the tenant's own brand name, never in place of it.
+  'doc.poweredByKrishiVerse': 'Powered by Krishi Verse',
 };
 export default en;
 export type MessageKey = keyof typeof en;

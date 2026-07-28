@@ -13,5 +13,7 @@ const gu: Record<string, string> = {
   'error.OTP_INVALID': 'અમાન્ય અથવા સમાપ્ત કોડ.',
   'error.REFRESH_INVALID': 'તમારું સત્ર સમાપ્ત થઈ ગયું છે. કૃપા કરી ફરી સાઇન ઇન કરો.',
   'error.LISTING_NOT_FOUND': 'લિસ્ટિંગ મળ્યું નથી.',
+  // DEV-27 (Q23) billing-document header badge — brand name kept in Latin script, per sms.otp's own convention above.
+  'doc.poweredByKrishiVerse': 'Krishi Verse દ્વારા સંચાલિત',
 };
 export default gu;

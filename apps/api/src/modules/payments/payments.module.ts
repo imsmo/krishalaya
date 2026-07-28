@@ -23,6 +23,10 @@ import { PaymentRepository } from './repositories/payment.repository';
 // etc.), so the reverse module import would cycle. OrderRepository's only dependency, READ_REPLICA,
 // is provided by the @Global() CoreModule, so this resolves cleanly without importing OrdersModule.
 import { OrderRepository } from '../orders/repositories/order.repository';
+// DEV-27 (Q23): DocumentPdfService needs TenantService (never TenantRepository directly, per Law 11 —
+// same precedent as MandateService above) to read the tenant's own brand name for the billing-document
+// header badge. TenancyModule has no `imports` of its own (verified), so this creates no module cycle.
+import { TenancyModule } from '../tenancy/tenancy.module';
 import { PayoutRepository } from './repositories/payout.repository';
 import { CommissionRuleRepository } from './repositories/commission-rule.repository';
 import { TaxRuleRepository } from './repositories/tax-rule.repository';
@@ -68,7 +72,7 @@ import { SandboxMandateGateway } from './gateway/sandbox-mandate.gateway';
 import { AutopayController } from './controllers/v1/autopay.controller';
 
 @Module({
-  imports: [MediaModule],   // MediaService for rendered statement/invoice PDFs
+  imports: [MediaModule, TenancyModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
   controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, CommissionRulesController, WalletController, AutopayController],
   providers: [
     PaymentService,
@@ -172,7 +176,11 @@ import { AutopayController } from './controllers/v1/autopay.controller';
       inject: [AppConfig, PayoutRepository, PayoutService],
     },
   ],
-  exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel],
+  // MandateService added DEV-25/KV-BL-057 (§8 FLAGGED — payments-module gap fix): InsuranceModule needs it
+  // for the auto-debit THIN LINK (linkAutopayMandate reads a mandate's status/purpose/owner via
+  // MandateService.getById — the SERVICE, never MandateRepository directly, per Law 11). No behavior change
+  // to MandateService itself.
+  exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel, MandateService],
 })
 export class PaymentsModule implements OnModuleInit {
   constructor(

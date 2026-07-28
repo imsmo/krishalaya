@@ -13,5 +13,7 @@ const hi: Record<string, string> = {
   'error.OTP_INVALID': 'अमान्य या समाप्त कोड।',
   'error.REFRESH_INVALID': 'आपका सत्र समाप्त हो गया है। कृपया पुनः साइन इन करें।',
   'error.LISTING_NOT_FOUND': 'सूची नहीं मिली।',
+  // DEV-27 (Q23) billing-document header badge — brand name kept in Latin script, per sms.otp's own convention above.
+  'doc.poweredByKrishiVerse': 'Krishi Verse द्वारा संचालित',
 };
 export default hi;

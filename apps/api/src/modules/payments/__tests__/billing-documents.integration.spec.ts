@@ -29,6 +29,7 @@ import { TradeInvoiceService } from '../services/trade-invoice.service';
 import { DocumentPdfService } from '../services/document-pdf.service';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
+import { TranslationService } from '../../../core/i18n/translation.service';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -69,10 +70,21 @@ run('billing documents: statements + GST invoices (integration, real Postgres + 
     lines = new SettlementLineRepository();
     const stmtRepo = new SettlementStatementRepository(replica as any);
     const invRepo = new TradeInvoiceRepository(replica as any);
-    // document_pdfs flag is OFF by default → PDF rendering is a no-op here (no S3 contacted)
-    const docPdf = new DocumentPdfService(uow, metrics, new FlagsService(pools, new InMemoryCacheService()), null as any, stmtRepo, invRepo);
+    // document_pdfs flag is OFF by default → PDF rendering is a no-op here (no S3 contacted); the DEV-27
+    // (Q23 badge) TenantService dep is likewise never reached with the flag off, so `null as any` mirrors
+    // the pre-existing `media: null as any` convention on this same line rather than standing up the
+    // full TenantService dependency graph for a test that never exercises it.
+    const docPdf = new DocumentPdfService(uow, metrics, new FlagsService(pools, new InMemoryCacheService()), null as any, stmtRepo, invRepo, new TranslationService(), null as any);
     statements = new SettlementStatementService(uow, metrics, audit, lines, stmtRepo, docPdf);
-    invoices = new TradeInvoiceService(metrics, new TaxRuleRepository(replica as any), invRepo);
+    // QA-FIX (DEV-27, gate repair per playbook HARD RULE 9): this fixture's TradeInvoiceService
+    // construction was stale — that constructor gained `store: ObjectStore` + `documentPdf:
+    // DocumentPdfService` params at commit 14cbabdf ("P1-4 · Invoice download") without this test file
+    // being updated, so it failed to COMPILE at HEAD (pre-existing, unrelated to DEV-27's own diff —
+    // confirmed via `git show HEAD` reproducing the identical 3-arg call). Neither dependency is
+    // exercised by this file's assertions (only generateForOrder/getByOrder are called, never
+    // downloadUrlForOrder), so `null as any`/the already-constructed `docPdf` mirror this file's own
+    // existing no-op-dependency convention rather than standing up a real ObjectStore.
+    invoices = new TradeInvoiceService(metrics, null as any, new TaxRuleRepository(replica as any), invRepo, docPdf);
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
