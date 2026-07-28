@@ -12,7 +12,8 @@ INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
  ('export_doc','Export document type',false),
  ('irrigation','Irrigation type',false),('weather_alert','Weather alert type',false),
  ('loan_kind','Loan product kind',false),
- ('scheme_category','Government scheme category',false)
+ ('scheme_category','Government scheme category',false),
+ ('claim_event','Insurance claim event type',false)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
@@ -33,8 +34,13 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('ledger_txn_type',NULL,'escrow_release','Escrow release','{}',3),('ledger_txn_type',NULL,'commission','Commission','{}',4),
  ('ledger_txn_type',NULL,'wage_payout','Wage payout','{}',5),('ledger_txn_type',NULL,'emd_hold','EMD hold','{}',6),
  ('ledger_txn_type',NULL,'payout','Wallet payout / withdrawal','{}',7),('ledger_txn_type',NULL,'refund','Refund to buyer','{}',8),
- ('ledger_txn_type',NULL,'subscription','Membership subscription','{}',9),('ledger_txn_type',NULL,'service_fee','Service marketplace fee (vet/etc.)','{}',10),('ledger_txn_type',NULL,'milk_payment','Milk procurement payment (coop → farmer)','{}',11),('ledger_txn_type',NULL,'storage_fee','Warehouse storage fee (depositor → operator)','{}',12),('ledger_txn_type',NULL,'contract_payment','Contract-farming advance/settlement (buyer → grower)','{}',13),('ledger_txn_type',NULL,'loan_disbursement','Loan disbursement (lender → borrower)','{}',14),('ledger_txn_type',NULL,'loan_repayment','Loan repayment (borrower → lender)','{}',15),('ledger_txn_type',NULL,'course_purchase','Course purchase (learner → instructor royalty + platform)','{}',16),('ledger_txn_type',NULL,'billing_adjustment','SaaS billing manual adjustment (platform ⇄ tenant, applied by billing-ops)','{}',17),('ledger_txn_type',NULL,'listing_boost','Listing visibility boost (seller → platform)','{}',18),
+ ('ledger_txn_type',NULL,'subscription','Membership subscription','{}',9),('ledger_txn_type',NULL,'service_fee','Service marketplace fee (vet/etc.)','{}',10),('ledger_txn_type',NULL,'milk_payment','Milk procurement payment (coop → farmer)','{}',11),('ledger_txn_type',NULL,'storage_fee','Warehouse storage fee (depositor → operator)','{}',12),('ledger_txn_type',NULL,'contract_payment','Contract-farming advance/settlement (buyer → grower)','{}',13),('ledger_txn_type',NULL,'loan_disbursement','Loan disbursement (lender → borrower)','{}',14),('ledger_txn_type',NULL,'loan_repayment','Loan repayment (borrower → lender)','{}',15),('ledger_txn_type',NULL,'course_purchase','Course purchase (learner → instructor royalty + platform)','{}',16),('ledger_txn_type',NULL,'billing_adjustment','SaaS billing manual adjustment (platform ⇄ tenant, applied by billing-ops)','{}',17),('ledger_txn_type',NULL,'insurance_claim_settlement','Insurance claim settlement (platform payouts reserve to claimant wallet)','{}',19),('ledger_txn_type',NULL,'listing_boost','Listing visibility boost (seller → platform)','{}',18),
  ('payment_purpose',NULL,'wallet_recharge','Wallet recharge','{}',1),('payment_purpose',NULL,'direct_order','Direct order','{}',2),
+ ('payment_purpose',NULL,'insurance_premium','Insurance premium payment','{}',3),
+ ('claim_event',NULL,'drought','Drought','{}',1),('claim_event',NULL,'flood','Flood','{}',2),
+ ('claim_event',NULL,'hail','Hailstorm','{}',3),('claim_event',NULL,'pest','Pest attack','{}',4),
+ ('claim_event',NULL,'death','Animal or livestock death','{}',5),('claim_event',NULL,'theft','Theft','{}',6),
+ ('claim_event',NULL,'fire','Fire','{}',7),('claim_event',NULL,'accident','Accident','{}',8),
  ('payout_purpose',NULL,'settlement','Seller settlement','{}',1),('payout_purpose',NULL,'wage','Worker wage','{}',2),
  ('delivery_method',NULL,'self_pickup','Self pickup','{}',1),('delivery_method',NULL,'tenant_delivery','Tenant delivery','{}',2),
  ('export_doc',NULL,'bol','Bill of Lading','{}',1),('export_doc',NULL,'awb','Air Waybill','{}',2),('export_doc',NULL,'commercial_invoice','Commercial Invoice','{}',3),('export_doc',NULL,'packing_list','Packing List','{}',4),('export_doc',NULL,'coo','Certificate of Origin','{}',5),('export_doc',NULL,'phyto','Phytosanitary Certificate','{}',6),('export_doc',NULL,'fumigation','Fumigation Certificate','{}',7),('export_doc',NULL,'insurance','Marine Insurance','{}',8),('export_doc',NULL,'inspection','Inspection Certificate','{}',9),
