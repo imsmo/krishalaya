@@ -26,15 +26,25 @@
 // from the already-loaded `OrderListItem` fields (order no/status/primary item/price — zero extra API calls).
 // The pane's own CTA (pay/track/rate) still runs the real `onCta` handler. A phone viewport is unaffected
 // (isSplit false → single column, tap navigates, byte-identical to pre-DEV-20).
-import React, { useCallback, useMemo, useState } from 'react';
+//
+// DEV-28 (APPLY-9 per-row tablet routing, this batch's own scoped follow-up per `dev20_report.md`'s per-mechanism
+// table): the list-snapshot preview above still renders INSTANTLY on selection (zero regression). Additionally,
+// selecting a row fires exactly ONE bounded, race-guarded `getOrder(id)` fetch — the SAME real call
+// `orders/[id].tsx` already makes — and once it resolves the pane upgrades in place with the full real item-line
+// list + cost breakdown (subtotal/delivery/discount/tax/platform-fee/total, same keys `orders/[id].tsx` already
+// uses, zero new i18n). CTA/navigation keep operating on the always-available `OrderListItem` row (never the
+// fetched `OrderDetail`, which has no `counterparty` field) — unaffected, unchanged. A fetch failure just leaves
+// the snapshot summary showing (Law 12 degrade-never-die); a fast reselect drops the stale response via the
+// effect's own cleanup flag (Law 11 — never more than one in-flight fetch, never a per-row/per-scroll fetch).
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { OrderListItem, OrderRole } from '@krishi-verse/sdk-js';
+import type { OrderListItem, OrderDetail, OrderRole } from '@krishi-verse/sdk-js';
 import { formatDate } from '@krishi-verse/i18n';
 import { EmptyState, MoneyText, StatusPill, SkeletonCard, Button, color, font, space, radius } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
-import { listOrders } from '../../features/orders/orders.api';
+import { listOrders, getOrder } from '../../features/orders/orders.api';
 import { payForOrder } from '../../features/payments/payments.api';
 import { useSplitLayout } from '../../core/mechanisms/useSplitLayout';
 import { orderStatusTone, matchesOrderFilter, orderProgress, orderListCta, counterpartyLabel, moreItemsCount, type OrderFilter, type OrderListCta } from '../../features/orders/order-status';
@@ -47,6 +57,9 @@ export default function Orders() {
   const router = useRouter();
   const { isSplit, listColumnWidth, maxWidth } = useSplitLayout();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // DEV-28: real per-order detail, keyed by id, populated once the selection's own bounded fetch resolves.
+  const [orderDetailById, setOrderDetailById] = useState<Record<string, OrderDetail>>({});
+  const [orderDetailLoadingId, setOrderDetailLoadingId] = useState<string | null>(null);
   const [role, setRole] = useState<OrderRole>('buyer');
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [byRole, setByRole] = useState<Record<OrderRole, OrderListItem[]>>({ buyer: [], seller: [] });
@@ -93,7 +106,29 @@ export default function Orders() {
   // (phone) or defer to a tap on the pane's own CTA (split).
   const openOrder = (o: OrderListItem) => router.push({ pathname: '/(farmer)/orders/[id]', params: { id: o.id, role, party: o.counterparty ?? '' } });
   const onCardPress = (o: OrderListItem) => { if (isSplit) setSelectedId(o.id); else openOrder(o); };
+  // DEV-28: `selectedItem` (the list snapshot) stays the single source of truth for the header/status/price/CTA —
+  // always present instantly, has `counterparty` (which `OrderDetail` does not carry). `orderDetail` is the
+  // fetched enrichment used ONLY to render the real item-line list + cost breakdown below it once it resolves.
   const selectedItem = isSplit ? filtered.find((o) => o.id === selectedId) ?? null : null;
+  const orderDetail = selectedId ? orderDetailById[selectedId] : undefined;
+  const orderDetailLoading = orderDetailLoadingId !== null && orderDetailLoadingId === selectedId && !orderDetail;
+
+  // DEV-28: exactly ONE bounded fetch per selection change (Law 11) — `getOrder` is the SAME real, party-scoped
+  // call `orders/[id].tsx` already makes. Standard React cancellation-flag race-guard: a fast reselect fires this
+  // effect's cleanup first, so a stale response for an already-abandoned selection is always dropped (Law 11/12).
+  useEffect(() => {
+    if (!isSplit || !selectedId) return;
+    let cancelled = false;
+    setOrderDetailLoadingId(selectedId);
+    (async () => {
+      const od = await getOrder(selectedId);
+      if (cancelled) return; // a newer selection has since started — drop this stale response
+      if (od) setOrderDetailById((prev) => ({ ...prev, [selectedId]: od }));
+      // on failure the snapshot summary keeps showing — never a blank pane (Law 12 degrade-never-die)
+      setOrderDetailLoadingId((cur) => (cur === selectedId ? null : cur));
+    })();
+    return () => { cancelled = true; };
+  }, [isSplit, selectedId]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -160,9 +195,11 @@ export default function Orders() {
       </View>
 
       {isSplit ? (
-        <View style={styles.splitDetail}>
+        // DEV-28: `accessibilityLiveRegion="polite"` announces the pane's content swap on selection/upgrade to
+        // screen readers (no navigation event a11y would otherwise hook into) — gate 10 live-content convention.
+        <View style={styles.splitDetail} accessibilityLiveRegion="polite">
           {selectedItem ? (
-            <View>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.cardHead}>
                 <Text style={styles.cardId}>{t('orders.orderNo', { id: selectedItem.orderNo })}</Text>
                 <StatusPill label={t(`orders.status.${selectedItem.status}`)} tone={orderStatusTone(selectedItem.status)} />
@@ -176,10 +213,46 @@ export default function Orders() {
                 <Text style={styles.cardTitle}>{counterpartyLabel(selectedItem.counterparty) ?? t('orders.orderNo', { id: selectedItem.orderNo })}</Text>
               )}
               <MoneyText minor={selectedItem.totalMinor} langCode={lang} size="lg" tone="default" style={styles.cardPrice} />
+
+              {/* DEV-28: real per-row enrichment once `getOrder(selectedItem.id)` resolves — the SAME item-line
+                  list + cost breakdown `orders/[id].tsx` already renders (reused keys, zero new i18n). Absent
+                  while loading/failed — the summary above still stands on its own (Law 12). */}
+              {orderDetail ? (
+                <View style={{ marginTop: space[4] }}>
+                  {orderDetail.items.map((it, i) => (
+                    <View key={it.listing_id + i} style={[styles.item, i > 0 && styles.itemDivide]}>
+                      <Text style={styles.itemName} numberOfLines={1}>{it.title_snapshot}</Text>
+                      <Text style={styles.itemMeta}>{it.quantity} {it.unit_code}</Text>
+                    </View>
+                  ))}
+                  <View style={{ marginTop: space[3] }}>
+                    <SplitBreakdownRow label={t('orders.subtotal')} minor={orderDetail.subtotalMinor} cc={orderDetail.currencyCode} lang={lang} />
+                    {/* [QA-FIX 2026-07-28]: orders/[id].tsx's own `BreakdownFree` shows a "FREE" i18n label instead
+                        of a zero money value when deliveryFeeMinor is '0' — the pane omitted that special case
+                        (always rendered a money row, e.g. a literal ₹0.00), a canon-fidelity gap vs the real detail
+                        screen this pane claims to mirror. Reproduced here with the same already-existing key. */}
+                    {orderDetail.deliveryFeeMinor === '0' ? (
+                      <View style={styles.brRow}>
+                        <Text style={styles.brLabel}>{t('orders.delivery')}</Text>
+                        <Text style={styles.freeTxt}>{t('orderDetail.free')}</Text>
+                      </View>
+                    ) : (
+                      <SplitBreakdownRow label={t('orders.delivery')} minor={orderDetail.deliveryFeeMinor} cc={orderDetail.currencyCode} lang={lang} />
+                    )}
+                    {orderDetail.discountMinor !== '0' ? <SplitBreakdownRow label={t('orders.discount')} minor={orderDetail.discountMinor} cc={orderDetail.currencyCode} lang={lang} /> : null}
+                    {orderDetail.commissionMinor !== '0' ? <SplitBreakdownRow label={t('orderDetail.platformFee')} minor={orderDetail.commissionMinor} cc={orderDetail.currencyCode} lang={lang} /> : null}
+                    <SplitBreakdownRow label={t('orders.tax')} minor={orderDetail.taxMinor} cc={orderDetail.currencyCode} lang={lang} />
+                    <SplitBreakdownRow label={t('orderDetail.totalPaid')} minor={orderDetail.totalMinor} cc={orderDetail.currencyCode} lang={lang} strong />
+                  </View>
+                </View>
+              ) : orderDetailLoading ? (
+                <Text style={styles.splitLoadingHint}>{t('common.loading')}</Text>
+              ) : null}
+
               <View style={{ marginTop: space[4] }}>
                 <Button title={t('orders.viewFullDetails')} onPress={() => openOrder(selectedItem)} fullWidth={false} />
               </View>
-            </View>
+            </ScrollView>
           ) : (
             <EmptyState title={t('orders.splitSelectPrompt')} />
           )}
@@ -299,4 +372,29 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: color.primary600, borderRadius: 2 },
   progressLabel: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 4 },
   progressStrong: { fontWeight: font.weight.bold, color: color.ink800 },
+
+  // DEV-28: split-pane real-detail enrichment (item-line list + cost breakdown, once `getOrder` resolves).
+  splitLoadingHint: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, marginTop: space[2] },
+  item: { paddingVertical: space[2] },
+  itemDivide: { borderTopWidth: 1, borderTopColor: color.ink100, marginTop: space[1], paddingTop: space[2] },
+  itemName: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink800, fontWeight: font.weight.semibold },
+  itemMeta: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, marginTop: 2 },
+  brRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space[1] },
+  brStrong: { borderTopWidth: 1, borderTopColor: color.ink100, marginTop: space[1], paddingTop: space[2] },
+  brLabel: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
+  brLabelStrong: { color: color.ink800, fontWeight: font.weight.semibold },
+  // [QA-FIX 2026-07-28]: matches orders/[id].tsx's own `freeTxt` style exactly (same tokens), for the
+  // zero-delivery-fee "FREE" label parity fix above.
+  freeTxt: { fontFamily: font.body, fontSize: font.size.sm, color: color.success, fontWeight: font.weight.semibold },
 });
+
+// DEV-28: split-pane cost-breakdown row — the same shape as `orders/[id].tsx`'s own `Breakdown` helper, kept as
+// a separate small component here (not imported) since that file's version is a local, unexported function.
+function SplitBreakdownRow({ label, minor, cc, lang, strong }: { label: string; minor: string; cc: string; lang: string; strong?: boolean }) {
+  return (
+    <View style={[styles.brRow, strong && styles.brStrong]}>
+      <Text style={[styles.brLabel, strong && styles.brLabelStrong]}>{label}</Text>
+      <MoneyText minor={minor} currencyCode={cc} langCode={lang} size={strong ? 'md' : 'sm'} tone={strong ? 'default' : 'muted'} />
+    </View>
+  );
+}

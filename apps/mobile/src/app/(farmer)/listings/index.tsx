@@ -16,17 +16,27 @@
 // the loaded `ListingCard` (title/badge/qty/price) — no per-row API call (would be the exact N+1 the comment
 // above already flags as forbidden). A "View full details →" button in the pane does the real navigation this
 // screen always did. On a phone-width viewport this is byte-behavior-identical to pre-DEV-20 (single column,
-// tap-to-navigate). The full "make each row's real detail live in the second pane" behavior is DEV-28's own
-// scoped follow-up (per `00_DEV_PENDING_MASTER.md` row 266) — this batch ships the mechanism, not a duplicate
-// detail screen.
-import React, { useCallback, useState } from 'react';
+// tap-to-navigate).
+//
+// DEV-28 (APPLY-9 per-row tablet routing — this batch's own scoped follow-up, per DEV-20's own report + Law 11):
+// the pane above already renders INSTANTLY from the list snapshot (zero flash, zero regression). This batch adds
+// a SECOND stage: selecting a row also fires exactly ONE bounded, race-guarded fetch (`getListing` +
+// `listingAnalytics`, the SAME calls the real detail screen `listings/[id].tsx` already makes) keyed to that one
+// `selectedId`, and progressively upgrades the pane in place with the fresher record + real views/offers once it
+// resolves — never a per-row fetch on list render/scroll (still zero N+1), never more than one in-flight fetch
+// per selection change (a fast re-select cancels the stale one via the effect's own cleanup flag), and never a
+// blank/blocking pane while it loads (the snapshot stays visible the whole time; Law 12 degrade-never-die — a
+// fetch failure just leaves the snapshot showing, forever, no error banner). Mutating actions (Edit/Extend/
+// Boost/Remove) are deliberately NOT duplicated here — "View full details" still routes to the real screen for
+// those, matching DEV-20's own explicit "not a duplicate detail screen" boundary.
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard, ListingAnalytics } from '@krishi-verse/sdk-js';
 import { EmptyState, MoneyText, SkeletonCard, Button, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
-import { myListings } from '../../../features/listings/listings.api';
+import { myListings, getListing, listingAnalytics } from '../../../features/listings/listings.api';
 import { walletEarnings } from '../../../features/wallet/wallet.api';
 import { useSplitLayout } from '../../../core/mechanisms/useSplitLayout';
 import { LISTING_FILTERS, badgeFor, countByStatus, filterListings, auctionCountdown, cropEmoji, type ListingFilter, type BadgeKind } from '../../../features/listings/my-listings';
@@ -46,6 +56,11 @@ export default function MyListings() {
   const { t, lang } = useTranslation();
   const { isSplit, listColumnWidth, maxWidth } = useSplitLayout();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // DEV-28: real per-row detail, keyed by id, populated once the selection's own bounded fetch resolves.
+  // `detailLoadingId` mirrors the id currently in flight so the pane can show a non-blocking "Loading…" hint
+  // without ever hiding the already-visible list-snapshot preview underneath it.
+  const [detailById, setDetailById] = useState<Record<string, { listing: ListingCard; analytics: ListingAnalytics | null }>>({});
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [items, setItems] = useState<ListingCard[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   // R2-01 (founder screenshot review): walletEarnings() is degrade-never-die (it self-catches to an EMPTY_INSIGHTS
@@ -82,7 +97,35 @@ export default function MyListings() {
   // navigating away, so the list stays visible next to the detail — the two-pane point of the mechanism. On a
   // phone viewport this is unreachable (isSplit is false) so behavior is unchanged from pre-DEV-20.
   const onCardPress = (l: ListingCard) => { if (isSplit) setSelectedId(l.id); else openListing(l); };
-  const selectedItem = isSplit ? items.find((i) => i.id === selectedId) ?? null : null;
+  // DEV-28: the list-snapshot row is ALWAYS available the instant a row is tapped (zero-flash instant preview);
+  // `detailById[selectedId]` is the fresher, real per-row record once its own bounded fetch (below) resolves —
+  // preferred over the snapshot when present, never required to be present.
+  const selectedListItem = isSplit ? items.find((i) => i.id === selectedId) ?? null : null;
+  const selectedDetail = selectedId ? detailById[selectedId] : undefined;
+  const selectedItem = selectedDetail?.listing ?? selectedListItem;
+  const selectedAnalytics = selectedDetail?.analytics ?? null;
+  const selectedDetailLoading = detailLoadingId !== null && detailLoadingId === selectedId && !selectedDetail;
+
+  // DEV-28: exactly ONE bounded fetch per selection change (never per list row, never per scroll/pagination —
+  // Law 11). `getListing`/`listingAnalytics` are the SAME real, tenant/owner-scoped calls the detail screen
+  // (`listings/[id].tsx`) already makes — no new endpoint, no mock/derived-only data. The `cancelled` flag is the
+  // standard React race-guard: if `selectedId` changes again before this resolves, the effect's own cleanup
+  // fires first and the stale response is dropped, so a fast reselect can never show the WRONG row's data.
+  useEffect(() => {
+    if (!isSplit || !selectedId) return;
+    let cancelled = false;
+    setDetailLoadingId(selectedId);
+    (async () => {
+      const [res, an] = await Promise.all([getListing(selectedId), listingAnalytics(selectedId)]);
+      if (cancelled) return; // a newer selection has since started — this response is stale, drop it (Law 11/12)
+      if (res.listing) {
+        const listing = res.listing;
+        setDetailById((prev) => ({ ...prev, [selectedId]: { listing, analytics: an } }));
+      } // on failure/404 the snapshot preview keeps showing — never a blank pane (Law 12 degrade-never-die)
+      setDetailLoadingId((cur) => (cur === selectedId ? null : cur));
+    })();
+    return () => { cancelled = true; };
+  }, [isSplit, selectedId]);
 
   const Header = (
     <View>
@@ -178,7 +221,10 @@ export default function MyListings() {
       </View>
 
       {isSplit ? (
-        <View style={styles.splitDetail}>
+        // DEV-28: `accessibilityLiveRegion="polite"` so a screen reader announces the pane's content change on
+        // selection/upgrade — the pane's own content swaps in place (no navigation event a11y would otherwise
+        // hook into), matching gate 10's live-content-update convention.
+        <View style={styles.splitDetail} accessibilityLiveRegion="polite">
           {selectedItem ? (
             <View>
               <View style={styles.cardTop}>
@@ -192,6 +238,18 @@ export default function MyListings() {
                 <MoneyText minor={selectedItem.priceMinor} currencyCode={selectedItem.currencyCode} langCode={lang} size="lg" />
                 <Text style={styles.perUnit}>/{selectedItem.unitCode}</Text>
               </View>
+              {/* DEV-28: real per-row enrichment (views/offers) once the bounded fetch resolves — the SAME
+                  `ListingAnalytics` fields the detail screen's "last 7 days" stat row shows (§7 last7/views/
+                  offers keys, reused verbatim, zero new i18n). Absent while loading/failed — never a fabricated
+                  0 standing in for "not yet known" (Law 12). */}
+              {selectedAnalytics ? (
+                <View style={[styles.stats, { marginTop: space[3] }]}>
+                  <Stat value={String(selectedAnalytics.views)} label={t('listingDetail.views')} tone={color.primary600} />
+                  <Stat value={String(selectedAnalytics.offers)} label={t('listingDetail.offers')} tone={color.accent700} />
+                </View>
+              ) : selectedDetailLoading ? (
+                <Text style={styles.splitLoadingHint}>{t('common.loading')}</Text>
+              ) : null}
               <View style={{ marginTop: space[4] }}>
                 <Button title={t('listings.viewFullDetails')} onPress={() => openListing(selectedItem)} fullWidth={false} />
               </View>
@@ -230,6 +288,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, flexDirection: 'row' },
   flex1: { flex: 1 },
   splitDetail: { flex: 1, borderLeftWidth: 1, borderLeftColor: color.earth200, padding: space[5] },
+  splitLoadingHint: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink400, marginTop: space[2] },
   list: { paddingHorizontal: space[5], paddingBottom: 96 },
 
   stats: { flexDirection: 'row', gap: space[2], marginBottom: space[3] },
