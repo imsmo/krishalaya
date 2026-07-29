@@ -53,7 +53,13 @@ export class MilkCollectionRepository {
   /** Stamp the bill id onto the collections it settled (partition-pruned by collected_on). */
   async attachToBill(tx: TxContext, tenantId: string, refs: Array<{ id: string; collectedOn: string }>, billId: string): Promise<void> {
     for (const ref of refs) {
-      await tx.query(`UPDATE milk_collections SET milk_bill_id=$4, updated_at=now() WHERE id=$1 AND collected_on=$2::date AND tenant_id=$3`, [ref.id, ref.collectedOn, tenantId, billId]);
+      // DEV-49 (2026-07-29): milk_collections deliberately carries NO updated_at
+      // column (partitioned daily-scale table, excluded from add_std_columns() by
+      // design — see 0009_livestock_dairy.sql). The previous `updated_at=now()`
+      // made every bill-attach UPDATE throw 42703 at runtime: a live P0 on the
+      // dairy money path (DEV-47 QA escalation). Regression guard:
+      // dairy/__tests__/updated-at-schema-truth.spec.ts sweeps the whole class.
+      await tx.query(`UPDATE milk_collections SET milk_bill_id=$4 WHERE id=$1 AND collected_on=$2::date AND tenant_id=$3`, [ref.id, ref.collectedOn, tenantId, billId]);
     }
   }
   /** Worker job (cross-tenant; kv_relay): distinct memberships with UNBILLED collections in [from,to].
