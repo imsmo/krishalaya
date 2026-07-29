@@ -2,7 +2,7 @@
   "name": "@krishi-verse/mobile",
   "version": "0.1.0",
   "private": true,
-  "description": "Farmer/Buyer/Worker/Ambassador role-switching app — offline-first, vernacular, low-end devices.",
+  "description": "Farmer/Buyer/Worker/Ambassador role-switching app \u2014 offline-first, vernacular, low-end devices.",
   "main": "expo-router/entry",
   "scripts": {
     "build:deps": "pnpm --filter @krishi-verse/ui-native build",
@@ -66,6 +66,7 @@
     "jest": "^29.7.0",
     "jest-expo": "~51.0.0",
     "react-test-renderer": "18.2.0",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.5.4"
   }
 }
