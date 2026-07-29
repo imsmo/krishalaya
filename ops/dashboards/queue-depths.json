@@ -71,8 +71,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "increase(kv_stream_dlq_total[15m])",
-          "legendFormat": "{{consumer}}"
+          "expr": "increase(sp_dead_lettered_total[15m])",
+          "legendFormat": "{{concern}}"
         }
       ],
       "datasource": {

@@ -48,7 +48,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum(rate(listings_search_count[5m]))",
+          "expr": "sum(rate(listing_search_count[5m]))",
           "legendFormat": "listings"
         },
         {
