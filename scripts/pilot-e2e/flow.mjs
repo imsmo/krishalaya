@@ -140,7 +140,26 @@ async function main() {
     await step(
       'Onboard farmer + buyer (tenant + users + tenant-roles + a farmer bank account + feature flags — direct SQL; see header comment)',
       async () => {
-        await admin.query(`INSERT INTO tenants (id, name) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING`, [tenantId, 'Pilot E2E Tenant']);
+        // [DEV-32 2026-07-29 FIX] `tenants` has no `name` column (confirmed against the applied
+        // migrations by direct SQL error: "column \"name\" of relation \"tenants\" does not exist")
+        // — this INSERT would have failed the moment it actually ran against a real, fully-migrated
+        // DB. Corrected to the real columns (slug/legal_name/display_name/tenant_type_id/
+        // country_code/status), matching the SAME pattern scripts/staging-smoke/provision.md already
+        // documents and DEV-30 proved live. Pure fix-forward on an unapplied/non-migration script —
+        // no migration touched, Law 5 n/a.
+        await admin.query(`INSERT INTO lookup_types (code, default_name, is_tenant_extendable) VALUES ('tenant_type','Tenant Type', false) ON CONFLICT (code) DO NOTHING`);
+        await admin.query(
+          `INSERT INTO lookup_values (type_code, tenant_id, code, default_name) VALUES ('tenant_type', NULL, 'fpo', 'FPO')
+           ON CONFLICT (type_code, tenant_id, code) DO UPDATE SET default_name = EXCLUDED.default_name`,
+        );
+        await admin.query(`INSERT INTO countries (code, default_name) VALUES ('IN','India') ON CONFLICT (code) DO NOTHING`);
+        await admin.query(
+          `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status)
+           SELECT $1, $2, 'Pilot E2E Tenant', 'Pilot E2E Tenant', lv.id, 'IN', 'active'
+           FROM lookup_values lv WHERE lv.type_code='tenant_type' AND lv.code='fpo'
+           ON CONFLICT (id) DO NOTHING`,
+          [tenantId, `pilot-e2e-${tenantId.slice(0, 8)}`],
+        );
         await admin.query(
           `INSERT INTO users (id, phone, full_name, language_code, country_code, status, is_test)
            VALUES ($1,$2,'Pilot Farmer','en','IN','active',true) ON CONFLICT (id) DO NOTHING`,
@@ -205,12 +224,15 @@ async function main() {
     });
 
     await step('OTP login — farmer (POST /v1/auth/otp -> POST /v1/auth/verify, dev-mode devCode)', async () => {
-      const otp = await api('POST', '/v1/auth/otp', { body: { phone: farmerPhone, channel: 'sms' }, expect: 200 });
+      // [DEV-32 2026-07-29 FIX] `AuthController.requestOtp`/`.verify` have no `@HttpCode` override, so
+      // NestJS's default POST status (201 Created) applies — confirmed against a live boot, not just
+      // the source. A hardcoded `expect: 200` here would fail every real execution; dropped to the
+      // api() helper's own default ([200, 201]).
+      const otp = await api('POST', '/v1/auth/otp', { body: { phone: farmerPhone, channel: 'sms' } });
       const devCode = otp.body?.data?.devCode;
       assert(devCode, 'devCode present in the /v1/auth/otp response (requires AUTH_EXPOSE_OTP=true)');
       const verify = await api('POST', '/v1/auth/verify', {
         body: { phone: farmerPhone, code: devCode, tenantId, fullName: 'Pilot Farmer' },
-        expect: 200,
       });
       farmerToken = verify.body?.data?.accessToken;
       assert(farmerToken, 'farmer accessToken returned');
@@ -218,12 +240,11 @@ async function main() {
     });
 
     await step('OTP login — buyer', async () => {
-      const otp = await api('POST', '/v1/auth/otp', { body: { phone: buyerPhone, channel: 'sms' }, expect: 200 });
+      const otp = await api('POST', '/v1/auth/otp', { body: { phone: buyerPhone, channel: 'sms' } });
       const devCode = otp.body?.data?.devCode;
       assert(devCode, 'devCode present');
       const verify = await api('POST', '/v1/auth/verify', {
         body: { phone: buyerPhone, code: devCode, tenantId, fullName: 'Pilot Buyer' },
-        expect: 200,
       });
       buyerToken = verify.body?.data?.accessToken;
       assert(buyerToken, 'buyer accessToken returned');
@@ -256,7 +277,7 @@ async function main() {
     });
 
     await step('Farmer publishes the listing — POST /v1/listings/:id/publish', async () => {
-      await api('POST', `/v1/listings/${listingId}/publish`, { token: farmerToken, tenantId, expect: 200 });
+      await api('POST', `/v1/listings/${listingId}/publish`, { token: farmerToken, tenantId });
     });
 
     await step('Verify the listing is published + public — GET /v1/listings/:id', async () => {
@@ -328,13 +349,13 @@ async function main() {
     });
 
     await step('Farmer (seller) walks the order: packed -> ready -> delivered', async () => {
-      await api('POST', `/v1/orders/${orderId}/packed`, { token: farmerToken, tenantId, expect: 200 });
-      await api('POST', `/v1/orders/${orderId}/ready`, { token: farmerToken, tenantId, expect: 200 });
-      await api('POST', `/v1/orders/${orderId}/delivered`, { token: farmerToken, tenantId, expect: 200 });
+      await api('POST', `/v1/orders/${orderId}/packed`, { token: farmerToken, tenantId });
+      await api('POST', `/v1/orders/${orderId}/ready`, { token: farmerToken, tenantId });
+      await api('POST', `/v1/orders/${orderId}/delivered`, { token: farmerToken, tenantId });
     });
 
     await step('Buyer confirms receipt — POST /v1/orders/:id/complete (emits orders.order_completed)', async () => {
-      await api('POST', `/v1/orders/${orderId}/complete`, { token: buyerToken, tenantId, expect: 200 });
+      await api('POST', `/v1/orders/${orderId}/complete`, { token: buyerToken, tenantId });
     });
 
     await step(

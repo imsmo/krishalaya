@@ -192,7 +192,12 @@ async function check1() {
 // ===================================================================================================
 async function check2() {
   return step('Real OTP round-trip (founder\'s phone) — POST /v1/auth/otp -> human types the code -> POST /v1/auth/verify', async () => {
-    const otp = await api('POST', '/v1/auth/otp', { body: { phone: FOUNDER_PHONE, channel: 'sms' }, expect: 200 });
+    // [DEV-32 2026-07-29 FIX] `AuthController.requestOtp`/`.verify` carry no `@HttpCode` override, so
+    // NestJS's default POST status (201 Created) applies — confirmed live against a real boot during
+    // DEV-32's local-full-stack execution (this file itself was never previously run against a real
+    // process to catch it). Dropped the hardcoded `expect: 200` in favor of the api() helper's own
+    // default ([200, 201]) on both calls below.
+    const otp = await api('POST', '/v1/auth/otp', { body: { phone: FOUNDER_PHONE, channel: 'sms' } });
     assert(otp.body?.data?.sent === true, 'otp request accepted (sent:true)');
     if (otp.body?.data?.devCode) {
       console.log('     WARNING: the /v1/auth/otp response included devCode — AUTH_EXPOSE_OTP appears to be on for ' +
@@ -202,7 +207,7 @@ async function check2() {
     console.log(`     An SMS should now be on its way to ${FOUNDER_PHONE}. This can take up to ~60s.`);
     const code = await ask('     Enter the OTP code you received: ');
     const verify = await api('POST', '/v1/auth/verify', {
-      body: { phone: FOUNDER_PHONE, code, tenantId: TENANT_ID, fullName: 'Founder Smoke Test' }, expect: 200,
+      body: { phone: FOUNDER_PHONE, code, tenantId: TENANT_ID, fullName: 'Founder Smoke Test' },
     });
     founderToken = verify.body?.data?.accessToken;
     founderUserId = verify.body?.data?.user?.id;
