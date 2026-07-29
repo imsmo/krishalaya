@@ -12,7 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "next": "^14.2.13", "react": "^18.3.1", "react-dom": "^18.3.1",
+    "next": "^16.2.12", "react": "^18.3.1", "react-dom": "^18.3.1",
     "@krishi-verse/ui": "workspace:*", "@krishi-verse/sdk-js": "workspace:*",
     "@krishi-verse/i18n": "workspace:*", "@krishi-verse/tokens": "workspace:*"
   },
