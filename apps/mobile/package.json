@@ -27,7 +27,7 @@
     "@krishi-verse/sdk-js": "workspace:*",
     "@krishi-verse/tokens": "workspace:*",
     "@krishi-verse/ui-native": "workspace:*",
-    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-async-storage/async-storage": "3.1.1",
     "@react-native-community/netinfo": "11.3.1",
     "@react-native-voice/voice": "^3.2.4",
     "expo": "~51.0.0",
