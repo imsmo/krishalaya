@@ -2,3 +2,10 @@
 # Start permissive; tighten as the team triages. Example accepted-by-design entries:
 10015	WARN	(Incomplete cache-control on public marketing pages — acceptable)
 10096	IGNORE	(Timestamp disclosure — not sensitive here)
+# --- DEV-34 additions (2026-07-29) — verified against the LIVE api.staging behaviour via
+# ops/security/dast-probes/probe-suite.mjs against a real local-full-stack boot, not guessed. WARN, never
+# IGNORE/blanket-suppress, per Law 12 ("never a blanket ignore to force green") — a human still sees these
+# in the triage report every run.
+10038	WARN	(CSP Header Not Set — api.staging ONLY: pure JSON API, no HTML rendered, no CSP attack surface. If this alert fires against a WEB APP target (web-storefront/web-tenant/web-partner), it is a REAL gap, not covered by this accept — re-open per S5_ZAP_BASELINE_RUNBOOK.md §4 item 1)
+10035	WARN	(Strict-Transport-Security Header Not Set — verified LIVE in security-headers.middleware.ts: HSTS is emitted only when config.isProd is true, by design, since TLS terminates at the ALB and a non-TLS origin must never claim HSTS. This alert is EXPECTED to disappear entirely once scanned against the real staging host over HTTPS; if it still fires there, that IS a real finding — re-open, do not re-accept blindly)
+10105	WARN	(Weak Authentication Method / JWT alg check — probed live: token.service.ts pins `algorithms: ['HS256']` on verify, confirmed alg:none/signature-strip/payload-tamper/expired tokens all rejected 401 by ops/security/dast-probes/probe-suite.mjs JWT-1..4, 2026-07-29 run. Kept as WARN, not IGNORE, so a future regression still surfaces.)
