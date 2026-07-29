@@ -128,7 +128,7 @@ accepted, and no sandbox gateway is registered for real money.
 
 **Verify the gate locally** (no real secrets needed):
 ```bash
-cd apps/api && pnpm test:unit --testPathPattern app-config.security   # 22 green
+cd apps/api && pnpm test:unit --testPathPattern app-config.security   # 42 green [DEV-29 2026-07-28: recounted fresh — was stale at "22", the suite has grown]
 ```
 
 ---
