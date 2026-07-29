@@ -5,7 +5,6 @@ import { AppConfig } from '../../core/config/app-config';
 // RAZORPAY_* env is configured); the default provider is config-driven so swapping PSP is config.
 // Money movement itself lives in core/wallet (Law 2); this module never INSERTs ledger rows.
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
-import { ResilienceService } from '../../core/resilience/resilience.service';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
@@ -45,12 +44,7 @@ import { SettlementStatementsController } from './controllers/v1/settlement-stat
 import { InvoicesController } from './controllers/v1/invoices.controller';
 import { CommissionRulesController } from './controllers/v1/commission-rules.controller';
 import { CommissionRuleService } from './services/commission-rule.service';
-import { GatewayRegistry } from './gateway/gateway.registry';
-import { SandboxGateway } from './gateway/sandbox.gateway';
-import { RazorpayGateway } from './gateway/razorpay.gateway';
-import { PAYOUT_GATEWAY } from './gateway/payout-gateway.port';
-import { RazorpayXGateway } from './gateway/razorpayx.gateway';
-import { SandboxPayoutGateway } from './gateway/sandbox-payout.gateway';
+import { gatewayRegistryProvider, payoutGatewayProvider, mandateGatewayProvider } from './gateway/payment-gateways.provider';
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
@@ -67,8 +61,6 @@ import { MandateService } from './services/mandate.service';
 import { MandateExecutionService } from './services/mandate-execution.service';
 import { MandateRepository } from './repositories/mandate.repository';
 import { MandateExecutionRepository } from './repositories/mandate-execution.repository';
-import { MANDATE_GATEWAY } from './gateway/mandate-gateway.port';
-import { SandboxMandateGateway } from './gateway/sandbox-mandate.gateway';
 import { AutopayController } from './controllers/v1/autopay.controller';
 
 @Module({
@@ -108,56 +100,12 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     MandateExecutionService,
     MandateRepository,
     MandateExecutionRepository,
-    {
-      // UPI-AutoPay mandate gateway: a real PSP when configured, else the deterministic sandbox (NON-prod only,
-      // mirroring the money-IN gateway rule). In prod a live PSP is mandatory before the autopay_execution flag
-      // is ever turned on — the flag stays OFF by default (fail-closed) regardless.
-      provide: MANDATE_GATEWAY,
-      useFactory: (config: AppConfig) => {
-        if (config.payments.isProd && !config.payments.allowSandbox) {
-          // No live UPI-AutoPay PSP adapter is wired yet; keeping the sandbox out of prod is the safe default.
-          // Execution remains gated by autopay_execution (default OFF), so this provider is never exercised in prod.
-        }
-        return new SandboxMandateGateway();
-      },
-      inject: [AppConfig],
-    },
-    {
-      provide: GatewayRegistry,
-      useFactory: (resilience: ResilienceService, config: AppConfig) => {
-        const reg = new GatewayRegistry();
-        const pay = config.payments;
-        // The deterministic sandbox gateway is ONLY registered outside production (Law: no fake money rails live).
-        // In prod, assertProductionSecurity has already guaranteed a real Razorpay gateway is configured.
-        if (pay.allowSandbox) {
-          reg.register(new SandboxGateway(pay.payoutWebhookSecret), !pay.razorpay.configured);
-        }
-        if (pay.razorpay.configured) {
-          reg.register(new RazorpayGateway({
-            keyId: pay.razorpay.keyId, keySecret: pay.razorpay.keySecret,
-            webhookSecret: pay.razorpay.webhookSecret, baseUrl: pay.razorpay.baseUrl,
-          }, resilience), pay.defaultProvider === 'razorpay');
-        }
-        // tune the razorpay dependency policy (money calls: no auto-retry without idempotency)
-        resilience.configure('razorpay', { timeoutMs: 8000, retries: 1, circuit: { failureThreshold: 5, resetMs: 15_000, halfOpenMax: 2 }, bulkhead: { maxConcurrent: 16, maxQueue: 64 } });
-        return reg;
-      },
-      inject: [ResilienceService, AppConfig],
-    },
-    {
-      // money-OUT gateway: RazorpayX when configured, else the deterministic sandbox (NON-prod only).
-      provide: PAYOUT_GATEWAY,
-      useFactory: (resilience: ResilienceService, config: AppConfig) => {
-        const x = config.payments.razorpayx;
-        if (x.configured) {
-          resilience.configure('razorpayx', { timeoutMs: 8000, retries: 0, circuit: { failureThreshold: 5, resetMs: 15_000, halfOpenMax: 2 }, bulkhead: { maxConcurrent: 16, maxQueue: 64 } });
-          return new RazorpayXGateway({ keyId: x.keyId, keySecret: x.keySecret, accountNumber: x.accountNumber, baseUrl: x.baseUrl }, resilience);
-        }
-        if (config.payments.isProd) throw new Error('FATAL: RAZORPAYX_KEY_ID must be configured in production (no sandbox payout gateway for real money)');
-        return new SandboxPayoutGateway('success');
-      },
-      inject: [ResilienceService, AppConfig],
-    },
+    // [DEV-31] the three PSP-selection factories (mandate/gateway-registry/payout) were extracted verbatim into
+    // gateway/payment-gateways.provider.ts so config-driven driver selection is independently unit-testable
+    // (see __tests__/payment-gateways.provider.spec.ts) — no behavior change from the prior inline objects.
+    mandateGatewayProvider,
+    gatewayRegistryProvider,
+    payoutGatewayProvider,
     {
       // KV-BL-P0-9-follow-on: the nightly settlement-statements cadence job (core/jobs/jobs.runner.ts
       // hosts it; this factory just supplies the configured interval — see AppConfig.jobs.settlementStatements).
