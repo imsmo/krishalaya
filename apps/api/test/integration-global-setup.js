@@ -38,6 +38,21 @@ module.exports = async function integrationGlobalSetup() {
     for (const f of migrations) {
       try { await admin.query(fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8')); }
       catch (e) { throw new Error(`migration ${f} failed: ${e.message}`); }
+      // [DEV-30 2026-07-28 FIX] migration 0057_upi_mandate_executions.sql inserts a lookup_values row keyed by
+      // lookup_type 'ledger_txn_type', which only exists once seed core/0005_lookup_vocabularies.sql has run
+      // (lookup_values.type_code REFERENCES lookup_types(code); 'ledger_txn_type' is a lookup_types row seed
+      // 0005 creates, not any migration) — this loop was applying ALL migrations before ANY seed (step 4 runs
+      // after this whole loop), so it hit the identical FK-order failure db/scripts/migrate.js hits against a
+      // truly fresh DB (first documented at DEV-04/05, re-confirmed live this batch — see dev30_report.md Part 6:
+      // this exact loop, unpatched, fails with "insert or update on table lookup_values violates foreign key
+      // constraint lookup_values_type_code_fkey" at 0057). This is the first time any sandbox has had a real
+      // Postgres to actually execute this globalSetup, so the defect was never observable before now. Fix: seed
+      // core/0005 only touches lookup_types/lookup_values, both created by migration 0001 — run it right after
+      // 0001, well before 0057. Seed 0005 is idempotent (ON CONFLICT DO NOTHING throughout) so step 4 below
+      // re-applying it later in the normal seed order is harmless, not a double-seed bug.
+      if (f.startsWith('0001_')) {
+        await admin.query(fs.readFileSync(path.join(SEEDS_DIR, 'core', '0005_lookup_vocabularies.sql'), 'utf8'));
+      }
     }
 
     // 3) Give kv_app LOGIN (its table privileges come from the migrations themselves, so the
