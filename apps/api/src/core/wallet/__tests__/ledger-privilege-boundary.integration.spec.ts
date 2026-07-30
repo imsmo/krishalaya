@@ -279,23 +279,40 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
         expect(relnamesWithTrigger.has('billing_adjustments')).toBe(true);
       });
 
-      it('ambassador_earnings/milk_collections: kv_relay holds table-wide SELECT + its one narrow column UPDATE, nothing more (the second-order column-privilege propagation fix)', async () => {
+      // [DEV-54 2026-07-30] as shipped (DEV-47/0078) this asserted kv_relay holds
+      // UPDATE(payout_id)/UPDATE(milk_bill_id) on these 2 tables — TRUE on disk at 0078/0079,
+      // but DEV-QA-R1 (2026-07-30) proved by direct code read that grant was always DEAD: the
+      // real writers (MilkBillService.generate()→attachToBill(), AmbassadorEarningService.
+      // payoutAmbassador()→markPaid()) both run via the injected UnitOfWork, which always
+      // connects as kv_app (PgUnitOfWork.run()→pools.writer()), never kv_relay — meanwhile
+      // kv_app held ZERO write privilege on either table, a live 42501 P0 on both the dairy
+      // and ambassador-commission money-out paths. Migration 0080 (DEV-54) restores kv_app's
+      // exact narrow column UPDATE and removes kv_relay's now-proven-unused one (its only
+      // genuine need, the cross-tenant SELECT each job's own raw relay connection issues, is
+      // untouched). Updated to assert the CORRECTED, code-verified shape: kv_relay keeps
+      // table-wide SELECT only; kv_app holds the narrow column UPDATE.
+      it('ambassador_earnings/milk_collections: kv_relay holds table-wide SELECT ONLY (its narrow column UPDATE was proven dead and removed at DEV-54/0080); kv_app holds the narrow column UPDATE instead (the actual writer)', async () => {
         for (const [table, col] of [['ambassador_earnings', 'payout_id'], ['milk_collections', 'milk_bill_id']] as const) {
           const selectGrant = await admin47.query(
             `SELECT 1 FROM information_schema.role_table_grants WHERE table_schema='public' AND table_name=$1 AND grantee='kv_relay' AND privilege_type='SELECT'`,
             [table],
           );
           expect(selectGrant.rows.length).toBeGreaterThan(0);
-          const colGrant = await admin47.query(
+          const relayColGrant = await admin47.query(
             `SELECT column_name FROM information_schema.column_privileges WHERE table_schema='public' AND table_name=$1 AND grantee='kv_relay' AND privilege_type='UPDATE'`,
             [table],
           );
-          expect(colGrant.rows.map((r: any) => r.column_name)).toEqual([col]);
+          expect(relayColGrant.rows).toEqual([]); // DEV-54: proven dead, removed
           const insertOrDelete = await admin47.query(
             `SELECT privilege_type FROM information_schema.role_table_grants WHERE table_schema='public' AND table_name=$1 AND grantee='kv_relay' AND privilege_type IN ('INSERT','DELETE')`,
             [table],
           );
           expect(insertOrDelete.rows).toEqual([]);
+          const appColGrant = await admin47.query(
+            `SELECT column_name FROM information_schema.column_privileges WHERE table_schema='public' AND table_name=$1 AND grantee='kv_app' AND privilege_type='UPDATE'`,
+            [table],
+          );
+          expect(appColGrant.rows.map((r: any) => r.column_name)).toEqual([col]); // DEV-54: the real writer
         }
       });
     });
@@ -355,7 +372,12 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
         ).rejects.toThrow(/permission denied/i);
       });
 
-      it('kv_relay UPDATE(amount_minor) on ambassador_earnings is DENIED even though it holds table-wide SELECT + UPDATE(payout_id) (column-restriction still enforced)', async () => {
+      // [DEV-54 2026-07-30] kv_relay no longer holds ANY column UPDATE on ambassador_earnings
+      // (its UPDATE(payout_id) grant was proven dead and removed by migration 0080 — see the
+      // static-assertion test above) — this probe is now an even simpler regression guard
+      // (kv_relay holds table-wide SELECT only) but is kept to prove the column-restriction
+      // mechanism itself still denies an out-of-scope column, not just an absent one.
+      it('kv_relay UPDATE(amount_minor) on ambassador_earnings is DENIED (kv_relay holds no UPDATE privilege on this table at all, post-DEV-54)', async () => {
         await expect(
           withRole47('kv_relay', (c) => c.query(`UPDATE ambassador_earnings SET amount_minor = 999 WHERE true`)),
         ).rejects.toThrow(/permission denied/i);
@@ -529,8 +551,13 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
     it('NO relation matching the money-signal column regex holds kv_relay INSERT/UPDATE/DELETE unless explicitly allow-listed with a proven reason', async () => {
       const ALLOW_LIST_RELAY_WRITE = [
         'reconciliation_runs',      // 0077: INSERT only, recon-zero-sum.job.ts + daily-gateway-recon.job.ts
-        'ambassador_earnings',      // 0078: UPDATE(payout_id) + SELECT only, weekly-payout-batch.job.ts
-        'milk_collections',         // 0078: UPDATE(milk_bill_id) + SELECT only, milk-bill-cycle-close.job.ts
+        // 'ambassador_earnings' and 'milk_collections' REMOVED from this allow-list at
+        // DEV-54/0080: their 0078-era kv_relay UPDATE(payout_id)/UPDATE(milk_bill_id) grants
+        // were PROVEN DEAD (the real writers run via the injected UnitOfWork, always kv_app,
+        // never kv_relay — see the static-assertion test above and migration 0080's header)
+        // and revoked; kv_relay now holds SELECT-only on both, so neither appears in this
+        // query's `relay_write` CTE anymore. Kept here as a comment, not a list entry, for
+        // audit-trail continuity.
         'payouts',                  // 0078: UPDATE only, payout-execution/wage-priority jobs
         'settlement_statements',    // 0079: SELECT+INSERT+UPDATE, settlement-statements.cadence-job.ts
         'settlement_lines',         // 0079: SELECT+INSERT+UPDATE+DELETE, dispute-resolved/order-completed handlers
@@ -594,5 +621,285 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
       );
       expect(res.rows).toEqual([]);
     }, 20000);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════════════════════
+// FOURTH BLOCK — DEV-54 fix-forward 0080: restore kv_app's write access on milk_collections
+// (the headline finding) AND ambassador_earnings (the sibling this batch found by re-tracing
+// every writer of every table 0078 fully cut kv_app off on — see migration 0080's own header
+// for the full writer→role→column matrix and sibling audit). Appended as a NEW describe block;
+// every block above is untouched except the two narrow, disclosed edits (the 0078 static
+// assertion + its neighboring comment) that were PROVEN STALE by this batch's own code trace —
+// see the `[DEV-54 2026-07-30]` annotations there.
+//
+// THE GAP THIS BLOCK CLOSES: every prior describe block in this file only asserts things are
+// DENIED. That is exactly why a revoke-too-far (0078 cutting kv_app off entirely) shipped
+// undetected for 2 batches (0078, 0079) and 2 QA passes — nothing ever asserted the legitimate
+// write PATH actually WORKS. This block adds that positive-path control, generalized to both
+// known legitimate writers this discovery chain has found so far.
+// ════════════════════════════════════════════════════════════════════════════════════════════
+{
+  const ADMIN_URL_54 = process.env.DATABASE_ADMIN_URL;
+  const run54 = ADMIN_URL_54 ? describe : describe.skip;
+
+  run54('kv_app dairy/ambassador write restoration — permanent P0 regression + positive-path guard (migration 0080, DEV-54)', () => {
+    let admin54: Pool;
+
+    beforeAll(async () => {
+      admin54 = new Pool({ connectionString: ADMIN_URL_54 });
+    }, 30000);
+
+    afterAll(async () => {
+      await admin54?.end();
+    });
+
+    async function withRole54<T>(role: string, fn: (c: Pool) => Promise<T>): Promise<T> {
+      const client = await admin54.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`SET LOCAL ROLE ${role}`);
+        // @ts-expect-error — reuse the Pool-shaped .query signature on a single client for this probe
+        const result = await fn({ query: (...args: any[]) => client.query(...args) });
+        await client.query('ROLLBACK'); // never actually persist the probe row/mutation
+        return result;
+      } catch (e) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw e;
+      } finally {
+        client.release();
+      }
+    }
+
+    describe('static grant enumeration — the corrected shape on both tables', () => {
+      it.each([
+        ['milk_collections', 'milk_bill_id'],
+        ['ambassador_earnings', 'payout_id'],
+      ])('%s: kv_app holds SELECT + the narrow column UPDATE(%s), no DELETE; kv_relay holds SELECT only, no UPDATE at all', async (table, col) => {
+        const appCol = await admin54.query(
+          `SELECT column_name FROM information_schema.column_privileges
+           WHERE table_schema='public' AND table_name=$1 AND grantee='kv_app' AND privilege_type='UPDATE'`,
+          [table],
+        );
+        expect(appCol.rows.map((r: any) => r.column_name)).toEqual([col]);
+        const appSelect = await admin54.query(
+          `SELECT 1 FROM information_schema.role_table_grants
+           WHERE table_schema='public' AND table_name=$1 AND grantee='kv_app' AND privilege_type='SELECT'`,
+          [table],
+        );
+        expect(appSelect.rows.length).toBeGreaterThan(0);
+        const appDelete = await admin54.query(
+          `SELECT 1 FROM information_schema.role_table_grants
+           WHERE table_schema='public' AND table_name=$1 AND grantee='kv_app' AND privilege_type='DELETE'`,
+          [table],
+        );
+        expect(appDelete.rows).toEqual([]);
+        const relayCol = await admin54.query(
+          `SELECT column_name FROM information_schema.column_privileges
+           WHERE table_schema='public' AND table_name=$1 AND grantee='kv_relay' AND privilege_type='UPDATE'`,
+          [table],
+        );
+        expect(relayCol.rows).toEqual([]); // the dead grant this batch removed
+        const relaySelect = await admin54.query(
+          `SELECT 1 FROM information_schema.role_table_grants
+           WHERE table_schema='public' AND table_name=$1 AND grantee='kv_relay' AND privilege_type='SELECT'`,
+          [table],
+        );
+        expect(relaySelect.rows.length).toBeGreaterThan(0); // its one genuine, unchanged need
+      });
+
+      it('the corrected column grants propagate onto a partition created fresh via ensure_partitions (both tables)', async () => {
+        await admin54.query(`CALL ensure_partitions(1)`);
+        for (const [table, col] of [['milk_collections', 'milk_bill_id'], ['ambassador_earnings', 'payout_id']] as const) {
+          const fresh = await admin54.query(
+            `SELECT c.relname FROM pg_inherits i JOIN pg_class p ON p.oid=i.inhparent AND p.relname=$1
+             JOIN pg_class c ON c.oid=i.inhrelid ORDER BY c.relname DESC LIMIT 1`,
+            [table],
+          );
+          expect(fresh.rows.length).toBe(1);
+          const partName = fresh.rows[0].relname;
+          const appUpd = await admin54.query(`SELECT has_column_privilege('kv_app', $1, $2, 'UPDATE') AS ok`, [partName, col]);
+          expect(appUpd.rows[0].ok).toBe(true);
+          const relayUpd = await admin54.query(`SELECT has_column_privilege('kv_relay', $1, $2, 'UPDATE') AS ok`, [partName, col]);
+          expect(relayUpd.rows[0].ok).toBe(false);
+        }
+      }, 20000);
+    });
+
+    // ── POSITIVE-PATH GUARD — the control this whole batch exists to add: prove the
+    // LEGITIMATE write actually SUCCEEDS, not just that illegitimate ones fail. Every describe
+    // block above this one (DEV-35/47/48's own suites) only asserts DENIALS — that is exactly
+    // why 0078's revoke-too-far on milk_collections/ambassador_earnings shipped undetected for
+    // 2 migrations and 2 QA passes. Both probes below use the REAL SQL byte-for-byte from the
+    // repositories (milk-collection.repository.ts's attachToBill(), ambassador-earning.
+    // repository.ts's markPaid()), run as kv_app via SET LOCAL ROLE with the SAME
+    // `app.tenant_id` GUC PgUnitOfWork.run() sets for every real transaction, so this exercises
+    // the actual privilege boundary the production code depends on, not a simulation of it.
+    describe('live probes — the real writer SQL, as kv_app, SUCCEEDS (the control missing until this batch)', () => {
+      it("MilkCollectionRepository.attachToBill()'s real SQL succeeds as kv_app and stamps the correct row (the exact statement that threw 42501 before migration 0080)", async () => {
+        const tenantId = '11111111-1111-1111-1111-111111111111';
+        const membershipId = '22222222-2222-2222-2222-222222222222';
+        const mccId = '33333333-3333-3333-3333-333333333333';
+        const billId = '44444444-4444-4444-4444-444444444444';
+        const collectionId = '55555555-5555-5555-5555-555555555555';
+        try {
+          await admin54.query(
+            `INSERT INTO milk_collections (id, tenant_id, mcc_id, membership_id, shift, collected_on, weight_kg,
+               fat_pct, snf_pct, water_flag, adulteration_flags, rate_card_id, amount_minor, entered_by)
+             VALUES ($1,$2,$3,$4,'morning',CURRENT_DATE,'10.000','4.00','8.50',false,'[]'::jsonb,gen_random_uuid(),5000,gen_random_uuid())`,
+            [collectionId, tenantId, mccId, membershipId],
+          );
+          const client = await admin54.connect();
+          let updateResult: { rowCount: number | null };
+          try {
+            await client.query('BEGIN');
+            await client.query(`SET LOCAL ROLE kv_app`);
+            await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]); // PgUnitOfWork.run()'s own GUC
+            // byte-for-byte the real attachToBill() statement (milk-collection.repository.ts:62)
+            updateResult = await client.query(
+              `UPDATE milk_collections SET milk_bill_id=$4 WHERE id=$1 AND collected_on=$2::date AND tenant_id=$3`,
+              [collectionId, new Date().toISOString().slice(0, 10), tenantId, billId],
+            );
+            await client.query('COMMIT');
+          } catch (e) {
+            await client.query('ROLLBACK').catch(() => undefined);
+            throw e;
+          } finally {
+            client.release();
+          }
+          expect(updateResult.rowCount).toBe(1);
+          const check = await admin54.query(`SELECT milk_bill_id FROM milk_collections WHERE id=$1`, [collectionId]);
+          expect(check.rows[0].milk_bill_id).toBe(billId);
+        } finally {
+          await admin54.query(`DELETE FROM milk_collections WHERE id=$1`, [collectionId]);
+        }
+      });
+
+      // [DEV-54 2026-07-30 — NEW FINDING, separate from the privilege fix] Live-probing this
+      // exact statement (byte-for-byte from ambassador-earning.repository.ts:37) with the
+      // `created_at` value exactly as `markPaid()`'s own real caller obtains it —
+      // `AmbassadorEarningService.payoutAmbassador()` line 63: `e.toProps().createdAt as Date`,
+      // i.e. a JS `Date` object round-tripped through node-pg's default `timestamptz` parser —
+      // reproducibly returns `rowCount: 0`, NOT 1: Postgres's `created_at` column (DEFAULT
+      // `now()`) stores MICROSECOND precision (verified live: `to_char(created_at,
+      // 'YYYY-MM-DD HH24:MI:SS.US')` → `...540668`), but a JS `Date` only holds MILLISECOND
+      // precision (`...540`, the `668` silently dropped) — no custom type parser exists
+      // anywhere in this repo (grep-confirmed: zero `setTypeParser` calls), so this loss is
+      // real and unconditional. `WHERE created_at=$2` therefore almost never matches in
+      // production (~1-in-a-million chance the microseconds happen to be `000`) — the weekly
+      // ambassador-commission payout job would SILENTLY mark zero rows paid, every real run,
+      // with `markPaid()` never checking `rowCount` — a SEVERE, previously-undiscovered,
+      // silent-failure P0 on this money-out path, independent of and NOT fixed by migration
+      // 0080's privilege restoration. Confirmed NOT a privilege issue: the identical statement
+      // against the identical row, using the FULL-PRECISION text form of the same timestamp
+      // (`created_at::text`, no JS Date round-trip), returns `rowCount: 1` — proving migration
+      // 0080's GRANT is correct and sufits and isolating the defect to the JS-Date-precision
+      // mismatch alone. NOT fixed here (an application-repository correctness bug, out of this
+      // migration-only batch's scope) — escalated in dev54_report.md/spec_dev54.md as a new P0
+      // candidate follow-up batch. This test proves BOTH facts explicitly: the privilege layer
+      // works (this test), and the real call shape as production code would issue it currently
+      // returns 0 rows, not 1 (the sibling test immediately below, the documented live defect).
+      it("AmbassadorEarningRepository.markPaid()'s real SQL, given the CORRECT (full-precision) created_at, succeeds as kv_app and stamps the row — proving migration 0080's grant is sufficient", async () => {
+        const tenantId = '66666666-6666-6666-6666-666666666666';
+        const ambassadorId = '77777777-7777-7777-7777-777777777777';
+        const payoutId = '88888888-8888-8888-8888-888888888888';
+        const earningId = '99999999-9999-9999-9999-999999999999';
+        try {
+          await admin54.query(
+            `INSERT INTO ambassador_earnings (id, tenant_id, ambassador_id, plan_id, event_code, reference_type, reference_id, amount_minor)
+             VALUES ($1,$2,$3,gen_random_uuid(),'signup','order',gen_random_uuid(),1000)`,
+            [earningId, tenantId, ambassadorId],
+          );
+          // full-precision text form (NOT the JS Date the real repository currently uses —
+          // see the sibling test below, which proves that shape returns 0 rows) — this
+          // isolates the PRIVILEGE proof from the separate precision defect.
+          const fullPrecision = await admin54.query(`SELECT created_at::text AS t FROM ambassador_earnings WHERE id=$1`, [earningId]);
+          const createdAtText = fullPrecision.rows[0].t;
+          const client = await admin54.connect();
+          let updateResult: { rowCount: number | null };
+          try {
+            await client.query('BEGIN');
+            await client.query(`SET LOCAL ROLE kv_app`);
+            await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
+            updateResult = await client.query(
+              `UPDATE ambassador_earnings SET payout_id=$3 WHERE id=$1 AND created_at=$2::timestamptz AND payout_id IS NULL`,
+              [earningId, createdAtText, payoutId],
+            );
+            await client.query('COMMIT');
+          } catch (e) {
+            await client.query('ROLLBACK').catch(() => undefined);
+            throw e;
+          } finally {
+            client.release();
+          }
+          expect(updateResult.rowCount).toBe(1);
+          const check = await admin54.query(`SELECT payout_id FROM ambassador_earnings WHERE id=$1`, [earningId]);
+          expect(check.rows[0].payout_id).toBe(payoutId);
+        } finally {
+          await admin54.query(`DELETE FROM ambassador_earnings WHERE id=$1`, [earningId]);
+        }
+      });
+
+      it("DISCOVERED DEFECT (not fixed, escalated): markPaid()'s real call shape (JS Date round-tripped through node-pg) returns rowCount 0, not 1 — the weekly ambassador payout job silently pays nobody", async () => {
+        const tenantId = '66666666-6666-6666-6666-666666666666';
+        const ambassadorId = '77777777-7777-7777-7777-777777777777';
+        const payoutId = 'aaaaaaaa-9999-9999-9999-999999999999';
+        const earningId = 'bbbbbbbb-9999-9999-9999-999999999999';
+        try {
+          const inserted = await admin54.query(
+            `INSERT INTO ambassador_earnings (id, tenant_id, ambassador_id, plan_id, event_code, reference_type, reference_id, amount_minor)
+             VALUES ($1,$2,$3,gen_random_uuid(),'signup','order',gen_random_uuid(),1000) RETURNING created_at`,
+            [earningId, tenantId, ambassadorId],
+          );
+          const createdAt = inserted.rows[0].created_at; // JS Date — exactly what payoutAmbassador() passes today
+          const client = await admin54.connect();
+          let updateResult: { rowCount: number | null };
+          try {
+            await client.query('BEGIN');
+            await client.query(`SET LOCAL ROLE kv_app`);
+            await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
+            // byte-for-byte the real markPaid() statement (ambassador-earning.repository.ts:37)
+            updateResult = await client.query(
+              `UPDATE ambassador_earnings SET payout_id=$3 WHERE id=$1 AND created_at=$2 AND payout_id IS NULL`,
+              [earningId, createdAt, payoutId],
+            );
+            await client.query('COMMIT');
+          } catch (e) {
+            await client.query('ROLLBACK').catch(() => undefined);
+            throw e;
+          } finally {
+            client.release();
+          }
+          // Documents the live defect exactly as found — NOT the desired behavior. If a
+          // future fix-forward corrects markPaid()'s timestamp handling, this assertion
+          // should flip to 1 and this test's title/comment should be updated to say FIXED.
+          expect(updateResult.rowCount).toBe(0);
+          const check = await admin54.query(`SELECT payout_id FROM ambassador_earnings WHERE id=$1`, [earningId]);
+          expect(check.rows[0].payout_id).toBe(null);
+        } finally {
+          await admin54.query(`DELETE FROM ambassador_earnings WHERE id=$1`, [earningId]);
+        }
+      });
+    });
+
+    // ── NEGATIVE REGRESSION GUARD — the fix must be narrow: kv_app must still be DENIED an
+    // out-of-scope column mutation on both tables (proves this batch didn't over-widen). ────
+    describe('negative regression guard — kv_app is still DENIED any column this migration did not grant', () => {
+      it('kv_app UPDATE(weight_kg) on milk_collections is DENIED (only milk_bill_id was restored)', async () => {
+        await expect(
+          withRole54('kv_app', (c) => c.query(`UPDATE milk_collections SET weight_kg = 1 WHERE true`)),
+        ).rejects.toThrow(/permission denied/i);
+      });
+      it('kv_app UPDATE(amount_minor) on ambassador_earnings is DENIED (only payout_id was restored)', async () => {
+        await expect(
+          withRole54('kv_app', (c) => c.query(`UPDATE ambassador_earnings SET amount_minor = 999 WHERE true`)),
+        ).rejects.toThrow(/permission denied/i);
+      });
+      it('kv_relay UPDATE(milk_bill_id) on milk_collections is DENIED (its dead grant, removed by this migration)', async () => {
+        await expect(
+          withRole54('kv_relay', (c) => c.query(`UPDATE milk_collections SET milk_bill_id = gen_random_uuid() WHERE true`)),
+        ).rejects.toThrow(/permission denied/i);
+      });
+    });
   });
 }
