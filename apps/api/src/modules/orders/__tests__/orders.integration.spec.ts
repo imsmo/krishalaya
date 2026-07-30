@@ -56,6 +56,7 @@ import { CartService } from '../services/cart.service';
 import { CartItemService } from '../services/cart-item.service';
 import { CheckoutService } from '../services/checkout.service';
 import { OrderService, OrderActor } from '../services/order.service';
+import { DeliveryZoneRepository } from '../../logistics/repositories/delivery-zone.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -120,7 +121,8 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     couponSvc = new CouponService(uow, outbox, idem, metrics, audit, promoRepo, couponRepo, new CouponRedemptionRepository(replica as any));
     const membershipSvc = new UserMembershipService(uow, outbox, idem, metrics, new InProcessWalletClient(new LedgerRepository()), audit, new MembershipTierRepository(replica as any), new UserMembershipRepository(replica as any));
     checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo, checkoutGroupRepo,
-      new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, membershipSvc);
+      new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, membershipSvc,
+      new DeliveryZoneRepository(replica as any)); // DEV-51: zones param (14th) — ctor drift fix
     orders = new OrderService(uow, outbox, metrics, audit, orderRepo);
 
     inspect = new Pool({ connectionString: APP_URL });

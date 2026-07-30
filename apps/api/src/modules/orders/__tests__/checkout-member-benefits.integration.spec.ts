@@ -44,6 +44,7 @@ import { MembershipTierService } from '../../memberships/services/membership-tie
 import { UserMembershipService } from '../../memberships/services/user-membership.service';
 import { MembershipTierRepository } from '../../memberships/repositories/membership-tier.repository';
 import { UserMembershipRepository } from '../../memberships/repositories/user-membership.repository';
+import { DeliveryZoneRepository } from '../../logistics/repositories/delivery-zone.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -93,7 +94,8 @@ run('checkout member benefits — platform fee override (integration, real Postg
     tiers = new MembershipTierService(uow, outbox, idem, metrics, audit, tierRepo);
     memberships = new UserMembershipService(uow, outbox, idem, metrics, wallet, audit, tierRepo, membershipRepo);
     checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, new OrderRepository(replica as any), checkoutGroupRepo,
-      new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, memberships);
+      new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, memberships,
+      new DeliveryZoneRepository(replica as any)); // DEV-51: zones param (14th) — ctor drift fix
   }, 30000);
 
   afterAll(async () => {
