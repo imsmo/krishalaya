@@ -11,7 +11,9 @@ const dec = (s: string) => Buffer.from(s, 'base64url').toString('utf8');
 @Injectable()
 export class OrderTimelineReadModel {
   constructor(private readonly repo: OrderRepository) {}
-  async list(tenantId: string, userId: string, q: QueryOrderDto) {
+  /** DELTA-069 (DEV-50): userId=null = moderator tenant-wide list; rows then carry BOTH
+   *  parties (a tenant worklist row spans many farmers/buyers — canon 547). */
+  async list(tenantId: string, userId: string | null, q: QueryOrderDto) {
     let cursor: { c: string; id: string } | undefined;
     if (q.cursor) { try { cursor = JSON.parse(dec(q.cursor)); } catch { /* first page */ } }
     const rows = await this.repo.listFor(tenantId, q.role, userId, { status: q.status, cursor, limit: q.limit + 1 });
@@ -26,6 +28,7 @@ export class OrderTimelineReadModel {
       return {
         id: p.id, orderNo: p.orderNo, status: p.status, totalMinor: p.totalMinor.toString(),
         counterparty: q.role === 'buyer' ? p.sellerUserId : p.buyerUserId, createdAt: p.createdAt,
+        ...(userId === null ? { buyerUserId: p.buyerUserId, sellerUserId: p.sellerUserId } : {}),
         primaryItem: pi ? { title: pi.title, quantity: pi.quantity, unitCode: pi.unitCode } : null,
         itemCount: pi ? pi.itemCount : 0,
       };

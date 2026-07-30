@@ -105,10 +105,14 @@ export class OrderRepository {
   }
 
   /** Cursor list for buyer/seller history (keyset on created_at,id — prunes recent partitions). */
-  async listFor(tenantId: string, party: 'buyer' | 'seller', userId: string, opts: { status?: string; cursor?: { c: string; id: string }; limit: number }): Promise<Order[]> {
+  /** DELTA-069 (DEV-50): userId=null = moderator-scoped TENANT-WIDE list (canon 547's
+   *  tenant-owner worklist) — mirrors the pattern stats()/getById() already use
+   *  (sellerUserId: canModerate ? null : ctx.userId). RLS still scopes to the tenant;
+   *  the caller (controller) enforces canModerateOrder before ever passing null. */
+  async listFor(tenantId: string, party: 'buyer' | 'seller', userId: string | null, opts: { status?: string; cursor?: { c: string; id: string }; limit: number }): Promise<Order[]> {
     const col = party === 'buyer' ? 'buyer_user_id' : 'seller_user_id';
-    const params: unknown[] = [tenantId, userId];
-    let where = `tenant_id=$1 AND ${col}=$2`;
+    const params: unknown[] = userId === null ? [tenantId] : [tenantId, userId];
+    let where = userId === null ? `tenant_id=$1` : `tenant_id=$1 AND ${col}=$2`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (opts.status) where += ` AND status=${p(opts.status)}`;
     if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }

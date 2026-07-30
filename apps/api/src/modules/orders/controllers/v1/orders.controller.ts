@@ -6,7 +6,7 @@ import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/perm
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
-import { BadRequestError } from '../../../../shared/errors/app-error';
+import { BadRequestError, ForbiddenError } from '../../../../shared/errors/app-error';
 import { OrderService } from '../../services/order.service';
 import { OrderPaymentService } from '../../services/order-payment.service';
 import { OrderItemService } from '../../services/order-item.service';
@@ -38,7 +38,16 @@ export class OrdersController {
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateOrder(ctx) }; }
 
   @Get() list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryOrderSchema) q: QueryOrderDto) {
-    return this.timeline.list(ctx.tenantId, ctx.userId, q).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    // DELTA-069 (DEV-50): explicit scope=tenant gives moderators the tenant-wide
+    // per-order list (canon 547 worklist) — same actor rule stats() already uses.
+    // Explicit deny beats silent fallback: a non-moderator asking for tenant scope
+    // gets a ForbiddenError, not somebody else's idea of their own orders.
+    let userId: string | null = ctx.userId;
+    if (q.scope === 'tenant') {
+      if (!canModerateOrder(ctx)) throw new ForbiddenError('scope=tenant requires order moderation permission');
+      userId = null;
+    }
+    return this.timeline.list(ctx.tenantId, userId, q).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
   // --- static routes declared BEFORE ':id' so they aren't captured as an order id ---
