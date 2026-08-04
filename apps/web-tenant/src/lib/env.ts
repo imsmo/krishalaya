@@ -37,4 +37,7 @@ export const env = {
   /** Console visibility switch for the education studio (PC-26). OFF by default; the API's own `education`
    *  flag + education.author/.publish perms remain the authoritative gates. */
   featureEducation: process.env.NEXT_PUBLIC_FEATURE_EDUCATION === 'true',
+  /** Console visibility switch for the comms hub (PC-27: broadcasts + notification templates). OFF by default;
+   *  the API's comm.manage perm remains the authoritative gate. */
+  featureComms: process.env.NEXT_PUBLIC_FEATURE_COMMS === 'true',
 } as const;

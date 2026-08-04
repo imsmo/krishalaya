@@ -43,4 +43,26 @@ export class NotificationsResource {
   async revokeDevice(token: string): Promise<{ ok: boolean; revoked: boolean }> {
     return (await this.http.request<{ ok: boolean; revoked: boolean }>('DELETE', 'notifications/devices', { body: { token } })).data;
   }
+
+  // --- PC-27: tenant comms hub (comm.manage, server-gated) — broadcasts + notification templates ---
+  /** Operator: send a broadcast to tenant members (all, or one role). Idempotency-Key required (Law 3). */
+  async sendBroadcast(input: { title: string; body: string; audienceRoleCode?: string }, idempotencyKey: string): Promise<{ id: string; recipients?: number }> {
+    return (await this.http.request<{ id: string; recipients?: number }>('POST', 'communication/broadcasts', { idempotencyKey, body: input })).data;
+  }
+  async listBroadcasts(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: Array<{ id: string; title: string; body: string; audienceRoleCode?: string | null; createdAt?: string; recipients?: number }>; nextCursor: string | null }> {
+    const r = await this.http.request<Array<{ id: string; title: string; body: string; audienceRoleCode?: string | null; createdAt?: string; recipients?: number }>>('GET', 'communication/broadcasts', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The platform event catalogue templates can bind to (real codes, never guessed). */
+  async templateEvents(signal?: AbortSignal): Promise<Array<{ code: string; description?: string | null }>> {
+    return (await this.http.request<Array<{ code: string; description?: string | null }>>('GET', 'notifications/events', { signal })).data;
+  }
+  async listTemplates(params: { eventCode?: string; channel?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: Array<{ id: string; eventCode: string; channel: string; languageCode: string; subject?: string | null; body: string; isActive: boolean }>; nextCursor: string | null }> {
+    const r = await this.http.request<Array<{ id: string; eventCode: string; channel: string; languageCode: string; subject?: string | null; body: string; isActive: boolean }>>('GET', 'notifications/templates', { query: { eventCode: params.eventCode, channel: params.channel, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** Operator: create/replace a per-event, per-channel, per-language template (whatsapp/sms/push/email/inapp/ivr). */
+  async upsertTemplate(input: { eventCode: string; channel: string; languageCode: string; subject?: string | null; body: string; providerTemplateRef?: string | null; isActive?: boolean }): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', 'notifications/templates', { body: input })).data;
+  }
 }
