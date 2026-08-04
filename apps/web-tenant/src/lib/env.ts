@@ -40,4 +40,7 @@ export const env = {
   /** Console visibility switch for the comms hub (PC-27: broadcasts + notification templates). OFF by default;
    *  the API's comm.manage perm remains the authoritative gate. */
   featureComms: process.env.NEXT_PUBLIC_FEATURE_COMMS === 'true',
+  /** Console visibility switch for FPO memberships (PC-28). OFF by default; the API's `memberships` flag +
+   *  membership.manage perm remain the authoritative gates. */
+  featureMemberships: process.env.NEXT_PUBLIC_FEATURE_MEMBERSHIPS === 'true',
 } as const;
