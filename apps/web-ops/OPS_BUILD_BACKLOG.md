@@ -11,8 +11,11 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
 
 ## Waves (one per session, `Yes start PC-3x`; each adds its sidebar entry when it ships)
 - [x] **OW-0 · foundation** — this scaffold.
-- [ ] **OW-1 · kiosk (4 rows)** — assisted farmer onboarding: users.create + kyc doc-types/submit + listings.create
-      on behalf of the farmer (server enforces ops perms + consent).
+- [x] **OW-1 · kiosk (4 rows)** ✅ 2026-08-05 — /kiosk: create the farmer's account (users.create, idempotent,
+      409→'already exists' honesty) + the GUIDED HANDOFF checklist. CONSENT RULING: KYC + first listing happen in
+      the FARMER'S OWN session (assisted, never impersonated — no on-behalf writes; an `assisted-onboarding`
+      on-behalf surface would be a PC-54 decision). Canon rows kiosk-home/profile → BUILT; kiosk-kyc/first-listing
+      → resolved by the handoff design (farmer-session actions, mobile/storefront already built).
 - [ ] **OW-2 · warehouse (18 rows)** — warehousing api: eNWR issue/registry, weighbridge, assay lab + certificate,
       stacking, storage billing, wh dashboard/insights.
 - [ ] **OW-3 · equipment/CHC + livestock (7 rows)** — equipment api bookings/maintenance/insights; livestock ear-tag scan.

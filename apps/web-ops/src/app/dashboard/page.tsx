@@ -13,7 +13,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dash.title'), robots: { index: false, follow: false } };
 }
 
-const WAVES = ['kiosk', 'warehouse', 'chc', 'dairypos', 'money', 'insights'] as const;
+const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk' }]; // OW-1
+const WAVES = ['warehouse', 'chc', 'dairypos', 'money', 'insights'] as const;
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');
@@ -31,6 +32,12 @@ export default async function DashboardPage() {
       <table className="kv-table">
         <thead><tr><th>{t.t('dash.colArea')}</th><th>{t.t('dash.colStatus')}</th></tr></thead>
         <tbody>
+          {BUILT.map((b) => (
+            <tr key={b.key}>
+              <td><a href={b.href} className="kv-link">{t.t(`dash.wave.${b.key}`)}</a></td>
+              <td><span className="kv-badge">{t.t('dash.live')}</span></td>
+            </tr>
+          ))}
           {WAVES.map((w) => (
             <tr key={w}>
               <td>{t.t(`dash.wave.${w}`)}</td>
