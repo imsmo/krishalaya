@@ -13,8 +13,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dash.title'), robots: { index: false, follow: false } };
 }
 
-const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk' }, { key: 'warehouse', href: '/warehouse' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }]; // OW-1..4
-const WAVES = ['money', 'insights'] as const;
+const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk' }, { key: 'warehouse', href: '/warehouse' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }, { key: 'insights', href: '/insights' }]; // OW-1..4,6
+const WAVES = ['money'] as const;
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');

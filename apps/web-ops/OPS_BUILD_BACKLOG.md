@@ -41,5 +41,8 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       `aeps-service-events` (controller over the existing table + device/provider wiring at S2). Canon rules
       preserved in the appendix (₹10k bank-set cap, 3-finger retry, no OTP fallback, W392 exceptions taxonomy)
       so the future wave builds exactly to spec. Dashboard keeps 'money' honestly as coming.
-- [ ] **OW-6 · insights (2 rows)** — analytics reads.
+- [x] **OW-6 · insights (2 rows)** ✅ 2026-08-05 — /insights: tenant analytics (tenancy/analytics 30-day
+      server-computed; 403 → honest permission note) + operational snapshot (status breakdown of the LATEST 50
+      per register, labeled as a snapshot never a total; true totals need read-models → PC-54 note).
+      **OPS CANON FULLY DISPOSITIONED**: OW-0..6 built/resolved; OW-7 gated on PC-54.
 - [ ] **OW-7 · GATED** — IoT device fleet + ops alerting (PC-54 modules first).
