@@ -43,4 +43,8 @@ export const env = {
   /** Console visibility switch for FPO memberships (PC-28). OFF by default; the API's `memberships` flag +
    *  membership.manage perm remain the authoritative gates. */
   featureMemberships: process.env.NEXT_PUBLIC_FEATURE_MEMBERSHIPS === 'true',
+  /** PC-28b visibility switches (API perms/flags stay authoritative): promotions+coupons, market insights, inbox. */
+  featurePromotions: process.env.NEXT_PUBLIC_FEATURE_PROMOTIONS === 'true',
+  featureMarket: process.env.NEXT_PUBLIC_FEATURE_MARKET === 'true',
+  featureInbox: process.env.NEXT_PUBLIC_FEATURE_INBOX === 'true',
 } as const;
