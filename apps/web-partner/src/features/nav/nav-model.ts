@@ -30,6 +30,10 @@ export const WILDCARD_PERM = '*';
 /** The full partner surface map. Flip `live: true` as each wave ships its route (links only to built routes). */
 export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/dashboard', labelKey: 'nav.dashboard', group: 'common', live: true },
+  { href: '/notifications', labelKey: 'nav.notifications', group: 'common', live: true },
+  { href: '/settlements', labelKey: 'nav.settlements', group: 'common', live: true },
+  { href: '/consents', labelKey: 'nav.consents', group: 'common', live: true },
+  { href: '/help', labelKey: 'nav.help', group: 'common', live: true },
   // lending vertical (financial partners)
   { href: '/loan-queue', labelKey: 'nav.loanQueue', group: 'lending', live: true },
   { href: '/products', labelKey: 'nav.products', group: 'lending', live: true },

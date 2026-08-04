@@ -12,7 +12,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasLending(perms)).toBe(true);
     expect(hasFleet(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'lending']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/loan-queue', '/products', '/profile', '/portfolio']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help', '/loan-queue', '/products', '/profile', '/portfolio']);
     expect(soonNavForPartner(perms)).toEqual([]); // lending vertical fully built
   });
 
@@ -21,7 +21,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasFleet(perms)).toBe(true);
     expect(hasLending(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'fleet']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/shipments', '/fleet', '/zones', '/routes', '/cold-chain']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help', '/shipments', '/fleet', '/zones', '/routes', '/cold-chain']);
     expect(soonNavForPartner(perms)).toEqual([]); // logistics vertical fully built
   });
 
@@ -31,7 +31,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasLending(perms)).toBe(false);
     expect(hasFleet(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'insurance']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/insurance-claims', '/insurance-policies', '/insurance-products']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help', '/insurance-claims', '/insurance-policies', '/insurance-products']);
     expect(soonNavForPartner(perms)).toEqual([]); // insurer console fully built this batch
   });
 
@@ -44,7 +44,7 @@ describe('partner nav model (persona-aware)', () => {
   it('no partner perms → only the common dashboard', () => {
     const perms = set();
     expect(visibleGroups(perms)).toEqual(['common']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help']);
     expect(soonNavForPartner(perms)).toEqual([]);
   });
 
