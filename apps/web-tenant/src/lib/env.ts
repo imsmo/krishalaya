@@ -47,4 +47,7 @@ export const env = {
   featurePromotions: process.env.NEXT_PUBLIC_FEATURE_PROMOTIONS === 'true',
   featureMarket: process.env.NEXT_PUBLIC_FEATURE_MARKET === 'true',
   featureInbox: process.env.NEXT_PUBLIC_FEATURE_INBOX === 'true',
+  /** Console visibility switch for the requirements board (PC-28c). OFF by default; requirement.post/.quote
+   *  perms remain the authoritative server gates. */
+  featureRequirements: process.env.NEXT_PUBLIC_FEATURE_REQUIREMENTS === 'true',
 } as const;

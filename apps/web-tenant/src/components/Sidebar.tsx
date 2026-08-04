@@ -51,6 +51,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featurePromotions ? [{ key: 'promotions', href: '/promotions', label: t.t('nav.promotions') }] : []),
         ...(env.featureMarket ? [{ key: 'market', href: '/market', label: t.t('nav.market') }] : []),
         ...(env.featureInbox ? [{ key: 'inbox', href: '/inbox', label: t.t('nav.inbox') }] : []),
+        ...(env.featureRequirements ? [{ key: 'requirements', href: '/requirements', label: t.t('nav.requirements') }] : []),
         { key: 'disputes', href: '/disputes', label: t.t('nav.disputes') },
         { key: 'notifications', href: '/notifications', label: t.t('nav.notifications') },
         { key: 'billing', href: '/billing', label: t.t('nav.billing') },
