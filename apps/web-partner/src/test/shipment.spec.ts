@@ -70,8 +70,10 @@ const tests: Array<[string, () => void]> = [
   ['buildFail >500 → throws', () => throws(() => buildFail({ reason: 'x'.repeat(501) }), 'reason', 'failLong')],
 ];
 
-let pass = 0;
-for (const [name, fn] of tests) { fn(); pass++; void name; }
-// eslint-disable-next-line no-console
-console.log(`${pass}/${tests.length} passed`);
+// PC-2A fix: this file was a SELF-EXECUTING script (assertions ran at import; ZERO jest tests registered —
+// jest reported "must contain at least one test" and the suite counted as failed-to-run on every CI run).
+// Same assertions, now registered as real jest tests.
+describe('shipment lifecycle (ported table)', () => {
+  for (const [name, fn] of tests) it(name, fn);
+});
 export {};

@@ -129,3 +129,17 @@ describe('list queries + hrefs', () => {
     expect(policiesHref('lapsed')).toBe('/insurance-policies?status=lapsed');
   });
 });
+
+describe('PC-2A vet-cert verification', () => {
+  const { canVerifyVetCert, buildVerifyVetCert } = require('../features/insurance/insurance');
+  it('gate mirrors live pre-decision statuses', () => {
+    for (const st of ['intimated', 'docs_pending', 'survey_scheduled', 'surveyed']) expect(canVerifyVetCert(st)).toBe(true);
+    for (const st of ['approved', 'paid', 'rejected', 'closed']) expect(canVerifyVetCert(st)).toBe(false);
+  });
+  it('certRef 1-120 chars, trimmed; empty/oversize throws', () => {
+    expect(buildVerifyVetCert(' VET-2026-0042 ')).toEqual({ certRef: 'VET-2026-0042' });
+    expect(() => buildVerifyVetCert('   ')).toThrow();
+    expect(() => buildVerifyVetCert('x'.repeat(121))).toThrow();
+  });
+});
+

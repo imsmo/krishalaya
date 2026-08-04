@@ -116,6 +116,19 @@ export function buildScheduleSurvey(rawSurveyorUserId: string): ScheduleSurveyBo
   return { surveyorUserId: v };
 }
 
+/** verifyVetCert(): livestock claims — the insurer verifies the vet certificate reference. Legal on any live,
+ *  pre-decision claim (mirrors the controller's own transition set; the API re-asserts). PC-2A. */
+export function canVerifyVetCert(status: ClaimStatus): boolean {
+  return status === 'intimated' || status === 'docs_pending' || status === 'survey_scheduled' || status === 'surveyed';
+}
+export interface VerifyVetCertBody { certRef: string; }
+/** Build the verifyVetCert() body: certRef 1–120 chars (mirrors VerifyVetCertSchema). */
+export function buildVerifyVetCert(rawCertRef: string): VerifyVetCertBody {
+  const v = (rawCertRef ?? '').trim();
+  if (!v || v.length > 120) throw new InsuranceInputError('certRef');
+  return { certRef: v };
+}
+
 export interface RecordSurveyBody { damagePercent: number; notes?: string; }
 /** Build the recordSurvey() body: damagePercent 0-100 (whole or decimal, parsed as a Number — this is a
  *  PERCENTAGE, not money, so a plain float parse is fine here; Law 2 governs money fields only), notes ≤2000

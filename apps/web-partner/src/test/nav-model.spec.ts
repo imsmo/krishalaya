@@ -31,7 +31,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasLending(perms)).toBe(false);
     expect(hasFleet(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'insurance']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/insurance-claims', '/insurance-policies']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/insurance-claims', '/insurance-policies', '/insurance-products']);
     expect(soonNavForPartner(perms)).toEqual([]); // insurer console fully built this batch
   });
 

@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { SdkError } from '@krishalaya/sdk-js';
-import { buildDecide, buildScheduleSurvey, buildRecordSurvey, InsuranceInputError } from '../../features/insurance/insurance';
+import { buildDecide, buildVerifyVetCert, buildScheduleSurvey, buildRecordSurvey, InsuranceInputError } from '../../features/insurance/insurance';
 
 function apiErrorKey(e: unknown): string {
   if (e instanceof SdkError) {
@@ -33,6 +33,19 @@ export async function requestDocumentsAction(formData: FormData): Promise<void> 
   catch (e) { redirect(`/insurance-claims/${enc(id)}?error=${apiErrorKey(e)}`); }
   revalidatePath(`/insurance-claims/${id}`);
   redirect(`/insurance-claims/${enc(id)}?ok=requestDocuments`);
+}
+
+export async function verifyVetCertAction(formData: FormData): Promise<void> {
+  await requirePartner();
+  const id = str(formData, 'id').trim();
+  if (!id) redirect('/insurance-claims');
+  let body;
+  try { body = buildVerifyVetCert(str(formData, 'certRef')); }
+  catch (e) { redirect(`/insurance-claims/${enc(id)}?error=${inputErrorKey(e)}`); }
+  try { await partnerClient().request('POST', `insurance/claims/${enc(id)}/verify-vet-cert`, { body }); }
+  catch (e) { redirect(`/insurance-claims/${enc(id)}?error=${apiErrorKey(e)}`); }
+  revalidatePath(`/insurance-claims/${id}`);
+  redirect(`/insurance-claims/${enc(id)}?ok=verifyVetCert`);
 }
 
 export async function scheduleSurveyAction(formData: FormData): Promise<void> {

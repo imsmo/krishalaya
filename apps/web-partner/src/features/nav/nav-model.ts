@@ -44,6 +44,7 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   // insurance vertical (insurer partners, KV-BL-056/DEV-24)
   { href: '/insurance-claims', labelKey: 'nav.insuranceClaims', group: 'insurance', live: true },
   { href: '/insurance-policies', labelKey: 'nav.insurancePolicies', group: 'insurance', live: true },
+  { href: '/insurance-products', labelKey: 'nav.insuranceProducts', group: 'insurance', live: true },
 ];
 
 export function hasLending(perms: ReadonlySet<string>): boolean {

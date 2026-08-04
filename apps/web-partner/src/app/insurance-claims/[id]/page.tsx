@@ -15,10 +15,10 @@ import { getTranslator } from '../../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { SdkError } from '@krishalaya/sdk-js';
 import {
-  canRequestDocuments, canScheduleSurvey, canRecordSurvey, canDecideAfterSurvey, canRejectEarly, canSettle, canClose,
+  canRequestDocuments, canScheduleSurvey, canVerifyVetCert, canRecordSurvey, canDecideAfterSurvey, canRejectEarly, canSettle, canClose,
   isClaimTerminal, claimStatusKey, claimStatusTone, isClaimStatus, type ClaimStatus, type ClaimDetail,
 } from '../../../features/insurance/insurance';
-import { requestDocumentsAction, scheduleSurveyAction, recordSurveyAction, decideAction, settleAction, closeAction } from '../actions';
+import { requestDocumentsAction, scheduleSurveyAction, verifyVetCertAction, recordSurveyAction, decideAction, settleAction, closeAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('claim.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['requestDocuments', 'scheduleSurvey', 'recordSurvey', 'decide', 'settle', 'close']);
+const OK = new Set(['requestDocuments', 'scheduleSurvey', 'recordSurvey', 'decide', 'settle', 'close', 'verifyVetCert']);
 const ERR = new Set(['badAmount', 'decision', 'note', 'surveyorUserId', 'damagePercent', 'notes', 'illegal', 'forbidden', 'notFound', 'generic']);
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -96,6 +96,17 @@ export default async function InsuranceClaimPage({ params, searchParams }: { par
             <label htmlFor="surveyorUserId" className="kv-field__label">{t.t('claim.surveyorUserId')}</label>
             <input id="surveyorUserId" className="kv-input" name="surveyorUserId" required />
             <button className="kv-btn" type="submit">{t.t('claim.scheduleSurveySubmit')}</button>
+          </form>
+        )}
+
+        {canVerifyVetCert(status) && (
+          <form action={verifyVetCertAction} className="kv-card kv-form">
+            <h2 className="kv-card__title">{t.t('claim.verifyVetCertHeading')}</h2>
+            <p className="kv-field__hint">{t.t('claim.verifyVetCertHint')}</p>
+            <input type="hidden" name="id" value={c.id} />
+            <label htmlFor="certRef" className="kv-field__label">{t.t('claim.certRef')}</label>
+            <input id="certRef" className="kv-input" name="certRef" required maxLength={120} />
+            <button className="kv-btn" type="submit">{t.t('claim.verifyVetCertSubmit')}</button>
           </form>
         )}
 
