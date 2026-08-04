@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/boost.tsx · screen 114 (Boost Listing) — built to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/114-farmer-boost-listing.html): gold hero ("Reach 5× More Buyers"),
+// (Krishalaya_Design_System/screens/114-farmer-boost-listing.html): gold hero ("Reach 5× More Buyers"),
 // "Choose a boost package" with selectable tier cards (POPULAR badge on the recommended one), a money-back tip
 // banner, a Payment summary, and a Maybe-Later + "Pay … · Boost Now" CTA bar. Thin screen over features/listings;
 // degrade-never-die (Law 12); ≥48px targets; i18n(hi/en/gu).
@@ -17,9 +17,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SdkError, type BoostTier, type ListingCard } from '@krishi-verse/sdk-js';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { SdkError, type BoostTier, type ListingCard } from '@krishalaya/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getListing, loadBoostTiers, payListingBoost } from '../../../features/listings/listings.api';

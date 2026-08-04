@@ -1,7 +1,7 @@
 # web-partner — build backlog (financial / logistics partner portal)
 
 **Status today.** `web-partner` is ✅ — **both partner verticals are fully built** on the shared platform API
-(`@krishi-verse/sdk-js`): the lending vertical (loan queue + decisions, products, lender registry, portfolio +
+(`@krishalaya/sdk-js`): the lending vertical (loan queue + decisions, products, lender registry, portfolio +
 repayments) and the logistics vertical (fleet setup, zones/routes/cold-chain, the full shipment delivery lifecycle),
 on a persona-aware shell with central i18n, silent-refresh session gate, root boundaries, and 7 unit-tested pure
 modules (≈220 assertions). All PR-W0…W3 waves are ticked below. It serves **two external partner personas** that
@@ -37,7 +37,7 @@ API decides what they can see (only consented/assigned records), never the clien
 
 Everything below is **frontend-only**: `apps/api` (✅) already exposes the endpoints these tasks consume — the
 controllers are inventoried in §2. **No new backend.** This app talks to the platform API **only through the shared
-SDK** (`@krishi-verse/sdk-js`) wired in `lib/api-client.ts`; mirror the controller exactly, never invent a route. If
+SDK** (`@krishalaya/sdk-js`) wired in `lib/api-client.ts`; mirror the controller exactly, never invent a route. If
 an endpoint a task needs genuinely doesn't exist in `apps/api`, **STOP and flag it** rather than faking it.
 Hand me one `Yes next PR-Wx-yy …` at a time with the contract (§1) pasted, exactly like the storefront / tenant /
 admin / mobile cadence.
@@ -62,7 +62,7 @@ admin / mobile cadence.
 PRODUCTION-GRADE CONTRACT (web-partner) — obey for everything you build:
 - This is the EXTERNAL B2B PARTNER portal (banks/NBFCs = lenders; 3PLs = logistics partners) on the shared platform
   API. Build production, not a demo. It is an AUTHENTICATED app — every page is noindex; there is no public surface.
-- SHARED API VIA THE SDK ONLY: talk to the platform API ONLY through @krishi-verse/sdk-js wired in lib/api-client.ts
+- SHARED API VIA THE SDK ONLY: talk to the platform API ONLY through @krishalaya/sdk-js wired in lib/api-client.ts
   (partnerClient = session-scoped, server-side token; anonClient = OTP login only). NEVER hand-roll a second fetch
   client, NEVER call admin-api. The API re-enforces partner RBAC + RLS on EVERY call; the cookie is convenience,
   never the authority. A 403 degrades to a clear "insufficient permission / re-authenticate" notice, never a crash,

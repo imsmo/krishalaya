@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   // is configured; left unset (relative) otherwise.
   metadataBase: env.siteUrl ? new URL(env.siteUrl) : undefined,
   title: { default: `${env.appName} — fresh from the farm`, template: `%s · ${env.appName}` },
-  description: 'Krishi-Verse: a multi-tenant agri-commerce marketplace connecting farmers, traders and buyers.',
+  description: 'Krishalaya: a multi-tenant agri-commerce marketplace connecting farmers, traders and buyers.',
   robots: { index: true, follow: true },
 };
 

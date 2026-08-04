@@ -1,4 +1,4 @@
-// @krishi-verse/i18n · locale-aware formatters built on Intl. CRITICAL: money arrives as a STRING of bigint
+// @krishalaya/i18n · locale-aware formatters built on Intl. CRITICAL: money arrives as a STRING of bigint
 // minor units (Law 2). We format it WITHOUT ever turning the whole amount into a JS number — the major-unit part
 // is grouped via Intl with a BigInt input (so ₹1,23,45,678.90 keeps full precision + correct lakh/crore grouping
 // in Indian locales), the minor-unit part is appended exactly. Negative + zero handled.
@@ -21,14 +21,14 @@ export interface FormatMoneyOptions {
   /** BRAND-024 symbol-vs-code disambiguation (e.g. "AED 1,250.00" vs the locale-default symbol). Defaults to
    *  Intl's own 'symbol'. */
   currencyDisplay?: 'symbol' | 'code';
-  /** Escape hatch for a caller that already has a raw BCP-47 Intl locale tag (not an `@krishi-verse/i18n`
+  /** Escape hatch for a caller that already has a raw BCP-47 Intl locale tag (not an `@krishalaya/i18n`
    *  LANGUAGE_REGISTRY code) — e.g. `packages/ui`'s `MoneyText` accepts an arbitrary Intl locale prop. When set,
    *  this locale is used AS-IS for all Intl calls and `langCode` is ignored for locale-resolution purposes. */
   intlLocale?: string;
 }
 
 /** Format bigint minor units (as a string, e.g. "123456") into a localized currency string (e.g. "₹1,234.56").
- *  `langCode` is an `@krishi-verse/i18n` LANGUAGE_REGISTRY code ('en'/'hi'/'gu'/…) by default; pass
+ *  `langCode` is an `@krishalaya/i18n` LANGUAGE_REGISTRY code ('en'/'hi'/'gu'/…) by default; pass
  *  `opts.intlLocale` to bypass the registry and use a raw Intl locale tag directly (see `FormatMoneyOptions`). */
 export function formatMoneyMinor(minor: string | bigint, currencyCode = 'INR', langCode = 'en', opts: FormatMoneyOptions = {}): string {
   let v: bigint;

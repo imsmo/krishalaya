@@ -452,7 +452,7 @@ function printSummary() {
 }
 
 async function main() {
-  console.log('=== Krishi-Verse STAGING smoke suite (Sprint S2) ===');
+  console.log('=== Krishalaya STAGING smoke suite (Sprint S2) ===');
   console.log(`API base: ${API_BASE}`);
   console.log(`Tenant:   ${TENANT_ID}`);
   console.log(`Phone:    ${FOUNDER_PHONE}`);

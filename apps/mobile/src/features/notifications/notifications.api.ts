@@ -1,7 +1,7 @@
 // apps/mobile/src/features/notifications/notifications.api.ts · the notification-center data layer. Inbox reads
 // go through the SWR cache (usable offline); mark-read + preference/quiet-hours writes hit the SDK and invalidate
 // the cached inbox. Degrade-never-die everywhere. Keyset paginated. The server enforces ownership (no IDOR).
-import type { NotificationItem, NotificationPreference, QuietHours } from '@krishi-verse/sdk-js';
+import type { NotificationItem, NotificationPreference, QuietHours } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { currentScope } from '../../core/offline/scope';

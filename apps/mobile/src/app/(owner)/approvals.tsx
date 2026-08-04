@@ -15,9 +15,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
-import type { RoleAssignment } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, SegmentedControl, color, font, space, radius } from '@krishi-verse/ui-native';
+import { SdkError } from '@krishalaya/sdk-js';
+import type { RoleAssignment } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, SegmentedControl, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { assignments, approveAssignment, rejectAssignment } from '../../features/tenant/tenant.api';

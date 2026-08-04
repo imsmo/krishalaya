@@ -4,7 +4,7 @@
 // These helpers read that bag DEFENSIVELY over a small allowlist of known keys — so when the sender includes the
 // money breakdown / order / buyer, the design's rich card renders from REAL data; when it doesn't, those rows are
 // simply omitted (Law 12 degrade, §13 never fake). Money stays a bigint minor-unit string (Law 2).
-import type { NotificationItem } from '@krishi-verse/sdk-js';
+import type { NotificationItem } from '@krishalaya/sdk-js';
 import { eventIcon, eventCategory, type NotifCategory } from './notif-prefs';
 import { internalDeepLink } from './present';
 

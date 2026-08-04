@@ -5,7 +5,7 @@
 // The browser never sees either raw token. Login/refresh write these from a Server Action; logout clears both.
 import 'server-only';
 import { cookies } from 'next/headers';
-import type { AuthTokens } from '@krishi-verse/sdk-js';
+import type { AuthTokens } from '@krishalaya/sdk-js';
 
 export const SESSION_COOKIE = 'kv_session';
 export const REFRESH_COOKIE = 'kv_refresh';

@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/index.tsx · screen 12 (My Listings) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/12-my-listings.html): the "My Listings" header, three stat cards
+// (Krishalaya_Design_System/screens/12-my-listings.html): the "My Listings" header, three stat cards
 // (Active · Sold · Earnings), filter chips (All / Active / Sold / Draft with live counts), and rich listing
 // cards (crop emoji, title, status badge LIVE/AUCTION+countdown/SOLD/DRAFT, qty, organic, ₹/qtl). A floating +
 // opens the create flow. Thin screen over features/listings + features/wallet; degrade-never-die (Law 12);
@@ -33,8 +33,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { ListingCard, ListingAnalytics } from '@krishi-verse/sdk-js';
-import { EmptyState, MoneyText, SkeletonCard, Button, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import type { ListingCard, ListingAnalytics } from '@krishalaya/sdk-js';
+import { EmptyState, MoneyText, SkeletonCard, Button, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { myListings, getListing, listingAnalytics } from '../../../features/listings/listings.api';
 import { walletEarnings } from '../../../features/wallet/wallet.api';

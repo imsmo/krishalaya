@@ -14,8 +14,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { findPmsbyProduct, myPmsbyPolicy, type InsurancePolicyView } from '../../features/insurance/insurance.api';

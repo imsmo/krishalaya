@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { buildAssign, buildOverride } from '../../../features/team/permissions';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 const PATH = '/team/roles';
 function fail(error: string): never { redirect(`${PATH}?error=${encodeURIComponent(error)}`); }

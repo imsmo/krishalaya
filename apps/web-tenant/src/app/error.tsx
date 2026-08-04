@@ -4,7 +4,7 @@
 // picks the matching catalog (falling back to English), keeping the error page localized too. `reset()` retries
 // the segment. No PII/secret is shown — just a friendly message (degrade, never die).
 import { useEffect } from 'react';
-import { resolveLanguage } from '@krishi-verse/i18n';
+import { resolveLanguage } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';

@@ -13,7 +13,7 @@
 // the user out if the refresh itself fails (the access token is by then confirmed dead, so there's no safe
 // degrade — only login recovers the session).
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
-import type { AuthTokens, UserProfile } from '@krishi-verse/sdk-js';
+import type { AuthTokens, UserProfile } from '@krishalaya/sdk-js';
 import { sessionReducer, initialSession, needsRefresh, type SessionState } from './session.reducer';
 import { tokenStore } from './token-store';
 import { createRefreshExecutor } from './refresh-executor';

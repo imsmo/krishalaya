@@ -5,7 +5,7 @@
 // per-skill DAILY-RATE RANGE (₹350-450/day) has NO field in the skill catalogue, so it is NOT assembled here (§13 —
 // omitted, never fabricated); years-of-experience has no worker-profile field either, so it is captured in the
 // screen and flagged, never faked into a contract.
-import type { Skill } from '@krishi-verse/sdk-js';
+import type { Skill } from '@krishalaya/sdk-js';
 import { skillEmoji } from './worker-skills';
 
 export interface PickerRow { id: string; name: string; emoji: string; selected: boolean }

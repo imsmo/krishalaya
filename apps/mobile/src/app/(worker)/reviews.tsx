@@ -11,9 +11,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import type { WorkerProfile, ReviewSummary, PublicReview } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { WorkerProfile, ReviewSummary, PublicReview } from '@krishalaya/sdk-js';
+import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { getMyWorker, workerRating, workerReviews } from '../../features/labour/labour.api';

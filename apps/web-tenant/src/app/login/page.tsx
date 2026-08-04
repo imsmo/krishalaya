@@ -10,7 +10,7 @@ import { env } from '../../lib/env';
 import { setSession } from '../../lib/auth';
 import { safeNext } from '../../features/nav/safe-next';
 import { getTranslator } from '../../lib/i18n';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();

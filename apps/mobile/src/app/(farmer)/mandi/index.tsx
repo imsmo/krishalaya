@@ -9,9 +9,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { MandiPrice } from '@krishi-verse/sdk-js';
-import { formatRelative } from '@krishi-verse/i18n';
-import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { MandiPrice } from '@krishalaya/sdk-js';
+import { formatRelative } from '@krishalaya/i18n';
+import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { listPrices, defaultRegionId } from '../../../features/market/market.api';

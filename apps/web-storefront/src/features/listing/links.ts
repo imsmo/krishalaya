@@ -1,7 +1,7 @@
 // apps/web-storefront/src/features/listing/links.ts · PURE helpers (no React/IO) → unit-tested.
 // Shape the NON-PII public links the detail read exposes (qrToken → farm-to-fork page; auctionId → live auction)
 // into safe hrefs + a CTA state. No fabrication: a missing token/id yields null so the component renders nothing.
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard } from '@krishalaya/sdk-js';
 
 /** A live consumer can still bid; ended/settled/cancelled is view-only. Drives the storefront auction CTA label. */
 const LIVE_AUCTION_STATUSES = new Set(['scheduled', 'live', 'extended', 'awaiting_approval']);

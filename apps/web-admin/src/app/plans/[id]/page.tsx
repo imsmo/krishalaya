@@ -7,7 +7,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { DataTable, Column } from '../../../components/DataTable';

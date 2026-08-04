@@ -11,7 +11,7 @@
 // MF-01-class black-void risk (Law 12) if a future batch ever does wire a nav entry or import this file directly,
 // without over-building routing today.
 import React from 'react';
-import { ScreenScaffold, EmptyState } from '@krishi-verse/ui-native';
+import { ScreenScaffold, EmptyState } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { offModuleState } from '../../../core/flags/off-module-state';

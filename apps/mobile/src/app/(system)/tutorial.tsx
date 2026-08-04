@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 
 // The tour's fixed steps (UI chrome — copy lives in i18n). `example` shows the localized sample voice line.

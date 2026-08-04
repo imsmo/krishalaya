@@ -2,13 +2,13 @@
 // imports) → unit-tested under the "core" jest project, mirrors core/flags/flags.ts's pure-logic convention.
 //
 // HONEST BOUNDARY (verified before writing a single line of paint code — GROUND HONESTLY, contract §4):
-// grep-checked `Phase-1 all screen design/Krishi_Verse_Design_System/system/screen.css` (the mobile farmer-app
+// grep-checked `Phase-1 all screen design/Krishalaya_Design_System/system/screen.css` (the mobile farmer-app
 // frame canon) for `data-theme`/`dark` → ZERO hits. `system/tokens.css` (the shared base file) carries only a
 // 3-property STUB under its own header "DARK MODE — defer to Phase 2, but tokens reserved" (`--surface-page`,
 // `--surface-card`, one inverted ink value) — never consumed by any mobile screen (screen.css never references
 // `.dark-enabled` either). BRAND-026 (senior-mode's own ratifying doc) states explicitly: "consoles excluded —
 // dark mode is the console-side variant, kept structurally separate". The ONE real, fully-built dark palette
-// (`@krishi-verse/tokens`' `darkColors`, DEV-19 QA-passed) is generated from `system/web/web-tokens.css`'s
+// (`@krishalaya/tokens`' `darkColors`, DEV-19 QA-passed) is generated from `system/web/web-tokens.css`'s
 // `[data-theme="dark"]` block — APPLY-7/Q40, WEB-CONSOLE-SCOPED (the 4 Next.js apps), not this canon.
 // → Mobile canon has NOT ratified a farmer-app dark palette. Per this batch's own founder brief: "implement what
 // canon ratifies, note the rest." What ships here is the MODE-RESOLUTION MECHANISM (system/light/dark preference,

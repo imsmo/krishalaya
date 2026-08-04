@@ -25,9 +25,9 @@ env:
 - name: REALTIME_PORT
   value: '8090'
 - name: JWT_ISSUER
-  value: krishi-verse
+  value: krishalaya
 - name: JWT_AUDIENCE
-  value: krishi-verse-app
+  value: krishalaya-app
 - name: RT_MAX_SUBSCRIPTIONS
   value: '50'
 - name: RT_MAX_BUFFERED_BYTES

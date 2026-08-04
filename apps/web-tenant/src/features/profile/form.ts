@@ -3,9 +3,9 @@
 // the SDK's users.updateMe accepts (dropping blank fields so a partial edit only sends what changed); kycStatusKey
 // maps a KYC document status to a known i18n key (guarding against an unexpected server value). No raw doc numbers
 // are ever handled here — the page renders only the server-masked `docNoMasked`.
-import type { KycStatus } from '@krishi-verse/sdk-js';
+import type { KycStatus } from '@krishalaya/sdk-js';
 
-/** Languages the console ships (mirrors @krishi-verse/i18n LANGUAGES); the API re-validates regardless. */
+/** Languages the console ships (mirrors @krishalaya/i18n LANGUAGES); the API re-validates regardless. */
 export const PROFILE_LANGUAGES = ['hi', 'en', 'gu'] as const;
 /** Genders the SDK's users.updateMe accepts. */
 export const PROFILE_GENDERS = ['male', 'female', 'other', 'undisclosed'] as const;

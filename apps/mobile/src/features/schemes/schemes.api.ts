@@ -4,7 +4,7 @@
 // the screen shows the precise outcome (idempotent — Law 3; a paid scheme fee / DBT moves money SERVER-SIDE, never
 // here — Law 11). Document upload reuses the core/media pipeline (P-01: pick → process/EXIF-drop → presign → PUT →
 // confirm) and returns a mediaId. Reads degrade-never-die (empty/null). Money is bigint minor strings (Law 2).
-import type { Scheme, SchemeAuthority, SchemeApplication, EligibilityResult, DbtTransfer, SchemeApplicationDocument } from '@krishi-verse/sdk-js';
+import type { Scheme, SchemeAuthority, SchemeApplication, EligibilityResult, DbtTransfer, SchemeApplicationDocument } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { POLICY } from '../../core/offline/cache-policies';

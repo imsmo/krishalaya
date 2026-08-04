@@ -13,7 +13,7 @@ import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { buildResolve } from '../../features/disputes/manage';
 import { validateReviewResponse } from '../../features/reviews/respond';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 function back(id: string, qs: string): never { redirect(`/disputes/${encodeURIComponent(id)}?${qs}`); }
 

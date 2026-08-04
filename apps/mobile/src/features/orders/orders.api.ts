@@ -5,7 +5,7 @@
 // be legal, and blind replay of a stale transition is wrong; so they run online, idempotent (Law 3 key), and the
 // caller surfaces the precise server outcome (409 = already moved, 403 = not allowed). PoD captures the buyer OTP
 // + an uploaded photo and delivers the shipment server-side.
-import type { OrderListItem, OrderDetail, OrderRole, Shipment, OrderTracking, OrderBuyerSummary } from '@krishi-verse/sdk-js';
+import type { OrderListItem, OrderDetail, OrderRole, Shipment, OrderTracking, OrderBuyerSummary } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { currentScope } from '../../core/offline/scope';

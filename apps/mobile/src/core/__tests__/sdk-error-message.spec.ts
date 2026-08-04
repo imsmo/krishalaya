@@ -1,7 +1,7 @@
 // Unit tests for sdkErrorMessage (KV-MF-03/04): the "Chat with support" + "Raise a complaint" alerts must show the
 // real server-reported reason (e.g. an SdkError's message off a 404 when a feature flag is off) instead of a
 // frozen generic string, per the KV-MF-02 convention.
-import { SdkError, SdkNetworkError } from '@krishi-verse/sdk-js';
+import { SdkError, SdkNetworkError } from '@krishalaya/sdk-js';
 import { sdkErrorMessage } from '../errors/sdk-error-message';
 
 describe('sdkErrorMessage', () => {

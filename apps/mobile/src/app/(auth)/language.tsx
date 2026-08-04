@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(auth)/language.tsx · screen 02 (Choose Language) — rebuilt to match the Phase-1 design
-// (Krishi_Verse_Design_System/screens/02-language.html): a trilingual hero ("Choose Your Language" + अपनी भाषा
+// (Krishalaya_Design_System/screens/02-language.html): a trilingual hero ("Choose Your Language" + अपनी भाषा
 // चुनें + તમારી ભાષા પસંદ કરો + "you can change this anytime"), then three language CARDS — each a circular
 // script avatar (अ / A / ગ), the native name, a romanised descriptor, and a check badge when selected — and a
 // bilingual "Continue / आगे बढ़ें" CTA. Selecting a card applies the language LIVE (the i18n runtime re-renders
@@ -9,8 +9,8 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { LANGUAGES } from '@krishi-verse/i18n';
-import { Button, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { LANGUAGES } from '@krishalaya/i18n';
+import { Button, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 

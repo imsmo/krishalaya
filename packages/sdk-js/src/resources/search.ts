@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · unified cross-entity search (P1-14). One call returns a single ranked list across
+// @krishalaya/sdk-js · unified cross-entity search (P1-14). One call returns a single ranked list across
 // entity types (listings, products, …) from the server's OpenSearch index plane — replacing the old honest
 // client-side fan-out. Tenant-isolated server-side; the response says which `engine` answered (`opensearch` or
 // the `postgres` fallback) so a degrade is observable. Keyset via an opaque federated `cursor`. Gated by the

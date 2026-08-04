@@ -5,7 +5,7 @@
 // — mocked at this same boundary rather than adding an expo-crypto mock, since phone.tsx is the only screen in
 // this batch's 15 that calls `newId()` directly at import/render time via a handler, not on mount).
 import React from 'react';
-import { Input } from '@krishi-verse/ui-native';
+import { Input } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import PhoneScreen from '../../(auth)/phone';
 

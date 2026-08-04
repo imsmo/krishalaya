@@ -109,7 +109,7 @@ describe('bid-sheet money (screen 17)', () => {
     expect(walletCoversHold('bad', '1')).toBe(false);
   });
 });
-import type { BidHistoryItem } from '@krishi-verse/sdk-js';
+import type { BidHistoryItem } from '@krishalaya/sdk-js';
 
 const bid = (over: Partial<BidHistoryItem>): BidHistoryItem => ({ id: 'b', bidderUserId: 'u', amountMinor: '10000', createdAt: '2026-06-01T00:00:00Z', ...over });
 

@@ -12,7 +12,7 @@ import { requireSession } from '../../lib/session';
 import {
   buildCommissionRule, buildDeliveryZone, buildBranding, buildLanguages, PLATFORM_LANGUAGES,
 } from '../../features/settings/config';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 const PATH = '/settings';
 function done(ok: string) { revalidatePath(PATH); redirect(`${PATH}?ok=${ok}`); }

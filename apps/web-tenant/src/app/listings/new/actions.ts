@@ -13,7 +13,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { buildCreateListingInput } from '../../../features/listings/form';
-import { SdkError, type MediaKind, type MediaUploadTicket } from '@krishi-verse/sdk-js';
+import { SdkError, type MediaKind, type MediaUploadTicket } from '@krishalaya/sdk-js';
 
 /** Step 1: mint a presigned PUT ticket (authed). The browser uploads the bytes to ticket.uploadUrl itself. */
 export async function requestUploadAction(input: { kind: MediaKind; mimeType: string; declaredBytes: number }): Promise<MediaUploadTicket> {

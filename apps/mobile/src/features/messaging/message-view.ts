@@ -1,7 +1,7 @@
 // apps/mobile/src/features/messaging/message-view.ts · PURE chat presenters (no React/native; SDK type is
 // `import type` → erased) → unit-tested. Classifies a server message into a render model (mine vs theirs, text /
 // image / voice) and validates a draft before send. Content is text or a media id (never raw bytes here).
-import type { Message } from '@krishi-verse/sdk-js';
+import type { Message } from '@krishalaya/sdk-js';
 
 export type MessageKind = 'text' | 'image' | 'voice' | 'empty';
 export interface MessageView { id: string; mine: boolean; kind: MessageKind; body: string | null; mediaId: string | null; flagged: boolean; createdAt?: string; }

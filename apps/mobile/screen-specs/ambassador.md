@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 86-ambassador-home — 86 · Ambassador Home — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/86-ambassador-home.html`
+## 86-ambassador-home — 86 · Ambassador Home — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/86-ambassador-home.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 86 · Ambassador Home — Krishi-Verse
+  - 86 · Ambassador Home — Krishalaya
   - Good morning, ambassador
   - नमस्ते
   - Vikas Joshi
@@ -54,11 +54,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 87-ambassador-farmers — 87 · My Farmers — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/87-ambassador-farmers.html`
+## 87-ambassador-farmers — 87 · My Farmers — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/87-ambassador-farmers.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 87 · My Farmers — Krishi-Verse
+  - 87 · My Farmers — Krishalaya
   - My Farmers · 247
   - All · 247
   - Active 30d · 189
@@ -113,11 +113,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 88-ambassador-onboard-start — 88 · Onboard Farmer — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/88-ambassador-onboard-start.html`
+## 88-ambassador-onboard-start — 88 · Onboard Farmer — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/88-ambassador-onboard-start.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 88 · Onboard Farmer — Krishi-Verse
+  - 88 · Onboard Farmer — Krishalaya
   - Onboard a Farmer
   - Step 1 of 4
   - Choose method
@@ -145,11 +145,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 89-ambassador-onboard-scan — 89 · Scan Aadhaar — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/89-ambassador-onboard-scan.html`
+## 89-ambassador-onboard-scan — 89 · Scan Aadhaar — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/89-ambassador-onboard-scan.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 89 · Scan Aadhaar — Krishi-Verse
+  - 89 · Scan Aadhaar — Krishalaya
   - Scan Farmer's Aadhaar
   - Scan the back of farmer's Aadhaar
   - The QR code reads name, photo, and address automatically. Auto-uploaded to UIDAI servers.
@@ -165,11 +165,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 90-ambassador-onboard-verify — 90 · Verify Details — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/90-ambassador-onboard-verify.html`
+## 90-ambassador-onboard-verify — 90 · Verify Details — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/90-ambassador-onboard-verify.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 90 · Verify Details — Krishi-Verse
+  - 90 · Verify Details — Krishalaya
   - Verify Details
   - Step 3 of 4
   - Verify with farmer
@@ -206,11 +206,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 91-ambassador-onboard-complete — 91 · Onboarding Complete — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/91-ambassador-onboard-complete.html`
+## 91-ambassador-onboard-complete — 91 · Onboarding Complete — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/91-ambassador-onboard-complete.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 91 · Onboarding Complete — Krishi-Verse
+  - 91 · Onboarding Complete — Krishalaya
   - Success
   - Onboarded successfully!
   - सफलतापूर्वक जोड़ा गया
@@ -240,11 +240,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 92-ambassador-commissions — 92 · My Commissions — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/92-ambassador-commissions.html`
+## 92-ambassador-commissions — 92 · My Commissions — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/92-ambassador-commissions.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 92 · My Commissions — Krishi-Verse
+  - 92 · My Commissions — Krishalaya
   - Total commissions · Aug 2026
   - ₹6,200
   - 12 onboarded · 8 first sales · ↑ 38% vs Jul
@@ -289,11 +289,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 93-ambassador-leaderboard — 93 · Leaderboard — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/93-ambassador-leaderboard.html`
+## 93-ambassador-leaderboard — 93 · Leaderboard — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/93-ambassador-leaderboard.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 93 · Leaderboard — Krishi-Verse
+  - 93 · Leaderboard — Krishalaya
   - Leaderboard
   - This month
   - All time
@@ -344,11 +344,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 94-ambassador-training — 94 · Training Hub — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/94-ambassador-training.html`
+## 94-ambassador-training — 94 · Training Hub — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/94-ambassador-training.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 94 · Training Hub — Krishi-Verse
+  - 94 · Training Hub — Krishalaya
   - Training Hub
   - Learn to onboard better
   - 8 videos · 3 completed · 32 min remaining
@@ -373,11 +373,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 95-ambassador-profile — 95 · My Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/95-ambassador-profile.html`
+## 95-ambassador-profile — 95 · My Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/95-ambassador-profile.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 95 · My Profile — Krishi-Verse
+  - 95 · My Profile — Krishalaya
   - VJ
   - Vikas Joshi
   - Petlad cluster · Anand FPO
@@ -431,7 +431,7 @@
   - Notifications
   - All on
   - Log out
-  - Krishi-Verse Ambassador v1.0
+  - Krishalaya Ambassador v1.0
   - Home
   - Farmers
   - Leaderboard
@@ -440,11 +440,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 162-ambassador-help-listing — 162 · Help with Listing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/162-ambassador-help-listing.html`
+## 162-ambassador-help-listing — 162 · Help with Listing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/162-ambassador-help-listing.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 162 · Help with Listing — Krishi-Verse
+  - 162 · Help with Listing — Krishalaya
   - Help Anil's First Listing
   - AK
   - Anil Kumar · Borsad
@@ -479,11 +479,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 163-ambassador-help-order — 163 · Help with Order — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/163-ambassador-help-order.html`
+## 163-ambassador-help-order — 163 · Help with Order — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/163-ambassador-help-order.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 163 · Help with Order — Krishi-Verse
+  - 163 · Help with Order — Krishalaya
   - Help Anil with Order
   - 📦 Order #KV-2026-0312
   - From: Mehta Trading Co. (Vadodara)
@@ -511,11 +511,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 164-ambassador-visit-log — 164 · Visit Log — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/164-ambassador-visit-log.html`
+## 164-ambassador-visit-log — 164 · Visit Log — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/164-ambassador-visit-log.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 164 · Visit Log — Krishi-Verse
+  - 164 · Visit Log — Krishalaya
   - Visit Log
   - This month
   - 28 visits
@@ -545,11 +545,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 165-ambassador-video-player — 165 · Training Video — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/165-ambassador-video-player.html`
+## 165-ambassador-video-player — 165 · Training Video — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/165-ambassador-video-player.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 165 · Training Video — Krishi-Verse
+  - 165 · Training Video — Krishalaya
   - 2:14 / 6:21
   - First listing · voice mode
   - Hindi · 6 min · Module 2 of 5 · ⭐4.9 (124)
@@ -581,11 +581,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 166-ambassador-quiz — 166 · Knowledge Quiz — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/166-ambassador-quiz.html`
+## 166-ambassador-quiz — 166 · Knowledge Quiz — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/166-ambassador-quiz.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 166 · Knowledge Quiz — Krishi-Verse
+  - 166 · Knowledge Quiz — Krishalaya
   - Knowledge Quiz
   - Onboarding Module 2
   - Question 3 of 5
@@ -608,11 +608,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 167-ambassador-faq-detail — 167 · FAQ Sheet — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/167-ambassador-faq-detail.html`
+## 167-ambassador-faq-detail — 167 · FAQ Sheet — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/167-ambassador-faq-detail.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 167 · FAQ Sheet — Krishi-Verse
+  - 167 · FAQ Sheet — Krishalaya
   - FAQ Cheat Sheet
   - 📋
   - Top 20 questions farmers ask
@@ -647,11 +647,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 168-ambassador-withdraw — 168 · Withdraw Commission — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/168-ambassador-withdraw.html`
+## 168-ambassador-withdraw — 168 · Withdraw Commission — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/168-ambassador-withdraw.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 168 · Withdraw Commission — Krishi-Verse
+  - 168 · Withdraw Commission — Krishalaya
   - Withdraw to Bank
   - Available to withdraw
   - ₹4,850
@@ -679,11 +679,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 169-ambassador-targets — 169 · Monthly Targets — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/169-ambassador-targets.html`
+## 169-ambassador-targets — 169 · Monthly Targets — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/169-ambassador-targets.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 169 · Monthly Targets — Krishi-Verse
+  - 169 · Monthly Targets — Krishalaya
   - My Targets · Aug 2026
   - 🎯
   - 75% of monthly goal
@@ -712,11 +712,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 170-ambassador-goal-setting — 170 · Set Next Month Goals — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/170-ambassador-goal-setting.html`
+## 170-ambassador-goal-setting — 170 · Set Next Month Goals — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/170-ambassador-goal-setting.html`
 - **Route:** `src/app/(ambassador)/…`  ·  **Feature:** `features/ambassador`  ·  **Flag:** `ambassador_app`
 - **Must render (exact design content):**
-  - 170 · Set Next Month Goals — Krishi-Verse
+  - 170 · Set Next Month Goals — Krishalaya
   - Plan Sep 2026 Goals
   - 💡 AI suggestion:
   - Based on your Aug pace and Petlad cluster opportunities, target

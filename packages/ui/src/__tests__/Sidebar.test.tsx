@@ -44,13 +44,13 @@ describe('Sidebar', () => {
     expect(withoutFooter).not.toContain('kvw-sidebar-foot');
   });
 
-  it('WHITE-LABEL: renders an arbitrary tenant brand and contains zero "Krishi Verse" hardcode', () => {
+  it('WHITE-LABEL: renders an arbitrary tenant brand and contains zero "Krishalaya" hardcode', () => {
     const html = renderToStaticMarkup(
       <Sidebar brand={{ name: 'Anand FPO Console' }} sections={sections} navLabel="Primary" footer={<span>Anand FPO</span>} />,
     );
     expect(html).toContain('Anand FPO Console');
-    expect(html).not.toContain('Krishi Verse');
-    expect(html).not.toContain('KrishiVerse');
+    expect(html).not.toContain('Krishalaya');
+    expect(html).not.toContain('Krishalaya');
   });
 
   it('renders the realm pill from realmLabel only, never a baked "ADMIN"/"GOV" string', () => {

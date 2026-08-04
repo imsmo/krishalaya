@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · education resource (module 9 — courses + enrollments). Learner surface: browse published
+// @krishalaya/sdk-js · education resource (module 9 — courses + enrollments). Learner surface: browse published
 // courses, read a course + its lessons, ENROLL (idempotent — a paid enroll moves money, Law 3), and track per-
 // lesson PROGRESS (seconds watched + quiz score + completed). Enrollments/progress are the caller's OWN (server
 // resolves the learner — no IDOR). Money is bigint minor strings (Law 2). Gated server-side by the `education` flag.

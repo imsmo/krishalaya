@@ -1,7 +1,7 @@
 // apps/mobile/src/features/labour/hire-browse.ts · PURE filter/sort/chip logic for the employer "Find Workers"
 // screen (screen 42). No React / no SDK I/O (SDK types are `import type` → erased) → unit-tested. Operates only on
 // the PII-minimised worker pool the server returned; the SERVER stays the authority on eligibility + the pool.
-import type { WorkerCard, LabourLookups } from '@krishi-verse/sdk-js';
+import type { WorkerCard, LabourLookups } from '@krishalaya/sdk-js';
 
 export type WorkerSort = 'rating' | 'jobs';
 

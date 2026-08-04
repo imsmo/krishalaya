@@ -2,7 +2,7 @@
 // withdraw 70). No React/native — unit-tested. The amounts here are whole-RUPEE presets for quick-pick chips
 // (display/UX only); the value actually sent to the server is always converted to paise via
 // core/payments/money.rupeesToPaiseMinor (BigInt, Law 2). Grouping is for DISPLAY of the typed integer only.
-import { formatNumber } from '@krishi-verse/i18n';
+import { formatNumber } from '@krishalaya/i18n';
 
 /** Add-money quick-pick presets (whole rupees), matching the design's chip row. */
 export const QUICK_ADD_RUPEES: readonly number[] = [500, 1000, 2000, 5000, 10000];

@@ -1,5 +1,5 @@
 // modules/identity/gateway/ekyc-provider.port.ts
-// Port to the EXTERNAL eKYC provider (UIDAI Aadhaar OTP / DigiLocker / Karza-style). Krishi-Verse owns the
+// Port to the EXTERNAL eKYC provider (UIDAI Aadhaar OTP / DigiLocker / Karza-style). Krishalaya owns the
 // POLICY (which doc types, consent, retention) + the SESSION state; the provider owns the actual identity proof.
 // CONTRACT, non-negotiable:
 //   • the RAW Aadhaar/PAN is passed to start() and goes NO FURTHER than the adapter — never persisted, never logged.

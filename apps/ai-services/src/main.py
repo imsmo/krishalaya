@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
         await db.close()
 
 
-app = FastAPI(title="krishi-verse ai-services", version="0.1.0", lifespan=lifespan, docs_url=None, redoc_url=None)
+app = FastAPI(title="krishalaya ai-services", version="0.1.0", lifespan=lifespan, docs_url=None, redoc_url=None)
 app.include_router(price_bands_router)
 app.include_router(voice_router)
 app.include_router(photo_router)

@@ -397,7 +397,7 @@ async function completeOrder(buyerToken, orderId) {
 // main
 // ---------------------------------------------------------------------------------------------
 async function main() {
-  console.log('=== Krishi-Verse demo seed (drives the REAL APIs — see scripts/demo-seed/README.md) ===');
+  console.log('=== Krishalaya demo seed (drives the REAL APIs — see scripts/demo-seed/README.md) ===');
   console.log(`API base: ${API_BASE}`);
   console.log(`Tenant:   ${TENANT_ID}`);
 

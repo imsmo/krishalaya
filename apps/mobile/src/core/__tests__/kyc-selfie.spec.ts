@@ -1,6 +1,6 @@
 // Unit tests for the PURE selfie doc-type resolver (features/kyc/selfie, screen 173). No React/native deps.
 import { selfieDocType } from '../../features/kyc/selfie';
-import type { KycDocType } from '@krishi-verse/sdk-js';
+import type { KycDocType } from '@krishalaya/sdk-js';
 
 const t = (id: string, code: string, name = code): KycDocType => ({ id, code, name });
 

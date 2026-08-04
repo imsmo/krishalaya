@@ -5,7 +5,7 @@ import {
   commissionCategory, isPayout, monthKey, monthCreditsMinor, monthCountByCategory,
   withdrawableMinor, paidMinor, momDeltaPct, EARNING_RULES,
 } from '../../features/ambassador/commissions-summary';
-import type { AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { AmbassadorEarning } from '@krishalaya/sdk-js';
 
 const e = (
   amountMinor: string,

@@ -4,7 +4,7 @@
 // money via the EMD hold and needs live auction state; blind replay of a stale bid is wrong). The EMD hold + the
 // loser-refund + winner→settlement are entirely SERVER-SIDE (the app never moves money — Law 11). Money is bigint
 // minor-unit strings (Law 2).
-import type { Auction, BidHistoryItem, MyBid, PlaceBidResult } from '@krishi-verse/sdk-js';
+import type { Auction, BidHistoryItem, MyBid, PlaceBidResult } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -50,6 +50,6 @@ export function unwatchAuction(id: string): Promise<{ ok: boolean; auctionId: st
   return apiClient().auctions.unwatch(id);
 }
 /** The caller's watched auctions (keyset). Degrades to an empty page on failure. */
-export async function listWatchedAuctions(cursor?: string): Promise<{ items: import('@krishi-verse/sdk-js').WatchedAuction[]; nextCursor: string | null }> {
+export async function listWatchedAuctions(cursor?: string): Promise<{ items: import('@krishalaya/sdk-js').WatchedAuction[]; nextCursor: string | null }> {
   try { return await apiClient().auctions.watching({ cursor }); } catch { return { items: [], nextCursor: null }; }
 }

@@ -1,14 +1,14 @@
 // apps/web-tenant/src/test-render/mechanisms.render.test.tsx · DEV-19. Proves the 4 UI mechanisms are real,
-// structural facts about this app's actual dependency (`@krishi-verse/ui`, workspace:*), not just unit-tested
+// structural facts about this app's actual dependency (`@krishalaya/ui`, workspace:*), not just unit-tested
 // in isolation inside that package. Same "can't call next/headers outside a request scope" constraint
-// `listings-shell.render.test.tsx` already documented applies here too — this test renders `@krishi-verse/ui`
+// `listings-shell.render.test.tsx` already documented applies here too — this test renders `@krishalaya/ui`
 // components/CSS directly (real, not mocked) rather than importing `layout.tsx` itself; `resolveThemeHtmlAttrs`/
 // `isSeniorOn` (this app's own `lib/mechanism.ts` thin wrapper around them) are unit-tested directly in
-// `@krishi-verse/ui`'s own `Mechanisms.test.ts` — this file is the "does the shipped CSS actually carry the
+// `@krishalaya/ui`'s own `Mechanisms.test.ts` — this file is the "does the shipped CSS actually carry the
 // mechanism" structural proof, at the level of this app's real bundled dependency.
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { KvUiGlobalStyles, kvUiCss, AppShell, Sidebar as UiSidebar, Topbar } from '@krishi-verse/ui';
+import { KvUiGlobalStyles, kvUiCss, AppShell, Sidebar as UiSidebar, Topbar } from '@krishalaya/ui';
 
 describe('mechanism 1 — DARK MODE: the shipped kvUiCss carries a real [data-theme="dark"] token block', () => {
   it('KvUiGlobalStyles renders a <style> tag whose content includes the dark-scope block', () => {
@@ -46,7 +46,7 @@ describe('mechanism 4 — RTL: the real shell composition renders identically un
   it('AppShell/Sidebar/Topbar emit byte-identical markup regardless of an ancestor dir="rtl"', () => {
     const compose = () => (
       <AppShell
-        sidebar={<UiSidebar brand={{ name: 'Krishi-Verse Console' }} sections={[]} navLabel="Console" />}
+        sidebar={<UiSidebar brand={{ name: 'Krishalaya Console' }} sections={[]} navLabel="Console" />}
         topbar={<Topbar userMenu={<span>Priya S.</span>} />}
       >
         <section>content</section>

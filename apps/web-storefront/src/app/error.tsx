@@ -4,7 +4,7 @@
 // retry re-renders the segment. No PII/secret is ever shown — just a friendly message (degrade, never die).
 'use client';
 import { useEffect } from 'react';
-import { resolveLanguage } from '@krishi-verse/i18n';
+import { resolveLanguage } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';

@@ -1,6 +1,6 @@
 // Unit tests for the PURE hire-browse logic (screen 42).
 import { filterWorkers, sortWorkers, skillChips, bookableSkills } from '../../features/labour/hire-browse';
-import type { WorkerProfile, LabourLookups } from '@krishi-verse/sdk-js';
+import type { WorkerProfile, LabourLookups } from '@krishalaya/sdk-js';
 
 const w = (over: Partial<WorkerProfile>): WorkerProfile => ({
   id: 'w', userId: 'u', ageVerified18: true, villageRegionId: null, travelKm: null, stayAwayOk: null,

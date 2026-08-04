@@ -1,6 +1,6 @@
-# Run Krishi-Verse on your MacBook — the complete beginner guide
+# Run Krishalaya on your MacBook — the complete beginner guide
 
-This is a **follow-top-to-bottom** guide to install, run, and test the *entire* Krishi-Verse product on a
+This is a **follow-top-to-bottom** guide to install, run, and test the *entire* Krishalaya product on a
 MacBook Pro. It assumes you are comfortable with a terminal and backend basics, but **new to Android/frontend
 tooling** — so every step is spelled out, including the small things that usually break.
 
@@ -21,7 +21,7 @@ tooling** — so every step is spelled out, including the small things that usua
 
 ## What is in this product (the map)
 
-Krishi-Verse is a **monorepo** (one git repo, many apps) managed by **pnpm workspaces** + **turbo**. There are
+Krishalaya is a **monorepo** (one git repo, many apps) managed by **pnpm workspaces** + **turbo**. There are
 three kinds of things inside:
 
 **A. Infrastructure (runs in Docker — you don't write code, you just start it):**

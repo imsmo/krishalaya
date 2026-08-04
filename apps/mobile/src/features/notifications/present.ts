@@ -1,7 +1,7 @@
 // apps/mobile/src/features/notifications/present.ts · PURE presentation helpers for a notification row. The
 // rendered title/body live in the server payload (localized); these read them defensively (any shape) and decide
 // unread state. No I/O → unit-tested.
-import type { NotificationItem } from '@krishi-verse/sdk-js';
+import type { NotificationItem } from '@krishalaya/sdk-js';
 
 export interface PresentedNotification { id: string; title: string; body: string; ref: string; deepLink: string | null; unread: boolean; createdAt?: string }
 

@@ -77,7 +77,7 @@ describe('mechanisms/theme (DEV-20 mechanism 1/4 — dark)', () => {
 });
 
 describe('mechanisms/seniorMode (DEV-20 mechanism 2/4 — senior, Q48)', () => {
-  it('SENIOR_TYPE_SCALE is the ratified 1.30x constant, sourced from @krishi-verse/tokens (not a re-typed literal)', () => {
+  it('SENIOR_TYPE_SCALE is the ratified 1.30x constant, sourced from @krishalaya/tokens (not a re-typed literal)', () => {
     expect(SENIOR_TYPE_SCALE).toBe(1.3);
   });
 
@@ -159,7 +159,7 @@ describe('mechanisms/rtl (DEV-20 mechanism 4/4 — RTL, APPLY-6/BRAND-017)', () 
   });
 
   it('every live app language (hi/en/gu) resolves to false today (HONEST BOUNDARY: mechanism real, structurally inactive)', () => {
-    // Mirrors this batch's own header comment: @krishi-verse/i18n's live registry carries only hi/en/gu, all ltr.
+    // Mirrors this batch's own header comment: @krishalaya/i18n's live registry carries only hi/en/gu, all ltr.
     for (const dir of ['ltr', 'ltr', 'ltr'] as const) expect(shouldForceRTL(dir)).toBe(false);
   });
 

@@ -6,7 +6,7 @@
 //      (the API itself 409s a claim against a non-active policy — this screen checks first).
 //   2. An active PMSBY policy -> the real claim form renders (claim-type picker, incident fields, doc checklist).
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import FileClaim from '../../(worker)/claim';
 

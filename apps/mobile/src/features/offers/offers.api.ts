@@ -3,7 +3,7 @@
 // offline-queued), idempotent where the endpoint requires it (make), and throw so the screen shows the precise
 // outcome (409 stale / 403 not your turn). Accept converts the offer to an order SERVER-SIDE (convertedOrderId).
 // Money is bigint minor-unit strings (Law 2).
-import type { ListingOffer, OfferBox } from '@krishi-verse/sdk-js';
+import type { ListingOffer, OfferBox } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

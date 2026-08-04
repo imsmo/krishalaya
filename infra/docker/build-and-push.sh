@@ -12,17 +12,17 @@ cd "$ROOT"
 
 # node services: <image-name>:<workspace-pkg>:<app-dir>
 NODE_SERVICES=(
-  "krishiverse-api:@krishi-verse/api:api"
-  "krishiverse-admin-api:@krishi-verse/admin-api:admin-api"
-  "krishiverse-wallet-service:@krishi-verse/wallet-service:wallet-service"
-  "krishiverse-worker:@krishi-verse/worker:worker"
-  "krishiverse-realtime-gateway:@krishi-verse/realtime-gateway:realtime-gateway"
+  "krishiverse-api:@krishalaya/api:api"
+  "krishiverse-admin-api:@krishalaya/admin-api:admin-api"
+  "krishiverse-wallet-service:@krishalaya/wallet-service:wallet-service"
+  "krishiverse-worker:@krishalaya/worker:worker"
+  "krishiverse-realtime-gateway:@krishalaya/realtime-gateway:realtime-gateway"
 )
 WEB_APPS=(
-  "krishiverse-web-storefront:@krishi-verse/web-storefront:web-storefront"
-  "krishiverse-web-tenant:@krishi-verse/web-tenant:web-tenant"
-  "krishiverse-web-admin:@krishi-verse/web-admin:web-admin"
-  "krishiverse-web-partner:@krishi-verse/web-partner:web-partner"
+  "krishiverse-web-storefront:@krishalaya/web-storefront:web-storefront"
+  "krishiverse-web-tenant:@krishalaya/web-tenant:web-tenant"
+  "krishiverse-web-admin:@krishalaya/web-admin:web-admin"
+  "krishiverse-web-partner:@krishalaya/web-partner:web-partner"
 )
 
 echo ">> ECR login"

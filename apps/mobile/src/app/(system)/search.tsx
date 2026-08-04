@@ -13,7 +13,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Input, MoneyText, EmptyState, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import { Input, MoneyText, EmptyState, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { globalSearch } from '../../features/system/system.api';

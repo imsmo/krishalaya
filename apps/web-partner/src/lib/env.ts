@@ -8,7 +8,7 @@ if (!publicApiUrl) throw new Error('web-partner: NEXT_PUBLIC_API_URL is required
 export const env = {
   publicApiUrl,
   serverApiUrl: process.env.API_URL_INTERNAL || publicApiUrl,   // server-side SSR origin (never shipped to the client)
-  appName: 'Krishi-Verse Partner',
+  appName: 'Krishalaya Partner',
   // single source for the NODE_ENV gate (so other modules never read process.env directly)
   isProduction: process.env.NODE_ENV === 'production',
 } as const;

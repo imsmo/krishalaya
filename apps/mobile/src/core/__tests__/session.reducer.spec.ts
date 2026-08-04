@@ -1,7 +1,7 @@
 // Unit tests for the pure session state machine. No React/expo — exercises every transition + the refresh-skew
 // logic, including the guard that a late TOKENS_REFRESHED can't resurrect a signed-out session.
 import { sessionReducer, initialSession, needsRefresh, type SessionState } from '../auth/session.reducer';
-import type { AuthTokens } from '@krishi-verse/sdk-js';
+import type { AuthTokens } from '@krishalaya/sdk-js';
 
 const tokens: AuthTokens = { accessToken: 'a', refreshToken: 'r', expiresInSec: 900 };
 

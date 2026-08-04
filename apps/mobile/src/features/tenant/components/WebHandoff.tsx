@@ -4,7 +4,7 @@
 // of failing). Optionally shows a "flagged: no mobile API yet" note so we never imply a fake in-app action.
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { Button, Card, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
+import { Button, Card, ScreenScaffold, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { openWebConsole } from '../../../core/deeplink';
 

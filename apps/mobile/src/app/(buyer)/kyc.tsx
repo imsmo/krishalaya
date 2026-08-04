@@ -7,8 +7,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { KycDocument, KycDocType, KycStatus, UserProfile, BusinessKycStatus, BusinessType } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius, type PillTone } from '@krishi-verse/ui-native';
+import type { KycDocument, KycDocType, KycStatus, UserProfile, BusinessKycStatus, BusinessType } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius, type PillTone } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';

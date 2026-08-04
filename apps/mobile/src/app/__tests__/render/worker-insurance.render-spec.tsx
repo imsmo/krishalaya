@@ -6,7 +6,7 @@
 // fetch/enrolment CTA) is covered separately in worker-insurance-on.render-spec.tsx, in its own file — jest.mock
 // hoists to module scope, so the ON path's `useFlag` override cannot safely share a file with this OFF test.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import WorkerInsurance from '../../(worker)/insurance';
 

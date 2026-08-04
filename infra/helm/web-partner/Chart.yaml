@@ -1,6 +1,6 @@
 apiVersion: v2
 name: web-partner
-description: Krishi-Verse partner portal (Next.js)
+description: Krishalaya partner portal (Next.js)
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

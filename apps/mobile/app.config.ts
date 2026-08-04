@@ -11,8 +11,8 @@ const apiHost = (() => { try { return process.env.EXPO_PUBLIC_API_URL ? new URL(
 const tlsPins = (process.env.EXPO_PUBLIC_TLS_PINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
 const config: ExpoConfig = {
-  name: 'Krishi-Verse',
-  slug: 'krishi-verse',
+  name: 'Krishalaya',
+  slug: 'krishalaya',
   scheme: 'krishiverse',
   version: '0.1.0',
   orientation: 'portrait',

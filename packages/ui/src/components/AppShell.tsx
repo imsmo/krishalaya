@@ -1,6 +1,6 @@
 // packages/ui/src/components/AppShell.tsx · DEV-17 (Phase D3, packages/ui port batch 3 —
 // navigation/layout primitives). Ports the console FRAME verbatim from
-// `Phase-1 all screen design/Krishi_Verse_Design_System/system/web/web-frame.css` — THIS batch's primary
+// `Phase-1 all screen design/Krishalaya_Design_System/system/web/web-frame.css` — THIS batch's primary
 // source per the brief (unlike DEV-15/16's `web-components.css`): `.web-shell` grid (lines 22-35),
 // `.kvw-impersonation` banner (131-140), `.kvw-content` + grid helpers (143-180), responsive collapse
 // (183-208), print (210-215). Sidebar/Topbar themselves are separate components (this file only owns the
@@ -35,8 +35,8 @@
 //   scope (packages/ui consumes canon, never edits it, contract §2).
 //
 // WHITE-LABEL (Rule Zero): `brand` is a REQUIRED prop on `Sidebar` (this file has no brand of its own) —
-// no Krishi Verse name/mark/wordmark is ever rendered as a fallback default anywhere in this file or
-// `Sidebar.tsx`/`Topbar.tsx` (grep-verified zero occurrences of the literal string "Krishi Verse" in any
+// no Krishalaya name/mark/wordmark is ever rendered as a fallback default anywhere in this file or
+// `Sidebar.tsx`/`Topbar.tsx` (grep-verified zero occurrences of the literal string "Krishalaya" in any
 // component source this batch touches — see dev17_report.md).
 import * as React from 'react';
 

@@ -12,7 +12,7 @@
 // lands.
 //
 // DEV-21: extended from a single hardcoded "coming soon" row (Marathi only) to the FULL 11-language target set
-// from the shared `@krishi-verse/i18n` registry (`COMING_SOON_LANGUAGES`) — native name + script rendered
+// from the shared `@krishalaya/i18n` registry (`COMING_SOON_LANGUAGES`) — native name + script rendered
 // directly from the registry (never a per-language translated string, since a native name IS the same string in
 // every locale). Dropped the previous Marathi row's invented "Coming Q1 2027" date claim (no rollout date is
 // known/verified for ANY of the 11 target languages — Golden Law 12, "no fabricated metric presented as current
@@ -20,8 +20,8 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishi-verse/i18n';
-import { Button, Card, StatusPill, Toggle, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishalaya/i18n';
+import { Button, Card, StatusPill, Toggle, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { orderedLanguageCodes, languageSubKey } from '../../features/system/system';

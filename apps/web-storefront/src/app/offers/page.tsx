@@ -4,8 +4,8 @@
 // offer carries only listingId (no title/tenant), so rows link to the offer detail, not back to the listing.
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
-import type { ListingOffer } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import type { ListingOffer } from '@krishalaya/sdk-js';
 import { serverClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { getTranslator, getLang } from '../../lib/i18n';

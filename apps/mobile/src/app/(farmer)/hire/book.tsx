@@ -13,8 +13,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { type LabourLookups } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, MoneyText, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { type LabourLookups } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, MoneyText, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getCurrentFix } from '../../../core/location';
@@ -22,7 +22,7 @@ import { buildBookingDraft, type BookingDraftField } from '../../../features/lab
 import { withDailyHours, BOOKING_HOURS } from '../../../features/labour/book-worker';
 import { rupeesToWageMinor } from '../../../features/labour/labour-status';
 import { labourLookups } from '../../../features/labour/hire.api';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 
 const SKILL_LEVELS = ['unskilled', 'semi_skilled', 'skilled', 'highly_skilled'] as const;
 

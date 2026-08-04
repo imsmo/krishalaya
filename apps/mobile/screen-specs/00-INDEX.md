@@ -1,4 +1,4 @@
-# Krishi-Verse Mobile — 196-Screen Build Spec (INDEX)
+# Krishalaya Mobile — 196-Screen Build Spec (INDEX)
 
 Per-screen, design-faithful, production-grade build specs for all **196** Phase-1 screens. Build in this order
 (one vertical per session). Each screen's full spec (exact design content + requirements) is in the linked file.

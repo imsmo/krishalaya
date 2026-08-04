@@ -1,6 +1,6 @@
 // Unit tests for the PURE notification-detail helpers (features/notifications/notif-detail, screen 172). No RN deps.
 import { moneyMinorOf, presentNotificationDetail, notifActions } from '../../features/notifications/notif-detail';
-import type { NotificationItem } from '@krishi-verse/sdk-js';
+import type { NotificationItem } from '@krishalaya/sdk-js';
 
 const n = (eventCode: string, payload: Record<string, unknown>, status = 'sent'): NotificationItem =>
   ({ id: 'x', eventCode, channel: 'push', status, payload, createdAt: '2026-08-22T06:12:00.000Z' });

@@ -10,7 +10,7 @@ export const EnvSchema = z.object({
   PORT: z.coerce.number().default(3000),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1), // # of trusted proxies/LB hops in front of the API
   // CORS allowlist for the 4 Next.js web apps (tenant/admin/storefront/partner) that call this API from the
-  // browser — comma-separated exact origins, e.g. "https://sell.krishi-verse.in,https://admin.krishi-verse.in".
+  // browser — comma-separated exact origins, e.g. "https://sell.krishalaya.com,https://admin.krishalaya.com".
   // Mobile apps and server-to-server webhooks never send an Origin header and are unaffected either way.
   // Empty (default) ⇒ CORS is left OFF entirely — identical to today's (no-CORS) behavior. Required in
   // production (assertProductionSecurity) once real web-app origins exist.
@@ -24,8 +24,8 @@ export const EnvSchema = z.object({
 
   // --- auth (required) ---
   JWT_ACCESS_SECRET: z.string().min(16),
-  JWT_ISSUER: z.string().default('krishi-verse'),
-  JWT_AUDIENCE: z.string().default('krishi-verse-api'),
+  JWT_ISSUER: z.string().default('krishalaya'),
+  JWT_AUDIENCE: z.string().default('krishalaya-api'),
   JWT_REFRESH_SECRET: z.string().min(16).default('dev-refresh-secret-change-me-32x'),
   JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(900),        // 15 min
   JWT_REFRESH_TTL_SEC: z.coerce.number().int().positive().default(2592000),   // 30 days

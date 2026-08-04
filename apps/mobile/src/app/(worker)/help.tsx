@@ -15,7 +15,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openTicket } from '../../features/profile/profile.api';

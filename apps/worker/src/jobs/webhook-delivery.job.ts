@@ -63,7 +63,7 @@ export const webhookDeliveryJob: Job = {
         try {
           const res = await fetch(row.url, {
             method: 'POST', signal: ctrl.signal,
-            headers: { 'content-type': 'application/json', 'X-KV-Timestamp': String(ts), 'X-KV-Signature': `t=${ts},v1=${sig}`, 'X-KV-Event': row.event_type, 'User-Agent': 'Krishi-Verse-Webhooks/1' },
+            headers: { 'content-type': 'application/json', 'X-KV-Timestamp': String(ts), 'X-KV-Signature': `t=${ts},v1=${sig}`, 'X-KV-Event': row.event_type, 'User-Agent': 'Krishalaya-Webhooks/1' },
             body,
           });
           statusCode = res.status;

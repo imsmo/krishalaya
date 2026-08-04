@@ -26,7 +26,7 @@ export async function openCheckout(input: CheckoutInput): Promise<CheckoutResult
     order_id: input.gatewayOrderId,
     amount: Number(input.amountMinor), // gateway requires an integer paise number at this boundary only
     currency: input.currencyCode ?? 'INR',
-    name: 'Krishi-Verse',
+    name: 'Krishalaya',
     description: input.description,
     prefill: input.prefill ?? {},
     theme: { color: '#1e6f3f' },

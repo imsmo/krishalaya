@@ -2,8 +2,8 @@
 // payout history, withdraw). No React, no native imports (SDK/ui types are `import type` → erased), so this is
 // unit-tested under ts-jest. Money is bigint minor-unit strings end-to-end (Law 2) — comparisons use BigInt,
 // never a float. Direction/tone are derived ONLY from server fields (status/purpose); the client invents nothing.
-import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishi-verse/sdk-js';
-import type { PillTone } from '@krishi-verse/ui-native';
+import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishalaya/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
 import { paymentOutcome } from '../../core/payments/money';
 
 export type TxnKind = 'payment' | 'payout';

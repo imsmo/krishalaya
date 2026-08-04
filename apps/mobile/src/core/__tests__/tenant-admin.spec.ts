@@ -1,7 +1,7 @@
 // Unit tests for the PURE tenant-admin-lite logic (features/tenant/tenant-admin). Money built with BigInt (Law 2).
 // The server is the authority on every action (no god-mode, Law 11); these helpers only drive the UI/validation.
 import { subscriptionTone, needsToApply, isPending, isPendingApproval, disputeStatusTone, disputeActions, buildResolution, dashboardKpis, validateAddFarmer, planFarmerLimit, sortPlansByPrice, expectedResponseAt, rosterCounts, filterRoster, groupAssignmentsByRole, avgOrderMinor, windowRange, planLimitLines, usageRows, isCustomPlan, upgradePlans, approvalCounts, filterApprovals, verifiedApprovalIds, pctOf, formatBytes, reportKindIcon, disputeTab, disputeTabCounts, filterDisputesByTab, daysAgo, isDisputeUrgent, disputeMessageRole, validateBroadcast, BROADCAST_BODY_MAX, campaignTab, campaignTabCounts, filterCampaignsByTab } from '../../features/tenant/tenant-admin';
-import type { RoleAssignment, Dispute, Plan } from '@krishi-verse/sdk-js';
+import type { RoleAssignment, Dispute, Plan } from '@krishalaya/sdk-js';
 
 const plan = (id: string, monthlyPriceMinor: string, limits: Record<string, string>): Plan =>
   ({ id, code: id, version: 1, defaultName: id, countryCode: 'IN', currencyCode: 'INR', monthlyPriceMinor, annualPriceMinor: '0', setupFeeMinor: '0', isPublic: true, isActive: true, limits } as Plan);

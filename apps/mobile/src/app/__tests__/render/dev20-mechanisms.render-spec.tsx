@@ -13,7 +13,7 @@ import { useThemeMode } from '../../../core/mechanisms/useThemeMode';
 import { useSeniorMode } from '../../../core/mechanisms/useSeniorMode';
 import { mechanismPreferences } from '../../../core/mechanisms/mechanismStore.runtime';
 import { applyRtlForDirection } from '../../../core/mechanisms/rtlBoot';
-import { font as baseFont } from '@krishi-verse/ui-native';
+import { font as baseFont } from '@krishalaya/ui-native';
 
 // A top-level ES import of the mock here breaks jest.mock's hoisting for this specific package (the factory runs
 // before the import binding is populated) — this is AsyncStorage's own documented jest.mock pattern (a lazy

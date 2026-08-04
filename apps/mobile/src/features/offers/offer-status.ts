@@ -2,8 +2,8 @@
 // are `import type` → erased) → unit-tested. Mirrors the server offer state machine for NAVIGATION/UX only —
 // which actions a screen may OFFER given (status, box). The SERVER re-authorizes the party (buyer vs seller) and
 // the legal transition; an illegal tap is rejected. Money is bigint minor-unit strings (Law 2).
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { OfferBox } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { OfferBox } from '@krishalaya/sdk-js';
 
 export type OfferAction = 'accept' | 'counter' | 'reject';
 

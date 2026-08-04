@@ -11,8 +11,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Course, CourseLesson, Enrollment, LessonProgress } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { Course, CourseLesson, Enrollment, LessonProgress } from '@krishalaya/sdk-js';
+import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { browseCourses, myEnrollments, getLessons, getProgress } from '../../features/education/education.api';

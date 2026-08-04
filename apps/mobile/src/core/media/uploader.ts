@@ -3,8 +3,8 @@
 // with the SAME idempotency keys, so a reconnect can never create a duplicate asset (Law 3). The raw bytes go
 // straight to S3 (ticket.uploadUrl) via expo-file-system — never proxied through the API or logged.
 import * as FileSystem from 'expo-file-system';
-import { SdkError } from '@krishi-verse/sdk-js';
-import type { MediaKind } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import type { MediaKind } from '@krishalaya/sdk-js';
 import { apiClient } from '../api/client';
 import type { QueuedOp, ReplayResult } from '../api/offline-queue';
 import { registerOpHandler, enqueueOp } from '../offline/sync-queue';

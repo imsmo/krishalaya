@@ -1,5 +1,5 @@
 {
-  "name": "@krishi-verse/contracts",
+  "name": "@krishalaya/contracts",
   "version": "0.1.0",
   "private": true,
   "description": "Versioned DTOs, event schemas, and OpenAPI contracts shared across services.",

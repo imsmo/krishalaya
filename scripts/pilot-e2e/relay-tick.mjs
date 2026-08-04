@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // scripts/pilot-e2e/relay-tick.mjs
-// One-shot outbox relay tick for the Krishi-Verse pilot E2E proof.
+// One-shot outbox relay tick for the Krishalaya pilot E2E proof.
 //
 // WHY THIS FILE EXISTS: apps/api/src/core/outbox/relay.poller.ts exports runRelay(), but nothing in
 // this repo invokes it at runtime today — apps/worker's outbox-gauge job only MEASURES the pending
@@ -20,8 +20,8 @@
 //      compiles ONLY main.ts/app.module.ts/core/shared/listings per apps/api/tsconfig.json's
 //      "include" (payments/orders/communication are pulled in transitively by the compiler, but the
 //      dist layout/entry points are not a published, stable module surface to import from a script).
-//   3. `pnpm --filter @krishi-verse/api exec ts-node <file>.ts` — CHOSEN. ts-node is already a
-//      devDependency of @krishi-verse/api (no new package added anywhere). It transpiles the target
+//   3. `pnpm --filter @krishalaya/api exec ts-node <file>.ts` — CHOSEN. ts-node is already a
+//      devDependency of @krishalaya/api (no new package added anywhere). It transpiles the target
 //      file on demand from apps/api's own tsconfig (decorators + paths just work) and needs no build
 //      step. The implementation lives in a NEW file (no existing source touched):
 //        apps/api/src/modules/payments/pilot-e2e/relay-tick.ts
@@ -74,7 +74,7 @@ const env = {
 
 const result = spawnSync(
   'pnpm',
-  ['--filter', '@krishi-verse/api', 'exec', 'ts-node', 'src/modules/payments/pilot-e2e/relay-tick.ts'],
+  ['--filter', '@krishalaya/api', 'exec', 'ts-node', 'src/modules/payments/pilot-e2e/relay-tick.ts'],
   { cwd: repoRoot, env, encoding: 'utf8' },
 );
 

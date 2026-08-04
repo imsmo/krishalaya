@@ -14,9 +14,9 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { ListingCard, SellerPublicProfile } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import type { ListingCard, SellerPublicProfile } from '@krishalaya/sdk-js';
+import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { BuyerListingCard } from '../../features/buyer/components/BuyerListingCard';

@@ -13,9 +13,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { Auction, BidHistoryItem, ListingCard } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import type { Auction, BidHistoryItem, ListingCard } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getAuction, bidHistory } from '../../../features/auctions/auctions.api';

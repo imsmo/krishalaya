@@ -7,8 +7,8 @@ import { notFound } from 'next/navigation';
 import { requirePartner } from '../../../lib/session';
 import { partnerClient } from '../../../lib/api-client';
 import { getTranslator } from '../../../lib/i18n';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import { SdkError } from '@krishalaya/sdk-js';
 import { formatAprBps, formatTenureMonths, type ProductRow } from '../../../features/lending/product';
 
 export const dynamic = 'force-dynamic';

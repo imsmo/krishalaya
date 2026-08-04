@@ -1,6 +1,6 @@
 // Unit tests for the PURE notification presenters (screen 28).
 import { groupByDay, internalDeepLink, presentNotification } from '../../features/notifications/present';
-import type { NotificationItem } from '@krishi-verse/sdk-js';
+import type { NotificationItem } from '@krishalaya/sdk-js';
 
 const n = (id: string, createdAt?: string, payload: Record<string, unknown> = {}): NotificationItem => ({
   id, eventCode: 'order.shipped', channel: 'inbox', status: 'delivered', payload, createdAt,

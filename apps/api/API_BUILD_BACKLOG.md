@@ -9,7 +9,7 @@ flags green.
 
 **The order of operations for every flagged flow is BACKEND-FIRST:**
 1. Build the endpoint here in `apps/api` (this file, one wave per session).
-2. Add the typed resource/method to `@krishi-verse/sdk-js`.
+2. Add the typed resource/method to `@krishalaya/sdk-js`.
 3. A tiny client "un-flag" session points the screen at the real endpoint and deletes the "coming soon"
    (mobile = a `M-Wx` row in `MOBILE_BUILD_BACKLOG.md` §6; web = a small follow-up in that app).
 
@@ -280,7 +280,7 @@ then P2 (engagement), then P3 (nice-to-have)** — reorder freely to match busin
    real Postgres; offline gate = pure-domain node-port + SQL parse).
 2. Endpoint mirrors the module's existing pattern exactly (guards + flag + RLS + keyset + idempotency + outbox for
    money); the gap was confirmed absent in pre-flight (never duplicated).
-3. SDK resource/method added in `@krishi-verse/sdk-js` (typed) so the client un-flag is a one-liner.
+3. SDK resource/method added in `@krishalaya/sdk-js` (typed) so the client un-flag is a one-liner.
 4. Module README + `MODULE_STATUS.md` cell + this file's box updated; the matching client backlog row
    (`MOBILE_BUILD_BACKLOG.md` §6 / web app) noted as "unblocked — un-flag pending".
 5. Self-audit §4 GREEN. Only then is the task done.

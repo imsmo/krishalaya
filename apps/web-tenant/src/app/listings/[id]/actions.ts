@@ -13,7 +13,7 @@ import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { parseMajorToMinor } from '../../../features/listings/form';
 import { priceErrorKey } from '../../../features/listings/manage';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 export async function publishListingAction(formData: FormData): Promise<void> {
   await requireSession('/listings');

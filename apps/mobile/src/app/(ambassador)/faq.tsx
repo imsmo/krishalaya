@@ -12,7 +12,7 @@
 // available offline, so the button would be a no-op).
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
-import { Card, EmptyState, Input, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Card, EmptyState, Input, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { FAQ_CATALOG, FAQ_CATEGORIES, faqCategoryCounts, filterFaqs, type FaqCategory, type ResolvedFaq } from '../../features/ambassador/faq-sheet';

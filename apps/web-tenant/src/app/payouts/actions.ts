@@ -13,7 +13,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { buildPayoutRequest, buildBankAccount } from '../../features/payouts/form';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 function back(qs: string): never { redirect(`/payouts?${qs}`); }
 

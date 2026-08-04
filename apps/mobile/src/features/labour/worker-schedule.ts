@@ -2,7 +2,7 @@
 // (screen 32). No React / no SDK I/O (SDK types are `import type` → erased) → unit-tested. Buckets the worker's own
 // assignments into Upcoming / Past / Cancelled and (for upcoming) into Today / Tomorrow / This week / Later by the
 // booking's start date. These only classify what the server returned; the SERVER stays the authority on statuses.
-import type { LabourAssignment, LabourBooking } from '@krishi-verse/sdk-js';
+import type { LabourAssignment, LabourBooking } from '@krishalaya/sdk-js';
 
 /** One row = an assignment plus its (optionally still-loading/absent) booking for date/task context. */
 export interface ScheduledJob { assignment: LabourAssignment; booking: LabourBooking | null }

@@ -1,7 +1,7 @@
 # web-tenant
 
 The seller / tenant-admin **console**. Next.js 14 (App Router), server-rendered, built on the shared
-`@krishi-verse/sdk-js` + `@krishi-verse/i18n` + `@krishi-verse/tokens`. Authenticated app — never indexed.
+`@krishalaya/sdk-js` + `@krishalaya/i18n` + `@krishalaya/tokens`. Authenticated app — never indexed.
 
 ## What it serves (built this slice)
 
@@ -131,7 +131,7 @@ The seller / tenant-admin console DoD is **closed** (`web-tenant` ✅): every ro
 secret-free, RBAC-respecting, money-safe, accessible, localized (en/hi/gu), and degrades instead of dying.
 
 What is **not** built is intentionally so: the tenant-*config* and vertical-operator surfaces the wider spec lists
-have **no seller-facing method in `@krishi-verse/sdk-js`**, so they are SDK-gap-flagged rather than faked —
+have **no seller-facing method in `@krishalaya/sdk-js`**, so they are SDK-gap-flagged rather than faked —
 commission-rules editing, delivery-zones, branding, integrations, webhooks, billing-config, the staff-permissions
 matrix, languages; and the operator verticals dairy-MCC, labour-as-employer-admin, schemes-as-assistant,
 ambassadors-admin, group-lots, auditor, and the AI-review queue. Each is unblocked only when the SDK (or the

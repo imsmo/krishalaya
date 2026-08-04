@@ -7,7 +7,7 @@ import { env } from '../lib/env';
 import { getTranslator, PARTNER_LANG } from '../lib/i18n';
 import { isAuthenticated } from '../lib/partner-auth';
 import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
-import { resolveLanguage } from '@krishi-verse/i18n';
+import { resolveLanguage } from '@krishalaya/i18n';
 import { Sidebar } from '../components/Sidebar';
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const t = getTranslator();
   const authed = isAuthenticated();
   // DEV-19: minimal mechanism wiring for this not-yet-on-packages/ui app (see lib/mechanism.ts's own header
-  // comment for the disclosed boundary). `dir` is now derived from the real @krishi-verse/i18n LanguageDef
+  // comment for the disclosed boundary). `dir` is now derived from the real @krishalaya/i18n LanguageDef
   // (previously hardcoded absent entirely — a real gap closed here, not just cosmetic).
   const lang = resolveLanguage(PARTNER_LANG);
   const themeAttrs = getThemeHtmlAttrs();

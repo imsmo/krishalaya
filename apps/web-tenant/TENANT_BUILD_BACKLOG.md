@@ -22,7 +22,7 @@
 6. **Only read surfaces** — no seller mutations (create/publish listing, fulfil orders, respond to offers, run
    auctions, request payouts) and none of the long-tail console.
 
-Everything below is **frontend-only**: the API (apps/api ✅, admin-api ✅) and the SDK (`@krishi-verse/sdk-js` ✅)
+Everything below is **frontend-only**: the API (apps/api ✅, admin-api ✅) and the SDK (`@krishalaya/sdk-js` ✅)
 already expose the endpoints + types these tasks consume. No new backend, no new SDK resource — **if a task needs
 one, STOP and flag it** rather than reaching past the SDK. Each task is one build session per the Production-Grade
 Contract below; **hand me one `Yes next TC-Wx-yy …` at a time** with the build guide pasted, exactly like the
@@ -46,7 +46,7 @@ PRODUCTION-GRADE CONTRACT (web-tenant) — obey for everything you build:
 - This is the SELLER / TENANT-ADMIN console for businesses running on the platform, under active attack. Build
   production, not a demo. It is an AUTHENTICATED app — every page is noindex; there is no public surface.
 - Match the reference: the FINISHED apps/web-storefront (its lib/session, i18n, Server-Action + boundary
-  patterns) and the existing apps/web-tenant lib (env/api-client/auth), plus @krishi-verse/sdk-js + i18n + tokens.
+  patterns) and the existing apps/web-tenant lib (env/api-client/auth), plus @krishalaya/sdk-js + i18n + tokens.
   Mirror their layering and rigor.
 - NO stubs, NO TODOs, NO placeholders. If a needed API/SDK method is missing, STOP and flag it —
   never fake data, never call the API past the typed SDK, never invent an endpoint. Nav links ONLY to built routes.
@@ -66,7 +66,7 @@ PRODUCTION-GRADE CONTRACT (web-tenant) — obey for everything you build:
 - MUTATIONS pass the user's Idempotency-Key where the SDK exposes it (create/publish/transition/bid/payout), so a
   double-submit/refresh never double-acts. Lifecycle transitions reflect the server state machine (only legal
   actions shown).
-- ACCESSIBILITY + i18n: semantic HTML, labelled controls, keyboard-navigable; all copy via @krishi-verse/i18n
+- ACCESSIBILITY + i18n: semantic HTML, labelled controls, keyboard-navigable; all copy via @krishalaya/i18n
   (en/hi/gu, full key parity, NO hardcoded strings); loading.tsx + error.tsx boundaries per route segment;
   noindex metadata on every page (no SEO surface).
 - Before "done": `npm run typecheck` (tsc --noEmit, exit 0) + `npm run lint` (next lint) + `npm run build`
@@ -91,7 +91,7 @@ PRODUCTION-GRADE CONTRACT (web-tenant) — obey for everything you build:
    admin-ish `admin.ts` (RbacResource / DisputesResource / UsersResource). **Match the SDK exactly; never guess.**
 3. `docs/spec/06_web_apps.md` (`web-tenant` section) — the intended route list (it's large; most config/operator
    routes are SDK-gap-flagged above).
-4. `@krishi-verse/i18n` keys (add new keys in en/hi/gu, never inline literals) + `@krishi-verse/tokens`
+4. `@krishalaya/i18n` keys (add new keys in en/hi/gu, never inline literals) + `@krishalaya/tokens`
    (design tokens / theme — never hardcode colours/spacing).
 5. `lib/{env,api-client,auth}.ts` (+ the new `lib/session.ts` once W0 lands) — use these; never read `process.env`
    or build a fetch client elsewhere.

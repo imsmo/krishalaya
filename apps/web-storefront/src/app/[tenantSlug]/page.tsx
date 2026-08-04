@@ -4,7 +4,7 @@
 // facets live in the URL searchParams (shareable, bookmarkable), parsed through the pure features/discovery
 // helpers into a typed SDK query. SSR + ISR. Degrades to an empty state if the API is unavailable (Law 12).
 import type { Metadata } from 'next';
-import type { ListingCard as ListingCardData, CategoryNode, TenantBranding } from '@krishi-verse/sdk-js';
+import type { ListingCard as ListingCardData, CategoryNode, TenantBranding } from '@krishalaya/sdk-js';
 import { publicClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { ListingCard } from '../../components/ListingCard';

@@ -5,7 +5,7 @@
 // timezone. Degrades to an error state; never 500 (Law 12); noindex.
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { NotificationPreference, QuietHours } from '@krishi-verse/sdk-js';
+import type { NotificationPreference, QuietHours } from '@krishalaya/sdk-js';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { getTranslator } from '../../../lib/i18n';

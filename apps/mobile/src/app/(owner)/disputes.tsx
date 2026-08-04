@@ -16,9 +16,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Dispute } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Card, EmptyState, MoneyText, SegmentedControl, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { Dispute } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Card, EmptyState, MoneyText, SegmentedControl, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { disputesList } from '../../features/tenant/tenant.api';

@@ -1,5 +1,5 @@
 // apps/web-storefront/src/i18n/gu.ts · Gujarati message catalog. Mirrors EVERY key in en.ts (Law 7).
-import type { Messages } from '@krishi-verse/i18n';
+import type { Messages } from '@krishalaya/i18n';
 
 export const gu: Messages = {
   'brand.tagline': 'ખેતરથી તાજું',

@@ -13,13 +13,13 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { env } from '../../lib/env';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { APPLICATION_STATUSES, officerActions, canRecordDbt, totalDbtMinor } from '../../features/schemes/operator';
 import {
   verifyApplicationAction, clarifyApplicationAction, approveApplicationAction,
   rejectApplicationAction, closeApplicationAction, recordDbtAction, checkEligibilityAction,
 } from './actions';
-import type { SchemeApplication, DbtTransfer, Scheme, ApplicationStatus } from '@krishi-verse/sdk-js';
+import type { SchemeApplication, DbtTransfer, Scheme, ApplicationStatus } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

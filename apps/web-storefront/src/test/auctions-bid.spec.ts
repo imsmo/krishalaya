@@ -1,6 +1,6 @@
 // apps/web-storefront/src/test/auctions-bid.spec.ts · auction bid math is BigInt-only (Law 2). Pins that the high
 // bid + suggested minimum are computed without float drift, and that sealed (null-amount) bids are ignored.
-import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
+import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
 import { currentHighMinor, minNextBidMinor, emdRequirement } from '../features/auctions/bid';
 
 const bid = (id: string, amountMinor: string | null): BidHistoryItem => ({ id, bidderUserId: 'u', amountMinor });

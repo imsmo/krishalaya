@@ -5,9 +5,9 @@
 // All copy via i18n; dates localized to the active language.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { formatDate } from '@krishi-verse/i18n';
-import type { TraceProvenance } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import type { TraceProvenance } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { publicClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 

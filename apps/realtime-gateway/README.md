@@ -1,6 +1,6 @@
 # realtime-gateway
 
-WebSocket fan-out gateway for Krishi-Verse. **Stateless pods** behind a sticky load balancer; all state lives
+WebSocket fan-out gateway for Krishalaya. **Stateless pods** behind a sticky load balancer; all state lives
 in the sockets + **Redis Pub/Sub** (with capped **Redis Streams** for reconnect replay). It carries live
 **auction bids**, **order-status** pushes, and **MCC dairy collection** dashboards. Scales to millions of
 concurrent sockets by adding pods — no socket state on the pod, no pod-to-pod coupling.

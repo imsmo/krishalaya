@@ -3,7 +3,7 @@
 // master-plan §2.1 row 8). The `farmer_profile` flag defaults OFF (real flag store) so the screen takes its
 // flag-gated EmptyState branch before `openTicket()`/`listOrders()` ever run.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import Complaint from '../../(farmer)/profile/complaint';
 

@@ -2,7 +2,7 @@
 // history (59) screens. No React/native — unit-tested. Money is bigint minor-unit strings end-to-end (Law 2):
 // every sum/compare uses BigInt, never a float. Filtering/grouping is derived ONLY from server fields (signed
 // amount, txnType, status, createdAt); the client invents nothing.
-import type { WalletLedgerEntry, PayoutSummary } from '@krishi-verse/sdk-js';
+import type { WalletLedgerEntry, PayoutSummary } from '@krishalaya/sdk-js';
 import { paymentOutcome } from '../../core/payments/money';
 import { ledgerKind, currentYearMonth } from './wallet-home';
 

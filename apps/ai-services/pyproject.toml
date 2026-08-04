@@ -1,5 +1,5 @@
 [project]
-name = "krishi-verse-ai-services"
+name = "krishalaya-ai-services"
 version = "0.1.0"
 description = "AI inference services: voice→listing extraction, photo grading, price bands, fraud signals."
 requires-python = ">=3.11"

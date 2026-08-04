@@ -1,7 +1,7 @@
 // Unit tests for the PURE Visit-Log derivations (features/ambassador/visits, screen 164). §13: only real logged
 // visits are bucketed/counted; no farmer/region name, planned row, or km is invented.
 import { visitDayBucket, groupVisitsByDay, visitsThisMonth, distinctRegionsThisMonth } from '../../features/ambassador/visits';
-import type { AmbassadorVisit } from '@krishi-verse/sdk-js';
+import type { AmbassadorVisit } from '@krishalaya/sdk-js';
 
 const v = (id: string, visitedAt: string, regionId: string | null = null): AmbassadorVisit =>
   ({ id, ambassadorId: 'a', visitedUserId: null, purpose: 'help', notes: null, lat: null, lng: null, regionId, visitedAt } as AmbassadorVisit);

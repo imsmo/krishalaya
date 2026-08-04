@@ -5,7 +5,7 @@
 // caller). Creates are OFFLINE-FIRST: if
 // the device is offline the op is enqueued (OfflineQueue) with a stable idempotency key and replayed later, so
 // the farmer never loses a listing started in a low-signal field (Law 3 idempotency + Law 12 degrade-never-die).
-import type { ListingCard, CreateListingInput, ListingAnalytics, GalleryItem, BoostTier, BoostWalletPayResult, ListingInquiry } from '@krishi-verse/sdk-js';
+import type { ListingCard, CreateListingInput, ListingAnalytics, GalleryItem, BoostTier, BoostWalletPayResult, ListingInquiry } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import type { QueuedOp, ReplayResult } from '../../core/api/offline-queue';
 import { isConnectivityFailure, classifyReplayFailure } from '../../core/api/write-classify';

@@ -1,6 +1,6 @@
 // core/i18n/locales/hi.ts · Hindi (Devanagari). Missing keys fall back to English.
 const hi: Record<string, string> = {
-  'sms.otp': 'Krishi-Verse कोड: {code} ({minutes} मिनट के लिए वैध)। किसी को न बताएं।',
+  'sms.otp': 'Krishalaya कोड: {code} ({minutes} मिनट के लिए वैध)। किसी को न बताएं।',
   'error.BAD_REQUEST': 'गलत अनुरोध',
   'error.VALIDATION_FAILED': 'कुछ जानकारी सही नहीं है। कृपया जाँचकर पुनः प्रयास करें।',
   'error.UNAUTHORIZED': 'जारी रखने के लिए कृपया साइन इन करें।',
@@ -14,6 +14,6 @@ const hi: Record<string, string> = {
   'error.REFRESH_INVALID': 'आपका सत्र समाप्त हो गया है। कृपया पुनः साइन इन करें।',
   'error.LISTING_NOT_FOUND': 'सूची नहीं मिली।',
   // DEV-27 (Q23) billing-document header badge — brand name kept in Latin script, per sms.otp's own convention above.
-  'doc.poweredByKrishiVerse': 'Krishi Verse द्वारा संचालित',
+  'doc.poweredByKrishalaya': 'Krishalaya द्वारा संचालित',
 };
 export default hi;

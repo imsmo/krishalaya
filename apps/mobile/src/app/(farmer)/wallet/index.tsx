@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/wallet/index.tsx · the wallet HUB (screen 19) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/19-wallet-home.html): a green balance hero (Available Balance + show/hide
+// (Krishalaya_Design_System/screens/19-wallet-home.html): a green balance hero (Available Balance + show/hide
 // eye + a 3-stat strip: In Escrow · This Month · Pending), three action tiles (Add Money / Send / Withdraw), and a
 // "Recent Transactions" feed with View All. Thin tab screen (guide §3); money via MoneyText/paise (Law 2);
 // degrade-never-die (Law 12); FLAG_SECURE (wallet balance on screen, §4); i18n(hi/en/gu).
@@ -24,9 +24,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import type { WalletLedgerEntry } from '@krishi-verse/sdk-js';
-import { formatRelative } from '@krishi-verse/i18n';
-import { EmptyState, SkeletonCard, MoneyText, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import type { WalletLedgerEntry } from '@krishalaya/sdk-js';
+import { formatRelative } from '@krishalaya/i18n';
+import { EmptyState, SkeletonCard, MoneyText, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security';

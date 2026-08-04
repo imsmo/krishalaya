@@ -3,7 +3,7 @@
 // so the screen shows the precise outcome (409 duplicate code / 403 not-allowed). Money is bigint minor strings
 // (Law 2); the app never moves money — commission accrues + pays out SERVER-SIDE (Law 11). The ambassador only
 // ever sees/acts on their OWN profile/earnings/referrals (server resolves the caller — no IDOR).
-import type { AmbassadorProfile, Referral, AmbassadorEarning, SuggestedListingDraft, LeaderboardEntry, AmbassadorVisit, AmbassadorTarget, SetTargetInput } from '@krishi-verse/sdk-js';
+import type { AmbassadorProfile, Referral, AmbassadorEarning, SuggestedListingDraft, LeaderboardEntry, AmbassadorVisit, AmbassadorTarget, SetTargetInput } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

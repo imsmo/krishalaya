@@ -9,8 +9,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { WeatherAlert, ForecastResult, ForecastDay } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { WeatherAlert, ForecastResult, ForecastDay } from '@krishalaya/sdk-js';
+import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { weatherAlerts, weatherForecast, defaultRegionId, defaultLatLng } from '../../../features/market/market.api';

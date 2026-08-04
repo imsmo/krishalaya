@@ -1,6 +1,6 @@
 # communication (PRD M13) — the notification spine
 
-Krishi-Verse owns the **policy + content** of notifications; the actual **send** is delegated to an external
+Krishalaya owns the **policy + content** of notifications; the actual **send** is delegated to an external
 notification product (push / in-app / email / sms / whatsapp / ivr) across a resilience-wrapped gateway port.
 Gated by the `communication` feature flag (default **OFF**).
 

@@ -1,7 +1,7 @@
 // apps/web-storefront/src/i18n/en.ts · English message catalog (the SOURCE-OF-TRUTH key set; hi.ts + gu.ts
 // MUST mirror every key — Law 7, no inline literals in components/pages). Loaded by lib/i18n.ts into the
-// shared @krishi-verse/i18n Translator. Plain data, no framework.
-import type { Messages } from '@krishi-verse/i18n';
+// shared @krishalaya/i18n Translator. Plain data, no framework.
+import type { Messages } from '@krishalaya/i18n';
 
 export const en: Messages = {
   'brand.tagline': 'Fresh from the farm',
@@ -12,7 +12,7 @@ export const en: Messages = {
   'nav.about': 'About',
   'nav.blog': 'Blog',
   'nav.press': 'Press',
-  'nav.signup': 'Sell on Krishi-Verse',
+  'nav.signup': 'Sell on Krishalaya',
   'nav.login': 'Sign in',
   'nav.logout': 'Sign out',
   'nav.offers': 'Offers',
@@ -38,9 +38,9 @@ export const en: Messages = {
   'common.notFoundBody': 'The page you are looking for does not exist or has moved.',
   'common.backHome': 'Back to home',
 
-  'about.title': 'About Krishi-Verse',
+  'about.title': 'About Krishalaya',
   'about.lead': 'We connect India’s farmers, traders and buyers on one trusted marketplace.',
-  'about.p1': 'Krishi-Verse is a multi-tenant agri-commerce platform: every seller gets their own storefront, and buyers discover fresh produce and agri-inputs from verified sellers across the country.',
+  'about.p1': 'Krishalaya is a multi-tenant agri-commerce platform: every seller gets their own storefront, and buyers discover fresh produce and agri-inputs from verified sellers across the country.',
   'about.p2': 'From listing and price discovery to secure payments, logistics and farm-to-fork traceability, the platform is built for scale, transparency and trust.',
   'about.missionTitle': 'Our mission',
   'about.mission': 'Put more of every rupee back in the farmer’s hands while giving buyers provenance they can verify.',
@@ -61,14 +61,14 @@ export const en: Messages = {
 
   'help.title': 'Help & support',
   'help.lead': 'Answers to the questions buyers ask most.',
-  'help.q1': 'How do I buy on Krishi-Verse?',
+  'help.q1': 'How do I buy on Krishalaya?',
   'help.a1': 'Browse a seller’s storefront, add items to your cart and check out securely. You’ll get an order confirmation and can track delivery from your account.',
   'help.q2': 'How are payments protected?',
   'help.a2': 'Payments are processed securely and held until your order is fulfilled. Money always moves through the platform wallet — never directly between strangers.',
   'help.q3': 'What is farm-to-fork traceability?',
   'help.a3': 'Many products carry a QR code. Scan it (or open the /trace link) to see the verified journey of the produce — no personal data, just provenance.',
   'help.q4': 'How do I become a seller?',
-  'help.a4': 'Create a seller account from “Sell on Krishi-Verse”. You’ll get your own storefront and tools to list, price and fulfil orders.',
+  'help.a4': 'Create a seller account from “Sell on Krishalaya”. You’ll get your own storefront and tools to list, price and fulfil orders.',
   'help.contact': 'Still need help? Reach our support team from within your account.',
 
   'blog.title': 'Blog',
@@ -80,7 +80,7 @@ export const en: Messages = {
   'press.body': 'For interviews, brand assets or media enquiries, please contact our communications team. We’ll respond within two business days.',
   'press.contact': 'Media enquiries',
 
-  'tenantsSignup.title': 'Sell on Krishi-Verse',
+  'tenantsSignup.title': 'Sell on Krishalaya',
   'tenantsSignup.lead': 'Reach buyers across India with your own branded storefront.',
   'tenantsSignup.body': 'Set up your catalogue, accept orders and auctions, get paid to your wallet, and build trust with verified, traceable produce.',
   'tenantsSignup.bullet1': 'Your own storefront and catalogue',
@@ -111,7 +111,7 @@ export const en: Messages = {
   'home.empty': 'No listings to show right now. Please check back shortly.',
 
   'storefront.title': '{tenant} storefront',
-  'storefront.metaDescription': 'Browse fresh produce and agri-inputs from {tenant} on Krishi-Verse.',
+  'storefront.metaDescription': 'Browse fresh produce and agri-inputs from {tenant} on Krishalaya.',
   'storefront.empty': 'This storefront has no published listings yet. Please check back shortly.',
 
   'card.organic': 'Organic',
@@ -168,10 +168,10 @@ export const en: Messages = {
   'listing.reviewStarsLabel': '{stars} out of 5 stars',
   'listing.reviewVerified': 'Verified purchase',
   'listing.reviewSellerResponse': 'Seller response',
-  'listing.auctionNote': 'This is an auction lot. Live bidding opens in the Krishi-Verse app.',
-  'listing.serviceNote': 'This is a service listing. Contact options open in the Krishi-Verse app.',
+  'listing.auctionNote': 'This is an auction lot. Live bidding opens in the Krishalaya app.',
+  'listing.serviceNote': 'This is a service listing. Contact options open in the Krishalaya app.',
   'listing.traceTitle': 'Farm-to-fork',
-  'listing.traceNote': 'Many Krishi-Verse products carry a QR code that reveals their verified journey — no personal data, just provenance.',
+  'listing.traceNote': 'Many Krishalaya products carry a QR code that reveals their verified journey — no personal data, just provenance.',
   'listing.traceLink': 'Learn about traceability',
 
   'cart.title': 'Your cart',
@@ -419,7 +419,7 @@ export const en: Messages = {
   'notif.channel.whatsapp': 'WhatsApp',
 
   'trace.title': 'Farm-to-fork provenance',
-  'trace.metaDescription': 'Verified journey of this produce, recorded on Krishi-Verse.',
+  'trace.metaDescription': 'Verified journey of this produce, recorded on Krishalaya.',
   'trace.notFoundTitle': 'Provenance not found',
   'trace.heading': 'Farm-to-fork journey',
   'trace.lead': 'This produce’s recorded journey. Registered {date}.',

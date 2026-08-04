@@ -1,6 +1,6 @@
 // Unit tests for the PURE active-job stopwatch/phase logic (screen 33).
 import { attendancePhase, elapsedWorkedSeconds, formatStopwatch } from '../../features/labour/active-job';
-import type { LabourAttendance } from '@krishi-verse/sdk-js';
+import type { LabourAttendance } from '@krishalaya/sdk-js';
 
 const att = (over: Partial<LabourAttendance>): LabourAttendance => ({ id: 'a', assignmentId: 'x', bookingId: 'b', workDate: '2026-08-15', ...over });
 

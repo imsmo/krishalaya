@@ -8,7 +8,7 @@
 // is purely additive to the existing cookie mechanism (unchanged) — `middleware.ts` also honors this same
 // `?lang=` param for a fresh visitor with no cookie yet, per Q16's ratified URL/locale scheme.
 import { NextResponse } from 'next/server';
-import { isSupported, resolveLanguage } from '@krishi-verse/i18n';
+import { isSupported, resolveLanguage } from '@krishalaya/i18n';
 import { LANG_COOKIE } from '../../../lib/i18n';
 import { withUrlLang } from '../../../lib/locale-url';
 

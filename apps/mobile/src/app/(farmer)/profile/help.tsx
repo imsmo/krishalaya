@@ -16,8 +16,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { SupportTicket } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { SupportTicket } from '@krishalaya/sdk-js';
+import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { sdkErrorMessage } from '../../../core/errors/sdk-error-message';

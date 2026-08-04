@@ -1,6 +1,6 @@
 apiVersion: v2
 name: web
-description: Krishi-Verse Next.js web app (generic; release per app)
+description: Krishalaya Next.js web app (generic; release per app)
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

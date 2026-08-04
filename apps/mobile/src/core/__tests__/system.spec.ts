@@ -16,7 +16,7 @@ import {
   canSubmitFeedback, composeFeedback, FEEDBACK_FEATURES,
   languagesSummary,
 } from '../../features/system/system';
-import type { ListingCard, OrderListItem } from '@krishi-verse/sdk-js';
+import type { ListingCard, OrderListItem } from '@krishalaya/sdk-js';
 
 const listing = (over: Partial<ListingCard>): ListingCard => ({
   id: 'l1', title: 'Tomato', priceMinor: '1000', currencyCode: 'INR', unitCode: 'kg', quantityAvailable: 5,

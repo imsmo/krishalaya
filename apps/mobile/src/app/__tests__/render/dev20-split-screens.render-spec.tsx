@@ -8,7 +8,7 @@
 // selected yet, and — the regression proof — renders its plain pre-DEV-20 single-column body when not eligible
 // (every existing DEV-46 render-floor assertion for these two screens keeps passing unmodified).
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import MyListings from '../../(farmer)/listings/index';
 import Orders from '../../(farmer)/orders';

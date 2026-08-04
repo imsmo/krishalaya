@@ -2,7 +2,7 @@
 // React/native deps (SDK types import-type only). Pins the saved-location row mapping (real fields only, no
 // fabricated address) + GPS-gated continue + landmark normalization.
 import { savedLocationRows, canContinueLocation, normalizeLandmark } from '../../features/labour/book-location';
-import type { LandParcel, LabourLookups } from '@krishi-verse/sdk-js';
+import type { LandParcel, LabourLookups } from '@krishalaya/sdk-js';
 
 const P = (id: string, surveyNo: string | null, regionId: string | null, area = '2', areaUnit = 'acre'): LandParcel => ({
   id, ownerUserId: 'u1', regionId, surveyNo, bhulekhRef: null, area, areaUnit, irrigationTypeId: null,

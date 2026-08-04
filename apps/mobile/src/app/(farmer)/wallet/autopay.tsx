@@ -14,9 +14,9 @@
 // limits under RBI UPI-AutoPay rules), never fabricated numbers.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import type { AutopayMandate } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, StatusPill, SegmentedControl, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { AutopayMandate } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, StatusPill, SegmentedControl, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security/screen-guard';

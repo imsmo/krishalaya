@@ -3,8 +3,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Conversation } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import type { Conversation } from '@krishalaya/sdk-js';
+import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listConversations } from '../../features/messaging/messaging.api';

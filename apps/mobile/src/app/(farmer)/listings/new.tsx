@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/new.tsx · screen 10 (Create Listing) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/10-create-listing.html): a Photo / Voice / Manual mode toggle, and the
+// (Krishalaya_Design_System/screens/10-create-listing.html): a Photo / Voice / Manual mode toggle, and the
 // "⚡ AI Voice Listing" panel — a tap-to-record mic ("Listening… / सुन रहा हूं"), an example hint, हिंदी / English /
 // ગુજરાતી language chips, a Live Transcript, and an "✨ AI Detected" card (Crop / Quantity / Price·qtl / Quality)
 // with Re-record + Preview →. Photo mode = up to 6 compressed uploads; Manual mode = the typed form. All three
@@ -13,8 +13,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import type { ProductCard } from '@krishi-verse/sdk-js';
-import { Button, Input, SegmentedControl, AddMediaTile, UploadTile, EmptyState, Icon, MoneyText, color, font, space, radius, shadow, type UploadStatus } from '@krishi-verse/ui-native';
+import type { ProductCard } from '@krishalaya/sdk-js';
+import { Button, Input, SegmentedControl, AddMediaTile, UploadTile, EmptyState, Icon, MoneyText, color, font, space, radius, shadow, type UploadStatus } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { searchProducts } from '../../../features/catalogue/catalogue.api';
@@ -22,7 +22,7 @@ import { createListing, getListing } from '../../../features/listings/listings.a
 import { captureFromCamera, pickFromGallery, uploadPickedImage, type PickedImage } from '../../../core/media';
 import { useVoiceDictation } from '../../../core/voice';
 import { CREATE_MODES, STT_LANGS, QUALITY_GRADES, buildCreateDraft, rupeesToPaise, parseQty, resolveModeParam, shouldShowVoiceComingSoon, shouldShowPriceSummary, type CreateMode, type QualityGrade } from '../../../features/listings/create-listing';
-import { LANGUAGES } from '@krishi-verse/i18n';
+import { LANGUAGES } from '@krishalaya/i18n';
 
 interface Photo { key: string; uri: string; status: UploadStatus; progress: number; mediaId?: string }
 const MAX_PHOTOS = 6;

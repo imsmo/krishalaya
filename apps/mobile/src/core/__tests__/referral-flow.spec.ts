@@ -1,7 +1,7 @@
 // Unit tests for the PURE ambassador/referral logic (features/ambassador/referral-flow). Earnings summed with
 // BigInt (Law 2); code validation mirrors the server's regex.
 import { referralStatusTone, normalizeReferralCode, isValidReferralCode, referralFunnel, sumEarningsMinor, isConverted, ONBOARD_METHODS, deriveReferralCode } from '../../features/ambassador/referral-flow';
-import type { Referral, AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { Referral, AmbassadorEarning } from '@krishalaya/sdk-js';
 
 const ref = (status: string): Referral => ({ id: Math.random().toString(), referrerUserId: 'a', refereeUserId: null, code: 'ABCD', status } as Referral);
 const earn = (amountMinor: string, payoutId: string | null = null): AmbassadorEarning =>

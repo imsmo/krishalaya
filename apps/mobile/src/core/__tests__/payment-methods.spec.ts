@@ -1,6 +1,6 @@
 // Unit tests for the PURE payment-step logic (screen 130). No React/native deps.
 import { walletCovers, walletShortfallMinor, previewItemCount } from '../../features/cart/payment-methods';
-import type { CheckoutPreview } from '@krishi-verse/sdk-js';
+import type { CheckoutPreview } from '@krishalaya/sdk-js';
 
 describe('payment step (screen 130)', () => {
   it('walletCovers: balance ≥ total', () => {

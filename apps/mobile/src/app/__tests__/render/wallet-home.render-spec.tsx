@@ -11,7 +11,7 @@
 // way; a first pass named them `walletBalance` etc. and failed with "module factory ... out-of-scope variables".)
 import React from 'react';
 import { Text } from 'react-native';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import WalletHome from '../../(farmer)/wallet/index';
 

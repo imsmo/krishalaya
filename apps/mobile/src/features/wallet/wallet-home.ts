@@ -2,7 +2,7 @@
 // (SDK types are `import type` → erased), so this is unit-tested in node. Money is bigint minor-unit strings
 // end-to-end (Law 2) — every sum uses BigInt, never a float. Every figure is derived ONLY from server data; the
 // client invents nothing (a datum the API can't supply degrades to '—' / 'hold' in the screen, never a fake).
-import type { InsightBucket, PayoutSummary, WalletLedgerEntry } from '@krishi-verse/sdk-js';
+import type { InsightBucket, PayoutSummary, WalletLedgerEntry } from '@krishalaya/sdk-js';
 import { paymentOutcome } from '../../core/payments/money';
 
 /** Current calendar month as the read-model's bucket key ('YYYY-MM'), in the given timezone-naive `now`. Pure. */

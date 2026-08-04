@@ -7,7 +7,7 @@
 // surface that generically. revalidate so the saved state shows.
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import type { NotificationPreference, QuietHours } from '@krishi-verse/sdk-js';
+import type { NotificationPreference, QuietHours } from '@krishalaya/sdk-js';
 import { serverClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 

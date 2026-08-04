@@ -8,8 +8,8 @@
 // it flags that syncing is coming soon. Nothing is fabricated; when the endpoint lands, wiring load/save is a drop-in.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { myScheduledJobs } from '../../features/labour/labour.api';

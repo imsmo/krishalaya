@@ -1,6 +1,6 @@
-# Krishi-Verse Mobile — Threat Model & Security Sign-off (P-30, Wave 11)
+# Krishalaya Mobile — Threat Model & Security Sign-off (P-30, Wave 11)
 
-**Scope:** `apps/mobile` (React Native / Expo) + the `@krishi-verse/sdk-js` client it speaks through.
+**Scope:** `apps/mobile` (React Native / Expo) + the `@krishalaya/sdk-js` client it speaks through.
 **Posture:** the mobile app is **fully untrusted**. A patched/rooted APK can call any endpoint with any payload,
 strip any client-side check, and read the decompiled bundle. Every security decision is therefore **enforced on
 the server** (Law 11); the client hardening below only *raises the cost of attack* — it is never the last line of

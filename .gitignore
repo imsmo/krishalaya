@@ -1,5 +1,5 @@
 # ============================================================================
-# Krishi-Verse · root .gitignore (monorepo: pnpm + turbo + Next.js + Expo + Python)
+# Krishalaya · root .gitignore (monorepo: pnpm + turbo + Next.js + Expo + Python)
 # Goal: commit SOURCE + lockfiles + config; never commit dependencies, build
 # output, caches, secrets, or OS/editor cruft. Patterns are repo-wide (they
 # match at any depth) unless anchored with a leading slash.

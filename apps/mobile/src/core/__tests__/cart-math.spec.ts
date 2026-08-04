@@ -1,7 +1,7 @@
 // Unit tests for the PURE cart helpers (features/cart/cart-math). No React/native deps (SDK types are type-only).
 // The server owns the subtotal; these only derive UI gating state from server fields.
 import { cartCount, cartBlockers, canCheckout, clampQuantity, formatAddress, lineTotalMinor, stockState, checkoutSummaryRows, isFreeDelivery, previewUnitMap } from '../../features/cart/cart-math';
-import type { Cart, CartItem, Address } from '@krishi-verse/sdk-js';
+import type { Cart, CartItem, Address } from '@krishalaya/sdk-js';
 
 describe('checkout summary (screen 96, from CheckoutPreview)', () => {
   const base = { subtotalMinor: '2981000', deliveryFeeMinor: '0', platformFeeMinor: '15000', discountMinor: '0' };

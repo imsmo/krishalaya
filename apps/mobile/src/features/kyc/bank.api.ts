@@ -5,7 +5,7 @@
 // Two add paths: a UPI / pre-tokenised destination via addBank() (caller already holds a vaultRef), and a FULL
 // bank account via addFullBank() (P1-16) — the raw account number + IFSC are sent ONCE and the SERVER tokenises
 // them at the gateway, persisting only the vault ref + last-4 (raw number never stored/logged on device or server).
-import type { BankAccount } from '@krishi-verse/sdk-js';
+import type { BankAccount } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

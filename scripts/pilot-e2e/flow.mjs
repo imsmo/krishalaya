@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // scripts/pilot-e2e/flow.mjs
-// The Krishi-Verse pilot slice, proven over real HTTP against a locally-running api:
+// The Krishalaya pilot slice, proven over real HTTP against a locally-running api:
 //   OTP login (farmer + buyer) -> onboard -> create + publish listing -> buyer orders (direct
 //   sale) -> wallet credit/escrow -> payout (stub provider) -> notification recorded.
 //
 // Every endpoint below was verified against the actual controller/DTO source (not guessed) — see
 // scripts/pilot-e2e/README.md for the file:line references. No new npm dependencies: uses Node's
-// built-in fetch + the `pg` package (already a dependency of the repo root / @krishi-verse/api).
+// built-in fetch + the `pg` package (already a dependency of the repo root / @krishalaya/api).
 //
 // Onboarding note: there is no self-serve "become a farmer / become a buyer" HTTP endpoint in this
 // codebase yet (checked: no POST /v1/farmers, /v1/buyers, /v1/onboarding/*; role assignment is an
@@ -121,7 +121,7 @@ const uuid = () => crypto.randomUUID();
 // the flow
 // ---------------------------------------------------------------------------------------------
 async function main() {
-  console.log('=== Krishi-Verse pilot E2E ===');
+  console.log('=== Krishalaya pilot E2E ===');
   console.log(`API base: ${API_BASE}`);
 
   const tenantId = uuid();

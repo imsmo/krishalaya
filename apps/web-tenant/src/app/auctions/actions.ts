@@ -12,7 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { buildCreateAuction } from '../../features/auctions/manage';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 /** datetime-local value ("2026-07-01T10:00") → ISO 8601, or '' when blank/unparseable. */
 function toIso(local: string): string {

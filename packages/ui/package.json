@@ -1,5 +1,5 @@
 {
-  "name": "@krishi-verse/ui",
+  "name": "@krishalaya/ui",
   "version": "0.1.0",
   "private": true,
   "description": "React component library (web) built on the design tokens.",
@@ -15,8 +15,8 @@
   },
   "peerDependencies": { "react": "^18.3.1" },
   "dependencies": {
-    "@krishi-verse/tokens": "workspace:*",
-    "@krishi-verse/i18n": "workspace:*"
+    "@krishalaya/tokens": "workspace:*",
+    "@krishalaya/i18n": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.5.4",

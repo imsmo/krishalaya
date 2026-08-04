@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(auth)/profile.tsx · screen 05 (Set Up Profile) — rebuilt to match the Phase-1 design
-// (Krishi_Verse_Design_System/screens/05-profile-setup.html): a header with "Set Up Your Profile" + a "Skip"
+// (Krishalaya_Design_System/screens/05-profile-setup.html): a header with "Set Up Your Profile" + a "Skip"
 // action, a subtitle, a dashed circular photo-upload with a camera edit badge, the form (Full Name*, Village /
 // Location* with "Detect via GPS", Pincode, Farm Size, UPI ID + helper), a "Your data is safe" consent card, and
 // two footer CTAs (Save Draft / Save & Continue).
@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Button, Input, SegmentedControl, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Input, SegmentedControl, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { captureFromCamera, pickFromGallery, type PickedImage } from '../../core/media';

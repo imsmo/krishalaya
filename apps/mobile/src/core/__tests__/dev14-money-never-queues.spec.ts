@@ -23,7 +23,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { isConnectivityFailure } from '../api/write-classify';
-import { SdkNetworkError } from '@krishi-verse/sdk-js';
+import { SdkNetworkError } from '@krishalaya/sdk-js';
 
 const SRC_ROOT = path.join(__dirname, '..', '..'); // apps/mobile/src
 

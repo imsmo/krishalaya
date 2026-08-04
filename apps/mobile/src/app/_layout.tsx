@@ -11,7 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
 import { PlusJakartaSans_400Regular, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 import { Hind_400Regular, Hind_600SemiBold } from '@expo-google-fonts/hind';
-import { color, OfflineBanner } from '@krishi-verse/ui-native';
+import { color, OfflineBanner } from '@krishalaya/ui-native';
 import { AuthProvider } from '../core/auth/auth.store';
 import { AppErrorBoundary } from '../core/errors/AppErrorBoundary';
 import { hydrateFlags } from '../core/flags/hydrate';
@@ -25,7 +25,7 @@ import { hydrateMechanismPreferences } from '../core/mechanisms/mechanismStore.r
 import { useThemeMode } from '../core/mechanisms/useThemeMode';
 import { statusBarStyleFor } from '../core/mechanisms/theme';
 import { applyRtlForDirection } from '../core/mechanisms/rtlBoot';
-import { resolveLanguage } from '@krishi-verse/i18n';
+import { resolveLanguage } from '@krishalaya/i18n';
 import '../core/offline/handlers'; // register offline replay handlers (media.upload, listing.create)
 import '../core/config'; // fail-closed env validation at boot
 

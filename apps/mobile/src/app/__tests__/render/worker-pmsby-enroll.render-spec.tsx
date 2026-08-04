@@ -4,7 +4,7 @@
 // EmptyState branch before ever loading eligibility data or calling the new insurance API. The flag-ON
 // enrolment-flow render is covered separately in worker-pmsby-enroll-on.render-spec.tsx.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import PmsbyEnroll from '../../(worker)/pmsby-enroll';
 

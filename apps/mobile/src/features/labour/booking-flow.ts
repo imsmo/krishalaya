@@ -2,8 +2,8 @@
 // types are `import type` → erased) → unit-tested. Money is bigint minor-unit strings (Law 2): the wage is built
 // from whole rupees via BigInt, never a float. The SERVER is the authority on the statutory wage floor, the
 // accept/decline window, and every lifecycle transition — these helpers only drive the employer UI/validation.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { LabourBooking, LabourAssignment, CreateBookingInput } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { LabourBooking, LabourAssignment, CreateBookingInput } from '@krishalaya/sdk-js';
 
 export type EmployerAction = 'assign' | 'start' | 'complete' | 'pay' | 'cancel';
 /** Which lifecycle actions the employer (booking owner) may attempt for a booking status. The server re-checks

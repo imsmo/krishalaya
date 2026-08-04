@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · unit tests with an injected fake fetch (no network). Pins the contract every frontend
+// @krishalaya/sdk-js · unit tests with an injected fake fetch (no network). Pins the contract every frontend
 // relies on: URL/version building, header attachment (bearer/tenant/idempotency), {data,meta} envelope
 // unwrap, typed error mapping (code/status/requestId), token NOT leaking into errors, idempotent-GET retry vs
 // no-retry on mutations, timeout, and money staying a string.

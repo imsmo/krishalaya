@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { anonClient } from '../../lib/api-client';
 import { setSession } from '../../lib/partner-auth';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 const enc = encodeURIComponent;
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();

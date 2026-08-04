@@ -5,7 +5,7 @@
 // — the server returns the same 200 either way. THROWS on failure so the screen can distinguish an honest
 // ineligible-role 403 (SdkError.code === 'SELFSERVE_ROLE_NOT_ELIGIBLE', details.reason) from a transient error —
 // never silently falls back to a fake local grant (Law 12: the server is the sole authority on roles).
-import type { OnboardRoleResult } from '@krishi-verse/sdk-js';
+import type { OnboardRoleResult } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

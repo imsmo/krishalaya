@@ -4,7 +4,7 @@
 // and services show a localized note (their buyer flows — live bidding / service contact — land in WAVE 4; and the
 // listing read-model exposes no auctionId to deep-link a bid from here, so we don't fake a bid button). Both forms
 // carry the tenant slug + listing id + available qty as hidden fields so the action can validate server-side.
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard } from '@krishalaya/sdk-js';
 import { getTranslator } from '../lib/i18n';
 import { addToCartAction, makeOfferAction } from '../app/[tenantSlug]/listings/[id]/actions';
 

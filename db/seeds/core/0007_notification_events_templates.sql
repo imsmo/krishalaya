@@ -34,11 +34,11 @@ INSERT INTO notification_events (code,default_name,priority,default_channels,use
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO notification_templates (event_code,channel,language_code,tenant_id,subject,body,provider_template_ref,is_active) VALUES
- ('auth.otp','sms','hi',NULL,NULL,'Krishi-Verse OTP: {{otp}}. 5 minute me expire. Kisi se share na karein.','DLT_OTP_HI',true),
- ('auth.otp','sms','en',NULL,NULL,'Krishi-Verse OTP: {{otp}}. Expires in 5 min. Do not share.','DLT_OTP_EN',true),
- ('auth.otp','sms','gu',NULL,NULL,'Krishi-Verse OTP: {{otp}}. 5 મિનિટમાં સમાપ્ત. કોઈને શેર ન કરો.','DLT_OTP_GU',true),
- ('wage.paid','sms','hi',NULL,NULL,'{{amount}} aapke khate me jama. Kaam: {{task}}. Krishi-Verse','DLT_WAGE_HI',true),
- ('wage.paid','sms','gu',NULL,NULL,'{{amount}} તમારા ખાતામાં જમા. કામ: {{task}}. Krishi-Verse','DLT_WAGE_GU',true),
+ ('auth.otp','sms','hi',NULL,NULL,'Krishalaya OTP: {{otp}}. 5 minute me expire. Kisi se share na karein.','DLT_OTP_HI',true),
+ ('auth.otp','sms','en',NULL,NULL,'Krishalaya OTP: {{otp}}. Expires in 5 min. Do not share.','DLT_OTP_EN',true),
+ ('auth.otp','sms','gu',NULL,NULL,'Krishalaya OTP: {{otp}}. 5 મિનિટમાં સમાપ્ત. કોઈને શેર ન કરો.','DLT_OTP_GU',true),
+ ('wage.paid','sms','hi',NULL,NULL,'{{amount}} aapke khate me jama. Kaam: {{task}}. Krishalaya','DLT_WAGE_HI',true),
+ ('wage.paid','sms','gu',NULL,NULL,'{{amount}} તમારા ખાતામાં જમા. કામ: {{task}}. Krishalaya','DLT_WAGE_GU',true),
  ('order.delivered','push','en',NULL,'Delivered','Your order {{order_no}} was delivered. Rate your experience.',NULL,true),
  -- M13 platform-default templates (en) for the fanout codes; tenants may override per (event,channel,lang)
  ('order.confirmed','push','en',NULL,'Order confirmed','Your order {{orderNo}} is confirmed.',NULL,true),

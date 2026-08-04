@@ -1,7 +1,7 @@
 // Unit tests for the PURE Add-a-Skill logic (features/labour/skill-picker) behind screen 137. Verifies flat rows
 // carry real name/emoji + selection, the experience buckets, and the selected count — no fabricated rate range.
 import { flatSkillRows, EXPERIENCE_LEVELS, selectedCount } from '../../features/labour/skill-picker';
-import type { Skill } from '@krishi-verse/sdk-js';
+import type { Skill } from '@krishalaya/sdk-js';
 
 const S = (id: string, code: string, name: string): Skill => ({ id, code, name, tier: 1, parentId: null, hazardous: false });
 

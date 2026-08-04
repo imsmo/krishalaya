@@ -1,6 +1,6 @@
 apiVersion: v2
 name: api
-description: Krishi-Verse tenant REST API
+description: Krishalaya tenant REST API
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

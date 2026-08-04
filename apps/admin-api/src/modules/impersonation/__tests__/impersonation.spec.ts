@@ -20,7 +20,7 @@ const ADMIN = '00000000-0000-0000-0000-0000000000a1';
 const TENANT = '11111111-1111-1111-1111-111111111111';
 const TARGET = '22222222-2222-2222-2222-222222222222';
 const actor = { userId: ADMIN, roles: ['platform_support_impersonator'], ip: '10.0.0.1', requestId: 'req1' } as any;
-const cfg = (enabled = true) => ({ impersonation: { enabled, secret: SECRET, issuer: 'krishi-verse-impersonation', audience: 'krishi-verse-api', maxTtlSec: 1800 } }) as any;
+const cfg = (enabled = true) => ({ impersonation: { enabled, secret: SECRET, issuer: 'krishalaya-impersonation', audience: 'krishalaya-api', maxTtlSec: 1800 } }) as any;
 const grant = (status: any = 'active', expiresInMs = 60000, adminId = ADMIN) => ImpersonationGrant.rehydrate({
   id: 'g1', adminUserId: adminId, targetTenantId: TENANT, targetUserId: TARGET, reason: 'investigate a bug report', scope: 'read_only',
   status, expiresAt: new Date(Date.now() + expiresInMs), endedAt: null, endedBy: null, endReason: null, createdAt: new Date('2026-06-01T00:00:00Z'),
@@ -63,20 +63,20 @@ describe('scope / ttl / self guards', () => {
 
 describe('act-as token', () => {
   it('round-trips; carries the actor + scope; is typ=impersonation (NEVER access)', () => {
-    const { token } = mintImpersonationToken({ secret: SECRET, issuer: 'krishi-verse-impersonation', audience: 'krishi-verse-api', grantId: 'g1', adminUserId: ADMIN, targetUserId: TARGET, targetTenantId: TENANT, ttlSec: 900 });
-    const c = verifyImpersonationToken(token, SECRET, 'krishi-verse-impersonation', 'krishi-verse-api');
+    const { token } = mintImpersonationToken({ secret: SECRET, issuer: 'krishalaya-impersonation', audience: 'krishalaya-api', grantId: 'g1', adminUserId: ADMIN, targetUserId: TARGET, targetTenantId: TENANT, ttlSec: 900 });
+    const c = verifyImpersonationToken(token, SECRET, 'krishalaya-impersonation', 'krishalaya-api');
     expect(c.sub).toBe(TARGET); expect(c.tid).toBe(TENANT); expect(c.act.sub).toBe(ADMIN);
     expect(c.jti).toBe('g1'); expect(c.scope).toBe('read_only'); expect(c.typ).toBe('impersonation');
     expect((c as any).typ).not.toBe('access');     // can never be mistaken for a normal access token
   });
   it('rejects tampered signature, wrong secret, expiry, and wrong audience', () => {
-    const { token } = mintImpersonationToken({ secret: SECRET, issuer: 'krishi-verse-impersonation', audience: 'krishi-verse-api', grantId: 'g1', adminUserId: ADMIN, targetUserId: TARGET, targetTenantId: TENANT, ttlSec: 900 });
-    expect(() => verifyImpersonationToken(token + 'x', SECRET, 'krishi-verse-impersonation', 'krishi-verse-api')).toThrow(ImpersonationTokenError);
-    expect(() => verifyImpersonationToken(token, 'другой'.repeat(8), 'krishi-verse-impersonation', 'krishi-verse-api')).toThrow(ImpersonationTokenError);
-    expect(() => verifyImpersonationToken(token, SECRET, 'wrong-iss', 'krishi-verse-api')).toThrow(ImpersonationTokenError);
-    expect(() => verifyImpersonationToken(token, SECRET, 'krishi-verse-impersonation', 'wrong-aud')).toThrow(ImpersonationTokenError);
-    const expired = mintImpersonationToken({ secret: SECRET, issuer: 'krishi-verse-impersonation', audience: 'krishi-verse-api', grantId: 'g1', adminUserId: ADMIN, targetUserId: TARGET, targetTenantId: TENANT, ttlSec: 1, nowSec: Math.floor(Date.now() / 1000) - 10 });
-    expect(() => verifyImpersonationToken(expired.token, SECRET, 'krishi-verse-impersonation', 'krishi-verse-api')).toThrow(ImpersonationTokenError);
+    const { token } = mintImpersonationToken({ secret: SECRET, issuer: 'krishalaya-impersonation', audience: 'krishalaya-api', grantId: 'g1', adminUserId: ADMIN, targetUserId: TARGET, targetTenantId: TENANT, ttlSec: 900 });
+    expect(() => verifyImpersonationToken(token + 'x', SECRET, 'krishalaya-impersonation', 'krishalaya-api')).toThrow(ImpersonationTokenError);
+    expect(() => verifyImpersonationToken(token, 'другой'.repeat(8), 'krishalaya-impersonation', 'krishalaya-api')).toThrow(ImpersonationTokenError);
+    expect(() => verifyImpersonationToken(token, SECRET, 'wrong-iss', 'krishalaya-api')).toThrow(ImpersonationTokenError);
+    expect(() => verifyImpersonationToken(token, SECRET, 'krishalaya-impersonation', 'wrong-aud')).toThrow(ImpersonationTokenError);
+    const expired = mintImpersonationToken({ secret: SECRET, issuer: 'krishalaya-impersonation', audience: 'krishalaya-api', grantId: 'g1', adminUserId: ADMIN, targetUserId: TARGET, targetTenantId: TENANT, ttlSec: 1, nowSec: Math.floor(Date.now() / 1000) - 10 });
+    expect(() => verifyImpersonationToken(expired.token, SECRET, 'krishalaya-impersonation', 'krishalaya-api')).toThrow(ImpersonationTokenError);
   });
 });
 
@@ -151,7 +151,7 @@ describe('StartImpersonationService', () => {
     const out: any = await new StartImpersonationService(pool, audit, repo, cfg()).start(actor, dto);
     expect(repo.insertGrant).toHaveBeenCalled();
     expect(audit.write).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'impersonation.started' }));
-    const c = verifyImpersonationToken(out.token, SECRET, 'krishi-verse-impersonation', 'krishi-verse-api');
+    const c = verifyImpersonationToken(out.token, SECRET, 'krishalaya-impersonation', 'krishalaya-api');
     expect(c.act.sub).toBe(ADMIN); expect(c.sub).toBe(TARGET); expect(c.scope).toBe('read_only');
   });
 });

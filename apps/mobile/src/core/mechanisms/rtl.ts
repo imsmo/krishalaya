@@ -4,19 +4,19 @@
 //
 // Canon source (verified): `system/screen.css` — `[dir="rtl"]` rules exist canon-wide (icon-mirror utility,
 // tab-underbar `inset-inline-start` note) — APPLY-6/BRAND-017. CLOSE-2 shipped a full Urdu (`ur`, RTL) screen set
-// under `screens/lang-ur/` in the DESIGN CANON — but `@krishi-verse/i18n`'s LIVE registry (`LANGUAGES`) still
+// under `screens/lang-ur/` in the DESIGN CANON — but `@krishalaya/i18n`'s LIVE registry (`LANGUAGES`) still
 // carries only `hi`/`en`/`gu`, all `dir: 'ltr'` (grep-verified). So today `shouldForceRTL` always resolves false
 // for every live app language — the mechanism is real and tested, but structurally INACTIVE until a live RTL
 // language ships (mirrors DEV-19's own disclosed residual: "no live RTL-triggering language exists yet").
 //
-// DEV-21: the shared `@krishi-verse/i18n` package now carries the FULL 14-entry `LANGUAGE_REGISTRY` (including
+// DEV-21: the shared `@krishalaya/i18n` package now carries the FULL 14-entry `LANGUAGE_REGISTRY` (including
 // every target language's `dir`) — this file's own `COMING_LANGUAGE_DIR` map below is DERIVED from that registry
 // rather than hand-duplicated, so a future language's RTL flag can never drift between the shared package and
 // this mobile-only forward-compat map.
 export type Direction = 'ltr' | 'rtl';
 
 /** Should the app force RTL layout for this language's direction? Pure — takes the direction value directly so
- * it works with any `LanguageDef`-shaped object (`@krishi-verse/i18n`'s registry OR a locally-registered
+ * it works with any `LanguageDef`-shaped object (`@krishalaya/i18n`'s registry OR a locally-registered
  * "coming soon" entry) without importing the package's type. */
 export function shouldForceRTL(dir: Direction | null | undefined): boolean {
   return dir === 'rtl';
@@ -29,7 +29,7 @@ export function rtlChangeRequiresReload(currentlyForced: boolean, dir: Direction
   return shouldForceRTL(dir) !== currentlyForced;
 }
 
-import { LANGUAGE_REGISTRY } from '@krishi-verse/i18n';
+import { LANGUAGE_REGISTRY } from '@krishalaya/i18n';
 
 /** Every registered language's direction (live AND target, all 14) — derived from the shared registry, never
  * hand-duplicated. `ur` (Urdu) is CLOSE-2's own shipped RTL design-canon language (screens/lang-ur/) with no

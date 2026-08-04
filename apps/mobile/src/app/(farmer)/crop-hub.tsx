@@ -10,8 +10,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { LearningResource, CropCalendar } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { LearningResource, CropCalendar } from '@krishalaya/sdk-js';
+import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listTips, listCropCalendars } from '../../features/content/content.api';

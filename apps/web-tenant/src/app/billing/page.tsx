@@ -7,10 +7,10 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { planPriceMinor, mergeUsageRows } from '../../features/billing/plan';
 import { applyPlanAction, changePlanAction, cancelSubscriptionAction } from './actions';
-import type { Plan, Subscription } from '@krishi-verse/sdk-js';
+import type { Plan, Subscription } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

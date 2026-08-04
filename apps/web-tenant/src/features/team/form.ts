@@ -1,7 +1,7 @@
 // apps/web-tenant/src/features/team/form.ts · PURE helpers for the team page. No framework, no I/O → unit-tested.
 // buildAddUser validates the admin-add-member form (the SDK's only roster-write that isn't approve-pending);
 // rolePending reads whether an assignment is still awaiting approval (approvedAt null).
-import type { RoleAssignment } from '@krishi-verse/sdk-js';
+import type { RoleAssignment } from '@krishalaya/sdk-js';
 
 export type AddUserResult =
   | { ok: true; value: { phone: string; fullName?: string; languageCode?: string; countryCode?: string } }

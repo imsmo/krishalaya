@@ -10,7 +10,7 @@
 // on its first run (the screen's `openExport` handler only runs on a user tap, never during render, so this is
 // purely an import-time config guard, not a runtime crash path in the real app).
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import TodayOrders from '../../(owner)/today-orders';
 

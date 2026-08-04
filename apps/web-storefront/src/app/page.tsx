@@ -3,7 +3,7 @@
 // empty state (Law 12 — a flaky dependency never 500s the public storefront). Revalidated periodically (ISR).
 // All copy via i18n.
 import type { Metadata } from 'next';
-import type { ListingCard as ListingCardData } from '@krishi-verse/sdk-js';
+import type { ListingCard as ListingCardData } from '@krishalaya/sdk-js';
 import { publicClient } from '../lib/api-client';
 import { getTranslator, getLang } from '../lib/i18n';
 import { ListingCard } from '../components/ListingCard';

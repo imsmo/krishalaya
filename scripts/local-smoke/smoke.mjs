@@ -339,7 +339,7 @@ function printSummary() {
 }
 
 async function main() {
-  console.log('=== Krishi-Verse LOCAL-FULL-STACK smoke suite (DEV-32) ===');
+  console.log('=== Krishalaya LOCAL-FULL-STACK smoke suite (DEV-32) ===');
   console.log(`BASE_URL: ${BASE_URL}  (this run: a locally-booted real apps/api process over real HTTP — NOT staging)`);
   const admin = new Pool({ connectionString: ADMIN_DATABASE_URL });
   try {

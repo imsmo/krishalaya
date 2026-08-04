@@ -7,7 +7,7 @@
 //
 // DEV-27 (Q23, G0-4 founder ruling 2026-07-22 — Design_Program/12_G0-2_DECISION_REGISTER.md): every
 // billing document header carries BOTH the tenant's own brand (name) AND the platform's small honest
-// "Powered by Krishi Verse" mark — never one without the other (TS-002 §a "Documents" row; DOC-000
+// "Powered by Krishalaya" mark — never one without the other (TS-002 §a "Documents" row; DOC-000
 // §a/§b, header zone — the LOGO-4 badge asset is drawn there). See spec_dev27.md for the verbatim
 // ruling + a filed discrepancy note (the register's own headline sentence says "footers", but its own
 // explanatory text + TS-002 + DOC-000's actual annotation + the drawn anatomy all place the badge in
@@ -33,7 +33,7 @@ export interface DocumentBrand { tenantName: string | null; badgeText: string }
  *  escapePdf() would silently turn every out-of-range character into "?", so printing a raw hi/gu
  *  translation here would render as "?????" mojibake — a worse, dishonest outcome than showing the
  *  correctly-resolved English string. Real hi/gu strings ARE registered in the i18n bundle (Law 3,
- *  `doc.poweredByKrishiVerse`) for any future Unicode-capable renderer/consumer of the same key; this
+ *  `doc.poweredByKrishalaya`) for any future Unicode-capable renderer/consumer of the same key; this
  *  regex only guards THIS ASCII-only text stream. Flagged as a known, disclosed constraint of this
  *  specific renderer in dev27_report.md — not a silent hack.
  */
@@ -54,7 +54,7 @@ export class DocumentPdfService {
   ) {}
 
   /** Q23 header lines: tenant brand name (if known) THEN the platform badge, exactly mirroring the
-   *  DOC-000 header-zone anatomy (tenant logo/name slot beside the "Powered by Krishi Verse" mark). */
+   *  DOC-000 header-zone anatomy (tenant logo/name slot beside the "Powered by Krishalaya" mark). */
   private brandHeaderLines(brand: DocumentBrand): string[] {
     return brand.tenantName ? [brand.tenantName, brand.badgeText, ''] : [brand.badgeText, ''];
   }
@@ -95,8 +95,8 @@ export class DocumentPdfService {
   /** Resolves the i18n key for the caller's lang (Law 3), degrading to the EN string when the
    *  translated value isn't WinAnsi-printable (see WIN_ANSI_PRINTABLE comment above). */
   private badgeText(lang: string): string {
-    const translated = this.i18n.t('doc.poweredByKrishiVerse', lang);
-    return WIN_ANSI_PRINTABLE.test(translated) ? translated : this.i18n.t('doc.poweredByKrishiVerse', 'en');
+    const translated = this.i18n.t('doc.poweredByKrishalaya', lang);
+    return WIN_ANSI_PRINTABLE.test(translated) ? translated : this.i18n.t('doc.poweredByKrishalaya', 'en');
   }
 
   /** Resolves the Q23 header brand for a tenant. tenantId is always the caller's own RequestContext-

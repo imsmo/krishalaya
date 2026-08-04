@@ -10,9 +10,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { MandiPulse, MandiPrice, Mandi } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { MandiPulse, MandiPrice, Mandi } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { haversineMeters } from '../../../core/location';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';

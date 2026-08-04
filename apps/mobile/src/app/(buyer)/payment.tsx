@@ -12,9 +12,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SdkError, type CheckoutPreview } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { SdkError, type CheckoutPreview } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';

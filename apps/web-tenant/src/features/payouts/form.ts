@@ -3,7 +3,7 @@
 // A payout destination is added by its gateway-tokenised `vaultRef` ONLY — raw account numbers / VPAs are
 // tokenised at the gateway out-of-band and never pass through the console (Law: no PII/secrets here).
 import { parseMajorToMinor } from '../listings/form';
-import type { BankAccount } from '@krishi-verse/sdk-js';
+import type { BankAccount } from '@krishalaya/sdk-js';
 
 export type PayoutResult =
   | { ok: true; value: { amountMinor: string; bankAccountId: string; currencyCode: string } }

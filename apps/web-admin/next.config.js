@@ -1,4 +1,4 @@
-// apps/web-admin/next.config.js · god-mode console. The workspace package(s) it imports (@krishi-verse/tokens) ship
+// apps/web-admin/next.config.js · god-mode console. The workspace package(s) it imports (@krishalaya/tokens) ship
 // PRE-COMPILED CommonJS in their dist/, so Next consumes them directly. transpilePackages is intentionally NOT set:
 // listing a pre-compiled CJS package there makes Next apply Fast-Refresh (injecting `import.meta.webpackHot`) to a
 // module webpack treats as CommonJS → "Cannot use 'import.meta' outside a module".

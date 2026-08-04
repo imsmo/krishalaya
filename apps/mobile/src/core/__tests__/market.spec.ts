@@ -6,7 +6,7 @@ import {
   alertTone, weatherSeverityTone, isAdvisoryActive, historyTrendPct,
   weatherEmoji, weatherConditionKey, pickPrimaryAdvisory, alertSummary, bpsToPct, uvBand, windCompass,
 } from '../../features/market/market';
-import type { MandiPrice, WeatherAlert } from '@krishi-verse/sdk-js';
+import type { MandiPrice, WeatherAlert } from '@krishalaya/sdk-js';
 
 describe('uvBand', () => {
   it('maps WHO UV bands; null when absent', () => {

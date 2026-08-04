@@ -11,13 +11,13 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { env } from '../../lib/env';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { ANIMAL_TYPES, PRICING_MODELS, PAYMENT_CYCLES, MILK_SHIFTS, nextBillActions } from '../../features/dairy/calc';
 import {
   createMccAction, setMccActiveAction, enrolMemberAction, createRateCardAction,
   recordCollectionAction, generateBillAction, previewBillAction, approveBillAction, payBillAction,
 } from './actions';
-import type { DairyMcc, DairyMembership, DairyRateCard, MilkBill } from '@krishi-verse/sdk-js';
+import type { DairyMcc, DairyMembership, DairyRateCard, MilkBill } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

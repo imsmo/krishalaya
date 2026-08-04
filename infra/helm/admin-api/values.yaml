@@ -25,9 +25,9 @@ env:
 - name: ADMIN_PORT
   value: '4001'
 - name: JWT_ISSUER
-  value: krishi-verse-admin
+  value: krishalaya-admin
 - name: JWT_AUDIENCE
-  value: krishi-verse-admin
+  value: krishalaya-admin
 - name: LOG_LEVEL
   value: info
 envFromSecretNames:

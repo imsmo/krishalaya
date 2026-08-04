@@ -12,7 +12,7 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { SchemeRow, SchemeChangeRow } from '../../../../features/schemes-registry/scheme';
 import { updateMetaAction, updateRulesAction, setWindowAction, setSchemeActiveAction } from '../../actions';
 

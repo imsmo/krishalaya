@@ -13,8 +13,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, ScreenScaffold, SkeletonCard, UploadTile, color, font, space, radius, type UploadStatus } from '@krishi-verse/ui-native';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, ScreenScaffold, SkeletonCard, UploadTile, color, font, space, radius, type UploadStatus } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';

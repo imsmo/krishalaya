@@ -1,4 +1,4 @@
-# Krishi-Verse Mobile — Store Compliance (P-32, Wave 11)
+# Krishalaya Mobile — Store Compliance (P-32, Wave 11)
 
 Play Store + App Store submission compliance (MOBILE_AI_AGENT_BUILD_GUIDE §8). This is the source of truth that
 the store data-safety / privacy forms must match what the app actually collects. Keep it in sync with the code

@@ -1,4 +1,4 @@
-// apps/web-storefront/src/app/tenants-signup/page.tsx · seller acquisition landing ("Sell on Krishi-Verse").
+// apps/web-storefront/src/app/tenants-signup/page.tsx · seller acquisition landing ("Sell on Krishalaya").
 // Localized marketing copy + a CTA. Seller onboarding itself lives in the web-tenant app (a separate console),
 // so the CTA links there via NEXT_PUBLIC_TENANT_APP_URL when configured, else to the in-app /login (sellers
 // authenticate first). No SDK call — this is a public marketing page.

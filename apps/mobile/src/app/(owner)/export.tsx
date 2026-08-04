@@ -13,8 +13,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { reportsArchive, type ScheduledReport, type GeneratedReport } from '../../features/tenant/tenant.api';

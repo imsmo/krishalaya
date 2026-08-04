@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · logistics shipments resource (module 5). Tracks an order's shipment and captures
+// @krishalaya/sdk-js · logistics shipments resource (module 5). Tracks an order's shipment and captures
 // PROOF-OF-DELIVERY: the buyer's OTP (issued server-side, 4–8 digits) + an optional signed PoD photo (mediaId).
 // The OTP is verified SERVER-SIDE (we send the raw code; the server hashes + compares) — the client never trusts
 // itself. `deliver` carries an Idempotency-Key (Law 3) so a retried delivery can't double-fire. Delivery is gated

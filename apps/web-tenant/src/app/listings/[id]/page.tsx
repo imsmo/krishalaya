@@ -15,11 +15,11 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { minorToMajor } from '../../../features/listings/form';
 import { canPublish, canChangePrice } from '../../../features/listings/manage';
 import { publishListingAction, changePriceAction } from './actions';
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

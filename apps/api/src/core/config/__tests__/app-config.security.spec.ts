@@ -32,7 +32,7 @@ const SECURE_RAW: Record<string, string> = {
   // from the app's own kv_app DATABASE_URL above.
   RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.cluster.ap-south-1.rds.amazonaws.com:5432/krishiverse',
   // ZAP-hardening: the 4 Next.js web apps' origins allowed to read cross-origin responses (CORS).
-  WEB_ORIGINS: 'https://sell.krishi-verse.in,https://admin.krishi-verse.in,https://www.krishi-verse.in,https://partners.krishi-verse.in',
+  WEB_ORIGINS: 'https://sell.krishalaya.com,https://admin.krishalaya.com,https://krishalaya.com,https://partners.krishalaya.com',
 };
 
 const envWith = (overrides: Record<string, string | undefined>): Env => {

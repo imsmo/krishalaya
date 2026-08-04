@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/edit.tsx · screen 113 (Edit Listing) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/113-farmer-edit-listing.html): Photos grid, Details (Crop / Quantity /
+// (Krishalaya_Design_System/screens/113-farmer-edit-listing.html): Photos grid, Details (Crop / Quantity /
 // Price + fair range / Grade / Moisture / Description) and Preferences (negotiation / delivery / min order), with
 // Cancel + Save Changes. Thin screen over features/listings; degrade-never-die (Law 12); money via paise BigInt.
 //
@@ -12,8 +12,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SdkError, type ListingCard, type GalleryItem } from '@krishi-verse/sdk-js';
-import { Button, Input, Toggle, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import { SdkError, type ListingCard, type GalleryItem } from '@krishalaya/sdk-js';
+import { Button, Input, Toggle, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { getListing, changeListingPrice, listingMedia } from '../../../features/listings/listings.api';
 import { getPulse } from '../../../features/market/market.api';

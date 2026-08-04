@@ -1,7 +1,7 @@
 // packages/ui/src/components/MoneyText.tsx · DEV-15 (Phase D3, packages/ui port batch 1).
 // LAW 3 FLAGSHIP. Ports canon classes `.kvw-money` / `.kvw-money small` / `.kvw-money.in` / `.kvw-money.out`
 // / `.kvw-money-code` verbatim from
-// `Phase-1 all screen design/Krishi_Verse_Design_System/system/web/web-components.css` lines 60/74/142-145.
+// `Phase-1 all screen design/Krishalaya_Design_System/system/web/web-components.css` lines 60/74/142-145.
 //
 // Golden Law 2 (money is BIGINT + explicit currency_code, never a float/assumed ₹) and Golden Law 3
 // (currency renders through the locale/token formatter, NEVER a hardcoded literal): this component takes
@@ -10,19 +10,19 @@
 // anywhere in this file. Proven by `MoneyText.test.tsx`: the exact same component renders correctly for INR
 // AND AED from the SAME code path.
 //
-// DEV-26/Q15: the actual formatting now delegates to `@krishi-verse/i18n`'s `formatMoneyMinor` — the platform's
+// DEV-26/Q15: the actual formatting now delegates to `@krishalaya/i18n`'s `formatMoneyMinor` — the platform's
 // ONE canonical money formatter (mobile's `packages/ui-native/MoneyText.tsx` already used it; this web
 // component previously hand-rolled its own `Number(amountMinor) / 10**exponent` conversion, which silently lost
 // precision for any amount beyond `Number.MAX_SAFE_INTEGER` — a real Law-2 gap, now closed, with ZERO change to
 // this component's own public props/output). The `locale` prop stays a raw BCP-47 Intl tag (unchanged contract
 // for every existing caller) and is passed through via `formatMoneyMinor`'s `opts.intlLocale` escape hatch —
-// `@krishi-verse/i18n`'s own `formatMoneyMinor` normally takes a LANGUAGE_REGISTRY code, not a raw Intl locale,
+// `@krishalaya/i18n`'s own `formatMoneyMinor` normally takes a LANGUAGE_REGISTRY code, not a raw Intl locale,
 // so a full prop-signature unification with mobile's `MoneyText` was evaluated and rejected here (it would have
 // silently changed behavior for the `locale='ja-JP'`/`'ar-AE'` style callers this component's own tests exercise)
 // — the underlying bigint-exact/no-float ALGORITHM is now shared; only the two components' distinct
 // locale-parameter conventions remain separate, disclosed rather than silently forced together.
 import * as React from 'react';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 
 export interface MoneyTextProps {
   /** Smallest currency unit (paise/fils/etc.) — matches the ledger's `amount_minor BIGINT` column exactly.
@@ -47,7 +47,7 @@ export function MoneyText(props: MoneyTextProps): React.ReactElement {
   const { amountMinor, currencyCode, locale = 'en-IN', direction, currencyDisplay = 'symbol', suffix, className } = props;
 
   // Bigint-exact, no float at any step (DEV-26/Q15) — see this file's header for why this delegates to
-  // `@krishi-verse/i18n`'s canonical formatter instead of its own former `Number(amountMinor)` conversion.
+  // `@krishalaya/i18n`'s canonical formatter instead of its own former `Number(amountMinor)` conversion.
   const formatted = formatMoneyMinor(BigInt(amountMinor), currencyCode, undefined, { currencyDisplay, intlLocale: locale });
 
   const classes = ['kvw-money', direction || '', className || ''].filter(Boolean).join(' ');

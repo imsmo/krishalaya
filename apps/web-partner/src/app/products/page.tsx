@@ -8,7 +8,7 @@ import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { formatAprBps, parseActiveOnly, type ProductRow } from '../../features/lending/product';
 
 export const dynamic = 'force-dynamic';

@@ -2,7 +2,7 @@
 // screen (screen 40). No React / no SDK I/O (SDK types are `import type` → erased) → unit-tested. The star
 // DISTRIBUTION is computed from the reviews actually loaded (the summary endpoint gives only avg + total count, no
 // per-star split — §13); the bars therefore reflect the shown page, never a fabricated lifetime breakdown.
-import type { PublicReview } from '@krishi-verse/sdk-js';
+import type { PublicReview } from '@krishalaya/sdk-js';
 
 export type ReviewFilter = 'all' | 'five' | 'month';
 export const REVIEW_FILTERS: readonly ReviewFilter[] = ['all', 'five', 'month'];

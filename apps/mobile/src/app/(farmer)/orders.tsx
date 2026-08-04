@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/orders.tsx · the Orders tab (screen 22 My Orders) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/22-my-orders.html): As-Buyer / As-Seller tabs with counts, a status filter
+// (Krishalaya_Design_System/screens/22-my-orders.html): As-Buyer / As-Seller tabs with counts, a status filter
 // chip row (All / In Transit / Delivered / Completed / Cancelled), and rich order cards (id + status badge, thumb,
 // counterparty, price, a fulfilment progress bar + status label + a primary CTA). Thin screen (guide §3); money
 // via MoneyText/paise (Law 2); degrade-never-die (Law 12); i18n(hi/en/gu).
@@ -40,9 +40,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { OrderListItem, OrderDetail, OrderRole } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { EmptyState, MoneyText, StatusPill, SkeletonCard, Button, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { OrderListItem, OrderDetail, OrderRole } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { EmptyState, MoneyText, StatusPill, SkeletonCard, Button, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { listOrders, getOrder } from '../../features/orders/orders.api';
 import { payForOrder } from '../../features/payments/payments.api';

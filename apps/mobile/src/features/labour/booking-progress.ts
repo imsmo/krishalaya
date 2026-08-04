@@ -3,7 +3,7 @@
 // unit-tested. It maps a booking's SERVER status to a 3-stage stepper (Scheduled → In progress → Done) so the
 // screen can show honest progress WITHOUT fabricating a percentage or clock time — the employer has no attendance
 // read yet (§13: degrade, never fake). Money is never computed here (wages settle server-side, Law 2).
-import type { LabourAssignment } from '@krishi-verse/sdk-js';
+import type { LabourAssignment } from '@krishalaya/sdk-js';
 
 export type ProgressStage = 'scheduled' | 'working' | 'done' | 'cancelled';
 export const PROGRESS_STEPS: readonly Exclude<ProgressStage, 'cancelled'>[] = ['scheduled', 'working', 'done'] as const;

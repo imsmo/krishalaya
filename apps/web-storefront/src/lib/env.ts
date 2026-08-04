@@ -13,7 +13,7 @@ export const env = {
   /** The tenant a buyer signs into from this storefront. The API scopes OTP verify/refresh to a tenant, so it must
    *  be sent. Locally set via NEXT_PUBLIC_TENANT_ID (demo-fpo); in prod derive from the storefront's host/slug. */
   tenantId: process.env.NEXT_PUBLIC_TENANT_ID,
-  /** Origin of the seller/tenant console (web-tenant); the "Sell on Krishi-Verse" CTA links here. An origin,
+  /** Origin of the seller/tenant console (web-tenant); the "Sell on Krishalaya" CTA links here. An origin,
    *  not a secret — safe to expose. Null when unset → the CTA falls back to in-app sign-in. */
   tenantAppUrl: process.env.NEXT_PUBLIC_TENANT_APP_URL || null,
   /** Razorpay PUBLISHABLE key id (rzp_*) — public by design (it's shown in the browser checkout). Null when
@@ -22,9 +22,9 @@ export const env = {
   /** Client visibility switch for the auctions surface (hidden when 'false'). Enabled by default; the API's own
    *  `auctions` flag is the authoritative gate (if it's off, the public reads simply degrade to an empty state). */
   featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS !== 'false',
-  /** The storefront's OWN public origin (e.g. https://krishi-verse.example) — used for metadataBase (absolute
+  /** The storefront's OWN public origin (e.g. https://krishalaya.example) — used for metadataBase (absolute
    *  canonical/OpenGraph URLs), robots.txt sitemap pointer, and sitemap.xml entries. Public, not a secret. Empty
    *  when unset → metadata stays relative and robots omits the sitemap line (still valid; set this in prod). */
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
-  appName: 'Krishi-Verse',
+  appName: 'Krishalaya',
 } as const;

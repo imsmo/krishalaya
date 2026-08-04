@@ -4,7 +4,7 @@
 // photo/voice attachments and a claimed "received" amount have NO ticket field, so they are captured + flagged
 // (not sent) rather than faked (§13). The AGREED wage shown is real (from the booking); "received" is the worker's
 // claim, not a system value, so the screen never prints a fabricated received figure.
-import type { TicketSeverity } from '@krishi-verse/sdk-js';
+import type { TicketSeverity } from '@krishalaya/sdk-js';
 
 export const DISPUTE_REASONS = [
   { key: 'less_wage', icon: '💰' },

@@ -1,6 +1,6 @@
 # infra/docker/web.Dockerfile · ONE image for ANY Next.js web app.
 #   docker build -f infra/docker/web.Dockerfile \
-#     --build-arg APP=web-storefront --build-arg APP_PKG=@krishi-verse/web-storefront \
+#     --build-arg APP=web-storefront --build-arg APP_PKG=@krishalaya/web-storefront \
 #     -t <ECR>/krishiverse-web-storefront:<tag> .
 # Works for: web-storefront, web-tenant, web-admin, web-partner.
 FROM node:20-alpine AS build

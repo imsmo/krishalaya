@@ -8,7 +8,7 @@
 // zero nav entry exists anywhere for `fintech` (grep-verified) — this is the honest component-level fix, not new
 // routing the pilot IA never called for.
 import React from 'react';
-import { ScreenScaffold, EmptyState } from '@krishi-verse/ui-native';
+import { ScreenScaffold, EmptyState } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { offModuleState } from '../../../core/flags/off-module-state';

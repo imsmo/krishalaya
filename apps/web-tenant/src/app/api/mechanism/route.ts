@@ -6,7 +6,7 @@
 // client component at all for the settings-page toggle forms (see `app/settings/page.tsx`), which is a purer
 // SSR-only design (this route is the ONLY place a mechanism preference is ever written).
 import { NextRequest, NextResponse } from 'next/server';
-import { THEME_PREFERENCES } from '@krishi-verse/ui';
+import { THEME_PREFERENCES } from '@krishalaya/ui';
 import { THEME_COOKIE, SENIOR_COOKIE } from '../../../lib/mechanism';
 
 const ONE_YEAR = 60 * 60 * 24 * 365;

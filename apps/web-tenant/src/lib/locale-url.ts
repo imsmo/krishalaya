@@ -4,7 +4,7 @@
 // comment (scheme decision + rejected path-prefix alternative) — identical scheme here, this console app has no
 // `[tenantSlug]`-style dynamic segment, but the same reasoning (bounded, additive, no route-tree restructure)
 // applies equally and keeps the mechanism identical across both apps that actually run a live locale switcher.
-import { isSupported, resolveLanguage } from '@krishi-verse/i18n';
+import { isSupported, resolveLanguage } from '@krishalaya/i18n';
 
 /** Reads `?lang=` from a URL and returns the resolved LIVE language code, or `null` if absent/unknown/not-live. */
 export function pickUrlLang(url: URL): string | null {

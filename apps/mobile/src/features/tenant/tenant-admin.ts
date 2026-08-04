@@ -3,8 +3,8 @@
 // within their own tenant and every action is authorized + re-checked SERVER-SIDE; these helpers only drive the
 // UI (status tones, KPI counts from real lists, resolution options, add-farmer validation). Money is bigint
 // minor strings (Law 2) — never floated here.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { RoleAssignment, Dispute, Subscription, Plan } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { RoleAssignment, Dispute, Subscription, Plan } from '@krishalaya/sdk-js';
 
 /** The farmer cap for a plan from its real `limits` map (key 'farmers' | 'max_farmers'), or null when the plan is
  * uncapped / the limit isn't published. Pure — never fabricates a cap (§13). Drives the "Up to N farmers" line. */

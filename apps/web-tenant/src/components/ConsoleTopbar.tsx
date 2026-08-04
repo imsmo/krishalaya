@@ -1,5 +1,5 @@
 // apps/web-tenant/src/components/ConsoleTopbar.tsx · DEV-18 REAL consuming-app smoke test (packages/ui
-// port batch 4). Wraps `@krishi-verse/ui`'s `Topbar` for the console shell. `me` is passed down from
+// port batch 4). Wraps `@krishalaya/ui`'s `Topbar` for the console shell. `me` is passed down from
 // `layout.tsx` (fetched once there, shared with `Sidebar`'s `tenant` slot — see that file's own header
 // comment for why).
 //
@@ -10,8 +10,8 @@
 // real; inventing a "0 unread" badge with no backing data would be worse than showing no bell at all).
 // `userMenu` shows only the real, already-fetched display name — no invented avatar-initials scheme (per
 // `Avatar`'s own header comment: never guess initials from a name split).
-import type { UserProfile } from '@krishi-verse/sdk-js';
-import { Topbar } from '@krishi-verse/ui';
+import type { UserProfile } from '@krishalaya/sdk-js';
+import { Topbar } from '@krishalaya/ui';
 
 export function ConsoleTopbar({ me }: { me: UserProfile | null }) {
   return (

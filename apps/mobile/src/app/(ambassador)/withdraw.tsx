@@ -14,10 +14,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { BankAccount } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import { Button, Input, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { BankAccount } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import { Button, Input, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';

@@ -1,10 +1,10 @@
 {
-  "name": "@krishi-verse/outbox-relay",
+  "name": "@krishalaya/outbox-relay",
   "version": "0.1.0",
   "private": true,
   "description": "Reliable event publisher: polls outbox_events (FOR UPDATE SKIP LOCKED) → SQS/EventBridge.",
   "main": "dist/main.js",
   "scripts": { "build": "tsc -p tsconfig.json", "start": "node dist/main.js", "dev": "ts-node src/main.ts", "typecheck": "tsc -p tsconfig.json --noEmit", "test": "jest --passWithNoTests", "lint": "eslint \"src/**/*.ts\"" },
-  "dependencies": { "pg": "^8.12.0", "@aws-sdk/client-sqs": "^3.654.0", "@aws-sdk/client-eventbridge": "^3.654.0", "@krishi-verse/contracts": "workspace:*" },
+  "dependencies": { "pg": "^8.12.0", "@aws-sdk/client-sqs": "^3.654.0", "@aws-sdk/client-eventbridge": "^3.654.0", "@krishalaya/contracts": "workspace:*" },
   "devDependencies": { "typescript": "^5.5.4", "ts-node": "^10.9.2", "@types/node": "^20.16.10", "jest": "^29.7.0", "ts-jest": "^29.2.5", "@types/jest": "^29.5.13" }
 }

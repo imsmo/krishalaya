@@ -15,7 +15,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Card, Input, Toggle, AddMediaTile, UploadTile, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, Input, Toggle, AddMediaTile, UploadTile, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useAuth } from '../../../core/auth/auth.store';

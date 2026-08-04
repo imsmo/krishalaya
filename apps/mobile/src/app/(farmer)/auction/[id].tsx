@@ -11,10 +11,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, Alert, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
-import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
-import { Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatRelative } from '@krishi-verse/i18n';
+import { SdkError } from '@krishalaya/sdk-js';
+import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
+import { Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatRelative } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useAuth } from '../../../core/auth/auth.store';

@@ -11,8 +11,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { LearningResource } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, ScreenScaffold, VoiceButton, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { LearningResource } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, ScreenScaffold, VoiceButton, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useVoiceDictation } from '../../core/voice';

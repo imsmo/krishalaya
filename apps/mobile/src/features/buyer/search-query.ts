@@ -3,7 +3,7 @@
 // `import type` → erased), so it's unit-tested under ts-jest. Money is bigint minor-unit strings (Law 2): rupee
 // inputs become paise via BigInt, never a float. Empty/invalid fields are dropped so the server gets a clean,
 // minimal query (and the cache key stays stable).
-import type { ListingQuery } from '@krishi-verse/sdk-js';
+import type { ListingQuery } from '@krishalaya/sdk-js';
 
 export type SortKey = 'newest' | 'price_asc' | 'price_desc';
 

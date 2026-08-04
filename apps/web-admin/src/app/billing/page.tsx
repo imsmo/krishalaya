@@ -7,7 +7,7 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { RevenueOverview } from '../../features/billing/billing';
 
 export const dynamic = 'force-dynamic';

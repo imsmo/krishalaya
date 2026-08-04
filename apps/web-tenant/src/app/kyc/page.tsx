@@ -17,7 +17,7 @@ import { MediaUploader } from '../../components/MediaUploader';
 import { getTranslator } from '../../lib/i18n';
 import { kycStatusKey, PROFILE_GENDERS, PROFILE_LANGUAGES } from '../../features/profile/form';
 import { updateProfileAction } from './actions';
-import type { UserProfile, KycDocument } from '@krishi-verse/sdk-js';
+import type { UserProfile, KycDocument } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

@@ -6,8 +6,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { ListingCard, ListingQuery } from '@krishi-verse/sdk-js';
-import { EmptyState, SkeletonCard, color, space } from '@krishi-verse/ui-native';
+import type { ListingCard, ListingQuery } from '@krishalaya/sdk-js';
+import { EmptyState, SkeletonCard, color, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { browseListings } from '../browse.api';
 import { getSavedListings, toggleSavedListing } from '../saved.api';

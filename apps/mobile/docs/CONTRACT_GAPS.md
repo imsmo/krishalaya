@@ -1,4 +1,4 @@
-# Krishi-Verse Mobile — Flagged Contract-Gaps Report
+# Krishalaya Mobile — Flagged Contract-Gaps Report
 
 **Purpose.** Every mobile screen was built to design parity, but a number of screens show fewer fields (or a
 "coming soon" / omitted row / generic label) than the Phase-1 mock because the **backend contract does not yet

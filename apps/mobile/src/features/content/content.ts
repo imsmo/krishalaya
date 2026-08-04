@@ -3,8 +3,8 @@
 // resources exist (box=browse returns only APPROVED) and on AI answers; these helpers only drive the UI: local
 // text search (ReDoS-safe plain includes), kind grouping/labels, saved-tips set math, and assistant input
 // validation. Saved tips are DEVICE-LOCAL bookmarks (no server endpoint yet — flagged); we keep tiny snapshots.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { LearningResource, ResourceKind, CropCalendar, CropCalendarStage } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { LearningResource, ResourceKind, CropCalendar, CropCalendarStage } from '@krishalaya/sdk-js';
 
 /** The resource kinds we surface, in display order (a "category" is a kind — there's no topic-name endpoint). */
 export const RESOURCE_KINDS: ResourceKind[] = ['article', 'video', 'blog', 'post', 'audio'];

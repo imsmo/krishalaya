@@ -1,5 +1,5 @@
 // modules/assistant/gateway/assistant-inference.port.ts
-// Port to the INTERNAL ai-services governed-inference tier. Krishi-Verse owns the POLICY (guardrails, cost/rate
+// Port to the INTERNAL ai-services governed-inference tier. Krishalaya owns the POLICY (guardrails, cost/rate
 // caps, ai_inferences logging); ai-services owns the model. CONTRACT (Law 12 — degrade, never fabricate):
 //   • ask(query) returns a GovernedReply: the model's answer + confidence + needsReview + optional citations +
 //     the model identity (code/id) for the audit row. It is reached over s2s (shared-secret bearer).

@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 06-tenant-apply — 06 · Tenant Application — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/06-tenant-apply.html`
+## 06-tenant-apply — 06 · Tenant Application — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/06-tenant-apply.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 06 · Tenant Application — Krishi-Verse
+  - 06 · Tenant Application — Krishalaya
   - Become a Tenant
   - Step 2 of 5
   - Plan Selection
@@ -43,11 +43,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 07-tenant-pending — 07 · Application Under Review — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/07-tenant-pending.html`
+## 07-tenant-pending — 07 · Application Under Review — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/07-tenant-pending.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 07 · Application Under Review — Krishi-Verse
+  - 07 · Application Under Review — Krishalaya
   - Application Status
   - Under Review
   - We're reviewing your application
@@ -75,11 +75,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 08-tenant-dashboard — 08 · Tenant Dashboard — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/08-tenant-dashboard.html`
+## 08-tenant-dashboard — 08 · Tenant Dashboard — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/08-tenant-dashboard.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 08 · Tenant Dashboard — Krishi-Verse
+  - 08 · Tenant Dashboard — Krishalaya
   - A
   - Anand FPO
   - Admin Console
@@ -128,11 +128,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 76-tenant-farmers — 76 · Farmers — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/76-tenant-farmers.html`
+## 76-tenant-farmers — 76 · Farmers — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/76-tenant-farmers.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 76 · Farmers — Krishi-Verse
+  - 76 · Farmers — Krishalaya
   - Farmers · Anand FPO
   - 1,247
   - Total
@@ -185,11 +185,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 77-tenant-farmer-detail — 77 · Farmer Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/77-tenant-farmer-detail.html`
+## 77-tenant-farmer-detail — 77 · Farmer Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/77-tenant-farmer-detail.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 77 · Farmer Detail — Krishi-Verse
+  - 77 · Farmer Detail — Krishalaya
   - Farmer Profile
   - RP
   - Ramesh Patel
@@ -242,11 +242,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 78-tenant-add-farmer — 78 · Add Farmer — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/78-tenant-add-farmer.html`
+## 78-tenant-add-farmer — 78 · Add Farmer — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/78-tenant-add-farmer.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 78 · Add Farmer — Krishi-Verse
+  - 78 · Add Farmer — Krishalaya
   - Add a Farmer
   - How will you add this farmer?
   - Pick one method. Farmer can complete remaining steps later.
@@ -276,11 +276,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 79-tenant-listings — 79 · Listings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/79-tenant-listings.html`
+## 79-tenant-listings — 79 · Listings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/79-tenant-listings.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 79 · Listings — Krishi-Verse
+  - 79 · Listings — Krishalaya
   - Listings · Anand FPO
   - 23
   - Pending
@@ -322,11 +322,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 80-tenant-payouts — 80 · Payouts — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/80-tenant-payouts.html`
+## 80-tenant-payouts — 80 · Payouts — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/80-tenant-payouts.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 80 · Payouts — Krishi-Verse
+  - 80 · Payouts — Krishalaya
   - Farmer Payouts
   - Pending payouts
   - ₹2,84,650
@@ -363,11 +363,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 81-tenant-compliance — 81 · Compliance — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/81-tenant-compliance.html`
+## 81-tenant-compliance — 81 · Compliance — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/81-tenant-compliance.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 81 · Compliance — Krishi-Verse
+  - 81 · Compliance — Krishalaya
   - Compliance & Reports
   - All compliant · No issues
   - Last audit 5 days ago · Next Sep 15, 2026
@@ -408,11 +408,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 82-tenant-branding — 82 · Branding — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/82-tenant-branding.html`
+## 82-tenant-branding — 82 · Branding — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/82-tenant-branding.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 82 · Branding — Krishi-Verse
+  - 82 · Branding — Krishalaya
   - App Branding
   - Preview · How farmers see your app
   - A
@@ -442,11 +442,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 83-tenant-team — 83 · Team — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/83-tenant-team.html`
+## 83-tenant-team — 83 · Team — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/83-tenant-team.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 83 · Team — Krishi-Verse
+  - 83 · Team — Krishalaya
   - Team & Users
   - Admins (3)
   - AS
@@ -490,11 +490,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 84-tenant-kpi-gmv — 84 · GMV Analytics — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/84-tenant-kpi-gmv.html`
+## 84-tenant-kpi-gmv — 84 · GMV Analytics — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/84-tenant-kpi-gmv.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 84 · GMV Analytics — Krishi-Verse
+  - 84 · GMV Analytics — Krishalaya
   - GMV Analytics
   - GMV · Aug 2026
   - ₹38.4 L
@@ -537,11 +537,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 85-tenant-billing — 85 · Plan & Billing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/85-tenant-billing.html`
+## 85-tenant-billing — 85 · Plan & Billing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/85-tenant-billing.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 85 · Plan & Billing — Krishi-Verse
+  - 85 · Plan & Billing — Krishalaya
   - Plan & Billing
   - Current plan
   - Growth · Tier 2
@@ -582,11 +582,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 147-tenant-farmer-approvals — 147 · Pending Approvals — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/147-tenant-farmer-approvals.html`
+## 147-tenant-farmer-approvals — 147 · Pending Approvals — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/147-tenant-farmer-approvals.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 147 · Pending Approvals — Krishi-Verse
+  - 147 · Pending Approvals — Krishalaya
   - Pending Approvals · 14
   - All · 14
   - Ambassador · 9
@@ -631,11 +631,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 148-tenant-approve-detail — 148 · Review Farmer — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/148-tenant-approve-detail.html`
+## 148-tenant-approve-detail — 148 · Review Farmer — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/148-tenant-approve-detail.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 148 · Review Farmer — Krishi-Verse
+  - 148 · Review Farmer — Krishalaya
   - Review Farmer
   - AK
   - Anil Kumar Vasava
@@ -676,11 +676,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 149-tenant-bulk-actions — 149 · Bulk Actions — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/149-tenant-bulk-actions.html`
+## 149-tenant-bulk-actions — 149 · Bulk Actions — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/149-tenant-bulk-actions.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 149 · Bulk Actions — Krishi-Verse
+  - 149 · Bulk Actions — Krishalaya
   - Bulk Actions
   - 9 farmers selected · Pending approval queue
   - Operations
@@ -712,11 +712,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 150-tenant-farmer-analytics — 150 · Farmer Analytics — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/150-tenant-farmer-analytics.html`
+## 150-tenant-farmer-analytics — 150 · Farmer Analytics — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/150-tenant-farmer-analytics.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 150 · Farmer Analytics — Krishi-Verse
+  - 150 · Farmer Analytics — Krishalaya
   - Farmer Analytics
   - Active farmers
   - 1,247
@@ -754,11 +754,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 151-tenant-order-analytics — 151 · Order Analytics — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/151-tenant-order-analytics.html`
+## 151-tenant-order-analytics — 151 · Order Analytics — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/151-tenant-order-analytics.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 151 · Order Analytics — Krishi-Verse
+  - 151 · Order Analytics — Krishalaya
   - Orders Analytics
   - Orders this month
   - 847
@@ -799,11 +799,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 152-tenant-worker-analytics — 152 · Worker Analytics — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/152-tenant-worker-analytics.html`
+## 152-tenant-worker-analytics — 152 · Worker Analytics — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/152-tenant-worker-analytics.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 152 · Worker Analytics — Krishi-Verse
+  - 152 · Worker Analytics — Krishalaya
   - Worker Bookings Analytics
   - Bookings this month
   - 412
@@ -840,11 +840,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 153-tenant-custom-report — 153 · Custom Report — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/153-tenant-custom-report.html`
+## 153-tenant-custom-report — 153 · Custom Report — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/153-tenant-custom-report.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 153 · Custom Report — Krishi-Verse
+  - 153 · Custom Report — Krishalaya
   - Build Custom Report
   - Report type
   - GMV by category & month
@@ -889,11 +889,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 154-tenant-export-reports — 154 · Export Reports — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/154-tenant-export-reports.html`
+## 154-tenant-export-reports — 154 · Export Reports — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/154-tenant-export-reports.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 154 · Export Reports — Krishi-Verse
+  - 154 · Export Reports — Krishalaya
   - Reports Archive
   - Saved & scheduled
   - 📊
@@ -930,11 +930,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 155-tenant-disputes — 155 · Disputes Inbox — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/155-tenant-disputes.html`
+## 155-tenant-disputes — 155 · Disputes Inbox — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/155-tenant-disputes.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 155 · Disputes Inbox — Krishi-Verse
+  - 155 · Disputes Inbox — Krishalaya
   - Disputes · 7
   - Open · 7
   - In review · 3
@@ -960,11 +960,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 156-tenant-dispute-detail — 156 · Dispute Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/156-tenant-dispute-detail.html`
+## 156-tenant-dispute-detail — 156 · Dispute Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/156-tenant-dispute-detail.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 156 · Dispute Detail — Krishi-Verse
+  - 156 · Dispute Detail — Krishalaya
   - Dispute #DSP-2026-0247
   - Quality dispute · Urgent
   - ₹14,400 in escrow
@@ -1004,11 +1004,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 157-tenant-broadcast — 157 · Broadcast Message — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/157-tenant-broadcast.html`
+## 157-tenant-broadcast — 157 · Broadcast Message — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/157-tenant-broadcast.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 157 · Broadcast Message — Krishi-Verse
+  - 157 · Broadcast Message — Krishalaya
   - Broadcast Message
   - Who to reach
   - All farmers
@@ -1049,11 +1049,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 158-tenant-campaigns — 158 · Campaigns — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/158-tenant-campaigns.html`
+## 158-tenant-campaigns — 158 · Campaigns — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/158-tenant-campaigns.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 158 · Campaigns — Krishi-Verse
+  - 158 · Campaigns — Krishalaya
   - Targeted Campaigns
   - Live · 3
   - Scheduled · 2
@@ -1091,11 +1091,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 159-tenant-payment-settings — 159 · Payment Settings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/159-tenant-payment-settings.html`
+## 159-tenant-payment-settings — 159 · Payment Settings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/159-tenant-payment-settings.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 159 · Payment Settings — Krishi-Verse
+  - 159 · Payment Settings — Krishalaya
   - Payment Gateway Settings
   - Active gateways
   - 💳 Razorpay
@@ -1125,11 +1125,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 160-tenant-notifications — 160 · Notification Settings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/160-tenant-notifications.html`
+## 160-tenant-notifications — 160 · Notification Settings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/160-tenant-notifications.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 160 · Notification Settings — Krishi-Verse
+  - 160 · Notification Settings — Krishalaya
   - Notification Settings
   - Critical alerts
   - 🆕 New pending approvals
@@ -1156,11 +1156,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 161-tenant-integrations — 161 · Integrations — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/161-tenant-integrations.html`
+## 161-tenant-integrations — 161 · Integrations — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/161-tenant-integrations.html`
 - **Route:** `src/app/(owner)/…`  ·  **Feature:** `features/tenant`  ·  **Flag:** `owner_console`
 - **Must render (exact design content):**
-  - 161 · Integrations — Krishi-Verse
+  - 161 · Integrations — Krishalaya
   - Integrations
   - Connected
   - 🏛

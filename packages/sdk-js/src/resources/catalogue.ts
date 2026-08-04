@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · catalogue browse (GET /v1/products) — platform-master + tenant products.
+// @krishalaya/sdk-js · catalogue browse (GET /v1/products) — platform-master + tenant products.
 import { HttpClient } from '../http';
 import { ProductCard, Page } from '../types';
 

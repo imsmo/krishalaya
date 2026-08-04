@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · media resource (core/media). Two-step upload: requestUpload() returns a presigned PUT
+// @krishalaya/sdk-js · media resource (core/media). Two-step upload: requestUpload() returns a presigned PUT
 // ticket → the HOST uploads the raw bytes to ticket.uploadUrl (S3, NOT the API; the SDK never proxies file
 // bytes) → confirmUpload() records size + sha256 (+image dims). Downloads are presigned + only for clean assets.
 // Both POSTs are mutations and accept an Idempotency-Key (Law 3) so a retry/replay can't create duplicate assets.

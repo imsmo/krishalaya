@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · the transport. One bounded, resilient request primitive every resource client uses.
+// @krishalaya/sdk-js · the transport. One bounded, resilient request primitive every resource client uses.
 // Guarantees: a per-request timeout via AbortController (no hung renders); RETRY only for IDEMPOTENT GETs on
 // transient failures (network/timeout/5xx) with exponential backoff + jitter — a mutation (POST/PATCH/…) is
 // NEVER auto-retried (Law 3: a non-idempotent call must fail loudly, never silently double-fire); the API's

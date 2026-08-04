@@ -14,10 +14,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { LabourBooking, LabourAssignment, LabourLookups } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { LabourBooking, LabourAssignment, LabourLookups } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getBooking, bookingAssignments, labourLookups, startBooking, completeBooking, cancelBooking, payWages } from '../../../../features/labour/hire.api';

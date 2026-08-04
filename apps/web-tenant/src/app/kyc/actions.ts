@@ -12,7 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { buildProfilePatch } from '../../features/profile/form';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 export async function updateProfileAction(formData: FormData): Promise<void> {
   await requireSession('/kyc');

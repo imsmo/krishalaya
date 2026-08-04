@@ -4,8 +4,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import type { Shipment } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import type { Shipment } from '@krishalaya/sdk-js';
+import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrderShipment } from '../../../features/orders/orders.api';

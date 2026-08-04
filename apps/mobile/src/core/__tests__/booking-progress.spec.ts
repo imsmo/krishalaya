@@ -1,7 +1,7 @@
 // Unit tests for the PURE booking-progress logic (features/labour/booking-progress) behind screen 51. No
 // React/native deps (SDK type is import-type only). Pins the honest stage mapping + anonymous worker derivation.
 import { bookingProgressStage, progressStepIndex, isJobActive, assignedWorkerId, workerAvatarInitials, PROGRESS_STEPS } from '../../features/labour/booking-progress';
-import type { LabourAssignment } from '@krishi-verse/sdk-js';
+import type { LabourAssignment } from '@krishalaya/sdk-js';
 
 const A = (workerId: string, status: string): LabourAssignment => ({ id: 'a-' + workerId, bookingId: 'b1', workerId, status, wageMinor: '39000', acceptedAt: null });
 

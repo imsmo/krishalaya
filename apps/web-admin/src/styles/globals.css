@@ -1,5 +1,5 @@
 /* apps/web-tenant/src/styles/globals.css · console shell styles from the design tokens (mirrors
-   @krishi-verse/tokens). Sidebar + content layout; accessible 44px targets. */
+   @krishalaya/tokens). Sidebar + content layout; accessible 44px targets. */
 :root {
   --kv-brand-500: #c62828; --kv-brand-700: #b71c1c; --kv-neutral-0: #fff; --kv-neutral-50: #fafafa;
   --kv-neutral-100: #f5f5f5; --kv-neutral-200: #eee; --kv-neutral-600: #757575; --kv-neutral-900: #212121;
@@ -8,21 +8,21 @@
 }
 /* DEV-19: dark-mode remap of this app's OWN legacy --kv-* vars, same bounded/mechanical approach as
    apps/web-tenant/src/styles/globals.css (see that file's own header comment for the full rationale — this
-   app is not yet on @krishi-verse/ui's ported shell, so this remap is the ONLY thing making [data-theme="dark"]
-   visible here). Values copied verbatim from @krishi-verse/tokens's generated `darkColors` export. --kv-brand-*
+   app is not yet on @krishalaya/ui's ported shell, so this remap is the ONLY thing making [data-theme="dark"]
+   visible here). Values copied verbatim from @krishalaya/tokens's generated `darkColors` export. --kv-brand-*
    (this realm's red accent) and --kv-danger are left UNCHANGED — canon's own dark scope doesn't remap either. */
 [data-theme="dark"] {
   --kv-neutral-0: #1b232b; --kv-neutral-50: #12171d; --kv-neutral-100: #202832; --kv-neutral-200: #29323c;
   --kv-neutral-600: #aab4bd; --kv-neutral-900: #e8ebee;
 }
-/* DEV-19: senior-mode extension (engineering-owed Q48 console extension, see @krishi-verse/ui's
+/* DEV-19: senior-mode extension (engineering-owed Q48 console extension, see @krishalaya/ui's
    mechanisms/seniorMode.ts). Same disclosed residual as web-tenant: 2 literal-px font-size rules
    (.kv-table th 14px / .kv-badge 12px) do not scale under this mechanism. */
 html[data-senior="true"] { font-size: 130%; }
 html[data-senior="true"] .kv-btn, html[data-senior="true"] .kv-input,
 html[data-senior="true"] .kv-sidebar a, html[data-senior="true"] .kv-sidebar__link { min-height: 56px; }
 /* DEV-19 / DELTA-001: pointer/hover density gating for this app's OWN 44px control floor (this app is not yet
-   on @krishi-verse/ui's ported shell, so packages/ui's densityStyles never reaches it — this is the same rule
+   on @krishalaya/ui's ported shell, so packages/ui's densityStyles never reaches it — this is the same rule
    duplicated locally). This is an ops/B2B console realm, in scope per DELTA-001's own console framing. Rule
    Zero preserved: the 44px rural-tap floor NEVER shrinks on coarse-pointer/no-hover (touch) input; only
    fine-pointer + hover (mouse/trackpad) devices get the denser 36px control height. */

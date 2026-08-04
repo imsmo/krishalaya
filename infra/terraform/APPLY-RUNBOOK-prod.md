@@ -1,4 +1,4 @@
-# Apply runbook — Krishi-Verse production foundation (AWS ap-south-1)
+# Apply runbook — Krishalaya production foundation (AWS ap-south-1)
 
 Beginner-followable steps to stand up the **foundation data plane** (VPC, EKS, Aurora PostgreSQL, Redis,
 OpenSearch, S3, Secrets Manager) built in `infra/terraform/modules/*` and composed in `infra/terraform/envs/prod`.

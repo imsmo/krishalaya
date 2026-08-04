@@ -1,4 +1,4 @@
-# KRISHI-VERSE — MASTER BUILD SPECIFICATION (every file)
+# KRISHALAYA — MASTER BUILD SPECIFICATION (every file)
 
 **The build bible. Every file in the repo, what code it must contain, which of the 252 DB tables it touches, which of the 12 laws apply, and its priority wave.** Built by walking the real repo + database. Read alongside `docs/build/00_BUILD_PLAN.md` (order) and the `listings` reference module (pattern).
 

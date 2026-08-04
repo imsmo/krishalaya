@@ -2,7 +2,7 @@
 // (guide §3). Reads degrade-never-die (null/empty). enroll is idempotent (Law 3) and throws so the screen shows
 // the precise outcome (402 payment-required / 409 already-enrolled). markProgress is an online write that throws.
 // Money is bigint minor strings (Law 2); a paid enroll moves money SERVER-SIDE (the app never does — Law 11).
-import type { Course, CourseLesson, Enrollment, LessonProgress } from '@krishi-verse/sdk-js';
+import type { Course, CourseLesson, Enrollment, LessonProgress } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

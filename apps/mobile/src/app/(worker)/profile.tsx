@@ -13,8 +13,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import type { WorkerProfile, LabourLookups, KycDocument } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, Button, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius, type PillTone } from '@krishi-verse/ui-native';
+import type { WorkerProfile, LabourLookups, KycDocument } from '@krishalaya/sdk-js';
+import { Card, EmptyState, Button, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius, type PillTone } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';
@@ -24,7 +24,7 @@ import { listKyc } from '../../features/kyc/kyc.api';
 import { canAcceptWork } from '../../features/labour/labour-status';
 import { initials } from '../../features/labour/worker-home';
 import { workerYears, regionName, compactLakh } from '../../features/labour/worker-profile';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 
 const KYC_TONE: Record<string, PillTone> = { verified: 'success', pending: 'warning', rejected: 'danger', expired: 'danger' };
 

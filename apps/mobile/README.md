@@ -1,8 +1,8 @@
-# mobile — Krishi-Verse app (one account, role-switching)
+# mobile — Krishalaya app (one account, role-switching)
 
 Expo SDK 51 + **expo-router** (file-based routing under `src/app`). Offline-first, vernacular (hi/en/gu),
-built for budget Android in low-signal villages. Built on the shared `@krishi-verse/sdk-js` (resilient typed API
-client), `@krishi-verse/i18n` (formatters + translator), and `@krishi-verse/ui-native` (the RN component library
+built for budget Android in low-signal villages. Built on the shared `@krishalaya/sdk-js` (resilient typed API
+client), `@krishalaya/i18n` (formatters + translator), and `@krishalaya/ui-native` (the RN component library
 on the Phase-1 design tokens). Target: small APK, usable on 2 GB-RAM phones, works on 2G.
 
 ## What's built this release (the foundation + the farmer vertical)
@@ -24,7 +24,7 @@ on the Phase-1 design tokens). Target: small APK, usable on 2 GB-RAM phones, wor
 - `auth/auth.store.tsx` — React provider: boot-restore + proactive refresh (fail-closed sign-out), `useAuth()`.
 - `auth/otp.helpers.ts` — E.164 normalization + resend cooldown (pure, **unit-tested**); `otp.flow.ts` wires the SDK.
 - `auth/role-switcher.ts` — multi-role catalog + home routing (**unit-tested**).
-- `i18n/` — runtime over `@krishi-verse/i18n` with bundled hi/en/gu catalogs + `useTranslation()` hook + numerals
+- `i18n/` — runtime over `@krishalaya/i18n` with bundled hi/en/gu catalogs + `useTranslation()` hook + numerals
   (lakh/crore, Devanagari/Gujarati digit transliteration — **unit-tested**).
 
 **Onboarding/auth flow (design screens 01–05):** `welcome → language → phone → verify (OTP, resend cooldown,
@@ -919,7 +919,7 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
 
 ## Verification
 
-- `pnpm --filter @krishi-verse/mobile test` → **219 unit tests green** (session reducer, offline queue, helpers,
+- `pnpm --filter @krishalaya/mobile test` → **219 unit tests green** (session reducer, offline queue, helpers,
   feature flags, SHA-256 FIPS vectors, base64, media-mime, cache policies, SWR cache engine, sync transitions,
   payment money/status, quiet-hours, deep-link routing, notification presenters, STT locale map, wallet txn
   presenters + withdrawal BigInt guard, order-status action map + PoD-OTP + tracking steps, buyer search-query +
@@ -931,7 +931,7 @@ Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attes
   BigInt commission sum, education quiz parse/score + course progress, tenant-admin subscription/approval/dispute
   tones + dispute actions + buildResolution + dashboard KPI compose + add-farmer phone validate, web-console report
   catalogue + safe-URL builder/anti-open-redirect) — run offline via
-  ts-jest scoped to `src/core/__tests__`. `@krishi-verse/sdk-js` 13/13 still
+  ts-jest scoped to `src/core/__tests__`. `@krishalaya/sdk-js` 13/13 still
   green (payments/payouts/kyc/bankAccounts/notifications/listings/orders/shipments/reviews/cart/checkout/addresses/
   offers/messaging/auctions/labour/ambassadors/education/tenancy/rbac/disputes/users resources).
 - Screens are thin (guide §3): every API call lives in a `features/<area>/*.api.ts` data layer (farmer

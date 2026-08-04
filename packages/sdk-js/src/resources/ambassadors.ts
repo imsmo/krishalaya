@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · ambassadors resource (module 7 — village acquisition agents). Self-service surface for an
+// @krishalaya/sdk-js · ambassadors resource (module 7 — village acquisition agents). Self-service surface for an
 // ambassador: their OWN profile + earnings (server resolves the caller — no client id, no IDOR), the commission
 // plan catalogue, and the REFERRAL engine (create a code, claim a code, list own referrals). Attribution is the
 // real, server-recorded mechanism: an ambassador creates a code → the referred farmer self-signs-up and claims it

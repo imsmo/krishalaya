@@ -1,4 +1,4 @@
-# Krishi-Verse · Phase-1 Screen Data Catalog
+# Krishalaya · Phase-1 Screen Data Catalog
 
 Faithful extraction of every label, value, name, price and copy string shown in all **196** design mockups
 (`Phase-1 all screen design/.../screens/*.html`). Use this as the source of truth when building each screen
@@ -12,10 +12,10 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Onboarding & Auth
 
 ### 01-welcome
-*01 · Welcome — Krishi-Verse*
+*01 · Welcome — Krishalaya*
 
-- 01 · Welcome — Krishi-Verse
-- Krishi-Verse
+- 01 · Welcome — Krishalaya
+- Krishalaya
 - From Farm to Future
 - आपकी खेती का डिजिटल साथी
 - Your farming, digitally yours.
@@ -25,9 +25,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Sign in
 
 ### 02-language
-*02 · Choose Language — Krishi-Verse*
+*02 · Choose Language — Krishalaya*
 
-- 02 · Choose Language — Krishi-Verse
+- 02 · Choose Language — Krishalaya
 - Choose Your Language
 - अपनी भाषा चुनें
 - તમારી ભાષા પસંદ કરો
@@ -44,23 +44,23 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue / आगे बढ़ें
 
 ### 03-otp
-*03 · Verify Phone — Krishi-Verse*
+*03 · Verify Phone — Krishalaya*
 
-- 03 · Verify Phone — Krishi-Verse
+- 03 · Verify Phone — Krishalaya
 - Verify Your Number
 - Enter the 6-digit code sent to
 - +91 98765 43210
 - Didn't receive code?
 - Resend in 0:24
-- For your safety, never share this OTP with anyone, not even Krishi-Verse team.
+- For your safety, never share this OTP with anyone, not even Krishalaya team.
 - Verify & Continue
 
 ### 04-role
-*04 · Choose Role — Krishi-Verse*
+*04 · Choose Role — Krishalaya*
 
-- 04 · Choose Role — Krishi-Verse
+- 04 · Choose Role — Krishalaya
 - Choose Your Role
-- How will you use Krishi-Verse?
+- How will you use Krishalaya?
 - Pick what fits you best. You can add more roles later.
 - Farmer
 - किसान
@@ -80,9 +80,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue as Farmer
 
 ### 05-profile-setup
-*05 · Set Up Profile — Krishi-Verse*
+*05 · Set Up Profile — Krishalaya*
 
-- 05 · Set Up Profile — Krishi-Verse
+- 05 · Set Up Profile — Krishalaya
 - Set Up Your Profile
 - Skip
 - Tell us a little about yourself so we can personalise your experience
@@ -109,9 +109,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Tenant/FPO apply+console
 
 ### 06-tenant-apply
-*06 · Tenant Application — Krishi-Verse*
+*06 · Tenant Application — Krishalaya*
 
-- 06 · Tenant Application — Krishi-Verse
+- 06 · Tenant Application — Krishalaya
 - Become a Tenant
 - Step 2 of 5
 - Plan Selection
@@ -142,9 +142,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue
 
 ### 07-tenant-pending
-*07 · Application Under Review — Krishi-Verse*
+*07 · Application Under Review — Krishalaya*
 
-- 07 · Application Under Review — Krishi-Verse
+- 07 · Application Under Review — Krishalaya
 - Application Status
 - Under Review
 - We're reviewing your application
@@ -170,9 +170,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Got it
 
 ### 08-tenant-dashboard
-*08 · Tenant Dashboard — Krishi-Verse*
+*08 · Tenant Dashboard — Krishalaya*
 
-- 08 · Tenant Dashboard — Krishi-Verse
+- 08 · Tenant Dashboard — Krishalaya
 - A
 - Anand FPO
 - Admin Console
@@ -219,9 +219,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 2 hours ago
 
 ### 76-tenant-farmers
-*76 · Farmers — Krishi-Verse*
+*76 · Farmers — Krishalaya*
 
-- 76 · Farmers — Krishi-Verse
+- 76 · Farmers — Krishalaya
 - Farmers · Anand FPO
 - 1,247
 - Total
@@ -272,9 +272,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - listings
 
 ### 77-tenant-farmer-detail
-*77 · Farmer Detail — Krishi-Verse*
+*77 · Farmer Detail — Krishalaya*
 
-- 77 · Farmer Detail — Krishi-Verse
+- 77 · Farmer Detail — Krishalaya
 - Farmer Profile
 - RP
 - Ramesh Patel
@@ -325,9 +325,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - View Full Profile →
 
 ### 78-tenant-add-farmer
-*78 · Add Farmer — Krishi-Verse*
+*78 · Add Farmer — Krishalaya*
 
-- 78 · Add Farmer — Krishi-Verse
+- 78 · Add Farmer — Krishalaya
 - Add a Farmer
 - How will you add this farmer?
 - Pick one method. Farmer can complete remaining steps later.
@@ -355,9 +355,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Add Farmer
 
 ### 79-tenant-listings
-*79 · Listings — Krishi-Verse*
+*79 · Listings — Krishalaya*
 
-- 79 · Listings — Krishi-Verse
+- 79 · Listings — Krishalaya
 - Listings · Anand FPO
 - 23
 - Pending
@@ -397,9 +397,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ✕ Reject
 
 ### 80-tenant-payouts
-*80 · Payouts — Krishi-Verse*
+*80 · Payouts — Krishalaya*
 
-- 80 · Payouts — Krishi-Verse
+- 80 · Payouts — Krishalaya
 - Farmer Payouts
 - Pending payouts
 - ₹2,84,650
@@ -434,9 +434,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Pay Now via UPI
 
 ### 81-tenant-compliance
-*81 · Compliance — Krishi-Verse*
+*81 · Compliance — Krishalaya*
 
-- 81 · Compliance — Krishi-Verse
+- 81 · Compliance — Krishalaya
 - Compliance & Reports
 - All compliant · No issues
 - Last audit 5 days ago · Next Sep 15, 2026
@@ -475,9 +475,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ✓ Pass
 
 ### 82-tenant-branding
-*82 · Branding — Krishi-Verse*
+*82 · Branding — Krishalaya*
 
-- 82 · Branding — Krishi-Verse
+- 82 · Branding — Krishalaya
 - App Branding
 - Preview · How farmers see your app
 - A
@@ -505,9 +505,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Save & Publish
 
 ### 83-tenant-team
-*83 · Team — Krishi-Verse*
+*83 · Team — Krishalaya*
 
-- 83 · Team — Krishi-Verse
+- 83 · Team — Krishalaya
 - Team & Users
 - Admins (3)
 - AS
@@ -549,9 +549,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - + 2 invitations pending
 
 ### 84-tenant-kpi-gmv
-*84 · GMV Analytics — Krishi-Verse*
+*84 · GMV Analytics — Krishalaya*
 
-- 84 · GMV Analytics — Krishi-Verse
+- 84 · GMV Analytics — Krishalaya
 - GMV Analytics
 - GMV · Aug 2026
 - ₹38.4 L
@@ -592,9 +592,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Download CSV Report
 
 ### 85-tenant-billing
-*85 · Plan & Billing — Krishi-Verse*
+*85 · Plan & Billing — Krishalaya*
 
-- 85 · Plan & Billing — Krishi-Verse
+- 85 · Plan & Billing — Krishalaya
 - Plan & Billing
 - Current plan
 - Growth · Tier 2
@@ -633,9 +633,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ₹999 ✓
 
 ### 147-tenant-farmer-approvals
-*147 · Pending Approvals — Krishi-Verse*
+*147 · Pending Approvals — Krishalaya*
 
-- 147 · Pending Approvals — Krishi-Verse
+- 147 · Pending Approvals — Krishalaya
 - Pending Approvals · 14
 - All · 14
 - Ambassador · 9
@@ -678,9 +678,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Approve Verified (9)
 
 ### 148-tenant-approve-detail
-*148 · Review Farmer — Krishi-Verse*
+*148 · Review Farmer — Krishalaya*
 
-- 148 · Review Farmer — Krishi-Verse
+- 148 · Review Farmer — Krishalaya
 - Review Farmer
 - AK
 - Anil Kumar Vasava
@@ -719,9 +719,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Approve Farmer
 
 ### 149-tenant-bulk-actions
-*149 · Bulk Actions — Krishi-Verse*
+*149 · Bulk Actions — Krishalaya*
 
-- 149 · Bulk Actions — Krishi-Verse
+- 149 · Bulk Actions — Krishalaya
 - Bulk Actions
 - 9 farmers selected · Pending approval queue
 - Operations
@@ -751,9 +751,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 
 ### 150-tenant-farmer-analytics
-*150 · Farmer Analytics — Krishi-Verse*
+*150 · Farmer Analytics — Krishalaya*
 
-- 150 · Farmer Analytics — Krishi-Verse
+- 150 · Farmer Analytics — Krishalaya
 - Farmer Analytics
 - Active farmers
 - 1,247
@@ -789,9 +789,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Export CSV Report
 
 ### 151-tenant-order-analytics
-*151 · Order Analytics — Krishi-Verse*
+*151 · Order Analytics — Krishalaya*
 
-- 151 · Order Analytics — Krishi-Verse
+- 151 · Order Analytics — Krishalaya
 - Orders Analytics
 - Orders this month
 - 847
@@ -830,9 +830,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Export Report
 
 ### 152-tenant-worker-analytics
-*152 · Worker Analytics — Krishi-Verse*
+*152 · Worker Analytics — Krishalaya*
 
-- 152 · Worker Analytics — Krishi-Verse
+- 152 · Worker Analytics — Krishalaya
 - Worker Bookings Analytics
 - Bookings this month
 - 412
@@ -867,9 +867,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Download Report
 
 ### 153-tenant-custom-report
-*153 · Custom Report — Krishi-Verse*
+*153 · Custom Report — Krishalaya*
 
-- 153 · Custom Report — Krishi-Verse
+- 153 · Custom Report — Krishalaya
 - Build Custom Report
 - Report type
 - GMV by category & month
@@ -912,9 +912,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Generate Report
 
 ### 154-tenant-export-reports
-*154 · Export Reports — Krishi-Verse*
+*154 · Export Reports — Krishalaya*
 
-- 154 · Export Reports — Krishi-Verse
+- 154 · Export Reports — Krishalaya
 - Reports Archive
 - Saved & scheduled
 - 📊
@@ -949,9 +949,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - + Build Custom Report
 
 ### 155-tenant-disputes
-*155 · Disputes Inbox — Krishi-Verse*
+*155 · Disputes Inbox — Krishalaya*
 
-- 155 · Disputes Inbox — Krishi-Verse
+- 155 · Disputes Inbox — Krishalaya
 - Disputes · 7
 - Open · 7
 - In review · 3
@@ -975,9 +975,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - EVIDENCE GATHERING
 
 ### 156-tenant-dispute-detail
-*156 · Dispute Detail — Krishi-Verse*
+*156 · Dispute Detail — Krishalaya*
 
-- 156 · Dispute Detail — Krishi-Verse
+- 156 · Dispute Detail — Krishalaya
 - Dispute #DSP-2026-0247
 - Quality dispute · Urgent
 - ₹14,400 in escrow
@@ -1015,9 +1015,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Approve Resolution
 
 ### 157-tenant-broadcast
-*157 · Broadcast Message — Krishi-Verse*
+*157 · Broadcast Message — Krishalaya*
 
-- 157 · Broadcast Message — Krishi-Verse
+- 157 · Broadcast Message — Krishalaya
 - Broadcast Message
 - Who to reach
 - All farmers
@@ -1056,9 +1056,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send to 1,247
 
 ### 158-tenant-campaigns
-*158 · Campaigns — Krishi-Verse*
+*158 · Campaigns — Krishalaya*
 
-- 158 · Campaigns — Krishi-Verse
+- 158 · Campaigns — Krishalaya
 - Targeted Campaigns
 - Live · 3
 - Scheduled · 2
@@ -1094,9 +1094,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 23 farmers haven't opened app in 14 days · Re-engagement SMS
 
 ### 159-tenant-payment-settings
-*159 · Payment Settings — Krishi-Verse*
+*159 · Payment Settings — Krishalaya*
 
-- 159 · Payment Settings — Krishi-Verse
+- 159 · Payment Settings — Krishalaya
 - Payment Gateway Settings
 - Active gateways
 - 💳 Razorpay
@@ -1124,9 +1124,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - IFSC SBIN0001247
 
 ### 160-tenant-notifications
-*160 · Notification Settings — Krishi-Verse*
+*160 · Notification Settings — Krishalaya*
 
-- 160 · Notification Settings — Krishi-Verse
+- 160 · Notification Settings — Krishalaya
 - Notification Settings
 - Critical alerts
 - 🆕 New pending approvals
@@ -1151,9 +1151,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 
 ### 161-tenant-integrations
-*161 · Integrations — Krishi-Verse*
+*161 · Integrations — Krishalaya*
 
-- 161 · Integrations — Krishi-Verse
+- 161 · Integrations — Krishalaya
 - Integrations
 - Connected
 - 🏛
@@ -1200,9 +1200,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Farmer core (home/listings/wallet/orders)
 
 ### 09-farmer-home
-*09 · Farmer Home — Krishi-Verse*
+*09 · Farmer Home — Krishalaya*
 
-- 09 · Farmer Home — Krishi-Verse
+- 09 · Farmer Home — Krishalaya
 - R
 - नमस्ते,
 - Ramesh ji
@@ -1250,9 +1250,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 10-create-listing
-*10 · Create Listing — Krishi-Verse*
+*10 · Create Listing — Krishalaya*
 
-- 10 · Create Listing — Krishi-Verse
+- 10 · Create Listing — Krishalaya
 - Create Listing
 - Photo
 - Voice
@@ -1279,9 +1279,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Preview →
 
 ### 11-listing-preview
-*11 · Preview Listing — Krishi-Verse*
+*11 · Preview Listing — Krishalaya*
 
-- 11 · Preview Listing — Krishi-Verse
+- 11 · Preview Listing — Krishalaya
 - Preview & Publish
 - 🌾
 - Premium Wheat — Lokwan
@@ -1314,9 +1314,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Publish Listing →
 
 ### 12-my-listings
-*12 · My Listings — Krishi-Verse*
+*12 · My Listings — Krishalaya*
 
-- 12 · My Listings — Krishi-Verse
+- 12 · My Listings — Krishalaya
 - My Listings
 - 3
 - Active
@@ -1373,9 +1373,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 19-wallet-home
-*19 · Wallet — Krishi-Verse*
+*19 · Wallet — Krishalaya*
 
-- 19 · Wallet — Krishi-Verse
+- 19 · Wallet — Krishalaya
 - Wallet
 - Available Balance
 - ₹12,450
@@ -1414,9 +1414,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 20-add-money
-*20 · Add Money — Krishi-Verse*
+*20 · Add Money — Krishalaya*
 
-- 20 · Add Money — Krishi-Verse
+- 20 · Add Money — Krishalaya
 - Add Money
 - Enter Amount
 - ₹
@@ -1443,9 +1443,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Proceed to Pay · ₹5,000
 
 ### 21-transactions
-*21 · Transactions — Krishi-Verse*
+*21 · Transactions — Krishalaya*
 
-- 21 · Transactions — Krishi-Verse
+- 21 · Transactions — Krishalaya
 - Transaction History
 - Export
 - All
@@ -1481,9 +1481,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - - ₹10,000
 
 ### 22-my-orders
-*22 · My Orders — Krishi-Verse*
+*22 · My Orders — Krishalaya*
 
-- 22 · My Orders — Krishi-Verse
+- 22 · My Orders — Krishalaya
 - My Orders
 - As Buyer
 - 5
@@ -1528,9 +1528,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ₹9,550
 
 ### 23-order-detail
-*23 · Order Tracking — Krishi-Verse*
+*23 · Order Tracking — Krishalaya*
 
-- 23 · Order Tracking — Krishi-Verse
+- 23 · Order Tracking — Krishalaya
 - Order #KV-2026-0142
 - In Transit
 - Your order is on the way
@@ -1578,9 +1578,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Help
 
 ### 24-order-review
-*24 · Rate Your Order — Krishi-Verse*
+*24 · Rate Your Order — Krishalaya*
 
-- 24 · Rate Your Order — Krishi-Verse
+- 24 · Rate Your Order — Krishalaya
 - Rate Your Order
 - ✓ Completed
 - Order delivered successfully!
@@ -1603,9 +1603,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Submit Review
 
 ### 112-farmer-my-listing-detail
-*112 · My Listing — Krishi-Verse*
+*112 · My Listing — Krishalaya*
 
-- 112 · My Listing — Krishi-Verse
+- 112 · My Listing — Krishalaya
 - My Listing
 - 🌾
 - ✓ ACTIVE
@@ -1653,9 +1653,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - EXTEND
 
 ### 113-farmer-edit-listing
-*113 · Edit Listing — Krishi-Verse*
+*113 · Edit Listing — Krishalaya*
 
-- 113 · Edit Listing — Krishi-Verse
+- 113 · Edit Listing — Krishalaya
 - Edit Listing
 - Photos
 - 🌾
@@ -1692,9 +1692,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Save Changes
 
 ### 114-farmer-boost-listing
-*114 · Boost Listing — Krishi-Verse*
+*114 · Boost Listing — Krishalaya*
 
-- 114 · Boost Listing — Krishi-Verse
+- 114 · Boost Listing — Krishalaya
 - Boost Listing
 - 🚀
 - Reach 5× More Buyers
@@ -1734,9 +1734,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Pay ₹176 · Boost Now
 
 ### 115-farmer-listing-analytics
-*115 · Listing Analytics — Krishi-Verse*
+*115 · Listing Analytics — Krishalaya*
 
-- 115 · Listing Analytics — Krishi-Verse
+- 115 · Listing Analytics — Krishalaya
 - Listing Analytics
 - Premium Wheat — Lokwan
 - Live for 3 days · Listing #LST-2026-247
@@ -1779,9 +1779,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Boost your listing — ₹149 for 7 days statewide.
 
 ### 116-farmer-repost-listing
-*116 · Repost Listing — Krishi-Verse*
+*116 · Repost Listing — Krishalaya*
 
-- 116 · Repost Listing — Krishi-Verse
+- 116 · Repost Listing — Krishalaya
 - Repost Listing
 - ⏳
 - Listing expired
@@ -1809,9 +1809,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Marketplace listing/checkout/auction
 
 ### 14-listing-detail
-*14 · Listing Detail — Krishi-Verse*
+*14 · Listing Detail — Krishalaya*
 
-- 14 · Listing Detail — Krishi-Verse
+- 14 · Listing Detail — Krishalaya
 - 🌾
 - Verified
 - ⚡ AI Listed
@@ -1846,9 +1846,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Buy Now · ₹5,760
 
 ### 15-checkout
-*15 · Review Order — Krishi-Verse*
+*15 · Review Order — Krishalaya*
 
-- 15 · Review Order — Krishi-Verse
+- 15 · Review Order — Krishalaya
 - Review Order
 - Your Order
 - 🌾
@@ -1874,16 +1874,16 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ₹150
 - Tax (GST 5%)
 - ₹296
-- Krishi-Verse Discount
+- Krishalaya Discount
 - - ₹100
 - You Pay
 - ₹6,106
 - Place Order · Pay ₹6,106
 
 ### 16-auction-detail
-*16 · Auction Detail — Krishi-Verse*
+*16 · Auction Detail — Krishalaya*
 
-- 16 · Auction Detail — Krishi-Verse
+- 16 · Auction Detail — Krishalaya
 - LIVE AUCTION
 - 🌶️
 - Red Chilli — Teja Variety, Premium
@@ -1927,9 +1927,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Place Bid →
 
 ### 17-place-bid
-*17 · Place Bid — Krishi-Verse*
+*17 · Place Bid — Krishalaya*
 
-- 17 · Place Bid — Krishi-Verse
+- 17 · Place Bid — Krishalaya
 - Place Your Bid
 - Current highest:
 - ₹14,500 /qtl
@@ -1952,9 +1952,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Confirm Bid · ₹14,800
 
 ### 18-my-bids
-*18 · My Bids — Krishi-Verse*
+*18 · My Bids — Krishalaya*
 
-- 18 · My Bids — Krishi-Verse
+- 18 · My Bids — Krishalaya
 - My Bids
 - Active
 - 3
@@ -1986,9 +1986,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ₹2,200 ✓
 
 ### 64-create-auction
-*64 · Create Auction — Krishi-Verse*
+*64 · Create Auction — Krishalaya*
 
-- 64 · Create Auction — Krishi-Verse
+- 64 · Create Auction — Krishalaya
 - Create Auction
 - Start a live auction
 - Get the best price from multiple buyers competing in real-time
@@ -2029,9 +2029,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Start Auction 🔨
 
 ### 65-auction-watch-live
-*65 · Your Auction — Krishi-Verse*
+*65 · Your Auction — Krishalaya*
 
-- 65 · Your Auction — Krishi-Verse
+- 65 · Your Auction — Krishalaya
 - Your Auction
 - LIVE NOW
 - ₹3,050
@@ -2073,9 +2073,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Stop Early
 
 ### 66-auction-ended-success
-*66 · Auction Complete — Krishi-Verse*
+*66 · Auction Complete — Krishalaya*
 
-- 66 · Auction Complete — Krishi-Verse
+- 66 · Auction Complete — Krishalaya
 - Auction Complete
 - ✓ SOLD
 - Your auction ended successfully!
@@ -2108,9 +2108,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Schedule Pickup →
 
 ### 67-buyer-search-results
-*67 · Search Results — Krishi-Verse*
+*67 · Search Results — Krishalaya*
 
-- 67 · Search Results — Krishi-Verse
+- 67 · Search Results — Krishalaya
 - Search
 - Wheat ✕
 - Organic ✕
@@ -2162,9 +2162,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ⭐ 4.9 (FPO)
 
 ### 68-buyer-filters
-*68 · Filters — Krishi-Verse*
+*68 · Filters — Krishalaya*
 
-- 68 · Filters — Krishi-Verse
+- 68 · Filters — Krishalaya
 - [Search results in background]
 - Filters
 - Clear all (5)
@@ -2204,9 +2204,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Show 42 results →
 
 ### 193-auction-outbid
-*193 · Outbid — Krishi-Verse*
+*193 · Outbid — Krishalaya*
 
-- 193 · Outbid — Krishi-Verse
+- 193 · Outbid — Krishalaya
 - Auction Update
 - 😔
 - You've been outbid
@@ -2229,9 +2229,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Bid ₹2,985
 
 ### 194-auction-history
-*194 · Auction History — Krishi-Verse*
+*194 · Auction History — Krishalaya*
 
-- 194 · Auction History — Krishi-Verse
+- 194 · Auction History — Krishalaya
 - My Auctions
 - All · 24
 - Won · 14
@@ -2266,9 +2266,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Buyer
 
 ### 13-buyer-home
-*13 · Buyer Home — Krishi-Verse*
+*13 · Buyer Home — Krishalaya*
 
-- 13 · Buyer Home — Krishi-Verse
+- 13 · Buyer Home — Krishalaya
 - Anand, Gujarat
 - 2
 - 🥭
@@ -2319,9 +2319,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 69-buyer-orders
-*69 · My Orders — Krishi-Verse*
+*69 · My Orders — Krishalaya*
 
-- 69 · My Orders — Krishi-Verse
+- 69 · My Orders — Krishalaya
 - My Orders
 - Active
 - 3
@@ -2358,9 +2358,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Edit
 
 ### 96-buyer-cart
-*96 · My Cart — Krishi-Verse*
+*96 · My Cart — Krishalaya*
 
-- 96 · My Cart — Krishi-Verse
+- 96 · My Cart — Krishalaya
 - My Cart · 3 items
 - 🌾
 - Premium Wheat — Lokwan
@@ -2400,9 +2400,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Proceed to Checkout · ₹29,960 →
 
 ### 97-buyer-inquiry
-*97 · Send Inquiry — Krishi-Verse*
+*97 · Send Inquiry — Krishalaya*
 
-- 97 · Send Inquiry — Krishi-Verse
+- 97 · Send Inquiry — Krishalaya
 - Inquire about listing
 - 🌾
 - Premium Wheat — Lokwan
@@ -2425,9 +2425,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send Inquiry
 
 ### 98-buyer-chat
-*98 · Chat with Seller — Krishi-Verse*
+*98 · Chat with Seller — Krishalaya*
 
-- 98 · Chat with Seller — Krishi-Verse
+- 98 · Chat with Seller — Krishalaya
 - RP
 - Ramesh Patel ⭐ 4.9
 - ● Online
@@ -2451,9 +2451,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Ramesh is typing...
 
 ### 99-buyer-make-offer
-*99 · Make Offer — Krishi-Verse*
+*99 · Make Offer — Krishalaya*
 
-- 99 · Make Offer — Krishi-Verse
+- 99 · Make Offer — Krishalaya
 - Make an Offer
 - 🌾
 - Premium Wheat — Lokwan
@@ -2484,9 +2484,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send Offer · ₹5,300
 
 ### 100-buyer-seller-profile
-*100 · Seller Profile — Krishi-Verse*
+*100 · Seller Profile — Krishalaya*
 
-- 100 · Seller Profile — Krishi-Verse
+- 100 · Seller Profile — Krishalaya
 - Seller Profile
 - RP
 - Ramesh Patel
@@ -2539,9 +2539,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - View All Listings →
 
 ### 126-buyer-saved-listings
-*126 · Saved Listings — Krishi-Verse*
+*126 · Saved Listings — Krishalaya*
 
-- 126 · Saved Listings — Krishi-Verse
+- 126 · Saved Listings — Krishalaya
 - Saved · 14
 - All · 14
 - Wheat · 4
@@ -2572,9 +2572,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ₹3,200 / qtl
 
 ### 127-buyer-saved-sellers
-*127 · Saved Sellers — Krishi-Verse*
+*127 · Saved Sellers — Krishalaya*
 
-- 127 · Saved Sellers — Krishi-Verse
+- 127 · Saved Sellers — Krishalaya
 - Saved Sellers · 8
 - Get notified when these farmers post new listings
 - RP
@@ -2606,9 +2606,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 🥬 Organic
 
 ### 128-buyer-saved-searches
-*128 · Saved Searches — Krishi-Verse*
+*128 · Saved Searches — Krishalaya*
 
-- 128 · Saved Searches — Krishi-Verse
+- 128 · Saved Searches — Krishalaya
 - Saved Searches
 - Active alerts
 - 🔍 Wheat Lokwan in Anand
@@ -2635,9 +2635,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - + Save
 
 ### 129-buyer-delivery-address
-*129 · Delivery Address — Krishi-Verse*
+*129 · Delivery Address — Krishalaya*
 
-- 129 · Delivery Address — Krishi-Verse
+- 129 · Delivery Address — Krishalaya
 - Delivery Address
 - Step 2 of 3
 - Delivery
@@ -2669,9 +2669,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue · Payment →
 
 ### 130-buyer-payment-method
-*130 · Payment — Krishi-Verse*
+*130 · Payment — Krishalaya*
 
-- 130 · Payment — Krishi-Verse
+- 130 · Payment — Krishalaya
 - Payment Method
 - Step 3 of 3
 - Payment · Order ₹29,960
@@ -2710,9 +2710,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Pay ₹29,960 via UPI
 
 ### 131-buyer-order-track
-*131 · Track Order — Krishi-Verse*
+*131 · Track Order — Krishalaya*
 
-- 131 · Track Order — Krishi-Verse
+- 131 · Track Order — Krishalaya
 - Track Order #KV-2026-0247
 - 🏠
 - 🚛
@@ -2744,9 +2744,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Mark Delivered
 
 ### 132-buyer-profile
-*132 · Business Profile — Krishi-Verse*
+*132 · Business Profile — Krishalaya*
 
-- 132 · Business Profile — Krishi-Verse
+- 132 · Business Profile — Krishalaya
 - Business Profile
 - MT
 - Mehta Trading Co.
@@ -2791,9 +2791,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 100 km from Vadodara
 
 ### 133-buyer-kyc
-*133 · Business KYC — Krishi-Verse*
+*133 · Business KYC — Krishalaya*
 
-- 133 · Business KYC — Krishi-Verse
+- 133 · Business KYC — Krishalaya
 - Business KYC
 - Step 2 of 3
 - Documents
@@ -2826,9 +2826,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue · Review →
 
 ### 134-buyer-addresses
-*134 · My Addresses — Krishi-Verse*
+*134 · My Addresses — Krishalaya*
 
-- 134 · My Addresses — Krishi-Verse
+- 134 · My Addresses — Krishalaya
 - My Addresses
 - PRIMARY · WAREHOUSE
 - Mehta Trading Co. — Warehouse
@@ -2854,9 +2854,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - + Add new address
 
 ### 135-buyer-report-order
-*135 · Report Order Issue — Krishi-Verse*
+*135 · Report Order Issue — Krishalaya*
 
-- 135 · Report Order Issue — Krishi-Verse
+- 135 · Report Order Issue — Krishalaya
 - Report Issue
 - 🌾
 - Premium Wheat — Lokwan
@@ -2895,9 +2895,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Worker / Labour
 
 ### 25-worker-profile
-*25 · Worker Profile — Krishi-Verse*
+*25 · Worker Profile — Krishalaya*
 
-- 25 · Worker Profile — Krishi-Verse
+- 25 · Worker Profile — Krishalaya
 - SK
 - Sunita Kumari
 - Sojitra Village, Anand · 2.4 km away
@@ -2972,9 +2972,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Book Sunita for a Job →
 
 ### 26-book-worker
-*26 · Book a Worker — Krishi-Verse*
+*26 · Book a Worker — Krishalaya*
 
-- 26 · Book a Worker — Krishi-Verse
+- 26 · Book a Worker — Krishalaya
 - Book Sunita Kumari
 - Step 3 of 4
 - Date, Hours & Wage
@@ -3022,9 +3022,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send Booking Request
 
 ### 27-booking-confirm
-*27 · New Job Offer — Krishi-Verse*
+*27 · New Job Offer — Krishalaya*
 
-- 27 · New Job Offer — Krishi-Verse
+- 27 · New Job Offer — Krishalaya
 - New Job Offer
 - 🌾 NEW BOOKING REQUEST
 - You have a new job offer!
@@ -3052,9 +3052,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Accept · ₹400
 
 ### 28-notifications
-*28 · Notifications — Krishi-Verse*
+*28 · Notifications — Krishalaya*
 
-- 28 · Notifications — Krishi-Verse
+- 28 · Notifications — Krishalaya
 - Notifications
 - All
 - 5
@@ -3088,9 +3088,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - You're all caught up! ✨
 
 ### 29-worker-home
-*29 · Worker Home — Krishi-Verse*
+*29 · Worker Home — Krishalaya*
 
-- 29 · Worker Home — Krishi-Verse
+- 29 · Worker Home — Krishalaya
 - SK
 - Namaste Sunita!
 - आज 3 नए काम मिले हैं
@@ -3131,9 +3131,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 30-worker-browse-jobs
-*30 · Find Jobs — Krishi-Verse*
+*30 · Find Jobs — Krishalaya*
 
-- 30 · Find Jobs — Krishi-Verse
+- 30 · Find Jobs — Krishalaya
 - Find Jobs
 - All
 - ≤ 5 km
@@ -3171,9 +3171,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Skilled work
 
 ### 31-worker-job-detail
-*31 · Job Detail — Krishi-Verse*
+*31 · Job Detail — Krishalaya*
 
-- 31 · Job Detail — Krishi-Verse
+- 31 · Job Detail — Krishalaya
 - Job Detail
 - Recommended for you
 - Wheat Harvesting Job
@@ -3217,9 +3217,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Accept · Earn ₹400
 
 ### 32-worker-my-jobs
-*32 · My Schedule — Krishi-Verse*
+*32 · My Schedule — Krishalaya*
 
-- 32 · My Schedule — Krishi-Verse
+- 32 · My Schedule — Krishalaya
 - My Schedule
 - Upcoming
 - (5)
@@ -3268,9 +3268,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 33-worker-active-job
-*33 · Active Job — Krishi-Verse*
+*33 · Active Job — Krishalaya*
 
-- 33 · Active Job — Krishi-Verse
+- 33 · Active Job — Krishalaya
 - Today's Job
 - WORK IN PROGRESS
 - Wheat harvesting
@@ -3300,9 +3300,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Mark Job Complete → Get Paid
 
 ### 34-worker-payment-received
-*34 · Payment Received — Krishi-Verse*
+*34 · Payment Received — Krishalaya*
 
-- 34 · Payment Received — Krishi-Verse
+- 34 · Payment Received — Krishalaya
 - Payment
 - Payment received!
 - पैसा मिल गया
@@ -3324,9 +3324,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Find next job
 
 ### 35-worker-earnings
-*35 · My Earnings — Krishi-Verse*
+*35 · My Earnings — Krishalaya*
 
-- 35 · My Earnings — Krishi-Verse
+- 35 · My Earnings — Krishalaya
 - My Earnings
 - This week
 - This month
@@ -3379,9 +3379,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - +₹450
 
 ### 36-worker-availability
-*36 · Set Availability — Krishi-Verse*
+*36 · Set Availability — Krishalaya*
 
-- 36 · Set Availability — Krishi-Verse
+- 36 · Set Availability — Krishalaya
 - Set Availability
 - Tap a date to mark it available. Farmers can only book you on green days. Bookings can't be removed here.
 - ✓ Available
@@ -3440,9 +3440,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Save Availability
 
 ### 37-worker-skills
-*37 · My Skills — Krishi-Verse*
+*37 · My Skills — Krishalaya*
 
-- 37 · My Skills — Krishi-Verse
+- 37 · My Skills — Krishalaya
 - My Skills
 - Skills you turn ON appear on your profile. Farmers can search by skill — more skills = more jobs. Add new ones anytime.
 - Crop work
@@ -3483,9 +3483,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Save Skills
 
 ### 38-worker-profile-own
-*38 · My Profile — Krishi-Verse*
+*38 · My Profile — Krishalaya*
 
-- 38 · My Profile — Krishi-Verse
+- 38 · My Profile — Krishalaya
 - My Profile
 - Edit ✎
 - SK
@@ -3541,9 +3541,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 
 ### 39-worker-insurance
-*39 · PMSBY Insurance — Krishi-Verse*
+*39 · PMSBY Insurance — Krishalaya*
 
-- 39 · PMSBY Insurance — Krishi-Verse
+- 39 · PMSBY Insurance — Krishalaya
 - Insurance
 - ✓ ACTIVE · GOVT-BACKED
 - PMSBY Insurance
@@ -3560,7 +3560,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Coverage period
 - 1 Apr 2026 — 31 Mar 2027
 - Premium paid via
-- Krishi-Verse Wallet
+- Krishalaya Wallet
 - Auto-renew
 - ✓ ON
 - What's covered
@@ -3584,9 +3584,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Download policy PDF
 
 ### 40-worker-reviews
-*40 · My Reviews — Krishi-Verse*
+*40 · My Reviews — Krishalaya*
 
-- 40 · My Reviews — Krishi-Verse
+- 40 · My Reviews — Krishalaya
 - My Reviews
 - 4.9
 - ★★★★★
@@ -3633,9 +3633,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Acchha kaam. Thoda jaldi finish kar deti hai. Quality A1.
 
 ### 41-worker-withdraw
-*41 · Withdraw to Bank — Krishi-Verse*
+*41 · Withdraw to Bank — Krishalaya*
 
-- 41 · Withdraw to Bank — Krishi-Verse
+- 41 · Withdraw to Bank — Krishalaya
 - Withdraw Money
 - Wallet balance
 - ₹2,800
@@ -3657,9 +3657,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Withdraw ₹2,800 →
 
 ### 42-browse-workers
-*42 · Find Workers — Krishi-Verse*
+*42 · Find Workers — Krishalaya*
 
-- 42 · Find Workers — Krishi-Verse
+- 42 · Find Workers — Krishalaya
 - Find Workers
 - All Tasks
 - Within 5 km
@@ -3733,9 +3733,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 4.6
 
 ### 43-filter-workers
-*43 · Filter Workers — Krishi-Verse*
+*43 · Filter Workers — Krishalaya*
 
-- 43 · Filter Workers — Krishi-Verse
+- 43 · Filter Workers — Krishalaya
 - Filter Workers
 - Reset all
 - Task type
@@ -3766,9 +3766,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Show 12 workers
 
 ### 44-book-step1-task
-*44 · Book Sunita · Step 1 — Krishi-Verse*
+*44 · Book Sunita · Step 1 — Krishalaya*
 
-- 44 · Book Sunita · Step 1 — Krishi-Verse
+- 44 · Book Sunita · Step 1 — Krishalaya
 - Book Sunita Kumari
 - Step 1 of 4
 - What work do you need?
@@ -3798,9 +3798,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Next · Date & Time
 
 ### 45-book-step2-datetime
-*45 · Book Sunita · Step 2 — Krishi-Verse*
+*45 · Book Sunita · Step 2 — Krishalaya*
 
-- 45 · Book Sunita · Step 2 — Krishi-Verse
+- 45 · Book Sunita · Step 2 — Krishalaya
 - Book Sunita Kumari
 - Step 2 of 4
 - When do you need her?
@@ -3870,9 +3870,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Next · Wage
 
 ### 46-book-step4-review
-*46 · Book Sunita · Final Review — Krishi-Verse*
+*46 · Book Sunita · Final Review — Krishalaya*
 
-- 46 · Book Sunita · Final Review — Krishi-Verse
+- 46 · Book Sunita · Final Review — Krishalaya
 - Final Review
 - Step 4 of 4
 - Confirm & send
@@ -3911,9 +3911,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send Booking · ₹412
 
 ### 47-booking-sent
-*47 · Booking Sent — Krishi-Verse*
+*47 · Booking Sent — Krishalaya*
 
-- 47 · Booking Sent — Krishi-Verse
+- 47 · Booking Sent — Krishalaya
 - Booking Status
 - WAITING FOR RESPONSE
 - Booking sent to Sunita
@@ -3928,9 +3928,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Cancel booking
 
 ### 48-booking-accepted
-*48 · Sunita Accepted — Krishi-Verse*
+*48 · Sunita Accepted — Krishalaya*
 
-- 48 · Sunita Accepted — Krishi-Verse
+- 48 · Sunita Accepted — Krishalaya
 - Booking Confirmed
 - ✓ ACCEPTED
 - Sunita accepted your booking!
@@ -3957,9 +3957,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Back to home
 
 ### 49-booking-rejected
-*49 · Booking Declined — Krishi-Verse*
+*49 · Booking Declined — Krishalaya*
 
-- 49 · Booking Declined — Krishi-Verse
+- 49 · Booking Declined — Krishalaya
 - Booking Update
 - Declined
 - Sunita couldn't take this job
@@ -3989,9 +3989,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Pick a different date
 
 ### 50-my-bookings-farmer
-*50 · My Worker Bookings — Krishi-Verse*
+*50 · My Worker Bookings — Krishalaya*
 
-- 50 · My Worker Bookings — Krishi-Verse
+- 50 · My Worker Bookings — Krishalaya
 - My Worker Bookings
 - Active
 - 3
@@ -4031,9 +4031,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Live
 
 ### 51-booking-detail-farmer
-*51 · Job In Progress — Krishi-Verse*
+*51 · Job In Progress — Krishalaya*
 
-- 51 · Job In Progress — Krishi-Verse
+- 51 · Job In Progress — Krishalaya
 - #BK-2026-0085
 - IN PROGRESS
 - Lakshmi is working on your farm
@@ -4073,9 +4073,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Report an issue
 
 ### 62-book-step3-location
-*62 · Book Worker — Krishi-Verse*
+*62 · Book Worker — Krishalaya*
 
-- 62 · Book Worker — Krishi-Verse
+- 62 · Book Worker — Krishalaya
 - Book Sunita Kumari
 - Step 3 of 5
 - Work Location
@@ -4098,9 +4098,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue →
 
 ### 63-book-step5-confirm
-*63 · Confirm Booking — Krishi-Verse*
+*63 · Confirm Booking — Krishalaya*
 
-- 63 · Confirm Booking — Krishi-Verse
+- 63 · Confirm Booking — Krishalaya
 - Confirm Booking
 - Step 5 of 5
 - Confirm & Pay
@@ -4141,9 +4141,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Confirm Booking · ₹410
 
 ### 136-worker-edit-profile
-*136 · Edit Profile — Krishi-Verse*
+*136 · Edit Profile — Krishalaya*
 
-- 136 · Edit Profile — Krishi-Verse
+- 136 · Edit Profile — Krishalaya
 - Edit Profile
 - SK
 - Change photo
@@ -4172,9 +4172,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Save
 
 ### 137-worker-add-skill
-*137 · Add Skill — Krishi-Verse*
+*137 · Add Skill — Krishalaya*
 
-- 137 · Add Skill — Krishi-Verse
+- 137 · Add Skill — Krishalaya
 - Add a Skill
 - What can you do?
 - Pick all that apply. Adding skills helps farmers find you for relevant jobs.
@@ -4225,9 +4225,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Save (3 skills)
 
 ### 138-worker-work-history
-*138 · Work History — Krishi-Verse*
+*138 · Work History — Krishalaya*
 
-- 138 · Work History — Krishi-Verse
+- 138 · Work History — Krishalaya
 - My Work History
 - Lifetime
 - 187 jobs · ₹71,420
@@ -4269,9 +4269,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 5★
 
 ### 139-worker-documents
-*139 · My Documents — Krishi-Verse*
+*139 · My Documents — Krishalaya*
 
-- 139 · My Documents — Krishi-Verse
+- 139 · My Documents — Krishalaya
 - My Documents
 - 🗂
 - 3 of 5 documents
@@ -4302,9 +4302,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Apply
 
 ### 140-worker-apply-job
-*140 · Apply for Job — Krishi-Verse*
+*140 · Apply for Job — Krishalaya*
 
-- 140 · Apply for Job — Krishi-Verse
+- 140 · Apply for Job — Krishalaya
 - Apply for Job
 - 🌾
 - Wheat Harvesting · Ramesh Patel
@@ -4331,9 +4331,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Apply Now
 
 ### 141-worker-job-offer
-*141 · New Job Offer — Krishi-Verse*
+*141 · New Job Offer — Krishalaya*
 
-- 141 · New Job Offer — Krishi-Verse
+- 141 · New Job Offer — Krishalaya
 - New Job Offer
 - 🌾
 - New job from Ramesh ji!
@@ -4367,9 +4367,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Accept · ₹400 Locked
 
 ### 142-worker-decline-job
-*142 · Decline Job — Krishi-Verse*
+*142 · Decline Job — Krishalaya*
 
-- 142 · Decline Job — Krishi-Verse
+- 142 · Decline Job — Krishalaya
 - Decline Job
 - 🌾
 - Wheat Harvesting · Ramesh Patel
@@ -4395,9 +4395,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send Decline
 
 ### 143-worker-dispute
-*143 · Wage Dispute — Krishi-Verse*
+*143 · Wage Dispute — Krishalaya*
 
-- 143 · Wage Dispute — Krishi-Verse
+- 143 · Wage Dispute — Krishalaya
 - Report Wage Dispute
 - 🌾 Wheat Harvesting · Ramesh Patel
 - 22 Aug 2026 · Anand · 8 hrs
@@ -4427,9 +4427,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Report · We'll Help
 
 ### 144-worker-help
-*144 · Help & Support — Krishi-Verse*
+*144 · Help & Support — Krishalaya*
 
-- 144 · Help & Support — Krishi-Verse
+- 144 · Help & Support — Krishalaya
 - Help & Support
 - 🤖
 - Ask AI · Voice
@@ -4460,9 +4460,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ✓ No bonded labour ever
 
 ### 145-worker-pmsby-enroll
-*145 · PMSBY Enrollment — Krishi-Verse*
+*145 · PMSBY Enrollment — Krishalaya*
 
-- 145 · PMSBY Enrollment — Krishi-Verse
+- 145 · PMSBY Enrollment — Krishalaya
 - PMSBY Insurance
 - Pradhan Mantri Suraksha Bima Yojana
 - ₹2 Lakh
@@ -4498,9 +4498,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Enroll · ₹20/yr
 
 ### 146-worker-claim
-*146 · File Insurance Claim — Krishi-Verse*
+*146 · File Insurance Claim — Krishalaya*
 
-- 146 · File Insurance Claim — Krishi-Verse
+- 146 · File Insurance Claim — Krishalaya
 - File Claim
 - Your PMSBY · Policy #PMSBY-2026-009842 · Active till 31 May 2027
 - What type of claim?
@@ -4536,9 +4536,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Farmer services (mandi/weather/tips/schemes/profile/AI)
 
 ### 52-farmer-mandi-prices
-*52 · Today's Mandi Prices — Krishi-Verse*
+*52 · Today's Mandi Prices — Krishalaya*
 
-- 52 · Today's Mandi Prices — Krishi-Verse
+- 52 · Today's Mandi Prices — Krishalaya
 - Mandi Prices
 - Today's Mandi Prices
 - आज का मंडी भाव
@@ -4612,9 +4612,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ↓ 1.2%
 
 ### 53-farmer-mandi-detail
-*53 · Wheat Price Detail — Krishi-Verse*
+*53 · Wheat Price Detail — Krishalaya*
 
-- 53 · Wheat Price Detail — Krishi-Verse
+- 53 · Wheat Price Detail — Krishalaya
 - Wheat — Lokwan
 - 🌾
 - Wheat · Lokwan
@@ -4652,9 +4652,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - List My Wheat Now
 
 ### 54-farmer-weather
-*54 · 7-Day Weather — Krishi-Verse*
+*54 · 7-Day Weather — Krishalaya*
 
-- 54 · 7-Day Weather — Krishi-Verse
+- 54 · 7-Day Weather — Krishalaya
 - Weather
 - 📍 Anand, Gujarat
 - ⛅
@@ -4716,13 +4716,13 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 💧 10%
 - 33°
 - 24°
-- Krishi-Verse Advisory
+- Krishalaya Advisory
 - Heavy rain expected Thu-Fri. If your wheat is mature, harvest by Wed evening to avoid damage. Cover stored grain.
 
 ### 55-farmer-tips-library
-*55 · Farming Tips — Krishi-Verse*
+*55 · Farming Tips — Krishalaya*
 
-- 55 · Farming Tips — Krishi-Verse
+- 55 · Farming Tips — Krishalaya
 - Tips & Knowledge
 - All
 - Crops
@@ -4763,9 +4763,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 👁 890 views
 
 ### 56-farmer-orders
-*56 · Orders Received — Krishi-Verse*
+*56 · Orders Received — Krishalaya*
 
-- 56 · Orders Received — Krishi-Verse
+- 56 · Orders Received — Krishalaya
 - My Orders
 - 2
 - New
@@ -4807,9 +4807,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 8 qtl · ₹15,280
 
 ### 57-farmer-order-detail
-*57 · Order Decision — Krishi-Verse*
+*57 · Order Decision — Krishalaya*
 
-- 57 · Order Decision — Krishi-Verse
+- 57 · Order Decision — Krishalaya
 - Order #KV-2026-0218
 - Decision needed within 4 hours · Buyer waiting
 - PM
@@ -4843,9 +4843,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Accept · ₹8,510
 
 ### 58-farmer-earnings
-*58 · My Earnings — Krishi-Verse*
+*58 · My Earnings — Krishalaya*
 
-- 58 · My Earnings — Krishi-Verse
+- 58 · My Earnings — Krishalaya
 - My Earnings
 - This month's earnings
 - ₹84,320
@@ -4896,9 +4896,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Withdraw ₹12,450
 
 ### 59-farmer-payout-history
-*59 · Payout History — Krishi-Verse*
+*59 · Payout History — Krishalaya*
 
-- 59 · Payout History — Krishi-Verse
+- 59 · Payout History — Krishalaya
 - Payout History
 - Total received lifetime
 - ₹4,28,750
@@ -4937,9 +4937,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - FAILED · RETRY
 
 ### 60-farmer-schemes
-*60 · Government Schemes — Krishi-Verse*
+*60 · Government Schemes — Krishalaya*
 
-- 60 · Government Schemes — Krishi-Verse
+- 60 · Government Schemes — Krishalaya
 - Government Schemes
 - Schemes for you
 - Based on your profile: Farmer · Anand, Gujarat · 5-acre holding
@@ -4985,9 +4985,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - NOT ELIGIBLE · No KCC yet
 
 ### 61-farmer-profile-own
-*61 · My Profile — Krishi-Verse*
+*61 · My Profile — Krishalaya*
 
-- 61 · My Profile — Krishi-Verse
+- 61 · My Profile — Krishalaya
 - My Profile
 - RP
 - Ramesh Patel
@@ -5023,9 +5023,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Logout
 
 ### 101-farmer-tip-detail
-*101 · Tip Detail — Krishi-Verse*
+*101 · Tip Detail — Krishalaya*
 
-- 101 · Tip Detail — Krishi-Verse
+- 101 · Tip Detail — Krishalaya
 - Pest Control
 - Stop Wheat Rust Before It Spreads
 - Dr. Mehta · ICAR · 5 min read
@@ -5064,9 +5064,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 3 min · 8.9k reads
 
 ### 102-farmer-tips-category
-*102 · Tips by Category — Krishi-Verse*
+*102 · Tips by Category — Krishalaya*
 
-- 102 · Tips by Category — Krishi-Verse
+- 102 · Tips by Category — Krishalaya
 - Pest Control · 24 tips
 - All
 - Wheat (8)
@@ -5108,9 +5108,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 3.2k reads
 
 ### 103-farmer-saved-tips
-*103 · Saved Tips — Krishi-Verse*
+*103 · Saved Tips — Krishalaya*
 
-- 103 · Saved Tips — Krishi-Verse
+- 103 · Saved Tips — Krishalaya
 - My Saved Tips · 12
 - Bookmarked
 - 12 saved
@@ -5134,9 +5134,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Yesterday · 4 min read
 
 ### 104-farmer-crop-hub
-*104 · Crop Knowledge Hub — Krishi-Verse*
+*104 · Crop Knowledge Hub — Krishalaya*
 
-- 104 · Crop Knowledge Hub — Krishi-Verse
+- 104 · Crop Knowledge Hub — Krishalaya
 - Wheat (Lokwan)
 - Wheat · Lokwan
 - Rabi season · 120-130 days · Your variety
@@ -5179,9 +5179,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 
 ### 105-farmer-scheme-detail
-*105 · Scheme Detail — Krishi-Verse*
+*105 · Scheme Detail — Krishalaya*
 
-- 105 · Scheme Detail — Krishi-Verse
+- 105 · Scheme Detail — Krishalaya
 - Scheme Detail
 - Central Govt · Direct Benefit
 - PM-KISAN Samman Nidhi
@@ -5232,14 +5232,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Apply Now (3 min)
 
 ### 106-farmer-scheme-apply
-*106 · Apply: PM-KISAN — Krishi-Verse*
+*106 · Apply: PM-KISAN — Krishalaya*
 
-- 106 · Apply: PM-KISAN — Krishi-Verse
+- 106 · Apply: PM-KISAN — Krishalaya
 - Apply: PM-KISAN
 - Step 1 of 3
 - Your details
 - Confirm your details
-- Auto-filled from your Krishi-Verse profile. Verify each field with your Aadhaar.
+- Auto-filled from your Krishalaya profile. Verify each field with your Aadhaar.
 - ✨ Auto-filled from your KV profile · Tap any field to edit
 - Full name (as on Aadhaar) *
 - Aadhaar number *
@@ -5265,9 +5265,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue · Land Details →
 
 ### 107-farmer-scheme-status
-*107 · Application Status — Krishi-Verse*
+*107 · Application Status — Krishalaya*
 
-- 107 · Application Status — Krishi-Verse
+- 107 · Application Status — Krishalaya
 - Application Status
 - ⏳ Under Review
 - PM-KISAN Samman Nidhi
@@ -5301,9 +5301,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 
 ### 108-farmer-scheme-docs
-*108 · Upload Documents — Krishi-Verse*
+*108 · Upload Documents — Krishalaya*
 
-- 108 · Upload Documents — Krishi-Verse
+- 108 · Upload Documents — Krishalaya
 - Upload Documents
 - Step 2 of 3
 - Documents
@@ -5330,9 +5330,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue · Review →
 
 ### 109-farmer-my-schemes
-*109 · My Applications — Krishi-Verse*
+*109 · My Applications — Krishalaya*
 
-- 109 · My Applications — Krishi-Verse
+- 109 · My Applications — Krishalaya
 - My Scheme Applications
 - All · 4
 - Active · 2
@@ -5364,9 +5364,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Browse All Schemes
 
 ### 110-farmer-mandi-alerts
-*110 · Price Alerts — Krishi-Verse*
+*110 · Price Alerts — Krishalaya*
 
-- 110 · Price Alerts — Krishi-Verse
+- 110 · Price Alerts — Krishalaya
 - Mandi Price Alerts
 - My alerts
 - 5 active
@@ -5397,9 +5397,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 🔇 Quiet hours (10 PM - 6 AM)
 
 ### 111-farmer-mandi-history
-*111 · Price History — Krishi-Verse*
+*111 · Price History — Krishalaya*
 
-- 111 · Price History — Krishi-Verse
+- 111 · Price History — Krishalaya
 - Wheat · Price History
 - 🌾 Wheat — Lokwan · Anand Mandi
 - ₹2,880 / qtl
@@ -5451,9 +5451,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Sell at ₹2,880 →
 
 ### 117-farmer-weather-detail
-*117 · Weather Detail — Krishi-Verse*
+*117 · Weather Detail — Krishalaya*
 
-- 117 · Weather Detail — Krishi-Verse
+- 117 · Weather Detail — Krishalaya
 - Anand · Weather
 - ⛈
 - 28°C
@@ -5526,9 +5526,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 33° / 24°
 
 ### 118-farmer-weather-settings
-*118 · Weather Alerts — Krishi-Verse*
+*118 · Weather Alerts — Krishalaya*
 
-- 118 · Weather Alerts — Krishi-Verse
+- 118 · Weather Alerts — Krishalaya
 - Weather Alert Settings
 - Critical alerts (always on)
 - ⛈ Heavy rain warning
@@ -5555,9 +5555,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - + Add crop
 
 ### 119-farmer-edit-profile
-*119 · Edit Profile — Krishi-Verse*
+*119 · Edit Profile — Krishalaya*
 
-- 119 · Edit Profile — Krishi-Verse
+- 119 · Edit Profile — Krishalaya
 - Edit Profile
 - RP
 - Change photo
@@ -5583,9 +5583,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Save Profile
 
 ### 120-farmer-farm-details
-*120 · Farm Details — Krishi-Verse*
+*120 · Farm Details — Krishalaya*
 
-- 120 · Farm Details — Krishi-Verse
+- 120 · Farm Details — Krishalaya
 - My Farm Details
 - Anand · 5 acres
 - 3 plots · 2 active crops · Drip irrigated
@@ -5623,9 +5623,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Update Farm Info
 
 ### 121-farmer-bank-accounts
-*121 · Bank Accounts — Krishi-Verse*
+*121 · Bank Accounts — Krishalaya*
 
-- 121 · Bank Accounts — Krishi-Verse
+- 121 · Bank Accounts — Krishalaya
 - Bank Accounts
 - State Bank of India
 - XXXX XXXX 2247
@@ -5649,9 +5649,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - All accounts verified via name-match with Aadhaar. Numbers never shown to buyers.
 
 ### 122-farmer-documents
-*122 · Documents Wallet — Krishi-Verse*
+*122 · Documents Wallet — Krishalaya*
 
-- 122 · Documents Wallet — Krishi-Verse
+- 122 · Documents Wallet — Krishalaya
 - My Documents
 - 🗂
 - Documents Wallet
@@ -5698,9 +5698,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 
 ### 123-farmer-help
-*123 · Help & Support — Krishi-Verse*
+*123 · Help & Support — Krishalaya*
 
-- 123 · Help & Support — Krishi-Verse
+- 123 · Help & Support — Krishalaya
 - Help & Support
 - 🤖
 - Ask AI assistant
@@ -5737,9 +5737,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - App issues
 
 ### 124-farmer-complaint
-*124 · Report Problem — Krishi-Verse*
+*124 · Report Problem — Krishalaya*
 
-- 124 · Report Problem — Krishi-Verse
+- 124 · Report Problem — Krishalaya
 - Report a Problem
 - What's the issue?
 - 💰
@@ -5774,13 +5774,13 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Submit Report
 
 ### 125-farmer-ai-chat
-*125 · AI Assistant — Krishi-Verse*
+*125 · AI Assistant — Krishalaya*
 
-- 125 · AI Assistant — Krishi-Verse
+- 125 · AI Assistant — Krishalaya
 - 🤖
 - Krishi AI · असिस्टेंट
 - ● Online · Gujarati, Hindi, English
-- Namaste Ramesh ji! 🙏 I'm your Krishi-Verse AI assistant. I can help with farming questions, market prices, scheme info, and app issues. Ask me anything in Gujarati, Hindi, or English.
+- Namaste Ramesh ji! 🙏 I'm your Krishalaya AI assistant. I can help with farming questions, market prices, scheme info, and app issues. Ask me anything in Gujarati, Hindi, or English.
 - 11:42 AM
 - My wheat leaves have yellow patches. What is it?
 - 11:45 AM
@@ -5821,9 +5821,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Ambassador
 
 ### 86-ambassador-home
-*86 · Ambassador Home — Krishi-Verse*
+*86 · Ambassador Home — Krishalaya*
 
-- 86 · Ambassador Home — Krishi-Verse
+- 86 · Ambassador Home — Krishalaya
 - Good morning, ambassador
 - नमस्ते
 - Vikas Joshi
@@ -5865,9 +5865,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 87-ambassador-farmers
-*87 · My Farmers — Krishi-Verse*
+*87 · My Farmers — Krishalaya*
 
-- 87 · My Farmers — Krishi-Verse
+- 87 · My Farmers — Krishalaya
 - My Farmers · 247
 - All · 247
 - Active 30d · 189
@@ -5920,9 +5920,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - listings
 
 ### 88-ambassador-onboard-start
-*88 · Onboard Farmer — Krishi-Verse*
+*88 · Onboard Farmer — Krishalaya*
 
-- 88 · Onboard Farmer — Krishi-Verse
+- 88 · Onboard Farmer — Krishalaya
 - Onboard a Farmer
 - Step 1 of 4
 - Choose method
@@ -5948,9 +5948,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Continue →
 
 ### 89-ambassador-onboard-scan
-*89 · Scan Aadhaar — Krishi-Verse*
+*89 · Scan Aadhaar — Krishalaya*
 
-- 89 · Scan Aadhaar — Krishi-Verse
+- 89 · Scan Aadhaar — Krishalaya
 - Scan Farmer's Aadhaar
 - Scan the back of farmer's Aadhaar
 - The QR code reads name, photo, and address automatically. Auto-uploaded to UIDAI servers.
@@ -5964,9 +5964,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Use photo
 
 ### 90-ambassador-onboard-verify
-*90 · Verify Details — Krishi-Verse*
+*90 · Verify Details — Krishalaya*
 
-- 90 · Verify Details — Krishi-Verse
+- 90 · Verify Details — Krishalaya
 - Verify Details
 - Step 3 of 4
 - Verify with farmer
@@ -6001,9 +6001,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Verified, Continue →
 
 ### 91-ambassador-onboard-complete
-*91 · Onboarding Complete — Krishi-Verse*
+*91 · Onboarding Complete — Krishalaya*
 
-- 91 · Onboarding Complete — Krishi-Verse
+- 91 · Onboarding Complete — Krishalaya
 - Success
 - Onboarded successfully!
 - सफलतापूर्वक जोड़ा गया
@@ -6031,9 +6031,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Help with First Listing
 
 ### 92-ambassador-commissions
-*92 · My Commissions — Krishi-Verse*
+*92 · My Commissions — Krishalaya*
 
-- 92 · My Commissions — Krishi-Verse
+- 92 · My Commissions — Krishalaya
 - Total commissions · Aug 2026
 - ₹6,200
 - 12 onboarded · 8 first sales · ↑ 38% vs Jul
@@ -6076,9 +6076,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Withdraw ₹4,850 to Bank
 
 ### 93-ambassador-leaderboard
-*93 · Leaderboard — Krishi-Verse*
+*93 · Leaderboard — Krishalaya*
 
-- 93 · Leaderboard — Krishi-Verse
+- 93 · Leaderboard — Krishalaya
 - Leaderboard
 - This month
 - All time
@@ -6127,9 +6127,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Profile
 
 ### 94-ambassador-training
-*94 · Training Hub — Krishi-Verse*
+*94 · Training Hub — Krishalaya*
 
-- 94 · Training Hub — Krishi-Verse
+- 94 · Training Hub — Krishalaya
 - Training Hub
 - Learn to onboard better
 - 8 videos · 3 completed · 32 min remaining
@@ -6152,9 +6152,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Most common 20 questions · 6 pages
 
 ### 95-ambassador-profile
-*95 · My Profile — Krishi-Verse*
+*95 · My Profile — Krishalaya*
 
-- 95 · My Profile — Krishi-Verse
+- 95 · My Profile — Krishalaya
 - VJ
 - Vikas Joshi
 - Petlad cluster · Anand FPO
@@ -6208,16 +6208,16 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Notifications
 - All on
 - Log out
-- Krishi-Verse Ambassador v1.0
+- Krishalaya Ambassador v1.0
 - Home
 - Farmers
 - Leaderboard
 - Profile
 
 ### 162-ambassador-help-listing
-*162 · Help with Listing — Krishi-Verse*
+*162 · Help with Listing — Krishalaya*
 
-- 162 · Help with Listing — Krishi-Verse
+- 162 · Help with Listing — Krishalaya
 - Help Anil's First Listing
 - AK
 - Anil Kumar · Borsad
@@ -6250,9 +6250,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Help with Step 3 →
 
 ### 163-ambassador-help-order
-*163 · Help with Order — Krishi-Verse*
+*163 · Help with Order — Krishalaya*
 
-- 163 · Help with Order — Krishi-Verse
+- 163 · Help with Order — Krishalaya
 - Help Anil with Order
 - 📦 Order #KV-2026-0312
 - From: Mehta Trading Co. (Vadodara)
@@ -6278,9 +6278,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 📞 Call Anil Now
 
 ### 164-ambassador-visit-log
-*164 · Visit Log — Krishi-Verse*
+*164 · Visit Log — Krishalaya*
 
-- 164 · Visit Log — Krishi-Verse
+- 164 · Visit Log — Krishalaya
 - Visit Log
 - This month
 - 28 visits
@@ -6308,9 +6308,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - + Log New Visit
 
 ### 165-ambassador-video-player
-*165 · Training Video — Krishi-Verse*
+*165 · Training Video — Krishalaya*
 
-- 165 · Training Video — Krishi-Verse
+- 165 · Training Video — Krishalaya
 - 2:14 / 6:21
 - First listing · voice mode
 - Hindi · 6 min · Module 2 of 5 · ⭐4.9 (124)
@@ -6340,9 +6340,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Take Quiz →
 
 ### 166-ambassador-quiz
-*166 · Knowledge Quiz — Krishi-Verse*
+*166 · Knowledge Quiz — Krishalaya*
 
-- 166 · Knowledge Quiz — Krishi-Verse
+- 166 · Knowledge Quiz — Krishalaya
 - Knowledge Quiz
 - Onboarding Module 2
 - Question 3 of 5
@@ -6363,9 +6363,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Submit Answer →
 
 ### 167-ambassador-faq-detail
-*167 · FAQ Sheet — Krishi-Verse*
+*167 · FAQ Sheet — Krishalaya*
 
-- 167 · FAQ Sheet — Krishi-Verse
+- 167 · FAQ Sheet — Krishalaya
 - FAQ Cheat Sheet
 - 📋
 - Top 20 questions farmers ask
@@ -6398,9 +6398,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 📥 Download PDF for Offline
 
 ### 168-ambassador-withdraw
-*168 · Withdraw Commission — Krishi-Verse*
+*168 · Withdraw Commission — Krishalaya*
 
-- 168 · Withdraw Commission — Krishi-Verse
+- 168 · Withdraw Commission — Krishalaya
 - Withdraw to Bank
 - Available to withdraw
 - ₹4,850
@@ -6426,9 +6426,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Withdraw ₹4,850
 
 ### 169-ambassador-targets
-*169 · Monthly Targets — Krishi-Verse*
+*169 · Monthly Targets — Krishalaya*
 
-- 169 · Monthly Targets — Krishi-Verse
+- 169 · Monthly Targets — Krishalaya
 - My Targets · Aug 2026
 - 🎯
 - 75% of monthly goal
@@ -6455,9 +6455,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - +₹5,000 + recognition
 
 ### 170-ambassador-goal-setting
-*170 · Set Next Month Goals — Krishi-Verse*
+*170 · Set Next Month Goals — Krishalaya*
 
-- 170 · Set Next Month Goals — Krishi-Verse
+- 170 · Set Next Month Goals — Krishalaya
 - Plan Sep 2026 Goals
 - 💡 AI suggestion:
 - Based on your Aug pace and Petlad cluster opportunities, target
@@ -6493,9 +6493,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Wallet/KYC/Payments
 
 ### 70-wallet-withdraw
-*70 · Withdraw Money — Krishi-Verse*
+*70 · Withdraw Money — Krishalaya*
 
-- 70 · Withdraw Money — Krishi-Verse
+- 70 · Withdraw Money — Krishalaya
 - Withdraw Money
 - Available Balance
 - ₹15,420.50
@@ -6518,9 +6518,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Withdraw ₹5,000 →
 
 ### 71-transaction-detail
-*71 · Transaction Detail — Krishi-Verse*
+*71 · Transaction Detail — Krishalaya*
 
-- 71 · Transaction Detail — Krishi-Verse
+- 71 · Transaction Detail — Krishalaya
 - Transaction
 - + ₹2,880
 - Received from Priya Mehta
@@ -6552,9 +6552,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Help
 
 ### 72-kyc-aadhaar-start
-*72 · Verify Aadhaar — Krishi-Verse*
+*72 · Verify Aadhaar — Krishalaya*
 
-- 72 · Verify Aadhaar — Krishi-Verse
+- 72 · Verify Aadhaar — Krishalaya
 - Verify Aadhaar
 - Verify your Aadhaar
 - अपना आधार सत्यापित करें
@@ -6576,9 +6576,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send OTP →
 
 ### 73-kyc-aadhaar-otp
-*73 · Verify OTP — Krishi-Verse*
+*73 · Verify OTP — Krishalaya*
 
-- 73 · Verify OTP — Krishi-Verse
+- 73 · Verify OTP — Krishalaya
 - Verify OTP
 - 📱
 - Enter Aadhaar OTP
@@ -6591,9 +6591,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Verify Aadhaar →
 
 ### 74-kyc-bank-setup
-*74 · Add Bank Account — Krishi-Verse*
+*74 · Add Bank Account — Krishalaya*
 
-- 74 · Add Bank Account — Krishi-Verse
+- 74 · Add Bank Account — Krishalaya
 - Add Bank Account
 - 🏦
 - Add your bank account
@@ -6623,9 +6623,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Verify Account →
 
 ### 173-kyc-selfie
-*173 · Verify with Selfie — Krishi-Verse*
+*173 · Verify with Selfie — Krishalaya*
 
-- 173 · Verify with Selfie — Krishi-Verse
+- 173 · Verify with Selfie — Krishalaya
 - Verify your identity
 - Step 3 of 3
 - Live selfie
@@ -6641,9 +6641,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 📷 Take Selfie
 
 ### 174-kyc-doc-upload
-*174 · Upload Document — Krishi-Verse*
+*174 · Upload Document — Krishalaya*
 
-- 174 · Upload Document — Krishi-Verse
+- 174 · Upload Document — Krishalaya
 - Upload Document
 - Photo of 7/12 Utara
 - Land record from talati office. Photo works fine — must show name, survey number, and area.
@@ -6663,9 +6663,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Take time, retry if needed.
 
 ### 175-kyc-rejected
-*175 · KYC Re-submission — Krishi-Verse*
+*175 · KYC Re-submission — Krishalaya*
 
-- 175 · KYC Re-submission — Krishi-Verse
+- 175 · KYC Re-submission — Krishalaya
 - KYC Issues
 - ⚠
 - Re-submission needed
@@ -6685,9 +6685,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - You can browse while fixing. Withdrawals locked until KYC complete.
 
 ### 180-upi-management
-*180 · UPI IDs — Krishi-Verse*
+*180 · UPI IDs — Krishalaya*
 
-- 180 · UPI IDs — Krishi-Verse
+- 180 · UPI IDs — Krishalaya
 - UPI IDs
 - Linked UPI IDs
 - ramesh@okaxis
@@ -6713,9 +6713,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Verify & Add
 
 ### 181-autopay
-*181 · Auto-Pay — Krishi-Verse*
+*181 · Auto-Pay — Krishalaya*
 
-- 181 · Auto-Pay — Krishi-Verse
+- 181 · Auto-Pay — Krishalaya
 - Auto-Pay Mandates
 - Auto-pay
 - lets you authorize recurring payments without entering PIN each time. UPI mandate based. Cancel anytime.
@@ -6740,9 +6740,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ₹120 / ₹5,000
 
 ### 182-spending-insights
-*182 · Spending Insights — Krishi-Verse*
+*182 · Spending Insights — Krishalaya*
 
-- 182 · Spending Insights — Krishi-Verse
+- 182 · Spending Insights — Krishalaya
 - Spending Insights
 - Aug 2026 · Spent
 - ₹3,180
@@ -6771,9 +6771,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 ## Settings/system/misc
 
 ### 75-settings
-*75 · Settings — Krishi-Verse*
+*75 · Settings — Krishalaya*
 
-- 75 · Settings — Krishi-Verse
+- 75 · Settings — Krishalaya
 - Settings
 - RP
 - Ramesh Patel
@@ -6804,14 +6804,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Help & FAQ
 - Contact Support
 - Chat · Call · Email
-- About Krishi-Verse
+- About Krishalaya
 - Logout
-- Krishi-Verse v1.0.0 (Build 142) · Made with 🌾 in India
+- Krishalaya v1.0.0 (Build 142) · Made with 🌾 in India
 
 ### 171-notification-settings
-*171 · Notification Settings — Krishi-Verse*
+*171 · Notification Settings — Krishalaya*
 
-- 171 · Notification Settings — Krishi-Verse
+- 171 · Notification Settings — Krishalaya
 - Notification Settings
 - Money & orders
 - 💰 Payment received
@@ -6837,9 +6837,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 📧 Email
 
 ### 172-notification-detail
-*172 · Notification — Krishi-Verse*
+*172 · Notification — Krishalaya*
 
-- 172 · Notification — Krishi-Verse
+- 172 · Notification — Krishalaya
 - Notification
 - 💰
 - Payment received!
@@ -6865,9 +6865,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 💰 Withdraw to Bank
 
 ### 176-change-phone
-*176 · Change Phone — Krishi-Verse*
+*176 · Change Phone — Krishalaya*
 
-- 176 · Change Phone — Krishi-Verse
+- 176 · Change Phone — Krishalaya
 - Change Phone Number
 - Current
 - +91 98765 12340
@@ -6889,9 +6889,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Send OTP to Both
 
 ### 177-account-delete
-*177 · Delete Account — Krishi-Verse*
+*177 · Delete Account — Krishalaya*
 
-- 177 · Delete Account — Krishi-Verse
+- 177 · Delete Account — Krishalaya
 - Delete Account
 - ⚠
 - Delete your account?
@@ -6923,9 +6923,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Confirm Deletion
 
 ### 178-privacy-settings
-*178 · Privacy — Krishi-Verse*
+*178 · Privacy — Krishalaya*
 
-- 178 · Privacy — Krishi-Verse
+- 178 · Privacy — Krishalaya
 - Privacy Settings
 - Profile visibility
 - Show profile to buyers
@@ -6955,9 +6955,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - privacy policy
 
 ### 179-data-download
-*179 · Download Data — Krishi-Verse*
+*179 · Download Data — Krishalaya*
 
-- 179 · Download Data — Krishi-Verse
+- 179 · Download Data — Krishalaya
 - Download My Data
 - 📦
 - All your data in one ZIP
@@ -6988,9 +6988,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Request Download (Free)
 
 ### 183-global-search
-*183 · Search — Krishi-Verse*
+*183 · Search — Krishalaya*
 
-- 183 · Search — Krishi-Verse
+- 183 · Search — Krishalaya
 - All · 47
 - Listings · 28
 - Sellers · 12
@@ -7022,9 +7022,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 
 ### 184-voice-search
-*184 · Voice Search — Krishi-Verse*
+*184 · Voice Search — Krishalaya*
 
-- 184 · Voice Search — Krishi-Verse
+- 184 · Voice Search — Krishalaya
 - Listening...
 - Speak now
 - In Gujarati, Hindi, or English
@@ -7035,9 +7035,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - "Show my orders"
 
 ### 185-permissions
-*185 · Permissions — Krishi-Verse*
+*185 · Permissions — Krishalaya*
 
-- 185 · Permissions — Krishi-Verse
+- 185 · Permissions — Krishalaya
 - Permissions
 - 🔐
 - A few permissions needed
@@ -7069,9 +7069,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Allow All
 
 ### 186-tutorial
-*186 · App Tour — Krishi-Verse*
+*186 · App Tour — Krishalaya*
 
-- 186 · App Tour — Krishi-Verse
+- 186 · App Tour — Krishalaya
 - 🎤
 - Speak your listing
 - Tap the mic button and tell us in Gujarati or Hindi. We'll fill the form for you.
@@ -7081,9 +7081,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Next →
 
 ### 187-language-switcher
-*187 · Language — Krishi-Verse*
+*187 · Language — Krishalaya*
 
-- 187 · Language — Krishi-Verse
+- 187 · Language — Krishalaya
 - Choose Language
 - 🌐
 - Change language
@@ -7105,9 +7105,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Apply Language
 
 ### 188-offline
-*188 · Offline — Krishi-Verse*
+*188 · Offline — Krishalaya*
 
-- 188 · Offline — Krishi-Verse
+- 188 · Offline — Krishalaya
 - No Internet
 - 📡
 - No internet connection
@@ -7124,9 +7124,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ↻ Retry Connection
 
 ### 189-server-error
-*189 · Server Error — Krishi-Verse*
+*189 · Server Error — Krishalaya*
 
-- 189 · Server Error — Krishi-Verse
+- 189 · Server Error — Krishalaya
 - 🛠
 - Something went wrong
 - Error 500 · Server hiccup
@@ -7140,9 +7140,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ↻ Retry
 
 ### 190-app-update
-*190 · Update Required — Krishi-Verse*
+*190 · Update Required — Krishalaya*
 
-- 190 · Update Required — Krishi-Verse
+- 190 · Update Required — Krishalaya
 - 🚀
 - App update needed
 - Version 2.4.0 has new features and bug fixes
@@ -7156,9 +7156,9 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 📥 Update Now
 
 ### 191-inbox-all
-*191 · Messages — Krishi-Verse*
+*191 · Messages — Krishalaya*
 
-- 191 · Messages — Krishi-Verse
+- 191 · Messages — Krishalaya
 - Messages · 4 new
 - All · 14
 - Buyers · 8
@@ -7189,14 +7189,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - 2d
 - Thanks for the delivery! ⭐⭐⭐⭐⭐
 - KV
-- Krishi-Verse Support
+- Krishalaya Support
 - 3d
 - Your dispute #DSP-0247 has been resolved.
 
 ### 192-message-archive
-*192 · Archive — Krishi-Verse*
+*192 · Archive — Krishalaya*
 
-- 192 · Archive — Krishi-Verse
+- 192 · Archive — Krishalaya
 - Archived Messages · 24
 - 📦 Archived messages · Auto-deleted after 1 year
 - RT
@@ -7222,12 +7222,12 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Restore Selected
 
 ### 195-feedback-cta
-*195 · Help us improve — Krishi-Verse*
+*195 · Help us improve — Krishalaya*
 
-- 195 · Help us improve — Krishi-Verse
+- 195 · Help us improve — Krishalaya
 - Feedback
 - 💛
-- How is your Krishi-Verse experience?
+- How is your Krishalaya experience?
 - Your feedback shapes the app
 - ⭐
 - Tap stars to rate
@@ -7246,12 +7246,12 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - Submit Feedback
 
 ### 196-about
-*196 · About Krishi-Verse — Krishi-Verse*
+*196 · About Krishalaya — Krishalaya*
 
-- 196 · About Krishi-Verse — Krishi-Verse
+- 196 · About Krishalaya — Krishalaya
 - About
 - 🌾
-- Krishi-Verse
+- Krishalaya
 - Version 2.4.0 · Build 247
 - Built with ❤️ for farmers, by Dev
 - India's most farmer-first agri SaaS
@@ -7273,17 +7273,17 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - ›
 - 📜 Licenses (Open Source)
 - ›
-- 💼 Krishi-Verse Pvt Ltd
+- 💼 Krishalaya Pvt Ltd
 - CIN U72200GJ2024
 - Connect
-- 📧 hello@krishi-verse.in
+- 📧 hello@krishalaya.com
 - ›
-- 🌐 krishi-verse.in
+- 🌐 krishalaya.com
 - ›
 - 💬 WhatsApp: +91 90990 12340
 - ›
 - Made in Anand, Gujarat 🇮🇳
-- © 2026 Krishi-Verse Pvt Ltd
+- © 2026 Krishalaya Pvt Ltd
 
 ---
 
@@ -7292,81 +7292,81 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > AI eligibility service + PFMS integration: backend pending — designs lead.
 
 ### 242-farmer-schemes-home
-*242 · Schemes Home — Krishi-Verse*
+*242 · Schemes Home — Krishalaya*
 
 - Tables: `schemes`, `scheme_authorities`, `lookup_values` (categories), `scheme_applications` (summary strip)
 - AI-matched recommendations via eligibility service
 - Categories: income_support, insurance, credit, mechanisation, irrigation, livestock, subsidy
 
 ### 243-farmer-scheme-detail
-*243 · Scheme Detail: PM-KISAN — Krishi-Verse*
+*243 · Scheme Detail: PM-KISAN — Krishalaya*
 
 - Tables: `schemes` (benefit_summary, eligibility_rules, required_doc_type_ids, application_window), `scheme_authorities`
 
 ### 244-farmer-eligibility-checker
-*244 · Eligibility Checker — Krishi-Verse*
+*244 · Eligibility Checker — Krishalaya*
 
 - Eligibility questionnaire (profile + land data; `farms`/`plots` tables)
 - AI eligibility service (backend API pending — design leads)
 
 ### 245-farmer-eligibility-result
-*245 · Eligibility Result — Krishi-Verse*
+*245 · Eligibility Result — Krishalaya*
 
 - Eligibility result + reasons
 - Links to `scheme_applications` create
 
 ### 246-farmer-scheme-application-form
-*246 · Scheme Application Form — Krishi-Verse*
+*246 · Scheme Application Form — Krishalaya*
 
 - Tables: `scheme_applications` (status=draft), `users`/`addresses`/`bank_accounts` prefill
 - Land/survey fields
 
 ### 247-farmer-document-upload
-*247 · Document Upload — Krishi-Verse*
+*247 · Document Upload — Krishalaya*
 
 - Tables: `scheme_application_documents` (migration 0052)
 - Doc status: verified / under review / pending / error
 
 ### 248-farmer-application-review-submit
-*248 · Application Review & Submit — Krishi-Verse*
+*248 · Application Review & Submit — Krishalaya*
 
 - Tables: `scheme_applications` submit (draft→submitted), `consents` (DPDP)
 
 ### 249-farmer-application-status-tracker
-*249 · Application Status Tracker — Krishi-Verse*
+*249 · Application Status Tracker — Krishalaya*
 
 - `scheme_applications.status` full enum: draft, submitted, under_verification, clarification_needed, approved, rejected, disbursed, closed, appealed
 - `scheme_application_events` timeline
 
 ### 250-farmer-dbt-payment-tracking
-*250 · DBT Payment Tracking — Krishi-Verse*
+*250 · DBT Payment Tracking — Krishalaya*
 
 - Tables: `dbt_transfers` (partitioned; PFMS ref, UTR, credited/processing/scheduled), `bank_accounts` masked
 
 ### 251-farmer-clarification-request
-*251 · Clarification Request — Krishi-Verse*
+*251 · Clarification Request — Krishalaya*
 
 - Tables: `scheme_application_events` (officer query), `scheme_application_documents` re-upload
 - Status: clarification_needed
 
 ### 252-tenant-scheme-officer-queue
-*252 · Scheme Officer Queue — Krishi-Verse*
+*252 · Scheme Officer Queue — Krishalaya*
 
 - `scheme_applications` tenant-scoped (RLS), SLA computation, filters by status
 
 ### 253-tenant-scheme-officer-application-review
-*253 · Application Review — Krishi-Verse*
+*253 · Application Review — Krishalaya*
 
 - `scheme_applications` decision actions (approve/clarify/reject), `scheme_application_documents` verification, `scheme_application_events` audit
 - AI eligibility auto-check (backend pending)
 
 ### 254-farmer-my-schemes-portfolio
-*254 · My Schemes Portfolio — Krishi-Verse*
+*254 · My Schemes Portfolio — Krishalaya*
 
 - `scheme_applications` by farmer across statuses, `dbt_transfers` totals
 
 ### 255-farmer-scheme-alerts
-*255 · Scheme Alerts — Krishi-Verse*
+*255 · Scheme Alerts — Krishalaya*
 
 - `notifications` (scheme events: deadline, clarification, dbt credit, AI match)
 
@@ -7379,175 +7379,175 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: `10_fintech_schemes.sql` / migration 0011. Money in minor units (paise) per Law 2.
 
 ### 256-farmer-fintech-home
-*256 · Fintech Home — Krishi-Verse*
+*256 · Fintech Home — Krishalaya*
 
 - Module hub · back-header (bottom-nav placement deferred to Sprint D16)
 - Tables: `loans` (active loan card KV-LN-2026-04412, outstanding ₹76,420, next EMI), `credit_scores` (712 Good mini-dial), `loan_products` (pre-approved offer shelf), `bnpl_limits` (BNPL limit chip), `insurance_policies` (active cover strip), `notifications` (badge)
 - API: GET /v1/fintech/home-summary (aggregate endpoint)
 
 ### 257-farmer-loan-products-browse
-*257 · Loan Products Browse — Krishi-Verse*
+*257 · Loan Products Browse — Krishalaya*
 
 - Tables: `loan_products` (25 categories via `lookup_values`: kcc_crop, gold, equipment, dairy, BNPL…), `financial_partners` (lender chips)
 - Key fields: interest_rate_bps, subvention_bps, min/max_amount_minor, tenure_months, processing_fee
 - API: GET /v1/loan-products?category=&q= (global reference data, cacheable)
 
 ### 258-farmer-loan-product-detail
-*258 · Loan Product Detail (KCC) — Krishi-Verse*
+*258 · Loan Product Detail (KCC) — Krishalaya*
 
 - Tables: `loan_products` (KCC: 7% nominal → effective 5% after 2% interest subvention, limit up to ₹3,00,000, required docs list), `financial_partners` (issuing lender)
 - Subvention math shown to farmer — subvention accounting service backend pending
 - CTAs → 259 (calculate) / 262 (apply)
 
 ### 259-farmer-emi-calculator
-*259 · EMI Calculator — Krishi-Verse*
+*259 · EMI Calculator — Krishalaya*
 
 - Client-side calculation (design shows ₹1,00,000 · 12 mo · 7% → EMI ₹8,365; total interest + subvention benefit split)
 - Bounds from `loan_products` (min/max amount, tenure options)
 - No persistence; "Apply with these numbers" → 262
 
 ### 260-farmer-credit-score-view
-*260 · Credit Score View — Krishi-Verse*
+*260 · Credit Score View — Krishalaya*
 
 - Tables: `credit_scores` (score 712 "Good" on 300–900 band; factor breakdown: repayment 30%, income 25%, land 25%, group 10%, tenure 10%), `credit_score_consents` (consent gate before compute/refresh)
 - Explainable, consent-gated credit-score service: backend pending — designs lead
 - API: GET /v1/me/credit-score · POST /v1/me/credit-score/consent
 
 ### 261-farmer-credit-score-improve-tips
-*261 · Credit Score Improve Tips — Krishi-Verse*
+*261 · Credit Score Improve Tips — Krishalaya*
 
 - Personalised tips derived from `credit_scores` factor weights (e.g., on-time EMIs → repayment 30%; SHG/JLG activity → group 10%)
 - Read-only companion to 260; same backend-pending score service
 
 ### 262-farmer-loan-application-start
-*262 · Loan Application Start (step 1 of 4) — Krishi-Verse*
+*262 · Loan Application Start (step 1 of 4) — Krishalaya*
 
 - Tables: `loan_applications` (create, status=draft), prefill from `users`
 - Key fields: requested_amount_minor (₹1,00,000), purpose, tenure_months (12), product_id (KCC)
 - API: POST /v1/loan-applications (Idempotency-Key) + autosave PATCH
 
 ### 263-farmer-loan-kyc-verification
-*263 · Loan KYC Verification (step 2 of 4) — Krishi-Verse*
+*263 · Loan KYC Verification (step 2 of 4) — Krishalaya*
 
 - Aadhaar masked XXXX-XXXX-4521, PAN, selfie/photo capture states
 - `bank_accounts` verification via penny-drop (₹1 test credit) — backend pending — designs lead
 - Doc rows → application document records; status contribution: docs_pending
 
 ### 264-farmer-loan-land-collateral
-*264 · Loan Land & Collateral (step 3 of 4) — Krishi-Verse*
+*264 · Loan Land & Collateral (step 3 of 4) — Krishalaya*
 
 - Tables: `plots`/land records (survey no., acreage), collateral declaration on `loan_applications`
 - Land value feeds credit factor (land 25%) and KCC limit
 
 ### 265-farmer-loan-application-review
-*265 · Loan Application Review (step 4 of 4) — Krishi-Verse*
+*265 · Loan Application Review (step 4 of 4) — Krishalaya*
 
 - Summary of steps 1–3 + edit links; DPDP consent + `credit_score_consents` (lender score pull)
 - Submit = `loan_applications` draft→submitted (outbox event)
 - API: POST /v1/loan-applications/:id/submit
 
 ### 266-farmer-loan-application-status
-*266 · Loan Application Status — Krishi-Verse*
+*266 · Loan Application Status — Krishalaya*
 
 - `loan_applications.status` full enum: draft, submitted, docs_pending, under_review, approved, rejected, withdrawn, disbursed, closed
 - Timeline design shows docs_pending active (gold) with re-upload CTA; application ID mono
 - API: GET /v1/loan-applications/:id (+events)
 
 ### 267-farmer-loan-offer-view
-*267 · Loan Offer (approved) — Krishi-Verse*
+*267 · Loan Offer (approved) — Krishalaya*
 
 - Sanction terms from lender: amount ₹1,00,000, 7% (effective 5% w/ subvention), EMI ₹8,365 × 12, processing fee, validity window
 - `loan_applications` status=approved; accept → 268, decline → withdrawn
 - API: GET /v1/loan-applications/:id/offer · POST /:id/offer/decline
 
 ### 268-farmer-loan-acceptance-esign
-*268 · Loan Acceptance & e-Sign — Krishi-Verse*
+*268 · Loan Acceptance & e-Sign — Krishalaya*
 
 - OTP-based e-sign of loan agreement (Aadhaar OTP pattern); agreement PDF preview
 - E-sign provider integration: backend pending — designs lead
 - API: POST /v1/loan-applications/:id/accept (records consent + signature ref)
 
 ### 269-farmer-disbursement-confirmation
-*269 · Disbursement Confirmation — Krishi-Verse*
+*269 · Disbursement Confirmation — Krishalaya*
 
 - Celebratory: ₹1,00,000 credited to bank ····4521; creates `loans` row (KV-LN-2026-04412, status=active); `loan_applications` → disbursed
 - First EMI date + schedule link (271)
 
 ### 270-farmer-loan-dashboard-active
-*270 · Loan Dashboard (active) — Krishi-Verse*
+*270 · Loan Dashboard (active) — Krishalaya*
 
 - Tables: `loans` (status=active, outstanding ₹76,420 after 3 EMIs, principal/interest split), `loan_repayments` (next EMI ₹8,365 due date, 3/12 paid progress)
 - `loans.status` enum: active, overdue, restructured, closed, written_off, transferred
 - API: GET /v1/loans/:id
 
 ### 271-farmer-repayment-schedule
-*271 · Repayment Schedule — Krishi-Verse*
+*271 · Repayment Schedule — Krishalaya*
 
 - `loan_repayments` 12-row amortisation table: EMI ₹8,365 each, per-row principal/interest split, status paid ✓ (1–3) / upcoming
 - API: GET /v1/loans/:id/repayments
 
 ### 272-farmer-make-repayment
-*272 · Make Repayment — Krishi-Verse*
+*272 · Make Repayment — Krishalaya*
 
 - Pay EMI ₹8,365 via wallet / UPI; idempotent payment (Idempotency-Key, wallet ledger)
 - Tables: `loan_repayments` (mark paid), wallet transactions
 - API: POST /v1/loans/:id/repayments/:n/pay
 
 ### 273-farmer-repayment-receipt
-*273 · Repayment Receipt — Krishi-Verse*
+*273 · Repayment Receipt — Krishalaya*
 
 - Receipt: txn ref mono, EMI 4 of 12, principal/interest split, outstanding after payment ₹68,713, bank/UPI source
 - Share/download affordance; data from `loan_repayments` + wallet txn
 
 ### 274-farmer-loan-closure
-*274 · Loan Closure — Krishi-Verse*
+*274 · Loan Closure — Krishalaya*
 
 - Foreclosure quote variant (outstanding + interest to date, no/low foreclosure fee messaging) + closed variant (NOC download, `loans.status`=closed)
 - API: GET /v1/loans/:id/foreclosure-quote · POST /v1/loans/:id/close
 
 ### 275-farmer-overdue-notice
-*275 · Overdue Notice — Krishi-Verse*
+*275 · Overdue Notice — Krishalaya*
 
 - `loans.status`=overdue; dignified tone (no red alarm walls): missed EMI, days overdue, late fee, Pay now + "Facing difficulty?" → 276 + helpline
 - Never a dead end; links restructure path
 
 ### 276-farmer-restructure-request
-*276 · Restructure Request (hardship) — Krishi-Verse*
+*276 · Restructure Request (hardship) — Krishalaya*
 
 - Hardship reasons (crop failure, medical, weather), proposed revised schedule (lower EMI, longer tenure)
 - Approved restructure → `loans.status`=restructured; request is audited
 - API: POST /v1/loans/:id/restructure-request
 
 ### 277-partner-funding-provider-queue
-*277 · Funding Provider Queue — Krishi-Verse (partner, English-only)*
+*277 · Funding Provider Queue — Krishalaya (partner, English-only)*
 
 - Partner console over `financial_partners` + `loan_applications` (submitted/under_review queue, docs check, approve/reject/request-docs)
 - PFMS-style lender sync: backend pending — designs lead
 - API: GET /v1/partner/loan-applications?status= · POST /:id/decision (audited)
 
 ### 278-farmer-loan-statement-download
-*278 · Loan Statement Download — Krishi-Verse*
+*278 · Loan Statement Download — Krishalaya*
 
 - Statement periods (FY/quarter), interest-paid certificate (for subvention/tax), PDF/CSV export
 - Data: `loans` + `loan_repayments` aggregates
 - API: GET /v1/loans/:id/statement?from=&to=&format=
 
 ### 279-farmer-insurance-products-browse
-*279 · Insurance Products — Krishi-Verse*
+*279 · Insurance Products — Krishalaya*
 
 - Tables: `insurance_products` (types: crop_pmfby, livestock, parametric_weather, health_life_bundle ₹99/mo), `insurance_policies` (my-cover strip)
 - `policy_status` enum: proposed, active, lapsed, cancelled, expired, claimed
 - API: GET /v1/insurance-products
 
 ### 280-farmer-insurance-product-detail
-*280 · Weather Insurance Detail (parametric) — Krishi-Verse*
+*280 · Weather Insurance Detail (parametric) — Krishalaya*
 
 - Parametric weather cover: trigger rules (rainfall deficit/excess thresholds), premium, sum insured, auto-payout promise (no survey)
 - Tables: `insurance_products` (terms), `insurance_claims` reference (`claim_status`: intimated, docs_pending, survey_scheduled, surveyed, approved, partially_approved, rejected, paid, closed — parametric skips survey → paid)
 - Full insurance flows continue in Batch D3 (M18)
 
 ### 281-farmer-fintech-alerts
-*281 · Fintech Alerts — Krishi-Verse*
+*281 · Fintech Alerts — Krishalaya*
 
 - `notifications` (fintech events): EMI due (warning + Pay chip), application approved (success), docs_pending (action chip), pre-approved offer (AI badge), rate change (info), parametric insurance auto-payout credited (celebratory; claim_status=paid)
 - Today/Earlier groups, unread dots, mark-all-read, empty state
@@ -7559,105 +7559,105 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: `10_fintech_schemes.sql` / migration 0011 — `insurance_products` (11 types incl. crop_pmfby, livestock, parametric_weather, health, life), `insurance_policies`, `insurance_claims`. Enums — `policy_status`: proposed, active, lapsed, cancelled, expired, claimed · `claim_status`: intimated, docs_pending, survey_scheduled, surveyed, approved, partially_approved, rejected, paid, closed. Money in minor units (paise) per Law 2.
 
 ### 282-farmer-insurance-home
-*282 · Insurance Home — Krishi-Verse*
+*282 · Insurance Home — Krishalaya*
 
 - Module hub · back-header (bottom-nav placement deferred to Sprint D16)
 - Tables: `insurance_policies` (3 active policy cards, total protection ₹8,60,000; premium-due chip livestock ₹3,000 due 1 Aug 2026), `insurance_claims` (open-claim strip KV-CLM-2026-0630-112), `insurance_products` (recommended shelf: parametric_weather not yet enrolled), `notifications` (badge)
 - API: GET /v1/insurance/home-summary (aggregate endpoint)
 
 ### 283-farmer-crop-insurance-enroll
-*283 · Crop Insurance Enroll — Krishi-Verse*
+*283 · Crop Insurance Enroll — Krishalaya*
 
 - Tables: `insurance_products` (type crop_pmfby), `insurance_policies` (create, policy_status=proposed → active on premium payment), `plots` (survey 214/2, Bhulekh-verified, 2.5 acre GG-20 groundnut Kharif 2026)
 - Premium split bar (transparency rule): ₹12,000 actuarial premium = farmer 2% ₹2,000 + government subsidy ₹10,000; sum insured ₹40,000/acre × 2.5 = ₹1,00,000; enrolment cutoff 31 Jul 2026
 - API: POST /v1/insurance-policies (Idempotency-Key) — ⚠ PMFBY portal sync backend pending
 
 ### 284-farmer-livestock-insurance-enroll
-*284 · Livestock Insurance Enroll — Krishi-Verse*
+*284 · Livestock Insurance Enroll — Krishalaya*
 
 - Tables: `insurance_products` (type livestock), `insurance_policies` (proposed → active on payment), animal records (2 Gir cattle, INAPH ear tags 356201004521 / 356201004522)
 - Ear-tag photo capture per animal + vet fitness certificate upload; sum insured ₹30,000/animal (market value), premium 5% = ₹3,000/yr total
 - ⚠ Vet certificate verification service backend pending
 
 ### 285-farmer-health-life-insurance-enroll
-*285 · Health + Life Enroll — Krishi-Verse*
+*285 · Health + Life Enroll — Krishalaya*
 
 - Tables: `insurance_products` (health + life bundle: ₹5,00,000 cashless health + ₹2,00,000 life at ₹99/month), `insurance_policies` (proposed → active on first ₹99 debit)
 - Members: self + spouse; nominee capture required; auto-debit from wallet (balance ₹12,450 shown)
 - ⚠ Auto-debit mandate service backend pending
 
 ### 286-farmer-policy-detail
-*286 · Policy Detail — Krishi-Verse*
+*286 · Policy Detail — Krishalaya*
 
 - Tables: `insurance_policies` (crop PMFBY KV-POL-2026-0615-081, policy_status=active, validity 15 Jun – 30 Nov 2026, farmer premium ₹2,000 paid 15 Jun + govt share ₹10,000), `insurance_products` (terms)
 - Covered / not-covered lists (plain language), policy document download, File-a-claim CTA → 289
 - API: GET /v1/insurance-policies/:id
 
 ### 287-farmer-my-policies
-*287 · My Policies — Krishi-Verse*
+*287 · My Policies — Krishalaya*
 
 - Tables: `insurance_policies` — full `policy_status` walk: 3 active (crop · livestock · health+life, total ₹8,60,000), 1 lapsed (parametric weather KV-POL-2025-0705-112, last Kharif), 1 claimed (livestock KV-POL-2025-0801-054 — illness claim ₹18,200 paid, matches renewal history on 294)
 - Lapsed card: quiet tone + Re-enrol CTA (no dead end)
 - API: GET /v1/me/insurance-policies?status=
 
 ### 288-farmer-premium-payment
-*288 · Premium Payment — Krishi-Verse*
+*288 · Premium Payment — Krishalaya*
 
 - Tables: `insurance_policies` (livestock KV-POL-2026-0401-054, premium ₹3,000 due 1 Aug 2026; grace 30 days, unpaid after grace → lapsed), wallet transactions
 - Methods: wallet (₹12,450, sufficient) / UPI / bank ····4521; post-payment receipt state with UTR mono
 - API: POST /v1/insurance-policies/:id/premium/pay (Idempotency-Key, wallet ledger)
 
 ### 289-farmer-claim-intimation
-*289 · Claim Intimation — Krishi-Verse*
+*289 · Claim Intimation — Krishalaya*
 
 - Tables: `insurance_claims` (create → claim_status=intimated; policy stays active until claim closes), `insurance_policies` (picker: crop policy selected)
 - 72-hour intimation window framing (rain event 30 Jun; "you are on time" reassurance), event type + date + voice note
 - API: POST /v1/insurance-claims (Idempotency-Key) → KV-CLM-2026-0630-112
 
 ### 290-farmer-claim-evidence-upload
-*290 · Claim Evidence Upload — Krishi-Verse*
+*290 · Claim Evidence Upload — Krishalaya*
 
 - Tables: `insurance_claims` (KV-CLM-2026-0630-112, claim_status=docs_pending → survey_scheduled once evidence accepted), claim documents
 - Geo-tagged photo capture (GPS + timestamp chips); error state: photo without GPS rejected with retake guidance
 - API: POST /v1/insurance-claims/:id/evidence
 
 ### 291-farmer-claim-status-tracker
-*291 · Claim Status Tracker — Krishi-Verse*
+*291 · Claim Status Tracker — Krishalaya*
 
 - `insurance_claims.claim_status` full 9-state enum as timeline: intimated → docs_pending → survey_scheduled (current, gold) → surveyed → approved / partially_approved → paid → closed
 - partially_approved shows explanation + appeal path; rejected variant shows reason + appeal — never a dead end
 - API: GET /v1/insurance-claims/:id (+events)
 
 ### 292-farmer-claim-assessment-visit
-*292 · Claim Assessment Visit — Krishi-Verse*
+*292 · Claim Assessment Visit — Krishalaya*
 
 - Tables: `insurance_claims` (survey_scheduled → surveyed after visit + farmer acknowledgment), surveyor assignment (Anil Mehta, ID KV-SRV-0244, visit 4 Jul 10 AM–1 PM)
 - Surveyor ID verification card (photo + ID match before letting them on the plot); disagree → assessment dispute review (no dead end)
 - ⚠ Surveyor dispatch/scheduling service backend pending
 
 ### 293-farmer-claim-settlement-detail
-*293 · Claim Settlement Detail — Krishi-Verse*
+*293 · Claim Settlement Detail — Krishalaya*
 
 - Tables: `insurance_claims` (claim_status=paid: approved 9 Jul → paid ₹28,500 on 11 Jul to ····4521), `insurance_policies` (crop policy → claimed)
 - Transparent calculation: sum insured ₹1,00,000 × 35% assessed loss = ₹35,000 − ₹6,500 PMFBY policy-terms adjustment = ₹28,500 payout; partially_approved explained inline with appeal link
 - API: GET /v1/insurance-claims/:id/settlement
 
 ### 294-farmer-policy-renewal
-*294 · Policy Renewal — Krishi-Verse*
+*294 · Policy Renewal — Krishalaya*
 
 - Tables: `insurance_policies` (livestock renewal due 1 Aug 2026, ₹3,000/yr, ₹60,000 cover; not renewed → lapsed — quiet consequence note; crop policy expires 30 Nov, not due yet), `insurance_claims` (claims-history framing: last year's livestock illness claim ₹18,200 paid — "insurance that paid out")
 - No-claim bonus note (health: claim-free year → e.g. −10% on renewal)
 - API: POST /v1/insurance-policies/:id/renew (Idempotency-Key)
 
 ### 295-farmer-insurance-faq-help
-*295 · Insurance FAQ & Help — Krishi-Verse*
+*295 · Insurance FAQ & Help — Krishalaya*
 
 - Native `<details>` accordions; plain-language explanations of both enums (rejected → appeal path, paid → bank credit timing)
 - No dead ends: every answer routes to an action (file claim, pay premium) or a human (call/IVR helpline)
 - Content-only screen; search over FAQ content
 
 ### 296-farmer-insurance-alerts
-*296 · Insurance Alerts — Krishi-Verse*
+*296 · Insurance Alerts — Krishalaya*
 
 - `notifications` (insurance events): survey visit reminder (survey_scheduled, action chip), claim approved (success), premium due (warning + Pay chip; lapse consequence), advisory (AI badge), renewal confirmation (info)
 - Today/Earlier groups, unread dots, mark-all-read, empty state
@@ -7671,21 +7671,21 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: `08_livestock_dairy.sql` — `mcc_centres`, `bmc_units`, `dairy_memberships`, `milk_rate_cards` (versioned), `milk_collections` (PARTITIONED daily; UNIQUE membership/day/shift), `milk_bills` (deductions jsonb: feed_credit | loan_emi | insurance | share), `subscription_plans_d2c`, `d2c_subscriptions`, `d2c_deliveries`, `animals` (yield link). Coop governance (`coop_share_registers` / `coop_resolutions` / `coop_votes`) is a future batch. Enums — `milk_shift`: morning · evening · `milk_bills.status`: draft · previewed · disputed · approved · paid · `adulteration_flags`: urea · starch · detergent · `d2c_subscriptions.frequency`: daily · alternate_day · weekly · monthly · `d2c_subscriptions.status`: active · paused · cancelled · `d2c_deliveries.status`: scheduled · delivered · skipped · failed · refunded. Money in minor units (paise, bigint) per Law 2.
 
 ### 219-farmer-dairy-home
-*219 · Dairy Home — Krishi-Verse*
+*219 · Dairy Home — Krishalaya*
 
 - Module hub · back-header (bottom-nav slot deferred to Sprint D16)
 - Tables: `milk_collections` (today: 9.0 L morning collected ✓, 6.5 L evening pending), `milk_bills` (cycle 21–30 Jun net preview ₹4,827, status=previewed, window 3 Jul), `milk_rate_cards` (today fat 4.6/SNF 8.6 → ₹33.80/L), `mcc_centres` + `dairy_memberships` (Vanthali Dugdh Mandali, 1.2 km), animals strip (Ganga + Gauri, 15.5 L/day)
 - API: GET /v1/dairy/home-summary (aggregate endpoint)
 
 ### 220-farmer-milk-log-entry
-*220 · Milk Log Entry — Krishi-Verse*
+*220 · Milk Log Entry — Krishalaya*
 
 - Personal pre-MCC log — farmer's own record, compared against the MCC slip later (NOT a `milk_collections` write)
 - Cow selector (Ganga selected · Gauri), shift toggle (`milk_shift` morning|evening), litre stepper 8.2 L, optional note; morning already saved (5.0 + 4.0 = 9.0 L, matches hub)
 - API: POST /v1/dairy/milk-logs
 
 ### 221-farmer-milk-collection-history
-*221 · Milk Collection History — Krishi-Verse*
+*221 · Milk Collection History — Krishalaya*
 
 - Tables: `milk_collections` — shift (`milk_shift`), weight_kg→litres, fat_pct, snf_pct, amount_minor, water_flag, adulteration_flags (urea · starch · detergent — none raised); UNIQUE membership/day/shift
 - Week 22–28 Jun selected: 108.5 L · ₹3,667; one water_flag row (Sat 27 Jun evening) shown as a quiet, respectful note — never accusatory
@@ -7693,136 +7693,136 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/me/milk-collections?from=&to=
 
 ### 222-farmer-mcc-center-finder
-*222 · MCC Centre Finder — Krishi-Verse*
+*222 · MCC Centre Finder — Krishalaya*
 
 - Tables: `mcc_centres` (distance-sorted), `dairy_memberships` (MY MCC badge: Vanthali Dugdh Mandali 1.2 km, KV-DM-0412; non-member cards get Become-member CTA), `milk_rate_cards` (each centre's active version at fat 4.6/SNF 8.6 basis)
 - API: GET /v1/mcc-centres?near=
 
 ### 223-farmer-mcc-slot-detail
-*223 · My MCC Detail — Krishi-Verse*
+*223 · My MCC Detail — Krishalaya*
 
 - Tables: `mcc_centres` (operator Suresh Bhai, route Vanthali–Junagadh R3), `bmc_units` (cooled 4°C — freshness chip), `dairy_memberships` (KV-DM-0412, 10-day payment cycle), `milk_rate_cards` (today fat 4.6/SNF 8.6 → ₹33.80/L)
 - Queue indicator is a design hint (light ≈ 8 farmers) — backend pending
 - API: GET /v1/mcc-centres/:id
 
 ### 224-farmer-rate-card-view
-*224 · Rate Card — Krishi-Verse*
+*224 · Rate Card — Krishalaya*
 
 - Tables: `milk_rate_cards` (versioned) — v2026-06, effective 16 Jun 2026; matrix fat 3.5–5.5 × SNF 8.0–9.0, ladder ≈ ₹25.70–₹40.20/L; Ramesh's typical cell fat 4.6/SNF 8.6 = ₹33.80 highlighted
 - Quality bonus note +₹0.50/L for clean-milk streak (links 225/240)
 - API: GET /v1/mcc-centres/:id/rate-card (active version + version history)
 
 ### 225-farmer-quality-test-results
-*225 · Quality Test Results — Krishi-Verse*
+*225 · Quality Test Results — Krishalaya*
 
 - Tables: `milk_collections` quality fields — fat_pct, snf_pct, density, water_flag, adulteration_flags (urea · starch · detergent), device_payload (certified analyzer evidence + slip photo)
 - Latest Sun 28 Jun evening all clear (fat 4.6, SNF 8.6, density 1.030, green); flagged Sat 27 Jun evening fat 3.8 — quiet amber "lower than your average" + dispute link → 233. Tone rule: quality flags stay respectful, never accusatory
 - API: GET /v1/me/milk-collections/:id/quality — ⚠ analyzer (Ekomilk) integration pending
 
 ### 226-farmer-dairy-payout-summary
-*226 · Dairy Payout Summary — Krishi-Verse*
+*226 · Dairy Payout Summary — Krishalaya*
 
 - Tables: `milk_bills` — full status walk: current cycle 21–30 Jun **previewed** (155.0 L, gross ₹5,177, deductions ₹350, net ₹4,827, dispute window ends 3 Jul) · last cycle 11–20 Jun **PAID** ₹4,912 on 21 Jun (UTR mono, celebratory) · older cycles paid · YTD 2026 ₹58,340 · payouts to bank ····4521
 - API: GET /v1/me/milk-bills
 
 ### 227-farmer-dairy-payout-detail
-*227 · Dairy Payout Detail — Krishi-Verse*
+*227 · Dairy Payout Detail — Krishalaya*
 
 - Tables: `milk_bills` (this bill previewed) — transparent calculation: 155.0 L line items → gross ₹5,177; deductions jsonb keys used: insurance ₹100 (D3 health+life auto-debit) + feed_credit ₹250 → net ₹4,827; dispute_window_ends 3 Jul banner
 - Accept CTA → status approved · Dispute CTA → 233 (previewed → disputed) — no dead end inside the window
 - API: GET /v1/milk-bills/:id · POST /v1/milk-bills/:id/approve (Idempotency-Key)
 
 ### 228-farmer-dairy-subscription-setup
-*228 · Dairy Subscription Setup — Krishi-Verse*
+*228 · Dairy Subscription Setup — Krishalaya*
 
 - Tables: `subscription_plans_d2c` (product, qty_per_day_l, price_per_l, delivery_area, frequency, start_date); `d2c_subscriptions.frequency` enum daily · alternate_day · weekly shown (monthly reserved for ghee/paneer plans)
 - Publish → plan goes live in the Vanthali consumer app; subscriber requests create `d2c_subscriptions` (status active) on accept
 - API: POST /v1/d2c/plans — ⚠ D2C marketplace backend pending
 
 ### 229-farmer-subscription-manage
-*229 · Subscription Manage — Krishi-Verse*
+*229 · Subscription Manage — Krishalaya*
 
 - Tables: `d2c_subscriptions` — status enum walk: 3 active + 1 paused (Kanta Ben, back 10 Jul); cancelled covered in flow history; ≈ ₹7,200/mo total from 4 subscribers
 - Pending cash collections = `d2c_deliveries` delivered + payment_mode cash awaiting mark-collected; new-request card → accept creates subscription
 - API: GET /v1/me/d2c-subscriptions?status= · POST /v1/d2c-subscriptions/:id/pause|resume
 
 ### 230-farmer-delivery-schedule
-*230 · Delivery Schedule — Krishi-Verse*
+*230 · Delivery Schedule — Krishalaya*
 
 - Tables: `d2c_deliveries` — status enum scheduled · delivered · skipped · failed · refunded; today (Thu 2 Jul): 2 delivered, 1 skipped (subscription paused — "family away"), 1 scheduled with mark-delivered CTA; failed/refunded in the flow's delivery-history screen
 - API: GET /v1/me/d2c-deliveries?date= · POST /v1/d2c-deliveries/:id/status (Idempotency-Key)
 
 ### 231-farmer-bulk-milk-sale
-*231 · Bulk Milk Sale — Krishi-Verse*
+*231 · Bulk Milk Sale — Krishalaya*
 
 - One-time bulk sale outside the MCC cycle (no `milk_bills` row): 40.0 L @ ₹52/L = ₹2,080, rate comparison vs MCC ₹33.80/L today
-- Payment terms: advance to Krishi Verse wallet before pickup (escrow-lite); past-sale "Paid" chip = wallet transaction status, NOT a milk_bills.status value
+- Payment terms: advance to Krishalaya wallet before pickup (escrow-lite); past-sale "Paid" chip = wallet transaction status, NOT a milk_bills.status value
 - API: POST /v1/dairy/bulk-sales (Idempotency-Key)
 
 ### 232-farmer-dairy-buyer-directory
-*232 · Dairy Buyer Directory — Krishi-Verse*
+*232 · Dairy Buyer Directory — Krishalaya*
 
 - Bulk buyer directory feeding 231 — directory cards only, no status enums; Verified badge = KYC-checked business; rates shown are typical from recent deals (honesty note — final rate agreed per deal); MCC comparison strip ₹33.80/L
 - API: GET /v1/dairy/bulk-buyers?near=
 
 ### 233-farmer-milk-quality-dispute
-*233 · Milk Quality Dispute — Krishi-Verse*
+*233 · Milk Quality Dispute — Krishalaya*
 
 - No-fault dispute of the 27 Jun evening reading (fat 3.8 vs 30-day avg 4.6); Tables: `milk_collections` (reading + device_payload analyzer evidence; MCC slip photo required), `milk_bills`
 - On submit: `milk_bills.status` previewed → **disputed** (window ends 3 Jul). Tone: calm, fair-process — readings can vary; neither farmer nor operator is blamed
 - API: POST /v1/milk-bills/:id/dispute (Idempotency-Key) — ⚠ dispute re-test workflow backend pending
 
 ### 234-farmer-dairy-analytics
-*234 · Dairy Analytics — Krishi-Verse*
+*234 · Dairy Analytics — Krishalaya*
 
 - Derived from `milk_collections` (yield/fat/SNF trends per shift), `milk_bills` (only paid months counted in history), D2C + bulk sale records; income mix: MCC + D2C ₹7,200-share + bulk ₹2,080
 - ⚠ June semantics: ₹15,940 = June **total earnings** incl. pending previewed bill + D2C + bulk (≠ 221's ₹15,004 collected-to-date — clarification comment in file)
 - API: GET /v1/dairy/analytics?period=
 
 ### 235-farmer-animal-milk-yield-link
-*235 · Animal Milk Yield Link — Krishi-Verse*
+*235 · Animal Milk Yield Link — Krishalaya*
 
 - M16 Dairy × M15 Livestock bridge: `animals` (Ganga INAPH 356201004521 · Gauri 356201004522; lactation + calving fields) joined to `milk_collections` per-animal rollup (farmer-attributed split)
 - 30-day averages: Ganga 8.0 L/day (trend +6% ↑), Gauri 7.5 L/day (stable); "View animal profile" CTAs target M15 screens 197–218 (pending batch — design intent only); AI insight — advisory engine pending
 - API: GET /v1/animals/:id/milk-yield
 
 ### 236-worker-mcc-operator-dashboard [WORKER]
-*236 · MCC Operator Dashboard — Krishi-Verse*
+*236 · MCC Operator Dashboard — Krishalaya*
 
 - MCC OPERATOR home (worker role, operator assignment on `mcc_centres`) — opened from the worker home (M28); back-header, dedicated operator nav ships with D16
 - Tables: `milk_collections` today aggregates (morning closed: 42 farmers · 385.5 L · avg fat 4.4%), `bmc_units` (temp 4°C OK, fill 62% of 620 L), `milk_bills` (2 disputed readings queued), tanker pickup 9 PM
 - API: GET /v1/mcc/:id/operator-summary
 
 ### 237-worker-mcc-collection-entry [WORKER]
-*237 · MCC Collection Entry — Krishi-Verse*
+*237 · MCC Collection Entry — Krishalaya*
 
 - Counter write path to PARTITIONED `milk_collections`: shift evening, weight_kg 6.5 → 6.3 L display (kg ÷ density 1.030), fat_pct 4.6, snf_pct 8.6, water_flag off, adulteration_flags all clear, amount_minor computed at counter from `milk_rate_cards` (₹33.80/L → ₹213), device_payload = Ekomilk M-04 raw evidence, entered_by = Suresh Bhai
 - UNIQUE membership/day/shift: saving twice for KV-DM-0412 today/evening is blocked — operator edits the existing row; offline-first: saves locally, syncs when network returns (idempotent)
 - API: POST /v1/mcc/:id/collections (Idempotency-Key ≙ membership+date+shift) — ⚠ analyzer integration + offline sync pending
 
 ### 238-worker-mcc-daily-summary [WORKER]
-*238 · MCC Daily Summary — Krishi-Verse*
+*238 · MCC Daily Summary — Krishalaya*
 
 - Shift close / daily summary: 2 Jul evening — 38 farmers · 292.0 L · ₹9,731 payable (amount_minor sum); quality bands from fat_pct; flags: 1 water_flag, 0 adulteration_flags; variance: counter 292.0 L vs `bmc_units` weight delta +291.4 L = −0.6 L (0.2%, within 0.5% tolerance)
 - Tanker dispatch: day total 677.5 L (morning 385.5 + evening 292.0), seal no. from dispatch record; closing the shift LOCKS `milk_collections` rows — later fixes go through the dispute flow
 - API: POST /v1/mcc/:id/shifts/close (Idempotency-Key) · GET /v1/mcc/:id/daily-summary
 
 ### 239-worker-mcc-farmer-ledger [WORKER]
-*239 · MCC Farmer Ledger — Krishi-Verse*
+*239 · MCC Farmer Ledger — Krishalaya*
 
 - Per-farmer counter ledger (operator view, bilingual — shown to the farmer across the counter): `dairy_memberships` (KV-DM-0412 Ramesh Patel), `milk_collections` rows (collection_date × shift, litres, fat_pct, amount), `milk_bills` cycle 21–30 Jun **previewed** — gross ₹5,177 − ₹350 feed advance = net ₹4,827, farmer review window closes 3 Jul
 - One row (27 Jun evening) carries a dispute flag — under review; past cycles show paid
 - API: GET /v1/mcc/:id/members/:membershipId/ledger
 
 ### 240-farmer-dairy-incentives
-*240 · Dairy Incentives — Krishi-Verse*
+*240 · Dairy Incentives — Krishalaya*
 
 - Quality bonus from `milk_collections` fat_pct averaged over the 10-day cycle (rule: avg fat ≥ 4.5% → +₹0.50/L on the bill): Ramesh avg 4.6 ✓ on-track, day 8/10, projected ~154.5 L × ₹0.50 = ₹77 · Loyalty: both shifts present 30 straight days → ₹200 (26/30) · Referral: new `dairy_memberships` via farmer code → ₹100
 - Bonuses post to `milk_bills` as credit lines; money-in — celebratory tone
 - API: GET /v1/dairy/incentives
 
 ### 241-farmer-dairy-alerts
-*241 · Dairy Alerts — Krishi-Verse*
+*241 · Dairy Alerts — Krishalaya*
 
 - `notifications` (dairy events): bill previewed → review-by 3 Jul (action chip), payout credited ₹4,912 cycle 11–20 Jun (celebratory), quality dip 27 Jun evening (quiet + dispute link), evening collection reminder 5 PM, quality bonus on-track (incentive engine), new D2C subscriber request
 - Today/Earlier groups, unread dots (2 today), mark-all-read, empty state
@@ -7840,14 +7840,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > - **Dignity floor in physics:** `chk_dignity_floor` CHECK `wage_offered_minor >= min_wage_minor` (floor snapshot at posting). Seeds effective 1 Apr 2026: GJ ₹380/₹420/₹480 · MH ₹420/₹460/₹520 (unskilled/semi_skilled/skilled), overtime_multiplier 1.5×. Geofence: `clock_in_distance_m ≤ 100` m. Timesheets are DERIVED from `attendance_records` (PRD §31.14 — no dedicated table). Wages never route through the sardar. Money in minor units (paise, bigint) per Law 2.
 
 ### 313-farmer-labour-home-v2
-*313 · Labour & Hiring Home — Krishi-Verse*
+*313 · Labour & Hiring Home — Krishalaya*
 
 - Module hub · back-header (bottom-nav slot deferred to Sprint D16)
 - Tables: `labour_bookings` (KV-JOB-2026-0781 **in_progress**, 5 workers, started Mon 6 Jul, survey 214/2), `attendance_records` (today 5/5 present ✓, all clock-ins inside the farm geofence, day 1 of 5), wages-due strip **₹10,050** (4 × ₹400 + crew leader ₹410, × 5 days, "+ overtime if approved" — QA-fixed from ₹10,000), `crews` (Vanthali Weeding Crew · 6 members · led by Sunita Kumari ★4.9), quick actions (post/find/crews/payments), AI kharif-weeding demand hint
 - API: GET /v1/labour/home-summary (aggregate endpoint)
 
 ### 314-farmer-post-job-advanced
-*314 · Post a Job — Krishi-Verse*
+*314 · Post a Job — Krishalaya*
 
 - `labour_bookings` create: task_skill_id (weeding | harvesting | sowing | irrigation | pesticide_spraying), workers_needed stepper (5), duration chips, `wage_kind` picker (per_day · per_task piece-rate · contract), perks (meals_provided, transport_provided, water), location survey 214/2 + "workers clock in within a 100 m geofence" note, voice-posting alternative
 - **Floor guard:** GJ minimum ₹380/day inline; offers below the floor are BLOCKED (chk_dignity_floor); "your ₹400 offer complies with the Minimum Wages Act, 1948"
@@ -7855,84 +7855,84 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: POST /v1/labour/bookings (Idempotency-Key) · draft → open
 
 ### 315-farmer-job-templates
-*315 · Job Templates — Krishi-Verse*
+*315 · Job Templates — Krishalaya*
 
 - Saved templates hydrate a new `labour_bookings` row: 🥜 Groundnut weeding 5×5 ₹400 → ₹10,000 (last used 1 Jul → KV-JOB-2026-0781) · 🌾 Harvest crew 8×3 ₹450 → ₹10,800 · 💧 Irrigation help 1×30 ₹200 part-time (4 hrs)
 - All template wages ≥ ₹380 floor; publish follows draft → open
 - API: GET /v1/labour/job-templates · POST /v1/labour/job-templates/:id/use
 
 ### 316-farmer-seasonal-crew-plan
-*316 · Seasonal Crew Plan — Krishi-Verse*
+*316 · Seasonal Crew Plan — Krishalaya*
 
 - Kharif 2026 planner (GG-20 groundnut, survey 214/2): Jul **booked** (KV-JOB-2026-0781, Vanthali Weeding Crew, ₹10,000 posting figure) · Aug to-plan spraying 2×4 ₹3,200 (PPE checklist applies) · Sep–Oct to-plan harvest 8×7 ₹25,200 · season budget **₹38,400**
 - Planner rows project future `labour_bookings` (demand_type seasonal | daily_multi | crew); AI copy-last-year suggestion
 - API: GET /v1/labour/season-plan?season=
 
 ### 317-farmer-crew-create
-*317 · Create Crew — Krishi-Verse*
+*317 · Create Crew — Krishalaya*
 
 - Tables: `crews` (default_name, sardar_id NULLABLE — NULL = platform-aggregated crew, speciality_skill_id, home_region_id), `crew_members`, `sardar_profiles` (Sunita — Sardar · **Grade A**; grades A|B|C|D, only A/B keep access), `worker_profiles` (member cards with skills)
 - **Dignity rule on-screen:** "wages never pass through the sardar; supervision fee is capped at 15%" (supervision_fee_bps ≤ 1500); default daily wage input with GJ ₹380 floor note — workers may set higher expected wages
 - API: POST /v1/crews
 
 ### 318-farmer-crew-detail
-*318 · Crew Detail — Krishi-Verse*
+*318 · Crew Detail — Krishalaya*
 
 - Vanthali Weeding Crew: 6 members · formed May '26 · 4 jobs done · ★4.8 avg; leader card (Sunita, Grade A) + member cards with `worker_skills` chips and last-job lines
 - Crew history = `labour_bookings` with crew_id: wheat harvesting 8–10 Jun (6 × 3 × ₹400 = ₹7,200, **paid**) · bajra weeding 18–21 May (5 × 4 × ₹380 = ₹7,600, **paid**); Rehire CTA
 - API: GET /v1/crews/:id
 
 ### 319-farmer-crew-assignments
-*319 · Assign Crew to Job — Krishi-Verse*
+*319 · Assign Crew to Job — Krishalaya*
 
 - Assign crew to KV-JOB-2026-0781 (**open**): availability check 5 of 6 (Kiran unavailable till 8 Jul — other job), per-member selection with per-day rates, summary 5 workers × 5 days × ₹400 = **₹10,000** (posting estimate)
 - On confirm: one `booking_assignments` row per worker (UNIQUE booking+worker), status **pending_worker** → becomes **accepted** only on the worker's yes (voice consent recorded) — "nobody is assigned without their yes"
 - API: POST /v1/labour/bookings/:id/assignments (bulk, Idempotency-Key)
 
 ### 320-farmer-worker-search-filters
-*320 · Find Workers — Krishi-Verse*
+*320 · Find Workers — Krishalaya*
 
 - Tables: `worker_profiles` (rating_avg, bookings_completed, **min_wage_expectation_minor — worker-set expected wage**: Sunita ₹400 · Meera ₹380 · Rajesh ₹420 · Priya ₹400, travel_km distance chips), `worker_skills.level` chips (certified · peer-rated · self-declared), `worker_availability` ("Available now" filter); "Worked with you before" = prior assignments with this employer, status paid
-- **Dignity rule on-screen:** "Expected wages are set by workers themselves — Krishi Verse never bids them down. Gujarat floor: ₹380/day."
+- **Dignity rule on-screen:** "Expected wages are set by workers themselves — Krishalaya never bids them down. Gujarat floor: ₹380/day."
 - API: GET /v1/workers/search?skill=&max_km=&min_rating=&available=
 
 ### 321-farmer-worker-profile-detail
-*321 · Worker Profile — Krishi-Verse*
+*321 · Worker Profile — Krishalaya*
 
 - Sunita's full CV: 4.9★ (340) · 187 jobs · **0 no-shows** · Verified + Crew-leader chips · Vanthali, 2.4 km; skills with level badges (weeding **Certified**); expected wage **₹400–420/day** framed as self-set ("Sunita has set her own rate")
 - Work history rows (all status **paid**) + farmer testimonials + 10-day availability strip ("free from 6 Jul — matches your job dates 6–10 Jul")
 - API: GET /v1/workers/:id · CTAs: Add to crew · Send offer → 322
 
 ### 322-farmer-hire-offer-send
-*322 · Send Hire Offer — Krishi-Verse*
+*322 · Send Hire Offer — Krishalaya*
 
 - Offer composer on KV-JOB-2026-0781 → Sunita: wage ₹400/day input with floor guard ("offers below ₹380 cannot be sent"), dates 6–10 Jul · 8 AM–5 PM (8 hrs + lunch), perks, personal message, validity 24 h (expires 3 Jul 9:10 AM → **expired**)
 - On send: assignment status → **pending_worker** (pending_worker IS the offered state — no 'offered' enum value); worker can accept, counter, or decline
 - API: POST /v1/labour/bookings/:id/offers (Idempotency-Key)
 
 ### 323-farmer-offer-negotiation
-*323 · Offer Negotiation — Krishi-Verse*
+*323 · Offer Negotiation — Krishalaya*
 
 - Respectful counter thread on the assignment — banner "🤝 Fair talk, fair work — counters are normal, respect goes both ways": ₹400 offer (pending_worker) → Sunita counter ₹420 ("I will also manage the team of 5") → Ramesh counter ₹410 → **accepted** 2 Jul 9:41 AM (accepted_at set, voice_consent_media_id "yes I will come" recorded)
 - Every counter must stay ≥ min_wage_minor ₹380; final terms card: Sunita (crew leader) ₹410/day · other 4 workers ₹400/day → job total **₹10,050** (4 × ₹2,000 + ₹2,050 — the money-arc midpoint)
 - API: POST /v1/assignments/:id/counter | accept | decline (Idempotency-Key)
 
 ### 324-worker-work-order-detail [WORKER]
-*324 · Work Order — Krishi-Verse*
+*324 · Work Order — Krishalaya*
 
 - Sunita's confirmed order (**accepted**, "you accepted on 2 Jul"): **₹2,050** for 5 days · ₹410/day (crew leader), job no., timing, role, perks; employer card Ramesh Patel ★4.7 *as employer* · Verified; location survey 214/2 + directions; geofence explainer "check in within 100 m of the field"
 - What-to-bring (own khurpi + cap; lunch/chai/water from the farmer) · fair-cancellation terms: ≥1 day notice = no penalty; same-morning cancel affects reliability; **late farmer cancel = half-day compensation ₹205**
 - API: GET /v1/me/assignments/:id
 
 ### 325-worker-attendance-geofence-checkin [WORKER]
-*325 · Field Check-in — Krishi-Verse*
+*325 · Field Check-in — Krishalaya*
 
 - `attendance_records` create (Sunita, day 1, 6 Jul): GPS locked ✓ **47 m from the field — within the 100 m fence** (clock_in_lat/lng, clock_in_distance_m), clock_in 7:56 AM, `clock_in_method` self (supervisor-marked fallback if GPS weak), optional selfie ("not required — your choice"), evening clock-out 5:04 PM = 8.1 hrs
 - **Offline-safe:** "No network in the field? Your check-in saves offline and syncs later" (idempotent replay); GPS-weak guidance (open sky, retry, supervisor_biometric path)
 - API: POST /v1/assignments/:id/attendance/clock-in | clock-out (Idempotency-Key ≙ assignment + work_date) — ⚠ geofence attendance service pending
 
 ### 326-farmer-attendance-daily-summary
-*326 · Attendance Today — Krishi-Verse*
+*326 · Attendance Today — Krishalaya*
 
 - Farmer view, day 1 of 5: **5/5 present ✓**; per-worker rows with in/out times, 📍 distance-verified chips (47 · 32 · 68 · 55 · 61 m — all ≤100 m), hours (8.1 / 7.7)
 - **No-blame late arrival:** Rajesh in 8:22 — "bus delay, informed Sunita" (informational, never accusatory)
@@ -7940,50 +7940,50 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/labour/bookings/:id/attendance?date= · POST .../approve-day (Idempotency-Key)
 
 ### 327-worker-timesheet-worker [WORKER]
-*327 · My Timesheet — Krishi-Verse*
+*327 · My Timesheet — Krishalaya*
 
 - DERIVED from `attendance_records` (PRD §31.14 — no timesheet table): hours_regular = clock_out − clock_in − break_minutes; Mon 6 Jul 8.1 hrs **Approved ✓** · Tue 7 Jul 8.0 hrs **Pending approval** · Wed–Fri **Scheduled**; geofence proof per day ("47 m verified")
 - Earned so far **₹820** (2 days × ₹410); OT strip (none yet, 1.5×) + Request → 329; expected payday Fri 10 Jul (weekly batch); label legend maps UI ↔ DB: Approved = confirmed_by_employer, Paid = wage_payout_id set, Scheduled = job in_progress
 - API: GET /v1/me/assignments/:id/timesheet
 
 ### 328-farmer-timesheet-approval
-*328 · Timesheet Approval — Krishi-Verse*
+*328 · Timesheet Approval — Krishalaya*
 
 - Per-day approval queue: Tue 7 Jul **Pending** (5 workers · 42.0 hrs) with hour steppers; **adjusting a row REQUIRES a reason note** (Rajesh 8.0 → 7.0 "Reached farm at 8 AM — agreed 7.0 hrs with Rajesh"; "the worker sees this note and can raise a dispute if it is wrong"); Sunita row carries +2.0 hrs OT review chip → 329 math
 - Mon 6 Jul **Approved ✓** and locked ("wages for 6 Jul already counted"); remaining days appear each evening; approving flips `confirmed_by_employer=true` per row — "workers see their earnings the moment you tap"
 - API: POST /v1/labour/bookings/:id/timesheets/:date/approve (Idempotency-Key)
 
 ### 329-worker-overtime-request [WORKER]
-*329 · Overtime Request — Krishi-Verse*
+*329 · Overtime Request — Krishalaya*
 
 - **Transparent math, every step shown:** daily ₹410 ÷ 8 hrs = ₹51.25/hr · × 1.5 (labour_bookings.overtime_rate_multiplier) = ₹76.88/hr · × 2.0 hrs = ₹153.75 → **₹154 rounded UP in the worker's favour**; planned 8.0 vs worked 10.0 hrs
 - Reason chips (extra area · rain make-up · farmer asked) + optional work photo; states **requested → approved** (writes `hours_overtime` on attendance_records; employer approves on 328); prior example: 28 Jun OT 1.5 hrs ₹115 approved same evening
 - API: POST /v1/me/assignments/:id/overtime (Idempotency-Key) — ⚠ OT approval flow backend pending
 
 ### 330-worker-wage-calculation-view [WORKER]
-*330 · Wage Calculation — Krishi-Verse*
+*330 · Wage Calculation — Krishalaya*
 
 - Full wage transparency ("हिसाब साफ़-साफ़"): 5 days × ₹410 = ₹2,050 · + overtime ₹154 (7 Jul, approved ✓) · − deductions **₹0** ("nothing is cut from your wage") · − advances (baki) **₹0** (worker_advances none outstanding; `advance_status` enum: requested | approved | disbursed | partially_recovered | recovered | written_off | rejected) · = **₹2,204**
-- Day-by-day list (Tue 7 Jul = ₹564 incl. OT); **floor promise:** "Your rate ₹410 ≥ Gujarat minimum ₹380 ✓ — always. Krishi Verse never allows any job below the legal minimum wage"; "a wage question never affects your jobs" help link
+- Day-by-day list (Tue 7 Jul = ₹564 incl. OT); **floor promise:** "Your rate ₹410 ≥ Gujarat minimum ₹380 ✓ — always. Krishalaya never allows any job below the legal minimum wage"; "a wage question never affects your jobs" help link
 - API: GET /v1/me/assignments/:id/wage-summary
 
 ### 331-farmer-wage-payment-batch
-*331 · Wage Payment Batch — Krishi-Verse*
+*331 · Wage Payment Batch — Krishalaya*
 
 - Batch payout **₹10,204** · 5 workers · all timesheets approved ✓ · due Fri 10 Jul: Sunita **₹2,204** (5 × ₹410 + OT ₹154) + Meera/Rajesh/Priya/Lakshmi **₹2,000** each (Rajesh note: 7 Jul adjusted 7.0 hrs, made up 8 Jul); per-worker "Pay only" fallback
-- Pay from Krishi Verse wallet: balance **₹12,450 → ₹2,246 remains**; top-up-by-UPI path if short
+- Pay from Krishalaya wallet: balance **₹12,450 → ₹2,246 remains**; top-up-by-UPI path if short
 - Post-payment state: 5 payouts with UTRs **KVWLT526419087301–05**, SMS + wage slip to each worker; `booking_assignments` completed → **paid**; `attendance_records.wage_payout_id` backfilled. **Idempotency (Law 5):** payout + outbox entry created in the SAME txn, keyed per booking batch — retry-safe, a worker can never be double-paid
 - API: POST /v1/labour/bookings/:id/payout-batch (Idempotency-Key) — ⚠ wallet-service payout integration pending
 
 ### 332-worker-wage-slip [WORKER]
-*332 · Wage Slip — Krishi-Verse*
+*332 · Wage Slip — Krishalaya*
 
 - Money-in = celebratory: "Wages received 🎉 **₹2,204**" credited 10 Jul 6:12 PM; slip math 5 × ₹410 = ₹2,050 + OT ₹154 = gross ₹2,204 − deductions ₹0 = **net ₹2,204**; UTR KVWLT526419087301 mono; June ₹8,400 · 2026 so far ₹47,850; share + download; rate-the-employer block
 - **Portable record framing:** "this slip is job no. 188 — every slip is proof of skill and reliability that stays with you, wherever you work"
 - API: GET /v1/me/wage-slips/:payoutId (+ PDF share/download)
 
 ### 333-tenant-minimum-wage-compliance [TENANT]
-*333 · Minimum Wage Compliance — Krishi-Verse* (English-only per tenant convention)
+*333 · Minimum Wage Compliance — Krishalaya* (English-only per tenant convention)
 
 - `minimum_wages` audit: statutory floor table **GJ ₹380/₹420/₹480 · MH ₹420/₹460/₹520** (unskilled/semi_skilled/skilled, effective 01 Apr 2026, UNIQUE region+skill_level+effective_from, OT multiplier 1.5× all rows, highly_skilled pending notification, source: state labour dept. notifications on file)
 - July: **214 bookings · 100% compliant · 7 below-floor attempts auto-blocked** (never reached workers — posters corrected their offers) · 0 open wage grievances; district breakdown (Junagadh 86 · Rajkot 54 · Anand 43 · Amreli 31); median offered ₹410 vs floor ₹380 (+7.9%)
@@ -7991,7 +7991,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/admin/labour/wage-compliance?month= · PUT /v1/admin/minimum-wages · GET .../export.csv
 
 ### 334-worker-pf-esi-enrollment [WORKER]
-*334 · PF & ESI Enrollment — Krishi-Verse*
+*334 · PF & ESI Enrollment — Krishalaya*
 
 - Statutory social security stored via the `worker_insurance_enrolments` pattern (product_id, **policy_ref holds UAN/IP number**, premium_minor, premium_paid_by platform | worker | employer, valid_from/until, status); PF **Not enrolled · Eligible ✓** · ESI **Not enrolled · On pathway**
 - No-pressure tone ("read, ask, enrol when you are ready"); plain-language PF ("a savings box for your old age — the money is always yours") and ESI ("doctor cover for you and your family") explainers; prerequisites verified (Aadhaar ✓, bank ✓); pathway meter **132 of 240 days** of regular work this year; "you never pay alone — the farmer and the platform contribute too"
@@ -8007,7 +8007,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: `07_labour.sql` + migrations — `migrant_engagements` (ONORC verification, journey timestamps, accommodation proof), `safety_checklists` (JSONB PPE items, photo proof), `labour_grievances` (**7 types**: wage_short · hours · harassment · safety · sardar_skim · bonded_flag · no_show_claim; **status**: open · mediation · arbitration · external · resolved · dismissed; SLA fields), `worker_advances` (**advance_status 7**: requested · approved · disbursed · partially_recovered · recovered · written_off · rejected; **30% cap CHECK**), `sardar_profiles` (grade A|B|C|D, supervision_fee_bps default **1000** = 10%, cap ≤1500), `worker_insurance_enrolments` (+ claims), `worker_skills` (level: self_declared · peer_rated · certified; cert_id), `certificates`, `worker_availability` (3-value status: available · booked · off) — plus the shared `reviews` table (**04_commerce.sql**, `target_type` worker | farmer_employer).
 
 ### 335-worker-migrant-worker-registration [WORKER]
-*335 · Migrant Worker Registration — Krishi-Verse*
+*335 · Migrant Worker Registration — Krishalaya*
 
 - `migrant_engagements` create: Arun Kumar Singh, **KV-MIG-2026-0521** — origin Runnisaidpur, Sitamarhi, Bihar → destination Vanthali, Junagadh (GG-20 groundnut season, skilled, **₹450/day above GJ floor ✓**); host employer Ramesh Patel 4.8★; e-Shram •••• 4172 ✓; home contact Ravi Kumar Singh (brother)
 - **ONORC verified ✓** — "your ration card works in Gujarat too; nearest fair-price shop shown after arrival"; family emergency contact block ("if you ever need help far from home, we call this person — and they get a free SMS when you arrive safely"); app-language picker (हिंदी ✓ · भोजपुरी · ગુજરાતી · EN); accommodation proof: stay provided ✓ farm quarters, toilet confirmed ✓ (declared by employer), travel reimbursed ₹1,200 on arrival, room-photo slot ("add after you arrive — proof of a decent stay, kept on your record")
@@ -8015,7 +8015,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: POST /v1/me/migrant-engagements — ⚠ migrant registry + ONORC integration pending
 
 ### 336-worker-migrant-journey-tracker [WORKER]
-*336 · Migrant Journey Tracker — Krishi-Verse*
+*336 · Migrant Journey Tracker — Krishalaya*
 
 - `migrant_engagements` journey timestamps (Sitamarhi → Junagadh): **departed home ✓ 28 Jun** (family notified by SMS) → **arrived Junagadh ✓ 30 Jun** (Vanthali check-in; travel ₹1,200 reimbursed) → **working now** (KV-JOB-2026-0796 · GG-20 groundnut · Ramesh Patel · in_progress; "wages on time, attendance GPS-stamped daily") → **return home planned 15 Oct** ("we confirm you reached home safely")
 - Weekly safety check-ins strip (30 Jun ✓ · 7 Jul ✓ · 14 Jul ✓ · next 21 Jul); family notified: arrival ✓ + weekly "all well" SMS ✓; **accommodation verified ✓** (room photo on record 30 Jun, toilet confirmed)
@@ -8023,14 +8023,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/me/migrant-engagements/:id · POST .../journey-events (depart | arrive | return; triggers family SMS)
 
 ### 337-worker-safety-training-modules [WORKER]
-*337 · Safety Training — Krishi-Verse*
+*337 · Safety Training — Krishalaya*
 
 - Training library (10–20 min modules, **voice-over — no reading needed**): 🧤 pesticide handling 15 min **Completed ✓** (cert 12 Jun, required for spraying jobs) · 🚜 machinery 20 min **In progress 2/5 lessons** · ☀️ heat safety 10 min **Due — finish before summer jobs** · 🐄 livestock 12 min Optional; "certified workers get more jobs — employers pick certified workers first"
 - `safety_checklists` (**JSONB PPE items + photo proof**): today's checklist `checklist_type=pesticide_ppe` on KV-JOB-2026-0812 — gloves Photo ✓ · mask Photo ✓ · boots Add photo; **"employer must provide PPE — if anything is missing, tell us before you start"**
 - API: GET /v1/me/safety-training · POST /v1/me/safety-training/:moduleId/progress · POST /v1/assignments/:id/safety-checklist — ⚠ safety training content pending
 
 ### 338-worker-safety-incident-report [WORKER]
-*338 · Safety Incident Report — Krishi-Verse*
+*338 · Safety Incident Report — Krishalaya*
 
 - Incident filing, Priya Bhat on pesticide spraying **KV-JOB-2026-0812** (job auto-linked ✓; when & where prefilled from check-in): type picker (chemical exposure — felt dizzy/sick · injury · heat · machinery · other), severity triage (minor · needs doctor · **emergency**), **voice-first description ("speaking is easiest — Hindi is fine")**, optional photo ("only if it is safe and easy for you")
 - **Emergency 108 instant path: "Emergency? Call the ambulance first — report later" + Call 108 button above the form**; **wage-protection banner: "your wage for today is protected — reporting never costs you money, today counts as a full paid day"** (no-blame wording throughout)
@@ -8038,7 +8038,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: POST /v1/me/safety-incidents (severity triage; feeds insurance claim 341 and tenant safety queue)
 
 ### 339-worker-grievance-file [WORKER]
-*339 · Raise a Concern — Krishi-Verse*
+*339 · Raise a Concern — Krishalaya*
 
 - `labour_grievances` create, Deepak Verma — all **7 grievance types** on-screen in worker words: **wage_short** ("paid less than promised") · **hours** ("made to work extra hours") · **harassment** · **safety** ("unsafe work conditions") · **sardar_skim** ("contractor took a cut from my wages") · **bonded_flag** ("forced to work / not allowed to leave") · **no_show_claim** ("falsely marked absent"); harassment/bonded carry an extra-protection note (specially trained officer, **women officers for harassment**, full confidence)
 - **Anonymity explained in plain words:** "the employer only ever sees 'Verified Worker' — never your name, photo or number"; employer name masked on the worker's own screen (**S••••• M••••**, Keshod); "only one trained grievance officer can see who you are — needed so any money owed reaches your bank; never shared even after the case closes"; wage-short calculator: promised ₹650/day × 7 = ₹4,550 · received ₹2,800 · **short ₹1,750** (KV-JOB-2026-0774, cotton weeding 22–28 Jun, auto-picked from the job record); proof optional — check-in records auto-attached
@@ -8046,7 +8046,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: POST /v1/me/grievances — ⚠ grievance SLA engine pending; anonymity enforced at data layer (masked party projection)
 
 ### 340-tenant-grievance-resolution [TENANT — English-only]
-*340 · Grievance Resolution — Krishi-Verse*
+*340 · Grievance Resolution — Krishalaya*
 
 - Officer case console **KV-GRV-2026-0142** — type **wage_short**, status chip **open**, **SLA 72h · 18h left**, filed 1 Jul 7:42 PM via worker app, confidential filing ✓: parties = **"Verified Worker"** (identity confidential; KYC + attendance verified; 4 platform jobs) vs **Suresh Makwana** (employer, Keshod, KV-F-051209, 1 prior grievance — resolved); rule pinned: **"never reveal the worker's identity to the employer — in calls, notes or resolution orders. Payments route through the platform so anonymity holds end-to-end."**
 - Evidence auto-attached from the booking: wage slips × 2 · attendance records 7 days ✓ · payment chit photo (worker); booking rate on record ₹650/day · 7 days confirmed present · ledger shows ₹2,800 of ₹4,550 → **system-computed shortfall ₹1,750 — matches the worker's claim**
@@ -8054,29 +8054,29 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/admin/grievances/:id · POST /v1/admin/grievances/:id/actions (mediate | order-payment | escalate-external | dismiss) — ⚠ SLA engine pending
 
 ### 341-worker-worker-insurance-claim [WORKER]
-*341 · Worker Insurance Claim — Krishi-Verse*
+*341 · Worker Insurance Claim — Krishalaya*
 
-- `worker_insurance_enrolments` + claim: Rajesh Kumar, **KV-CLM-2026-0718-098** — hand cut (minor) 8 Jul during harvest work, treated same day at Vanthali PHC, **created from his 338 safety report ("nothing to fill twice")**; policy **KV-WIN-2026-4471** worker accident micro-cover, **premium paid by Krishi Verse — free for the worker ✓**, active to 31 Mar 2027, covers treatment up to ₹25,000 + lost wage days
+- `worker_insurance_enrolments` + claim: Rajesh Kumar, **KV-CLM-2026-0718-098** — hand cut (minor) 8 Jul during harvest work, treated same day at Vanthali PHC, **created from his 338 safety report ("nothing to fill twice")**; policy **KV-WIN-2026-4471** worker accident micro-cover, **premium paid by Krishalaya — free for the worker ✓**, active to 31 Mar 2027, covers treatment up to ₹25,000 + lost wage days
 - Claim math: treatment **₹2,500** (dressing + medicines; PHC receipt photo ✓ — "a phone photo is enough") + lost wages **1 day (9 Jul) × ₹400 booking day rate, added automatically** = **expected payout ₹2,900**. **⚠ QA-FIX (critical, post-audit): rate corrected ₹450 → ₹400 and payout ₹2,950 → ₹2,900** to match the canonical KV-JOB-2026-0812 rate (₹400 × 5 = ₹2,000 on 353/354)
 - Progress tracker: claim received 8 Jul 6:40 PM → documents check ✓ 9 Jul → approval in review (expected 12 Jul — no survey for small claims; "small claims usually pay in 3–5 days") → payout by **DBT to bank ····3318** with SMS; get-well-soon tone ("focus on healing — we handle the rest"); helpline 1800-270-4499
 - API: POST /v1/me/insurance-claims (from safety report) · GET /v1/me/insurance-claims/:id — ⚠ insurance claim processing pending
 
 ### 342-farmer-worker-ratings-review [FARMER]
-*342 · Rate Your Crew — Krishi-Verse*
+*342 · Rate Your Crew — Krishalaya*
 
 - Shared `reviews` table (04_commerce.sql), **target_type=worker**: rate the 5-worker crew on KV-JOB-2026-0781 (**Paid ₹10,204 ✓** header chip); Sunita Kumari row already **Submitted ✓** (5★ testimonial + Team lead/Punctual/Skilled chips); remaining workers: star rows + trait chips (**punctual · careful · skilled · team lead**) + optional "a kind word" + **"rehire next season" toggle** (feeds 350 favourites)
 - **Mutual-rating fairness banner: "workers rate you too — ratings open only after wages are paid, for both sides"**; footer: rating optional, can be done later, **"ratings never change payments"**
 - API: POST /v1/labour/bookings/:id/reviews (target_type=worker, one row per worker)
 
 ### 343-worker-farmer-ratings-by-worker [WORKER]
-*343 · Rate Your Employer — Krishi-Verse*
+*343 · Rate Your Employer — Krishalaya*
 
 - `reviews` with **target_type=farmer_employer**: Sunita rates Ramesh Patel (★4.7 as employer · 12 platform jobs) on 0781 (her wage ₹2,204, **Paid**): 5★ "very good" + what-went-well chips (**paid on time · respectful · safe water + shade · hours as agreed**) + optional note; "ratings go both ways — both sides held to the same standard"
 - **Anonymity for honest low ratings: "hide my name" toggle — a low rating shows the farmer only "a worker on this job"; "you cannot lose future work for being honest"**; impact note ("good employers find workers faster — your voice shapes that") + published example review, bilingual
 - API: POST /v1/labour/bookings/:id/reviews (target_type=farmer_employer; anonymised projection on low scores)
 
 ### 344-partner-labour-contractor-dashboard [PARTNER/SARDAR — bilingual]
-*344 · Labour Contractor Dashboard — Krishi-Verse*
+*344 · Labour Contractor Dashboard — Krishalaya*
 
 - `sardar_profiles` home: **Vikram Patel — ◆ Grade A** (grades A|B|C|D; only A/B keep marketplace access), **supervision fee 10%** (supervision_fee_bps 1000 default, cap 1500), Sojitra Harvesting Gang **KV-CREW-2026-0015**, 12 workers; active placement 🌾 **KV-JOB-2026-0790** groundnut harvesting (8 on site · Ramesh Patel, Vanthali · ends 12 Jul · in_progress)
 - Earnings tile **₹6,800 commission this month (Jul, 3 bookings)**; needs-attention queue (3): 2 workers' documents expiring (Mangal Rathva, Kiran Chavda — renew by 25 Jul) · 1 settlement due **₹1,900** (KV-JOB-2026-0772); quick actions: roster · settlements · find jobs · add worker
@@ -8084,14 +8084,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/partners/me/sardar-dashboard
 
 ### 345-partner-contractor-worker-roster [PARTNER/SARDAR — bilingual]
-*345 · Worker Roster — Krishi-Verse*
+*345 · Worker Roster — Krishalaya*
 
 - `crews` + `crew_members` roster: Sojitra Harvesting Gang (KV-CREW-2026-0015 · speciality harvesting · formed 2025 · 34 jobs done · **8/12 on job now** till 12 Jul, 4 Available); member cards with ratings + skill chips + badges ✓ Verified / **⚠ KYC expiring 25 Jul** (Mangal, Kiran); document-renewal queue with Renew CTAs
 - **Consent + anti-bonded freedom notes (structural, on-screen):** add-worker requires the worker's own acceptance ("an invite is sent first"); **"any worker can leave your gang anytime, from their own app — no permission needed. Gang membership is never a bond. Advances are settled through the platform, not held over workers."**
 - API: GET /v1/partners/me/crew/members · POST .../invites (worker must accept) · PATCH member docs
 
 ### 346-partner-contractor-settlements [PARTNER/SARDAR — bilingual]
-*346 · Contractor Settlements — Krishi-Verse*
+*346 · Contractor Settlements — Krishalaya*
 
 - **Anti-skim structural transparency — the two-payment split diagram** on KV-JOB-2026-0790: farmer pays **₹26,400 in two separate payments** → **₹24,000 worker wages (100%) "paid directly into each of the 8 workers' own accounts — never passes through you"** + **₹2,400 your fee (10%) "paid separately by the farmer, on top of wages"**; bold rule: **"your fee is never cut from workers' wages — ₹24,000 wages + ₹2,400 fee = ₹26,400. Every worker sees this split too."**
 - July settlements **₹6,800 from 3 bookings (₹4,900 received + ₹1,900 pending)**: 0790 ₹2,400 **Paid** UTR 518274093216 (12 Jul) · 0748 wheat ₹2,500 **Paid** UTR 502148873041 (2 Jul) · 0772 cotton ₹1,900 **Pending** due 14 Jul; header: **commissions 2026 YTD ₹28,600**, Grade A, fee 10% (declared)
@@ -8099,42 +8099,42 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/partners/me/settlements — **fee-separation payment architecture: sardar fee rides its own payout rail, never a wage deduction**
 
 ### 347-worker-skill-certification [WORKER]
-*347 · Skill Certification — Krishi-Verse*
+*347 · Skill Certification — Krishalaya*
 
 - `worker_skills` (level self_declared | peer_rated | **certified**, cert_id) + `certificates`: Sunita's 🎖️ **Harvesting — Advanced ✓ completed 12 Jul 2026 · KVK Junagadh · KVK-HRV-2026-00847** (→ badge 348); available certifications (all **free**): 🌾 harvesting — 1 day training + field assessment, **typical wage after certificate ₹400 → ₹450/day**, what-is-tested list (clean fast cutting, bundling/stacking/handover, tool safety + posture), **next slot 18 Jul · Keshod KVK centre · book CTA** · 🧴 pesticide handling — 2 days + PPE assessment, ⚠ hazardous-skill flag · 🚜 machinery — 3 days + driving assessment
 - **Ownership note: "your certificate belongs to you, not to any sardar or farmer — it shows on your profile and travels with you wherever you work"**
 - API: GET /v1/me/certifications · POST /v1/me/certifications/:skillId/book-slot — ⚠ certification body (KVK) integration pending
 
 ### 348-worker-skill-badge-detail [WORKER]
-*348 · Skill Badge Detail — Krishi-Verse*
+*348 · Skill Badge Detail — Krishalaya*
 
-- `certificates` badge view: 🎖️ Harvesting — Advanced · Sunita Kumari · **issued by KVK Junagadh 12 Jul 2026 · valid 3 years (till 11 Jul 2029)** · cert no. **KVK-HRV-2026-00847**; **QR verification: "farmers scan to verify — one scan confirms this certificate is real, issued by KVK Junagadh and registered on Krishi Verse"**
+- `certificates` badge view: 🎖️ Harvesting — Advanced · Sunita Kumari · **issued by KVK Junagadh 12 Jul 2026 · valid 3 years (till 11 Jul 2029)** · cert no. **KVK-HRV-2026-00847**; **QR verification: "farmers scan to verify — one scan confirms this certificate is real, issued by KVK Junagadh and registered on Krishalaya"**
 - Wage impact tile **₹400 → ₹450/day** (typical harvesting wage since certification); skill level flips to **Certified ✓** on profile; as-farmers-see-it preview card (SK · 4.9★ · **188 jobs done** · 🌾 Harvesting ✓ Certified); **Share on WhatsApp**; renewal: reminder 2 months before expiry, half-day refresher renews free
 - API: GET /v1/certificates/:certNo/verify (public QR endpoint) · GET /v1/me/certificates/:id
 
 ### 349-worker-job-history-worker [WORKER]
-*349 · My Job History — Krishi-Verse*
+*349 · My Job History — Krishalaya*
 
 - Portable work CV: Sunita Kumari **✓ platform-verified · 188 jobs done · ⭐4.9 · ₹47,850 earned in 2026**; year tabs (2026/2025) + crop filters (groundnut/wheat/cotton); 5 recent rows, all **✓ Paid** with rating received: 0781 groundnut weeding ₹2,204 ⭐5.0 · 0714 wheat harvesting ₹1,350 ⭐5.0 · 0623 groundnut sowing ₹2,000 ⭐4.8 · 0552 cotton weeding ₹800 ⭐5.0 · 0489 onion harvesting ₹1,600 ⭐4.9 · +183 older
-- **"Your record goes where you go — every job, rating and payment here is platform-verified. Share it as your work CV with any farmer, sardar or employer — even outside Krishi Verse"**; Download CV (PDF) + Share
+- **"Your record goes where you go — every job, rating and payment here is platform-verified. Share it as your work CV with any farmer, sardar or employer — even outside Krishalaya"**; Download CV (PDF) + Share
 - API: GET /v1/me/job-history?year=&crop= · GET /v1/me/job-history/cv.pdf
 
 ### 350-farmer-rehire-favorites [FARMER]
-*350 · Rehire Favourites — Krishi-Verse*
+*350 · Rehire Favourites — Krishalaya*
 
 - Favourites = workers hired before + rated well: **Sunita** (★4.9 · worked with you 3×, 5★ each time · 🎖️ Certified Harvesting · usually available Jul–Oct · last job 0781 paid ₹2,204) · Bharat Solanki (certified tractor) · Hansa Ben Solanki · Jivan Damor; each card: last-job line, **next-5-days `worker_availability` strip**, **private note field ("only you see this")**, Rehire CTA; bulk "invite all 4 to a new job"
 - **Consent framing: "favourites are invitations, not bookings — each worker sees your offer with full wage details and accepts freely from their own app"**
 - API: GET /v1/me/favourite-workers · POST /v1/labour/rehire-invites (→ standard pending_worker offer flow)
 
 ### 351-tenant-labour-analytics [TENANT — English-only]
-*351 · Labour Analytics — Krishi-Verse*
+*351 · Labour Analytics — Krishalaya*
 
 - July 2026 marketplace ops: **supply vs demand by district** — Junagadh demand 340 vs supply 285 (**gap −55**) · Rajkot 212/218 balanced · Keshod 96/142 (**surplus +46**); definition note: demand = open + accepted + in_progress bookings, supply = active worker profiles with availability in period; **wage trends**: weeding ₹402/day +3% MoM · harvesting ₹455/day steady; AI seasonal forecast: Sep–Oct harvest peak 2.4× volume, insight "farmers who book 2+ weeks ahead fill 92% of positions vs 71% last-minute"
 - **Migrant inflow 128 registered this season (`migrant_engagements`) · ONORC verified 94% · grievance rate 0.8% of jobs — healthy (5 on 648 completed, 0 open past SLA)** · wage compliance 100% ≥ statutory floor (GJ ₹380/₹420/₹480 — details in 333); change period + Export CSV
 - API: GET /v1/admin/labour/analytics?month= · GET .../export.csv
 
 ### 352-shared-dispute-labour-specific [SHARED]
-*352 · Raise a Labour Dispute — Krishi-Verse*
+*352 · Raise a Labour Dispute — Krishalaya*
 
 - **Symmetric flow — workers and employers use this same form** ("both sides are heard, the record decides"); dispute types: wages · hours · worker no-show · employer no-show · work quality · safety; linked job card (0781, status **paid**) with **auto-attached evidence: attendance records × 5 · geofence logs · wage slips — "attached automatically, records speak; nobody has to argue from memory"**
 - Resolution ladder: talk it over first (most disputes end here) → **platform mediation within 72h** (neutral mediator reviews records with both parties) → **tenant ruling** (written decision) → **appeal within 7 days**; status journey mirrors the system record: **open → mediation → resolved**, every change notified in writing
@@ -8142,14 +8142,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: POST /v1/disputes (labour context; evidence auto-attach from booking)
 
 ### 353-worker-advance-payment-request [WORKER]
-*353 · Advance Payment Request — Krishi-Verse*
+*353 · Advance Payment Request — Krishalaya*
 
 - `worker_advances` request: Rajesh Kumar on upcoming **KV-JOB-2026-0812** (cotton picking · Ramesh Patel · starts 20 Jul · **₹400/day × 5 = ₹2,000 expected**); amount input with **hard cap ₹600 = 30% of expected wages** (chips ₹500 · ₹600); purpose chips: school fees · medical · festival · other
 - **Dignified advance copy:** "how you repay: ₹500 is deducted from your final wages at payout — **₹2,000 − ₹500 = ₹1,500 in hand. No interest, ever. No fees, no rollover**"; normalising note "asking for an advance is normal — thousands of workers do it every season. **It never affects your rating**"; status stepper shows **requested → approved → disbursed ✓ (to Krishi wallet)** — first 3 of the 7-value advance_status enum (requested · approved · disbursed · partially_recovered · recovered · written_off · rejected)
 - API: POST /v1/me/advances (Idempotency-Key) — **30% cap is a DB CHECK, not just UI** · ⚠ advance recovery engine pending
 
 ### 354-farmer-advance-approval [FARMER]
-*354 · Advance Approval — Krishi-Verse*
+*354 · Advance Approval — Krishalaya*
 
 - Farmer view of Rajesh's request (**requested** chip · ₹500 of max ₹600 (30% cap) · reason: school fees · cotton picking 0812 starts 20 Jul): **recovery preview — expected final wages ₹2,000 − advance ₹500 = ₹1,500 paid at payout; "Rajesh sees this exact preview too — no surprises for anyone"**; trust context: worked with you 2× · 4.8★ · always completed the job
 - **Decline-is-OK framing:** "if it does not suit you this time, say no — there is no penalty and it will not affect your working relationship or Rajesh's standing"; optional decline-reason picker (cash flow tight · prefer full wages at completion · dates may change · other); "recovery is automatic, interest-free, and handled by the platform"
@@ -8157,21 +8157,21 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: POST /v1/advances/:id/approve | decline (Idempotency-Key) — ⚠ recovery engine pending
 
 ### 355-farmer-labour-marketplace-map [FARMER]
-*355 · Labour Marketplace Map — Krishi-Verse*
+*355 · Labour Marketplace Map — Krishalaya*
 
 - Map marketplace with layer toggles (workers available · jobs open · crews), radius chips 2/5/10 km, skill + availability filters, list-view switch: 3 worker pins — Sunita (Certified ✓ harvesting · 4.9★ · from 11 Jul · **₹450/day** · 1.8 km) · Meera Ben (weeding ₹400 · 2.4 km) · Kiran Solanki (cotton ₹420 · 3.6 km); 2 open jobs nearby (cotton picking Keshod ₹400 · groundnut weeding Vanthali ₹410); footer: expected wages respect GJ floors ₹380/₹420/₹480
 - **Worker-location privacy (500 m grid): "locations approximate for privacy" banner + "worker pins are approximate on purpose — exact locations are shared only after a booking is confirmed"** — server snaps worker coordinates to a 500 m grid pre-booking
 - API: GET /v1/labour/map?layer=&radius=&skill= (grid-snapped coords) — worker privacy enforced server-side
 
 ### 356-worker-worker-availability-calendar [WORKER]
-*356 · Worker Availability Calendar — Krishi-Verse*
+*356 · Worker Availability Calendar — Krishalaya*
 
 - `worker_availability` **3-value status calendar (available · booked · off)**: July 2026 — 6–10 Jul **booked ✓** (harvesting for Ramesh Patel, 0781) · 13–14 Jul **off** (family event) · rest available; quick patterns: weekdays only · all days · "harvest season — yes"; **60-day setting horizon** (till 1 Sep 2026, further days unlock as time moves)
 - **Privacy + quiet protection:** off-day reason "**only you can see this**"; "farmers searching see only your available days — **never the reason a day is off**"; **invites landing on an off day are declined for you, quietly — no calls, no pings, no rating impact**
 - API: PUT /v1/me/availability (range upserts) · GET /v1/me/availability?month=
 
 ### 357-shared-labour-alerts [SHARED]
-*357 · Labour Alerts — Krishi-Verse*
+*357 · Labour Alerts — Krishalaya*
 
 - Notification centre (worker-side state shown): **advance approved ₹500** (0812; "interest-free — recovered from final wages, nothing more") · **new job match 2.1 km, ₹450/day** ("fits your available days" — respects 356) · **certification slot 18 Jul Keshod** (bring Aadhaar; certified harvesters earn ₹450/day) · **safety training due** (annual module before next booking) · **wages in 🎉 ₹2,204** (0781, paid on time 10 Jul) · **5★ rating received** (avg now 4.9★)
 - **Discreet notifications for sensitive alerts:** the grievance/support update reads only "**an update on your support case — open the app to view; case details are never shown in notifications, for your privacy**" (push payloads for grievance/dispute/safety classes carry no case content); quiet-by-design footer: "we only notify when it matters — **your off days stay quiet**"
@@ -8193,7 +8193,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source (backend-pending — generalization required): `subscription_plans_d2c`, `d2c_subscriptions` (**status** ENUM `active`|`paused`|`cancelled`; **frequency** ENUM `daily`|`alternate_day`|`weekly`|`monthly`) — currently dairy-focused in the existing schema, **GENERALIZED here for produce/fresh-box subscriptions (backend migration needed)**; `d2c_deliveries` (**status** ENUM `scheduled`|`delivered`|`skipped`|`failed`|`refunded`); `wallet_ledger` (consumer_id, **entry_type** ENUM `credit_referral`|`credit_refund`|`debit_applied`, amount, note, related_delivery_id) — table not yet wired, screen 398 mocks it; `referrals` (referrer_id, friend_id, referral_code, **status** ENUM `pending`|`joined`|`credited`, referrer_credit, friend_discount) — table not yet wired, screen 399 mocks it; `consumers`, `consumer_addresses`, `payment_methods` (**type** ENUM `upi_autopay`|`card`); traceability (397) has **no live service yet** — `trace_batches`/`trace_scans` are future tables, this screen's data contract is designs-led until the trace service ships.
 
 ### 392-consumer-home
-*392 · Consumer Home — Krishi-Verse*
+*392 · Consumer Home — Krishalaya*
 
 - **TAB 1 · Home** (bottom-nav gold standard — nav structure documented in-file, FOUNDER-APPROVED 2026-07-03). `d2c_deliveries` status `scheduled`: next delivery hero — "Your box arrives tomorrow" Thu · 7:00 AM · 15 items · Family box; cold-chain badge; driver **Vikram** ("He'll ring once — box stays chilled at your door")
 - `d2c_subscriptions` status `active`: **My box this week** card — Family plan **₹1,099**/wk · 14–16 items · Mon & Thu · items preview (palak, desi tomatoes, Kesar mangoes, carrots, bananas +10 more) · **"Customize till 9 PM today"** cutoff note → links to 394
@@ -8202,42 +8202,42 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/me/next-delivery · GET /v1/me/subscription/current-box · GET /v1/me/farm-story · GET /v1/me/wallet/summary — ⚠ consumer-box generalization of d2c tables pending
 
 ### 393-consumer-subscription-plans
-*393 · Subscription Plans — Krishi-Verse*
+*393 · Subscription Plans — Krishalaya*
 
 - `subscription_plans_d2c` (website parity) — plan codes `mini`|`family`|`joint`: **Mini ₹599/wk** (8–10 items, 1×/week) · **Family ₹1,099/wk** (14–16 items, Mon & Thu — **current plan**, featured) · **Joint ₹1,899/wk** (22–25 items, 2×/week); each card shows the farmer-fair chip **₹74 of every ₹100 goes to farmers**
 - `d2c_subscriptions.status` ENUM `active`|`paused`|`cancelled`; `d2c_subscriptions.frequency` ENUM `daily`|`alternate_day`|`weekly`|`monthly` — Priya's row: `active`/`weekly`. Switch-plan CTA: **"Effective from your next delivery — this week's box is unchanged"**; **no-guilt manage-plan row**: "Pause or skip a week" (no charge for skipped week, auto-resumes) and **"Cancel anytime — No questions, no lock-in. Your last box still arrives as scheduled"** (quiet tone, no retention dark patterns)
 - API: GET /v1/subscription-plans (website-parity source) · POST /v1/me/subscription/switch-plan · POST /v1/me/subscription/pause (skip-week) · POST /v1/me/subscription/cancel — ⚠ consumer-box generalization of d2c tables pending
 
 ### 394-consumer-box-customization
-*394 · Box Customization — Krishi-Verse*
+*394 · Box Customization — Krishalaya*
 
 - **TAB 2 · My Box — TAB ROOT** (`aria-current="page"`). `d2c_subscriptions.status` `active`, Family plan ₹1,099/wk, this week's box (**15/16 items packed**, progress bar), Thu 3 Jul delivery; **cutoff banner "Customize till 9 PM today"**
 - 15-item grid (palak 500g, tomato 1kg, Kesar mango 6pcs, carrot 500g, banana 1 dozen, onion 1kg, potato 1kg, capsicum 250g, cucumber 500g, brinjal 500g, coriander 1 bunch, lemon 4pcs, garlic 100g, cluster beans 300g) + 1 **removed** tile (bitter gourd 400g, struck-through, "Removed" flag); **swap flow**: "Swap bitter gourd for" → 3 alternates (bell pepper, **bhindi/okra — selected ✓**, cauliflower); dietary preference chips (**No onion-garlic — active**, less spicy veg, more greens); teaser: "Next week's box opens for editing Sat 5 Jul"
 - API: GET /v1/me/subscription/this-week-box · POST /v1/me/subscription/box/swap-item · PUT /v1/me/subscription/dietary-prefs — ⚠ consumer-box generalization of d2c tables pending (swap/cutoff logic needs backend)
 
 ### 395-consumer-delivery-tracking
-*395 · Delivery Tracking — Krishi-Verse*
+*395 · Delivery Tracking — Krishalaya*
 
 - **TAB 3 · Deliveries — TAB ROOT** (`aria-current="page"`). `d2c_deliveries.status` ENUM `scheduled`|`delivered`|`skipped`|`failed`|`refunded`: tomorrow's delivery **scheduled** — Thu 3 Jul 2026, window **6:45–7:15 AM** ("leaves hub 6:10 AM"), driver **Vikram** (Call CTA), **cold-chain 4°C** badge, live map placeholder
 - Past delivery Mon 30 Jun — **delivered** 7:02 AM, photo-proof; collapsed disclosure example of **failed → auto-refund state** (`status='refunded'`), quiet/no-blame copy (no fault language toward driver or consumer)
 - API: GET /v1/me/deliveries/next · GET /v1/me/deliveries/history · GET /v1/me/deliveries/:id/track (live map) — ⚠ consumer-box generalization of d2c tables pending; failed→refund automation is designs-led
 
 ### 396-consumer-orders
-*396 · Order History — Krishi-Verse*
+*396 · Order History — Krishalaya*
 
 - Sub-screen under Deliveries tab (back-header, no bottom nav). `d2c_deliveries.status` ENUM, reverse-chronological: Thu 3 Jul **scheduled** · Mon 30 Jun **delivered** (₹1,099, 15 items, Download invoice) · Thu 26 Jun **delivered** with a **partial item-level refund chip** (palak −₹80, quality issue, ties to the 24hr quality guarantee flow in 398)
 - Monthly summary strip: **June 2026 = 9 boxes × ₹1,099 = ₹9,891** (Mon/Thu weekly cadence ≈ 4.5 weeks/month); avg rating **4.9★**; footer: **"GST-compliant invoices · GSTIN shown on downloaded PDF"**
 - API: GET /v1/me/orders?month= · GET /v1/me/orders/:id/invoice.pdf (GST-compliant) — ⚠ consumer-box generalization of d2c tables pending
 
 ### 397-consumer-traceability-view
-*397 · Traceability / Farm Story — Krishi-Verse*
+*397 · Traceability / Farm Story — Krishalaya*
 
 - **TAB 4 · Farm Story — TAB ROOT.** ⚠ **BACKEND PENDING — designs lead**: renders QR-scan → batch → farmer → journey as static content; `trace_batches`/`trace_scans` service does not exist yet — **this screen's data contract is AUTHORITATIVE for the future trace service** (see developer handoff)
 - QR scan flow → item detail: palak, **grown by Meera Ben · Vanthali · picked Wed 5:30 AM**; batch code **KV-TRC-2026-18834**; farm-to-doorstep journey timeline (farm → cold-chain hub → delivery); **farmer-fair receipt**: "Of your ₹1,099 this week: **₹815 to 6 farmers**" itemised across **Meera Ben**, **Ramesh Patel**, **Divya Ben Solanki** (+3 more); farmer profile cards (photo placeholder, village, years farming)
 - API (future, designs-authoritative): GET /v1/trace/:batchCode · GET /v1/me/box/:deliveryId/farmer-fair-receipt · POST /v1/trace/scan (QR) — ⚠ trace service backend entirely pending
 
 ### 398-consumer-wallet-refunds
-*398 · Wallet & Refunds — Krishi-Verse*
+*398 · Wallet & Refunds — Krishalaya*
 
 - Sub-screen under Profile tab. ⚠ **BACKEND PENDING**: `wallet_ledger` (consumer_id, **entry_type** ENUM `credit_referral`|`credit_refund`|`debit_applied`, amount, note, related_delivery_id, created_at) table + refund-decision service not yet wired — screen mocks the ledger with static rows
 - Running balance **₹200** ("applies automatically to next box"); ledger rows: **+₹80 credit_refund** (26 Jun, wilted palak, "credited within 2 hours" — trust-first quality flow) → **−₹80 debit_applied** (30 Jun box) → **+₹200 credit_referral** (1 Jul, Anjali Shah's first delivery); `d2c_deliveries.status='refunded'` set on the affected line item when a quality refund is issued
@@ -8245,7 +8245,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/me/wallet/ledger · POST /v1/me/quality-issues (→ auto wallet credit) — ⚠ wallet_ledger table + refund-decision service pending; idempotency required on credit writes
 
 ### 399-consumer-referrals
-*399 · Referrals — Krishi-Verse*
+*399 · Referrals — Krishalaya*
 
 - Sub-screen under Profile tab. ⚠ **BACKEND PENDING**: `referrals` (referrer_id, friend_id, referral_code, **status** ENUM `pending`|`joined`|`credited`, referrer_credit, friend_discount, created_at, credited_at) table not yet wired — screen mocks history with static rows; a `credited` transition inserts a `wallet_ledger` `credit_referral` row (see 398)
 - Give-get **₹200/₹200**: "You ₹200 · Friend ₹200 off first box"; referral code **PRIYA200** (share via WhatsApp or link); 3-step explainer (send code → friend gets ₹200 off at checkout → you get ₹200 in wallet)
@@ -8253,7 +8253,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/me/referrals · POST /v1/me/referrals/invite · webhook: friend's first `delivered` d2c_delivery flips status → `credited` — ⚠ referrals table + fraud guards + WhatsApp deep-link pending
 
 ### 400-consumer-profile
-*400 · Profile & Settings — Krishi-Verse*
+*400 · Profile & Settings — Krishalaya*
 
 - **TAB 5 · Profile — TAB ROOT** (`aria-current="page"`). `consumers` (consumer_id, name, city, member_since, household_size, dietary_pref): **Priya Sharma**, Junagadh — member since May 2026, 4-person household, dietary pref "no onion-garlic"; `d2c_subscriptions` summary (Family plan, active, Mon/Thu) → links to 393; `consumer_addresses` (label, address_line, landmark, is_default); `payment_methods` (**type** ENUM `upi_autopay`|`card`) — UPI autopay active + backup card on file
 - Quick links to **398 wallet/refunds** and **399 referrals**; **DPDP wording added (QA fix)**: "Privacy & data" row — **"Download or delete your data — your right under DPDP"** (Digital Personal Data Protection Act compliance, data-rights self-service)
@@ -8282,7 +8282,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source (backend scaffolded only — NestJS routes/DTOs exist but are not wired to live data): `animal_species`, `animal_breeds`, `animals` (Pashu Aadhaar/INAPH registry), `animal_attribute_values` (EAV for species-specific attributes), `animal_health_events` (partitioned by `created_at`), `animal_ownership_transfers`, `listing_animals` (joins to shared `listings` table, category `livestock`), `vet_profiles`, `vet_services`, `vet_bookings`, `prescriptions`/`prescription_items`, `semen_catalog`, `insemination_records`, `disease_outbreaks`. ⚠ **Explicitly NOT implemented — design-led/mocked:** INAPH/Pashu Aadhaar government integration, vet booking dispatch/notification to the technician, semen catalog sourcing/inventory sync, disease-outbreak live feed ingestion, and the girth-tape→weight estimation algorithm.
 
 ### 197-farmer-livestock-home
-*197 · Livestock Home — Krishi-Verse*
+*197 · Livestock Home — Krishalaya*
 
 - Module hub (back-header, no bottom nav — bottom-nav slot deferred to D16 nav audit). `animals` (3 rows, `status=active`): herd strip — **Ganga** 8.0 L/day "In milk", **Gauri** 7.5 L/day "In milk", **Bholu** ~100 kg "Calf" chip
 - Attention banner: Ganga's FMD booster overdue (`animal_health_events.next_due_date` passed) → Book vet CTA; upcoming chip: Gauri's PD check 28 Sep
@@ -8290,146 +8290,146 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 - API: GET /v1/me/livestock/herd-summary (aggregation: animals + next-due health events + insurance value + outbreak banner)
 
 ### 198-farmer-add-animal
-*198 · Add Animal — Krishi-Verse*
+*198 · Add Animal — Krishalaya*
 
 - Form screen, worked example Bholu. `animal_species` (cattle|buffalo|goat|sheep|poultry selector), `animal_breeds` (Gir/Sahiwal/Jaffarabadi/Kankrej/Other), `animals.sex` (male|female), `animals.acquired_via` (born|purchased|transferred), `animals.dob_estimated` (approximate OK)
 - Pashu Aadhaar (INAPH) 12-digit field disabled with placeholder **"TAG PENDING"** — tag-pending-honesty principle: never invent a number, ambassador/vet issues it later; `animals.lactation_stage` chip row disabled + N/A note for a male calf
 - API: POST /v1/me/livestock/animals (tag/`pashu_aadhaar` field nullable at creation — ⚠ INAPH issuance is a manual ambassador/vet step, not automated)
 
 ### 199-farmer-animal-profile
-*199 · Animal Profile — Krishi-Verse*
+*199 · Animal Profile — Krishalaya*
 
 - Ganga's full profile. `animals`: INAPH 356201004521, `status=active`, 8.0 L/day, lactation day 142 (mid), ~385 kg, BCS 3.5/5; health alert banner — FMD booster overdue since 20 May 2026 → Book vet
 - Lineage card: calved 10 Feb 2026, links to Bholu's profile (calf); insurance row — "Insured — policy KV-POL-2026-0401-054" → links to 213; manage rows: Health log (→200), Weight history (→208), Breeding (→203), Documents (→214); quiet "Sell or transfer Ganga" link (→216 pattern)
 - API: GET /v1/me/livestock/animals/:id · GET /v1/me/livestock/animals/:id/insurance-summary — ⚠ insurance summary sourced from insurance_policies (D3 module)
 
 ### 200-farmer-animal-health-log
-*200 · Animal Health Log — Krishi-Verse*
+*200 · Animal Health Log — Krishalaya*
 
 - Ganga's `animal_health_events` timeline, reverse-chronological, filterable by `event_type`: **calving** 10 Feb 2026 (male calf Bholu born) · **deworming** 15 Mar 2026 (next due 15 Sep 2026, on track) · **treatment** 12 Dec 2025 (illness, recovered under Dr. Vaghela's care, insurance claim ₹18,200 under KV-POL-2026-0401-054 — incident date only, payout date lives on 287) · **vaccination** FMD 20 Nov 2025 (next due 20 May 2026 — shown **overdue**)
 - Filter chips: All / Vaccination / Deworming / Treatment / Calving; FAB to add a new health event
 - API: GET /v1/me/livestock/animals/:id/health-events?type= · POST /v1/me/livestock/animals/:id/health-events
 
 ### 201-farmer-vaccination-schedule
-*201 · Vaccination Schedule — Krishi-Verse*
+*201 · Vaccination Schedule — Krishalaya*
 
 - Herd-wide vaccine calendar derived from `animal_health_events` (`event_type=vaccination`) + `next_due_date`: **Ganga** FMD booster overdue since 20 May 2026 · **Bholu** first FMD due at 6 months = 10 Aug 2026 (born 10 Feb 2026) · **Gauri** HS (haemorrhagic septicaemia) annual due Oct 2026
 - LSD advisory note (vaccine recommended, watch level); free Vanthali Thursday camp callout; vet card Dr. Foram Vaghela, 6 km, 4.8★
 - API: GET /v1/me/livestock/vaccinations/due?herd=true — ⚠ due-date computation (+6 months FMD, annual HS) is client/design-derived, not yet a scheduled backend job
 
 ### 202-farmer-vaccination-record-add
-*202 · Vaccination Record Add — Krishi-Verse*
+*202 · Vaccination Record Add — Krishalaya*
 
 - Form writing an `animal_health_events` row, `event_type=vaccination`. Fields: animal selector (Ganga selected), vaccine (FMD|HS|LSD|Brucellosis), `batch_no`, `date_given`, `given_by` (vet|camp|self), auto-suggested `next_due_date` (+6 months for FMD)
 - Worked example: Ganga, FMD, given by Dr. Foram Vaghela (GJ-VCI-14392), given 2 Jul 2026, next due auto-suggested 2 Jan 2027
 - API: POST /v1/me/livestock/animals/:id/health-events (event_type=vaccination, next_due_date server-computed per vaccine type)
 
 ### 203-farmer-breeding-records
-*203 · Breeding Records — Krishi-Verse*
+*203 · Breeding Records — Krishalaya*
 
 - Breeding history view spanning `insemination_records` + `animal_health_events` (`event_type` ai_insemination|pd_check|calving). **Gauri**: AI done 30 Jun 2026 (heat reported 28 Jun), sexed Gir semen GIR-SAS-2291 (Sabarmati Ashram Gaushala, ₹800/dose), technician Dr. Foram Vaghela, PD check due 28 Sep 2026, `pd_result=pending`
 - **Ganga**: calved 10 Feb 2026 (Bholu); next-heat watch flagged as imminent (lactation day 142 as of 2 Jul 2026, watch begins ~day 150+ post-calving)
 - API: GET /v1/me/livestock/animals/:id/breeding-history
 
 ### 204-farmer-breeding-add
-*204 · Breeding Add — Krishi-Verse*
+*204 · Breeding Add — Krishalaya*
 
 - Form writing an `insemination_records` row (`event_type=ai_insemination`). Fields: `animal_id`, `heat_reported_at`, semen selection from `semen_catalog` (bull code, source, price, `is_sexed`), `technician_vet_id`, `performed_at`, `pd_due_date` (auto +90 days), `pd_result` auto-set to **pending** on save
 - Worked example: Gauri, heat reported 28 Jun 2026, semen GIR-SAS-2291 (Sabarmati Ashram Gaushala, ₹800/dose, sexed), technician Dr. Foram Vaghela (AI technician, GJ-VCI-14392), performed 30 Jun 2026, PD due 28 Sep 2026
 - API: POST /v1/me/livestock/animals/:id/inseminations (pd_due_date server-computed = performed_at + 90 days) — ⚠ semen catalog sourcing/inventory not yet backend-wired
 
 ### 205-farmer-vet-directory
-*205 · Vet Directory — Krishi-Verse*
+*205 · Vet Directory — Krishalaya*
 
 - **Livestock · Vet.** Directory of `vet_profiles` + `vet_services`, filterable. Dr. Foram Vaghela featured: BVSc & AH, reg. GJ-VCI-14392, 6 km, 4.8★, `is_ai_technician=true`, emergency-available
 - `vet_bookings.urgency` (emergency|urgent|routine), `.mode` (visit|tele), `vet_services.pricing_unit` (per_visit|per_dose|per_animal|per_minute) all surfaced as filter/sort context ahead of booking
 - API: GET /v1/me/livestock/vets?lat=&lng=&radius_km= · GET /v1/me/livestock/vets/:id/services
 
 ### 206-farmer-vet-booking
-*206 · Book a Vet — Krishi-Verse*
+*206 · Book a Vet — Krishalaya*
 
 - **Livestock · Vet.** Booking form writing `vet_bookings`: `animal_id`, `service_id`, `pricing_unit` (per_visit|per_dose|per_animal|per_minute), `urgency` (emergency|urgent|routine), `mode` (visit|tele), `preferred_slot`, notes. Status initializes to **requested** (first state of the 8-state `vet_booking_status` enum) on submit
 - Vet: Dr. Foram Vaghela — consult ₹250/visit · vaccination ₹150/dose · AI ₹300/animal · emergency ₹500; free Vanthali Thursday camp noted as a routine-check alternative. **QA-fixed:** canonical font link + zero stray hex restored (see batch QA note above)
 - API: POST /v1/me/livestock/vet-bookings (status=requested; downstream transitions require vet dispatch — ⚠ not implemented)
 
 ### 207-farmer-vet-appointment-detail
-*207 · Vet Appointment — Krishi-Verse*
+*207 · Vet Appointment — Krishalaya*
 
 - **Livestock · Vet.** Live `vet_bookings` row: Ganga, vaccination, Dr. Foram Vaghela, `mode=visit`, `urgency=routine`, fee ₹400 (visit ₹250 + vaccine ₹150). Status progression shown exactly per the 8-state enum: requested 2 Jul 6:10 PM → accepted 6:25 PM → **en_route (active, "arriving ~9:40 AM")** → in_consult/prescribed/completed pending
 - Collapsed completed example: earlier Ganga visit with a `prescriptions`/`prescription_items` row (FMD vaccine dose 1, `is_schedule_h` restricted-drug note); cancel/reschedule row states the `no_show` policy plainly, no scare tone. **QA-fixed:** canonical font link restored
 - API: GET /v1/me/livestock/vet-bookings/:id · PATCH /v1/me/livestock/vet-bookings/:id/cancel — ⚠ status transitions past "accepted" require live vet dispatch/notification, not implemented
 
 ### 208-farmer-animal-weight-tracking
-*208 · Weight Tracking — Krishi-Verse*
+*208 · Weight Tracking — Krishalaya*
 
 - `weight_logs` (animal_id, weight_kg, method tape_measure|scale, recorded_at) per animal, tabbed. **Ganga**: Mar 372 kg → Apr 376 kg → May 380 kg → Jun 385 kg (matches profile canon). **Gauri**: steady ~400 kg. **Bholu**: birth 24 kg (10 Feb 2026) → ~100 kg today
 - `animals.status` enum referenced for context (active|sold|deceased|lost). **QA-fixed:** canonical Hind/Hind Vadodara font link restored + zero stray hex outside gradients (grep-verified)
 - API: POST /v1/me/livestock/animals/:id/weight-logs · GET /v1/me/livestock/animals/:id/weight-logs — ⚠ tape-measure→weight estimation algorithm not implemented, manual entry only today
 
 ### 209-farmer-feed-log
-*209 · Feed Log — Krishi-Verse*
+*209 · Feed Log — Krishalaya*
 
 - `feed_logs` (animal_id, item, qty_kg, cost_rupees, logged_at). Post 8-Jun feed change (azolla + cottonseed cake): green fodder 15 kg ₹50/day + cottonseed cake 2.5 kg ₹80/day + dry fodder ₹25/day + mineral mix ₹8/day = **₹163/day/cow**; change added ~₹20/day cost for +0.5 L/day yield, netting the previously-published **+₹470/month** figure (a distinct, marginal-delta insight, not restated arithmetic)
 - Milk value cross-check shown: Ganga 8.0 L × ₹33.80/L ≈ ₹270/day
 - API: POST /v1/me/livestock/animals/:id/feed-logs · GET /v1/me/livestock/feed-logs/summary
 
 ### 210-farmer-animal-sale-listing
-*210 · List Animal for Sale — Krishi-Verse*
+*210 · List Animal for Sale — Krishalaya*
 
 - **Livestock · Marketplace.** Writes to `listing_animals`/shared `listings` (category=livestock): `price_rupees`, `status` (draft|published|sold|withdrawn), photos[]. Worked example: **Bholu**, male Gir calf, born 10 Feb 2026, ~100 kg, healthy, **NOT insured**, tag pending (INAPH issued at ownership transfer, not before), listed **₹18,000**
 - `animals.status` unchanged (`active`) until sale completes — listing alone does not flip status; insured-animal policy note: if a listed animal IS insured, the flow must prompt a policy-transfer step before publish (not applicable to Bholu, who carries no policy)
 - API: POST /v1/me/livestock/listings (animal_id, price_minor, status=draft) · PATCH /v1/me/livestock/listings/:id/publish — ⚠ insured-animal policy-transfer gate not yet enforced server-side
 
 ### 211-farmer-animal-marketplace-browse
-*211 · Animal Marketplace — Krishi-Verse*
+*211 · Animal Marketplace — Krishalaya*
 
 - **Livestock · Marketplace.** Browse `listing_animals` joined to `animals` (species, breed, price_rupees, `status` draft|published|sold|withdrawn, distance_km, seller_verified). Bholu's own listing appears (Ramesh Patel's, ₹18,000)
 - LSD advisory context note: `severity=watch`/`movement_restricted=false` in this district does **not** block sale/movement listings — only an escalation to a restriction-level advisory would pause movement (ties to 218's outbreak canon)
 - API: GET /v1/me/livestock/marketplace?species=&breed=&max_distance_km= — ⚠ live disease-outbreak feed integration pending; movement-restriction gating is designed but not enforced today
 
 ### 212-farmer-animal-detail-buyer
-*212 · Animal Detail (Buyer View) — Krishi-Verse*
+*212 · Animal Detail (Buyer View) — Krishalaya*
 
 - **Livestock · Marketplace.** Buyer-facing joined view: `animal_listings` + `animals` + `animal_health_events` + `weight_logs`. Bholu: INAPH tag **pending** (issued at ownership transfer), born 10 Feb 2026, ~100 kg, healthy, NOT insured, Vanthali (Junagadh), price ₹18,000, seller Ramesh Patel 4.7★
 - Embodies the **health-record-transparency-as-trust** principle: full vet/vaccination/weight history surfaced to the buyer before purchase, not just a price tag
 - API: GET /v1/me/livestock/marketplace/:listingId (aggregated buyer view) — sale finalization flips `animals.status` to `sold` and triggers INAPH tag issuance to the buyer (⚠ INAPH issuance not implemented)
 
 ### 213-farmer-livestock-insurance-link
-*213 · Livestock Insurance Link — Krishi-Verse*
+*213 · Livestock Insurance Link — Krishalaya*
 
 - Policy **KV-POL-2026-0401-054** (`insurance_policies.policy_status=active`): 2 Gir cattle, ₹30,000/animal sum insured = ₹60,000 total, premium 5%/yr = ₹3,000, due 1 Aug 2026. **Ganga** (INAPH 356201004521) ₹30,000 covered — past claim ₹18,200 paid Dec 2025 (matches 200/287 canon, incident 12 Dec / payout 18 Dec kept distinct). **Gauri** (INAPH 356201004522) ₹30,000 covered, no claims. **Bholu** NOT insured — quiet, non-pressuring upsell note given he's listed for sale ₹18,000
 - API: GET /v1/me/livestock/animals/:id/insurance-policy · GET /v1/me/livestock/insurance/policies/:policyId — cross-module read from insurance_policies (D3)
 
 ### 214-farmer-animal-documents
-*214 · Animal Documents — Krishi-Verse*
+*214 · Animal Documents — Krishalaya*
 
 - Document vault per animal (tag_certificate|vet_fitness_cert|vaccination_card|insurance_policy|pedigree), each with issued_date + file_ref. **Ganga**: INAPH tag certificate on file, vet fitness cert valid Apr 2026, vaccination card PDF (FMD logged, next due shown overdue), insurance policy KV-POL-2026-0401-054 linked, no pedigree paperwork (smallholder herd)
 - **Bholu**: documents begin once the Pashu Aadhaar tag is issued at transfer (→216) — tag-pending-honesty principle applied to the document list itself, not just the profile field
 - API: GET /v1/me/livestock/animals/:id/documents · POST /v1/me/livestock/animals/:id/documents (upload) — ⚠ no dedicated animal_documents table yet; implied via animals + health_events + insurance_policies linkage
 
 ### 215-farmer-herd-analytics
-*215 · Herd Analytics — Krishi-Verse*
+*215 · Herd Analytics — Krishalaya*
 
 - Herd-wide rollup from `animals`, `animal_health_events`, milk_collections (per-animal split), `insurance_policies`, `animal_ownership_transfers`, breeding records. Ganga 8.0 L/day = 52% of 15.5 L/day herd total (vaccination overdue) + Gauri 7.5 L/day = 48% (AI 30 Jun → PD check 28 Sep pending) = 2 of 3 animals fully vaccinated (Bholu calf not yet due)
 - Cost/revenue: feed ₹163/day/cow × 2 milking cows = **₹326/day**; revenue 15.5 L × ₹33.80/L ≈ **₹524/day**; margin **₹198/day**. Herd value: ₹60,000 insured (KV-POL-2026-0401-054) + Bholu's pending ₹18,000 sale = **₹78,000**. 12-month timeline strip: calving Feb, feed change Jun, AI Jun, sale Jul
 - API: GET /v1/me/livestock/analytics/herd-summary (aggregation across animals/health/milk/insurance/transfers)
 
 ### 216-farmer-animal-transfer
-*216 · Animal Transfer — Krishi-Verse*
+*216 · Animal Transfer — Krishalaya*
 
 - Writes `animal_ownership_transfers` (from_user, to_user, order_id, price_minor, `inaph_synced`). **Bholu** sold **₹18,000** to **Bhavesh Rabari** (Junagadh); payment received via escrow, released to farmer (UTR reference); handover scheduled **5 Jul 2026**, status **active** (today ≈ 2 Jul 2026)
 - `inaph_synced=false` until the government system updates post-handover (tag itself still transfers with the animal); `animals.status` moves active→sold on handover completion; health records travel with the animal (keyed to `animal_id`, not owner); insurance N/A — Bholu was never insured, so **no policy-transfer step applies to this sale**, contrasting with what would be required for an insured animal (see 213 note)
 - API: POST /v1/me/livestock/animals/:id/transfer (creates animal_ownership_transfers row, inaph_synced=false) — ⚠ INAPH government sync not implemented, manual/pending today
 
 ### 217-farmer-mortality-record
-*217 · Mortality Record — Krishi-Verse*
+*217 · Mortality Record — Krishalaya*
 
 - **Grief-sensitive form state** — no canon animal (Ganga/Gauri/Bholu) has died; this screen has no animal pre-selected and its worked example is a fully **anonymized generic buffalo / unnamed co-op member**, deliberately using no real names or tag numbers. Tone: compassionate, minimal, zero bureaucracy
 - On submit: `animals.status` → `deceased`; `animal_health_events` row created (`event_type=death`, cause, date, vet cert if any); an insurance claim auto-initiates if the animal was insured, mirroring the 213/287 illness-claim pattern
 - API: POST /v1/me/livestock/animals/:id/mortality (sets status=deceased, creates health_event type=death, triggers insurance claim if insured) — ⚠ claim auto-initiation hook not implemented
 
 ### 218-farmer-livestock-alerts
-*218 · Livestock Alerts — Krishi-Verse*
+*218 · Livestock Alerts — Krishalaya*
 
 - Alert feed aggregating `disease_outbreaks` (LSD, `severity=watch`, `movement_restricted=false` — calm precaution tone, not lockdown language), `animal_health_events` (Ganga's vaccination overdue, →201/214), breeding (Gauri's PD check due 28 Sep, →215), `insurance_policies` (premium due 1 Aug ₹3,000 under KV-POL-2026-0401-054, →213), `animal_ownership_transfers` (Bholu's handover 5 Jul, →216), weight-log reminder (→208). Today ≈ 2 Jul 2026
 - **QA-fixed (BLOCKING/CRITICAL):** bilingual (Hindi) wiring was broken/incomplete; repaired and independently re-verified — 22 `lang="hi"` occurrences now present in the file (grep-confirmed)
@@ -8460,112 +8460,112 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: `09_agri_infra_services.sql` — `equipment_assets`, `equipment_rates`, `equipment_bookings`, `equipment_maintenance_logs` (all implemented and used as designed). Generic shared tables reused: `payments`, `payouts`, `commission_rules` (owner earnings/commission maths on 311 reads from these). ⚠ **Explicitly NOT implemented / pending:** `equipment_condition_records` (does not exist — schema gap 1 above), `media_assets` linkage for condition/damage photos, polymorphic `disputes.order_id` support for equipment bookings (schema gap 2), `decline_reason` column (schema gap 3), seasonal `rate_basis` value (schema gap 4).
 
 ### 297-farmer-equipment-home
-*297 · Equipment Home — Krishi-Verse*
+*297 · Equipment Home — Krishalaya*
 
 - Module hub (back-header, no bottom nav — bottom-nav slot deferred to D16 nav audit, same pattern as other module hubs). Hero: "Rent equipment" near Vanthali. Upcoming booking card: Mini-tractor + rotavator, Harsukh Dobariya (Keshod), 8 Jul 2026 7–11 AM, ₹3,200, `rental_status=confirmed`
 - Cross-role banner: "You also lend: battery sprayer · ₹150/day — 2 requests waiting" (peer-to-peer, same farmer as owner); AI seasonal tip (inter-culturing window); quick actions grid (Browse, My bookings, List my equipment, Help); "How it works" 4-step strip (Book → OTP start → GPS-fair billing → Pay after work)
 - API: GET /v1/me/equipment/home-summary (aggregation: upcoming booking + owned-equipment pending requests + seasonal tip)
 
 ### 298-farmer-equipment-browse
-*298 · Browse Equipment — Krishi-Verse*
+*298 · Browse Equipment — Krishalaya*
 
 - `equipment_assets` browse (all `status=active`), category chips (Tractor/Rotavator/Harvester/Sprayer/Thresher/Trailer) + filter chips (distance, operator-included, availability date). 3 results near Vanthali: Mahindra 575 DI 42 HP (Harsukh Dobariya, Keshod, 6 km, ₹800/hr, 4.6★/34 rentals, RC+insurance verified, operator included), Sonalika 35 HP (Bhavesh Rathod, Vanthali, 2 km, ₹700/hr, 4.3★/19 rentals), John Deere + harvester combo (Kiran Solanki, Junagadh, 14 km, ₹6,200/day, 4.8★/61 rentals)
 - Each card shows its true `equipment_rates.rate_basis` label (per_hour/per_day) — never "seasonal"
 - API: GET /v1/me/equipment/browse?category=&max_distance_km=&operator_included=&available_on=
 
 ### 299-farmer-equipment-detail
-*299 · Equipment Detail — Krishi-Verse*
+*299 · Equipment Detail — Krishalaya*
 
 - Mahindra 575 DI full detail: `equipment_assets` (hp_rating 42, model year 2019, engine hours 1,842, reg GJ-11-T-8834, `status=active`), owner Harsukh Dobariya (4.6★, 34 rentals, Call CTA), two active `equipment_rates` rows — per_hour ₹800 (operator ✓, fuel ✗) and per_day ₹5,800 (operator ✓, fuel ✗)
 - RC ✓ + Insurance ✓ verified doc chips; rotavator included at no extra rate line; 2 reviews (Devang Bhatt 5.0★, Pravin Vaghasiya 4.5★); "Check availability July 2026" → 300; sticky CTA "Book this tractor"
 - API: GET /v1/me/equipment/assets/:id (joined rates + owner + reviews + docs)
 
 ### 300-farmer-equipment-availability-calendar
-*300 · Equipment Availability Calendar — Krishi-Verse*
+*300 · Equipment Availability Calendar — Krishalaya*
 
 - Honesty note: no separate availability table — booked/blocked days are DERIVED from existing `equipment_bookings` rows (`rental_status` in requested/quoted/confirmed/in_progress = "booked" for display; cancelled/disputed excluded). July 2026 calendar for Mahindra 575 DI: booked 5, 6, 9, 12 Jul (other confirmed jobs); Ramesh selects **8 Jul**, morning slot 7–11 AM (4 hours) vs afternoon 2–6 PM alternative
 - Time slots are informal UI windows, not a DB table — slot choice narrows the eventual `equipment_bookings.start_otp_hash` window
 - API: GET /v1/me/equipment/assets/:id/availability?month=2026-07 (derived from bookings, not a dedicated table)
 
 ### 301-farmer-booking-request
-*301 · Booking Request — Krishi-Verse*
+*301 · Booking Request — Krishalaya*
 
 - Form creating an `equipment_bookings` row (`rental_status` starts at **requested** on submit). Task: inter-culturing, GG-20 groundnut, 2.5 acre, GPS-marked plot survey 214/2, Vanthali. Date/slot: 8 Jul 2026, 7–11 AM, `est_quantity=4` hours (matches `rate_basis=per_hour`)
 - Cost breakdown: rate ₹800/hr × 4 hrs = ₹3,200 + refundable security ₹500 = **₹3,700 total upfront**; fuel note (renter supplies diesel, owner's operator drives); "Harsukh usually responds within 30 minutes" nudge
 - API: POST /v1/me/equipment/bookings (rental_status=requested, est_quantity=4, rate snapshot ₹800/hr captured at creation)
 
 ### 302-farmer-booking-confirmation
-*302 · Booking Confirmation — Krishi-Verse*
+*302 · Booking Confirmation — Krishalaya*
 
 - Booking **KV-EQ-2026-1108** confirmed — owner Harsukh accepted as-is (no counter-quote this time; owners MAY return `rental_status=quoted` first to adjust hours/rate before confirming, not exercised here). Payment (`advance_minor` ₹3,700 escrow) still pending → screen 303
 - Owner card (Call CTA); schedule card (8 Jul 7 AM arrival); "What happens next" 5-step timeline (Pay to lock → OTP at handover → GPS-trace work → Return check → Security refunded); cancellation policy: free until 24h before start (7 Jul 7 AM cutoff)
 - API: GET /v1/me/equipment/bookings/:id (status=confirmed) · PATCH /v1/me/equipment/bookings/:id/pay-intent
 
 ### 303-farmer-booking-payment
-*303 · Booking Payment — Krishi-Verse*
+*303 · Booking Payment — Krishalaya*
 
 - Pre-pay state: amount ₹3,700 (work estimate ₹3,200 + refundable security ₹500), method select (UPI selected/default, Card, Net-banking — no wallet option shown, per design rule). Escrow note: "Money held safely by the platform until the job is done"
 - Post-pay success state (`payment_status=success`): UTR 402619558231, booking KV-EQ-2026-1108, booking status "Locked ✓," amount paid ₹3,700, method UPI; OTP note — start OTP arrives by SMS morning of 8 Jul
 - API: POST /v1/me/equipment/bookings/:id/payments (method=upi, amount_minor=370000) · GET /v1/me/equipment/bookings/:id/payment-status — security portion refunds (`payment_status→refunded`) after clean return
 
 ### 304-farmer-my-bookings-renter
-*304 · My Bookings (Renter) — Krishi-Verse*
+*304 · My Bookings (Renter) — Krishalaya*
 
 - Renter's `equipment_bookings` list, All/Upcoming/Past filters. Active: KV-EQ-2026-1108, Mahindra 575 DI, 8 Jul 2026, `rental_status=confirmed` ("Awaiting start"), ₹3,700 paid. Past: KV-EQ-2026-0942, rotavator solo (Bhavesh Rathod), 12 Jun 2026, completed→**settled**, ₹2,400, 5.0★ rating given
 - Past: KV-EQ-2026-0871, battery sprayer (Jayesh Koradiya), 2 Jun 2026, **cancelled**, ₹300 refunded to UPI (quiet tone, no blame); full 8-state `rental_status` legend strip at bottom (requested/quoted/confirmed/in_progress/completed/settled/cancelled/disputed)
 - API: GET /v1/me/equipment/bookings?role=renter&filter=upcoming|past
 
 ### 305-farmer-handover-checklist
-*305 · Handover Checklist — Krishi-Verse*
+*305 · Handover Checklist — Krishalaya*
 
 - ⚠ BACKEND PENDING banner (needs new `equipment_condition_records` table + `media_assets` linkage — schema gap 1). Booking KV-EQ-2026-1108, `rental_status=confirmed` here → moves to **in_progress** once handover OTP is verified and "Start work" is tapped (`start_otp_hash` verified, `started_at` stamped)
 - Handover OTP `4 7 1 9 0 6` verified; condition checks: fuel ¾ tank (photographed), hour-meter start **1,842.4** hrs (photographed), 2 pre-existing scratches (annotated so nobody is blamed for old wear); operator Suresh Dobariya (Call CTA); both-parties confirm row (renter ✓ / owner ✓); trust note: "same photos are used if there's ever a dispute at return"
 - API: POST /v1/me/equipment/bookings/:id/handover (verifies start_otp_hash, sets rental_status=in_progress, started_at=now) — ⚠ condition photo capture has no backing table yet
 
 ### 306-farmer-return-checklist
-*306 · Return Checklist — Krishi-Verse*
+*306 · Return Checklist — Krishalaya*
 
 - ⚠ BACKEND PENDING banner (same schema gap 1). Booking KV-EQ-2026-1108, `rental_status=in_progress` here → **completed** on this screen's CTA, then **settled** once the ₹500 security refund clears (311 shows the owner-side settlement rows). Hour-meter end **1,846.4** − start 1,842.4 = **4.0 hrs actual = estimate exactly**; `area_gps_trace` **2.48 acres**, within **±2% billing tolerance**
 - Condition re-check: fuel returned ¾ tank (matches pickup, no top-up owed), no new damage (compared vs handover photos, only the 2 pre-existing scratches remain); completion OTP `2 5 8 3 1 4` verified (shared by owner); settlement preview: work charge ₹3,200 final + security ₹500 "Full refund initiated"; 5-star rating given
 - API: POST /v1/me/equipment/bookings/:id/complete (verifies return OTP, sets rental_status=completed, completed_at=now, triggers advance_minor refund) — ⚠ condition re-check/photo-compare has no backing table yet
 
 ### 307-farmer-damage-report
-*307 · Damage Report — Krishi-Verse*
+*307 · Damage Report — Krishalaya*
 
 - ⚠ BACKEND PENDING banner (same schema gap 1; also references schema gap 2 — no polymorphic `disputes.order_id` if this ever escalated). PAST CASE, resolved amicably: booking **KV-EQ-2026-0987** (inline booking ID — 1 optional QA polish applied), battery backpack sprayer rented to Jayesh Kanani, 28 Jun, Vanthali. **Bent nozzle** — noticed at pickup together, both photographed
 - `equipment_maintenance_logs` row: `log_type=repair`, cost ₹120 (local mechanic, receipt uploaded), performed 29 Jun. Resolution: security ₹150 absorbs the ₹120 repair, **₹30 refunded** to renter — both owner and renter agreed chips shown; "if either side had disagreed, the booking would move to **disputed** status... no penalty for raising a concern"; both-sides-fairness closing note ("photos protect everyone")
 - API: GET /v1/me/equipment/bookings/:id/condition-report · POST /v1/me/equipment/bookings/:id/damage-resolution (writes equipment_maintenance_logs log_type=repair, adjusts advance_minor refund amount) — ⚠ no equipment_condition_records table, no decline/dispute_reason column; disputed escalation not FK-clean (schema gaps 1–3)
 
 ### 308-farmer-list-my-equipment
-*308 · List My Equipment — Krishi-Verse*
+*308 · List My Equipment — Krishalaya*
 
 - Form creating `equipment_assets` + `equipment_rates` rows. Category grid (Tractor/Harvester/Rotavator/**Sprayer selected**/Drone/Other); worked example: battery backpack sprayer, 16 L capacity, 2025 model, 2 photos; rate ₹150, `rate_basis=per_day` (chip-selected from per_hour/per_day/per_acre)
 - Operator-included toggle **OFF** (self-service listing — `includes_operator=false`); service radius 5 km; availability "All days by default"; security deposit field ₹150 suggested (= 1 day's rate, a UI convention not a DB default)
 - API: POST /v1/me/equipment/assets (category, hp_rating/capacity, status=active default) · POST /v1/me/equipment/assets/:id/rates (rate_basis CHECK-constrained to the 5 values, includes_operator=false)
 
 ### 309-farmer-owner-equipment-manage
-*309 · Manage My Equipment — Krishi-Verse*
+*309 · Manage My Equipment — Krishalaya*
 
 - Owner view of the sprayer: ₹150/day, `status=active` badge, 34 rentals lifetime, 4.8★. Utilization bar: June 2026 = 9 of 30 days rented (30%). `equipment_maintenance_logs`: repair — bent nozzle, 29 Jun, ₹120 (recovered from renter's security, cross-refs 307), and a routine inspection, 1 Jun, all parts okay ✓ (`log_type=inspection`)
 - Listing status radio (Active/Maintenance/Retired — `equipment_assets.status` free varchar, not enum) with note: "Setting Maintenance pauses new bookings but keeps your rental history and rating intact"; links to Edit listing / View as renter
 - API: GET /v1/me/equipment/assets/:id/manage (utilization + maintenance log rollup) · PATCH /v1/me/equipment/assets/:id/status (active|maintenance|retired) · POST /v1/me/equipment/assets/:id/maintenance-logs
 
 ### 310-farmer-owner-booking-requests
-*310 · Booking Requests (Owner) — Krishi-Verse*
+*310 · Booking Requests (Owner) — Krishalaya*
 
 - Owner accept flow: `rental_status=requested` → owner can **Accept** (→confirmed) or **Decline/quote** (→quoted, renter then confirms). Pending: Suresh Bhai, sprayer, 10–11 Jul, 2 days, ₹300 (2×₹150); "30-min response builds your rating" nudge
 - Upcoming: Meera Ben, 12 Jul, 1 day, ₹150, confirmed ✓. **Declined**: Vinod Kanani, 9 Jul, 1 day, ₹150 — "Calendar conflict" chip, decline note in owner's own words ("Already booked that day, free from 10 Jul — sorry for the short notice!"), **"Polite decline sent — no penalty to your rating"** meta line
 - API: PATCH /v1/me/equipment/bookings/:id/accept (rental_status→confirmed) · PATCH /v1/me/equipment/bookings/:id/quote (rental_status→quoted) — ⚠ decline has no dedicated status transition or `decline_reason` column (schema gap 3); reason captured as free-text chat note only
 
 ### 311-farmer-owner-earnings
-*311 · Owner Earnings — Krishi-Verse*
+*311 · Owner Earnings — Krishalaya*
 
 - All rows `rental_status=settled`. June 2026: 9 rental days × ₹150 = ₹1,350 gross, platform fee illustrative 5% = −₹68, **net ₹1,282**. Settlement rows: KV-EQ-2026-1092 (Meera Ben, ₹150), KV-EQ-2026-1071 (Jayesh Kanani, ₹150, **+₹120 repair recovered from security** — bent-nozzle cross-ref to 307/309, shown as a recovery note NOT part of the ₹150/day gross), KV-EQ-2026-1103 (Vinod Kanani, 2 days, ₹300), KV-EQ-2026-1064 (Bhavesh Vaghela, 5 days, ₹750); each row shows a UTR
 - Year-to-date **₹6,840**. Explicit note: "Payouts go straight to your linked bank account after each settlement — **no wallet balance held on the platform**"; yearly tax statement download; AI tip nudging weekend availability
 - API: GET /v1/me/equipment/earnings/summary?month=2026-06 · GET /v1/me/equipment/earnings/settlements — reads from generic `payments`/`payouts`/`commission_rules` tables, no dedicated wallet table involved
 
 ### 312-farmer-equipment-alerts
-*312 · Equipment Alerts — Krishi-Verse*
+*312 · Equipment Alerts — Krishalaya*
 
 - Composite alert feed mixing renter-side and owner-side events for Ramesh Patel (renter on KV-EQ-2026-1108, owner of the sprayer), ~7 Jul 2026. Today: handover OTP ready reminder (KV-EQ-2026-1108, 8 Jul 7 AM, "share only at pickup"), 2 pending booking requests nudge (→310), security refund processed ₹500 (KV-EQ-2026-1108, clean return)
 - Earlier: rental request accepted (Meera Ben, 12 Jul), insurance/RC renewal due reminder (Mahindra 575 DI docs — `equipment_assets` RC/insurance ref expiring), earnings settled ₹300 (KV-EQ-2026-1103, credited to bank account). Explicit design comment: **NO wallet balance ever shown**; empty-state footer once alerts end
@@ -8606,75 +8606,75 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: PRD §16.3 (traceability — `trace_lots`, `trace_events`, `trace_scan()` RPC) and PRD §25 (contract farming M22 — `farming_contracts` suite), both **REAL migrated tables** including migration 0028, confirmed implemented and used as designed (not schema-scaffolded-only). One exception: **367 is M18 modular-farming, a concept screen with NO backend schema at all**, clearly labeled as such and excluded from the "real tables" claim. ⚠ **Explicitly NOT implemented / pending:** `farm_stories` (gap 1), negotiation-message log (gap 2), settlement table (gap 3, currently a view-over-4-tables), M18 modular-farming schema entirely (gap 4), trace enrichment fields (gap 5, app-layer today), `trace_lots`↔order FK (gap 6).
 
 ### 358-public-qr-trace-view
-*358 · Public QR Trace View — Krishi-Verse*
+*358 · Public QR Trace View — Krishalaya*
 
 - **PUBLIC, no-auth** page (no back-header, no bottom nav — accessible directly via QR scan). `trace_lots` (qr_token, listing_id, farmer_user_id, parcel_id, crop_season_id, declared_inputs jsonb, certificate_ids jsonb, `blockchain_anchor` nullable) + `trace_events` (event_code, meta jsonb) resolve trace code **KV-TRC-2026-18834** — Palak (પાલક), farmer **Meera Ben**, Vanthali, Junagadh, 14 km from scan location. Journey timeline built from `trace_events` rows
 - EN/हिं/ગુ 3-way language toggle (exact generalization of approved screen 397). Chips distinguish **declared vs verified**: "Pesticide-free / Organic — self-declared" vs "FPO member — verified." `blockchain_anchor` honestly shown as `anchored=false` ("Blockchain verification — coming Phase 2," never overclaimed). Farmer-pay note "₹74 of every ₹100 paid goes to farmers" labeled a general platform figure, not a per-scan receipt. ⚠ Farmer name/photo/village, cold-chain °C, km-traveled and the ₹74/₹100 note are APP-LAYER ENRICHMENT, not stored directly in trace_lots/trace_events (schema gap 5)
 - API: GET /v1/public/trace/:qr_token (calls `trace_scan()` RPC — public security surface, no auth required, rate-limited)
 
 ### 359-farmer-farm-story-editor
-*359 · Farm Story Editor — Krishi-Verse*
+*359 · Farm Story Editor — Krishalaya*
 
 - ⚠ BACKEND PENDING — no `farm_stories` table exists (schema gap 1); screen is fully UI-mocked. Farmer profile: Ramesh Patel, Vanthali Junagadh, 4.7★, 6-bigha plot, 18 years farming, crop okra/bhindi. Practice checkboxes: Drip irrigation ✓, No chemical pesticide ✓, Organic manure unchecked
 - Honesty callout: "Only claim what's true — buyers can report a mismatch, and it affects your trust score" (radical trace honesty principle applied to self-reported practices, not just verified certs)
 - API: proposed POST /v1/me/trace/farm-story (NOT implemented — needs new `farm_stories` table)
 
 ### 360-farmer-batch-link-manager
-*360 · Batch Link Manager — Krishi-Verse*
+*360 · Batch Link Manager — Krishalaya*
 
 - QR generation is REAL via `trace_lots` (qr_token). Active batch: Okra/Bhindi, picked 6 Jul 2026, code **KV-TRC-2026-19102**, 12 scans to date. Past batches: Tomatoes (KV-TRC-2026-17960, 27 scans), Carrots (KV-TRC-2026-17421, 19 scans)
 - ⚠ Box-order linkage is APP-LAYER ONLY — no direct `trace_lots`→order foreign key exists (schema gap 6). Honesty callout: "What you declare shows to every scanner — be exact"
 - API: POST /v1/me/trace/lots (creates trace_lots row, generates qr_token) · GET /v1/me/trace/lots/:id/scans — ⚠ order association has no FK, assembled at application layer
 
 ### 361-farmer-contracts-home
-*361 · Contracts Home — Krishi-Verse*
+*361 · Contracts Home — Krishalaya*
 
 - Module hub (back-header, bottom-nav deferred to D16 audit). Active contract card: Mehta Oil Industries, Manavadar, "Forward contract," **KV-CON-2026-0231**, badge Active, GG-20 groundnut (in-shell) મગફળી, 10 qtl @ ₹6,200/qtl, total **₹62,000**, "Next milestone: Mid-season check — Aug." Offers teaser: "2 new offers near you"
 - Past contract card: Lokwan wheat, fulfilled, Apr 2026 pre-sowing contract — **"₹27,000 net paid · gross ₹29,400"** (QA-FIXED to match 368's breakdown exactly; card omits the KV-CON-2025-0987 ID inline, a minor future-polish candidate, not a QA blocker). Callout: "Price locked before harvest — no mandi-day stress"
 - API: GET /v1/me/contracts/home-summary (active contract + past contracts + nearby-offers count)
 
 ### 362-farmer-contract-offer-browse
-*362 · Browse Contract Offers — Krishi-Verse*
+*362 · Browse Contract Offers — Krishalaya*
 
 - `farming_contracts` browse, `status=proposed` offers open to this farmer. 3 offers: Mehta Oil Industries (Manavadar, forward, verified buyer, GG-20 groundnut, floor_ceiling ₹6,100–6,400/qtl, delivery Oct 2026, suggested 8–12 qtl); Saurashtra Castor Traders (Rajkot, pre_sowing, castor seed, fixed ₹5,850/qtl, delivery Feb 2027); Gir Oilseeds Pvt Ltd (Junagadh, tripartite, bank-finance included, sesame, floor_ceiling ₹13,200–13,900/qtl, delivery Nov 2026)
 - Each card shows its true `contract_kind` and `price_model` enum label — never invented values
 - API: GET /v1/me/contracts/offers?crop=&contract_kind=&price_model=
 
 ### 363-farmer-contract-detail-terms
-*363 · Contract Terms — Krishi-Verse*
+*363 · Contract Terms — Krishalaya*
 
 - `status=negotiating`, KV-CON-2026-0231. Committed quantity 10 qtl, price_model=fixed ₹6,200/qtl, total contract value ₹62,000 (10 × ₹6,200/qtl). `price_terms` jsonb includes oil-premium threshold (oil content >48% → +₹100/qtl); `quality_spec` jsonb: moisture max 8%, foreign matter max 1%. Legal basis cited: Model Contract Farming Act 2018 template
 - Callout: "no penalty for shortfall due to yield" (farmer-protective term surfaced plainly)
 - API: GET /v1/me/contracts/:id (full terms + price_terms + quality_spec jsonb)
 
 ### 364-farmer-contract-negotiation
-*364 · Contract Negotiation — Krishi-Verse*
+*364 · Contract Negotiation — Krishalaya*
 
 - ⚠ BACKEND PENDING — no dedicated negotiation-message table (schema gap 2); thread is UI-only illustrative state, not derived from real rows. MSP 2026 context shown explicitly: **₹6,783/qtl**; mandi range ₹5,800–6,900/qtl. Thread arc: opened ₹6,000/qtl → countered ₹6,400/qtl → settled ₹6,150/qtl + oil-content premium → "Mehta Oil accepted ₹6,200/qtl + oil-content premium · 5 Jul, 2:30 PM"
 - Agreed total 10 × ₹6,200 = ₹62,000, "a gain of ₹2,000 on the full 10 qtl" vs the opening counter. Farmer-empowerment copy: countering is framed as the farmer's right, not confrontation
 - API: proposed POST /v1/me/contracts/:id/negotiate (NOT implemented — needs new negotiation-message log table; current UI reads only the final `farming_contracts` row)
 
 ### 365-farmer-contract-esign
-*365 · Contract e-Sign — Krishi-Verse*
+*365 · Contract e-Sign — Krishalaya*
 
 - `esign_envelope_ref` is REAL: **KV-ESN-88123**. Legal basis: IT Act 2000 + Model Contract Farming Act 2018. Contract ₹62,000, KV-CON-2026-0231, phone ending 4521 for OTP-gated signature. "Signed on 6 Jul 2026, 4:12 PM"
 - API: POST /v1/me/contracts/:id/esign (creates esign envelope, stores esign_envelope_ref on farming_contracts, status→signed)
 
 ### 366-farmer-contract-milestones-tracker
-*366 · Contract Milestones Tracker — Krishi-Verse*
+*366 · Contract Milestones Tracker — Krishalaya*
 
 - `milestone_type` is free VARCHAR, not an enum — honest vocab demo: **midseason used twice** with distinct jsonb sub-labels. Timeline: sowing_confirm ✓ 18 Jun 2026 (geo 21.05°N/70.34°E) → midseason ✓ 5 Jul 2026 (sub-label "crop establishment") → midseason **active**, due Aug (sub-label "flowering") → preharvest_estimate pending Sep → delivery pending Oct → payment pending (auto-trigger on delivery)
 - API: GET /v1/me/contracts/:id/milestones · POST /v1/me/contracts/:id/milestones/:milestone_id/evidence (photo/geo evidence upload — media asset linkage)
 
 ### 367-farmer-modular-farming-plan
-*367 · Modular Farming Plan — Krishi-Verse*
+*367 · Modular Farming Plan — Krishalaya*
 
 - ⚠ BACKEND PENDING — M18 "modular farming" has NO dedicated schema at all (schema gap 4); pure product-concept screen. Oyster mushroom production unit: ₹8,500 input advance, buyback ₹120/kg, 90 kg/cycle, gross value per cycle = 90 × ₹120 = **₹10,800**, ~3 cycles/season
 - On-screen disclaimers: "New concept — backend in progress. Numbers below are an illustrative plan, not a live offer yet" and "This is not a guaranteed income figure" — never presented as a live, bookable offer
 - API: NONE — concept screen only, no backend exists for M18 today
 
 ### 368-farmer-contract-settlement
-*368 · Contract Settlement — Krishi-Verse*
+*368 · Contract Settlement — Krishalaya*
 
 - ⚠ NO settlement table exists (schema gap 3) — screen is a reconciliation VIEW computed at render time from 4 tables (contract + delivery + quality-check + payment records); "net paid = gross − recovered advance" computed here, not stored as a single row. KV-CON-2025-0987, Lokwan wheat, status=fulfilled, delivered 12.0 qtl ✓, quality passed ✓ (moisture 7.2%, limit ≤8%), rate ₹2,450/qtl
 - Gross **12 × ₹2,450 = ₹29,400**; seed advance recovered **−₹2,400**; **net paid ₹27,000**; delivered 28 Mar 2026, paid 8 Apr 2026, UTR WHTDBT426198035512; "Contract won by ₹60/qtl ✓" vs mandi avg ₹2,390/qtl. This screen's exact figures are the source-of-truth that 361's summary line was QA-fixed to match
@@ -8708,91 +8708,91 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: PRD §22.10–22.11 (SHG/JLG group mechanics) + §29 (group savings/lending) + acceptance §40.13/M26, cross-referenced against `Database_Architecture/10_fintech_schemes.sql` (`finance_groups`, `finance_group_members`, `group_ledger_entries` — PARTITIONED — all **REAL migrated tables**, confirmed implemented and used as designed for the core savings/membership surface). ⚠ **Explicitly NOT implemented / pending:** balance/corpus column (gap 1), loan-request/approval workflow columns (gap 2), `group_meetings` table (gap 3, screen 377 fully designs-lead), election/vote audit table (gap 4, `coop_resolutions` not FK'd to `finance_groups`), group↔federation junction (gap 5, conceptual via `shg_federation` tenant type only). External JLG group-loan applications intentionally reuse the existing D2 loans module (`loan_applications.group_id`, loan kinds `shg`/`jlg`, collateral `group_guarantee`) — a scope decision, not a gap.
 
 ### 369-farmer-groups-home
-*369 · Groups Home — Krishi-Verse*
+*369 · Groups Home — Krishalaya*
 
 - Module hub (FARMER, Meera Ben Patel, President view). `finance_groups` (group_kind, nrlm_code, bank_account_id, meeting_cadence, grade) + `finance_group_members` (role, joined_at/left_at) + `group_ledger_entries` (PARTITIONED; entry_kind). Vanthali Mahila Bachat Mandal, NRLM GJ-JND-SHG-04412, 12 members, formed Mar 2024, tier1 grade. Corpus **₹72,000** (⚠ computed from ledger, no balance column — schema gap 1). Viewer's own savings "₹5,600" (28 × ₹200)
 - Next meeting "Sun, 12 Jul 2026 — 5 days away" (verified Sunday). Agenda teasers: "Jashoda Ben's loan request," "Monthly contributions." Scope-note strip: JLG group-crop-loan applications intentionally live in the existing D2 loans module, not duplicated here — a deliberate scope decision
 - API: proposed GET /v1/me/groups/home-summary (group summary + own savings + next-meeting agenda)
 
 ### 370-farmer-create-group
-*370 · Create Group — Krishi-Verse*
+*370 · Create Group — Krishalaya*
 
 - Single scrollable creation form (FARMER). `finance_groups.group_kind` CHECK constraint allows ONLY 'shg' or 'jlg' — the two radio chips map 1:1, nothing else valid. `nrlm_code` optional text (no DB format enum — state-scheme convention only). `meeting_cadence` free varchar, default 'weekly'; form offers weekly/fortnightly/monthly as designs-lead common values, not a DB enum list. `bank_account_id` nullable FK — linking a bank account modeled as a follow-up step after creation (no screen number reserved for it in this batch)
 - `finance_group_members` rows are created only once each invited phone number accepts — this screen only captures phone numbers to invite. PRD-sourced membership-size guidance (design copy only): SHG typically 10–20 members, JLG typically 4–10 members
 - API: proposed POST /v1/me/groups (creates finance_groups row) · invited members create finance_group_members rows only on accept — NOT a single-transaction bulk-invite endpoint
 
 ### 371-farmer-group-detail
-*371 · Group Detail — Krishi-Verse*
+*371 · Group Detail — Krishalaya*
 
 - Group profile (FARMER, Meera Ben Patel, President view). NRLM GJ-JND-SHG-04412, formed Mar 2024, 12 members, bank account linked. Money position: "In bank ₹67,600" + "On loan ₹4,400" = **₹72,000** (reconciles exactly with corpus). ⚠ Schema gap 1 (no balance column, computed from ledger) and schema gap 2-equivalent (no loan-status column — money-position figures derived by summing ledger entries, not read from a status field)
 - Officers: President Meera Ben Patel (elected Feb 2026, 2-year term — designs-lead convention, no election/term column exists), Secretary Hansa Ben Chauhan, Treasurer Ranjan Ben Vaghela. Meeting "Monthly, 2nd Sunday" — moved from fortnightly in 2025 (members' own choice, no negative framing)
 - API: proposed GET /v1/me/groups/:id (full profile: finance_groups row + computed money-position rollup + officers via finance_group_members)
 
 ### 372-farmer-member-management
-*372 · Member Management — Krishi-Verse*
+*372 · Member Management — Krishalaya*
 
 - Full 12-member roster + 1 past member (FARMER, Meera Ben Patel, President view). `finance_group_members.role` free varchar (member|president|secretary|treasurer, not a DB enum); per-member savings-to-date COMPUTED by summing that member's saving_deposit rows — no per-member balance column exists. "KYC ✓" and consent chips are UI-only conventions, no dedicated columns
 - Officers + Kanta Ben Rathod ("KYC ✓," "loan active" chips, **₹5,600 saved** — her savings-to-date, distinct from her separately-tracked ₹4,400 loan-remaining-balance shown on 371/373/379) + Jashoda Ben Parmar ("request pending") + 6 more Mar-2024 founding members at ₹5,600 each + 2 later joiners (Vina Ben Gohil ₹4,400 saved since Sep 2024; Nita Ben Bavarva ₹3,600 saved since Jan 2025) at proportionally lower savings. Past member Radha Ben Prajapati — "left Mar 2026 — savings returned ✓" (left_at populated, kept visible, never hard-deleted). **QA FIX APPLIED:** an adjacent member-savings figure was corrected ₹4,200→₹4,400 to remove ambiguity with the authoritative loan-remaining-balance arithmetic (₹5,000+₹500−₹1,100=₹4,400) documented on 373/379/371 — Kanta's own rendered figure on this screen is her ₹5,600 savings-to-date, never conflated with her loan balance
 - API: proposed GET /v1/me/groups/:id/members (roster incl. left members) · POST /v1/me/groups/:id/members (invite by phone)
 
 ### 373-farmer-group-savings-ledger
-*373 · Group Savings Ledger — Krishi-Verse*
+*373 · Group Savings Ledger — Krishalaya*
 
 - Full ledger view (FARMER, Meera Ben Patel, President view). `group_ledger_entries` PARTITIONED flat ledger, entry_kind EXACT vocab (5 values), columns amount_minor/meeting_date/note, NO status/approval columns. Running corpus strip "₹72,000" (⚠ computed, no balance column — schema gap 1)
 - Authoritative loan-math source: **Kanta Ben Rathod's loan — ₹5,000 principal (12 Apr 2026 internal_loan, "buffalo feed") + ₹500 interest (1%/month flat × 10 months) = ₹5,500 total; 2 × ₹550 internal_repayment (10 May, 14 Jun) = ₹1,100 paid; ₹5,500 − ₹1,100 = ₹4,400 remaining.** Monthly reconciliation shown: Jun/May/Apr 2026 each show 12 × ₹200 = ₹2,400 saving_deposit rows plus Kanta's repayment/disbursal rows
 - API: proposed GET /v1/me/groups/:id/ledger?month= (paginated group_ledger_entries feed, filterable by entry_kind)
 
 ### 374-farmer-contribution-entry
-*374 · Contribution Entry — Krishi-Verse*
+*374 · Contribution Entry — Krishalaya*
 
 - Treasurer/President action screen, dated to the 14 Jun 2026 meeting (FARMER, Meera Ben Patel). "Save" writes one `group_ledger_entries` row per paying member (entry_kind='saving_deposit', amount_minor=20000, meeting_date='2026-06-14') — no separate "contribution batch" table exists, each member's ₹200 is its own row. ⚠ No pending/paid status column — a member with no saving_deposit row for this meeting_date is simply absent from the ledger; "will pay next meeting" is a UI-only convention
 - 11 of 12 members "Paid ✓" at ₹200 each; Nita Ben Bavarva "Will pay next meeting." Totals: Collected ₹2,200 + Pending ₹200 = Expected ₹2,400 (verified). No-shame copy: "Life happens — catch-up is always OK"
 - API: proposed POST /v1/me/groups/:id/ledger/contributions (bulk-writes one saving_deposit row per paying member for a given meeting_date)
 
 ### 375-farmer-internal-lending-request
-*375 · Internal Lending Request — Krishi-Verse*
+*375 · Internal Lending Request — Krishalaya*
 
 - Submission screen (FARMER, Jashoda Ben Parmar, member). ⚠ NO status column anywhere in `group_ledger_entries`/`finance_groups` (no pending/approved/declined enum, no approved_by/approved_at) — the "pending group decision" state is a DESIGNS-LEAD CONVENTION layered on the ledger's free-text `note` field; the request exists only as a UI state until the meeting, when (if approved) a single internal_loan row is written
 - Requests ₹8,000 for a tailoring machine. Terms preview: 1%/month flat × 10 months → interest ₹800 → total repayable ₹8,800 → monthly installment ₹880. Her savings-to-date ₹5,600 (28 × ₹200, same tenure as founding members). Context: "₹8,000 of ₹67,600 in bank." Dignity copy: "Asking your own group is strength"
 - API: proposed POST /v1/me/groups/:id/loan-requests (⚠ NOT backed by a dedicated table — proposal only, becomes a real row only as a future internal_loan ledger entry if approved)
 
 ### 376-farmer-internal-loan-approval
-*376 · Internal Loan Approval — Krishi-Verse*
+*376 · Internal Loan Approval — Krishalaya*
 
 - Meeting screen, 12 Jul 2026 (FARMER, group member view). ⚠ NO approval-workflow columns on `group_ledger_entries` (no status/approved_by/approved_at) and NO election/vote-audit table — "approval" is a DESIGN CONVENTION: a show-of-hands count recorded at the meeting, followed by an authorized internal_loan ledger entry; no DB table stores the tally itself
 - Jashoda Ben Parmar's ₹8,000 request: ₹880 × 10 months, ₹800 interest, ₹8,800 total. **Approved 11-0-1** (Yes-No-Absent), co-signed by President Meera Ben Patel + Treasurer Ranjan Ben Vaghela. Comfort strip: "Group corpus is ₹72,000 — after Jashoda's ₹8,000, ₹64,000 stays with the group." Disbursed ₹8,000; first installment ₹880 due 9 Aug 2026. Democratic-decision copy: group vote, never a unilateral approval
 - API: proposed POST /v1/me/groups/:id/loan-requests/:id/approve (writes internal_loan ledger row with note recording the vote tally; ⚠ vote tally itself not separately persisted)
 
 ### 377-farmer-group-meeting-minutes
-*377 · Group Meeting Minutes — Krishi-Verse*
+*377 · Group Meeting Minutes — Krishalaya*
 
 - ⚠ FULLY DESIGNS-LEAD SCREEN — NO meeting-minutes table exists in the current schema (schema gap 3). `finance_groups` only stores meeting_cadence; `group_ledger_entries` has an optional meeting_date but no agenda/attendance/narrative fields. Attendance, agenda, discussion notes, photo, and secretary sign-off are all DESIGN CONVENTION. **PROPOSED FUTURE MIGRATION: `group_meetings` table** (id, group_id, tenant_id, meeting_date, place, attendance_count, agenda jsonb/text, recorded_by_user_id, photo_url, created_at) that `group_ledger_entries.meeting_date` could reference
 - 14 Jun 2026 meeting, 11/12 attendance, Meera Ben's courtyard. Money figures shown DO map to real ledger rows (11 × ₹200 = ₹2,200 contributions; Kanta's ₹550 installment 2 of 10) — only the meeting "wrapper" is speculative. Recorded by Secretary Hansa Ben Chauhan. Next agenda: Jashoda Ben's ₹8,000 request
 - API: NONE — proposed POST /v1/me/groups/:id/meetings (NOT implemented, needs new group_meetings table)
 
 ### 378-farmer-group-elections-roles
-*378 · Group Elections & Roles — Krishi-Verse*
+*378 · Group Elections & Roles — Krishalaya*
 
 - ⚠ NO election audit table (schema gap 4) — no vote log, no term-start/term-end columns, no ballot records anywhere in the schema; every term date, vote tally, and "since" chip is DESIGNS-LEAD. `coop_resolutions` DOES exist but is scoped to dairy cooperative societies (coop_id) and is NOT foreign-keyed to `finance_groups`
 - Officers: President Meera Ben Patel (since Feb 2026), Secretary Hansa Ben Chauhan, Treasurer Ranjan Ben Vaghela. "Last election: February 2026 — unanimous," 12/12 voted, 12/12 for Meera Ben Patel. Next election Feb 2028. Footer note: updates `finance_group_members.role` — no separate ballot record exists yet, the meeting itself is the record. Dignity copy: "Leadership rotation grows everyone"
 - API: proposed PATCH /v1/me/groups/:id/members/:member_id/role (updates finance_group_members.role only; ⚠ no audit trail persisted)
 
 ### 379-farmer-group-analytics
-*379 · Group Health Analytics — Krishi-Verse*
+*379 · Group Health Analytics — Krishalaya*
 
 - Corpus-growth chart + health indicators (FARMER). `group_ledger_entries` is the source for all figures — corpus growth is a running sum, no separate analytics/snapshot table. Chart: Year 1 end (Dec 2024) ₹24,000 → Year 2 end (Dec 2025) ₹57,600 → Now (Jul 2026) **₹72,000** (of which ₹67,600 bank + ₹4,400 on Kanta Ben's active loan). "100% repayment rate — 0 missed in 28 months." Savings per member ₹5,600 (₹200 × 28 months, same for all 12 members)
 - NABARD ₹1,50,000 cash-credit ceiling for tier1 SHGs after 6+ months good standing — explicitly labeled **domain guidance, not a database field**. Federation row: "Junagadh Mahila Federation — member group since formation" (⚠ no junction table, schema gap 5). **QA FIX APPLIED:** hardcoded hex-white literal replaced with CSS keyword `white` on `.ga2-grade-chip` (tier1 chip text) for token-convention consistency; `.ga2-bank-section`'s decorative pale-green hex gradient (`#eef7f1`/`#e2f0e7`) retained intentionally
 - API: proposed GET /v1/me/groups/:id/analytics (computed rollup: corpus-growth series + repayment rate + per-member savings, no stored snapshot)
 
 ### 380-tenant-federation-link
-*380 · Federation Link — Krishi-Verse [TENANT — English-only]*
+*380 · Federation Link — Krishalaya [TENANT — English-only]*
 
 - Federation console (TENANT admin, Junagadh Mahila Federation; English-only per tenant convention, no bilingual spans). CONCEPTUAL DISCLOSURE: "Federation" = a `tenants` row with `type = shg_federation`. NO junction table links member SHGs to a federation tenant — relationship implied only by `finance_groups.tenant_id` pointing at the federation's tenant row (schema gap 5). No federation-level metadata (member count, aggregate corpus) is stored or computed — every number shown is a rollup this screen proposes, not a stored fact
 - Junagadh Mahila Federation: **34 groups, 412 members, ₹21,40,000 combined corpus**. Member rows incl. Vanthali Mahila Bachat Mandal (12 members, tier1, ₹72,000, 100% repayment), Keshod Pragati Mahila Mandal (14 members, tier1, ₹94,500, 98% repayment), Mangrol Sakhi Mandal (10 members, tier2, ₹41,200, 100% repayment), Bantva New Beginnings SHG (8 members, provisional, ₹18,600, no loans yet). NRLM verification checks nrlm_code against state SHG records — no verification-status column exists, so "verified" badges are a design convention. **QA FIX APPLIED:** hardcoded hex-white literal replaced with CSS keyword `white`/`rgba(255,255,255,…)` on `.tfl-hero`/`.tfl-hero::before`/`.tfl-hero-type` (hero banner + tenant-type chip) for token-convention consistency; the brand hex gradient (`#1e6f3f`/`#0e4a28`) on `.tfl-hero` retained intentionally
 - API: proposed GET /v1/tenant/federation/:id/groups (rollup of member finance_groups rows — ⚠ no junction table, assembled via tenant_id match only)
 
 ### 381-farmer-group-alerts
-*381 · Group Alerts — Krishi-Verse*
+*381 · Group Alerts — Krishalaya*
 
 - Notification feed (FARMER, Vanthali Mahila Bachat Mandal member view). Summarizes real `group_ledger_entries` plus designs-lead conventions for meeting reminders (no group_meetings table — see 377), grade renewal (finance_groups.grade free varchar), and federation invitations (no junction table — see 380). No dedicated notifications table assumed beyond the shared platform convention; representative design state, not a literal DB dump
 - Today: meeting reminder (Sun 12 Jul, 5 PM, Meera Ben's courtyard) + Jashoda Ben's ₹8,000 agenda item. Earlier: Kanta Ben's ₹550 installment-due reminder (3 of 10), contribution-recorded confirmation (₹200 ✓, running total ₹800 this year), grade-renewed notice ("still tier1!"), Junagadh Mahila Federation dairy-training invite (18 Jul)
@@ -8828,70 +8828,70 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: PRD §23.5 (repair services) + generic service-marketplace tables/acceptance language, cross-referenced against `Database_Architecture/14_audit_additions.sql` (migration 0015 — `service_offerings`, `service_bookings` — confirmed **REAL migrated tables**, used as designed for the core listing/booking surface). ⚠ **Explicitly NOT implemented / pending:** dispatch-grade status enum + supporting columns (urgency, problem_description, problem_photo_media_id, quoted_items jsonb), provider rating_avg + gallery columns, service category seed rows, notification/event table for service_bookings status transitions. Drone spraying — a **different, excluded** module — PRD §28 (the PRD's own "M25").
 
 ### 382-farmer-services-home
-*382 · Services Home — Krishi-Verse*
+*382 · Services Home — Krishalaya*
 
 - Module hub (FARMER, Ramesh Patel view). `service_offerings` (category_id — pending seed, pricing_model, status) + `service_bookings` (booking_no, starts_at, total_minor, status). Active-booking strip shows KV-SVC-2026-0871 at `en_route` (⚠ proposed status value) — Dinesh Solanki, Keshod
 - 7 category tiles: Pump & motor mechanic, Equipment mechanic, Electrician, Plumber, Spraying (knapsack — drone spraying explicitly excluded, DGCA module §28), Soil testing ("Coming soon" — deep-links to future screen 410/D13, booking flow not built here), Vet ("Opens vet directory" — deep-links to existing screen 205, no duplicate flow). "Have a skill? Earn with it" teaser links to 388. Recent services: Dinesh Solanki (en_route), Ismail Bhai (completed), Ravi Parmar (completed)
 - API: proposed GET /v1/me/services/home-summary (category tiles + active booking + recent bookings, single round-trip)
 
 ### 383-farmer-service-category-browse
-*383 · Pump & Motor Mechanics — Krishi-Verse*
+*383 · Pump & Motor Mechanics — Krishalaya*
 
 - Category browse list (FARMER, near Vanthali). 3 providers, `service_offerings` REAL rows (pricing_model='per_visit', status='published'): **Dinesh Solanki** (Keshod, 6 km, ⭐4.7/214 jobs, KYC-verified, emergency-available, ₹300/visit, waive-chip) — shown first, later booked. Ismail Bhai (Junagadh, 11 km, ⭐4.5/156 jobs, ₹250/visit). Ravi Parmar (Vanthali, 1 km, ⭐4.2/38 jobs, "New provider — give a fair chance" chip, ₹250/visit)
 - ⚠ rating_avg, jobs-completed count, emergency-available flag are PROPOSED provider-profile columns — not yet real; reviews aggregate from the shared (real) reviews table once seeded. Filter chips: Distance (active), Emergency now, Rating 4+. Every card shows the visit-fee-waived-on-repair transparency chip
 - API: proposed GET /v1/services/categories/:category_id/providers?lat=&lng=&sort= (nearby published service_offerings joined to provider profile)
 
 ### 384-farmer-provider-profile
-*384 · Provider Profile — Krishi-Verse*
+*384 · Provider Profile — Krishalaya*
 
 - Provider profile (FARMER view, Dinesh Solanki). Services offered — all REAL `service_offerings` rows, status='published': pump repair ₹300/visit (waived on repair), motor rewinding ₹1,200 fixed (pricing_model='fixed'), borewell check ₹500/visit. Service area: 12 km radius from Keshod (REAL `service_radius_km` column), covers Vanthali/Junagadh outskirts
 - Reviews (2 shown, real via shared reviews table once seeded): Bharat Vaghasiya 5★, Jayesh Ben 5★. Work gallery (3 placeholder images) — ⚠ proposed column, not yet in service_offerings. Fair-pricing-on-parts honesty note: parts charged at market rate, receipt shown, never a flat/marked-up parts fee
 - API: proposed GET /v1/services/providers/:provider_id (service_offerings rows + service_radius_km + reviews + gallery)
 
 ### 385-farmer-service-booking
-*385 · Book a Service — Krishi-Verse*
+*385 · Book a Service — Krishalaya*
 
 - Booking request form (FARMER, Ramesh Patel, 7 Jul 2026). Submitting creates a `service_bookings` row, status='requested' (REAL). Provider: Dinesh Solanki. Problem: "Pump not starting — trips immediately" (⚠ proposed `problem_description` column) + photo attached (⚠ proposed `problem_photo_media_id`)
 - Urgency: **Urgent** selected (⚠ proposed `urgency` column, mirrors vet_bookings' urgency/notes pattern) — context chip "Crop needs water — groundnut irrigation," farmer (not the app) judges the emergency-vs-urgent threshold. Location: Farm Survey 214/2, Vanthali. Slot: Today ASAP (7 Jul). Fee summary: Visit fee ₹300, waived-if-repair note, Due now ₹300 (correctly distinct from the eventual ₹750 total post-repair). "How quotes work" 3-step explainer (inspect → quote → approve)
 - API: proposed POST /v1/me/services/bookings (creates service_bookings row; also accepts proposed urgency/problem_description/problem_photo_media_id fields pending migration)
 
 ### 386-farmer-booking-status
-*386 · Booking Status — Krishi-Verse [QA-FIXED]*
+*386 · Booking Status — Krishalaya [QA-FIXED]*
 
 - Live dispatch status (FARMER, KV-SVC-2026-0871). `service_bookings` REAL: booking_no, total_minor 75000 (₹750), status enum (REAL 6-value). ⚠ PROPOSED extension status shown in timeline: requested 8:10 AM → accepted 8:16 AM → **en_route ACTIVE** (arriving ~9:40 AM) → quoted (pending, shown expanded as live example) → in_progress (pending) → completed 11:20 AM
 - `quoted_items` jsonb (proposed): Capacitor ₹450 + Labour ₹300. **Quote math verified: ₹450+₹300=₹750; visit fee ₹300 shown waived as "₹0, was ₹300" — total due ₹750, never ₹1,050.** **QA FIX APPLIED:** the visit-fee line initially showed only "waived on repair: ₹0" without the "was ₹300" comparison; corrected to match 387's already-correct receipt rendering exactly. Consent copy: "Work starts only after you say yes." Completed card: paid ₹750 via UPI, UTR 402719558124, Rate Dinesh CTA
 - API: proposed GET /v1/me/services/bookings/:id (full detail + live dispatch status) · POST /v1/me/services/bookings/:id/quote (server-computed quoted_items + total) · POST /v1/me/services/bookings/:id/approve-quote (the consent gate)
 
 ### 387-farmer-service-completion-rating
-*387 · Service Completion & Rating — Krishi-Verse*
+*387 · Service Completion & Rating — Krishalaya*
 
 - Receipt + two-sided rating (FARMER, KV-SVC-2026-0871, completed 11:20 AM). `service_bookings` REAL (completed, total_minor 75000). `reviews` REAL shared table: reviewer_user_id, target_type ('service_provider' this flow; ⚠ proposed 'service_customer' for the reverse direction mirroring 'farmer_employer' from screen 342), target_id, order_id→booking, stars 1–5, tags jsonb, is_verified_purchase=true, status='published', UNIQUE(order_id, reviewer, target_type, target_id)
 - Receipt: Capacitor ₹450 + Labour ₹300 + **Visit fee waived "₹0, was ₹300"** (struck-through, explicit "was ₹300" label, never silently dropped) = Total paid ₹750. UPI UTR 402719558124. Parts receipt photo attached. Two-sided: Ramesh rated Dinesh 5★ (tags: On time, Fair price, Explained clearly); Dinesh rated Ramesh 5★ back ("clear problem description, prompt payment") — ratings open only after payment settles. "Book Dinesh again" CTA; rating explicitly does not affect what was already paid
 - API: proposed POST /v1/me/services/bookings/:id/reviews (writes reviews row, both directions gated on is_verified_purchase + payment settlement)
 
 ### 388-worker-become-provider
-*388 · Become a Service Provider — Krishi-Verse [WORKER]*
+*388 · Become a Service Provider — Krishalaya [WORKER]*
 
 - Become-a-provider flow (WORKER, Arjun Rathod — existing D7 canon exact, ★4.3, 6 jobs, Junagadh). `service_offerings` REAL: provider_id, skill_id, pricing_model='per_unit' unit='acre', price_minor 15000 (₹150/acre), service_radius_km 8, status draft→published on publish tap. `skills` REAL (07_labour.sql): code='spraying', is_hazardous=true — this is WHY the PPE/hazard declaration step is required specifically for this listing, tied directly to the column, not a generic step
 - `worker_kyc`/`kyc_status` REAL: Arjun's Aadhaar KYC reused from his existing worker profile, no re-upload (KYC is identity-level not listing-level). PPE checklist: Mask, Gloves, Boots + safe-handling pledge. Market hint ₹100–200/acre (illustrative, not from a live table). Availability references worker calendar screen 356 (reference row only, not built here). "New providers get a fair chance" note; "Your labour record speaks for you — ★4.3 · 6 jobs shown to customers"
 - API: proposed POST /v1/me/services/offerings (creates service_offerings row, status='draft') · PATCH /v1/me/services/offerings/:id/publish (⚠ server must hard-gate publish on a PPE-declaration record when skills.is_hazardous=true)
 
 ### 389-partner-provider-job-queue
-*389 · Provider Job Queue — Krishi-Verse [PARTNER — bilingual rural]*
+*389 · Provider Job Queue — Krishalaya [PARTNER — bilingual rural]*
 
 - Job queue (PARTNER, Dinesh Solanki). `service_bookings` REAL status CHECK (requested|confirmed|in_progress|completed|cancelled|disputed). ⚠ PROPOSED dispatch extension: requested|accepted|en_route|in_progress|quoted|completed|cancelled|no_show + urgency ('normal'|'urgent') + quoted_items jsonb. Today summary: 1 completed, ₹750 earned, 2 pending. Map glance: Keshod (urgent pin), Vanthali (normal pin)
 - Pending: **Meena Ben** (Keshod, borewell check, URGENT, requested 12:40) — Accept/Decline actions, decline requires a reason; **Suresh Bhai** (Vanthali, motor rewinding, tomorrow AM, status='accepted' ⚠ proposed value, REAL enum has no 'accepted' only 'confirmed'). Completed today: Ramesh Patel ✓, pump repair, ₹750, "5★ received" celebration chip
 - API: proposed GET /v1/me/services/provider/job-queue (pending + completed-today bookings + today's earnings sum) · PATCH /v1/me/services/bookings/:id/status (provider-side transition, ⚠ blocked today by missing proposed enum values)
 
 ### 390-partner-provider-earnings
-*390 · Provider Earnings — Krishi-Verse [PARTNER — bilingual rural]*
+*390 · Provider Earnings — Krishalaya [PARTNER — bilingual rural]*
 
 - Earnings view (PARTNER, Dinesh Solanki). `service_bookings` REAL status='completed' rows feed this view; payouts → `bank_accounts` REAL tables, weekly settlement cycle — **no wallet balance ever shown anywhere on the platform (strict rule)**. `reviews` REAL feeds the ★4.7 rating which (per PRD) also contributes to browse/search ranking priority
 - **Arithmetic (exact, verified): 6 visit-only × ₹300 = ₹1,800 + 3 small repairs ≈₹500 = ₹1,500 + 1 medium job ₹800 + today's ₹750 = ₹4,850 total, 11 jobs.** YTD ₹28,400 (illustrative season total). Recent jobs: KV-SVC-2026-0871/Ramesh Patel ₹750 (today, UTR shown), Medium job/Vanthali ₹800 (4 Jul), Small repair/Keshod ₹500 (2 Jul), Visit-only/Keshod ₹300 (1 Jul). Tax-time-friendly note: "every settlement here is already dated and totalled for you"
 - API: proposed GET /v1/me/services/provider/earnings?period= (completed-booking total_minor sums by period + payout status via bank_accounts)
 
 ### 391-shared-services-alerts
-*391 · Service Alerts — Krishi-Verse [SHARED]*
+*391 · Service Alerts — Krishalaya [SHARED]*
 
 - Notification feed (SHARED — farmer-facing, Ramesh Patel, with 1 provider-side example row folded in). notification-events-pending: no notifications/events table exists yet for `service_bookings` — every event type is a PROPOSED trigger against status transitions (REAL enum + proposed dispatch extension). `reviews` REAL is the source for the "rating received" event
 - Today: booking accepted (8:16 AM), Dinesh on his way (9:12 AM, Track CTA), quote ready ₹750 (10:05 AM, Approve CTA — "work starts only after you approve"), work completed + payment receipt (11:20 AM, UTR shown), 5★ received (11:24 AM), **provider-side example row** "(provider)" tag — what Dinesh sees: new booking request, Meena Ben, Keshod, borewell check, urgent (12:40 PM, Open queue CTA linking to 389). Earlier: booking request sent (8:10 AM). Empty-state footer: "You're all caught up"
@@ -8951,77 +8951,77 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 > Source: screens' own header comments (401–411), cross-referenced against `Database_Architecture` (shipments/shipment_events/logistics_partners/vehicles/delivery_routes/cold_chain_logs/warehouses/storage_bookings/assay_reports/nwr_receipts/soil_tests/weather_alerts/compliance_requirements/export_documents — all confirmed REAL tables) and D2/D3/D5/D7/D9/D12 canon for cross-references (Vikram Patel, KV-LN-2026-04412, KV-CON-2026-0231, GG-20 groundnut/vegetative stage, KV-POL-2025-0705-112, 395's 7:02 AM handoff, 400's profile pattern, 390's no-wallet-balance rule).
 
 ### 401-transporter-home
-*401 · Transporter Home — Krishi-Verse [NEW ROLE — Delivery Partner, TAB ROOT]*
+*401 · Transporter Home — Krishalaya [NEW ROLE — Delivery Partner, TAB ROOT]*
 
 - Hub screen (DELIVERY PARTNER, Vikram Rathod, tab 1 of the founder-approved 5-tab nav). Next-trip hero + today strip + earnings snapshot + vehicle status + rating, all sourced from `shipments`/`vehicles`/the designs-lead earnings note. Role chip reads "Delivery Partner" (not "Transporter"), `partner_kind='rider'`
 - Rating 4.8★ · 96% on-time (illustrative). Today: Trip 1 delivered 7:02 AM ₹450 (D12/395 canon exact); Trip 2 assigned, Vanthali→Junagadh mandi, 11 AM; Trip 3 pending, 5 PM cold-chain leg. Vehicles: GJ-11-KV-4521 (cold tempo, refrigerated, 4°C ready) + GJ-11-KV-7734 (general tempo, insurance renewal due Aug — designs-lead date). Earnings snapshot: today ₹450, July ≈₹19,500 (designs-lead illustrative)
 - API: proposed GET /v1/me/transporter/home-summary (next trip + today strip + earnings snapshot + vehicle status, single round-trip)
 
 ### 402-transporter-trip-assignments
-*402 · Trip Assignments — Krishi-Verse [TAB ROOT — Trips]*
+*402 · Trip Assignments — Krishalaya [TAB ROOT — Trips]*
 
 - Trip list + history (DELIVERY PARTNER, Vikram Rathod). `shipments` REAL: full 11-value `shipment_status` legend rendered on-screen; `pickup_otp_hash`/`delivery_otp_hash`/`pod_media_id`/`cod_minor`/`requires_cold_chain`/`distance_km` referenced on trip cards. `delivery_routes` REAL — Saturday Village Run recurring entry (day_of_week + stop consolidation), distinct from ad-hoc shipments
 - Trip 1 delivered 7:02 AM ₹450 (done). Trip 2 assigned — Vanthali collection point → Junagadh mandi, 11:00 AM, ~14 km, vegetables ~800 kg (never groundnut, Oct harvest out of season), tempo GJ-11-KV-7734, cold-chain not required, Accept already actioned. New offer: tomorrow Thu 9 Jul, 9 AM, Keshod→Rajkot, 62 km, ₹1,850 flat, 30-min accept window. Trip 3 pending, 5 PM, cold-chain required (4°C, cold tempo GJ-11-KV-4521)
 - API: proposed GET /v1/me/transporter/trips?status= (today's list + history, filterable by shipment_status) · POST /v1/me/transporter/trips/:id/accept (offer acceptance within the 30-min window)
 
 ### 403-transporter-trip-navigation-pickup
-*403 · Trip Navigation & Pickup — Krishi-Verse [SUB-SCREEN under Trips, back-header]*
+*403 · Trip Navigation & Pickup — Krishalaya [SUB-SCREEN under Trips, back-header]*
 
 - Live navigation + pickup sub-screen (DELIVERY PARTNER), reached from 402's "Start trip" on Trip 2. `shipments.pickup_otp_hash` — the 6-digit code entered is verified server-side against this hash, raw OTP never persisted. `shipment_events` — "Start transit" writes a new row with device lat/lng + status `in_transit`. Stepper shows 5 of the 11 `shipment_status` values relevant to this leg (assigned→pickup_scheduled→picked_up→in_transit→delivered; full 11-value legend lives on 402)
 - Trip 2: Vanthali collection point → Junagadh mandi, 11:00 AM, ~14 km, vegetables ~800 kg (never groundnut). `requires_cold_chain = false` for this trip — cold-chain row explicitly N/A here; live temp readouts belong to cold-van trips (see `cold_chain_logs` on 406). Vehicle: tempo GJ-11-KV-7734 (1,500 kg)
 - API: proposed GET /v1/me/transporter/trips/:id (live detail) · POST /v1/me/transporter/trips/:id/events (writes shipment_events row on Start transit) · POST /v1/me/transporter/trips/:id/verify-pickup-otp (hash-checked server-side)
 
 ### 404-transporter-pod-capture
-*404 · Proof of Delivery Capture — Krishi-Verse [SUB-SCREEN under Trips, back-header] [DEFERRED D16: dead CSS]*
+*404 · Proof of Delivery Capture — Krishalaya [SUB-SCREEN under Trips, back-header] [DEFERRED D16: dead CSS]*
 
 - POD capture sub-screen (DELIVERY PARTNER), reached at the end of Trip 2's transit leg (403 → in_transit → this screen → delivered), drop at Junagadh mandi. PHOTO + OTP ONLY, NO SIGNATURE FIELD (schema gap 5): `shipments.pod_media_id` stores the delivery photo; `shipments.delivery_otp_hash` verifies the receiver's 6-digit code server-side, raw OTP never persisted. Receiver-name field is VISUAL-ONLY (no schema column). `shipments.cod_minor` = 0 for Trip 2 (mandi drop, no COD collection) — guard note tells the driver to collect only what the app instructs
 - Arrived Junagadh mandi gate 2, 12:10 PM, geo-fence confirmed. Photo captured ✓ 12:11 PM. Failed-delivery path maps to `shipment_status` ENUM values `failed`/`returned`. Trip earnings +₹1,200 chip carries a designs-lead note (schema gap 1 — no delivery_fee/rider-fee column). ⚠ DEFERRED D16: dead `.tpc-celebrate{display:none}` CSS rule — harmless, unused, flagged not fixed
 - API: proposed POST /v1/me/transporter/trips/:id/pod (writes pod_media_id + verifies delivery_otp_hash) · PATCH /v1/me/transporter/trips/:id/status (delivered|failed|returned transition)
 
 ### 405-transporter-earnings
-*405 · Transporter Earnings — Krishi-Verse [TAB ROOT — Earnings]*
+*405 · Transporter Earnings — Krishalaya [TAB ROOT — Earnings]*
 
 - Earnings ledger (DELIVERY PARTNER, Vikram Rathod), pattern follows 390-partner-provider-earnings.html conventions (summary hero, per-job rows, YTD strip, no wallet balance, tax-simple note). Schema gap 1 (designs-lead): no `delivery_fee` value, no rider-fee column in the current schema — every figure is illustrative pending a real payout schema. NO wallet balance is ever shown anywhere on the platform (strict rule, matching 390)
 - Arithmetic (exact, verified): 22 local trips × ₹450 = ₹9,900 + 8 mandi trips × ₹1,200 = ₹9,600 = **₹19,500** July total (30 trips), matching 401's July snapshot exactly. YTD ₹1,08,400 (illustrative). Today: Trip 1 ₹450 settled ✓; Trip 2 ₹1,200 on completion (matches 404's chip). Rating 4.8★ · 96% on-time
 - API: proposed GET /v1/me/transporter/earnings?period= (completed-trip sums by period + settlement status via bank_accounts/payouts, no stored wallet)
 
 ### 406-transporter-vehicle-management
-*406 · Vehicle Management — Krishi-Verse [TAB ROOT — Vehicle]*
+*406 · Vehicle Management — Krishalaya [TAB ROOT — Vehicle]*
 
 - Fleet screen (DELIVERY PARTNER, Vikram Rathod). `vehicles.is_refrigerated` REAL (true for GJ-11-KV-4521, false for GJ-11-KV-7734); `vehicles.rc_doc_id` REAL ("RC verified" chip driven purely by doc-id presence). Schema gap 2: `vehicles` has NO insurance/permit/DL date columns — any renewal date shown is a DESIGNS-LEAD placeholder, chips explicitly labelled. `cold_chain_logs` REAL (subject_type='shipment', temp_c, is_breach) feeds the cold-chain log strip. Driving licence is a KYC document (kyc_documents), NOT a vehicles column — cross-linked only
 - GJ-11-KV-4521: cold tempo, refrigerated ✓, 4°C ready, 500 kg capacity. GJ-11-KV-7734: 1,500 kg capacity, general produce, not refrigerated, insurance renewal due Aug 2026 (designs-lead placeholder). Last cold-chain trip logged 3.8–4.2°C, no breach (matches 4°C canon used across 395/401)
 - API: proposed GET /v1/me/transporter/vehicles (fleet + cold_chain_logs + rc_doc_id status) · PATCH /v1/me/transporter/vehicles/:id/active (operational toggle, app-side only, no DB status enum yet)
 
 ### 407-farmer-export-readiness-profile
-*407 · Export Readiness — Krishi-Verse [SHARED]*
+*407 · Export Readiness — Krishalaya [SHARED]*
 
 - Compliance-readiness checklist (FARMER, Ramesh Patel) — explicitly NOT exporter registration. `exporter_registrations` exists in the DB but is NOT owned by the farmer role (Ramesh is a grower, not an exporter of record); that flow belongs to the buyer/exporter role, never surfaced here. `compliance_requirements` REAL (`rules` jsonb, e.g. `eu_mrl`) informs the residue/MRL awareness row. `export_documents` REAL doc types (bol|awb|commercial_invoice|packing_list|coo|phyto|fumigation|insurance|inspection) inform the documentation-literacy row (plain-language explainer only, farmer does not generate these docs)
 - Linked to contract KV-CON-2026-0231, Mehta Oil Industries, quality_spec moisture_max_pct 8 — tracked as "practice alignment," not a new spec. Readiness meter 2 of 4 (UI-composition score, no readiness-score table in DB, presentational/designs-lead only)
 - API: proposed GET /v1/me/export-readiness (compliance_requirements + export_documents literacy rows + contract-linked practice-alignment checks, computed rollup, no stored readiness score)
 
 ### 408-farmer-warehouse-receipt
-*408 · Warehouse Receipt (eNWR) — Krishi-Verse [SHARED]*
+*408 · Warehouse Receipt (eNWR) — Krishalaya [SHARED]*
 
 - eNWR detail (FARMER, Ramesh Patel). `nwr_receipts` REAL: repository ENUM NERL|CCRL = 'NERL', `enwr_no` unique = NERL-ENWR-2026-088412, `valuation_minor` = 1,960,000 (₹19,600 = 8 qtl × ₹2,450/qtl), `nwr_status` ENUM (6 values, exact: issued|pledged|partially_released|released|cancelled|defaulted) = 'issued'. `warehouses` REAL (wdra_reg_no, storage_kinds jsonb, rate_per_qtl_month_minor) — Junagadh AgriStore, WDRA reg. WDRA/GJ/00214. `assay_reports` REAL (parameters jsonb) — moisture 11.2% chip. `storage_bookings.status` (separate lifecycle enum, already 'stored' stage, receipt issued)
 - Wheat (Lokwan), 8 qtl, deposited 15 Feb 2026. Pledge available but NOT taken. GUARD: `pledged_loan_id` is a soft ref for FUTURE pledge loans against THIS receipt only — never Ramesh's existing KCC loan KV-LN-2026-04412 (LAND collateral per D2 canon); the "borrow ~70%" pledge card describes a hypothetical, separate, not-yet-taken loan product, never implying a link to the existing KCC loan
 - API: proposed GET /v1/me/nwr-receipts/:id (receipt + assay + warehouse detail) · POST /v1/me/nwr-receipts/:id/pledge (hypothetical future action, not yet exercised)
 
 ### 409-farmer-cold-storage-booking
-*409 · Cold Storage Booking — Krishi-Verse [SHARED] [DEFERRED D16: 4-of-6 stepper, intentional]*
+*409 · Cold Storage Booking — Krishalaya [SHARED] [DEFERRED D16: 4-of-6 stepper, intentional]*
 
 - Booking flow (FARMER, Ramesh Patel). `warehouses` REAL: Junagadh AgriStore offers cold_0_4 at rate_per_qtl_month_minor=3200 (₹32/qtl/month), WDRA-registered, 4 km; Vanthali Cold Chain Hub offers cold_0_4 + frozen at ₹38/qtl/month, 9 km, honestly labelled "Private facility · not WDRA." `storage_bookings.status` REAL varchar vocab (6, exact, no invented states): requested|confirmed|stored|partially_released|released|cancelled
 - Booking is for a small leafy-vegetable lot destined for a D2C delivery box (consumer-module tie-in), NOT the farmer's main groundnut/wheat commodity: 3 qtl × ₹32/qtl/month × 0.5 month (2 weeks) = **₹48** (exact). ⚠ DEFERRED D16: the on-screen status-flow stepper shows only 4 of the 6 real status values (Requested→Confirmed→Stored→Released, happy-path only, omitting partially_released/cancelled) — comment-documented as complete/intentional for this booking, not a bug
 - API: proposed POST /v1/me/storage-bookings (creates storage_bookings row, status='requested') · GET /v1/warehouses?storage_kind=cold_0_4&near= (nearby warehouse options)
 
 ### 410-farmer-soil-testing-service
-*410 · Soil Testing Service — Krishi-Verse [SHARED]*
+*410 · Soil Testing Service — Krishalaya [SHARED]*
 
 - Booking + report screen (FARMER, Ramesh Patel, Survey 214/2). `soil_tests` REAL: parcel_id → survey 214/2, shc_card_no = 'GJ-SHC-88-04412', results jsonb (12 canonical parameters: ph,ec,oc,n,p,k,s,zn,fe,cu,mn,b), recommendations jsonb, valid_until ≈ Mar 2029 (SHC cards valid ~3 years from sample date 12 Mar 2026). ⚠ Schema gap 3: NO booking-workflow table for soil tests exists — the "book a new test" card (lab pickup vs bring-sample, slot, fee) is a DESIGNS-LEAD pre-report flow composition, not backed by a booking table; it front-ends the eventual creation of a soil_tests row once a report is issued
 - Recommendations tie to the farmer's CURRENT crop (GG-20 groundnut, vegetative stage per D9 canon) — recommendations jsonb content references the crop actually sown, never a generic crop. New booking: lab pickup, slot 12 Jul 2026 morning, fee ₹250
 - API: proposed POST /v1/me/soil-tests/bookings (⚠ NOT backed by a dedicated table — proposal only, becomes a real soil_tests row once a report is issued) · GET /v1/me/soil-tests/:id (past report + 12-param results + recommendations)
 
 ### 411-farmer-weather-advisory-detail
-*411 · Weather Advisory Detail — Krishi-Verse [SHARED]*
+*411 · Weather Advisory Detail — Krishalaya [SHARED]*
 
 - Alert detail (FARMER, Ramesh Patel, Vanthali/Junagadh). `weather_alerts` REAL: alert_type lookup (7 values, exact: heavy_rain|drought|frost|hail|heatwave|cyclone|pest_risk) = 'heavy_rain'; severity is a FREE varchar (no DB enum) — "Watch" is a DESIGNS-LEAD severity-scale choice (Watch < Warning < Severe, informational, calm), not a DB constraint. valid_from/valid_to = 10–11 Jul 2026. Source: IMD. ⚠ Schema gap 4: weather_alerts has NO crop-stage column — the crop-stage advisory card is UI COMPOSITION ONLY, joining the alert to the farmer's known crop (GG-20 groundnut, VEGETATIVE stage, sown 18 Jun, flowering not until Aug) at render time, not a DB relationship
 - Insurance nudge references D3 canon: parametric weather policy KV-POL-2025-0705-112 LAPSED, and the 30 Jun 2026 rain claim of ₹28,500 already paid under the (now-lapsed) product — used to build trust, not alarm, nudging re-enrollment via 280 (product detail) / 283 (enroll flow). Tone calm throughout, "Watch" framing, no siren language
@@ -9099,7 +9099,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 412-farmer-pest-detection-camera
 
-*412 · Pest Detection Camera — Krishi-Verse [FARMER] [BETA — pest_detection_cv OFF]*
+*412 · Pest Detection Camera — Krishalaya [FARMER] [BETA — pest_detection_cv OFF]*
 
 - Camera capture screen kicking off a real AI pipeline: `ai_models` (`code='crop_pest_diagnosis'`, provider TBD, `status='shadow'` until confidence clears QA) → `ai_inferences` (`subject_type='crop_photo'`, `input_ref` jsonb pointing at the captured photo blob, never raw PII, `confidence numeric(5,4)`, `was_overridden boolean`). Below-threshold inferences route to `ai_review_queue` (`queue_kind='low_confidence_grade'`). No new tables requested — reuses existing `ai_*` infrastructure from 12_growth_intelligence.sql.
 - ⚠ No `pest_species`/`pest_catalogue` table exists in Database_Architecture — pest examples and "how it helps" copy are UI-illustrative only (designs-lead call). Offline note is honest: a smaller on-device model runs with no network at lower confidence than the server model — a genuine trade-off, not a placeholder claim.
@@ -9107,7 +9107,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 413-farmer-pest-diagnosis-result
 
-*413 · Pest Diagnosis Result — Krishi-Verse [FARMER] [BETA — pest_detection_cv OFF]*
+*413 · Pest Diagnosis Result — Krishalaya [FARMER] [BETA — pest_detection_cv OFF]*
 
 - Reads back one `ai_inferences` row (`subject_type='crop_photo'`, `output` jsonb holding label/severity/treatment payload, `confidence` shown as 87% i.e. 0.8700). `was_overridden` flips true if a Krishi Mitra/agronomist later corrects the label via `ai_review_queue`. Low-confidence variant models `ai_inferences.confidence < ai_models.confidence_threshold` — UI shows top-2 candidates rather than a single false-certain label.
 - ⚠ No crop-pest lookup table exists (same designs-lead call as 412) — "Tikka — groundnut leaf spot (Cercospora)" and treatment copy are illustrative pending an agronomy content partner. "Report wrong diagnosis" writes a new `ai_review_queue` row. Nearby-sellers row previews `product_batches` (batch_no, qty_remaining, unit_code) as an illustrative real-bind placeholder, not live inventory — booking links through to 382 (services flow).
@@ -9115,7 +9115,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 414-farmer-satellite-farm-verification
 
-*414 · Satellite Farm Verification — Krishi-Verse [FARMER] [BETA — satellite_farm_verification OFF]*
+*414 · Satellite Farm Verification — Krishalaya [FARMER] [BETA — satellite_farm_verification OFF]*
 
 - Plot facts reuse Phase-1 canon exactly: `land_parcels` survey `214/2`, `area_acres=2.5`, GG-20 groundnut, centroid 21.05°N 70.34°E, Ramesh Patel, Vanthali — same parcel referenced across the design system (290, 359). Declared practices drip irrigation + organic manure per 359 canon. NDVI 0.68 read as vegetative stage.
 - ⚠ No `satellite_observations`/`ndvi_readings` table exists in Database_Architecture — imagery, NDVI value/history and "verification status" are illustrative pending a satellite data provider (Sentinel-2/ESA, Planet, Bhuvan — TBD). If built, natural home is a new parcel-linked observations table keyed off `land_parcels.id`, populated by a scheduled ingestion job (not a human-filled form). `carbon_enrolments.mrv_evidence` jsonb already has a slot for satellite/IoT/ground-truth refs (14_audit_additions.sql) that this screen's output would eventually populate. Every claim hedged: satellite estimates SUPPORT, never REPLACE, a human field visit for loans/schemes/claims.
@@ -9123,7 +9123,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 415-farmer-carbon-credit-dashboard
 
-*415 · Carbon Credit Dashboard — Krishi-Verse [FARMER] [BETA — carbon_credits OFF]*
+*415 · Carbon Credit Dashboard — Krishalaya [FARMER] [BETA — carbon_credits OFF]*
 
 - `carbon_projects` REAL: `methodology` varchar (`no_till\|agroforestry\|verra_vcs\|...`), `revenue_split` jsonb DEFAULT `{"farmer_bps":6000,"tenant_bps":2500,"platform_bps":1500}` — 60/25/15 EXACT, schema-default enforced. `carbon_enrolments` REAL: `parcel_id → land_parcels` (214/2, Ramesh Patel, Vanthali), `practices` jsonb, `mrv_evidence` jsonb. `carbon_credits` REAL: `vintage_year`, `tonnes_co2e numeric(12,3)`, `status` enum `issued\|listed\|sold\|retired`, `sale_price_minor`.
 - Table state honestly shows 0 credits issued — first issuance only happens after an MRV verification cycle completes; nothing implies credits already exist or sold. tCO2e estimate (~0.8–1.0/acre/yr) is domain-guidance content pending an approved methodology + verifier (Verra/Gold Standard equivalent) — shown as a RANGE, never a single number, never framed as earned/realised income.
@@ -9131,7 +9131,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 416-farmer-carbon-enrollment
 
-*416 · Carbon Enrollment — Krishi-Verse [FARMER] [BETA — carbon_credits OFF]*
+*416 · Carbon Enrollment — Krishalaya [FARMER] [BETA — carbon_credits OFF]*
 
 - Writes one `carbon_enrolments` row (`project_id → carbon_projects`, `parcel_id → land_parcels` 214/2, `farmer_user_id` Ramesh Patel, `practices` jsonb array, `mrv_evidence` jsonb, `status` default `'enrolled'`). Practices checklist pre-checks drip irrigation + organic manure from existing `crop_declarations` (359 canon). GUARD: no AWD (Alternate Wetting & Drying) option shown anywhere — AWD is a paddy-water-management methodology and this is a groundnut plot, correctly absent, not omitted by mistake.
 - No-till and agroforestry offered as optional additional practices per `carbon_projects.methodology` vocabulary. Revenue split mirrors 415's 60/25/15 exact schema default, disclosed BEFORE enrolment. MRV consent maps to `mrv_evidence` jsonb collection, framed as opt-in consent. On submit, status starts `'enrolled'` (matches 415's chip) — no credits exist yet.
@@ -9139,7 +9139,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 417-public-blockchain-trace-verify
 
-*417 · Public Blockchain Trace Verify — Krishi-Verse [PUBLIC] [BETA — blockchain_anchor OFF]*
+*417 · Public Blockchain Trace Verify — Krishalaya [PUBLIC] [BETA — blockchain_anchor OFF]*
 
 - CONTINUITY: same lot as screen 358 (public QR trace view) — palak batch `KV-TRC-2026-18834`, farmer Meera Ben, Vanthali, same journey timeline. 358 showed this lot BEFORE anchoring ("Not yet anchored," `blockchain_anchor` null); 417 shows the IDENTICAL lot AFTER `trace_lots.blockchain_anchor varchar(120)` is populated — a state TRANSITION for one real record, never a retcon or different batch. Every fact carried over from 358 matches exactly.
 - `trace_events.event_hash varchar(64)` (partitioned) — hash chip rows render per-event hashes; "verify steps" recomputes a hash of all trace_events for this lot and compares it to the anchored value. The `polygon:0x...` value is ILLUSTRATIVE FORMAT ONLY — chain/provider selection (Polygon, permissioned ledger, or other L2) is an untracked Phase-3 decision (P3-6). Served via the same public `trace_scan(qr_token)` SECURITY DEFINER RPC as 358 — no direct table grants to `anon` role. Post-audit minor: copy-button enlarged to 44px tap target.
@@ -9147,7 +9147,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 418-farmer-ai-negotiation-assistant
 
-*418 · AI Negotiation Assistant — Krishi-Verse [FARMER] [BETA — ai_negotiation_assistant, no live flag row yet]*
+*418 · AI Negotiation Assistant — Krishalaya [FARMER] [BETA — ai_negotiation_assistant, no live flag row yet]*
 
 - Extends 364-farmer-contract-negotiation.html — same thread (`KV-CON-2026-0231`, Mehta Oil Industries, GG-20 groundnut, 10 qtl). Nearest real DB trace: `farming_contracts.ai_suggested jsonb` ("AI negotiation assistant hints (Phase 3)," 0015_audit_additions.sql). AI panel sits ALONGSIDE the human thread, never replacing or auto-sending on it. Suggestions are illustrative front-end state pending an `ai_inferences` row (`subject_type='farming_contract'`, `subject_id=KV-CON-2026-0231`, via `ai_models`, `output` jsonb suggested range + reasons, `was_overridden` logged the moment farmer accepts/edits/dismisses).
 - GUARD: AI never auto-sends, never auto-commits — every suggestion drafted for human review; farmer's floor (₹6,100) is a hard client-side bound the assistant cannot suggest below. Canon held: MSP ₹6,783 verbatim; contract arc opened ₹6,000 (buyer), agreed ₹6,200 + oil-content premium (never altered here — this screen is BEFORE that agreement point, offering a counter-suggestion at the ₹6,150 counter step).
@@ -9155,7 +9155,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 419-farmer-digital-twin-mandi
 
-*419 · Digital Twin Mandi — Krishi-Verse [FARMER] [BETA — digital_twin_mandi, no live flag row yet]*
+*419 · Digital Twin Mandi — Krishalaya [FARMER] [BETA — digital_twin_mandi, no live flag row yet]*
 
 - PLANNING SIMULATION view, never a trading venue — "futures"/"trading" never appear anywhere. `mandi_prices` REAL (`modal_minor`, `arrivals_qty`, `min_minor`/`max_minor`, `price_date`, `product_id`, `mandi_id`, `source` enum `agmarknet\|enam\|platform_txn\|ambassador_manual`) drives the supply gauge/arrivals trend/today's-modal price. `price_predictions` REAL (`p10_minor`/`p50_minor`/`p90_minor`, `confidence`, `model_version`, `product_id`, `region_id`, `grade_option_id`, `target_date`) drives the simulation bands.
 - ⚠ `price_predictions` bands are pure historical modal-price percentile forecasts today — NO rainfall/arrivals/festival scenario-input column exists yet. Scenario chips are illustrative front-end framing over the same p10/p50/p90 output — band widens/narrows only with `model_version` updates, not a live "what-if" recompute (backend pending). Junagadh groundnut modal ₹6,240, consistent with 427's voice answer. Framed as aggregated/anonymised/govt-FPO-licensed data for farmer planning only.
@@ -9163,7 +9163,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 420-tenant-export-marketplace
 
-*420 · Export Marketplace — Krishi-Verse [TENANT, English-only] [BETA — export_marketplace, nearest live flag 'exports' OFF]*
+*420 · Export Marketplace — Krishalaya [TENANT, English-only] [BETA — export_marketplace, nearest live flag 'exports' OFF]*
 
 - TENANT role, English-only by design (zero Devanagari) — exporter admin, not farmer-facing. Exporter identity: Mehta Oil Industries Manavadar (exporter/buyer of record — NEVER Ramesh Patel or any farmer). `exporter_registrations` REAL: `authority` enum `APEDA\|MPEDA\|SPICES_BOARD\|TEA\|COFFEE`, `reg_no` (RCMC), `iec_code` regex `^[A-Z0-9]{10}$` — belongs to the buyer/exporter role only, per 407's canon note, never surfaced to farmers.
 - Listings reference `export_shipments` REAL (`destination_country char(2)`, `incoterm varchar(10)`, 7-state `status`) and `compliance_requirements` REAL (`destination_country`, `requirement_code` e.g. `eu_mrl`, `rules` jsonb). Countries: Bangladesh/Sri Lanka/Nepal are PRD-named target markets; UAE/Saudi shown "under exploration" only — hedge, not committed. Groundnut harvest is Sept–Oct; listing dates correctly read "Available Nov 2026 onward." FARMERS-NEVER-EXPORTERS GUARD carried explicitly in header comment.
@@ -9171,7 +9171,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 421-tenant-export-order-docs
 
-*421 · Export Order Docs — Krishi-Verse [TENANT, English-only] [BETA — export_marketplace, nearest live flag 'exports' OFF]*
+*421 · Export Order Docs — Krishalaya [TENANT, English-only] [BETA — export_marketplace, nearest live flag 'exports' OFF]*
 
 - `export_shipments` REAL (0010_agri_infra_services.sql): `destination_country char(2)`, `incoterm varchar(10)`, `status varchar(30)` ENUM EXACT 7-state `draft\|docs_in_progress\|inspection\|shipped\|delivered\|paid\|closed`, `lc_ref varchar(80)`, `vessel_or_awb`, `order_ids jsonb`, `total_value_minor`, `currency_code`. ⚠ No shipment-reference-code column exists (id is a plain uuid) — "KV-EXP-2026-0034" is an illustrative front-end format, not DB-generated; flagged backend-pending.
 - `export_documents` REAL: `doc_type_id` dynamic FK to `lookup_values(type_code='export_doc')`, EXACTLY 9 values `bol\|awb\|commercial_invoice\|packing_list\|coo\|phyto\|fumigation\|insurance\|inspection`; per-doc `status` real enum `pending\|submitted\|verified\|rejected`. Gate: shipment cannot move to `shipped` until every document is `verified` (error `EXPORT_DOCS_NOT_CLEARED`), reflected in stepper. AWB correctly n/a-sea (CIF Chittagong, sea freight — AWB only applies to air-freight lanes).
@@ -9179,7 +9179,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 422-shared-multi-country-selector
 
-*422 · Country & Cell Selector — Krishi-Verse [SHARED, bilingual EN+HI] [BETA — multi_country, no live flag row yet]*
+*422 · Country & Cell Selector — Krishalaya [SHARED, bilingual EN+HI] [BETA — multi_country, no live flag row yet]*
 
 - Any role may see this from account settings. `cells` REAL (0043_cells_ops.sql): `code varchar(40)` UNIQUE, `country_code char(2)`, `status` CHECK enum EXACT `active\|draining\|readonly\|retired`, `residency_locked boolean DEFAULT true`, plus `display_name`/`is_default`/`capacity_tenants`/`placed_count`. India (cell `IN-1`) is the only 'active' cell today; `residency_locked=true` is the concrete mechanism behind "your data stays in India" framing.
 - References ADR-0008 ("cell per country," currently a one-line stub file, cited for traceability even though its prose isn't written yet). Countries: Bangladesh/Sri Lanka/Nepal are PRD-named future cells ("coming 2029-30" — long-horizon, not committed); UAE/Saudi "under exploration" only, no cell rows exist for either. Global-design note: allow ~30% string-length expansion over English for Hindi/Gujarati/Bengali/Sinhala/Nepali labels; date-token order and currency symbol/decimal-separator kept isolated from surrounding text.
@@ -9187,15 +9187,15 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 423-shared-currency-preferences
 
-*423 · Currency Preferences — Krishi-Verse [SHARED] [BETA — multi_country]*
+*423 · Currency Preferences — Krishalaya [SHARED] [BETA — multi_country]*
 
-- DISPLAY-LAYER preference only. Every amount in Krishi-Verse is stored as `(amount_minor integer, currency_code CHAR(3))` per the base money ADR — no conversion, no FX rate table, no stored "preferred display currency" column exists anywhere yet. Rows are a design proposal for a future `user_preferences.display_currency_code` field; changing this selector today would be cosmetic-only and must never imply money moved or converted. Real accounts remain INR (₹) for the whole of Phase-1/2 — screen previews what Bangladesh/Nepal/Sri Lanka cells (multi_country flag) would eventually show.
+- DISPLAY-LAYER preference only. Every amount in Krishalaya is stored as `(amount_minor integer, currency_code CHAR(3))` per the base money ADR — no conversion, no FX rate table, no stored "preferred display currency" column exists anywhere yet. Rows are a design proposal for a future `user_preferences.display_currency_code` field; changing this selector today would be cosmetic-only and must never imply money moved or converted. Real accounts remain INR (₹) for the whole of Phase-1/2 — screen previews what Bangladesh/Nepal/Sri Lanka cells (multi_country flag) would eventually show.
 - GLOBAL-DESIGN REFERENCE screen: isolates the currency symbol inside one element (`.ccy-amount .ccy-symbol`) so a future locale swap never touches layout — the pattern every other module should copy. Post-audit minors applied: amounts reformatted to whole-rupee display, phrasing polished.
 - API: proposed GET /v1/me/currency-preview?currency= (illustrative, display-only, no persistence yet)
 
 ### 424-shared-family-account-sharing
 
-*424 · Family Account Sharing — Krishi-Verse [SHARED] [BETA — family_sharing]*
+*424 · Family Account Sharing — Krishalaya [SHARED] [BETA — family_sharing]*
 
 - CONCEPT SCREEN — no `finance_groups`/tenant schema exists for multi-person account access today; every permission, chip and audit row is a design proposal only, not backed by a table. Canon: Ramesh Patel (primary account holder). Meera Ben Patel is his wife and is ALSO the elected president of Vanthali Mahila Bachat Mandal (screen 369) — reused here exactly as that canon person, not a new character. Kiran is their grown son, view-only.
 - Backend pending — designs lead; this screen documents the intended permission model (primary/co-owner/view-only tiers) ahead of any P3-11 schema work.
@@ -9203,7 +9203,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 425-shared-ussd-flow-reference
 
-*425 · USSD Flow Reference — Krishi-Verse [SHARED] [BETA — ussd_channel]*
+*425 · USSD Flow Reference — Krishalaya [SHARED] [BETA — ussd_channel]*
 
 - DESIGN REFERENCE SHEET — a reference artifact for the channel engineering team, not an in-app screen a smartphone user ever opens. Documents how `*123#` would render on a feature phone and the reply flows behind it. SCAFFOLD NOTE: intended backing service is an `ivr-ussd-gateway` (session-based, stateless HTTP callback per keypress, 30s inter-step timeout, resume-on-timeout within grace window) sitting in front of the same mandi-price and order-status read APIs the smartphone app uses — no new business logic, only a text-menu adapter.
 - No USSD gateway integration exists yet — scaffold exists in architecture docs only, no schema. Menu tree walks mandi prices, order status, and scheme status per PRD rural-channel requirements.
@@ -9211,7 +9211,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 426-tenant-federation-tenant-switch
 
-*426 · Federation Tenant Switch — Krishi-Verse [TENANT, English-only] [BETA — tenant_federation]*
+*426 · Federation Tenant Switch — Krishalaya [TENANT, English-only] [BETA — tenant_federation]*
 
 - TENANT admin view. GUARD (380-DISTINCTION, explicit header comment): screen 380 is the FARMER-facing SHG/JLG groups module, where "federation" means a `tenants` row of type `shg_federation` aggregating member savings groups (`finance_groups`) for microfinance grading. Screen 426 is a COMPLETELY DIFFERENT concept: cross-tenant FPO-to-FPO commerce federation for an ordinary buyer/seller FPO tenant admin — sharing buyer demand signals and listing visibility across allied FPO tenants, never savings-group ledgers, never member SHG data.
 - CONCEPTUAL DISCLOSURE (backlog P3-8): no `tenant_federations`/`tenant_federation_members` table exists today. `tenants.parent_tenant_id` (if present) only expresses hierarchy, not peer opt-in federation, and there is no consent/audit table for cross-tenant demand-sharing. Every toggle, member count and "shared" indicator is a design proposal, not a stored fact.
@@ -9219,7 +9219,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 427-shared-voice-assistant-hub
 
-*427 · Voice Assistant Hub — Krishi-Verse [SHARED] [BETA — voice_assistant_hub]*
+*427 · Voice Assistant Hub — Krishalaya [SHARED] [BETA — voice_assistant_hub]*
 
 - Central voice assistant entry point. Backed conceptually by the real `voice_extraction` router (`apps/ai-services/src/voice_extraction/router.py`, `POST /v1/voice-extraction`) — vernacular speech-to-text provider stays generic (never names a vendor). Locales supported: `hi\|en\|gu` ONLY. Per Law 11/`ai_inferences` governance, the transcript is transient and used only for the single request — NEVER persisted; only the structured answer + a pointer are logged to `ai_inferences` for audit.
 - No new schema introduced — composes existing read APIs (mandi prices, orders, schemes, weather) behind one voice front door. Answer example: Junagadh groundnut ₹6,240, consistent with 419's canon. No vendor named anywhere on-screen.
@@ -9274,7 +9274,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 428-shared-forgot-pin-reset
 
-*428 · Forgot PIN Reset — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*428 · Forgot PIN Reset — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - 3-stage flow (phone entry → OTP verify → new PIN set), lockout-aware: before Stage 2 the client must check the Redis lockout key for this phone first and hard-redirect to 429 if locked — a user can never retry OTP send from here mid-lockout. Canon OTP law verbatim (6-digit/7-min/3-attempts/0:42) and masked phone "+91 98765 ●●●●●" (matches 75-settings.html).
 - ⚠ BACKEND-PENDING: `users` has no `pin_hash` column today. Shipping this flow requires `users.pin_hash` (hashed, never plaintext) + `users.pin_set_at` (timestamptz) — flagged for backend, not yet in Database_Architecture; screen is UI-only / design-lead-approved mock until then. Attempt-count/lockout state itself is Redis TTL + counter only, never a Postgres column.
@@ -9282,7 +9282,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 429-shared-otp-lockout
 
-*429 · OTP / PIN Lockout — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*429 · OTP / PIN Lockout — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - Verbatim required copy (microcopy-library law, do not paraphrase): "🔒 Account temporarily locked / Too many incorrect OTP attempts. Please try again in 30 minutes, or contact support." Live mono-digit 30-minute countdown, same visual language as the 0:42 OTP-resend timer. Sibling PIN-lockout copy variant included in the same shell for 428's forgot-PIN flow ("Too many incorrect PIN attempts").
 - Lockout state is Redis-only (attempt counter + TTL key per phone/session) — no lockout fields exist on `users`/`sessions` in Postgres; `sessions.revoked_at` only forces re-login once a lockout resolves, never stores the countdown. SIM-swap safety banner is protective disclosure, calm tone, never accusatory. "Verify via missed call instead" is a DESIGNER PROPOSAL chip shown disabled/pending — no IVR/missed-call channel exists in the current SMS-only OTP stack.
@@ -9290,7 +9290,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 430-shared-session-expired
 
-*430 · Session Expired — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*430 · Session Expired — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - DOCUMENTED DEVIATION from the full-screen takeover convention used by 428/429/431: renders as a bottom-sheet (`kv-backdrop` + `kv-sheet`, existing approved components.css primitives) over a dimmed, frozen mock of the screen the user was on, not a full-screen replace — intentional, because a session timeout is routine/low-stakes and the UI should stay "quiet," visibly preserving the user's place ("return where you left off"). No back-header — nothing to go back to except the sheet's own re-auth action.
 - Session invalidation is `sessions.revoked_at` being set under idle-timeout policy — no separate "session_expired" status exists; the client simply finds its access token rejected and shows this sheet. Masked phone "+91 98765 ●●●●●" matches 75-settings.html. The frozen "Draft listing" backdrop is illustrative — the real return target is whatever route/draft state the client had in memory at expiry.
@@ -9298,7 +9298,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 431-shared-account-suspended
 
-*431 · Account Suspended — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*431 · Account Suspended — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - Structure mirrors 177-account-delete.html (red gradient hero, warning box, alternative-path callout) but scoped to a USER-level suspension. `users.status` ENUM EXACT `active\|pending_verification\|suspended\|restricted\|soft_deleted` — this screen reads `suspended`. ⚠ No `suspension_reason` enum/column exists in Database_Architecture; the 4 reason classes shown (Policy violation / Suspicious activity review / Unresolved dispute / Tenant-initiated) are a design-lead PROPOSAL for de-facto display codes — pending backend ratification as `suspension_reason_code`, not yet a ratified DB enum.
 - GUARD: user-level suspension only — a SEPARATE tenant-level suspension exists (`tenant_status`, its own enum on the `tenants` table, independent of `users.status`); that tenant-suspended admin view is out of scope here and explicitly DEFERRED to batch D21. Appeal SLA ("respond within 3 business days") is a COPY COMMITMENT only — no appeals-queue table exists yet, backend ticket pending. Wallet balance stays fully visible/withdrawable (wallet-safe) throughout suspension. DPDP: `data_subject_requests` backs the "request copy or deletion" row with its existing 90-day cooling-off period, unaffected by suspension.
@@ -9306,7 +9306,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 432-shared-manage-devices-sessions
 
-*432 · Manage Devices & Sessions — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*432 · Manage Devices & Sessions — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - Lists `devices` rows (`fingerprint`/`platform`/`model`/`os_version`/`app_version`/`last_seen_at`) joined against `sessions`. Per-device "Log out" writes `sessions.revoked_at = now()` for that session only — the `devices` row itself is never deleted, only revoked, preserving device history. Bulk "Log out of all other devices" uses the same spell-out confirmation pattern used elsewhere for destructive-adjacent actions.
 - PRIVACY GUARDS: no raw IP or precise location shown for any device — current-device card and others intentionally omit `sessions.ip` (not user-facing); a future "Junagadh, Gujarat (approx.)"-style geo-lookup is proposed but not built, so the screen omits location rather than expose a raw IP today. `devices.push_token` is an internal delivery credential and is never surfaced in any UI, anywhere. NEW-DEVICE ALERT banner is sourced from `login_events` (first sight of an unrecognised fingerprint), `role="alert"` so screen readers announce it immediately on load.
@@ -9314,7 +9314,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 433-shared-role-picker-v2
 
-*433 · Choose Role (v2) — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*433 · Choose Role (v2) — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - SUPERSEDES 04-role.html as the live 9-role picker (04 retained in the screens folder for design-history reference, not deleted). Extends 04's verbatim hero copy and its 5 original role gradients, adding 4 new gradients: worker teal `#2a9d8f→#1a6b60`, consumer rose `#e76f8a→#b03a56`, transporter slate `#5a7d9a→#33506b`, service copper `#c07a3a→#8a4f1d`. 9 role cards total.
 - `roles.requires_kyc` / `roles.requires_approval` columns EXIST on the `roles` table but are UNSEEDED for the 5 newer roles — flagged gap, not a schema gap. Consumer/transporter/service-provider routes correctly show an `is-pending` "onboarding coming shortly" chip targeting D23 backlog screens 501/503 (and a third TBD-numbered flow) instead of a dead link. Invite footnote names Vet, Warehouse Operator and Sardar as staff roles added by invitation or FPO/tenant assignment, not self-serve pick.
@@ -9322,7 +9322,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 434-worker-registration-onboarding
 
-*434 · Worker Registration — Krishi-Verse [WORKER] [P0 — D16 remediation]*
+*434 · Worker Registration — Krishalaya [WORKER] [P0 — D16 remediation]*
 
 - Skills-tiers registration form. `worker_profiles.age_verified_18` is a HARD server-side rule enforced from DOB at submission (not just UI copy) — under-18 registrations are blocked before KYC. Fair-wage helper text ("Local market range: ₹350 – ₹500 · You're in fair range ✓") verbatim-consistent with the Phase-1 fair-range helper pattern (screen 136). `worker_profiles.stay_away_ok` ENUM EXACT `same_day\|overnight\|weekly\|monthly` powers the migrant-willingness ladder, framed as widening job matches, never a requirement.
 - e-Shram number and emergency-contact fields are optional/encouraged, never gating. Spraying hazard chip surfaces a protective note ("farmers must provide protective gear and safety training before you start") — framed at the farmer's obligation, never as a warning to the worker. KYC entry reuses the exact 72-kyc-aadhaar-start.html worker-framed pattern ("Required to receive wages — Needed before farmers can pay you").
@@ -9386,7 +9386,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 435-tenant-listing-moderation-queue
 
-*435 · Listing Approvals — Krishi-Verse [TENANT] [P0 — D16 remediation]*
+*435 · Listing Approvals — Krishalaya [TENANT] [P0 — D16 remediation]*
 
 - Tenant-role, English-only (back-office convention, no bilingual wrapper). Lists rows WHERE `listings.status='pending_approval'` only. "SLA >24h" age is COMPUTED at query time from `listings.submitted_at` (`NOW() - submitted_at`) — there is no stored `sla_breached` flag. AI-grade confidence % reads from the existing AI quality-grading pipeline (same source as `kv-badge-ai` on 12-my-listings.html).
 - Fair-band check compares `listings.price_per_unit` against the mandi fair-price range for that crop/mandi — same computation as `mo-fair` on 99-buyer-make-offer.html, also computed, not stored.
@@ -9394,7 +9394,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 436-tenant-listing-reject-detail
 
-*436 · Review Listing — Krishi-Verse [TENANT] [P0 — D16 remediation]*
+*436 · Review Listing — Krishalaya [TENANT] [P0 — D16 remediation]*
 
 - Tenant-role, English-only. `listings.reject_reason` is FREE TEXT — no reason-code lookup table exists. The reason chips are a DESIGN-LEAD UX AFFORDANCE ONLY: tapping one pre-fills the free-text field; the DB still stores plain text, not an enum key.
 - "Request changes" is a DESIGN-LEAD PROPOSED UX-ONLY BRANCH — it does not change `listings.status` (stays `pending_approval`) and only attaches an internal note; no separate DB status exists for it today. Case shown: Ramesh Patel's Okra listing (see 435 queue).
@@ -9402,7 +9402,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 437-farmer-listing-rejected-resubmit
 
-*437 · Resubmit Listing — Krishi-Verse [FARMER] [P0 — D16 remediation]*
+*437 · Resubmit Listing — Krishalaya [FARMER] [P0 — D16 remediation]*
 
 - Bilingual (mandatory wrapper — `.hi` spans present). `listings.status='rejected'`; `reject_reason` free text displayed verbatim (no reason-code table — see 436 for its tenant-side origin). Resubmitting moves status back to `pending_approval` on the SAME row, not a new listing.
 - No penalty/strike is applied on rejection + resubmit — there is no strikes/penalty column on `listings` or `farmer_profiles` today. Tone: no-shame, encouraging (okra-story framing) — this is a routine correction, not a failure.
@@ -9410,7 +9410,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 438-farmer-respond-to-offer
 
-*438 · Respond to Offer — Krishi-Verse [FARMER] [P0 — D16 remediation]*
+*438 · Respond to Offer — Krishalaya [FARMER] [P0 — D16 remediation]*
 
 - EXACT continuation of 99-buyer-make-offer.html (same offer, farmer side). Bilingual (mandatory wrapper). `listing_offers.status` ENUM `open | countered | accepted | rejected | expired | converted`; `round` + `counter_price_minor` track negotiation.
 - Buyer's original offer ₹2,650/qtl × 2 qtl = ₹5,300, earnest lock ₹530 (10%), round=1 (`open`). Farmer counters at ₹2,780/qtl × 2 = ₹5,560 → round=2, `status='countered'`. New 10% earnest ₹556; buyer already locked ₹530, so top-up owed = ₹556 − ₹530 = ₹26. Max rounds (3) is a DESIGN-LEAD ASSUMPTION — not a stored cap, backend should confirm.
@@ -9418,7 +9418,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 439-buyer-dispute-status-thread
 
-*439 · Dispute #DSP-2026-0247 — Krishi-Verse [BUYER] [P0 — D16 remediation]*
+*439 · Dispute #DSP-2026-0247 — Krishalaya [BUYER] [P0 — D16 remediation]*
 
 - Buyer (Mehta Trading Co.) POV of the SAME dispute as 156-tenant-dispute-detail.html. Bilingual wrapper mandatory (escrow-safety strip carries a `.hi` span). `disputes.status` ENUM shows `under_review` here (seller has responded; admin has not yet proposed a resolution — that's sibling screen 441). `escrow_holds.amount` = ₹14,400 (5 qtl × ₹2,880) remains locked. `dispute_reason='poor_quality'`.
 - ANTI-IDOR: servable only where `disputes.against_user`/complainant-respondent pair resolves server-side to the requesting user's own ID — enforced at the API/query layer, never by client-side role checks.
@@ -9426,7 +9426,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 440-farmer-dispute-respond
 
-*440 · Respond to Dispute — Krishi-Verse [FARMER] [P0 — D16 remediation]*
+*440 · Respond to Dispute — Krishalaya [FARMER] [P0 — D16 remediation]*
 
 - Ramesh Patel's POV of #DSP-2026-0247 at the compose moment — before submission (`disputes.status` still `open`, `seller_respond_by` countdown running). Bilingual wrapper mandatory. Submitting transitions `open` → `seller_responded` (the thread state shown in 439/156).
 - `seller_respond_by` is the SLA deadline column; if it lapses with no response, the case proceeds to admin review using only the buyer's evidence (fair-warning copy shown). Same server-side `against_user` ANTI-IDOR resolution as 439 — Ramesh can only load disputes where he is the resolved respondent, never by guessing IDs.
@@ -9434,7 +9434,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 441-shared-dispute-resolution-accept-appeal
 
-*441 · Resolution Proposed — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*441 · Resolution Proposed — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - Same-pattern screen used by BOTH parties of #DSP-2026-0247 (buyer view shown; labels flip "to you"/"to seller" for the respondent's render). Bilingual wrapper mandatory. Accepting moves `disputes.status` → `resolved` (escrow release scheduled +24h). Appealing moves status → `escalated` — a VALID enum value, so the appeal path is enum-correct, not a UX-only branch.
 - `resolution_type='refund_partial'` is a DESIGN-LEAD FIELD NAME (proposed values `refund_full | refund_partial | no_action | replacement`) pending backend ratification. Split: ₹2,200 to buyer + ₹12,200 to seller = ₹14,400 (full escrow, exact). "One appeal only" is a COPY COMMITMENT, not yet a stored appeal-count column.
@@ -9442,7 +9442,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 442-shared-payment-failed-retry
 
-*442 · Payment Failed — Krishi-Verse [SHARED] [P0 — D16 remediation]*
+*442 · Payment Failed — Krishalaya [SHARED] [P0 — D16 remediation]*
 
 - Reuses 15-checkout.html's order EXACT (Premium Wheat Lokwan 2 qtl ₹5,760 + delivery ₹150 + GST ₹296 − discount ₹100 = ₹6,106). `payments.payment_status` ENUM includes `failed` plus refund states (full list pending backend ratification). `payments.failure_code` is FREE VARCHAR, gateway-style (`UPI_TIMEOUT`, `INSUFFICIENT_FUNDS`, `BANK_DECLINED`) — no fixed enum exists; shown as a designs-lead placeholder code.
 - Tone: zero-blame, money-safety reassurance FIRST — a failed UPI debit is common and never assumed to be the buyer's fault; auto-refund language appears before any retry CTA.
@@ -9450,7 +9450,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 443-buyer-order-cancel
 
-*443 · Cancel Order — Krishi-Verse [BUYER] [P0 — D16 remediation] [canon fix applied: farmer identity → Ramesh Patel]*
+*443 · Cancel Order — Krishalaya [BUYER] [P0 — D16 remediation] [canon fix applied: farmer identity → Ramesh Patel]*
 
 - Order #KV-2026-0215 canon (56-farmer-orders.html: Rajesh Trader (buyer) · Yellow Maize 5 qtl · ₹9,550 · "⏱ 2 hours left" = farmer hasn't accepted yet). `order_status` ENUM includes `cancelled` (this action sets it). `cancel_reason` is a LOOKUP TYPE THAT EXISTS in schema but has ZERO SEEDED VALUES — the 4 reason chips are a DESIGNS-LEAD PROPOSED LIST pending backend/ops confirmation.
 - Pre-accept cancellation = 100% refund, no fee. Tone: retention-gentle — "Keep My Order" is offered with equal visual weight to cancelling, never buried. Post-audit fix: farmer name corrected to Ramesh Patel (established canon identity) — buyer remains Rajesh Trader per 56's own canon.
@@ -9458,7 +9458,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 444-buyer-delivery-failed-redeliver
 
-*444 · Delivery Attempt Failed — Krishi-Verse [BUYER] [P0 — D16 remediation]*
+*444 · Delivery Attempt Failed — Krishalaya [BUYER] [P0 — D16 remediation]*
 
 - Extends 131-buyer-order-track.html's timeline chrome with an appended failed-attempt step. COMMENT GUARD: this is order #KV-2026-0251 (Ramesh Patel's wheat, 5 qtl, driver Hareshbhai · GJ-23-AB-7821) — a DIFFERENT order from 131's own #KV-2026-0247, which succeeded and is untouched by this screen.
 - `shipments.status` ENUM includes `failed` (this attempt) — a subsequent farmer-side bounce-back to hub sets `shipments.status='returned'` (see 447). `order_status` is unaffected by a single failed attempt; it stays `in_transit` until redelivery or a return decision.
@@ -9466,7 +9466,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 445-buyer-order-return-request-tracker
 
-*445 · Return Request — Krishi-Verse [BUYER] [P0 — D16 remediation]*
+*445 · Return Request — Krishalaya [BUYER] [P0 — D16 remediation]*
 
 - Order #KV-2026-0198 canon (56-farmer-orders.html: Vadodara Mills · Yellow Maize 8 qtl · ₹15,280 · Delivered ✓; seller = Ramesh Patel, see 446). Unit price = ₹15,280 / 8 = ₹1,910/qtl. Buyer returns 2 of 8 qtl (`poor_quality`) → refund 2 × ₹1,910 = ₹3,820; seller keeps 6 × ₹1,910 = ₹11,460.
 - NEEDS ENUM: `returns.status` is currently a comment-vocab VARCHAR (`requested | approved | in_transit | received | refunded | rejected`) — not yet a ratified Postgres ENUM. Return reasons REUSE the `dispute_reason` vocabulary (e.g. `poor_quality`) — no separate `return_reason` type exists; a designs-lead reuse decision, not DB truth.
@@ -9474,7 +9474,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 446-farmer-return-request-review
 
-*446 · Review Return Request — Krishi-Verse [FARMER] [P0 — D16 remediation]*
+*446 · Review Return Request — Krishalaya [FARMER] [P0 — D16 remediation]*
 
 - Ramesh Patel's side of #KV-2026-0198 (buyer request shown in 445): Vadodara Mills returning 2 of 8 qtl maize, reason `poor_quality`. Refund 2 × ₹1,910 = ₹3,820; Ramesh nets ₹11,460 (6 × ₹1,910).
 - `returns.status` comment-vocab (needs ENUM, see 445). Contest routes into the SAME dispute pattern as 441 (`disputes.status` lifecycle), not a separate flow. Approving + confirming received goods triggers a `refund_txn` against escrow, which is what reduces Ramesh's payout on this order.
@@ -9482,7 +9482,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 447-farmer-returned-shipment-intake
 
-*447 · Returned Shipment Intake (Logistics) — Krishi-Verse [FARMER] [P0 — D16 remediation]*
+*447 · Returned Shipment Intake (Logistics) — Krishalaya [FARMER] [P0 — D16 remediation]*
 
 - DISTINCT FROM 446: a LOGISTICS bounce-back — goods physically returned to the farmer after 2 failed delivery attempts on order #KV-2026-0251 (see 444), NOT a buyer-quality return like #KV-2026-0198 in 445/446. `shipments.status` ENUM = `returned` (this screen's state), following `failed` (444's first attempt).
 - Buyer-charge note reflects a per-policy second-failure redelivery fee — DESIGNS-LEAD, not yet a ratified fee-schedule column. Tone: no-shame/no-blame throughout; farmer chooses relist / hold / dispose.
@@ -9490,7 +9490,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 448-buyer-shortage-reconciliation
 
-*448 · Delivery Shortage — Krishi-Verse [BUYER] [P0 — D16 remediation]*
+*448 · Delivery Shortage — Krishalaya [BUYER] [P0 — D16 remediation]*
 
 - Order #KV-2026-0201 canon (56-farmer-orders.html: Anand FPO · Wheat-Sharbati 10 qtl · ₹31,500 · In transit; seller = Ramesh Patel, see 449). Farmer declared before pickup he could only fulfil 8 of 10 qtl (yield shortfall). Shortfall = 2 qtl × ₹3,150/qtl = ₹6,300. Revised total = ₹31,500 − ₹6,300 = ₹25,200 exact.
 - `order_status` ENUM includes `partially_fulfilled` (this order's state after farmer's declaration in 449). "Dispute Shortfall" routes into the same `disputes.status` pattern as 441.
@@ -9498,7 +9498,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 449-farmer-mark-partial-fulfilment
 
-*449 · Mark Partial Fulfilment — Krishi-Verse [FARMER] [P0 — D16 remediation]*
+*449 · Mark Partial Fulfilment — Krishalaya [FARMER] [P0 — D16 remediation]*
 
 - Ramesh Patel declares BEFORE pickup that order #KV-2026-0201 (Anand FPO, Wheat-Sharbati 10 qtl @ ₹3,150 = ₹31,500) can only be fulfilled at 8 qtl. Shortfall = 2 qtl × ₹3,150 = ₹6,300; revised total = ₹31,500 − ₹6,300 = ₹25,200 exact.
 - `order_status` ENUM includes `partially_fulfilled` — this screen's confirm action sets it, mirroring the buyer's view in 448. Declaring pre-pickup (vs. a buyer discovering it post-delivery) is the honesty-first, declare-early trust path this screen is designed to encourage.
@@ -9506,7 +9506,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ---
 
-## P0 Additions · Vet Role — screens 450–460 [D16 REMEDIATION · NEW ROLE] [batch #3 of the D16-audit P0 remediation plan; 11 screens, 1 brand-new role (Vet); closes the supply-side gap for farmer screens 205–207 — Krishi-Verse's first veterinarian-facing app: registration/VCI verification, booking queue with emergency triage, in-consult exam, prescription writing, consult-complete fee collection, earnings, services/rates management, an availability calendar fused with the AI-technician worklist, and profile]
+## P0 Additions · Vet Role — screens 450–460 [D16 REMEDIATION · NEW ROLE] [batch #3 of the D16-audit P0 remediation plan; 11 screens, 1 brand-new role (Vet); closes the supply-side gap for farmer screens 205–207 — Krishalaya's first veterinarian-facing app: registration/VCI verification, booking queue with emergency triage, in-consult exam, prescription writing, consult-complete fee collection, earnings, services/rates management, an availability calendar fused with the AI-technician worklist, and profile]
 
 > **Founder-approved 5-tab nav (2026-07-08) — 451 is the pattern-setting nav-gate screen for this new role, same gate process as D12/D13:**
 > Home (451) · Bookings (452 tab root; 453/454/455/456 flow sub-screens) · Earnings (457 tab root) · Schedule (459 tab root, availability slots fused with the date-driven AI-technician/PD worklist) · Profile (460 tab root; 458 services/rates nests under it as a sub-page). Justification carried verbatim from 451's own header comment: (1) Home + Bookings earn the first two continuous-use slots — a vet checks her queue and accepts/declines emergency requests multiple times an hour, same reasoning as 401-transporter-home's Trips tab; (2) Earnings gets its own tab, not nested under Profile, because same-day settlement confidence is a distinct daily anxiety for a gig-style clinical worker, mirroring 390-partner-provider-earnings / 405-transporter-earnings precedent; (3) Schedule is the 4th tab (not buried 5th) because her open availability slots directly gate what farmers can book (206/386) AND the same calendar carries her date-driven AI-technician worklist (insemination_records.pd_due_date follow-ups) — one calendar surface, not two; (4) Profile is last per platform convention, with 458 (service rates, changes rarely) nested under it as a sub-page rather than earning continuous top-level real estate.
@@ -9550,7 +9550,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 450-vet-registration-onboarding
 
-*450 · Vet Registration — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*450 · Vet Registration — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header, no nav — entry flow precedes 451's bottom-nav home. Pattern source: 434-worker-registration-onboarding.html (hero → sections → KYC framing → success). Applicant Dr. Foram Vaghela, BVSc & AH, target VCI reg. GJ-VCI-14392, base region Vanthali/Junagadh. Touches `vet_profiles` (`vci_registration_no`, degree doc → `kyc_documents`, `is_ai_technician`, `base_region`, `service_radius_km` default 25) + draft `vet_services` rows (service_type, pricing_unit, price_minor).
 - `pricing_unit` ENUM EXACT 4 values `per_visit|per_dose|per_animal|per_minute`. Vets do not self-list instantly — invite-or-application intake, reviewed by tenant admin + VCI registry check before `vet_profiles.is_verified`.
@@ -9558,7 +9558,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 451-vet-home
 
-*451 · Vet Home — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE · NAV GATE] [post-audit fix: 3 hrefs repaired]*
+*451 · Vet Home — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE · NAV GATE] [post-audit fix: 3 hrefs repaired]*
 
 - FOUNDER-APPROVED 2026-07-08, pattern-setting 5-tab nav screen for the whole vet app (full tab map + justification in the batch nav block above). Hub: emergency-first queue snapshot, AI-technician follow-up strip (disambiguated from the platform's other "AI"=artificial intelligence badge — spelled out on first use, no purple `kv-badge-ai` used here), regional advisory, earnings snapshot (₹14,850 / 46 jobs, matches 457 exactly), Thursday free-camp reminder.
 - Canon: Dr. Foram Vaghela, GJ-VCI-14392, 4.8★, `is_ai_technician=true`, emergency-available. Queue mirrors 452's top cards (Ganga en_route, Moti emergency, Kalu tele gap-flagged ₹200).
@@ -9567,7 +9567,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 452-vet-booking-queue
 
-*452 · Vet Booking Queue — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*452 · Vet Booking Queue — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - TAB ROOT for Bookings (`aria-current`, bottom nav byte-identical to 451). Full `vet_booking_status` list surfaced via filter chips + per-card status badges. Canon cards: Moti (buffalo, Jasuben Chavda, Keshod) — bloat, emergency, requested 7:52 AM, ₹500, accept/decline + 30-min response nudge; Ganga (Ramesh Patel, Vanthali) — KV-VET-2026-0702-041, routine, en_route, arriving ~9:40 AM, ₹400 (start-consult CTA transitions en_route→in_consult, opens 454); Kalu (goat kid, Prakash Rabari) — tele, requested, ₹200 (tele-rate gap flag); one earlier completed routine consult, ₹250, settled.
 - E-AUDIT CLOSURE: `cancelled`/`no_show` had no rendered example anywhere in the D19 canon set — a small muted demo-legend row closes the gap, explicitly labeled non-canon ("don't occur in today's queue").
@@ -9575,7 +9575,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 453-vet-booking-detail
 
-*453 · Vet Booking Detail — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE] [canon clarification applied + D25 tension flag]*
+*453 · Vet Booking Detail — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE] [canon clarification applied + D25 tension flag]*
 
 - Back-header, no nav — vet-side mirror of farmer's 207. KV-VET-2026-0702-041 lifecycle carried exact (requested 2 Jul 6:10 PM → accepted 6:25 PM → en_route). Farmer note verbatim: "Due for FMD booster, otherwise eating and milking normally." Health-history chips: FMD dose 1 15 May ✓ (batch FMD-GJ-2026-B117, next due 15 Nov per 207) · overdue booster since 20 May · in-milk 8.0 L/day.
 - FIRST UI EXPOSURE of `ai_triage` jsonb — rendered advisory-only ("Routine ✓ suggested… differential: none" + explicit human-decides note); never replaces the vet's clinical judgment. Cancel action renders an inline expandable reason-comment block rather than a separate screen.
@@ -9584,7 +9584,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 454-vet-visit-inconsult
 
-*454 · Vet In-Consult — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*454 · Vet In-Consult — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header, no nav. `status=in_consult`. Ganga's exam: consult started 9:42 AM, temp 101.2°F (normal cattle range ~101–102.5°F), appetite ✓, udder ✓, BCS 3.5 (body condition score, 1–5). Vaccine administration: FMD booster, batch FMD-GJ-2026-B214 (NEW batch, distinct from dose-1 batch FMD-GJ-2026-B117 on 207/453), subcutaneous neck site.
 - TELE-VARIANT GAP: when `vet_bookings.mode='tele'` (e.g. Kalu's booking), this same screen would need a call/video UI instead of the exam checklist shown — no `vet_tele_sessions`/call-log table exists yet; flagged as a schema gap, not fully designed.
@@ -9592,7 +9592,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 455-vet-prescription-writing
 
-*455 · Vet Prescription Writing — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*455 · Vet Prescription Writing — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header, no nav. Status transitions `in_consult`→`prescribed`. PER-LINE `is_schedule_h` GUARD DEMO: Line 1 FMD booster, `is_schedule_h=true` ("Restricted — vet-administered only", verbatim 207 copy), batch FMD-GJ-2026-B214, `next_due` auto-chip 3 Jan 2027 (+6 months — a NEW dose event resetting the clock, distinct from the 15 Nov 2026 next-due on the OLDER 15 May dose-1 record). Line 2 Meloxicam (post-vaccination antipyretic), `is_schedule_h=false`, orderable-from-pharma product link.
 - `digital_signature_ref` mono stamp: Dr. Foram Vaghela, GJ-VCI-14392. Valid until 3 Aug 2026 (30-day standard Rx validity).
@@ -9600,7 +9600,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 456-vet-consult-complete-fee
 
-*456 · Vet Consult Complete & Fee — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*456 · Vet Consult Complete & Fee — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header, no nav. Transitions `prescribed`→`completed`, `completed_at` stamped. Fee collection shown with cash-in-hand (the most common rural pattern) pre-toggled ON, settled state visible in the same scroll — a single coherent "closing out the visit" screen. Visit began 9:40 AM, prescription completed 10:04 AM (24-min duration). Fee ₹400 = ₹250 visit + ₹150 dose (exact mirror of 451/455/207/453). Next dose due 3 Jan 2027 (matches 455's chip exactly).
 - `payment_id` is populated only for gateway-mediated methods once `payments.status='captured'`; the cash-received toggle leaves `payment_id` NULL — `fee_minor` + `completed_at` alone stand as the settlement record (same offline pattern as `service_bookings` platform-wide). `reviews.target_type='farmer'` flagged as the first vet-rates-farmer surface, a compatible non-schema-changing addition pending backend confirmation.
@@ -9608,7 +9608,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 457-vet-earnings
 
-*457 · Vet Earnings — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*457 · Vet Earnings — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - TAB ROOT (Earnings), bottom nav byte-identical to 451 with `aria-current` moved. Follows 390-partner-provider-earnings / 405-transporter-earnings conventions (gradient summary hero, breakdown rows, today strip, rating-impact row, YTD, tax-simple note, NO wallet balance).
 - ARITHMETIC EXACT: 17×₹400 + 15×₹250 + 6×₹300 + 3×₹500 + 5×₹200 = ₹6,800+₹3,750+₹1,800+₹1,500+₹1,000 = ₹14,850 (46 jobs) — matches 451's hero exactly. Today ₹650 (Ganga ₹400 + earlier ₹250). YTD ₹1,02,400 (illustrative, lakh grouping per 390/405 convention).
@@ -9617,7 +9617,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 458-vet-services-rates-manage
 
-*458 · Vet Services & Rates — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*458 · Vet Services & Rates — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header sub-page, nests under Profile (460) per 451's nav justification #4 (rates change rarely). Full CRUD on the REAL `vet_services` table: `id, vet_id FK vet_profiles(user_id), service_type_id/type, price_minor NOT NULL, pricing_unit NOT NULL, is_active, created_at, updated_at`. `pricing_unit` CHECK EXACT 4 values `per_visit|per_dose|per_animal|per_minute` — do not invent a 5th without founder approval.
 - EMERGENCY WRINKLE: Emergency is not its own pricing_unit — a flat call-out fee stored `per_visit` (same unit as Consult), gated by `vet_profiles.is_emergency_available` (vet-level boolean, not per-service) — the Emergency row's toggle edits `vet_profiles`, not this row's `pricing_unit`. TELE-RATE GAP: proposes an unpublished ₹200 tele row — saving it CREATES the real row and clears the gap flag seen on 451/452/457.
@@ -9625,7 +9625,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 459-vet-availability-calendar
 
-*459 · Vet Availability Calendar — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE]*
+*459 · Vet Availability Calendar — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE]*
 
 - TAB ROOT (Schedule), bottom nav byte-identical to 451. ONE surface for two obligations: open availability slots (gate what 206/386 let farmers book) AND the date-driven AI-technician/PD worklist (`insemination_records.pd_due_date`, vaccination next-dose reminders) — both are "what does my calendar require of me" questions.
 - Thursday morning LOCKED (free camp, not bookable) — consistent with 201/205 canon; Thursday afternoon open. Worklist: Gauri (Gir cow) — `performed_at` 30 Jun 2026 ✓, `pd_due_date` 28 Sep 2026 pending PD check (HER own task, auto-books her 28 Sep morning slot, not farmer-initiated); Ganga — FMD booster next due 3 Jan 2027, reminder only (matches 455/456 exactly).
@@ -9634,7 +9634,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 460-vet-profile-settings
 
-*460 · Vet Profile — Krishi-Verse [VET] [P0 — D16 remediation · NEW ROLE — LAST screen of the role, 451–460 complete]*
+*460 · Vet Profile — Krishalaya [VET] [P0 — D16 remediation · NEW ROLE — LAST screen of the role, 451–460 complete]*
 
 - TAB ROOT (Profile), bottom nav byte-identical to 451. 458 nests here as a sub-page chevron row (rates change rarely, per 451's justification #4). 292-DIVERGENCE NOTE (intentional, not an inconsistency): unlike 292's separate surveyor-ID pill, the VCI registration number stays INLINE in the profile meta line ("BVSc & AH · GJ-VCI-14392"), consistent with 451's own precedent — the same identity fact repeats across many surfaces (queue cards, directory 205, this profile), so an inline treatment reads as professional credentialing rather than a one-time trust-badge moment.
 - DB TRUTH: `vet_profiles` (`user_id`, `degree`, `vci_registration_no`, `rating_avg`, `consult_count`, `is_ai_technician`, `is_emergency_available`, `base_region`). GAP (mirrors 451/457/458/459 pattern): no `service_radius_km`/`hosts_free_camp` columns exist today — "Service area · 25 km radius" and "Free camp hosting" are PROPOSED illustrative defaults pending backend confirmation.
@@ -9692,7 +9692,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 461-warehouse-operator-onboarding
 
-*461 · Warehouse Operator Onboarding — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
+*461 · Warehouse Operator Onboarding — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header, no nav — entry flow precedes 462's bottom-nav home. Pattern source: 450-vet-registration-onboarding.html (hero → invite-context → stepped sections → review-pending state). Role-picker cross-ref: 433 ("Vet, Warehouse Operator, Sardar and staff roles are added by invitation or your FPO/tenant"). Depicts Paresh Thakkar's ORIGINAL onboarding submission for Junagadh AgriStore — a historical instance filled with his real canon data (WDRA/GJ/00214, capacity 500 MT, storage_kinds ambient+cold_0_4, ambient ₹28/cold ₹32 per qtl/month, NERL+CCRL repository memberships) — shown WITHOUT an in-UI "today" stamp (unlike 462) because by the batch's "today" his application was approved long ago and he is already fully operational (see 462); same narrative device as 408-farmer-warehouse-receipt (historical vs "today").
 - DB FIELDS TOUCHED: `warehouses` (`wdra_reg_no`, `address_id`, `capacity_mt`, `storage_kinds` jsonb, `rate_per_qtl_month_minor`, `insurance_policy_ref`, `operator_user_id`, `is_active`) + draft `vet_services`-style rate rows (service_type, pricing_unit, price_minor equivalents for storage rates). Repository membership (NERL/CCRL) is not a `warehouses` column in this schema pass — modelled as onboarding-intake metadata pending a `warehouse_repository_memberships` join table, flagged not silently invented as a real column.
@@ -9701,7 +9701,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 462-warehouse-operator-home
 
-*462 · Warehouse Operator Home — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
+*462 · Warehouse Operator Home — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
 
 - FOUNDER-APPROVED 2026-07-08, pattern-setting 5-tab nav screen for the whole warehouse-operator app (full tab map + justification in the batch nav block above). Hub: today intake/pending/upcoming queue, occupancy snapshot, a lightweight "July so far" earnings snapshot (₹6,360, captured 9:41 AM — BEFORE today's release, see 469's snapshot-timing reconciliation), eNWR strip, alerts.
 - Canon: Paresh Thakkar, Junagadh AgriStore, WDRA/GJ/00214. TIME-LAPSE CONTINUITY NOTE: Ramesh Patel's cold booking (409) is shown here as "confirmed ✓", two days after 409's own "requested" moment — same `storage_bookings` row, two roles, two timestamps, documented here to pre-empt a false canon-mismatch flag in QA. CHAMBER-SPLIT + RATE-PER-KIND gaps re-quoted (ambient 260/380 MT, cold 50/120 MT split; single `rate_per_qtl_month_minor` column vs two live per-kind rates).
@@ -9709,7 +9709,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 463-warehouse-booking-queue
 
-*463 · Warehouse Booking Queue — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
+*463 · Warehouse Booking Queue — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
 
 - TAB ROOT for Intake (`aria-current`, bottom nav byte-identical to 462). Full `storage_bookings.status` 6-vocab surfaced via filter chips + per-card status badges. Canon cards: Naresh Bhatti (15 qtl groundnut, ambient, `requested`, capacity-check chip "15 qtl fits ambient ✓"); Kanji Bhalala (12 qtl cotton, ambient, `confirmed`, arrival today 8 Jul, "Start intake" CTA → 464); Ramesh Patel (3 qtl leafy veg, cold, `confirmed`, expected 10 Jul, ₹48 — same row as 409, time-lapse continuity per 462).
 - E-AUDIT CLOSURE: `cancelled` demoed as a muted legend row, same 452-vet-booking-queue-precedent treatment for states absent from today's live queue. `stored`/`partially_released`/`released` have no reachable transition from this screen (belong to 464/467).
@@ -9717,7 +9717,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 464-warehouse-goods-intake
 
-*464 · Warehouse Goods Intake — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
+*464 · Warehouse Goods Intake — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header, no nav — floor task, part of the fused Intake tab (463 confirm → 464 weigh-in → 465 assay, one continuous physical workflow, see 462's nav-structure comment). Canon: Kanji Bhalala's cotton lot, `status=confirmed` (from 463), arrival today 8 Jul 2026. Intake ceremony: arrival/depositor check, weigh-in verification against the declared 12 qtl, condition photos, a moisture quick-check preview (full parameters recorded later at 465), storage assignment, and the status transition `confirmed`→`stored` itself (`stored_at` timestamptz set).
 - WEIGHBRIDGE UI-ONLY NOTE: no `weighbridge_readings` table exists anywhere in Database_Architecture — the "declared vs weighed" comparison is a UI-only verification step for the operator's own confidence before storing; only the confirmed 12 qtl persists to `storage_bookings`. CHAMBER ASSIGNMENT DESIGNS-LEAD NOTE: "Ambient chamber A2" is an illustrative placeholder (same flag as 462/468) — no `warehouse_chambers` table exists to hold a real per-chamber assignment.
@@ -9725,7 +9725,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 465-warehouse-assay-record
 
-*465 · Warehouse Assay Record — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
+*465 · Warehouse Assay Record — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header, no nav — floor task, part of the fused Intake tab (463 confirm → 464 weigh-in → 465 assay). Canon: assay for Kanji Bhalala's cotton lot, freshly stored today (from 464). `assayer_name` = "Paresh Thakkar (in-house)" — this warehouse's own operator doubles as assayer for this deposit (external-lab option shown as the alternative path). NEW cotton assay: moisture 8.2%, trash/FM 3.1%, staple 27.5mm, Grade A shankar-6; `valid_until` = assayed_at (8 Jul 2026) + 90 days = 6 Oct 2026 exact (Jul 8→31=23d, +Aug 31=54d, +Sep 30=84d, +6=90d).
 - `parameters` jsonb for COTTON (moisture/trash-FM/staple-length) differs by design from the WHEAT shape (moisture/FM/broken) shown as a COMPLETED REFERENCE card: Ramesh Patel's Feb wheat assay (moisture 11.2%, FM 0.8%, broken 2.1%), reproduced verbatim from 408-farmer-warehouse-receipt.html canon — same commodity's receipt (NERL-ENWR-2026-088412) is issued and referenced again at 466.
@@ -9733,7 +9733,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 466-warehouse-nwr-issuance
 
-*466 · Warehouse NWR Issuance — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
+*466 · Warehouse NWR Issuance — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
 
 - TAB ROOT for eNWR (`aria-current`, bottom nav byte-identical to 462) — earns its own top-level tab (not nested under Stock/Intake) because eNWR is a distinct regulatory/legal artefact (negotiable instrument, pledge-eligible) independent of physical stock state, same reasoning as 457-vet-earnings' own tab. Canon: Ramesh Patel's wheat receipt NERL-ENWR-2026-088412 (8 qtl, ₹19,600, status=issued) shown from the operator's issuing side, identical to 408. Kanji Bhalala's cotton — assay just completed at 465 — NEW issuance flow expanded inline: repository select (NERL|CCRL, CCRL chosen), quantity 12 qtl, MANUAL valuation ₹7,150/qtl → ₹85,800 auto-calculated (12 × 7,150), producing `enwr_no` CCRL-ENWR-2026-091730.
 - MANUAL VALUATION GAP: `nwr_receipts.valuation_minor` populated by the operator typing a per-qtl rate — no automated valuation service (e.g. mandi-price lookup × quantity) exists. A real, load-bearing gap — two different operators could value the same commodity/quantity differently until a real pricing service exists.
@@ -9742,7 +9742,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 467-warehouse-release-authorization
 
-*467 · Warehouse Release Authorization — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
+*467 · Warehouse Release Authorization — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE]*
 
 - Back-header sub-action nested under the Stock tab (see 462's nav-structure comment: Stock = 468 occupancy + 467 release, two views of the same inventory-on-hand question). Reached from 468's Junagadh Traders stored-lot row → "Release →" CTA. Canon: Junagadh Traders, 95 qtl groundnut, ambient, stored 12 May 2026, NWR NERL-ENWR-2026-089950 (issued, unpledged); holder requested release via the app this morning, Paresh verifies + authorizes here.
 - FEE ARITHMETIC (exact, REAL formula sourced from `storage-booking.entity.ts`: fee = qty × rate_per_qtl_month × CEIL(months)): 12 May→8 Jul 2026 = 1 complete month + a partial second month → CEIL 2; 95 qtl × ₹28/qtl/month × 2 months = ₹5,320 (95×28=2,660; ×2=5,320). Posts as a `storage_fee` wallet leg only at the moment `storage_bookings.status`→`released` — matches 462's "fees settle only on release" framing and 469's "today's release ₹5,320" line item.
@@ -9751,7 +9751,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 468-warehouse-occupancy-dashboard
 
-*468 · Warehouse Occupancy Dashboard — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
+*468 · Warehouse Occupancy Dashboard — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE]*
 
 - TAB ROOT for Stock (`aria-current`, bottom nav byte-identical to 462), fuses this occupancy view with 467-warehouse-release-authorization (see 462's nav-structure comment). Canon: 310/500 MT occupied (62%) — ambient 260/380 MT (68%), cold 50/120 MT (42%), 190 MT free. Four named stored lots (Ramesh Patel wheat 8 qtl since 15 Feb, Kanji Bhalala cotton 12 qtl stored today, Anand FPO wheat 180 qtl ambient since Mar, Junagadh Traders groundnut 95 qtl ambient since 12 May) plus one reserved-not-yet-stored row (Ramesh Patel leafy veg, cold, incoming 10 Jul).
 - TONNAGE PLAUSIBILITY NOTE (designs-lead): the four named lots sum to 8+12+180+95 = 295 qtl (29.5 MT) — a small fraction of the 310 MT aggregate occupancy total. Intentional and consistent with a summary dashboard, not a full ledger: this warehouse serves many smaller depositors beyond the four with a reachable story on other screens; the remaining ≈280 MT is real in the aggregate figure but not itemised lot-by-lot here, same "top-N under an aggregate total" treatment as any hub dashboard.
@@ -9760,7 +9760,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 469-warehouse-earnings
 
-*469 · Warehouse Earnings — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE — DELIBERATE DIVERGENCE FROM VET PRECEDENT]*
+*469 · Warehouse Earnings — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE — DELIBERATE DIVERGENCE FROM VET PRECEDENT]*
 
 - Back-header sub-page NESTED under Profile (NOT a bottom-nav tab) — deliberate divergence from the vet precedent (457-vet-earnings, a tab root): a vet's fee settles per booking, multiple times a day; a warehouse operator's `storage_fee` only crystallizes at an episodic `release()` event, so most days the number does not move — a tab would manufacture false daily activity. Reached from 462's "Full ledger →" link and 470's "Earnings & statements" chevron row; back button returns to 470.
 - SNAPSHOT-TIMING RECONCILIATION: 462's morning read ("July so far ₹6,360 · Today ₹0", captured 9:41 AM, BEFORE release) vs this screen's later read (AFTER Paresh's 467 release, same day) — July so far now ₹11,680, Today ₹5,320; both are the correct, consistent state of the same ledger at two different moments, not a canon contradiction. ARITHMETIC EXACT: ambient 210 qtl-mo×₹28=₹5,880 + cold 15 qtl-mo×₹32=₹480 = ₹6,360 prior-to-today; + today's release 95×₹28×2=₹5,320 = ₹11,680 July so far. YTD ₹1,84,900 (illustrative, lakh grouping per 390/405/457 convention).
@@ -9769,7 +9769,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 470-warehouse-profile-settings
 
-*470 · Warehouse Profile — Krishi-Verse [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE — LAST screen of the role, 461–470 complete · LAST ZERO-COVERAGE ROLE CLOSED]*
+*470 · Warehouse Profile — Krishalaya [WAREHOUSE OPERATOR] [P0 — D16 remediation · NEW ROLE · NAV GATE — LAST screen of the role, 461–470 complete · LAST ZERO-COVERAGE ROLE CLOSED]*
 
 - TAB ROOT (Profile), bottom nav byte-identical to 462. 469 nests here as a sub-page via the "Earnings & statements" chevron row (see 462's DELIBERATE DIVERGENCE note — earnings is NOT a tab). Canon: Paresh Thakkar, Junagadh AgriStore, WDRA/GJ/00214, capacity 500 MT, storage_kinds ambient+cold_0_4, member of both NERL and CCRL repositories (Ramesh's wheat issued via NERL, Kanji's cotton via CCRL, same warehouse). Insurance ref AGRI-WH-INS-2025-3387. Staff: Bhavesh Koli, loader/weighman (cosmetic-only row, see gap note below).
 - RATE-PER-KIND GAP (verbatim from 462, re-quoted because this is the screen where the operator would EDIT rates): `warehouses.rate_per_qtl_month_minor` is a single bigint field, but this warehouse publishes TWO live per-kind rates — ambient ₹28/qtl/month, cold_0_4 ₹32/qtl/month. A single scalar column cannot hold two rates at once; the schema needs a rate row per `(warehouse_id, storage_kind)`. The edit row shows both figures as the warehouse's real published pricing; the single-column schema gap is flagged, not silently resolved.
@@ -9813,7 +9813,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 471-farmer-loan-rejected
 
-*471 · Loan Application Rejected — Krishi-Verse [FARMER] [P0 — D16 remediation · never-shame]*
+*471 · Loan Application Rejected — Krishalaya [FARMER] [P0 — D16 remediation · never-shame]*
 
 - Back-header, no nav. `loan_applications.status = rejected`, KV-LN-2026-05203 (Gold loan, Suvarna Gold Finance NBFC), ₹40,000 requested. `decision_note` verbatim: "Existing loan obligation (KCC ····4412, ₹68,713 outstanding) reduces free repayment capacity for a new ₹40,000 request." `credit_decisions.factors` jsonb rendered as plain-language right-to-explanation cards — never raw score/model output. `cooling_off_until` is NULL (PRD §59.4: only populates on approved offers; rejections carry no cooling-off period). KV-LN-2026-04412 (the KCC loan quoted) is NOT modified by this screen — its own arc (screen 266) stays exactly as-is.
 - NEVER-SHAME TONE: no penalty framing, no "DENIED" stamp; two concrete next steps offered (apply again with a co-applicant / apply for a smaller amount).
@@ -9821,7 +9821,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 472-farmer-loan-restructured-schedule
 
-*472 · Loan Restructured Schedule — Krishi-Verse [FARMER] [P0 — D16 remediation]*
+*472 · Loan Restructured Schedule — Krishalaya [FARMER] [P0 — D16 remediation]*
 
 - Back-header, no nav. `loans.status` enum `active|overdue|restructured|closed|written_off|transferred` — continues screen 276 verbatim: farmer picked "Smaller EMI, longer time" (Option A) on KCC loan ····4412 (KV-LN-2026-04412); NBFC approved it, `loans.status → restructured`. Figures inherited exactly from 276: tenure 12→18 months, EMI ₹8,365→₹5,720. "~₹1,900 more total interest" is 276's OWN illustrative comparison for the ORIGINAL ₹1,00,000 loan — explicitly NOT re-derived against the ₹68,713 currently-outstanding figure quoted on 471; the two numbers describe different things and must not be reconciled.
 - Schedule: 4 instalments already paid at the old ₹8,365 rate (4×₹8,365=₹33,460) before the restructure took effect, followed by the new 14-instalment restructured plan at ₹5,720 (14×₹5,720=₹80,080) to complete the 18-month tenure.
@@ -9829,7 +9829,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 473-farmer-policy-cancel-surrender
 
-*473 · Policy Cancel / Surrender — Krishi-Verse [FARMER] [P0 — D16 remediation · no-cash-back honesty]*
+*473 · Policy Cancel / Surrender — Krishalaya [FARMER] [P0 — D16 remediation · no-cash-back honesty]*
 
 - Back-header, no nav. `insurance_policies.policy_status` enum `proposed|active|lapsed|cancelled|expired|claimed` — this screen cancels KV-POL-2026-0110-233 (Health+Life bundle, ₹99/month, members Ramesh Patel + Meera Ben Patel — canon screen 285). HONESTY NOTE: there is NO `surrender_value` column anywhere in `insurance_policies` — this product never accrued a cash value, so "surrender" is framed plainly as cancellation with zero pay-out, never implied refund/cash-back.
 - Cancelling stops the ₹99 auto-debit immediately and ends cover today for both members; re-enrolling later restarts BOTH waiting periods from screen 285 (30-day accident-only window, 2-year pre-existing-illness exclusion) — not a resume, a fresh start. No pause/hold state exists in the schema — the only retention lever is a human support conversation.
@@ -9837,14 +9837,14 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 474-farmer-policy-nominee-edit
 
-*474 · Policy Nominee Edit — Krishi-Verse [FARMER] [P0 — D16 remediation · BACKEND-DEFERRED]*
+*474 · Policy Nominee Edit — Krishalaya [FARMER] [P0 — D16 remediation · BACKEND-DEFERRED]*
 
 - Back-header, no nav. SCHEMA GAP flagged upward, not solved here: there is no `policy_nominees` table and no nominee column on `insurance_policies` — nominee name/relationship for KV-POL-2026-0110-233 today lives only inside the 285 enrollment form capture as free text, with no dedicated storage or update path. This screen is UI-only: it lets the farmer (Meera Ben Patel's nominee record) submit a change request, but there is no backend field yet for the app to write it into. The on-screen banner tells the farmer honestly that this is confirmed by a human, not instantly applied — because instant apply is not technically possible until the schema exists.
 - API: proposed `POST /v1/insurance/policies/:id/nominee-change-request` (human-routed, no direct-write endpoint until `policy_nominees` exists)
 
 ### 475-farmer-claim-appeal
 
-*475 · Claim Appeal — Krishi-Verse [FARMER] [P0 — D16 remediation · SUPPORT ACTION, non-transition]*
+*475 · Claim Appeal — Krishalaya [FARMER] [P0 — D16 remediation · SUPPORT ACTION, non-transition]*
 
 - Back-header, no nav. `claim_status` enum `intimated|docs_pending|survey_scheduled|surveyed|approved|partially_approved|rejected|paid|closed` — there is NO "appealed" value in this enum. So an appeal here is a SUPPORT ACTION (a review request logged against the claim) layered on top of the unchanged status — `claim_status` stays `partially_approved` before, during and after the appeal is filed. Contrast: screen 476 (scheme appeal) has an enum that WAS ratified to include "appealed" as a real status, so a scheme appeal performs a genuine status transition — that asymmetry is real today and is called out to the farmer in the footnote below, not hidden.
 - KV-CLM-2026-0530-098: livestock accident claim, policy KV-POL-2026-0401-054, sum insured ₹60,000, assessed 40% loss → payout ₹24,000 (60,000×0.40=24,000) already paid/approved-at-40%; farmer's own estimate is 70% loss.
@@ -9852,7 +9852,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 476-farmer-scheme-rejected-appeal
 
-*476 · Scheme Rejected → Appeal — Krishi-Verse [FARMER] [P0 — D16 remediation · REAL enum transition]*
+*476 · Scheme Rejected → Appeal — Krishalaya [FARMER] [P0 — D16 remediation · REAL enum transition]*
 
 - Back-header, no nav. `scheme_applications.status` enum `draft|submitted|under_verification|clarification_needed|approved|rejected|disbursed|closed|appealed` — "appealed" IS a ratified real value here (see screen 249's enum comment), so filing an appeal below performs a genuine status transition `rejected → appealed`, persisted in `scheme_application_events`. Contrast: screen 475 (claim appeal) has no such value in `claim_status`, so that appeal is only a logged support action with the status left unchanged — this asymmetry between the two modules is intentional today and is called out on screen 475's footnote, not hidden here either.
 - KV-SCH-2026-00347 = the same KCC scheme application shown "Closed Feb 2026 · Not approved" in canon screen 254's portfolio list. `rejection_reason` verbatim: "7/12 land record could not be verified before the 31 January window closed." New evidence attached reuses the Bhulekh-verified survey 214/2 record from screen 264 (kv-badge-success "Verified · Bhulekh" chip).
@@ -9860,7 +9860,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 477-farmer-contract-terminate-breach
 
-*477 · Contract Status / Exit Terms — Krishi-Verse [FARMER] [P0 — D16 remediation · DEMO-LEGEND FIRST RENDERING]*
+*477 · Contract Status / Exit Terms — Krishalaya [FARMER] [P0 — D16 remediation · DEMO-LEGEND FIRST RENDERING]*
 
 - Back-header, no nav, VIEW only. DB: `farming_contracts.status` ENUM (9): `draft|proposed|negotiating|signed|active|fulfilled|breached|terminated|disputed`. KV-CON-2026-0231 (Ramesh Patel ↔ Mehta Oil Industries, 10 qtl GG-20 groundnut, forward, fixed ₹6,200/qtl + oil premium — see 363/364/366) is `active` and STAYS active here — milestones on track per 366 (sowing done 18 Jun, crop-establishment done 5 Jul, flowering due Aug). This screen is a VIEW of the active contract's exit-terms (reusing 363's "what if..." clauses) — it is never an action screen that breaches/terminates the real contract.
 - Of the 9 status values, live canon only ever reaches `negotiating → signed → active`. `breached`, `terminated` and `disputed` have ZERO live examples anywhere in the screen set — this is their FIRST rendering, as DEMO LEGENDS ONLY (466-precedent: muted cards, anonymized data, BACKEND-note captions, no live CTAs) so the pattern exists somewhere before a real contract ever needs it. Tone: talk-before-terminate — platform mediation and a human helpline sit ahead of any exit action; this screen never offers a live "Terminate" button for Ramesh's active contract.
@@ -9868,7 +9868,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 478-buyer-contract-view-respond
 
-*478 · Contract View / Respond — Krishi-Verse [BUYER-ORG] [P0 — D16 remediation · ENGLISH-ONLY]*
+*478 · Contract View / Respond — Krishalaya [BUYER-ORG] [P0 — D16 remediation · ENGLISH-ONLY]*
 
 - Back-header, buyer-org procurement register. Mirrors 364-farmer-contract-negotiation.html's EXACT thread from the buyer org's side — same contract KV-CON-2026-0231, same 4 messages, same final agreed terms (₹6,200/qtl + oil-content premium, 10 qtl, ₹62,000 base). "me" is now Mehta Oil Industries; Ramesh Patel's messages render on the left. The accepted-terms banner is rendered as MEHTA OIL'S OWN action ("You accepted...") since this is their accept moment, not a passive notification.
 - ENGLISH-ONLY BUSINESS REGISTER: this is a B2B procurement-org screen (Mehta Oil is a company account, not a rural smallholder) — no bilingual wrapper, no Hindi/Gujarati spans anywhere on this screen, per the buyer-org convention. ⚠ BACKEND PENDING (inherited from 364): there is no dedicated negotiation-message table yet.
@@ -9876,7 +9876,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 479-farmer-nwr-defaulted-consequence
 
-*479 · NWR Defaulted Consequence — Krishi-Verse [FARMER] [P0 — D16 remediation · EDUCATION ONLY]*
+*479 · NWR Defaulted Consequence — Krishalaya [FARMER] [P0 — D16 remediation · EDUCATION ONLY]*
 
 - Back-header, no nav, calm education explainer. Ramesh Patel's real receipt NERL-ENWR-2026-088412 (8 qtl wheat, ₹19,600, status=issued — canon from 408-farmer-warehouse-receipt.html / 466-warehouse-nwr-issuance.html) is shown SAFE first: it is not pledged, so nothing about default applies to it today. The rest of the screen is a calm EDUCATION explainer for `nwr_status = 'defaulted'`, using a clearly-labelled DEMO receipt NERL-ENWR-2025-0EXMP (groundnut, 10 qtl, ₹22,000 valuation — 10×₹2,200 — same demo numbers as 466's defaulted legend card, kept consistent across the batch).
 - DB ENUM (09_agri_infra_services.sql): `nwr_status` AS ENUM (`issued, pledged, partially_released, released, cancelled, defaulted`). BACKEND-DEFERRED (quoting 466's D20 comment verbatim): neither `pledged` nor `defaulted` has a reachable UI transition anywhere in the current screen set.
@@ -9884,7 +9884,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 480-transporter-eod-cash-reconciliation
 
-*480 · EOD Cash Reconciliation — Krishi-Verse [TRANSPORTER] [P0 — D16 remediation · one-word QA fix]*
+*480 · EOD Cash Reconciliation — Krishalaya [TRANSPORTER] [P0 — D16 remediation · one-word QA fix]*
 
 - Back-header, no nav. Driver Vikram Rathod (delivery_partner rider — distinct from Vikram Patel, labour sardar in 344/345/346), today Wed 8 Jul 2026, end of shift. DB TRUTH: `payments.method = 'cod'` rows for two of today's stops carry cash the rider collected in person: Trip A ₹1,850 + Trip B ₹950 = ₹2,800 (`shipments.cod_minor` per leg) — a DIFFERENT pair of trips from 404/405's own earnings trips.
 - BACKEND-PENDING: no ratified `eod_cash_reconciliation` table yet — this screen mocks the deposit-confirm + variance workflow against `payments.method=cod` rows directly. Guard verbatim from 404-transporter-pod-capture.html: "collect only what the app instructs, never a manual amount" — QA CONFIRMED this reads **"instructs"** (the batch's one-word fix target, corrected and verified in the shipped file).
@@ -9892,7 +9892,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 481-shared-bank-account-edit-remove
 
-*481 · Bank Account Edit / Remove — Krishi-Verse [SHARED] [P0 — D16 remediation · audit-premise corrected]*
+*481 · Bank Account Edit / Remove — Krishalaya [SHARED] [P0 — D16 remediation · audit-premise corrected]*
 
 - Back-header, no nav. Canon EXACT from 121-farmer-bank-accounts.html: SBI ····2247 (SBIN0001247, DEFAULT) + HDFC ····9831 (HDFC0000287, secondary), account holder Ramesh Bhanubhai Patel, plus the same 2 verified UPI IDs (ramesh@okaxis linked to SBI ····2247, 98765xxxxx@paytm linked to HDFC ····9831). Penny-drop re-verification reuses 180-upi-management.html's canon note verbatim: "UPI verification sends ₹1 test transaction · Refunded immediately."
 - GUARDS (designs-lead, consistent with "money-out is quiet" tone): (1) cannot remove the DEFAULT account until another account is reassigned default; (2) cannot remove an account that has a pending payout still routing to it — neither of Ramesh's two accounts has a pending payout today, so guard (2) is shown as a stated rule, not a fabricated live block. ⚠ CROSS-BATCH INCONSISTENCY, footnote CORRECT AS WRITTEN (logged for consolidation, not fixed here): 121's canon HDFC secondary account is ····9831, but 21-transactions.html renders an unrelated withdrawal line as "Bank withdrawal — HDFC ●●4521" — a different last-4 for what reads as the same HDFC relationship. This screen renders 121's ····9831 as-is (source of truth for the Bank Accounts screen) and flags the mismatch for a future data-consolidation pass. QA confirmed no change was needed on this screen — see `batch_pack/06-qa-report.md`.
@@ -9900,7 +9900,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 482-shared-refund-status-tracker
 
-*482 · Refund Status Tracker — Krishi-Verse [SHARED] [P0 — D16 remediation · two-rails disclosure]*
+*482 · Refund Status Tracker — Krishalaya [SHARED] [P0 — D16 remediation · two-rails disclosure]*
 
 - Back-header, no nav, buyer-view lead. DB TRUTH: `payments.payment_status` ENUM (`initiated, pending, authorized, success, failed, expired, refund_initiated, refunded, partially_refunded`) — 05_money.sql / 442's canon. LIVE example: Order #KV-2026-0215 (443's canon — Rajesh Trader · Yellow Maize 5 qtl · ₹9,550, pre-accept cancellation) — `refund_initiated` today (Wed 8 Jul 2026), expected refunded in 3–5 days, same as 443's refund preview. Row 2: Order #KV-2026-0198 (445's canon — Vadodara Mills · Yellow Maize, 2 of 8 qtl returned, poor_quality) — ₹3,820 `partially_refunded` ✓ (2×₹1,910/qtl; seller kept ₹11,460 for the other 6 qtl, per 445).
 - TWO-RAILS honesty: marketplace order refunds (orders/payments tables, above) travel via the payment gateway back to the buyer's original bank/UPI method. Consumer D2C box credits are a SEPARATE rail — `wallet_ledger` (398's canon), never the payment gateway. 398's ₹80 quality-refund credit (Priya Sharma, 26 Jun 2026) is shown below labelled "other rail" so nobody reads it as a marketplace refund by mistake — it is real canon data, just from a different table/flow.
@@ -9978,7 +9978,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 483-farmer-equipment-booking-cancel-reschedule
 
-*483 · Equipment Booking Cancel / Reschedule — Krishi-Verse [FARMER] [P1 — D16 remediation · lifecycle verb]*
+*483 · Equipment Booking Cancel / Reschedule — Krishalaya [FARMER] [P1 — D16 remediation · lifecycle verb]*
 
 - Back-header, no nav. Canon EXACT from 304-farmer-my-bookings-renter.html: KV-EQ-2026-1108 (Mahindra 575 DI + rotavator), owner Harsukh Dobariya, Keshod, 8 Jul 2026 7–11 AM, `rental_status = confirmed`. Paid ₹3,700 = ₹3,200 rental + ₹500 security deposit. `rental_status` enum (8): `requested|quoted|confirmed|in_progress|completed|settled|cancelled|disputed`.
 - CANCEL POLICY (designs-lead, pending ops ratification): >24h before start → full ₹3,700 refund; <24h before start → ₹3,200 rental refunded, ₹500 security forfeits to owner as compensation for the lost slot. GUARD: once `rental_status → in_progress` (handover OTP, 305), neither reschedule nor cancel is available — must go through the in-progress/dispute path. Refunds return via `payments.payment_status = 'refunded'`, 3–5 working days, same convention as 443.
@@ -9986,7 +9986,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 484-farmer-labour-booking-edit-cancel
 
-*484 · Labour Booking Edit / Cancel — Krishi-Verse [FARMER] [P1 — D16 remediation · anti-debt-trap]*
+*484 · Labour Booking Edit / Cancel — Krishalaya [FARMER] [P1 — D16 remediation · anti-debt-trap]*
 
 - Back-header, no nav. Canon: KV-JOB-2026-0812 (cotton picking, farmer Ramesh Patel), `booking_status = open` (FUTURE, starts 20 Jul 2026), 5 workers × 5 days × ₹400/day = ₹2,000/worker (₹10,000 pool), including Rajesh Kumar's disbursed ₹500 advance (353 canon, cap ₹600 = 30% of ₹2,000). `booking_status` enum (13): `draft|open|pending_worker|accepted|rejected|expired|in_progress|completed|paid|cancelled|disputed|no_show|applied`.
 - EDIT GUARD: wage floor ₹380/day (Gujarat statutory agricultural minimum, designs-lead sourced, app-enforced) — cannot save below it. CANCEL → ADVANCE IMPLICATION (`worker_advances.advance_status` enum, 7: `requested|approved|disbursed|partially_recovered|recovered|written_off|rejected`): recovery only happens by deduction from this job's final wage payout; if the job never happens, Rajesh's ₹500 disbursed advance auto-moves to `written_off` — never chased from the worker (PRD §31.15 anti-debt-trap guarantee applied to the cancel path). CROSS-REFERENCE GUARD: KV-JOB-2026-0781 (324, Sunita's groundnut weeding, `accepted`/in-progress-bound) shown purely as a contrast example of a job that CANNOT be edited once work has started.
@@ -9994,7 +9994,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 485-farmer-log-entry-edit
 
-*485 · Log Entry Edit (correction pattern) — Krishi-Verse [FARMER] [P1 — D16 remediation · append-only PATTERN]*
+*485 · Log Entry Edit (correction pattern) — Krishalaya [FARMER] [P1 — D16 remediation · append-only PATTERN]*
 
 - Back-header, no nav. PATTERN screen demonstrating ONE correction mechanic across the 4 farmer-authored log types that are append-only in the DB: health_events (vaccination), breeding records, feed_log, and the personal pre-MCC milk log (220). MECHANIC (designs-lead, applies to all 4): a correction is never an UPDATE on the original row — it is a NEW row linked back via a `corrects_entry_id`/superseded_by-style FK; the original is never deleted, both are kept, the corrected entry displays by default, full history stays visible.
 - Four worked examples: (a) VACCINATION — Ganga, canon batch FMD-GJ-0625-118 (202, given by Dr. Foram Vaghela) — a transposed typo (118→181) corrected back to canon. (b) BREEDING — Gauri, heat-date 28 Jun corrected to 27 Jun. (c) FEED — daily feed cost ₹136/day corrected to ₹163/day. (d) MILK PERSONAL LOG — Gauri, 30 Jun evening, farmer's OWN pre-MCC log only (same concept as 220). HONESTY NOTE: `milk_collections` (the official MCC record, UNIQUE per day/shift) is operator-entered and cannot be edited here — disputing an official MCC reading routes through 233's dispute flow instead.
@@ -10002,7 +10002,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 486-farmer-scheme-application-withdraw
 
-*486 · Scheme Application Withdraw — Krishi-Verse [FARMER] [P1 — D16 remediation · NO withdrawn enum]*
+*486 · Scheme Application Withdraw — Krishalaya [FARMER] [P1 — D16 remediation · NO withdrawn enum]*
 
 - Back-header, no nav. ANONYMIZED DEMO (287-pattern): KV-SCH-2026-0EXMP (SMAM equipment subsidy, submitted 1 Jul 2026) is a labelled demo, NOT a real canon record — never alters PM-KISAN/PMFBY/KCC rows shown on 254. DB TRUTH: `application_status` is an EXACT 9-value enum (`draft|submitted|under_verification|clarification_needed|approved|rejected|disbursed|closed|appealed`) — there is NO `withdrawn` value.
 - DESIGNS-LEAD MAPPING: withdrawing sets `scheme_applications.status = 'closed'` and writes an `application_status_history` row (`note='withdrawn_by_applicant'`) — the "withdrawn" concept is carried entirely by that history note. ALTERNATIVE FLAGGED FOR BACKEND: a dedicated `withdrawn` enum value would let officer dashboards distinguish farmer-initiated withdrawals from other closures — logged as a possible future schema change, not assumed. GUARD: withdrawing is only offered while status ∈ {draft, submitted, under_verification, clarification_needed}; `approved`/`disbursed` block withdrawal (funds/commitment already in motion — contact support instead); `rejected`/`closed`/`appealed` are terminal.
@@ -10010,7 +10010,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 487-farmer-crew-edit-disband
 
-*487 · Crew Edit / Disband — Krishi-Verse [FARMER] [P1 — D16 remediation · live-job guard]*
+*487 · Crew Edit / Disband — Krishalaya [FARMER] [P1 — D16 remediation · live-job guard]*
 
 - Back-header, no nav. CANON exact match to 318-farmer-crew-detail.html: Vanthali Weeding Crew, sardar Sunita Kumari (★4.9, Grade A, 187 jobs), 5 members — Meera Ben (★4.8), Rajesh Kumar (★4.6), Priya Bhat (★4.4), Lakshmi Ben (★4.7), Kiran Chavda (★4.5), formed May '26, 4 jobs done, crew avg ★4.8. DB TRUTH (07_labour.sql): `crews` (sardar_id, default_name, speciality_skill_id, home_region_id, `is_active` boolean); `crew_members` (crew_id, worker_id, joined_at, left_at) — removing a member sets `left_at`, never deletes the row (same convention as 372's `left_at` for SHG members). There is NO separate crew status enum — disbanding is DESIGNS-LEAD MAPPED to `crews.is_active = false`; `crew_members` history remains permanently queryable.
 - LIVE-JOB GUARD (reuses 484's KV-JOB-2026-0781 cross-reference verbatim: Sunita's groundnut weeding job, `accepted`/in-progress-bound, 324): while any crew member is actively assigned to a booking in (`accepted`,`in_progress`), the crew cannot be disbanded — a designs-lead guard rule, no DB CHECK constraint exists.
@@ -10018,7 +10018,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 488-farmer-group-settings-edit
 
-*488 · Group Settings Edit (SHG/JLG) — Krishi-Verse [FARMER] [P1 — D16 remediation · governance guard]*
+*488 · Group Settings Edit (SHG/JLG) — Krishalaya [FARMER] [P1 — D16 remediation · governance guard]*
 
 - Back-header, no nav. CANON: Vanthali Mahila Bachat Mandal, matches 370/371/372/378 — President Meera Ben Patel, Secretary Hansa Ben Chauhan, Treasurer Ranjan Ben Vaghela (elected Feb 2026, 378), 12 members, standard deposit ₹200/meeting (28×₹200=₹5,600 canon in 372). Kanta Ben Rathod's "loan active" chip (outstanding ₹4,400, same figure as 372's F2c exit-guard banner) reused verbatim as the loan-exit-guard example.
 - DB TRUTH (10_fintech_schemes.sql): `finance_groups` has `default_name`, `meeting_cadence` varchar(15) DEFAULT 'weekly', `group_kind`, `grade`, `bank_account_id` — ARE real editable columns. There is NO `contribution_amount` column: "₹200 per meeting" is a GROUP-AGREED CONVENTION recorded per-deposit via `group_ledger_entries` (`entry_kind='saving_deposit'`), not a stored settings field — editing it here is a designs-lead UI convenience flagged, not assumed, as needing a backend column. `finance_group_members.role` is a free varchar (no DB enum) with `left_at` for exits, same mechanism as 372. GOVERNANCE (378, exact copy): "no separate ballot record exists yet; the meeting itself is the record" — handover, exit, and expulsion all route through the same meeting → show-of-hands → secretary-records flow, entirely a designs-lead UX convention mirroring NRLM SHG practice.
@@ -10026,7 +10026,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 489-farmer-trace-batch-edit-void
 
-*489 · Trace Batch Edit / Void — Krishi-Verse [FARMER] [P1 — D16 remediation · edit-freeze + deleted_at void]*
+*489 · Trace Batch Edit / Void — Krishalaya [FARMER] [P1 — D16 remediation · edit-freeze + deleted_at void]*
 
 - Back-header, no nav. CANON exact match to 360-farmer-batch-link-manager.html: Okra (Bhindi), picked 6 Jul 2026, KV-TRC-2026-19102, 12 scans so far, linked to listing + QR generated. DB TRUTH (12_growth_intelligence.sql): `trace_lots` (qr_token varchar(40) unique, listing_id, farmer_user_id, parcel_id, crop_season_id, `declared_inputs` jsonb, certificate_ids jsonb, blockchain_anchor) with platform-wide `deleted_at` soft-delete column (00_foundation.sql). Scan counters read `trace_events` via the public `trace_scan(qr_token)` RPC, filtered `WHERE deleted_at IS NULL` — a voided lot's QR stops resolving to live data while `trace_events` history is retained untouched (no cascade delete).
 - EDIT-FREEZE GUARD (designs-lead, no DB CHECK): once `trace_events` shows ≥1 scan against a `qr_token`, `declared_inputs` is treated as frozen — changing what was declared after a buyer has scanned it would undermine the QR's trust purpose. Before the first scan, `declared_inputs` is freely editable (shown as a separate, clearly-labelled pre-scan demo using a different anonymized batch, so the 12-scan canon above is never contradicted). VOID (designs-lead mapping): "void" = `trace_lots.deleted_at` set — records retained 7 years (designs-lead compliance convention). A voided `qr_token` never resolves to a new batch; any replacement is always a brand-new row with its own token.
@@ -10034,7 +10034,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 490-farmer-storage-booking-cancel-extend
 
-*490 · Storage Booking Cancel / Extend — Krishi-Verse [FARMER] [P1 — D16 remediation · duration-column gap]*
+*490 · Storage Booking Cancel / Extend — Krishalaya [FARMER] [P1 — D16 remediation · duration-column gap]*
 
 - Back-header, no nav. DB TRUTH: `storage_bookings.status` varchar vocab (exact, no invented states): `requested|confirmed|stored|partially_released|released|cancelled`. CANCEL guard: cancellation is only meaningful before `stored_at` is set (status `requested`/`confirmed`) — once `stored_at` is populated the grain physically sits in the warehouse and the correct action becomes release (467's partial-release legend), not cancel.
 - CANCEL example: Ramesh's leafy-veg cold booking (408/409 canon) — 3 qtl, cold_0_4, Junagadh AgriStore, ₹32/qtl/month, `status=confirmed`, arrival 10 Jul 2026, cost ₹48 (3×₹32×0.5 month) — free to cancel because `stored_at` is still null. EXTEND example: Ramesh's wheat deposit (eNWR NERL-ENWR-2026-088412), 8 qtl stored since 15 Feb 2026 at Junagadh AgriStore, rate ₹28/qtl/month. SCHEMA-GAP: `storage_bookings` has NO duration/`extended_until` column — extending today is an ops-record update (warehouse operator adjusts the physical hold), not a persisted date on the row; flagged inline, not silently implied. Cost math (exact): 8×₹28×N months → +1mo=₹224, +2mo=₹448, +3mo=₹672.
@@ -10042,7 +10042,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 491-provider-manage-offerings
 
-*491 · Manage Offerings — Krishi-Verse [SERVICE PROVIDER] [P1 — D16 remediation · no-penalty pause]*
+*491 · Manage Offerings — Krishalaya [SERVICE PROVIDER] [P1 — D16 remediation · no-penalty pause]*
 
 - Back-header, no nav. DB TRUTH — `service_offerings` (REAL, 14_audit_additions.sql): provider_id, skill_id, pricing_model, price_minor, service_radius_km, `status` varchar CHECK IN (`draft|published|paused|archived`). Manages Arjun Rathod's offerings list (388 canon: knapsack spraying ₹150/acre, per_unit, radius 8 km, is_hazardous skill).
 - STATUS FLOW: `draft → published ⇄ paused`, `published`/`paused → archived` (terminal, history-preserved, no un-archive shown). NO-PENALTY PAUSE: pausing simply hides the listing from the published-only browse index (public directory/search only ever reads `status='published'` rows) while row/rating/job history stay intact — resuming is one tap. Archiving is the quiet final removal, also history-preserved, provider does not expect to bring it back casually. `vet_services` is a SEPARATE real table (458 canon) — vet rate rows are never mixed into this generic list.
@@ -10050,7 +10050,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 492-transporter-vehicle-edit-remove
 
-*492 · Vehicle Edit / Remove — Krishi-Verse [TRANSPORTER] [P1 — D16 remediation · no-FK honesty]*
+*492 · Vehicle Edit / Remove — Krishalaya [TRANSPORTER] [P1 — D16 remediation · no-FK honesty]*
 
 - Back-header, no nav. DB TRUTH (matches 406 canon exactly): `vehicles.is_refrigerated`, `vehicles.rc_doc_id` — vehicles has NO status enum documented yet (app-side active/maintenance flag only, no DB column) and NO FK-level block on delete; any "cannot remove" guard here is an APP-SIDE QUERY (does this vehicle_id appear on any open/future trip's `shipments` row?), never a database foreign-key constraint. Driving licence lives in `kyc_documents` against the delivery_partner's profile, never a `vehicles` column.
 - CANON (today = Wed 8 Jul 2026): Vikram Rathod, delivery_partner. GJ-11-KV-4521 cold tempo, refrigerated ✓, 500 kg capacity, RC verified — referenced live by Trip 3 (402 canon), 5:00 PM today, cold-chain required, so remove is BLOCKED. GJ-11-KV-7734 general tempo, 1,500 kg, not refrigerated, RC verified — no open/future trip references it right now, so remove is ALLOWED (with confirm + history-preserved note).
@@ -10058,7 +10058,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 493-transporter-trip-cancel-after-accept
 
-*493 · Trip Cancel After Accept — Krishi-Verse [TRANSPORTER] [P1 — D16 remediation · decline-vs-cancel]*
+*493 · Trip Cancel After Accept — Krishalaya [TRANSPORTER] [P1 — D16 remediation · decline-vs-cancel]*
 
 - Back-header, no nav. DB TRUTH (matches 402 canon exactly): `shipment_status` ENUM (11, exact): `pending|assigned|pickup_scheduled|picked_up|in_transit|at_hub|out_for_delivery|delivered|failed|returned|cancelled`. Trip 2 (Vanthali collection point → Junagadh mandi, 11:00 AM, tempo GJ-11-KV-7734, `shipment_status=assigned`) is the TRUE accepted trip per 402 canon — its Accept action was already actioned there, making it the only trip that can genuinely be "cancelled after accept" today.
 - Cancelling an assigned trip returns it to `shipment_status=pending`/the reassignment pool (402's active section) so another transporter can pick it up. RATING POLICY (designs-lead): a genuine emergency cancellation does not touch the transporter's rating — a product/policy stance, not yet DB-enforced, called out explicitly for engineering. DECLINE vs CANCEL are different actions on different objects: 402's Keshod→Rajkot offer (`status='offered'`, 30-minute accept window) is DECLINED, not cancelled — decline happens before acceptance with no emergency-reason flow; this screen's cancel applies only to an already-accepted/assigned trip like Trip 2.
@@ -10066,7 +10066,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 494-shared-review-edit-delete
 
-*494 · Review Edit / Delete — Krishi-Verse [SHARED] [P1 — D16 remediation · UNIQUE no-re-review]*
+*494 · Review Edit / Delete — Krishalaya [SHARED] [P1 — D16 remediation · UNIQUE no-re-review]*
 
 - Back-header, no nav. DB TRUTH — `reviews` (REAL, 14_audit_additions.sql, shared table used by 342/387): reviewer_user_id, target_type, target_id, order_id, stars smallint 1–5, tags jsonb, body, is_verified_purchase, `status` enum `published|hidden|under_moderation|removed`, UNIQUE(order_id, reviewer_user_id, target_type, target_id) — one review per order per reviewer per target, enforced at the DB level. CANON (387): Ramesh Patel rated Dinesh Solanki (pump mechanic) 5★ on booking KV-SVC-2026-0871, completed 7 Jul 2026 11:20 AM, tags "On time / Fair price / Explained clearly", `target_type='service_provider'`.
 - EDIT WINDOW (designs-lead): reviews editable for 48 hours from posting — a product policy, not yet DB-enforced, shown honestly as designs-lead. LOCK GUARD: once `seller_responded_at` is set (Dinesh replied), the review locks regardless of the 48h window — demonstrated here as already replied → locked. DELETE = soft delete: sets `reviews.status='removed'` (never a hard delete) — history-preserving. Because of the UNIQUE constraint, removing a review does NOT free a fresh review slot for the same order — Ramesh cannot re-review this booking after deleting, honestly disclosed on-screen.
@@ -10074,7 +10074,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 495-shared-kyc-doc-expired-renew
 
-*495 · KYC Doc Expired / Renew — Krishi-Verse [SHARED] [P1 — D16 remediation · real expired enum]*
+*495 · KYC Doc Expired / Renew — Krishalaya [SHARED] [P1 — D16 remediation · real expired enum]*
 
 - Back-header, no nav. DB TRUTH — `kyc_documents` (REAL): doc_type, doc_number, valid_until, `status` enum incl. `pending|verified|rejected|expired` — `expired` is a REAL enum value, reached honestly here because `valid_until` has passed, not a designs-lead placeholder. Vikram Rathod's driving licence (referenced as a KYC doc, not a `vehicles` column, per 406 canon) has `valid_until` in the past → `status=expired`.
 - RENEW APPROACH (append, not overwrite): uploading a new DL creates a NEW `kyc_documents` row rather than mutating the expired one — preserves the audit trail of every version ever submitted; the new row starts `status=pending`, then moves to `verified` after re-check. DELETE GUARD: required-doc types (e.g. driving licence for a delivery_partner) cannot be deleted outright — only replaced by uploading a fresh version; only optional/supplementary doc types could ever be deleted. GRACE PERIOD (designs-lead): trips continue during the 7-day re-verify window after renewal is submitted — a product policy, not yet DB-enforced, flagged accordingly.
@@ -10082,7 +10082,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 496-farmer-equipment-retire-listing
 
-*496 · Equipment Retire Listing — Krishi-Verse [FARMER] [P1 — D16 remediation · CANON FIX post-audit]*
+*496 · Equipment Retire Listing — Krishalaya [FARMER] [P1 — D16 remediation · CANON FIX post-audit]*
 
 - Back-header, no nav. DB TRUTH — `equipment_assets.status` is a free varchar `active|maintenance|retired` (no enum constraint in the schema, just app-agreed values). Reached from 309's Listing status chips ("Retired" option) — this screen is what appears when a farmer taps Retired there and needs to see the real consequences before committing. RETIRE GUARD: an app-side query checks `equipment_bookings` for any confirmed/upcoming booking on this `asset_id` before allowing retirement — no DB-level FK block, just a pre-check the UI enforces.
 - CANON (309): Ramesh Patel's battery backpack sprayer, ₹150/day, 34 rentals lifetime, ★4.8. One confirmed booking exists — **Meera Ben Patel, 12 Jul 2026, Confirmed** (canon per screen 310) — retiring while a booking exists must be resolved (honoured or cancelled) first; the BLOCKED variant shows that state, the CLEAR variant shows the same asset once that booking is gone. Consequences rows reuse 309's exact "pauses new bookings but keeps your rental history and rating intact" language, extended for the retired (not maintenance) state. ⚠ **QA CANON FIX (post-audit):** the blocked-booking name/date/status was corrected to Meera Ben (Patel) / 12 Jul / Confirmed to exactly match screen 310's own canon — see `batch_pack/06-qa-report.md`.
@@ -10142,7 +10142,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 497-buyer-help-support
 
-*497 · Help & Support — Krishi-Verse [BUYER] [P1 — D16 remediation · role completeness]*
+*497 · Help & Support — Krishalaya [BUYER] [P1 — D16 remediation · role completeness]*
 
 - Back-header, no nav. `.bhs-` prefix, pattern adapted from 123-farmer-help.html for the buyer role. Buyer identity is deliberately unspecified across screens (13's buyer-anonymity canon) — no persona name invented here. Quick-action cards + FAQ list cross-link to returns (445-buyer-order-return-request-tracker.html), disputes (439-buyer-dispute-status-thread.html), and making an offer (99-buyer-make-offer.html).
 - HONESTY: closes the "buyer can bid/pay/dispute but never reach a help surface" gap flagged by D16-C. Backend pending — design leads (no dedicated support-ticket table referenced).
@@ -10150,7 +10150,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 498-buyer-alerts
 
-*498 · Alerts — Krishi-Verse [BUYER] [P1 — D16 remediation · role completeness]*
+*498 · Alerts — Krishalaya [BUYER] [P1 — D16 remediation · role completeness]*
 
 - Back-header, no nav. `.bal-` prefix, chrome adapted from 296-farmer-insurance-alerts.html (Today/Earlier groups, unread dot, mark-all-read). Six representative states spanning the buyer journey: outbid on a live auction (Red Chilli Teja, 13-buyer-live-auction.html canon lot), offer accepted by farmer (counterpart to 438-farmer-respond-to-offer.html, farmer accepts buyer's original ₹2,650/qtl × 2 qtl offer), order `out_for_delivery` (`orders.status` enum), price-drop saved-search hit, delivery-tomorrow reminder, and a return refund credited — exact ₹3,820 figure from 445 (order #KV-2026-0198, 2 of 8 qtl returned).
 - Every notification traces to a real prior-batch canon fact rather than an invented figure. Backend pending — design leads.
@@ -10158,7 +10158,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 499-buyer-livestock-purchase-flow
 
-*499 · Livestock Purchase Flow (Bhavesh Rabari's POV) — Krishi-Verse [BUYER] [P1 — D16 remediation · Bholu triangle closure]*
+*499 · Livestock Purchase Flow (Bhavesh Rabari's POV) — Krishalaya [BUYER] [P1 — D16 remediation · Bholu triangle closure]*
 
 - Back-header, no nav. `.blp-` prefix. Exact continuation of the Bholu purchase canon across three screens: 211-farmer-animal-marketplace-browse.html (browse), 212-farmer-animal-detail-buyer.html (buy decision + "what happens after you buy" 3-step, verbatim), 216-farmer-animal-transfer.html (escrow + handover timeline, UTR HDFC0042026070211987). Rendered here as Bhavesh's completed journey — today is 8 Jul 2026, so the 5 Jul handover from 216 is now DONE.
 - `animal_ownership_transfers.inaph_synced` remains `false` post-handover (govt-system lag) — continuity preserved from 216, not silently resolved; INAPH tag issuance to Bhavesh is the ambassador-assisted next step, linked to **508** (ambassador tag issuance, D23 sibling screen — this is the Bholu-triangle handoff link). Health records travel with Bholu per `health_events` keyed to `animal_id`, not owner (216 convention). ⚠ **QA FIX (post-audit):** the href to 508 was broken pre-audit and has been repaired — see `batch_pack/06-qa-report.md`.
@@ -10166,7 +10166,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 500-buyer-post-requirement-rfq
 
-*500 · Post Requirement (RFQ) — Krishi-Verse [BUYER] [P1 — D16 remediation · farming_contracts reuse]*
+*500 · Post Requirement (RFQ) — Krishalaya [BUYER] [P1 — D16 remediation · farming_contracts reuse]*
 
 - Back-header, no nav. `.rfq-` prefix. DB mapping: writes a new `farming_contracts` row with `status='proposed'` (`contract_kind`, `price_model`, `price_terms` jsonb, `quality` jsonb, delivery window) — the SAME table/enum set farmers browse back on 362 (Browse Contract Offers). There is intentionally no dedicated "RFQ"/"requirement" table in the schema; a standalone `buyer_requirements` table (buyer posts a need BEFORE a specific `contract_kind`/price is fixed) is flagged as the alternative design worth a future evaluation, NOT built.
 - `contract_kind` enum: `pre_sowing | forward | tripartite` (forward selected in the mock). `price_model` enum: `fixed | floor_ceiling | formula` — only `fixed` and `floor_ceiling` are offered as choices; `formula` is left out of scope, same honesty rule as 362.
@@ -10174,7 +10174,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 501-consumer-onboarding-entry
 
-*501 · Consumer Onboarding Entry — Krishi-Verse [CONSUMER] [P1 — D16 remediation · Junagadh-only honesty]*
+*501 · Consumer Onboarding Entry — Krishalaya [CONSUMER] [P1 — D16 remediation · Junagadh-only honesty]*
 
 - Flow: role-picker (433) → this entry screen → ends at Subscription Plans (393, CTA "Choose your plan"). Phone verification reuses the existing OTP flow/component (`kv-otp-group`) — shown here already-completed as a status chip, not re-built.
 - `roles.requires_approval` is a real column but currently UNSEEDED for the consumer role (no approval gate exists yet for D2C sign-up) — shown as auto-approved, no pending-review state implied. HONESTY GUARD: marketing/earlier collateral referenced an "8-city" launch claim that is NOT canon — Junagadh is the sole live-serviceable city in the current `Database_Architecture`/operations data; the serviceability check reflects that honestly, including the non-serviceable waitlist variant for every other pincode/city. gu register per 392/398/399 convention.
@@ -10182,7 +10182,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 502-consumer-alerts
 
-*502 · Alerts — Krishi-Verse [CONSUMER] [P1 — D16 remediation · role completeness]*
+*502 · Alerts — Krishalaya [CONSUMER] [P1 — D16 remediation · role completeness]*
 
 - Back-header, no nav. `.cal-` prefix, chrome copied from 296-farmer-insurance-alerts.html (Today/Earlier toolbar groups, unread dot, mark-all-read, `kv-empty` end state). LANGUAGE CONVENTION: gu register, matching 392/398/399's own established convention for this role — deliberately NOT hi, unlike every other role in this batch.
 - DB: `d2c_deliveries.status` ENUM (`scheduled|delivered|skipped|failed|refunded`); `wallet_ledger` (`entry_type` ENUM `credit_referral|credit_refund|debit_applied`) — the refund (+₹80, wilted palak) and referral (+₹200, Anjali Shah) rows are the exact canon transactions from 398-consumer-wallet-refunds.html / 399-consumer-referrals.html, surfaced here as their original push notifications. Persona: Priya Sharma, Junagadh.
@@ -10190,7 +10190,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 503-transporter-onboarding-docs
 
-*503 · Delivery Partner Onboarding Docs — Krishi-Verse [TRANSPORTER] [P1 — D16 remediation · role completeness]*
+*503 · Delivery Partner Onboarding Docs — Krishalaya [TRANSPORTER] [P1 — D16 remediation · role completeness]*
 
 - `.tod-` prefix. ROLE VOCABULARY NOTE (matches 401 exactly): DB/PRD role code is `delivery_partner`; "Transporter" is the Design Program's file-naming label only — the on-screen role label reads "Delivery Partner" everywhere, never "Transporter." `partner_kind='rider'` for this applicant tier (two-wheeler/light tempo), distinct from car/truck `partner_kind` values elsewhere.
 - `roles.requires_kyc`/`requires_approval` exist but the table is UNSEEDED for `delivery_partner` and the other new roles (worker, consumer, service provider) — gap flagged for backend, verbatim with 433's own note. DB TRUTH: `kyc_documents` (REAL table, per 495 canon) — driving-licence upload here creates the FIRST `kyc_documents` row for this applicant, `status` starts `pending`. Permit/insurance chips shown are designs-lead UI pending dedicated columns.
@@ -10198,7 +10198,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 504-transporter-profile-settings
 
-*504 · Transporter Profile — Tab Root — Krishi-Verse [TRANSPORTER] [P1 — D16 remediation · fulfills 401's promised Tab-5]*
+*504 · Transporter Profile — Tab Root — Krishalaya [TRANSPORTER] [P1 — D16 remediation · fulfills 401's promised Tab-5]*
 
 - Fills the promised Tab 5 from 401-transporter-home.html ("reuses platform profile pattern... for settings, KYC, support, logout — no new pattern invented"). Bottom nav copied verbatim from 401 with `aria-current="page"` moved to the Profile tab — same convention as 406's Vehicle tab root and 460-vet-profile-settings.html's card layout.
 - DISAMBIGUATION: profile is Vikram RATHOD, `delivery_partner` (rider) — a DIFFERENT canonical person from Vikram PATEL, the labour sardar/contractor in 344/345/346/506/507.
@@ -10206,7 +10206,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 505-transporter-help-alerts
 
-*505 · Delivery Partner Help + Alerts (combined) — Krishi-Verse [TRANSPORTER] [P1 — D16 remediation · role completeness]*
+*505 · Delivery Partner Help + Alerts (combined) — Krishalaya [TRANSPORTER] [P1 — D16 remediation · role completeness]*
 
 - `.tha-` prefix. Back-header, no bottom nav (sub-page reached from 504's Help row). DISAMBIGUATION: Vikram RATHOD, `delivery_partner` (rider) — distinct from Vikram PATEL, sardar (344/346/506/507).
 - Help FAQ rows reference POD (404-transporter-pod-capture.html), COD reconciliation (480-transporter-eod-cash-reconciliation.html), failed delivery (444-buyer-delivery-failed-redeliver.html, buyer-side view of the same event). New-offer alert canon is IDENTICAL to 402's "New offer" card (tomorrow Thu 9 Jul, 9:00 AM, Keshod → Rajkot, ~62 km, ₹1,850 flat fee, 30-minute accept window). Re-attempt and DL-expiry alerts link to 444 and 495 respectively, matching those screens' canon exactly (order #KV-2026-0251 re-attempt 6–8 PM; Vikram Rathod's expired DL).
@@ -10214,7 +10214,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 506-sardar-onboarding-kyc
 
-*506 · Sardar Onboarding — Invite Redemption — Krishi-Verse [SARDAR] [P1 — D16 remediation · invite-only bucket]*
+*506 · Sardar Onboarding — Invite Redemption — Krishalaya [SARDAR] [P1 — D16 remediation · invite-only bucket]*
 
 - `.sok-` prefix. Sardar is an INVITE-ONLY bucket, verbatim from 433-shared-role-picker-v2.html: "Vet, Warehouse Operator, Sardar and staff roles are added by invitation or your FPO/tenant." This screen opens with invite-code redemption, NOT a role-picker path.
 - DB (07_labour.sql, matches 344/346 canon): `sardar_profiles.supervision_fee_bps` integer NOT NULL DEFAULT 1000 CHECK (`<= 1500`, ≤15% cap); `grade` char(1) CHECK (`IN ('A','B','C','D')`) — annual review, only A/B keep access; `cl_act_license_doc_id` → `kyc_documents` is a REAL field the Contract Labour Act licence upload writes into directly, not a placeholder. GRADE-ASSIGNMENT: a brand-new sardar starts at `grade='C'` by default — Vikram Patel's Grade A (344/346/507) is years of transparent, on-time settlements, not a starting position. Anti-skim pledge shown at signup; commission = gross wages × `supervision_fee_bps`/10000, paid separately by employer — never deducted from worker wages.
@@ -10222,7 +10222,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 507-sardar-profile-settings-help
 
-*507 · Sardar Profile, Settings & Help — Krishi-Verse [SARDAR] [P1 — D16 remediation · resolves 344's dead link]*
+*507 · Sardar Profile, Settings & Help — Krishalaya [SARDAR] [P1 — D16 remediation · resolves 344's dead link]*
 
 - `.sps-` prefix. Back-header, no bottom nav — matches 344/346's own chrome (partner app uses back-header navigation, not `kv-bottomnav`, for this role). Vikram Patel, Grade A, Sojitra Harvesting Gang KV-CREW-2026-0015 — canon identical to 344/346. This screen is the RESOLVED DESTINATION of 344's "What do grades mean?" button (`.cdb-grade-link`), which had no target on 344 itself — the grade explainer expander here is that destination.
 - DB (07_labour.sql): `grade` char(1) CHECK (`A|B|C|D`), annual review, only A/B keep access; `supervision_fee_bps` DEFAULT 1000 CHECK (`<=1500`). YTD ₹28,600 commission figure is sourced directly from 346's YTD hero (346-sourced, not recalculated). Bilingual — sardar is a rural user.
@@ -10230,7 +10230,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 508-ambassador-animal-tag-issuance
 
-*508 · Animal Tag Issuance — Krishi-Verse [AMBASSADOR] [P1 — D16 remediation · Bholu triangle closure · NEW persona]*
+*508 · Animal Tag Issuance — Krishalaya [AMBASSADOR] [P1 — D16 remediation · Bholu triangle closure · NEW persona]*
 
 - English-only per 86/95/164 precedent — platform inconsistency flagged for design review (every other role app is bilingual; ambassador has shipped English-only across 86, 92–95, 162–170). NEW persona: Hitesh Barad, ambassador, Vanthali cluster, Junagadh — GEOGRAPHY GUARD: Vikas Joshi (86/92/93/95/168 canon) is Petlad/Anand-scoped and would never see a Vanthali/Junagadh case like Bholu's (216) or Moti's (451); tag-issuance queues are cluster-scoped, requiring a distinct ambassador for Junagadh-district livestock.
 - `animals.pashu_aadhaar` varchar(12) = the INAPH 12-digit tag/registration number (08_livestock_dairy.sql). Case 1: Bholu (male Gir calf, born 10 Feb 2026, ex-Ramesh Patel — 216 canon) — ownership transfer to Bhavesh Rabari completed, handover done 5 Jul, but `animal_ownership_transfers.inaph_synced=false` until the field ambassador issues/re-keys the tag; submitting this form flips `inaph_synced` true — **closes 216's/499's loop**. Case 2: Moti (female buffalo, owner Jasuben Chavda, Keshod — 451 canon) has no tag issued yet, a fresh (not transfer) issuance. Commission ₹20/issuance is a designs-lead placeholder, not yet a `commission_rules` row.
@@ -10238,7 +10238,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 509-ambassador-alerts
 
-*509 · Alerts — Krishi-Verse [AMBASSADOR] [P1 — D16 remediation · QA-corrected attribution]*
+*509 · Alerts — Krishalaya [AMBASSADOR] [P1 — D16 remediation · QA-corrected attribution]*
 
 - English-only per 86/95/164 precedent — no bilingual wrapper, zero Devanagari/Gujarati glyphs. Chrome reused from 296-farmer-insurance-alerts.html (Today/Earlier grouping, unread dot, mark-all-read, `kv-empty` end state).
 - Content sources: tag-issuance assignment routes to 508's queue (Bholu/216 case, Vanthali/Junagadh). Visit-due reminder mirrors 164's visit-log cadence. Commission credited ₹50 onboarding matches the 92/168 ledger canon. Training quiz due Friday references the 94/166 module. ⚠ **QA FIX (post-audit):** the leaderboard line ("3rd in Junagadh cluster") originally carried over 86/93's Vikas Joshi (Petlad/Anand-scoped) attribution pattern verbatim without re-pointing it to this screen's own persona; corrected to read as Hitesh Barad's (508) own Junagadh-cluster standing — see `batch_pack/06-qa-report.md`.
@@ -10246,7 +10246,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 510-partner-funding-review-decision
 
-*510 · Funding Review Decision — Krishi-Verse [FUNDING PARTNER] [P1 — D16 remediation · real applicant continuity]*
+*510 · Funding Review Decision — Krishalaya [FUNDING PARTNER] [P1 — D16 remediation · real applicant continuity]*
 
 - Statuses (`loan_applications.status` enum): `draft · submitted · docs_pending · under_review · approved · rejected · withdrawn · disbursed · closed`. Opens ONE application from queue 277 (`under_review`) for a full reviewer decision — applicant reused from 277's card set: Meera Ben Chudasama, Keshod, Junagadh · Gold loan · KV-LA-2026-10302 · ₹50,000 requested · score 712 (`credit_scores.score_band='Good'`).
 - Credit panel factors sourced from `credit_scores.factors` (jsonb), gated by `credit_score_consents.consent_given=true` (assumed granted; backend must verify the consent row before rendering in build). `decision_note` (`credit_decisions.decision_note`) captures the reviewer's action + reason for the audit trail; the farmer-facing subset renders on the farmer app (approve → 267-style offer, reject → 471-style reason page). SLA: `days_waiting > 5` breaches queue SLA (277) — this application is at day 2 of 5. English-only per tenant/partner convention.
@@ -10254,7 +10254,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 511-partner-funding-portfolio
 
-*511 · Funding Portfolio — Krishi-Verse [FUNDING PARTNER] [P1 — D16 remediation · dignity-first NPA register]*
+*511 · Funding Portfolio — Krishalaya [FUNDING PARTNER] [P1 — D16 remediation · dignity-first NPA register]*
 
 - Partner (Gramin Finance NBFC) loan-book portfolio dashboard. Figures are illustrative mock aggregates over `loan_applications`/`loan_repayments` — real-time ledger integration is backend-pending, hence "Illustrative" chips on headline numbers.
 - Health strip reads `repayment_schedule`: on-time % = paid-on-time instalments / total due; "overdue" = `days_past_due > 0` but below NPA threshold; "restructured" = a restructure event in `loan_applications.status` history. NPA language is deliberately quiet — "accounts under watch," never "defaulters" — recovery routes through platform mediation only, never harassment or third-party recovery agents (dignity-first collections policy). Settlement note reflects `partner_settlements` (illustrative T+2 cycle). "Payout" vs "disbursement" vs "settlement" vocabulary is not yet finalized platform-wide — flagged as pending convention, not silently picked. English-only per tenant/partner convention.
@@ -10262,15 +10262,15 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 512-farmer-referral
 
-*512 · Refer a Friend — Krishi-Verse [FARMER] [P1 — D16 remediation · register-discipline signature screen]*
+*512 · Refer a Friend — Krishalaya [FARMER] [P1 — D16 remediation · register-discipline signature screen]*
 
 - `<html lang="hi">` at the document root — a distinct code shape from the rest of this batch's `.hi`-span-inside-`lang="en"` bilingual wrapper convention. DB: `referrals` (`referrer_id`, `friend_id`, `referral_code`, `status` ENUM `pending|joined|credited`, `referrer_credit`, `friend_discount`, `created_at`, `credited_at`) — same table shape reused from consumer-app screen 399; backend pending (referrals table + WhatsApp share deep-link not yet wired, this screen mocks history with static rows).
-- Milestone rule mirrors 399's "credited once their first delivery goes out," reinterpreted here as the friend's first COMPLETED SALE on Krishi Verse (a farmer-side milestone, not a delivery/checkout event) triggering `status='credited'` for both `referrer_credit` and any friend-side bonus. OPEN QUESTION: no farmer wallet table exists yet — whether referral credit lands in a future `wallet_ledger` row or rides the same rail as sale payouts (assumed here) is flagged for design lead before backend build. REGISTER NOTE: 399 (consumer app) uses gu for its inline vernacular; this is a FARMER app screen, so hi is used per farmer-app convention — gu must not carry over from 399. Persona: Ramesh Patel, Vanthali, code RAMESH50; Suresh Koli joined 2 Jul, credited +₹50 after first completed sale 5 Jul; Devji Bhai invited 6 Jul, `status='pending'`.
+- Milestone rule mirrors 399's "credited once their first delivery goes out," reinterpreted here as the friend's first COMPLETED SALE on Krishalaya (a farmer-side milestone, not a delivery/checkout event) triggering `status='credited'` for both `referrer_credit` and any friend-side bonus. OPEN QUESTION: no farmer wallet table exists yet — whether referral credit lands in a future `wallet_ledger` row or rides the same rail as sale payouts (assumed here) is flagged for design lead before backend build. REGISTER NOTE: 399 (consumer app) uses gu for its inline vernacular; this is a FARMER app screen, so hi is used per farmer-app convention — gu must not carry over from 399. Persona: Ramesh Patel, Vanthali, code RAMESH50; Suresh Koli joined 2 Jul, credited +₹50 after first completed sale 5 Jul; Devji Bhai invited 6 Jul, `status='pending'`.
 - API: `GET /v1/referrals?user_id=` · `POST /v1/referrals/invite` (both backend-pending)
 
 ## P1 Additions · Marketplace Completion & Shared Infrastructure — screens 513–520 [D16 REMEDIATION — FINAL SCREEN BATCH] [batch #8, THIRD and LAST batch of the D16-audit's P1 remediation plan, following D22 (lifecycle verbs, 483–496) and D23 (role completeness, 497–512); 8 screens, 4 roles (farmer ×2, buyer ×2, shared ×4); no new role, no nav gate; closes the marketplace-completion and shared-infrastructure line items from the D16-C/D/E audit findings — every auction outcome branch (edit/cancel, reserve-not-met, won), the exact failed-payout row left dangling since 59, a platform-wide notification aggregator, a refreshed 15-domain search, a first render of the replacement resolution path, and a real human support surface]
 
-> **ALL 520 PLANNED SCREENS NOW EXIST.** D24 is the final screen-generation batch of the entire Krishi-Verse Design Program: with 513–520 shipped, every screen scoped across Phase-1, Phase-2, Phase-3, the D15 channel specs, and all eight D16-audit remediation batches (D17–D24) has been generated. The only remaining Design Program work is F3 (any residual systemic fix pass, if one is found necessary) and the D25 final regression audit — no further NEW screens are planned.
+> **ALL 520 PLANNED SCREENS NOW EXIST.** D24 is the final screen-generation batch of the entire Krishalaya Design Program: with 513–520 shipped, every screen scoped across Phase-1, Phase-2, Phase-3, the D15 channel specs, and all eight D16-audit remediation batches (D17–D24) has been generated. The only remaining Design Program work is F3 (any residual systemic fix pass, if one is found necessary) and the D25 final regression audit — no further NEW screens are planned.
 
 > **Canon-continuity block — this batch closes three long-open story threads, all verified byte-exact, not re-invented:**
 > 1. **The Rice auction, two points of view, closed (65/66 ↔ 515):** 65 (live watch) and 66 (ended, sold) established THE canonical auction — Rice, 10 qtl, reserve ₹2,800/qtl, bids ₹2,900→₹2,950→₹3,000→₹3,050, sold ₹30,500 (+9% above reserve) to Rajesh Kumar (Ahmedabad APMC, ★4.8, 142 deals), 23 bids/12 bidders/6h. 66 never rendered a Lot ID; **515** assigns it **Lot #851** (chosen to sit alongside #842/#847/#853/#856 used elsewhere in this batch) and renders Rajesh's own buyer-side confirmation of that exact win — EMD ₹500 auto-converts from hold to payment credit, 24h window to pay the remaining ₹30,000, escrow mirrors 66's step 1. Two screens, two POVs (farmer sells / buyer wins), one settlement.
@@ -10300,7 +10300,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 513-farmer-auction-edit-cancel
 
-*513 · Edit or Cancel Auction (Ramesh Patel's POV) — Krishi-Verse [FARMER] [P1 — D16 remediation · auction lifecycle completion]*
+*513 · Edit or Cancel Auction (Ramesh Patel's POV) — Krishalaya [FARMER] [P1 — D16 remediation · auction lifecycle completion]*
 
 - `.aec-` prefix, back-header, no nav, two clearly-sectioned variants per spec §5 States rule. Variant A: Ramesh's NEW sibling auction, Premium Wheat (Lokwan), Lot #853, `scheduled`, 0 bids — every field (start price, reserve, increment, duration) freely editable; cancelling is immediate and free. Variant B: Ramesh's GG-20 Groundnut auction, Lot #856, `live`, 4 bids/3 bidders, current highest ₹6,180/qtl (matching 498's groundnut price-drop alert band) — pricing/reserve/duration fields render read-only/locked because `bids` (04_commerce.sql) is schema-commented IMMUTABLE (no UPDATE/DELETE grants per file 13) once a bid exists.
 - CANCEL CONSEQUENCES (Variant B, DESIGNS-LEAD PROPOSED, PENDING OPS RATIFICATION — no `cancellation_policy`/`seller_trust_flags` table exists yet): `auction.status` → `cancelled`, all open bids voided, every bidder's EMD auto-released via `emd_release` ledger entries, repeated post-bid cancellations flagged against seller trust score (backend pending). `cancel_reason` select is a designs-lead proposed, deliberately dispute-free 5-option list (lookup type exists, zero seeded values), same pattern as 443's chips. 66's canonical Rice auction is referenced only for the "Lot #NNN" ID format (per 59) — not itself edited/cancelled here.
@@ -10308,7 +10308,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 514-farmer-auction-reserve-not-met
 
-*514 · Auction Ended — Reserve Not Met (Ramesh Patel's POV) — Krishi-Verse [FARMER] [P1 — D16 remediation · honest parallel-universe variant of 66]*
+*514 · Auction Ended — Reserve Not Met (Ramesh Patel's POV) — Krishalaya [FARMER] [P1 — D16 remediation · honest parallel-universe variant of 66]*
 
 - `.frm-` prefix, back-header, no nav. PARALLEL-UNIVERSE VARIANT of 66-auction-ended-success.html, not a contradiction: renders the same lot shape (Rice, 10 qtl, reserve ₹2,800/qtl) as a plausible SIBLING auction, **Lot #847**, that ended the other possible way — highest bid ₹2,650/qtl by masked bidder "R\*\*\* M\*\*\*" (masking convention per 16), short of reserve by ₹150/qtl (−5.4%). 23 bids/12 bidders/6h duration reused from 65/66's stats to keep the sibling lot's shape identical, only the ceiling differs. All 12 bidders' EMDs auto-released via `emd_release` — no forfeiture since nobody won.
 - DB TRUTH: `auction_status` ENUM (04_commerce.sql) includes `failed_reserve` — this is its canonical render. ⚠ SCHEMA GAP flagged in-screen (muted legend card): the Phase-1 (MVP) schema does not define `failed_reserve`/`awaiting_approval` as reachable states — backend-first decision needed on MVP scope. Three DESIGNS-LEAD PROPOSED next-step paths, all pending backend (no supporting tables): (a) second-chance offer to the highest bidder, 48h expiry, mirroring 438's offer/counter-offer shape; (b) AI-suggested relist reserve ₹2,640/qtl, derived illustratively from 183's 14-mandi wheat median band ₹2,720–₹2,920 (flagged `kv-badge-ai`, not a literal rice average); (c) convert to a fixed-price listing via the existing 10-create-listing.html flow.
@@ -10316,7 +10316,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 515-buyer-auction-won-confirmation
 
-*515 · You Won the Auction (Rajesh Kumar's POV) — Krishi-Verse [BUYER] [P1 — D16 remediation · buyer-side POV of the canonical Rice auction]*
+*515 · You Won the Auction (Rajesh Kumar's POV) — Krishalaya [BUYER] [P1 — D16 remediation · buyer-side POV of the canonical Rice auction]*
 
 - `.awc-` prefix, back-header, no nav, bilingual (matching 498/499). Exact continuation of THE canonical auction (65/66): Rice, 10 qtl, reserve ₹2,800/qtl, bids ₹2,900→₹2,950→₹3,000→₹3,050, sold **₹3,050/qtl = ₹30,500** total (+9% above reserve) to Rajesh Kumar (Ahmedabad APMC, ★4.8, 142 deals), 23 bids/12 bidders/6h. Assigned **Lot #851** here (66 never rendered a lot ID; chosen to sit alongside #842/#847/#853/#856 used elsewhere in this batch, format from 59).
 - EMD CANON: per 16, Rajesh's ₹500 EMD hold (placed when bidding) converts from `emd_release` into an `order_payment` credit since he won (both `ledger_txn_type` lookup values, 05_money.sql:93 — DESIGNS-LEAD proposed transition, backend pending). PAYMENT WINDOW: 24h to pay the remaining ₹30,000, mirroring 66's farmer-side pickup-confirmation window — both key off the same settlement clock; unpaid triggers quiet-toned `emd_forfeit` (per spec §5 money-out tone rule). Payment methods (Wallet/UPI/Net Banking) reuse 130's canon. Escrow holds funds until delivery confirms, same shape as 66/499. `auctions.settled_order_id` links this auction to its order once payment clears — "View your order" crosslink is disabled/pending here since payment hasn't happened yet.
@@ -10324,7 +10324,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 516-farmer-payout-failure-resolve
 
-*516 · Resolve Failed Payout — Krishi-Verse [FARMER] [P1 — D16 remediation · continues 59's exact FAILED row]*
+*516 · Resolve Failed Payout — Krishalaya [FARMER] [P1 — D16 remediation · continues 59's exact FAILED row]*
 
 - `.pyf-` prefix, back-header, no nav, bilingual. CONTINUES the exact failed payout row from 59-farmer-payout-history.html: "Withdrawal · ₹8,000 · Bank rejected · IFSC mismatch · −₹8,000 · FAILED · RETRY" — this screen is what "RETRY" opens. Farmer: Ramesh (Bhanubhai) Patel, same canon person as 121/481. Affected account HDFC ····9831 (canonical per 121/481), corrected IFSC **HDFC0000287** re-entered in the fix flow (the mismatch that caused this failure predates that correction).
 - DB TRUTH: Phase-1 `01_phase1_schema.sql` `payout_status` ENUM (`queued|processing|success|failed|reversed`) has only free-text `failure_reason` — no structured `failure_code` column. Full-platform `05_money.sql` adds `cancelled` to the enum plus a `failure_code varchar(60)` column; this screen honestly renders the Phase-1 shape only (same "don't silently upgrade the data shape" discipline as 442). RETRY SAFETY: `payouts.idempotency_key` is UNIQUE NOT NULL — retry reuses the SAME key already stored against the failed row, guaranteeing no double-debit even on repeated taps. Idempotent retry flow: queued → processing → success (T+1). LEDGER TRUTH: `ledger_txn_type` includes `payout`/`payout_reversal` — a failed payout never actually leaves the wallet balance, since the `payout` hold reverses via `payout_reversal` the moment status flips to `failed`, which is why the reassurance card can truthfully say the ₹8,000 never left the balance. ⚠ Both the historical on-file IFSC and the corrected value differ from 481/121's current canonical HDFC0000287 in ways logged for the same D25 cross-batch consolidation pass tracking the pre-existing "····9831 vs 21-transactions' ●●4521" bank-last-4 drift.
@@ -10332,7 +10332,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 517-shared-unified-notification-center
 
-*517 · Unified Notification Center — Krishi-Verse [SHARED] [P1 — D16 remediation · NEW shared surface]*
+*517 · Unified Notification Center — Krishalaya [SHARED] [P1 — D16 remediation · NEW shared surface]*
 
 - `.unc-` prefix. NEW shared surface — no prior cross-role notification aggregator existed (D16 audit gap, closed here). SINGLE TEMPLATE, same convention as 441: content, module filter chips, and "Mark all read" scope all flip per signed-in role (buyer sees Orders/Payments/Disputes chips, worker sees Labour/Payments/Schemes, ambassador sees Payments/Schemes/Alerts). This render demonstrates the FARMER view, Ramesh (Bhanubhai) Patel — same person as 121/481/516 canon. 9 module filter chips total across all roles.
 - FEED CONTENT: items 1–5 are REUSED VERBATIM from 28-notifications.html (title/body/time/CTA unchanged) — order out-for-delivery #KV-0142, outbid on Red Chilli, Sunita Kumari booking acceptance, ₹9,550 payment received from Anand Stores, Aadhaar KYC verified — plus one honest failed-SMS→WhatsApp-resend item. DB TRUTH: `notification_events.priority` CHECK (`critical|important|informational|promotional`, 11_engagement.sql) rendered as coloured priority dots; `notif_channel` ENUM (`push|sms|whatsapp|email|inapp`, 01_phase1_schema.sql, loosened to free varchar(15) in full-platform); `notif_status` ENUM (`queued|sent|delivered|failed|read`, full-platform adds `suppressed` for quiet-hours holds, named but not demonstrated live); `user_quiet_hours` (21:00–06:00 default, Asia/Kolkata) rendered as an info card linking to 171. AGGREGATES, does not replace, the 11 per-module alert screens (7 existing deep-dives: 241/255/281/296/357/381/391; 4 formerly-missing role alerts now filled by D23: 498/502/505/509), which remain the per-module destinations.
@@ -10340,15 +10340,15 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 518-shared-global-search-v2
 
-*518 · Global Search v2 — Krishi-Verse [SHARED] [P1 — D16 remediation · 183 refresh, 15-domain index]*
+*518 · Global Search v2 — Krishalaya [SHARED] [P1 — D16 remediation · 183 refresh, 15-domain index]*
 
 - `.gs2-` prefix. SUPERSEDES 183-global-search.html (183 stays on disk for reference/history, not deleted or redirected). Expands from 183's 5 indexed domains (Listings/Sellers/Tips/Mandi/Guides) to all 15 module domains catalogued across the design program. Query "wheat" preserved: the 6 "Top results" rows are 183's rows CARRIED OVER VERBATIM (Premium Wheat — Lokwan ₹2,880/qtl Ramesh Patel, Sharbati Wheat Grade A+ ₹3,200/qtl, wheat mandi prices 14 mandis ₹2,720–₹2,920, "Stop wheat rust" tip 12.4k reads, Krishna Mehta · Nadiad · ★4.8 · 52 listings, wheat knowledge hub 47 articles) — only the money visual treatment is upgraded to `var(--font-mono)` 700 per F1 LAW (183 predates that rule).
-- NEW cross-domain rows under "Also across Krishi-Verse," one canon-true row per new domain, each commented at its markup site with its exact source: auction **#851 live** (515/518 canon-aligned, see QA fix below), order #KV-0142, equipment (generic-flagged), labour (Sunita Kumari booking), PM-KISAN scheme (₹6,000/yr), Junagadh AgriStore warehouse (WDRA/GJ/00214), and one illustrative course. 9 domain filter chips. DOMAIN CHIP COUNTS ARE HONEST: v2 counts (All·13 = Market·4 + Auctions·1 + Orders·1 + Equipment·1 + Labour·1 + Schemes·1 + Storage·1 + Knowledge·3) are an exact tally of rows actually rendered in this mock — contrast with 183's aggregate index-wide counts that were unrelated to what it actually displayed. ⚠ **QA CANON FIX (post-audit):** the auction cross-domain row originally cited Lot #847 as live at ₹3,050/qtl, colliding with 514's canonical use of #847 as the `failed_reserve` lot — corrected to **Lot #851** (515's canonical live-win lot).
+- NEW cross-domain rows under "Also across Krishalaya," one canon-true row per new domain, each commented at its markup site with its exact source: auction **#851 live** (515/518 canon-aligned, see QA fix below), order #KV-0142, equipment (generic-flagged), labour (Sunita Kumari booking), PM-KISAN scheme (₹6,000/yr), Junagadh AgriStore warehouse (WDRA/GJ/00214), and one illustrative course. 9 domain filter chips. DOMAIN CHIP COUNTS ARE HONEST: v2 counts (All·13 = Market·4 + Auctions·1 + Orders·1 + Equipment·1 + Labour·1 + Schemes·1 + Storage·1 + Knowledge·3) are an exact tally of rows actually rendered in this mock — contrast with 183's aggregate index-wide counts that were unrelated to what it actually displayed. ⚠ **QA CANON FIX (post-audit):** the auction cross-domain row originally cited Lot #847 as live at ₹3,050/qtl, colliding with 514's canonical use of #847 as the `failed_reserve` lot — corrected to **Lot #851** (515's canonical live-win lot).
 - API: `GET /v1/search?q=&domain=` (15-domain index, module-filtered)
 
 ### 519-buyer-replacement-order-tracker
 
-*519 · Replacement Tracker — Krishi-Verse [BUYER] [P1 — D16 remediation · FIRST render of resolution_type='replacement']*
+*519 · Replacement Tracker — Krishalaya [BUYER] [P1 — D16 remediation · FIRST render of resolution_type='replacement']*
 
 - `.brl-` prefix. FIRST instantiation of `resolution_type='replacement'` — a DESIGN-LEAD FIELD NAME per 441's own flag (proposed values `refund_full|refund_partial|no_action|replacement`, pending backend ratification as a column on `disputes`/`dispute_resolutions`). Order shape reused from 445-buyer-order-return-request-tracker.html: Order #KV-2026-0198, Yellow Maize, seller Ramesh Patel, buyer Vadodara Mills, 8 qtl delivered, ₹15,280 total (₹1,910/qtl, 445's own math, reused verbatim).
 - ⚠ ALTERNATE-RESOLUTION DEMO — LOUDLY LABELED, not 445's canon outcome. 445 remains the ONE TRUE resolved case (2 of 8 qtl returned for poor_quality, refund-style ₹3,820 to buyer, seller keeps ₹11,460). 519 renders a SECOND, hypothetical dispute variant for the same order shape and same 2-of-8-qtl damage scenario, resolved instead as a REPLACEMENT (2 fresh qtl shipped, no money changes hands) — the two outcomes cannot both be true for one order at once, same "sibling scenario" discipline as 514 alongside 66. DB TRUTH: `returns.status` remains comment-vocab VARCHAR (`requested|approved|in_transit|received|refunded|rejected`), not a ratified ENUM (445's own flag); the replacement timeline (approved → replacement_dispatched → in_transit → delivered → closed) extends it with two NEW design-lead-proposed steps not in 445's list. LEDGER TRUTH: because replacement moves goods not money, the `escrow_holds` row stays untouched — no `ledger_txn_type` entry fires (contrast with 441's 'resolved' path, which schedules an escrow release within +24h). 48h auto-close on buyer confirmation; escalate path falls back to 441.
@@ -10356,7 +10356,7 @@ Faithful extraction of every label, value, name, price and copy string shown in 
 
 ### 520-shared-support-chat
 
-*520 · Human Support Chat — Krishi-Verse [SHARED] [P1 — D16 remediation · FINAL screen of the entire 520-screen program]*
+*520 · Human Support Chat — Krishalaya [SHARED] [P1 — D16 remediation · FINAL screen of the entire 520-screen program]*
 
 - `.ssc-` prefix. FILLS DEAD CTAs: 123's "💬 Chat with support · 9 AM–7 PM · Free" quick-card, 124's "💬 Chat in app" contact-method radio, 497's "💬 Chat support" quick-card, and 400's "Chat with us, FAQs" nav row all pointed nowhere until now. SINGLE TEMPLATE, PER-ROLE, same convention as 517 — this shared surface would render identically for any role's support ticket. This render demonstrates the FARMER view, Ramesh (Bhanubhai) Patel, same canon person as 121/481/516/517/519.
 - TICKET CANON (`support_tickets`, full-platform `11_engagement.sql`): `ticket_no='TKT-2026-04187'`, `category='payment'` (lookup `ticket_category`: payment|kyc|order|dispute|technical|safety|emergency_vet|women_safety), `severity='P2'` (CHECK P0–P3, default P2), `status` = `ticket_status` ENUM `open|pending_customer|pending_internal|escalated|resolved|closed|reopened`, `channel='app'` (varchar(20): app|whatsapp|ivr|phone|email|ambassador). Agent **Kavita Nair**, Payments team — `messages.is_ai_generated=false` on every bubble (human), explicit CONTRAST with 125's AI chat (`is_ai_generated=true` throughout): human initials-disc avatar (KN) not the 🤖/purple-AI theme, NO "📖 From:" AI-source citation chips, NO bot quick-action chips — replaced with a human "Payments team" identity card, business-hours banner (9 AM–7 PM per 123), and a CSAT block 125 has no equivalent of. SLA badge "within 4 hours / critical 1 hour" is 124's own verbatim copy, condensed to badge length. DEMO THREAD CONTINUES 516's story beat-for-beat: the agent references the already-`processing` retry from 516 rather than re-diagnosing, moving the ticket to `pending_customer` (an honest use of the real enum value) awaiting confirmation once funds land. Resolved variant includes CSAT 1–5 + a reopened note.
@@ -11140,7 +11140,7 @@ Escalations to founder: white-label billing exception · SAC 997331 classificati
 | ID | Event(s) | Tier(s) / opt_out | Notes |
 |---|---|---|---|
 | SMS-005 | order.delivered (REAL), order.packed, dispute.acknowledged, dispute.seller_responded | important, opt_out=true | Order/dispute completion — Kiran Desai's canon arc, ORD-2026-19207 + DSP-2026-0342, same IDs as EM-004/EM-007/EM-008, no re-derivation |
-| SMS-006 | kyc.submitted, kyc.verified, kyc.rejected | important, opt_out=true | KYC set — Prakash Rathod persona, Junagadh; verbatim "Krishi Verse never asks you to reply with documents, card numbers, or codes." doctrine line; never-shame rejection; PAN never appears in SMS at any tier |
+| SMS-006 | kyc.submitted, kyc.verified, kyc.rejected | important, opt_out=true | KYC set — Prakash Rathod persona, Junagadh; verbatim "Krishalaya never asks you to reply with documents, card numbers, or codes." doctrine line; never-shame rejection; PAN never appears in SMS at any tier |
 | SMS-007 | billing.invoice_issued, payment_received, due_reminder (important) / overdue, final_notice, autopay_failed (critical) | important opt_out=true / critical opt_out=false | Billing set — SMS-is-a-headline-not-a-ledger: only ₹28,910 total appears, never the subtotal/GST breakdown (that stays in EM-029's arithmetic strip); tenant-admin recipient, two invoice arcs (happy INV-2026-07-1207 / dunning INV-2026-06-8841) |
 | SMS-008 | lifecycle.welcome_farmer, activation_nudge, first_listing_live, winback_30d | informational/important/promotional, opt_out=true | Lifecycle set — Jayesh Dangar/Prakash Rathod/Dilip Chauhan personas; T-3 rulings cited (never-shame, exit-on-action, 2-sends-forever); zero rupee figures in file |
 | SMS-009 | full 40-event registry × 5 channels | — | Eligibility matrix, canon page (no mock) — SMS=30, Push=32, Email=31, WhatsApp=9, IVR=3; grep-verified against every built template; DELTA-059 channel fan-out/dedupe gap flagged (order.delivered rides 4 channels simultaneously, no routine-tier redundancy policy); T-8 extension appended: cross-channel marketing winback double-send (EM-020/WA-011) joins DELTA-059 |
@@ -11149,7 +11149,7 @@ Escalations to founder: white-label billing exception · SAC 997331 classificati
 | ID | Event(s) | Tier(s) / category | Notes |
 |---|---|---|---|
 | WA-009 | payout.credited, weather.alert_severe, kcc.due_reminder, mandi.daily_digest | important/utility, critical/utility (sole quiet-hours exemption), important/utility, informational/utility | Farmer money+weather set — Manguben Chaudhary payout derivation drawn (51.4 kg × ₹64.90/kg = ₹3,335.86, same canon math as EM-005/PU-002, zero new money invented); weather.alert_severe is WA's one quiet-hours exemption; kcc.due_reminder kept amount-free; mandi.daily_digest is WA's richest farmer surface (public price, not sensitive) |
-| WA-010 | kyc.submitted, kyc.verified, kyc.rejected, scheme.window_open | important/utility ×3, informational/utility | KYC + scheme set — Prakash Rathod persona (Junagadh), never-shame rejection wording, verbatim "Krishi Verse never asks for your UPI PIN or OTP in chat" doctrine sibling line carried from WA-000; scheme.window_open kept date-only, no eligibility promises |
+| WA-010 | kyc.submitted, kyc.verified, kyc.rejected, scheme.window_open | important/utility ×3, informational/utility | KYC + scheme set — Prakash Rathod persona (Junagadh), never-shame rejection wording, verbatim "Krishalaya never asks for your UPI PIN or OTP in chat" doctrine sibling line carried from WA-000; scheme.window_open kept date-only, no eligibility promises |
 | WA-011 | lifecycle.first_listing_live, class.reminder, lifecycle.winback_30d | important/utility, informational/utility, promotional/marketing | Lifecycle set — Prakash Rathod (no price shown), Mastitis reminder (W-D46 exact), lifecycle.winback_30d is the ONE marketing-category template in the entire batch: opt-in required, STOP honored instantly and unconditionally, 2-sends-forever cap |
 | WA-012 | full 20-event WA reconciliation vs. PU-000 data plane | — | Eligibility reconciliation, canon page — WA count moves 9→20 of 40 registered events (11 added at T-8: WA-009 ×4, WA-010 ×4, WA-011 ×3); tier/opt_out diff table vs. PU-000 shows zero drift on 11/11 rows; surfaced (and this T-8 pass fixed) an unflagged pre-T-6 residual on PU-000's payout.credited row; mandatory cascade edit to SMS-009's WA column (9→20, footnote added); honest 6th "roadmap gap" class recorded for order.payment_failed, lifecycle.activation_nudge, course.published_promo (not a doctrine exclusion — just not yet templated) |
 
@@ -11179,7 +11179,7 @@ Escalations to founder: logo-fallback law (TS-000, §17 — new law formalized h
 |---|---|---|---|
 | DOC-000 | Document design-language canon (no mock) | Statutory-honesty law | A4 sheet anatomy, bilingual field-label law, JetBrains Mono numerals, QR quiet-zone spec, signature/stamp blocks, footer law (doc-ID + kv.link/verify + page N of M + timezone-stamped generated-at + currency code), @page print CSS, 80mm thermal law, doc-number scheme registry (grep-verified against W012/W148/W287 — INV-2026-07-1204/1198/0972/1150; INV-2026-07-1207 sourced separately from EM-029, stated precisely at DOC-1 close-out), GSTIN/UTR masking law |
 | DOC-001 | Trade invoice (tenant→buyer GST invoice) | GST-incl decomposition + paise-rounding note; ratified SAC 9967 vs illustrative rates | Anand FPO Store → Kiran Desai, ORD-2026-19207, ANDF/INV/2026-27/0412; 2×A2 Gir Cow Ghee decomposed to taxable+GST (12% illustrative), delivery SAC 9967 18% ratified, CGST/SGST split, masked GSTINs; Dynamic QR Code (B2C) note reworded threshold-free at close-out (no ₹ figure asserted, escalated §17) |
-| DOC-002 | GST e-invoice (platform→tenant SaaS) | Intra-state CGST/SGST per W312 | Krishi Verse → Saurashtra Dairy Producers Co. (illustrative), INV-2026-07-1207, ₹24,500 + CGST 9% ₹2,205.00 + SGST 9% ₹2,205.00 = ₹28,910 (corrected at DOC-1 close-out: seller state fixed to 24 Gujarat per W312's registered-office fact, replacing an invented Karnataka/IGST placeholder); SAC 997331 §17-pending; IRN/ack/signed-QR structural Phase-2 mocks |
+| DOC-002 | GST e-invoice (platform→tenant SaaS) | Intra-state CGST/SGST per W312 | Krishalaya → Saurashtra Dairy Producers Co. (illustrative), INV-2026-07-1207, ₹24,500 + CGST 9% ₹2,205.00 + SGST 9% ₹2,205.00 = ₹28,910 (corrected at DOC-1 close-out: seller state fixed to 24 Gujarat per W312's registered-office fact, replacing an invented Karnataka/IGST placeholder); SAC 997331 §17-pending; IRN/ack/signed-QR structural Phase-2 mocks |
 | DOC-003 | Payment receipts (A4 + 80mm) | Receipt≠invoice law; purpose milk_bill REAL | Manguben Chaudhary milk-payout, cycle 01–07 Jul, 51.4kg×₹64.90=₹3,335.86, both an A4 record and an 80mm MCC counter-print of the SAME payout; no GST fields on either (deliberate, not omission); thermal mock's absent QR/page-numbering stated explicitly as deliberate exceptions at close-out ("stated, not silent") |
 | DOC-004 | Credit note | `credit_notes` table ABSENT — backend-pending | GST credit note vs DOC-001's trade invoice — dispute DSP-2026-0342 refund_partial: 1 of 2 ghee jars reversed, taxable ₹1,919.64+GST ₹230.36=₹2,150.00, references ANDF/INV/2026-27/0412; no `credit_notes` table exists on the real schema (grepped clean), flagged prominently rather than invented; GSTINs masked throughout all four print-real mocks |
 
@@ -11196,7 +11196,7 @@ Escalations to founder: DOC-1 P0 fix (seller-state canon conflict, DOC-002 vs W3
 ## DOC-3 — Loan sanction + agreement + insurance cert (DigiLocker) + claim form — documents/
 | ID | Content | Key finding | Notes |
 |---|---|---|---|
-| DOC-009 | Loan sanction letter (A4, LENDER-branded) | Number-grounding rule + partner-class flag | Saurashtra Gramin Bank letterhead (`financial_partners` row, "serviced via Krishi Verse" line) sanctioning LA-2026-0710-08 — Ramesh P.'s KCC application, ₹3,00,000, product range ₹50,000–₹5,00,000, 7.0%−3.0% subvention = 4.0% effective, harvest_aligned repayment (all W207/W208 REAL); RBI Key Facts Statement drawn STRUCTURALLY (field labels only, values `{{vars}}`, §17-escalated exact field list); 24h cooling-off (`loan_applications.cooling_off_until`, PRD §59.4); regulator ref RBI ••4471 grep-found and cited (W207:21/W208:21) at DOC-3 arbitration, replacing an earlier "not populated in canon" placeholder; two clearly-separated lender stories held apart (this sanction letter's LA-2026-0710-08/Ramesh P./W207-208 arc vs. DOC-010's independent KV-LN-2026-04412/276-471-472 arc — never conflated); partner-branded document class flagged as a TS-002 matrix EXTENSION row (proposed at DOC-3, founder ratification pending §17). |
+| DOC-009 | Loan sanction letter (A4, LENDER-branded) | Number-grounding rule + partner-class flag | Saurashtra Gramin Bank letterhead (`financial_partners` row, "serviced via Krishalaya" line) sanctioning LA-2026-0710-08 — Ramesh P.'s KCC application, ₹3,00,000, product range ₹50,000–₹5,00,000, 7.0%−3.0% subvention = 4.0% effective, harvest_aligned repayment (all W207/W208 REAL); RBI Key Facts Statement drawn STRUCTURALLY (field labels only, values `{{vars}}`, §17-escalated exact field list); 24h cooling-off (`loan_applications.cooling_off_until`, PRD §59.4); regulator ref RBI ••4471 grep-found and cited (W207:21/W208:21) at DOC-3 arbitration, replacing an earlier "not populated in canon" placeholder; two clearly-separated lender stories held apart (this sanction letter's LA-2026-0710-08/Ramesh P./W207-208 arc vs. DOC-010's independent KV-LN-2026-04412/276-471-472 arc — never conflated); partner-branded document class flagged as a TS-002 matrix EXTENSION row (proposed at DOC-3, founder ratification pending §17). |
 | DOC-010 | Loan agreement (A4, compact, multi-page-pattern honesty) | Day-1 vs restructure-event separation + EMI implied-rate footnote | KV-LN-2026-04412 (KCC, ₹1,00,000, original 12mo/₹8,365 EMI — the SAME loan 276/471/472 later show restructured to 18mo/₹5,720; this agreement draws only the pre-restructure day-1 terms, since an agreement is executed at disbursal); interest/origination/late-charge fields ALL `{{vars}}` from lender master data; no-shame collections clause law drawn (verbatim placeholder, clause text itself §17-escalated); cooling-off cites `loan_applications.cooling_off_until` exactly; stamp-duty note = state-specific §17 interpretation, no amount asserted; citation lines corrected at DOC-3 close-out (screens/472 lines 102–104, composite, not a single line); footnote added: the ₹1,00,000/12mo/₹8,365 schedule implies an unusually low (~1% APR) effective rate, consistent with stacked KCC interest subvention (7.0%−3.0%, W208) rather than an error — rate itself stays `{{interest_apr_bps}}`, no figure asserted; captions switched from gu to hi at DOC-3 arbitration (source-canon screens 276/471/472 are 100% Hindi, known-language priority, DOC-000 §a). |
 | DOC-011 | Insurance policy certificate (A4, INSURER-branded, DigiLocker) | IRDAI ••118 mask precedent + authoritative-copy §17 escalation | Bharat Krishi Insurance-branded (partner class, same TS-002 extension flag as DOC-009) certificate BKI-PMF-••••-2214, Ramesh P., crop_season GG-20 groundnut 2.8 acre kharif, sum insured ₹98,000 (all W248 REAL); policy no. masked per the IRDAI ref ••118 canon precedent (W245/W248/W249 sidebar); `crop_seasons` enum EXACT (kharif|rabi|zaid|perennial, migrations/0061_crop_calendars.sql); DigiLocker block: `digilocker://` issuance URI clearly labeled MOCK, "issued to the policyholder's DigiLocker — integration structural, backend pending"; authoritative-copy question (DigiLocker vs. kv.link/verify vs. insurer system-of-record) drawn as an open §17 question, not answered by design; claims-how-to strip ties both W252's CLM-2026-0087 (same crop-policy class) and screens/475's KV-CLM-2026-0530-098 (appeal mechanics only, explicitly not conflated with this policy's own figures). |
 | DOC-012 | Claim intake form (A4, NEW fillable-form sub-type) | 8 cause-of-loss values schema-exact + label+input semantics | Blank ruled fillable form (real `<label for>` + `<input>`/`<textarea>`/`<input type="checkbox">` pairs, natively keyboard-focusable, zero JS) alongside a 3-field filled-preview strip using KV-CLM-2026-0530-098's real canon values (screens/475): policy no. KV-POL-2026-0401-054, cause "Accident (livestock)", own estimate 70% — sum insured ₹60,000/assessed 40%/payout ₹24,000 drawn as context, not a form field; cause-of-loss checklist is the 8 values from `insurance_claims.event_type_id`'s comment list EXACTLY (drought, flood, hail, pest, death, theft, fire, accident), with a 9th "Other" item explicitly flagged as an addition; 72h intimation note cites `intimated_within_72h`; thumb-impression offered as an equal, respectful alternative to signature; *123#+helpline footer (DOC-003 field-materials law); citation fixed at DOC-3 close-out (screens/475 line 8, route comment — not line 3); captions switched from gu to hi at DOC-3 arbitration (source-canon screen 475 is 100% Hindi, known-language priority, DOC-000 §a). |
@@ -11211,7 +11211,7 @@ Escalations to founder: partner-branded document class / TS-002 matrix extension
 | DOC-013 | Contract-farming tripartite agreement (A4, compact) | Two-"tripartite" schema-fidelity flag + real contract_status ladder | KV-CON-2026-0231 — Ramesh Patel (grower) · Anand FPO (aggregator-facilitator, Ramesh's REAL tenant #FPO-A-247) · Mehta Oil Industries (buyer); 10 qtl GG-20 groundnut × ₹6,200/qtl fixed = ₹62,000, Oct 2026 delivery, +₹100/qtl oil-content premium >48% (all screens/363/364/478 REAL); `contract_status` 9-value ENUM drawn in full exact order (draft\|proposed\|negotiating\|signed\|active\|fulfilled\|breached\|terminated\|disputed, 0010_agri_infra_services.sql) — this real contract stays `active`, breached/terminated/disputed shown only as muted 466-precedent demo-legend states, never live; hi (Hindi) captions used per grep of this exact arc's own screens (363/364/477 render `lang="hi"`), overriding the batch's Gujarat-arc gu default per DOC-000 §a known-language priority; farmer-protection clause set + dispute seat/governing law both explicitly §17-flagged, no state Act or venue asserted; **`financier_partner_id`'s own schema comment reads "tripartite bank (file 10 partner)" — a DIFFERENT three-party (grower+buyer+financier-bank) concept than this batch's spec-mandated grower+FPO+buyer framing; KV-CON-2026-0231 has no `financier_partner_id` set anywhere in canon, so no bank/NBFC party is invented — the FPO's presence is grounded instead via Ramesh's real tenant membership, and the distinction is called out explicitly so QA does not conflate the two "tripartite" ideas.** |
 | DOC-014 | Export commercial invoice (A4, full-USD) | Golden Law 2 first full-USD document; zero ₹ glyph, no invented FX | Shipment KV-EXP-2026-0034, Mehta Oil Industries (exporter of record, APEDA RCMC-GJ-04471, IEC masked) → Bangladesh consignee (masked), **INCOTERM CIF Chittagong** (real, screens/420/421 — used over a blank placeholder since a real value was grep-found); unit price/amount drawn as the ONE illustrative-flagged row, **USD 610–640/MT indicative** (screens/420 line 115, buyer demand-board range, not a contracted price); grade shown as FAQ (real, judgment call correcting the spec's own example word "HPS" — zero canon hits for HPS on groundnut); quantity modeled as Ramesh Patel's 10-qtl/1-MT lot as one line inside the larger ≤200 MT consolidated shipment, so it foots to the canon contract figure; HS code kept `{{variable}}` (zero grep hits, "from export master data"); export_marketplace is a Phase-3 design-inventory flag only — nearest LIVE flag `exports` is OFF by default (0009_feature_flags.sql), stated as "canon prepared for flag-on," not evidence the flow is live; self-test regex proof confirms **zero ₹/`&#8377;` matches** inside the `.doc-sheet` markup, and "INR" appears exactly once, only inside the mandated **"INR↔USD conversion is a treasury fact, never a design fact" — no exchange rate appears anywhere on this document** annotation; **timeline-reconciliation note** appended (this shipment's document-preparation phase necessarily post-dates the Oct-2026 contract delivery and Nov-2026-onward export listing window — goods not yet harvested cannot be packed/invoiced; the "Generated 13 Jul 2026" footer is the mock's BUILD date, not the shipment's business date). |
 | DOC-015 | Export packing list (A4) | Arithmetic foot-check gate + packing-list money law | Ties 1:1 to DOC-014 (same CI ref, same shipment, same exporter/consignee/INCOTERM); mandatory worked arithmetic **40 bags × 25 kg net = 1,000 kg net = 10 qtl**, footing exactly to `contract_growers.committed_quantity` = 10 qtl for KV-CON-2026-0231 (screens/363/364/478) — not an invented tonnage; gross weight = net + (40 × 0.5 kg/bag illustrative tare) = 1,020 kg, the 0.5 kg/bag itself explicitly flagged as an illustrative sample, not canon/master data; container/seal numbers masked-format (shipment not yet booked, per screens/421 "Vessel not yet booked"); **no-money-on-packing-lists law stated explicitly on the mock itself** ("A packing list carries no prices or monetary amounts — that information belongs on the commercial invoice (DOC-014) only"), not merely an absence; same timeline-reconciliation note as DOC-014/016 appended. |
-| DOC-016 | Third-party document records (canon page + 3 compact record-block patterns: BoL / CoO / phyto) | Verbatim never-issues-a-certificate law + real 9-value doc-type / 4-value status enums | Doctrine banner reproduced **verbatim**: *"The platform prepares the pack and stores the record. Carriers, chambers and plant-quarantine authorities issue their own documents — Krishi Verse never issues a statutory certificate."* `export_documents.doc_type_id` is a dynamic FK to `lookup_values(type_code='export_doc')` with exactly 9 REAL values (bol\|awb\|commercial_invoice\|packing_list\|coo\|phyto\|fumigation\|insurance\|inspection, 0010_agri_infra_services.sql); per-document status is a REAL 4-value enum (pending\|submitted\|verified\|rejected, schema default 'pending') — this page draws exactly 3 of the 9 (bol, coo, phyto), each status mapped from screens/421's own checklist rows (BoL "Awaiting vessel"→pending, CoO "In progress"→submitted, phyto "Pending inspection"→pending); every record block's verify link is explicit that it verifies **the record on file, not the underlying statutory certificate itself**; CoO preferential-vs-non-preferential (India–Bangladesh SAARC/SAFTA context) explicitly §17-flagged, not asserted as canon; phyto explainer copy honesty-checked against screens/407 ("you don't apply for it yourself" / "arranged by the buyer/exporter"); illustrative reference numbers (BL-••••-BD26, CoO-••••-7305, PC-••••-5518) kept masked-format, not real assigned numbers, de-collided from DOC-013/014/015's own real canon ID suffixes so no illustrative ref accidentally matches a real one. |
+| DOC-016 | Third-party document records (canon page + 3 compact record-block patterns: BoL / CoO / phyto) | Verbatim never-issues-a-certificate law + real 9-value doc-type / 4-value status enums | Doctrine banner reproduced **verbatim**: *"The platform prepares the pack and stores the record. Carriers, chambers and plant-quarantine authorities issue their own documents — Krishalaya never issues a statutory certificate."* `export_documents.doc_type_id` is a dynamic FK to `lookup_values(type_code='export_doc')` with exactly 9 REAL values (bol\|awb\|commercial_invoice\|packing_list\|coo\|phyto\|fumigation\|insurance\|inspection, 0010_agri_infra_services.sql); per-document status is a REAL 4-value enum (pending\|submitted\|verified\|rejected, schema default 'pending') — this page draws exactly 3 of the 9 (bol, coo, phyto), each status mapped from screens/421's own checklist rows (BoL "Awaiting vessel"→pending, CoO "In progress"→submitted, phyto "Pending inspection"→pending); every record block's verify link is explicit that it verifies **the record on file, not the underlying statutory certificate itself**; CoO preferential-vs-non-preferential (India–Bangladesh SAARC/SAFTA context) explicitly §17-flagged, not asserted as canon; phyto explainer copy honesty-checked against screens/407 ("you don't apply for it yourself" / "arranged by the buyer/exporter"); illustrative reference numbers (BL-••••-BD26, CoO-••••-7305, PC-••••-5518) kept masked-format, not real assigned numbers, de-collided from DOC-013/014/015's own real canon ID suffixes so no illustrative ref accidentally matches a real one. |
 
 **Number-grounding + de-collision discipline (binding across all 4 artifacts)**: every figure is either grep-sourced (file → figure) or an explicitly flagged `{{variable}}`/illustrative sample — never invented; illustrative reference numbers introduced across the batch (witness name, consignee name, carrier/chamber/PQ-station names, container/seal numbers, BoL/CoO/phyto doc refs) were checked against every real canon ID already in use (KV-CON-2026-0231, KV-EXP-2026-0034, KV-ESN-88123, RCMC-GJ-04471, etc.) so no illustrative suffix collides with a real one — the fix Fable applied ahead of this packaging pass. **Timeline-reconciliation note (×3, DOC-014/015/016)**: each of the export artifacts carries the identical note that the shipment's document-preparation phase necessarily post-dates Ramesh Patel's unharvested Oct-2026 crop and the Nov-2026-onward export listing window — a document's business date is bounded by its goods' existence, and the mock's "Generated 13 Jul 2026" build date is stated as distinct from the shipment's actual business date. **Wrong spec pointer corrected**: the batch's own spec had pointed to web-screens/W420/421 (twin/ESG canon) for export figures; the builder grep-verified the real export canon lives at `screens/420`/`421` instead, and used the correct real screens — filed as a feature of the grounding rule (spec pointers get grep-verified by builders), not a deviation. **`financier_partner_id` schema-fidelity flag** (DOC-013): the schema's own "tripartite bank" concept (grower+buyer+financier-bank) is explicitly distinguished from this batch's grower+FPO+buyer framing, with no bank/NBFC party invented.
 
@@ -11235,10 +11235,10 @@ Escalations to founder: DELTA-062 wheat-deposit-vs-harvest-window date reconcili
 | COL-001 | Farmer — GU-primary + hi variant noted (12-language brief corrected to 3-live grep-true count) | market_intel/education/ai_assistant flags OFF → coming soon | Farmer tri-fold: mandi bhav (screen 52, coming soon — `market_intel` OFF-until-launch), sell-from-home voice listing "बोलकर बेचो" (521–524, LIVE) + WhatsApp (WA-002, LIVE), money safety/no-OTP-asking fraud line + payout-to-bank (EM-005 family, LIVE — not gated by store-only `online_payments` flag), learn/courses (W411, coming soon — `education` OFF), KrishiMitra (screen 530, coming soon — `ai_assistant` OFF, "until a model key is set"); Senior-Farmer-legible tone, zero invented metrics |
 | COL-002 | Worker — HI-primary | labour flag OFF → find-work/fair-records coming soon; kyc flag ON → ID card LIVE | Worker tri-fold: find nearby work (345/350 canon, coming soon — `labour` OFF-until-launch, stricter than spec brief's assumed-live panel list) · fair records: attendance/wage/earnings certificate (DOC-020a tie, coming soon, same `labour` flag) · your ID card (DOC-019 tie, LIVE — grounded in `worker_profiles` + `kyc` flag is_enabled=true, a distinct capability from the labour marketplace) · dignity tone ("आपका काम, आपका रिकॉर्ड"); zero wage figures (rates vary, no wage promises) |
 | COL-003 | Tenant/FPO — EN-primary + gu accents (FPO boards/CEOs, office-literate reader) | console/white-label/settlements/onboarding all LIVE; pricing = "talk to us" | Tenant tri-fold: run your FPO digitally (console canon, LIVE — not on the flags-OFF list) · your brand, your members (white-label W191, TS-002) · transparent, itemised settlements ("you see every rupee's path," W147/DOC-007 cite — `commission_split`=false + `buyer_charges`=false confirm "full gross where commission is buyer-side" is the actual current default) · onboarding in 4 steps (EM-016 checklist: KYC → invite team → first listing → connect payout) · pricing: "talk to us" (§17 public-claims rule, confirmed grep-true by `tenancy` flag OFF-until-launch — no live plan/quota system exists yet to quote a price from) |
-| COL-004 | Ambassador — HI/GU dual (cover + tier-ladder in Hindi, money-safety/honesty panel in both Hindi and Gujarati, English gloss small) | 0207_ambassador_commission_plans.sql = canon-designated brochure rate data | Ambassador tri-fold: become your village's Krishi Saathi (W-D43 canon: tiers trainee→district_coordinator, kiosk/AePS services) · what you earn: per-event rate STRUCTURE (₹25/₹50/₹25/1%-cap-₹100/₹10/₹100/₹100/₹10) reproduced from `krishi-verse/db/seeds/rules/0207_ambassador_commission_plans.sql`, a file whose own header comment reads "ambassador earning streams as data (Ambassador Brochure)" — canon itself designates these numbers for this exact use; monthly stipend stated as STRUCTURE only (`monthly_stipend_minor` field is tier-based, schema default 0, no ratified rupee figure exists) · mandatory honesty line verbatim: "Earnings vary by area and effort — no income is guaranteed" · training + ID (DOC-019 family) · farmer-hands doctrine one-liner ("हर पक्का कदम किसान के अपने OTP से"); W389's real personal figures (Kiran Ben V.'s ₹4,665/97.6% quality) deliberately NOT reproduced — personal-data + zero-outcome-% gates |
+| COL-004 | Ambassador — HI/GU dual (cover + tier-ladder in Hindi, money-safety/honesty panel in both Hindi and Gujarati, English gloss small) | 0207_ambassador_commission_plans.sql = canon-designated brochure rate data | Ambassador tri-fold: become your village's Krishi Saathi (W-D43 canon: tiers trainee→district_coordinator, kiosk/AePS services) · what you earn: per-event rate STRUCTURE (₹25/₹50/₹25/1%-cap-₹100/₹10/₹100/₹100/₹10) reproduced from `krishalaya/db/seeds/rules/0207_ambassador_commission_plans.sql`, a file whose own header comment reads "ambassador earning streams as data (Ambassador Brochure)" — canon itself designates these numbers for this exact use; monthly stipend stated as STRUCTURE only (`monthly_stipend_minor` field is tier-based, schema default 0, no ratified rupee figure exists) · mandatory honesty line verbatim: "Earnings vary by area and effort — no income is guaranteed" · training + ID (DOC-019 family) · farmer-hands doctrine one-liner ("हर पक्का कदम किसान के अपने OTP से"); W389's real personal figures (Kiran Ben V.'s ₹4,665/97.6% quality) deliberately NOT reproduced — personal-data + zero-outcome-% gates |
 | COL-005 | Buyer — EN throughout (B2B: traders/processors/exporters, the one audience not given a vernacular treatment, matching spec) | traceability/warehousing/online_payments flags OFF → trace/assay/escrow coming soon; listing_boost + group_lots LIVE | Buyer tri-fold: source with provenance — farm-to-fork QR trace (W303 SIGNATURE canon, coming soon — `traceability` OFF-until-launch) · quality you can verify — assay-backed lots (W-D42/DOC-018, coming soon — `warehousing` OFF) · safe payments — escrow-style protection (store canon W283–292, coming soon — `online_payments` OFF "until payments lands") · direct from FPOs / browse catalogues (apps/web-storefront, W273–282, LIVE — `listing_boost`=true, `group_lots`=true, not on the OFF list); no SOC2/ISO certification claimed (in-progress per canon, never asserted as held) |
 
-**The claims law (this batch's spine, verbatim on every rail)**: *"If the canon cannot show it on a screen, the brochure cannot promise it."* Every feature claim carries a rail citation to a canon screen/file; the law binds to the underlying **flags-seed adjudication**, not the screen alone — a screen can be fully built canon and still be marked "coming soon" if its governing row in `krishi-verse/db/seeds/core/0009_feature_flags.sql` reads `is_enabled=false` ("OFF until launch"). Checked in full (45 rows): `market_intel`/`education`/`ai_assistant` (COL-001), `labour` (COL-002), `traceability`/`warehousing`/`online_payments` (COL-005) all = false → coming-soon treatment on the panels they govern; `kyc`, `listing_boost`, `group_lots` = true → the only features drawn LIVE besides core/ungated capability (voice listing, WhatsApp selling, wallet payout, the tenant console itself). **Zero metrics/prices/personal-data law**: no user counts, no "trusted by N", no yield/income-uplift %, no plan prices (tenant = "talk to us" only), no personal names/numbers printed on any panel — only *123#, the helpline (marked "(mock)"), mm bleed/panel dimensions, pt type sizes, and the ISO/IEC 18004 quiet-zone citation are permitted numbers. **3-languages-live honesty**: the spec brief's own suggested "12-language honesty line" does not match canon — `krishi-verse/packages/i18n/src/languages.ts` (`LANGUAGES` array, `DEFAULT_LANGUAGE='en'`) defines exactly THREE languages (hi/en/gu); COL-001's rail states the grep-true 3-live count instead of the brief's figure, flagged as a corrected judgment call rather than silently building either version. **Tri-fold format specs (all five)**: A4 landscape drawn as two spreads (Spread 1 outside: back panel | front cover | inside-flap; Spread 2 inside: 3 panels), each panel 99×210mm within a 297×210mm spread + 3mm bleed (dashed orange ticks, `#ba6018`), fold lines dashed green, CMYK-safe conversion flagged as a print-vendor step outside the mock's control; village-legible type (11pt body floor, 13pt Fraunces panel headings, 20pt Fraunces display cover headline, 8–8.5pt fine print for footers/citations only, never a claim); QR quiet zone ≥4 modules per ISO/IEC 18004; *123# + helpline on all five (field-materials law).
+**The claims law (this batch's spine, verbatim on every rail)**: *"If the canon cannot show it on a screen, the brochure cannot promise it."* Every feature claim carries a rail citation to a canon screen/file; the law binds to the underlying **flags-seed adjudication**, not the screen alone — a screen can be fully built canon and still be marked "coming soon" if its governing row in `krishalaya/db/seeds/core/0009_feature_flags.sql` reads `is_enabled=false` ("OFF until launch"). Checked in full (45 rows): `market_intel`/`education`/`ai_assistant` (COL-001), `labour` (COL-002), `traceability`/`warehousing`/`online_payments` (COL-005) all = false → coming-soon treatment on the panels they govern; `kyc`, `listing_boost`, `group_lots` = true → the only features drawn LIVE besides core/ungated capability (voice listing, WhatsApp selling, wallet payout, the tenant console itself). **Zero metrics/prices/personal-data law**: no user counts, no "trusted by N", no yield/income-uplift %, no plan prices (tenant = "talk to us" only), no personal names/numbers printed on any panel — only *123#, the helpline (marked "(mock)"), mm bleed/panel dimensions, pt type sizes, and the ISO/IEC 18004 quiet-zone citation are permitted numbers. **3-languages-live honesty**: the spec brief's own suggested "12-language honesty line" does not match canon — `krishalaya/packages/i18n/src/languages.ts` (`LANGUAGES` array, `DEFAULT_LANGUAGE='en'`) defines exactly THREE languages (hi/en/gu); COL-001's rail states the grep-true 3-live count instead of the brief's figure, flagged as a corrected judgment call rather than silently building either version. **Tri-fold format specs (all five)**: A4 landscape drawn as two spreads (Spread 1 outside: back panel | front cover | inside-flap; Spread 2 inside: 3 panels), each panel 99×210mm within a 297×210mm spread + 3mm bleed (dashed orange ticks, `#ba6018`), fold lines dashed green, CMYK-safe conversion flagged as a print-vendor step outside the mock's control; village-legible type (11pt body floor, 13pt Fraunces panel headings, 20pt Fraunces display cover headline, 8–8.5pt fine print for footers/citations only, never a claim); QR quiet zone ≥4 modules per ISO/IEC 18004; *123# + helpline on all five (field-materials law).
 
 Escalations to founder: §17 — is majority-coming-soon recruitment/marketing collateral (worker, ambassador, and buyer brochures each carry more coming-soon panels than live ones) the right choice for launch timing, or should this batch wait closer to feature-flag flip dates? No design-layer figure or date is asserted; founder decision requested. QA verdict: PASS, 0 P0 / 0 P1 / 0 P2 — zero rework, the first batch in the whole DP2 program to clear without a single fix.
 
@@ -11251,7 +11251,7 @@ Escalations to founder: §17 — is majority-coming-soon recruitment/marketing c
 | COL-009 | QR standees, one file, two formats — (a) A5 table tent (kirana/dairy counter, true size), (b) roll-up floor standee 850×2000mm (drawn 1:4) | `kyc`=true → PRINT-READY NOW, both formats | Scan-first: QR area-basis worked before drawing — (a) 115×115mm QR / 148×210mm face = **42.5%**; (b) 830×830mm true QR / 850×2000mm true face = **40.5%** (scale-invariant); both clear the ≥40% floor. ONE verb caption ("स्कैन करो — जुड़ो"). *123# fallback + helpline **1800-419-KRISHI now printed on both faces, directly under the QR** — corrected at COL-2 arbitration (the self-test had falsely claimed this gate already passed; see master-context P0). Ambassador handwriting "यहाँ मिला: ___" location slot — the one deliberate handwriting field in the whole batch. |
 | COL-010 | Village Activation Kit manifest page (not a poster — no one-message law; aggregates gate status of all COL-2 + boxed COL-1 assets) | Kit-wide print-gate summary table | Kit contents table: proposed quantities per village activation (COL-006×6, COL-007a×4/COL-007b×4, COL-008×1, COL-009a×10/COL-009b×1, COL-001×50, COL-004×20 — every row flagged PROPOSED, ops to ratify, no staffing/budget canon exists to derive real figures from); placement guide (haat entrance/dairy counter/panchayat board/kirana counter/CSC, each with a stated WHY); ambassador setup checklist tied verbatim to W-D43 kiosk canon (kiosk_enabled/training_completed_at, battery>20%, farmer-hands consent hand-off, sync-before-departure); languages-per-district note (gu default, hi where district arc grepped Hindi-belt); kit box label mock (proposed ID scheme `KV-KIT-VLG-YYYY-NNNN`, flagged PROPOSED not discovered); *123#+helpline on the label. |
 
-**PRINT-GATING LAW (this batch's spine, verbatim on every rail)**: *"A poster cannot say 'coming soon.' Every asset carries a PRINT GATE naming the flag(s) that must be ON before it goes to press. PRINT-READY NOW is earned, not assumed."* Gates re-grepped against `krishi-verse/db/seeds/core/0009_feature_flags.sql` (47 rows, current count — see COL-001 errata below): `kyc`=**true** clears COL-006/008/009 (both formats); `market_intel`=**false** holds COL-007a (`PRINT GATE: market_intel = true`); no matching `voice_listing`/`whatsapp_selling`-shaped row exists for COL-007b, consistent with COL-001's own prior finding, kept PRINT-READY. **One-message-one-poster law**: every field poster/banner/standee carries exactly ONE message (COL-006 register/join; COL-007a check-rate only; COL-007b sell-from-home only; COL-008 register/join; COL-009 scan-to-join) — no second CTA, no price, no feature list on any single face. **QR area-basis law**: standee QR must be ≥40% of the content face, the % worked and stated BEFORE drawing (COL-009: 42.5% table tent / 40.5% roll-up, both stated, both scale-invariant). **Zero-prices-on-posters + stale-price reasoning**: no poster in this batch — gated or live — ever prints a rupee/rate figure; COL-007a is the explicit case (mandi-bhav feature named, zero rate figures drawn) with the reasoning stated on the sheet itself: a printed rate goes stale by evening trade, so the SERVICE (the live, gated screen) carries the number and the POSTER only ever carries the invitation to check via *123#. **Field-safety fallback law, corrected**: *123# + helpline 1800-419-KRISHI on every single face across all five artifacts (COL-006, both COL-007 sheets, COL-008, both COL-009 formats, and the COL-010 kit label) — this is a per-FACE law, not a per-file law; COL-009 initially shipped with a self-test that falsely claimed the helpline gate had passed while the helpline number was actually absent from both standee faces, corrected at arbitration (see master-context P0 finding). **Counting convention (COL-2 arbitration, newly written)**: 1 file = 1 collateral piece — COL-006…010 = pieces 6…10 of ~25, even where a single file draws multiple physical formats (COL-007's two posters, COL-008/COL-009's scale/format pairs); footers renumbered 6/7/8/9/10 accordingly across all five files.
+**PRINT-GATING LAW (this batch's spine, verbatim on every rail)**: *"A poster cannot say 'coming soon.' Every asset carries a PRINT GATE naming the flag(s) that must be ON before it goes to press. PRINT-READY NOW is earned, not assumed."* Gates re-grepped against `krishalaya/db/seeds/core/0009_feature_flags.sql` (47 rows, current count — see COL-001 errata below): `kyc`=**true** clears COL-006/008/009 (both formats); `market_intel`=**false** holds COL-007a (`PRINT GATE: market_intel = true`); no matching `voice_listing`/`whatsapp_selling`-shaped row exists for COL-007b, consistent with COL-001's own prior finding, kept PRINT-READY. **One-message-one-poster law**: every field poster/banner/standee carries exactly ONE message (COL-006 register/join; COL-007a check-rate only; COL-007b sell-from-home only; COL-008 register/join; COL-009 scan-to-join) — no second CTA, no price, no feature list on any single face. **QR area-basis law**: standee QR must be ≥40% of the content face, the % worked and stated BEFORE drawing (COL-009: 42.5% table tent / 40.5% roll-up, both stated, both scale-invariant). **Zero-prices-on-posters + stale-price reasoning**: no poster in this batch — gated or live — ever prints a rupee/rate figure; COL-007a is the explicit case (mandi-bhav feature named, zero rate figures drawn) with the reasoning stated on the sheet itself: a printed rate goes stale by evening trade, so the SERVICE (the live, gated screen) carries the number and the POSTER only ever carries the invitation to check via *123#. **Field-safety fallback law, corrected**: *123# + helpline 1800-419-KRISHI on every single face across all five artifacts (COL-006, both COL-007 sheets, COL-008, both COL-009 formats, and the COL-010 kit label) — this is a per-FACE law, not a per-file law; COL-009 initially shipped with a self-test that falsely claimed the helpline gate had passed while the helpline number was actually absent from both standee faces, corrected at arbitration (see master-context P0 finding). **Counting convention (COL-2 arbitration, newly written)**: 1 file = 1 collateral piece — COL-006…010 = pieces 6…10 of ~25, even where a single file draws multiple physical formats (COL-007's two posters, COL-008/COL-009's scale/format pairs); footers renumbered 6/7/8/9/10 accordingly across all five files.
 
 **COL-001 errata note (upstream drift, documented in-place)**: COL-001's grounding comment (COL-1 batch) cited "45 rows" for `0009_feature_flags.sql`; a fresh grep at COL-2 counts **47 rows** — the flag set has grown since COL-1 closed. COL-001's own text now carries an inline errata marker citing the corrected count rather than being silently rewritten; COL-006 and all COL-2 files report the current 47-row count directly, per grep-true-over-stale-reuse discipline.
 
@@ -11260,7 +11260,7 @@ Escalations to founder: none new (print-gating law resolves half of COL-1's §17
 ## COL-3 — Product labels + van/signage — collateral/
 | ID | Format | Key finding | Notes |
 |---|---|---|---|
-| COL-011 | Product jar label, flat wrap dieline 200×90mm (front 80 + side 40 + back 70 + 10mm flap), A2 Gir Cow Ghee 1 kg | Statutory label law verbatim; zone-level print-gating; MRP ₹2,150 is the only money value | Front/back FSSAI/Legal-Metrology STRUCTURE (veg mark, batch/best-before, license masked) has no feature-flag dependency → PRINT-READY unconditionally; only the SIDE panel's farm-to-fork trace-QR module gates on `traceability` (row 42/47, false) → HOLD. Veg mark drawn geometrically (CSS square + dot, token green). MRP ₹2,150 (WA-002/W274, two independent citations) is the ONE money figure — 3 visible occurrences of that single value confirmed (sub-heading, front panel, claims table), corrected at arbitration from a false "exactly one occurrence" self-test claim. §17 bilingual-sufficiency flag (language pairing legal-sufficiency escalated to compliance counsel, not asserted by this label). "Marketed via Krishi Verse" mfr slot noted as adapted from TS-002's "Powered by Krishi Verse" law for the statutory mfr context, not verbatim reuse. |
+| COL-011 | Product jar label, flat wrap dieline 200×90mm (front 80 + side 40 + back 70 + 10mm flap), A2 Gir Cow Ghee 1 kg | Statutory label law verbatim; zone-level print-gating; MRP ₹2,150 is the only money value | Front/back FSSAI/Legal-Metrology STRUCTURE (veg mark, batch/best-before, license masked) has no feature-flag dependency → PRINT-READY unconditionally; only the SIDE panel's farm-to-fork trace-QR module gates on `traceability` (row 42/47, false) → HOLD. Veg mark drawn geometrically (CSS square + dot, token green). MRP ₹2,150 (WA-002/W274, two independent citations) is the ONE money figure — 3 visible occurrences of that single value confirmed (sub-heading, front panel, claims table), corrected at arbitration from a false "exactly one occurrence" self-test claim. §17 bilingual-sufficiency flag (language pairing legal-sufficiency escalated to compliance counsel, not asserted by this label). "Marketed via Krishalaya" mfr slot noted as adapted from TS-002's "Powered by Krishalaya" law for the statutory mfr context, not verbatim reuse. |
 | COL-012 | Lot/bag label, A5 gummed, 148×210mm, GG-20 groundnut 25 kg bag | Zone-level print-gating; P0 self-test/markup mismatch corrected at arbitration | Trade/commodity structure (variety GG-20, grade FAQ — canon per DOC-015, not HPS — net/tare, lot ID, packed-on) is flag-independent → PRINT-READY unconditionally; trace-QR module gates on `traceability` = false → HOLD, same zone reasoning as COL-011. **Arbitration fix:** net-weight "25 kg" had rendered at 22pt under an inline style override despite its class stating 48pt, and Lot ID rendered at 14pt despite the rail table already claiming 36pt — both were self-test claims the markup did not actually render. Markup corrected (override removed; Lot ID raised to 36pt on its own stacked row); rail table and self-test now cite the TRUE rendered values (48pt≈16.93mm, 36pt≈12.70mm, both clearing the derived 12.0mm/2m stencil-legibility floor). §17 bilingual-sufficiency flag added, matching COL-011's wording. |
 | COL-013 | Assay sticker, two variants: 50×50mm square + 40mm round, one file + A4 sheet-nesting diagram | QR area-basis (40.96%/53.79%); whole-artifact print-gating; P0 missing-helpline + sheet-arithmetic fixed at arbitration | Whole-artifact HOLD (not zone-level, unlike COL-011/012) since the sticker's sole content IS the gated scan-verify claim — `traceability` = false, row 42/47. QR ≥40% of face on both variants, worked before drawing: square 32×32mm/50×50mm = 40.96%; round 26×26mm (inscribed)/π×20² = 53.79%. **Arbitration fix:** the round face was missing the helpline entirely (only *123# was present, self-test had falsely claimed both variants carried it) — "1800-419-KRISHI" added beneath *123# on the round face, chord-width fit worked (≈19.36mm available at the bottom text line vs ≈13.97mm needed at the existing 4.4pt). Sheet-nesting arithmetic corrected from an n-gap to an (n−1)-gap convention: square 3×5 grid = 156×262mm (was miscalculated 159×265mm); round 4×6 grid = 169×255mm (was 172×258mm) — per-sheet counts (15/24) were already correct and unchanged. |
 | COL-014 | Van livery + signage: (a) LCV side elevation 4200×1800mm at 1:20, (b) MCC/kiosk fascia board 2440×610mm at 1:10 | Livery law verbatim; no print-gate at all — brand-only surface; helpline legibility floor given (120mm/20m) | "A moving vehicle makes no feature claims — it carries the name and the number" (verbatim livery law). Neither face names any platform feature (no trace/grade/wallet/marketplace claim) — nothing here for any `0009_feature_flags.sql` row to govern, so PRINT-READY unconditionally, reasoning annotated rather than left as an unexplained absent gate chip. Helpline digits drawn at 400pt (141.12mm actual cap-height), clearing the spec-given 120mm/20m floor by 21.12mm. Tenant co-brand slot noted, not drawn as a second elevation ("files exactly 4" discipline). Bilingual asymmetry (moving-asset EN-only wordmark/tagline vs fixed-signage gu on the fascia) flagged for founder eyes at arbitration — a §17-adjacent brand call, not a compliance requirement, deferred to founder review. |
@@ -11274,17 +11274,17 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 |---|---|---|---|
 | COL-015 | Ambassador field-kit manifest + A5 fillable logbook sheet + CR80 doctrine card | Field-kit-vs-village-kit distinction law; logbook zero-PII law; register mask arbitrated to a synthetic pair | **"The village kit dresses the village; the field kit dresses the ambassador."** COL-010 equips a FIXED LOCATION for one activation event; this kit equips ONE AMBASSADOR who carries it village-to-village across a tenure — manifest (ID card DOC-019, device+charger+power bank, A5 fillable logbook, COL-004 brochures, tent cards, CR80 doctrine card, lanyard) sized for a person, not a place, with per-item gate chips + a kit-wide gate summary. Logbook sheet law, verbatim: **"paper carries counts, names live in the app"** — the A5 fillable logbook records village + tally counts only, zero farmer names/numbers, an explicit adaptation of the app's own PII discipline to a physical medium. Doctrine card carried as a KIT ITEM (CR80, not a poster): the farmer-hands promise "हर पक्का कदम किसान के अपने OTP से" printed on the face, *123#+helpline on the back. **Register mask, arbitrated**: the spec's kit-issue/return register row originally cited real ambassador Kiran Ben V. (W389, senior tier) by masked initials — re-identifiable (see master-context P0 below); corrected to a synthetic register entry, "D••• M. (trainee tier)," a first-minted masked pair grep-checked against every existing masked pattern in canon (buyer-review "N•••S" on W290 is the only precedent; collides with nothing), with an arbitration note on the rail stating the mask is synthetic, not a disguised real person. Issue/return register extends W381's "assisted access is borrowed, per-session, and it expires" doctrine to a physical object on a per-tenure cadence, annotated as an explicit adaptation. |
 | COL-016 | Apparel print art — tee, cap, field vest (placement art on garment outlines, 1:4/1:2 scale) | Livery law applied verbatim to a worn surface — "Krishi Saathi" only, no personal names, garments outlive tenure | **Livery law (COL-014, adapted verbatim): "A moving vehicle makes no feature claims — it carries the name and the number."** Applied here as "Apparel makes no feature claims — it carries the name and the number only": every mark on every garment scanned (tee front left-chest 90mm mark + back "Krishi Saathi" wordmark + helpline arc ≥60mm cap-height; cap front 60mm mark; field vest front panel mark + back helpline GIANT ≥80mm + *123#) — zero trace/grade/price/wallet/sell/marketplace claim anywhere, `0009_feature_flags.sql` re-grepped (47 rows) with nothing for any row to govern, PRINT-READY unconditionally. Only the generic role label "Krishi Saathi" prints — never an individual ambassador's name or tier — reasoned explicitly: garments outlive tenure, so an ambassador who leaves doesn't strand a personalized print run, and a new ambassador can wear existing stock immediately. 2-spot screen-print (brand green + one ink) + CMYK-fallback notes; S–XXL size-range note (one art file, standard grading scales it). |
-| COL-017 | Investor one-pager (A4, two-sided) | TARGETS RAZOR: every §1 number wears a TARGET (PRD) chip; counsel line verbatim; built-counts corrected to grep-true 973 screens / 74 artifacts / 21 doc types; pre-launch honesty; citations corrected | **The targets razor (verbatim, this batch's spine): "All figures on this page are TARGETS from PRD v4 / Master Contract §1 — stated goals, not achieved results. Krishi Verse is pre-launch."** Printed on both sheet faces. Every §1 vision number (15,000 tenants Y3, 100K+ FPOs/250K+ buyers/75M+ households/₹1.5L Cr GMV all Year 10, roadmap phase markers) wears its own TARGET (PRD) chip — 7 total — with a single-occurrence rupee-glyph self-test (exactly 1 ₹ symbol file-wide, the GMV target cell) proving no figure sneaks in as achieved traction. Zero achieved-metrics; the honest traction line is "pre-launch — canon complete, flags gated." Counsel line reproduced verbatim: "Investor materials are forward-looking statements — counsel review before any external use (§17)." **Built-counts corrected**: spec_col4.md's own draft text read "560+ canon screens, 74 channel artifacts, 21 document types" — re-grepped 2026-07-18: `screens/`=538 + `web-screens/`=435 = **973** canon screens (the draft undercounted by omitting the web-console realm entirely), 74 channel artifacts (email 35/WhatsApp 13/SMS 10/push 5/USSD 3/IVR 8), 21 document types — all cited to source, none recalled from memory. **Citations corrected**: built-count sourcing originally misattributed to DP2_TRACKER.md entries; corrected to point at the actual source — KRISHI_VERSE_MASTER_CONTEXT.md's own T-9 and T-10 entries — since this is the one page whose credibility IS its citation trail. |
+| COL-017 | Investor one-pager (A4, two-sided) | TARGETS RAZOR: every §1 number wears a TARGET (PRD) chip; counsel line verbatim; built-counts corrected to grep-true 973 screens / 74 artifacts / 21 doc types; pre-launch honesty; citations corrected | **The targets razor (verbatim, this batch's spine): "All figures on this page are TARGETS from PRD v4 / Master Contract §1 — stated goals, not achieved results. Krishalaya is pre-launch."** Printed on both sheet faces. Every §1 vision number (15,000 tenants Y3, 100K+ FPOs/250K+ buyers/75M+ households/₹1.5L Cr GMV all Year 10, roadmap phase markers) wears its own TARGET (PRD) chip — 7 total — with a single-occurrence rupee-glyph self-test (exactly 1 ₹ symbol file-wide, the GMV target cell) proving no figure sneaks in as achieved traction. Zero achieved-metrics; the honest traction line is "pre-launch — canon complete, flags gated." Counsel line reproduced verbatim: "Investor materials are forward-looking statements — counsel review before any external use (§17)." **Built-counts corrected**: spec_col4.md's own draft text read "560+ canon screens, 74 channel artifacts, 21 document types" — re-grepped 2026-07-18: `screens/`=538 + `web-screens/`=435 = **973** canon screens (the draft undercounted by omitting the web-console realm entirely), 74 channel artifacts (email 35/WhatsApp 13/SMS 10/push 5/USSD 3/IVR 8), 21 document types — all cited to source, none recalled from memory. **Citations corrected**: built-count sourcing originally misattributed to DP2_TRACKER.md entries; corrected to point at the actual source — KRISHALAYA_MASTER_CONTEXT.md's own T-9 and T-10 entries — since this is the one page whose credibility IS its citation trail. |
 | COL-018 | Pitch deck template — 7 master 16:9 slide layouts (contact sheet) | Template law: "A template carries zero claims."; 7 master layouts; 3-inherited-laws usage card | **Template law (verbatim, this batch): "A template carries zero claims. Every deck built from it inherits the claims law and the targets razor."** 7 master layouts (title / section-divider / content / two-column / data-chart (§6 chart language) / quote / closing+contact) drawn 16:9 true 338.7×190.5mm as a scaled contact sheet — every slide-facing string is a `{{placeholder}}`, none filled in, per the template law. Brand-rules card (Fraunces display + Jakarta body, slide-footer + page-number law, color-usage, image-slot convention) + a usage-rules card naming exactly 3 inherited laws (claims law, targets razor, counsel-review) each with a one-line consequence for any deck actually built from the template. Closes Phase J at 18 collateral pieces. |
 
-**PHASE J (COLLATERAL) CLOSES at COL-4**: 18 collateral pieces total across COL-1…4 — brochures (5), posters/banner/standees/village-kit (5), labels/van livery (4), field-kit/apparel/investor-kit/pitch-template (4). Laws coined across the phase: claims law (COL-1), print-gating + its zone-vs-whole evolution (COL-2/COL-3), statutory label law (COL-3), livery law (COL-3, re-applied to apparel at COL-4), targets razor (COL-4), template law (COL-4). **QA verdict (COL-4): CONDITIONAL FAIL → fixed — 1 P0 (register mask on COL-015 re-identified a real named ambassador via initials+tier) + 1 P1 (COL-017 built-count citations misattributed to the wrong source file) + 2 P2, all fixed and re-verified** (full detail: KRISHI_VERSE_MASTER_CONTEXT.md COL-4 entry). Escalations carried forward from earlier in the phase: coming-soon timing (COL-1, §17), label-language mandate (COL-3, §17), bilingual asymmetry (COL-3, founder eyes), counsel review (COL-4, mandatory on every investor-facing use).
+**PHASE J (COLLATERAL) CLOSES at COL-4**: 18 collateral pieces total across COL-1…4 — brochures (5), posters/banner/standees/village-kit (5), labels/van livery (4), field-kit/apparel/investor-kit/pitch-template (4). Laws coined across the phase: claims law (COL-1), print-gating + its zone-vs-whole evolution (COL-2/COL-3), statutory label law (COL-3), livery law (COL-3, re-applied to apparel at COL-4), targets razor (COL-4), template law (COL-4). **QA verdict (COL-4): CONDITIONAL FAIL → fixed — 1 P0 (register mask on COL-015 re-identified a real named ambassador via initials+tier) + 1 P1 (COL-017 built-count citations misattributed to the wrong source file) + 2 P2, all fixed and re-verified** (full detail: KRISHALAYA_MASTER_CONTEXT.md COL-4 entry). Escalations carried forward from earlier in the phase: coming-soon timing (COL-1, §17), label-language mandate (COL-3, §17), bilingual asymmetry (COL-3, founder eyes), counsel review (COL-4, mandatory on every investor-facing use).
 
 **PHASE J (COLLATERAL) COMPLETE at COL-4: 18 collateral pieces, COL-001…018, founder visual approval ⬜ pending across the whole phase.**
 
 ## SITE-1 — Trust center (security/compliance/status) + get-the-app — site/ (PHASE K WEBSITE opens, DELTA-064)
 | ID | Page | Key finding | Notes |
 |---|---|---|---|
-| SITE-000 | site-canon.html — website design language + trust-page law | Canon location/prefix migration ratified (DELTA-064); TRUST-PAGE LAW authored; ink + 2 new greens sourced to live site | New canon home `Krishi_Verse_Design_System/site/` + `SITE-` prefix (Fable-assigned, DELTA-064), the design-canon counterpart to the live `krishi-verse_website/` (20 pages, JS-driven). **TRUST-PAGE LAW authored, verbatim (binds all 5 rails): "A trust page is the one page that must never need a correction. Factual claims only: no certification we do not hold, no uptime we have not measured, no user count we have not earned. 'In progress' is a trustworthy sentence."** Canon ink `#232a33` kept over the live site's `#1f2937` (builder judgment call, accepted). Only 2 new hexes declared in the site-token table — `--site-green-700 #15803d` and `--site-green-deep #0a3d1f` — both sourced to the live site's existing greens, not invented. |
+| SITE-000 | site-canon.html — website design language + trust-page law | Canon location/prefix migration ratified (DELTA-064); TRUST-PAGE LAW authored; ink + 2 new greens sourced to live site | New canon home `Krishalaya_Design_System/site/` + `SITE-` prefix (Fable-assigned, DELTA-064), the design-canon counterpart to the live `krishalaya_website/` (20 pages, JS-driven). **TRUST-PAGE LAW authored, verbatim (binds all 5 rails): "A trust page is the one page that must never need a correction. Factual claims only: no certification we do not hold, no uptime we have not measured, no user count we have not earned. 'In progress' is a trustworthy sentence."** Canon ink `#232a33` kept over the live site's `#1f2937` (builder judgment call, accepted). Only 2 new hexes declared in the site-token table — `--site-green-700 #15803d` and `--site-green-deep #0a3d1f` — both sourced to the live site's existing greens, not invented. |
 | SITE-001 | security.html | SOC2/ISO IN PROGRESS chips only; security@/disclosure infra flagged backend-pending | Trust-page-law-compliant: no certification claimed as held, only "in progress" with §17 wording sign-off pending. Security contact / responsible-disclosure intake explicitly flagged **backend-pending** — the page states the channel, not a live SLA it cannot back. |
 | SITE-002 | compliance.html | JSON-LD `<pre>` omission — accepted arbitration, not a defect | Data-residency and at-rest-encryption confirmations flagged `{{confirm with engineering}}` — backend-pending. **Accepted disclosed deviation (1 P2)**: omits a JSON-LD `<pre>` block that COL/DOC-family compliance pages elsewhere carry — rationale recorded on the rail: the schema value here is operational (status/compliance state), not discoverable structured data, so a JSON-LD block would assert machine-readable claims the platform cannot yet back. Arbitrated as an accepted deviation, not waved through as a gap. |
 | SITE-003 | status.html | All 9 components PRE-LAUNCH chips; zero uptime numbers; SAMPLE incident; JSON-LD `<pre>` omission (same accepted rationale as SITE-002) | Status-page telemetry service flagged **backend-pending** — every one of the 9 monitored components carries a PRE-LAUNCH chip rather than a fabricated uptime %; the historical-incident banner is explicitly labelled SAMPLE data, verbatim, so it cannot be read as a real incident log. |
@@ -11294,16 +11294,16 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 
 **Builder judgment calls (all arbitrated ACCEPTED)**: 12-languages spec line corrected to grep-true hi/en/gu (`packages/i18n/src/languages.ts`, COL-001 precedent, `DEFAULT_LANGUAGE='en'`) rather than building the spec's stated 12; canon ink `#232a33` kept over live-site `#1f2937`; only 2 new hexes declared (see SITE-000 row above).
 
-**LIVE-SITE HONESTY GAP FINDING (flagged prominently, §17-adjacent, for a future content batch — NOT fixed in this batch, NOT inherited into canon)**: the LIVE marketing site (`krishi-verse_website/index.html`) currently displays unsupported metrics — "10K+ farmers," a GMV figure, "98% delivery," and "22 languages" — none of which are grep-true against current canon/schema (the i18n registry defines 3 live languages, not 22; no verified farmer count or GMV exists pre-launch). These metrics were **deliberately NOT inherited** into the new SITE- canon pages, which is why SITE-000…004 read pre-launch-honest. This is a pre-existing honesty gap on the LIVE site, out of scope for a design-canon batch to silently rewrite — flagged here for the founder and for whichever future batch owns live-site content remediation.
+**LIVE-SITE HONESTY GAP FINDING (flagged prominently, §17-adjacent, for a future content batch — NOT fixed in this batch, NOT inherited into canon)**: the LIVE marketing site (`krishalaya_website/index.html`) currently displays unsupported metrics — "10K+ farmers," a GMV figure, "98% delivery," and "22 languages" — none of which are grep-true against current canon/schema (the i18n registry defines 3 live languages, not 22; no verified farmer count or GMV exists pre-launch). These metrics were **deliberately NOT inherited** into the new SITE- canon pages, which is why SITE-000…004 read pre-launch-honest. This is a pre-existing honesty gap on the LIVE site, out of scope for a design-canon batch to silently rewrite — flagged here for the founder and for whichever future batch owns live-site content remediation.
 
 **Backend-pending items opened this batch (design layer states the intent, cannot assert the system exists)**: status-page telemetry service (SITE-003); security@ contact / responsible-disclosure intake infra (SITE-001); data-residency confirmation + at-rest-encryption confirmation (SITE-002, both `{{confirm with engineering}}`).
 
-**QA verdict (SITE-1): CONDITIONAL FAIL → fixed → PASS.** 1 P1 (SITE-004 false self-test bilingual claim, fixed as above) + 1 P2 accepted as a disclosed deviation (SITE-002/003 JSON-LD `<pre>` omission, rationale recorded, not a defect) (full detail: KRISHI_VERSE_MASTER_CONTEXT.md SITE-1 entry). **PHASE K (WEBSITE) OPENED at SITE-1: 5 of ~35 website pages built (SITE-000…004), DELTA-064 (new `site/` canon location + `SITE-` prefix).**
+**QA verdict (SITE-1): CONDITIONAL FAIL → fixed → PASS.** 1 P1 (SITE-004 false self-test bilingual claim, fixed as above) + 1 P2 accepted as a disclosed deviation (SITE-002/003 JSON-LD `<pre>` omission, rationale recorded, not a defect) (full detail: KRISHALAYA_MASTER_CONTEXT.md SITE-1 entry). **PHASE K (WEBSITE) OPENED at SITE-1: 5 of ~35 website pages built (SITE-000…004), DELTA-064 (new `site/` canon location + `SITE-` prefix).**
 
 ## SITE-2 — Developer portal + API docs + integrations — site/ (Phase K continues)
 | ID | Page | Key finding | Notes |
 |---|---|---|---|
-| SITE-005 | developers.html — dev portal landing | 41 real API modules ls-verbatim; 4 Golden Laws in public phrasing; no live key-issuance | `ls krishi-verse/apps/api/src/modules/` = 41 real module directories, listed alphabetically and grouped into 5 navigation families (ai-governance, ambassadors, assistant, auctions, audit, buyer, catalogue, cms, communication, contract-farming, dairy, disputes, education, equipment, exports, fintech, group-lots, identity, labour, land-soil-weather, listings, livestock, logistics, lookups, market-intel, memberships, offers, orders, payments, promotions, requirements, reviews, schemes, search, services-marketplace, support, tenancy, tenant-integrations, tenant-webhooks, traceability, warehousing) — every module NAME is `ls`-verbatim, the 5-family grouping is flagged as the builder's own navigational judgment call, not a codebase-declared grouping. Availability honesty: "the Developer API opens with platform launch... there is no public key-issuance flow live yet" — this page does not offer "sign up for keys today" (spec_site2.md grounding #7). |
+| SITE-005 | developers.html — dev portal landing | 41 real API modules ls-verbatim; 4 Golden Laws in public phrasing; no live key-issuance | `ls krishalaya/apps/api/src/modules/` = 41 real module directories, listed alphabetically and grouped into 5 navigation families (ai-governance, ambassadors, assistant, auctions, audit, buyer, catalogue, cms, communication, contract-farming, dairy, disputes, education, equipment, exports, fintech, group-lots, identity, labour, land-soil-weather, listings, livestock, logistics, lookups, market-intel, memberships, offers, orders, payments, promotions, requirements, reviews, schemes, search, services-marketplace, support, tenancy, tenant-integrations, tenant-webhooks, traceability, warehousing) — every module NAME is `ls`-verbatim, the 5-family grouping is flagged as the builder's own navigational judgment call, not a codebase-declared grouping. Availability honesty: "the Developer API opens with platform launch... there is no public key-issuance flow live yet" — this page does not offer "sign up for keys today" (spec_site2.md grounding #7). |
 | SITE-006 | dev-getting-started.html — auth/keys/environments | api_keys DB-true schema vs. gateway-enforcement gap; Idempotency-Key; cursor pagination vs console page sizes; money convention | `api_keys` table + full field set real (`db/migrations/0002_tenancy_billing.sql` lines 200–212: `key_prefix` l.204, `key_hash` l.205, `scopes` l.206, `rate_per_hour` default 1000 l.207, `last_used_at` l.208, `revoked_at` l.209) and the tenant-console UI is fully specified (W190-tenant-api-keys.html) — but no controller/service/guard implementing API-key bearer authentication was found anywhere under `apps/api/src`; the live request path (`core/auth/auth.guard.ts`) authenticates via a JWT, not a key. Flagged as a judgment call: `{{confirm with engineering}}` on the wire header/verification path, not invented. Idempotency-Key required on create (`listings.controller.ts` lines 105–115, 400 BAD_REQUEST if missing). Pagination stated as two DISTINCT, non-conflated conventions: API list endpoints use opaque cursor + bounded limit (1–100, default 20, `query-listing.dto.ts`) vs. the web console's own "Rows: 25/50/100" table-page-size convention (contract §6, W189/W190) — a different surface, not a contradiction. Money convention: `amount_minor` (bigint-safe string) + `currency_code` (default INR), zero literal ₹ anywhere including the walkthrough's `<pre>` blocks ("245000"+"INR" only), Golden Law 2. First-request walkthrough uses the real gold-standard endpoint (`POST /v1/listings`). |
 | SITE-007 | api-reference.html — reference design pattern + real example endpoint | Full real endpoint drawn: `POST /v1/listings`, guards, all 18 Zod fields, response, errors | Three-pane anatomy (module sidebar / endpoint doc / code-sample rail). Gold-standard endpoint per contract §12: `listings.controller.ts` lines 37–38 (`@Controller`, class-level `AuthGuard`+`PermissionsGuard`+`FeatureFlagGuard`) + lines 105–115 (`@Post()`, `@RequirePermissions(ListingPermissions.Create)`, Golden Law 11 least-privilege), `Idempotency-Key` required (Golden Law 3). All 18 request fields drawn verbatim from `create-listing.dto.ts`'s real `CreateListingSchema` (zod `.strict()`): productId, categoryId, title, description, quantityTotal, minOrderQty, unitCode, priceMinor, currencyCode, saleType, organicClaim, pincode, regionId, lat/lng, visibility, publishAt, attributes, mediaIds — each with real type/required/notes (e.g. `priceMinor` positive bigint-safe string, `saleType` enum direct\|auction\|both\|preorder\|service\|group_lot default direct). Response `201 { "data": { "id": "<uuid>" } }` (controller line 114, exact shape). Error codes 400/401/403 etc. grep-cited. PATTERN-flagged (structural, not asserted live): the deprecation chip; the sidebar's collapsed "… N more" module rows. |
 | SITE-008 | webhooks.html — event catalog + signature verification | 9-event allow-list byte-identical; HMAC-SHA256 X-KV-Signature/X-KV-Timestamp; retry/backoff exact; delivery-status "derived state" teaching column (unscored P2: caption clarity) | 9 real events from `modules/tenant-webhooks/domain/webhook-events.ts` (`WEBHOOK_EVENT_TYPES`, byte-identical): order.created, order.completed, order.cancelled, payment.succeeded, payout.completed, shipment.status_changed, auction.ended, offer.accepted, dispute.resolved — a tenant may only subscribe to this allow-list, anything else rejected at the registration DTO. Signature: `webhook-signature.ts` (`SIGNATURE_HEADER='X-KV-Signature'`, `TIMESTAMP_HEADER='X-KV-Timestamp'`, HMAC-SHA256 hex over `"${ts}.${body}"`); signing secret shown once, AES-256-GCM at rest (README.md). Delivery/retry semantics from `modules/tenant-webhooks/README.md`: 8s timeout, exponential backoff 1m→4h, up to 8 attempts, then the row is parked (`next_retry_at = NULL`) — no invented rate-limit/SLA/retry numbers, all cite README.md. W189 has no named delivery-status chip vocabulary, so the "Derived state" teaching column mirrors the raw field-combination shape (`succeeded`/`next_retry_at`/`attempt`) rather than inventing status-chip names — flagged as an unscored P2 observation (caption clarity) at QA, not a defect. Idempotent-consumer guidance for receivers mirrors Golden Law 3 (send-side idempotency) applied to the receive side. |
@@ -11370,7 +11370,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 | SITE-021 | country-landing-template.html — all-placeholder country landing template | Locale law occurrence 2 of 5; P1 FIXED: hero carried literal tagline text, breaking placeholder purity | The hero block shipped with the brand line "From Farm to Future, in {{country}}" typed directly onto the template face — a real, literal sentence sitting inside a page whose entire premise is that every string is a `{{var}}` until a real country ships it. Fixed: the face now reads `{{hero_tagline}}` with zero literal words, and the suggested value moved to the RAIL annotation (not the template), preserving placeholder purity absolutely while still telling a future builder what the line is for. |
 | SITE-022 | country-india.html — the ONE fully-drawn live country instance | **P0 FIXED: THE LOCALE LAW band was missing from this file entirely** — added at QA | The batch's own occurrence-numbering scheme (1/2/4/5 present across SITE-020/021/023/024) had explicitly reserved slot "3 of 5" for this file — the builder numbered around a file it then forgot to actually carry the law band on. Added at QA, now reads "occurrence 3 of 5 (added at QA — the batch numbering had reserved slot 3 for this page)." Country scan CLEAN: SITE-022 contains ZERO roadmap-country names (Bangladesh/Nepal/Sri Lanka/UAE/Saudi/Africa/Europe/Americas never appear on India's own live page). All 14 claims on the page are byte-consistent with COL-001/SITE-002/SITE-004's own prior adjudications — no drift introduced by re-stating them here. |
 | SITE-023 | rtl-demonstration.html — real `dir="rtl"` rendered canon demo | Locale law occurrence 4 of 5; P2 FIXED: `direction:ltr` bidi-isolation count corrected 1 claimed → 3 actual, all justified | Real `dir="rtl"` rendering (not a mirrored screenshot) with ZERO live physical-property CSS anywhere in the file (proof-block grep: zero `left`/`right` declarations) — every layout rule uses logical properties, so the chevron/text/spacing all flip automatically off the single `dir` attribute. The self-test originally claimed exactly 1 `direction:ltr` bidi-isolation exception; the true count is 3 (helpline digits + two LTR-run blocks in the compare strip), all three justified as bidi-isolation of Western numerals inside RTL runs, not a physical-property violation — self-test reworded to state 3, not 1. Every Arabic string on the page is machine-draft-watermarked with a §17 chip (translation review required before any real launch). |
-| SITE-024 | i18n-implementation-guide.html — key convention, +40% expansion law, what-never-translates, live-seam honesty | Locale law occurrence 5 of 5; **MAJOR FOUNDER-FACING FINDING**: live site's `i18n.js` registers 22 languages (10 `complete:true`) vs platform `languages.ts` 3 — named, unreconciled; P2 FIXED: languages.ts line-cite off-by-one | §e documents the live `krishi-verse_website/assets/i18n.js` seam (`kv_lang` localStorage key, 22-entry `LANGUAGES` array, 10 flagged `complete:true`: en/hi/gu/mr/ta/te/kn/ml/bn/pa) strictly AS-IS, side by side with the platform's `packages/i18n/src/languages.ts` 3-language canon (hi/en/gu) that the rest of this design system cites as ground truth — stating the gap plainly rather than silently picking a side or reconciling it in the design layer. This is a NAMED, deliberate non-adoption: the canon never treats 22/10 as platform fact. Joins the live-site metrics honesty gap (first flagged at SITE-1, "10K+ farmers"/GMV/"98% delivery"/"22 languages" unsupported claims) in the same §17-adjacent founder queue. Separately, a P2: the file's own citation of `languages.ts`'s LANGUAGES-array line range was off by one line versus the true `lines 6–11` — corrected. |
+| SITE-024 | i18n-implementation-guide.html — key convention, +40% expansion law, what-never-translates, live-seam honesty | Locale law occurrence 5 of 5; **MAJOR FOUNDER-FACING FINDING**: live site's `i18n.js` registers 22 languages (10 `complete:true`) vs platform `languages.ts` 3 — named, unreconciled; P2 FIXED: languages.ts line-cite off-by-one | §e documents the live `krishalaya_website/assets/i18n.js` seam (`kv_lang` localStorage key, 22-entry `LANGUAGES` array, 10 flagged `complete:true`: en/hi/gu/mr/ta/te/kn/ml/bn/pa) strictly AS-IS, side by side with the platform's `packages/i18n/src/languages.ts` 3-language canon (hi/en/gu) that the rest of this design system cites as ground truth — stating the gap plainly rather than silently picking a side or reconciling it in the design layer. This is a NAMED, deliberate non-adoption: the canon never treats 22/10 as platform fact. Joins the live-site metrics honesty gap (first flagged at SITE-1, "10K+ farmers"/GMV/"98% delivery"/"22 languages" unsupported claims) in the same §17-adjacent founder queue. Separately, a P2: the file's own citation of `languages.ts`'s LANGUAGES-array line range was off by one line versus the true `lines 6–11` — corrected. |
 
 **THE LOCALE LAW (this batch's spine, authored and reproduced verbatim ×5 rails)**: *"A country page is a promise of presence, and a language switcher is a promise of words. Only a country where the platform actually operates gets a live landing — roadmap countries wear TARGET (PRD) chips. A language is live only when its strings, fonts, and formats have all shipped — a flag icon is not a translation, and a machine draft is not a launch."*
 
@@ -11462,7 +11462,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 
 **THE LAUNCH-ASSET LAW (this batch's spine, authored and reproduced verbatim ×5 rails)**: *"A store listing is the platform's first promise to a stranger. Screenshots show real canon screens, copy carries only adjudicated claims, and no rating, download count, or award appears anywhere before it exists. The same law dresses every public asset: social posts, preview videos, sounds — nothing launches before the thing it promises."*
 
-**QA verdict (BRAND-3): CONDITIONAL FAIL → fixed → PASS. Zero P0, 2 P1, 1 P2.** **P1 — BRAND-014 rendered ₹ twice via `&#8377;`**, a byte-exact quote lifted from IVR-007's own ratified example; QA ruled that a quoted-from-elsewhere ₹ is still a rendered ₹ under the batch's zero-exception rule, and the passage was reworded rather than exempted. **P2 — one citation was missing its `krishi-verse/` path prefix** — fixed.
+**QA verdict (BRAND-3): CONDITIONAL FAIL → fixed → PASS. Zero P0, 2 P1, 1 P2.** **P1 — BRAND-014 rendered ₹ twice via `&#8377;`**, a byte-exact quote lifted from IVR-007's own ratified example; QA ruled that a quoted-from-elsewhere ₹ is still a rendered ₹ under the batch's zero-exception rule, and the passage was reworded rather than exempted. **P2 — one citation was missing its `krishalaya/` path prefix** — fixed.
 
 **LESSON FOR MEMORY — the zero-₹ rule is absolute per batch spec, with no quoting exception**: this batch's spec called for ZERO rupee glyphs anywhere, and the builder's defense that the ₹ in BRAND-014 was a byte-exact quote from an already-ratified IVR-007 example did not survive QA — **quoting a ratified example does not exempt the glyph; rewording preserves the pedagogy without the symbol.** This hardens the ₹-confinement discipline already seen across BRAND-1/2 and the SITE batches: there is no "it's just a quote" carve-out. Separately, **BRAND-2's citation-slug lesson held at 37/37 this batch** — zero fabricated slugs, confirming the copy-paste-citation rule generalizes cleanly to a second batch running under it.
 
@@ -11610,7 +11610,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 
 **GROUND-FIRST DISCIPLINE HONORED: enumeration reconciled BEFORE execution.** The complete in-situ `<path d="...">` signature was extracted and counted repo-wide before any script was written: exactly one distinct full-signature element exists across every carrier file. Reconciled against QA's own 431-file partition (BRAND-032 §4: ~424 web-screens + 6 collateral + 1 historical) — this batch's exact enumeration measured 430 live occurrences (423 web-screens + 6 collateral + 1 historical), a 1-file delta explained rather than forced: **W274-store-tenant-home.html** carries a DIFFERENT, shorter 3-subpath icon (storefront "photo placeholder" cards) that coincidentally shares this signature's first 3 subpaths as a prefix — never a live brand-mark instance, correctly untouched by exact full-string matching.
 
-**EXECUTED: 429 files retired (423 web-screens + 6 collateral), 429 matches, 1 per file.** The master's 5 path d-strings (byte-copied verbatim from `krishi-verse-mark-small.svg`, BRAND-029 Exhibit E) are wrapped in `<g transform="scale(0.3)">` rather than any coordinate being hand-rewritten — the container's own viewBox/stroke/width/height are never touched. Every touched file grew by exactly the same byte delta per file, itself evidence of a uniform, mechanical change; per-file diff-bounds assertion recorded 0 violations across all 429. BRAND-029 preserved untouched on purpose, the historical record of the pre-ratification state. Exclusion checksums (BRAND-029, BRAND-032, `qa_gates.py`) verified sha256-identical pre/post. Post-run repo-wide grep of the exact full signature: 1 remaining match, BRAND-029 only. Idempotency proven: QA's own re-run of the script found 0 matches remaining to touch.
+**EXECUTED: 429 files retired (423 web-screens + 6 collateral), 429 matches, 1 per file.** The master's 5 path d-strings (byte-copied verbatim from `krishalaya-mark-small.svg`, BRAND-029 Exhibit E) are wrapped in `<g transform="scale(0.3)">` rather than any coordinate being hand-rewritten — the container's own viewBox/stroke/width/height are never touched. Every touched file grew by exactly the same byte delta per file, itself evidence of a uniform, mechanical change; per-file diff-bounds assertion recorded 0 violations across all 429. BRAND-029 preserved untouched on purpose, the historical record of the pre-ratification state. Exclusion checksums (BRAND-029, BRAND-032, `qa_gates.py`) verified sha256-identical pre/post. Post-run repo-wide grep of the exact full signature: 1 remaining match, BRAND-029 only. Idempotency proven: QA's own re-run of the script found 0 matches remaining to touch.
 
 **QA VERDICT: CONDITIONAL FAIL → fixed → PASS. 1 P1, 1 P2.** **P1 — THE STROKE DEFECT**: the replacement wrapper carried no `stroke-width` and inherited the container's `stroke-width="2"`, rendering 0.6px effective at the `scale(0.3)` wrapper — 60% thinner than the ratified small-cut's designed 1.5px (5.0 × 0.3). Senior review had flagged the ambiguity pre-QA as a priority item; QA computed the actual math from an extracted replaced block and confirmed the defect. **Fixed**: a uniform exact-string patch applied across all 429 files — the inner wrapper now carries `stroke-width="5"` → 1.5px effective, the ratified appearance. Script patched with a changelog note, run log updated, a BRAND-033 patch note added documenting the fix. Post-fix verification: 429/429 touched files carry the patched wrapper, zero unpatched instances remain. **P2 — W274's shared-prefix icon is 3-subpath, not 2-subpath** as an earlier draft of the prose stated; corrected.
 
@@ -11623,15 +11623,15 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 ## LOGO-4 — Tenant fallback + co-brand lockups — brand/ (Logo Program batch 4 of 6), pipeline v4
 | ID | Page | Key finding | Notes |
 |---|---|---|---|
-| BRAND-034 | cobrand-fallback.html — the "Powered by Krishi Verse" badge drawn for the first time (3 SVG variants: master/reversed/mono-thermal, icon byte-copied from `krishi-verse-mark-small.svg`, scale 0.35, EXPLICIT stroke-width 5.0→1.75px effective, 40px min-height derived); co-brand constructions (tenant-primary badge-not-lockup per Golden Law 1, partner equal-weight lockup RATIFIED under delegation); THE FALLBACK SYSTEM (both candidates drawn, two-tier rule DECIDED, OPEN §17 CLOSED); retrofit census + 8-file surgical upgrade; kit-v3 (16→19) + sha256s | QA reconciled the census math exactly (143 = 8 retrofitted + 119 escalated + 6 brand-prose + 3 collateral-prose + 7 designer_pack) and caught the page's own demo renders violating its own 40px floor | Tools: none scripted this batch (surgical, LOGO-3 discipline). Spec: `Design_Program/specs_v3/spec_logo4.md`. |
+| BRAND-034 | cobrand-fallback.html — the "Powered by Krishalaya" badge drawn for the first time (3 SVG variants: master/reversed/mono-thermal, icon byte-copied from `krishalaya-mark-small.svg`, scale 0.35, EXPLICIT stroke-width 5.0→1.75px effective, 40px min-height derived); co-brand constructions (tenant-primary badge-not-lockup per Golden Law 1, partner equal-weight lockup RATIFIED under delegation); THE FALLBACK SYSTEM (both candidates drawn, two-tier rule DECIDED, OPEN §17 CLOSED); retrofit census + 8-file surgical upgrade; kit-v3 (16→19) + sha256s | QA reconciled the census math exactly (143 = 8 retrofitted + 119 escalated + 6 brand-prose + 3 collateral-prose + 7 designer_pack) and caught the page's own demo renders violating its own 40px floor | Tools: none scripted this batch (surgical, LOGO-3 discipline). Spec: `Design_Program/specs_v3/spec_logo4.md`. |
 
-**THE BADGE, DRAWN FOR THE FIRST TIME.** Three real SVG files — `kv-powered-by-badge.svg` (master, cream/light), `-reversed.svg` (mono-white knockout, any dark/green surface — a deliberate judgment call over ink-on-green so one file generalizes correctly per LOGO-3's own narrow ink-on-green usage law), `-mono.svg` (1-bit thermal/fax, DOC-003 typography convention reused) — all built on the official <24px small-cut geometry (byte-copied from `krishi-verse-mark-small.svg`, BRAND-029 Exhibit E), never the standard 7-path build, since the badge's own icon renders below the standard build's 32px floor. Scale math shown, not implied (LOGO-3.1/BRAND-033 lesson): icon scale factor 28÷80=0.35, effective stroke-width 5.0×0.35=**1.75px**, EXPLICIT in every badge file's own provenance comment. Min badge height **40px** derived (not decreed): 28px icon (above the small-cut's own 24px floor by a deliberate safety margin) + 6px/side breathing room (21.4%, at/above the LOGO-3-derived 20% clear-space rule) = 40px, the master's own native viewBox height.
+**THE BADGE, DRAWN FOR THE FIRST TIME.** Three real SVG files — `kv-powered-by-badge.svg` (master, cream/light), `-reversed.svg` (mono-white knockout, any dark/green surface — a deliberate judgment call over ink-on-green so one file generalizes correctly per LOGO-3's own narrow ink-on-green usage law), `-mono.svg` (1-bit thermal/fax, DOC-003 typography convention reused) — all built on the official <24px small-cut geometry (byte-copied from `krishalaya-mark-small.svg`, BRAND-029 Exhibit E), never the standard 7-path build, since the badge's own icon renders below the standard build's 32px floor. Scale math shown, not implied (LOGO-3.1/BRAND-033 lesson): icon scale factor 28÷80=0.35, effective stroke-width 5.0×0.35=**1.75px**, EXPLICIT in every badge file's own provenance comment. Min badge height **40px** derived (not decreed): 28px icon (above the small-cut's own 24px floor by a deliberate safety margin) + 6px/side breathing room (21.4%, at/above the LOGO-3-derived 20% clear-space rule) = 40px, the master's own native viewBox height.
 
-**CO-BRAND CONSTRUCTIONS.** Tenant-primary: on a tenant-primary surface (storefront, farmer app, store emails) the tenant's brand IS the brand — Krishi Verse's presence is the small honest badge, **never** the full `krishi-verse-logo-lockup.svg`, per Golden Law 1 (contract §3) quoted verbatim. Partner co-brand (lender/insurer documents): an EQUAL-weight lockup with a vertical divider (partner logo | divider | KV badge), per DOC-000 §b header-anatomy convention — **RATIFIED under the founder's standing 2026-07-19 written delegation** (BRAND-029 Exhibit E pattern: decision / basis / override-open / date), closing TS-002's "Partner documents" row that had sat "proposed, ratification pending" since DOC-3.
+**CO-BRAND CONSTRUCTIONS.** Tenant-primary: on a tenant-primary surface (storefront, farmer app, store emails) the tenant's brand IS the brand — Krishalaya's presence is the small honest badge, **never** the full `krishalaya-logo-lockup.svg`, per Golden Law 1 (contract §3) quoted verbatim. Partner co-brand (lender/insurer documents): an EQUAL-weight lockup with a vertical divider (partner logo | divider | KV badge), per DOC-000 §b header-anatomy convention — **RATIFIED under the founder's standing 2026-07-19 written delegation** (BRAND-029 Exhibit E pattern: decision / basis / override-open / date), closing TS-002's "Partner documents" row that had sat "proposed, ratification pending" since DOC-3.
 
 **THE FALLBACK SYSTEM — OPEN §17 CLOSED (open since the COL batches).** Both candidates drawn: (a) NAME-BLOCK — tenant name in a bordered Fraunces-700 block (one step lighter than the KV wordmark's own Fraunces 800, so a tenant name is never mistaken for the KV mark), single-line ellipsis truncation with a `title` fallback, renders in the tenant's own registered script; (b) INITIAL-TILE — tenant initial(s) in a tile that is **NEVER KV green** (a fallback dressing an unbranded tenant in the platform's own brand color reads backwards — worked correct/wrong example rendered side by side). **DECIDED under delegation:** name-block wherever available width ≥160px (documents/headers/emails); initial-tile ONLY in fixed-square micro contexts (nav 32–40px, avatars); never mixed on one surface; initial-tile uses a single FIXED neutral tone (`--color-ink-400`), not a per-tenant hash-derived color (reasoned: a hash palette would quietly reintroduce the exact per-tenant chrome variance TS-002 §b's Console v2 law exists to prevent). History cited in full: TS-000 §a (proposal) → BRAND-001 (OPEN chip, absence grep) → BRAND-032 §6 LOGO-4 handoff (scoped: draw both, founder picks) → this batch (decided). BRAND-000/BRAND-001 updated to CLOSED this session. Backend-pending restated: `tenants.logo_url` column + fallback rendering = engineering; the design rule ships now.
 
-**SCALE DISCOVERY, ESCALATED NOT ABSORBED (LOGO-3/LOGO-3.1 precedent): repo-wide census found 143 files carrying "Powered by Krishi Verse," not the ~7 the spec's own grounding named.** Decomposition: 121 web-screens (byte-identical `kvw-sidebar-foot` pattern), 6 brand-prose, 5 collateral (2 live renders + 3 prose), 3 documents (all live), 1 templates/system (rule source). 8 representative files retrofitted surgically this batch (one per surface class: console sidebar-foot icon-only inline, full master badge on document anatomy/thermal contexts, mono-white knockout on a physical CR80 card) — **119 remaining live instances (117 web-screens + COL-002 + COL-015) ESCALATED to a dedicated LOGO-4.1 scripted batch**, same doctrine as `retire_lookalike.py`/LOGO-3.1 (stdlib, dry-run-default, exact-match, full proof pack), correctly not silently folded into this "surgical, LOGO-3 discipline" batch's normal scope.
+**SCALE DISCOVERY, ESCALATED NOT ABSORBED (LOGO-3/LOGO-3.1 precedent): repo-wide census found 143 files carrying "Powered by Krishalaya," not the ~7 the spec's own grounding named.** Decomposition: 121 web-screens (byte-identical `kvw-sidebar-foot` pattern), 6 brand-prose, 5 collateral (2 live renders + 3 prose), 3 documents (all live), 1 templates/system (rule source). 8 representative files retrofitted surgically this batch (one per surface class: console sidebar-foot icon-only inline, full master badge on document anatomy/thermal contexts, mono-white knockout on a physical CR80 card) — **119 remaining live instances (117 web-screens + COL-002 + COL-015) ESCALATED to a dedicated LOGO-4.1 scripted batch**, same doctrine as `retire_lookalike.py`/LOGO-3.1 (stdlib, dry-run-default, exact-match, full proof pack), correctly not silently folded into this "surgical, LOGO-3 discipline" batch's normal scope.
 
 **QA VERDICT: CONDITIONAL FAIL → fixed → PASS. 3 P1, 1 P2.** **P1-1 — stale census number**: the build-time self-test claimed 135 files; final-state repo grep = **143** (the 8-file gap = the three new badge SVGs ×main+exports+LICENSE + this page's own self-reference, new artifacts never retrofit subjects) — reconciliation corrected: 143 = 8 retrofitted + 119 escalated + 6 brand-prose + 3 collateral-prose + 7 designer_pack. **P1-2 — self-test bucket miscount**: the page claimed "6 prose files incl. TS-002"; true count is 8, and TS-002 belongs to the 8 RETROFITTED bucket (it is the rule source, annotated with the badge asset reference), not the prose-citation bucket — corrected. **P1-3 — POETIC, THE PAGE VIOLATED ITS OWN LAW**: BRAND-034's own demo renders across every badge-card and lockup-construction visual shrink the icon to 17.5px effective (inside the small-cut's known arm-merge zone) to fit page layout — undershooting the very 40px floor Section 1 itself derives. Fixed: a "reduced for page layout only — NOT a compliance-scale reference" caption added to all 5 demo renders, rather than silently allowing a canon page to legislate a floor its own body violates. **P2 — BRAND-001 stale header cross-reference**: pointed at the pre-closure OPEN §17 language; a superseded-pointer to this file's §3 closure was added.
 **LESSON HARDENED FOR MEMORY: a canon page must obey the law it legislates.** Page-internal demo renders are deployments too — the same rendered-weight-math discipline LOGO-3.1 hardened for scripted mass edits applies equally to a single hand-authored page's own illustrative examples; "it's just a demo" is not an exemption from a floor the page itself derives two sections earlier.
@@ -11643,13 +11643,13 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 |---|---|---|---|
 | BRAND-035 | badge-retrofit-record.html — the LOGO-4.1 execution record: the STOP-and-arbitrate story (116 vs BRAND-034's stated 117), replacement provenance (byte-copied from W191, scale 0.3/stroke 1.5px EXPLICIT), run statistics (116 scripted + 2 manual = 118), full proof pack, post-run survivors census | Independent QA re-ran every check from scratch (dry-run idempotency, 10-file byte/sha256 sample, 6-file cross-realm XML-parse, 6-file exclusion sha256, census arithmetic) — zero defects found, zero fixes required | Tools: `badge_retrofit.py` (farmer root, stdlib, `--dry-run` default / `--execute` gated behind `--i-have-reconciled-the-count-discrepancy`, exact full-string match, idempotent) + `badge_retrofit_run_log.json`. |
 
-**THE STOP-AND-ARBITRATE STORY — the machinery's finest hour, told honestly.** `badge_retrofit.py`'s dry-run enumerated exactly **116** live `kvw-sidebar-foot` text-only instances repo-wide, against BRAND-034 §4's own stated **117** remaining (121 loose-census − 4 already retrofitted at LOGO-4 itself). The script's `--execute` path refused to run on that 1-file mismatch — per program rule "count mismatches → STOP and flag, never force" — printing its refusal to stderr and exiting 2, nothing written. Root cause traced to exactly one file: `web-screens/W307-store-tenant-signup.html` carries the phrase "Powered by Krishi Verse" only inside marketing prose (a bullet: `"Powered by Krishi Verse" is the only trace of us.`), never the `kvw-sidebar-foot` markup — a false positive baked into BRAND-034's own loose subject-grep census, which had hedged its own count but still let it flow forward into a specific claim. Confirmed independently this session: zero exact-`TARGET_TEXT` occurrences in W307, correctly excluded from `EXCLUDE_RELATIVE_PATHS` (that list is for files already carrying NEW badge markup, not for files never in scope). **ARBITRATED: the true total is 118 (116 scripted web-screens + 2 manual collateral, COL-002/COL-015), not BRAND-034's stated 119** — BRAND-034's own prose is corrected by this record wherever the two disagree, same founder-delegated design-authority pattern established at BRAND-029 Exhibit E. `--i-have-reconciled-the-count-discrepancy` was supplied to `--execute` only after the arbitration's own reasoning was complete — an acknowledgement, not a bypass. This is exact-match discipline catching a loose census before it could compound into 116 files of silently-wrong scope — the same discipline `retire_lookalike.py`/LOGO-3.1 hardened, now proven a second time on an independent batch.
+**THE STOP-AND-ARBITRATE STORY — the machinery's finest hour, told honestly.** `badge_retrofit.py`'s dry-run enumerated exactly **116** live `kvw-sidebar-foot` text-only instances repo-wide, against BRAND-034 §4's own stated **117** remaining (121 loose-census − 4 already retrofitted at LOGO-4 itself). The script's `--execute` path refused to run on that 1-file mismatch — per program rule "count mismatches → STOP and flag, never force" — printing its refusal to stderr and exiting 2, nothing written. Root cause traced to exactly one file: `web-screens/W307-store-tenant-signup.html` carries the phrase "Powered by Krishalaya" only inside marketing prose (a bullet: `"Powered by Krishalaya" is the only trace of us.`), never the `kvw-sidebar-foot` markup — a false positive baked into BRAND-034's own loose subject-grep census, which had hedged its own count but still let it flow forward into a specific claim. Confirmed independently this session: zero exact-`TARGET_TEXT` occurrences in W307, correctly excluded from `EXCLUDE_RELATIVE_PATHS` (that list is for files already carrying NEW badge markup, not for files never in scope). **ARBITRATED: the true total is 118 (116 scripted web-screens + 2 manual collateral, COL-002/COL-015), not BRAND-034's stated 119** — BRAND-034's own prose is corrected by this record wherever the two disagree, same founder-delegated design-authority pattern established at BRAND-029 Exhibit E. `--i-have-reconciled-the-count-discrepancy` was supplied to `--execute` only after the arbitration's own reasoning was complete — an acknowledgement, not a bypass. This is exact-match discipline catching a loose census before it could compound into 116 files of silently-wrong scope — the same discipline `retire_lookalike.py`/LOGO-3.1 hardened, now proven a second time on an independent batch.
 
 **EXECUTED: 116 files retrofitted (1 match each), byte-copied from W191's own LOGO-4, QA-passed retrofit block** — gradient id `kvw-sf-grad-w191`, paint, geometry and the existing `kvw-muted` text all reused unchanged (a repeated literal id across 116 separate documents is not a collision, each file is its own document). Scale math shown, not implied (LOGO-3.1/BRAND-033 lesson): icon rendered 24×24px against the small-cut master's own 0..80 viewBox, scale factor 24÷80=**0.3**, effective stroke-width 5.0×0.3=**1.5px**, EXPLICIT on the inserted `<g>` itself. Every touched file grew by exactly the same **781-byte** delta — uniform, mechanical evidence of a non-hand-edited change; per-file diff-bounds assertion recorded 0 violations across all 116. The 4 files already retrofitted at LOGO-4 itself (W172, W191, W197, W432) were actively skipped via a hardcoded exclusion list, not silently relied upon to "already not match." Plus **2 hand-edited manual carriers** — COL-015 (full-scale CR80 ID-card header bar, REVERSED mono-white small-cut knockout, byte-identical construction to DOC-019's own precedent, icon ≥24px small-cut floor with 26% margin) and COL-002 (0.5×-scale `col-idcardmini` schematic preview, icon 15.12px — honestly flagged BELOW the 24px floor by 37%, not hidden, same caveat category as BRAND-034 §1's own reduced-demo notes) — both reversed/mono-white knockout for their on-brand-green header context, both self-tests re-run and kept TRUE (additive to an already-passing surface).
 
 **QA VERDICT: CLEAN PASS — ZERO defects, zero fixes required, the 6th zero-rework batch in program history.** Independent review recomputed everything from scratch rather than trusting the record: run log's 116-file entries sample-verified against disk (10/10 byte+sha256 match); a fresh `--dry-run` immediately after `--execute` confirmed idempotency (0 matches, 0 files touched); a repo-wide grep of the exact text-only pattern confirmed 0 remaining; 6 files sampled across distinct realms (billing, dairy, logistics, WhatsApp, ambassador, schemes) all carry the badge block with EXPLICIT `stroke-width="5.0"`, the annotation comment, and XML-parsed clean; both manual edits (COL-002, COL-015) diffed against their COL-1/COL-4 batch-zip originals and found surgical (COL-002's only other diff was the pre-existing LOGO-3.1 look-alike retirement; COL-015's diff was the badge insertion alone) — no LOGO-4 collateral edit intervened between baseline and this batch for either file; W307 independently confirmed untouched, 0 exact-pattern matches, prose-only; BRAND-034's corrected prose (118, arbitration annotations) verified consistent; the survivors census arithmetic (143 = 120 badged web + 1 W307 + 7 designer_pack + 6 brand + 2 badged col + 3 prose col + 3 documents + 1 templates) independently recomputed and confirmed exact; `qa_gates.py` re-run against BRAND-035 directly and matched its own pasted output byte-for-byte (PASS on all 7 checks); all 6 exclusion sha256s (BRAND-033, `retire_lookalike.py`, the 4 LOGO-4 web-screens) independently recomputed and confirmed byte-identical.
 
-**THE MILESTONE: every "Powered by Krishi Verse" that was ever text-only in the console canon is now artwork.** 116 console sidebar-feet + 2 collateral ID-card headers, all now carrying the drawn badge glyph — the last carrier class named at LOGO-4 §4's own escalation is closed out, on the machinery's own reconciled arithmetic (118, not the loose census's 119, not a guess).
+**THE MILESTONE: every "Powered by Krishalaya" that was ever text-only in the console canon is now artwork.** 116 console sidebar-feet + 2 collateral ID-card headers, all now carrying the drawn badge glyph — the last carrier class named at LOGO-4 §4's own escalation is closed out, on the machinery's own reconciled arithmetic (118, not the loose census's 119, not a guess).
 
 **LOGO-4.1 COMPLETE, QA-PASSED (packaged) — clean PASS, ZERO defects, arbitration 119→118 executed clean.** Backend-pending: none. **§17/NEXT**: founder visual pass still pending across the LOGO-3 variants + LOGO-4 badges; next per `Design_Program/10_LOGO_PROGRAM.md`: **LOGO-5 — icon exports + localized wordmark decision** (batch 5 of 6). Program totals: 973 canon screens + 74 channel artifacts + 21 documents + 18 collateral + 25 website pages + brand & systems: 36→37 artifacts (incl. `qa_gates.py`) + 22 production logo assets (unchanged — this batch retrofits carrier files, it draws no new master asset).
 
@@ -11658,13 +11658,13 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 |---|---|---|---|
 | BRAND-036 | icon-exports-localized-wordmarks.html — THE FIRST REAL STORE-SUBMISSION BINARIES: 12 files (iOS 1024 flat square, Android adaptive bg/fg 432, Android-13 themed-mono 432, social avatars 512/1024 — SVG+PNG each) via `logo5_export_build.py`; Exhibit E-1 (Android-13 themed icon RATIFIED under delegation, reasoned departure from BRAND-032's knockout mechanism); Exhibit E-2 (THE LOCALIZED-WORDMARK DECISION — hi/gu wordmarks built now); tenant-app-icon approval workflow closing BRAND-010's OPEN §17; kit rebuild 19→34 | QA independently re-derived every number from scratch rather than trusting the build log: all 12 sha256 + all 6 PNG dims/pixel-sanity RGBA reproduced byte-identical; glyph-path spot-diff across 5 files (master/themed-mono/iOS/adaptive-fg/avatar) confirmed byte-identical; all citation line-numbers (EM-016, IVR-007, TS-003, the 3-file tagline precedent) grep-confirmed exact | Tools: `logo5_export_build.py` (farmer root, stdlib + cairosvg + Pillow, same no-fake-binaries doctrine as `retire_lookalike.py`/`badge_retrofit.py`), `py_compile` clean. No `spec_logo5.md` exists — this batch's own inline `Design_Program/10_LOGO_PROGRAM.md` LOGO-5 row IS the spec, same precedent that file set for the whole program. |
 
-**THE FIRST REAL STORE-SUBMISSION BINARIES.** Every prior Logo Program batch shipped SVG masters and/or website raster exports; this is the first batch to ship the actual asset set a developer uploads to the iOS App Store / Google Play console: `ios-appicon-1024.{svg,png}` (flat square, no rx — Apple applies its own mask at render time, per BRAND-010's own rule), `android-adaptive-bg-432.{svg,png}` (full-bleed gradient, no glyph), `android-adaptive-fg-432.{svg,png}` (glyph only, transparent, safe-zone scaled), `android-themed-mono-432.{svg,png}` (single-ink Android-13 silhouette), `social-avatar-512/1024.{svg,png}` (BRAND-012 circle-safe construction) — 12 files total, every scale factor derived from the CURRENT ratified master (`krishi-verse-mark.svg`, stroke 4.0 — explicitly NOT BRAND-010's own stale 3.5 diagram, flagged since LOGO-3 and never fixed there, out of scope for that file). QA independently reproduced all 12 sha256 hashes from disk (byte-identical to the BRAND-036 file-inventory table), all 6 PNG IHDR dimensions, and all 6 pixel-sanity corner/center RGBA reads (iOS/adaptive-bg corners `#1e6f3f`, adaptive-fg/themed-mono corners fully transparent, avatar corners cream `#FAF7F0`; centers gold `#f9c45a` or opaque black for the mono variant) — zero zero-byte files, zero mismatches.
+**THE FIRST REAL STORE-SUBMISSION BINARIES.** Every prior Logo Program batch shipped SVG masters and/or website raster exports; this is the first batch to ship the actual asset set a developer uploads to the iOS App Store / Google Play console: `ios-appicon-1024.{svg,png}` (flat square, no rx — Apple applies its own mask at render time, per BRAND-010's own rule), `android-adaptive-bg-432.{svg,png}` (full-bleed gradient, no glyph), `android-adaptive-fg-432.{svg,png}` (glyph only, transparent, safe-zone scaled), `android-themed-mono-432.{svg,png}` (single-ink Android-13 silhouette), `social-avatar-512/1024.{svg,png}` (BRAND-012 circle-safe construction) — 12 files total, every scale factor derived from the CURRENT ratified master (`krishalaya-mark.svg`, stroke 4.0 — explicitly NOT BRAND-010's own stale 3.5 diagram, flagged since LOGO-3 and never fixed there, out of scope for that file). QA independently reproduced all 12 sha256 hashes from disk (byte-identical to the BRAND-036 file-inventory table), all 6 PNG IHDR dimensions, and all 6 pixel-sanity corner/center RGBA reads (iOS/adaptive-bg corners `#1e6f3f`, adaptive-fg/themed-mono corners fully transparent, avatar corners cream `#FAF7F0`; centers gold `#f9c45a` or opaque black for the mono variant) — zero zero-byte files, zero mismatches.
 
-**EXHIBIT E-1 — THE ANDROID-13 THEMED-ICON RATIFICATION, with a stated departure from precedent.** The spec line read "geometry = mono variant logic per BRAND-032," which literally would mean BRAND-032's solid-container-with-knocked-out-glyph `<mask>` construction. This batch does NOT ship that mechanism — it reuses BRAND-032's byte-true glyph geometry and single-flat-ink philosophy only, reasoning stated in full (not silently substituted): Android's own themed-icon system already supplies its own background mask/shape (a baked-in container risks corner-clipping under the launcher's own often-circular mask, and duplicates a job the OS already does), and BRAND-032's knockout construction is explicitly scoped to "single-ink PRINT reproduction... NOT for general on-screen use" — applying it to an OS-rendered UI layer would repeat, in reverse, the exact category error BRAND-032 itself warns against. The shipped construction is a bare wheat-glyph silhouette at the current ratified stroke-width (4.0), RATIFIED under the founder's standing 2026-07-19 written delegation, a new master file (`krishi-verse-mark-themed-mono.svg`) added to the kit.
+**EXHIBIT E-1 — THE ANDROID-13 THEMED-ICON RATIFICATION, with a stated departure from precedent.** The spec line read "geometry = mono variant logic per BRAND-032," which literally would mean BRAND-032's solid-container-with-knocked-out-glyph `<mask>` construction. This batch does NOT ship that mechanism — it reuses BRAND-032's byte-true glyph geometry and single-flat-ink philosophy only, reasoning stated in full (not silently substituted): Android's own themed-icon system already supplies its own background mask/shape (a baked-in container risks corner-clipping under the launcher's own often-circular mask, and duplicates a job the OS already does), and BRAND-032's knockout construction is explicitly scoped to "single-ink PRINT reproduction... NOT for general on-screen use" — applying it to an OS-rendered UI layer would repeat, in reverse, the exact category error BRAND-032 itself warns against. The shipped construction is a bare wheat-glyph silhouette at the current ratified stroke-width (4.0), RATIFIED under the founder's standing 2026-07-19 written delegation, a new master file (`krishalaya-mark-themed-mono.svg`) added to the kit.
 
-**EXHIBIT E-2 — THE LOCALIZED-WORDMARK DECISION.** PRINCIPLE: the mark (wheat sheaf) is universal and script-free; the wordmark localizes per script and SHIPS WITH ITS LANGUAGE (site/SITE-020's locale law + BRAND-015's font-pack law, both cited verbatim). Two new masters, `krishi-verse-wordmark-hi.svg` and `-gu.svg`, mirror the EN wordmark's exact two-line anatomy (name line + tagline line, same baselines/x-start/fill colors), substituting Hind/Hind Vadodara for Fraunces/Plus Jakarta Sans (role-matched, not like-for-like — Devanagari/Gujarati do not run in Fraunces) at the heaviest available weight (700, annotated, not silently substituted), with the tokens.css-cited 110% vernacular size bump (independently verified at lines 259-265 this session). Name line: canon-precedent transliteration, "कृषि वर्स"/"કૃષિ વર્સ", grep-verified byte-exact against templates/email/EM-016 lines 125-126 and templates/ivr/IVR-007 line 121. Tagline line: the ONLY existing canon-precedent translation, "खेत से भविष्य तक"/"ખેતરથી ભવિષ્ય સુધી," sourced verbatim from three independent designer_pack files (grep-verified exact at the cited line numbers) — prose-only until now, explicitly flagged as the first time it becomes a drawn artifact. Both files carry an explicit `{{native review}}`/`{{type review}}` rider and, correctly, ship with **no PNG raster** (confirmed by directory listing) — this sandbox has no Devanagari/Gujarati font to shape/render the run, and a tofu bitmap would be a worse falsification than no raster at all.
+**EXHIBIT E-2 — THE LOCALIZED-WORDMARK DECISION.** PRINCIPLE: the mark (wheat sheaf) is universal and script-free; the wordmark localizes per script and SHIPS WITH ITS LANGUAGE (site/SITE-020's locale law + BRAND-015's font-pack law, both cited verbatim). Two new masters, `krishalaya-wordmark-hi.svg` and `-gu.svg`, mirror the EN wordmark's exact two-line anatomy (name line + tagline line, same baselines/x-start/fill colors), substituting Hind/Hind Vadodara for Fraunces/Plus Jakarta Sans (role-matched, not like-for-like — Devanagari/Gujarati do not run in Fraunces) at the heaviest available weight (700, annotated, not silently substituted), with the tokens.css-cited 110% vernacular size bump (independently verified at lines 259-265 this session). Name line: canon-precedent transliteration, "कृषि वर्स"/"કૃષિ વર્સ", grep-verified byte-exact against templates/email/EM-016 lines 125-126 and templates/ivr/IVR-007 line 121. Tagline line: the ONLY existing canon-precedent translation, "खेत से भविष्य तक"/"ખેતરથી ભવિષ્ય સુધી," sourced verbatim from three independent designer_pack files (grep-verified exact at the cited line numbers) — prose-only until now, explicitly flagged as the first time it becomes a drawn artifact. Both files carry an explicit `{{native review}}`/`{{type review}}` rider and, correctly, ship with **no PNG raster** (confirmed by directory listing) — this sandbox has no Devanagari/Gujarati font to shape/render the run, and a tofu bitmap would be a worse falsification than no raster at all.
 
-**BRAND-010's OPEN §17 CLOSED.** The tenant-app-icon approval workflow (submission requirements, validation rules, a drawn 4-step flow extending the real `web-screens/W191-tenant-theming.html` precedent, rejection reasons, an appeal note) is designed in full, every automation claim explicitly flagged backend-pending against the REAL schema — QA independently confirmed the `tenants` table (`krishi-verse/db/migrations/0002_tenancy_billing.sql`) carries zero icon/logo/favicon/branding columns (grep, exit 1) and that `branding.logo_url` (a storefront-logo setting, not an app-icon field) is the only related artifact, at the cited line (`0008_setting_definitions.sql:12`). BRAND-010 itself is updated surgically — QA diffed it against the BRAND-3 zip baseline and confirmed the delta is exactly the pre-existing LOGO-3 look-alike-retirement layer plus this batch's own §17-CLOSED + PROPOSED→RATIFIED flip + self-test annotations, including an honestly-flagged, out-of-scope, PRE-EXISTING `qa_gates.py` hex_audit finding (`#fff` shorthand at BRAND-010 lines 36/77, independently re-run and confirmed genuinely failing, correctly deferred rather than silently touched while in the file for an unrelated reason).
+**BRAND-010's OPEN §17 CLOSED.** The tenant-app-icon approval workflow (submission requirements, validation rules, a drawn 4-step flow extending the real `web-screens/W191-tenant-theming.html` precedent, rejection reasons, an appeal note) is designed in full, every automation claim explicitly flagged backend-pending against the REAL schema — QA independently confirmed the `tenants` table (`krishalaya/db/migrations/0002_tenancy_billing.sql`) carries zero icon/logo/favicon/branding columns (grep, exit 1) and that `branding.logo_url` (a storefront-logo setting, not an app-icon field) is the only related artifact, at the cited line (`0008_setting_definitions.sql:12`). BRAND-010 itself is updated surgically — QA diffed it against the BRAND-3 zip baseline and confirmed the delta is exactly the pre-existing LOGO-3 look-alike-retirement layer plus this batch's own §17-CLOSED + PROPOSED→RATIFIED flip + self-test annotations, including an honestly-flagged, out-of-scope, PRE-EXISTING `qa_gates.py` hex_audit finding (`#fff` shorthand at BRAND-010 lines 36/77, independently re-run and confirmed genuinely failing, correctly deferred rather than silently touched while in the file for an unrelated reason).
 
 **QA VERDICT: CLEAN PASS — ZERO defects found.** The 66dp safe-zone px-math was independently re-derived from scratch (48-unit content-box × 5.4 scale = 259.2px, inside a 66dp×4=264px safe circle, margin (264−259.2)/2 = 2.4px/0.6dp per side) — genuinely tight, and the file's own "passes, but honestly tight" framing is verified accurate, not silently smoothed over. `qa_gates.py` independently re-run against BRAND-036 in isolation (`--footer "Logo Program: batch 5 of 6 (LOGO-5)"`) reproduced OVERALL PASS on all 10 checks, matching the page's own self-test table. `logo5_export_build.py` — `py_compile` clean.
 
@@ -11673,11 +11673,11 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 ## LOGO-6 — Motion mark + trademark canon — brand/ (Logo Program batch 6 of 6, FINAL BATCH — closes the set), pipeline v4
 | ID | Page | Key finding | Notes |
 |---|---|---|---|
-| BRAND-037 | motion-mark-trademark.html — SPLASH-ENTRANCE CHOREOGRAPHY (7-path stagger, spine→arm-pairs-bottom-up→lockup, 0/150/300/450/600ms delays, 920ms total, real `tokens.css` durations/easings), a flagged §17 stroke-draw-on alternative (stroke-dashoffset, honestly non-compliant with BRAND-013's transform/opacity-only rule, both-ways reasoning shown), a small-cut loading pulse (never rotation, two reasons stated); THE NAME-FORM RULING (hyphenated "Krishi-Verse" = wordmark artwork + UI page-titles; unhyphenated "Krishi Verse" = prose/body/aria/voice), decided under standing delegation with pasted repo-wide grep counts; ™/® usage rules (placement/size/12px floor/registration-status all `{{counsel}}` per the statutory honesty law); and the LOGO PROGRAM'S OWN CLOSING RECORD (six-batch arc, five original findings marked resolved, final 34-file kit inventory, what remains open for the founder) | QA independently recomputed the 920ms splash total from `tokens.css:190-192` (4×150+320=920, exact); reduced-motion audit confirmed 3/3 `@keyframes` assigned only inside the one `@media (prefers-reduced-motion: no-preference)` block (8/8 `animation:` lines); splash/stroke-draw/pulse demo SVGs byte-diffed against `krishi-verse-logo-lockup.svg`/`krishi-verse-mark.svg`/`krishi-verse-mark-small.svg` respectively — all three exact matches; terms.html lines 87/170/197 and DOC-000 line 98 quotes confirmed byte-verbatim by direct read; name-form grep counts re-run — the file's own pasted 1433/1334/1169 are the pre-self-write baseline, a live re-run (which now includes BRAND-037's own body text) returns 1451/1344/1170, a fully-explained +18/+10/+1 delta (BRAND-037 itself contains those strings that many times), not a discrepancy in the file's own arithmetic | No `spec_logo6.md` exists — this batch's own inline `Design_Program/10_LOGO_PROGRAM.md` LOGO-6 row IS the spec, same precedent LOGO-5/BRAND-036 already set. Motion values are explicitly PROPOSED (founder visual approval required); the name-form ruling is DECIDED (standing delegation); trademark registration status/strategy/localized-™ stay `{{counsel}}` (statutory honesty law, not a design call). |
+| BRAND-037 | motion-mark-trademark.html — SPLASH-ENTRANCE CHOREOGRAPHY (7-path stagger, spine→arm-pairs-bottom-up→lockup, 0/150/300/450/600ms delays, 920ms total, real `tokens.css` durations/easings), a flagged §17 stroke-draw-on alternative (stroke-dashoffset, honestly non-compliant with BRAND-013's transform/opacity-only rule, both-ways reasoning shown), a small-cut loading pulse (never rotation, two reasons stated); THE NAME-FORM RULING (hyphenated "Krishalaya" = wordmark artwork + UI page-titles; unhyphenated "Krishalaya" = prose/body/aria/voice), decided under standing delegation with pasted repo-wide grep counts; ™/® usage rules (placement/size/12px floor/registration-status all `{{counsel}}` per the statutory honesty law); and the LOGO PROGRAM'S OWN CLOSING RECORD (six-batch arc, five original findings marked resolved, final 34-file kit inventory, what remains open for the founder) | QA independently recomputed the 920ms splash total from `tokens.css:190-192` (4×150+320=920, exact); reduced-motion audit confirmed 3/3 `@keyframes` assigned only inside the one `@media (prefers-reduced-motion: no-preference)` block (8/8 `animation:` lines); splash/stroke-draw/pulse demo SVGs byte-diffed against `krishalaya-logo-lockup.svg`/`krishalaya-mark.svg`/`krishalaya-mark-small.svg` respectively — all three exact matches; terms.html lines 87/170/197 and DOC-000 line 98 quotes confirmed byte-verbatim by direct read; name-form grep counts re-run — the file's own pasted 1433/1334/1169 are the pre-self-write baseline, a live re-run (which now includes BRAND-037's own body text) returns 1451/1344/1170, a fully-explained +18/+10/+1 delta (BRAND-037 itself contains those strings that many times), not a discrepancy in the file's own arithmetic | No `spec_logo6.md` exists — this batch's own inline `Design_Program/10_LOGO_PROGRAM.md` LOGO-6 row IS the spec, same precedent LOGO-5/BRAND-036 already set. Motion values are explicitly PROPOSED (founder visual approval required); the name-form ruling is DECIDED (standing delegation); trademark registration status/strategy/localized-™ stay `{{counsel}}` (statutory honesty law, not a design call). |
 
 **THE FINAL LOGO PROGRAM BATCH — motion + trademark, the last two system holes finding 4 named.** Splash-entrance timing is shown-derived, not asserted: the stagger interval is one `var(--duration-fast)` (150ms) per stage, stage 5 (lockup) begins at 4×150=600ms and runs `var(--duration-slow)` (320ms), ending at 920ms total — every individual animation stays ≤320ms (well under BRAND-013's own 500ms per-element cap), with a stated 70ms deliberate overlap explained rather than silently left. The stroke-draw-on alternative is flagged as a genuine rule conflict (stroke-dashoffset repaints, unlike transform/opacity's compositor-only path) with both-ways reasoning (GPU-cheap in practice at this tiny scale vs. rule-purity/precedent-risk) and a PROPOSED-decorative-only conclusion, never presented as the default. Never-rotation for the loading pulse is reasoned two ways: semantic (a harvested sheaf reads static, not spinning) and technical (the container's fixed 135° gradient would desync from a rotating frame with no clean transform-only fix).
 
-**THE NAME-FORM RULING, decided under the same 2026-07-19 standing delegation as every prior LOGO-N decision.** Repo-wide grep pasted in full: 1433 hyphenated / 1334 unhyphenated occurrences; `<title>` tags split 1169 hyphen / 3 space (of 1172 total, 99.7% hyphenated); non-title split 264 hyphen / 1331 space (of 1595, 83.4% unhyphenated); the two drawn wordmark master SVGs are 5-for-5 hyphenated, zero unhyphenated. RULED: hyphenated "Krishi-Verse" is canon in the drawn wordmark artwork and the UI page-title convention only (formalizing an already-99.7%-real practice); unhyphenated "Krishi Verse" is canon in all prose/body-copy/aria-label/spoken (IVR/voice) contexts (matching the 83.4% real-world lean and reading more naturally spoken aloud). The legal entity name is recorded as a separate, third string — "Krishi-Verse Technologies Pvt. Ltd." (CIN U72900GJ2026PTC123456) — quoted verbatim from `krishi-verse_website/terms.html` lines 87/170/197, not independently verified against a registrar (that step stays `{{counsel}}`). The 264 residual non-title hyphen instances are named as a genuine, S-sized future copy-edit pass, not retroactively fixed this batch and not silently left unstated.
+**THE NAME-FORM RULING, decided under the same 2026-07-19 standing delegation as every prior LOGO-N decision.** Repo-wide grep pasted in full: 1433 hyphenated / 1334 unhyphenated occurrences; `<title>` tags split 1169 hyphen / 3 space (of 1172 total, 99.7% hyphenated); non-title split 264 hyphen / 1331 space (of 1595, 83.4% unhyphenated); the two drawn wordmark master SVGs are 5-for-5 hyphenated, zero unhyphenated. RULED: hyphenated "Krishalaya" is canon in the drawn wordmark artwork and the UI page-title convention only (formalizing an already-99.7%-real practice); unhyphenated "Krishalaya" is canon in all prose/body-copy/aria-label/spoken (IVR/voice) contexts (matching the 83.4% real-world lean and reading more naturally spoken aloud). The legal entity name is recorded as a separate, third string — "Krishalaya Technologies Pvt. Ltd." (CIN U72900GJ2026PTC123456) — quoted verbatim from `krishalaya_website/terms.html` lines 87/170/197, not independently verified against a registrar (that step stays `{{counsel}}`). The 264 residual non-title hyphen instances are named as a genuine, S-sized future copy-edit pass, not retroactively fixed this batch and not silently left unstated.
 
 **™/® USAGE RULES — the first canon page ever to set them (absence independently confirmed).** ™ usable now on any surface asserting a claim (strategy = `{{counsel}}`); ® reserved strictly for actual registration (using it earlier is a false representation of registered status, a statutory offense in several jurisdictions including India's Trademarks Act 1999, not a style call); superscript placement after the wordmark only, never a bare glyph; a 12px legibility floor derived from the real `tokens.css:119` (`--text-xs`) token rather than a browser's auto-shrunk `<sup>` default; never on the pictorial mark alone or in farmer-facing plain-language surfaces; registration status recorded everywhere as `{{pending/registered per class}}`, the statutory honesty law (`documents/DOC-000-document-design-language.html:98`) quoted verbatim as the reason a fact is not invented.
 
@@ -11688,7 +11688,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 ## LOGO PROGRAM COMPLETE (2026-07-19) — 6 of 6 core batches + 2 scripted mass-passes, PROGRAM CLOSES
 **THE ARC, six core batches + two scripted mass-passes, every one QA-passed:** LOGO-1 mark ratification (BRAND-029/030, THE LOGO LAW ratified) → LOGO-2 masters + live-site + first export pipeline (BRAND-031) → LOGO-3 variant set + geometry law (BRAND-032, escalating a 431-file look-alike-B finding) → LOGO-3.1 scripted mass retirement of 429 files (BRAND-033, `retire_lookalike.py`) → LOGO-4 co-brand badge + tenant fallback (BRAND-034, escalating a 119-instance census) → LOGO-4.1 scripted badge retrofit of 118 files (BRAND-035, `badge_retrofit.py`, STOP-and-arbitrate 119→118) → LOGO-5 store-submission binaries + localized wordmarks (BRAND-036, `logo5_export_build.py`) → LOGO-6 motion mark + trademark canon (BRAND-037, PROGRAM CLOSES).
 
-**FINAL ASSET INVENTORY:** 34-file production kit (`designer_pack/assets/logo/exports/kv-logo-kit.zip`, `unzip -l` independently reconfirmed = 34 this session) — 2 original 2026-05-30 archives + 4 standard/small-cut/lockup/wordmark masters + 4 LOGO-3 variant masters (mono-black/mono-white/ink-on-green/small-ink-on-green) + 7 favicon/PWA raster/SVG set + 3 LOGO-5 new masters (themed-mono, wordmark-hi, wordmark-gu) + 12 LOGO-5 store-submission binaries (iOS 1024, Android adaptive bg/fg 432, Android-13 themed-mono 432, social avatars 512/1024) + `LICENSE-USAGE.txt`. Plus: the live-site favicon/PWA/manifest integration (LOGO-2, "K" placeholder retired, grep=0 remaining); the co-brand "Powered by Krishi Verse" badge now drawn artwork everywhere it appears in canon (547 total carrier files cured across LOGO-3.1's 429 + LOGO-4.1's 118). Total brand/ canon pages: 38 (BRAND-000…037, independently counted on disk this session) + `qa_gates.py` = 39 artifacts under the program's own "N artifacts (incl. qa_gates.py)" counting convention — plus 3 further one-off Python tools at the repo root (`retire_lookalike.py`, `badge_retrofit.py`, `logo5_export_build.py`) that were never folded into that running total, same as every prior batch's own convention.
+**FINAL ASSET INVENTORY:** 34-file production kit (`designer_pack/assets/logo/exports/kv-logo-kit.zip`, `unzip -l` independently reconfirmed = 34 this session) — 2 original 2026-05-30 archives + 4 standard/small-cut/lockup/wordmark masters + 4 LOGO-3 variant masters (mono-black/mono-white/ink-on-green/small-ink-on-green) + 7 favicon/PWA raster/SVG set + 3 LOGO-5 new masters (themed-mono, wordmark-hi, wordmark-gu) + 12 LOGO-5 store-submission binaries (iOS 1024, Android adaptive bg/fg 432, Android-13 themed-mono 432, social avatars 512/1024) + `LICENSE-USAGE.txt`. Plus: the live-site favicon/PWA/manifest integration (LOGO-2, "K" placeholder retired, grep=0 remaining); the co-brand "Powered by Krishalaya" badge now drawn artwork everywhere it appears in canon (547 total carrier files cured across LOGO-3.1's 429 + LOGO-4.1's 118). Total brand/ canon pages: 38 (BRAND-000…037, independently counted on disk this session) + `qa_gates.py` = 39 artifacts under the program's own "N artifacts (incl. qa_gates.py)" counting convention — plus 3 further one-off Python tools at the repo root (`retire_lookalike.py`, `badge_retrofit.py`, `logo5_export_build.py`) that were never folded into that running total, same as every prior batch's own convention.
 
 **THE LAWS RATIFIED OR CLOSED BY THIS PROGRAM:** THE LOGO LAW (proposed BRAND-029, ratified BRAND-030, restated RATIFIED at every batch since, final restatement BRAND-037 — "One mark, drawn once, exported for every surface, with a rule for every context — including the tenant who brings their own"); THE NAME-FORM RULING (BRAND-037, hyphenated-vs-unhyphenated by context, decided under standing delegation); THE FALLBACK SYSTEM (BRAND-034, tenant co-brand/fallback rules, closing an §17 open since the COL batches); THE CO-BRAND CONSTITUTION (BRAND-034, tenant-primary badge-never-full-lockup Golden Law + partner equal-weight lockup, ratified under standing delegation).
 
@@ -11701,10 +11701,10 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 
 **THE CENSUS STORY.** Contract §6 requires 6 states per screen (default-populated/loading/empty/error/denied/flagged-off). A prior sampling pass (G0-1) found flagged-off "missing almost everywhere sampled" but could not say how badly without checking every file. This batch characterized the canon's own existing convention (9 files already carried a flagged-off card: W282/284/317/405/420/431-435) and built a mechanical census (`qa_gates.py`'s new `states_coverage` check) to grade all 435 web-screens against it — before: 9/435 (2.1%); after the mass-fix pass: 402/435 (92.4%). Both numbers independently reproduced this session from the two census JSONs, and the after-JSON cross-checked against a live re-scan of disk (0 mismatches across all 435 files).
 **THE NON-APPLICABILITY RULE (now canon convention).** A screen type that carries its OWN documented state canon — auth shells, canon-definition pages, static marketing, single-shot terminal screens, kiosk/POS step screens — is exempt from the console 6-card "Screen states" grid, provided it declares the exemption via `<!-- QA-STATES-EXEMPT: <class> — <reasoning> -->` placed after `<body...>`. 28 files carry the marker across 5 classes (5 auth-shell, 6 canon-definition, 5 static-marketing, 2 terminal-screen, 10 kiosk-pos-step), hand-enumerated by senior arbitration since "carries its own canon" is a judgment call, not mechanically derivable. `states_coverage` checks for the marker FIRST and short-circuits to EXEMPT-PASS before the 6-state detector ever runs — verified this session by reading the check's own code and by observing the 5 auth-shell files' own "locked-out" reasoning text (which would otherwise false-match the `denied` detector) never gets evaluated.
-**392 files scripted** — byte-copied card anatomy per realm, parameterized only by module name (derived from each file's own `<title>`): kvw console/tenant/gov/admin realm gets icon+title+body with a danger-colored flag SVG (byte-studied off W431-435's own precedent); kvs storefront/kvo ops/kvk kiosk realms get a plainer strong+p shape, no icon, no button (byte-studied off W282/W284, generalized to kvo/kvk's own existing card anatomy where no flagged-off precedent existed in-realm). Every insertion carries a trailing `<!-- flagged-off state added at BODY-1 (§6 completion pass) -->` marker comment. **W273-store-home.html hand-built separately** (0/6 states — no "Screen states" section existed at all, so the mass tool correctly left it untouched rather than inventing a section) — now 6/6, its flagged-off card using the platform's real `group_lots` feature flag (grep-verified in `krishi-verse/db/seeds/core/0009_feature_flags.sql:5`) as the worked example, not an invented one.
+**392 files scripted** — byte-copied card anatomy per realm, parameterized only by module name (derived from each file's own `<title>`): kvw console/tenant/gov/admin realm gets icon+title+body with a danger-colored flag SVG (byte-studied off W431-435's own precedent); kvs storefront/kvo ops/kvk kiosk realms get a plainer strong+p shape, no icon, no button (byte-studied off W282/W284, generalized to kvo/kvk's own existing card anatomy where no flagged-off precedent existed in-realm). Every insertion carries a trailing `<!-- flagged-off state added at BODY-1 (§6 completion pass) -->` marker comment. **W273-store-home.html hand-built separately** (0/6 states — no "Screen states" section existed at all, so the mass tool correctly left it untouched rather than inventing a section) — now 6/6, its flagged-off card using the platform's real `group_lots` feature flag (grep-verified in `krishalaya/db/seeds/core/0009_feature_flags.sql:5`) as the worked example, not an invented one.
 **QA (independent) VERDICT: PASS.** Every number re-derived from scratch: `py_compile` clean on both tools; post-execute dry-run of `body1_flagged_off.py --mode insert`/`--mode exempt` reproduced 0 remaining targets and 0 manual (idempotency proven); all 392 `targets_written` run-log entries verified byte-exact against on-disk files (exact card text at the exact recorded offset, exact bytes_before/bytes_after) — not a 3-file sample, all 392 checked, 0 mismatches; all 28 exemption markers verified byte-exact against the hand-enumerated arbitration list; regression sweep `tag_balance`/`no_script`/`hex_audit --profile console` all 435/435, matching the builder's claim; an 8-file cross-realm sample (kvw incl. gov, kvs, kvo, kvk) independently read and confirmed well-formed (balanced nesting, correct trailer, sensible module name). **3 cosmetic defects found and fixed**: W113/W114/W115's inserted card carried the tool's hardcoded 8-space indent against those 3 files' own 6-space sibling-card convention (whitespace only — tag balance unaffected) — normalized, re-verified clean. **1 honesty correction**: the empty-state debt independently recomputes to **243 files** missing the `empty` state (435 total − 192 present = 243), not the informally-estimated 244 — corrected here and in the tracker/memory rather than carried forward.
 **DEBT QUEUED, NOT SILENTLY ABSORBED.** **BODY-1.2** — empty-state pass, 243 files, census-driven (re-run `qa_gates.py --profile console --checks states_coverage` against `body1_states_census_after.json`'s own `empty: false` files to regenerate the exact list at any time). **BODY-1.3** — 8 files with NO "Screen states" section at all, left deferred rather than force-built: W265-partner-onboarding, W274-store-tenant-home, W314-store-queued-actions, W315-store-sync-center, W318-tenant-offline-canon, W320-store-degraded-service, W364-ops-pos-exceptions, W365-ops-pos-shift (a 9th such file, W273, is resolved — hand-built at this same batch).
-**BODY-1 COMPLETE, QA-PASSED (packaged) — PASS, 3 cosmetic fixes, 1 honesty correction, 0 regressions.** **§17/NEXT**: Phase N continues per `Design_Program/09_DP3_PENDING_DESIGN_MASTER.md` — BODY-1.2/BODY-1.3/BODY-2 (learner education)/BODY-5 (live-site honesty) — or the founder names a batch; APPLY-1 (language pilot) also unblocked. Touched files: 421 web-screens (392 scripted + 28 exemption-marked + 1 hand-built) stay in place at `Phase-1 all screen design/Krishi_Verse_Design_System/web-screens/`; the 4 tool/record artifacts (script + 2 census JSONs + run log) are packaged separately in `files_design_batch_BODY-1.zip`.
+**BODY-1 COMPLETE, QA-PASSED (packaged) — PASS, 3 cosmetic fixes, 1 honesty correction, 0 regressions.** **§17/NEXT**: Phase N continues per `Design_Program/09_DP3_PENDING_DESIGN_MASTER.md` — BODY-1.2/BODY-1.3/BODY-2 (learner education)/BODY-5 (live-site honesty) — or the founder names a batch; APPLY-1 (language pilot) also unblocked. Touched files: 421 web-screens (392 scripted + 28 exemption-marked + 1 hand-built) stay in place at `Phase-1 all screen design/Krishalaya_Design_System/web-screens/`; the 4 tool/record artifacts (script + 2 census JSONs + run log) are packaged separately in `files_design_batch_BODY-1.zip`.
 
 ## BODY-1.2 — Empty-state pass across web-screens (Phase N continues) — web-screens/ (content-mapped mass fix, closing the debt BODY-1 queued)
 | ID | Page | Key finding | Notes |
@@ -11715,7 +11715,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 **THE CONTENT-MAPPING METHOD (the realism guarantee).** Unlike BODY-1's flagged-off pass (one fixed template phrase, module name substituted), contract §7 bans generic empty-state filler, so BODY-1.2's card content is per-file: `body1_2_build_mapping.py` reads each file's OWN `<title>` module, `<h1>`, page-header action labels, and nearest list/table heading, then applies two rules — **(1) own-object naming**: the card's subject is the real noun the list describes (a sub-list heading, the collection name), never the generic word "items"; **(2) own-CTA-reuse**: a button is only reused verbatim from the page's OWN existing action label, and only when clicking it in an empty state is the real, sensible way to populate exactly this list (a "New X"/"Add X" action whose object matches, or the literal population mechanism) — queue-processing verbs and destructive/instance actions (Suspend, Block, Approve ₹X, **Declare breach**) are never reused as empty-state CTAs, so 88 of the 105 written cards are explain-only by design, not a missed opportunity. Card anatomy is byte-studied per realm (kvw: icon+title+body+optional button off W001/W002/W004/W005; kvs: strong+p, no icon, off W280/W282; kvo/kvk: strong+p without the kvs inline-padding override, generalizing BODY-1's own precedent) — verified this session via `tag_balance`/`no_script` PASS on all 435 files and a byte-delta spot-check against 5 of the 105 `targets_written` run-log entries (2 legitimately differ from the log's original figures — see honest correction record below; 3 matched exactly).
 **THE HONEST CORRECTION RECORD (a process win, not a cover-up).** (a) **28 titles missed the DETECTOR's own vocabulary** on the first `--execute` pass — e.g. "Nothing completed yet" doesn't satisfy `STATE_EMPTY_RE` because "Nothing" only matches before to/awaiting/queued/submitted/moving/due/owed/monitored, not arbitrary verbs — 27 were reworded to match the regex, 1 (W043, see below) got an additional copyedit; all 28 independently reconfirmed this session (`body1_2_mapping.json`'s 211 titles now all satisfy `STATE_EMPTY_RE`, verified by re-running the detector against the mapping's own title strings). (b) **An accidental duplicate `--execute` during manual testing** (not a design flaw — a human/agent testing error) re-inserted a SECOND card into the 10 files whose title still failed to match the regex after the first title-correction round (the script's own idempotency check IS that same regex, so a title that still didn't match failed to protect itself on the second run); the other 18 title-corrected files' body text happened to independently satisfy the regex, so they were correctly skipped on the accidental second run. **Duplicate-strip completeness independently verified this session**: grepped all 435 files for the `<!-- empty state added at BODY-1.2 -->` marker — exactly 211 files carry it, and every one of those 211 carries it **exactly once** (0 files with 2+ markers), including all 10 named strip files (W073, W093, W095, W116, W143, W146, W160, W187, W203, W210) confirmed individually at marker-count=1. (c) **W043-admin-breaches.html copyedit**: "No breaches recorded yet" → "No breaches declared yet" (the page's own verb is "Declare breach", so "declared" matches the page's own language where "recorded" didn't) — the card deliberately does **not** reuse the page's real "Declare breach" CTA (verified still present verbatim, page-actions bar) per Rule 2's destructive/instance-action exclusion: declaring a breach is a serious, single-fact legal disclosure, not a list-population action, and an empty-state button inviting an admin to "declare a breach" just to fill a compliance register would be the wrong nudge. **This reasoning was NOT originally annotated anywhere** — the run log documented the wording change but not the CTA-withholding rationale; this QA pass added explicit annotations to both `body1_2_run_log.json` (`cta_withholding_reasoning` field) and `body1_2_build_mapping.py` (inline comment at the W043 entry) so the judgment call has a durable, inspectable record. The idempotency-discipline catching its own accidental duplicate (rather than a human happening to notice it) is the process win worth keeping: the same live-regex-recheck doctrine that caused the duplicate (title didn't match, so the "already inserted" check failed to protect itself) is exactly what let this QA pass mechanically prove, in seconds, that the cleanup was complete.
 **QA (independent) VERDICT: PASS.** Every number re-derived from scratch, not trusted from the run log: `py_compile` clean on both new tools; dry-run of `body1_2_empty_state.py` reproduced 0 remaining targets, 211/435 already-empty (idempotency proven); fresh `body1_2_census.py` run byte-identical to `body1_2_census_after.json`; 0 regressions on the 5 non-empty states (recomputed by diffing every file against `body1_states_census_after.json`, not sampled); `tag_balance`+`no_script` 435/435 PASS full directory; 8 BODY-1.3 no-section files and all 28 exempt files confirmed absent from `targets_written`/mapping (untouched); 15-card content sample (5 CTA-reuse, 7 explain-only across kvw/kvs/kvo/kvk realms and queue/analytics/detail content classes, 3 hand-review cases W027/W115/W300 — note W027/W115 were pre-existing `already_has_empty` files, not new BODY-1.2 insertions, correctly classified as such) — every CTA label confirmed verbatim elsewhere in its own file (grep count ≥2), every object name matched the page's own real content, every explain-only body factual and §7-toned (no "just/approx", no blame, no invented features). **1 defect found and fixed**: the W043 CTA-withholding judgment (a real, correct call) had no durable reasoning trail — annotated in both the run log and the mapping script (see above); no code or content changes required, annotation only. **1 observation (not a defect)**: on-disk mtimes show all 211 applicable files share a write-timestamp cluster distinct from the untouched control files' original build time, including the 106 "already_has_empty" files the run log describes as untouched by this script — spot-checked (W003's pre-existing "No recent activity" card) and confirmed genuinely well-formed and correctly placed either way; flagged here for completeness, does not change the verdict.
-**§17/NEXT**: Phase N continues per `Design_Program/09_DP3_PENDING_DESIGN_MASTER.md` — BODY-1.3 (8 no-section files — the last states debt) / BODY-2 (learner education) / BODY-5 (live-site honesty) / BODY-6 (quality-debt sweep) — or APPLY-1 (language pilot). Touched files: 211 web-screens (105 scripted insertions + 106 pre-existing, all under `body1_2_applicable.json`'s scope) stay in place at `Phase-1 all screen design/Krishi_Verse_Design_System/web-screens/`; the 5 tool/record artifacts (2 scripts + mapping JSON + run log + census JSON) are packaged separately in `files_design_batch_BODY-1.2.zip`.
+**§17/NEXT**: Phase N continues per `Design_Program/09_DP3_PENDING_DESIGN_MASTER.md` — BODY-1.3 (8 no-section files — the last states debt) / BODY-2 (learner education) / BODY-5 (live-site honesty) / BODY-6 (quality-debt sweep) — or APPLY-1 (language pilot). Touched files: 211 web-screens (105 scripted insertions + 106 pre-existing, all under `body1_2_applicable.json`'s scope) stay in place at `Phase-1 all screen design/Krishalaya_Design_System/web-screens/`; the 5 tool/record artifacts (2 scripts + mapping JSON + run log + census JSON) are packaged separately in `files_design_batch_BODY-1.2.zip`.
 
 ## BODY-1.3 — STATES DEBT CLOSED — web-screens/ (the last 8 no-section files: arbitrate-or-build, pipeline v5)
 | ID | Page | Key finding | Notes |
@@ -11726,7 +11726,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 **CONTENT-REAL BUILD (§7 discipline, byte-studied per realm).** W265 uses the `kvw-card kvw-table-state` icon-gallery anatomy (byte-studied off W215/W269's own precedent, including their exact icon SVGs for empty/error/denied/flagged) — states are grounded in the page's own settlement-account/penny-drop/narration-code/signatory-step objects (e.g. denied = "Step locked — signatory not confirmed", reusing the wizard's own step-2 gate; flagged-off = digital penny-drop verification not offered to gold-loan/NBFC partner classes, who use the page's own "Raise it with support" manual path instead). W274 uses the `kvs-card` anatomy (byte-studied off W273's own hand-built section, same realm, same grid-2-column layout) — states reuse the page's own tenant name, listing count, and "Group lots" nav category (denied = "members-only" lots left off the public view; flagged-off = this storefront's own group-lots category switched off, mirroring W273's group_lots flag pattern one level down at the tenant). W364/W365 use the plainer `kvo-grid`/`kvo-card` strong+p anatomy (byte-studied off the sibling kiosk-realm file W360, not the fuller kvw icon gallery W366/W367 use — W364/W365 are body-class "store" but kvo-shell touch screens, the lighter kiosk realm, same as W360-363) — states reuse each page's own domain objects: W364's denied is its own "Duplicate-pour override" card, now explicitly locked to supervisor PIN; W365's error is its own "BMC load-cell reading" failing to fetch, and denied is its own "operator + member-witness" two-line signature requirement. Every insertion carries the trailing `<!-- states section added at BODY-1.3 (§6 completion) -->` marker.
 **BUILD SELF-TEST (2026-07-21, this batch's own agent — independent QA still to follow per pipeline v5).** Direct pasted-grep proof: scanned all 435 files for `aria-label="Screen states"` OR `QA-STATES-EXEMPT` — **0 files carry neither** (was 8, now 0). `qa_gates.py --profile console --checks states_coverage --expect-files 435`: all 8 target files individually `[PASS]` — the 4 exempted read `EXEMPT-PASS: class=canon-definition — …` with the declared reasoning, the 4 built read the full `present: default_populated,loading,empty,error,denied,flagged_off`. Zero-regression proof: diffed all 435×6 state booleans, `body1_2_census_after.json` vs a fresh `body1_3_census_after.json` run of the exact same census tool — **0 flips from true→false anywhere**. `tag_balance` 435/435 PASS, `no_script` 435/435 PASS, full directory, both re-run fresh this session (not trusted from a prior log).
 **THE TRILOGY SUMMARY (BODY-1 → BODY-1.2 → BODY-1.3, contract §6's 6-state canon over 435 web-screens):** flagged-off **9→402** (2.1%→92.4%, BODY-1) · empty **192→403** (44.1%→92.6%, BODY-1.2) · no-section **8→0** (100% closed, BODY-1.3) · the `QA-STATES-EXEMPT` non-applicability convention ratified and now carries 32 files across 6 classes (5 auth-shell, **10** canon-definition — 6 from BODY-1 + 4 added this batch, 5 static-marketing, 2 terminal-screen, 10 kiosk-pos-step). **Honestly quantified remainder, NOT silently absorbed:** a mechanical re-scan (`qa_gates.py --profile console --checks states_coverage`) over the full 435-file directory finds **100 files** (none of them from this 8-file set, none newly regressed) still short of full 6-state coverage on a *partial* basis — every one of the 100 already carries a "Screen states" section (this was the no-section debt this batch closed), but is missing one or more of: **denied (74 files)**, **error (40 files)**, **loading (33 files)** — concentrated in the store/kiosk realms per the census. This is **BODY-1.4**'s scope: deepening existing-but-incomplete states sections, a different shape of debt than any of the three batches above (no-section vs missing-card vs incomplete-card).
-**§17/NEXT**: Phase N menu — BODY-2 (learner education) / BODY-5 (live-site honesty) / BODY-6 (quality-debt sweep) / **BODY-1.4** (loading-error-denied deepening, 100 files: denied 74 / error 40 / loading 33) — or APPLY-1 (language pilot). Touched files: 8 web-screens (4 exemption-marked, 4 hand-built) stay in place at `Phase-1 all screen design/Krishi_Verse_Design_System/web-screens/`; the 1 tool/record artifact (census script + its output JSON) is packaged separately in `files_design_batch_BODY-1.3.zip`.
+**§17/NEXT**: Phase N menu — BODY-2 (learner education) / BODY-5 (live-site honesty) / BODY-6 (quality-debt sweep) / **BODY-1.4** (loading-error-denied deepening, 100 files: denied 74 / error 40 / loading 33) — or APPLY-1 (language pilot). Touched files: 8 web-screens (4 exemption-marked, 4 hand-built) stay in place at `Phase-1 all screen design/Krishalaya_Design_System/web-screens/`; the 1 tool/record artifact (census script + its output JSON) is packaged separately in `files_design_batch_BODY-1.3.zip`.
 **QA (independent) VERDICT: PASS.** All 4 exemptions (W314/W315/W318/W320) independently read — each genuinely documents its own states/sync/offline/degraded canon as its stated subject, marker wording matches the W313/W316/W317/W319 sibling convention exactly. All 4 hand-built files (W265/W274/W364/W365) independently read — realm-true anatomy confirmed (kvw icon-card for W265, kvs-card for W274, plain kvo-card for W364/W365 matching sibling W360), every state's content grounded in objects verbatim-findable elsewhere in the same file (penny-drop/signatory-step, Anand FPO/group-lots, duplicate-pour, BMC load-cell/member-witness), §7-toned, no filler, trailing BODY-1.3 marker present on all 4. `qa_gates.py --checks states_coverage` re-run fresh: all 8 files individually PASS (4 EXEMPT-PASS, 4 full 6/6). Reproduced from scratch: `tag_balance`+`no_script` 435/435 PASS; direct scan confirms 0 non-exempt no-section files (was 8); diff of `body1_2_census_after.json` vs a fresh `body1_3_census_after.json` re-run shows 0 regressions (0 true→false flips across all 435×6). Trilogy numbers independently recomputed and confirmed exact: flagged-off 9→402, empty 192→403, no-section 8→0. BODY-1.4 debt independently recomputed from the census JSON and confirmed exact: denied 74 / error 40 / loading 33 (100 files, concentrated in store/ops-kiosk realms). Catalog/tracker/memory entries checked against the recomputed numbers — accurate, no discrepancies. **0 defects, 0 regressions, 0 P0/P1.**
 
 ## BODY-1.4 — STATES CANON 100% — web-screens/ (loading/error/denied deepening, the last shape of the BODY-1 states debt, pipeline v5)
@@ -11741,7 +11741,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 **BUILD SELF-TEST (this batch's own agent, 2026-07-21).** Dry-run then execute, both clean: **100/100 files written, 0 manual-locator-failures, 147 cards inserted** (33 loading + 40 error + 74 denied), 66,632 bytes added — matching the pre-computed mapping counts exactly. Idempotency proven: an immediate second dry-run finds all 100 files "already OK" (live-rechecked via `qa_gates.detect_states`) and previews 0 further insertions. Fresh `body1_4_census.py` run: **403/403 applicable files now 6/6** — the census assertion this batch existed to reach, with 0 files missing any of the 6 states. Zero-regression proof: diffed all 435×6 state booleans between `body1_3_census_after.json` and `body1_4_census_after.json` — **0 flips true→false anywhere**, exactly **147 flips false→true** (matching the 147 cards written, no more, no fewer). `qa_gates.py --profile console --checks states_coverage --expect-files 435`: **OVERALL PASS** — the directory-wide FAIL BODY-1.3 honestly reported is gone; this was the exact gap this batch existed to close. `qa_gates.py --checks tag_balance,no_script --expect-files 435`: **435/435 PASS** both checks, full directory.
 **THE 10-CARD DENIED HAND-REVIEW (§7 copywriter pass — explain the fix, never blame).** Sampled across all applicable realms and gating types: W007/W012 (scope-token gates), W117/W146 (role/segregation-of-duties gates), W275 (licensing/region gate), W288 (sign-in gate), W380/W392 (kiosk device/supervisor gates), W422 (privacy-by-design aggregate-only gate), W343 (audit-logged masking gate). All 10 read as explanatory, not blaming: each names the mechanism (a scope token, a maker-checker rule, a licensing boundary, a training flag, a supervisor PIN, an audit-logged reveal) and, where relevant, states what remains visible/usable rather than issuing a bare "access denied." No invented role name appears in any of the 10 that wasn't already present in that file's own copy.
 **STATES CANON 100% — the BODY-1 quartet complete: every applicable web screen (403 of 435, the other 32 lawfully exempt under `QA-STATES-EXEMPT`) now renders all 6 §6 states.** Quartet summary over contract §6's full canon: flagged-off **9→402** (BODY-1) · empty **192→403** (BODY-1.2) · no-section **8→0** (BODY-1.3) · partial-section (loading/error/denied) **100→0** (BODY-1.4). This closes the states-debt line of work opened at BODY-1 — no further §6 states gap remains anywhere in the 435-file web-screens canon.
-**§17/NEXT**: Phase N menu — BODY-2 (learner education) / BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 100 web-screens (each receiving 1–3 new cards, all pre-existing content untouched) stay in place at `Phase-1 all screen design/Krishi_Verse_Design_System/web-screens/`; the 4 tool/record artifacts (mapping script + mapping JSON + insertion script + run log + census script + census JSON) are packaged in `files_design_batch_BODY-1.4.zip`.
+**§17/NEXT**: Phase N menu — BODY-2 (learner education) / BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 100 web-screens (each receiving 1–3 new cards, all pre-existing content untouched) stay in place at `Phase-1 all screen design/Krishalaya_Design_System/web-screens/`; the 4 tool/record artifacts (mapping script + mapping JSON + insertion script + run log + census script + census JSON) are packaged in `files_design_batch_BODY-1.4.zip`.
 **BUILD SELF-TEST VERDICT: PASS** (build agent, pipeline v5) — 0 regressions, 435/435 tag_balance/no_script, 403/403 applicable at 6/6, 0 manual-locator-failures, idempotency proven, 10-card denied §7 review clean. Independent QA agent to follow per pipeline v5.
 **QA (independent Review-Agent, 2026-07-21) VERDICT: PASS WITH 1 FIX.** Reproduced from scratch, all exact: `qa_gates.py --profile console --checks states_coverage --expect-files 435` → OVERALL PASS, 403/403 non-exempt at 6/6, 32 EXEMPT-PASS; `body1_4_census.py` re-run byte-identical to the packaged `body1_4_census_after.json`; diff vs `body1_3_census_after.json` → 0 true→false flips, exactly 147 false→true (denied 74/error 40/loading 33), matching the mapping's 147 state-card entries exactly; trailing-comment grep = 147 across 100 files, 0 mismatches per-file; `body1_4_states.py` dry-run → 0 targets (fully idempotent); `tag_balance`/`no_script` 435/435 PASS; 5 sampled byte-deltas (W007/W012/W114/W117/W119) match `body1_4_run_log.json` exactly. Content sample of 12 cards found 1 defect (not 0, contra the build agent's "10-card review... no invented role" claim): **W392-ops-aeps-exceptions.html's denied card cited "duplicate-pour override / supervisor's PIN" — verbatim W364's (MCC POS dairy) own access fact, wrongly pasted onto W392, an unrelated AePS/fingerprint kiosk screen with no pour content of its own** — fixed in place (title/body replaced with W392's own device-not-RD-certified fact, mirroring sibling W391's grounded card; `body1_4_mapping.json` updated to match; annotated with a QA-FIX comment) and reverified: still 403/403, still PASS, 0 further regressions. The other 11 sampled cards (W007/W012 scope-token reuse, W380 kiosk_enabled/training_completed_at reuse, W117/W146/W422/W343 role-fact reuse, W275/W296 storefront gating, kvw/kvs/kvk loading+error anatomy) were independently verified verbatim-grounded, §7-toned, Retry present on errors. Packaging verified: `files_design_batch_BODY-1.4.zip` = 6 files exactly (per `unzip -l`); catalog/tracker numbers otherwise accurate.
 
@@ -11759,7 +11759,7 @@ Escalations to founder: §17 bilingual-language-sufficiency mandate for packaged
 
 Backend-pending: `education` feature flag (0009_feature_flags.sql, is_enabled=false, OFF until launch) — every screen above is designed at-launch-ready and populated per §6, not gated visually. Object continuity verified against instructor canon W410–W419 and tenant CMS W178/W179 (same Anand FPO tenant, same Dr. Kalpana Joshi/Clean Milk Production/Groundnut/Silage objects, byte-consistent names). M14 (education) is now two-sided: instructor authoring (W410–W419, tenant-side) + learner consumption (539–546, farmer-side).
 **BUILD SELF-TEST (2026-07-21).** `qa_gates.py --profile mobile --expect-files 8`: OVERALL PASS (no_script 8/8, tag_balance 8/8, hex_audit 8/8 zero-unrecognized, pii_patterns 8/8 zero-unmasked, physical_props 8/8, law_numbering clean, file_count 8/8) — reached after 3 fixes found during self-test: (1) 546's `.lcc-cert-kind` used `text-align:right` (physical property) → changed to `text-align:end`; (2) 546's WhatsApp CTA used the literal brand hex `#25D366` → changed to `var(--color-success)` per WA-012's own explicit "no WA trade-dress hex" rule (grep-found, not guessed); (3) 543's bare "4 of 4" progress span false-triggered the `law_numbering` aggregate-badge check (mistaking a quiz progress label for a "Law N of M" documentation series) → reworded to "Question 4 of 4" (leading non-digit text breaks the false match, no meaning lost). Object-continuity grep table (course/lesson/instructor names) confirmed byte-consistent across all 8 files and against W410/W412/W413/W417/W419/W178/W179 source screens — 0 mismatches. Independent QA agent to follow per pipeline v5.
-**§17/NEXT**: Phase N menu — BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 8 new mobile screens at `Phase-1 all screen design/Krishi_Verse_Design_System/screens/` (539–546); packaged in `files_design_batch_BODY-2.zip`.
+**§17/NEXT**: Phase N menu — BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 8 new mobile screens at `Phase-1 all screen design/Krishalaya_Design_System/screens/` (539–546); packaged in `files_design_batch_BODY-2.zip`.
 
 ## BODY-3 — USSD channel deepening (3→7 artifacts) + auditor console deepening (2→4 screens), pipeline v5
 | ID | Role | Module | DB tables / lookups | Key fields/enums | Notes |
@@ -11773,7 +11773,7 @@ Backend-pending: `education` feature flag (0009_feature_flags.sql, is_enabled=fa
 
 Object continuity verified: USSD-003's `pending_approval` matches screens/524/525 exactly; USSD-005's dispute_reason/dispute_status/order_status and USSD-004's payout_status are all ENUM-EXACT against `Database_Architecture/full_platform/04_commerce.sql` + `05_money.sql` + `db/seeds/core/0005_lookup_vocabularies.sql`; W436/W437's GST and scheme figures are the SAME numbers already shown on W059/W202, not freshly invented. Farmer-hands OTP doctrine ("Every committing step is the farmer's own OTP.") cited verbatim from `collateral/COL-015-ambassador-field-kit.html` in both USSD-003 and USSD-006.
 **BUILD SELF-TEST (2026-07-21).** `qa_gates.py --profile templates --expect-files 7` on `templates/ussd/`: OVERALL PASS (no_script/tag_balance/hex_audit/pii_patterns/physical_props/law_numbering/media_queries/file_count all clean, 7/7 files incl. USSD-000/001/002 untouched). `qa_gates.py --profile console --checks states_coverage,no_script,tag_balance,hex_audit,pii_patterns,currency_glyphs,media_queries,law_numbering --expect-files 2` on the 2 new W-files: OVERALL PASS, states_coverage 6/6 both files — 1 self-caught fix (W436's empty-card title reworded "No transactions match this range" to hit the detector's vocabulary). Arithmetic independently recomputed in Python: 8×₹2,560=₹20,480; ledger legs −44,660+1,340+43,320=0, −638+638=0, −12,820+12,820=0; GST split 2,06,090+2,06,090=4,12,180; refund 2×₹620=₹1,240 — all exact. Independent QA agent to follow per pipeline v5.
-**§17/NEXT**: Phase N menu — BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 4 new USSD templates at `Phase-1 all screen design/Krishi_Verse_Design_System/templates/ussd/` (USSD-003..006) + 2 new web-screens at `.../web-screens/` (W436/W437) + 2 small in-page cross-link edits (W200/W201, unchanged sidebar); packaged in `files_design_batch_BODY-3.zip`.
+**§17/NEXT**: Phase N menu — BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 4 new USSD templates at `Phase-1 all screen design/Krishalaya_Design_System/templates/ussd/` (USSD-003..006) + 2 new web-screens at `.../web-screens/` (W436/W437) + 2 small in-page cross-link edits (W200/W201, unchanged sidebar); packaged in `files_design_batch_BODY-3.zip`.
 **QA (independent, 2026-07-21) VERDICT: PASS WITH 1 FIX** — DP1 conformance, schema-truth (0012_engagement.sql/0009 flag/0005 course_topic registry), and object continuity vs W410–419/W178/W179 re-verified byte-exact; `qa_gates.py --profile mobile --expect-files 8` reproduced OVERALL PASS. 1 defect fixed: 546's cert Doc ID/verify-link revealed 2 trailing digits (`CERT-2026-••••42`), contradicting its own claim of matching DOC-019's fully-masked `••••` convention — corrected to `CERT-2026-••••` in both places; re-verified PASS, zip repackaged.
 **BODY-3 QA (independent Review-Agent, 2026-07-21) VERDICT: PASS WITH 2 RECORD FIXES, 0 design-file defects** — canon conformance (≤6-item menus every screen, no-OTP-via-USSD honored, *123#/helpline present all 4 files, DELTA-056 both-script honesty, one-write-path/root-0-Help/9-code paging/₹0.00-wallet/no-sidebar-retrofit judgment calls all verified reasonable, not refailed); 6 sampled screens' char/182 badges and GSM-7 class independently recomputed exact match; `dispute_reason`(9)/`dispute_status`(7)/`payout_status`(6)/`order_status` byte-checked against `04_commerce.sql`/`05_money.sql`/`0005_lookup_vocabularies.sql` — exact; W436's 3 ledger foots (−44,660+1,340+43,320=0; −638+638=0; −12,820+12,820=0) and W437's GST split (2,06,090+2,06,090=4,12,180, ties W059's real `gst_payable` exactly) recomputed exact; all 3 cited transactions confirmed on W200; states_coverage 6/6 both files (qa_gates PASS); `qa_gates.py --profile templates`/`--profile console` both OVERALL PASS; portal (7 USSD cards, +2 tenant cards) and zip (6 flat files) verified correct. 2 minor record-keeping miscounts found and fixed in tracker/memory self-test text (`9133` was ×5, actually ×6; `dispute_reason` was ×9, actually ×5) — no design HTML changed.
 
@@ -11785,19 +11785,19 @@ Object continuity verified: USSD-003's `pending_approval` matches screens/524/52
 | SITE-027-compare-agriwebb | public site visitor | Comparison hub | identical citations to SITE-025/011 | 7 `{{verified: ...}}` slots, AgriWebb-tailored (incl. a livestock-vs-farm-to-fork traceability-scope question, never answered), + 1 ideal-customer slot | instance 3 of 3 |
 
 **THE GAP THIS CLOSES.** SITE-012 (SITE-3) shipped a reusable comparison-page template plus a 3-row "filled-slug queue" (ninjacart/farmart/agriwebb, all QUEUED — not yet built) and SITE-010's hub cards pointed all three at that template with a "Queued instance" CTA. This batch instantiates all 3 into full pages, completing the competitor-page set at 4 of 4 (DeHaat + Ninjacart + Farmart + AgriWebb).
-**BUILD.** Each new file is structurally byte-consistent with SITE-011 (the one prior fully-drawn precedent): identical 7-row OUR-capability spine (same citations, same order), hero fit-framing + respect line byte-copied, who-is-each-for (OUR side reused verbatim from SITE-011; competitor side a single `{{verified: ideal-customer profile}}` slot), switching/migration section identical to SITE-011's own QA-corrected version (W045-admin-compliance-exports.html lines 60-61/76, `tenant_full_export` self-serve export job), 5-question FAQ (every answer about Krishi Verse or the page's own methodology, never the competitor), CONTENT GATE chip (§17) + trademark/nominative-use note both byte-copied, comparison law + trust-page law verbatim on the rail (fresh "N of 3 this batch: BODY-4" occurrence series, distinct snippet text from SITE-3's own "N of 5" series — zero law_numbering collision, confirmed by direct qa_gates re-run). The ONLY per-competitor content is the 7 `{{verified}}` capability-cell questions + 1 ideal-customer-profile slot — each tailored to name the SPECIFIC thing to check (e.g. "does Ninjacart offer a white-label/multi-tenant console...?", "is AgriWebb's traceability scope livestock/compliance record-keeping only, or farm-to-fork...?") without ever asserting what the answer is. Nav/footer logo is the post-G0-R1 inline `<svg>` glyph, byte-copied from SITE-011/024 (not the retired text-"K"). Batch-constant footer: "Phase N (BODY-4): comparison set complete — 4 of 4 competitor pages (1 filled example + 3 verified-slot instances awaiting the CONTENT GATE)."
+**BUILD.** Each new file is structurally byte-consistent with SITE-011 (the one prior fully-drawn precedent): identical 7-row OUR-capability spine (same citations, same order), hero fit-framing + respect line byte-copied, who-is-each-for (OUR side reused verbatim from SITE-011; competitor side a single `{{verified: ideal-customer profile}}` slot), switching/migration section identical to SITE-011's own QA-corrected version (W045-admin-compliance-exports.html lines 60-61/76, `tenant_full_export` self-serve export job), 5-question FAQ (every answer about Krishalaya or the page's own methodology, never the competitor), CONTENT GATE chip (§17) + trademark/nominative-use note both byte-copied, comparison law + trust-page law verbatim on the rail (fresh "N of 3 this batch: BODY-4" occurrence series, distinct snippet text from SITE-3's own "N of 5" series — zero law_numbering collision, confirmed by direct qa_gates re-run). The ONLY per-competitor content is the 7 `{{verified}}` capability-cell questions + 1 ideal-customer-profile slot — each tailored to name the SPECIFIC thing to check (e.g. "does Ninjacart offer a white-label/multi-tenant console...?", "is AgriWebb's traceability scope livestock/compliance record-keeping only, or farm-to-fork...?") without ever asserting what the answer is. Nav/footer logo is the post-G0-R1 inline `<svg>` glyph, byte-copied from SITE-011/024 (not the retired text-"K"). Batch-constant footer: "Phase N (BODY-4): comparison set complete — 4 of 4 competitor pages (1 filled example + 3 verified-slot instances awaiting the CONTENT GATE)."
 **UPDATE.** SITE-010-comparisons.html: the 3 competitor cards' CTA flipped from `SITE-012...#slug` / "Queued instance (template) →" to the new page / "See the full comparison →"; the paragraph below the card grid rewritten; both edits marked `<!-- EDITED at BODY-4 -->`. SITE-012-compare-template.html: the filled-slug queue table's 3 status cells flipped "QUEUED — not yet built" → "instantiated at BODY-4 (SITE-0NN) — awaiting CONTENT GATE" (linked); its own self-test row updated to match, prior wording quoted for continuity; THE TEMPLATE LAW band, the all-`{{placeholder}}` mock, and the 3 usage-rules laws are byte-untouched.
 **COMPETITOR-NAME SCAN (programmatic, pasted).** Each new file: 44 total occurrences of its own competitor name. Classification (regex-scanned, `§1`-cite window vs `{{verified}}`-adjacent window vs name-only): 1 §1-citation, 13 inside/immediately-adjacent-to a `{{verified: ...}}` slot, 30 name-only (title/hero/breadcrumb/nav/FAQ-question-headers/trademark-note/self-test-prose/claims-table labels — manually spot-checked, zero predicates asserting a competitor fact in any of the 30). Zero ✗/✓ in any competitor column. Zero superiority language ("faster/cheaper/#1/only platform") anywhere.
 **BUILD SELF-TEST (2026-07-21).** `qa_gates.py --profile site --expect-files 3` on the 3 new files: no_script/currency_glyphs/physical_props/tag_balance/law_numbering/footer_constancy/media_queries/pii_patterns/file_count all PASS. `qa_gates.py --profile site` on the 3 new files + edited SITE-010/SITE-012 (5 files): same PASS set holds; hex_audit FAILs on all 5 with the identical pre-existing hex set (`#0a3d1f`/`#15803d`/`#fff` — the copied `--site-green-700`/`--site-green-deep` custom-property values + white) — independently confirmed via a direct pre-edit re-run of `qa_gates.py --profile site` against the ORIGINAL, untouched SITE-010/011/012 that this same hex_audit FAIL already existed there, byte-for-byte identical unrecognized set; noted as pre-existing debt, not fixed, per this batch's own scope. tag_balance PASS on all 5 touched/new files.
 **JUDGMENT CALLS, documented not silent:** (a) the nav's "Compare" entry keeps SITE-011's literal "NEW this batch" chrome label byte-consistent with the copied anatomy, even though these 3 files were built at BODY-4/Phase N, not SITE-3 — an accepted anachronism in the copied nav chrome, not a silent drift. (b) SITE-010/SITE-012's own docstabs/footer link lists were left unedited (out of the spec's explicit UPDATE scope — only the 3 competitor cards and the queue table were touched); the new files' own docstabs instead cross-link the full 8-page compare family. (c) The trust-page-law and comparison-law "N of M" occurrence annotations on the 3 new files mint a fresh "N of 3 this batch (BODY-4)" series rather than continuing SITE-3's own "N of 5" numbering, to avoid any risk of a law_numbering dupe/hole across the two unrelated batches sharing the same law text.
-**§17/NEXT**: Phase N menu — BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 3 new site pages at `Phase-1 all screen design/Krishi_Verse_Design_System/site/` (SITE-025/026/027) + 2 small annotated edits (SITE-010 competitor cards, SITE-012 queue table); packaged in `files_design_batch_BODY-4.zip`.
+**§17/NEXT**: Phase N menu — BODY-5 (live-site honesty) / BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files: 3 new site pages at `Phase-1 all screen design/Krishalaya_Design_System/site/` (SITE-025/026/027) + 2 small annotated edits (SITE-010 competitor cards, SITE-012 queue table); packaged in `files_design_batch_BODY-4.zip`.
 **BUILD SELF-TEST VERDICT: PASS** (build agent, pipeline v5) — 0 asserted competitor facts (44/44/44 occurrences classified, zero predicates), laws byte-identical ×3 checked, tag_balance 5/5, hex_audit pre-existing debt confirmed not a regression. Independent QA agent to follow per pipeline v5.
 **INDEPENDENT QA VERDICT (2026-07-21): PASS WITH 1 FIX** — competitor scan redone independently (44/44/44 occurrences/file, re-classified name-only/§1-cite/`{{verified}}`-slot, zero predicates); AgriWebb traceability-scope slot specifically checked and confirmed phrased as an either/or question, not a presupposition; comparison law + trust-page law byte-diffed exact vs SITE-010/SITE-000 ×3; SITE-010/SITE-012 edits confirmed surgical (cards/queue-cells + annotations only, template law band byte-untouched); `qa_gates.py --profile site` re-run clean (hex_audit FAIL reproduced identically, pre-existing); footer batch-constant ×3, portal 28 cards, zip 3 flat files all confirmed. 1 defect fixed: SITE-025/026/027 row-1 OUR-cell had drifted to "enforced at **the** DB layer" vs SITE-011's "enforced at DB layer" — corrected to exact byte match in all 3 files; zip repackaged.
 
 ## BODY-5 — Live-site honesty reconciliation: Q27 executed across the production website (20 pages + i18n + main.js), pipeline v5
 | Surface | Claim families found | Resolution | Notes |
 |---|---|---|---|
-| `krishi-verse_website/index.html` | fake press-logo strip; hero/impact-band invented metrics (10K+/312/500+/22/₹25Cr/₹84Cr/98%); named testimonial; 18hr logistics claim; 21-language pill grid | removed / TARGET-framed / illustrative / 3-language | hero-stats + impact band rebuilt around 6 capability facts (dedicated experiences/access channels/languages live/price-share target) |
+| `krishalaya_website/index.html` | fake press-logo strip; hero/impact-band invented metrics (10K+/312/500+/22/₹25Cr/₹84Cr/98%); named testimonial; 18hr logistics claim; 21-language pill grid | removed / TARGET-framed / illustrative / 3-language | hero-stats + impact band rebuilt around 6 capability facts (dedicated experiences/access channels/languages live/price-share target) |
 | `about.html` | "22 Indian languages"; 10-year milestone map (Year 1=2026=today) presented as achieved | corrected; TARGET chip + "Target:" prefix every year row | COL-017 razor + chip styling reused byte-for-byte |
 | `careers.html` / `contact.html` | "22 Indian languages" job line; "24×7 support in 22 languages"; 3 fake regional offices (headcounts+addresses) | corrected; 3 offices → "Planned · Not yet open" placeholders | HQ card real address kept, headcount claim dropped |
 | `farmers.html` / `ambassadors.html` | "10,000+ farmers" claims; named Patel-bhai testimonial; ambassador program's own invented-metric family (312 villages/6 districts/₹28K avg/3 named testimonials/38% women stat) | illustrative reframe + TARGET labels | ambassador page's fabrication was its own separate family, resolved in parallel with the site-wide known-4 |
@@ -11814,8 +11814,8 @@ Object continuity verified: USSD-003's `pending_approval` matches screens/524/52
 **THE GAP THIS CLOSES.** `SITE-000-site-canon.html` (SITE-1) carried its own judgment-call comment since the site batch flagging the live production site's invented achievement metrics as a "pre-existing honesty gap for a future site content batch to resolve." G0-2 Q27 then ruled explicitly: "walk the claims back — honesty is law, not taste." This batch is that resolution.
 **METHOD.** 14+ regex claim-families scanned across all 20 HTML pages + 6 `i18n_*.js` files + `main.js`, producing 60 distinct findings in `body5_claims_audit.json` (classified INVENTED-METRIC / UNVERIFIABLE / OK-canon-true / OK-vision-target-framed). Every invented claim was resolved one of four ways: removed, TARGET-reframed (COL-017 razor + amber chip, byte-consistent styling), illustrative-reframed (labeled persona, not a real named customer), or replaced with a true statement (forward SLA/policy commitment, or the real 3-language i18n truth). Forward SLA/policy commitments (48-hour payment, 4-hour press response, escrow timing, credit thresholds) and public third-party facts (₹50 Lakh Cr agri-economy size, government "10,000 FPO" mission) were left untouched throughout — OK-canon-true, not achieved-history claims.
 **BUILD SELF-TEST (2026-07-21).** `node --check` clean on all 7 touched JS files. Tag-balance sanity (div/section/a/p/h1/h2/h3/ul/li) clean on all 17 touched HTML files. Repo-wide grep for the known-4 family returns zero unframed occurrences (remaining hits are inside TARGET-chip blocks or JS header comments). Language picker confirmed at exactly 3 `LANGUAGES` entries. LOGO-2 state re-verified, not redone: inline `<svg>` glyph present in `main.js` NAV_HTML/FOOTER_HTML; `rel="icon"` present on all 20 pages; `assets/site.webmanifest` exists, referenced site-wide.
-**JUDGMENT CALLS, documented not silent:** (a) forward SLA/policy claims left untouched (mechanism promise ≠ achieved-history claim); (b) public market-size stats left untouched (third-party fact, not a Krishi-Verse performance claim); (c) blog.html's editorial-preview cards reframed (date + overlapping-fabrication fixes) rather than deleted, since forthcoming-content framing is a lighter-touch category, but held to the same bar once overlapping an established fabrication; (d) fpos.html/buyers.html dashboard mockups kept as labeled "Sample data"/"(illustrative)" UI mockups rather than removed, per standard SaaS marketing convention.
-**§17/NEXT**: Phase N menu — BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files (build pass): 17 HTML pages + 7 JS files at `krishi-verse_website/`, listed above; `spec_body5.md` + `body5_claims_audit.json` at `Design_Program/specs_v3/`; packaged in `files_design_batch_BODY-5.zip` (audit JSON + spec only — site edits stay in place at their live paths). QA fix pass additionally touched `terms.html` + `privacy.html` (outside the build pass's 17-file scope — see QA verdict below) — 19 HTML pages total now carry BODY-5 edits; zip contents unchanged (spec + audit JSON only, re-verified 2/2 flat files).
+**JUDGMENT CALLS, documented not silent:** (a) forward SLA/policy claims left untouched (mechanism promise ≠ achieved-history claim); (b) public market-size stats left untouched (third-party fact, not a Krishalaya performance claim); (c) blog.html's editorial-preview cards reframed (date + overlapping-fabrication fixes) rather than deleted, since forthcoming-content framing is a lighter-touch category, but held to the same bar once overlapping an established fabrication; (d) fpos.html/buyers.html dashboard mockups kept as labeled "Sample data"/"(illustrative)" UI mockups rather than removed, per standard SaaS marketing convention.
+**§17/NEXT**: Phase N menu — BODY-6 (quality sweep) / BODY-7 (platform-staff home) — or APPLY-1 (language pilot). Touched files (build pass): 17 HTML pages + 7 JS files at `krishalaya_website/`, listed above; `spec_body5.md` + `body5_claims_audit.json` at `Design_Program/specs_v3/`; packaged in `files_design_batch_BODY-5.zip` (audit JSON + spec only — site edits stay in place at their live paths). QA fix pass additionally touched `terms.html` + `privacy.html` (outside the build pass's 17-file scope — see QA verdict below) — 19 HTML pages total now carry BODY-5 edits; zip contents unchanged (spec + audit JSON only, re-verified 2/2 flat files).
 **BUILD SELF-TEST VERDICT: PASS** (build agent, pipeline v5) — node --check 7/7, tag-balance 17/17, known-4 repo-wide grep zero unframed, picker 3/3 languages, LOGO-2 intact. Independent QA agent to follow per pipeline v5.
 **INDEPENDENT QA VERDICT (2026-07-21): PASS WITH 8 FIXES** — full residual sweep of all 20 pages + 6 i18n JS files (incl. hi/gu strings) for the known-4 + ratings/awards/funding/VCs/press/accuracy%/"trusted by"/future-dating found 8 survivors the build pass missed, all fixed in place: (1) `about.html`'s separate "Our Presence" office grid (undetected duplicate of the `contact.html` fake-office family — 5 non-existent offices with fabricated street addresses/opening dates/emails) rewritten to honest "Planned/Target · Not yet open," no addresses; (2) `case-studies.html` `<title>`/meta still asserted "Real stories from real farms" + fabricated ₹38L/GCC claims as fact despite the honest body copy — rewritten; (3) `consumers.html` meta retained the exact "30-40% cheaper than supermarkets" claim the body had walked back — fixed; (4) `ambassadors.html` meta said "Phase-1 rollout active," contradicting the body's honest "applications open" — fixed; (5) `blog.html` meta claimed "India's leading agricultural intelligence platform" (unverifiable, pre-launch) — fixed; (6) `terms.html` + `privacy.html` (not in the original 17-file/60-finding scope) both carried a future-dated "Last updated: December 1, 2026" relative to system date 2026-07-21 — the same fabrication class press.html/blog.html were fixed for — corrected to "No revisions yet"; (7) `index.html`'s own static markup (the data-i18n fallback text, i.e. what a no-JS visitor or view-source audit sees) still read "30-40% cheaper than supermarkets" and "Phase-1 active" verbatim even though the corresponding i18n dictionary entries were already fixed — static text corrected to match; (8) `i18n_pages.js`'s `page.blog.hero.lead` EN/hi/gu dict values said "Updated weekly" (a false achieved-cadence claim silently overwriting blog.html's honest "preview, not live yet" disclaimer via `applyTranslations()` on every page load) — corrected in all 3 languages; `i18n_ambassadors.js` hi/gu additionally had `home.persona.ambassador.desc` mistranslated as "Phase-1 active"/"ફેઝ-1 સક્રિય" (should track the English "applications open") — corrected. Mechanical re-verification post-fix: `node --check` clean on all 7 JS files, tag-balance clean on all 20 HTML pages (not just the 17), favicon/manifest present on all 20, LANGUAGES registry still exactly 3 and NOT_YET_LIVE never selectable (picker code traced), one i18n key (`page.about.hero.tag`) traced end-to-end confirming lookup + fallback works. Noted, not blocking: `assets/i18n.js`'s own `TRANSLATIONS` object still carries the pre-Q27 mr/ta/te/kn/ml/bn/pa blocks (unlike the 5 page-extension files) — dead code, unreachable via the picker (LANGUAGES=3), not user-facing, left alone. The 60-finding audit JSON is otherwise accurate — no gaps found in its classification of what it did cover, only in pages/tags outside its stated scope.
 
@@ -11835,8 +11835,8 @@ Object continuity verified: USSD-003's `pending_approval` matches screens/524/52
 | W438-admin-staff-home | admin/(staff)/home | roles (scope platform), user_tenant_roles, staff_permission_overrides (read, same tables as W104) | role codes exact (super_admin/support_agent/auditor/ai_ops) | DELTA-025 (unchanged — `user_tenant_roles.tenant_id` NOT NULL has no clean platform-scope home; this screen is the design fix, the storage question stays open) |
 | W439-admin-staff-security | admin/(staff)/security | `sessions`, `devices`, `audit_log`, `users.last_active_at` (all real); FIDO2 key rows target a table that does not exist | session/device fields exact; FIDO2 key rows illustrative-shape only | **DELTA-066 (new, this batch)** — no `fido2_credentials`/`webauthn_credentials` table anywhere in schema (grepped: 5 file matches for fido2/webauthn/passkey/credential across `db/migrations/*.sql`, all incidental generic "credential" mentions — 0 of the 5 are a credential table; QA re-verified) |
 
-**GROUNDING.** DELTA-025's original filing: `DP2_TRACKER.md` BODY-7 header + W-D12 checklist item 6 ("W104 staff — FIDO2 enforced, DELTA-025, dormant auto-suspend") + this catalog's own W104 row (line 10522: "DELTA-025 platform-staff home"); G0-3 adjudication (`KRISHI_VERSE_MASTER_CONTEXT.md`): "DELTA-025 queued as a named small batch, Phase N BODY-7." **W104-admin-staff.html read in full** — the facts this batch must not contradict: 31 active staff, **31/31 FIDO2-enrolled**, enforced at login, 4h sessions; roles super_admin 3/support_agent 18/auditor 4/ai_ops 6 = 31; 9 permission overrides; **dormant>30d, auto-suspend at 45d** (N=45 reused verbatim, not re-derived); deactivation law ("sessions killed, keys unbound, open work reassigned… before the exit conversation, not after"). Desk counts cited on W438 pulled from their real source screens: W005 (148 open, 3 P0 SLA-breaching), W006 (2 open mismatches, ₹18,450), W089 (86 open reports, 7 appeals pending). Contract §12 ("FIDO2/step-up for admin realm", immutable audit, maker-checker) and §4 admin-realm chrome (gold top border + ADMIN pill, `.realm-admin` class) reused byte-for-byte from W104's own chrome. Golden Law 11 (least-privilege RBAC, permission-denied designed) drives W438's locked quick-link tiles.
-**SCHEMA GROUNDING (pasted grep, `krishi-verse/db/migrations/0003_identity_access.sql` + `0014_platform_ops_security.sql`).** Real tables reused: `roles`(scope platform CHECK), `permissions`, `role_permissions`, `user_tenant_roles`, `staff_permission_overrides`, `users.last_active_at`, `devices`, `sessions`(device_id/ip/expires_at/revoked_at), `login_events`(method otp\|refresh\|assisted), `audit_log`(actor_user_id/actor_role/action/entity_type/entity_id/old_value/new_value/reason, partitioned). Absent: no FIDO2/WebAuthn credential table exists anywhere — `grep -rli "webauthn|fido2|passkey|credential" krishi-verse/db/migrations/*.sql` → 5 file matches, all incidental generic "credential" prose (Secrets-Manager refs, provider-health note, DB credentials, eKYC provider validity), 0 of which is an actual fido2_credentials/webauthn_credentials table (QA re-grepped and read each hit, 2026-07-21). W439's per-key list is the honest target shape, banner-flagged, not silently invented as real rows — same doctrine W104 already used for DELTA-025. **DELTA-066 filed** (fido2_credentials table: user_tenant_role_id, key_label, credential_id_hash, added_at, last_used_at, revoked_at, revoked_by, revoke_reason) — next number after the highest existing (`DELTA-065`, confirmed via full-tracker grep). Step-up log rides the real `audit_log` table (action=`staff.step_up_verified`) — legitimate reuse, not a gap.
+**GROUNDING.** DELTA-025's original filing: `DP2_TRACKER.md` BODY-7 header + W-D12 checklist item 6 ("W104 staff — FIDO2 enforced, DELTA-025, dormant auto-suspend") + this catalog's own W104 row (line 10522: "DELTA-025 platform-staff home"); G0-3 adjudication (`KRISHALAYA_MASTER_CONTEXT.md`): "DELTA-025 queued as a named small batch, Phase N BODY-7." **W104-admin-staff.html read in full** — the facts this batch must not contradict: 31 active staff, **31/31 FIDO2-enrolled**, enforced at login, 4h sessions; roles super_admin 3/support_agent 18/auditor 4/ai_ops 6 = 31; 9 permission overrides; **dormant>30d, auto-suspend at 45d** (N=45 reused verbatim, not re-derived); deactivation law ("sessions killed, keys unbound, open work reassigned… before the exit conversation, not after"). Desk counts cited on W438 pulled from their real source screens: W005 (148 open, 3 P0 SLA-breaching), W006 (2 open mismatches, ₹18,450), W089 (86 open reports, 7 appeals pending). Contract §12 ("FIDO2/step-up for admin realm", immutable audit, maker-checker) and §4 admin-realm chrome (gold top border + ADMIN pill, `.realm-admin` class) reused byte-for-byte from W104's own chrome. Golden Law 11 (least-privilege RBAC, permission-denied designed) drives W438's locked quick-link tiles.
+**SCHEMA GROUNDING (pasted grep, `krishalaya/db/migrations/0003_identity_access.sql` + `0014_platform_ops_security.sql`).** Real tables reused: `roles`(scope platform CHECK), `permissions`, `role_permissions`, `user_tenant_roles`, `staff_permission_overrides`, `users.last_active_at`, `devices`, `sessions`(device_id/ip/expires_at/revoked_at), `login_events`(method otp\|refresh\|assisted), `audit_log`(actor_user_id/actor_role/action/entity_type/entity_id/old_value/new_value/reason, partitioned). Absent: no FIDO2/WebAuthn credential table exists anywhere — `grep -rli "webauthn|fido2|passkey|credential" krishalaya/db/migrations/*.sql` → 5 file matches, all incidental generic "credential" prose (Secrets-Manager refs, provider-health note, DB credentials, eKYC provider validity), 0 of which is an actual fido2_credentials/webauthn_credentials table (QA re-grepped and read each hit, 2026-07-21). W439's per-key list is the honest target shape, banner-flagged, not silently invented as real rows — same doctrine W104 already used for DELTA-025. **DELTA-066 filed** (fido2_credentials table: user_tenant_role_id, key_label, credential_id_hash, added_at, last_used_at, revoked_at, revoked_by, revoke_reason) — next number after the highest existing (`DELTA-065`, confirmed via full-tracker grep). Step-up log rides the real `audit_log` table (action=`staff.step_up_verified`) — legitimate reuse, not a gap.
 **BUILD.** W438 = staff's own landing (first-person "you/your"), distinct from W104 (roster) and W105 (role definitions): FIDO2 session strip (key verified, step-up age 22m/next-due 3h38m against the 4h law, session expiry), dormancy warning (demonstrates a teammate, Ravi T./auditor, at day 44/45 — **QA-corrected**: originally read "day 22/45, not yet dormant," contradicting W104's own roster badge for this same person/date ("dormant 14d" = 14 days past the day-30 threshold = day 44); fixed to match W104's source-of-truth row — own account day 0/45, not a false alarm on self), 4 my-work tiles each citing its real desk + a realistic subset count (Support 12/148, Recon 1/2, Moderation 6/86, Approvals 2 pending-checker), a live `kvw-approval` maker-checker card, and a least-privilege quick-links grid where 3 of 8 tiles render **locked** ("needs the `super_admin` role") per Golden Law 11 — not hidden. W439 = staff security self-service: 1 registered FIDO2 key with masked add/revoke, **last-key lockout guard** (revoke disabled + explicit warning copy, matching W104's deactivation law), dormancy policy card (30d dormant / 45d auto-suspend / `users.last_active_at` / reactivation path), step-up log (4 rows, immutable-audit footnote citing §12), active sessions (2 rows, current-device revoke disabled, masked IP, reason-required revoke + audit note).
 **BUILD SELF-TEST (2026-07-21).** `qa_gates.py --profile console` on both new files individually: OVERALL PASS, `states_coverage` 6/6 both (`present: default_populated,loading,empty,error,denied,flagged_off`) — no fixes needed, vocabulary matched on first pass (verified against `qa_gates.py`'s own `detect_states()` regexes before writing, not guessed after). `qa_gates.py --profile console --checks states_coverage,tag_balance,no_script,hex_audit --expect-files 439` on the full `web-screens/` directory: **file_count 439/439 exact**, OVERALL PASS, zero regressions on the pre-existing 437 files. Object/desk-count continuity re-grepped directly against source: W005 "Open 148"/"SLA breaching 3", W006 "open mismatches 2"/"₹18,450", W089 "Open reports 86" — all byte-match what W438 cites. Independent QA agent to follow per pipeline v5.
 **JUDGMENT CALLS (documented, not silent):** (1) DELTA-066 minted for the FIDO2-credential table gap, following the exact DELTA-025 precedent (banner, not invented rows). (2) "Approvals pending" tile is a UI aggregation of existing maker-checker touchpoints (W104's "Invite staff (checker)", W105's role diff) — no dedicated `approvals` table exists, stated as such, not a new schema claim. (3) Dormancy N=45 reused verbatim from W104, not re-derived. (4) Step-up log rides `audit_log` (real reuse, not a gap). (5) No sidebar retrofit of W104/W105/W106/W099 to cross-link the 2 new pages — same judgment call BODY-3 made for W436/W437, accepted by that batch's independent QA; W438/W439's own sidebars carry the full nav incl. each other and W104.
@@ -11878,7 +11878,7 @@ Phase N ("finish the body: coverage + states debt found by G0-1/G0-2 audit") ope
 
 **PHASE M OPENED.** This is the first batch of Phase M (variant application to the 973-screen body: language/RTL/dark-mode/senior-mode/tablet/country-pack). Next: APPLY-2…5 (2 languages per batch) / APPLY-6 RTL / APPLY-7 dark mode / APPLY-8 senior mode / APPLY-9 tablet / APPLY-10 country pack — or Phase O HAND-1.
 
-**INDEPENDENT QA VERDICT (2026-07-21, Review-Agent — APPLY-1): CONDITIONAL PASS → fixed → PASS.** Structural fidelity re-verified on 5 sampled variants (difflib structure-sequence diff vs source, banner/font/lang-attr insertions excluded) — all differences explainable (machine-draft banner insertion, added `aria-label` translations, the documented gu→English gloss judgment call, lang-tagged unit spans) with zero unexplained layout/class drift; 5 SOURCE files re-hashed, byte-identical pre/post. `qa_gates.py --profile mobile` re-run: 15/15 PASS on tag_balance/no_script/pii_patterns; banner/provenance/`lang="mr"` all grep-recounted at 15/15. Expansion audit independently recomputed via `apply1_expansion_audit.py`: 187/187 pairs, 0 flags, all mitigations (LIVE reverts, क्वि. abbreviations) confirmed physically present in the files. Template length sample independently recomputed (python-true): EM-002 31/50 + 65/90, SMS 84→100 chars / 1→2 UCS-2 segments, PU-001 16/40 + 115/120 — all match. Recipe cross-checked against source law: BRAND-015 confirms Bengali–Assamese shared script (as rides bn's font free) verbatim; `audit_w51.py`'s `[ऀ-ॿ]` regex and `tokens.css:113`'s `--font-body-hi` both confirmed real and unmodified. **1 P1 found and fixed**: `52-farmer-mandi-prices.html`'s `.vern` gloss line had survived as unmitigated Hindi ("आज का मंडी भाव") mistagged `lang="mr"` — a genuine Hindi-bleed-through defect (this screen wasn't one of the 5 files the batch's own judgment-call #1 named for gloss handling, so it was missed; `09-farmer-home.html`'s equivalent `.vern` span WAS correctly translated to Marathi and was used as the fix precedent — corrected to "आजचे मंडईतील दर"). **1 P2 found and fixed**: the packaged `files_design_batch_APPLY-1.zip` shipped only the recipe/spec/audit docs and was missing all 15 `screens/lang-mr/*.html` deliverable files — repackaged to include them (21 files total), matching every prior batch's flat-HTML convention. **1 P2 record-keeping fix**: the expansion-audit's "12 overflow-risk flags found on first run" claim didn't match its own mitigation log's itemized entries (sum to 10) — corrected in the script, JSON, catalog, and tracker; the underlying 0-flags-remaining conclusion was already correct and unaffected. Language-quality read (5 files, native-register review): natural, farmer-respectful Marathi throughout — correct copula (आहे, never है), correct agri vocabulary (क्विंटल/मंडी/प्रति क्विंटल used correctly), correct register-specific greeting (नमस्कार, not Hindi नमस्ते), never-translate glossary held (Krishi-Verse/KrishiMitra, Lokwan/Sharbati/Teja, order/dispute IDs), numerals Western, money format intact — zero further Hindi bleed-through found after the one fix above (grep-swept for है/हैं/नहीं/में/को/रहा/रही/अपनी/अपना/चाहिए and Hindi postpositions का/की/के across all 15 files, all clean). No other defects.
+**INDEPENDENT QA VERDICT (2026-07-21, Review-Agent — APPLY-1): CONDITIONAL PASS → fixed → PASS.** Structural fidelity re-verified on 5 sampled variants (difflib structure-sequence diff vs source, banner/font/lang-attr insertions excluded) — all differences explainable (machine-draft banner insertion, added `aria-label` translations, the documented gu→English gloss judgment call, lang-tagged unit spans) with zero unexplained layout/class drift; 5 SOURCE files re-hashed, byte-identical pre/post. `qa_gates.py --profile mobile` re-run: 15/15 PASS on tag_balance/no_script/pii_patterns; banner/provenance/`lang="mr"` all grep-recounted at 15/15. Expansion audit independently recomputed via `apply1_expansion_audit.py`: 187/187 pairs, 0 flags, all mitigations (LIVE reverts, क्वि. abbreviations) confirmed physically present in the files. Template length sample independently recomputed (python-true): EM-002 31/50 + 65/90, SMS 84→100 chars / 1→2 UCS-2 segments, PU-001 16/40 + 115/120 — all match. Recipe cross-checked against source law: BRAND-015 confirms Bengali–Assamese shared script (as rides bn's font free) verbatim; `audit_w51.py`'s `[ऀ-ॿ]` regex and `tokens.css:113`'s `--font-body-hi` both confirmed real and unmodified. **1 P1 found and fixed**: `52-farmer-mandi-prices.html`'s `.vern` gloss line had survived as unmitigated Hindi ("आज का मंडी भाव") mistagged `lang="mr"` — a genuine Hindi-bleed-through defect (this screen wasn't one of the 5 files the batch's own judgment-call #1 named for gloss handling, so it was missed; `09-farmer-home.html`'s equivalent `.vern` span WAS correctly translated to Marathi and was used as the fix precedent — corrected to "आजचे मंडईतील दर"). **1 P2 found and fixed**: the packaged `files_design_batch_APPLY-1.zip` shipped only the recipe/spec/audit docs and was missing all 15 `screens/lang-mr/*.html` deliverable files — repackaged to include them (21 files total), matching every prior batch's flat-HTML convention. **1 P2 record-keeping fix**: the expansion-audit's "12 overflow-risk flags found on first run" claim didn't match its own mitigation log's itemized entries (sum to 10) — corrected in the script, JSON, catalog, and tracker; the underlying 0-flags-remaining conclusion was already correct and unaffected. Language-quality read (5 files, native-register review): natural, farmer-respectful Marathi throughout — correct copula (आहे, never है), correct agri vocabulary (क्विंटल/मंडी/प्रति क्विंटल used correctly), correct register-specific greeting (नमस्कार, not Hindi नमस्ते), never-translate glossary held (Krishalaya/KrishiMitra, Lokwan/Sharbati/Teja, order/dispute IDs), numerals Western, money format intact — zero further Hindi bleed-through found after the one fix above (grep-swept for है/हैं/नहीं/में/को/रहा/रही/अपनी/अपना/चाहिए and Hindi postpositions का/की/के across all 15 files, all clean). No other defects.
 
 ## APPLY-2…5 — bn/te/ta/as/pa/kn/ml/or, the remaining 8-language rollout (ALL 9 §7 TARGET LANGUAGES NOW RENDERED — mr+8), pipeline v5
 
@@ -11950,7 +11950,7 @@ All 40 remaining flags are short function-words/produce-names whose shortest cor
 - **Tooling-bug investigation (no data corruption found, closed clean).** APPLY-4's report found and fixed a real bug in its own new expansion-audit scripts: the inherited strip order (style/script blocks stripped before HTML comments) could swallow real markup when a provenance comment's own prose contained the literal substring `<style`, silently zeroing extraction on 2 kn files (`03-otp.html`, `09-farmer-home.html`, both 0/187 pairs on first run). APPLY-5 independently found and fixed the identical bug in its own scripts. **Checked whether APPLY-2 (bn/te) and APPLY-3 (ta/as) — which never fixed this in their own scripts — silently suffered the same corruption:** confirmed the bug IS latently present in all 4 of those scripts (same buggy strip order), and confirmed by direct regex simulation that bn's `01-welcome.html` provenance comment does contain the collision string and does get its `<head>`/status-bar/banner markup incorrectly swallowed when parsed with the original strip order. However, re-running the full audit for **all 4 languages (bn, te, as, ta)** with both the original (buggy) and fixed (comments-first) strip order produced **byte-identical results in every case** — same `compared_pairs` (187/187 for all 4) and same flag counts (bn 0, te 1, as 0, ta 11) under both orders, because the swallowed markup in every affected file happened to fall outside the button/chip/title element classes the audit tracks. **Conclusion: apply2/apply3's published audit numbers are correct and unaffected by the latent tooling bug** — this was independently verified by direct simulation, not assumed from the absence of a reported symptom.
 - **Recompute spot-checks (python-true, independent):** ta's 3-segment OTP claim (135 chars, UCS-2, `ceil(135/67)=3`) recomputed and confirmed exact; kn (101→2), pa (95→2), as (98→2) also recomputed and confirmed exact as a bonus.
 
-**5. Mechanical.** `qa_gates.py --profile mobile` re-run on all 8 dirs: only `physical_props` fails, and it fails with **identical per-file hit-counts** to the English source screens (directly re-diffed side-by-side: `01-welcome.html` 2 hits both, `09-farmer-home.html` 2 hits both, `112-...-detail.html` 2 hits both, etc.) — confirmed pre-existing, source-inherited, byte-identical CSS never touched by any language batch, not a regression. Every other check (no_script, currency_glyphs, tag_balance, law_numbering, hex_audit, pii_patterns, file_count) PASS 15/15 all 8 dirs. Zero source modification: sha256 of 4 sampled source files (01-welcome, 09-farmer-home, 112-my-listing-detail, 529-senior-mode) matches apply5_report.md's own recorded baseline exactly, prefix-for-prefix. No shared-record races: `DP2_TRACKER.md`'s APPLY-2..5 STATE block sat unflipped (⬜ rows) exactly as the builders' reports claimed, `SCREEN-DATA-CATALOG.md` and `KRISHI_VERSE_MASTER_CONTEXT.md` carried no APPLY-2..5 content before this entry, and the portal `index.html` had zero APPLY mentions — confirmed no builder wrote to shared records.
+**5. Mechanical.** `qa_gates.py --profile mobile` re-run on all 8 dirs: only `physical_props` fails, and it fails with **identical per-file hit-counts** to the English source screens (directly re-diffed side-by-side: `01-welcome.html` 2 hits both, `09-farmer-home.html` 2 hits both, `112-...-detail.html` 2 hits both, etc.) — confirmed pre-existing, source-inherited, byte-identical CSS never touched by any language batch, not a regression. Every other check (no_script, currency_glyphs, tag_balance, law_numbering, hex_audit, pii_patterns, file_count) PASS 15/15 all 8 dirs. Zero source modification: sha256 of 4 sampled source files (01-welcome, 09-farmer-home, 112-my-listing-detail, 529-senior-mode) matches apply5_report.md's own recorded baseline exactly, prefix-for-prefix. No shared-record races: `DP2_TRACKER.md`'s APPLY-2..5 STATE block sat unflipped (⬜ rows) exactly as the builders' reports claimed, `SCREEN-DATA-CATALOG.md` and `KRISHALAYA_MASTER_CONTEXT.md` carried no APPLY-2..5 content before this entry, and the portal `index.html` had zero APPLY mentions — confirmed no builder wrote to shared records.
 
 **THE LANGUAGE WALL IS DOWN.** All 9 of contract §7's target languages (mr/bn/te/ta/as/pa/kn/ml/or) now have machine-draft renders of the same 15-screen farmer core journey. Native-review gates (TS-003 §d `reviewed_by`) remain the explicit, un-cleared gate before any of these 9 is LIVE rather than TARGET — this batch, like APPLY-1, produces strings ready for that review, not launch-ready copy.
 
@@ -11958,17 +11958,17 @@ All 40 remaining flags are short function-words/produce-names whose shortest cor
 
 **Builder:** 1 implement-agent, following `Design_Program/14_LANGUAGE_RECIPE.md` + BRAND-017's ratified RTL implementation plan (gate-32b, G0-2 Q37). **Independent QA + records consolidation: this entry (2026-07-21, Review-Agent).**
 
-**RTL IS REAL.** Krishi Verse's first right-to-left language ships as 15 recipe screens (`screens/lang-ar/`, `dir="rtl" lang="ar"`) plus a console proof (`web-screens/lang-ar/W128-tenant-listings-bulk.html`), and — for the first time — BRAND-017's long-PROPOSED `[dir="rtl"]` CSS patches are APPLIED for real into the shipping system canon (`system/screen.css`, `system/web/web-components.css`), not just demonstrated in a brand-book `<pre>` block. BRAND-017 itself was surgically updated (PROPOSED→APPLIED chips, gate-32b marked RATIFIED per G0-2 Q37, two self-test rows annotated "Superseded at APPLY-6") — verified present and accurate.
+**RTL IS REAL.** Krishalaya's first right-to-left language ships as 15 recipe screens (`screens/lang-ar/`, `dir="rtl" lang="ar"`) plus a console proof (`web-screens/lang-ar/W128-tenant-listings-bulk.html`), and — for the first time — BRAND-017's long-PROPOSED `[dir="rtl"]` CSS patches are APPLIED for real into the shipping system canon (`system/screen.css`, `system/web/web-components.css`), not just demonstrated in a brand-book `<pre>` block. BRAND-017 itself was surgically updated (PROPOSED→APPLIED chips, gate-32b marked RATIFIED per G0-2 Q37, two self-test rows annotated "Superseded at APPLY-6") — verified present and accurate.
 
 **1. CSS patches (system scope, highest risk).** Read `system/screen.css` + `system/web/web-components.css` + `system/web/web-frame.css` in full: every new/edited rule is scoped `[dir="rtl"]` (the `.icon-mirrors` utility's unscoped line is the documented no-op default `transform:none`, flipping only under `[dir="rtl"]`) — zero unscoped physical-property additions confirmed by direct read, matching BRAND-017's own patch-block text verbatim (diffed against the `<pre class="proof-pre">` source in `brand/BRAND-017-rtl-implementation.html`). `web-frame.css` line 195 confirmed correctly annotated PRE-EXISTING (not a new APPLY-6 rule). BRAND-017's PROPOSED→APPLIED flips (patch-block heading, gate-32b heading, 2 "Superseded at APPLY-6" self-test rows) all verified present and worded accurately. **LTR-unchanged re-proof (independently re-run, not just trusted):** `qa_gates.py --checks tag_balance,no_script,pii_patterns,physical_props` on the full English `screens/` (546 top-level files): 347 fail-lines / 345 unique files — matches the report's claimed 346/546 baseline (off by one file, immaterial, same pre-existing physical-CSS/aadhaar-false-positive condition, zero new failures introduced). Full `web-screens/` (439 files): exactly 4 fail (W062/W063/W064/W065, aadhaar-shaped-number false positives) — byte-exact match to the report's claim. Sha/mtime spot-check confirmed: `screens/01-welcome.html` (Jul 8, untouched), `system/tokens.css` (May 31, untouched), `screens/lang-mr/01-welcome.html` (Jul 21 18:39, predates this session's 22:31–22:54 edit window) — all consistent with the claimed zero-collateral-damage scope.
 
-**2. The ar set — recounted, not just trusted.** All 15 files carry `dir="rtl" lang="ar"`, `.md-banner-ar` (15/15, 1 actual element each), and `.md-chip` per-block watermarks — independently recounted at the actual-element level (excluding CSS-rule/comment string hits): **75 total**, per-file breakdown byte-identical to the report's table (3/5/6/6/6/4/6/4/5/6/6/5/4/6/3). Bidi isolation (`.bidi{direction:ltr;unicode-bidi:isolate}`) recounted the same way: **90 total**, per-file breakdown also byte-identical to the report. Sampled 4 bidi blocks (money/UTR/timestamp cells in 59-farmer-payout-history and 12-my-listings): CSS rule present and correct, content inside genuinely LTR-run (₹ amounts, UTR digit strings, dates) — not a mislabeled Arabic span. Arabic-Indic digit scan (`٠-٩`, U+0660–0669) across all 15 mobile files + W128: **zero occurrences** — Western numerals confirmed (Q51). Never-translate glossary held (Krishi-Verse/KrishiMitra, crop-variety codes Lokwan/Sharbati/Teja/Jeera/Bold kept Latin, dispute/order IDs, UTR digits). Logo mark (01-welcome, the only file carrying one) confirmed never-mirrored — no class on the wheat-glyph `<svg>`, explicit "NEVER MIRRORS" comment retained. Back-arrow/chevron icons across all 15 files correctly carry `.icon-mirrors`. **Arabic language-quality sample (4 files: 01-welcome, 52-farmer-mandi-prices, 440-farmer-dispute-respond, 530-farmer-krishimitra-home):** natural, professional MSA farmer/dispute register throughout — correct imperative verb forms, correct agreement, correct agri vocabulary (قنطار/مندي used with an explicit `{{unit-term review}}` flag on the Gulf ar-AE ambiguity, exactly as claimed — not silently normalized), no gibberish, glossary-Latin variety names correctly preserved inline with translated produce nouns (e.g. "كمون — Jeera", "قمح — Lokwan"). No further `{{unit-term review}}` flags needed.
+**2. The ar set — recounted, not just trusted.** All 15 files carry `dir="rtl" lang="ar"`, `.md-banner-ar` (15/15, 1 actual element each), and `.md-chip` per-block watermarks — independently recounted at the actual-element level (excluding CSS-rule/comment string hits): **75 total**, per-file breakdown byte-identical to the report's table (3/5/6/6/6/4/6/4/5/6/6/5/4/6/3). Bidi isolation (`.bidi{direction:ltr;unicode-bidi:isolate}`) recounted the same way: **90 total**, per-file breakdown also byte-identical to the report. Sampled 4 bidi blocks (money/UTR/timestamp cells in 59-farmer-payout-history and 12-my-listings): CSS rule present and correct, content inside genuinely LTR-run (₹ amounts, UTR digit strings, dates) — not a mislabeled Arabic span. Arabic-Indic digit scan (`٠-٩`, U+0660–0669) across all 15 mobile files + W128: **zero occurrences** — Western numerals confirmed (Q51). Never-translate glossary held (Krishalaya/KrishiMitra, crop-variety codes Lokwan/Sharbati/Teja/Jeera/Bold kept Latin, dispute/order IDs, UTR digits). Logo mark (01-welcome, the only file carrying one) confirmed never-mirrored — no class on the wheat-glyph `<svg>`, explicit "NEVER MIRRORS" comment retained. Back-arrow/chevron icons across all 15 files correctly carry `.icon-mirrors`. **Arabic language-quality sample (4 files: 01-welcome, 52-farmer-mandi-prices, 440-farmer-dispute-respond, 530-farmer-krishimitra-home):** natural, professional MSA farmer/dispute register throughout — correct imperative verb forms, correct agreement, correct agri vocabulary (قنطار/مندي used with an explicit `{{unit-term review}}` flag on the Gulf ar-AE ambiguity, exactly as claimed — not silently normalized), no gibberish, glossary-Latin variety names correctly preserved inline with translated produce nouns (e.g. "كمون — Jeera", "قمح — Lokwan"). No further `{{unit-term review}}` flags needed.
 
 **3. Console proof (W128) — 1 defect found + fixed (documentation-only).** Confirmed: no local `[dir="rtl"]` CSS added in the file (only a provenance-comment mention of the pre-existing/newly-applied system rules); sidebar/table/breadcrumb mirroring genuinely consumed from system CSS, zero per-file direction hacks. `.md-chip` recount: 5 actual elements (matches). Bidi recount: 11 actual elements (matches). **`.md-banner-ar` recount: 1 actual element** — the report's own text said "3 `.md-banner-ar` markers", which was the raw string-occurrence count (comment + CSS rule + 1 real element), not the element count; the underlying build is correct (1 banner, as intended), only the report's phrasing was imprecise — corrected in `apply6_report.md`. **`.icon-mirrors`: 0 actual elements, not 1 as originally claimed** — grepped the file directly; the only occurrence of the string `icon-mirrors` is inside the provenance comment, no element in the markup carries `class="icon-mirrors"`. Read the full file to confirm this isn't a missed-mirror defect: W128 has no back-arrow or disclosure-chevron element anywhere in its markup (sidebar nav icons are non-directional category glyphs; the breadcrumb separator is a pure CSS `::before{content:"/"}`, not an icon) — there was genuinely nothing on this screen needing the class, so the console-CSS-mirrors proof itself is unaffected. **Fixed:** `apply6_report.md` §4 corrected to state the true counts (1 banner element / 0 icon-mirrors elements, with the reasoning above) instead of the inaccurate "3 markers / 1 icon" claim.
 
 **4. Audits — independently re-run, not just read.** `apply6_ar_expansion_audit.py` re-executed fresh: **187/187 pairs**, first-run 44 → after regex fix 10 → final 5 flags — byte-identical to the report's claimed numbers. `apply6_ar_template_length_sample.py` re-executed fresh: EM-002 subject 31/50, preheader 59/90; SMS-001 OTP ar 93 chars/UCS-2/2 segments vs en 84 chars/GSM-7/1 segment; PU-001 title 18/40, body 90/120 — all match exactly.
 
-**5. Mechanical.** `qa_gates.py --profile mobile --checks tag_balance,no_script,pii_patterns --recursive` on `screens/lang-ar/`: **PASS 15/15** all three checks. Same checks on `web-screens/lang-ar/`: **PASS 1/1** (W128). No shared-record races: `DP2_TRACKER.md`'s APPLY-6 STATE block sat unflipped (⬜ rows) exactly as expected before this entry; `SCREEN-DATA-CATALOG.md` and `KRISHI_VERSE_MASTER_CONTEXT.md` carried no APPLY-6 content before this entry; the portal `index.html` had zero `lang-ar`/W128 mentions — confirmed no builder wrote to shared records ahead of this QA pass.
+**5. Mechanical.** `qa_gates.py --profile mobile --checks tag_balance,no_script,pii_patterns --recursive` on `screens/lang-ar/`: **PASS 15/15** all three checks. Same checks on `web-screens/lang-ar/`: **PASS 1/1** (W128). No shared-record races: `DP2_TRACKER.md`'s APPLY-6 STATE block sat unflipped (⬜ rows) exactly as expected before this entry; `SCREEN-DATA-CATALOG.md` and `KRISHALAYA_MASTER_CONTEXT.md` carried no APPLY-6 content before this entry; the portal `index.html` had zero `lang-ar`/W128 mentions — confirmed no builder wrote to shared records ahead of this QA pass.
 
 **INDEPENDENT QA VERDICT (2026-07-21, Review-Agent — APPLY-6): CONDITIONAL PASS → fixed → PASS.** All structural claims (CSS-patch scoping, banner/chip/bidi counts, qa_gates PASS, LTR-unchanged proof, audit numbers) independently re-verified byte-exact or immaterially close. **2 P2 documentation-only defects found + fixed**, both confined to `apply6_report.md`'s §4 (W128 console-proof tallies): (a) the "1 `.icon-mirrors` icon" claim was false — 0 elements actually carry the class in that file, because it has no directional icon to mirror; (b) the "3 `.md-banner-ar` markers" phrasing conflated a raw string-count with the actual element count (1 banner, correctly built). Neither defect touched any shipped screen file — both are corrected in the report text only. Zero P0/P1 found. **RTL IS REAL — the system mirrors** (proven by an independently re-run LTR-regression sweep across the full 546+439-file English canon, zero new failures); an ar-AE candidate screen set is built and machine-draft-watermarked end-to-end; GCC Y6-7 is unblocked at the design layer. ar itself needs its own font-pack ratification (Noto Naskh Arabic remains an explicit DEMO face) and native-speaker review (TS-003 §d `reviewed_by` still empty) before any launch consideration — this batch, like every APPLY batch before it, produces strings ready for that review, not launch-ready copy.
 
@@ -12066,9 +12066,9 @@ All 40 remaining flags are short function-words/produce-names whose shortest cor
 
 **Founder order:** "Handoff modernization: `designer_pack/07-developer-handoff` + `HOW-TO-GET-INTO-FIGMA` + tokens export are frozen at 2026-05-31 (pre-DP2, mobile-only). Rewrite for the full canon; `packages/tokens` consumption path per §12." Both docs and the token export had not been touched since before the console (DP2), templates/documents/collateral/site/brand realms, all 4 scoping mechanisms, or the logo program existed — an engineer reading them would build against a 28-screen mobile prototype that no longer resembles the shipped ~1,177-file canon.
 
-**What shipped:** `designer_pack/07-developer-handoff.md` (full rewrite, 13,691→43,216 bytes after this QA pass's DELTA-001 fixes, ground truth via `wc -c`) — realm map with grep-derived counts, two-layer CSS token architecture, the 4 scoping mechanisms with exact selector contracts, component consumption rules (currency/dates/vocabulary as master data), states canon, `qa_gates.py` as acceptance harness, assets/fonts/logo consumption, language/RTL/country recipes as engineering runbooks, schema-backlog pointer, engineering-owed items; `HOW-TO-GET-INTO-FIGMA.md` (full rewrite, honest 4-path structure, corrected the old "28 screens" claim against the real `design-canvas.html` scope); `hand1_tokens_export.py` (farmer root) — parses `system/tokens.css` + `system/web/web-tokens.css` + `system/screen.css`'s senior/contrast blocks directly, regenerates all 7 `designer_pack/tokens/*` files every run with a provenance header (date + source SHA-256×3); `krishi-verse/packages/tokens/sync-from-design-system.js` turned from a stub into a real generator reading `design-tokens.json` and regenerating `src/{colors,spacing,typography}.ts` as canon-true `as const` objects, `src/index.ts` additively exports 2 new constants, `npm run sync` script added.
+**What shipped:** `designer_pack/07-developer-handoff.md` (full rewrite, 13,691→43,216 bytes after this QA pass's DELTA-001 fixes, ground truth via `wc -c`) — realm map with grep-derived counts, two-layer CSS token architecture, the 4 scoping mechanisms with exact selector contracts, component consumption rules (currency/dates/vocabulary as master data), states canon, `qa_gates.py` as acceptance harness, assets/fonts/logo consumption, language/RTL/country recipes as engineering runbooks, schema-backlog pointer, engineering-owed items; `HOW-TO-GET-INTO-FIGMA.md` (full rewrite, honest 4-path structure, corrected the old "28 screens" claim against the real `design-canvas.html` scope); `hand1_tokens_export.py` (farmer root) — parses `system/tokens.css` + `system/web/web-tokens.css` + `system/screen.css`'s senior/contrast blocks directly, regenerates all 7 `designer_pack/tokens/*` files every run with a provenance header (date + source SHA-256×3); `krishalaya/packages/tokens/sync-from-design-system.js` turned from a stub into a real generator reading `design-tokens.json` and regenerating `src/{colors,spacing,typography}.ts` as canon-true `as const` objects, `src/index.ts` additively exports 2 new constants, `npm run sync` script added.
 
-**1. Handoff-doc accuracy — every path/count/selector/citation independently re-derived, not trusted.** Extracted and tested every file/dir path named in `07-developer-handoff.md` (designer_pack/01-designer-handbook.html, designer_pack/tokens/, user-flows.html, component-library.html, system/web/web-component-library.html, screens/, web-screens/, all 7 `system/*.css` sources, designer_pack/assets/{icons,logo,illustrations}, screens/lang-ar, web-screens/lang-ar, all 7 templates/ subdirs, Design_Program/{DP2_TRACKER,14_LANGUAGE_RECIPE,16_COUNTRY_PACK_RECIPE,07_PACKAGES_UI_IMPLEMENTATION_SPEC}.md, Development_Program/DESIGN_DRIVEN_SCHEMA_BACKLOG.md, Database_Architecture/, krishi-verse/packages/{tokens,i18n}/, qa_gates.py, BRAND-029…038) — **zero misses, all exist.** Every count independently re-grepped from `Phase-1 all screen design/Krishi_Verse_Design_System/` and matches exactly: 546 mobile / 439 console / 10 lang dirs × 15 = 150 / 1 lang-ar console / 83 templates / 23 documents / 18 collateral / 29 site / 39 brand / 150 icon SVGs / 151 sprite symbols / 42 schema-backlog items (Tier 1=12, Tier 2=18, Tier 3=12) — every figure byte-exact to the doc's own claims. All 4 scoping selectors byte-checked against their CSS sources: `[data-theme="dark"]` (web-tokens.css), `.screen.senior-mode` (screen.css), `.screen.screen-split` + `@media (min-width:768px) and (pointer:coarse)` (screen.css, exact match including the space-free media-query form the doc quotes), `[dir="rtl"]` (screen.css/web-frame.css/web-components.css) — all exact. `qa_gates.py`'s actual `PROFILE_CHOICES` (site/brand/console/store/mobile/print/templates + auto) matches the doc's `--profile {site|brand|console|mobile|print|templates|store|auto}` claim (order differs, set identical). Contract §12 quoted in the doc byte-checked against `KRISHI_VERSE_MASTER_WORK_CONTRACT.md` lines 95-101 — **verbatim, exact.** Q35/Q40/Q41/Q42/Q48/Q49/Q52 spot-checked against `12_G0-2_DECISION_REGISTER.md` — all 7 accurate.
+**1. Handoff-doc accuracy — every path/count/selector/citation independently re-derived, not trusted.** Extracted and tested every file/dir path named in `07-developer-handoff.md` (designer_pack/01-designer-handbook.html, designer_pack/tokens/, user-flows.html, component-library.html, system/web/web-component-library.html, screens/, web-screens/, all 7 `system/*.css` sources, designer_pack/assets/{icons,logo,illustrations}, screens/lang-ar, web-screens/lang-ar, all 7 templates/ subdirs, Design_Program/{DP2_TRACKER,14_LANGUAGE_RECIPE,16_COUNTRY_PACK_RECIPE,07_PACKAGES_UI_IMPLEMENTATION_SPEC}.md, Development_Program/DESIGN_DRIVEN_SCHEMA_BACKLOG.md, Database_Architecture/, krishalaya/packages/{tokens,i18n}/, qa_gates.py, BRAND-029…038) — **zero misses, all exist.** Every count independently re-grepped from `Phase-1 all screen design/Krishalaya_Design_System/` and matches exactly: 546 mobile / 439 console / 10 lang dirs × 15 = 150 / 1 lang-ar console / 83 templates / 23 documents / 18 collateral / 29 site / 39 brand / 150 icon SVGs / 151 sprite symbols / 42 schema-backlog items (Tier 1=12, Tier 2=18, Tier 3=12) — every figure byte-exact to the doc's own claims. All 4 scoping selectors byte-checked against their CSS sources: `[data-theme="dark"]` (web-tokens.css), `.screen.senior-mode` (screen.css), `.screen.screen-split` + `@media (min-width:768px) and (pointer:coarse)` (screen.css, exact match including the space-free media-query form the doc quotes), `[dir="rtl"]` (screen.css/web-frame.css/web-components.css) — all exact. `qa_gates.py`'s actual `PROFILE_CHOICES` (site/brand/console/store/mobile/print/templates + auto) matches the doc's `--profile {site|brand|console|mobile|print|templates|store|auto}` claim (order differs, set identical). Contract §12 quoted in the doc byte-checked against `KRISHALAYA_MASTER_WORK_CONTRACT.md` lines 95-101 — **verbatim, exact.** Q35/Q40/Q41/Q42/Q48/Q49/Q52 spot-checked against `12_G0-2_DECISION_REGISTER.md` — all 7 accurate.
 
 **1 real defect found + fixed (P1, citation-accuracy class):** the doc's §10 + accessibility-checklist DELTA-001 description said console density (36px) was "currently unratified §17-pending" — this **contradicted** `Design_Program/13_G0-3_DELTA_REGISTER.md` (2026-07-19 sitting), which lists DELTA-001 among the 17 items **FORMALLY CLOSED** that sitting, with an explicit residual recorded in the same register's §E contract-v1.3 changelog: *"§4/§6 addendum per DELTA-001 residual: console density adaptation requires pointer/hover media-query detection (engineering-owed)."* DELTA-001 was RATIFIED (36px is canon), not pending a founder decision — the still-open item is a named ENGINEERING-OWED technical residual (pointer/hover gating), independently confirmed still unbuilt (`grep -c "pointer:\|hover:" system/web/*.css` → 0 anywhere). Fixed in place at both occurrences in `07-developer-handoff.md` with dated `[QA-FIX HAND-1 2026-07-22]` annotations, preserving the substantive engineering warning while correcting the ratification-status claim.
 
@@ -12076,11 +12076,11 @@ All 40 remaining flags are short function-words/produce-names whose shortest cor
 
 **3. Figma doc — no fabricated capabilities, 196/546 correction verified, time math checked.** Read skeptically: the doc repeatedly and explicitly states Claude cannot write a `.fig` file, never claims otherwise. Independently re-derived the `design-canvas.html` scope claim: `grep -oE "[0-9]{2,3}-[a-zA-Z0-9-]*\.html"` on the file returns **exactly 196 unique screen references, numbered 01–196** — matches the doc's "196 of the 546" claim exactly (my first pass with a stricter 3-digit-only regex under-matched at 97; the correct 2-3-digit pattern confirms 196). Time-math table independently recomputed: 546/60≈9.1h ("~9 hours" ✓), 439/60≈7.32h ("~7.3 hours" ✓), 1,177/60≈19.6h ("~19.6 hours" ✓). No stale "196 screens" assertion presented as the current canon total anywhere — every 196 mention is explicitly framed as the old/partial `design-canvas.html` scope, correctly distinguished from the 546/1,177 full-canon counts.
 
-**4. `packages/tokens` — zero-consumer claim reproduced, tsc clean, sync script verified, §12 judged honestly.** `grep -rl "@krishi-verse/tokens" --include="*.ts" --include="*.tsx" apps packages | grep -v node_modules` independently re-run: returns only the 4 files inside `packages/tokens/src/` itself, each hit being the file's own self-referencing header comment (not an import) — confirmed zero external consumers, matching the blast-radius claim exactly; `packages/ui/src/components/Button.tsx` independently confirmed still `export {};` + TODO stub. `npx tsc -p tsconfig.json --noEmit` run independently from `packages/tokens/`: exit 0, no output. `node sync-from-design-system.js` re-run fresh: output byte-identical to the already-shipped `src/{colors,spacing,typography,index}.ts` (diff empty on all 4) — idempotent. Verified both self-caught bugs hold: `colors.ts`'s `surface.page` resolves to a real hex (`"#faf7f0"`, not an unresolved `var()` string) and `typography.ts`'s `fontFamily.display` is valid double-quoted TS containing literal single quotes (`"'Fraunces', 'Hind', Georgia, serif"`). `index.ts` confirmed additive: exports both new constants (`touchTarget`, `seniorModeTypeScaleMultiplier`) alongside the pre-existing `touchTargetMinPx` (still present in `spacing.ts`, back-compat preserved). **§12 compliance judged honestly, not rubber-stamped:** contract §12 requires "consume `packages/tokens` programmatically (kill the hand-copied CSS vars)" — this batch makes the SYNC MECHANISM real and canon-true (verified above), but `packages/ui`'s components remain 100% unimplemented stubs, so there is no live hand-copied CSS to kill yet; the handoff doc's own §6 states this split plainly ("the 'kill the hand-copied CSS vars' half of §12 this batch could not itself execute... there is no hand-copied CSS to kill yet because there is no component code yet") — an honest partial-compliance framing, not an overclaim. Confirmed accurate on independent read.
+**4. `packages/tokens` — zero-consumer claim reproduced, tsc clean, sync script verified, §12 judged honestly.** `grep -rl "@krishalaya/tokens" --include="*.ts" --include="*.tsx" apps packages | grep -v node_modules` independently re-run: returns only the 4 files inside `packages/tokens/src/` itself, each hit being the file's own self-referencing header comment (not an import) — confirmed zero external consumers, matching the blast-radius claim exactly; `packages/ui/src/components/Button.tsx` independently confirmed still `export {};` + TODO stub. `npx tsc -p tsconfig.json --noEmit` run independently from `packages/tokens/`: exit 0, no output. `node sync-from-design-system.js` re-run fresh: output byte-identical to the already-shipped `src/{colors,spacing,typography,index}.ts` (diff empty on all 4) — idempotent. Verified both self-caught bugs hold: `colors.ts`'s `surface.page` resolves to a real hex (`"#faf7f0"`, not an unresolved `var()` string) and `typography.ts`'s `fontFamily.display` is valid double-quoted TS containing literal single quotes (`"'Fraunces', 'Hind', Georgia, serif"`). `index.ts` confirmed additive: exports both new constants (`touchTarget`, `seniorModeTypeScaleMultiplier`) alongside the pre-existing `touchTargetMinPx` (still present in `spacing.ts`, back-compat preserved). **§12 compliance judged honestly, not rubber-stamped:** contract §12 requires "consume `packages/tokens` programmatically (kill the hand-copied CSS vars)" — this batch makes the SYNC MECHANISM real and canon-true (verified above), but `packages/ui`'s components remain 100% unimplemented stubs, so there is no live hand-copied CSS to kill yet; the handoff doc's own §6 states this split plainly ("the 'kill the hand-copied CSS vars' half of §12 this batch could not itself execute... there is no hand-copied CSS to kill yet because there is no component code yet") — an honest partial-compliance framing, not an overclaim. Confirmed accurate on independent read.
 
 **5. Freshness — provenance headers present, no stale content survives as current truth.** Both rewritten docs carry the exact "Rewritten HAND-1 2026-07-22, supersedes 2026-05-31" header. Grepped both docs for "196 screens"/old-path/"mobile-only" patterns: every hit sits inside an explicit before/after correction context (e.g., "supersedes 2026-05-31 (pre-DP2, mobile-only, 28-screen scope)", "design-canvas.html... currently embeds 196 of the 546") — zero instances of stale content asserted as current fact.
 
-**6. Regression — canon HTML/CSS untouched, confirmed by mtime, not assumed.** Most recently modified file across all 7 canon realms + the 4 core system CSS files: `brand/BRAND-038-uae-country-pack.html` at 2026-07-22 12:55:57 (APPLY-10) — predates this batch's session start (~13:00). `system/tokens.css` (2026-05-31), `system/screen.css` (2026-07-22 10:47, pre-batch), `system/web/web-tokens.css` (2026-07-22 12:08, pre-batch) all confirmed untouched by HAND-1 (the generator only reads them). Records (`DP2_TRACKER.md`, `SCREEN-DATA-CATALOG.md`, `KRISHI_VERSE_MASTER_CONTEXT.md`, portal `index.html`, `qa_gates.py`) independently confirmed untouched pre-QA: all 5 mtimes/byte-counts exactly match `hand1_report.md`'s own §7 listing (376705/407897/727674/1084281 bytes respectively).
+**6. Regression — canon HTML/CSS untouched, confirmed by mtime, not assumed.** Most recently modified file across all 7 canon realms + the 4 core system CSS files: `brand/BRAND-038-uae-country-pack.html` at 2026-07-22 12:55:57 (APPLY-10) — predates this batch's session start (~13:00). `system/tokens.css` (2026-05-31), `system/screen.css` (2026-07-22 10:47, pre-batch), `system/web/web-tokens.css` (2026-07-22 12:08, pre-batch) all confirmed untouched by HAND-1 (the generator only reads them). Records (`DP2_TRACKER.md`, `SCREEN-DATA-CATALOG.md`, `KRISHALAYA_MASTER_CONTEXT.md`, portal `index.html`, `qa_gates.py`) independently confirmed untouched pre-QA: all 5 mtimes/byte-counts exactly match `hand1_report.md`'s own §7 listing (376705/407897/727674/1084281 bytes respectively).
 
 **INDEPENDENT QA VERDICT (2026-07-22, Review-Agent — HAND-1): CONDITIONAL PASS → fixed → PASS.** Every claim across all 6 governing checks (handoff-doc path/count/selector/citation accuracy, tokens-export re-run + value/provenance verification, Figma-doc honesty, packages/tokens reproduction + §12 judgment, freshness, regression) was independently re-derived — own path tests, own greps, own CSS byte-checks, own script re-runs, own SHA-256 recomputes, own `tsc`/`node --check` invocations — never trusted from the builder's own tooling or report prose. **2 real defects found + fixed, both small, both dated:** (1) a citation-accuracy miss in `07-developer-handoff.md` — DELTA-001 mischaracterized as "unratified §17-pending" when the G0-3 register shows it FORMALLY CLOSED/RATIFIED with a named engineering-owed residual, corrected at both occurrences; (2) a garbage-token bug in `hand1_tokens_export.py`'s senior-mode `var()` resolver — an off-by-2 string slice produced `"?"` and a malformed `"----tap-large"` note for `tap-min`/`tap-rural` instead of the real resolved `"56px"`, fixed, re-run, and re-verified clean. Both fixes are surgical (2 files touched: the handoff doc's prose, the generator script's one function), byte-logged via diff against the pre-fix snapshot, and independently re-validated post-fix (all self-tests re-pass). Zero P0. Every count, path, selector, and citation this batch made an accuracy claim about was independently reproduced and found correct except the 2 defects above, now fixed. **THE HANDOFF NOW MATCHES THE SHIPPED CANON**: an engineer reading `07-developer-handoff.md` today builds against the real ~1,177-file, 4-scoping-mechanism, 10-language platform, not a stale 28-screen prototype; the token export is a real, idempotent, garbage-free generated artifact with verifiable provenance; `packages/tokens` is wired for real with an honest disclosure of what remains engineering-owed. **PHASE O IS OPEN.** Next: HAND-2 (component library refresh) / HAND-3 (qa_gates v5 pipeline adoption) / HAND-4 (redline convention) — or the founder's own open list.
 
@@ -12098,7 +12098,7 @@ All 40 remaining flags are short function-words/produce-names whose shortest cor
 
 **3. New CSS — read in full, not sampled.** Brace balance independently recounted: **323 open / 323 close** — exact. Structure confirms additive-only by construction: `PART 1`/`PART 2` (lines 1–551, pre-existing, APPLY-6/APPLY-7 annotations intact and undisturbed) followed by a clean `PART 3: HAND-2` marker at line 553 — no interleaved edits found anywhere in the pre-existing 551 lines. Tree chevron RTL mirror rule found and read (`[dir="rtl"] .kvw-tree-item .chevron` + a combined expanded-state rotate-mirror rule) — real, not just claimed. Date-range picker read in full: reuses `.kvw-datepicker`/`.kvw-cal`/`.day`/`.day.in-range`/`.day.is-selected` verbatim (grep-confirmed zero changes to those base rules), ships zero `<script>`, inputs are `readonly`. Diff viewer's 3 claimed modes independently confirmed real and demoed: inline (with the new "changed" line-type + `mark.tok-add`/`tok-del`), side-by-side (`.kvw-diff-split`, grid 2-pane), and the pre-existing code viewer. Interactive-element sizing (32px tree-item/date-field, matching the file's own pre-existing 28–32px dense-console convention) is consistent with the rest of the file — the mobile 44px tap floor is correctly N/A here (web/console realm, confirmed by the build's own grep showing senior-mode/screen-split are mobile-only mechanisms).
 
-**4. Guardian ruling — byte-checked + independently reasoned, not rubber-stamped.** Contract §6's Guardian-path text independently re-grepped against `KRISHI_VERSE_MASTER_WORK_CONTRACT.md` line 62 — **byte-exact** to both the build and prior-QA reports' quotes. **Independent reasoning on whether the 4 promoted ad-hoc classes needed a fresh Guardian approval: no.** Guardian gates a component's *first use*; for 3 of the 4 (`kvw-sidebar-foot`, `kvw-callout`, `kvw-wizard-shell`) first use already happened pre-HAND-2 as ad-hoc inline styles/bare classes in production screens — this batch only formalizes an already-deployed pattern into the shared stylesheet with zero visual change (verified: the new CSS default matches each file's existing inline declaration). `kvw-toolbar` is the one exception disclosed by the build itself (first real CSS, a genuine visual fix, not a mirror) — but it too formalizes an already-shipped, already-in-use bare div, not a new UI pattern being introduced for the first time. Only the 3 founder-named gaps (tree view, date-range, diff upgrade) are genuinely NEW interaction patterns — those are correctly Guardian-satisfied by the founder's own HAND-2 order naming and directing all 3.
+**4. Guardian ruling — byte-checked + independently reasoned, not rubber-stamped.** Contract §6's Guardian-path text independently re-grepped against `KRISHALAYA_MASTER_WORK_CONTRACT.md` line 62 — **byte-exact** to both the build and prior-QA reports' quotes. **Independent reasoning on whether the 4 promoted ad-hoc classes needed a fresh Guardian approval: no.** Guardian gates a component's *first use*; for 3 of the 4 (`kvw-sidebar-foot`, `kvw-callout`, `kvw-wizard-shell`) first use already happened pre-HAND-2 as ad-hoc inline styles/bare classes in production screens — this batch only formalizes an already-deployed pattern into the shared stylesheet with zero visual change (verified: the new CSS default matches each file's existing inline declaration). `kvw-toolbar` is the one exception disclosed by the build itself (first real CSS, a genuine visual fix, not a mirror) — but it too formalizes an already-shipped, already-in-use bare div, not a new UI pattern being introduced for the first time. Only the 3 founder-named gaps (tree view, date-range, diff upgrade) are genuinely NEW interaction patterns — those are correctly Guardian-satisfied by the founder's own HAND-2 order naming and directing all 3.
 
 **5. W128/W340 — diagnosed, confirmed pre-existing, reconciled against APPLY-7's baseline.** Independent `qa_gates.py --profile console --recursive --expect-files 440` run on `web-screens/` reproduced **3,521 PASS / 6 FAIL exactly**, both files matching the build's claim: `W128-tenant-listings-bulk.html` (`states_coverage`: missing empty/error/flagged_off) and `W340-gov-dbt-batch.html` (5 `law_numbering` FAIL rows on a worked-example table). Confirmed pre-existing two ways: mtime (`W128` 2026-07-22 06:09, hours before this session; `W340` 2026-07-21 12:44, previous day) and the byte log showing HAND-2 touched only 2 files, neither of which is W128/W340. **Reconciled against APPLY-7's "zero new failures" claim** (`apply7_report.md` §6): APPLY-7's sweep ran `--checks tag_balance,hex_audit` only — a narrower check-set that never exercised `law_numbering` or `states_coverage` — so the two "0 fail" and "6 fail" results are not in tension; they audited different check-sets, not the same one at different times. Both files' original build batches were W-D15 (W128) and W-D38 (W340), each independently QA-passed at the time under the check-set then in force. **Left as disclosed known debt, not fixed here**: different screens, unrelated content, out of HAND-2's component-library scope — a mass-fix would need its own dry-run/census per Hard Rule 9, not a scope-creep patch bundled into this batch.
 
@@ -12116,7 +12116,7 @@ All 40 remaining flags are short function-words/produce-names whose shortest cor
 
 **2. Backward compatibility — reproduced on 3 realms, matched against the HAND-2 regression baseline.** Ran the exact v2.1-era command lines (`brand/` bare, `site/ --profile site`, `web-screens/ --profile console`) and confirmed byte-identical `checks run:` lines to the builder's claims (10 checks for brand/site, 11 for console incl. `states_coverage`'s pre-existing auto-join — zero new v3 check names leaked anywhere). Ran the full default-checks regression sweep on `web-screens/ --profile console --recursive --expect-files 440`: **3,521 PASS / exactly 6 FAIL, the identical 2-file signature HAND-2's own recorded baseline documented** (`W128-tenant-listings-bulk.html` states_coverage gap, `W340-gov-dbt-batch.html` 5 law_numbering rows) — zero new failures, regression proof holds byte-for-byte against the prior batch's own sweep.
 
-**3. The 3 debt findings — spot-verified, and one genuine detector bug found underneath them (Hard Rule 10).** **Favicon 0/508:** direct grep for literal (unescaped) `<link rel="icon">`/`<link rel="shortcut icon">` tags across `site/`+`brand/`+`web-screens/` (508 files: 29+39+440) returns **zero** real hits — confirmed honest, not a detector artifact (the one loose-grep hit found was HTML-escaped prose inside BRAND-028 itself, describing the check, not a rendered tag). The causal claim ("LOGO-2 wired favicon into the 20 live `krishi-verse_website/` pages only") independently confirmed: those 20 live pages DO carry real favicon links (20/20), while 2 sampled design-canon files (SITE-000, SITE-016) show zero in their `<head>` — SITE-016's own grounding comment even documents LOGO-2 wiring the live site's `assets/` folder, not canon. **USSD-003…006 badge drift:** independently recomputed all 26 blocks across the 4 files by hand — 24 are genuine defects (2 in USSD-005 already clean); real, correctly NOT mass-fixed at this scale in an S batch. **The original "2–4 characters off" characterization was itself imprecise** (true range 1–3 chars concat-method / flat +5 space-method) — a small reporting defect, fixed in both `hand3_report.md` and `BRAND-028` with a dated QA annotation. **lang-{code} expansion overflow — a REAL DETECTOR BUG found underneath, not just content debt:** running the check on 2 lang dirs (mr, bn) reproduced the reported W530 chat-preview overflow pattern — but digging into why `screens/lang-ml/`+`screens/lang-or/` showed only 1/15 FAIL each (suspiciously low vs. their siblings) found that `lang_length`'s expansion-mode helper (`extract_lang_len_elements()`) stripped `<style>`/`<script>` blocks BEFORE stripping HTML comments — since this canon's grounding comments routinely mention "`<style>`" as prose (e.g. "scoped to this file's own `<style>` block only"), the non-greedy strip regex matched from that in-comment mention to the real closing tag, deleting the comment's own closing `-->` and causing Python's `html.parser` to silently treat the entire rest of the file as one unclosed comment — a FALSE zero-element result, not a genuine translation finding. **This is a regression, not a novel bug**: `Design_Program/specs_v3/apply5_report.md` §4 already found and fixed this exact defect for the apply5 expansion-audit scripts ("future batches should inherit the apply5 versions") — the qa_gates v3 port inherited the pre-fix `apply1_expansion_audit.py` order instead. Verified blast radius: **31 files** were silently returning 0/truncated elements (14/15 in `lang-ml`, 14/15 in `lang-or`, 2/15 in `lang-kn`, plus `web-screens/lang-ar/W128` — the exact file originally characterized as "a 0-element-matched structural mismatch," itself a symptom of this bug, not a real finding). **Fixed directly in `qa_gates.py`** (comments now strip first, dated annotation at the function, per Hard Rule 10 — fix the detector) and re-ran the full canon-wide sweep: true numbers are materially higher (51 of 151 lang-dir files flagged, not 26; **all 11 of 11 directories** show real signal, not "9 of 11"; the W530 src=18/translated=14 pattern is confirmed in 9 of 10 mobile languages, not 8 — `ar`'s own translated markup has 19 elements so never fit that specific pattern). Both `hand3_report.md` (QA ADDENDUM section) and `BRAND-028` (corrected RUN RESULTS cards/table + a dated QA-correction doctrine block) now carry the true numbers.
+**3. The 3 debt findings — spot-verified, and one genuine detector bug found underneath them (Hard Rule 10).** **Favicon 0/508:** direct grep for literal (unescaped) `<link rel="icon">`/`<link rel="shortcut icon">` tags across `site/`+`brand/`+`web-screens/` (508 files: 29+39+440) returns **zero** real hits — confirmed honest, not a detector artifact (the one loose-grep hit found was HTML-escaped prose inside BRAND-028 itself, describing the check, not a rendered tag). The causal claim ("LOGO-2 wired favicon into the 20 live `krishalaya_website/` pages only") independently confirmed: those 20 live pages DO carry real favicon links (20/20), while 2 sampled design-canon files (SITE-000, SITE-016) show zero in their `<head>` — SITE-016's own grounding comment even documents LOGO-2 wiring the live site's `assets/` folder, not canon. **USSD-003…006 badge drift:** independently recomputed all 26 blocks across the 4 files by hand — 24 are genuine defects (2 in USSD-005 already clean); real, correctly NOT mass-fixed at this scale in an S batch. **The original "2–4 characters off" characterization was itself imprecise** (true range 1–3 chars concat-method / flat +5 space-method) — a small reporting defect, fixed in both `hand3_report.md` and `BRAND-028` with a dated QA annotation. **lang-{code} expansion overflow — a REAL DETECTOR BUG found underneath, not just content debt:** running the check on 2 lang dirs (mr, bn) reproduced the reported W530 chat-preview overflow pattern — but digging into why `screens/lang-ml/`+`screens/lang-or/` showed only 1/15 FAIL each (suspiciously low vs. their siblings) found that `lang_length`'s expansion-mode helper (`extract_lang_len_elements()`) stripped `<style>`/`<script>` blocks BEFORE stripping HTML comments — since this canon's grounding comments routinely mention "`<style>`" as prose (e.g. "scoped to this file's own `<style>` block only"), the non-greedy strip regex matched from that in-comment mention to the real closing tag, deleting the comment's own closing `-->` and causing Python's `html.parser` to silently treat the entire rest of the file as one unclosed comment — a FALSE zero-element result, not a genuine translation finding. **This is a regression, not a novel bug**: `Design_Program/specs_v3/apply5_report.md` §4 already found and fixed this exact defect for the apply5 expansion-audit scripts ("future batches should inherit the apply5 versions") — the qa_gates v3 port inherited the pre-fix `apply1_expansion_audit.py` order instead. Verified blast radius: **31 files** were silently returning 0/truncated elements (14/15 in `lang-ml`, 14/15 in `lang-or`, 2/15 in `lang-kn`, plus `web-screens/lang-ar/W128` — the exact file originally characterized as "a 0-element-matched structural mismatch," itself a symptom of this bug, not a real finding). **Fixed directly in `qa_gates.py`** (comments now strip first, dated annotation at the function, per Hard Rule 10 — fix the detector) and re-ran the full canon-wide sweep: true numbers are materially higher (51 of 151 lang-dir files flagged, not 26; **all 11 of 11 directories** show real signal, not "9 of 11"; the W530 src=18/translated=14 pattern is confirmed in 9 of 10 mobile languages, not 8 — `ar`'s own translated markup has 19 elements so never fit that specific pattern). Both `hand3_report.md` (QA ADDENDUM section) and `BRAND-028` (corrected RUN RESULTS cards/table + a dated QA-correction doctrine block) now carry the true numbers.
 
 **4. BRAND-028 — v3 section accurate against argparse reality; Q19 cite byte-checked.** Check names/realm-gate tables cross-checked against `CHECK_REGISTRY`/`FAVICON_REQUIRED_PROFILES`/`VIEWPORT_REQUIRED_PROFILES` in code: accurate. Q19's quoted decision-register line ("qa_gates standing adoption (endorsed — pipeline v5)") byte-matched against `12_G0-2_DECISION_REGISTER.md` line 44 — exact, and its ordinal position (5th of 6 clauses in the Q15–Q20 routed batch) confirmed = Q19. **Demos-are-deployments check:** BRAND-028 itself was run through the new checks — it correctly FAILS `favicon` (it's one of the 39 `brand/` files already folded into the honest 0/508 aggregate, no separate disclosure needed) and PASSes `meta_essentials`; no undisclosed exemption found. Tag balance re-verified PASS after this pass's own edits.
 
@@ -12133,11 +12133,11 @@ All 40 remaining flags are short function-words/produce-names whose shortest cor
 **Independent QA (2026-07-22) — verdict: PASS, with 2 real doctrine-honesty gaps found + fixed in place (dated annotations, not builder-blocking).**
 
 1. **The decision, re-weighed independently: sound.** Recounted the 1,177-file population from scratch (`546+439+83+23+18+29+39`, own `find` commands) — exact match. Q42 citation byte-verified against `12_G0-2_DECISION_REGISTER.md` line 17 — verbatim. Cost asymmetry (200+ build hours vs. ~3 edits) and the two-sources-of-truth drift risk are real and not overstated; PATH A was never seriously competitive. Exhibit E is complete (decision / decision-basis / date 2026-07-22 / founder-override-open, matching BRAND-029's own signoff markup).
-2. **Doctrine honesty — 1 real overclaim found + fixed.** The draft's "literal values legitimately exist in exactly two places" (content; CSS-gradient/hex-table exceptions) was incomplete. Grep-census this pass: **198 files / 1,003 occurrences** of literal hex in `fill=`/`stroke=`/`stop-color=` SVG presentation attributes (frozen logo/badge/icon artwork, e.g. the LOGO-4.1 "Powered by Krishi Verse" badge) — entirely outside `hex_audit`'s v2 CSS-only scope (`<style>`/`style=""` contexts only), so neither counted nor flagged, and not one of the doctrine's named carve-outs. Confirmed by spot-checking 2 console screens (`web-screens/W117-tenant-dashboard.html`, `web-screens/W123-tenant-listings.html`) — both carry `stop-color="#1e6f3f"`/`stroke="#f9c45a"` with zero token trace available. **Fixed:** BRAND-039 corrected in place to a third named carve-out ("Frozen brand/icon SVG artwork") with the exact grep and count, `[QA-FIX HAND-4 2026-07-22]` annotated — the artwork itself is correctly ratified (LOGO-1…6), the doctrine's completeness claim was not.
+2. **Doctrine honesty — 1 real overclaim found + fixed.** The draft's "literal values legitimately exist in exactly two places" (content; CSS-gradient/hex-table exceptions) was incomplete. Grep-census this pass: **198 files / 1,003 occurrences** of literal hex in `fill=`/`stroke=`/`stop-color=` SVG presentation attributes (frozen logo/badge/icon artwork, e.g. the LOGO-4.1 "Powered by Krishalaya" badge) — entirely outside `hex_audit`'s v2 CSS-only scope (`<style>`/`style=""` contexts only), so neither counted nor flagged, and not one of the doctrine's named carve-outs. Confirmed by spot-checking 2 console screens (`web-screens/W117-tenant-dashboard.html`, `web-screens/W123-tenant-listings.html`) — both carry `stop-color="#1e6f3f"`/`stroke="#f9c45a"` with zero token trace available. **Fixed:** BRAND-039 corrected in place to a third named carve-out ("Frozen brand/icon SVG artwork") with the exact grep and count, `[QA-FIX HAND-4 2026-07-22]` annotated — the artwork itself is correctly ratified (LOGO-1…6), the doctrine's completeness claim was not.
 3. **Annotation register — 1 real gap found + fixed, 1 near-fork flagged as debt.** The register's own grep (`QA-STATES-EXEMPT|QA-FIX|QA-LAW-EXTERNAL|QA-HEX-TABLE-DECLARED|DARK-READY|SENIOR-READY|TABLET-READY|APPLIED at`) missed `"<asset> retired at <BATCH>"` — an actual, larger, pre-existing HTML-comment marker convention (**457 real comment occurrences**, not table prose, across web-screens/collateral/site — e.g. `<!-- brand glyph: look-alike retired at LOGO-3.1, geometry = ... (BRAND-029 Exhibit E) -->`), bigger by volume than several markers the register did include. **Fixed:** added as a 7th reg-card with real byte-quoted examples, dated `[QA-FIX HAND-4 2026-07-22]`. Also found `brand/BRAND-028-web-qa-automation.html` carries 4 occurrences of `[QA-CORRECTED <date>, was "..."]` — functionally a duplicate of `QA-FIX` under a different tag, introduced at the HAND-3 QA pass, missed by this batch's own vocabulary grep — exactly the vocabulary-fork risk this register exists to prevent, already having happened once undetected. Not folded into BRAND-028 (outside this batch's edit scope, bigger blast radius than a doctrine-page fix) — flagged as known debt in a new register callout instead.
-4. **Extraction proof — independently redone on a different tenant-console screen (`web-screens/W117-tenant-dashboard.html`), 5 fresh questions, own timing:** (1) KPI card padding → 20px, `.kvw-card{padding:var(--space-5)}` → `--space-5:1.25rem`, ~10s; (2) "New listing" primary button → `var(--color-primary-600)` → `#1e6f3f`, ~10s; (3) "GMV this month" KPI value font → `var(--font-display)` → Fraunces/Hind/Georgia stack, ~10s; (4) notification bell tap target → `.kvw-topbar-iconbtn` 36×36px via `--web-control-h`, same DELTA-001 dense-console exception as W001, ~40s disclosed 2-file lookup; (5) **"Powered by Krishi Verse" badge color → NOT resolvable via any token trace at all** — literal `stop-color="#1e6f3f"`/`stroke="#f9c45a"` SVG attributes, the exact gap found in finding #2 above. Net: 4/5 clean via the cascade (matching W001's own ratio), 1/5 genuinely outside the doctrine's stated taxonomy — a materially useful independent redo, not a repeat of the builder's own result.
+4. **Extraction proof — independently redone on a different tenant-console screen (`web-screens/W117-tenant-dashboard.html`), 5 fresh questions, own timing:** (1) KPI card padding → 20px, `.kvw-card{padding:var(--space-5)}` → `--space-5:1.25rem`, ~10s; (2) "New listing" primary button → `var(--color-primary-600)` → `#1e6f3f`, ~10s; (3) "GMV this month" KPI value font → `var(--font-display)` → Fraunces/Hind/Georgia stack, ~10s; (4) notification bell tap target → `.kvw-topbar-iconbtn` 36×36px via `--web-control-h`, same DELTA-001 dense-console exception as W001, ~40s disclosed 2-file lookup; (5) **"Powered by Krishalaya" badge color → NOT resolvable via any token trace at all** — literal `stop-color="#1e6f3f"`/`stroke="#f9c45a"` SVG attributes, the exact gap found in finding #2 above. Net: 4/5 clean via the cascade (matching W001's own ratio), 1/5 genuinely outside the doctrine's stated taxonomy — a materially useful independent redo, not a repeat of the builder's own result.
 5. **W001's bell-36px claim, independently judged: genuinely DELTA-001's ratified exception, not a defect wearing one's clothes.** Read `13_G0-3_DELTA_REGISTER.md` directly: DELTA-001 is listed among items with status **flipped from de-facto to FORMALLY CLOSED**, and the v1.3 changelog line (verbatim, register line 25) reads "§4/§6 addendum per DELTA-001 residual: console density adaptation requires pointer/hover media-query detection (engineering-owed)" — confirms ratified canon with a real, still-open engineering residual, exactly as `07-developer-handoff.md` §10 and BRAND-039 state. Not a defect.
-6. **BRAND-039 mechanics — independently re-run, not trusted from the report.** Own `qa_gates.py` sweep of `brand/` (`--profile brand --checks no_script,currency_glyphs,physical_props,tag_balance,law_numbering,media_queries,hex_audit,pii_patterns,favicon,meta_essentials,lang_length`, 40 files): **41 total FAILs both before and after this pass's own doctrine edits** (39 favicon + 2 physical_props — BRAND-017/BRAND-028, pre-existing, unrelated), **BRAND-039 clean on all 11 named checks including favicon and meta_essentials** — reproduced exactly, including post-fix (tag balance still `balanced`, hex_audit still `0 unrecognized` after the added prose-hex citations, correctly outside v2's CSS-only scope like the page's pre-existing citations). **"First canon page" claim reconciled honest:** `grep -rl 'rel="icon"'` across the whole design-system canon returns only `brand/BRAND-028` (prose mention, not a live tag) and `brand/BRAND-039` (real tag) — zero elsewhere, including `site/` (still 0/29, matching HAND-3's baseline). The live, separately-deployed `krishi-verse_website/` (20 pages, LOGO-2) DOES carry real favicons — but that tree is not canon (`Krishi_Verse_Design_System/site/` is), so the doctrine's own scoping ("first page in ANY realm's canon") is accurate, not overreaching into the live site.
+6. **BRAND-039 mechanics — independently re-run, not trusted from the report.** Own `qa_gates.py` sweep of `brand/` (`--profile brand --checks no_script,currency_glyphs,physical_props,tag_balance,law_numbering,media_queries,hex_audit,pii_patterns,favicon,meta_essentials,lang_length`, 40 files): **41 total FAILs both before and after this pass's own doctrine edits** (39 favicon + 2 physical_props — BRAND-017/BRAND-028, pre-existing, unrelated), **BRAND-039 clean on all 11 named checks including favicon and meta_essentials** — reproduced exactly, including post-fix (tag balance still `balanced`, hex_audit still `0 unrecognized` after the added prose-hex citations, correctly outside v2's CSS-only scope like the page's pre-existing citations). **"First canon page" claim reconciled honest:** `grep -rl 'rel="icon"'` across the whole design-system canon returns only `brand/BRAND-028` (prose mention, not a live tag) and `brand/BRAND-039` (real tag) — zero elsewhere, including `site/` (still 0/29, matching HAND-3's baseline). The live, separately-deployed `krishalaya_website/` (20 pages, LOGO-2) DOES carry real favicons — but that tree is not canon (`Krishalaya_Design_System/site/` is), so the doctrine's own scoping ("first page in ANY realm's canon") is accurate, not overreaching into the live site.
 7. **Cross-refs — accurate.** `designer_pack/07-developer-handoff.md` §11 and the one `15_PIPELINE_PLAYBOOK.md` line both byte-checked against BRAND-039's actual content; no drift found.
 8. **Regression — reproduced, zero new failures**, matching the report's claimed 41-FAIL baseline exactly (39 pre-existing brand/ files unchanged, BRAND-039 itself is the only new file and it's clean).
 
@@ -12185,7 +12185,7 @@ Zero P0 beyond the 4 dated QA-fixes above (1 aria-label translation, 2×440 clas
 **Sitting, not a build batch.** This agent acted as both builder and records agent for this sitting (G0-2's own precedent). No screens built; this is a decision/records/cascade sitting per `Design_Program/15_PIPELINE_PLAYBOOK.md`'s HARD RULES.
 
 **What the founder decided, verbatim, 2026-07-22 (recorded authority: "Founder, direct, 2026-07-22" on every item):**
-1. **Q23 white-label billing** — TENANT BRAND + small ratified "Powered by Krishi Verse" badge (LOGO-4) in billing-document footers.
+1. **Q23 white-label billing** — TENANT BRAND + small ratified "Powered by Krishalaya" badge (LOGO-4) in billing-document footers.
 2. **Q24/DELTA-059 channel fan-out** — ROUTINE tier = ONE primary channel per farmer preference + auto-fallback to SMS on non-delivery; money/security tiers stay multi-channel.
 3. **Q25 print collateral timing** — WAIT for feature-flag flips before printing (no coming-soon panels in print).
 4. **Q28 JP-KR** — FRAMEWORK-ONLY until entry nears; build packs via `16_COUNTRY_PACK_RECIPE.md` at that time.
@@ -12193,8 +12193,8 @@ Zero P0 beyond the 4 dated QA-fixes above (1 aria-label translation, 2×440 clas
 6. **G0-R3a W273 gold hero CTA** — KEEP; gold ratified as the store realm's commerce accent.
 7. **G0-R3b Gov blue pill** — KEEP + DOCUMENT; ratified as intentional realm differentiation.
 8. **G0-R3c W207 duplicate primary CTA** — FIX; secondary action demoted to outline style.
-9. **Q29 social handles** — `@krishiverse` family primary (fallbacks `@krishiverseapp`, `@krishiverseHQ`); hashtags `#KrishiVerse`/`#FromFarmToFuture`; registration is an external action, queued, availability NOT asserted.
-10.–11. **Q30/contract v1.3** — SIGN AS DRAFTED: the §E changelog (`13_G0-3_DELTA_REGISTER.md`) pasted into `KRISHI_VERSE_MASTER_WORK_CONTRACT.md` with date 2026-07-22 filled in, and every correction it names applied surgically into the contract body itself this sitting.
+9. **Q29 social handles** — `@krishiverse` family primary (fallbacks `@krishiverseapp`, `@krishiverseHQ`); hashtags `#Krishalaya`/`#FromFarmToFuture`; registration is an external action, queued, availability NOT asserted.
+10.–11. **Q30/contract v1.3** — SIGN AS DRAFTED: the §E changelog (`13_G0-3_DELTA_REGISTER.md`) pasted into `KRISHALAYA_MASTER_WORK_CONTRACT.md` with date 2026-07-22 filled in, and every correction it names applied surgically into the contract body itself this sitting.
 
 **Records updated:** `Design_Program/12_G0-2_DECISION_REGISTER.md` (all 8 FOUNDER-PERSONAL rows Q23/24/25/26/28/29/30/31 flipped RESERVED→DECIDED, G0-4 sitting note added at bottom); `Design_Program/13_G0-3_DELTA_REGISTER.md` (DELTA-059 flipped RESERVED→DECIDED, §E marked SIGNED 2026-07-22, GATE 0 line updated); `Design_Program/11_G0_APPROVAL_LEDGER.md` (new "G0-R3 — EXECUTED" section for the 3 taste-calls, GATE 0 line updated to record founder decision debt = zero).
 
@@ -12230,4 +12230,4 @@ Zero P0 beyond the 4 dated QA-fixes above (1 aria-label translation, 2×440 clas
 - DELTA-067 register disposition (`13_G0-3_DELTA_REGISTER.md` §F) independently read — matches the screen's own header comment and this catalog entry exactly: RATIFIED + canon authored, unblocks DEV-45 Step 3.
 - Sibling consistency: farmer names/towns/buyer names spot-checked directly against 08/147/151/56/22/23 — all verbatim matches, zero invented identities.
 
-**Verdict: PASS, zero defects found.** Full independent verification detail in the DEV-45 QA pass covering both Development Program steps — see `KRISHI_VERSE_MASTER_CONTEXT.md` memory entry and `Development_Program/DEV_TRACKER.md` DEV-45 QA VERIFICATION section (this was executed as a combined design+dev QA pass per the DEV-45 batch brief, QA-agent-owned records on both sides).
+**Verdict: PASS, zero defects found.** Full independent verification detail in the DEV-45 QA pass covering both Development Program steps — see `KRISHALAYA_MASTER_CONTEXT.md` memory entry and `Development_Program/DEV_TRACKER.md` DEV-45 QA VERIFICATION section (this was executed as a combined design+dev QA pass per the DEV-45 batch brief, QA-agent-owned records on both sides).

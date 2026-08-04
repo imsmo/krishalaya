@@ -1,7 +1,7 @@
 // apps/web-tenant/src/i18n/en.ts · English message catalog for the console (the SOURCE-OF-TRUTH key set; hi.ts +
 // gu.ts MUST mirror every key — Law 7, no inline literals in pages/components). Loaded by lib/i18n.ts into the
-// shared @krishi-verse/i18n Translator. Plain data, no framework.
-import type { Messages } from '@krishi-verse/i18n';
+// shared @krishalaya/i18n Translator. Plain data, no framework.
+import type { Messages } from '@krishalaya/i18n';
 
 export const en: Messages = {
   'nav.dashboard': 'Dashboard',
@@ -479,7 +479,7 @@ export const en: Messages = {
   'roles.assign.role': 'Role',
   'roles.assign.rolePlaceholder': 'Choose a role…',
   'roles.assign.submit': 'Assign role',
-  'roles.assign.platformNote': 'Platform/owner roles are not assignable here — they are managed by Krishi-Verse.',
+  'roles.assign.platformNote': 'Platform/owner roles are not assignable here — they are managed by Krishalaya.',
   'roles.assignments.title': 'Current assignments',
   'roles.assignments.empty': 'No role assignments yet.',
   'roles.assignments.user': 'Member',

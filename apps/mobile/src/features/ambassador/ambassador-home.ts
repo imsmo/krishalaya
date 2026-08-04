@@ -4,7 +4,7 @@
 // §13: referrals are PII-minimised (no farmer name on the contract) → the list anonymises to a code-initial + the
 // server-enforced status; a specific pending REASON (e.g. "Aadhaar pending") and a farmer ACTIVITY feed have no
 // contract yet, so those are rendered honestly (status label / coming-soon), never fabricated.
-import type { Referral, LeaderboardEntry } from '@krishi-verse/sdk-js';
+import type { Referral, LeaderboardEntry } from '@krishalaya/sdk-js';
 
 /** Count referrals created in the calendar month of `nowMs`. Pure. */
 export function referralsThisMonth(items: readonly Referral[] | null | undefined, nowMs: number): number {

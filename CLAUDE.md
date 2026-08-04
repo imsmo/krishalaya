@@ -1,4 +1,4 @@
-# KRISHI-VERSE — LAWS FOR AI CODING AGENTS (and humans)
+# KRISHALAYA — LAWS FOR AI CODING AGENTS (and humans)
 Read before writing ANY code. These are constraints, not suggestions.
 The founder OS, PRD v4, and Database_Architecture/ are the source of truth.
 

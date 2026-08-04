@@ -9,11 +9,11 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { isNegotiable, effectivePriceMinor } from '../../../features/offers/negotiation';
 import { minorToMajor } from '../../../features/listings/form';
 import { acceptOfferAction, counterOfferAction, rejectOfferAction } from './actions';
-import type { ListingOffer } from '@krishi-verse/sdk-js';
+import type { ListingOffer } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

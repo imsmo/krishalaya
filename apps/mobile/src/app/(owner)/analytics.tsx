@@ -15,8 +15,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { TenantAnalytics } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, MoneyText, ScreenScaffold, SegmentedControl, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { TenantAnalytics } from '@krishalaya/sdk-js';
+import { Card, EmptyState, MoneyText, ScreenScaffold, SegmentedControl, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openWebConsole } from '../../core/deeplink';

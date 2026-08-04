@@ -5,7 +5,7 @@
 // paise (Law 2). Fields with NO contract yet (age, spoken-languages list, about-me, market wage-range) are NOT
 // assembled here — the screen renders them for design parity but flags them as not-yet-persisted (§13), never
 // fabricating a dob from an age or a wage range we don't have.
-import type { WorkerPrefsInput } from '@krishi-verse/sdk-js';
+import type { WorkerPrefsInput } from '@krishalaya/sdk-js';
 
 export const GENDERS = ['female', 'male', 'other'] as const;
 export type Gender = (typeof GENDERS)[number];

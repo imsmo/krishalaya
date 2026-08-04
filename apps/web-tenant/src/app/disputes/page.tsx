@@ -8,8 +8,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatDate } from '@krishi-verse/i18n';
-import type { Dispute, ReviewSummary, ReviewItem, UserProfile } from '@krishi-verse/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import type { Dispute, ReviewSummary, ReviewItem, UserProfile } from '@krishalaya/sdk-js';
 import { respondToReviewAction } from './actions';
 
 export const dynamic = 'force-dynamic';

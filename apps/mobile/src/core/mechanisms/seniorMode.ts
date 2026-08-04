@@ -5,11 +5,11 @@
 // per G0-2 Q48 ("1.30x senior multiplier RATIFIED"), scope "farmer-facing app surfaces only... consoles excluded".
 // screen.css writes each scaled step as a literal `calc(<tokens.css base rem> * 1.30)` (CSS can't reference its
 // own prior value inside its own redefinition) — this file does the SAME multiplication in TS against
-// `@krishi-verse/tokens`' `seniorModeTypeScaleMultiplier` (1.30, already-committed export, pre-dates DEV-19,
+// `@krishalaya/tokens`' `seniorModeTypeScaleMultiplier` (1.30, already-committed export, pre-dates DEV-19,
 // safe to consume) so the mobile app derives its senior scale from the identical ratified constant, never a
 // re-typed literal. Tap floor: screen.css's `--tap-min`/`--tap-rural` both collapse onto `--tap-large` (56px,
 // tokens.css:222) inside `.screen.senior-mode` — mirrored here as `SENIOR_TAP_MIN`.
-import { seniorModeTypeScaleMultiplier } from '@krishi-verse/tokens';
+import { seniorModeTypeScaleMultiplier } from '@krishalaya/tokens';
 
 export const SENIOR_TYPE_SCALE = seniorModeTypeScaleMultiplier; // 1.30, Q48
 export const SENIOR_TAP_MIN = 56; // tokens.css --tap-large, screen.css .screen.senior-mode override target

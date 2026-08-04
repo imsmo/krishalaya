@@ -1,7 +1,7 @@
 // Unit tests for the PURE Work-History logic (features/labour/work-history) behind screen 138. Verifies hours sum,
 // the status precedence, honest filters + this-year count — all off the REAL attendance contract, no fabrication.
 import { attendanceTotalHours, attendanceStatusKey, matchesHistoryFilter, thisYearCount, HISTORY_FILTERS } from '../../features/labour/work-history';
-import type { LabourAttendance } from '@krishi-verse/sdk-js';
+import type { LabourAttendance } from '@krishalaya/sdk-js';
 
 const A = (over: Partial<LabourAttendance>): LabourAttendance => ({ id: 'a', assignmentId: 'as', bookingId: 'b', workDate: '2026-08-22', ...over });
 

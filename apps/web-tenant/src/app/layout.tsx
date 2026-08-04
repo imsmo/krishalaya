@@ -4,7 +4,7 @@
 // and the API re-enforces RBAC per call.
 //
 // DEV-18 REAL consuming-app smoke test (packages/ui port batch 4): the hand-rolled `.kv-shell`/`.kv-content`
-// div + ad-hoc `<Sidebar>` chrome is rewired onto `@krishi-verse/ui`'s ported `AppShell`/`Sidebar`/`Topbar`
+// div + ad-hoc `<Sidebar>` chrome is rewired onto `@krishalaya/ui`'s ported `AppShell`/`Sidebar`/`Topbar`
 // (the first real usage of the port in a running app — see `dev18_report.md`). `<KvUiGlobalStyles />` is
 // rendered once here, in `<head>`, per that component's own integration requirement
 // (`packages/ui/src/GlobalStyles.tsx`'s header comment: "a consuming app renders `<KvUiGlobalStyles />` ONCE,
@@ -20,8 +20,8 @@ import { getLanguageDef, getTranslator } from '../lib/i18n';
 import { hasSessionCookie } from '../lib/auth';
 import { tenantClient } from '../lib/api-client';
 import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
-import type { UserProfile } from '@krishi-verse/sdk-js';
-import { AppShell, KvUiGlobalStyles } from '@krishi-verse/ui';
+import type { UserProfile } from '@krishalaya/sdk-js';
+import { AppShell, KvUiGlobalStyles } from '@krishalaya/ui';
 import { Sidebar } from '../components/Sidebar';
 import { ConsoleTopbar } from '../components/ConsoleTopbar';
 
@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
   // DEV-19: theme (dark/light/system) + senior-mode attrs, resolved SERVER-SIDE from cookies (see
   // `lib/mechanism.ts`) — rendered directly into the initial HTML, so there is no client-side flash/hydration
-  // mismatch to guard against (see `@krishi-verse/ui`'s `mechanisms/theme.ts` header comment for the full
+  // mismatch to guard against (see `@krishalaya/ui`'s `mechanisms/theme.ts` header comment for the full
   // SSR-strategy rationale). `data-senior` mirrors the same cookie-driven, zero-client-JS pattern.
   const themeAttrs = getThemeHtmlAttrs();
   const senior = getSeniorMode();

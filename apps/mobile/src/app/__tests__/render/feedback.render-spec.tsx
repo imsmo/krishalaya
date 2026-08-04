@@ -3,7 +3,7 @@
 // master-plan §2.1 row 8). The `system_screens` flag defaults OFF (real flag store) so the screen takes its
 // flag-gated EmptyState branch before `submitFeedback()` is ever wired to a real Submit press.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import Feedback from '../../(system)/feedback';
 

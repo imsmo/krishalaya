@@ -1,5 +1,5 @@
 // modules/payments/pilot-e2e/relay-tick.ts
-// ONE-SHOT outbox relay drain for the local Krishi-Verse pilot E2E script (scripts/pilot-e2e/).
+// ONE-SHOT outbox relay drain for the local Krishalaya pilot E2E script (scripts/pilot-e2e/).
 //
 // WHY THIS FILE EXISTS (S0 classification memo finding): apps/api/src/core/outbox/relay.poller.ts
 // exports runRelay(), but NOTHING in this repo calls it at runtime today. apps/worker's

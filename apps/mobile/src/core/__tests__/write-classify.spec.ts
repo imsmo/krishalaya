@@ -1,7 +1,7 @@
 // Unit tests for core/api/write-classify.ts — the KV-MF-02 fix. Only a TRUE connectivity failure
 // (SdkNetworkError/SdkTimeoutError) may be queued/retried; every real server response (any HTTP status) or
 // unexpected exception must be surfaced/dead-lettered instead.
-import { SdkError, SdkNetworkError, SdkTimeoutError } from '@krishi-verse/sdk-js';
+import { SdkError, SdkNetworkError, SdkTimeoutError } from '@krishalaya/sdk-js';
 import { isConnectivityFailure, classifyReplayFailure } from '../api/write-classify';
 
 describe('isConnectivityFailure', () => {

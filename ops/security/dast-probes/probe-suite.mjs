@@ -243,7 +243,7 @@ function b64url(obj) { return Buffer.from(JSON.stringify(obj)).toString('base64u
 async function probeJwtTampering(validToken) {
   // alg:none forged token, claiming the SAME subject/tenant as a real token, no signature at all.
   const header = b64url({ alg: 'none', typ: 'JWT' });
-  const payload = b64url({ sub: 'attacker', tid: 'a0000000-0000-7000-8000-0000000032a1', sid: 'x', roles: ['tenant_admin'], perms: ['*'], typ: 'access', iss: 'krishi-verse', aud: 'krishi-verse-api', exp: Math.floor(Date.now() / 1000) + 3600 });
+  const payload = b64url({ sub: 'attacker', tid: 'a0000000-0000-7000-8000-0000000032a1', sid: 'x', roles: ['tenant_admin'], perms: ['*'], typ: 'access', iss: 'krishalaya', aud: 'krishalaya-api', exp: Math.floor(Date.now() / 1000) + 3600 });
   const algNoneToken = `${header}.${payload}.`;
   const r1 = await raw('GET', '/v1/auth/sessions', { headers: { authorization: `Bearer ${algNoneToken}` } });
   record({ id: 'JWT-1', name: 'alg:none forged token is rejected', request: 'GET /v1/auth/sessions, Bearer <alg:none forged token>', expected: '401 — jsonwebtoken.verify is called with `algorithms: ["HS256"]` explicitly (token.service.ts), which rejects alg:none tokens by construction', actual: String(r1.status), verdict: r1.status === 401 ? 'PASS' : 'FAIL' });
@@ -254,7 +254,7 @@ async function probeJwtTampering(validToken) {
     const r2 = await raw('GET', '/v1/auth/sessions', { headers: { authorization: `Bearer ${strippedSig}` } });
     record({ id: 'JWT-2', name: 'Signature-stripped valid token is rejected', request: 'GET /v1/auth/sessions, Bearer <real token with signature removed>', expected: '401', actual: String(r2.status), verdict: r2.status === 401 ? 'PASS' : 'FAIL' });
 
-    const tamperedPayload = b64url({ sub: parts[1] ? JSON.parse(Buffer.from(parts[1], 'base64url').toString()).sub : 'x', tid: 'a0000000-0000-7000-8000-0000000032a1', sid: 'x', roles: ['tenant_admin'], perms: ['*'], typ: 'access', iss: 'krishi-verse', aud: 'krishi-verse-api', exp: Math.floor(Date.now() / 1000) + 3600 });
+    const tamperedPayload = b64url({ sub: parts[1] ? JSON.parse(Buffer.from(parts[1], 'base64url').toString()).sub : 'x', tid: 'a0000000-0000-7000-8000-0000000032a1', sid: 'x', roles: ['tenant_admin'], perms: ['*'], typ: 'access', iss: 'krishalaya', aud: 'krishalaya-api', exp: Math.floor(Date.now() / 1000) + 3600 });
     const tamperedToken = `${parts[0]}.${tamperedPayload}.${parts[2]}`;
     const r3 = await raw('GET', '/v1/auth/sessions', { headers: { authorization: `Bearer ${tamperedToken}` } });
     record({ id: 'JWT-3', name: 'Payload-tampered token (roles/perms escalated) fails signature check', request: 'GET /v1/auth/sessions, Bearer <payload edited to roles:[tenant_admin] perms:[*], original signature kept>', expected: '401 — HMAC signature no longer matches the edited payload', actual: String(r3.status), verdict: r3.status === 401 ? 'PASS' : 'FAIL' });
@@ -265,7 +265,7 @@ async function probeJwtTampering(validToken) {
 
   // expired token: mint with a JWT-shaped-but-garbage signature and exp in the past (still 401 expected,
   // via either the exp check or the (also-failing) signature check — either path must reject).
-  const expiredPayload = b64url({ sub: 'x', tid: 'x', sid: 'x', roles: [], perms: [], typ: 'access', iss: 'krishi-verse', aud: 'krishi-verse-api', exp: Math.floor(Date.now() / 1000) - 3600 });
+  const expiredPayload = b64url({ sub: 'x', tid: 'x', sid: 'x', roles: [], perms: [], typ: 'access', iss: 'krishalaya', aud: 'krishalaya-api', exp: Math.floor(Date.now() / 1000) - 3600 });
   const expiredToken = `${header.replace('none', 'HS256')}.${expiredPayload}.deadbeef`;
   const r4 = await raw('GET', '/v1/auth/sessions', { headers: { authorization: `Bearer ${expiredToken}` } });
   record({ id: 'JWT-4', name: 'Expired token is rejected', request: 'GET /v1/auth/sessions, Bearer <expired exp claim>', expected: '401', actual: String(r4.status), verdict: r4.status === 401 ? 'PASS' : 'FAIL' });

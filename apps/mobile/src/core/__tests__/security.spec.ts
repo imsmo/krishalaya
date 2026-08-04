@@ -26,10 +26,10 @@ describe('TLS pinning config', () => {
     expect(isValidHostPins(null)).toBe(false);
   });
   it('matches hosts (incl. subdomains when opted in)', () => {
-    expect(hostOf('https://api.krishiverse.com/v1/x')).toBe('api.krishiverse.com');
+    expect(hostOf('https://api.krishalaya.com/v1/x')).toBe('api.krishalaya.com');
     expect(hostOf('http://insecure.com')).toBeNull(); // not https
-    const list = [{ host: 'krishiverse.com', pins: [PIN_A, PIN_B], includeSubdomains: true }];
-    expect(isPinnedHost('https://api.krishiverse.com/v1', list)).toBe(true);
+    const list = [{ host: 'krishalaya.com', pins: [PIN_A, PIN_B], includeSubdomains: true }];
+    expect(isPinnedHost('https://api.krishalaya.com/v1', list)).toBe(true);
     expect(isPinnedHost('https://evil.com', list)).toBe(false);
   });
   it('pinConfigReady gates a valid non-empty prod config', () => {
@@ -67,8 +67,8 @@ describe('inbound deep-link guard', () => {
     expect(parseDeepLink('').reason).toBe('malformed');
   });
   it('accepts https app-links only for allowlisted hosts', () => {
-    expect(parseDeepLink('https://app.krishiverse.com/order/1', ['app.krishiverse.com'])).toEqual({ ok: true, path: 'order/1' });
-    expect(parseDeepLink('https://evil.com/order/1', ['app.krishiverse.com']).reason).toBe('scheme');
+    expect(parseDeepLink('https://app.krishalaya.com/order/1', ['app.krishalaya.com'])).toEqual({ ok: true, path: 'order/1' });
+    expect(parseDeepLink('https://evil.com/order/1', ['app.krishalaya.com']).reason).toBe('scheme');
   });
   it('isSafeParamValue rejects hostile param values', () => {
     expect(isSafeParamValue('abc-123_ID.4')).toBe(true);

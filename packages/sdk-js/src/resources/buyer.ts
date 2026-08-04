@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · buyer favourites (module: buyer). The caller's OWN saves + saved searches —
+// @krishalaya/sdk-js · buyer favourites (module: buyer). The caller's OWN saves + saved searches —
 // the server scopes everything to the authenticated user (a non-owner read is impossible; no IDOR).
 // Saves are keyset-paginated; add/remove are idempotent server-side.
 import { HttpClient } from '../http';

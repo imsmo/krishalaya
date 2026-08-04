@@ -3,7 +3,7 @@
 // a bigint minor-unit STRING (Law 2) — never via Number()/parseFloat/toFixed. The product picker encodes the
 // three fields the create payload needs (productId, categoryId, defaultUnit) into one <option> value so a
 // server-rendered <select> can carry them without an extra lookup; decode validates the shape.
-import type { CreateListingInput } from '@krishi-verse/sdk-js';
+import type { CreateListingInput } from '@krishalaya/sdk-js';
 
 const MINOR_DIGITS = 2; // INR paise; the API authoritatively re-derives by currency, this is the display contract
 

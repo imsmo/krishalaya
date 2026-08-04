@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 13-buyer-home — 13 · Buyer Home — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/13-buyer-home.html`
+## 13-buyer-home — 13 · Buyer Home — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/13-buyer-home.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 13 · Buyer Home — Krishi-Verse
+  - 13 · Buyer Home — Krishalaya
   - Anand, Gujarat
   - 2
   - 🥭
@@ -63,11 +63,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 67-buyer-search-results — 67 · Search Results — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/67-buyer-search-results.html`
+## 67-buyer-search-results — 67 · Search Results — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/67-buyer-search-results.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 67 · Search Results — Krishi-Verse
+  - 67 · Search Results — Krishalaya
   - Search
   - Wheat ✕
   - Organic ✕
@@ -121,11 +121,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 68-buyer-filters — 68 · Filters — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/68-buyer-filters.html`
+## 68-buyer-filters — 68 · Filters — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/68-buyer-filters.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 68 · Filters — Krishi-Verse
+  - 68 · Filters — Krishalaya
   - [Search results in background]
   - Filters
   - Clear all (5)
@@ -167,11 +167,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 69-buyer-orders — 69 · My Orders — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/69-buyer-orders.html`
+## 69-buyer-orders — 69 · My Orders — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/69-buyer-orders.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 69 · My Orders — Krishi-Verse
+  - 69 · My Orders — Krishalaya
   - My Orders
   - Active
   - 3
@@ -210,11 +210,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 96-buyer-cart — 96 · My Cart — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/96-buyer-cart.html`
+## 96-buyer-cart — 96 · My Cart — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/96-buyer-cart.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 96 · My Cart — Krishi-Verse
+  - 96 · My Cart — Krishalaya
   - My Cart · 3 items
   - 🌾
   - Premium Wheat — Lokwan
@@ -256,11 +256,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 97-buyer-inquiry — 97 · Send Inquiry — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/97-buyer-inquiry.html`
+## 97-buyer-inquiry — 97 · Send Inquiry — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/97-buyer-inquiry.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 97 · Send Inquiry — Krishi-Verse
+  - 97 · Send Inquiry — Krishalaya
   - Inquire about listing
   - 🌾
   - Premium Wheat — Lokwan
@@ -285,11 +285,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 98-buyer-chat — 98 · Chat with Seller — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/98-buyer-chat.html`
+## 98-buyer-chat — 98 · Chat with Seller — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/98-buyer-chat.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 98 · Chat with Seller — Krishi-Verse
+  - 98 · Chat with Seller — Krishalaya
   - RP
   - Ramesh Patel ⭐ 4.9
   - ● Online
@@ -315,11 +315,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 99-buyer-make-offer — 99 · Make Offer — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/99-buyer-make-offer.html`
+## 99-buyer-make-offer — 99 · Make Offer — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/99-buyer-make-offer.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 99 · Make Offer — Krishi-Verse
+  - 99 · Make Offer — Krishalaya
   - Make an Offer
   - 🌾
   - Premium Wheat — Lokwan
@@ -352,11 +352,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 100-buyer-seller-profile — 100 · Seller Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/100-buyer-seller-profile.html`
+## 100-buyer-seller-profile — 100 · Seller Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/100-buyer-seller-profile.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 100 · Seller Profile — Krishi-Verse
+  - 100 · Seller Profile — Krishalaya
   - Seller Profile
   - RP
   - Ramesh Patel
@@ -411,11 +411,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 126-buyer-saved-listings — 126 · Saved Listings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/126-buyer-saved-listings.html`
+## 126-buyer-saved-listings — 126 · Saved Listings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/126-buyer-saved-listings.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 126 · Saved Listings — Krishi-Verse
+  - 126 · Saved Listings — Krishalaya
   - Saved · 14
   - All · 14
   - Wheat · 4
@@ -448,11 +448,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 127-buyer-saved-sellers — 127 · Saved Sellers — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/127-buyer-saved-sellers.html`
+## 127-buyer-saved-sellers — 127 · Saved Sellers — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/127-buyer-saved-sellers.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 127 · Saved Sellers — Krishi-Verse
+  - 127 · Saved Sellers — Krishalaya
   - Saved Sellers · 8
   - Get notified when these farmers post new listings
   - RP
@@ -486,11 +486,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 128-buyer-saved-searches — 128 · Saved Searches — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/128-buyer-saved-searches.html`
+## 128-buyer-saved-searches — 128 · Saved Searches — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/128-buyer-saved-searches.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 128 · Saved Searches — Krishi-Verse
+  - 128 · Saved Searches — Krishalaya
   - Saved Searches
   - Active alerts
   - 🔍 Wheat Lokwan in Anand
@@ -519,11 +519,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 129-buyer-delivery-address — 129 · Delivery Address — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/129-buyer-delivery-address.html`
+## 129-buyer-delivery-address — 129 · Delivery Address — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/129-buyer-delivery-address.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 129 · Delivery Address — Krishi-Verse
+  - 129 · Delivery Address — Krishalaya
   - Delivery Address
   - Step 2 of 3
   - Delivery
@@ -557,11 +557,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 130-buyer-payment-method — 130 · Payment — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/130-buyer-payment-method.html`
+## 130-buyer-payment-method — 130 · Payment — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/130-buyer-payment-method.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 130 · Payment — Krishi-Verse
+  - 130 · Payment — Krishalaya
   - Payment Method
   - Step 3 of 3
   - Payment · Order ₹29,960
@@ -602,11 +602,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 131-buyer-order-track — 131 · Track Order — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/131-buyer-order-track.html`
+## 131-buyer-order-track — 131 · Track Order — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/131-buyer-order-track.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 131 · Track Order — Krishi-Verse
+  - 131 · Track Order — Krishalaya
   - Track Order #KV-2026-0247
   - 🏠
   - 🚛
@@ -640,11 +640,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 132-buyer-profile — 132 · Business Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/132-buyer-profile.html`
+## 132-buyer-profile — 132 · Business Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/132-buyer-profile.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 132 · Business Profile — Krishi-Verse
+  - 132 · Business Profile — Krishalaya
   - Business Profile
   - MT
   - Mehta Trading Co.
@@ -691,11 +691,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 133-buyer-kyc — 133 · Business KYC — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/133-buyer-kyc.html`
+## 133-buyer-kyc — 133 · Business KYC — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/133-buyer-kyc.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 133 · Business KYC — Krishi-Verse
+  - 133 · Business KYC — Krishalaya
   - Business KYC
   - Step 2 of 3
   - Documents
@@ -730,11 +730,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 134-buyer-addresses — 134 · My Addresses — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/134-buyer-addresses.html`
+## 134-buyer-addresses — 134 · My Addresses — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/134-buyer-addresses.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 134 · My Addresses — Krishi-Verse
+  - 134 · My Addresses — Krishalaya
   - My Addresses
   - PRIMARY · WAREHOUSE
   - Mehta Trading Co. — Warehouse
@@ -762,11 +762,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 135-buyer-report-order — 135 · Report Order Issue — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/135-buyer-report-order.html`
+## 135-buyer-report-order — 135 · Report Order Issue — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/135-buyer-report-order.html`
 - **Route:** `src/app/(buyer)/…`  ·  **Feature:** `features/buyer · cart · addresses · offers · messaging`  ·  **Flag:** `buyer_app / buyer_checkout`
 - **Must render (exact design content):**
-  - 135 · Report Order Issue — Krishi-Verse
+  - 135 · Report Order Issue — Krishalaya
   - Report Issue
   - 🌾
   - Premium Wheat — Lokwan

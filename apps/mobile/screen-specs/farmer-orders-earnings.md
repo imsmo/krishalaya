@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 22-my-orders — 22 · My Orders — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/22-my-orders.html`
+## 22-my-orders — 22 · My Orders — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/22-my-orders.html`
 - **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
 - **Must render (exact design content):**
-  - 22 · My Orders — Krishi-Verse
+  - 22 · My Orders — Krishalaya
   - My Orders
   - As Buyer
   - 5
@@ -57,11 +57,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 23-order-detail — 23 · Order Tracking — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/23-order-detail.html`
+## 23-order-detail — 23 · Order Tracking — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/23-order-detail.html`
 - **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
 - **Must render (exact design content):**
-  - 23 · Order Tracking — Krishi-Verse
+  - 23 · Order Tracking — Krishalaya
   - Order #KV-2026-0142
   - In Transit
   - Your order is on the way
@@ -111,11 +111,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 24-order-review — 24 · Rate Your Order — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/24-order-review.html`
+## 24-order-review — 24 · Rate Your Order — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/24-order-review.html`
 - **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
 - **Must render (exact design content):**
-  - 24 · Rate Your Order — Krishi-Verse
+  - 24 · Rate Your Order — Krishalaya
   - Rate Your Order
   - ✓ Completed
   - Order delivered successfully!
@@ -140,11 +140,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 56-farmer-orders — 56 · Orders Received — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/56-farmer-orders.html`
+## 56-farmer-orders — 56 · Orders Received — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/56-farmer-orders.html`
 - **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
 - **Must render (exact design content):**
-  - 56 · Orders Received — Krishi-Verse
+  - 56 · Orders Received — Krishalaya
   - My Orders
   - 2
   - New
@@ -188,11 +188,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 57-farmer-order-detail — 57 · Order Decision — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/57-farmer-order-detail.html`
+## 57-farmer-order-detail — 57 · Order Decision — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/57-farmer-order-detail.html`
 - **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
 - **Must render (exact design content):**
-  - 57 · Order Decision — Krishi-Verse
+  - 57 · Order Decision — Krishalaya
   - Order #KV-2026-0218
   - Decision needed within 4 hours · Buyer waiting
   - PM
@@ -228,11 +228,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 58-farmer-earnings — 58 · My Earnings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/58-farmer-earnings.html`
+## 58-farmer-earnings — 58 · My Earnings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/58-farmer-earnings.html`
 - **Route:** `src/app/(farmer)/orders/…`  ·  **Feature:** `features/orders · reviews`  ·  **Flag:** `orders_fulfilment`
 - **Must render (exact design content):**
-  - 58 · My Earnings — Krishi-Verse
+  - 58 · My Earnings — Krishalaya
   - My Earnings
   - This month's earnings
   - ₹84,320

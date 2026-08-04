@@ -4,7 +4,7 @@
 // reachable from anywhere (the data-backed calls enforce auth server-side); static fallbacks render unauthenticated.
 import React from 'react';
 import { Stack } from 'expo-router';
-import { color } from '@krishi-verse/ui-native';
+import { color } from '@krishalaya/ui-native';
 
 export default function SystemLayout() {
   // contentStyle pins the native Screen surface to the app's cream page background — react-native-screens has no

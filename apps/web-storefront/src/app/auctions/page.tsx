@@ -5,8 +5,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import type { Auction } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { Auction } from '@krishalaya/sdk-js';
 import { publicClient } from '../../lib/api-client';
 import { env } from '../../lib/env';
 import { getTranslator, getLang } from '../../lib/i18n';

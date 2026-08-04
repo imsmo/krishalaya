@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · typed errors. The SDK surfaces the API's stable error `code` (not a raw HTTP number)
+// @krishalaya/sdk-js · typed errors. The SDK surfaces the API's stable error `code` (not a raw HTTP number)
 // so callers branch on a contract, plus the requestId for support. SECURITY: an SdkError NEVER carries the
 // request's Authorization header / token / body — only the safe code/status/requestId/message.
 export class SdkError extends Error {

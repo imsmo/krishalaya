@@ -179,7 +179,7 @@ psql teardown — see `docs/local-setup/` for that sequence.
   degrade category matched either (extremely unlikely — `crops.spices` always has cumin), or (on a
   rerun) the listing is sold out at that exact title. Check the printed NOTE.
 - **`relay tick exited with code 1`** — same troubleshooting as `scripts/pilot-e2e/README.md`: check
-  `DATABASE_ADMIN_URL`/`DATABASE_URL` is set and `pnpm --filter @krishi-verse/api exec ts-node --version`
+  `DATABASE_ADMIN_URL`/`DATABASE_URL` is set and `pnpm --filter @krishalaya/api exec ts-node --version`
   resolves.
 - **Order (c) says "sold out — skipping"** — expected after a few reruns (10 qtl total stock); either
   ignore (orders (a)/(b)/wallet still get exercised) or bump `Onion — Medium Grade`'s listed

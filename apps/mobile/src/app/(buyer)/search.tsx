@@ -14,7 +14,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Input, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Input, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { buildListingQuery, activeFilterCount, activeFilterChips, removeFilterChip, cycleSort, describeSearch, type FilterForm, type FilterChip, type SortKey } from '../../features/buyer/search-query';
 import { addSavedSearch, pushRecentSearch } from '../../features/buyer/saved.api';

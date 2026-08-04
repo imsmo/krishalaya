@@ -10,8 +10,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import type { KycDocument, KycDocType, BankAccount } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius, type PillTone } from '@krishi-verse/ui-native';
+import type { KycDocument, KycDocType, BankAccount } from '@krishalaya/sdk-js';
+import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius, type PillTone } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';

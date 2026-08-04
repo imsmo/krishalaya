@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · tenant integrations resource (P1-11). A tenant admin connects/disconnects its OWN
+// @krishalaya/sdk-js · tenant integrations resource (P1-11). A tenant admin connects/disconnects its OWN
 // third-party provider credentials. The raw credential is sent once on connect and is vaulted SERVER-SIDE (only a
 // ref is stored — the app never sees it again); reads are masked (no secret). Authed; gated by tenant.settings.
 import { HttpClient } from '../http';

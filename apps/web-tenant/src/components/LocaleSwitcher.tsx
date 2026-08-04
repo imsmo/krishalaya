@@ -9,7 +9,7 @@
 // not-yet-live language). `COMING_SOON_LANGUAGES` is the FULL 11-language target set from the shared registry
 // (was previously not rendered here at all) — never fabricated, always the registry's own truth.
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishi-verse/i18n';
+import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishalaya/i18n';
 
 export function LocaleSwitcher({ active, label, comingSoonLabel }: { active: string; label: string; comingSoonLabel?: string }) {
   const pathname = usePathname() || '/dashboard';

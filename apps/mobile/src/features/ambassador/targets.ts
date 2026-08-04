@@ -9,7 +9,7 @@
 // `sales_facilitated` has NO per-ambassador achieved feed, so it degrades to progress-unknown (the screen shows
 // the target with "—"), never a fabricated count. Bonus amounts / tier ladders / a satisfaction rating are NOT
 // modelled here (no contract) and are omitted by the screen.
-import type { AmbassadorTarget, Referral, AmbassadorVisit, AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { AmbassadorTarget, Referral, AmbassadorVisit, AmbassadorEarning } from '@krishalaya/sdk-js';
 
 // Referral statuses that count as a completed onboarding (an activated farmer).
 const ACTIVATED = new Set(['activated', 'active', 'onboarded', 'converted', 'completed']);

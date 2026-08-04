@@ -3,7 +3,7 @@
 // degrade-never-die (empty cart on failure). Mutations return {ok} → the caller re-reads the cart. Checkout is a
 // REAL, idempotent (Law 3) cart→orders conversion — NOT offline-queued (it needs live stock/price/coupon
 // validation and an immediate result); it throws so the screen shows the precise outcome (409 stale, 422 invalid).
-import type { Cart, CheckoutResult, CheckoutPreview, DeliveryMethodsResult } from '@krishi-verse/sdk-js';
+import type { Cart, CheckoutResult, CheckoutPreview, DeliveryMethodsResult } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 import { track, EVENTS } from '../../core/observability';

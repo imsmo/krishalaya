@@ -1,9 +1,9 @@
-// apps/mobile/src/core/i18n/i18n.ts · the app's translation runtime. Wraps @krishi-verse/i18n's Translator with
+// apps/mobile/src/core/i18n/i18n.ts · the app's translation runtime. Wraps @krishalaya/i18n's Translator with
 // the three bundled offline catalogs (hi/en/gu) so the UI is never blank even with no network (the DB
 // `ui_messages` table is the eventual source of truth; these are the shipped fallback). The active language is
 // resolved from (1) the user's saved choice, else (2) the device locale, else (3) English. Changing the language
 // rebuilds the Translator and notifies subscribers (the React provider re-renders).
-import { Translator, resolveLanguage, DEFAULT_LANGUAGE, type Messages } from '@krishi-verse/i18n';
+import { Translator, resolveLanguage, DEFAULT_LANGUAGE, type Messages } from '@krishalaya/i18n';
 import en from './locales/en.json';
 import hi from './locales/hi.json';
 import gu from './locales/gu.json';

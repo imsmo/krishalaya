@@ -2,7 +2,7 @@
 // just (state, action) → state, so it is fully unit-testable (see __tests__/session.reducer.spec.ts). The auth
 // store (React) and token store (secure storage) are thin shells around this. Keeping the transition logic pure
 // is the mobile analogue of the API's domain state machines (Law 5): one place owns "what a session can become".
-import type { AuthTokens, UserProfile } from '@krishi-verse/sdk-js';
+import type { AuthTokens, UserProfile } from '@krishalaya/sdk-js';
 
 export type SessionStatus = 'booting' | 'anonymous' | 'authenticated';
 

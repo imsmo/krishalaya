@@ -10,13 +10,13 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { getThemePreference, getSeniorMode } from '../../lib/mechanism';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { formatBps, settingString, settingList, PLATFORM_LANGUAGES, COMMISSION_SOURCES } from '../../features/settings/config';
 import {
   createCommissionRuleAction, deactivateCommissionRuleAction, createDeliveryZoneAction,
   setZoneActiveAction, saveBrandingAction, saveLanguagesAction,
 } from './actions';
-import type { CommissionRule, DeliveryZone, TenantSetting } from '@krishi-verse/sdk-js';
+import type { CommissionRule, DeliveryZone, TenantSetting } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

@@ -8,7 +8,7 @@ terraform {
 }
 resource "aws_route53_zone" "this" {
   name          = var.root_domain
-  comment       = "Krishi-Verse production zone"
+  comment       = "Krishalaya production zone"
   force_destroy = false
   tags          = merge(var.tags, { Module = "dns" })
 }

@@ -3,7 +3,7 @@
 // the screen shows the precise outcome: profile update (PATCH /users/me), parcel register + ticket open + bank add
 // are idempotent (Law 3); CSAT is a simple rated write. Bank/KYC reads show masked data only — the app never holds
 // a raw account number/Aadhaar (DPDP). Money n/a here. The server is the authority on KYC verification + SLA.
-import type { UserProfile, SupportTicket, LandParcel, BankAccount, KycDocument, ReviewSummary } from '@krishi-verse/sdk-js';
+import type { UserProfile, SupportTicket, LandParcel, BankAccount, KycDocument, ReviewSummary } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 import type { ProfilePatch, TicketInput, ParcelInput } from './profile';

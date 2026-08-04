@@ -5,7 +5,7 @@
 // to a single-shape result on failure so the screen shows an honest "submitted / unavailable" message — the app
 // NEVER fabricates an export or deletes the account locally (the server is the data controller — Law 11).
 // Feedback opens a real support ticket (P-22). Reads degrade-never-die; writes are idempotent (Law 3).
-import type { ListingCard, OrderListItem, PrivacyRequest } from '@krishi-verse/sdk-js';
+import type { ListingCard, OrderListItem, PrivacyRequest } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 import { mergeSearchResults, fromUnifiedSearch, normalizeQuery, type SearchHit } from './system';
@@ -70,7 +70,7 @@ export async function confirmPhoneChange(newPhone: string, code: string): Promis
 
 /** The caller's DPDP consent records (privacy-settings toggles, screen 178). Degrades to [] (all opt-in defaults
  *  read as OFF) if the endpoint is unreachable — the app never fabricates a granted consent. */
-export async function getConsents(): Promise<import('@krishi-verse/sdk-js').ConsentRecord[]> {
+export async function getConsents(): Promise<import('@krishalaya/sdk-js').ConsentRecord[]> {
   try { return await apiClient().privacy.listConsents(); }
   catch { return []; }
 }

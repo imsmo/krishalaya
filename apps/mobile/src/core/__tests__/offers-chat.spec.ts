@@ -21,7 +21,7 @@ describe('make-offer preview (screen 99)', () => {
   });
 });
 import { presentMessage, canSend, normalizeBody, dayKey, isDayBoundary } from '../../features/messaging/message-view';
-import type { Message } from '@krishi-verse/sdk-js';
+import type { Message } from '@krishalaya/sdk-js';
 
 describe('chat day dividers (screen 98)', () => {
   const v = (id: string, createdAt?: string) => ({ id, mine: false, kind: 'text' as const, body: 'x', mediaId: null, flagged: false, createdAt });

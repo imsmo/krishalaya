@@ -18,10 +18,10 @@
 //  • Read ticks "✓✓": the Message contract has no delivery/read state → no read receipts are shown.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
-import type { Message, ListingCard } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Input, Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { Message, ListingCard } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Input, Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import type { FlagKey } from '../../../core/flags/flags';

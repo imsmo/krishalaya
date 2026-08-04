@@ -1,7 +1,7 @@
-# MOBILE AI AGENT BUILD GUIDE — Krishi-Verse App (React Native / Expo)
+# MOBILE AI AGENT BUILD GUIDE — Krishalaya App (React Native / Expo)
 
 **Paste the "Mobile Production-Grade Contract" (§1) at the top of EVERY mobile build command.**
-This is the engineering constitution for the Krishi-Verse mobile app — the primary surface for **millions of
+This is the engineering constitution for the Krishalaya mobile app — the primary surface for **millions of
 real, concurrent users** (farmers, buyers, workers, traders, ambassadors) issuing **billions of operations**,
 on budget Android phones, on 2G/flaky networks, in 3 launch languages. Our ambition is to be the **world's
 largest agri platform**, so assume from day one that well-funded global competitors and attackers are reverse-
@@ -85,13 +85,13 @@ MOBILE PRODUCTION-GRADE CONTRACT — obey for everything you build in apps/mobil
 ## 2. PRE-FLIGHT — read before writing a line
 1. `CLAUDE.md` — the **12 Laws**. Non-negotiable. (Law 11: god-mode/admin powers are NEVER in this app.)
 2. `apps/mobile/README.md` + `apps/mobile/SCREENS_BACKLOG.md` + **the screen's spec in `apps/mobile/screen-specs/`**.
-3. **The design itself** — open `../Phase-1 all screen design/Krishi_Verse_Design_System/screens/NN-*.html` AND
+3. **The design itself** — open `../Phase-1 all screen design/Krishalaya_Design_System/screens/NN-*.html` AND
    its extracted content in `docs/design-data/SCREEN-DATA-CATALOG.md` (every label/value the screen must show).
 4. The exemplar vertical IN FULL: `src/app/(farmer)/*` + `src/features/listings/listings.api.ts` (data-layer
    pattern: SDK call → degrade-never-die → offline-queue for writes → typed result).
 5. `packages/ui-native/src/index.ts` + `theme.ts` — use these primitives/tokens; **never** hardcode a color,
    spacing, font, or a raw `<TextInput>`/`<Button>` when a primitive exists. Add a primitive if one is missing.
-6. The matching backend contract: the SDK resource (`@krishi-verse/sdk-js`) OR the API controller/DTO in
+6. The matching backend contract: the SDK resource (`@krishalaya/sdk-js`) OR the API controller/DTO in
    `apps/api/src/modules/<domain>` so field names + idempotency + money types match EXACTLY. If the SDK lacks a
    typed method, use the SDK `request()` escape-hatch and note the assumed contract; if the endpoint itself is
    missing, flag it — never fake the response.
@@ -187,7 +187,7 @@ Deliverable per feature: a short **"Threats considered"** note + regression test
   the design uses them. RTL-safe layouts.
 - **Low-literacy / a11y:** large type, high contrast (sunlight), ≥48px targets, voice-first (Speak-to-Sell),
   icons + text, `accessibilityLabel/Role/State` on every interactive element, screen-reader tested, OS font scaling.
-- **Vernacular money/number/date** via `@krishi-verse/i18n`. Never assume English locale.
+- **Vernacular money/number/date** via `@krishalaya/i18n`. Never assume English locale.
 
 ---
 

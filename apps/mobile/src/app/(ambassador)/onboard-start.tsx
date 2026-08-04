@@ -11,7 +11,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { ONBOARD_METHODS, type OnboardMethod } from '../../features/ambassador/referral-flow';

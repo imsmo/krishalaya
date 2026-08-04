@@ -72,7 +72,7 @@ export function Clean({ t }: { t: (k: string) => string }) {
 test('respects the inline i18n-allow comment allowlist (with a real reason)', () => {
   const file = writeFixture('Allowed.tsx', `
 export function Allowed() {
-  return <button>Krishi Verse</button>; // i18n-allow: brand name, TS-003 never-translate glossary
+  return <button>Krishalaya</button>; // i18n-allow: brand name, TS-003 never-translate glossary
 }
 `);
   const findings = [];

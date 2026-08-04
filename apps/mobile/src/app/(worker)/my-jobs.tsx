@@ -11,9 +11,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { LabourLookups } from '@krishi-verse/sdk-js';
-import { EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { LabourLookups } from '@krishalaya/sdk-js';
+import { EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { myScheduledJobs, labourLookups } from '../../features/labour/labour.api';

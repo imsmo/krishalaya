@@ -29,7 +29,7 @@ kubectl apply -f infra/k8s/observability/alertmanager-config.yaml
 ```
 
 ## 3. Verify telemetry is flowing
-- Grafana → the six `Krishi-Verse ·` dashboards show live data.
+- Grafana → the six `Krishalaya ·` dashboards show live data.
 - `up{namespace="krishiverse"}` = 1 for every service in Prometheus.
 - Some app series exist after traffic: `auth_verify_otp_count`, `dep_call`, `payments_webhook_count`.
 

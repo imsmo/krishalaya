@@ -15,7 +15,7 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { isPending } from '../../features/team/form';
 import { approveAssignmentAction, addUserAction } from './actions';
-import type { RoleAssignment } from '@krishi-verse/sdk-js';
+import type { RoleAssignment } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

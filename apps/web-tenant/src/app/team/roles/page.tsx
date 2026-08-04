@@ -11,7 +11,7 @@ import { DataTable } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { assignableRoles, canGrantPermission } from '../../../features/team/permissions';
 import { assignRoleAction, revokeRoleAction, setOverrideAction } from './actions';
-import type { RoleDef, PermissionDef, RoleAssignment } from '@krishi-verse/sdk-js';
+import type { RoleDef, PermissionDef, RoleAssignment } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

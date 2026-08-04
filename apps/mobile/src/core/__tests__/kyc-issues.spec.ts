@@ -1,6 +1,6 @@
 // Unit tests for the PURE KYC re-submission issue builder (features/kyc/issues, screen 175). No React/native deps.
 import { buildKycIssues } from '../../features/kyc/issues';
-import type { KycDocument, KycDocType } from '@krishi-verse/sdk-js';
+import type { KycDocument, KycDocType } from '@krishalaya/sdk-js';
 
 const types: KycDocType[] = [{ id: 'dt1', code: 'land_712', name: '7/12 Utara' }, { id: 'dt2', code: 'aadhaar', name: 'Aadhaar Card' }];
 const doc = (o: Partial<KycDocument>): KycDocument => ({ id: 'x', status: 'pending', ...o } as KycDocument);

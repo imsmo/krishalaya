@@ -7,7 +7,7 @@ get stuck, and this guide removes that trap.**
 All commands run from the **repo root** unless stated. The repo root is the folder that contains
 `package.json`, `docker-compose.yml`, and the `apps/` folder. Get there:
 ```bash
-cd /Users/sanjayodedra/Documents/Personal/farmer/krishi-verse
+cd /Users/sanjayodedra/Documents/Personal/farmer/krishalaya
 ```
 
 ---
@@ -19,14 +19,14 @@ nvm use            # switches to Node 20 (reads .nvmrc)
 pnpm install       # installs every app + package in the monorepo (takes a few minutes the first time)
 ```
 
-**Build the shared packages once** so the apps can import them (`@krishi-verse/sdk-js`, tokens, i18n, etc.):
+**Build the shared packages once** so the apps can import them (`@krishalaya/sdk-js`, tokens, i18n, etc.):
 ```bash
 pnpm build
 ```
 > This runs `turbo build` across the repo. The first run is slow; later runs are cached and fast. If it fails on an
 > *optional* app you don't care about (e.g. stream-processor needing Kafka types), that's fine — the core
 > (`api`, `sdk-js`, web apps) is what matters. You can also build just what you need:
-> `pnpm --filter @krishi-verse/sdk-js --filter @krishi-verse/tokens --filter @krishi-verse/i18n build`.
+> `pnpm --filter @krishalaya/sdk-js --filter @krishalaya/tokens --filter @krishalaya/i18n build`.
 
 ---
 

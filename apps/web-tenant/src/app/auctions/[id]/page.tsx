@@ -10,11 +10,11 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { env } from '../../../lib/env';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { canApprove, canCancel } from '../../../features/auctions/manage';
 import { approveAuctionAction, cancelAuctionAction } from '../actions';
 import { DataTable } from '../../../components/DataTable';
-import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
+import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

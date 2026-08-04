@@ -2,7 +2,7 @@
 // screen (171). No React/native — unit-tested. The server contract is per event×channel booleans
 // (NotificationPreference {eventCode, channel, isEnabled}); these helpers group those real rows by event, bucket
 // events into display categories, and pick display glyphs — all derived from the server's codes (never fabricated).
-import type { NotificationPreference } from '@krishi-verse/sdk-js';
+import type { NotificationPreference } from '@krishalaya/sdk-js';
 
 export interface EventGroup { eventCode: string; channels: NotificationPreference[] }
 export type NotifCategory = 'money' | 'mandi' | 'other';

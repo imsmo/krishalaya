@@ -1,4 +1,4 @@
-# MOBILE BUILD ROADMAP — Krishi-Verse App (prioritized, one command per item)
+# MOBILE BUILD ROADMAP — Krishalaya App (prioritized, one command per item)
 
 **How to use this file.** Each **P-## item below is one "AI_AGENT_BUILD" command = one session = one vertical
 slice.** Issue them to the agent **in order** (top to bottom). With every mobile command, **attach
@@ -43,7 +43,7 @@ These are cross-cutting capabilities almost every later screen needs. Do them be
   unit tests green (incl. SHA-256 FIPS vectors), sdk 7/7; threats note in README. (Screen wiring lands in P-05.)
 - **Why first:** create-listing photos, KYC docs, PoD photos, profile photo, chat images all need it.
 - **Backend:** `media` module (S3 presign + EXIF-strip already built). **SDK:** add `media` resource
-  (`presignUpload`, confirm) to `@krishi-verse/sdk-js`.
+  (`presignUpload`, confirm) to `@krishalaya/sdk-js`.
 - **Build:** `core/media/` — pick from camera/gallery (`expo-image-picker`), client-side **downscale/compress**
   (rural data), EXIF strip, presigned multipart upload with progress + retry + offline-queue, thumbnailing;
   `ui-native` `ImagePicker`/`UploadTile` primitives.
@@ -560,7 +560,7 @@ This completes **Wave 9** and the Phase-1 mobile screen catalogue.
 - Behind a feature flag (default OFF) with a kill-switch; unit-test pure logic; update `SCREENS_BACKLOG.md` +
   `MODULE_STATUS.md`; ship a feature README + "Threats considered" note; paste green typecheck/test output.
 
-## SDK work implied (extend `@krishi-verse/sdk-js` as each vertical lands)
+## SDK work implied (extend `@krishalaya/sdk-js` as each vertical lands)
 New typed resources to add (currently only auth/listings/catalogue/traceability exist): **media, wallet,
 payments, kyc, orders, offers, messaging, auctions, labour, ambassadors, notifications, market-intel, schemes,
 reviews, support, tenancy**. Add the resource + types in the same session as the screen that first needs it (or

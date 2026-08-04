@@ -12,8 +12,8 @@
 // fabricated). Event titles are the server code humanized, not invented copy.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import type { NotificationPreference } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, Input, ScreenScaffold, SkeletonCard, Toggle, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { NotificationPreference } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, Input, ScreenScaffold, SkeletonCard, Toggle, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getPreferences, setPreferences, getQuietHours, setQuietHours } from '../../../features/notifications/notifications.api';

@@ -1,6 +1,6 @@
 // apps/mobile/src/app/(auth)/role.tsx · screen 04 (Choose Role) — rebuilt to match the Phase-1 design
-// (Krishi_Verse_Design_System/screens/04-role.html): a back-button app-bar titled "Choose Your Role", a hero
-// ("How will you use Krishi-Verse?" + helper), five role cards each with a gradient icon tile, the English name
+// (Krishalaya_Design_System/screens/04-role.html): a back-button app-bar titled "Choose Your Role", a hero
+// ("How will you use Krishalaya?" + helper), five role cards each with a gradient icon tile, the English name
 // with its Devanagari vernacular beside it, a one-line description, and a chevron; the selected card gets the
 // green border + tint. A pinned "Continue as <role>" CTA carries the pick forward.
 // KV-BL-066 (screens 04/433 canon): Continue now actually GRANTS the role server-side — POST
@@ -13,9 +13,9 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { ROLES, backendRoleCode, roleEligibility, type AppRole, type RoleDef } from '../../core/auth/role-switcher';
-import { Button, Icon, IconBadge, StatusPill, type IconName, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { Button, Icon, IconBadge, StatusPill, type IconName, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { grantRole } from '../../features/onboarding/role-select.api';

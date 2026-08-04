@@ -6,7 +6,7 @@ RUN corepack enable
 COPY pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/stream-processor ./apps/stream-processor
-RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishi-verse/stream-processor build
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishalaya/stream-processor build
 
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production

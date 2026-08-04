@@ -6,8 +6,8 @@
 // Server Action (no client JS). Degrades to empty/error, never 500 (Law 12).
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatDate } from '@krishi-verse/i18n';
-import type { NotificationItem } from '@krishi-verse/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import type { NotificationItem } from '@krishalaya/sdk-js';
 import { serverClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { getTranslator, getLang } from '../../lib/i18n';

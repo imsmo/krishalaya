@@ -4,7 +4,7 @@
 // AsyncStorage. The access token's absolute expiry is persisted so we can refresh proactively at boot.
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { AuthTokens } from '@krishi-verse/sdk-js';
+import type { AuthTokens } from '@krishalaya/sdk-js';
 
 const K_ACCESS = 'kv.access';
 const K_REFRESH = 'kv.refresh';

@@ -48,7 +48,7 @@ pg process can't import cleanly:
 
 **Decision required** (for the remaining jobs above, one of): (a) the **api** process runs them on an internal
 timer (simplest — handlers are already there, as chosen for the outbox relay above); or (b) extract a shared
-`@krishi-verse/domain` lib both the api and worker import; or (c) publish to a bus (bullmq/SQS — already a
+`@krishalaya/domain` lib both the api and worker import; or (c) publish to a bus (bullmq/SQS — already a
 worker dep) and a consumer runs handlers. Until chosen, these remain in the api or unscheduled. Tracked as
 **P0-9-follow-on** in the backlog. The 6 operational jobs above (the ones the P0-7 gap named: retention,
 partitions, recon, erasure, outbox-backlog) **are** built and scheduled here.

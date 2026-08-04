@@ -4,9 +4,9 @@
 // detail screen fetches the listing title (flagged).
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { formatRelative } from '@krishi-verse/i18n';
-import { Card, MoneyText, StatusPill, color, font, space, type PillTone } from '@krishi-verse/ui-native';
-import type { Auction } from '@krishi-verse/sdk-js';
+import { formatRelative } from '@krishalaya/i18n';
+import { Card, MoneyText, StatusPill, color, font, space, type PillTone } from '@krishalaya/ui-native';
+import type { Auction } from '@krishalaya/sdk-js';
 
 export function AuctionCard({ auction, langCode, kindLabel, statusLabel, statusTone, startLabel, endsLabel, onPress }: {
   auction: Auction; langCode: string; kindLabel: string; statusLabel: string; statusTone: PillTone; startLabel: string; endsLabel: string; onPress: () => void;

@@ -6,7 +6,7 @@
 // granter-subset check is server-only (the app has no endpoint for the actor's full permission set), so the UI
 // surfaces the server's 403 rather than pretending to enforce it.
 
-import type { RoleDef } from '@krishi-verse/sdk-js';
+import type { RoleDef } from '@krishalaya/sdk-js';
 
 // MUST stay in lockstep with UNGRANTABLE in apps/api/.../user-tenant-role.service.ts.
 export const UNGRANTABLE_PERMISSIONS = new Set<string>([

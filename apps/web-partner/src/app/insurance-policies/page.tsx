@@ -11,7 +11,7 @@ import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import {
   POLICY_STATUSES, policyStatusKey, policyStatusTone, buildPolicyListQuery, policiesHref, type PolicyRow,
 } from '../../features/insurance/insurance';

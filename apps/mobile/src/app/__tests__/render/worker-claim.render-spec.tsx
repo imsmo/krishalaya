@@ -4,7 +4,7 @@
 // ever calling `findPmsbyProduct()`/`myPmsbyPolicy()`. The flag-ON paths (no-active-policy gate, and the real
 // claim form once an active policy exists) are covered separately in worker-claim-on.render-spec.tsx.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import FileClaim from '../../(worker)/claim';
 

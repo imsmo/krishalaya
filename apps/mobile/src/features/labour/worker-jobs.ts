@@ -2,7 +2,7 @@
 // are `import type` → erased) → unit-tested. Money is bigint minor-unit strings (Law 2): earnings are summed with
 // BigInt, never a float. The SERVER is the authority on wage floors, the geofence, and when an assignment becomes
 // `paid` — these helpers only bucket/aggregate what the server already returned for display.
-import type { LabourAssignment } from '@krishi-verse/sdk-js';
+import type { LabourAssignment } from '@krishalaya/sdk-js';
 
 /** Where a worker's assignment belongs in "My Jobs". `pending_worker` is an OFFER (lives in the Offers tab, P-12)
  * so it's excluded from the jobs buckets. */

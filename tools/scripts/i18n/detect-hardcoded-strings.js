@@ -20,14 +20,14 @@
 // Usage:
 //   node tools/scripts/i18n/detect-hardcoded-strings.js [--json] [dir1 dir2 ...]
 // Default dirs (if none given): the 4 web apps' src/ + apps/mobile/src/ (relative to repo root, i.e. two levels
-// up from this file: tools/scripts/i18n/ → krishi-verse/).
+// up from this file: tools/scripts/i18n/ → krishalaya/).
 // Exit code: 1 if any un-allowlisted violation is found, 0 otherwise (0 findings, or all findings allowlisted).
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const ts = require('typescript');
 
-const REPO_ROOT = path.resolve(__dirname, '..', '..', '..'); // krishi-verse/
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..'); // krishalaya/
 const DEFAULT_DIRS = [
   'apps/web-tenant/src',
   'apps/web-admin/src',

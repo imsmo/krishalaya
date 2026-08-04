@@ -3,7 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /repo
 RUN corepack enable
 COPY . .
-RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishi-verse/web-tenant build
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishalaya/web-tenant build
 
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production

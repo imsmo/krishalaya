@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · group-lots resource (FPO pooling, P1-12). A coordinator opens a pooled lot, records
+// @krishalaya/sdk-js · group-lots resource (FPO pooling, P1-12). A coordinator opens a pooled lot, records
 // farmer pledges, marks it ready, cancels, and settles — the server computes each pledger's proportional share of
 // the sale proceeds (float-free, zero-loss; Law 2). Money is bigint minor strings; quantities are decimal strings.
 // Every WRITE is gated server-side by `group_lot.coordinate` + the `group_lots` flag. create + pledge carry an

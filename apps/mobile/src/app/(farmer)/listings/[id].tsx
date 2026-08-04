@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/[id].tsx · screen 112 (My Listing detail) — rebuilt to the Phase-1
-// design (Krishi_Verse_Design_System/screens/112-farmer-my-listing-detail.html): crop hero + status badge +
+// design (Krishalaya_Design_System/screens/112-farmer-my-listing-detail.html): crop hero + status badge +
 // photo count, title + ₹/quintal + meta line, a 7-day stats strip (Views · Inquiries · Offers), quick actions
 // (Edit · Extend · Boost · Stats · Remove), Recent inquiries, and a Listing-health checklist. Thin screen over
 // features/listings; degrade-never-die (Law 12); money via MoneyText (paise); ≥48px targets; i18n(hi/en/gu).
@@ -24,10 +24,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { ListingCard, ListingAnalytics, ListingInquiry } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { EmptyState, MoneyText, SkeletonCard, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { ListingCard, ListingAnalytics, ListingInquiry } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { EmptyState, MoneyText, SkeletonCard, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getListing, listingAnalytics, listingMedia, extendListing, listingInquiries, archiveListing, addListingPhoto } from '../../../features/listings/listings.api';

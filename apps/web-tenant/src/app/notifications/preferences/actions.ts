@@ -6,7 +6,7 @@
 // the pair is in the checked set. A mandatory event can't be disabled (the server rejects it); surfaced generically.
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import type { NotificationPreference, QuietHours } from '@krishi-verse/sdk-js';
+import type { NotificationPreference, QuietHours } from '@krishalaya/sdk-js';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 

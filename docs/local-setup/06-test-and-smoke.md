@@ -56,7 +56,7 @@ AUTH_EXPOSE_OTP=true
 ```
 Now `POST /v1/auth/otp` includes a `devCode` field in its JSON. **(Dev only — never set this in production.)**
 
-**Or — read it from the logs.** The dev SMS sender logs `[dev SMS] <phone>: Krishi-Verse OTP: 123456 ...` in the
+**Or — read it from the logs.** The dev SMS sender logs `[dev SMS] <phone>: Krishalaya OTP: 123456 ...` in the
 **API terminal** (because `LOG_LEVEL=debug`). Copy the 6-digit code from there.
 
 ---

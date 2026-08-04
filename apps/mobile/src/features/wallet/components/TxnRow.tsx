@@ -4,8 +4,8 @@
 // status via StatusPill, date via the locale formatter. The status label text is provided already-localized.
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { formatDate } from '@krishi-verse/i18n';
-import { Card, MoneyText, StatusPill, color, font, space } from '@krishi-verse/ui-native';
+import { formatDate } from '@krishalaya/i18n';
+import { Card, MoneyText, StatusPill, color, font, space } from '@krishalaya/ui-native';
 import type { TxnView } from '../txn';
 
 export function TxnRow({ txn, title, statusLabel, langCode, onPress }: {

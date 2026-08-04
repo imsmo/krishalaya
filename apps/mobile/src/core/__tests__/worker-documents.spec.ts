@@ -1,7 +1,7 @@
 // Unit tests for the PURE worker My-Documents logic (features/labour/worker-documents) behind screen 139. Verifies
 // the catalogue-joined checklist (real names + masked values), bank/UPI resolution, and computed completion.
 import { checklistRows, bankAccount, upiAccount, documentsProgress } from '../../features/labour/worker-documents';
-import type { KycDocument, KycDocType, BankAccount } from '@krishi-verse/sdk-js';
+import type { KycDocument, KycDocType, BankAccount } from '@krishalaya/sdk-js';
 
 const DT: KycDocType[] = [
   { id: 't-aadhaar', code: 'aadhaar', name: 'Aadhaar Card' },

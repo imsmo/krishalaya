@@ -1,6 +1,6 @@
 // Unit tests for the PURE worker-booking helper (screen 26).
 import { withDailyHours, BOOKING_HOURS } from '../../features/labour/book-worker';
-import type { CreateBookingInput } from '@krishi-verse/sdk-js';
+import type { CreateBookingInput } from '@krishalaya/sdk-js';
 
 const base = { demandTypeCode: 'harvest', taskSkillId: 's1', regionId: 'r1', skillLevel: 'skilled', workersNeeded: 1, startDate: '2026-08-18', endDate: '2026-08-18', wageOfferedMinor: '40000', farmLat: 22.3, farmLng: 73.1 } as unknown as CreateBookingInput;
 

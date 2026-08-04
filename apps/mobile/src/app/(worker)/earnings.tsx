@@ -11,9 +11,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { WalletInsights, LabourLookups } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { WalletInsights, LabourLookups } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security';

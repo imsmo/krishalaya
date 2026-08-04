@@ -5,7 +5,7 @@
 // ever calling `listKyc()`. `features/kyc/kyc.api` is still mocked so the module's own `apiClient` import chain
 // never has to resolve. `core/security/screen-guard` mocked (native `expo-screen-capture`, out of scope here).
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import KycStatus from '../../(farmer)/kyc/index';
 

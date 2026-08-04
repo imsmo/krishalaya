@@ -1,7 +1,7 @@
 // Unit tests for the PURE Ambassador Targets derivations (features/ambassador/targets, screen 169). Progress is
 // computed only from real feeds; metrics with no feed degrade to achieved=null (never a fabricated count).
 import { withinPeriod, progressPct, remaining, daysLeft, onboardsAchieved, visitsAchieved, earningsAchievedMinor, targetProgress, monthPeriodOffset, clampGoal } from '../../features/ambassador/targets';
-import type { AmbassadorTarget, Referral, AmbassadorVisit, AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { AmbassadorTarget, Referral, AmbassadorVisit, AmbassadorEarning } from '@krishalaya/sdk-js';
 
 const START = '2026-08-01';
 const END = '2026-08-31';

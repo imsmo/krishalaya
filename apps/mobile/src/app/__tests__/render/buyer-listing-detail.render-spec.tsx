@@ -4,7 +4,7 @@
 // feature APIs it imports (browse/saved/cart/messaging) ever run. Those four are still mocked so none of their
 // real `apiClient` import chains resolve at module-load time.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import { searchParams, resetExpoRouterMock } from '../../../test-utils/expo-router-mock';
 import BuyerListingDetail from '../../(buyer)/listings/[id]';

@@ -17,7 +17,7 @@ env:
 - inputText: ${SELLER_PHONE}          # 03 phone
 - tapOn: "Continue"
 - inputText: ${OTP}                   # 04 verify (FLAG_SECURE screen)
-- assertVisible: "Krishi-Verse"       # landed in the app (farmer home)
+- assertVisible: "Krishalaya"       # landed in the app (farmer home)
 - tapOn: "Sell"                       # 10 create-listing
 - inputText: "Tomato"
 - tapOn: { id: "listing-price" }

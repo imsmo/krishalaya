@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · tenant-admin-lite resources (P-17). RBAC role-assignments (the tenant's roster + the
+// @krishalaya/sdk-js · tenant-admin-lite resources (P-17). RBAC role-assignments (the tenant's roster + the
 // pending-approval queue) + APPROVE; disputes moderation (list/get/review/escalate/resolve); tenant users
 // (read a member + admin-add a farmer); KYC review. EVERY action is authorized SERVER-SIDE by the tenant's own
 // permissions (Report/Approve/dispute.resolve) — this is NOT god-mode (Law 11): a tenant admin only acts within

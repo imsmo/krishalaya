@@ -3,7 +3,7 @@
 // §2.1 row 6). The `labour_hire` flag defaults OFF (real flag store) so the screen takes its flag-gated
 // EmptyState branch before `browseWorkers()`/`labourLookups()` ever run.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import BrowseWorkers from '../../(farmer)/hire/workers';
 

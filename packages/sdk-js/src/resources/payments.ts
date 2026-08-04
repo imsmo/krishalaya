@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · payments + payouts resources (module 4). createIntent returns a gateway order to hand to
+// @krishalaya/sdk-js · payments + payouts resources (module 4). createIntent returns a gateway order to hand to
 // the gateway SDK (Razorpay) on the client; the actual capture is verified SERVER-SIDE via the signed webhook —
 // the client only polls status. Both money-moving POSTs require an Idempotency-Key (Law 3). Money is bigint
 // minor-unit strings (Law 2). Gated server-side by the `online_payments` flag.

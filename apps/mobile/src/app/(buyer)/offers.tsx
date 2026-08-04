@@ -3,8 +3,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { ListingOffer } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import type { ListingOffer } from '@krishalaya/sdk-js';
+import { Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listOffers } from '../../features/offers/offers.api';

@@ -15,9 +15,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
-import type { ListingCard, ReviewSummary, GalleryItem, PublicReview } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import type { ListingCard, ReviewSummary, GalleryItem, PublicReview } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { publicClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { env } from '../../../../lib/env';

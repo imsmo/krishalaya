@@ -13,13 +13,13 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { env } from '../../lib/env';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { TARGET_METRICS, previewUnpaidMinor, canPayout } from '../../features/ambassadors/admin';
 import {
   enrollAmbassadorAction, setAmbassadorActiveAction, updateAmbassadorAction,
   payoutAmbassadorAction, activateReferralAction, setTargetAction,
 } from './actions';
-import type { AmbassadorProfile, AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { AmbassadorProfile, AmbassadorEarning } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

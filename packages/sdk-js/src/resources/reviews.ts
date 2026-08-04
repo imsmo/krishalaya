@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · reviews resource (module 5). A review is bound to a COMPLETED order; the target
+// @krishalaya/sdk-js · reviews resource (module 5). A review is bound to a COMPLETED order; the target
 // (seller↔buyer) is resolved SERVER-SIDE from verified-purchase eligibility — the client never supplies a
 // target id (anti-IDOR). Create carries an Idempotency-Key (Law 3) so a double-tap can't post twice. Summary +
 // the PUBLIC reviews list read only published reviews and carry NO buyer PII. Gated server-side by the `reviews` flag.

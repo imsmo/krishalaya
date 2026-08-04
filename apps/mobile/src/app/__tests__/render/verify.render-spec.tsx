@@ -6,7 +6,7 @@
 // mock, mirroring how every other secure screen in this batch is handled). `searchParams.phone` is set so the
 // screen renders the real entered-number line.
 import React from 'react';
-import { OtpInput } from '@krishi-verse/ui-native';
+import { OtpInput } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import { searchParams, resetExpoRouterMock } from '../../../test-utils/expo-router-mock';
 import VerifyScreen from '../../(auth)/verify';

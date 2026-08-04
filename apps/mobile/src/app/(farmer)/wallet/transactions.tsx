@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/wallet/transactions.tsx · screen 21 (Transaction History) — rebuilt to the Phase-1
-// design (Krishi_Verse_Design_System/screens/21-transactions.html): filter chips (All / Money In / Money Out /
+// design (Krishalaya_Design_System/screens/21-transactions.html): filter chips (All / Money In / Money Out /
 // Escrow / This month), an In / Out / Net summary, and a date-grouped feed. Thin screen (guide §3); FLAG_SECURE
 // (§4); behind the `wallet` flag; money via MoneyText/paise (Law 2); degrade-never-die (Law 12).
 //
@@ -15,9 +15,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import type { WalletLedgerEntry } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { WalletLedgerEntry } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security';

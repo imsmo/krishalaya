@@ -14,7 +14,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, Input, OtpInput, SegmentedControl, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, Input, OtpInput, SegmentedControl, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security';

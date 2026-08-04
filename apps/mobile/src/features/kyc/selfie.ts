@@ -2,7 +2,7 @@
 // unit-tested. The app captures a selfie and submits it as a KYC DOCUMENT; the actual liveness + Aadhaar-photo
 // FACE-MATCH is a server/provider capability (Law 11 — the app never asserts a match). This helper only resolves
 // which seeded KYC doc-type the selfie should be filed under, by matching its code — never fabricating an id.
-import type { KycDocType } from '@krishi-verse/sdk-js';
+import type { KycDocType } from '@krishalaya/sdk-js';
 
 // Codes a selfie/liveness doc-type might carry in the seeded catalogue (server-owned controlled vocab).
 const SELFIE_CODE_RE = /(selfie|liveness|live_photo|face|photo)/i;

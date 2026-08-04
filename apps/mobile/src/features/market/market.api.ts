@@ -2,7 +2,7 @@
 // (guide §3). Reads degrade-never-die (null/empty). createAlert is idempotent (Law 3) and throws so the screen
 // shows the precise outcome. Money is bigint minor strings (Law 2). Alert delivery is a server-side PUSH (P-04) —
 // the app only subscribes; the server fires when a price crosses the threshold.
-import type { Mandi, MandiPrice, MandiPulse, PriceAlert, AlertActivity, WeatherAlert, ForecastResult, WeatherPrefs } from '@krishi-verse/sdk-js';
+import type { Mandi, MandiPrice, MandiPulse, PriceAlert, AlertActivity, WeatherAlert, ForecastResult, WeatherPrefs } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

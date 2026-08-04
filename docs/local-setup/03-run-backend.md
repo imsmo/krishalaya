@@ -22,8 +22,8 @@ DATABASE_URL=postgres://kv_app:dev@localhost:5432/krishiverse
 DATABASE_POOL_MAX=20
 SHARD_COUNT=1
 JWT_ACCESS_SECRET=dev-secret-change-me-at-least-32-characters-long
-JWT_ISSUER=krishi-verse
-JWT_AUDIENCE=krishi-verse-app
+JWT_ISSUER=krishalaya
+JWT_AUDIENCE=krishalaya-app
 REDIS_URL=redis://localhost:6379
 # OPENSEARCH_URL=http://localhost:9200   # uncomment if you started OpenSearch
 WALLET_GRPC_URL=localhost:50051
@@ -108,8 +108,8 @@ ADMIN_PORT=4001
 DATABASE_URL=postgres://kv_app:dev@localhost:5432/krishiverse
 REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=dev-secret-change-me-at-least-32-characters-long
-JWT_ISSUER=krishi-verse-admin
-JWT_AUDIENCE=krishi-verse-admin
+JWT_ISSUER=krishalaya-admin
+JWT_AUDIENCE=krishalaya-admin
 EOF
 ```
 ```bash
@@ -131,8 +131,8 @@ NODE_ENV=development
 REALTIME_PORT=8090
 REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=dev-secret-change-me-at-least-32-characters-long
-JWT_ISSUER=krishi-verse
-JWT_AUDIENCE=krishi-verse-app
+JWT_ISSUER=krishalaya
+JWT_AUDIENCE=krishalaya-app
 RT_MAX_SUBSCRIPTIONS=50
 RT_MAX_BUFFERED_BYTES=1000000
 RT_MAX_QUEUED_MESSAGES=100

@@ -1,6 +1,6 @@
 // core/i18n/locales/en.ts · source-of-truth English strings (keys, never literals — Law 7).
 const en = {
-  'sms.otp': 'Krishi-Verse code: {code} (valid {minutes} min). Do not share.',
+  'sms.otp': 'Krishalaya code: {code} (valid {minutes} min). Do not share.',
   'error.BAD_REQUEST': 'Bad request',
   'error.VALIDATION_FAILED': 'Some details are not valid. Please check and try again.',
   'error.UNAUTHORIZED': 'Please sign in to continue.',
@@ -15,7 +15,7 @@ const en = {
   'error.LISTING_NOT_FOUND': 'Listing not found.',
   // DEV-27 (Q23, G0-4 founder ruling 2026-07-22): billing-document header badge — TS-002 §a "Documents"
   // row + DOC-000 §a/§b. Rendered alongside the tenant's own brand name, never in place of it.
-  'doc.poweredByKrishiVerse': 'Powered by Krishi Verse',
+  'doc.poweredByKrishalaya': 'Powered by Krishalaya',
 };
 export default en;
 export type MessageKey = keyof typeof en;

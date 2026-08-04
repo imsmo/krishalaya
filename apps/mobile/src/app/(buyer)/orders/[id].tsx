@@ -5,9 +5,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { OrderDetail } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, Icon, color, font, space } from '@krishi-verse/ui-native';
+import type { OrderDetail } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, Icon, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, completeOrder, cancelOrder } from '../../../features/orders/orders.api';

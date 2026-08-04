@@ -38,8 +38,8 @@ export class AdminConfig {
       PORT: num(raw.ADMIN_PORT, 4001),
       DATABASE_ADMIN_URL: String(raw.DATABASE_ADMIN_URL ?? raw.DATABASE_URL ?? ''),
       ADMIN_JWT_SECRET: String(raw.ADMIN_JWT_SECRET ?? ''),
-      ADMIN_JWT_ISSUER: String(raw.ADMIN_JWT_ISSUER ?? 'krishi-verse-admin'),
-      ADMIN_JWT_AUDIENCE: String(raw.ADMIN_JWT_AUDIENCE ?? 'krishi-verse-admin-api'),
+      ADMIN_JWT_ISSUER: String(raw.ADMIN_JWT_ISSUER ?? 'krishalaya-admin'),
+      ADMIN_JWT_AUDIENCE: String(raw.ADMIN_JWT_AUDIENCE ?? 'krishalaya-admin-api'),
       ADMIN_IP_ALLOWLIST: list(raw.ADMIN_IP_ALLOWLIST),
       ADMIN_REQUIRE_HARDWARE_KEY: bool(raw.ADMIN_REQUIRE_HARDWARE_KEY, raw.NODE_ENV === 'production'),
       ADMIN_STEP_UP_MAX_AGE_SEC: num(raw.ADMIN_STEP_UP_MAX_AGE_SEC, 900),   // 15 min
@@ -49,8 +49,8 @@ export class AdminConfig {
       WALLET_GRPC_TIMEOUT_MS: num(raw.WALLET_GRPC_TIMEOUT_MS, 4000),
       IMPERSONATION_ENABLED: bool(raw.IMPERSONATION_ENABLED, false),   // Law 10: default OFF
       IMPERSONATION_TOKEN_SECRET: String(raw.IMPERSONATION_TOKEN_SECRET ?? ''),
-      IMPERSONATION_TOKEN_ISSUER: String(raw.IMPERSONATION_TOKEN_ISSUER ?? 'krishi-verse-impersonation'),
-      IMPERSONATION_TOKEN_AUDIENCE: String(raw.IMPERSONATION_TOKEN_AUDIENCE ?? 'krishi-verse-api'),
+      IMPERSONATION_TOKEN_ISSUER: String(raw.IMPERSONATION_TOKEN_ISSUER ?? 'krishalaya-impersonation'),
+      IMPERSONATION_TOKEN_AUDIENCE: String(raw.IMPERSONATION_TOKEN_AUDIENCE ?? 'krishalaya-api'),
       IMPERSONATION_MAX_TTL_SEC: num(raw.IMPERSONATION_MAX_TTL_SEC, 1800),   // 30 min hard cap
     };
     this.assertProductionSecurity();

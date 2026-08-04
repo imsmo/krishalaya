@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · messaging resources (communication module): chat conversations + masked (privacy-proxy)
+// @krishalaya/sdk-js · messaging resources (communication module): chat conversations + masked (privacy-proxy)
 // calls. Conversations are membership-gated SERVER-SIDE (a non-participant gets 404 — no IDOR). open + postMessage
 // + initiate(call) carry an Idempotency-Key (Law 3). A message body is text OR a media id (voice/attachment) — the
 // bytes live in S3, referenced by id. A masked call bridges the two real numbers server-side; NO phone number is

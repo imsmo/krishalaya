@@ -2427,7 +2427,7 @@ Total files: 1975 (+ foundation files created earlier). P1 = build now · P2/P3 
 - `ops/alerts/wallet-alerts.yml` — alert rules as code **[P1]**
 
 ## ops/statuspage.md  (1 files)
-- `ops/statuspage.md` — status.krishi-verse.com config + update SOP (15-min Sev0 rule) **[P1]**
+- `ops/statuspage.md` — status.krishalaya.com config + update SOP (15-min Sev0 rule) **[P1]**
 
 ## packages/contracts  (12 files)
 - `packages/contracts/src/events/auctions.events.ts` — versioned event schemas for auctions (outbox contract) **[P1]**

@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 25-worker-profile — 25 · Worker Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/25-worker-profile.html`
+## 25-worker-profile — 25 · Worker Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/25-worker-profile.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 25 · Worker Profile — Krishi-Verse
+  - 25 · Worker Profile — Krishalaya
   - SK
   - Sunita Kumari
   - Sojitra Village, Anand · 2.4 km away
@@ -87,11 +87,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 26-book-worker — 26 · Book a Worker — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/26-book-worker.html`
+## 26-book-worker — 26 · Book a Worker — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/26-book-worker.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 26 · Book a Worker — Krishi-Verse
+  - 26 · Book a Worker — Krishalaya
   - Book Sunita Kumari
   - Step 3 of 4
   - Date, Hours & Wage
@@ -141,11 +141,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 27-booking-confirm — 27 · New Job Offer — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/27-booking-confirm.html`
+## 27-booking-confirm — 27 · New Job Offer — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/27-booking-confirm.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 27 · New Job Offer — Krishi-Verse
+  - 27 · New Job Offer — Krishalaya
   - New Job Offer
   - 🌾 NEW BOOKING REQUEST
   - You have a new job offer!
@@ -175,11 +175,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 28-notifications — 28 · Notifications — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/28-notifications.html`
+## 28-notifications — 28 · Notifications — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/28-notifications.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 28 · Notifications — Krishi-Verse
+  - 28 · Notifications — Krishalaya
   - Notifications
   - All
   - 5
@@ -215,11 +215,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 29-worker-home — 29 · Worker Home — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/29-worker-home.html`
+## 29-worker-home — 29 · Worker Home — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/29-worker-home.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 29 · Worker Home — Krishi-Verse
+  - 29 · Worker Home — Krishalaya
   - SK
   - Namaste Sunita!
   - आज 3 नए काम मिले हैं
@@ -262,11 +262,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 30-worker-browse-jobs — 30 · Find Jobs — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/30-worker-browse-jobs.html`
+## 30-worker-browse-jobs — 30 · Find Jobs — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/30-worker-browse-jobs.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 30 · Find Jobs — Krishi-Verse
+  - 30 · Find Jobs — Krishalaya
   - Find Jobs
   - All
   - ≤ 5 km
@@ -306,11 +306,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 31-worker-job-detail — 31 · Job Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/31-worker-job-detail.html`
+## 31-worker-job-detail — 31 · Job Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/31-worker-job-detail.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 31 · Job Detail — Krishi-Verse
+  - 31 · Job Detail — Krishalaya
   - Job Detail
   - Recommended for you
   - Wheat Harvesting Job
@@ -356,11 +356,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 32-worker-my-jobs — 32 · My Schedule — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/32-worker-my-jobs.html`
+## 32-worker-my-jobs — 32 · My Schedule — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/32-worker-my-jobs.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 32 · My Schedule — Krishi-Verse
+  - 32 · My Schedule — Krishalaya
   - My Schedule
   - Upcoming
   - (5)
@@ -411,11 +411,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 33-worker-active-job — 33 · Active Job — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/33-worker-active-job.html`
+## 33-worker-active-job — 33 · Active Job — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/33-worker-active-job.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 33 · Active Job — Krishi-Verse
+  - 33 · Active Job — Krishalaya
   - Today's Job
   - WORK IN PROGRESS
   - Wheat harvesting
@@ -447,11 +447,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 34-worker-payment-received — 34 · Payment Received — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/34-worker-payment-received.html`
+## 34-worker-payment-received — 34 · Payment Received — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/34-worker-payment-received.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 34 · Payment Received — Krishi-Verse
+  - 34 · Payment Received — Krishalaya
   - Payment
   - Payment received!
   - पैसा मिल गया
@@ -475,11 +475,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 35-worker-earnings — 35 · My Earnings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/35-worker-earnings.html`
+## 35-worker-earnings — 35 · My Earnings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/35-worker-earnings.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 35 · My Earnings — Krishi-Verse
+  - 35 · My Earnings — Krishalaya
   - My Earnings
   - This week
   - This month
@@ -534,11 +534,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 36-worker-availability — 36 · Set Availability — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/36-worker-availability.html`
+## 36-worker-availability — 36 · Set Availability — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/36-worker-availability.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 36 · Set Availability — Krishi-Verse
+  - 36 · Set Availability — Krishalaya
   - Set Availability
   - Tap a date to mark it available. Farmers can only book you on green days. Bookings can't be removed here.
   - ✓ Available
@@ -599,11 +599,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 37-worker-skills — 37 · My Skills — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/37-worker-skills.html`
+## 37-worker-skills — 37 · My Skills — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/37-worker-skills.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 37 · My Skills — Krishi-Verse
+  - 37 · My Skills — Krishalaya
   - My Skills
   - Skills you turn ON appear on your profile. Farmers can search by skill — more skills = more jobs. Add new ones anytime.
   - Crop work
@@ -646,11 +646,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 38-worker-profile-own — 38 · My Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/38-worker-profile-own.html`
+## 38-worker-profile-own — 38 · My Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/38-worker-profile-own.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 38 · My Profile — Krishi-Verse
+  - 38 · My Profile — Krishalaya
   - My Profile
   - Edit ✎
   - SK
@@ -708,11 +708,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 39-worker-insurance — 39 · PMSBY Insurance — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/39-worker-insurance.html`
+## 39-worker-insurance — 39 · PMSBY Insurance — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/39-worker-insurance.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 39 · PMSBY Insurance — Krishi-Verse
+  - 39 · PMSBY Insurance — Krishalaya
   - Insurance
   - ✓ ACTIVE · GOVT-BACKED
   - PMSBY Insurance
@@ -729,7 +729,7 @@
   - Coverage period
   - 1 Apr 2026 — 31 Mar 2027
   - Premium paid via
-  - Krishi-Verse Wallet
+  - Krishalaya Wallet
   - Auto-renew
   - ✓ ON
   - What's covered
@@ -755,11 +755,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 40-worker-reviews — 40 · My Reviews — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/40-worker-reviews.html`
+## 40-worker-reviews — 40 · My Reviews — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/40-worker-reviews.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 40 · My Reviews — Krishi-Verse
+  - 40 · My Reviews — Krishalaya
   - My Reviews
   - 4.9
   - ★★★★★
@@ -808,11 +808,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 41-worker-withdraw — 41 · Withdraw to Bank — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/41-worker-withdraw.html`
+## 41-worker-withdraw — 41 · Withdraw to Bank — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/41-worker-withdraw.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 41 · Withdraw to Bank — Krishi-Verse
+  - 41 · Withdraw to Bank — Krishalaya
   - Withdraw Money
   - Wallet balance
   - ₹2,800
@@ -836,11 +836,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 42-browse-workers — 42 · Find Workers — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/42-browse-workers.html`
+## 42-browse-workers — 42 · Find Workers — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/42-browse-workers.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 42 · Find Workers — Krishi-Verse
+  - 42 · Find Workers — Krishalaya
   - Find Workers
   - All Tasks
   - Within 5 km
@@ -916,11 +916,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 43-filter-workers — 43 · Filter Workers — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/43-filter-workers.html`
+## 43-filter-workers — 43 · Filter Workers — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/43-filter-workers.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 43 · Filter Workers — Krishi-Verse
+  - 43 · Filter Workers — Krishalaya
   - Filter Workers
   - Reset all
   - Task type
@@ -953,11 +953,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 44-book-step1-task — 44 · Book Sunita · Step 1 — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/44-book-step1-task.html`
+## 44-book-step1-task — 44 · Book Sunita · Step 1 — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/44-book-step1-task.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 44 · Book Sunita · Step 1 — Krishi-Verse
+  - 44 · Book Sunita · Step 1 — Krishalaya
   - Book Sunita Kumari
   - Step 1 of 4
   - What work do you need?
@@ -989,11 +989,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 45-book-step2-datetime — 45 · Book Sunita · Step 2 — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/45-book-step2-datetime.html`
+## 45-book-step2-datetime — 45 · Book Sunita · Step 2 — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/45-book-step2-datetime.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 45 · Book Sunita · Step 2 — Krishi-Verse
+  - 45 · Book Sunita · Step 2 — Krishalaya
   - Book Sunita Kumari
   - Step 2 of 4
   - When do you need her?
@@ -1065,11 +1065,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 46-book-step4-review — 46 · Book Sunita · Final Review — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/46-book-step4-review.html`
+## 46-book-step4-review — 46 · Book Sunita · Final Review — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/46-book-step4-review.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 46 · Book Sunita · Final Review — Krishi-Verse
+  - 46 · Book Sunita · Final Review — Krishalaya
   - Final Review
   - Step 4 of 4
   - Confirm & send
@@ -1110,11 +1110,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 47-booking-sent — 47 · Booking Sent — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/47-booking-sent.html`
+## 47-booking-sent — 47 · Booking Sent — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/47-booking-sent.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 47 · Booking Sent — Krishi-Verse
+  - 47 · Booking Sent — Krishalaya
   - Booking Status
   - WAITING FOR RESPONSE
   - Booking sent to Sunita
@@ -1131,11 +1131,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 48-booking-accepted — 48 · Sunita Accepted — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/48-booking-accepted.html`
+## 48-booking-accepted — 48 · Sunita Accepted — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/48-booking-accepted.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 48 · Sunita Accepted — Krishi-Verse
+  - 48 · Sunita Accepted — Krishalaya
   - Booking Confirmed
   - ✓ ACCEPTED
   - Sunita accepted your booking!
@@ -1164,11 +1164,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 49-booking-rejected — 49 · Booking Declined — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/49-booking-rejected.html`
+## 49-booking-rejected — 49 · Booking Declined — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/49-booking-rejected.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 49 · Booking Declined — Krishi-Verse
+  - 49 · Booking Declined — Krishalaya
   - Booking Update
   - Declined
   - Sunita couldn't take this job
@@ -1200,11 +1200,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 50-my-bookings-farmer — 50 · My Worker Bookings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/50-my-bookings-farmer.html`
+## 50-my-bookings-farmer — 50 · My Worker Bookings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/50-my-bookings-farmer.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 50 · My Worker Bookings — Krishi-Verse
+  - 50 · My Worker Bookings — Krishalaya
   - My Worker Bookings
   - Active
   - 3
@@ -1246,11 +1246,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 51-booking-detail-farmer — 51 · Job In Progress — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/51-booking-detail-farmer.html`
+## 51-booking-detail-farmer — 51 · Job In Progress — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/51-booking-detail-farmer.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 51 · Job In Progress — Krishi-Verse
+  - 51 · Job In Progress — Krishalaya
   - #BK-2026-0085
   - IN PROGRESS
   - Lakshmi is working on your farm
@@ -1292,11 +1292,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 62-book-step3-location — 62 · Book Worker — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/62-book-step3-location.html`
+## 62-book-step3-location — 62 · Book Worker — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/62-book-step3-location.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 62 · Book Worker — Krishi-Verse
+  - 62 · Book Worker — Krishalaya
   - Book Sunita Kumari
   - Step 3 of 5
   - Work Location
@@ -1321,11 +1321,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 63-book-step5-confirm — 63 · Confirm Booking — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/63-book-step5-confirm.html`
+## 63-book-step5-confirm — 63 · Confirm Booking — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/63-book-step5-confirm.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 63 · Confirm Booking — Krishi-Verse
+  - 63 · Confirm Booking — Krishalaya
   - Confirm Booking
   - Step 5 of 5
   - Confirm & Pay
@@ -1368,11 +1368,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 136-worker-edit-profile — 136 · Edit Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/136-worker-edit-profile.html`
+## 136-worker-edit-profile — 136 · Edit Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/136-worker-edit-profile.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 136 · Edit Profile — Krishi-Verse
+  - 136 · Edit Profile — Krishalaya
   - Edit Profile
   - SK
   - Change photo
@@ -1403,11 +1403,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 137-worker-add-skill — 137 · Add Skill — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/137-worker-add-skill.html`
+## 137-worker-add-skill — 137 · Add Skill — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/137-worker-add-skill.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 137 · Add Skill — Krishi-Verse
+  - 137 · Add Skill — Krishalaya
   - Add a Skill
   - What can you do?
   - Pick all that apply. Adding skills helps farmers find you for relevant jobs.
@@ -1460,11 +1460,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 138-worker-work-history — 138 · Work History — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/138-worker-work-history.html`
+## 138-worker-work-history — 138 · Work History — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/138-worker-work-history.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 138 · Work History — Krishi-Verse
+  - 138 · Work History — Krishalaya
   - My Work History
   - Lifetime
   - 187 jobs · ₹71,420
@@ -1508,11 +1508,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 139-worker-documents — 139 · My Documents — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/139-worker-documents.html`
+## 139-worker-documents — 139 · My Documents — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/139-worker-documents.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 139 · My Documents — Krishi-Verse
+  - 139 · My Documents — Krishalaya
   - My Documents
   - 🗂
   - 3 of 5 documents
@@ -1545,11 +1545,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 140-worker-apply-job — 140 · Apply for Job — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/140-worker-apply-job.html`
+## 140-worker-apply-job — 140 · Apply for Job — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/140-worker-apply-job.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 140 · Apply for Job — Krishi-Verse
+  - 140 · Apply for Job — Krishalaya
   - Apply for Job
   - 🌾
   - Wheat Harvesting · Ramesh Patel
@@ -1578,11 +1578,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 141-worker-job-offer — 141 · New Job Offer — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/141-worker-job-offer.html`
+## 141-worker-job-offer — 141 · New Job Offer — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/141-worker-job-offer.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 141 · New Job Offer — Krishi-Verse
+  - 141 · New Job Offer — Krishalaya
   - New Job Offer
   - 🌾
   - New job from Ramesh ji!
@@ -1618,11 +1618,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 142-worker-decline-job — 142 · Decline Job — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/142-worker-decline-job.html`
+## 142-worker-decline-job — 142 · Decline Job — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/142-worker-decline-job.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 142 · Decline Job — Krishi-Verse
+  - 142 · Decline Job — Krishalaya
   - Decline Job
   - 🌾
   - Wheat Harvesting · Ramesh Patel
@@ -1650,11 +1650,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 143-worker-dispute — 143 · Wage Dispute — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/143-worker-dispute.html`
+## 143-worker-dispute — 143 · Wage Dispute — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/143-worker-dispute.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 143 · Wage Dispute — Krishi-Verse
+  - 143 · Wage Dispute — Krishalaya
   - Report Wage Dispute
   - 🌾 Wheat Harvesting · Ramesh Patel
   - 22 Aug 2026 · Anand · 8 hrs
@@ -1686,11 +1686,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 144-worker-help — 144 · Help & Support — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/144-worker-help.html`
+## 144-worker-help — 144 · Help & Support — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/144-worker-help.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 144 · Help & Support — Krishi-Verse
+  - 144 · Help & Support — Krishalaya
   - Help & Support
   - 🤖
   - Ask AI · Voice
@@ -1723,11 +1723,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 145-worker-pmsby-enroll — 145 · PMSBY Enrollment — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/145-worker-pmsby-enroll.html`
+## 145-worker-pmsby-enroll — 145 · PMSBY Enrollment — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/145-worker-pmsby-enroll.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 145 · PMSBY Enrollment — Krishi-Verse
+  - 145 · PMSBY Enrollment — Krishalaya
   - PMSBY Insurance
   - Pradhan Mantri Suraksha Bima Yojana
   - ₹2 Lakh
@@ -1765,11 +1765,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 146-worker-claim — 146 · File Insurance Claim — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/146-worker-claim.html`
+## 146-worker-claim — 146 · File Insurance Claim — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/146-worker-claim.html`
 - **Route:** `src/app/(worker) · (farmer)/hire/…`  ·  **Feature:** `features/labour`  ·  **Flag:** `worker_app / labour_hire`
 - **Must render (exact design content):**
-  - 146 · File Insurance Claim — Krishi-Verse
+  - 146 · File Insurance Claim — Krishalaya
   - File Claim
   - Your PMSBY · Policy #PMSBY-2026-009842 · Active till 31 May 2027
   - What type of claim?

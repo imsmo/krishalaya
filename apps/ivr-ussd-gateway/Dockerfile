@@ -6,7 +6,7 @@ RUN corepack enable
 COPY pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/ivr-ussd-gateway ./apps/ivr-ussd-gateway
-RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishi-verse/ivr-ussd-gateway build
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishalaya/ivr-ussd-gateway build
 
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production

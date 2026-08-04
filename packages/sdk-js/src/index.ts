@@ -1,5 +1,5 @@
-// @krishi-verse/sdk-js · public entry. The official typed client every web frontend + mobile + integrator uses.
-export { KrishiVerseClient, createClient } from './client';
+// @krishalaya/sdk-js · public entry. The official typed client every web frontend + mobile + integrator uses.
+export { KrishalayaClient, createClient } from './client';
 export type { SdkConfig } from './config';
 export { SdkError, SdkNetworkError, SdkTimeoutError } from './errors';
 export type { HttpMethod, RequestOptions, Envelope } from './http';
@@ -44,7 +44,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
 // [DEV-01 FIX 2026-07-23: the 13 types above (InsightBucket, WalletStatementFile…DisputeMessage) were already defined in ./types.ts
 // (and in BusinessKycStatus/EkycStartResult/EkycVerifyResult's case, already consumed internally by
 // resources/payments.ts and resources/identity.ts) but were never re-exported from this public barrel, so every
-// consumer importing them from '@krishi-verse/sdk-js' (apps/mobile: kyc.api.ts, wallet.api.ts, wallet-home.ts,
+// consumer importing them from '@krishalaya/sdk-js' (apps/mobile: kyc.api.ts, wallet.api.ts, wallet-home.ts,
 // autopay.ts, system.api.ts, tenant.api.ts) failed `tsc` with TS2305 "has no exported member". Mechanical
 // barrel-export fix per DEV_PIPELINE_PLAYBOOK.md category (a); no behavior/schema change. `Skill` (imported by
 // apps/mobile/src/features/labour/skill-picker.ts) has NO definition anywhere in packages/sdk-js/src — that is a

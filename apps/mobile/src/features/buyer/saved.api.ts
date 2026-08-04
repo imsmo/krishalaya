@@ -11,7 +11,7 @@
 // string (Law 2). Lists are deduped + capped via the pure saved-set helpers (bounded storage, guide §5).
 // §13: a listing saved on ANOTHER device (id present server-side, no local snapshot yet) is omitted rather than
 // rendered from fabricated data — it hydrates once the buyer opens it on this device.
-import type { ListingCard, SavedEntityType, SavedSearch as ServerSavedSearch } from '@krishi-verse/sdk-js';
+import type { ListingCard, SavedEntityType, SavedSearch as ServerSavedSearch } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { asyncStorageKv as kv } from '../../core/offline/kv';
 import { currentScope } from '../../core/offline/scope';

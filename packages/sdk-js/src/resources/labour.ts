@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · labour resource (module 6 — the worker marketplace). Worker self-service: register +
+// @krishalaya/sdk-js · labour resource (module 6 — the worker marketplace). Worker self-service: register +
 // view/update OWN profile (the server scopes to the caller — userId is never client-supplied); browse OPEN
 // bookings (jobs); list + respond to OWN assignments (job offers) within the booking's accept/decline window
 // (server-enforced). `age_verified_18` is NOT settable here — it's verified out-of-band (KYC) and the server

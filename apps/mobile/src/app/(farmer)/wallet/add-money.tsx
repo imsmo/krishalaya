@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/wallet/add-money.tsx · screen 20 (Add Money) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/20-add-money.html): a big centred amount entry (₹ + value) with Min/Max,
+// (Krishalaya_Design_System/screens/20-add-money.html): a big centred amount entry (₹ + value) with Min/Max,
 // a quick-amount chip row, a "Pay Using" section (UPI apps + Card / Netbanking) and a "Proceed to Pay · ₹X" CTA.
 // Thin screen (guide §3); money is bigint paise (Law 2 — rupees → paise via rupeesToPaiseMinor, never a float);
 // FLAG_SECURE while shown (§4); behind the `payments_addmoney` flag (kill-switch); degrade-never-die (Law 12).
@@ -13,7 +13,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Button, EmptyState, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, EmptyState, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security/screen-guard';

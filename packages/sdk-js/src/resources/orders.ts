@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · orders resource (module 5). Read the buyer/seller timeline (keyset/cursor — never offset)
+// @krishalaya/sdk-js · orders resource (module 5). Read the buyer/seller timeline (keyset/cursor — never offset)
 // and one order's detail; drive the lifecycle (confirm → packed → ready → delivered → completed, plus cancel /
 // dispute). Ownership + the legal state transition are enforced SERVER-SIDE (the entity state machine + RLS) — the
 // client only reflects what's allowed. Lifecycle POSTs carry an Idempotency-Key (Law 3): a retried "confirm" from a

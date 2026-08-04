@@ -1,5 +1,5 @@
 {
-  "name": "@krishi-verse/tokens",
+  "name": "@krishalaya/tokens",
   "version": "0.1.0",
   "private": true,
   "description": "Design tokens (colors, type, spacing) generated for web/native/email.",

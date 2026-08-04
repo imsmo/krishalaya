@@ -1,7 +1,7 @@
 // Unit tests for the PURE wallet presenters + the withdrawal guard (features/wallet/txn). No React/native deps
 // (SDK/ui imports are type-only). Money is bigint minor units (Law 2) — the guard must use BigInt, never float.
 import { statusTone, statusLabelKey, txnTitleKey, presentPayment, presentPayout, withdrawable, withdrawErrorKind, ledgerMoneyTone, presentLedgerEntry, txnFlow } from '../../features/wallet/txn';
-import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishi-verse/sdk-js';
+import type { PaymentSummary, PayoutSummary, WalletLedgerEntry } from '@krishalaya/sdk-js';
 
 describe('statusTone / statusLabelKey', () => {
   it('maps terminal/non-terminal statuses to tone + label key', () => {

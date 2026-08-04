@@ -3,7 +3,7 @@
 // row 6). The `worker_app` flag defaults OFF (real flag store) so the screen takes its flag-gated EmptyState
 // branch before `browseJobs()`/`labourLookups()` ever run.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import Jobs from '../../(worker)/jobs';
 

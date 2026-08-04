@@ -14,8 +14,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { CourseLesson } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { CourseLesson } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getLessons, lessonMediaUrl, markProgress } from '../../../features/education/education.api';

@@ -10,9 +10,9 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { effectivePriceMinor } from '../../features/offers/negotiation';
-import type { ListingCard, ListingOffer } from '@krishi-verse/sdk-js';
+import type { ListingCard, ListingOffer } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

@@ -2,7 +2,7 @@
 // endpoint — mirrors `apps/web-tenant/src/app/api/mechanism/route.ts` exactly (referer-redirect, no client JS,
 // no token, no PII; see that file's own header comment for the full design rationale).
 import { NextRequest, NextResponse } from 'next/server';
-import { THEME_PREFERENCES } from '@krishi-verse/ui';
+import { THEME_PREFERENCES } from '@krishalaya/ui';
 import { THEME_COOKIE, SENIOR_COOKIE } from '../../../lib/mechanism';
 
 const ONE_YEAR = 60 * 60 * 24 * 365;

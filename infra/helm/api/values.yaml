@@ -25,9 +25,9 @@ env:
 - name: PORT
   value: '3000'
 - name: JWT_ISSUER
-  value: krishi-verse
+  value: krishalaya
 - name: JWT_AUDIENCE
-  value: krishi-verse-app
+  value: krishalaya-app
 - name: SHARD_COUNT
   value: '1'
 - name: DATABASE_POOL_MAX

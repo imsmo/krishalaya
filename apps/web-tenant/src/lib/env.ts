@@ -6,7 +6,7 @@ if (!publicApiUrl) throw new Error('web-tenant: NEXT_PUBLIC_API_URL is required'
 export const env = {
   publicApiUrl,
   serverApiUrl: process.env.API_URL_INTERNAL || publicApiUrl,   // server-side SSR origin (never shipped)
-  appName: 'Krishi-Verse Console',
+  appName: 'Krishalaya Console',
   /** The tenant this console instance serves. The API scopes login to a tenant, so the verify step must send it.
    *  In production this is derived from the host/subdomain; locally it's set explicitly via NEXT_PUBLIC_TENANT_ID. */
   tenantId: process.env.NEXT_PUBLIC_TENANT_ID,

@@ -10,7 +10,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Card, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { permissionsByGroup, permissionTitleKey, permissionWhyKey, type PermissionGroup, type PermissionItem } from '../../features/system/system';
 

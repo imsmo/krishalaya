@@ -4,7 +4,7 @@
 // existence. A hard network error keeps us here with a friendly message (degrade-never-die).
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Button, Input, ScreenScaffold, space, color, font } from '@krishi-verse/ui-native';
+import { Button, Input, ScreenScaffold, space, color, font } from '@krishalaya/ui-native';
 import { Text } from 'react-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { normalizeIndianPhone, requestOtp } from '../../core/auth/otp.flow';

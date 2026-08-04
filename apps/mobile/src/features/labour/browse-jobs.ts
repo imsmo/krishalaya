@@ -2,7 +2,7 @@
 // marketplace (screen 30). No React / no SDK I/O (SDK types are `import type` → erased) → unit-tested. These only
 // shape/order what the server already returned; the SERVER stays the authority on which bookings are open, the
 // wage floor, and eligibility. Money is compared as BigInt minor units (Law 2) — never floated.
-import type { LabourBooking } from '@krishi-verse/sdk-js';
+import type { LabourBooking } from '@krishalaya/sdk-js';
 
 /** A quick-filter chip. `all` clears; `today`/`week` bucket by start date; `group`/`women` use booking flags;
  * `skill:<id>` filters by the booking's task skill (§13 — distance/amenity filters from the design aren't here

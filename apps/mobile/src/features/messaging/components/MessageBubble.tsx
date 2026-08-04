@@ -4,7 +4,7 @@
 // download-link wiring — flagged). A flagged message shows a subtle moderation marker.
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { color, font, space, radius } from '@krishi-verse/ui-native';
+import { color, font, space, radius } from '@krishalaya/ui-native';
 import type { MessageView } from '../message-view';
 
 export function MessageBubble({ view, imageLabel, voiceLabel, flaggedLabel, time }: {

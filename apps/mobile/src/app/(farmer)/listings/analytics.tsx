@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/analytics.tsx · screen 115 (Listing Analytics) — built to the Phase-1
-// design (Krishi_Verse_Design_System/screens/115-farmer-listing-analytics.html): a green hero (title · live-for ·
+// design (Krishalaya_Design_System/screens/115-farmer-listing-analytics.html): a green hero (title · live-for ·
 // listing #, + a 3-stat row), "Views by day", a "Buyer journey funnel", "Buyer locations", and a Boost CTA. Thin
 // screen over features/listings; degrade-never-die (Law 12); ≥48px targets; i18n(hi/en/gu).
 //
@@ -17,9 +17,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { ListingCard, ListingAnalytics } from '@krishi-verse/sdk-js';
-import { formatNumber } from '@krishi-verse/i18n';
-import { EmptyState, SkeletonCard, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import type { ListingCard, ListingAnalytics } from '@krishalaya/sdk-js';
+import { formatNumber } from '@krishalaya/i18n';
+import { EmptyState, SkeletonCard, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getListing, listingAnalytics } from '../../../features/listings/listings.api';

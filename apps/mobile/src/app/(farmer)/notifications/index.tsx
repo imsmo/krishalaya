@@ -11,9 +11,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, SectionList, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { NotificationItem } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatRelative } from '@krishi-verse/i18n';
+import type { NotificationItem } from '@krishalaya/sdk-js';
+import { Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatRelative } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { inbox, markAllRead } from '../../../features/notifications/notifications.api';

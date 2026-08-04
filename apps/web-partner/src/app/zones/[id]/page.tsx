@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import { requirePartner } from '../../../lib/session';
 import { partnerClient } from '../../../lib/api-client';
 import { getTranslator } from '../../../lib/i18n';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { type ZoneRow } from '../../../features/logistics/network';
 import { updateZoneAction, setZoneActiveAction } from '../actions';
 

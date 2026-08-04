@@ -8,7 +8,7 @@ import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
-import { formatDate } from '@krishi-verse/i18n';
+import { formatDate } from '@krishalaya/i18n';
 import {
   SHIPMENT_STATUSES, SHIPMENT_BOXES, statusKey, statusTone, boxKey, buildListQuery, shipmentsHref, type ShipmentRow,
 } from '../../features/logistics/shipment';

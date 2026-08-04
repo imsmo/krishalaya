@@ -10,7 +10,7 @@
 // live) → an honest "unavailable" message on failure; the chosen Format is forwarded (assumed field).
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Button, Card, SegmentedControl, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, SegmentedControl, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { requestDataExport } from '../../features/system/system.api';

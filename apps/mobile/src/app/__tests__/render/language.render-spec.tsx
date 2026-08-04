@@ -1,12 +1,12 @@
 // apps/mobile/src/app/__tests__/render/language.render-spec.tsx · DEV-21 render-floor test for
 // src/app/(system)/language.tsx (screen 187). Proves the screen renders the 3 LIVE languages as selectable rows
-// AND all 11 target languages from the shared `@krishi-verse/i18n` registry as disabled "coming soon" rows — the
+// AND all 11 target languages from the shared `@krishalaya/i18n` registry as disabled "coming soon" rows — the
 // exact regression this batch fixes (previously only Marathi rendered as "coming soon", silently omitting
 // bn/te/ta/as/pa/kn/ml/or/ar/ur). Mocks: `core/auth/auth.store` (useAuth — the real store wires token-store/
 // secure-store/api-client at import time, out of scope here).
 import React from 'react';
 import { Text } from 'react-native';
-import { COMING_SOON_LANGUAGES, LANGUAGES } from '@krishi-verse/i18n';
+import { COMING_SOON_LANGUAGES, LANGUAGES } from '@krishalaya/i18n';
 import { renderScreen } from '../../../test-utils/render';
 import LanguageSwitcher from '../../(system)/language';
 

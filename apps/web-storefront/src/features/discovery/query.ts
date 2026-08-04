@@ -3,7 +3,7 @@
 // testable and safe to import from a Server Component. Money is handled as INTEGER STRINGS end-to-end (Law 2):
 // the buyer types a major-unit amount (e.g. ₹123.45) and we convert to a minor-unit string ("12345") with string
 // math — never a float, never `parseFloat`/`toFixed`.
-import type { ListingQuery } from '@krishi-verse/sdk-js';
+import type { ListingQuery } from '@krishalaya/sdk-js';
 
 /** Sale-type facets the buyer can pick. Mirrors the API's listing sale types (minus seller-only variants). The
  *  value is passed straight through to `listings.browse({ saleType })`; labels are localized in the UI. */

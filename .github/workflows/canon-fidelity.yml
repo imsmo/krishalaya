@@ -90,9 +90,9 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - name: packages/ui test suite
-        run: pnpm --filter @krishi-verse/ui test
+        run: pnpm --filter @krishalaya/ui test
       - name: packages/i18n test suite (registry + formatters)
-        run: pnpm --filter @krishi-verse/i18n test
+        run: pnpm --filter @krishalaya/i18n test
 
   script-tests:
     # Proves the 3 detector/checker scripts above are themselves correct (synthetic fixtures, planted violations,

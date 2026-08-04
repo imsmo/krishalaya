@@ -1,6 +1,6 @@
 // core/i18n/locales/gu.ts · Gujarati. Missing keys fall back to English.
 const gu: Record<string, string> = {
-  'sms.otp': 'Krishi-Verse કોડ: {code} ({minutes} મિનિટ માટે માન્ય). કોઈને કહેશો નહીં.',
+  'sms.otp': 'Krishalaya કોડ: {code} ({minutes} મિનિટ માટે માન્ય). કોઈને કહેશો નહીં.',
   'error.BAD_REQUEST': 'ખોટી વિનંતી',
   'error.VALIDATION_FAILED': 'કેટલીક વિગતો માન્ય નથી. કૃપા કરી તપાસીને ફરી પ્રયાસ કરો.',
   'error.UNAUTHORIZED': 'ચાલુ રાખવા માટે કૃપા કરી સાઇન ઇન કરો.',
@@ -14,6 +14,6 @@ const gu: Record<string, string> = {
   'error.REFRESH_INVALID': 'તમારું સત્ર સમાપ્ત થઈ ગયું છે. કૃપા કરી ફરી સાઇન ઇન કરો.',
   'error.LISTING_NOT_FOUND': 'લિસ્ટિંગ મળ્યું નથી.',
   // DEV-27 (Q23) billing-document header badge — brand name kept in Latin script, per sms.otp's own convention above.
-  'doc.poweredByKrishiVerse': 'Krishi Verse દ્વારા સંચાલિત',
+  'doc.poweredByKrishalaya': 'Krishalaya દ્વારા સંચાલિત',
 };
 export default gu;

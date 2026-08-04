@@ -2,7 +2,7 @@
 // test). A SEPARATE jest project from `jest.config.js` (which scopes to `src/test/**/*.spec.ts`, pure
 // framework-free logic, per that file's own header comment) — this one covers the new render-level proof
 // that the rewired console shell (`AppShell`/`Sidebar`/`Topbar`/`PageHeader`/`DataTable` from
-// `@krishi-verse/ui`) actually renders, mirroring DEV-46's own precedent of adding a SEPARATE jest project
+// `@krishalaya/ui`) actually renders, mirroring DEV-46's own precedent of adding a SEPARATE jest project
 // for a new test class rather than touching the existing config's scope (`apps/mobile/jest.config.js`'s
 // `render` project).
 //

@@ -1,4 +1,4 @@
-// @krishi-verse/i18n · registry unit tests (DEV-21). Proves the 14-entry LANGUAGE_REGISTRY is internally
+// @krishalaya/i18n · registry unit tests (DEV-21). Proves the 14-entry LANGUAGE_REGISTRY is internally
 // consistent (no duplicate codes, every fontPack id resolves, rtl only where the canon actually shipped an RTL
 // language set) and that the pre-existing LANGUAGES/resolveLanguage/isSupported surface is UNCHANGED (still
 // exactly the 3 live languages) — a regression test against accidentally widening "selectable" to "known".

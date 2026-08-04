@@ -3,7 +3,7 @@
 // founder-reported upside-down "Say hello 👋" (an `inverted` FlatList flips ListEmptyComponent 180° too — the
 // robust fix is to never mount the inverted list while there are zero messages, see ChatThreadScreen.tsx).
 import { presentMessage, canSend, normalizeBody, dayKey, isDayBoundary, hasMessages, type MessageView } from '../../features/messaging/message-view';
-import type { Message } from '@krishi-verse/sdk-js';
+import type { Message } from '@krishalaya/sdk-js';
 
 const msg = (over: Partial<Message>): Message => ({
   id: 'm1', conversationId: 'c1', senderUserId: 'u1', body: 'hi', attachmentMediaId: null, voiceMediaId: null,

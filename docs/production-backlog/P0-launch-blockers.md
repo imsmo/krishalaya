@@ -146,7 +146,7 @@ Legend: **Track** = which part of the system · **Why pending** = the honest rea
   ⛔ **Remaining (flagged, needs a decision):** the **domain-handler jobs** (outbox relay *execution*, notification
   dispatch/digest/push, settlement generation, mandi/weather ingest, KYC/scheme sync) run handler logic that lives
   in the `apps/api` Nest modules — the standalone worker can't import them. Decision: api runs them on a timer / a
-  shared `@krishi-verse/domain` lib / a bus consumer (see WORKER-RUNTIME.md). Tracked as **P0-9-follow-on**.
+  shared `@krishalaya/domain` lib / a bus consumer (see WORKER-RUNTIME.md). Tracked as **P0-9-follow-on**.
 - **Original gap:** The job *logic* was real (in `apps/api` modules) but `apps/worker/` was entirely a scaffold —
   nothing fired on a cadence.
 - **Track:** `apps/worker`

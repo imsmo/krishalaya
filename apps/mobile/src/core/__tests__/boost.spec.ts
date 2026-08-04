@@ -1,6 +1,6 @@
 // Unit tests for the PURE boost helpers (screen 114): tier-kind mapping, price sort, recommended pick.
 import { tierKind, sortByPrice, pickRecommendedTier } from '../../features/listings/boost';
-import type { BoostTier } from '@krishi-verse/sdk-js';
+import type { BoostTier } from '@krishalaya/sdk-js';
 
 const t = (id: string, code: string, priceMinor: string, days: number): BoostTier => ({ id, code, name: id, priceMinor, days });
 

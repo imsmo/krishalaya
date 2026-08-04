@@ -2,8 +2,8 @@
 // `import type` → erased) → unit-tested. The SERVER is the authority on eligibility, on the application state
 // machine, and on DBT credits — these helpers only drive the UI: status tone/labels, which applicant actions a
 // status allows, the document checklist completeness, and apply/eligibility input assembly + validation.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { ApplicationStatus, EligibilityResult } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { ApplicationStatus, EligibilityResult } from '@krishalaya/sdk-js';
 
 /** Status → tone for the pill (UX only; the server owns the real state machine). */
 export function applicationStatusTone(status: ApplicationStatus | string): PillTone {

@@ -1,6 +1,6 @@
 # stream-processor
 
-High-throughput Kafka stream tier for Krishi-Verse. Moves heavy fan-out work OFF the write path: instead of the
+High-throughput Kafka stream tier for Krishalaya. Moves heavy fan-out work OFF the write path: instead of the
 in-process relay doing search indexing / notifications / projections synchronously in the outbox tx, this
 service tails the outbox to Kafka and processes it asynchronously, at scale, decoupled and independently
 scalable. Phase 2 (the in-process handlers in `apps/api` remain the source of truth until this is rolled on).

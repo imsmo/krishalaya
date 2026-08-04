@@ -14,9 +14,9 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Cart, CartItem, CheckoutPreview } from '@krishi-verse/sdk-js';
-import { Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import type { Cart, CartItem, CheckoutPreview } from '@krishalaya/sdk-js';
+import { Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { getCart, checkoutPreview, setCartQuantity, removeFromCart } from '../../features/cart/cart.api';

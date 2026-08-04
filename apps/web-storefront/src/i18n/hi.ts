@@ -1,6 +1,6 @@
 // apps/web-storefront/src/i18n/hi.ts · Hindi message catalog. Mirrors EVERY key in en.ts (Law 7). A missing
 // key falls back to English then to the key itself (Translator), so parity is enforced by review, not by crash.
-import type { Messages } from '@krishi-verse/i18n';
+import type { Messages } from '@krishalaya/i18n';
 
 export const hi: Messages = {
   'brand.tagline': 'खेत से ताज़ा',

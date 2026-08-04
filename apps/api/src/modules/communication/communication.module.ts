@@ -1,5 +1,5 @@
 // modules/communication/communication.module.ts
-// Communication (PRD M13) — the NOTIFICATION SPINE. Krishi-Verse owns the policy + content: a GLOBAL event
+// Communication (PRD M13) — the NOTIFICATION SPINE. Krishalaya owns the policy + content: a GLOBAL event
 // catalog, per event×channel×language templates (+ tenant overrides), user preferences + quiet hours, and the
 // partitioned delivery log with cost tracking. Every module's domain events flow through the outbox relay; the
 // DomainEventFanoutHandler (one per mapped event type) renders + dispatches notifications via the EXTERNAL

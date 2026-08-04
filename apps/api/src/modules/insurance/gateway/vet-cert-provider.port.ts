@@ -2,7 +2,7 @@
 // Port to an EXTERNAL veterinary-certificate verification service (DEV-25, KV-BL-057, Wave 7) — checks a
 // livestock claim's vet-issued certificate (death/illness/treatment cert referenced by the claimant) against
 // the issuing authority's own record. Mirrors identity's ekyc-provider.port.ts honesty contract exactly:
-// Krishi-Verse owns the CLAIM + the POLICY; the provider owns the actual veterinary-registry proof. NO
+// Krishalaya owns the CLAIM + the POLICY; the provider owns the actual veterinary-registry proof. NO
 // commercial provider account exists in this environment (§8) — the certificate reference passed in is
 // whatever the claimant/insurer already has on file (a cert number / VCI registration, never a raw document
 // upload parsed here). Adapters are resilience-wrapped and DEGRADE to 'unavailable' (never a fabricated

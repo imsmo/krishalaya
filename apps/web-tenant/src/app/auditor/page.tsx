@@ -13,7 +13,7 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { env } from '../../lib/env';
 import { validateFilters, buildAuditQuery, summarizeChange, compact, changedKeys } from '../../features/audit/viewer';
-import type { AuditEntry } from '@krishi-verse/sdk-js';
+import type { AuditEntry } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

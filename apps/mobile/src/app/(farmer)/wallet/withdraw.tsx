@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/wallet/withdraw.tsx · screen 70 (Withdraw Money) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/70-wallet-withdraw.html): a green Available-Balance hero, a big amount entry
+// (Krishalaya_Design_System/screens/70-wallet-withdraw.html): a green Available-Balance hero, a big amount entry
 // with quick chips (incl. a "Max ₹X"), an instant-transfer info banner, a "Transfer to" bank/UPI destination card
 // (+ switch destination), and a "Withdraw ₹X →" CTA. Thin screen (guide §3); money is bigint paise (Law 2);
 // FLAG_SECURE while shown (§4); behind the `wallet` flag; degrade-never-die (Law 12).
@@ -23,8 +23,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { SdkError, type BankAccount } from '@krishi-verse/sdk-js';
-import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import { SdkError, type BankAccount } from '@krishalaya/sdk-js';
+import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security/screen-guard';

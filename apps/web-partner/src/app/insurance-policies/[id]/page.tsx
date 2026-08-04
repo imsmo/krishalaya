@@ -10,8 +10,8 @@ import { notFound } from 'next/navigation';
 import { requirePartner } from '../../../lib/session';
 import { partnerClient } from '../../../lib/api-client';
 import { getTranslator } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { SdkError } from '@krishalaya/sdk-js';
 import { policyStatusKey, policyStatusTone, isOnCover, claimsHref, type PolicyRow } from '../../../features/insurance/insurance';
 
 export const dynamic = 'force-dynamic';

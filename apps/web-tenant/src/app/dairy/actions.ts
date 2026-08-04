@@ -9,7 +9,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { validateMcc, validateMembership, validateRateCard, validateCollection } from '../../features/dairy/calc';
 
 const PATH = '/dairy';

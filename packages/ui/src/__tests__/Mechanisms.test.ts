@@ -59,7 +59,7 @@ describe('senior mode mechanism — seniorConsoleStyles (engineering-owed Q48 co
   it('is scoped to [data-senior="true"] — additive/opt-in, never an unconditional override', () => {
     expect(seniorConsoleStyles).toContain('[data-senior="true"] {');
   });
-  it('carries the ratified 1.30x multiplier literally (imported from @krishi-verse/tokens, not re-typed)', () => {
+  it('carries the ratified 1.30x multiplier literally (imported from @krishalaya/tokens, not re-typed)', () => {
     expect(seniorConsoleStyles).toContain('* 1.3');
   });
   it('redefines every one of the 7 base --text-* scale steps used by the console (xs..3xl)', () => {

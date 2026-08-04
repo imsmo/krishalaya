@@ -18,9 +18,9 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Plan, Subscription } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, MoneyText, ProgressBar, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { Plan, Subscription } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, Card, EmptyState, MoneyText, ProgressBar, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { billingDashboard } from '../../features/tenant/tenant.api';

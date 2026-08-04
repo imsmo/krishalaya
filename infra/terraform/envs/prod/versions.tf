@@ -23,7 +23,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "krishi-verse"
+      Project     = "krishalaya"
       Environment = "prod"
       ManagedBy   = "terraform"
     }

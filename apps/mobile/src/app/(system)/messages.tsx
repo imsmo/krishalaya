@@ -11,9 +11,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Conversation } from '@krishi-verse/sdk-js';
-import { EmptyState, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { Conversation } from '@krishalaya/sdk-js';
+import { EmptyState, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listConversations } from '../../features/messaging/messaging.api';

@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 09-farmer-home — 09 · Farmer Home — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/09-farmer-home.html`
+## 09-farmer-home — 09 · Farmer Home — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/09-farmer-home.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 09 · Farmer Home — Krishi-Verse
+  - 09 · Farmer Home — Krishalaya
   - R
   - नमस्ते,
   - Ramesh ji
@@ -60,11 +60,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 10-create-listing — 10 · Create Listing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/10-create-listing.html`
+## 10-create-listing — 10 · Create Listing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/10-create-listing.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 10 · Create Listing — Krishi-Verse
+  - 10 · Create Listing — Krishalaya
   - Create Listing
   - Photo
   - Voice
@@ -93,11 +93,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 11-listing-preview — 11 · Preview Listing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/11-listing-preview.html`
+## 11-listing-preview — 11 · Preview Listing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/11-listing-preview.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 11 · Preview Listing — Krishi-Verse
+  - 11 · Preview Listing — Krishalaya
   - Preview & Publish
   - 🌾
   - Premium Wheat — Lokwan
@@ -132,11 +132,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 12-my-listings — 12 · My Listings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/12-my-listings.html`
+## 12-my-listings — 12 · My Listings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/12-my-listings.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 12 · My Listings — Krishi-Verse
+  - 12 · My Listings — Krishalaya
   - My Listings
   - 3
   - Active
@@ -195,11 +195,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 112-farmer-my-listing-detail — 112 · My Listing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/112-farmer-my-listing-detail.html`
+## 112-farmer-my-listing-detail — 112 · My Listing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/112-farmer-my-listing-detail.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 112 · My Listing — Krishi-Verse
+  - 112 · My Listing — Krishalaya
   - My Listing
   - 🌾
   - ✓ ACTIVE
@@ -249,11 +249,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 113-farmer-edit-listing — 113 · Edit Listing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/113-farmer-edit-listing.html`
+## 113-farmer-edit-listing — 113 · Edit Listing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/113-farmer-edit-listing.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 113 · Edit Listing — Krishi-Verse
+  - 113 · Edit Listing — Krishalaya
   - Edit Listing
   - Photos
   - 🌾
@@ -292,11 +292,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 114-farmer-boost-listing — 114 · Boost Listing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/114-farmer-boost-listing.html`
+## 114-farmer-boost-listing — 114 · Boost Listing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/114-farmer-boost-listing.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 114 · Boost Listing — Krishi-Verse
+  - 114 · Boost Listing — Krishalaya
   - Boost Listing
   - 🚀
   - Reach 5× More Buyers
@@ -338,11 +338,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 115-farmer-listing-analytics — 115 · Listing Analytics — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/115-farmer-listing-analytics.html`
+## 115-farmer-listing-analytics — 115 · Listing Analytics — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/115-farmer-listing-analytics.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 115 · Listing Analytics — Krishi-Verse
+  - 115 · Listing Analytics — Krishalaya
   - Listing Analytics
   - Premium Wheat — Lokwan
   - Live for 3 days · Listing #LST-2026-247
@@ -387,11 +387,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 116-farmer-repost-listing — 116 · Repost Listing — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/116-farmer-repost-listing.html`
+## 116-farmer-repost-listing — 116 · Repost Listing — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/116-farmer-repost-listing.html`
 - **Route:** `src/app/(farmer)/…`  ·  **Feature:** `features/farmer · listings`  ·  **Flag:** `farmer_app`
 - **Must render (exact design content):**
-  - 116 · Repost Listing — Krishi-Verse
+  - 116 · Repost Listing — Krishalaya
   - Repost Listing
   - ⏳
   - Listing expired

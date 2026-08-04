@@ -5,8 +5,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import type { AmbassadorEarning } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import type { AmbassadorEarning } from '@krishalaya/sdk-js';
+import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { myEarnings } from '../../features/ambassador/ambassador.api';

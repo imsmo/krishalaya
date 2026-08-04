@@ -1,6 +1,6 @@
 // Unit tests for the PURE browse-jobs filter/sort/tag logic (screen 30).
 import { matchesFilter, filterJobs, sortJobs, jobTags, presentSkillIds } from '../../features/labour/browse-jobs';
-import type { LabourBooking } from '@krishi-verse/sdk-js';
+import type { LabourBooking } from '@krishalaya/sdk-js';
 
 const now = Date.parse('2026-08-18T12:00:00Z');
 const b = (over: Partial<LabourBooking>): LabourBooking => ({

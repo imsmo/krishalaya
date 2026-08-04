@@ -3,7 +3,7 @@
 // catalogue by tier into the design's categories, resolves an emoji + a marketing badge per skill, and toggles the
 // worker's self-declared skill-id set. The SERVER owns the catalogue + the statutory wage floors; these only shape
 // the fixed master data for display and manage the local selection saved via updateWorker({ skillIds }).
-import type { LabourLookups } from '@krishi-verse/sdk-js';
+import type { LabourLookups } from '@krishalaya/sdk-js';
 
 export type Skill = LabourLookups['skills'][number];
 export type SkillCategory = 'crop' | 'irrigation' | 'specialised';

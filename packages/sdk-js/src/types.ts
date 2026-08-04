@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · response types mirroring the API read-models. MONEY IS ALWAYS A STRING of bigint minor
+// @krishalaya/sdk-js · response types mirroring the API read-models. MONEY IS ALWAYS A STRING of bigint minor
 // units (Law 2) — never a JS number, so a large balance/price never loses precision in a browser.
 export interface Page<T> { items: T[]; nextCursor: string | null; total?: number | null; }
 

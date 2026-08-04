@@ -8,7 +8,7 @@
 // 4xx/5xx SdkError, or an unrelated post-success throw) fell through that same catch-all. The fix is narrow and
 // literal: only `SdkNetworkError` (and its subclass `SdkTimeoutError`) means "the request never reached the
 // API" — that is the ONLY condition that should ever be silently queued instead of surfaced to the farmer.
-import { SdkNetworkError } from '@krishi-verse/sdk-js';
+import { SdkNetworkError } from '@krishalaya/sdk-js';
 
 /** True only for a genuine connectivity failure (the request never reached the API / timed out waiting for a
  * response). Anything else — a real SdkError of ANY status (2xx never throws; so this means 3xx/4xx/5xx), or an

@@ -5,9 +5,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { Course, CourseLesson, Enrollment, LessonProgress } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, ProgressBar, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import type { Course, CourseLesson, Enrollment, LessonProgress } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, ProgressBar, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getCourse, getLessons, myEnrollments, getProgress, enroll } from '../../../features/education/education.api';

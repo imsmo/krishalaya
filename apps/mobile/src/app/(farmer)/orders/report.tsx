@@ -4,8 +4,8 @@
 import React, { useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Input, EmptyState, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, Input, EmptyState, ScreenScaffold, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { reportOrder } from '../../../features/orders/orders.api';

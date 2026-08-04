@@ -21,8 +21,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     redisUrl: env.REDIS_URL ?? '',
     jwt: {
       accessSecret: env.JWT_ACCESS_SECRET ?? '',
-      issuer: env.JWT_ISSUER ?? 'krishi-verse',
-      audience: env.JWT_AUDIENCE ?? 'krishi-verse-app',
+      issuer: env.JWT_ISSUER ?? 'krishalaya',
+      audience: env.JWT_AUDIENCE ?? 'krishalaya-app',
     },
     limits: {
       maxSubscriptions: Number(env.RT_MAX_SUBSCRIPTIONS ?? 50),

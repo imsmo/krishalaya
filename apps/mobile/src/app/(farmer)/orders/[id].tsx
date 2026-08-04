@@ -9,10 +9,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { OrderDetail, OrderRole, Shipment } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { OrderDetail, OrderRole, Shipment } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, getOrderShipment, confirmOrder, packOrder, readyOrder, completeOrder, cancelOrder } from '../../../features/orders/orders.api';

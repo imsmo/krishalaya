@@ -12,7 +12,7 @@ import { getTranslator } from '../../../lib/i18n';
 import {
   registerWebhookAction, updateWebhookAction, rotateWebhookSecretAction, deleteWebhookAction,
 } from './actions';
-import type { WebhookEndpoint } from '@krishi-verse/sdk-js';
+import type { WebhookEndpoint } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

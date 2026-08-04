@@ -13,10 +13,10 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { canReview, canEscalate, canResolve, RESOLUTION_TYPES } from '../../../features/disputes/manage';
 import { reviewDisputeAction, escalateDisputeAction, resolveDisputeAction } from '../actions';
-import type { Dispute } from '@krishi-verse/sdk-js';
+import type { Dispute } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

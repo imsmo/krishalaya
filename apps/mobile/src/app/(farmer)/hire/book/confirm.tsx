@@ -15,9 +15,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SdkError, type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, Toggle, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatDate, formatMoneyMinor } from '@krishi-verse/i18n';
+import { SdkError, type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, Toggle, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../../core/security/screen-guard';

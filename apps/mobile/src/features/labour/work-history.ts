@@ -4,7 +4,7 @@
 // task/crop, farmer name, wage ₹, star rating, review quote — is NOT on the attendance contract, so this file
 // never assembles it (§13: the screen degrades those to a neutral card, never fabricates "Ramesh Patel"/"₹400"/
 // "Excellent worker"). Hours are numbers (not money — wages settle only in the ledger, Law 2).
-import type { LabourAttendance } from '@krishi-verse/sdk-js';
+import type { LabourAttendance } from '@krishalaya/sdk-js';
 
 /** Total worked hours for a day = regular + overtime, or null when the server hasn't stamped hours yet. Pure. */
 export function attendanceTotalHours(att: Pick<LabourAttendance, 'hoursRegular' | 'hoursOvertime'>): number | null {

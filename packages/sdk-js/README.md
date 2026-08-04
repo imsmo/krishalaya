@@ -1,6 +1,6 @@
-# @krishi-verse/sdk-js
+# @krishalaya/sdk-js
 
-The official typed TypeScript client for the Krishi-Verse API. Every web frontend, the mobile app, and
+The official typed TypeScript client for the Krishalaya API. Every web frontend, the mobile app, and
 third-party integrators talk to the platform through this one SDK — so the API contract, auth handling, money
 semantics, and resilience live in a single audited place.
 
@@ -14,7 +14,7 @@ semantics, and resilience live in a single audited place.
   auto-retried** (Law 3 — a non-idempotent call must fail loudly, never silently double-fire). Mutations pass an
   `Idempotency-Key`.
 - **Money is a string of bigint minor units** (Law 2). `priceMinor`/balances are typed `string` so a large value
-  never loses precision in a browser. Format with `@krishi-verse/i18n`'s `formatMoneyMinor`.
+  never loses precision in a browser. Format with `@krishalaya/i18n`'s `formatMoneyMinor`.
 - **Typed errors.** A non-2xx becomes an `SdkError` carrying the API's stable `code`, `status`, and `requestId`
   (helpers: `isAuth/isForbidden/isNotFound/isConflict/isValidation/isRateLimited`). Transport failures are
   `SdkNetworkError` / `SdkTimeoutError`.
@@ -24,8 +24,8 @@ semantics, and resilience live in a single audited place.
 ## Usage
 
 ```ts
-import { createClient } from '@krishi-verse/sdk-js';
-const kv = createClient({ baseUrl: 'https://api.krishiverse.com', getToken: () => myToken, tenantSlug: 'acme' });
+import { createClient } from '@krishalaya/sdk-js';
+const kv = createClient({ baseUrl: 'https://api.krishalaya.com', getToken: () => myToken, tenantSlug: 'acme' });
 const page = await kv.listings.browse({ q: 'tomato', limit: 24 });   // anonymous, retried GET
 const prov = await kv.traceability.scan('QR-TOKEN');                 // public farm-to-fork provenance
 const me = await kv.auth.me();                                       // uses the bearer token

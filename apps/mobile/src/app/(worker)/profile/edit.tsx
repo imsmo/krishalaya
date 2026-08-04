@@ -12,8 +12,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { WorkerProfile, UserProfile, LabourLookups } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { WorkerProfile, UserProfile, LabourLookups } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getMyWorker, updateWorker, labourLookups } from '../../../features/labour/labour.api';

@@ -1,6 +1,6 @@
 // Unit tests for the PURE worker active-job logic (features/labour/worker-jobs). Money summed with BigInt (Law 2).
 import { jobBucket, categorizeAssignments, sumEarningsMinor, canClockIn, isWagePaid } from '../../features/labour/worker-jobs';
-import type { LabourAssignment } from '@krishi-verse/sdk-js';
+import type { LabourAssignment } from '@krishalaya/sdk-js';
 
 const a = (status: string, wageMinor = '0', id = Math.random().toString()): LabourAssignment =>
   ({ id, bookingId: 'b', workerId: 'w', status, wageMinor, acceptedAt: null, createdAt: '2026-01-01' } as LabourAssignment);

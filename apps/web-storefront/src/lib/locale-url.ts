@@ -3,7 +3,7 @@
 // unit-testable with no Next.js runtime.
 //
 // SCHEME DECIDED (Q16, this batch): a `?lang=<code>` query parameter, read with priority over the existing
-// `kv_lang` cookie, wired to `@krishi-verse/i18n`'s LANGUAGE_REGISTRY (only LIVE codes are accepted — a
+// `kv_lang` cookie, wired to `@krishalaya/i18n`'s LANGUAGE_REGISTRY (only LIVE codes are accepted — a
 // "coming soon" registry code is a real, known code but never a selectable locale today, same distinction the
 // LocaleSwitcher's own `COMING_SOON_LANGUAGES` rendering already makes).
 //
@@ -20,7 +20,7 @@
 // REAL, bookmarkable, shareable part of the URL (satisfying the ruling's own text — "locale scheme in URL", not
 // "URL as the ONLY locale source") without moving a single existing file or changing a single existing route's
 // path. It is explicitly ADDITIVE: a future batch can still layer a path-prefix scheme on top without conflict.
-import { isSupported, resolveLanguage } from '@krishi-verse/i18n';
+import { isSupported, resolveLanguage } from '@krishalaya/i18n';
 
 /** Reads `?lang=` from a URL and returns the resolved LIVE language code, or `null` if absent/unknown/not-live
  *  (never throws, never silently invents a code — a null return means "the URL expressed no valid preference,

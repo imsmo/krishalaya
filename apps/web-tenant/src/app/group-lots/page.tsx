@@ -13,10 +13,10 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { env } from '../../lib/env';
 import { notFound } from 'next/navigation';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { GROUP_LOT_STATUSES, coordinatorActions, canPledge } from '../../features/group-lots/coordinator';
 import { createLotAction, pledgeAction, markReadyAction, cancelLotAction, settleAction } from './actions';
-import type { GroupLot, GroupLotDetail, GroupLotStatus } from '@krishi-verse/sdk-js';
+import type { GroupLot, GroupLotDetail, GroupLotStatus } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

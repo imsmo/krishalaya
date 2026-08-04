@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · self-serve onboarding resource (KV-BL-066, screens 04/433 role picker). An OTP-verified
+// @krishalaya/sdk-js · self-serve onboarding resource (KV-BL-066, screens 04/433 role picker). An OTP-verified
 // user starts with a bare account and no tenant role; this grants one of the pilot's self-serve-safe roles
 // (farmer|customer today — see the API's SELF_SERVE_ALLOWED). Every other role code is rejected with a typed 403
 // (SdkError.code === 'SELFSERVE_ROLE_NOT_ELIGIBLE', details.reason one of platform_role|invite_only|not_pilot_ga|

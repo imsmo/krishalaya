@@ -1,6 +1,6 @@
 // apps/web-tenant/src/i18n/hi.ts · Hindi message catalog. Mirrors EVERY key in en.ts (Law 7). A missing key
 // falls back to English then to the key itself (Translator), so parity is enforced by review, not by crash.
-import type { Messages } from '@krishi-verse/i18n';
+import type { Messages } from '@krishalaya/i18n';
 
 export const hi: Messages = {
   'nav.dashboard': 'डैशबोर्ड',
@@ -478,7 +478,7 @@ export const hi: Messages = {
   'roles.assign.role': 'भूमिका',
   'roles.assign.rolePlaceholder': 'भूमिका चुनें…',
   'roles.assign.submit': 'भूमिका दें',
-  'roles.assign.platformNote': 'प्लेटफ़ॉर्म/मालिक भूमिकाएँ यहाँ नहीं दी जा सकतीं — उन्हें Krishi-Verse प्रबंधित करता है।',
+  'roles.assign.platformNote': 'प्लेटफ़ॉर्म/मालिक भूमिकाएँ यहाँ नहीं दी जा सकतीं — उन्हें Krishalaya प्रबंधित करता है।',
   'roles.assignments.title': 'वर्तमान असाइनमेंट',
   'roles.assignments.empty': 'अभी कोई भूमिका असाइनमेंट नहीं।',
   'roles.assignments.user': 'सदस्य',

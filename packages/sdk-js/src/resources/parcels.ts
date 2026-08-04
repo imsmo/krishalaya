@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · land parcels resource (P-22 farm details). The farmer registers a parcel (idempotent —
+// @krishalaya/sdk-js · land parcels resource (P-22 farm details). The farmer registers a parcel (idempotent —
 // Law 3) and lists/reads their OWN parcels (box=mine, server-scoped — no IDOR). `area` is a decimal string in
 // `areaUnit` (acre/ha) — NOT money. Server verifies parcels (verificationStatus); the app shows it read-only.
 // Gated server-side by the `land_soil_weather` flag.

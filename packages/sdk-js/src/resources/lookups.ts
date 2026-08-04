@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · lookups / taxonomy reads (P1-9). One place for the reference data every app needs to
+// @krishalaya/sdk-js · lookups / taxonomy reads (P1-9). One place for the reference data every app needs to
 // render pickers + facets with REAL names instead of opaque UUIDs: the category tree, a category's attributes +
 // their options, admin regions, and controlled vocabularies (doc_type, cancel_reason, …). All are PUBLIC reads
 // (anonymous storefront facets use them) and locale-resolved server-side from the caller's language. None move

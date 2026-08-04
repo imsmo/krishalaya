@@ -2,7 +2,7 @@
 // unit-tested. planPriceMinor picks the right bigint minor-unit string for the chosen billing cycle (rendered via
 // formatMoneyMinor — never a float, Law 2). mergeUsageRows unions the plan's limits with the tenant's usage into
 // display rows (a missing limit means "unlimited"; a missing usage means 0).
-import type { Plan } from '@krishi-verse/sdk-js';
+import type { Plan } from '@krishalaya/sdk-js';
 
 export type BillingCycle = 'monthly' | 'annual';
 

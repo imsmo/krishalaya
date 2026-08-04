@@ -7,7 +7,7 @@
 // state, NO per-visit commission amount, and NO distance-travelled aggregate. So the screen shows real logged
 // visits (time + purpose + notes) grouped by day, a this-month count and a distinct-region count — never a
 // fabricated "Anil Kumar · BORSAD · +₹25" planned row or a made-up "142 km travelled".
-import type { AmbassadorVisit } from '@krishi-verse/sdk-js';
+import type { AmbassadorVisit } from '@krishalaya/sdk-js';
 
 export type VisitDay = 'today' | 'yesterday' | 'earlier';
 

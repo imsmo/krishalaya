@@ -2,7 +2,7 @@
 // (SDK types are `import type` → erased) → unit-tested. The SERVER is the authority on enrollment progress + the
 // quiz score it stores (the client posts the score it computed; the server recomputes overall % + completion).
 // These helpers parse the opaque lesson `quiz` payload defensively and compute a UX score/progress.
-import type { CourseLesson, LessonProgress, Enrollment } from '@krishi-verse/sdk-js';
+import type { CourseLesson, LessonProgress, Enrollment } from '@krishalaya/sdk-js';
 
 export interface QuizQuestion { q: string; options: string[]; answer: number; hint?: string }
 export const QUIZ_PASS_PCT = 60;

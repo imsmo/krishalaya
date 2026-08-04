@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 19-wallet-home — 19 · Wallet — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/19-wallet-home.html`
+## 19-wallet-home — 19 · Wallet — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/19-wallet-home.html`
 - **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
 - **Must render (exact design content):**
-  - 19 · Wallet — Krishi-Verse
+  - 19 · Wallet — Krishalaya
   - Wallet
   - Available Balance
   - ₹12,450
@@ -51,11 +51,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 20-add-money — 20 · Add Money — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/20-add-money.html`
+## 20-add-money — 20 · Add Money — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/20-add-money.html`
 - **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
 - **Must render (exact design content):**
-  - 20 · Add Money — Krishi-Verse
+  - 20 · Add Money — Krishalaya
   - Add Money
   - Enter Amount
   - ₹
@@ -84,11 +84,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 21-transactions — 21 · Transactions — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/21-transactions.html`
+## 21-transactions — 21 · Transactions — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/21-transactions.html`
 - **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
 - **Must render (exact design content):**
-  - 21 · Transactions — Krishi-Verse
+  - 21 · Transactions — Krishalaya
   - Transaction History
   - Export
   - All
@@ -126,11 +126,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 59-farmer-payout-history — 59 · Payout History — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/59-farmer-payout-history.html`
+## 59-farmer-payout-history — 59 · Payout History — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/59-farmer-payout-history.html`
 - **Route:** `src/app/(farmer)/wallet/…`  ·  **Feature:** `features/wallet`  ·  **Flag:** `wallet`
 - **Must render (exact design content):**
-  - 59 · Payout History — Krishi-Verse
+  - 59 · Payout History — Krishalaya
   - Payout History
   - Total received lifetime
   - ₹4,28,750

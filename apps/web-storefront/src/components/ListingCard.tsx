@@ -3,8 +3,8 @@
 // Copy (organic badge, "available" suffix) arrives as already-localized labels from the server page, so the card
 // stays a pure presentational component with no hardcoded strings.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import type { ListingCard as ListingCardData } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { ListingCard as ListingCardData } from '@krishalaya/sdk-js';
 
 export type ListingCardLabels = { organic: string; available: string };
 

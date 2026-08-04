@@ -4,7 +4,7 @@
 // Degrade-never-die: a hard failure → an empty page / null, never a crash. Money stays bigint-minor (Law 2) — the
 // screen formats via MoneyText. Cache is scoped (anon-safe): the public catalogue is the same for everyone, so we
 // scope it under a fixed 'public' bucket rather than the user, and never cache another tenant's private data.
-import type { ListingCard, ListingQuery, ReviewSummary, CategoryNode, SellerPublicProfile, PublicReview } from '@krishi-verse/sdk-js';
+import type { ListingCard, ListingQuery, ReviewSummary, CategoryNode, SellerPublicProfile, PublicReview } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { cache } from '../../core/offline/sqlite.db';
 import { POLICY } from '../../core/offline/cache-policies';

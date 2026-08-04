@@ -4,7 +4,7 @@
 // before any of its four feature APIs (cart/addresses/wallet/payments) run. `core/security/screen-guard` mocked
 // (native expo-screen-capture, same pattern as every other secure screen in this batch).
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import Checkout from '../../(buyer)/checkout';
 

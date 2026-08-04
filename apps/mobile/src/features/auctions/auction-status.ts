@@ -2,8 +2,8 @@
 // `import type` → erased) → unit-tested. Money is bigint minor-unit strings (Law 2): the current price + min next
 // bid + bid validation all use BigInt, never a float. The SERVER is the authority on whether a bid is legal
 // (highest, increment, EMD, timing) — this is UX gating + display only.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
 
 /** Auction status → chip tone. */
 export function auctionStatusTone(status: string): PillTone {

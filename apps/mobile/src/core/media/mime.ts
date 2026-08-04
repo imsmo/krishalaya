@@ -1,6 +1,6 @@
 // apps/mobile/src/core/media/mime.ts · PURE helpers mapping mime types to the API's MediaKind + an allowlist
 // guard. Kept separate from the expo-dependent code so it can be unit-tested offline (see __tests__).
-import type { MediaKind } from '@krishi-verse/sdk-js';
+import type { MediaKind } from '@krishalaya/sdk-js';
 
 const IMAGE = /^image\/(jpeg|png|webp|heic|heif)$/i;
 const VIDEO = /^video\/(mp4|quicktime|3gpp|webm)$/i;

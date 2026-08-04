@@ -1,13 +1,13 @@
-# AI AGENT BUILD GUIDE — Krishi-Verse
+# AI AGENT BUILD GUIDE — Krishalaya
 
 **Paste the "Production-Grade Contract" (§1) at the top of EVERY build command.** This guide is
-the engineering constitution for building Krishi-Verse — a multi-tenant agri-commerce platform
+the engineering constitution for building Krishalaya — a multi-tenant agri-commerce platform
 targeting **millions of active users and billions of operations**, where thousands of competitors
 and global attackers will probe us from day one. Build accordingly: every module is production,
 not a demo.
 
 Reference module = `apps/api/src/modules/listings`. Hardened example = `apps/api/src/modules/identity`
-(read its `README.md` and `Krishi_Verse_Identity_Security_Audit.md`). When in doubt, match them.
+(read its `README.md` and `Krishalaya_Identity_Security_Audit.md`). When in doubt, match them.
 
 ---
 
@@ -43,7 +43,7 @@ PRODUCTION-GRADE CONTRACT — obey for everything you build:
 ## 2. PRE-FLIGHT — read before writing a line
 1. `/CLAUDE.md` — the **12 laws** (10 + Law 11 god-mode-only-in-admin-api + Law 12 degrade-never-die). Non-negotiable.
 2. `apps/api/src/modules/listings/` IN FULL — gold-standard structure/patterns.
-3. `apps/api/src/modules/identity/` + its `README.md` + `Krishi_Verse_Identity_Security_Audit.md` — the security/auth bar.
+3. `apps/api/src/modules/identity/` + its `README.md` + `Krishalaya_Identity_Security_Audit.md` — the security/auth bar.
 4. The module's canonical schema in `db/migrations/00NN_<domain>.sql` — match column names EXACTLY; money is `bigint` minor units; flag any mismatch, never invent.
 5. `apps/api/src/core/` — use core contracts by token (`UNIT_OF_WORK`, `OUTBOX_WRITER`, `QUOTA_SERVICE`, `IDEMPOTENCY_SERVICE`, `CACHE_SERVICE`, `METRICS`, `READ_REPLICA`, `ROLE_CACHE_SERVICE`, `AUDIT_WRITER`, auth/token/otp). Never instantiate `pg`/Redis in a module.
 6. `docs/architecture/module-map.md` (PRD module + screens), `MODULE_STATUS.md` (progress), `START_HERE.md` (sequence).

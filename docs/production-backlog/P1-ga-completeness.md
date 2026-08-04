@@ -225,7 +225,7 @@ These are ordered by user-visible impact. Most are independent; do them in any o
   tenant-scoped, RBAC-gated, **audited** endpoints (`commission-rules` POST/GET/:id/deactivate `payout.approve`;
   `logistics/zones` CRUD+active `ShipmentPermissions.Manage` under the `logistics` flag; `tenant-settings`
   GET/PUT `tenant.settings` under the `tenancy` flag). The genuine gaps, now closed:
-  1. **SDK** — new `tenantConfig` resource (`KrishiVerseClient.tenantConfig`): `commissionRules` / `createCommissionRule`
+  1. **SDK** — new `tenantConfig` resource (`KrishalayaClient.tenantConfig`): `commissionRules` / `createCommissionRule`
      (idem) / `deactivateCommissionRule`; `deliveryZones` / `getDeliveryZone` / `createDeliveryZone` (idem) /
      `updateDeliveryZone` / `setDeliveryZoneActive`; `settings` / `putSetting` (idem) / `features`. New types
      (`CommissionRule`, `CreateCommissionRuleInput`, `DeliveryZone`, `Create/UpdateDeliveryZoneInput`,

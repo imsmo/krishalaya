@@ -3,7 +3,7 @@
 import * as jwt from 'jsonwebtoken';
 import { extractToken, verifyToken, authenticate } from '../auth/socket-auth.guard';
 
-const CFG = { accessSecret: 'a'.repeat(40), issuer: 'krishi-verse', audience: 'krishi-verse-app' };
+const CFG = { accessSecret: 'a'.repeat(40), issuer: 'krishalaya', audience: 'krishalaya-app' };
 const mint = (over: Record<string, unknown> = {}, secret = CFG.accessSecret) =>
   jwt.sign({ tid: 't1', sid: 's1', roles: [], perms: ['dairy.manage'], typ: 'access', ...over },
     secret, { subject: 'u1', issuer: CFG.issuer, audience: CFG.audience, expiresIn: 900, algorithm: 'HS256' });

@@ -1,4 +1,4 @@
-// @krishi-verse/i18n · fontPacks.ts — the Q35 font-pack manifest (developer-handoff.md §7 / BRAND-015/016).
+// @krishalaya/i18n · fontPacks.ts — the Q35 font-pack manifest (developer-handoff.md §7 / BRAND-015/016).
 // One entry per DISTINCT font family the platform loads for a script. Several languages REUSE a pack (mr rides
 // hi's shipped Hind; as rides bn's Hind Siliguri) — that reuse is exactly why this is a separate manifest keyed
 // by `id`, not a 1:1 per-language table: `LanguageDef.fontPack` in languages.ts POINTS at one of these ids.

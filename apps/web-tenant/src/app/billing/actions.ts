@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { buildApply } from '../../features/billing/plan';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 export async function applyPlanAction(formData: FormData): Promise<void> {
   await requireSession('/billing');

@@ -12,8 +12,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { KycDocument, UserProfile, ReviewSummary } from '@krishi-verse/sdk-js';
-import { Button, Card, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, type PillTone } from '@krishi-verse/ui-native';
+import type { KycDocument, UserProfile, ReviewSummary } from '@krishalaya/sdk-js';
+import { Button, Card, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, type PillTone } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';

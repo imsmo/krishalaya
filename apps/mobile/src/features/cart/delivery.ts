@@ -1,7 +1,7 @@
 // apps/mobile/src/features/cart/delivery.ts · PURE logic for the buyer delivery step (screen 129). No React/native
 // deps (SDK types are `import type` → erased) → unit-tested. Money is bigint minor-unit strings (Law 2) — the
 // "save on delivery" figure is computed with BigInt, never a float.
-import type { DeliveryMethod } from '@krishi-verse/sdk-js';
+import type { DeliveryMethod } from '@krishalaya/sdk-js';
 
 /** The delivery method to treat as selected: the caller's pick if it's still a real option, else the first offered
  * (server order), else null when there are none. Keeps the selection valid as the option set changes. Pure. */

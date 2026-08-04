@@ -16,7 +16,7 @@ target, not a localhost boot).
 This directory is the honestly-labelled fallback the brief explicitly sanctioned for that case: a
 hand-written probe suite covering the SAME finding classes ZAP's baseline scan actually checks
 (`Development_Program/S5_ZAP_BASELINE_RUNBOOK.md` §4's predicted-findings list +
-`krishi-verse/docs/security/SECURITY-READINESS.md` §1's pen-test scope table), run against a real,
+`krishalaya/docs/security/SECURITY-READINESS.md` §1's pen-test scope table), run against a real,
 unmodified, locally-booted `apps/api` (the DEV-32 live-boot recipe).
 
 **What this IS NOT:** a ZAP replacement, an active-scan fuzzer, a spider, or a claim of ZAP-equivalent

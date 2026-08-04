@@ -12,7 +12,7 @@ import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import {
   CLAIM_STATUSES, claimStatusKey, claimStatusTone, buildClaimListQuery, claimsHref, type ClaimRow,
 } from '../../features/insurance/insurance';

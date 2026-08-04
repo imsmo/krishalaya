@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · support tickets resource (P-22 help/complaint). The caller opens a ticket (idempotent —
+// @krishalaya/sdk-js · support tickets resource (P-22 help/complaint). The caller opens a ticket (idempotent —
 // Law 3), lists/reads their OWN tickets (box=mine, server-scoped — no IDOR), and rates CSAT once resolved. SLA
 // due-times are server-set from severity and read-only on the app (the app never decides SLA — Law 11). Agent
 // actions (assign/respond/transition) are NOT exposed here — they need support.handle and live in the console.

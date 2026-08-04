@@ -1,4 +1,4 @@
-// @krishi-verse/i18n · a tiny message catalog + translator. Frontends register per-language message dictionaries
+// @krishalaya/i18n · a tiny message catalog + translator. Frontends register per-language message dictionaries
 // (loaded as JSON, code-split per locale) and call t(key, vars). Falls back to the default language, then to the
 // key itself, so a missing translation degrades gracefully (never a blank UI). {placeholder} interpolation.
 import { DEFAULT_LANGUAGE, resolveLanguage } from './languages';

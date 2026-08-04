@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { buildAssign, buildSchedulePickup, buildDeliver, buildFail, ShipmentError } from '../../features/logistics/shipment';
 
 function apiErrorKey(e: unknown): string {

@@ -3,8 +3,8 @@
 // Degrades to empty/error (Law 12). No PII — the conversation read-model carries only a context label + id.
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatDate } from '@krishi-verse/i18n';
-import type { Conversation } from '@krishi-verse/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import type { Conversation } from '@krishalaya/sdk-js';
 import { serverClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { getTranslator, getLang } from '../../lib/i18n';

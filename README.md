@@ -1,4 +1,4 @@
-# 🌾 Krishi-Verse — The Operating System for Indian Agriculture
+# 🌾 Krishalaya — The Operating System for Indian Agriculture
 Multi-tenant agri-commerce SaaS. 28 modules · 24 roles · 12 languages · From Farm to Future.
 
 ## Monorepo Layout

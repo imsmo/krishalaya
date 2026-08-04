@@ -1,4 +1,4 @@
-// apps/web-storefront/next.config.js · public marketplace. The workspace packages it imports (@krishi-verse/*)
+// apps/web-storefront/next.config.js · public marketplace. The workspace packages it imports (@krishalaya/*)
 // ship PRE-COMPILED CommonJS in their dist/, so Next consumes them directly. transpilePackages is intentionally
 // NOT set: listing a pre-compiled CJS package there makes Next apply its Fast-Refresh transform (injecting
 // `import.meta.webpackHot`) to a module webpack treats as CommonJS → "Cannot use 'import.meta' outside a module".

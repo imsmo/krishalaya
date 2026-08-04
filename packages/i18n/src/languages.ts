@@ -1,4 +1,4 @@
-// @krishi-verse/i18n · the supported-language registry (mirrors the DB `languages` table). Launch set is
+// @krishalaya/i18n · the supported-language registry (mirrors the DB `languages` table). Launch set is
 // Hindi / English / Gujarati; `dir` drives RTL layout; `intlLocale` is the BCP-47 tag passed to Intl for
 // number/date formatting.
 //
@@ -10,7 +10,7 @@
 // mobile i18n runtime, resolveLanguage/isSupported, the Translator) is UNCHANGED by this batch; this is additive.
 //
 // The 11 target languages mirror the 11 canon language directories (`Phase-1 all screen design/
-// Krishi_Verse_Design_System/screens/lang-{code}/`, grep-verified to exist for all 11): mr/bn/te/ta/as/pa/kn/ml/or
+// Krishalaya_Design_System/screens/lang-{code}/`, grep-verified to exist for all 11): mr/bn/te/ta/as/pa/kn/ml/or
 // (APPLY-1..6, machine-draft, TS-003 §d "is_machine=true in spirit until reviewed_by is set") + ar (APPLY-6,
 // RTL-mirroring proof, ar-AE CANDIDATE locale per SITE-023, not a ratified locale) + ur (CLOSE-2, RTL, Nastaliq,
 // BRAND-018 forward canon — "the first real Urdu specimen string this design system has produced ... still not a

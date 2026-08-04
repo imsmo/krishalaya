@@ -98,7 +98,7 @@ so the design seed in Step 2 deliberately does **not** touch it. Two things are 
 
 **3a. The wallet-service must be running.** If it isn't, the mobile wallet screen shows "—" because the balance
 read fails (and correctly degrades rather than inventing a number). Start it per `03-run-backend.md`
-(`pnpm --filter @krishi-verse/wallet-service start`) and confirm it's listening on its gRPC port.
+(`pnpm --filter @krishalaya/wallet-service start`) and confirm it's listening on its gRPC port.
 
 **3b. The demo account needs an opening balance.** The clean way — the same path a real user takes — is to add
 money through the app: open **Wallet → Add money**, enter an amount, and complete the dev Razorpay checkout. The

@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(auth)/verify.tsx · screen 03 (Verify Phone) — rebuilt to match the Phase-1 design
-// (Krishi_Verse_Design_System/screens/03-otp.html): a back button, a gradient shield icon-circle, "Verify Your
+// (Krishalaya_Design_System/screens/03-otp.html): a back button, a gradient shield icon-circle, "Verify Your
 // Number", the bilingual sub with the entered number in bold, six OTP boxes, a "Didn't receive code? Resend in
 // m:ss" line (disabled during the cooldown), an info-tinted safety note with a shield icon, and a full-width
 // "Verify & Continue" CTA. All AUTH LOGIC is unchanged: verifyOtp → signIn (tokens → secure store) → role;
@@ -9,8 +9,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, OtpInput, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, OtpInput, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { verifyOtp, requestOtp, resendSecondsRemaining } from '../../core/auth/otp.flow';
 import { newId } from '../../core/util/ids';

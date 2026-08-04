@@ -3,8 +3,8 @@
 // the support SLA clock + ticket state machine, KYC verification, and bank vaulting — these helpers only drive the
 // UI: profile-patch + ticket + parcel form validation (bounded, ReDoS-safe), status/severity tone+labels, the SLA
 // state read-out (server-set due-times vs now), and masked bank/area display.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { SupportTicket, TicketSeverity, TicketStatus, LandParcel, BankAccount, KycDocument } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { SupportTicket, TicketSeverity, TicketStatus, LandParcel, BankAccount, KycDocument } from '@krishalaya/sdk-js';
 
 /** Whether the caller has at least one VERIFIED KYC document (screen 132 hero "verified" badge). The server owns
  * verification; this only reads the real doc list. Pure — never asserts a specific doc type (GST/FSSAI aren't

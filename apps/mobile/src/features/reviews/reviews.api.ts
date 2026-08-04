@@ -1,7 +1,7 @@
 // apps/mobile/src/features/reviews/reviews.api.ts · data layer for post-order reviews (P-07). A review is bound to
 // a COMPLETED order; the target (who is being reviewed) is resolved SERVER-SIDE from verified-purchase eligibility
 // — the client never supplies a target id (anti-IDOR, guide §4). Submit is idempotent (Law 3). Reads degrade.
-import type { ReviewSummary } from '@krishi-verse/sdk-js';
+import type { ReviewSummary } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

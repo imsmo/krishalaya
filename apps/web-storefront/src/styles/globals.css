@@ -1,5 +1,5 @@
 /* apps/web-storefront/src/styles/globals.css · base styles driven by the design tokens (kept in CSS variables
-   so the same palette/spacing applies across every page; the values mirror @krishi-verse/tokens). */
+   so the same palette/spacing applies across every page; the values mirror @krishalaya/tokens). */
 :root {
   --kv-brand-500: #558b2f; --kv-brand-700: #33691e; --kv-neutral-0: #ffffff; --kv-neutral-100: #f5f5f5;
   --kv-neutral-600: #757575; --kv-neutral-900: #212121; --kv-success: #2e7d32; --kv-radius: 12px; --kv-space: 16px;
@@ -7,14 +7,14 @@
 }
 /* DEV-19: dark-mode remap of this app's OWN legacy --kv-* vars, same bounded/mechanical approach as
    apps/web-tenant/src/styles/globals.css (see that file's own header comment for the full rationale). Values
-   copied verbatim from @krishi-verse/tokens's generated `darkColors` export. --kv-brand-500/700 and --kv-success
+   copied verbatim from @krishalaya/tokens's generated `darkColors` export. --kv-brand-500/700 and --kv-success
    left UNCHANGED (canon's own dark scope doesn't remap either). Disclosed residual: the single inline
    `var(--kv-neutral-50, #f7f7f5)` fallback on .kv-review__response is not a real custom property in this file's
    :root and is not remapped here (matches the bounded-mechanical-remap scope, not a full redesign). */
 [data-theme="dark"] {
   --kv-neutral-0: #1b232b; --kv-neutral-100: #202832; --kv-neutral-600: #aab4bd; --kv-neutral-900: #e8ebee;
 }
-/* DEV-19: senior-mode extension (engineering-owed Q48 console extension, see @krishi-verse/ui's
+/* DEV-19: senior-mode extension (engineering-owed Q48 console extension, see @krishalaya/ui's
    mechanisms/seniorMode.ts). Disclosed residual: several literal-px font-size rules (e.g. .kv-badge 12px,
    .kv-table th 13px) do not scale under this mechanism. Density (DELTA-001 pointer/hover gating) is
    deliberately NOT applied to this app — see lib/mechanism.ts's own header comment: storefront is

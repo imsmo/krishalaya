@@ -1,6 +1,6 @@
 // Unit tests for the PURE worker-schedule tab/section logic (screen 32).
 import { scheduleTab, filterByTab, tabCounts, daySection, groupUpcoming, isActiveNow, type ScheduledJob } from '../../features/labour/worker-schedule';
-import type { LabourAssignment, LabourBooking } from '@krishi-verse/sdk-js';
+import type { LabourAssignment, LabourBooking } from '@krishalaya/sdk-js';
 
 const now = Date.parse('2026-08-15T12:00:00Z');
 const asg = (status: string): LabourAssignment => ({ id: status, bookingId: 'b-' + status, workerId: 'w', status, wageMinor: '40000', acceptedAt: null });

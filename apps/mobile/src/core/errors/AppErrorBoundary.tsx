@@ -6,7 +6,7 @@
 // the tree. No PII is shown or logged (only the SDK's safe requestId, if any). Static — renders without a backend.
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { EmptyState, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
+import { EmptyState, ScreenScaffold, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../i18n/useTranslation';
 import { captureError } from '../observability';
 import { safeErrorRef } from '../../features/system/system';

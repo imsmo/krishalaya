@@ -4,9 +4,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import type { WeatherAlert } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { WeatherAlert } from '@krishalaya/sdk-js';
+import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { weatherAlerts } from '../../../features/market/market.api';

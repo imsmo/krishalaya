@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · tenancy resource (P-17 — tenant-admin-lite). Plans catalogue + the tenant's subscription
+// @krishalaya/sdk-js · tenancy resource (P-17 — tenant-admin-lite). Plans catalogue + the tenant's subscription
 // (apply / current / list). create is idempotent (Law 3; a paid plan moves money SERVER-SIDE — the app never
 // does, Law 11). Money is bigint minor strings (Law 2). Gated server-side by the tenant's own permissions.
 import { HttpClient } from '../http';

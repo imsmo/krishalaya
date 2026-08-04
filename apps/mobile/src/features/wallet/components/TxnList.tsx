@@ -5,7 +5,7 @@
 // the list shows a friendly empty state, never a crash. `present` maps a raw item → a pure TxnView.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
-import { EmptyState, SkeletonCard, color, space } from '@krishi-verse/ui-native';
+import { EmptyState, SkeletonCard, color, space } from '@krishalaya/ui-native';
 import { TxnRow } from './TxnRow';
 import type { TxnView } from '../txn';
 

@@ -8,7 +8,7 @@
 // §5). So the list cards omit them and they appear on the listing DETAIL instead; surface them here only when
 // the owner list read-model starts returning lightweight view/offer counts inline. Never invented.
 
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard } from '@krishalaya/sdk-js';
 
 export type ListingFilter = 'all' | 'active' | 'sold' | 'draft';
 export const LISTING_FILTERS: readonly ListingFilter[] = Object.freeze(['all', 'active', 'sold', 'draft']);

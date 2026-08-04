@@ -3,7 +3,7 @@
 // review) are ONLINE transitions that throw so the screen shows the precise outcome (403 not-allowed, 409 illegal)
 // — the SERVER authorizes every action against the tenant admin's OWN permissions (NOT god-mode, Law 11).
 // add-farmer + apply carry an Idempotency-Key (Law 3). Money is bigint minor strings (Law 2).
-import type { Plan, Subscription, RoleAssignment, Dispute, DisputeMessage, UserProfile, ListingCard, PayoutSummary, TenantAnalytics, TenantBroadcast } from '@krishi-verse/sdk-js';
+import type { Plan, Subscription, RoleAssignment, Dispute, DisputeMessage, UserProfile, ListingCard, PayoutSummary, TenantAnalytics, TenantBroadcast } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

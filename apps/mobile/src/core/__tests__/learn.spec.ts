@@ -1,7 +1,7 @@
 // Unit tests for the PURE learning logic (features/education/learn): defensive quiz parsing, integer scoring, and
 // progress computation. The server is authoritative on stored score + enrollment %; these drive the UX.
 import { parseQuiz, scoreQuiz, passThreshold, lessonCompleted, courseProgressPct, isCourseComplete, nextLessonId, QUIZ_PASS_PCT } from '../../features/education/learn';
-import type { LessonProgress } from '@krishi-verse/sdk-js';
+import type { LessonProgress } from '@krishalaya/sdk-js';
 
 const prog = (lessonId: string, completed: boolean): LessonProgress => ({ lessonId, completedAt: completed ? '2026-01-01' : null, secondsWatched: 0, quizScore: null });
 

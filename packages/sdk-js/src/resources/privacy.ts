@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · DPDP privacy resource (P-23 data-download / account-delete / change-phone).
+// @krishalaya/sdk-js · DPDP privacy resource (P-23 data-download / account-delete / change-phone).
 // LIVE (identity PrivacyController): consents (list/grant), data-export requests, account-DELETION requests
 // (erasure — server records the request, runs a statutory 90-day cooling-off + retention/anti-fraud holds, then
 // erases; the app NEVER deletes locally — Law 11), and a `myRequests` status read. Phone change is OTP-verified

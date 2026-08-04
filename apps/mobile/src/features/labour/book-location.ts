@@ -4,7 +4,7 @@
 // default + selected. The booking's actual navigation coordinates come from a GPS fix (core/location) — parcels
 // carry no lat/lng or street address in the contract — so the design's street line / "2.4 km away" / landmark
 // persistence HONESTLY degrade (§13); this file never fabricates an address or distance.
-import type { LandParcel, LabourLookups } from '@krishi-verse/sdk-js';
+import type { LandParcel, LabourLookups } from '@krishalaya/sdk-js';
 
 export interface SavedLocationRow {
   id: string;

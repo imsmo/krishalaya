@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · auctions resource (module 3). Browse/detail are public-within-tenant; create is
+// @krishalaya/sdk-js · auctions resource (module 3). Browse/detail are public-within-tenant; create is
 // seller-only; approve/cancel are seller-or-moderator (server-enforced). Placing a bid holds an EMD (earnest-money
 // deposit) on the bidder's WALLET — entirely SERVER-SIDE (the client never moves money, Law 11); on loss the EMD
 // is refunded server-side. create + placeBid carry an Idempotency-Key (Law 3) — a retried bid can't double-hold.

@@ -1,4 +1,4 @@
-// apps/mobile/src/core/api/client.ts · the typed API client factory for the app, built on @krishi-verse/sdk-js
+// apps/mobile/src/core/api/client.ts · the typed API client factory for the app, built on @krishalaya/sdk-js
 // (timeout + idempotent-GET retry + circuit-safe; money as string minor units; typed SdkError). The bearer token
 // is supplied per-request by a getter the auth store registers, so a single client instance always sends the
 // CURRENT token (no stale-token bug, no client churn on refresh). The tenant slug (white-label builds) is sent as
@@ -10,7 +10,7 @@
 // that calls the refresh endpoint, persists + applies the new tokens, and reports success/failure. That executor
 // is wired into the SINGLE shared client as `onUnauthorized` — the SDK (packages/sdk-js/src/http.ts) owns the
 // single-flight + retry-once orchestration; this module only supplies the "how to refresh" callback.
-import { createClient, KrishiVerseClient } from '@krishi-verse/sdk-js';
+import { createClient, KrishalayaClient } from '@krishalaya/sdk-js';
 import { config } from '../config';
 import { integrityHeaders } from '../security/integrity';
 import { correlationHeaders } from '../observability';
@@ -36,9 +36,9 @@ export function registerRefreshExecutor(fn: () => Promise<boolean>): void {
   _refreshExecutor = fn;
 }
 
-let _client: KrishiVerseClient | undefined;
+let _client: KrishalayaClient | undefined;
 /** The shared authenticated client (singleton — reads the live token each request). */
-export function apiClient(): KrishiVerseClient {
+export function apiClient(): KrishalayaClient {
   if (!_client) {
     _client = createClient({
       baseUrl: config.apiUrl,
@@ -56,6 +56,6 @@ export function apiClient(): KrishiVerseClient {
 }
 
 /** Tokenless client for the pre-auth OTP flow. */
-export function anonClient(): KrishiVerseClient {
+export function anonClient(): KrishalayaClient {
   return createClient({ baseUrl: config.apiUrl, tenantSlug: config.tenantSlug, timeoutMs: config.requestTimeoutMs, userAgent: config.userAgent });
 }

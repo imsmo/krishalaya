@@ -14,8 +14,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import type { RoleAssignment, TenantAnalytics } from '@krishi-verse/sdk-js';
-import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { RoleAssignment, TenantAnalytics } from '@krishalaya/sdk-js';
+import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { assignments, tenantAnalytics } from '../../features/tenant/tenant.api';

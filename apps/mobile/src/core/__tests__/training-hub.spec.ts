@@ -1,7 +1,7 @@
 // Unit tests for the PURE Training-Hub derivations (features/ambassador/training-hub, screen 94). §13: status
 // comes only from real progress (completedAt / secondsWatched); no language or lock is invented.
 import { lessonStatus, minutesWatched, minutesRemaining, hubSummary, sortLessons, moduleCount, nextLessons } from '../../features/ambassador/training-hub';
-import type { CourseLesson, LessonProgress } from '@krishi-verse/sdk-js';
+import type { CourseLesson, LessonProgress } from '@krishalaya/sdk-js';
 
 const lesson = (id: string, moduleNo: number, lessonNo: number, durationSecs: number | null): CourseLesson =>
   ({ id, courseId: 'c1', moduleNo, lessonNo, defaultTitle: id, contentKind: 'video', mediaId: null, body: null, durationSecs, quiz: null } as CourseLesson);

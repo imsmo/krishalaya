@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/wallet/payouts.tsx · screen 59 (Payout History) — rebuilt to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/59-farmer-payout-history.html): a header band + month-grouped payout rows,
+// (Krishalaya_Design_System/screens/59-farmer-payout-history.html): a header band + month-grouped payout rows,
 // each with a status icon (RECEIVED ✓ / HOLD ⏱ / FAILED !), title, date and amount. Thin screen (guide §3);
 // FLAG_SECURE (§4); behind the `wallet` flag; money via MoneyText/paise (Law 2); degrade-never-die (Law 12).
 //
@@ -14,9 +14,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import type { PayoutSummary } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { PayoutSummary } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security';

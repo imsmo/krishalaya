@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(auth)/welcome.tsx · screen 01 (Welcome) — rebuilt to match the Phase-1 design
-// (Krishi_Verse_Design_System/screens/01-welcome.html): brand mark + "From Farm to Future" tag, two soft
+// (Krishalaya_Design_System/screens/01-welcome.html): brand mark + "From Farm to Future" tag, two soft
 // decorative glows (accent top-right, primary bottom-left), a framed hero illustration, the bilingual promise
 // (vernacular line + display title), the subtitle, a full-width gold "Get Started" CTA, and a "Sign in" link.
 // Pure presentation — no data, no business logic (guide §3). All copy via i18n (hi/en/gu); all colour/space/
@@ -12,7 +12,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Button, BrandHero, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { Button, BrandHero, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 
 export default function Welcome() {

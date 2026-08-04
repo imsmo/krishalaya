@@ -1,6 +1,6 @@
 // apps/web-tenant/src/components/Sidebar.tsx · DEV-18 REAL consuming-app smoke test (packages/ui port
 // batch 4) — rewired from a hand-rolled `<nav>`/`<ul>` (this app's own now-superseded `.kv-sidebar*` CSS,
-// `globals.css`) onto `@krishi-verse/ui`'s ported `Sidebar` component. The nav item list, feature-flag
+// `globals.css`) onto `@krishalaya/ui`'s ported `Sidebar` component. The nav item list, feature-flag
 // gating, and i18n labels are UNCHANGED from the pre-DEV-18 version — only the render target moved.
 //
 // `me` (signed-in staff identity) is now fetched ONCE by the parent `layout.tsx` and passed down as a prop,
@@ -9,15 +9,15 @@
 // per request would be a real, avoidable extra round-trip (Golden Law 11 — scale honesty, applies even at
 // N=1: the correct shape doesn't change with request volume).
 //
-// KNOWN INTEGRATION TRADE-OFF (disclosed, not hidden — see `dev18_report.md`): `@krishi-verse/ui`'s
+// KNOWN INTEGRATION TRADE-OFF (disclosed, not hidden — see `dev18_report.md`): `@krishalaya/ui`'s
 // `Sidebar` is framework-agnostic (it cannot import `next/link`) and renders each nav item as a plain
 // `<a href>`. The pre-DEV-18 version used Next's `<Link>` for client-side transitions; this rewire trades
 // that away for a real, shared cross-app component — every sidebar nav click is now a full page navigation
 // (still correct, still accessible, just not a client-side transition). Flagged as a real cost of adopting
 // the shared library, not silently absorbed.
-import type { UserProfile } from '@krishi-verse/sdk-js';
-import { Sidebar as UiSidebar } from '@krishi-verse/ui';
-import type { SidebarNavSection } from '@krishi-verse/ui';
+import type { UserProfile } from '@krishalaya/sdk-js';
+import { Sidebar as UiSidebar } from '@krishalaya/ui';
+import type { SidebarNavSection } from '@krishalaya/ui';
 import { getTranslator, getLang } from '../lib/i18n';
 import { env } from '../lib/env';
 import { LocaleSwitcher } from './LocaleSwitcher';

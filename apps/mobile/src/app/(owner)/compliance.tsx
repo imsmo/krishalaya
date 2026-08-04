@@ -12,7 +12,7 @@
 // would be the most dangerous fake on the whole app. Each item instead opens the real compliance console.
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, ScrollView } from 'react-native';
-import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openWebConsole } from '../../core/deeplink';

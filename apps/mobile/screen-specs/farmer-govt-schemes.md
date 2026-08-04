@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 60-farmer-schemes — 60 · Government Schemes — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/60-farmer-schemes.html`
+## 60-farmer-schemes — 60 · Government Schemes — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/60-farmer-schemes.html`
 - **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
 - **Must render (exact design content):**
-  - 60 · Government Schemes — Krishi-Verse
+  - 60 · Government Schemes — Krishalaya
   - Government Schemes
   - Schemes for you
   - Based on your profile: Farmer · Anand, Gujarat · 5-acre holding
@@ -58,11 +58,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 105-farmer-scheme-detail — 105 · Scheme Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/105-farmer-scheme-detail.html`
+## 105-farmer-scheme-detail — 105 · Scheme Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/105-farmer-scheme-detail.html`
 - **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
 - **Must render (exact design content):**
-  - 105 · Scheme Detail — Krishi-Verse
+  - 105 · Scheme Detail — Krishalaya
   - Scheme Detail
   - Central Govt · Direct Benefit
   - PM-KISAN Samman Nidhi
@@ -115,16 +115,16 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 106-farmer-scheme-apply — 106 · Apply: PM-KISAN — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/106-farmer-scheme-apply.html`
+## 106-farmer-scheme-apply — 106 · Apply: PM-KISAN — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/106-farmer-scheme-apply.html`
 - **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
 - **Must render (exact design content):**
-  - 106 · Apply: PM-KISAN — Krishi-Verse
+  - 106 · Apply: PM-KISAN — Krishalaya
   - Apply: PM-KISAN
   - Step 1 of 3
   - Your details
   - Confirm your details
-  - Auto-filled from your Krishi-Verse profile. Verify each field with your Aadhaar.
+  - Auto-filled from your Krishalaya profile. Verify each field with your Aadhaar.
   - ✨ Auto-filled from your KV profile · Tap any field to edit
   - Full name (as on Aadhaar) *
   - Aadhaar number *
@@ -152,11 +152,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 107-farmer-scheme-status — 107 · Application Status — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/107-farmer-scheme-status.html`
+## 107-farmer-scheme-status — 107 · Application Status — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/107-farmer-scheme-status.html`
 - **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
 - **Must render (exact design content):**
-  - 107 · Application Status — Krishi-Verse
+  - 107 · Application Status — Krishalaya
   - Application Status
   - ⏳ Under Review
   - PM-KISAN Samman Nidhi
@@ -192,11 +192,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 108-farmer-scheme-docs — 108 · Upload Documents — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/108-farmer-scheme-docs.html`
+## 108-farmer-scheme-docs — 108 · Upload Documents — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/108-farmer-scheme-docs.html`
 - **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
 - **Must render (exact design content):**
-  - 108 · Upload Documents — Krishi-Verse
+  - 108 · Upload Documents — Krishalaya
   - Upload Documents
   - Step 2 of 3
   - Documents
@@ -225,11 +225,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 109-farmer-my-schemes — 109 · My Applications — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/109-farmer-my-schemes.html`
+## 109-farmer-my-schemes — 109 · My Applications — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/109-farmer-my-schemes.html`
 - **Route:** `src/app/(farmer)/schemes/…`  ·  **Feature:** `features/schemes`  ·  **Flag:** `schemes_govt`
 - **Must render (exact design content):**
-  - 109 · My Applications — Krishi-Verse
+  - 109 · My Applications — Krishalaya
   - My Scheme Applications
   - All · 4
   - Active · 2

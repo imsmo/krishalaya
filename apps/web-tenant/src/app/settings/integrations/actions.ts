@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 
 const PATH = '/settings/integrations';
 const PROVIDER = /^[a-z][a-z0-9_]{1,59}$/;

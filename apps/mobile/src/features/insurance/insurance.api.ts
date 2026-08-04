@@ -2,7 +2,7 @@
 // DEV-24), consuming the REAL insurance module DEV-22/23 shipped (`apps/api/src/modules/insurance`, `insurance`
 // DB-backed feature flag — QA-PASSED, queued for founder merge). `packages/sdk-js` carries NO dedicated
 // `.insurance` resource yet (this batch does not touch `packages/*` — see spec_dev24.md's gate note), so every
-// call here rides `KrishiVerseClient.request<T>()`, the SAME documented "escape hatch for endpoints without a
+// call here rides `KrishalayaClient.request<T>()`, the SAME documented "escape hatch for endpoints without a
 // dedicated resource method yet" every other module used before its own typed resource shipped (`packages/sdk-js/
 // src/client.ts` line 147-150). All reads degrade-never-die (empty/null on failure — Law 12). The two REAL money
 // actions this module owns are enrolment premium-payment initiation and (indirectly) claim filing/evidence —
@@ -19,7 +19,7 @@
 // FlagKey mirrors the server's `insurance` flag (none of `fintech`/`worker_app`/any other existing key is
 // renamed or duplicated for this) — see DEV-22 QA's fintech-vs-insurance naming-split flag, left exactly as
 // filed for the founder queue; this batch does not invent a resolution for the FARMER-side `InsuranceScreen.tsx`.
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 import { openCheckout } from '../../core/payments/checkout';

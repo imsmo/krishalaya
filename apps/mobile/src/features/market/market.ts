@@ -3,8 +3,8 @@
 // computed with BigInt (no precision loss on large paise values) and only the final percentage is a number for
 // display. The SERVER is the authority on prices, predictions, alert firing (push), and advisories — these
 // helpers only drive the UI.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { MandiPrice, WeatherAlert, PriceAlert, ForecastDay } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { MandiPrice, WeatherAlert, PriceAlert, ForecastDay } from '@krishalaya/sdk-js';
 
 /** Percent change between two bigint-minor prices, as a number rounded to 1 dp (display only). Uses BigInt so a
  * huge price never loses precision; returns null if old is missing/zero or inputs are malformed. */

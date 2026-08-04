@@ -4,7 +4,7 @@
 import React from 'react';
 import { Redirect, Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
-import { color, font, EmptyState } from '@krishi-verse/ui-native';
+import { color, font, EmptyState } from '@krishalaya/ui-native';
 import { useAuth } from '../../core/auth/auth.store';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';

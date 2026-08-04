@@ -61,7 +61,7 @@ resource "aws_security_group_rule" "egress" {
 resource "aws_rds_cluster_parameter_group" "this" {
   name        = "${var.name}-aurora-pg16"
   family      = local.family
-  description = "Krishi-Verse Aurora PG16 cluster params"
+  description = "Krishalaya Aurora PG16 cluster params"
   tags        = local.tags
 
   parameter {

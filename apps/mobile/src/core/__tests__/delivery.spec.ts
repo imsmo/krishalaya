@@ -1,6 +1,6 @@
 // Unit tests for the PURE delivery-step logic (screen 129). No React/native deps.
 import { defaultMethodId, deliverySavingMinor } from '../../features/cart/delivery';
-import type { DeliveryMethod } from '@krishi-verse/sdk-js';
+import type { DeliveryMethod } from '@krishalaya/sdk-js';
 
 const M: DeliveryMethod[] = [
   { id: 'pickup', name: 'Pickup', feeMinor: '0' },

@@ -28,7 +28,7 @@ auctions watch/follow.
   (server + public SDK factories, timeout-bounded, GET-retry), `lib/auth.ts` (httpOnly + Secure + SameSite session
   cookie helpers — set/get/clear), `components/ListingCard.tsx`, `styles/globals.css`.
 - **App shell + static surface (SF-W0-01 ✅):** localized global header (nav, locale switcher, cart badge, login
-  link) + footer; server-side i18n (en/hi/gu via `lib/i18n.ts` + `@krishi-verse/i18n` Translator, 68-key parity,
+  link) + footer; server-side i18n (en/hi/gu via `lib/i18n.ts` + `@krishalaya/i18n` Translator, 68-key parity,
   no inline literals); no-JS locale switch (`/api/lang` route, fail-closed + same-origin redirect guard); the six
   marketing/static pages `/about /blog /help /pricing /press /tenants-signup` (static localized copy — the SDK has
   no `cms` resource), each with `generateMetadata` + segment `loading.tsx`/`error.tsx`; a shared accessible
@@ -39,10 +39,10 @@ checkout/payment, no orders, no offers/auctions/reviews** yet (the marketing/sta
 spec calls for now exist — `docs/spec/06_web_apps.md`: about, blog, help, press, pricing, tenants-signup, a shared
 `data-table`). `lib/auth.ts` ships the cookie plumbing but **nothing writes the session yet** (the login Route
 Handler / Server Action is the first real gap). The whole authenticated buyer journey — which the shared
-`@krishi-verse/sdk-js` already fully supports (auth, identity, catalogue, listings, cart/commerce, orders,
+`@krishalaya/sdk-js` already fully supports (auth, identity, catalogue, listings, cart/commerce, orders,
 payments, offers, messaging, auctions, reviews, notifications, traceability) — is unbuilt.
 
-Everything below is **frontend-only**: the API (apps/api ✅) and the SDK (`@krishi-verse/sdk-js` ✅) already
+Everything below is **frontend-only**: the API (apps/api ✅) and the SDK (`@krishalaya/sdk-js` ✅) already
 expose every endpoint and type these tasks consume. No new backend, no new SDK resource — if a task seems to
 need one, STOP and flag it rather than reaching past the SDK. Each task is one build session per the
 Production-Grade Contract below; **hand me one `Yes next SF-Wx-yy …` at a time** with the build guide pasted,
@@ -58,7 +58,7 @@ exactly like the apps/api / admin-api / mobile cadence.
 PRODUCTION-GRADE CONTRACT (web-storefront) — obey for everything you build:
 - This is the PUBLIC consumer site for millions of users, under active attack. Build production, not a demo.
 - Match the reference: the existing apps/web-storefront pages + lib (env/api-client/auth) and the shared
-  @krishi-verse/sdk-js + @krishi-verse/i18n + @krishi-verse/tokens. Mirror their layering and rigor.
+  @krishalaya/sdk-js + @krishalaya/i18n + @krishalaya/tokens. Mirror their layering and rigor.
 - NO stubs, NO TODOs, NO placeholders. If a needed API/SDK method is missing, STOP and flag it —
   never fake data, never call the API past the typed SDK, never invent an endpoint.
 - DATA ACCESS ONLY VIA THE SDK. Server Components / Server Actions / Route Handlers use serverClient()
@@ -74,7 +74,7 @@ PRODUCTION-GRADE CONTRACT (web-storefront) — obey for everything you build:
   empty/error state — a flaky API never 500s the storefront. GETs may retry; mutations never auto-retry.
 - MUTATIONS pass the user's Idempotency-Key where the SDK exposes it (checkout/pay/offer/bid), so a
   double-submit/refresh never double-charges or double-acts.
-- ACCESSIBILITY + i18n + SEO: semantic HTML, labelled controls, keyboard-navigable; all copy via @krishi-verse/i18n
+- ACCESSIBILITY + i18n + SEO: semantic HTML, labelled controls, keyboard-navigable; all copy via @krishalaya/i18n
   (no hardcoded strings); SSR/ISR + correct <title>/<meta>/canonical/OpenGraph on indexable pages; loading.tsx +
   error.tsx boundaries per route segment.
 - Before "done": `npm run typecheck` (tsc --noEmit, exit 0) + `npm run lint` (next lint) + `npm run build`
@@ -93,7 +93,7 @@ PRODUCTION-GRADE CONTRACT (web-storefront) — obey for everything you build:
 2. The SDK surface you'll consume: `packages/sdk-js/src/resources/<resource>.ts` + `…/types.ts` (method names,
    inputs, the `Envelope`/`Page` shapes, money-as-string). **Match the SDK exactly; never guess a shape.**
 3. `docs/spec/06_web_apps.md` (`web-storefront` section) — the intended route list + behaviour.
-4. `@krishi-verse/i18n` keys (add new keys there, in en/hi/gu, never inline literals) + `@krishi-verse/tokens`
+4. `@krishalaya/i18n` keys (add new keys there, in en/hi/gu, never inline literals) + `@krishalaya/tokens`
    (design tokens / theme — never hardcode colours/spacing).
 5. `lib/{env,api-client,auth}.ts` — use these; never read `process.env` or build a fetch client elsewhere.
 
@@ -107,7 +107,7 @@ PRODUCTION-GRADE CONTRACT (web-storefront) — obey for everything you build:
   `serverClient()` is invoked for writes; they read the session cookie, pass the Idempotency-Key, and
   `revalidatePath`/`redirect` on success.
 - **Cross-route logic** (table configs, multi-step flows, form schemas) lives in `src/features/**`; shared UI in
-  `src/components/**` (or `@krishi-verse/ui`). Every route segment that fetches gets a `loading.tsx` + `error.tsx`.
+  `src/components/**` (or `@krishalaya/ui`). Every route segment that fetches gets a `loading.tsx` + `error.tsx`.
 - **Auth gating**: a server helper (`requireSession()` building on `lib/auth.getSessionToken`) redirects anonymous
   users from account/cart/checkout/orders to login with a return-to.
 
@@ -135,7 +135,7 @@ After each task: `tsc` + `lint` green → I tick it ✅ here and refresh the `we
 
 ### WAVE 0 — shell + marketing/static surface (no auth)
 - [x] **SF-W0-01 · app-shell + static-pages** — global header (nav, tenant/locale switcher, cart badge, login
-  link) + footer + `@krishi-verse/i18n` provider wiring + a shared `components/DataTable.tsx`; the static routes
+  link) + footer + `@krishalaya/i18n` provider wiring + a shared `components/DataTable.tsx`; the static routes
   the spec lists: `/about`, `/blog`, `/help`, `/pricing`, `/press`, `/tenants-signup` (the SDK exposes no `cms`
   resource → static localized copy, per "else static copy"), each with `generateMetadata` + `loading.tsx`/`error.tsx`.
   SEO + i18n (en/hi/gu, 68-key parity, zero inline literals) + a11y (skip-link, `<html lang/dir>`, table `<caption>`,

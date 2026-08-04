@@ -1,6 +1,6 @@
 // apps/web-tenant/src/test-render/listings-shell.render.test.tsx · DEV-18 (packages/ui port batch 4 — real
 // consuming-app smoke test). Asserts the rewired console listings page renders the FULL real shell
-// (AppShell + Sidebar + Topbar + PageHeader) and the real DataTable, all from `@krishi-verse/ui` — the
+// (AppShell + Sidebar + Topbar + PageHeader) and the real DataTable, all from `@krishalaya/ui` — the
 // package this app depends on via `workspace:*`, not a mock — assembled exactly the way
 // `apps/web-tenant/src/app/layout.tsx` / `src/components/Sidebar.tsx` / `src/components/ConsoleTopbar.tsx`
 // / `src/app/listings/page.tsx` / `src/components/ListingsTable.tsx` compose them in production.
@@ -9,7 +9,7 @@
 // `ConsoleTopbar.tsx`/`listings/page.tsx` call `getTranslator()`/`getLang()` (`src/lib/i18n.ts`), which use
 // `next/headers`'s `cookies()`/`headers()` — these throw outside a real Next.js request scope (verified:
 // `next/headers`'s own runtime invariant) and cannot run in a plain jest process. This test instead renders
-// the SAME `@krishi-verse/ui` components with realistic fixture data shaped exactly like the real
+// the SAME `@krishalaya/ui` components with realistic fixture data shaped exactly like the real
 // `ListingCard`/`UserProfile` SDK types, proving the render-level composition (shell classes, nav items,
 // table rows, i18n-resolved copy) genuinely works — the request-scoped data-fetching wrapper around it is
 // separately proven correct by the full, real `next build` succeeding across all 31 routes including
@@ -19,8 +19,8 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   AppShell, Sidebar as UiSidebar, Topbar, PageHeader, DataTable,
-} from '@krishi-verse/ui';
-import type { SidebarNavSection, DataTableColumn, DataTableState } from '@krishi-verse/ui';
+} from '@krishalaya/ui';
+import type { SidebarNavSection, DataTableColumn, DataTableState } from '@krishalaya/ui';
 
 interface FixtureListing {
   id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;
@@ -54,7 +54,7 @@ function renderListingsPageShell(state: DataTableState, items: FixtureListing[])
     <AppShell
       sidebar={
         <UiSidebar
-          brand={{ name: 'Krishi-Verse Console' }}
+          brand={{ name: 'Krishalaya Console' }}
           sections={sections}
           navLabel="Console"
         />
@@ -85,9 +85,9 @@ describe('web-tenant listings page — rewired shell + table (DEV-18 smoke test)
     expect(html).toContain('web-shell');
     expect(html).toContain('kvw-content');
 
-    // Sidebar (real @krishi-verse/ui component, not a stub)
+    // Sidebar (real @krishalaya/ui component, not a stub)
     expect(html).toContain('kvw-sidebar');
-    expect(html).toContain('Krishi-Verse Console');
+    expect(html).toContain('Krishalaya Console');
     expect(html).toContain('Listings');
     expect(html).toContain('aria-current="page"');
 

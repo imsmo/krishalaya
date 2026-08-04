@@ -9,7 +9,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Button, Card, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { Button, Card, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 
 const DOS = ['wait', 'offline', 'voice'] as const;

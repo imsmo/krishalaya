@@ -1,4 +1,4 @@
-// apps/mobile/src/app/(system)/about.tsx · screen 196 (About Krishi-Verse). Thin screen (guide §3): a 🌾 hero
+// apps/mobile/src/app/(system)/about.tsx · screen 196 (About Krishalaya). Thin screen (guide §3): a 🌾 hero
 // (name + version subtitle + tagline), an App-info card (version, languages), the mission statement, Legal links
 // (Terms / Privacy / Licenses), the publisher identity, Connect rows (email / website / WhatsApp), and the footer.
 // Config-driven — no backend, so it cannot fail a network call. Behind `system_screens`.
@@ -12,8 +12,8 @@
 // company's own static product chrome (i18n), not per-user data. Version/build-number surfacing is flagged.
 import React from 'react';
 import { View, Text, StyleSheet, Linking, Alert } from 'react-native';
-import { Card, ScreenScaffold, EmptyState, color, font, space, radius } from '@krishi-verse/ui-native';
-import { LANGUAGES } from '@krishi-verse/i18n';
+import { Card, ScreenScaffold, EmptyState, color, font, space, radius } from '@krishalaya/ui-native';
+import { LANGUAGES } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { config } from '../../core/config';

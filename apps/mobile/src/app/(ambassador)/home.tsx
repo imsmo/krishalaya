@@ -11,8 +11,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { AmbassadorProfile, Referral, AmbassadorEarning, LeaderboardEntry } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, MoneyText, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { AmbassadorProfile, Referral, AmbassadorEarning, LeaderboardEntry } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, MoneyText, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';

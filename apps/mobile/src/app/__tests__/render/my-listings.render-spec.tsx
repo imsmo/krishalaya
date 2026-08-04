@@ -5,7 +5,7 @@
 // degrades to the designed "no listings yet" panel rather than a blank/crashed list once its load-on-focus
 // effect settles (renderScreen flushes one tick for exactly this).
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import MyListings from '../../(farmer)/listings/index';
 

@@ -7,7 +7,7 @@
 // prerequisite/lock field. So the screen shows the REAL status (completed / watching / not-started) and never a
 // fabricated "Hindi · Gujarati subtitles" or a "🔒 After KYC tutorial" lock. Section titles use the real course
 // title (defaultTitle); a module without a title is grouped by its real moduleNo, never an invented name.
-import type { CourseLesson, LessonProgress } from '@krishi-verse/sdk-js';
+import type { CourseLesson, LessonProgress } from '@krishalaya/sdk-js';
 
 export type LessonStatus = 'completed' | 'watching' | 'notStarted';
 

@@ -4,8 +4,8 @@
 // yet (flagged), so there's a neutral thumbnail placeholder rather than a fake image.
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import type { ListingCard } from '@krishi-verse/sdk-js';
-import { Card, MoneyText, StatusPill, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { ListingCard } from '@krishalaya/sdk-js';
+import { Card, MoneyText, StatusPill, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 
 export function BuyerListingCard({ card, langCode, saved, onPress, onToggleSave, saveLabel, glyph, priceOverrideMinor, dropLabel }: {

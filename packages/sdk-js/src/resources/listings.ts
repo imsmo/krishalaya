@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
+// @krishalaya/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
 import { HttpClient } from '../http';
 import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page } from '../types';
 

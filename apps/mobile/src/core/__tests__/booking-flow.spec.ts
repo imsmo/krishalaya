@@ -1,6 +1,6 @@
 // Unit tests for the PURE employer (hire) logic (features/labour/booking-flow). Money built with BigInt (Law 2).
 import { bookingLifecycleActions, bookingStatusTone, tallyAssignments, canAssignMore, workerFilterParams, buildBookingDraft, rupeesToMinor } from '../../features/labour/booking-flow';
-import type { LabourAssignment } from '@krishi-verse/sdk-js';
+import type { LabourAssignment } from '@krishalaya/sdk-js';
 
 const asg = (status: string): LabourAssignment => ({ id: Math.random().toString(), bookingId: 'b', workerId: 'w', status, wageMinor: '0', acceptedAt: null, createdAt: '2026-01-01' } as LabourAssignment);
 

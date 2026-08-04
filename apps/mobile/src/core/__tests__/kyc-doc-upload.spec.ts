@@ -1,6 +1,6 @@
 // Unit tests for the PURE doc-type resolver (features/kyc/doc-upload, screen 174). No React/native deps.
 import { resolveDocType } from '../../features/kyc/doc-upload';
-import type { KycDocType } from '@krishi-verse/sdk-js';
+import type { KycDocType } from '@krishalaya/sdk-js';
 
 const t = (id: string, code: string, name = code): KycDocType => ({ id, code, name });
 const list = [t('1', 'aadhaar', 'Aadhaar Card'), t('2', 'land_712', '7/12 Utara'), t('3', 'pan', 'PAN Card')];

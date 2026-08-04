@@ -12,7 +12,7 @@
 // be fabrication. So each row opens the real branding editor; nothing is faked.
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, ScrollView } from 'react-native';
-import { Card, EmptyState, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
+import { Card, EmptyState, ScreenScaffold, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openWebConsole } from '../../core/deeplink';

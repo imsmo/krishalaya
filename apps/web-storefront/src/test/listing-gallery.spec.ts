@@ -1,6 +1,6 @@
 // Unit tests for the PURE listing-gallery helpers (no React/IO). Proves the storefront never fabricates media
 // and always renders a stable, deduped, sort-ordered view of whatever the signed media endpoint returns.
-import type { GalleryItem } from '@krishi-verse/sdk-js';
+import type { GalleryItem } from '@krishalaya/sdk-js';
 import { hasGallery, orderedGallery } from '../features/listing/gallery';
 
 const item = (mediaId: string, url: string, sortOrder?: number): GalleryItem =>

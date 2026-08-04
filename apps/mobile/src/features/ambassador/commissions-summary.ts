@@ -10,7 +10,7 @@
 // the program rules are shown as fixed UI copy without a fabricated figure. The only real paid/unpaid split the
 // ledger exposes is `payoutId`; there is no settlement-holdback ("pending 7d") contract, so the second tile shows
 // PAID-to-date, not a fabricated pending window.
-import type { AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { AmbassadorEarning } from '@krishalaya/sdk-js';
 
 export type CommissionCategory = 'onboarding' | 'first_sale' | 'gmv' | 'bonus' | 'payout' | 'other';
 

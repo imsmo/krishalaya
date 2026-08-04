@@ -1,4 +1,4 @@
-// @krishi-verse/i18n · formatter + translator unit tests. The critical one: money formats from a bigint-string
+// @krishalaya/i18n · formatter + translator unit tests. The critical one: money formats from a bigint-string
 // of minor units with FULL precision (no float rounding) and correct Indian lakh/crore grouping.
 import { formatMoneyMinor, formatNumber, Translator, resolveLanguage } from '../index';
 
@@ -38,7 +38,7 @@ describe('formatMoneyMinor (bigint-string minor units, no float)', () => {
     expect(formatMoneyMinor('0', 'JPY', 'en').replace(/[^0-9]/g, '')).toBe('0');
   });
   it('an unrecognized langCode is treated as a raw Intl locale tag, never silently collapsed to en (DEV-26/Q15)', () => {
-    // 'ja-JP' is not an @krishi-verse/i18n LANGUAGE_REGISTRY code — formatMoneyMinor must still honor it directly
+    // 'ja-JP' is not an @krishalaya/i18n LANGUAGE_REGISTRY code — formatMoneyMinor must still honor it directly
     // (this is exactly the contract packages/ui's MoneyText relies on via opts.intlLocale).
     const out = formatMoneyMinor('500', 'JPY', 'ja-JP');
     expect(out).toMatch(/[¥￥]/);

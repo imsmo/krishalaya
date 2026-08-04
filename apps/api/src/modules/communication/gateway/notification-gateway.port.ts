@@ -1,6 +1,6 @@
 // modules/communication/gateway/notification-gateway.port.ts
 // Channel-agnostic port to the EXTERNAL notification product (push / in-app / email / sms / whatsapp / ivr).
-// Krishi-Verse owns the POLICY + CONTENT (event catalog, templates, preferences, quiet hours, delivery log,
+// Krishalaya owns the POLICY + CONTENT (event catalog, templates, preferences, quiet hours, delivery log,
 // cost tracking); the actual SEND is delegated across this boundary. Adapters are resilience-wrapped and may
 // DEGRADE (return a 'failed' outcome) rather than throw — a hung notifier must never cascade into a request
 // path (Law 12). The 'inapp' channel needs no external send (the notifications row IS the inbox item), so the

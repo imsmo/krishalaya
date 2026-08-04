@@ -12,15 +12,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { Address, DeliveryMethod } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { Address, DeliveryMethod } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listAddresses } from '../../features/addresses/addresses.api';
 import { deliveryMethods } from '../../features/cart/cart.api';
 import { formatAddress } from '../../features/cart/cart-math';
 import { defaultMethodId, deliverySavingMinor } from '../../features/cart/delivery';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 
 export default function DeliveryStep() {
   const { t, lang } = useTranslation();

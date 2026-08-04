@@ -1,6 +1,6 @@
 // Unit tests for the PURE category-nav flattener (P1-9). Pins: real names (not UUIDs), depth-indent preserves the
 // server's path order, inactive nodes dropped, empty/garbage degrades to [].
-import type { CategoryNode } from '@krishi-verse/sdk-js';
+import type { CategoryNode } from '@krishalaya/sdk-js';
 import { flattenCategoryNav } from '../features/discovery/categories';
 
 const cat = (over: Partial<CategoryNode>): CategoryNode => ({

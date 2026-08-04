@@ -1,1 +1,1 @@
-// @krishi-verse/contracts · public entry. Re-export the package's modules here.
+// @krishalaya/contracts · public entry. Re-export the package's modules here.

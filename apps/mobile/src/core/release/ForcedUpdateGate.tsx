@@ -5,7 +5,7 @@
 // Fail-open: if no min is configured (dev) or the flag is off, the app renders normally (degrade-never-die).
 import React from 'react';
 import { View, Text, StyleSheet, Linking, Platform, Alert } from 'react-native';
-import { Button, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
+import { Button, ScreenScaffold, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../i18n/useTranslation';
 import { useFlag } from '../flags/useFlag';
 import { config } from '../config';

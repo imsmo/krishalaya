@@ -12,7 +12,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { MediaUploader } from '../../../components/MediaUploader';
 import { createListingAction } from './actions';
 import { encodeProductChoice, LISTING_SALE_TYPES, LISTING_ORGANIC, LISTING_VISIBILITY } from '../../../features/listings/form';
-import type { ProductCard } from '@krishi-verse/sdk-js';
+import type { ProductCard } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

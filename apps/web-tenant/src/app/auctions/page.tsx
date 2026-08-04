@@ -10,10 +10,10 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { env } from '../../lib/env';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { AUCTION_KINDS } from '../../features/auctions/manage';
 import { createAuctionAction } from './actions';
-import type { Auction, ListingCard } from '@krishi-verse/sdk-js';
+import type { Auction, ListingCard } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 

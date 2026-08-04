@@ -1,6 +1,6 @@
 // modules/insurance/gateway/pmfby-provider.port.ts
 // Port to the EXTERNAL PMFBY (Pradhan Mantri Fasal Bima Yojana) govt crop-insurance portal (DEV-25,
-// KV-BL-057, Wave 7). Krishi-Verse owns the POLICY aggregate (insurance_policies); the govt portal owns
+// KV-BL-057, Wave 7). Krishalaya owns the POLICY aggregate (insurance_policies); the govt portal owns
 // the actual scheme-enrolment record. NO commercial/govt provider account exists in this environment
 // (§8: provider accounts are founder-reviewed before any real credential is set) — the real PMFBY API
 // spec is NOT in this repo, so this port's input shape is OUR domain's own fields (what

@@ -2,7 +2,7 @@
 // Port to an EXTERNAL surveyor-network dispatch/scheduling service (DEV-25, KV-BL-057, Wave 7). When an
 // insurer schedules (or RE-schedules, per the claim state machine's own survey_scheduled→survey_scheduled
 // reassignment loop — DEV-23's farmer-disagreement re-survey path) a surveyor visit, this port notifies the
-// external network so the visit is actually staffed/tracked outside our own user directory. Krishi-Verse
+// external network so the visit is actually staffed/tracked outside our own user directory. Krishalaya
 // owns the CLAIM aggregate + the internal `surveyor_user_id` (an existing platform user); the external
 // network is only told WHICH claim/surveyor/visit-window to action — no claimant PII beyond what the
 // network needs to route the dispatch.

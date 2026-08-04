@@ -14,10 +14,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { AmbassadorProfile, Referral, AmbassadorVisit, AmbassadorTarget, AmbassadorTargetMetric } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { AmbassadorProfile, Referral, AmbassadorVisit, AmbassadorTarget, AmbassadorTargetMetric } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { myProfile, myTargets, listReferrals, listVisits, setTarget } from '../../features/ambassador/ambassador.api';

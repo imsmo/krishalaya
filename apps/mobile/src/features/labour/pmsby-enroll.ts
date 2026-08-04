@@ -7,7 +7,7 @@
 // DEV-22/23) — `pmsbyCoverageWindow()` adds the pure ISO date-range helper the screen needs to call
 // `POST /v1/insurance/policies` (`validFrom`/`validUntil`), matching PMSBY's real annual cycle (1 June - 31 May,
 // per screen 145's own auto-debit mandate copy "on 1 June each year").
-import type { WorkerProfile, BankAccount, KycDocument, KycDocType } from '@krishi-verse/sdk-js';
+import type { WorkerProfile, BankAccount, KycDocument, KycDocType } from '@krishalaya/sdk-js';
 
 // PMSBY statutory figures (public scheme constants — bigint minor, Law 2; not per-user/seed data).
 export const PMSBY_COVER_MINOR = '20000000';   // ₹2,00,000 accidental death / total disability

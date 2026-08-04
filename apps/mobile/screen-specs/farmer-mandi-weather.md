@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 52-farmer-mandi-prices — 52 · Today's Mandi Prices — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/52-farmer-mandi-prices.html`
+## 52-farmer-mandi-prices — 52 · Today's Mandi Prices — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/52-farmer-mandi-prices.html`
 - **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
 - **Must render (exact design content):**
-  - 52 · Today's Mandi Prices — Krishi-Verse
+  - 52 · Today's Mandi Prices — Krishalaya
   - Mandi Prices
   - Today's Mandi Prices
   - आज का मंडी भाव
@@ -86,11 +86,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 53-farmer-mandi-detail — 53 · Wheat Price Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/53-farmer-mandi-detail.html`
+## 53-farmer-mandi-detail — 53 · Wheat Price Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/53-farmer-mandi-detail.html`
 - **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
 - **Must render (exact design content):**
-  - 53 · Wheat Price Detail — Krishi-Verse
+  - 53 · Wheat Price Detail — Krishalaya
   - Wheat — Lokwan
   - 🌾
   - Wheat · Lokwan
@@ -130,11 +130,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 54-farmer-weather — 54 · 7-Day Weather — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/54-farmer-weather.html`
+## 54-farmer-weather — 54 · 7-Day Weather — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/54-farmer-weather.html`
 - **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
 - **Must render (exact design content):**
-  - 54 · 7-Day Weather — Krishi-Verse
+  - 54 · 7-Day Weather — Krishalaya
   - Weather
   - 📍 Anand, Gujarat
   - ⛅
@@ -196,17 +196,17 @@
   - 💧 10%
   - 33°
   - 24°
-  - Krishi-Verse Advisory
+  - Krishalaya Advisory
   - Heavy rain expected Thu-Fri. If your wheat is mature, harvest by Wed evening to avoid damage. Cover stored grain.
 - **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 110-farmer-mandi-alerts — 110 · Price Alerts — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/110-farmer-mandi-alerts.html`
+## 110-farmer-mandi-alerts — 110 · Price Alerts — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/110-farmer-mandi-alerts.html`
 - **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
 - **Must render (exact design content):**
-  - 110 · Price Alerts — Krishi-Verse
+  - 110 · Price Alerts — Krishalaya
   - Mandi Price Alerts
   - My alerts
   - 5 active
@@ -239,11 +239,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 111-farmer-mandi-history — 111 · Price History — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/111-farmer-mandi-history.html`
+## 111-farmer-mandi-history — 111 · Price History — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/111-farmer-mandi-history.html`
 - **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
 - **Must render (exact design content):**
-  - 111 · Price History — Krishi-Verse
+  - 111 · Price History — Krishalaya
   - Wheat · Price History
   - 🌾 Wheat — Lokwan · Anand Mandi
   - ₹2,880 / qtl
@@ -297,11 +297,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 117-farmer-weather-detail — 117 · Weather Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/117-farmer-weather-detail.html`
+## 117-farmer-weather-detail — 117 · Weather Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/117-farmer-weather-detail.html`
 - **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
 - **Must render (exact design content):**
-  - 117 · Weather Detail — Krishi-Verse
+  - 117 · Weather Detail — Krishalaya
   - Anand · Weather
   - ⛈
   - 28°C
@@ -376,11 +376,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 118-farmer-weather-settings — 118 · Weather Alerts — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/118-farmer-weather-settings.html`
+## 118-farmer-weather-settings — 118 · Weather Alerts — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/118-farmer-weather-settings.html`
 - **Route:** `src/app/(farmer)/mandi · weather/…`  ·  **Feature:** `features/market`  ·  **Flag:** `mandi_weather`
 - **Must render (exact design content):**
-  - 118 · Weather Alerts — Krishi-Verse
+  - 118 · Weather Alerts — Krishalaya
   - Weather Alert Settings
   - Critical alerts (always on)
   - ⛈ Heavy rain warning

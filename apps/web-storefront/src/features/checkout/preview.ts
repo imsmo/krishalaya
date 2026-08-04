@@ -2,7 +2,7 @@
 // The authoritative bill + coupon discount come from the server (`checkout.preview`); the serviceable delivery
 // options from `checkout.deliveryMethods`. These helpers only normalize input and choose a sensible default — they
 // never compute money (Law 2: the server owns every total) and never fabricate a method.
-import type { DeliveryMethod } from '@krishi-verse/sdk-js';
+import type { DeliveryMethod } from '@krishalaya/sdk-js';
 
 /** Normalize a raw coupon string to the server's accepted shape (trim + upper), or null when blank/invalid.
  *  Mirrors the API DTO regex (^[A-Za-z0-9_-]{3,40}$) so we don't round-trip an obviously-bad code. */

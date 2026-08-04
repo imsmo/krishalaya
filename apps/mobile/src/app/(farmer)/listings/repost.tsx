@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/repost.tsx · screen 116 (Repost Listing) — built to the Phase-1 design
-// (Krishi_Verse_Design_System/screens/116-farmer-repost-listing.html): an "expired" hero, a preview of the lapsed
+// (Krishalaya_Design_System/screens/116-farmer-repost-listing.html): an "expired" hero, a preview of the lapsed
 // listing with its last-7-day stats, an "Update before reposting" section (quantity + price + keep-photos/desc +
 // boost toggles) and Discard / "Repost · Live in 5 min". Thin screen over features/listings; degrade-never-die
 // (Law 12); money via paise BigInt (Law 2); i18n(hi/en/gu).
@@ -19,9 +19,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SdkError, type ListingCard, type ListingAnalytics, type BoostTier } from '@krishi-verse/sdk-js';
-import { Button, Input, Toggle, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { SdkError, type ListingCard, type ListingAnalytics, type BoostTier } from '@krishalaya/sdk-js';
+import { Button, Input, Toggle, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getListing, listingAnalytics, listingMedia, loadBoostTiers, repostListing } from '../../../features/listings/listings.api';

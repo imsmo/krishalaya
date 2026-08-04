@@ -1,6 +1,6 @@
 // apps/mobile/src/features/addresses/addresses.ts · PURE address-book logic (no React/native, no SDK client) →
 // unit-tested. Presentation ordering + a Maps affordance guard for screen 134.
-import type { Address } from '@krishi-verse/sdk-js';
+import type { Address } from '@krishalaya/sdk-js';
 
 /** Primary address first, then the rest in their existing (server) order (screen 134). Stable. Pure — no I/O. */
 export function sortAddresses<T extends { isDefault: boolean }>(list: T[]): T[] {

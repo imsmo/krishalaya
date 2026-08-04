@@ -9,7 +9,7 @@
 // proactive one in auth.store.tsx — once a token expired mid-session, every request 401'd until the app
 // restarted. This executor is what the SDK calls reactively on a 401 (at most once per request, single-flighted
 // across concurrent 401s — see http.ts's `refreshOnce`).
-import type { AuthTokens } from '@krishi-verse/sdk-js';
+import type { AuthTokens } from '@krishalaya/sdk-js';
 
 export interface RefreshExecutorDeps {
   /** Reads the CURRENT refresh token (a ref in the real store, so it always reads the live value even though

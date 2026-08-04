@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 61-farmer-profile-own — 61 · My Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/61-farmer-profile-own.html`
+## 61-farmer-profile-own — 61 · My Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/61-farmer-profile-own.html`
 - **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
 - **Must render (exact design content):**
-  - 61 · My Profile — Krishi-Verse
+  - 61 · My Profile — Krishalaya
   - My Profile
   - RP
   - Ramesh Patel
@@ -48,11 +48,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 119-farmer-edit-profile — 119 · Edit Profile — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/119-farmer-edit-profile.html`
+## 119-farmer-edit-profile — 119 · Edit Profile — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/119-farmer-edit-profile.html`
 - **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
 - **Must render (exact design content):**
-  - 119 · Edit Profile — Krishi-Verse
+  - 119 · Edit Profile — Krishalaya
   - Edit Profile
   - RP
   - Change photo
@@ -80,11 +80,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 120-farmer-farm-details — 120 · Farm Details — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/120-farmer-farm-details.html`
+## 120-farmer-farm-details — 120 · Farm Details — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/120-farmer-farm-details.html`
 - **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
 - **Must render (exact design content):**
-  - 120 · Farm Details — Krishi-Verse
+  - 120 · Farm Details — Krishalaya
   - My Farm Details
   - Anand · 5 acres
   - 3 plots · 2 active crops · Drip irrigated
@@ -124,11 +124,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 121-farmer-bank-accounts — 121 · Bank Accounts — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/121-farmer-bank-accounts.html`
+## 121-farmer-bank-accounts — 121 · Bank Accounts — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/121-farmer-bank-accounts.html`
 - **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
 - **Must render (exact design content):**
-  - 121 · Bank Accounts — Krishi-Verse
+  - 121 · Bank Accounts — Krishalaya
   - Bank Accounts
   - State Bank of India
   - XXXX XXXX 2247
@@ -154,11 +154,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 122-farmer-documents — 122 · Documents Wallet — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/122-farmer-documents.html`
+## 122-farmer-documents — 122 · Documents Wallet — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/122-farmer-documents.html`
 - **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
 - **Must render (exact design content):**
-  - 122 · Documents Wallet — Krishi-Verse
+  - 122 · Documents Wallet — Krishalaya
   - My Documents
   - 🗂
   - Documents Wallet
@@ -207,11 +207,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 123-farmer-help — 123 · Help & Support — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/123-farmer-help.html`
+## 123-farmer-help — 123 · Help & Support — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/123-farmer-help.html`
 - **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
 - **Must render (exact design content):**
-  - 123 · Help & Support — Krishi-Verse
+  - 123 · Help & Support — Krishalaya
   - Help & Support
   - 🤖
   - Ask AI assistant
@@ -250,11 +250,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 124-farmer-complaint — 124 · Report Problem — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/124-farmer-complaint.html`
+## 124-farmer-complaint — 124 · Report Problem — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/124-farmer-complaint.html`
 - **Route:** `src/app/(farmer)/profile/…`  ·  **Feature:** `features/profile`  ·  **Flag:** `farmer_profile`
 - **Must render (exact design content):**
-  - 124 · Report Problem — Krishi-Verse
+  - 124 · Report Problem — Krishalaya
   - Report a Problem
   - What's the issue?
   - 💰

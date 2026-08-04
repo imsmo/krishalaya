@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 75-settings — 75 · Settings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/75-settings.html`
+## 75-settings — 75 · Settings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/75-settings.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 75 · Settings — Krishi-Verse
+  - 75 · Settings — Krishalaya
   - Settings
   - RP
   - Ramesh Patel
@@ -41,18 +41,18 @@
   - Help & FAQ
   - Contact Support
   - Chat · Call · Email
-  - About Krishi-Verse
+  - About Krishalaya
   - Logout
-  - Krishi-Verse v1.0.0 (Build 142) · Made with 🌾 in India
+  - Krishalaya v1.0.0 (Build 142) · Made with 🌾 in India
 - **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 171-notification-settings — 171 · Notification Settings — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/171-notification-settings.html`
+## 171-notification-settings — 171 · Notification Settings — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/171-notification-settings.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 171 · Notification Settings — Krishi-Verse
+  - 171 · Notification Settings — Krishalaya
   - Notification Settings
   - Money & orders
   - 💰 Payment received
@@ -80,11 +80,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 172-notification-detail — 172 · Notification — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/172-notification-detail.html`
+## 172-notification-detail — 172 · Notification — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/172-notification-detail.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 172 · Notification — Krishi-Verse
+  - 172 · Notification — Krishalaya
   - Notification
   - 💰
   - Payment received!
@@ -112,11 +112,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 176-change-phone — 176 · Change Phone — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/176-change-phone.html`
+## 176-change-phone — 176 · Change Phone — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/176-change-phone.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 176 · Change Phone — Krishi-Verse
+  - 176 · Change Phone — Krishalaya
   - Change Phone Number
   - Current
   - +91 98765 12340
@@ -140,11 +140,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 177-account-delete — 177 · Delete Account — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/177-account-delete.html`
+## 177-account-delete — 177 · Delete Account — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/177-account-delete.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 177 · Delete Account — Krishi-Verse
+  - 177 · Delete Account — Krishalaya
   - Delete Account
   - ⚠
   - Delete your account?
@@ -178,11 +178,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 178-privacy-settings — 178 · Privacy — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/178-privacy-settings.html`
+## 178-privacy-settings — 178 · Privacy — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/178-privacy-settings.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 178 · Privacy — Krishi-Verse
+  - 178 · Privacy — Krishalaya
   - Privacy Settings
   - Profile visibility
   - Show profile to buyers
@@ -214,11 +214,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 179-data-download — 179 · Download Data — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/179-data-download.html`
+## 179-data-download — 179 · Download Data — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/179-data-download.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 179 · Download Data — Krishi-Verse
+  - 179 · Download Data — Krishalaya
   - Download My Data
   - 📦
   - All your data in one ZIP
@@ -251,11 +251,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 183-global-search — 183 · Search — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/183-global-search.html`
+## 183-global-search — 183 · Search — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/183-global-search.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 183 · Search — Krishi-Verse
+  - 183 · Search — Krishalaya
   - All · 47
   - Listings · 28
   - Sellers · 12
@@ -289,11 +289,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 185-permissions — 185 · Permissions — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/185-permissions.html`
+## 185-permissions — 185 · Permissions — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/185-permissions.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 185 · Permissions — Krishi-Verse
+  - 185 · Permissions — Krishalaya
   - Permissions
   - 🔐
   - A few permissions needed
@@ -327,11 +327,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 186-tutorial — 186 · App Tour — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/186-tutorial.html`
+## 186-tutorial — 186 · App Tour — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/186-tutorial.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 186 · App Tour — Krishi-Verse
+  - 186 · App Tour — Krishalaya
   - 🎤
   - Speak your listing
   - Tap the mic button and tell us in Gujarati or Hindi. We'll fill the form for you.
@@ -343,11 +343,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 187-language-switcher — 187 · Language — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/187-language-switcher.html`
+## 187-language-switcher — 187 · Language — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/187-language-switcher.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 187 · Language — Krishi-Verse
+  - 187 · Language — Krishalaya
   - Choose Language
   - 🌐
   - Change language
@@ -371,11 +371,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 188-offline — 188 · Offline — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/188-offline.html`
+## 188-offline — 188 · Offline — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/188-offline.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 188 · Offline — Krishi-Verse
+  - 188 · Offline — Krishalaya
   - No Internet
   - 📡
   - No internet connection
@@ -394,11 +394,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 189-server-error — 189 · Server Error — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/189-server-error.html`
+## 189-server-error — 189 · Server Error — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/189-server-error.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 189 · Server Error — Krishi-Verse
+  - 189 · Server Error — Krishalaya
   - 🛠
   - Something went wrong
   - Error 500 · Server hiccup
@@ -414,11 +414,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 190-app-update — 190 · Update Required — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/190-app-update.html`
+## 190-app-update — 190 · Update Required — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/190-app-update.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 190 · Update Required — Krishi-Verse
+  - 190 · Update Required — Krishalaya
   - 🚀
   - App update needed
   - Version 2.4.0 has new features and bug fixes
@@ -434,11 +434,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 191-inbox-all — 191 · Messages — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/191-inbox-all.html`
+## 191-inbox-all — 191 · Messages — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/191-inbox-all.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 191 · Messages — Krishi-Verse
+  - 191 · Messages — Krishalaya
   - Messages · 4 new
   - All · 14
   - Buyers · 8
@@ -469,18 +469,18 @@
   - 2d
   - Thanks for the delivery! ⭐⭐⭐⭐⭐
   - KV
-  - Krishi-Verse Support
+  - Krishalaya Support
   - 3d
   - Your dispute #DSP-0247 has been resolved.
 - **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 192-message-archive — 192 · Archive — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/192-message-archive.html`
+## 192-message-archive — 192 · Archive — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/192-message-archive.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 192 · Archive — Krishi-Verse
+  - 192 · Archive — Krishalaya
   - Archived Messages · 24
   - 📦 Archived messages · Auto-deleted after 1 year
   - RT
@@ -508,14 +508,14 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 195-feedback-cta — 195 · Help us improve — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/195-feedback-cta.html`
+## 195-feedback-cta — 195 · Help us improve — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/195-feedback-cta.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 195 · Help us improve — Krishi-Verse
+  - 195 · Help us improve — Krishalaya
   - Feedback
   - 💛
-  - How is your Krishi-Verse experience?
+  - How is your Krishalaya experience?
   - Your feedback shapes the app
   - ⭐
   - Tap stars to rate
@@ -536,14 +536,14 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 196-about — 196 · About Krishi-Verse — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/196-about.html`
+## 196-about — 196 · About Krishalaya — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/196-about.html`
 - **Route:** `src/app/(system) · (app)/…`  ·  **Feature:** `features/system`  ·  **Flag:** `(core)`
 - **Must render (exact design content):**
-  - 196 · About Krishi-Verse — Krishi-Verse
+  - 196 · About Krishalaya — Krishalaya
   - About
   - 🌾
-  - Krishi-Verse
+  - Krishalaya
   - Version 2.4.0 · Build 247
   - Built with ❤️ for farmers, by Dev
   - India's most farmer-first agri SaaS
@@ -565,17 +565,17 @@
   - ›
   - 📜 Licenses (Open Source)
   - ›
-  - 💼 Krishi-Verse Pvt Ltd
+  - 💼 Krishalaya Pvt Ltd
   - CIN U72200GJ2024
   - Connect
-  - 📧 hello@krishi-verse.in
+  - 📧 hello@krishalaya.com
   - ›
-  - 🌐 krishi-verse.in
+  - 🌐 krishalaya.com
   - ›
   - 💬 WhatsApp: +91 90990 12340
   - ›
   - Made in Anand, Gujarat 🇮🇳
-  - © 2026 Krishi-Verse Pvt Ltd
+  - © 2026 Krishalaya Pvt Ltd
 - **States (Law 12):** loading = skeleton mirroring THIS layout · empty = designed `EmptyState` · error = inline retry. Never a blank body.
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).

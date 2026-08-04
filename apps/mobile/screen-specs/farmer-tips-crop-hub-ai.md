@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 55-farmer-tips-library — 55 · Farming Tips — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/55-farmer-tips-library.html`
+## 55-farmer-tips-library — 55 · Farming Tips — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/55-farmer-tips-library.html`
 - **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
 - **Must render (exact design content):**
-  - 55 · Farming Tips — Krishi-Verse
+  - 55 · Farming Tips — Krishalaya
   - Tips & Knowledge
   - All
   - Crops
@@ -53,11 +53,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 101-farmer-tip-detail — 101 · Tip Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/101-farmer-tip-detail.html`
+## 101-farmer-tip-detail — 101 · Tip Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/101-farmer-tip-detail.html`
 - **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
 - **Must render (exact design content):**
-  - 101 · Tip Detail — Krishi-Verse
+  - 101 · Tip Detail — Krishalaya
   - Pest Control
   - Stop Wheat Rust Before It Spreads
   - Dr. Mehta · ICAR · 5 min read
@@ -98,11 +98,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 102-farmer-tips-category — 102 · Tips by Category — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/102-farmer-tips-category.html`
+## 102-farmer-tips-category — 102 · Tips by Category — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/102-farmer-tips-category.html`
 - **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
 - **Must render (exact design content):**
-  - 102 · Tips by Category — Krishi-Verse
+  - 102 · Tips by Category — Krishalaya
   - Pest Control · 24 tips
   - All
   - Wheat (8)
@@ -146,11 +146,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 103-farmer-saved-tips — 103 · Saved Tips — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/103-farmer-saved-tips.html`
+## 103-farmer-saved-tips — 103 · Saved Tips — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/103-farmer-saved-tips.html`
 - **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
 - **Must render (exact design content):**
-  - 103 · Saved Tips — Krishi-Verse
+  - 103 · Saved Tips — Krishalaya
   - My Saved Tips · 12
   - Bookmarked
   - 12 saved
@@ -176,11 +176,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 104-farmer-crop-hub — 104 · Crop Knowledge Hub — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/104-farmer-crop-hub.html`
+## 104-farmer-crop-hub — 104 · Crop Knowledge Hub — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/104-farmer-crop-hub.html`
 - **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
 - **Must render (exact design content):**
-  - 104 · Crop Knowledge Hub — Krishi-Verse
+  - 104 · Crop Knowledge Hub — Krishalaya
   - Wheat (Lokwan)
   - Wheat · Lokwan
   - Rabi season · 120-130 days · Your variety
@@ -225,15 +225,15 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 125-farmer-ai-chat — 125 · AI Assistant — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/125-farmer-ai-chat.html`
+## 125-farmer-ai-chat — 125 · AI Assistant — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/125-farmer-ai-chat.html`
 - **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
 - **Must render (exact design content):**
-  - 125 · AI Assistant — Krishi-Verse
+  - 125 · AI Assistant — Krishalaya
   - 🤖
   - Krishi AI · असिस्टेंट
   - ● Online · Gujarati, Hindi, English
-  - Namaste Ramesh ji! 🙏 I'm your Krishi-Verse AI assistant. I can help with farming questions, market prices, scheme info, and app issues. Ask me anything in Gujarati, Hindi, or English.
+  - Namaste Ramesh ji! 🙏 I'm your Krishalaya AI assistant. I can help with farming questions, market prices, scheme info, and app issues. Ask me anything in Gujarati, Hindi, or English.
   - 11:42 AM
   - My wheat leaves have yellow patches. What is it?
   - 11:45 AM
@@ -272,11 +272,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 184-voice-search — 184 · Voice Search — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/184-voice-search.html`
+## 184-voice-search — 184 · Voice Search — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/184-voice-search.html`
 - **Route:** `src/app/(farmer)/tips · crop-hub · assistant/…`  ·  **Feature:** `features/content`  ·  **Flag:** `tips_assistant`
 - **Must render (exact design content):**
-  - 184 · Voice Search — Krishi-Verse
+  - 184 · Voice Search — Krishalaya
   - Listening...
   - Speak now
   - In Gujarati, Hindi, or English

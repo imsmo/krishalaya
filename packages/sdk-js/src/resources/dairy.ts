@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · dairy MCC-operator resource (P1-12). The cooperative/MCC operator console talks to the
+// @krishalaya/sdk-js · dairy MCC-operator resource (P1-12). The cooperative/MCC operator console talks to the
 // dairy module: manage MCCs + rate cards, enrol members, record counter milk-collections, and run the per-cycle
 // milk-bill settlement (generate → preview → approve → pay). Every WRITE is gated server-side by `dairy.manage`
 // + the `dairy` feature flag; money is computed and moved SERVER-SIDE (Law 2/11) — the SDK only carries strings.

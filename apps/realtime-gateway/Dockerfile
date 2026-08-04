@@ -6,7 +6,7 @@ RUN corepack enable
 COPY pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/realtime-gateway ./apps/realtime-gateway
-RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishi-verse/realtime-gateway build
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishalaya/realtime-gateway build
 
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production

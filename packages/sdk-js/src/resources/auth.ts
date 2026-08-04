@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · auth resource (phone-OTP login, mirrors the identity module). The SDK never stores
+// @krishalaya/sdk-js · auth resource (phone-OTP login, mirrors the identity module). The SDK never stores
 // tokens — it returns them to the host, which decides storage (httpOnly cookie on the server, memory in the
 // browser). requestOtp is enumeration-safe by API contract (same response whether or not the phone exists).
 import { HttpClient } from '../http';

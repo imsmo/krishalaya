@@ -3,7 +3,7 @@
 // degrade-never-die. Posting a message is idempotent (Law 3); image attachments upload via core/media (compress +
 // presigned PUT) → we send the attachmentMediaId only (bytes never go through the API). A masked call bridges the
 // two real numbers SERVER-SIDE — the client only initiates and never sees a phone number.
-import type { Conversation, Message, MaskedCall } from '@krishi-verse/sdk-js';
+import type { Conversation, Message, MaskedCall } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

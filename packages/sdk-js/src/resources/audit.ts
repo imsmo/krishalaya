@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · audit resource (read-only audit trail, P1-12). A tenant auditor browses the
+// @krishalaya/sdk-js · audit resource (read-only audit trail, P1-12). A tenant auditor browses the
 // append-only audit_log — filtered by action / entity / actor / time window, keyset-paginated. There is NO
 // write method: the trail is immutable (written server-side by the platform inside business transactions).
 // Every read is gated server-side by `audit.read` + the `audit_trail` flag, and RLS-isolated to the tenant.

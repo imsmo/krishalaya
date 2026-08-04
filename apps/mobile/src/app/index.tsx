@@ -4,7 +4,7 @@
 import React from 'react';
 import { Redirect } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
-import { color } from '@krishi-verse/ui-native';
+import { color } from '@krishalaya/ui-native';
 import { useAuth } from '../core/auth/auth.store';
 
 export default function Index() {

@@ -1,6 +1,6 @@
 // Unit tests for the PURE notification-prefs helpers (features/notifications/notif-prefs, screen 171). No RN deps.
 import { groupByEvent, eventCategory, eventIcon, channelIcon, enabledChannels, humanizeCode } from '../../features/notifications/notif-prefs';
-import type { NotificationPreference } from '@krishi-verse/sdk-js';
+import type { NotificationPreference } from '@krishalaya/sdk-js';
 
 const p = (eventCode: string, channel: string, isEnabled: boolean): NotificationPreference => ({ eventCode, channel, isEnabled });
 

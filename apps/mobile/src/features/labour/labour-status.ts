@@ -1,9 +1,9 @@
 // apps/mobile/src/features/labour/labour-status.ts · PURE labour logic for the worker app (P-12). No React/native
 // (SDK/ui types are `import type` → erased) → unit-tested. Money is bigint minor-unit strings (Law 2). The SERVER
 // is the authority on the 18+ gate, the accept/decline window, and wage floors — these helpers drive UX only.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { WorkerProfile, LabourBooking } from '@krishi-verse/sdk-js';
-import type { WorkerPrefsInput } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { WorkerProfile, LabourBooking } from '@krishalaya/sdk-js';
+import type { WorkerPrefsInput } from '@krishalaya/sdk-js';
 
 /** Booking (job) status → chip tone. */
 export function bookingStatusTone(status: string): PillTone {

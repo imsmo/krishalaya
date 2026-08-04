@@ -21,7 +21,7 @@
 //    (masked handle) + tokenised bank/UPI payout instruments (last-4 / IFSC + verified flag). Nothing sensitive.
 //    Adding a bank/UPI payout destination (tokenised vaultRef) is the P-03 flagged gap — withdrawal works against
 //    destinations already on file.
-import type { PaymentSummary, PayoutSummary, BankAccount, WalletInsights, WalletStatementFile, AutopayMandate, MandateExecution, SavedInstruments, WalletBalance, WalletLedgerEntry } from '@krishi-verse/sdk-js';
+import type { PaymentSummary, PayoutSummary, BankAccount, WalletInsights, WalletStatementFile, AutopayMandate, MandateExecution, SavedInstruments, WalletBalance, WalletLedgerEntry } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

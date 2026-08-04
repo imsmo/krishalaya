@@ -11,7 +11,7 @@ export function Sidebar() {
   const t = getTranslator();
   return (
     <nav className="kv-sidebar" aria-label={t.t('nav.primary')}>
-      <Link href="/dashboard" className="kv-brand">Krishi-Verse Admin <span className="kv-godmode">{t.t('nav.godmode')}</span></Link>
+      <Link href="/dashboard" className="kv-brand">Krishalaya Admin <span className="kv-godmode">{t.t('nav.godmode')}</span></Link>
       <ul className="kv-sidebar__nav">
         {liveNav().map((n) => (
           <li key={n.href}><Link href={n.href} className="kv-sidebar__link">{t.t(n.labelKey)}</Link></li>

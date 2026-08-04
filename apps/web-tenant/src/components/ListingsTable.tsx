@@ -1,6 +1,6 @@
 'use client';
 // apps/web-tenant/src/components/ListingsTable.tsx · DEV-18 REAL consuming-app smoke test (packages/ui
-// port batch 4) — client boundary wrapper around `@krishi-verse/ui`'s `DataTable`.
+// port batch 4) — client boundary wrapper around `@krishalaya/ui`'s `DataTable`.
 //
 // WHY THIS FILE EXISTS (the real RSC-boundary lesson this batch's smoke test was built to surface, see
 // `dev18_report.md`): `DataTable` is a Client Component (it uses `useRef`/`useEffect` internally — this
@@ -13,10 +13,10 @@
 // side, where defining a fresh function is completely normal (no boundary crossed, because both the
 // closures and the component that consumes them now live on the same side).
 import Link from 'next/link';
-import { DataTable } from '@krishi-verse/ui';
-import type { DataTableColumn, DataTableState } from '@krishi-verse/ui';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import { DataTable } from '@krishalaya/ui';
+import type { DataTableColumn, DataTableState } from '@krishalaya/ui';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { ListingCard } from '@krishalaya/sdk-js';
 
 export interface ListingsTableProps {
   items: ListingCard[];

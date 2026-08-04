@@ -11,7 +11,7 @@
 // BoostTier nor BoostWalletPayResult exposes a tax breakdown, so the screen shows the single server price as the
 // Total with a "price inclusive of taxes" note rather than inventing an 18% split that may not match the charge.
 
-import type { BoostTier } from '@krishi-verse/sdk-js';
+import type { BoostTier } from '@krishalaya/sdk-js';
 
 /** Coarse tier kind → drives which static marketing copy (features + coverage area) a tier card shows. Mapped from
  * the server tier `code`; anything unrecognised falls back to 'generic' so a new server tier still renders safely. */

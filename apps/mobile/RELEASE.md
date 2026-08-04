@@ -1,4 +1,4 @@
-# Krishi-Verse Mobile — Release Runbook (P-32, Wave 11)
+# Krishalaya Mobile — Release Runbook (P-32, Wave 11)
 
 How we ship a build to millions of low-end devices without breaking them: EAS profiles, phased rollout, OTA with
 flag discipline + rollback, and the forced-update floor. (MOBILE_AI_AGENT_BUILD_GUIDE §8.) The framework-free

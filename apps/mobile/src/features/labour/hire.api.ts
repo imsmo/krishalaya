@@ -3,7 +3,7 @@
 // pay) are ONLINE transitions that throw so the screen shows the precise outcome (422 wage-below-floor, 403
 // not-owner, 409 illegal-transition) — the server is the authority. create/assign/pay carry an Idempotency-Key
 // (Law 3). Money is bigint minor strings (Law 2); the app never moves money — payWages signals the server (Law 11).
-import type { WorkerCard, LabourBooking, LabourAssignment, CreateBookingInput, LabourLookups, ReviewSummary } from '@krishi-verse/sdk-js';
+import type { WorkerCard, LabourBooking, LabourAssignment, CreateBookingInput, LabourLookups, ReviewSummary } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

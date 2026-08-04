@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · tenant self-config resource (P1-10). The seller-facing surface for a tenant admin to
+// @krishalaya/sdk-js · tenant self-config resource (P1-10). The seller-facing surface for a tenant admin to
 // self-serve their own commission rules, delivery zones, branding + language settings — every call is the tenant's
 // OWN tenant (server re-resolves the subject from the token; no id-from-request → no IDOR) and is RBAC-gated +
 // audited SERVER-SIDE. Money rules stay server-authoritative: this never computes a fee, it only reads/edits rule

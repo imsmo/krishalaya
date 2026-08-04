@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { getTranslator } from '../../lib/i18n';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { AppRow } from '../../features/lending/application';
 
 export const dynamic = 'force-dynamic';

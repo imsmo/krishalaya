@@ -12,8 +12,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { formatRelative } from '@krishi-verse/i18n';
-import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishi-verse/ui-native';
+import { formatRelative } from '@krishalaya/i18n';
+import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { loadSavedTips, unsaveTip } from '../../../features/content/content.api';

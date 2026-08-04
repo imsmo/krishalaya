@@ -14,7 +14,7 @@ import { getTranslator } from '../../lib/i18n';
 import { env } from '../../lib/env';
 import { REVIEW_STATUSES, QUEUE_KINDS, reviewerActions, canResolve, isOpen, priorityBucket, openCount } from '../../features/ai-review/queue';
 import { claimAction, resolveAction, enqueueAction } from './actions';
-import type { AiReviewItem, AiReviewStatus, AiReviewQueueKind } from '@krishi-verse/sdk-js';
+import type { AiReviewItem, AiReviewStatus, AiReviewQueueKind } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

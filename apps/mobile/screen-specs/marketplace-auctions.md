@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 14-listing-detail — 14 · Listing Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/14-listing-detail.html`
+## 14-listing-detail — 14 · Listing Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/14-listing-detail.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 14 · Listing Detail — Krishi-Verse
+  - 14 · Listing Detail — Krishalaya
   - 🌾
   - Verified
   - ⚡ AI Listed
@@ -47,11 +47,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 16-auction-detail — 16 · Auction Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/16-auction-detail.html`
+## 16-auction-detail — 16 · Auction Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/16-auction-detail.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 16 · Auction Detail — Krishi-Verse
+  - 16 · Auction Detail — Krishalaya
   - LIVE AUCTION
   - 🌶️
   - Red Chilli — Teja Variety, Premium
@@ -97,11 +97,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 17-place-bid — 17 · Place Bid — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/17-place-bid.html`
+## 17-place-bid — 17 · Place Bid — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/17-place-bid.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 17 · Place Bid — Krishi-Verse
+  - 17 · Place Bid — Krishalaya
   - Place Your Bid
   - Current highest:
   - ₹14,500 /qtl
@@ -126,11 +126,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 18-my-bids — 18 · My Bids — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/18-my-bids.html`
+## 18-my-bids — 18 · My Bids — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/18-my-bids.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 18 · My Bids — Krishi-Verse
+  - 18 · My Bids — Krishalaya
   - My Bids
   - Active
   - 3
@@ -164,11 +164,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 64-create-auction — 64 · Create Auction — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/64-create-auction.html`
+## 64-create-auction — 64 · Create Auction — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/64-create-auction.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 64 · Create Auction — Krishi-Verse
+  - 64 · Create Auction — Krishalaya
   - Create Auction
   - Start a live auction
   - Get the best price from multiple buyers competing in real-time
@@ -211,11 +211,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 65-auction-watch-live — 65 · Your Auction — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/65-auction-watch-live.html`
+## 65-auction-watch-live — 65 · Your Auction — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/65-auction-watch-live.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 65 · Your Auction — Krishi-Verse
+  - 65 · Your Auction — Krishalaya
   - Your Auction
   - LIVE NOW
   - ₹3,050
@@ -259,11 +259,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 66-auction-ended-success — 66 · Auction Complete — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/66-auction-ended-success.html`
+## 66-auction-ended-success — 66 · Auction Complete — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/66-auction-ended-success.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 66 · Auction Complete — Krishi-Verse
+  - 66 · Auction Complete — Krishalaya
   - Auction Complete
   - ✓ SOLD
   - Your auction ended successfully!
@@ -298,11 +298,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 193-auction-outbid — 193 · Outbid — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/193-auction-outbid.html`
+## 193-auction-outbid — 193 · Outbid — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/193-auction-outbid.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 193 · Outbid — Krishi-Verse
+  - 193 · Outbid — Krishalaya
   - Auction Update
   - 😔
   - You've been outbid
@@ -327,11 +327,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 194-auction-history — 194 · Auction History — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/194-auction-history.html`
+## 194-auction-history — 194 · Auction History — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/194-auction-history.html`
 - **Route:** `src/app/(buyer)/auctions · (farmer)/create-auction/…`  ·  **Feature:** `features/auctions`  ·  **Flag:** `auctions`
 - **Must render (exact design content):**
-  - 194 · Auction History — Krishi-Verse
+  - 194 · Auction History — Krishalaya
   - My Auctions
   - All · 24
   - Won · 14

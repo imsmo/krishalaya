@@ -10,9 +10,9 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { Referral } from '@krishi-verse/sdk-js';
-import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatDate } from '@krishi-verse/i18n';
+import type { Referral } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listReferrals } from '../../features/ambassador/ambassador.api';

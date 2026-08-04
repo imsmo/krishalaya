@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/home.tsx · screen 09 (Farmer Home) — rebuilt to match the Phase-1 design
-// (Krishi_Verse_Design_System/screens/09-farmer-home.html): avatar + bilingual greeting header, the ⚡AI-POWERED
+// (Krishalaya_Design_System/screens/09-farmer-home.html): avatar + bilingual greeting header, the ⚡AI-POWERED
 // green hero with a gold "Speak to Sell" + glass "Photo", My-Listings/Wallet stat cards, horizontal "Today's Mandi
 // Pulse", and "Today's Tip". Thin screen (guide §3): all data via features/farmer/dashboard.api; money via
 // MoneyText (Law 2); sections that fail simply HIDE rather than show fakes (Law 12). Pull-to-refresh.
@@ -7,7 +7,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { MoneyText, SkeletonCard, EmptyState, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import { MoneyText, SkeletonCard, EmptyState, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';

@@ -14,8 +14,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
-import type { WalletBalance, WalletLedgerEntry } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import type { WalletBalance, WalletLedgerEntry } from '@krishalaya/sdk-js';
 import { presentLedgerEntry, totalWalletMinor } from '../../features/wallet/ledger';
 
 export const dynamic = 'force-dynamic';

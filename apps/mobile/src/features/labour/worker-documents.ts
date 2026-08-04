@@ -3,7 +3,7 @@
 // from the REAL doc-type catalogue (kycDocTypes) joined to the worker's submitted KYC docs, resolves the banking
 // rows, and computes the "N of M documents" completion. The design's PAN "> ₹50K" note, photo "matched with
 // Aadhaar", and Skill-India cert are fixed program copy (static i18n) — no fabricated verification is invented (§13).
-import type { KycDocument, KycDocType, KycStatus, BankAccount } from '@krishi-verse/sdk-js';
+import type { KycDocument, KycDocType, KycStatus, BankAccount } from '@krishalaya/sdk-js';
 
 export interface DocRow {
   typeId: string;

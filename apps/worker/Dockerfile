@@ -6,7 +6,7 @@ RUN corepack enable
 COPY pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/worker ./apps/worker
-RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishi-verse/worker build
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishalaya/worker build
 
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production

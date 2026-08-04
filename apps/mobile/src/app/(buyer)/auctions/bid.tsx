@@ -12,10 +12,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
-import type { Auction, BidHistoryItem, ListingCard } from '@krishi-verse/sdk-js';
-import { Button, Input, MoneyText, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { SdkError } from '@krishalaya/sdk-js';
+import type { Auction, BidHistoryItem, ListingCard } from '@krishalaya/sdk-js';
+import { Button, Input, MoneyText, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security/screen-guard';

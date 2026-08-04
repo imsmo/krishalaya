@@ -26,7 +26,7 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction): void {
     if (this.config.isProd) {
-      // includeSubDomains: every krishi-verse.* subdomain (web apps + api) is HTTPS-only. No `preload`
+      // includeSubDomains: every krishalaya.* subdomain (web apps + api) is HTTPS-only. No `preload`
       // yet — that's a one-way door (submission to browser preload lists); revisit once HSTS has run
       // cleanly in prod for a while.
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

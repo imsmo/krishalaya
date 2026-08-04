@@ -9,7 +9,7 @@ import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { ReconOverview } from '../../features/recon/recon';
 
 export const dynamic = 'force-dynamic';

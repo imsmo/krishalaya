@@ -3,7 +3,7 @@
 import { hhmmToMinutes, isWithinQuietMinutes, isWithinQuietHours } from '../push/quiet-hours';
 import { routeForNotification } from '../push/notification-router';
 import { presentNotification, unreadCount } from '../../features/notifications/present';
-import type { NotificationItem } from '@krishi-verse/sdk-js';
+import type { NotificationItem } from '@krishalaya/sdk-js';
 
 describe('quiet hours', () => {
   it('parses HH:MM', () => { expect(hhmmToMinutes('22:30')).toBe(1350); expect(hhmmToMinutes('bad')).toBeNull(); });

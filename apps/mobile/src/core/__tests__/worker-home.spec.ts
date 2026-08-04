@@ -1,6 +1,6 @@
 // Unit tests for the PURE worker-home presenters (screen 29).
 import { initials, pendingOfferCount, confirmedCount, taskEmoji, skillLabel, workTypeLabel } from '../../features/labour/worker-home';
-import type { LabourAssignment, LabourLookups } from '@krishi-verse/sdk-js';
+import type { LabourAssignment, LabourLookups } from '@krishalaya/sdk-js';
 
 const a = (status: string): LabourAssignment => ({ id: status, bookingId: 'b', workerId: 'w', status, wageMinor: '0', acceptedAt: null });
 

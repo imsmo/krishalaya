@@ -16,8 +16,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { OrderListItem } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { OrderListItem } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { sdkErrorMessage } from '../../../core/errors/sdk-error-message';

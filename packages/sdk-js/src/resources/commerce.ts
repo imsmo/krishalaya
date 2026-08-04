@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · cart + checkout resources (module 3). The cart is owner-scoped server-side; mutations
+// @krishalaya/sdk-js · cart + checkout resources (module 3). The cart is owner-scoped server-side; mutations
 // return { ok } so the caller re-reads the authoritative cart (prices/availability are recomputed live — the
 // client never trusts a stale line total). Checkout converts the cart into orders under ONE Idempotency-Key
 // (Law 3) so a retried "place order" can't double-create. Money is bigint minor-unit strings (Law 2); the final

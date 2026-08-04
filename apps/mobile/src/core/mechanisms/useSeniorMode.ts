@@ -2,7 +2,7 @@
 // senior mode, plus the scaled type-size table + effective tap floor a screen applies when it's on. Mirrors
 // core/flags/useFlag.ts's useSyncExternalStore shape.
 import { useSyncExternalStore, useCallback, useMemo } from 'react';
-import { font as baseFont } from '@krishi-verse/ui-native';
+import { font as baseFont } from '@krishalaya/ui-native';
 import { mechanismPreferences } from './mechanismStore.runtime';
 import { seniorFontSizeScale, effectiveTapMin, SENIOR_TAP_MIN } from './seniorMode';
 
@@ -18,7 +18,7 @@ export interface UseSeniorModeResult {
   tapMin: number;
 }
 
-const BASE_TAP_MIN = 48; // matches @krishi-verse/ui-native's HIT_TARGET
+const BASE_TAP_MIN = 48; // matches @krishalaya/ui-native's HIT_TARGET
 
 export function useSeniorMode(): UseSeniorModeResult {
   const enabled = useSyncExternalStore(

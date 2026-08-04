@@ -1,6 +1,6 @@
 # ai-services
 
-Internal AI inference tier for Krishi-Verse (FastAPI / Python). Four model endpoints — **voice→listing
+Internal AI inference tier for Krishalaya (FastAPI / Python). Four model endpoints — **voice→listing
 extraction**, **photo grading**, **price bands**, **fraud signals** — called service-to-service by `apps/api`
 / `apps/worker` / `apps/stream-processor`. Every decision is **advisory** and is recorded to the
 `ai_inferences` audit log; enforcement (publishing a listing, moving money, blocking an account) stays

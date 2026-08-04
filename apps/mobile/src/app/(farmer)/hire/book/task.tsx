@@ -10,8 +10,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import type { WorkerProfile, LabourLookups } from '@krishi-verse/sdk-js';
-import { Button, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { WorkerProfile, LabourLookups } from '@krishalaya/sdk-js';
+import { Button, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getWorker, labourLookups } from '../../../../features/labour/hire.api';

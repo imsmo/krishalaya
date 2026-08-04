@@ -2,13 +2,13 @@
 // web-partner is an EXTERNAL B2B realm (banks/NBFCs = lenders; 3PLs = logistics partners) — en is the primary (and
 // currently only) locale; hi/gu parity is OPTIONAL and can be registered later (the Translator falls back to en).
 // The rule that still binds: NO hardcoded literals in pages/components — every string is a key here, resolved
-// through the shared @krishi-verse/i18n Translator.
-import type { Messages } from '@krishi-verse/i18n';
+// through the shared @krishalaya/i18n Translator.
+import type { Messages } from '@krishalaya/i18n';
 
 export const en: Messages = {
   // chrome / nav
   'nav.primary': 'Partner navigation',
-  'nav.brand': 'Krishi-Verse Partner',
+  'nav.brand': 'Krishalaya Partner',
   'nav.signOut': 'Sign out',
   'nav.soon': '(soon)',
   'nav.soonTitle': 'Coming in a later release',

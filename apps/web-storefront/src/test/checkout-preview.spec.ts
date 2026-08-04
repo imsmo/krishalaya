@@ -1,6 +1,6 @@
 // Unit tests for the PURE checkout-preview helpers. No money is computed here (the server owns totals); these
 // only normalize the coupon and choose the cheapest delivery method.
-import type { DeliveryMethod } from '@krishi-verse/sdk-js';
+import type { DeliveryMethod } from '@krishalaya/sdk-js';
 import { normalizeCoupon, pickDefaultMethod } from '../features/checkout/preview';
 
 describe('normalizeCoupon', () => {

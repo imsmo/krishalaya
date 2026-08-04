@@ -1,5 +1,5 @@
 // apps/mobile/src/core/media/types.ts · shared shapes for the media pipeline (pick → process → hash → upload).
-import type { MediaKind } from '@krishi-verse/sdk-js';
+import type { MediaKind } from '@krishalaya/sdk-js';
 
 export type { MediaKind };
 

@@ -1,6 +1,6 @@
 // apps/mobile/src/features/labour/book-worker.ts · PURE helpers for the worker-targeted booking (screen 26). No
 // React/native deps (SDK types are `import type` → erased) → unit-tested.
-import type { CreateBookingInput } from '@krishi-verse/sdk-js';
+import type { CreateBookingInput } from '@krishalaya/sdk-js';
 
 /** The day-length options the design offers (half/three-quarter/full day). `dailyHours` is a real CreateBooking
  * field. */

@@ -4,7 +4,7 @@
 // post-OTP steps still inside this group).
 import React from 'react';
 import { Stack } from 'expo-router';
-import { color } from '@krishi-verse/ui-native';
+import { color } from '@krishalaya/ui-native';
 
 export default function AuthLayout() {
   // contentStyle pins the native Screen surface to the app's cream page background — react-native-screens has no

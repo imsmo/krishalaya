@@ -11,8 +11,8 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { monthMatrix, isoOf } from '../../../../features/labour/availability-calendar';

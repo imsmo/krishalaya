@@ -4,7 +4,7 @@
 // which actions a screen may OFFER for a given (status, role). The server re-validates every transition and
 // ownership — the client never grants itself a transition; an illegal tap is rejected server-side (Law: untrusted
 // client). `nextActions` is what drives the detail screen's action bar.
-import type { PillTone } from '@krishi-verse/ui-native';
+import type { PillTone } from '@krishalaya/ui-native';
 
 export type OrderRole = 'buyer' | 'seller';
 export type OrderAction = 'confirm' | 'packed' | 'ready' | 'recordDelivery' | 'complete' | 'cancel' | 'review' | 'report' | 'track';

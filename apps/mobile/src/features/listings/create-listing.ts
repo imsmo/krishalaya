@@ -42,7 +42,7 @@ export function shouldShowPriceSummary(priceMinor: string | null, hasProduct: bo
   return priceMinor != null && hasProduct;
 }
 
-// STT languages offered on the voice panel (subset of the launch locales). Codes match @krishi-verse/i18n.
+// STT languages offered on the voice panel (subset of the launch locales). Codes match @krishalaya/i18n.
 export const STT_LANGS: readonly string[] = Object.freeze(['hi', 'en', 'gu']);
 
 // Quality grades shown on the AI-Detected card. Appended to the listing description (there is no dedicated

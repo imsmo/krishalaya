@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · AI review-queue resource (human-in-the-loop, P1-12). A reviewer browses the queue of
+// @krishalaya/sdk-js · AI review-queue resource (human-in-the-loop, P1-12). A reviewer browses the queue of
 // AI decisions awaiting human judgement (low-confidence grades, fraud flags, price anomalies, …), claims an item,
 // and resolves it accepted/rejected — the resolution drives the originating module via the server's outbox.
 // Every call is gated server-side by `ai.review` + the `ai_governance` flag, and RLS-isolated to the tenant.

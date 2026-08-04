@@ -6,7 +6,7 @@ import {
   groupByKind, tipSnapshot, isSaved, toggleSaved, reconcileSavedTips, buildAssistantDraft, appendTurn, type TipSnapshot, type ChatTurn,
   readTimeMinutes, languageLabelKey, TIP_CATEGORIES, relatedTips, shouldShowAssistantMic,
 } from '../../features/content/content';
-import type { LearningResource } from '@krishi-verse/sdk-js';
+import type { LearningResource } from '@krishalaya/sdk-js';
 
 describe('relatedTips (real catalogue, never fabricated)', () => {
   const r = (id: string, kind: LearningResource['kind']) => ({ id, kind });

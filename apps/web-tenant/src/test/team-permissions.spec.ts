@@ -4,7 +4,7 @@
 import {
   UNGRANTABLE_PERMISSIONS, isRoleAssignable, assignableRoles, canGrantPermission, buildAssign, buildOverride,
 } from '../features/team/permissions';
-import type { RoleDef } from '@krishi-verse/sdk-js';
+import type { RoleDef } from '@krishalaya/sdk-js';
 
 const role = (over: Partial<RoleDef>): RoleDef => ({
   id: 'r', code: 'manager', defaultName: 'Manager', scope: 'tenant', requiresKyc: false, requiresApproval: false, moduleCode: null, isActive: true, ...over,

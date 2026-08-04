@@ -6,8 +6,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import type { OrderDetail } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
+import type { OrderDetail } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { serverClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { getTranslator } from '../../../../lib/i18n';

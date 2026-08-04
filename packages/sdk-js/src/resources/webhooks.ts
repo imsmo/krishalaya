@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · tenant webhooks resource (P1-11). A tenant admin registers https endpoints, subscribes to
+// @krishalaya/sdk-js · tenant webhooks resource (P1-11). A tenant admin registers https endpoints, subscribes to
 // events, and rotates the signing secret. The signing secret is returned ONLY by register + rotateSecret (shown
 // once — the server stores it encrypted and never returns it again). Authed; gated by tenant.settings server-side.
 import { HttpClient } from '../http';

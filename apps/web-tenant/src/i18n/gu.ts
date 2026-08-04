@@ -1,6 +1,6 @@
 // apps/web-tenant/src/i18n/gu.ts · Gujarati message catalog. Mirrors EVERY key in en.ts (Law 7). A missing key
 // falls back to English then to the key itself (Translator), so parity is enforced by review, not by crash.
-import type { Messages } from '@krishi-verse/i18n';
+import type { Messages } from '@krishalaya/i18n';
 
 export const gu: Messages = {
   'nav.dashboard': 'ડેશબોર્ડ',
@@ -478,7 +478,7 @@ export const gu: Messages = {
   'roles.assign.role': 'ભૂમિકા',
   'roles.assign.rolePlaceholder': 'ભૂમિકા પસંદ કરો…',
   'roles.assign.submit': 'ભૂમિકા આપો',
-  'roles.assign.platformNote': 'પ્લેટફોર્મ/માલિક ભૂમિકાઓ અહીં આપી શકાતી નથી — તે Krishi-Verse સંચાલિત કરે છે.',
+  'roles.assign.platformNote': 'પ્લેટફોર્મ/માલિક ભૂમિકાઓ અહીં આપી શકાતી નથી — તે Krishalaya સંચાલિત કરે છે.',
   'roles.assignments.title': 'વર્તમાન અસાઇનમેન્ટ',
   'roles.assignments.empty': 'હજુ કોઈ ભૂમિકા અસાઇનમેન્ટ નથી.',
   'roles.assignments.user': 'સભ્ય',

@@ -5,7 +5,7 @@
 // every request until the app restarts. No React/expo import here by design — this file runs in the
 // framework-free jest.config.js harness (roots: src/core/__tests__), mirroring session.reducer.spec.ts.
 import { createRefreshExecutor, type RefreshExecutorDeps } from '../auth/refresh-executor';
-import type { AuthTokens } from '@krishi-verse/sdk-js';
+import type { AuthTokens } from '@krishalaya/sdk-js';
 
 const tokens: AuthTokens = { accessToken: 'fresh-access', refreshToken: 'fresh-refresh', expiresInSec: 900 };
 

@@ -7,9 +7,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
-import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { publicClient, serverClient } from '../../../lib/api-client';
 import { resolveSessionToken } from '../../../lib/session';
 import { env } from '../../../lib/env';

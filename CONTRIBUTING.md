@@ -1,4 +1,4 @@
-# Contributing to Krishi-Verse
+# Contributing to Krishalaya
 
 ## Golden rule
 `apps/api/src/modules/listings` is the reference implementation. Every new module/feature
@@ -8,7 +8,7 @@ Obey `CLAUDE.md` (the 10 Laws). See `MODULE_STATUS.md` for what's built.
 ## Workflow
 1. One module/feature per branch: `feat/<module>` or `core/<area>`.
 2. Open a PR using the template; CI (`.github/workflows/api-ci.yml`) must be green.
-3. The PR must satisfy the Definition of Done (see `Krishi_Verse_Build_and_Command_Playbook.md` §4).
+3. The PR must satisfy the Definition of Done (see `Krishalaya_Build_and_Command_Playbook.md` §4).
 
 ## Local setup
 ```bash

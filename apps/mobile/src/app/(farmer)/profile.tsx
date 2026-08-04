@@ -11,9 +11,9 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { UserProfile, KycDocument, BankAccount, LandParcel } from '@krishi-verse/sdk-js';
-import { LANGUAGES } from '@krishi-verse/i18n';
-import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { UserProfile, KycDocument, BankAccount, LandParcel } from '@krishalaya/sdk-js';
+import { LANGUAGES } from '@krishalaya/i18n';
+import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';

@@ -1,8 +1,8 @@
 {
-  "name": "@krishi-verse/api",
+  "name": "@krishalaya/api",
   "version": "0.1.0",
   "private": true,
-  "description": "Krishi-Verse API — modular monolith (listings vertical slice fully implemented).",
+  "description": "Krishalaya API — modular monolith (listings vertical slice fully implemented).",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

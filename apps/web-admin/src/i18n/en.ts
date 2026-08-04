@@ -1,8 +1,8 @@
 // apps/web-admin/src/i18n/en.ts · English message catalog for the god-mode console (the SOURCE-OF-TRUTH key set).
 // web-admin is an INTERNAL, staff-only realm, so en is the primary (and currently only) locale — hi/gu parity is
 // optional here, unlike the public storefront/tenant apps. The rule that still binds: NO hardcoded literals in
-// pages/components — every string is a key here, resolved through the shared @krishi-verse/i18n Translator.
-import type { Messages } from '@krishi-verse/i18n';
+// pages/components — every string is a key here, resolved through the shared @krishalaya/i18n Translator.
+import type { Messages } from '@krishalaya/i18n';
 
 export const en: Messages = {
   // nav / chrome
@@ -51,7 +51,7 @@ export const en: Messages = {
   'notice.unavailable': 'This is temporarily unavailable. Please try again shortly.',
 
   // login
-  'login.title': 'Krishi-Verse Admin',
+  'login.title': 'Krishalaya Admin',
   'login.lead': 'This is the platform god-mode console. Access requires a hardware security key (FIDO2) and a recent step-up re-authentication, enforced by the admin API on every request.',
   'login.failed': 'Sign-in did not complete. Contact platform security.',
   'login.cta': 'Sign in with hardware key →',

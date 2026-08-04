@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · market-intel (mandi prices) + weather resources (P-19). Mandi pulse/prices/predictions
+// @krishalaya/sdk-js · market-intel (mandi prices) + weather resources (P-19). Mandi pulse/prices/predictions
 // are read-only reference data (server-ingested); price ALERTS are the caller's own threshold subscriptions
 // (create → server fires a push when crossed). Weather is regional advisories (read-only, by regionId). Money is
 // bigint minor strings (Law 2). Gated server-side by `market_intel` / `land_soil_weather` flags.

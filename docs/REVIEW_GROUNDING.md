@@ -1,4 +1,4 @@
-# Krishi-Verse — Review Grounding (memory anchor)
+# Krishalaya — Review Grounding (memory anchor)
 
 Purpose: single source of truth for what the product IS and what the current
 build state is, so every subsequent piece of work is built to the same bar —
@@ -6,7 +6,7 @@ build state is, so every subsequent piece of work is built to the same bar —
 operations, global." Written after a full re-review of PRD v4, the database,
 the source monorepo, the Phase-1 screens, and the marketing website.
 
-## 1. Product (PRD v4 — Krishi_Verse_PRD_v4.docx)
+## 1. Product (PRD v4 — Krishalaya_PRD_v4.docx)
 - 62 sections, 833 headings, 231 tables. Vision built from Junagadh, Gujarat;
   engineered for global scale; anchored in farmer dignity.
 - **24 stakeholder roles** (farmer, buyer/consumer, vyapari, worker, sardar,
@@ -37,7 +37,7 @@ the source monorepo, the Phase-1 screens, and the marketing website.
   rules-as-data (commission/tax/charges), membership tiers, usage counters.
 - Double-entry append-only ledger, hot-account striping (shard_no), hash-chaining.
 
-## 3. Source monorepo (krishi-verse/ — WORK IN PROGRESS, ~80% implemented)
+## 3. Source monorepo (krishalaya/ — WORK IN PROGRESS, ~80% implemented)
 - pnpm + turborepo. **17 apps**: api (44 modules), admin-api (God mode, 15 ops
   modules, 245+ tests, FIDO2), wallet-service (gRPC, the only ledger writer),
   worker, outbox-relay, realtime-gateway, stream-processor, web-tenant, web-admin,
@@ -74,7 +74,7 @@ the source monorepo, the Phase-1 screens, and the marketing website.
   Hind/Hind Vadodara (Devanagari/Gujarati), JetBrains Mono (money). 48dp tap
   targets, WCAG AA, dignity-first, AI-marked-never-hidden.
 
-## 5. Marketing website (krishi-verse_website/)
+## 5. Marketing website (krishalaya_website/)
 - Static HTML/CSS/JS (vanilla + Three.js hero), 20 pages, finished/production-ready.
 - Home + 6 persona landings (farmers, FPOs, buyers, consumers, ambassadors,
   investors) + about/pricing/careers/press/blog/case-studies/crops/help/contact +

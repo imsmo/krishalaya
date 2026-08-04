@@ -1,7 +1,7 @@
 // apps/mobile/src/features/cart/payment-methods.ts · PURE logic for the buyer payment step (screen 130). No React/
 // native deps (SDK types are `import type` → erased) → unit-tested. Money is bigint minor-unit strings (Law 2) —
 // wallet sufficiency + shortfall are compared with BigInt, never a float.
-import type { CheckoutPreview } from '@krishi-verse/sdk-js';
+import type { CheckoutPreview } from '@krishalaya/sdk-js';
 
 /** The payment rails the app really supports: the gateway (UPI/Cards/Net-Banking are chosen INSIDE the secure
  * sheet — we never store a saved VPA/bank), the KV wallet, and cash-on-delivery (not offered under the escrow

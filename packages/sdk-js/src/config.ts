@@ -1,9 +1,9 @@
-// @krishi-verse/sdk-js · client configuration. The SDK is the single typed entry point every web frontend +
-// the mobile app + third-party integrators use to talk to the Krishi-Verse API. It NEVER holds secrets: the
+// @krishalaya/sdk-js · client configuration. The SDK is the single typed entry point every web frontend +
+// the mobile app + third-party integrators use to talk to the Krishalaya API. It NEVER holds secrets: the
 // access token is supplied per-request by a `getToken` callback the host owns (so SSR can read an httpOnly
 // cookie, a browser can read memory, a server integration can read a vault) — the SDK only attaches it.
 export interface SdkConfig {
-  /** API origin, e.g. https://api.krishiverse.com (no trailing /v1 — the SDK adds the version). */
+  /** API origin, e.g. https://api.krishalaya.com (no trailing /v1 — the SDK adds the version). */
   baseUrl: string;
   /** URI version segment. Default 'v1' (matches the API's URI versioning). */
   apiVersion?: string;

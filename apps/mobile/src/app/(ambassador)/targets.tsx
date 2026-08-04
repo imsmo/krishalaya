@@ -11,9 +11,9 @@
 // omitted rather than invented. When the server has set no targets, the screen shows the designed empty state.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import type { AmbassadorTarget, Referral, AmbassadorVisit, AmbassadorEarning } from '@krishi-verse/sdk-js';
-import { formatDate } from '@krishi-verse/i18n';
-import { Card, EmptyState, MoneyText, ProgressBar, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { AmbassadorTarget, Referral, AmbassadorVisit, AmbassadorEarning } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
+import { Card, EmptyState, MoneyText, ProgressBar, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { myTargets, listReferrals, listVisits, myEarnings } from '../../features/ambassador/ambassador.api';

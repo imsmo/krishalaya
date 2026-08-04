@@ -9,9 +9,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { OrderDetail, OrderRole } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Input, EmptyState, ScreenScaffold, SkeletonCard, Icon, color, font, space, radius } from '@krishi-verse/ui-native';
+import type { OrderDetail, OrderRole } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, Input, EmptyState, ScreenScaffold, SkeletonCard, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder } from '../../../features/orders/orders.api';

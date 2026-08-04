@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 
-const ROOT = path.join(__dirname, '..', '..', '..');        // repo root (krishi-verse)
+const ROOT = path.join(__dirname, '..', '..', '..');        // repo root (krishalaya)
 const MIGRATIONS_DIR = path.join(ROOT, 'db', 'migrations');
 const SEEDS_DIR = path.join(ROOT, 'db', 'seeds');
 const APP_ROLE_SQL = path.join(__dirname, 'sql', '01_app_role.sql');

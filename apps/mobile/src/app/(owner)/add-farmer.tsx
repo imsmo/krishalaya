@@ -15,8 +15,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SdkError } from '@krishi-verse/sdk-js';
-import { Button, Card, Input, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishi-verse/ui-native';
+import { SdkError } from '@krishalaya/sdk-js';
+import { Button, Card, Input, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';

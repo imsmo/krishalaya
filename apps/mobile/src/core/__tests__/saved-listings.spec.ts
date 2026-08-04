@@ -1,6 +1,6 @@
 // Unit tests for the PURE saved-listings logic (screen 126). No React/native deps.
 import { priceDropMinor, droppedCount, filterSaved, SAVED_ALL, SAVED_DROPPED } from '../../features/buyer/saved-listings';
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard } from '@krishalaya/sdk-js';
 
 const card = (id: string, priceMinor: string): ListingCard => ({
   id, title: id, priceMinor, currencyCode: 'INR', unitCode: 'qtl', quantityAvailable: 1,

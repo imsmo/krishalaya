@@ -2,7 +2,7 @@
 // type-only). Money is bigint minor strings (Law 2). The 18+ gate + accept window are server-enforced; these
 // helpers drive UX only.
 import { bookingStatusTone, assignmentStatusTone, assignmentActions, canAcceptWork, rupeesToWageMinor, buildWorkerPatch, isJobOpen } from '../../features/labour/labour-status';
-import type { WorkerProfile } from '@krishi-verse/sdk-js';
+import type { WorkerProfile } from '@krishalaya/sdk-js';
 
 const worker = (over: Partial<WorkerProfile> = {}): WorkerProfile => ({
   id: 'w1', userId: 'u1', ageVerified18: true, villageRegionId: null, travelKm: 10, stayAwayOk: 'same_day',

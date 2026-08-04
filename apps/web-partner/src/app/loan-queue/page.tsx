@@ -10,7 +10,7 @@ import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import {
   APP_STATUSES, statusKey, statusTone, buildListQuery, queueHref, boxKey, LENDER_BOXES, type AppRow,
 } from '../../features/lending/application';

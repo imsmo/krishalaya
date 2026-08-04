@@ -1,4 +1,4 @@
-// @krishi-verse/i18n · public entry — language registry, money/number/date formatters, message translator.
+// @krishalaya/i18n · public entry — language registry, money/number/date formatters, message translator.
 export {
   LANGUAGES, LANGUAGE_REGISTRY, COMING_SOON_LANGUAGES, DEFAULT_LANGUAGE,
   resolveLanguage, isSupported, getRegistryEntry, isRegistered,

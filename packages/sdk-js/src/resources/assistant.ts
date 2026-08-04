@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · AI farm-assistant resource (P-20 AI-chat). ASSUMED CONTRACT: no farmer-facing AI endpoint
+// @krishalaya/sdk-js · AI farm-assistant resource (P-20 AI-chat). ASSUMED CONTRACT: no farmer-facing AI endpoint
 // is live yet (the only AI surface today is the admin `ai/inferences` governance queue, which is NOT this). We wire
 // the real call shape we expect — POST ai/assistant/messages with the user's message + UI language + a thread
 // sessionId, idempotent (Law 3) so a retried turn can't double-post — and the data layer degrades honestly if the

@@ -1,8 +1,8 @@
-# Krishi-Verse — Production Backlog (go-live plan)
+# Krishalaya — Production Backlog (go-live plan)
 
 This folder is the **single source of truth for everything still pending before and after go-live**, ordered by
 priority. It was produced by a deep review of the whole repo (`MODULE_STATUS.md`, every `*_BUILD_BACKLOG.md`,
-the 48 DB migrations), the canonical schema in `Database_Architecture/full_platform/`, and `Krishi_Verse_PRD_v4.docx`.
+the 48 DB migrations), the canonical schema in `Database_Architecture/full_platform/`, and `Krishalaya_PRD_v4.docx`.
 
 ---
 

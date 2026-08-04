@@ -6,7 +6,7 @@ instead of the docker `postgres:dev`. The app still connects as the least-privil
 
 Run everything from the repo root:
 ```bash
-cd /Users/sanjayodedra/Documents/Personal/farmer/krishi-verse
+cd /Users/sanjayodedra/Documents/Personal/farmer/krishalaya
 ```
 
 ---
@@ -33,10 +33,10 @@ redis-cli ping   # → PONG
 
 ## 1. Build the shared packages (once)
 
-The apps import `@krishi-verse/sdk-js`, `tokens`, `i18n` — build them first. Dev mode (`start:dev`) needs no other build.
+The apps import `@krishalaya/sdk-js`, `tokens`, `i18n` — build them first. Dev mode (`start:dev`) needs no other build.
 ```bash
 nvm use
-pnpm --filter @krishi-verse/sdk-js --filter @krishi-verse/tokens --filter @krishi-verse/i18n build
+pnpm --filter @krishalaya/sdk-js --filter @krishalaya/tokens --filter @krishalaya/i18n build
 # (Optional, slower) build everything: pnpm build
 ```
 

@@ -15,7 +15,7 @@
 // suite (unchanged, still green) covering the underlying gate/query/money logic itself.
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { DataTable, Column } from '../components/DataTable';
 import { en } from '../i18n/en';
 import {

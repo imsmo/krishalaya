@@ -80,7 +80,7 @@ INSERT INTO lookup_values (type_code, tenant_id, code, default_name)
 INSERT INTO countries (code, default_name) VALUES ('IN','India') ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status)
-  SELECT '11111111-0000-7000-8000-000000000001', 'kv-staging-smoke', 'Krishi-Verse Staging Smoke Pilot',
+  SELECT '11111111-0000-7000-8000-000000000001', 'kv-staging-smoke', 'Krishalaya Staging Smoke Pilot',
          'Staging Smoke Pilot', lv.id, 'IN', 'active'
   FROM lookup_values lv WHERE lv.type_code = 'tenant_type' AND lv.code = 'fpo'
   ON CONFLICT (id) DO NOTHING;

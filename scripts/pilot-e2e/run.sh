@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/pilot-e2e/run.sh
 #
-# ONE COMMAND to prove the Krishi-Verse pilot loop on a founder's own machine:
+# ONE COMMAND to prove the Krishalaya pilot loop on a founder's own machine:
 #   OTP login -> onboard farmer + buyer -> create + publish listing -> buyer orders (direct sale)
 #   -> wallet credit/escrow -> payout (stub provider) -> notification recorded.
 #
@@ -135,7 +135,7 @@ pass "seed applied (core, rules, catalogue)"
 
 # ------------------------------------------------------------------------------------------------
 # 3b. FIXED in S1 (KV-BL-064): dotenv is now declared in apps/api/package.json — this block is a no-op after `pnpm install`. Kept as a safety net for stale node_modules:
-#     but @krishi-verse/api does not declare `dotenv` as a dependency (confirmed: not in
+#     but @krishalaya/api does not declare `dotenv` as a dependency (confirmed: not in
 #     apps/api/package.json, not in the pnpm-lock.yaml importer for apps/api). With
 #     shamefully-hoist=false (.npmrc), that import throws MODULE_NOT_FOUND at boot on a strict
 #     pnpm install. This is a real, separate defect (flag it for the codebase, don't just paper
@@ -144,7 +144,7 @@ pass "seed applied (core, rules, catalogue)"
 #     node_modules. No package.json is touched; this is an install-time link, not a source edit.
 # ------------------------------------------------------------------------------------------------
 if [ ! -e "apps/api/node_modules/dotenv" ]; then
-  warn "apps/api is missing 'dotenv' (main.ts imports it, but @krishi-verse/api doesn't declare it as a dependency)."
+  warn "apps/api is missing 'dotenv' (main.ts imports it, but @krishalaya/api doesn't declare it as a dependency)."
   warn "Working around it with a node_modules symlink so 'pnpm --filter api start:dev' doesn't crash on boot."
   DOTENV_SRC="$(find node_modules/.pnpm -maxdepth 1 -iname 'dotenv@*' 2>/dev/null | head -1)"
   if [ -n "$DOTENV_SRC" ]; then

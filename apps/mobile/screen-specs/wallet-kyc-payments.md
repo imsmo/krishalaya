@@ -6,11 +6,11 @@
   money via `MoneyText` (paise), all from `ui-native` tokens. Verify against real seeded data, never hardcode.
 
 
-## 15-checkout — 15 · Review Order — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/15-checkout.html`
+## 15-checkout — 15 · Review Order — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/15-checkout.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 15 · Review Order — Krishi-Verse
+  - 15 · Review Order — Krishalaya
   - Review Order
   - Your Order
   - 🌾
@@ -36,7 +36,7 @@
   - ₹150
   - Tax (GST 5%)
   - ₹296
-  - Krishi-Verse Discount
+  - Krishalaya Discount
   - - ₹100
   - You Pay
   - ₹6,106
@@ -45,11 +45,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 70-wallet-withdraw — 70 · Withdraw Money — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/70-wallet-withdraw.html`
+## 70-wallet-withdraw — 70 · Withdraw Money — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/70-wallet-withdraw.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 70 · Withdraw Money — Krishi-Verse
+  - 70 · Withdraw Money — Krishalaya
   - Withdraw Money
   - Available Balance
   - ₹15,420.50
@@ -74,11 +74,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 71-transaction-detail — 71 · Transaction Detail — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/71-transaction-detail.html`
+## 71-transaction-detail — 71 · Transaction Detail — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/71-transaction-detail.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 71 · Transaction Detail — Krishi-Verse
+  - 71 · Transaction Detail — Krishalaya
   - Transaction
   - + ₹2,880
   - Received from Priya Mehta
@@ -112,11 +112,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 72-kyc-aadhaar-start — 72 · Verify Aadhaar — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/72-kyc-aadhaar-start.html`
+## 72-kyc-aadhaar-start — 72 · Verify Aadhaar — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/72-kyc-aadhaar-start.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 72 · Verify Aadhaar — Krishi-Verse
+  - 72 · Verify Aadhaar — Krishalaya
   - Verify Aadhaar
   - Verify your Aadhaar
   - अपना आधार सत्यापित करें
@@ -140,11 +140,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 73-kyc-aadhaar-otp — 73 · Verify OTP — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/73-kyc-aadhaar-otp.html`
+## 73-kyc-aadhaar-otp — 73 · Verify OTP — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/73-kyc-aadhaar-otp.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 73 · Verify OTP — Krishi-Verse
+  - 73 · Verify OTP — Krishalaya
   - Verify OTP
   - 📱
   - Enter Aadhaar OTP
@@ -159,11 +159,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 74-kyc-bank-setup — 74 · Add Bank Account — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/74-kyc-bank-setup.html`
+## 74-kyc-bank-setup — 74 · Add Bank Account — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/74-kyc-bank-setup.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 74 · Add Bank Account — Krishi-Verse
+  - 74 · Add Bank Account — Krishalaya
   - Add Bank Account
   - 🏦
   - Add your bank account
@@ -195,11 +195,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 173-kyc-selfie — 173 · Verify with Selfie — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/173-kyc-selfie.html`
+## 173-kyc-selfie — 173 · Verify with Selfie — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/173-kyc-selfie.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 173 · Verify with Selfie — Krishi-Verse
+  - 173 · Verify with Selfie — Krishalaya
   - Verify your identity
   - Step 3 of 3
   - Live selfie
@@ -217,11 +217,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 174-kyc-doc-upload — 174 · Upload Document — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/174-kyc-doc-upload.html`
+## 174-kyc-doc-upload — 174 · Upload Document — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/174-kyc-doc-upload.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 174 · Upload Document — Krishi-Verse
+  - 174 · Upload Document — Krishalaya
   - Upload Document
   - Photo of 7/12 Utara
   - Land record from talati office. Photo works fine — must show name, survey number, and area.
@@ -243,11 +243,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 175-kyc-rejected — 175 · KYC Re-submission — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/175-kyc-rejected.html`
+## 175-kyc-rejected — 175 · KYC Re-submission — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/175-kyc-rejected.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 175 · KYC Re-submission — Krishi-Verse
+  - 175 · KYC Re-submission — Krishalaya
   - KYC Issues
   - ⚠
   - Re-submission needed
@@ -269,11 +269,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 180-upi-management — 180 · UPI IDs — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/180-upi-management.html`
+## 180-upi-management — 180 · UPI IDs — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/180-upi-management.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 180 · UPI IDs — Krishi-Verse
+  - 180 · UPI IDs — Krishalaya
   - UPI IDs
   - Linked UPI IDs
   - ramesh@okaxis
@@ -301,11 +301,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 181-autopay — 181 · Auto-Pay — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/181-autopay.html`
+## 181-autopay — 181 · Auto-Pay — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/181-autopay.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 181 · Auto-Pay — Krishi-Verse
+  - 181 · Auto-Pay — Krishalaya
   - Auto-Pay Mandates
   - Auto-pay
   - lets you authorize recurring payments without entering PIN each time. UPI mandate based. Cancel anytime.
@@ -332,11 +332,11 @@
 - **i18n:** add hi/en/gu keys for every string above. **Money:** bigint paise via MoneyText.
 - **Parity check:** every region above present; ui-native palette/radius/shadow; verify as Ramesh (+919900000101); degrade (never fake) any datum the API can't supply yet (flag it).
 
-## 182-spending-insights — 182 · Spending Insights — Krishi-Verse
-- **Design:** `Phase-1 all screen design/Krishi_Verse_Design_System/screens/182-spending-insights.html`
+## 182-spending-insights — 182 · Spending Insights — Krishalaya
+- **Design:** `Phase-1 all screen design/Krishalaya_Design_System/screens/182-spending-insights.html`
 - **Route:** `src/app/(farmer)/wallet · kyc/…`  ·  **Feature:** `features/wallet · kyc · payments`  ·  **Flag:** `wallet / payments_addmoney`
 - **Must render (exact design content):**
-  - 182 · Spending Insights — Krishi-Verse
+  - 182 · Spending Insights — Krishalaya
   - Spending Insights
   - Aug 2026 · Spent
   - ₹3,180

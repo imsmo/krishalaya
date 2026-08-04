@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · offers (negotiation) resource (module 3). Buyer makes an offer on a listing; the seller
+// @krishalaya/sdk-js · offers (negotiation) resource (module 3). Buyer makes an offer on a listing; the seller
 // (or buyer, on a counter) counters/accepts/rejects. Accept converts the offer into an order SERVER-SIDE
 // (`convertedOrderId`). `make` carries an Idempotency-Key (Law 3). Money is bigint minor-unit strings (Law 2);
 // the per-party authorization (buyer vs the listing's seller) + the legal transition are enforced server-side.

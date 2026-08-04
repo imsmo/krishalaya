@@ -11,9 +11,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
-import type { OrderDetail, Shipment, InvoiceDownload } from '@krishi-verse/sdk-js';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import type { OrderDetail, Shipment, InvoiceDownload } from '@krishalaya/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import { serverClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { getTranslator, getLang } from '../../../lib/i18n';

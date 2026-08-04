@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · notifications resource (communication module). The caller's OWN inbox + preferences +
+// @krishalaya/sdk-js · notifications resource (communication module). The caller's OWN inbox + preferences +
 // quiet hours (server enforces ownership — a non-owner read is 404, no IDOR). Inbox is keyset-paginated. mark-read
 // is idempotent server-side. Gated server-side by the `communication` flag.
 import { HttpClient } from '../http';

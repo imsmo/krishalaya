@@ -2,7 +2,7 @@
 // (Law 2) — all arithmetic is BigInt, never a float. The server is the authority on the real minimum + EMD; these
 // helpers only compute a sensible *suggested* next bid + read the current high from the (newest-first) bid history
 // for display. No I/O, no framework → unit-testable.
-import type { Auction, BidHistoryItem } from '@krishi-verse/sdk-js';
+import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
 
 /** Highest visible bid amount (minor string) from a newest-first history, or null when there are none/sealed. */
 export function currentHighMinor(bids: BidHistoryItem[]): string | null {

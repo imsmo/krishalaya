@@ -6,7 +6,7 @@ if (!publicAdminApiUrl) throw new Error('web-admin: NEXT_PUBLIC_ADMIN_API_URL is
 export const env = {
   publicAdminApiUrl,
   serverAdminApiUrl: process.env.ADMIN_API_URL_INTERNAL || publicAdminApiUrl,
-  appName: 'Krishi-Verse Admin',
+  appName: 'Krishalaya Admin',
   // single source for the NODE_ENV gate (so other modules never read process.env directly)
   isProduction: process.env.NODE_ENV === 'production',
 } as const;

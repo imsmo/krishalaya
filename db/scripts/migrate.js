@@ -1,5 +1,5 @@
 // db/scripts/migrate.js
-// Production migration runner for Krishi-Verse.
+// Production migration runner for Krishalaya.
 //
 // Properties (MNC-grade):
 //  • Ordered: applies db/migrations/*.sql in ascending filename order.

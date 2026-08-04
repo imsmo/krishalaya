@@ -3,7 +3,7 @@
 // one-tap way back to the home tab. Static (no backend) — renders regardless of flags / auth. Thin screen (guide §3).
 import React from 'react';
 import { useRouter } from 'expo-router';
-import { EmptyState, ScreenScaffold } from '@krishi-verse/ui-native';
+import { EmptyState, ScreenScaffold } from '@krishalaya/ui-native';
 import { useTranslation } from '../core/i18n/useTranslation';
 
 export default function NotFound() {

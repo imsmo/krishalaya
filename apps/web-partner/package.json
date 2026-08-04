@@ -1,5 +1,5 @@
 {
-  "name": "@krishi-verse/web-partner",
+  "name": "@krishalaya/web-partner",
   "version": "0.1.0",
   "private": true,
   "description": "Bank/NBFC/insurer partner portal (loan queues, claims).",
@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "next": "^14.2.13", "react": "^18.3.1", "react-dom": "^18.3.1",
-    "@krishi-verse/ui": "workspace:*", "@krishi-verse/sdk-js": "workspace:*",
-    "@krishi-verse/i18n": "workspace:*", "@krishi-verse/tokens": "workspace:*"
+    "@krishalaya/ui": "workspace:*", "@krishalaya/sdk-js": "workspace:*",
+    "@krishalaya/i18n": "workspace:*", "@krishalaya/tokens": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.5.4", "@types/react": "^18.3.5", "@types/react-dom": "^18.3.0",

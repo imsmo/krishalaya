@@ -14,7 +14,7 @@
 // controls" — the same instruction this file follows for the console's own control-height tokens). Flagged
 // here, in `dev19_report.md`, and in this batch's DEV_TRACKER STATE block as a genuine boundary distinct from
 // the other 3 mechanisms (dark/RTL/density), which all already had real web/console precedent to extend.
-import { seniorModeTypeScaleMultiplier } from '@krishi-verse/tokens';
+import { seniorModeTypeScaleMultiplier } from '@krishalaya/tokens';
 
 /** Parses a raw (possibly attacker-controlled) cookie/preference value — fail-closed to OFF. */
 export function isSeniorOn(raw: string | undefined | null): boolean {

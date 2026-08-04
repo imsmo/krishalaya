@@ -1,10 +1,10 @@
 // packages/ui-native/src/components/MoneyText.tsx · renders money from bigint MINOR-unit strings (Law 2 — never
 // a float, never a JS number that could lose precision past 2^53). Delegates the actual formatting to
-// @krishi-verse/i18n's formatMoneyMinor (Indian lakh/crore grouping, locale-aware). The component only owns
+// @krishalaya/i18n's formatMoneyMinor (Indian lakh/crore grouping, locale-aware). The component only owns
 // presentation (size/tone).
 import React from 'react';
 import { StyleSheet, Text, TextStyle } from 'react-native';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { color, font } from '../theme';
 
 export interface MoneyTextProps {

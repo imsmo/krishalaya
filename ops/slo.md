@@ -1,4 +1,4 @@
-# Service Level Objectives — Krishi-Verse (P0-6)
+# Service Level Objectives — Krishalaya (P0-6)
 
 SLOs for the four hot paths. Latency is measured from the per-use-case summaries the API emits (`<name>{quantile}`
 + `<name>_count{ok}`); availability from the `ok="true"` ratio. Recording + burn-rate alerts:

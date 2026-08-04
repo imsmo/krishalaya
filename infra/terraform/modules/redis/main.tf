@@ -51,7 +51,7 @@ resource "aws_security_group_rule" "egress" {
 
 resource "aws_elasticache_replication_group" "this" {
   replication_group_id = "${var.name}-redis"
-  description          = "Krishi-Verse cache / rate-limits / OTP store / realtime bus"
+  description          = "Krishalaya cache / rate-limits / OTP store / realtime bus"
   engine               = "redis"
   engine_version       = var.engine_version
   node_type            = var.node_type

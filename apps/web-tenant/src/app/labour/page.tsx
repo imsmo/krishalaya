@@ -12,13 +12,13 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { env } from '../../lib/env';
-import { formatMoneyMinor } from '@krishi-verse/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { SKILL_LEVELS, WAGE_KINDS, bookingActions, previewPayrollMinor } from '../../features/labour/employer';
 import {
   createBookingAction, assignWorkerAction, startBookingAction, completeBookingAction,
   cancelBookingAction, payWagesAction, confirmAttendanceAction,
 } from './actions';
-import type { LabourBooking, LabourAssignment, WorkerCard, LabourLookups } from '@krishi-verse/sdk-js';
+import type { LabourBooking, LabourAssignment, WorkerCard, LabourLookups } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

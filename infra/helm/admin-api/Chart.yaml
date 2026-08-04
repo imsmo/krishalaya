@@ -1,6 +1,6 @@
 apiVersion: v2
 name: admin-api
-description: Krishi-Verse god-mode admin API
+description: Krishalaya god-mode admin API
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

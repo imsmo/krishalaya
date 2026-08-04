@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator } from '../../lib/i18n';
-import type { UserProfile } from '@krishi-verse/sdk-js';
+import type { UserProfile } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic'; // per-request (session-scoped); never statically cached
 

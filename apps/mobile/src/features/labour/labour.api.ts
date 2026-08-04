@@ -2,7 +2,7 @@
 // (guide §3). Reads degrade-never-die (null/empty). Register is idempotent (Law 3). Respond (accept/decline) is an
 // online transition that throws so the screen shows the precise outcome (409 window-expired / 403 not-allowed) —
 // the server enforces the accept/decline window + the 18+ gate. Money is bigint minor strings (Law 2).
-import type { WorkerProfile, LabourBooking, LabourAssignment, WorkerPrefsInput, ReviewSummary, LabourLookups } from '@krishi-verse/sdk-js';
+import type { WorkerProfile, LabourBooking, LabourAssignment, WorkerPrefsInput, ReviewSummary, LabourLookups } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -55,7 +55,7 @@ export function applyToJob(bookingId: string): Promise<LabourAssignment> {
 /** The caller's OWN work-history (attendance days, newest first; screen 138). Keyset-paged; degrades to an empty
  * page. Attendance carries date/hours/status/paid — NOT the task/farmer/wage/rating/review (those aren't on the
  * contract, so the screen degrades them, never fakes them). */
-export async function workHistory(cursor?: string): Promise<{ items: import('@krishi-verse/sdk-js').LabourAttendance[]; nextCursor: string | null }> {
+export async function workHistory(cursor?: string): Promise<{ items: import('@krishalaya/sdk-js').LabourAttendance[]; nextCursor: string | null }> {
   try { return await apiClient().labour.workHistory(cursor, 20); } catch { return { items: [], nextCursor: null }; }
 }
 
@@ -68,7 +68,7 @@ export async function myJobs(cursor?: string): Promise<OffersPage> {
 /** The current (unconfirmed) attendance row for ONE assignment (screen 33) — found in the caller's own work
  * history. Degrades to null (no open attendance / read failed). The SERVER is the authority on hours + the ≤100m
  * geofence; this is a read for display. */
-export async function currentAttendance(assignmentId: string): Promise<import('@krishi-verse/sdk-js').LabourAttendance | null> {
+export async function currentAttendance(assignmentId: string): Promise<import('@krishalaya/sdk-js').LabourAttendance | null> {
   try {
     const { items } = await apiClient().labour.workHistory(undefined, 20);
     return items.find((a) => a.assignmentId === assignmentId && a.status !== 'confirmed') ?? null;
@@ -77,13 +77,13 @@ export async function currentAttendance(assignmentId: string): Promise<import('@
 
 /** Worker clocks IN on their own assignment (screen 33). The device sends only its GPS fix; the ≤100m farm
  * geofence is enforced SERVER-side. Idempotent (Law 3). Online → throws so the screen shows the outcome. */
-export function clockInJob(assignmentId: string, fix: { lat: number; lng: number }): Promise<import('@krishi-verse/sdk-js').LabourAttendance> {
+export function clockInJob(assignmentId: string, fix: { lat: number; lng: number }): Promise<import('@krishalaya/sdk-js').LabourAttendance> {
   return apiClient().labour.clockIn(assignmentId, fix, newId());
 }
 
 /** Worker clocks OUT of today's open attendance ("Mark job complete"), declaring the unpaid break taken. The
  * server stamps the time + computes hours; the employer then dual-confirms + pays. Idempotent (Law 3). Throws. */
-export function clockOutJob(assignmentId: string, breakMinutes: number): Promise<import('@krishi-verse/sdk-js').LabourAttendance> {
+export function clockOutJob(assignmentId: string, breakMinutes: number): Promise<import('@krishalaya/sdk-js').LabourAttendance> {
   return apiClient().labour.clockOut(assignmentId, breakMinutes, newId());
 }
 
@@ -107,6 +107,6 @@ export async function workerRating(userId: string): Promise<ReviewSummary | null
 
 /** The PUBLIC reviews about the worker (screen 40). PII-free (no reviewer id/name) and keyset-paginated; degrades
  * to an empty list when the `reviews` flag is off or none exist. */
-export async function workerReviews(userId: string, cursor?: string): Promise<import('@krishi-verse/sdk-js').PublicReview[]> {
+export async function workerReviews(userId: string, cursor?: string): Promise<import('@krishalaya/sdk-js').PublicReview[]> {
   try { return (await apiClient().reviews.publicReviews({ targetUserId: userId, cursor })).items; } catch { return []; }
 }

@@ -1,7 +1,7 @@
-# MOBILE AI AGENT BUILD GUIDE — Krishi-Verse App (React Native / Expo)
+# MOBILE AI AGENT BUILD GUIDE — Krishalaya App (React Native / Expo)
 
 **Paste the "Mobile Production-Grade Contract" (§1) at the top of EVERY mobile build command.**
-This is the engineering constitution for the Krishi-Verse mobile app — the primary surface for **millions of
+This is the engineering constitution for the Krishalaya mobile app — the primary surface for **millions of
 real, concurrent users** (farmers, buyers, workers, traders, ambassadors) issuing **billions of operations**,
 on budget Android phones, on 2G/flaky networks, in 3 launch languages. Our ambition is to be the **world's
 largest agri platform**, so assume from day one that well-funded global competitors and attackers are reverse-
@@ -62,7 +62,7 @@ MOBILE PRODUCTION-GRADE CONTRACT — obey for everything you build in apps/mobil
    pattern: SDK call → degrade-never-die → offline-queue for writes → typed result).
 4. `packages/ui-native/src/index.ts` + `theme.ts` — use these primitives/tokens; **never** hardcode a color,
    spacing, font, or a raw `<TextInput>`/`<Button>` when a primitive exists. Add a primitive if one is missing.
-5. The matching backend contract for the screen: the SDK resource (`@krishi-verse/sdk-js`) OR the API
+5. The matching backend contract for the screen: the SDK resource (`@krishalaya/sdk-js`) OR the API
    controller/DTO in `apps/api/src/modules/<domain>` so field names + idempotency + money types match EXACTLY.
    If the SDK lacks a typed method, use the SDK `request()` escape-hatch and note the assumed contract; if the
    endpoint itself is missing, flag it — never fake the response.
@@ -180,7 +180,7 @@ The bottleneck is the device and the network, not just the backend. Treat perfor
 - **Low-literacy / accessibility:** large type, high contrast (outdoor sunlight), ≥48px targets, voice-first
   affordances (Speak-to-Sell), icons + text, `accessibilityLabel`/`Role`/`State` on every interactive element,
   screen-reader tested, respects OS font scaling.
-- **Vernacular money/number/date** formatting via `@krishi-verse/i18n`. Never assume English locale.
+- **Vernacular money/number/date** formatting via `@krishalaya/i18n`. Never assume English locale.
 
 ---
 

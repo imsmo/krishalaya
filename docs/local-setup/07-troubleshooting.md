@@ -40,9 +40,9 @@ up → migrate). Never edit applied migrations; add a new numbered one.
 
 ## Node / pnpm / build
 
-**`Cannot find module '@krishi-verse/sdk-js'`** (or tokens/i18n/contracts)
+**`Cannot find module '@krishalaya/sdk-js'`** (or tokens/i18n/contracts)
 → The shared packages weren't built. From root: `pnpm install && pnpm build` (or build just the libs:
-`pnpm --filter "@krishi-verse/*" build`).
+`pnpm --filter "@krishalaya/*" build`).
 
 **`Unsupported engine` / wrong Node version**
 → `nvm use` (reads `.nvmrc` → Node 20). If `nvm` isn't found, re-do Step 1.3 (the `~/.zshrc` lines), then

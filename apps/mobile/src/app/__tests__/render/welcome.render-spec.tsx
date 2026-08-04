@@ -4,7 +4,7 @@
 // is simply: mounts without throwing + the real "Get Started" CTA (Button) is present, proving the component
 // tree actually built (a JSX/import error would throw during `renderScreen`, not just fail an assertion).
 import React from 'react';
-import { Button } from '@krishi-verse/ui-native';
+import { Button } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import Welcome from '../../(auth)/welcome';
 

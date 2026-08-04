@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · KYC + bank-account resources (module 1, identity). KYC submission references an uploaded
+// @krishalaya/sdk-js · KYC + bank-account resources (module 1, identity). KYC submission references an uploaded
 // media id (the doc image) — raw doc numbers are NEVER sent (only a masked value); review is admin-only (server).
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.

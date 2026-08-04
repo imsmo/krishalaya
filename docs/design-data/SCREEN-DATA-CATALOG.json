@@ -1,9 +1,9 @@
 {
  "01-welcome": {
-  "title": "01 · Welcome — Krishi-Verse",
+  "title": "01 · Welcome — Krishalaya",
   "lines": [
-   "01 · Welcome — Krishi-Verse",
-   "Krishi-Verse",
+   "01 · Welcome — Krishalaya",
+   "Krishalaya",
    "From Farm to Future",
    "आपकी खेती का डिजिटल साथी",
    "Your farming, digitally yours.",
@@ -14,9 +14,9 @@
   ]
  },
  "02-language": {
-  "title": "02 · Choose Language — Krishi-Verse",
+  "title": "02 · Choose Language — Krishalaya",
   "lines": [
-   "02 · Choose Language — Krishi-Verse",
+   "02 · Choose Language — Krishalaya",
    "Choose Your Language",
    "अपनी भाषा चुनें",
    "તમારી ભાષા પસંદ કરો",
@@ -34,24 +34,24 @@
   ]
  },
  "03-otp": {
-  "title": "03 · Verify Phone — Krishi-Verse",
+  "title": "03 · Verify Phone — Krishalaya",
   "lines": [
-   "03 · Verify Phone — Krishi-Verse",
+   "03 · Verify Phone — Krishalaya",
    "Verify Your Number",
    "Enter the 6-digit code sent to",
    "+91 98765 43210",
    "Didn't receive code?",
    "Resend in 0:24",
-   "For your safety, never share this OTP with anyone, not even Krishi-Verse team.",
+   "For your safety, never share this OTP with anyone, not even Krishalaya team.",
    "Verify & Continue"
   ]
  },
  "04-role": {
-  "title": "04 · Choose Role — Krishi-Verse",
+  "title": "04 · Choose Role — Krishalaya",
   "lines": [
-   "04 · Choose Role — Krishi-Verse",
+   "04 · Choose Role — Krishalaya",
    "Choose Your Role",
-   "How will you use Krishi-Verse?",
+   "How will you use Krishalaya?",
    "Pick what fits you best. You can add more roles later.",
    "Farmer",
    "किसान",
@@ -72,9 +72,9 @@
   ]
  },
  "05-profile-setup": {
-  "title": "05 · Set Up Profile — Krishi-Verse",
+  "title": "05 · Set Up Profile — Krishalaya",
   "lines": [
-   "05 · Set Up Profile — Krishi-Verse",
+   "05 · Set Up Profile — Krishalaya",
    "Set Up Your Profile",
    "Skip",
    "Tell us a little about yourself so we can personalise your experience",
@@ -98,9 +98,9 @@
   ]
  },
  "06-tenant-apply": {
-  "title": "06 · Tenant Application — Krishi-Verse",
+  "title": "06 · Tenant Application — Krishalaya",
   "lines": [
-   "06 · Tenant Application — Krishi-Verse",
+   "06 · Tenant Application — Krishalaya",
    "Become a Tenant",
    "Step 2 of 5",
    "Plan Selection",
@@ -132,9 +132,9 @@
   ]
  },
  "07-tenant-pending": {
-  "title": "07 · Application Under Review — Krishi-Verse",
+  "title": "07 · Application Under Review — Krishalaya",
   "lines": [
-   "07 · Application Under Review — Krishi-Verse",
+   "07 · Application Under Review — Krishalaya",
    "Application Status",
    "Under Review",
    "We're reviewing your application",
@@ -161,9 +161,9 @@
   ]
  },
  "08-tenant-dashboard": {
-  "title": "08 · Tenant Dashboard — Krishi-Verse",
+  "title": "08 · Tenant Dashboard — Krishalaya",
   "lines": [
-   "08 · Tenant Dashboard — Krishi-Verse",
+   "08 · Tenant Dashboard — Krishalaya",
    "A",
    "Anand FPO",
    "Admin Console",
@@ -211,9 +211,9 @@
   ]
  },
  "09-farmer-home": {
-  "title": "09 · Farmer Home — Krishi-Verse",
+  "title": "09 · Farmer Home — Krishalaya",
   "lines": [
-   "09 · Farmer Home — Krishi-Verse",
+   "09 · Farmer Home — Krishalaya",
    "R",
    "नमस्ते,",
    "Ramesh ji",
@@ -262,9 +262,9 @@
   ]
  },
  "10-create-listing": {
-  "title": "10 · Create Listing — Krishi-Verse",
+  "title": "10 · Create Listing — Krishalaya",
   "lines": [
-   "10 · Create Listing — Krishi-Verse",
+   "10 · Create Listing — Krishalaya",
    "Create Listing",
    "Photo",
    "Voice",
@@ -292,9 +292,9 @@
   ]
  },
  "11-listing-preview": {
-  "title": "11 · Preview Listing — Krishi-Verse",
+  "title": "11 · Preview Listing — Krishalaya",
   "lines": [
-   "11 · Preview Listing — Krishi-Verse",
+   "11 · Preview Listing — Krishalaya",
    "Preview & Publish",
    "🌾",
    "Premium Wheat — Lokwan",
@@ -328,9 +328,9 @@
   ]
  },
  "12-my-listings": {
-  "title": "12 · My Listings — Krishi-Verse",
+  "title": "12 · My Listings — Krishalaya",
   "lines": [
-   "12 · My Listings — Krishi-Verse",
+   "12 · My Listings — Krishalaya",
    "My Listings",
    "3",
    "Active",
@@ -388,9 +388,9 @@
   ]
  },
  "13-buyer-home": {
-  "title": "13 · Buyer Home — Krishi-Verse",
+  "title": "13 · Buyer Home — Krishalaya",
   "lines": [
-   "13 · Buyer Home — Krishi-Verse",
+   "13 · Buyer Home — Krishalaya",
    "Anand, Gujarat",
    "2",
    "🥭",
@@ -442,9 +442,9 @@
   ]
  },
  "14-listing-detail": {
-  "title": "14 · Listing Detail — Krishi-Verse",
+  "title": "14 · Listing Detail — Krishalaya",
   "lines": [
-   "14 · Listing Detail — Krishi-Verse",
+   "14 · Listing Detail — Krishalaya",
    "🌾",
    "Verified",
    "⚡ AI Listed",
@@ -480,9 +480,9 @@
   ]
  },
  "15-checkout": {
-  "title": "15 · Review Order — Krishi-Verse",
+  "title": "15 · Review Order — Krishalaya",
   "lines": [
-   "15 · Review Order — Krishi-Verse",
+   "15 · Review Order — Krishalaya",
    "Review Order",
    "Your Order",
    "🌾",
@@ -508,7 +508,7 @@
    "₹150",
    "Tax (GST 5%)",
    "₹296",
-   "Krishi-Verse Discount",
+   "Krishalaya Discount",
    "- ₹100",
    "You Pay",
    "₹6,106",
@@ -516,9 +516,9 @@
   ]
  },
  "16-auction-detail": {
-  "title": "16 · Auction Detail — Krishi-Verse",
+  "title": "16 · Auction Detail — Krishalaya",
   "lines": [
-   "16 · Auction Detail — Krishi-Verse",
+   "16 · Auction Detail — Krishalaya",
    "LIVE AUCTION",
    "🌶️",
    "Red Chilli — Teja Variety, Premium",
@@ -563,9 +563,9 @@
   ]
  },
  "17-place-bid": {
-  "title": "17 · Place Bid — Krishi-Verse",
+  "title": "17 · Place Bid — Krishalaya",
   "lines": [
-   "17 · Place Bid — Krishi-Verse",
+   "17 · Place Bid — Krishalaya",
    "Place Your Bid",
    "Current highest:",
    "₹14,500 /qtl",
@@ -589,9 +589,9 @@
   ]
  },
  "18-my-bids": {
-  "title": "18 · My Bids — Krishi-Verse",
+  "title": "18 · My Bids — Krishalaya",
   "lines": [
-   "18 · My Bids — Krishi-Verse",
+   "18 · My Bids — Krishalaya",
    "My Bids",
    "Active",
    "3",
@@ -624,9 +624,9 @@
   ]
  },
  "19-wallet-home": {
-  "title": "19 · Wallet — Krishi-Verse",
+  "title": "19 · Wallet — Krishalaya",
   "lines": [
-   "19 · Wallet — Krishi-Verse",
+   "19 · Wallet — Krishalaya",
    "Wallet",
    "Available Balance",
    "₹12,450",
@@ -666,9 +666,9 @@
   ]
  },
  "20-add-money": {
-  "title": "20 · Add Money — Krishi-Verse",
+  "title": "20 · Add Money — Krishalaya",
   "lines": [
-   "20 · Add Money — Krishi-Verse",
+   "20 · Add Money — Krishalaya",
    "Add Money",
    "Enter Amount",
    "₹",
@@ -696,9 +696,9 @@
   ]
  },
  "21-transactions": {
-  "title": "21 · Transactions — Krishi-Verse",
+  "title": "21 · Transactions — Krishalaya",
   "lines": [
-   "21 · Transactions — Krishi-Verse",
+   "21 · Transactions — Krishalaya",
    "Transaction History",
    "Export",
    "All",
@@ -735,9 +735,9 @@
   ]
  },
  "22-my-orders": {
-  "title": "22 · My Orders — Krishi-Verse",
+  "title": "22 · My Orders — Krishalaya",
   "lines": [
-   "22 · My Orders — Krishi-Verse",
+   "22 · My Orders — Krishalaya",
    "My Orders",
    "As Buyer",
    "5",
@@ -783,9 +783,9 @@
   ]
  },
  "23-order-detail": {
-  "title": "23 · Order Tracking — Krishi-Verse",
+  "title": "23 · Order Tracking — Krishalaya",
   "lines": [
-   "23 · Order Tracking — Krishi-Verse",
+   "23 · Order Tracking — Krishalaya",
    "Order #KV-2026-0142",
    "In Transit",
    "Your order is on the way",
@@ -834,9 +834,9 @@
   ]
  },
  "24-order-review": {
-  "title": "24 · Rate Your Order — Krishi-Verse",
+  "title": "24 · Rate Your Order — Krishalaya",
   "lines": [
-   "24 · Rate Your Order — Krishi-Verse",
+   "24 · Rate Your Order — Krishalaya",
    "Rate Your Order",
    "✓ Completed",
    "Order delivered successfully!",
@@ -860,9 +860,9 @@
   ]
  },
  "25-worker-profile": {
-  "title": "25 · Worker Profile — Krishi-Verse",
+  "title": "25 · Worker Profile — Krishalaya",
   "lines": [
-   "25 · Worker Profile — Krishi-Verse",
+   "25 · Worker Profile — Krishalaya",
    "SK",
    "Sunita Kumari",
    "Sojitra Village, Anand · 2.4 km away",
@@ -938,9 +938,9 @@
   ]
  },
  "26-book-worker": {
-  "title": "26 · Book a Worker — Krishi-Verse",
+  "title": "26 · Book a Worker — Krishalaya",
   "lines": [
-   "26 · Book a Worker — Krishi-Verse",
+   "26 · Book a Worker — Krishalaya",
    "Book Sunita Kumari",
    "Step 3 of 4",
    "Date, Hours & Wage",
@@ -989,9 +989,9 @@
   ]
  },
  "27-booking-confirm": {
-  "title": "27 · New Job Offer — Krishi-Verse",
+  "title": "27 · New Job Offer — Krishalaya",
   "lines": [
-   "27 · New Job Offer — Krishi-Verse",
+   "27 · New Job Offer — Krishalaya",
    "New Job Offer",
    "🌾 NEW BOOKING REQUEST",
    "You have a new job offer!",
@@ -1020,9 +1020,9 @@
   ]
  },
  "28-notifications": {
-  "title": "28 · Notifications — Krishi-Verse",
+  "title": "28 · Notifications — Krishalaya",
   "lines": [
-   "28 · Notifications — Krishi-Verse",
+   "28 · Notifications — Krishalaya",
    "Notifications",
    "All",
    "5",
@@ -1057,9 +1057,9 @@
   ]
  },
  "29-worker-home": {
-  "title": "29 · Worker Home — Krishi-Verse",
+  "title": "29 · Worker Home — Krishalaya",
   "lines": [
-   "29 · Worker Home — Krishi-Verse",
+   "29 · Worker Home — Krishalaya",
    "SK",
    "Namaste Sunita!",
    "आज 3 नए काम मिले हैं",
@@ -1101,9 +1101,9 @@
   ]
  },
  "30-worker-browse-jobs": {
-  "title": "30 · Find Jobs — Krishi-Verse",
+  "title": "30 · Find Jobs — Krishalaya",
   "lines": [
-   "30 · Find Jobs — Krishi-Verse",
+   "30 · Find Jobs — Krishalaya",
    "Find Jobs",
    "All",
    "≤ 5 km",
@@ -1142,9 +1142,9 @@
   ]
  },
  "31-worker-job-detail": {
-  "title": "31 · Job Detail — Krishi-Verse",
+  "title": "31 · Job Detail — Krishalaya",
   "lines": [
-   "31 · Job Detail — Krishi-Verse",
+   "31 · Job Detail — Krishalaya",
    "Job Detail",
    "Recommended for you",
    "Wheat Harvesting Job",
@@ -1189,9 +1189,9 @@
   ]
  },
  "32-worker-my-jobs": {
-  "title": "32 · My Schedule — Krishi-Verse",
+  "title": "32 · My Schedule — Krishalaya",
   "lines": [
-   "32 · My Schedule — Krishi-Verse",
+   "32 · My Schedule — Krishalaya",
    "My Schedule",
    "Upcoming",
    "(5)",
@@ -1241,9 +1241,9 @@
   ]
  },
  "33-worker-active-job": {
-  "title": "33 · Active Job — Krishi-Verse",
+  "title": "33 · Active Job — Krishalaya",
   "lines": [
-   "33 · Active Job — Krishi-Verse",
+   "33 · Active Job — Krishalaya",
    "Today's Job",
    "WORK IN PROGRESS",
    "Wheat harvesting",
@@ -1274,9 +1274,9 @@
   ]
  },
  "34-worker-payment-received": {
-  "title": "34 · Payment Received — Krishi-Verse",
+  "title": "34 · Payment Received — Krishalaya",
   "lines": [
-   "34 · Payment Received — Krishi-Verse",
+   "34 · Payment Received — Krishalaya",
    "Payment",
    "Payment received!",
    "पैसा मिल गया",
@@ -1299,9 +1299,9 @@
   ]
  },
  "35-worker-earnings": {
-  "title": "35 · My Earnings — Krishi-Verse",
+  "title": "35 · My Earnings — Krishalaya",
   "lines": [
-   "35 · My Earnings — Krishi-Verse",
+   "35 · My Earnings — Krishalaya",
    "My Earnings",
    "This week",
    "This month",
@@ -1355,9 +1355,9 @@
   ]
  },
  "36-worker-availability": {
-  "title": "36 · Set Availability — Krishi-Verse",
+  "title": "36 · Set Availability — Krishalaya",
   "lines": [
-   "36 · Set Availability — Krishi-Verse",
+   "36 · Set Availability — Krishalaya",
    "Set Availability",
    "Tap a date to mark it available. Farmers can only book you on green days. Bookings can't be removed here.",
    "✓ Available",
@@ -1417,9 +1417,9 @@
   ]
  },
  "37-worker-skills": {
-  "title": "37 · My Skills — Krishi-Verse",
+  "title": "37 · My Skills — Krishalaya",
   "lines": [
-   "37 · My Skills — Krishi-Verse",
+   "37 · My Skills — Krishalaya",
    "My Skills",
    "Skills you turn ON appear on your profile. Farmers can search by skill — more skills = more jobs. Add new ones anytime.",
    "Crop work",
@@ -1461,9 +1461,9 @@
   ]
  },
  "38-worker-profile-own": {
-  "title": "38 · My Profile — Krishi-Verse",
+  "title": "38 · My Profile — Krishalaya",
   "lines": [
-   "38 · My Profile — Krishi-Verse",
+   "38 · My Profile — Krishalaya",
    "My Profile",
    "Edit ✎",
    "SK",
@@ -1520,9 +1520,9 @@
   ]
  },
  "39-worker-insurance": {
-  "title": "39 · PMSBY Insurance — Krishi-Verse",
+  "title": "39 · PMSBY Insurance — Krishalaya",
   "lines": [
-   "39 · PMSBY Insurance — Krishi-Verse",
+   "39 · PMSBY Insurance — Krishalaya",
    "Insurance",
    "✓ ACTIVE · GOVT-BACKED",
    "PMSBY Insurance",
@@ -1539,7 +1539,7 @@
    "Coverage period",
    "1 Apr 2026 — 31 Mar 2027",
    "Premium paid via",
-   "Krishi-Verse Wallet",
+   "Krishalaya Wallet",
    "Auto-renew",
    "✓ ON",
    "What's covered",
@@ -1564,9 +1564,9 @@
   ]
  },
  "40-worker-reviews": {
-  "title": "40 · My Reviews — Krishi-Verse",
+  "title": "40 · My Reviews — Krishalaya",
   "lines": [
-   "40 · My Reviews — Krishi-Verse",
+   "40 · My Reviews — Krishalaya",
    "My Reviews",
    "4.9",
    "★★★★★",
@@ -1614,9 +1614,9 @@
   ]
  },
  "41-worker-withdraw": {
-  "title": "41 · Withdraw to Bank — Krishi-Verse",
+  "title": "41 · Withdraw to Bank — Krishalaya",
   "lines": [
-   "41 · Withdraw to Bank — Krishi-Verse",
+   "41 · Withdraw to Bank — Krishalaya",
    "Withdraw Money",
    "Wallet balance",
    "₹2,800",
@@ -1639,9 +1639,9 @@
   ]
  },
  "42-browse-workers": {
-  "title": "42 · Find Workers — Krishi-Verse",
+  "title": "42 · Find Workers — Krishalaya",
   "lines": [
-   "42 · Find Workers — Krishi-Verse",
+   "42 · Find Workers — Krishalaya",
    "Find Workers",
    "All Tasks",
    "Within 5 km",
@@ -1716,9 +1716,9 @@
   ]
  },
  "43-filter-workers": {
-  "title": "43 · Filter Workers — Krishi-Verse",
+  "title": "43 · Filter Workers — Krishalaya",
   "lines": [
-   "43 · Filter Workers — Krishi-Verse",
+   "43 · Filter Workers — Krishalaya",
    "Filter Workers",
    "Reset all",
    "Task type",
@@ -1750,9 +1750,9 @@
   ]
  },
  "44-book-step1-task": {
-  "title": "44 · Book Sunita · Step 1 — Krishi-Verse",
+  "title": "44 · Book Sunita · Step 1 — Krishalaya",
   "lines": [
-   "44 · Book Sunita · Step 1 — Krishi-Verse",
+   "44 · Book Sunita · Step 1 — Krishalaya",
    "Book Sunita Kumari",
    "Step 1 of 4",
    "What work do you need?",
@@ -1783,9 +1783,9 @@
   ]
  },
  "45-book-step2-datetime": {
-  "title": "45 · Book Sunita · Step 2 — Krishi-Verse",
+  "title": "45 · Book Sunita · Step 2 — Krishalaya",
   "lines": [
-   "45 · Book Sunita · Step 2 — Krishi-Verse",
+   "45 · Book Sunita · Step 2 — Krishalaya",
    "Book Sunita Kumari",
    "Step 2 of 4",
    "When do you need her?",
@@ -1856,9 +1856,9 @@
   ]
  },
  "46-book-step4-review": {
-  "title": "46 · Book Sunita · Final Review — Krishi-Verse",
+  "title": "46 · Book Sunita · Final Review — Krishalaya",
   "lines": [
-   "46 · Book Sunita · Final Review — Krishi-Verse",
+   "46 · Book Sunita · Final Review — Krishalaya",
    "Final Review",
    "Step 4 of 4",
    "Confirm & send",
@@ -1898,9 +1898,9 @@
   ]
  },
  "47-booking-sent": {
-  "title": "47 · Booking Sent — Krishi-Verse",
+  "title": "47 · Booking Sent — Krishalaya",
   "lines": [
-   "47 · Booking Sent — Krishi-Verse",
+   "47 · Booking Sent — Krishalaya",
    "Booking Status",
    "WAITING FOR RESPONSE",
    "Booking sent to Sunita",
@@ -1916,9 +1916,9 @@
   ]
  },
  "48-booking-accepted": {
-  "title": "48 · Sunita Accepted — Krishi-Verse",
+  "title": "48 · Sunita Accepted — Krishalaya",
   "lines": [
-   "48 · Sunita Accepted — Krishi-Verse",
+   "48 · Sunita Accepted — Krishalaya",
    "Booking Confirmed",
    "✓ ACCEPTED",
    "Sunita accepted your booking!",
@@ -1946,9 +1946,9 @@
   ]
  },
  "49-booking-rejected": {
-  "title": "49 · Booking Declined — Krishi-Verse",
+  "title": "49 · Booking Declined — Krishalaya",
   "lines": [
-   "49 · Booking Declined — Krishi-Verse",
+   "49 · Booking Declined — Krishalaya",
    "Booking Update",
    "Declined",
    "Sunita couldn't take this job",
@@ -1979,9 +1979,9 @@
   ]
  },
  "50-my-bookings-farmer": {
-  "title": "50 · My Worker Bookings — Krishi-Verse",
+  "title": "50 · My Worker Bookings — Krishalaya",
   "lines": [
-   "50 · My Worker Bookings — Krishi-Verse",
+   "50 · My Worker Bookings — Krishalaya",
    "My Worker Bookings",
    "Active",
    "3",
@@ -2022,9 +2022,9 @@
   ]
  },
  "51-booking-detail-farmer": {
-  "title": "51 · Job In Progress — Krishi-Verse",
+  "title": "51 · Job In Progress — Krishalaya",
   "lines": [
-   "51 · Job In Progress — Krishi-Verse",
+   "51 · Job In Progress — Krishalaya",
    "#BK-2026-0085",
    "IN PROGRESS",
    "Lakshmi is working on your farm",
@@ -2065,9 +2065,9 @@
   ]
  },
  "52-farmer-mandi-prices": {
-  "title": "52 · Today's Mandi Prices — Krishi-Verse",
+  "title": "52 · Today's Mandi Prices — Krishalaya",
   "lines": [
-   "52 · Today's Mandi Prices — Krishi-Verse",
+   "52 · Today's Mandi Prices — Krishalaya",
    "Mandi Prices",
    "Today's Mandi Prices",
    "आज का मंडी भाव",
@@ -2142,9 +2142,9 @@
   ]
  },
  "53-farmer-mandi-detail": {
-  "title": "53 · Wheat Price Detail — Krishi-Verse",
+  "title": "53 · Wheat Price Detail — Krishalaya",
   "lines": [
-   "53 · Wheat Price Detail — Krishi-Verse",
+   "53 · Wheat Price Detail — Krishalaya",
    "Wheat — Lokwan",
    "🌾",
    "Wheat · Lokwan",
@@ -2183,9 +2183,9 @@
   ]
  },
  "54-farmer-weather": {
-  "title": "54 · 7-Day Weather — Krishi-Verse",
+  "title": "54 · 7-Day Weather — Krishalaya",
   "lines": [
-   "54 · 7-Day Weather — Krishi-Verse",
+   "54 · 7-Day Weather — Krishalaya",
    "Weather",
    "📍 Anand, Gujarat",
    "⛅",
@@ -2247,14 +2247,14 @@
    "💧 10%",
    "33°",
    "24°",
-   "Krishi-Verse Advisory",
+   "Krishalaya Advisory",
    "Heavy rain expected Thu-Fri. If your wheat is mature, harvest by Wed evening to avoid damage. Cover stored grain."
   ]
  },
  "55-farmer-tips-library": {
-  "title": "55 · Farming Tips — Krishi-Verse",
+  "title": "55 · Farming Tips — Krishalaya",
   "lines": [
-   "55 · Farming Tips — Krishi-Verse",
+   "55 · Farming Tips — Krishalaya",
    "Tips & Knowledge",
    "All",
    "Crops",
@@ -2296,9 +2296,9 @@
   ]
  },
  "56-farmer-orders": {
-  "title": "56 · Orders Received — Krishi-Verse",
+  "title": "56 · Orders Received — Krishalaya",
   "lines": [
-   "56 · Orders Received — Krishi-Verse",
+   "56 · Orders Received — Krishalaya",
    "My Orders",
    "2",
    "New",
@@ -2341,9 +2341,9 @@
   ]
  },
  "57-farmer-order-detail": {
-  "title": "57 · Order Decision — Krishi-Verse",
+  "title": "57 · Order Decision — Krishalaya",
   "lines": [
-   "57 · Order Decision — Krishi-Verse",
+   "57 · Order Decision — Krishalaya",
    "Order #KV-2026-0218",
    "Decision needed within 4 hours · Buyer waiting",
    "PM",
@@ -2378,9 +2378,9 @@
   ]
  },
  "58-farmer-earnings": {
-  "title": "58 · My Earnings — Krishi-Verse",
+  "title": "58 · My Earnings — Krishalaya",
   "lines": [
-   "58 · My Earnings — Krishi-Verse",
+   "58 · My Earnings — Krishalaya",
    "My Earnings",
    "This month's earnings",
    "₹84,320",
@@ -2432,9 +2432,9 @@
   ]
  },
  "59-farmer-payout-history": {
-  "title": "59 · Payout History — Krishi-Verse",
+  "title": "59 · Payout History — Krishalaya",
   "lines": [
-   "59 · Payout History — Krishi-Verse",
+   "59 · Payout History — Krishalaya",
    "Payout History",
    "Total received lifetime",
    "₹4,28,750",
@@ -2474,9 +2474,9 @@
   ]
  },
  "60-farmer-schemes": {
-  "title": "60 · Government Schemes — Krishi-Verse",
+  "title": "60 · Government Schemes — Krishalaya",
   "lines": [
-   "60 · Government Schemes — Krishi-Verse",
+   "60 · Government Schemes — Krishalaya",
    "Government Schemes",
    "Schemes for you",
    "Based on your profile: Farmer · Anand, Gujarat · 5-acre holding",
@@ -2523,9 +2523,9 @@
   ]
  },
  "61-farmer-profile-own": {
-  "title": "61 · My Profile — Krishi-Verse",
+  "title": "61 · My Profile — Krishalaya",
   "lines": [
-   "61 · My Profile — Krishi-Verse",
+   "61 · My Profile — Krishalaya",
    "My Profile",
    "RP",
    "Ramesh Patel",
@@ -2562,9 +2562,9 @@
   ]
  },
  "62-book-step3-location": {
-  "title": "62 · Book Worker — Krishi-Verse",
+  "title": "62 · Book Worker — Krishalaya",
   "lines": [
-   "62 · Book Worker — Krishi-Verse",
+   "62 · Book Worker — Krishalaya",
    "Book Sunita Kumari",
    "Step 3 of 5",
    "Work Location",
@@ -2588,9 +2588,9 @@
   ]
  },
  "63-book-step5-confirm": {
-  "title": "63 · Confirm Booking — Krishi-Verse",
+  "title": "63 · Confirm Booking — Krishalaya",
   "lines": [
-   "63 · Confirm Booking — Krishi-Verse",
+   "63 · Confirm Booking — Krishalaya",
    "Confirm Booking",
    "Step 5 of 5",
    "Confirm & Pay",
@@ -2632,9 +2632,9 @@
   ]
  },
  "64-create-auction": {
-  "title": "64 · Create Auction — Krishi-Verse",
+  "title": "64 · Create Auction — Krishalaya",
   "lines": [
-   "64 · Create Auction — Krishi-Verse",
+   "64 · Create Auction — Krishalaya",
    "Create Auction",
    "Start a live auction",
    "Get the best price from multiple buyers competing in real-time",
@@ -2676,9 +2676,9 @@
   ]
  },
  "65-auction-watch-live": {
-  "title": "65 · Your Auction — Krishi-Verse",
+  "title": "65 · Your Auction — Krishalaya",
   "lines": [
-   "65 · Your Auction — Krishi-Verse",
+   "65 · Your Auction — Krishalaya",
    "Your Auction",
    "LIVE NOW",
    "₹3,050",
@@ -2721,9 +2721,9 @@
   ]
  },
  "66-auction-ended-success": {
-  "title": "66 · Auction Complete — Krishi-Verse",
+  "title": "66 · Auction Complete — Krishalaya",
   "lines": [
-   "66 · Auction Complete — Krishi-Verse",
+   "66 · Auction Complete — Krishalaya",
    "Auction Complete",
    "✓ SOLD",
    "Your auction ended successfully!",
@@ -2757,9 +2757,9 @@
   ]
  },
  "67-buyer-search-results": {
-  "title": "67 · Search Results — Krishi-Verse",
+  "title": "67 · Search Results — Krishalaya",
   "lines": [
-   "67 · Search Results — Krishi-Verse",
+   "67 · Search Results — Krishalaya",
    "Search",
    "Wheat ✕",
    "Organic ✕",
@@ -2812,9 +2812,9 @@
   ]
  },
  "68-buyer-filters": {
-  "title": "68 · Filters — Krishi-Verse",
+  "title": "68 · Filters — Krishalaya",
   "lines": [
-   "68 · Filters — Krishi-Verse",
+   "68 · Filters — Krishalaya",
    "[Search results in background]",
    "Filters",
    "Clear all (5)",
@@ -2855,9 +2855,9 @@
   ]
  },
  "69-buyer-orders": {
-  "title": "69 · My Orders — Krishi-Verse",
+  "title": "69 · My Orders — Krishalaya",
   "lines": [
-   "69 · My Orders — Krishi-Verse",
+   "69 · My Orders — Krishalaya",
    "My Orders",
    "Active",
    "3",
@@ -2895,9 +2895,9 @@
   ]
  },
  "70-wallet-withdraw": {
-  "title": "70 · Withdraw Money — Krishi-Verse",
+  "title": "70 · Withdraw Money — Krishalaya",
   "lines": [
-   "70 · Withdraw Money — Krishi-Verse",
+   "70 · Withdraw Money — Krishalaya",
    "Withdraw Money",
    "Available Balance",
    "₹15,420.50",
@@ -2921,9 +2921,9 @@
   ]
  },
  "71-transaction-detail": {
-  "title": "71 · Transaction Detail — Krishi-Verse",
+  "title": "71 · Transaction Detail — Krishalaya",
   "lines": [
-   "71 · Transaction Detail — Krishi-Verse",
+   "71 · Transaction Detail — Krishalaya",
    "Transaction",
    "+ ₹2,880",
    "Received from Priya Mehta",
@@ -2956,9 +2956,9 @@
   ]
  },
  "72-kyc-aadhaar-start": {
-  "title": "72 · Verify Aadhaar — Krishi-Verse",
+  "title": "72 · Verify Aadhaar — Krishalaya",
   "lines": [
-   "72 · Verify Aadhaar — Krishi-Verse",
+   "72 · Verify Aadhaar — Krishalaya",
    "Verify Aadhaar",
    "Verify your Aadhaar",
    "अपना आधार सत्यापित करें",
@@ -2981,9 +2981,9 @@
   ]
  },
  "73-kyc-aadhaar-otp": {
-  "title": "73 · Verify OTP — Krishi-Verse",
+  "title": "73 · Verify OTP — Krishalaya",
   "lines": [
-   "73 · Verify OTP — Krishi-Verse",
+   "73 · Verify OTP — Krishalaya",
    "Verify OTP",
    "📱",
    "Enter Aadhaar OTP",
@@ -2997,9 +2997,9 @@
   ]
  },
  "74-kyc-bank-setup": {
-  "title": "74 · Add Bank Account — Krishi-Verse",
+  "title": "74 · Add Bank Account — Krishalaya",
   "lines": [
-   "74 · Add Bank Account — Krishi-Verse",
+   "74 · Add Bank Account — Krishalaya",
    "Add Bank Account",
    "🏦",
    "Add your bank account",
@@ -3030,9 +3030,9 @@
   ]
  },
  "75-settings": {
-  "title": "75 · Settings — Krishi-Verse",
+  "title": "75 · Settings — Krishalaya",
   "lines": [
-   "75 · Settings — Krishi-Verse",
+   "75 · Settings — Krishalaya",
    "Settings",
    "RP",
    "Ramesh Patel",
@@ -3063,15 +3063,15 @@
    "Help & FAQ",
    "Contact Support",
    "Chat · Call · Email",
-   "About Krishi-Verse",
+   "About Krishalaya",
    "Logout",
-   "Krishi-Verse v1.0.0 (Build 142) · Made with 🌾 in India"
+   "Krishalaya v1.0.0 (Build 142) · Made with 🌾 in India"
   ]
  },
  "76-tenant-farmers": {
-  "title": "76 · Farmers — Krishi-Verse",
+  "title": "76 · Farmers — Krishalaya",
   "lines": [
-   "76 · Farmers — Krishi-Verse",
+   "76 · Farmers — Krishalaya",
    "Farmers · Anand FPO",
    "1,247",
    "Total",
@@ -3123,9 +3123,9 @@
   ]
  },
  "77-tenant-farmer-detail": {
-  "title": "77 · Farmer Detail — Krishi-Verse",
+  "title": "77 · Farmer Detail — Krishalaya",
   "lines": [
-   "77 · Farmer Detail — Krishi-Verse",
+   "77 · Farmer Detail — Krishalaya",
    "Farmer Profile",
    "RP",
    "Ramesh Patel",
@@ -3177,9 +3177,9 @@
   ]
  },
  "78-tenant-add-farmer": {
-  "title": "78 · Add Farmer — Krishi-Verse",
+  "title": "78 · Add Farmer — Krishalaya",
   "lines": [
-   "78 · Add Farmer — Krishi-Verse",
+   "78 · Add Farmer — Krishalaya",
    "Add a Farmer",
    "How will you add this farmer?",
    "Pick one method. Farmer can complete remaining steps later.",
@@ -3208,9 +3208,9 @@
   ]
  },
  "79-tenant-listings": {
-  "title": "79 · Listings — Krishi-Verse",
+  "title": "79 · Listings — Krishalaya",
   "lines": [
-   "79 · Listings — Krishi-Verse",
+   "79 · Listings — Krishalaya",
    "Listings · Anand FPO",
    "23",
    "Pending",
@@ -3251,9 +3251,9 @@
   ]
  },
  "80-tenant-payouts": {
-  "title": "80 · Payouts — Krishi-Verse",
+  "title": "80 · Payouts — Krishalaya",
   "lines": [
-   "80 · Payouts — Krishi-Verse",
+   "80 · Payouts — Krishalaya",
    "Farmer Payouts",
    "Pending payouts",
    "₹2,84,650",
@@ -3289,9 +3289,9 @@
   ]
  },
  "81-tenant-compliance": {
-  "title": "81 · Compliance — Krishi-Verse",
+  "title": "81 · Compliance — Krishalaya",
   "lines": [
-   "81 · Compliance — Krishi-Verse",
+   "81 · Compliance — Krishalaya",
    "Compliance & Reports",
    "All compliant · No issues",
    "Last audit 5 days ago · Next Sep 15, 2026",
@@ -3331,9 +3331,9 @@
   ]
  },
  "82-tenant-branding": {
-  "title": "82 · Branding — Krishi-Verse",
+  "title": "82 · Branding — Krishalaya",
   "lines": [
-   "82 · Branding — Krishi-Verse",
+   "82 · Branding — Krishalaya",
    "App Branding",
    "Preview · How farmers see your app",
    "A",
@@ -3362,9 +3362,9 @@
   ]
  },
  "83-tenant-team": {
-  "title": "83 · Team — Krishi-Verse",
+  "title": "83 · Team — Krishalaya",
   "lines": [
-   "83 · Team — Krishi-Verse",
+   "83 · Team — Krishalaya",
    "Team & Users",
    "Admins (3)",
    "AS",
@@ -3407,9 +3407,9 @@
   ]
  },
  "84-tenant-kpi-gmv": {
-  "title": "84 · GMV Analytics — Krishi-Verse",
+  "title": "84 · GMV Analytics — Krishalaya",
   "lines": [
-   "84 · GMV Analytics — Krishi-Verse",
+   "84 · GMV Analytics — Krishalaya",
    "GMV Analytics",
    "GMV · Aug 2026",
    "₹38.4 L",
@@ -3451,9 +3451,9 @@
   ]
  },
  "85-tenant-billing": {
-  "title": "85 · Plan & Billing — Krishi-Verse",
+  "title": "85 · Plan & Billing — Krishalaya",
   "lines": [
-   "85 · Plan & Billing — Krishi-Verse",
+   "85 · Plan & Billing — Krishalaya",
    "Plan & Billing",
    "Current plan",
    "Growth · Tier 2",
@@ -3493,9 +3493,9 @@
   ]
  },
  "86-ambassador-home": {
-  "title": "86 · Ambassador Home — Krishi-Verse",
+  "title": "86 · Ambassador Home — Krishalaya",
   "lines": [
-   "86 · Ambassador Home — Krishi-Verse",
+   "86 · Ambassador Home — Krishalaya",
    "Good morning, ambassador",
    "नमस्ते",
    "Vikas Joshi",
@@ -3538,9 +3538,9 @@
   ]
  },
  "87-ambassador-farmers": {
-  "title": "87 · My Farmers — Krishi-Verse",
+  "title": "87 · My Farmers — Krishalaya",
   "lines": [
-   "87 · My Farmers — Krishi-Verse",
+   "87 · My Farmers — Krishalaya",
    "My Farmers · 247",
    "All · 247",
    "Active 30d · 189",
@@ -3594,9 +3594,9 @@
   ]
  },
  "88-ambassador-onboard-start": {
-  "title": "88 · Onboard Farmer — Krishi-Verse",
+  "title": "88 · Onboard Farmer — Krishalaya",
   "lines": [
-   "88 · Onboard Farmer — Krishi-Verse",
+   "88 · Onboard Farmer — Krishalaya",
    "Onboard a Farmer",
    "Step 1 of 4",
    "Choose method",
@@ -3623,9 +3623,9 @@
   ]
  },
  "89-ambassador-onboard-scan": {
-  "title": "89 · Scan Aadhaar — Krishi-Verse",
+  "title": "89 · Scan Aadhaar — Krishalaya",
   "lines": [
-   "89 · Scan Aadhaar — Krishi-Verse",
+   "89 · Scan Aadhaar — Krishalaya",
    "Scan Farmer's Aadhaar",
    "Scan the back of farmer's Aadhaar",
    "The QR code reads name, photo, and address automatically. Auto-uploaded to UIDAI servers.",
@@ -3640,9 +3640,9 @@
   ]
  },
  "90-ambassador-onboard-verify": {
-  "title": "90 · Verify Details — Krishi-Verse",
+  "title": "90 · Verify Details — Krishalaya",
   "lines": [
-   "90 · Verify Details — Krishi-Verse",
+   "90 · Verify Details — Krishalaya",
    "Verify Details",
    "Step 3 of 4",
    "Verify with farmer",
@@ -3678,9 +3678,9 @@
   ]
  },
  "91-ambassador-onboard-complete": {
-  "title": "91 · Onboarding Complete — Krishi-Verse",
+  "title": "91 · Onboarding Complete — Krishalaya",
   "lines": [
-   "91 · Onboarding Complete — Krishi-Verse",
+   "91 · Onboarding Complete — Krishalaya",
    "Success",
    "Onboarded successfully!",
    "सफलतापूर्वक जोड़ा गया",
@@ -3709,9 +3709,9 @@
   ]
  },
  "92-ambassador-commissions": {
-  "title": "92 · My Commissions — Krishi-Verse",
+  "title": "92 · My Commissions — Krishalaya",
   "lines": [
-   "92 · My Commissions — Krishi-Verse",
+   "92 · My Commissions — Krishalaya",
    "Total commissions · Aug 2026",
    "₹6,200",
    "12 onboarded · 8 first sales · ↑ 38% vs Jul",
@@ -3755,9 +3755,9 @@
   ]
  },
  "93-ambassador-leaderboard": {
-  "title": "93 · Leaderboard — Krishi-Verse",
+  "title": "93 · Leaderboard — Krishalaya",
   "lines": [
-   "93 · Leaderboard — Krishi-Verse",
+   "93 · Leaderboard — Krishalaya",
    "Leaderboard",
    "This month",
    "All time",
@@ -3807,9 +3807,9 @@
   ]
  },
  "94-ambassador-training": {
-  "title": "94 · Training Hub — Krishi-Verse",
+  "title": "94 · Training Hub — Krishalaya",
   "lines": [
-   "94 · Training Hub — Krishi-Verse",
+   "94 · Training Hub — Krishalaya",
    "Training Hub",
    "Learn to onboard better",
    "8 videos · 3 completed · 32 min remaining",
@@ -3833,9 +3833,9 @@
   ]
  },
  "95-ambassador-profile": {
-  "title": "95 · My Profile — Krishi-Verse",
+  "title": "95 · My Profile — Krishalaya",
   "lines": [
-   "95 · My Profile — Krishi-Verse",
+   "95 · My Profile — Krishalaya",
    "VJ",
    "Vikas Joshi",
    "Petlad cluster · Anand FPO",
@@ -3889,7 +3889,7 @@
    "Notifications",
    "All on",
    "Log out",
-   "Krishi-Verse Ambassador v1.0",
+   "Krishalaya Ambassador v1.0",
    "Home",
    "Farmers",
    "Leaderboard",
@@ -3897,9 +3897,9 @@
   ]
  },
  "96-buyer-cart": {
-  "title": "96 · My Cart — Krishi-Verse",
+  "title": "96 · My Cart — Krishalaya",
   "lines": [
-   "96 · My Cart — Krishi-Verse",
+   "96 · My Cart — Krishalaya",
    "My Cart · 3 items",
    "🌾",
    "Premium Wheat — Lokwan",
@@ -3940,9 +3940,9 @@
   ]
  },
  "97-buyer-inquiry": {
-  "title": "97 · Send Inquiry — Krishi-Verse",
+  "title": "97 · Send Inquiry — Krishalaya",
   "lines": [
-   "97 · Send Inquiry — Krishi-Verse",
+   "97 · Send Inquiry — Krishalaya",
    "Inquire about listing",
    "🌾",
    "Premium Wheat — Lokwan",
@@ -3966,9 +3966,9 @@
   ]
  },
  "98-buyer-chat": {
-  "title": "98 · Chat with Seller — Krishi-Verse",
+  "title": "98 · Chat with Seller — Krishalaya",
   "lines": [
-   "98 · Chat with Seller — Krishi-Verse",
+   "98 · Chat with Seller — Krishalaya",
    "RP",
    "Ramesh Patel ⭐ 4.9",
    "● Online",
@@ -3993,9 +3993,9 @@
   ]
  },
  "99-buyer-make-offer": {
-  "title": "99 · Make Offer — Krishi-Verse",
+  "title": "99 · Make Offer — Krishalaya",
   "lines": [
-   "99 · Make Offer — Krishi-Verse",
+   "99 · Make Offer — Krishalaya",
    "Make an Offer",
    "🌾",
    "Premium Wheat — Lokwan",
@@ -4027,9 +4027,9 @@
   ]
  },
  "100-buyer-seller-profile": {
-  "title": "100 · Seller Profile — Krishi-Verse",
+  "title": "100 · Seller Profile — Krishalaya",
   "lines": [
-   "100 · Seller Profile — Krishi-Verse",
+   "100 · Seller Profile — Krishalaya",
    "Seller Profile",
    "RP",
    "Ramesh Patel",
@@ -4083,9 +4083,9 @@
   ]
  },
  "101-farmer-tip-detail": {
-  "title": "101 · Tip Detail — Krishi-Verse",
+  "title": "101 · Tip Detail — Krishalaya",
   "lines": [
-   "101 · Tip Detail — Krishi-Verse",
+   "101 · Tip Detail — Krishalaya",
    "Pest Control",
    "Stop Wheat Rust Before It Spreads",
    "Dr. Mehta · ICAR · 5 min read",
@@ -4125,9 +4125,9 @@
   ]
  },
  "102-farmer-tips-category": {
-  "title": "102 · Tips by Category — Krishi-Verse",
+  "title": "102 · Tips by Category — Krishalaya",
   "lines": [
-   "102 · Tips by Category — Krishi-Verse",
+   "102 · Tips by Category — Krishalaya",
    "Pest Control · 24 tips",
    "All",
    "Wheat (8)",
@@ -4170,9 +4170,9 @@
   ]
  },
  "103-farmer-saved-tips": {
-  "title": "103 · Saved Tips — Krishi-Verse",
+  "title": "103 · Saved Tips — Krishalaya",
   "lines": [
-   "103 · Saved Tips — Krishi-Verse",
+   "103 · Saved Tips — Krishalaya",
    "My Saved Tips · 12",
    "Bookmarked",
    "12 saved",
@@ -4197,9 +4197,9 @@
   ]
  },
  "104-farmer-crop-hub": {
-  "title": "104 · Crop Knowledge Hub — Krishi-Verse",
+  "title": "104 · Crop Knowledge Hub — Krishalaya",
   "lines": [
-   "104 · Crop Knowledge Hub — Krishi-Verse",
+   "104 · Crop Knowledge Hub — Krishalaya",
    "Wheat (Lokwan)",
    "Wheat · Lokwan",
    "Rabi season · 120-130 days · Your variety",
@@ -4243,9 +4243,9 @@
   ]
  },
  "105-farmer-scheme-detail": {
-  "title": "105 · Scheme Detail — Krishi-Verse",
+  "title": "105 · Scheme Detail — Krishalaya",
   "lines": [
-   "105 · Scheme Detail — Krishi-Verse",
+   "105 · Scheme Detail — Krishalaya",
    "Scheme Detail",
    "Central Govt · Direct Benefit",
    "PM-KISAN Samman Nidhi",
@@ -4297,14 +4297,14 @@
   ]
  },
  "106-farmer-scheme-apply": {
-  "title": "106 · Apply: PM-KISAN — Krishi-Verse",
+  "title": "106 · Apply: PM-KISAN — Krishalaya",
   "lines": [
-   "106 · Apply: PM-KISAN — Krishi-Verse",
+   "106 · Apply: PM-KISAN — Krishalaya",
    "Apply: PM-KISAN",
    "Step 1 of 3",
    "Your details",
    "Confirm your details",
-   "Auto-filled from your Krishi-Verse profile. Verify each field with your Aadhaar.",
+   "Auto-filled from your Krishalaya profile. Verify each field with your Aadhaar.",
    "✨ Auto-filled from your KV profile · Tap any field to edit",
    "Full name (as on Aadhaar) *",
    "Aadhaar number *",
@@ -4331,9 +4331,9 @@
   ]
  },
  "107-farmer-scheme-status": {
-  "title": "107 · Application Status — Krishi-Verse",
+  "title": "107 · Application Status — Krishalaya",
   "lines": [
-   "107 · Application Status — Krishi-Verse",
+   "107 · Application Status — Krishalaya",
    "Application Status",
    "⏳ Under Review",
    "PM-KISAN Samman Nidhi",
@@ -4368,9 +4368,9 @@
   ]
  },
  "108-farmer-scheme-docs": {
-  "title": "108 · Upload Documents — Krishi-Verse",
+  "title": "108 · Upload Documents — Krishalaya",
   "lines": [
-   "108 · Upload Documents — Krishi-Verse",
+   "108 · Upload Documents — Krishalaya",
    "Upload Documents",
    "Step 2 of 3",
    "Documents",
@@ -4398,9 +4398,9 @@
   ]
  },
  "109-farmer-my-schemes": {
-  "title": "109 · My Applications — Krishi-Verse",
+  "title": "109 · My Applications — Krishalaya",
   "lines": [
-   "109 · My Applications — Krishi-Verse",
+   "109 · My Applications — Krishalaya",
    "My Scheme Applications",
    "All · 4",
    "Active · 2",
@@ -4433,9 +4433,9 @@
   ]
  },
  "110-farmer-mandi-alerts": {
-  "title": "110 · Price Alerts — Krishi-Verse",
+  "title": "110 · Price Alerts — Krishalaya",
   "lines": [
-   "110 · Price Alerts — Krishi-Verse",
+   "110 · Price Alerts — Krishalaya",
    "Mandi Price Alerts",
    "My alerts",
    "5 active",
@@ -4467,9 +4467,9 @@
   ]
  },
  "111-farmer-mandi-history": {
-  "title": "111 · Price History — Krishi-Verse",
+  "title": "111 · Price History — Krishalaya",
   "lines": [
-   "111 · Price History — Krishi-Verse",
+   "111 · Price History — Krishalaya",
    "Wheat · Price History",
    "🌾 Wheat — Lokwan · Anand Mandi",
    "₹2,880 / qtl",
@@ -4522,9 +4522,9 @@
   ]
  },
  "112-farmer-my-listing-detail": {
-  "title": "112 · My Listing — Krishi-Verse",
+  "title": "112 · My Listing — Krishalaya",
   "lines": [
-   "112 · My Listing — Krishi-Verse",
+   "112 · My Listing — Krishalaya",
    "My Listing",
    "🌾",
    "✓ ACTIVE",
@@ -4573,9 +4573,9 @@
   ]
  },
  "113-farmer-edit-listing": {
-  "title": "113 · Edit Listing — Krishi-Verse",
+  "title": "113 · Edit Listing — Krishalaya",
   "lines": [
-   "113 · Edit Listing — Krishi-Verse",
+   "113 · Edit Listing — Krishalaya",
    "Edit Listing",
    "Photos",
    "🌾",
@@ -4613,9 +4613,9 @@
   ]
  },
  "114-farmer-boost-listing": {
-  "title": "114 · Boost Listing — Krishi-Verse",
+  "title": "114 · Boost Listing — Krishalaya",
   "lines": [
-   "114 · Boost Listing — Krishi-Verse",
+   "114 · Boost Listing — Krishalaya",
    "Boost Listing",
    "🚀",
    "Reach 5× More Buyers",
@@ -4656,9 +4656,9 @@
   ]
  },
  "115-farmer-listing-analytics": {
-  "title": "115 · Listing Analytics — Krishi-Verse",
+  "title": "115 · Listing Analytics — Krishalaya",
   "lines": [
-   "115 · Listing Analytics — Krishi-Verse",
+   "115 · Listing Analytics — Krishalaya",
    "Listing Analytics",
    "Premium Wheat — Lokwan",
    "Live for 3 days · Listing #LST-2026-247",
@@ -4702,9 +4702,9 @@
   ]
  },
  "116-farmer-repost-listing": {
-  "title": "116 · Repost Listing — Krishi-Verse",
+  "title": "116 · Repost Listing — Krishalaya",
   "lines": [
-   "116 · Repost Listing — Krishi-Verse",
+   "116 · Repost Listing — Krishalaya",
    "Repost Listing",
    "⏳",
    "Listing expired",
@@ -4729,9 +4729,9 @@
   ]
  },
  "117-farmer-weather-detail": {
-  "title": "117 · Weather Detail — Krishi-Verse",
+  "title": "117 · Weather Detail — Krishalaya",
   "lines": [
-   "117 · Weather Detail — Krishi-Verse",
+   "117 · Weather Detail — Krishalaya",
    "Anand · Weather",
    "⛈",
    "28°C",
@@ -4805,9 +4805,9 @@
   ]
  },
  "118-farmer-weather-settings": {
-  "title": "118 · Weather Alerts — Krishi-Verse",
+  "title": "118 · Weather Alerts — Krishalaya",
   "lines": [
-   "118 · Weather Alerts — Krishi-Verse",
+   "118 · Weather Alerts — Krishalaya",
    "Weather Alert Settings",
    "Critical alerts (always on)",
    "⛈ Heavy rain warning",
@@ -4835,9 +4835,9 @@
   ]
  },
  "119-farmer-edit-profile": {
-  "title": "119 · Edit Profile — Krishi-Verse",
+  "title": "119 · Edit Profile — Krishalaya",
   "lines": [
-   "119 · Edit Profile — Krishi-Verse",
+   "119 · Edit Profile — Krishalaya",
    "Edit Profile",
    "RP",
    "Change photo",
@@ -4864,9 +4864,9 @@
   ]
  },
  "120-farmer-farm-details": {
-  "title": "120 · Farm Details — Krishi-Verse",
+  "title": "120 · Farm Details — Krishalaya",
   "lines": [
-   "120 · Farm Details — Krishi-Verse",
+   "120 · Farm Details — Krishalaya",
    "My Farm Details",
    "Anand · 5 acres",
    "3 plots · 2 active crops · Drip irrigated",
@@ -4905,9 +4905,9 @@
   ]
  },
  "121-farmer-bank-accounts": {
-  "title": "121 · Bank Accounts — Krishi-Verse",
+  "title": "121 · Bank Accounts — Krishalaya",
   "lines": [
-   "121 · Bank Accounts — Krishi-Verse",
+   "121 · Bank Accounts — Krishalaya",
    "Bank Accounts",
    "State Bank of India",
    "XXXX XXXX 2247",
@@ -4932,9 +4932,9 @@
   ]
  },
  "122-farmer-documents": {
-  "title": "122 · Documents Wallet — Krishi-Verse",
+  "title": "122 · Documents Wallet — Krishalaya",
   "lines": [
-   "122 · Documents Wallet — Krishi-Verse",
+   "122 · Documents Wallet — Krishalaya",
    "My Documents",
    "🗂",
    "Documents Wallet",
@@ -4982,9 +4982,9 @@
   ]
  },
  "123-farmer-help": {
-  "title": "123 · Help & Support — Krishi-Verse",
+  "title": "123 · Help & Support — Krishalaya",
   "lines": [
-   "123 · Help & Support — Krishi-Verse",
+   "123 · Help & Support — Krishalaya",
    "Help & Support",
    "🤖",
    "Ask AI assistant",
@@ -5022,9 +5022,9 @@
   ]
  },
  "124-farmer-complaint": {
-  "title": "124 · Report Problem — Krishi-Verse",
+  "title": "124 · Report Problem — Krishalaya",
   "lines": [
-   "124 · Report Problem — Krishi-Verse",
+   "124 · Report Problem — Krishalaya",
    "Report a Problem",
    "What's the issue?",
    "💰",
@@ -5060,13 +5060,13 @@
   ]
  },
  "125-farmer-ai-chat": {
-  "title": "125 · AI Assistant — Krishi-Verse",
+  "title": "125 · AI Assistant — Krishalaya",
   "lines": [
-   "125 · AI Assistant — Krishi-Verse",
+   "125 · AI Assistant — Krishalaya",
    "🤖",
    "Krishi AI · असिस्टेंट",
    "● Online · Gujarati, Hindi, English",
-   "Namaste Ramesh ji! 🙏 I'm your Krishi-Verse AI assistant. I can help with farming questions, market prices, scheme info, and app issues. Ask me anything in Gujarati, Hindi, or English.",
+   "Namaste Ramesh ji! 🙏 I'm your Krishalaya AI assistant. I can help with farming questions, market prices, scheme info, and app issues. Ask me anything in Gujarati, Hindi, or English.",
    "11:42 AM",
    "My wheat leaves have yellow patches. What is it?",
    "11:45 AM",
@@ -5104,9 +5104,9 @@
   ]
  },
  "126-buyer-saved-listings": {
-  "title": "126 · Saved Listings — Krishi-Verse",
+  "title": "126 · Saved Listings — Krishalaya",
   "lines": [
-   "126 · Saved Listings — Krishi-Verse",
+   "126 · Saved Listings — Krishalaya",
    "Saved · 14",
    "All · 14",
    "Wheat · 4",
@@ -5138,9 +5138,9 @@
   ]
  },
  "127-buyer-saved-sellers": {
-  "title": "127 · Saved Sellers — Krishi-Verse",
+  "title": "127 · Saved Sellers — Krishalaya",
   "lines": [
-   "127 · Saved Sellers — Krishi-Verse",
+   "127 · Saved Sellers — Krishalaya",
    "Saved Sellers · 8",
    "Get notified when these farmers post new listings",
    "RP",
@@ -5173,9 +5173,9 @@
   ]
  },
  "128-buyer-saved-searches": {
-  "title": "128 · Saved Searches — Krishi-Verse",
+  "title": "128 · Saved Searches — Krishalaya",
   "lines": [
-   "128 · Saved Searches — Krishi-Verse",
+   "128 · Saved Searches — Krishalaya",
    "Saved Searches",
    "Active alerts",
    "🔍 Wheat Lokwan in Anand",
@@ -5203,9 +5203,9 @@
   ]
  },
  "129-buyer-delivery-address": {
-  "title": "129 · Delivery Address — Krishi-Verse",
+  "title": "129 · Delivery Address — Krishalaya",
   "lines": [
-   "129 · Delivery Address — Krishi-Verse",
+   "129 · Delivery Address — Krishalaya",
    "Delivery Address",
    "Step 2 of 3",
    "Delivery",
@@ -5238,9 +5238,9 @@
   ]
  },
  "130-buyer-payment-method": {
-  "title": "130 · Payment — Krishi-Verse",
+  "title": "130 · Payment — Krishalaya",
   "lines": [
-   "130 · Payment — Krishi-Verse",
+   "130 · Payment — Krishalaya",
    "Payment Method",
    "Step 3 of 3",
    "Payment · Order ₹29,960",
@@ -5280,9 +5280,9 @@
   ]
  },
  "131-buyer-order-track": {
-  "title": "131 · Track Order — Krishi-Verse",
+  "title": "131 · Track Order — Krishalaya",
   "lines": [
-   "131 · Track Order — Krishi-Verse",
+   "131 · Track Order — Krishalaya",
    "Track Order #KV-2026-0247",
    "🏠",
    "🚛",
@@ -5315,9 +5315,9 @@
   ]
  },
  "132-buyer-profile": {
-  "title": "132 · Business Profile — Krishi-Verse",
+  "title": "132 · Business Profile — Krishalaya",
   "lines": [
-   "132 · Business Profile — Krishi-Verse",
+   "132 · Business Profile — Krishalaya",
    "Business Profile",
    "MT",
    "Mehta Trading Co.",
@@ -5363,9 +5363,9 @@
   ]
  },
  "133-buyer-kyc": {
-  "title": "133 · Business KYC — Krishi-Verse",
+  "title": "133 · Business KYC — Krishalaya",
   "lines": [
-   "133 · Business KYC — Krishi-Verse",
+   "133 · Business KYC — Krishalaya",
    "Business KYC",
    "Step 2 of 3",
    "Documents",
@@ -5399,9 +5399,9 @@
   ]
  },
  "134-buyer-addresses": {
-  "title": "134 · My Addresses — Krishi-Verse",
+  "title": "134 · My Addresses — Krishalaya",
   "lines": [
-   "134 · My Addresses — Krishi-Verse",
+   "134 · My Addresses — Krishalaya",
    "My Addresses",
    "PRIMARY · WAREHOUSE",
    "Mehta Trading Co. — Warehouse",
@@ -5428,9 +5428,9 @@
   ]
  },
  "135-buyer-report-order": {
-  "title": "135 · Report Order Issue — Krishi-Verse",
+  "title": "135 · Report Order Issue — Krishalaya",
   "lines": [
-   "135 · Report Order Issue — Krishi-Verse",
+   "135 · Report Order Issue — Krishalaya",
    "Report Issue",
    "🌾",
    "Premium Wheat — Lokwan",
@@ -5466,9 +5466,9 @@
   ]
  },
  "136-worker-edit-profile": {
-  "title": "136 · Edit Profile — Krishi-Verse",
+  "title": "136 · Edit Profile — Krishalaya",
   "lines": [
-   "136 · Edit Profile — Krishi-Verse",
+   "136 · Edit Profile — Krishalaya",
    "Edit Profile",
    "SK",
    "Change photo",
@@ -5498,9 +5498,9 @@
   ]
  },
  "137-worker-add-skill": {
-  "title": "137 · Add Skill — Krishi-Verse",
+  "title": "137 · Add Skill — Krishalaya",
   "lines": [
-   "137 · Add Skill — Krishi-Verse",
+   "137 · Add Skill — Krishalaya",
    "Add a Skill",
    "What can you do?",
    "Pick all that apply. Adding skills helps farmers find you for relevant jobs.",
@@ -5552,9 +5552,9 @@
   ]
  },
  "138-worker-work-history": {
-  "title": "138 · Work History — Krishi-Verse",
+  "title": "138 · Work History — Krishalaya",
   "lines": [
-   "138 · Work History — Krishi-Verse",
+   "138 · Work History — Krishalaya",
    "My Work History",
    "Lifetime",
    "187 jobs · ₹71,420",
@@ -5597,9 +5597,9 @@
   ]
  },
  "139-worker-documents": {
-  "title": "139 · My Documents — Krishi-Verse",
+  "title": "139 · My Documents — Krishalaya",
   "lines": [
-   "139 · My Documents — Krishi-Verse",
+   "139 · My Documents — Krishalaya",
    "My Documents",
    "🗂",
    "3 of 5 documents",
@@ -5631,9 +5631,9 @@
   ]
  },
  "140-worker-apply-job": {
-  "title": "140 · Apply for Job — Krishi-Verse",
+  "title": "140 · Apply for Job — Krishalaya",
   "lines": [
-   "140 · Apply for Job — Krishi-Verse",
+   "140 · Apply for Job — Krishalaya",
    "Apply for Job",
    "🌾",
    "Wheat Harvesting · Ramesh Patel",
@@ -5661,9 +5661,9 @@
   ]
  },
  "141-worker-job-offer": {
-  "title": "141 · New Job Offer — Krishi-Verse",
+  "title": "141 · New Job Offer — Krishalaya",
   "lines": [
-   "141 · New Job Offer — Krishi-Verse",
+   "141 · New Job Offer — Krishalaya",
    "New Job Offer",
    "🌾",
    "New job from Ramesh ji!",
@@ -5698,9 +5698,9 @@
   ]
  },
  "142-worker-decline-job": {
-  "title": "142 · Decline Job — Krishi-Verse",
+  "title": "142 · Decline Job — Krishalaya",
   "lines": [
-   "142 · Decline Job — Krishi-Verse",
+   "142 · Decline Job — Krishalaya",
    "Decline Job",
    "🌾",
    "Wheat Harvesting · Ramesh Patel",
@@ -5727,9 +5727,9 @@
   ]
  },
  "143-worker-dispute": {
-  "title": "143 · Wage Dispute — Krishi-Verse",
+  "title": "143 · Wage Dispute — Krishalaya",
   "lines": [
-   "143 · Wage Dispute — Krishi-Verse",
+   "143 · Wage Dispute — Krishalaya",
    "Report Wage Dispute",
    "🌾 Wheat Harvesting · Ramesh Patel",
    "22 Aug 2026 · Anand · 8 hrs",
@@ -5760,9 +5760,9 @@
   ]
  },
  "144-worker-help": {
-  "title": "144 · Help & Support — Krishi-Verse",
+  "title": "144 · Help & Support — Krishalaya",
   "lines": [
-   "144 · Help & Support — Krishi-Verse",
+   "144 · Help & Support — Krishalaya",
    "Help & Support",
    "🤖",
    "Ask AI · Voice",
@@ -5794,9 +5794,9 @@
   ]
  },
  "145-worker-pmsby-enroll": {
-  "title": "145 · PMSBY Enrollment — Krishi-Verse",
+  "title": "145 · PMSBY Enrollment — Krishalaya",
   "lines": [
-   "145 · PMSBY Enrollment — Krishi-Verse",
+   "145 · PMSBY Enrollment — Krishalaya",
    "PMSBY Insurance",
    "Pradhan Mantri Suraksha Bima Yojana",
    "₹2 Lakh",
@@ -5833,9 +5833,9 @@
   ]
  },
  "146-worker-claim": {
-  "title": "146 · File Insurance Claim — Krishi-Verse",
+  "title": "146 · File Insurance Claim — Krishalaya",
   "lines": [
-   "146 · File Insurance Claim — Krishi-Verse",
+   "146 · File Insurance Claim — Krishalaya",
    "File Claim",
    "Your PMSBY · Policy #PMSBY-2026-009842 · Active till 31 May 2027",
    "What type of claim?",
@@ -5868,9 +5868,9 @@
   ]
  },
  "147-tenant-farmer-approvals": {
-  "title": "147 · Pending Approvals — Krishi-Verse",
+  "title": "147 · Pending Approvals — Krishalaya",
   "lines": [
-   "147 · Pending Approvals — Krishi-Verse",
+   "147 · Pending Approvals — Krishalaya",
    "Pending Approvals · 14",
    "All · 14",
    "Ambassador · 9",
@@ -5914,9 +5914,9 @@
   ]
  },
  "148-tenant-approve-detail": {
-  "title": "148 · Review Farmer — Krishi-Verse",
+  "title": "148 · Review Farmer — Krishalaya",
   "lines": [
-   "148 · Review Farmer — Krishi-Verse",
+   "148 · Review Farmer — Krishalaya",
    "Review Farmer",
    "AK",
    "Anil Kumar Vasava",
@@ -5956,9 +5956,9 @@
   ]
  },
  "149-tenant-bulk-actions": {
-  "title": "149 · Bulk Actions — Krishi-Verse",
+  "title": "149 · Bulk Actions — Krishalaya",
   "lines": [
-   "149 · Bulk Actions — Krishi-Verse",
+   "149 · Bulk Actions — Krishalaya",
    "Bulk Actions",
    "9 farmers selected · Pending approval queue",
    "Operations",
@@ -5989,9 +5989,9 @@
   ]
  },
  "150-tenant-farmer-analytics": {
-  "title": "150 · Farmer Analytics — Krishi-Verse",
+  "title": "150 · Farmer Analytics — Krishalaya",
   "lines": [
-   "150 · Farmer Analytics — Krishi-Verse",
+   "150 · Farmer Analytics — Krishalaya",
    "Farmer Analytics",
    "Active farmers",
    "1,247",
@@ -6028,9 +6028,9 @@
   ]
  },
  "151-tenant-order-analytics": {
-  "title": "151 · Order Analytics — Krishi-Verse",
+  "title": "151 · Order Analytics — Krishalaya",
   "lines": [
-   "151 · Order Analytics — Krishi-Verse",
+   "151 · Order Analytics — Krishalaya",
    "Orders Analytics",
    "Orders this month",
    "847",
@@ -6070,9 +6070,9 @@
   ]
  },
  "152-tenant-worker-analytics": {
-  "title": "152 · Worker Analytics — Krishi-Verse",
+  "title": "152 · Worker Analytics — Krishalaya",
   "lines": [
-   "152 · Worker Analytics — Krishi-Verse",
+   "152 · Worker Analytics — Krishalaya",
    "Worker Bookings Analytics",
    "Bookings this month",
    "412",
@@ -6108,9 +6108,9 @@
   ]
  },
  "153-tenant-custom-report": {
-  "title": "153 · Custom Report — Krishi-Verse",
+  "title": "153 · Custom Report — Krishalaya",
   "lines": [
-   "153 · Custom Report — Krishi-Verse",
+   "153 · Custom Report — Krishalaya",
    "Build Custom Report",
    "Report type",
    "GMV by category & month",
@@ -6154,9 +6154,9 @@
   ]
  },
  "154-tenant-export-reports": {
-  "title": "154 · Export Reports — Krishi-Verse",
+  "title": "154 · Export Reports — Krishalaya",
   "lines": [
-   "154 · Export Reports — Krishi-Verse",
+   "154 · Export Reports — Krishalaya",
    "Reports Archive",
    "Saved & scheduled",
    "📊",
@@ -6192,9 +6192,9 @@
   ]
  },
  "155-tenant-disputes": {
-  "title": "155 · Disputes Inbox — Krishi-Verse",
+  "title": "155 · Disputes Inbox — Krishalaya",
   "lines": [
-   "155 · Disputes Inbox — Krishi-Verse",
+   "155 · Disputes Inbox — Krishalaya",
    "Disputes · 7",
    "Open · 7",
    "In review · 3",
@@ -6219,9 +6219,9 @@
   ]
  },
  "156-tenant-dispute-detail": {
-  "title": "156 · Dispute Detail — Krishi-Verse",
+  "title": "156 · Dispute Detail — Krishalaya",
   "lines": [
-   "156 · Dispute Detail — Krishi-Verse",
+   "156 · Dispute Detail — Krishalaya",
    "Dispute #DSP-2026-0247",
    "Quality dispute · Urgent",
    "₹14,400 in escrow",
@@ -6260,9 +6260,9 @@
   ]
  },
  "157-tenant-broadcast": {
-  "title": "157 · Broadcast Message — Krishi-Verse",
+  "title": "157 · Broadcast Message — Krishalaya",
   "lines": [
-   "157 · Broadcast Message — Krishi-Verse",
+   "157 · Broadcast Message — Krishalaya",
    "Broadcast Message",
    "Who to reach",
    "All farmers",
@@ -6302,9 +6302,9 @@
   ]
  },
  "158-tenant-campaigns": {
-  "title": "158 · Campaigns — Krishi-Verse",
+  "title": "158 · Campaigns — Krishalaya",
   "lines": [
-   "158 · Campaigns — Krishi-Verse",
+   "158 · Campaigns — Krishalaya",
    "Targeted Campaigns",
    "Live · 3",
    "Scheduled · 2",
@@ -6341,9 +6341,9 @@
   ]
  },
  "159-tenant-payment-settings": {
-  "title": "159 · Payment Settings — Krishi-Verse",
+  "title": "159 · Payment Settings — Krishalaya",
   "lines": [
-   "159 · Payment Settings — Krishi-Verse",
+   "159 · Payment Settings — Krishalaya",
    "Payment Gateway Settings",
    "Active gateways",
    "💳 Razorpay",
@@ -6372,9 +6372,9 @@
   ]
  },
  "160-tenant-notifications": {
-  "title": "160 · Notification Settings — Krishi-Verse",
+  "title": "160 · Notification Settings — Krishalaya",
   "lines": [
-   "160 · Notification Settings — Krishi-Verse",
+   "160 · Notification Settings — Krishalaya",
    "Notification Settings",
    "Critical alerts",
    "🆕 New pending approvals",
@@ -6400,9 +6400,9 @@
   ]
  },
  "161-tenant-integrations": {
-  "title": "161 · Integrations — Krishi-Verse",
+  "title": "161 · Integrations — Krishalaya",
   "lines": [
-   "161 · Integrations — Krishi-Verse",
+   "161 · Integrations — Krishalaya",
    "Integrations",
    "Connected",
    "🏛",
@@ -6446,9 +6446,9 @@
   ]
  },
  "162-ambassador-help-listing": {
-  "title": "162 · Help with Listing — Krishi-Verse",
+  "title": "162 · Help with Listing — Krishalaya",
   "lines": [
-   "162 · Help with Listing — Krishi-Verse",
+   "162 · Help with Listing — Krishalaya",
    "Help Anil's First Listing",
    "AK",
    "Anil Kumar · Borsad",
@@ -6482,9 +6482,9 @@
   ]
  },
  "163-ambassador-help-order": {
-  "title": "163 · Help with Order — Krishi-Verse",
+  "title": "163 · Help with Order — Krishalaya",
   "lines": [
-   "163 · Help with Order — Krishi-Verse",
+   "163 · Help with Order — Krishalaya",
    "Help Anil with Order",
    "📦 Order #KV-2026-0312",
    "From: Mehta Trading Co. (Vadodara)",
@@ -6511,9 +6511,9 @@
   ]
  },
  "164-ambassador-visit-log": {
-  "title": "164 · Visit Log — Krishi-Verse",
+  "title": "164 · Visit Log — Krishalaya",
   "lines": [
-   "164 · Visit Log — Krishi-Verse",
+   "164 · Visit Log — Krishalaya",
    "Visit Log",
    "This month",
    "28 visits",
@@ -6542,9 +6542,9 @@
   ]
  },
  "165-ambassador-video-player": {
-  "title": "165 · Training Video — Krishi-Verse",
+  "title": "165 · Training Video — Krishalaya",
   "lines": [
-   "165 · Training Video — Krishi-Verse",
+   "165 · Training Video — Krishalaya",
    "2:14 / 6:21",
    "First listing · voice mode",
    "Hindi · 6 min · Module 2 of 5 · ⭐4.9 (124)",
@@ -6575,9 +6575,9 @@
   ]
  },
  "166-ambassador-quiz": {
-  "title": "166 · Knowledge Quiz — Krishi-Verse",
+  "title": "166 · Knowledge Quiz — Krishalaya",
   "lines": [
-   "166 · Knowledge Quiz — Krishi-Verse",
+   "166 · Knowledge Quiz — Krishalaya",
    "Knowledge Quiz",
    "Onboarding Module 2",
    "Question 3 of 5",
@@ -6599,9 +6599,9 @@
   ]
  },
  "167-ambassador-faq-detail": {
-  "title": "167 · FAQ Sheet — Krishi-Verse",
+  "title": "167 · FAQ Sheet — Krishalaya",
   "lines": [
-   "167 · FAQ Sheet — Krishi-Verse",
+   "167 · FAQ Sheet — Krishalaya",
    "FAQ Cheat Sheet",
    "📋",
    "Top 20 questions farmers ask",
@@ -6635,9 +6635,9 @@
   ]
  },
  "168-ambassador-withdraw": {
-  "title": "168 · Withdraw Commission — Krishi-Verse",
+  "title": "168 · Withdraw Commission — Krishalaya",
   "lines": [
-   "168 · Withdraw Commission — Krishi-Verse",
+   "168 · Withdraw Commission — Krishalaya",
    "Withdraw to Bank",
    "Available to withdraw",
    "₹4,850",
@@ -6664,9 +6664,9 @@
   ]
  },
  "169-ambassador-targets": {
-  "title": "169 · Monthly Targets — Krishi-Verse",
+  "title": "169 · Monthly Targets — Krishalaya",
   "lines": [
-   "169 · Monthly Targets — Krishi-Verse",
+   "169 · Monthly Targets — Krishalaya",
    "My Targets · Aug 2026",
    "🎯",
    "75% of monthly goal",
@@ -6694,9 +6694,9 @@
   ]
  },
  "170-ambassador-goal-setting": {
-  "title": "170 · Set Next Month Goals — Krishi-Verse",
+  "title": "170 · Set Next Month Goals — Krishalaya",
   "lines": [
-   "170 · Set Next Month Goals — Krishi-Verse",
+   "170 · Set Next Month Goals — Krishalaya",
    "Plan Sep 2026 Goals",
    "💡 AI suggestion:",
    "Based on your Aug pace and Petlad cluster opportunities, target",
@@ -6729,9 +6729,9 @@
   ]
  },
  "171-notification-settings": {
-  "title": "171 · Notification Settings — Krishi-Verse",
+  "title": "171 · Notification Settings — Krishalaya",
   "lines": [
-   "171 · Notification Settings — Krishi-Verse",
+   "171 · Notification Settings — Krishalaya",
    "Notification Settings",
    "Money & orders",
    "💰 Payment received",
@@ -6758,9 +6758,9 @@
   ]
  },
  "172-notification-detail": {
-  "title": "172 · Notification — Krishi-Verse",
+  "title": "172 · Notification — Krishalaya",
   "lines": [
-   "172 · Notification — Krishi-Verse",
+   "172 · Notification — Krishalaya",
    "Notification",
    "💰",
    "Payment received!",
@@ -6787,9 +6787,9 @@
   ]
  },
  "173-kyc-selfie": {
-  "title": "173 · Verify with Selfie — Krishi-Verse",
+  "title": "173 · Verify with Selfie — Krishalaya",
   "lines": [
-   "173 · Verify with Selfie — Krishi-Verse",
+   "173 · Verify with Selfie — Krishalaya",
    "Verify your identity",
    "Step 3 of 3",
    "Live selfie",
@@ -6806,9 +6806,9 @@
   ]
  },
  "174-kyc-doc-upload": {
-  "title": "174 · Upload Document — Krishi-Verse",
+  "title": "174 · Upload Document — Krishalaya",
   "lines": [
-   "174 · Upload Document — Krishi-Verse",
+   "174 · Upload Document — Krishalaya",
    "Upload Document",
    "Photo of 7/12 Utara",
    "Land record from talati office. Photo works fine — must show name, survey number, and area.",
@@ -6829,9 +6829,9 @@
   ]
  },
  "175-kyc-rejected": {
-  "title": "175 · KYC Re-submission — Krishi-Verse",
+  "title": "175 · KYC Re-submission — Krishalaya",
   "lines": [
-   "175 · KYC Re-submission — Krishi-Verse",
+   "175 · KYC Re-submission — Krishalaya",
    "KYC Issues",
    "⚠",
    "Re-submission needed",
@@ -6852,9 +6852,9 @@
   ]
  },
  "176-change-phone": {
-  "title": "176 · Change Phone — Krishi-Verse",
+  "title": "176 · Change Phone — Krishalaya",
   "lines": [
-   "176 · Change Phone — Krishi-Verse",
+   "176 · Change Phone — Krishalaya",
    "Change Phone Number",
    "Current",
    "+91 98765 12340",
@@ -6877,9 +6877,9 @@
   ]
  },
  "177-account-delete": {
-  "title": "177 · Delete Account — Krishi-Verse",
+  "title": "177 · Delete Account — Krishalaya",
   "lines": [
-   "177 · Delete Account — Krishi-Verse",
+   "177 · Delete Account — Krishalaya",
    "Delete Account",
    "⚠",
    "Delete your account?",
@@ -6912,9 +6912,9 @@
   ]
  },
  "178-privacy-settings": {
-  "title": "178 · Privacy — Krishi-Verse",
+  "title": "178 · Privacy — Krishalaya",
   "lines": [
-   "178 · Privacy — Krishi-Verse",
+   "178 · Privacy — Krishalaya",
    "Privacy Settings",
    "Profile visibility",
    "Show profile to buyers",
@@ -6945,9 +6945,9 @@
   ]
  },
  "179-data-download": {
-  "title": "179 · Download Data — Krishi-Verse",
+  "title": "179 · Download Data — Krishalaya",
   "lines": [
-   "179 · Download Data — Krishi-Verse",
+   "179 · Download Data — Krishalaya",
    "Download My Data",
    "📦",
    "All your data in one ZIP",
@@ -6979,9 +6979,9 @@
   ]
  },
  "180-upi-management": {
-  "title": "180 · UPI IDs — Krishi-Verse",
+  "title": "180 · UPI IDs — Krishalaya",
   "lines": [
-   "180 · UPI IDs — Krishi-Verse",
+   "180 · UPI IDs — Krishalaya",
    "UPI IDs",
    "Linked UPI IDs",
    "ramesh@okaxis",
@@ -7008,9 +7008,9 @@
   ]
  },
  "181-autopay": {
-  "title": "181 · Auto-Pay — Krishi-Verse",
+  "title": "181 · Auto-Pay — Krishalaya",
   "lines": [
-   "181 · Auto-Pay — Krishi-Verse",
+   "181 · Auto-Pay — Krishalaya",
    "Auto-Pay Mandates",
    "Auto-pay",
    "lets you authorize recurring payments without entering PIN each time. UPI mandate based. Cancel anytime.",
@@ -7036,9 +7036,9 @@
   ]
  },
  "182-spending-insights": {
-  "title": "182 · Spending Insights — Krishi-Verse",
+  "title": "182 · Spending Insights — Krishalaya",
   "lines": [
-   "182 · Spending Insights — Krishi-Verse",
+   "182 · Spending Insights — Krishalaya",
    "Spending Insights",
    "Aug 2026 · Spent",
    "₹3,180",
@@ -7064,9 +7064,9 @@
   ]
  },
  "183-global-search": {
-  "title": "183 · Search — Krishi-Verse",
+  "title": "183 · Search — Krishalaya",
   "lines": [
-   "183 · Search — Krishi-Verse",
+   "183 · Search — Krishalaya",
    "All · 47",
    "Listings · 28",
    "Sellers · 12",
@@ -7099,9 +7099,9 @@
   ]
  },
  "184-voice-search": {
-  "title": "184 · Voice Search — Krishi-Verse",
+  "title": "184 · Voice Search — Krishalaya",
   "lines": [
-   "184 · Voice Search — Krishi-Verse",
+   "184 · Voice Search — Krishalaya",
    "Listening...",
    "Speak now",
    "In Gujarati, Hindi, or English",
@@ -7113,9 +7113,9 @@
   ]
  },
  "185-permissions": {
-  "title": "185 · Permissions — Krishi-Verse",
+  "title": "185 · Permissions — Krishalaya",
   "lines": [
-   "185 · Permissions — Krishi-Verse",
+   "185 · Permissions — Krishalaya",
    "Permissions",
    "🔐",
    "A few permissions needed",
@@ -7148,9 +7148,9 @@
   ]
  },
  "186-tutorial": {
-  "title": "186 · App Tour — Krishi-Verse",
+  "title": "186 · App Tour — Krishalaya",
   "lines": [
-   "186 · App Tour — Krishi-Verse",
+   "186 · App Tour — Krishalaya",
    "🎤",
    "Speak your listing",
    "Tap the mic button and tell us in Gujarati or Hindi. We'll fill the form for you.",
@@ -7161,9 +7161,9 @@
   ]
  },
  "187-language-switcher": {
-  "title": "187 · Language — Krishi-Verse",
+  "title": "187 · Language — Krishalaya",
   "lines": [
-   "187 · Language — Krishi-Verse",
+   "187 · Language — Krishalaya",
    "Choose Language",
    "🌐",
    "Change language",
@@ -7186,9 +7186,9 @@
   ]
  },
  "188-offline": {
-  "title": "188 · Offline — Krishi-Verse",
+  "title": "188 · Offline — Krishalaya",
   "lines": [
-   "188 · Offline — Krishi-Verse",
+   "188 · Offline — Krishalaya",
    "No Internet",
    "📡",
    "No internet connection",
@@ -7206,9 +7206,9 @@
   ]
  },
  "189-server-error": {
-  "title": "189 · Server Error — Krishi-Verse",
+  "title": "189 · Server Error — Krishalaya",
   "lines": [
-   "189 · Server Error — Krishi-Verse",
+   "189 · Server Error — Krishalaya",
    "🛠",
    "Something went wrong",
    "Error 500 · Server hiccup",
@@ -7223,9 +7223,9 @@
   ]
  },
  "190-app-update": {
-  "title": "190 · Update Required — Krishi-Verse",
+  "title": "190 · Update Required — Krishalaya",
   "lines": [
-   "190 · Update Required — Krishi-Verse",
+   "190 · Update Required — Krishalaya",
    "🚀",
    "App update needed",
    "Version 2.4.0 has new features and bug fixes",
@@ -7240,9 +7240,9 @@
   ]
  },
  "191-inbox-all": {
-  "title": "191 · Messages — Krishi-Verse",
+  "title": "191 · Messages — Krishalaya",
   "lines": [
-   "191 · Messages — Krishi-Verse",
+   "191 · Messages — Krishalaya",
    "Messages · 4 new",
    "All · 14",
    "Buyers · 8",
@@ -7273,15 +7273,15 @@
    "2d",
    "Thanks for the delivery! ⭐⭐⭐⭐⭐",
    "KV",
-   "Krishi-Verse Support",
+   "Krishalaya Support",
    "3d",
    "Your dispute #DSP-0247 has been resolved."
   ]
  },
  "192-message-archive": {
-  "title": "192 · Archive — Krishi-Verse",
+  "title": "192 · Archive — Krishalaya",
   "lines": [
-   "192 · Archive — Krishi-Verse",
+   "192 · Archive — Krishalaya",
    "Archived Messages · 24",
    "📦 Archived messages · Auto-deleted after 1 year",
    "RT",
@@ -7308,9 +7308,9 @@
   ]
  },
  "193-auction-outbid": {
-  "title": "193 · Outbid — Krishi-Verse",
+  "title": "193 · Outbid — Krishalaya",
   "lines": [
-   "193 · Outbid — Krishi-Verse",
+   "193 · Outbid — Krishalaya",
    "Auction Update",
    "😔",
    "You've been outbid",
@@ -7334,9 +7334,9 @@
   ]
  },
  "194-auction-history": {
-  "title": "194 · Auction History — Krishi-Verse",
+  "title": "194 · Auction History — Krishalaya",
   "lines": [
-   "194 · Auction History — Krishi-Verse",
+   "194 · Auction History — Krishalaya",
    "My Auctions",
    "All · 24",
    "Won · 14",
@@ -7368,12 +7368,12 @@
   ]
  },
  "195-feedback-cta": {
-  "title": "195 · Help us improve — Krishi-Verse",
+  "title": "195 · Help us improve — Krishalaya",
   "lines": [
-   "195 · Help us improve — Krishi-Verse",
+   "195 · Help us improve — Krishalaya",
    "Feedback",
    "💛",
-   "How is your Krishi-Verse experience?",
+   "How is your Krishalaya experience?",
    "Your feedback shapes the app",
    "⭐",
    "Tap stars to rate",
@@ -7393,12 +7393,12 @@
   ]
  },
  "196-about": {
-  "title": "196 · About Krishi-Verse — Krishi-Verse",
+  "title": "196 · About Krishalaya — Krishalaya",
   "lines": [
-   "196 · About Krishi-Verse — Krishi-Verse",
+   "196 · About Krishalaya — Krishalaya",
    "About",
    "🌾",
-   "Krishi-Verse",
+   "Krishalaya",
    "Version 2.4.0 · Build 247",
    "Built with ❤️ for farmers, by Dev",
    "India's most farmer-first agri SaaS",
@@ -7420,17 +7420,17 @@
    "›",
    "📜 Licenses (Open Source)",
    "›",
-   "💼 Krishi-Verse Pvt Ltd",
+   "💼 Krishalaya Pvt Ltd",
    "CIN U72200GJ2024",
    "Connect",
-   "📧 hello@krishi-verse.in",
+   "📧 hello@krishalaya.com",
    "›",
-   "🌐 krishi-verse.in",
+   "🌐 krishalaya.com",
    "›",
    "💬 WhatsApp: +91 90990 12340",
    "›",
    "Made in Anand, Gujarat 🇮🇳",
-   "© 2026 Krishi-Verse Pvt Ltd"
+   "© 2026 Krishalaya Pvt Ltd"
   ]
  }
 }

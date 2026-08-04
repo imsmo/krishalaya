@@ -19,7 +19,7 @@ locals {
 
 resource "aws_wafv2_web_acl" "this" {
   name        = "${var.name}-edge"
-  description = "Krishi-Verse edge WAF (ALB)"
+  description = "Krishalaya edge WAF (ALB)"
   scope       = "REGIONAL"
 
   default_action {

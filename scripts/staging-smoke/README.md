@@ -157,7 +157,7 @@ costs another real ₹1 each time checks 5/8 are not skipped.
 
 - The outbox relay runs continuously in the api process (S1, KV-BL-063) — this suite never ticks
   anything manually, unlike `pilot-e2e`.
-- `dotenv` is a declared dependency of `@krishi-verse/api` (S1, KV-BL-064) — irrelevant to this suite
+- `dotenv` is a declared dependency of `@krishalaya/api` (S1, KV-BL-064) — irrelevant to this suite
   (it never boots the api locally), noted only because `pilot-e2e/README.md` flagged it and it's now
   fixed.
 - Provider adapters (Razorpay, MSG91/Twilio, eKYC) are the S2 wiring this suite is meant to smoke-test

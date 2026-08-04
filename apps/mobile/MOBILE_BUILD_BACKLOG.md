@@ -1,4 +1,4 @@
-# mobile — build backlog (Krishi-Verse React Native app)
+# mobile — build backlog (Krishalaya React Native app)
 
 **Status today.** `apps/mobile` is ✅ (Phase-1 GA) as of the **M-W0** DoD-close below — every roadmap item
 P-01…P-32 is built, the closing audit passed (305/305 pure tests green, §4 clean, i18n parity 1232×3, coverage
@@ -58,7 +58,7 @@ MOBILE_AI_AGENT_BUILD_GUIDE.md + CLAUDE.md 12 Laws remain supreme:
 - This is large-scale multi-tenant SaaS product for millions of users / billions of ops, under
   active attack. Write code that withstands that — never a demo.
 - This is the farmer/buyer/worker/ambassador/tenant-lite Expo (SDK 51, expo-router) app on the shared platform API
-  via @krishi-verse/sdk-js. Build production for rural users on low-end Android + flaky 2G/3G. Offline-first.
+  via @krishalaya/sdk-js. Build production for rural users on low-end Android + flaky 2G/3G. Offline-first.
 - SERVER IS THE ONLY SECURITY AUTHORITY. The app trusts its own role for NAVIGATION ONLY; the API re-enforces
   RBAC + RLS + every state transition + every money move on every call. Never widen scope client-side.
 - DATA ACCESS ONLY THROUGH features/<vertical>.api (which calls the SDK). NEVER call apiClient() from a screen
@@ -92,7 +92,7 @@ MOBILE_AI_AGENT_BUILD_GUIDE.md + CLAUDE.md 12 Laws remain supreme:
 3. The platform-API surface you'll consume: `apps/api/src/modules/<module>/controllers/v1/*.controller.ts` (exact
    path + verb) + the module DTOs/read-models. **Match the controller exactly; never guess.** If the endpoint is
    absent, it goes in §6 (flag-not-fake), not into a fake.
-4. `@krishi-verse/sdk-js` resources already in place; add a typed resource + types in the same session as the screen
+4. `@krishalaya/sdk-js` resources already in place; add a typed resource + types in the same session as the screen
    that first needs it (or use the SDK `request()` escape-hatch and note the assumed contract). Never fake a response.
 
 ---

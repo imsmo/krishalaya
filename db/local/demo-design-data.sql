@@ -1,5 +1,5 @@
 -- ============================================================================
--- ⚠️  DEPRECATED for app-flow testing (Krishi Verse hardening slice D) — DESIGN-PREVIEW ONLY.
+-- ⚠️  DEPRECATED for app-flow testing (Krishalaya hardening slice D) — DESIGN-PREVIEW ONLY.
 --
 -- This file hand-inserts rows with fixed, non-uuidv7 ids (the `d0000...`/`44444444-...` literals
 -- below) and predates money entirely: no `price_minor` sibling columns some screens now expect, no

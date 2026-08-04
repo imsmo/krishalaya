@@ -1,6 +1,6 @@
 # 00 — THE PRODUCTION-GRADE CONTRACT (paste at the top of EVERY task)
 
-This is the engineering constitution for Krishi-Verse — multi-tenant agri-commerce for **millions of users and
+This is the engineering constitution for Krishalaya — multi-tenant agri-commerce for **millions of users and
 billions of operations**, under active attack from global competitors. Every task in this backlog is **production,
 never a demo**. Copy the block below verbatim above each task you hand off.
 

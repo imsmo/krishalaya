@@ -13,8 +13,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LANGUAGES } from '@krishi-verse/i18n';
-import { Button, Card, Input, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishi-verse/ui-native';
+import { LANGUAGES } from '@krishalaya/i18n';
+import { Button, Card, Input, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getMyProfile, updateMyProfile } from '../../../features/profile/profile.api';

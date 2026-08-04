@@ -1,8 +1,8 @@
 # web-partner
 
 The financial / logistics **partner portal** — banks/NBFCs (lenders) process loan applications; 3PLs (logistics
-partners) run deliveries. Next.js 14 (App Router), server-rendered, built on the shared `@krishi-verse/sdk-js` +
-`@krishi-verse/i18n` + `@krishi-verse/tokens`. Partner-scoped auth; never tenant data beyond consented/assigned
+partners) run deliveries. Next.js 14 (App Router), server-rendered, built on the shared `@krishalaya/sdk-js` +
+`@krishalaya/i18n` + `@krishalaya/tokens`. Partner-scoped auth; never tenant data beyond consented/assigned
 records. Never indexed. (No insurance backend exists yet, so policies/claims are out of scope — see
 `PARTNER_BUILD_BACKLOG.md`.)
 

@@ -2,7 +2,7 @@
 // (screen 33). No React / no SDK I/O (SDK types are `import type` → erased) → unit-tested. It derives the elapsed
 // worked-time DISPLAY from the server-stamped clock-in time (never money — the wage is settled server-side on
 // completion, Law 2; we never compute a running rupee figure on the client).
-import type { LabourAttendance } from '@krishi-verse/sdk-js';
+import type { LabourAttendance } from '@krishalaya/sdk-js';
 
 export type AttendancePhase = 'none' | 'working' | 'done';
 

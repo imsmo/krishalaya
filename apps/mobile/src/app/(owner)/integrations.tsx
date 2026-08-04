@@ -12,7 +12,7 @@
 // bounded, audited console. When a tenant integrations read contract ships, this renders the real connection state.
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { Button, Card, EmptyState, ScreenScaffold, color, font, space } from '@krishi-verse/ui-native';
+import { Button, Card, EmptyState, ScreenScaffold, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openWebConsole } from '../../core/deeplink';

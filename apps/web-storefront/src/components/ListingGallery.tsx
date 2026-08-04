@@ -2,7 +2,7 @@
 // Images are SHORT-LIVED presigned GET urls from the API (`listings/:id/media`), clean assets only — this
 // component renders only what it's given and shows nothing when there are no real images (never a placeholder).
 // Copy arrives pre-localized from the server page, so this stays a string-free presentational component.
-import type { GalleryItem } from '@krishi-verse/sdk-js';
+import type { GalleryItem } from '@krishalaya/sdk-js';
 import { orderedGallery } from '../features/listing/gallery';
 
 export function ListingGallery(

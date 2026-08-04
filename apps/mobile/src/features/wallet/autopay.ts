@@ -2,8 +2,8 @@
 // (SDK/ui types are `import type` → erased) → unit-tested. Derive display-only bits (icon, cancellability, status
 // tone) from the mandate's server fields; the SERVER is the authority on the mandate lifecycle (Law 11) and the
 // raw VPA is masked server-side.
-import type { AutopayMandate } from '@krishi-verse/sdk-js';
-import type { PillTone } from '@krishi-verse/ui-native';
+import type { AutopayMandate } from '@krishalaya/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
 
 /** A small per-purpose glyph (fixed chrome). Unknown purposes fall back to the generic recurring icon. Pure. */
 export function autopayIcon(purpose: string | null | undefined): string {

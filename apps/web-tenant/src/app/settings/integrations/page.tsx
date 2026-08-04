@@ -9,7 +9,7 @@ import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { connectIntegrationAction, disconnectIntegrationAction } from './actions';
-import type { IntegrationProvider, TenantIntegration } from '@krishi-verse/sdk-js';
+import type { IntegrationProvider, TenantIntegration } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {

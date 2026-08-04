@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · govt schemes resource. Read surface: browse the GLOBAL scheme catalogue + a scheme's
+// @krishalaya/sdk-js · govt schemes resource. Read surface: browse the GLOBAL scheme catalogue + a scheme's
 // detail (benefit/eligibility rules/required docs), check eligibility (server-evaluated, explainable). Write
 // surface: apply (idempotent — Law 3), submit/resubmit/appeal the caller's OWN application. Reads of applications
 // + DBT credits are owner-scoped server-side (no IDOR). Money is bigint minor strings (Law 2). Gated server-side

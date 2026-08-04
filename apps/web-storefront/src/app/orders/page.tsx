@@ -4,8 +4,8 @@
 // formatMoneyMinor; dates via formatDate. Degrades to an empty/error state, never 500 (Law 12).
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishi-verse/i18n';
-import type { OrderListItem } from '@krishi-verse/sdk-js';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import type { OrderListItem } from '@krishalaya/sdk-js';
 import { serverClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { getTranslator, getLang } from '../../lib/i18n';

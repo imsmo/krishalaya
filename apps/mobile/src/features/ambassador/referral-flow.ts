@@ -2,8 +2,8 @@
 // (SDK/ui types are `import type` → erased) → unit-tested. Money is bigint minor-unit strings (Law 2): earnings
 // are summed with BigInt, never a float. The SERVER is the authority on referral state transitions, commission
 // accrual, and attribution — these helpers only drive the ambassador UI/validation.
-import type { PillTone } from '@krishi-verse/ui-native';
-import type { Referral, AmbassadorEarning } from '@krishi-verse/sdk-js';
+import type { PillTone } from '@krishalaya/ui-native';
+import type { Referral, AmbassadorEarning } from '@krishalaya/sdk-js';
 
 /** Referral status → chip tone. invited → signed_up → activated → rewarded (server-enforced forward-only). */
 export function referralStatusTone(status: string): PillTone {

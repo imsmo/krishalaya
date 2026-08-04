@@ -1,5 +1,5 @@
 // apps/mobile/src/app/(farmer)/listings/preview.tsx · screen 11 (Preview & Publish) — rebuilt to the Phase-1
-// design (Krishi_Verse_Design_System/screens/11-listing-preview.html): a crop hero, the title + "Edit All",
+// design (Krishalaya_Design_System/screens/11-listing-preview.html): a crop hero, the title + "Edit All",
 // status/AI chips, the detail rows (Crop·Variety / Quantity / Price·qtl / Grade·Moisture) each with a "Change"
 // link, a "📊 Fair Price Check" card (Low · You · High band), and Save Draft / Publish Listing → .
 // Thin screen over features/listings + features/market; degrade-never-die (Law 12). Money via MoneyText (paise).
@@ -13,8 +13,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { ListingCard, MandiPulse } from '@krishi-verse/sdk-js';
-import { Button, EmptyState, MoneyText, SkeletonCard, Icon, color, font, space, radius, shadow } from '@krishi-verse/ui-native';
+import type { ListingCard, MandiPulse } from '@krishalaya/sdk-js';
+import { Button, EmptyState, MoneyText, SkeletonCard, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { getListing, publishListing } from '../../../features/listings/listings.api';
 import { getPulse } from '../../../features/market/market.api';

@@ -52,7 +52,7 @@ async function bootstrap(): Promise<void> {
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.enableShutdownHooks();
   await app.listen(config.port);
-  new Logger('Bootstrap').log(`Krishi-Verse API listening on :${config.port} (${config.nodeEnv})`);
+  new Logger('Bootstrap').log(`Krishalaya API listening on :${config.port} (${config.nodeEnv})`);
 }
 
 bootstrap().catch((err) => {

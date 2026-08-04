@@ -6,7 +6,7 @@
 // NOT derivable here: the public ListingCard read-model carries no categoryId, seller display name, region name or
 // rating. So this module only computes the chips the contract can back honestly — "All" and "Price dropped" — and
 // the screen degrades the category chips + seller line rather than inventing a categorisation or a name.
-import type { ListingCard } from '@krishi-verse/sdk-js';
+import type { ListingCard } from '@krishalaya/sdk-js';
 
 export const SAVED_ALL = 'all';
 export const SAVED_DROPPED = 'dropped';

@@ -43,8 +43,8 @@ function sign(payload: Record<string, unknown>, secret: string, alg = 'HS256') {
   const s = createHmac('sha256', secret).update(`${h}.${p}`).digest('base64url');
   return `${h}.${p}.${s}`;
 }
-const cfg = new AdminConfig({ NODE_ENV: 'test', ADMIN_JWT_SECRET: 's'.repeat(40), ADMIN_JWT_ISSUER: 'krishi-verse-admin', ADMIN_JWT_AUDIENCE: 'krishi-verse-admin-api', ADMIN_REQUIRE_HARDWARE_KEY: 'true' });
-const goodClaims = (over: Record<string, unknown> = {}) => ({ sub: 'admin1', roles: ['platform_ai_ops'], amr: ['pwd', 'hwk'], auth_time: Math.floor(Date.now() / 1000), iss: 'krishi-verse-admin', aud: 'krishi-verse-admin-api', exp: Math.floor(Date.now() / 1000) + 600, ...over });
+const cfg = new AdminConfig({ NODE_ENV: 'test', ADMIN_JWT_SECRET: 's'.repeat(40), ADMIN_JWT_ISSUER: 'krishalaya-admin', ADMIN_JWT_AUDIENCE: 'krishalaya-admin-api', ADMIN_REQUIRE_HARDWARE_KEY: 'true' });
+const goodClaims = (over: Record<string, unknown> = {}) => ({ sub: 'admin1', roles: ['platform_ai_ops'], amr: ['pwd', 'hwk'], auth_time: Math.floor(Date.now() / 1000), iss: 'krishalaya-admin', aud: 'krishalaya-admin-api', exp: Math.floor(Date.now() / 1000) + 600, ...over });
 
 describe('verifyAdminToken', () => {
   it('accepts a well-formed token + surfaces claims', () => {

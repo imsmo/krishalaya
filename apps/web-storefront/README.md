@@ -1,7 +1,7 @@
 # web-storefront ✅
 
 The public consumer site + per-tenant storefronts + the public farm-to-fork QR landing. Next.js 14 (App
-Router), server-rendered, built on the shared `@krishi-verse/sdk-js` + `@krishi-verse/i18n` + `@krishi-verse/tokens`.
+Router), server-rendered, built on the shared `@krishalaya/sdk-js` + `@krishalaya/i18n` + `@krishalaya/tokens`.
 **Status: complete** — the full anonymous→authenticated buyer journey (browse · discovery · listing detail ·
 auth · cart · checkout/pay · orders · reviews · offers · chat · auctions · notifications) ships behind the
 Production-Grade Contract. Money is bigint-minor-unit strings via `formatMoneyMinor`; the session token lives only
@@ -30,7 +30,7 @@ in an httpOnly cookie; all copy is i18n (en/hi/gu); data flows exclusively throu
 A shared **header** (brand, primary nav, locale switcher, cart badge, login link) + **footer** wrap every page
 from `app/layout.tsx`, which sets `<html lang/dir>` from the active locale and renders a skip-to-content link.
 **i18n** is server-side: `lib/i18n.ts` resolves the locale (`kv_lang` cookie → `Accept-Language` → default) and
-builds an `@krishi-verse/i18n` Translator over the `en`/`hi`/`gu` catalogs (full key parity; **no inline copy**
+builds an `@krishalaya/i18n` Translator over the `en`/`hi`/`gu` catalogs (full key parity; **no inline copy**
 in components/pages). Locale switching works **without client JS** — a `<form>` posts to `/api/lang`, which
 validates fail-closed against the supported set and 303-redirects back (same-origin guard, no open redirect).
 Segment `loading.tsx`/`error.tsx`/`not-found.tsx` boundaries are localized; `error.tsx` is the one client

@@ -2,7 +2,7 @@
 // lookups) into a flat, indented option list for the discovery category facet — real names, never UUIDs. No I/O,
 // no framework → unit-testable. The server returns nodes pre-ordered by ltree `path`, so a depth-based indent
 // reproduces the hierarchy in a plain <select>. Unknown/empty input degrades to [] (the facet simply hides).
-import type { CategoryNode } from '@krishi-verse/sdk-js';
+import type { CategoryNode } from '@krishalaya/sdk-js';
 
 export interface CategoryOption { id: string; label: string; depth: number; }
 

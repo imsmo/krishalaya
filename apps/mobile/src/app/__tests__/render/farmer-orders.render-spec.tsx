@@ -3,7 +3,7 @@
 // buyer combined tab). No flag gate of its own — the render-floor assertion is the DATA-empty EmptyState path:
 // `listOrders()` mocked to resolve zero items for both the buyer and seller role calls it fires in parallel.
 import React from 'react';
-import { EmptyState } from '@krishi-verse/ui-native';
+import { EmptyState } from '@krishalaya/ui-native';
 import { renderScreen } from '../../../test-utils/render';
 import Orders from '../../(farmer)/orders';
 

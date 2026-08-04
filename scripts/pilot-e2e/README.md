@@ -1,6 +1,6 @@
 # Pilot E2E — Sprint S0 deliverable
 
-One command that proves the Krishi-Verse pilot slice works, end to end, on your own machine:
+One command that proves the Krishalaya pilot slice works, end to end, on your own machine:
 
 ```
 OTP login -> onboard farmer + buyer -> create + publish listing -> buyer orders (direct sale)
@@ -124,8 +124,8 @@ matter how long you wait, in dev, staging, or production, as the codebase stands
 2. *`node --conditions` against `apps/api/dist`* — rejected. The production build
    (`tsc -p tsconfig.build.json`) is not a published/stable import target, and requires a full build
    step first.
-3. **`pnpm --filter @krishi-verse/api exec ts-node <file>.ts` — chosen.** `ts-node` is already a
-   *devDependency* of `@krishi-verse/api` (`apps/api/package.json`) — no new package was added
+3. **`pnpm --filter @krishalaya/api exec ts-node <file>.ts` — chosen.** `ts-node` is already a
+   *devDependency* of `@krishalaya/api` (`apps/api/package.json`) — no new package was added
    anywhere. The implementation is a **new file**,
    `apps/api/src/modules/payments/pilot-e2e/relay-tick.ts` (no existing source touched), which
    copies the exact hand-wired dependency graph already proven in
@@ -152,7 +152,7 @@ see the three options in `apps/worker/WORKER-RUNTIME.md`'s "Deferred: domain-han
 
 ## Known repo gap this script works around (flagging, not silently hiding)
 
-`apps/api/src/main.ts` does `import 'dotenv/config'`, but `@krishi-verse/api` does **not** declare
+`apps/api/src/main.ts` does `import 'dotenv/config'`, but `@krishalaya/api` does **not** declare
 `dotenv` as a dependency (checked: absent from `apps/api/package.json` and from the `apps/api`
 importer section of `pnpm-lock.yaml`). With `.npmrc`'s `shamefully-hoist=false`, that import throws
 `MODULE_NOT_FOUND` on a strict `pnpm install` — i.e. **the api cannot boot via `ts-node src/main.ts`
@@ -179,8 +179,8 @@ it here rather than leaving it silently patched.
   script turns on `online_payments` and `communication` (both OFF by default); if you've modified
   the seed data, make sure those flags are still enabled for the pilot tenant.
 - **Relay tick step fails / times out** — check that `pnpm` is on `PATH` inside the subprocess (the
-  launcher shells out to `pnpm --filter @krishi-verse/api exec ts-node ...`); run
-  `pnpm --filter @krishi-verse/api exec ts-node --version` manually to confirm it resolves.
+  launcher shells out to `pnpm --filter @krishalaya/api exec ts-node ...`); run
+  `pnpm --filter @krishalaya/api exec ts-node --version` manually to confirm it resolves.
 - **Re-running repeatedly against the same machine** — every run creates a brand-new tenant +
   farmer + buyer with fresh random phone numbers, so OTP rate limits (`OTP_REQUEST_MAX_PER_HOUR`,
   `OTP_VERIFY_MAX_PER_HOUR` — `apps/api/src/core/auth/otp.service.ts`) never accumulate across runs.

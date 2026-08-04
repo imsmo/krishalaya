@@ -10,13 +10,13 @@ genuinely differs from prod's. Read each linked runbook once; this document is t
 no Terraform binary or AWS creds are available in the authoring sandbox.
 
 Cross-referenced runbooks (do not duplicate — follow the link when noted):
-- `krishi-verse/infra/terraform/APPLY-RUNBOOK-prod.md` — the foundation apply mechanics (state bootstrap, kubectl
+- `krishalaya/infra/terraform/APPLY-RUNBOOK-prod.md` — the foundation apply mechanics (state bootstrap, kubectl
   connect, PITR test-restore). Every step maps 1:1 to staging with `envs/staging` substituted for `envs/prod`.
-- `krishi-verse/infra/DEPLOY-RUNBOOK.md` — image build/push + Helm install mechanics.
-- `krishi-verse/infra/EDGE-RUNBOOK.md` — ALB/WAF/ACM/Route53/external-dns mechanics.
-- `krishi-verse/infra/SECRETS-RUNBOOK.md` — the full secrets chain + the `assertProductionSecurity` table.
-- `krishi-verse/db/prod/DB-BOOTSTRAP-RUNBOOK.md` — migrate/partition/role-login/seed/RLS-gate, run as-is against staging.
-- `krishi-verse/ops/runbooks/restore-drill.md` — the PITR drill script/log this runbook's §7 exercises.
+- `krishalaya/infra/DEPLOY-RUNBOOK.md` — image build/push + Helm install mechanics.
+- `krishalaya/infra/EDGE-RUNBOOK.md` — ALB/WAF/ACM/Route53/external-dns mechanics.
+- `krishalaya/infra/SECRETS-RUNBOOK.md` — the full secrets chain + the `assertProductionSecurity` table.
+- `krishalaya/db/prod/DB-BOOTSTRAP-RUNBOOK.md` — migrate/partition/role-login/seed/RLS-gate, run as-is against staging.
+- `krishalaya/ops/runbooks/restore-drill.md` — the PITR drill script/log this runbook's §7 exercises.
 
 ---
 

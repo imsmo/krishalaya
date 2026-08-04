@@ -33,8 +33,8 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
-import { formatDate } from '@krishi-verse/i18n';
-import { Button, EmptyState, Input, ScreenScaffold, VoiceButton, color, font, space, radius } from '@krishi-verse/ui-native';
+import { formatDate } from '@krishalaya/i18n';
+import { Button, EmptyState, Input, ScreenScaffold, VoiceButton, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';

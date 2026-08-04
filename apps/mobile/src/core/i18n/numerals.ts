@@ -1,5 +1,5 @@
 // apps/mobile/src/core/i18n/numerals.ts · small number helpers for the Indian context. Money formatting itself
-// lives in @krishi-verse/i18n (formatMoneyMinor, bigint-safe) — this file only covers the lightweight
+// lives in @krishalaya/i18n (formatMoneyMinor, bigint-safe) — this file only covers the lightweight
 // presentation helpers the UI needs: short lakh/crore labels for big counts and optional Devanagari digit
 // transliteration for fully-vernacular surfaces. Pure functions, no React.
 

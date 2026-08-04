@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
-import { SdkError } from '@krishi-verse/sdk-js';
+import { SdkError } from '@krishalaya/sdk-js';
 import {
   buildCreatePartner, buildUpdatePartner, buildCreateVehicle, buildUpdateVehicle, buildCreateSlot, buildSetActive, FleetError,
 } from '../../features/logistics/fleet';

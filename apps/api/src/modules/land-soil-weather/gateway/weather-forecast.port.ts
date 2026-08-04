@@ -1,5 +1,5 @@
 // modules/land-soil-weather/gateway/weather-forecast.port.ts
-// Port to the EXTERNAL geocoded weather-forecast provider (IMD / Open-Meteo / Skymet-style). Krishi-Verse owns
+// Port to the EXTERNAL geocoded weather-forecast provider (IMD / Open-Meteo / Skymet-style). Krishalaya owns
 // the POLICY (which fields, caching, degrade-to-advisory); the provider owns the meteorology.
 // CONTRACT (Law 12 — degrade, never die / never fabricate):
 //   • fetch(lat,lng) returns a NORMALISED forecast (provider-agnostic shape) for the next N days.

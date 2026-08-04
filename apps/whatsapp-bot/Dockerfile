@@ -6,7 +6,7 @@ RUN corepack enable
 COPY pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/whatsapp-bot ./apps/whatsapp-bot
-RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishi-verse/whatsapp-bot build
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishalaya/whatsapp-bot build
 
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production

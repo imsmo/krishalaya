@@ -5,7 +5,7 @@
 // DEV-18 REAL consuming-app smoke test (packages/ui port batch 4) — this is the ONE real screen rebuilt on
 // the ported library end-to-end (per the founder's own brief: "mirroring canon W123/W128's layout, with …
 // data via the app's existing data conventions"). `PageHeader` replaces the old ad-hoc `.kv-page-head` div;
-// the table itself moved to `<ListingsTable>` (a Client Component wrapper around `@krishi-verse/ui`'s
+// the table itself moved to `<ListingsTable>` (a Client Component wrapper around `@krishalaya/ui`'s
 // `DataTable` — see that file's own header comment for why a wrapper is required, not optional: `DataTable`
 // is a Client Component and cannot receive this Server Component's inline `render`/`getRowKey` closures
 // directly). ALL real behavior is preserved unchanged: `requireSession` gate, `tenantClient().listings.
@@ -19,9 +19,9 @@ import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import type { ListingCard } from '@krishi-verse/sdk-js';
-import { PageHeader } from '@krishi-verse/ui';
-import type { DataTableState } from '@krishi-verse/ui';
+import type { ListingCard } from '@krishalaya/sdk-js';
+import { PageHeader } from '@krishalaya/ui';
+import type { DataTableState } from '@krishalaya/ui';
 import { ListingsTable } from '../../components/ListingsTable';
 
 export const dynamic = 'force-dynamic';

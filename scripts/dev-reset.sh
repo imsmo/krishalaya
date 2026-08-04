@@ -7,15 +7,15 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> [1/2] Rebuilding shared packages the mobile app imports (sdk-js, i18n, ui-native, tokens, contracts)…"
-pnpm --filter @krishi-verse/tokens    build
-pnpm --filter @krishi-verse/contracts build
-pnpm --filter @krishi-verse/i18n      build
-pnpm --filter @krishi-verse/sdk-js    build
-pnpm --filter @krishi-verse/ui-native build
+pnpm --filter @krishalaya/tokens    build
+pnpm --filter @krishalaya/contracts build
+pnpm --filter @krishalaya/i18n      build
+pnpm --filter @krishalaya/sdk-js    build
+pnpm --filter @krishalaya/ui-native build
 echo "    shared packages rebuilt."
 
 echo "==> [2/2] Rebuilding the API…"
-pnpm --filter @krishi-verse/api build
+pnpm --filter @krishalaya/api build
 echo "    API built."
 
 cat <<'NEXT'
@@ -24,7 +24,7 @@ cat <<'NEXT'
  dev-reset complete. Now, in order:
 
  TERMINAL 1  — start the API from SOURCE (always fresh, no build step to forget):
-     pnpm --filter @krishi-verse/api start:dev
+     pnpm --filter @krishalaya/api start:dev
    (leave running; wait for "listening" / "started")
 
  TERMINAL 2  — one-time data + flags (only if not already done today):

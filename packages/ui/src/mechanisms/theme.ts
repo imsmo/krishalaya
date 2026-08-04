@@ -5,7 +5,7 @@
 // so it stays usable from any consuming app (Next.js server component, a future non-Next app, or a unit test)
 // without dragging a framework dependency into `packages/ui`. Each app's own `lib/*.ts` (mirroring the existing
 // `lib/i18n.ts` cookie-read convention already established by `web-tenant`/`web-storefront`) is responsible for
-// reading its OWN cookie and calling this resolver — exactly the same separation `@krishi-verse/i18n`'s
+// reading its OWN cookie and calling this resolver — exactly the same separation `@krishalaya/i18n`'s
 // `resolveLanguage()` already has from each app's own `getLanguageDef()`.
 //
 // SSR STRATEGY (stated, not assumed — see `dev19_report.md` "SSR strategy" section): this mechanism is 100%

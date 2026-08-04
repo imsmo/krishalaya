@@ -3,7 +3,7 @@
 // (see order-status.trackingSteps) — reached steps are filled, the current step is emphasized.
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { color, font, space, radius } from '@krishi-verse/ui-native';
+import { color, font, space, radius } from '@krishalaya/ui-native';
 import type { TrackingStep } from '../order-status';
 
 export function Timeline({ steps, labelFor }: { steps: TrackingStep[]; labelFor: (key: string) => string }) {

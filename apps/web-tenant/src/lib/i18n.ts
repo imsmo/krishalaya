@@ -1,10 +1,10 @@
 // apps/web-tenant/src/lib/i18n.ts · server-side i18n for the console. Resolves the active language from the
 // `kvt_lang` cookie (set by the locale switcher), falling back to the Accept-Language header, then the default —
-// and returns a @krishi-verse/i18n Translator pre-loaded with en/hi/gu. Server-only: the catalogs are tiny +
+// and returns a @krishalaya/i18n Translator pre-loaded with en/hi/gu. Server-only: the catalogs are tiny +
 // framework-free, so there is no client provider and no per-request bundle cost.
 import 'server-only';
 import { cookies, headers } from 'next/headers';
-import { Translator, resolveLanguage, DEFAULT_LANGUAGE, type LanguageDef } from '@krishi-verse/i18n';
+import { Translator, resolveLanguage, DEFAULT_LANGUAGE, type LanguageDef } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';

@@ -2,7 +2,7 @@
 // The gallery itself is fetched from the API's signed `listings/:id/media` endpoint (short-lived presigned GET
 // urls, clean assets only) — these helpers only shape what the presentational component renders. No fabrication:
 // if the API returns no items the component shows nothing (never a placeholder image).
-import type { GalleryItem } from '@krishi-verse/sdk-js';
+import type { GalleryItem } from '@krishalaya/sdk-js';
 
 /** True when there is at least one real, presigned image to show. */
 export function hasGallery(items: GalleryItem[] | null | undefined): boolean {

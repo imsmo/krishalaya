@@ -7,7 +7,7 @@
 // produces a genuinely locale-bearing, shareable/bookmarkable URL, not just a cookie side-effect; additive to
 // the existing cookie mechanism. `middleware.ts` honors this same param for a fresh visitor with no cookie yet.
 import { NextRequest, NextResponse } from 'next/server';
-import { isSupported, resolveLanguage } from '@krishi-verse/i18n';
+import { isSupported, resolveLanguage } from '@krishalaya/i18n';
 import { LANG_COOKIE } from '../../../lib/i18n';
 import { withUrlLang } from '../../../lib/locale-url';
 

@@ -2,7 +2,7 @@
 // erased) → unit-tested. The cart's authoritative subtotal + line totals come from the SERVER (prices recomputed
 // live); these helpers only derive UI state (item count, checkout blockers). Money is bigint minor-unit strings
 // (Law 2) — never summed as a float here (the server owns the subtotal).
-import type { CartItem, Cart, Address, CheckoutPreview } from '@krishi-verse/sdk-js';
+import type { CartItem, Cart, Address, CheckoutPreview } from '@krishalaya/sdk-js';
 
 /** Total distinct line items (for the cart-tab badge). */
 export function cartCount(cart: Cart | null): number {

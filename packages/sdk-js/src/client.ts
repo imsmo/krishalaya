@@ -1,4 +1,4 @@
-// @krishi-verse/sdk-js · the client facade. Compose once per request context (SSR: a fresh client with the
+// @krishalaya/sdk-js · the client facade. Compose once per request context (SSR: a fresh client with the
 // request's token; browser: one client reading the in-memory token). Resource clients hang off it.
 import { SdkConfig, resolveConfig } from './config';
 import { HttpClient, HttpMethod, RequestOptions, Envelope } from './http';
@@ -40,7 +40,7 @@ import { ParcelsResource } from './resources/parcels';
 import { PrivacyResource } from './resources/privacy';
 import { OnboardingResource } from './resources/onboarding';
 
-export class KrishiVerseClient {
+export class KrishalayaClient {
   private readonly http: HttpClient;
   readonly listings: ListingsResource;
   readonly catalogue: CatalogueResource;
@@ -149,4 +149,4 @@ export class KrishiVerseClient {
     return this.http.request<T>(method, path, opts);
   }
 }
-export function createClient(config: SdkConfig): KrishiVerseClient { return new KrishiVerseClient(config); }
+export function createClient(config: SdkConfig): KrishalayaClient { return new KrishalayaClient(config); }

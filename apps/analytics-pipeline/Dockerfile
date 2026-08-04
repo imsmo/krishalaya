@@ -6,7 +6,7 @@ RUN corepack enable
 COPY pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/analytics-pipeline ./apps/analytics-pipeline
-RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishi-verse/analytics-pipeline build
+RUN pnpm install --no-frozen-lockfile && pnpm --filter @krishalaya/analytics-pipeline build
 
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production

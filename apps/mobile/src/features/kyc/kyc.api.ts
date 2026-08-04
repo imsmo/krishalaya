@@ -2,7 +2,7 @@
 // catalogue (reads, degrade-never-die) and submits a new doc (idempotent). A submission references an uploaded
 // media id (the doc photo, via core/media) — raw doc numbers are NEVER sent (only an optional masked value). The
 // eKYC (Aadhaar/PAN provider) flow lives on the SDK too; review/verification is server/admin-only.
-import type { KycDocument, KycDocType, EkycStartResult, EkycVerifyResult, BusinessKycStatus, BusinessType } from '@krishi-verse/sdk-js';
+import type { KycDocument, KycDocType, EkycStartResult, EkycVerifyResult, BusinessKycStatus, BusinessType } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 

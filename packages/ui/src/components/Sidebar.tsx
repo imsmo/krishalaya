@@ -23,7 +23,7 @@
 //
 // WHITE-LABEL (Rule Zero): `brand.name`/`brand.mark`/`footer` are ALL caller-supplied, REQUIRED-or-slot
 // props — this file contains zero hardcoded tenant/platform name anywhere (grep-verified, see
-// dev17_report.md). The canon's own demo screens happen to show "Krishi Verse"/"Powered by Krishi Verse" as
+// dev17_report.md). The canon's own demo screens happen to show "Krishalaya"/"Powered by Krishalaya" as
 // CONTENT (a mock's own tenant choice, same as DEV-15's MoneyText ₹-mock-vs-code distinction) — this
 // component never bakes that content, it is 100% the `brand`/`footer` prop values.
 import * as React from 'react';
@@ -54,7 +54,7 @@ export interface SidebarNavSection {
 }
 
 export interface SidebarProps {
-  /** White-label brand slot (Rule Zero) — REQUIRED, no Krishi Verse fallback exists anywhere in this file. */
+  /** White-label brand slot (Rule Zero) — REQUIRED, no Krishalaya fallback exists anywhere in this file. */
   brand: { name: string; mark?: React.ReactNode };
   /** `.kvw-sidebar-tenant` slot, e.g. `<strong>Anand FPO</strong> Tenant Admin` — fully caller-composed. */
   tenant?: React.ReactNode;

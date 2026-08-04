@@ -2,7 +2,7 @@
 // 29). No React / no SDK I/O (SDK types are `import type` → erased) → unit-tested. These only shape/count what the
 // server already returned; the SERVER remains the authority on offers, confirmations, wages, and the wage floor.
 // Money stays as bigint minor-unit strings elsewhere (Law 2) — nothing here coerces a wage to a float.
-import type { LabourAssignment, LabourBooking, LabourLookups } from '@krishi-verse/sdk-js';
+import type { LabourAssignment, LabourBooking, LabourLookups } from '@krishalaya/sdk-js';
 
 /** Initials for the greeting avatar (design "SK"): the first letters of the first two name-words, uppercased
  * (≤2 chars). Falls back to the given char when the name is empty/blank. Pure. */
