@@ -5,7 +5,7 @@ so every module comes out consistent and correct. **One module per agent session
 
 ## The brief (paste this, fill the [BRACKETS])
 
-> You are implementing the **[MODULE]** module of Krishi-Verse, a multi-tenant
+> You are implementing the **[MODULE]** module of Krishalaya, a multi-tenant
 > agri-commerce platform. Before writing code:
 > 1. Read `/CLAUDE.md` — the 12 laws are non-negotiable constraints.
 > 2. Read `/apps/api/src/modules/listings/` IN FULL — it is the gold-standard

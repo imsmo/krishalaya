@@ -14,7 +14,7 @@
 --   • W391 (withdrawal): customer + masked bank details ("Bank of Baroda a/c XXXXXX••27", "Aadhaar
 --     XXXX-XXXX-••41"), amount requested, ₹10,000 per-transaction cap (NPCI/bank-set, not hardcoded here — a
 --     business rule that can change without a migration), up-to-3 finger-retry rule, "no OTP fallback", balance
---     before/after (bank-reported, informational only — the money itself never touches a Krishi Verse ledger).
+--     before/after (bank-reported, informational only — the money itself never touches a Krishalaya ledger).
 --   • W392 (exceptions log): every non-straight-through scan in order — device-not-RD-certified (BLOCKS, kiosk
 --     auto-switches to backup certified device), finger-fail×3 (money stays untouched, retry with a different
 --     finger, escalate to nearest bank mitra/branch), bank-server-down (auto-retried, money untouched).
@@ -24,7 +24,7 @@
 -- FK-TARGET VERIFICATION: the kiosk actor is an ambassador — `ambassador_profiles` (0013_growth_intelligence.sql,
 -- NOT partitioned, already carries `aeps_enabled boolean` — confirmed existing, no new column needed there).
 -- The AePS CUSTOMER (Jashoda Ben R. on W391) is a walk-in bank customer using HER OWN bank account via Aadhaar +
--- fingerprint — she may or may not already be a Krishi Verse platform `users` row (AePS doesn't require platform
+-- fingerprint — she may or may not already be a Krishalaya platform `users` row (AePS doesn't require platform
 -- registration, only an Aadhaar-linked bank account) — `customer_user_id` is therefore NULLABLE, mirroring
 -- `ambassador_visits.visited_user_id`'s own "NULL = prospect not yet onboarded" doctrine (0047_ambassador_visits_targets.sql).
 --
@@ -36,7 +36,7 @@
 --     `field_verifications.geotag`: full-precision storage, always-masked render, two different concerns).
 --   • `account_last4` — mirrors `bank_accounts.account_last4` (0003) — never a full account number.
 --   • The fingerprint itself is NEVER captured by this platform at all (W390's own doctrine banner: "Your
---     fingerprint travels encrypted from this device to your bank via NPCI/UIDAI — Krishi Verse never sees it,
+--     fingerprint travels encrypted from this device to your bank via NPCI/UIDAI — Krishalaya never sees it,
 --     never stores it, and could not replay it if it wanted to") — there is deliberately NO column for it, not
 --     even masked; this is an absence, not a masking exercise.
 --   • No OTP column either (AePS explicitly has "no OTP fallback" per canon) — nothing to mask there.
@@ -48,7 +48,7 @@
 -- `balance_after_minor` is bank-reported and informational ONLY — this table never becomes a second source of
 -- truth for the customer's actual bank balance, and (per the filed shape's own words) commission/settlement stays
 -- entirely on the bank's side, never touching `wallet_accounts`/`ledger_entries` — no ledger_txn_id correlation
--- column is added here (unlike kcc_drawl_ledger, 0069) because there genuinely is no Krishi Verse money movement
+-- column is added here (unlike kcc_drawl_ledger, 0069) because there genuinely is no Krishalaya money movement
 -- to correlate against; inventing one would misrepresent the doctrine this delta exists to encode.
 --
 -- RLS DECISION: TENANT-SCOPED, RLS ON via the idempotent pass below — every kiosk event happens under exactly one
@@ -81,7 +81,7 @@ CREATE TABLE aeps_service_events (
                                                  -- ambassador_visits.visited_user_id, 0047)
   service_kind        varchar(20) NOT NULL DEFAULT 'cash_withdrawal'
                       CHECK (service_kind IN ('cash_withdrawal','balance_enquiry','mini_statement')),
-  bank_name           varchar(120),             -- customer's OWN bank (e.g. 'Bank of Baroda') — never Krishi Verse's
+  bank_name           varchar(120),             -- customer's OWN bank (e.g. 'Bank of Baroda') — never Krishalaya's
   account_last4       varchar(4),               -- masked; mirrors bank_accounts.account_last4 (0003) — never the full account no
   aadhaar_last4       varchar(4),               -- masked; mirrors ekyc_sessions.last4 (0050) doctrine — NEVER raw Aadhaar,
                                                  -- NEVER any fingerprint material (Law 10)

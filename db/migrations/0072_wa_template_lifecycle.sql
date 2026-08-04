@@ -16,7 +16,7 @@
 --     literal 5-value enum, not an invented 6th value — same discipline as DEV-05's literal-filed-shape citing.
 --   • W427-tenant-whatsapp-templates.html — confirms the field vocabulary used below 1:1: a "Lifecycle" column
 --     rendering exactly these chips (submitted/rejected/paused/live) plus a separate "Quality" column
---     (high/medium/low, "the provider's verdict, display-only" — Krishi Verse never sets it, only WhatsApp's
+--     (high/medium/low, "the provider's verdict, display-only" — Krishalaya never sets it, only WhatsApp's
 --     webhook-ingestion path may write it) and its own banner: "Lifecycle chips below carry DELTA-052 treatment:
 --     only is_active exists on notification_templates today."
 --

@@ -137,7 +137,7 @@ CREATE TABLE tenant_status_events (                   -- lifecycle audit (pendin
 );
 CREATE INDEX idx_tse_tenant ON tenant_status_events(tenant_id, created_at);
 
--- ---------- subscriptions & SaaS billing (Krishi-Verse revenue stream #1)
+-- ---------- subscriptions & SaaS billing (Krishalaya revenue stream #1)
 CREATE TABLE subscriptions (
   id              uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
   tenant_id       uuid NOT NULL REFERENCES tenants(id),
