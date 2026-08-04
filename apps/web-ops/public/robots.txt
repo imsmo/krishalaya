@@ -1,0 +1,2 @@
+# robots — storefront indexable; tenant/admin panels noindex · [P1]
+User-agent: *
