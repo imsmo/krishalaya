@@ -46,9 +46,56 @@ export class CoursesResource {
   async archive(id: string): Promise<Course> {
     return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/archive`, {})).data;
   }
-  /** Author: add/replace one lesson (module/lesson number addressing; video/text via contentKind + mediaId/body). */
-  async addLesson(courseId: string, input: { moduleNo?: number; lessonNo: number; defaultTitle: string; contentKind: string; mediaId?: string | null; body?: string | null; durationSecs?: number | null }): Promise<CourseLesson> {
+  /** Author: add/replace one lesson (module/lesson number addressing; video/text via contentKind + mediaId/body;
+   *  `quiz` carries the canonical quiz JSON `{questions:[{q,options,answer,hint?}]}` — the shape the mobile
+   *  learner parser consumes). */
+  async addLesson(courseId: string, input: { moduleNo?: number; lessonNo: number; defaultTitle: string; contentKind: string; mediaId?: string | null; body?: string | null; durationSecs?: number | null; quiz?: unknown }): Promise<CourseLesson> {
     return (await this.http.request<CourseLesson>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons`, { body: input })).data;
+  }
+}
+
+/** PC-26b: live-session hosting (education.host) + external content channels. Server-gated by the `education`
+ *  flag; the studio only reflects legality. */
+export interface EduChannel { id: string; provider: string; title: string; handle: string | null; externalUrl: string; topicId: string | null; description: string | null; status: string; createdAt?: string; }
+export interface LiveSession { id: string; channelId: string; title: string; topicId: string | null; scheduledAt: string; status: string; startedAt?: string | null; endedAt?: string | null; createdAt?: string; }
+
+export class LiveStudioResource {
+  constructor(private readonly http: HttpClient) {}
+  /** Host: schedule a live session on one of your channels. */
+  async schedule(input: { channelId: string; title: string; topicId?: string | null; scheduledAt: string }): Promise<LiveSession> {
+    return (await this.http.request<LiveSession>('POST', 'education/live-sessions', { body: input })).data;
+  }
+  async list(params: { box?: 'upcoming' | 'mine' | 'all'; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<LiveSession>> {
+    const r = await this.http.request<LiveSession[]>('GET', 'education/live-sessions', { query: { box: params.box ?? 'upcoming', cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async get(id: string, signal?: AbortSignal): Promise<LiveSession> {
+    return (await this.http.request<LiveSession>('GET', `education/live-sessions/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  async start(id: string): Promise<LiveSession> {
+    return (await this.http.request<LiveSession>('POST', `education/live-sessions/${encodeURIComponent(id)}/start`, {})).data;
+  }
+  async end(id: string): Promise<LiveSession> {
+    return (await this.http.request<LiveSession>('POST', `education/live-sessions/${encodeURIComponent(id)}/end`, {})).data;
+  }
+  async cancel(id: string): Promise<LiveSession> {
+    return (await this.http.request<LiveSession>('POST', `education/live-sessions/${encodeURIComponent(id)}/cancel`, {})).data;
+  }
+  // --- channels (a host registers external content channels; moderation is admin-side) ---
+  async channels(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<EduChannel>> {
+    const r = await this.http.request<EduChannel[]>('GET', 'education/channels', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async registerChannel(input: { provider: string; title: string; handle?: string | null; externalUrl: string; topicId?: string | null; description?: string | null }): Promise<EduChannel> {
+    return (await this.http.request<EduChannel>('POST', 'education/channels', { body: input })).data;
+  }
+  // --- instructor self-profile ---
+  async myInstructor(signal?: AbortSignal): Promise<{ id: string; bio: string | null } | null> {
+    try { return (await this.http.request<{ id: string; bio: string | null }>('GET', 'education/instructors/me', { signal })).data; }
+    catch { return null; }
+  }
+  async upsertInstructor(input: { bio?: string | null }): Promise<{ id: string; bio: string | null }> {
+    return (await this.http.request<{ id: string; bio: string | null }>('PUT', 'education/instructors/me', { body: input })).data;
   }
 }
 

@@ -14,7 +14,7 @@ import { MediaUploader } from '../../components/MediaUploader';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { COURSE_LEVELS } from '../../features/studio/manage';
-import { createCourseAction } from './actions';
+import { createCourseAction, upsertInstructorAction } from './actions';
 import type { Course } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -23,9 +23,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('studio.title'), robots: { index: false, follow: false } };
 }
 
-const ERR = new Set(['title', 'level', 'price', 'create']);
+const ERR = new Set(['title', 'level', 'price', 'create', 'instructor']);
+const OK = new Set(['instructor']);
 
-export default async function StudioPage({ searchParams }: { searchParams: { cursor?: string; error?: string } }) {
+export default async function StudioPage({ searchParams }: { searchParams: { cursor?: string; ok?: string; error?: string } }) {
   await requireSession('/studio');
   const t = getTranslator();
   const lang = getLang();
@@ -36,7 +37,12 @@ export default async function StudioPage({ searchParams }: { searchParams: { cur
     items = p.items; nextCursor = p.nextCursor;
   } catch { failed = true; }
 
+  // PC-26b: instructor self-profile (GET degrades to null — the form still allows creating one).
+  let myBio: string | null = null;
+  try { myBio = (await tenantClient().liveStudio.myInstructor())?.bio ?? null; } catch { myBio = null; }
+
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
+  const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
 
   const uploaderLabels = {
     add: t.t('studio.coverAdd'), hint: t.t('studio.coverHint'), uploading: t.t('studio.uploading'),
@@ -45,8 +51,12 @@ export default async function StudioPage({ searchParams }: { searchParams: { cur
 
   return (
     <section>
-      <h1>{t.t('studio.title')}</h1>
+      <div className="kv-page-head">
+        <h1>{t.t('studio.title')}</h1>
+        <Link href="/studio/live" className="kv-btn--link">{t.t('studio.liveLink')} →</Link>
+      </div>
       <p className="kv-field__hint">{t.t('studio.hint')}</p>
+      {okKey && <p className="kv-success" role="status">{t.t(`studio.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`studio.error.${errKey}`)}</p>}
 
       {failed ? <p className="kv-error" role="alert">{t.t('studio.loadError')}</p> : (
@@ -87,6 +97,16 @@ export default async function StudioPage({ searchParams }: { searchParams: { cur
           <MediaUploader labels={uploaderLabels} fieldName="coverMediaId" single />
 
           <button type="submit" className="kv-btn">{t.t('studio.createBtn')}</button>
+        </form>
+      </details>
+
+      <details className="kv-card">
+        <summary className="kv-card__title">{t.t('studio.instructor')}</summary>
+        <p className="kv-field__hint">{t.t('studio.instructorHint')}</p>
+        <form action={upsertInstructorAction} className="kv-form">
+          <label htmlFor="ins-bio" className="kv-field__label">{t.t('studio.bio')}</label>
+          <textarea id="ins-bio" name="bio" className="kv-textarea" rows={3} maxLength={2000} defaultValue={myBio ?? ''} />
+          <button type="submit" className="kv-btn">{t.t('studio.bioSave')}</button>
         </form>
       </details>
     </section>

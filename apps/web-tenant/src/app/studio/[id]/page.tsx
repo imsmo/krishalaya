@@ -21,7 +21,7 @@ export function generateMetadata(): Metadata {
 }
 
 const OK = new Set(['created', 'submit', 'publish', 'resume', 'pause', 'archive', 'lesson']);
-const ERR = new Set(['action', 'illegal', 'lesson', 'lessonno', 'title', 'kind', 'content']);
+const ERR = new Set(['action', 'illegal', 'lesson', 'lessonno', 'title', 'kind', 'content', 'quiz_empty', 'quiz_question', 'quiz_options', 'quiz_answer']);
 
 export default async function StudioCoursePage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   await requireSession(`/studio/${params.id}`);
@@ -115,6 +115,10 @@ export default async function StudioCoursePage({ params, searchParams }: { param
           <MediaUploader labels={uploaderLabels} fieldName="lessonMediaId" single />
           <label htmlFor="l-body" className="kv-field__label">{t.t('studio.lessonBody')}</label>
           <textarea id="l-body" name="body" className="kv-textarea" rows={4} maxLength={20000} />
+          <label htmlFor="l-quiz" className="kv-field__label">{t.t('studio.quizText')}</label>
+          <textarea id="l-quiz" name="quizText" className="kv-textarea" rows={6} maxLength={20000}
+            placeholder={'Q: …\nA) …\n*B) …  ← *\nH: …'} />
+          <p className="kv-field__hint">{t.t('studio.quizHint')}</p>
           <p className="kv-field__hint">{t.t('studio.lessonContentHint')}</p>
           <button type="submit" className="kv-btn">{t.t('studio.addLessonBtn')}</button>
         </form>

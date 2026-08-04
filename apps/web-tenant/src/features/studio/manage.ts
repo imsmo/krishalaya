@@ -4,8 +4,10 @@
 // on every call (reflect, never grant). Money parsed float-free. No IO → unit-tested.
 import { parseMajorToMinor } from '../listings/form';
 
+import { parseQuizText } from './quiz';
+
 export const COURSE_LEVELS = ['basic', 'intermediate', 'advanced'] as const;
-export const CONTENT_KINDS = ['video', 'pdf', 'article', 'audio'] as const; // quiz/live authored elsewhere (see page note)
+export const CONTENT_KINDS = ['video', 'pdf', 'article', 'audio', 'quiz'] as const; // PC-26b: quiz authoring live
 
 export function canSubmit(status: string | undefined | null): boolean { return status === 'draft'; }
 export function canPublish(status: string | undefined | null): boolean { return status === 'review'; }
@@ -29,11 +31,12 @@ export function buildCourse(raw: { title: string; level: string; priceMajor: str
 }
 
 export type LessonResult =
-  | { ok: true; value: { moduleNo: number; lessonNo: number; defaultTitle: string; contentKind: string; mediaId?: string; body?: string } }
-  | { ok: false; error: 'lessonno' | 'title' | 'kind' | 'content' };
+  | { ok: true; value: { moduleNo: number; lessonNo: number; defaultTitle: string; contentKind: string; mediaId?: string; body?: string; quiz?: { questions: unknown[] } } }
+  | { ok: false; error: 'lessonno' | 'title' | 'kind' | 'content' | 'quiz_empty' | 'quiz_question' | 'quiz_options' | 'quiz_answer' };
 
-/** video/pdf/audio need an uploaded mediaId; article needs body text. Never both empty (no hollow lessons). */
-export function buildLesson(raw: { moduleNo: string; lessonNo: string; title: string; contentKind: string; mediaId: string; body: string }): LessonResult {
+/** video/pdf/audio need an uploaded mediaId; article needs body text; quiz needs a parseable quiz (PC-26b).
+ *  Never a hollow lesson. */
+export function buildLesson(raw: { moduleNo: string; lessonNo: string; title: string; contentKind: string; mediaId: string; body: string; quizText?: string }): LessonResult {
   const moduleNo = Number.parseInt(raw.moduleNo || '1', 10);
   const lessonNo = Number.parseInt(raw.lessonNo, 10);
   if (!Number.isInteger(moduleNo) || moduleNo < 1 || moduleNo > 999) return { ok: false, error: 'lessonno' };
@@ -43,6 +46,11 @@ export function buildLesson(raw: { moduleNo: string; lessonNo: string; title: st
   if (!(CONTENT_KINDS as readonly string[]).includes(raw.contentKind)) return { ok: false, error: 'kind' };
   const mediaId = raw.mediaId.trim();
   const body = raw.body.trim();
+  if (raw.contentKind === 'quiz') {
+    const parsed = parseQuizText(raw.quizText ?? '');
+    if (!parsed.ok) return { ok: false, error: `quiz_${parsed.error}` as 'quiz_empty' };
+    return { ok: true, value: { moduleNo, lessonNo, defaultTitle, contentKind: 'quiz', quiz: parsed.value } };
+  }
   if (raw.contentKind === 'article') {
     if (!body || body.length > 20000) return { ok: false, error: 'content' };
     return { ok: true, value: { moduleNo, lessonNo, defaultTitle, contentKind: raw.contentKind, body } };

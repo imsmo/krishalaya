@@ -31,7 +31,7 @@ import { ConversationsResource, MaskedCallsResource } from './resources/messagin
 import { AuctionsResource } from './resources/auctions';
 import { LabourResource } from './resources/labour';
 import { AmbassadorsResource } from './resources/ambassadors';
-import { CoursesResource, EnrollmentsResource, ResourcesResource } from './resources/education';
+import { CoursesResource, EnrollmentsResource, ResourcesResource, LiveStudioResource } from './resources/education';
 import { MarketResource, WeatherResource } from './resources/market';
 import { AssistantResource } from './resources/assistant';
 import { SchemesResource } from './resources/schemes';
@@ -70,6 +70,7 @@ export class KrishalayaClient {
   readonly ambassadors: AmbassadorsResource;
   readonly courses: CoursesResource;
   readonly enrollments: EnrollmentsResource;
+  readonly liveStudio: LiveStudioResource;
   readonly tenancy: TenancyResource;
   readonly dairy: DairyResource;
   readonly groupLots: GroupLotsResource;
@@ -122,6 +123,7 @@ export class KrishalayaClient {
     this.ambassadors = new AmbassadorsResource(this.http);
     this.courses = new CoursesResource(this.http);
     this.enrollments = new EnrollmentsResource(this.http);
+    this.liveStudio = new LiveStudioResource(this.http);
     this.tenancy = new TenancyResource(this.http);
     this.dairy = new DairyResource(this.http);
     this.groupLots = new GroupLotsResource(this.http);
