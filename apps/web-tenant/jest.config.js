@@ -6,7 +6,9 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   rootDir: 'src',
-  testMatch: ['<rootDir>/test/**/*.spec.ts'],
+  // PC-23 fix: the vertical-operator waves added co-located `features/**/*.test.ts` specs (dairy/labour/
+  // ambassadors/group-lots/ai-review/audit) which the original pattern silently never ran. Both patterns now run.
+  testMatch: ['<rootDir>/test/**/*.spec.ts', '<rootDir>/features/**/*.test.ts'],
   transform: {
     '^.+\\.ts$': ['ts-jest', { isolatedModules: true, tsconfig: { module: 'commonjs', moduleResolution: 'node', esModuleInterop: true, skipLibCheck: true, strict: true, jsx: 'preserve' } }],
   },
