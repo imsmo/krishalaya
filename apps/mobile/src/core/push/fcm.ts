@@ -2,10 +2,10 @@
 // obtain the Expo push token (FCM under the hood on Android), and set the Android notification channel. The token
 // is then synced to the server so it can target this device.
 //
-// FLAGGED BACKEND GAP: there is no device-token registration endpoint yet (the `communication` module has the
-// push SENDER but no client token-sync route). So `syncPushToken` posts to the assumed `notifications/devices`
-// endpoint and DEGRADES silently if it's missing — until that endpoint lands, the server can't target this
-// device. We never fake success and never log the token.
+// FLAG CLOSED (PC-21, 2026-08-04): the `notifications/devices` POST/DELETE routes now exist in the api
+// (communication devices.controller) + sdk-js (notifications.registerDevice/revokeDevice). syncPushToken keeps
+// its degrade-on-failure shape (offline-first, Law 12) and now also remembers the last synced token so
+// revokePushToken() can un-target this device on sign-out (privacy). We never fake success and never log the token.
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
@@ -39,11 +39,27 @@ export async function registerForPush(): Promise<string | null> {
   }
 }
 
-/** Best-effort token sync. No-ops on any failure (incl. the endpoint not existing yet). Never logs the token. */
+let lastSyncedToken: string | null = null;
+
+/** Best-effort token sync. No-ops on any failure (offline etc.). Never logs the token. */
 export async function syncPushToken(token: string): Promise<void> {
   try {
     await apiClient().request('POST', 'notifications/devices', { body: { platform: Platform.OS, token } });
+    lastSyncedToken = token;
   } catch {
-    /* endpoint not available yet / offline — degrade; the sync engine could retry once a route exists */
+    /* offline / transient — degrade; next start() re-syncs (registration is idempotent server-side) */
+  }
+}
+
+/** Best-effort token revoke on sign-out — the server must stop targeting a signed-out device (privacy).
+ *  Called while the session token is still attached; degrades silently (idempotent server-side). */
+export async function revokePushToken(): Promise<void> {
+  const token = lastSyncedToken;
+  if (!token) return;
+  lastSyncedToken = null;
+  try {
+    await apiClient().request('DELETE', 'notifications/devices', { body: { token } });
+  } catch {
+    /* offline — degrade; the token also dies naturally when the push provider rotates it */
   }
 }

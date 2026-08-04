@@ -20,6 +20,7 @@ import { createRefreshExecutor } from './refresh-executor';
 import { apiClient, anonClient, registerAccessTokenGetter, registerRefreshExecutor } from '../api/client';
 import { setCacheScope, clearCacheScope } from '../offline/scope';
 import { setCrashUser, track, EVENTS } from '../observability';
+import { revokePushToken } from '../push/fcm';
 import { i18n } from '../i18n/i18n';
 import { config } from '../config';
 
@@ -121,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SIGNED_IN', tokens, nowMs: now });
     },
     async signOut() {
+      await revokePushToken();        // un-target this device BEFORE the session dies (privacy, PC-21; degrades)
       await tokenStore.clearTokens();
       await clearCacheScope();        // wipe this user's cached reads so the next user can't see them
       setCrashUser(null);             // clear the crash user context (no PII lingers)
