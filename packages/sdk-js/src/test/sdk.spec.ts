@@ -147,6 +147,16 @@ describe('HttpClient via resources', () => {
     expect(d.resolutionAmountMinor).toBe('50000');
   });
 
+  it('disputes.raise POSTs with Idempotency-Key + reason enum', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd9', orderId: 'o1', raisedBy: 'b1', againstUser: 's1', reasonId: null, description: 'late by 3 days', status: 'open', sellerRespondBy: null, resolutionType: null, resolutionAmountMinor: null, resolvedBy: null, resolvedAt: null, slaDueAt: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const d = await c.disputes.raise({ orderId: 'o1', reasonCode: 'late', description: 'late by 3 days' }, 'idem-1');
+    expect(calls[0].url).toBe('https://api.test/v1/disputes');
+    expect((calls[0].init?.headers as Record<string, string>)['idempotency-key']).toBe('idem-1');
+    expect(JSON.parse(String(calls[0].init?.body)).reasonCode).toBe('late');
+    expect(d.status).toBe('open');
+  });
+
   it('disputes.respond POSTs the party respond transition (no body)', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd1', orderId: 'o1', raisedBy: 'r', againstUser: 's', reasonId: null, description: null, status: 'seller_responded', sellerRespondBy: null, resolutionType: null, resolutionAmountMinor: null, resolvedBy: null, resolvedAt: null, slaDueAt: null } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

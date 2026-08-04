@@ -72,6 +72,11 @@ export class DisputesResource {
     const r = await this.http.request<DisputeMessage[]>('GET', `disputes/${encodeURIComponent(id)}/messages`, { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
+  /** BUYER action (PC-24b): raise a dispute against an order (needs dispute.raise; eligibility — own order,
+   * legal window — enforced in the service). Idempotency-Key required (Law 3). reasonCode is the server enum. */
+  async raise(input: { orderId: string; reasonCode: string; description?: string }, idempotencyKey: string): Promise<Dispute> {
+    return (await this.http.request<Dispute>('POST', 'disputes', { idempotencyKey, body: input })).data;
+  }
   /** PARTY action (PC-22): the respondent marks the dispute responded (seller_responded transition, 48h window).
    * The server enforces WHO may respond (assertParty) — a non-party gets 403, never client-guessed. */
   async respond(id: string): Promise<Dispute> {

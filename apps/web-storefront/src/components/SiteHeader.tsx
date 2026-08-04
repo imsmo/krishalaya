@@ -36,6 +36,7 @@ export async function SiteHeader() {
           {signedIn && <Link href="/offers" className="kv-header__link">{t.t('nav.offers')}</Link>}
           {signedIn && <Link href="/messages" className="kv-header__link">{t.t('nav.messages')}</Link>}
           {signedIn && <Link href="/notifications" className="kv-header__link">{t.t('nav.notifications')}</Link>}
+          {signedIn && <Link href="/account" className="kv-header__link">{t.t('nav.account')}</Link>}
           <Link href="/cart" className="kv-header__cart" aria-label={t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}
           </Link>

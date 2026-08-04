@@ -20,13 +20,18 @@ import { getTranslator, getLang } from '../../../lib/i18n';
 import { OrderTimeline } from '../../../components/OrderTimeline';
 import { orderTimeline, ORDER_STEPS } from '../../../features/orders/timeline';
 import { invoiceFileName } from '../../../features/orders/invoice';
+import { canCancelOrder, DISPUTE_REASONS } from '../../../features/orders/buyer-actions';
+import { cancelOrderAction, raiseDisputeAction } from './actions';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const t = getTranslator();
   return { title: t.t('order.detailTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function OrderDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { status?: string } }) {
+const BUYER_OK = new Set(['cancelled', 'dispute']);
+const BUYER_ERR = new Set(['cancel', 'cancel_illegal', 'dispute', 'dispute_reason', 'dispute_description', 'dispute_dup']);
+
+export default async function OrderDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { status?: string; ok?: string; error?: string } }) {
   await requireSession(`/orders/${encodeURIComponent(params.id)}`);
   const t = getTranslator();
   const lang = getLang();
@@ -57,6 +62,8 @@ export default async function OrderDetailPage({ params, searchParams }: { params
       <h1>{t.t('order.orderNo', { no: order.orderNo })}</h1>
 
       {searchParams.status === 'reviewed' && <p className="kv-form__notice" role="status">{t.t('review.thanks')}</p>}
+      {searchParams.ok && BUYER_OK.has(searchParams.ok) && <p className="kv-form__notice" role="status">{t.t(`order.ok.${searchParams.ok}`)}</p>}
+      {searchParams.error && BUYER_ERR.has(searchParams.error) && <p className="kv-form__error" role="alert">{t.t(`order.error.${searchParams.error}`)}</p>}
 
       <OrderTimeline status={order.status} />
 
@@ -109,8 +116,31 @@ export default async function OrderDetailPage({ params, searchParams }: { params
 
       <div className="kv-cart__actions">
         {isComplete && <Link href={`/orders/${encodeURIComponent(order.id)}/review`} className="kv-btn">{t.t('review.writeCta')}</Link>}
+        {canCancelOrder(order.status) && (
+          <form action={cancelOrderAction} className="kv-inline-form">
+            <input type="hidden" name="id" value={order.id} />
+            <button type="submit" className="kv-btn kv-btn--muted">{t.t('order.cancelBtn')}</button>
+          </form>
+        )}
         <Link href="/orders" className="kv-btn--link">{t.t('order.backToList')}</Link>
       </div>
+
+      {/* PC-24b: report a problem → disputes.raise (server enforces eligibility + one-per-order). */}
+      <details className="kv-form__card">
+        <summary>{t.t('order.reportProblem')}</summary>
+        <form action={raiseDisputeAction} className="kv-form">
+          <input type="hidden" name="id" value={order.id} />
+          <label htmlFor="d-reason" className="kv-form__label">{t.t('order.disputeReason')}</label>
+          <select id="d-reason" name="reasonCode" className="kv-field__input" defaultValue="" required>
+            <option value="" disabled>{t.t('order.disputeReasonChoose')}</option>
+            {DISPUTE_REASONS.map((r) => <option key={r} value={r}>{t.t(`order.disputeReason.${r}`)}</option>)}
+          </select>
+          <label htmlFor="d-desc" className="kv-form__label">{t.t('order.disputeDesc')}</label>
+          <textarea id="d-desc" name="description" className="kv-field__input" rows={3} maxLength={4000} />
+          <p className="kv-detail__muted">{t.t('order.disputeHint')}</p>
+          <button type="submit" className="kv-btn">{t.t('order.disputeBtn')}</button>
+        </form>
+      </details>
     </section>
   );
 }
