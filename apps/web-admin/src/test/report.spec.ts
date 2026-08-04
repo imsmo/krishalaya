@@ -25,7 +25,9 @@ describe('buildReportQuery', () => {
   });
   it('normalises valid ISO from/to and drops invalid ones', () => {
     const r = buildReportQuery({ from: '2026-01-01T00:00', to: 'nope' });
-    expect(r.from).toMatch(/^2026-01-01T/);
+    // TZ-independent (PC-29 fix: the old /^2026-01-01T/ assertion only passed with TZ=UTC — datetime-local
+    // inputs parse as LOCAL time, so the ISO date can differ): compare instants, not string prefixes.
+    expect(new Date(r.from as string).getTime()).toBe(new Date('2026-01-01T00:00').getTime());
     expect(r.to).toBeUndefined();
   });
 });

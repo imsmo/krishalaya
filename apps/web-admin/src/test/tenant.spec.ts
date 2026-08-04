@@ -44,7 +44,8 @@ describe('buildLimitOverride (float-free, mirrors zod DTO)', () => {
   it('accepts -1 (unlimited) and an ISO expiry', () => {
     const r = buildLimitOverride({ limitCode: 'max_users', limitValue: '-1', reason: 'enterprise', expiresAt: '2026-12-31T00:00' });
     expect(r.ok).toBe(true);
-    if (r.ok) { expect(r.value.limitValue).toBe('-1'); expect(r.value.expiresAt).toMatch(/^2026-12-31T/); }
+    // TZ-independent (PC-29 fix — same local-midnight ISO issue as report.spec):
+    if (r.ok) { expect(r.value.limitValue).toBe('-1'); expect(new Date(r.value.expiresAt as string).getTime()).toBe(new Date('2026-12-31T00:00').getTime()); }
   });
   it('rejects a bad code / float value / short reason / bad expiry', () => {
     expect(buildLimitOverride({ limitCode: 'BAD CODE', limitValue: '5', reason: 'ok x' })).toEqual({ ok: false, error: 'limitCode' });
