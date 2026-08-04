@@ -83,7 +83,7 @@ ALTER TABLE tenant_languages ADD CONSTRAINT fk_tl_tenant FOREIGN KEY (tenant_id)
 CREATE TABLE tenant_domains (                         -- subdomain + custom domains (PRD §5.1)
   id          uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
   tenant_id   uuid NOT NULL REFERENCES tenants(id),
-  domain      varchar(255) UNIQUE NOT NULL,           -- 'mybrand.krishalaya.com' | 'mandi.gov.in'
+  domain      varchar(255) UNIQUE NOT NULL,           -- 'mybrand.krishi-verse.com' | 'mandi.gov.in'
   is_primary  boolean NOT NULL DEFAULT false,
   tls_status  varchar(20) NOT NULL DEFAULT 'pending',
   verified_at timestamptz
@@ -137,7 +137,7 @@ CREATE TABLE tenant_status_events (                   -- lifecycle audit (pendin
 );
 CREATE INDEX idx_tse_tenant ON tenant_status_events(tenant_id, created_at);
 
--- ---------- subscriptions & SaaS billing (Krishalaya revenue stream #1)
+-- ---------- subscriptions & SaaS billing (Krishi-Verse revenue stream #1)
 CREATE TABLE subscriptions (
   id              uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
   tenant_id       uuid NOT NULL REFERENCES tenants(id),

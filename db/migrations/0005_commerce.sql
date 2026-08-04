@@ -262,7 +262,7 @@ CREATE TABLE orders (
   discount_minor  bigint NOT NULL DEFAULT 0,
   tax_minor       bigint NOT NULL DEFAULT 0,
   commission_minor bigint NOT NULL DEFAULT 0,         -- tenant commission (rule snapshot below)
-  platform_fee_minor bigint NOT NULL DEFAULT 0,       -- Krishalaya override share
+  platform_fee_minor bigint NOT NULL DEFAULT 0,       -- Krishi-Verse override share
   tds_minor       bigint NOT NULL DEFAULT 0,
   total_minor     bigint NOT NULL,
   commission_rule_snapshot jsonb,                     -- exact rule applied (auditable forever)
