@@ -5,10 +5,11 @@
 // edits carry the listing's version; a conflict degrades to a "reload" message. All copy via i18n; money via
 // formatMoneyMinor; noindex.
 //
-// SDK-GAP (flagged, not faked): a paid visibility BOOST needs a boost-tier lookup + a wallet-captured paymentTxnId,
-// neither of which the seller-facing SDK exposes (listings.startBoost takes a boostTierId + paymentTxnId it can't
-// source here). Mobile deferred its boost screen for the same reason. We therefore omit the boost control and note
-// it as unavailable rather than ship a placeholder. Unblocked when sdk-js adds boost-tier + boost-payment methods.
+// BOOST (PC-21b, 2026-08-04 — former SDK-gap flag CLOSED): the SDK now exposes listings.boostTiers() (server
+// catalogue with authoritative prices) and listings.payBoostFromWallet(id, tierId, idemKey) — the server resolves
+// the price and debits the wallet zero-sum, fail-closed. The control shows only for a published, not-yet-boosted
+// listing (features/listings/boost.canBoost); if the tier catalogue read fails or the boost flag is off server-side,
+// the section degrades to nothing — never a faked control.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -18,8 +19,9 @@ import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { minorToMajor } from '../../../features/listings/form';
 import { canPublish, canChangePrice } from '../../../features/listings/manage';
-import { publishListingAction, changePriceAction } from './actions';
-import type { ListingCard } from '@krishalaya/sdk-js';
+import { canBoost } from '../../../features/listings/boost';
+import { publishListingAction, changePriceAction, boostListingAction } from './actions';
+import type { ListingCard, BoostTier } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +29,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('listingManage.title'), robots: { index: false, follow: false } };
 }
 
-const ERROR_KEYS = new Set(['publish', 'price', 'conflict', 'failed']);
-const OK_KEYS = new Set(['published', 'price']);
+const ERROR_KEYS = new Set(['publish', 'price', 'conflict', 'failed', 'boost', 'boostfunds', 'boostfrozen', 'boosttier']);
+const OK_KEYS = new Set(['published', 'price', 'boosted']);
 
 export default async function ListingDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string; ok?: string } }) {
   await requireSession(`/listings/${params.id}`);
@@ -40,6 +42,12 @@ export default async function ListingDetailPage({ params, searchParams }: { para
   catch { notFound(); }
 
   const status = listing.status ?? 'draft';
+
+  // Boost tiers: loaded only when the control could show; a failed read (or boost flag off) degrades to no section.
+  let tiers: BoostTier[] = [];
+  if (canBoost(status, listing.boosted)) {
+    try { tiers = await tenantClient().listings.boostTiers(); } catch { tiers = []; }
+  }
   const errorKey = searchParams.error && ERROR_KEYS.has(searchParams.error) ? searchParams.error : null;
   const okKey = searchParams.ok && OK_KEYS.has(searchParams.ok) ? searchParams.ok : null;
 
@@ -86,7 +94,28 @@ export default async function ListingDetailPage({ params, searchParams }: { para
         </form>
       )}
 
-      <p className="kv-field__hint kv-note">{t.t('listingManage.boostUnavailable')}</p>
+      {tiers.length > 0 && (
+        <form action={boostListingAction} className="kv-form kv-card">
+          <h2 className="kv-card__title">{t.t('listingManage.boostHeading')}</h2>
+          <p className="kv-field__hint">{t.t('listingManage.boostHint')}</p>
+          <fieldset className="kv-fieldset">
+            <legend className="kv-field__label">{t.t('listingManage.boostTier')}</legend>
+            {tiers.map((tier, i) => (
+              <label key={tier.id} className="kv-radio">
+                <input type="radio" name="boostTierId" value={tier.id} defaultChecked={i === 0} required />
+                <span>{t.t('listingManage.boostTierLabel', {
+                  name: tier.name,
+                  price: formatMoneyMinor(tier.priceMinor, listing.currencyCode, lang),
+                  days: String(tier.days),
+                })}</span>
+              </label>
+            ))}
+          </fieldset>
+          <input type="hidden" name="id" value={listing.id} />
+          <p className="kv-field__hint">{t.t('listingManage.boostWalletNote')}</p>
+          <button type="submit" className="kv-btn">{t.t('listingManage.boostBtn')}</button>
+        </form>
+      )}
     </section>
   );
 }

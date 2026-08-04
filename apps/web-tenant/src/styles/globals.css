@@ -170,5 +170,7 @@ details.kv-card > summary { cursor: pointer; }
 .kv-disclosure > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .kv-fieldset { border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
 .kv-fieldset > legend { font-size: 13px; color: var(--kv-neutral-500, #737373); padding: 0 4px; }
+.kv-radio { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+.kv-radio input[type='radio'] { accent-color: var(--kv-green-700, #15803d); width: 16px; height: 16px; }
 .kv-btn--sm { padding: 4px 10px; font-size: 13px; min-height: 32px; }
 .kv-fine { font-size: 12px; }

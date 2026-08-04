@@ -7,12 +7,14 @@
 //     version comes from the rendered listing; if it changed underneath us the API rejects and we surface a
 //     "reload, it changed" conflict message (never silently overwrite). Money is parsed float-free (Law 2).
 // 'use server' modules export ONLY async functions — validation/types live in features/listings/{form,manage}.ts.
+import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { parseMajorToMinor } from '../../../features/listings/form';
 import { priceErrorKey } from '../../../features/listings/manage';
+import { boostErrorKey } from '../../../features/listings/boost';
 import { SdkError } from '@krishalaya/sdk-js';
 
 export async function publishListingAction(formData: FormData): Promise<void> {
@@ -47,4 +49,24 @@ export async function changePriceAction(formData: FormData): Promise<void> {
   revalidatePath(`/listings/${id}`);
   revalidatePath('/listings');
   redirect(`/listings/${encodeURIComponent(id)}?ok=price`);
+}
+
+// PC-21b (2026-08-04): pay for a visibility boost straight from the wallet. The client sends ONLY the tier id —
+// the server resolves the tier's authoritative price and moves money zero-sum (buyer wallet → platform fees),
+// fail-closed on insufficient balance / frozen account. Idempotency-Key (Law 3) so a double-submit can't double-pay.
+export async function boostListingAction(formData: FormData): Promise<void> {
+  await requireSession('/listings');
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/listings');
+  const boostTierId = String(formData.get('boostTierId') ?? '').trim();
+  if (!boostTierId) redirect(`/listings/${encodeURIComponent(id)}?error=boosttier`);
+  try {
+    await tenantClient().listings.payBoostFromWallet(id, boostTierId, randomUUID());
+  } catch (e) {
+    const reason = boostErrorKey(e instanceof SdkError ? e.code : undefined);
+    redirect(`/listings/${encodeURIComponent(id)}?error=${reason}`);
+  }
+  revalidatePath(`/listings/${id}`);
+  revalidatePath('/listings');
+  redirect(`/listings/${encodeURIComponent(id)}?ok=boosted`);
 }
