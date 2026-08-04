@@ -35,6 +35,11 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       per period → preview[dispute window]→approve→pay idempotent run, only the legal step shows), active rate
       charts. Canon rows pos-shift/slip/quality/exceptions/bmc/rate-chart/payout-run all BUILT (bmc = the MCC
       registry lives in tenant /dairy; ops POS records against memberships).
-- [ ] **OW-5 · assisted money (3 rows)** — fintech AePS receipt + withdrawal (provider-wired at S2).
+- [x] **OW-5 · assisted money (3 rows)** ✅ 2026-08-05 — DISPOSITIONED, no code (Ledger Appendix 3): AePS is an
+      AMBASSADOR service (profiles.aeps_enabled); the aeps_service_events TABLE exists (0071, RLS-proven) but has
+      NO endpoints — and by design it is a LOG only (money moves BANK-side via NPCI, never our ledger). → PC-54
+      `aeps-service-events` (controller over the existing table + device/provider wiring at S2). Canon rules
+      preserved in the appendix (₹10k bank-set cap, 3-finger retry, no OTP fallback, W392 exceptions taxonomy)
+      so the future wave builds exactly to spec. Dashboard keeps 'money' honestly as coming.
 - [ ] **OW-6 · insights (2 rows)** — analytics reads.
 - [ ] **OW-7 · GATED** — IoT device fleet + ops alerting (PC-54 modules first).
