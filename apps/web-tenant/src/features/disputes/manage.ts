@@ -25,6 +25,26 @@ export function canReview(status: string | undefined | null): boolean { return c
 export function canEscalate(status: string | undefined | null): boolean { return canTransition(status ?? '', 'escalated'); }
 export function canResolve(status: string | undefined | null): boolean { return canTransition(status ?? '', 'resolved'); }
 
+/** PC-22: the RESPONDENT's respond action is legal only from 'open' (mirrors dispute.state sellerRespond) and
+ *  only for the against-party — the caller's id must match dispute.againstUser (the API re-asserts the party). */
+export function canRespond(status: string | undefined | null, againstUser: string | null | undefined, meId: string | null | undefined): boolean {
+  return canTransition(status ?? '', 'seller_responded') && !!meId && !!againstUser && meId === againstUser;
+}
+
+/** Derive a thread author's role for display (this contract carries ids, not names — PII-minimal by design). */
+export function messageAuthorRole(authorUserId: string, dispute: { raisedBy: string; againstUser: string | null }): 'complainant' | 'respondent' | 'moderator' {
+  if (authorUserId === dispute.raisedBy) return 'complainant';
+  if (dispute.againstUser && authorUserId === dispute.againstUser) return 'respondent';
+  return 'moderator';
+}
+
+/** Validate one thread message (server re-validates ≤4000). */
+export function buildDisputeMessage(raw: string): { ok: true; value: string } | { ok: false; error: 'message' } {
+  const body = raw.trim();
+  if (!body || body.length > 4000) return { ok: false, error: 'message' };
+  return { ok: true, value: body };
+}
+
 export const RESOLUTION_TYPES = ['refund_full', 'refund_partial', 'replacement', 'rejected'] as const;
 export type ResolutionType = (typeof RESOLUTION_TYPES)[number];
 

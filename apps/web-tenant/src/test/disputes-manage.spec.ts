@@ -32,3 +32,28 @@ describe('buildResolve', () => {
     expect(buildResolve({})).toEqual({ ok: false, error: 'type' });
   });
 });
+
+describe('PC-22 party respond + thread helpers', () => {
+  const { canRespond, messageAuthorRole, buildDisputeMessage } = require('../features/disputes/manage');
+  const d = { raisedBy: 'buyer1', againstUser: 'seller1' };
+
+  it('canRespond only from open, only for the against-party', () => {
+    expect(canRespond('open', 'seller1', 'seller1')).toBe(true);
+    expect(canRespond('open', 'seller1', 'buyer1')).toBe(false);
+    expect(canRespond('under_review', 'seller1', 'seller1')).toBe(false);
+    expect(canRespond('open', null, 'seller1')).toBe(false);
+    expect(canRespond('open', 'seller1', null)).toBe(false);
+  });
+
+  it('messageAuthorRole derives complainant/respondent/moderator', () => {
+    expect(messageAuthorRole('buyer1', d)).toBe('complainant');
+    expect(messageAuthorRole('seller1', d)).toBe('respondent');
+    expect(messageAuthorRole('staff9', d)).toBe('moderator');
+  });
+
+  it('buildDisputeMessage trims, requires content, caps 4000', () => {
+    expect(buildDisputeMessage('  evidence  ')).toEqual({ ok: true, value: 'evidence' });
+    expect(buildDisputeMessage('   ')).toEqual({ ok: false, error: 'message' });
+    expect(buildDisputeMessage('x'.repeat(4001))).toEqual({ ok: false, error: 'message' });
+  });
+});

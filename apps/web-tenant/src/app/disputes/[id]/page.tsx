@@ -4,9 +4,11 @@
 // unit-tested): take-under-review / escalate / resolve (with a decision + optional amount). Money via
 // formatMoneyMinor; all copy via i18n; noindex.
 //
-// SDK note (flagged, not faked): the SDK's DisputesResource exposes review/escalate/resolve but NO seller-side
-// "respond" method (the seller_responded transition). So we offer the moderation actions only and don't fake a
-// respond form. Unblocked when the SDK adds a dispute-respond method.
+// PC-22 (2026-08-04 — former SDK-gap flag CLOSED): the SDK now exposes disputes.respond() (party-only
+// seller_responded transition, server-asserted) + disputes.postMessage()/messages() (append-only evidence
+// thread). The respond button shows only when the CALLER is the against-party AND the transition is legal
+// (features/disputes/manage.canRespond — reflect, never grant; the API re-asserts the party on every call).
+// The thread renders with derived roles (complainant/respondent/moderator — ids only, PII-minimal contract).
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -14,9 +16,9 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import { canReview, canEscalate, canResolve, RESOLUTION_TYPES } from '../../../features/disputes/manage';
-import { reviewDisputeAction, escalateDisputeAction, resolveDisputeAction } from '../actions';
-import type { Dispute } from '@krishalaya/sdk-js';
+import { canReview, canEscalate, canResolve, canRespond, messageAuthorRole, RESOLUTION_TYPES } from '../../../features/disputes/manage';
+import { reviewDisputeAction, escalateDisputeAction, resolveDisputeAction, respondDisputeAction, postDisputeMessageAction } from '../actions';
+import type { Dispute, DisputeMessage } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +26,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('disputeDetail.title'), robots: { index: false, follow: false } };
 }
 
-const ERR = new Set(['review', 'escalate', 'resolve', 'type', 'amount', 'illegal']);
-const OK = new Set(['review', 'escalate', 'resolve']);
+const ERR = new Set(['review', 'escalate', 'resolve', 'type', 'amount', 'illegal', 'respond', 'message', 'notparty']);
+const OK = new Set(['review', 'escalate', 'resolve', 'respond', 'message']);
 
 export default async function DisputeDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   await requireSession(`/disputes/${params.id}`);
@@ -35,6 +37,13 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
   let dispute: Dispute;
   try { dispute = await tenantClient().disputes.get(params.id); }
   catch { notFound(); }
+
+  // Caller identity (for the party-only respond gate) + thread — each degrades independently (Law 12).
+  let meId: string | null = null;
+  try { meId = (await tenantClient().auth.me()).id; } catch { meId = null; }
+  let thread: DisputeMessage[] = []; let threadFailed = false;
+  try { thread = (await tenantClient().disputes.messages(params.id, { limit: 50 })).items; }
+  catch { threadFailed = true; }
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errorKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
@@ -96,7 +105,39 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
         </form>
       )}
 
-      <p className="kv-field__hint kv-note">{t.t('disputeDetail.respondUnavailable')}</p>
+      {canRespond(dispute.status, dispute.againstUser, meId) && (
+        <form action={respondDisputeAction} className="kv-inline-form">
+          <input type="hidden" name="id" value={dispute.id} />
+          <button type="submit" className="kv-btn">{t.t('disputeDetail.respondBtn')}</button>
+          <p className="kv-field__hint">{t.t('disputeDetail.respondHint')}</p>
+        </form>
+      )}
+
+      <h2 className="kv-section-title">{t.t('disputeDetail.thread')}</h2>
+      {threadFailed ? (
+        <p className="kv-error" role="alert">{t.t('disputeDetail.threadError')}</p>
+      ) : thread.length === 0 ? (
+        <p className="kv-muted">{t.t('disputeDetail.threadEmpty')}</p>
+      ) : (
+        <ul className="kv-thread">
+          {thread.map((m) => (
+            <li key={m.id} className="kv-thread__item">
+              <span className="kv-badge">{t.t(`disputeDetail.role.${messageAuthorRole(m.authorUserId, dispute)}`)}</span>
+              <p className="kv-thread__body">{m.body}</p>
+              <span className="kv-muted">{formatDate(m.createdAt, lang)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form action={postDisputeMessageAction} className="kv-form kv-card">
+        <h2 className="kv-card__title">{t.t('disputeDetail.addMessage')}</h2>
+        <input type="hidden" name="id" value={dispute.id} />
+        <label htmlFor="body" className="kv-field__label">{t.t('disputeDetail.messageLabel')}</label>
+        <textarea id="body" name="body" className="kv-textarea" rows={3} maxLength={4000} required />
+        <p className="kv-field__hint">{t.t('disputeDetail.messageHint')}</p>
+        <button type="submit" className="kv-btn">{t.t('disputeDetail.messageBtn')}</button>
+      </form>
     </section>
   );
 }

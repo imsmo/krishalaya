@@ -147,6 +147,24 @@ describe('HttpClient via resources', () => {
     expect(d.resolutionAmountMinor).toBe('50000');
   });
 
+  it('disputes.respond POSTs the party respond transition (no body)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd1', orderId: 'o1', raisedBy: 'r', againstUser: 's', reasonId: null, description: null, status: 'seller_responded', sellerRespondBy: null, resolutionType: null, resolutionAmountMinor: null, resolvedBy: null, resolvedAt: null, slaDueAt: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const d = await c.disputes.respond('d1');
+    expect(calls[0].url).toBe('https://api.test/v1/disputes/d1/respond');
+    expect(calls[0].init?.method).toBe('POST');
+    expect(d.status).toBe('seller_responded');
+  });
+
+  it('disputes.postMessage POSTs one thread message', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'm1', disputeId: 'd1', authorUserId: 'u1', body: 'evidence text', createdAt: '2026-01-02' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const m = await c.disputes.postMessage('d1', 'evidence text');
+    expect(calls[0].url).toBe('https://api.test/v1/disputes/d1/messages');
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({ body: 'evidence text' });
+    expect(m.body).toBe('evidence text');
+  });
+
   it('market.pulse GETs /v1/market/pulse and returns bigint-minor money as strings', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: {
       latest: { id: 'mp1', mandiId: 'm1', productId: 'p1', regionId: 'r1', minMinor: '90000', maxMinor: '110000', modalMinor: '100000', unitCode: 'qtl', priceDate: '2026-06-20' },

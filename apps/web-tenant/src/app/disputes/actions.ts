@@ -11,7 +11,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { buildResolve } from '../../features/disputes/manage';
+import { buildResolve, buildDisputeMessage } from '../../features/disputes/manage';
 import { validateReviewResponse } from '../../features/reviews/respond';
 import { SdkError } from '@krishalaya/sdk-js';
 
@@ -71,4 +71,35 @@ export async function resolveDisputeAction(formData: FormData): Promise<void> {
   revalidatePath(`/disputes/${id}`);
   revalidatePath('/disputes');
   back(id, 'ok=resolve');
+}
+
+// PC-22: PARTY actions on the dispute thread. The API asserts the caller IS a party (assertParty) — a non-party
+// gets 403 which degrades to a message; the UI additionally gates via canRespond (reflect, never grant).
+export async function respondDisputeAction(formData: FormData): Promise<void> {
+  await requireSession('/disputes');
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/disputes');
+  try {
+    await tenantClient().disputes.respond(id);
+  } catch (e) {
+    back(id, `error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'respond'}`);
+  }
+  revalidatePath(`/disputes/${id}`);
+  revalidatePath('/disputes');
+  back(id, 'ok=respond');
+}
+
+export async function postDisputeMessageAction(formData: FormData): Promise<void> {
+  await requireSession('/disputes');
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/disputes');
+  const built = buildDisputeMessage(String(formData.get('body') ?? ''));
+  if (!built.ok) back(id, `error=${built.error}`);
+  try {
+    await tenantClient().disputes.postMessage(id, built.value);
+  } catch (e) {
+    back(id, `error=${e instanceof SdkError && (e.status === 403 || e.status === 409) ? 'notparty' : 'message'}`);
+  }
+  revalidatePath(`/disputes/${id}`);
+  back(id, 'ok=message');
 }

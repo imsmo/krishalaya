@@ -72,6 +72,15 @@ export class DisputesResource {
     const r = await this.http.request<DisputeMessage[]>('GET', `disputes/${encodeURIComponent(id)}/messages`, { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
+  /** PARTY action (PC-22): the respondent marks the dispute responded (seller_responded transition, 48h window).
+   * The server enforces WHO may respond (assertParty) — a non-party gets 403, never client-guessed. */
+  async respond(id: string): Promise<Dispute> {
+    return (await this.http.request<Dispute>('POST', `disputes/${encodeURIComponent(id)}/respond`, {})).data;
+  }
+  /** PARTY/moderator action (PC-22): append one message to the evidence thread (≤4000 chars, server-validated). */
+  async postMessage(id: string, body: string): Promise<DisputeMessage> {
+    return (await this.http.request<DisputeMessage>('POST', `disputes/${encodeURIComponent(id)}/messages`, { body: { body } })).data;
+  }
 }
 
 export class UsersResource {
