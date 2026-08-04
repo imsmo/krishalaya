@@ -122,6 +122,8 @@ export const en: Messages = {
   'discover.searchPlaceholder': 'Search produce…',
   'discover.category': 'Category',
   'discover.category.any': 'All categories',
+  'discover.region': 'Region',
+  'discover.region.any': 'All regions',
   'discover.saleType': 'Sale type',
   'discover.saleType.any': 'Any type',
   'discover.saleType.direct': 'Buy now',

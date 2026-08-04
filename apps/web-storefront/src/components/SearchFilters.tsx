@@ -6,13 +6,15 @@
 import { getTranslator } from '../lib/i18n';
 import { SALE_TYPES, SORTS, minorToMajor, parseMajorToMinor, type RawSearchParams } from '../features/discovery/query';
 import type { CategoryOption } from '../features/discovery/categories';
+import type { RegionOption } from '../features/discovery/regions';
 
-export function SearchFilters({ basePath, sp, categories = [] }: { basePath: string; sp: RawSearchParams; categories?: CategoryOption[] }) {
+export function SearchFilters({ basePath, sp, categories = [], regions = [] }: { basePath: string; sp: RawSearchParams; categories?: CategoryOption[]; regions?: RegionOption[] }) {
   const t = getTranslator();
   const cur = (k: string) => (Array.isArray(sp[k]) ? (sp[k] as string[])[0] : (sp[k] as string | undefined)) ?? '';
   const saleType = cur('saleType');
   const sort = cur('sort');
   const categoryId = cur('categoryId');
+  const regionId = cur('regionId');
 
   return (
     <form method="get" action={basePath} className="kv-filters" role="search" aria-label={t.t('discover.filtersLabel')}>
@@ -46,6 +48,16 @@ export function SearchFilters({ basePath, sp, categories = [] }: { basePath: str
             </select>
           </div>
         )}
+
+        {regions.length > 0 && (
+          <div className="kv-filters__field">
+            <label htmlFor="f-region" className="kv-filters__label">{t.t('discover.region')}</label>
+            <select id="f-region" name="regionId" defaultValue={regionId} className="kv-field__input">
+              <option value="">{t.t('discover.region.any')}</option>
+              {regions.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="kv-filters__row">
@@ -68,7 +80,7 @@ export function SearchFilters({ basePath, sp, categories = [] }: { basePath: str
           {/* carry tenant-scoped passthrough filters that have no visible control. categoryId rides as a hidden
               input ONLY when the category <select> isn't shown (no lookup available) so it survives a filter change. */}
           {categories.length === 0 && categoryId && <input type="hidden" name="categoryId" value={categoryId} />}
-          {cur('regionId') && <input type="hidden" name="regionId" value={cur('regionId')} />}
+          {regions.length === 0 && regionId && <input type="hidden" name="regionId" value={regionId} />}
           <button type="submit" className="kv-btn">{t.t('discover.apply')}</button>
           <a href={basePath} className="kv-btn--link">{t.t('discover.clear')}</a>
         </div>

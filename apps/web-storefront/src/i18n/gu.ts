@@ -120,6 +120,8 @@ export const gu: Messages = {
   'discover.searchPlaceholder': 'પેદાશ શોધો…',
   'discover.category': 'શ્રેણી',
   'discover.category.any': 'બધી શ્રેણીઓ',
+  'discover.region': 'પ્રદેશ',
+  'discover.region.any': 'બધા પ્રદેશો',
   'discover.saleType': 'વેચાણ પ્રકાર',
   'discover.saleType.any': 'કોઈપણ પ્રકાર',
   'discover.saleType.direct': 'હમણાં ખરીદો',

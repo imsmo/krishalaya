@@ -12,6 +12,7 @@ import { SearchFilters } from '../../components/SearchFilters';
 import { TenantBrandMark } from '../../components/TenantBrandMark';
 import { toListingQuery, loadMoreHref, hasActiveFilters, type RawSearchParams } from '../../features/discovery/query';
 import { flattenCategoryNav } from '../../features/discovery/categories';
+import { flattenRegionNav } from '../../features/discovery/regions';
 
 export const revalidate = 60;
 
@@ -41,6 +42,11 @@ export default async function TenantStorefront(
     items = []; // API/search down → empty state, never a 500 (Law 12)
   }
 
+  // PC-24: real region names for the discovery facet (lookups.regions). Degrades to [] → facet hides (Law 12).
+  let regionNav: ReturnType<typeof flattenRegionNav> = [];
+  try { regionNav = flattenRegionNav(await publicClient(params.tenantSlug).lookups.regions()); }
+  catch { regionNav = []; }
+
   // P1-9: real category names for the discovery facet (lookups). Degrades to [] → the facet simply hides (Law 12).
   let categoryNav: ReturnType<typeof flattenCategoryNav> = [];
   try {
@@ -61,7 +67,7 @@ export default async function TenantStorefront(
     <section>
       <TenantBrandMark branding={branding} tenantSlug={params.tenantSlug} />
 
-      <SearchFilters basePath={basePath} sp={searchParams} categories={categoryNav} />
+      <SearchFilters basePath={basePath} sp={searchParams} categories={categoryNav} regions={regionNav} />
 
       {typeof total === 'number' && items.length > 0 && (
         <p className="kv-results-count" aria-live="polite">{t.t('discover.resultsCount', { count: String(total) })}</p>

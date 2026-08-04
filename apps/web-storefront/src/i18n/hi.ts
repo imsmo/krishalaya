@@ -121,6 +121,8 @@ export const hi: Messages = {
   'discover.searchPlaceholder': 'उपज खोजें…',
   'discover.category': 'श्रेणी',
   'discover.category.any': 'सभी श्रेणियाँ',
+  'discover.region': 'क्षेत्र',
+  'discover.region.any': 'सभी क्षेत्र',
   'discover.saleType': 'बिक्री प्रकार',
   'discover.saleType.any': 'कोई भी प्रकार',
   'discover.saleType.direct': 'अभी खरीदें',
