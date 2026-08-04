@@ -6,6 +6,7 @@ import { LocaleSwitcher } from './LocaleSwitcher';
 const NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
   { href: '/dashboard', labelKey: 'nav.dashboard' },
   { href: '/kiosk', labelKey: 'nav.kiosk' }, // OW-1
+  { href: '/warehouse', labelKey: 'nav.warehouse' }, // OW-2
   // OW-1 kiosk · OW-2 warehouse · OW-3 equipment/CHC · OW-4 dairy POS · OW-5 assisted money · OW-6 insights
   // are appended here by their waves (OPS_BUILD_BACKLOG.md) — never linked before they exist.
 ];

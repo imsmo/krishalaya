@@ -16,8 +16,13 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       the FARMER'S OWN session (assisted, never impersonated — no on-behalf writes; an `assisted-onboarding`
       on-behalf surface would be a PC-54 decision). Canon rows kiosk-home/profile → BUILT; kiosk-kyc/first-listing
       → resolved by the handoff design (farmer-session actions, mobile/storefront already built).
-- [ ] **OW-2 · warehouse (18 rows)** — warehousing api: eNWR issue/registry, weighbridge, assay lab + certificate,
-      stacking, storage billing, wh dashboard/insights.
+- [x] **OW-2 · warehouse (18 rows)** ✅ 2026-08-05 — /warehouse (+/[id]): storage-booking lifecycle
+      (requested→confirmed→stored→released + cancel, pure state-machine gates; release idempotent w/
+      server-settled fee), assay reports (plain-text name=value → typed params), eNWR issue (stored-only,
+      NERL/CCRL, float-free valuation, idempotent) + receipt register. SDK: NEW WarehousingResource.
+      Canon-row notes: weighbridge = the confirm→store step (weighment precedes 'stored'); stacking +
+      per-lot storage-billing detail + wh-insights = server read-models → PC-54 note; assay CERTIFICATE
+      file rides reportMediaId (upload wiring with the shared MediaUploader when ops gets one).
 - [ ] **OW-3 · equipment/CHC + livestock (7 rows)** — equipment api bookings/maintenance/insights; livestock ear-tag scan.
 - [ ] **OW-4 · dairy POS (11 rows)** — dairy api: collection shifts, slips, quality, exceptions, rate charts, pay runs.
 - [ ] **OW-5 · assisted money (3 rows)** — fintech AePS receipt + withdrawal (provider-wired at S2).
