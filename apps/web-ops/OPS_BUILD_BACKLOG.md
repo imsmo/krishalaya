@@ -23,7 +23,12 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       Canon-row notes: weighbridge = the confirm→store step (weighment precedes 'stored'); stacking +
       per-lot storage-billing detail + wh-insights = server read-models → PC-54 note; assay CERTIFICATE
       file rides reportMediaId (upload wiring with the shared MediaUploader when ops gets one).
-- [ ] **OW-3 · equipment/CHC + livestock (7 rows)** — equipment api bookings/maintenance/insights; livestock ear-tag scan.
+- [x] **OW-3 · equipment/CHC + livestock (7 rows)** ✅ 2026-08-05 — /equipment (+/[id]): rental lifecycle
+      requested→quoted(advance, float-free)→confirmed(RENTER's device — their consent, their wallet)→
+      in_progress(renter's OTP = presence proof)→completed(actual usage)→settled(idempotent, money server-side);
+      cancel pre-start; asset register. SDK: NEW EquipmentResource. Canon notes: chc-maintenance = asset
+      status toggle (asset lifecycle depth = PC-54 note); chc-insights → OW-6; livestock EAR-TAG LOOKUP =
+      API gap (animal registry has no tag-number query param) → PC-54 `livestock-tag-lookup`.
 - [ ] **OW-4 · dairy POS (11 rows)** — dairy api: collection shifts, slips, quality, exceptions, rate charts, pay runs.
 - [ ] **OW-5 · assisted money (3 rows)** — fintech AePS receipt + withdrawal (provider-wired at S2).
 - [ ] **OW-6 · insights (2 rows)** — analytics reads.
