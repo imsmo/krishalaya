@@ -33,6 +33,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'dashboard', href: '/dashboard', label: t.t('nav.dashboard') },
         { key: 'listings', href: '/listings', label: t.t('nav.listings') },
         { key: 'orders', href: '/orders', label: t.t('nav.orders') },
+        { key: 'logistics', href: '/logistics', label: t.t('nav.logistics') },
         { key: 'offers', href: '/offers', label: t.t('nav.offers') },
         { key: 'payouts', href: '/payouts', label: t.t('nav.payouts') },
         { key: 'wallet', href: '/wallet', label: t.t('nav.wallet') },
