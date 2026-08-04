@@ -1,17 +1,17 @@
-# infra/k8s/external-secrets/realtime-gateway.yaml · sync AWS Secrets Manager -> k8s Secret krishiverse-realtime-env (consumed by the realtime-gateway chart)
+# infra/k8s/external-secrets/realtime-gateway.yaml · sync AWS Secrets Manager -> k8s Secret krishalaya-realtime-env (consumed by the realtime-gateway chart)
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
   name: realtime-gateway-env
-  namespace: krishiverse
+  namespace: krishalaya
 spec:
   refreshInterval: 1h
   secretStoreRef:
     name: aws-secrets-manager
     kind: ClusterSecretStore
   target:
-    name: krishiverse-realtime-env
+    name: krishalaya-realtime-env
     creationPolicy: Owner
   dataFrom:
     - extract:
-        key: krishiverse-prod/realtime/env   # a JSON secret in Secrets Manager holding every env var for this service
+        key: krishalaya-prod/realtime/env   # a JSON secret in Secrets Manager holding every env var for this service

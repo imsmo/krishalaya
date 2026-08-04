@@ -3,7 +3,7 @@
 // (Law 11) and reaches the wallet-service — the ONLY writer of money (Law 2) — over this gRPC contract. Keep in
 // sync with the wallet-service proto; only the messages admin-api uses are required here.
 syntax = "proto3";
-package krishiverse.wallet.v1;
+package krishalaya.wallet.v1;
 
 message Leg {
   string owner_kind    = 1;  // 'user' | 'tenant' | 'platform'

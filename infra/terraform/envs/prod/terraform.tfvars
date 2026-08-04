@@ -2,7 +2,7 @@
 # Edit bucket_suffix + eks_public_access_cidrs before apply.
 
 region        = "ap-south-1"
-project       = "krishiverse-prod"
+project       = "krishalaya-prod"
 vpc_cidr      = "10.40.0.0/16"
 az_count      = 2
 bucket_suffix = "REPLACE_WITH_ACCOUNT_ID_OR_ORG"
@@ -20,4 +20,4 @@ redis_node_type          = "cache.t4g.micro"
 opensearch_instance_type = "t3.small.search"
 
 # edge
-root_domain = "krishiverse.ai"
+root_domain = "krishalaya.com"

@@ -31,7 +31,7 @@ is data + config on the server.
 
 ## Prerequisites
 
-- Steps 1–3 of this guide already done: infra up, `krishiverse` DB created, **migrations + core/demo seeds run**,
+- Steps 1–3 of this guide already done: infra up, `krishalaya` DB created, **migrations + core/demo seeds run**,
   and `db/local/local-login-roles.sql` applied so `kv_app` / `kv_wallet` / `kv_relay` can log in.
 - The API is reachable from your phone at `http://192.168.31.165:3000` (your Mac's LAN IP; phone on the same Wi-Fi).
 - `psql` available in your terminal.
@@ -40,8 +40,8 @@ Set a couple of shell variables so the commands below are copy-paste:
 
 ```bash
 # Run as the DB OWNER (bypasses tenant RLS so the seed's explicit tenant_id inserts go through)
-export KV_DB="postgres://<owner>:<owner-pw>@localhost:5432/krishiverse"
-# The wallet-service's own database (separate from krishiverse)
+export KV_DB="postgres://<owner>:<owner-pw>@localhost:5432/krishalaya"
+# The wallet-service's own database (separate from krishalaya)
 export KV_WALLET_DB="postgres://kv_wallet:dev@localhost:5432/kv_wallet"
 ```
 
@@ -93,7 +93,7 @@ farmer's screens all come from here.
 
 ## Step 3 — Make the wallet show a balance (screens 19 / 21 / 58 / 70)
 
-Wallet balance and the ledger live in the **wallet-service's own database (`kv_wallet`)**, not in `krishiverse`,
+Wallet balance and the ledger live in the **wallet-service's own database (`kv_wallet`)**, not in `krishalaya`,
 so the design seed in Step 2 deliberately does **not** touch it. Two things are needed:
 
 **3a. The wallet-service must be running.** If it isn't, the mobile wallet screen shows "—" because the balance

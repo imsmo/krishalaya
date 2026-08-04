@@ -3,7 +3,7 @@
 # automatically; this drives the DELIBERATE cross-region promotion (when the cross-region Aurora Global secondary
 # from the DR wave exists — P0-7 DR / deferred dr.tf). Prints the runbook steps + executes the promote if -y.
 set -euo pipefail
-REGION_DR="${REGION_DR:-ap-south-2}"; GLOBAL="${GLOBAL_CLUSTER:-krishiverse-global}"; SECONDARY="${SECONDARY:-krishiverse-dr-aurora}"
+REGION_DR="${REGION_DR:-ap-south-2}"; GLOBAL="${GLOBAL_CLUSTER:-krishalaya-global}"; SECONDARY="${SECONDARY:-krishalaya-dr-aurora}"
 echo "DR failover plan (cross-region):"
 echo "  1. Confirm the primary region is truly down (not a transient blip) — incident commander decision."
 echo "  2. Promote the DR-region secondary to standalone writer:"

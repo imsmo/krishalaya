@@ -1,12 +1,12 @@
-{{- include "krishiverse-common.serviceaccount" . }}
+{{- include "krishalaya-common.serviceaccount" . }}
 ---
-{{ include "krishiverse-common.deployment" . }}
+{{ include "krishalaya-common.deployment" . }}
 ---
-{{ include "krishiverse-common.service" . }}
+{{ include "krishalaya-common.service" . }}
 ---
-{{ include "krishiverse-common.hpa" . }}
+{{ include "krishalaya-common.hpa" . }}
 ---
-{{ include "krishiverse-common.pdb" . }}
+{{ include "krishalaya-common.pdb" . }}
 
 ---
-{{ include "krishiverse-common.ingress" . }}
+{{ include "krishalaya-common.ingress" . }}

@@ -12,17 +12,17 @@ cd "$ROOT"
 
 # node services: <image-name>:<workspace-pkg>:<app-dir>
 NODE_SERVICES=(
-  "krishiverse-api:@krishalaya/api:api"
-  "krishiverse-admin-api:@krishalaya/admin-api:admin-api"
-  "krishiverse-wallet-service:@krishalaya/wallet-service:wallet-service"
-  "krishiverse-worker:@krishalaya/worker:worker"
-  "krishiverse-realtime-gateway:@krishalaya/realtime-gateway:realtime-gateway"
+  "krishalaya-api:@krishalaya/api:api"
+  "krishalaya-admin-api:@krishalaya/admin-api:admin-api"
+  "krishalaya-wallet-service:@krishalaya/wallet-service:wallet-service"
+  "krishalaya-worker:@krishalaya/worker:worker"
+  "krishalaya-realtime-gateway:@krishalaya/realtime-gateway:realtime-gateway"
 )
 WEB_APPS=(
-  "krishiverse-web-storefront:@krishalaya/web-storefront:web-storefront"
-  "krishiverse-web-tenant:@krishalaya/web-tenant:web-tenant"
-  "krishiverse-web-admin:@krishalaya/web-admin:web-admin"
-  "krishiverse-web-partner:@krishalaya/web-partner:web-partner"
+  "krishalaya-web-storefront:@krishalaya/web-storefront:web-storefront"
+  "krishalaya-web-tenant:@krishalaya/web-tenant:web-tenant"
+  "krishalaya-web-admin:@krishalaya/web-admin:web-admin"
+  "krishalaya-web-partner:@krishalaya/web-partner:web-partner"
 )
 
 echo ">> ECR login"
@@ -33,15 +33,15 @@ ensure_repo() { aws ecr describe-repositories --repository-names "$1" --region "
        --region "$REGION" >/dev/null; }
 
 echo ">> node-base"
-ensure_repo krishiverse-node-base
-docker build -f infra/docker/node-base.Dockerfile -t "$ECR/krishiverse-node-base:20" .
-docker push "$ECR/krishiverse-node-base:20"
+ensure_repo krishalaya-node-base
+docker build -f infra/docker/node-base.Dockerfile -t "$ECR/krishalaya-node-base:20" .
+docker push "$ECR/krishalaya-node-base:20"
 
 for entry in "${NODE_SERVICES[@]}"; do
   IFS=: read -r img pkg app <<< "$entry"
   echo ">> $img ($pkg)"; ensure_repo "$img"
   docker build -f infra/docker/node-service.Dockerfile \
-    --build-arg RUNTIME_BASE="$ECR/krishiverse-node-base:20" \
+    --build-arg RUNTIME_BASE="$ECR/krishalaya-node-base:20" \
     --build-arg APP="$app" --build-arg APP_PKG="$pkg" \
     -t "$ECR/$img:$TAG" .
   docker push "$ECR/$img:$TAG"
@@ -57,8 +57,8 @@ for entry in "${WEB_APPS[@]}"; do
 done
 
 echo ">> ai-services"
-ensure_repo krishiverse-ai-services
-docker build -f infra/docker/ai-services.Dockerfile -t "$ECR/krishiverse-ai-services:$TAG" apps/ai-services
-docker push "$ECR/krishiverse-ai-services:$TAG"
+ensure_repo krishalaya-ai-services
+docker build -f infra/docker/ai-services.Dockerfile -t "$ECR/krishalaya-ai-services:$TAG" apps/ai-services
+docker push "$ECR/krishalaya-ai-services:$TAG"
 
 echo "DONE. Images pushed to $ECR with tag $TAG"

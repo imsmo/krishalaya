@@ -3,7 +3,7 @@
 nameOverride: ''
 fullnameOverride: ''
 image:
-  repository: REPLACE_ECR/krishiverse-worker
+  repository: REPLACE_ECR/krishalaya-worker
   tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 2
@@ -25,7 +25,7 @@ env:
 - name: LOG_LEVEL
   value: info
 envFromSecretNames:
-- krishiverse-worker-env
+- krishalaya-worker-env
 secretEnv: []
 command: []
 args: []
@@ -86,7 +86,7 @@ extraVolumeMounts: []
 ingress:
   enabled: false
   className: alb
-  groupName: krishiverse-edge
+  groupName: krishalaya-edge
   certArn: REPLACE_ACM_CERT_ARN
   wafArn: REPLACE_WAF_ACL_ARN
   healthcheckPath: /healthz

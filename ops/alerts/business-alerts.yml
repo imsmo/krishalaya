@@ -1,7 +1,7 @@
 # ops/alerts/business-alerts.yml · business-KPI guardrails (sudden drop = something upstream broke).
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
-metadata: { name: krishiverse-business-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+metadata: { name: krishalaya-business-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
 spec:
   groups:
     - name: business.kpis

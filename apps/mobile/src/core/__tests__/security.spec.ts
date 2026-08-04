@@ -57,13 +57,13 @@ describe('device-integrity signal', () => {
 
 describe('inbound deep-link guard', () => {
   it('accepts our scheme on an allowlisted route', () => {
-    expect(parseDeepLink('krishiverse://order/abc123')).toEqual({ ok: true, path: 'order/abc123' });
-    expect(parseDeepLink('krishiverse://listing/xyz?ref=sms')).toEqual({ ok: true, path: 'listing/xyz' });
+    expect(parseDeepLink('krishalaya://order/abc123')).toEqual({ ok: true, path: 'order/abc123' });
+    expect(parseDeepLink('krishalaya://listing/xyz?ref=sms')).toEqual({ ok: true, path: 'listing/xyz' });
   });
   it('rejects foreign schemes, non-allowlisted routes, and traversal/junk', () => {
     expect(parseDeepLink('evil://order/1').reason).toBe('scheme');
-    expect(parseDeepLink('krishiverse://wallet/withdraw').reason).toBe('route'); // money flows NOT link-reachable
-    expect(parseDeepLink('krishiverse://order/../../etc').reason).toBe('malformed');
+    expect(parseDeepLink('krishalaya://wallet/withdraw').reason).toBe('route'); // money flows NOT link-reachable
+    expect(parseDeepLink('krishalaya://order/../../etc').reason).toBe('malformed');
     expect(parseDeepLink('').reason).toBe('malformed');
   });
   it('accepts https app-links only for allowlisted hosts', () => {

@@ -30,16 +30,16 @@ they hold). Pick a unique suffix — your **account id** works well:
 ACC=$(aws sts get-caller-identity --query Account --output text)
 REGION=ap-south-1
 
-aws s3api create-bucket --bucket "krishiverse-tfstate-$ACC" \
+aws s3api create-bucket --bucket "krishalaya-tfstate-$ACC" \
   --region $REGION --create-bucket-configuration LocationConstraint=$REGION
-aws s3api put-bucket-versioning --bucket "krishiverse-tfstate-$ACC" \
+aws s3api put-bucket-versioning --bucket "krishalaya-tfstate-$ACC" \
   --versioning-configuration Status=Enabled
-aws s3api put-bucket-encryption --bucket "krishiverse-tfstate-$ACC" \
+aws s3api put-bucket-encryption --bucket "krishalaya-tfstate-$ACC" \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"aws:kms"}}]}'
-aws s3api put-public-access-block --bucket "krishiverse-tfstate-$ACC" \
+aws s3api put-public-access-block --bucket "krishalaya-tfstate-$ACC" \
   --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 
-aws dynamodb create-table --table-name krishiverse-tflock \
+aws dynamodb create-table --table-name krishalaya-tflock \
   --attribute-definitions AttributeName=LockID,AttributeType=S \
   --key-schema AttributeName=LockID,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST --region $REGION
@@ -53,7 +53,7 @@ echo "Your suffix is: $ACC"
 
 Edit `infra/terraform/envs/prod/backend.tf` — replace `<ACCOUNT_ID_OR_ORG>` with the suffix from step 1:
 ```hcl
-bucket = "krishiverse-tfstate-123456789012"
+bucket = "krishalaya-tfstate-123456789012"
 ```
 
 Edit `infra/terraform/envs/prod/terraform.tfvars`:
@@ -118,7 +118,7 @@ pod, or a bastion). That's by design.
 Point-in-time restore proves your backups work. Restore the cluster to a throwaway clone, confirm it's available,
 then delete it:
 ```bash
-SRC=krishiverse-prod-aurora
+SRC=krishalaya-prod-aurora
 aws rds restore-db-cluster-to-point-in-time \
   --source-db-cluster-identifier $SRC \
   --db-cluster-identifier ${SRC}-pitr-test \
@@ -139,7 +139,7 @@ Record the restore time — that's part of your RTO/RPO evidence for P0-7.
   `api_shared_secret_arn`). Populate the **external** provider secrets (Razorpay/SMS/eKYC/weather/AI/push) — their
   empty containers exist; set values with:
   ```bash
-  aws secretsmanager put-secret-value --secret-id krishiverse-prod/razorpay/key_id --secret-string '...'
+  aws secretsmanager put-secret-value --secret-id krishalaya-prod/razorpay/key_id --secret-string '...'
   ```
 - **P0-5** (DB): create the least-privilege roles (`kv_app`/`kv_wallet`/`kv_relay`) using the Aurora master secret,
   run `pnpm migrate` against the writer endpoint, seed **reference** data (NOT demo), `pnpm db:partitions`, then run

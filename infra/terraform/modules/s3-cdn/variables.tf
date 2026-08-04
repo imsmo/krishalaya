@@ -3,7 +3,7 @@
 
 variable "name" {
   type        = string
-  description = "Name prefix (e.g. krishiverse-prod)."
+  description = "Name prefix (e.g. krishalaya-prod)."
 }
 
 variable "bucket_suffix" {

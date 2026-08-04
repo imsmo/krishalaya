@@ -39,14 +39,14 @@ output "irsa_role_arns" {
 
 # --- edge ---
 output "route53_name_servers" {
-  description = "Delegate the 'staging' HOST (not the apex) to these 4 servers: either an NS record at your registrar for the 'staging' subdomain (works even if the krishiverse.ai apex isn't on Route 53 yet — most registrars support independent subdomain NS delegation), or, once the prod zone exists, an NS record inside it. See S1_STAGING_APPLY_RUNBOOK.md."
+  description = "Delegate the 'staging' HOST (not the apex) to these 4 servers: either an NS record at your registrar for the 'staging' subdomain (works even if the krishalaya.com apex isn't on Route 53 yet — most registrars support independent subdomain NS delegation), or, once the prod zone exists, an NS record inside it. See S1_STAGING_APPLY_RUNBOOK.md."
   value       = module.dns.name_servers
 }
 output "route53_zone_id" {
   value = module.dns.zone_id
 }
 output "acm_certificate_arn" {
-  description = "Wildcard cert ARN for *.staging.krishiverse.ai — set as the ALB Ingress certificate-arn (Helm ingress.certArn)."
+  description = "Wildcard cert ARN for *.staging.krishalaya.com — set as the ALB Ingress certificate-arn (Helm ingress.certArn)."
   value       = module.acm.certificate_arn
 }
 output "waf_web_acl_arn" {

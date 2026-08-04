@@ -27,10 +27,10 @@ ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 ACCOUNT=$ACCOUNT REGION=ap-south-1 TAG=$(git rev-parse --short HEAD) \
   ./infra/docker/build-and-push.sh
 ```
-This creates the ECR repos (scan-on-push) and pushes: `krishiverse-node-base:20`, `krishiverse-api`,
-`krishiverse-admin-api`, `krishiverse-wallet-service`, `krishiverse-worker`, `krishiverse-realtime-gateway`,
-`krishiverse-web-storefront`, `krishiverse-web-tenant`, `krishiverse-web-admin`, `krishiverse-web-partner`,
-`krishiverse-ai-services` — all tagged with the short git SHA (`$TAG`).
+This creates the ECR repos (scan-on-push) and pushes: `krishalaya-node-base:20`, `krishalaya-api`,
+`krishalaya-admin-api`, `krishalaya-wallet-service`, `krishalaya-worker`, `krishalaya-realtime-gateway`,
+`krishalaya-web-storefront`, `krishalaya-web-tenant`, `krishalaya-web-admin`, `krishalaya-web-partner`,
+`krishalaya-ai-services` — all tagged with the short git SHA (`$TAG`).
 
 > **Web apps bake `NEXT_PUBLIC_*` at build time.** Before building web images, set the public API URL as a build
 > arg in `build-and-push.sh` (or build web images separately) so the browser bundle points at your prod API
@@ -41,7 +41,7 @@ This creates the ECR repos (scan-on-push) and pushes: `krishiverse-node-base:20`
 ## 3. Create the namespace + the env Secrets (synced from AWS Secrets Manager)
 
 ```bash
-kubectl create namespace krishiverse
+kubectl create namespace krishalaya
 ```
 
 Each backend chart reads its env from a Kubernetes Secret (`envFromSecretNames`). The **recommended** way to keep
@@ -50,20 +50,20 @@ these in sync with AWS Secrets Manager is the **External Secrets Operator** (ESO
 helm repo add external-secrets https://charts.external-secrets.io
 helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
 ```
-Then create an `ExternalSecret` per service that pulls from `krishiverse-prod/*` into the k8s Secret names the
-charts expect: `krishiverse-api-env`, `krishiverse-admin-api-env`, `krishiverse-wallet-env`,
-`krishiverse-worker-env`, `krishiverse-realtime-env`, `krishiverse-ai-env`.
+Then create an `ExternalSecret` per service that pulls from `krishalaya-prod/*` into the k8s Secret names the
+charts expect: `krishalaya-api-env`, `krishalaya-admin-api-env`, `krishalaya-wallet-env`,
+`krishalaya-worker-env`, `krishalaya-realtime-env`, `krishalaya-ai-env`.
 
 > **Quick manual alternative (to test before wiring ESO)** — create one secret by hand. Build the connection
 > strings from the Terraform outputs (`aurora_writer_endpoint`, `redis_primary_endpoint`, …) and the generated
 > secrets in Secrets Manager. Example for the API:
 > ```bash
-> kubectl -n krishiverse create secret generic krishiverse-api-env \
->   --from-literal=DATABASE_URL='postgres://kv_app:***@<aurora_writer>:5432/krishiverse' \
->   --from-literal=READ_REPLICA_URL='postgres://kv_app:***@<aurora_reader>:5432/krishiverse' \
+> kubectl -n krishalaya create secret generic krishalaya-api-env \
+>   --from-literal=DATABASE_URL='postgres://kv_app:***@<aurora_writer>:5432/krishalaya' \
+>   --from-literal=READ_REPLICA_URL='postgres://kv_app:***@<aurora_reader>:5432/krishalaya' \
 >   --from-literal=REDIS_URL='rediss://:***@<redis_primary>:6379' \
->   --from-literal=JWT_ACCESS_SECRET="$(aws secretsmanager get-secret-value --secret-id krishiverse-prod/jwt/access_secret --query SecretString --output text)" \
->   --from-literal=WALLET_GRPC_URL='krishiverse-wallet-service.krishiverse.svc.cluster.local:50051' \
+>   --from-literal=JWT_ACCESS_SECRET="$(aws secretsmanager get-secret-value --secret-id krishalaya-prod/jwt/access_secret --query SecretString --output text)" \
+>   --from-literal=WALLET_GRPC_URL='krishalaya-wallet-service.krishalaya.svc.cluster.local:50051' \
 >   --from-literal=OPENSEARCH_URL='https://<opensearch_endpoint>' \
 >   --from-literal=S3_BUCKET='<media_bucket_name>'
 > ```
@@ -88,8 +88,8 @@ matching role ARN from step 1):
 ECR=$ACCOUNT.dkr.ecr.ap-south-1.amazonaws.com
 API_ROLE=$(terraform -chdir=../terraform/envs/prod output -json irsa_role_arns | jq -r '.api')
 
-helm upgrade --install api ./api -n krishiverse \
-  --set image.repository=$ECR/krishiverse-api \
+helm upgrade --install api ./api -n krishalaya \
+  --set image.repository=$ECR/krishalaya-api \
   --set image.tag=$TAG \
   --set serviceAccount.roleArn=$API_ROLE
 ```
@@ -101,10 +101,10 @@ Service-by-service notes:
 - **ai-services** → role `ai-services`.
 - **web apps** → the generic `web` chart, one release each (no IRSA needed):
   ```bash
-  helm upgrade --install web-storefront ./web -n krishiverse --set image.repository=$ECR/krishiverse-web-storefront --set image.tag=$TAG
-  helm upgrade --install web-tenant     ./web -n krishiverse --set image.repository=$ECR/krishiverse-web-tenant     --set image.tag=$TAG
-  helm upgrade --install web-admin      ./web -n krishiverse --set image.repository=$ECR/krishiverse-web-admin      --set image.tag=$TAG
-  helm upgrade --install web-partner    ./web-partner -n krishiverse --set image.repository=$ECR/krishiverse-web-partner --set image.tag=$TAG
+  helm upgrade --install web-storefront ./web -n krishalaya --set image.repository=$ECR/krishalaya-web-storefront --set image.tag=$TAG
+  helm upgrade --install web-tenant     ./web -n krishalaya --set image.repository=$ECR/krishalaya-web-tenant     --set image.tag=$TAG
+  helm upgrade --install web-admin      ./web -n krishalaya --set image.repository=$ECR/krishalaya-web-admin      --set image.tag=$TAG
+  helm upgrade --install web-partner    ./web-partner -n krishalaya --set image.repository=$ECR/krishalaya-web-partner --set image.tag=$TAG
   ```
 
 ---
@@ -112,12 +112,12 @@ Service-by-service notes:
 ## 5. Verify
 
 ```bash
-kubectl -n krishiverse get pods,svc,hpa
-kubectl -n krishiverse rollout status deploy/api
-kubectl -n krishiverse logs deploy/api --tail=50
+kubectl -n krishalaya get pods,svc,hpa
+kubectl -n krishalaya rollout status deploy/api
+kubectl -n krishalaya logs deploy/api --tail=50
 # in-cluster smoke (no public ingress yet — that's the edge wave):
-kubectl -n krishiverse run curl --rm -it --image=curlimages/curl --restart=Never -- \
-  curl -s http://api.krishiverse.svc.cluster.local/healthz
+kubectl -n krishalaya run curl --rm -it --image=curlimages/curl --restart=Never -- \
+  curl -s http://api.krishalaya.svc.cluster.local/healthz
 ```
 All pods `Running`/`Ready`, HPAs showing targets, `/healthz` returns ok = the services are live in the cluster.
 

@@ -1,13 +1,13 @@
 # ops/alerts/db-alerts.yml · Aurora/RDS + connection-pool health (RDS Exporter / CloudWatch-via-Prometheus).
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
-metadata: { name: krishiverse-db-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+metadata: { name: krishalaya-db-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
 spec:
   groups:
     - name: db.health
       rules:
         - alert: AuroraCpuHigh
-          expr: aws_rds_cpuutilization_average{dbinstance_identifier=~"krishiverse-prod-aurora.*"} > 85
+          expr: aws_rds_cpuutilization_average{dbinstance_identifier=~"krishalaya-prod-aurora.*"} > 85
           for: 10m
           labels: { severity: ticket }
           annotations: { summary: "Aurora CPU >85% on {{ $labels.dbinstance_identifier }}" }

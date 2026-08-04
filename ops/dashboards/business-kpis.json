@@ -1,5 +1,5 @@
 {
-  "uid": "krishiverse-biz",
+  "uid": "krishalaya-biz",
   "title": "Krishalaya \u00b7 Business KPIs",
   "schemaVersion": 39,
   "version": 1,
@@ -20,7 +20,7 @@
     ]
   },
   "tags": [
-    "krishiverse",
+    "krishalaya",
     "p0-6"
   ],
   "panels": [

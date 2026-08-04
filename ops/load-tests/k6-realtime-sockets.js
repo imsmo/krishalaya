@@ -24,7 +24,7 @@
 import ws from 'k6/ws';
 import { check } from 'k6';
 
-const URL = __ENV.WS_URL || 'wss://rt.krishiverse.ai';
+const URL = __ENV.WS_URL || 'wss://rt.krishalaya.com';
 const TENANT_ID = __ENV.TENANT_ID || '';
 const PILOT_MODE = (__ENV.PILOT_MODE || 'false') === 'true';
 

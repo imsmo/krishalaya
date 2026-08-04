@@ -101,13 +101,13 @@ module "irsa" {
   name               = var.project
   oidc_provider_arn  = module.eks.oidc_provider_arn
   oidc_provider_url  = module.eks.oidc_provider_url
-  namespace          = "krishiverse"
+  namespace          = "krishalaya"
   kms_key_arn        = module.secrets.kms_key_arn
   secrets_arn_prefix = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${var.project}/*"
   media_bucket_arn   = module.media.media_bucket_arn
 }
 
-# 6) EDGE — DNS zone for the staging.krishiverse.ai SUBDOMAIN (its own Route 53 zone, NS-delegated at the
+# 6) EDGE — DNS zone for the staging.krishalaya.com SUBDOMAIN (its own Route 53 zone, NS-delegated at the
 #    registrar or inside the prod zone once it exists — see S1_STAGING_APPLY_RUNBOOK.md §5), wildcard TLS, WAF,
 #    and IAM for the ALB controller + external-dns. Founder decision: WAF/ACM/Route53 ON at pilot (cheap, and
 #    staging should prove the exact same edge path prod will use).

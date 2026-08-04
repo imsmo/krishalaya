@@ -14,14 +14,14 @@ only** (never demo), and RLS-verified — with one fail-closed, idempotent comma
 
 ```bash
 cd <repo-root>
-PROJECT=krishiverse-prod REGION=ap-south-1 \
+PROJECT=krishalaya-prod REGION=ap-south-1 \
 WRITER_HOST=$(terraform -chdir=infra/terraform/envs/prod output -raw aurora_writer_endpoint) \
 MASTER_SECRET_ARN=$(terraform -chdir=infra/terraform/envs/prod output -raw aurora_master_secret_arn) \
   ./db/prod/apply.sh
 ```
 
 Prereqs: `aws` CLI v2 (auth'd), `node`, `psql`, repo deps installed (`pnpm install`), and the app-role password
-secrets created (P0-2 / SECRETS-RUNBOOK §1a: `krishiverse-prod/db/{kv_app,kv_wallet,kv_relay}_password`).
+secrets created (P0-2 / SECRETS-RUNBOOK §1a: `krishalaya-prod/db/{kv_app,kv_wallet,kv_relay}_password`).
 
 ## What it does (each step is idempotent; stops on first failure)
 

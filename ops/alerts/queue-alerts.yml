@@ -1,24 +1,24 @@
 # ops/alerts/queue-alerts.yml · outbox relay + stream-processor lag/DLQ (worker/stream-processor emit these).
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
-metadata: { name: krishiverse-queue-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+metadata: { name: krishalaya-queue-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
 spec:
   groups:
     - name: queues.lag
       rules:
         # NOTE: requires the worker to gauge unrelayed outbox rows as kv_outbox_pending (add if absent).
         - alert: OutboxBacklogGrowing
-          expr: kv_outbox_pending{namespace="krishiverse"} > 5000
+          expr: kv_outbox_pending{namespace="krishalaya"} > 5000
           for: 10m
           labels: { severity: page }
           annotations: { summary: "Outbox backlog >5k (events not dispatching)", runbook: ops/runbooks/partition-job-failed.md }
         - alert: StreamProcessorDLQGrowing
-          expr: increase(kv_stream_dlq_total{namespace="krishiverse"}[15m]) > 50
+          expr: increase(kv_stream_dlq_total{namespace="krishalaya"}[15m]) > 50
           for: 15m
           labels: { severity: ticket }
           annotations: { summary: "Stream-processor DLQ growing on {{ $labels.consumer }}" }
         - alert: PartitionRunwayLow
-          expr: kv_partition_days_ahead{namespace="krishiverse"} < 3
+          expr: kv_partition_days_ahead{namespace="krishalaya"} < 3
           for: 1h
           labels: { severity: page }
           annotations: { summary: "Partition runway <3 days — inserts will fail soon", runbook: ops/runbooks/partition-job-failed.md }

@@ -30,7 +30,7 @@ kubectl apply -f infra/k8s/observability/alertmanager-config.yaml
 
 ## 3. Verify telemetry is flowing
 - Grafana → the six `Krishalaya ·` dashboards show live data.
-- `up{namespace="krishiverse"}` = 1 for every service in Prometheus.
+- `up{namespace="krishalaya"}` = 1 for every service in Prometheus.
 - Some app series exist after traffic: `auth_verify_otp_count`, `dep_call`, `payments_webhook_count`.
 
 ## 4. Arm + test alerting (must page on a real fault)
@@ -39,8 +39,8 @@ kubectl apply -f infra/k8s/observability/alertmanager-config.yaml
 
 ## 5. Load + soak at target scale (cluster-only)
 ```bash
-BASE=https://api.krishiverse.ai k6 run ops/load-tests/k6-order-flow.js      # ramp to 500 VUs; SLO gates inline
-k6 run -e WS_URL=wss://rt.krishiverse.ai -e TOKEN=... ops/load-tests/k6-realtime-sockets.js   # socket soak
+BASE=https://api.krishalaya.com k6 run ops/load-tests/k6-order-flow.js      # ramp to 500 VUs; SLO gates inline
+k6 run -e WS_URL=wss://rt.krishalaya.com -e TOKEN=... ops/load-tests/k6-realtime-sockets.js   # socket soak
 k6 run ops/load-tests/soak-72h.js                                            # 72h endurance (dedicated box)
 ```
 Watch golden-signals + db-health + wallet-invariants throughout. **The run passes when SLOs (slo.md) hold and no

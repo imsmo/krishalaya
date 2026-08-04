@@ -40,7 +40,7 @@ row each — see `dev34_report.md` for the full probe table and findings registe
 # against a real, already-booted apps/api (any boot method: docker, embedded-PG, staging):
 BASE_URL=http://localhost:3910 \
   TOKEN_A=<tenant-A JWT> TOKEN_B=<tenant-B JWT> OTHER_TENANT_LISTING_ID=<a tenant-A listing id> \
-  ALLOWED_ORIGIN=https://tenant.staging.krishiverse.ai \
+  ALLOWED_ORIGIN=https://tenant.staging.krishalaya.com \
   OUT_JSON=/tmp/probe-result.json \
   node ops/security/dast-probes/probe-suite.mjs
 

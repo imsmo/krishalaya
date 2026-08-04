@@ -162,7 +162,7 @@ data "aws_region" "current" {}
 # ---------- VPC flow logs ----------
 resource "aws_cloudwatch_log_group" "flow" {
   count             = var.enable_flow_logs ? 1 : 0
-  name              = "/krishiverse/${var.name}/vpc-flow-logs"
+  name              = "/krishalaya/${var.name}/vpc-flow-logs"
   retention_in_days = var.flow_logs_retention_days
   tags              = local.tags
 }

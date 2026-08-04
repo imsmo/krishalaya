@@ -3,7 +3,7 @@
 nameOverride: ''
 fullnameOverride: ''
 image:
-  repository: REPLACE_ECR/krishiverse-web-storefront
+  repository: REPLACE_ECR/krishalaya-web-storefront
   tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 2
@@ -81,11 +81,11 @@ extraVolumeMounts: []
 ingress:
   enabled: true
   className: alb
-  groupName: krishiverse-edge
+  groupName: krishalaya-edge
   certArn: REPLACE_ACM_CERT_ARN
   wafArn: REPLACE_WAF_ACL_ARN
   healthcheckPath: /
   hosts:
-  - krishiverse.ai
-  - www.krishiverse.ai
+  - krishalaya.com
+  - www.krishalaya.com
   annotations: {}

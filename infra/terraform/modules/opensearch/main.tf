@@ -114,7 +114,7 @@ resource "aws_opensearch_domain" "this" {
 }
 
 resource "aws_cloudwatch_log_group" "os" {
-  name              = "/krishiverse/${var.name}/opensearch"
+  name              = "/krishalaya/${var.name}/opensearch"
   retention_in_days = 30
   tags              = local.tags
 }

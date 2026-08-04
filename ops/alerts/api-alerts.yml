@@ -3,7 +3,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: krishiverse-api-alerts
+  name: krishalaya-api-alerts
   namespace: monitoring
   labels: { release: kube-prometheus-stack }
 spec:
@@ -11,7 +11,7 @@ spec:
     - name: api.availability
       rules:
         - alert: ApiTargetDown
-          expr: up{namespace="krishiverse", job=~"api|admin-api|wallet-service|realtime-gateway|ai-services"} == 0
+          expr: up{namespace="krishalaya", job=~"api|admin-api|wallet-service|realtime-gateway|ai-services"} == 0
           for: 2m
           labels: { severity: page }
           annotations:
@@ -19,14 +19,14 @@ spec:
             description: "{{ $labels.job }}/{{ $labels.pod }} has been unreachable for 2m."
             runbook: ops/runbooks/production-down.md
         - alert: ApiPodCrashLooping
-          expr: increase(kube_pod_container_status_restarts_total{namespace="krishiverse"}[10m]) > 3
+          expr: increase(kube_pod_container_status_restarts_total{namespace="krishalaya"}[10m]) > 3
           for: 5m
           labels: { severity: page }
           annotations: { summary: "{{ $labels.pod }} crash-looping", runbook: ops/runbooks/production-down.md }
         - alert: ApiHighMemory
           expr: |
-            max by (pod) (container_memory_working_set_bytes{namespace="krishiverse",container!=""})
-              / max by (pod) (kube_pod_container_resource_limits{namespace="krishiverse",resource="memory"}) > 0.9
+            max by (pod) (container_memory_working_set_bytes{namespace="krishalaya",container!=""})
+              / max by (pod) (kube_pod_container_resource_limits{namespace="krishalaya",resource="memory"}) > 0.9
           for: 10m
           labels: { severity: ticket }
           annotations: { summary: "{{ $labels.pod }} >90% memory limit (OOM risk)" }
@@ -35,15 +35,15 @@ spec:
         # dep_failure / dep_call are emitted by core/resilience for every external dependency.
         - alert: DependencyErrorRateHigh
           expr: |
-            sum by (dep) (increase(dep_failure{namespace="krishiverse"}[5m]))
-              / clamp_min(sum by (dep) (increase(dep_call_count{namespace="krishiverse"}[5m])), 1) > 0.1
+            sum by (dep) (increase(dep_failure{namespace="krishalaya"}[5m]))
+              / clamp_min(sum by (dep) (increase(dep_call_count{namespace="krishalaya"}[5m])), 1) > 0.1
           for: 5m
           labels: { severity: page }
           annotations:
             summary: "dependency {{ $labels.dep }} error rate >10%"
             description: "Circuit breaker likely open. One hung dependency must not cascade (Law 12)."
         - alert: DependencyLatencyP99High
-          expr: max by (dep) (dep_call{namespace="krishiverse",quantile="0.99"}) > 3000
+          expr: max by (dep) (dep_call{namespace="krishalaya",quantile="0.99"}) > 3000
           for: 10m
           labels: { severity: ticket }
           annotations: { summary: "dependency {{ $labels.dep }} p99 > 3s" }

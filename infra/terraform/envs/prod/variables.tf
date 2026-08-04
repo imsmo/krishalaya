@@ -7,7 +7,7 @@ variable "region" {
 
 variable "project" {
   type    = string
-  default = "krishiverse-prod"
+  default = "krishalaya-prod"
 }
 
 variable "vpc_cidr" {
@@ -64,5 +64,5 @@ variable "opensearch_instance_type" {
 variable "root_domain" {
   type        = string
   description = "Apex production domain."
-  default     = "krishiverse.ai"
+  default     = "krishalaya.com"
 }

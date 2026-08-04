@@ -35,7 +35,7 @@
 -- NEVER run in staging/production (there is no legitimate reason these ids would exist there).
 --
 -- RUN IT as the DB owner (same role that ran demo-design-data.sql):
---   psql "postgres://<owner>:<pw>@localhost:5432/krishiverse" -f db/local/cleanup-demo-design-data.sql
+--   psql "postgres://<owner>:<pw>@localhost:5432/krishalaya" -f db/local/cleanup-demo-design-data.sql
 -- ============================================================================
 BEGIN;
 

@@ -40,9 +40,9 @@
 --     have their DEFAULT partition — created by ensure_partitions()).
 --
 -- RUN IT as the DB OWNER / superuser (bypasses tenant RLS so explicit tenant_id inserts go through):
---   psql "postgres://<owner>:<pw>@localhost:5432/krishiverse" -f db/local/demo-design-data.sql
+--   psql "postgres://<owner>:<pw>@localhost:5432/krishalaya" -f db/local/demo-design-data.sql
 -- e.g.
---   psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishiverse" -f db/local/demo-design-data.sql
+--   psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishalaya" -f db/local/demo-design-data.sql
 --
 -- NEVER run in staging/production. Re-runnable any time.
 -- ============================================================================
@@ -254,7 +254,7 @@ COMMIT;
 
 -- ============================================================================
 -- NOT INCLUDED here (need a separate DB or many lookup FKs — ask to add next):
---   • Wallet balance + ledger lines (screens 19/21/71): live in the wallet-service DB (kv_wallet), not krishiverse.
+--   • Wallet balance + ledger lines (screens 19/21/71): live in the wallet-service DB (kv_wallet), not krishalaya.
 --   • Labour bookings (screens 50/51): need demand-type lookup + skills + farm address rows.
 --   • Ambassador earnings/referrals (screens 86/92): need the ambassador tables seeded.
 -- ============================================================================

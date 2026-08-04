@@ -4,7 +4,7 @@
 // apps/api/src/core/wallet/wallet.client.inprocess.ts (the active path). When wallet is
 // extracted to its own process, this same service is served over gRPC — callers are unchanged.
 syntax = "proto3";
-package krishiverse.wallet.v1;
+package krishalaya.wallet.v1;
 
 // A signed leg: amount_minor > 0 = credit, < 0 = debit. Legs of one txn MUST sum to zero.
 message Leg {

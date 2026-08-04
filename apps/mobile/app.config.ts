@@ -1,6 +1,6 @@
 // apps/mobile/app.config.ts · Expo app configuration. Uses expo-router (file-based routing under src/app) and
 // surfaces public runtime config via `extra` (read by core/config.ts — no secrets here, only public values
-// injected from EXPO_PUBLIC_* env at build time). Deep-link scheme `krishiverse` powers OTP/SMS return +
+// injected from EXPO_PUBLIC_* env at build time). Deep-link scheme `krishalaya` powers OTP/SMS return +
 // notification taps. P-30 release hardening: Hermes JS engine, R8/ProGuard + resource shrink, cleartext OFF, and
 // TLS pinning declared for the API host so the native layer enforces it in release builds (§4). None of these are
 // the LAST line of defence — the server is the authority (Law 11) — but they raise the cost of attack.
@@ -13,7 +13,7 @@ const tlsPins = (process.env.EXPO_PUBLIC_TLS_PINS ?? '').split(',').map((s) => s
 const config: ExpoConfig = {
   name: 'Krishalaya',
   slug: 'krishalaya',
-  scheme: 'krishiverse',
+  scheme: 'krishalaya',
   version: '0.1.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
@@ -21,8 +21,8 @@ const config: ExpoConfig = {
   jsEngine: 'hermes', // Hermes bytecode in release (smaller + harder to reverse than plain JS) — §4/§5
   splash: { backgroundColor: '#1e6f3f', resizeMode: 'contain' },
   assetBundlePatterns: ['**/*'],
-  ios: { supportsTablet: false, bundleIdentifier: 'co.krishiverse.app' },
-  android: { package: 'co.krishiverse.app', adaptiveIcon: { backgroundColor: '#1e6f3f' } },
+  ios: { supportsTablet: false, bundleIdentifier: 'com.krishalaya.app' },
+  android: { package: 'com.krishalaya.app', adaptiveIcon: { backgroundColor: '#1e6f3f' } },
   plugins: [
     'expo-router', 'expo-secure-store', 'expo-localization', 'expo-font',
     // Release anti-tamper/anti-reversing + transport hardening (§4). Cleartext is OFF (HTTPS-only); R8/ProGuard

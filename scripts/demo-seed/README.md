@@ -161,10 +161,10 @@ Safe to re-run any time:
 There's no flag to wipe and restart clean. Tearing down three phone numbers' worth of data cleanly
 means walking `orders` → `order_items` → `payments` → `wallet_ledger_entries`/`wallet_accounts` →
 `payouts` → `kyc_documents`/`ekyc_sessions` → `bank_accounts` → `user_tenant_roles` → `users` in FK
-order across two databases (`krishiverse` + the wallet-service's own `kv_wallet`) — non-trivial
+order across two databases (`krishalaya` + the wallet-service's own `kv_wallet`) — non-trivial
 enough that getting it wrong (deleting a hash-chained ledger row out of order, say) is worse than
 not offering it. If you want a truly fresh demo tenant, the safe option is a full local Postgres
-reset (drop + recreate `krishiverse` and `kv_wallet`, re-migrate, re-seed) rather than a partial
+reset (drop + recreate `krishalaya` and `kv_wallet`, re-migrate, re-seed) rather than a partial
 psql teardown — see `docs/local-setup/` for that sequence.
 
 ## Troubleshooting

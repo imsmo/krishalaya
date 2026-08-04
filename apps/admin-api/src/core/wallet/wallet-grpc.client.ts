@@ -32,7 +32,7 @@ export class WalletGrpcAdminClient implements WalletAdminPort {
     if (!addr) throw new WalletUnavailableError('WALLET_GRPC_ADDR is not configured (cannot move money)');
     const def = loadSync(join(__dirname, 'wallet.proto'), { longs: String, keepCase: true, defaults: true, oneofs: true });
     const pkg = loadPackageDefinition(def) as any;
-    const Ctor = pkg.krishiverse.wallet.v1.Wallet;
+    const Ctor = pkg.krishalaya.wallet.v1.Wallet;
     this.client = new Ctor(addr, credentials.createInsecure()) as WalletGrpcClient;   // TLS terminated by the mesh
     return this.client;
   }

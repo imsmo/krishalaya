@@ -30,7 +30,7 @@
 //   4. Writes tokens.json + prints ready-to-export env lines for profile.env.
 //
 // Usage:
-//   STAGING_API_URL=https://api.staging.krishiverse.ai \
+//   STAGING_API_URL=https://api.staging.krishalaya.com \
 //   TENANT_ID=11111111-0000-7000-8000-000000000001 \
 //   LOAD_TEST_PHONES=+919800000001,+919800000002,+919800000003 \
 //   node ops/load-tests/pilot/provision-loadtest-identities.mjs

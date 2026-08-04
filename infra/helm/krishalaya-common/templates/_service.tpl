@@ -1,18 +1,18 @@
-{{- define "krishiverse-common.service" -}}
+{{- define "krishalaya-common.service" -}}
 {{- if .Values.service.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "krishiverse-common.fullname" . }}
+  name: {{ include "krishalaya-common.fullname" . }}
   labels:
-    {{- include "krishiverse-common.labels" . | nindent 4 }}
+    {{- include "krishalaya-common.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   {{- if .Values.service.sessionAffinity }}
   sessionAffinity: {{ .Values.service.sessionAffinity }}
   {{- end }}
   selector:
-    {{- include "krishiverse-common.selectorLabels" . | nindent 4 }}
+    {{- include "krishalaya-common.selectorLabels" . | nindent 4 }}
   ports:
     - name: {{ if .Values.service.grpc }}grpc{{ else }}http{{ end }}
       port: {{ .Values.service.port }}

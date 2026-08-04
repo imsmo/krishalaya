@@ -1,5 +1,5 @@
 # infra/docker/ai-services.Dockerfile · FastAPI inference service, non-root.
-#   docker build -f infra/docker/ai-services.Dockerfile -t <ECR>/krishiverse-ai-services:<tag> apps/ai-services
+#   docker build -f infra/docker/ai-services.Dockerfile -t <ECR>/krishalaya-ai-services:<tag> apps/ai-services
 # (context = apps/ai-services)
 FROM python:3.11-slim AS runtime
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PORT=8000

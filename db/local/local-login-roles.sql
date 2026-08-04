@@ -12,7 +12,7 @@
 --   the apps. Safe to re-run. Password is 'dev' to match the .env files in this guide.
 --
 -- RUN IT (from the repo root, with Docker Postgres up):
---   psql "postgres://postgres:dev@localhost:5432/krishiverse" -f db/local/local-login-roles.sql
+--   psql "postgres://postgres:dev@localhost:5432/krishalaya" -f db/local/local-login-roles.sql
 --
 -- NEVER run this in staging/production. These are weak dev passwords on purpose.
 -- ============================================================================

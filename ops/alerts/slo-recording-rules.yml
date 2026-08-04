@@ -2,7 +2,7 @@
 # Latency comes from our per-use-case summaries (quantile + _count/_sum); success from the ok="true" label.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
-metadata: { name: krishiverse-slo, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+metadata: { name: krishalaya-slo, namespace: monitoring, labels: { release: kube-prometheus-stack } }
 spec:
   groups:
     - name: slo.recording

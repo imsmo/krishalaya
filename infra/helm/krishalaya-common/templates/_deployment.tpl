@@ -1,10 +1,10 @@
-{{- define "krishiverse-common.deployment" -}}
+{{- define "krishalaya-common.deployment" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "krishiverse-common.fullname" . }}
+  name: {{ include "krishalaya-common.fullname" . }}
   labels:
-    {{- include "krishiverse-common.labels" . | nindent 4 }}
+    {{- include "krishalaya-common.labels" . | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   {{- if not .Values.autoscaling.enabled }}
@@ -12,13 +12,13 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "krishiverse-common.selectorLabels" . | nindent 6 }}
+      {{- include "krishalaya-common.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "krishiverse-common.labels" . | nindent 8 }}
+        {{- include "krishalaya-common.labels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "krishiverse-common.serviceAccountName" . }}
+      serviceAccountName: {{ include "krishalaya-common.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- with .Values.nodeSelector }}
@@ -41,11 +41,11 @@ spec:
           whenUnsatisfiable: {{ .whenUnsatisfiable }}
           labelSelector:
             matchLabels:
-              {{- include "krishiverse-common.selectorLabels" $ | nindent 14 }}
+              {{- include "krishalaya-common.selectorLabels" $ | nindent 14 }}
         {{- end }}
       {{- end }}
       containers:
-        - name: {{ include "krishiverse-common.name" . }}
+        - name: {{ include "krishalaya-common.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
@@ -85,11 +85,11 @@ spec:
           {{- end }}
           {{- if ne .Values.livenessProbe.type "none" }}
           livenessProbe:
-            {{- include "krishiverse-common.probe" (dict "p" .Values.livenessProbe "Values" .Values) | nindent 12 }}
+            {{- include "krishalaya-common.probe" (dict "p" .Values.livenessProbe "Values" .Values) | nindent 12 }}
           {{- end }}
           {{- if ne .Values.readinessProbe.type "none" }}
           readinessProbe:
-            {{- include "krishiverse-common.probe" (dict "p" .Values.readinessProbe "Values" .Values) | nindent 12 }}
+            {{- include "krishalaya-common.probe" (dict "p" .Values.readinessProbe "Values" .Values) | nindent 12 }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -108,7 +108,7 @@ spec:
 {{- end -}}
 
 {{/* probe renderer: http | tcp | exec */}}
-{{- define "krishiverse-common.probe" -}}
+{{- define "krishalaya-common.probe" -}}
 {{- $p := .p -}}
 {{- if eq $p.type "http" }}
 httpGet:

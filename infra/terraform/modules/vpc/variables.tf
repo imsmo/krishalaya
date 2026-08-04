@@ -1,7 +1,7 @@
 # infra/terraform/modules/vpc/variables.tf · network foundation inputs
 
 variable "name" {
-  description = "Name prefix for all VPC resources (e.g. krishiverse-prod)."
+  description = "Name prefix for all VPC resources (e.g. krishalaya-prod)."
   type        = string
 }
 

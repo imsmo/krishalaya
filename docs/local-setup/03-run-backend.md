@@ -18,7 +18,7 @@ Create `apps/api/.env` with these exact contents:
 cat > apps/api/.env <<'EOF'
 NODE_ENV=development
 PORT=3000
-DATABASE_URL=postgres://kv_app:dev@localhost:5432/krishiverse
+DATABASE_URL=postgres://kv_app:dev@localhost:5432/krishalaya
 DATABASE_POOL_MAX=20
 SHARD_COUNT=1
 JWT_ACCESS_SECRET=dev-secret-change-me-at-least-32-characters-long
@@ -60,7 +60,7 @@ non-money features work fine, but money endpoints will error.
 cat > apps/wallet-service/.env <<'EOF'
 NODE_ENV=development
 GRPC_PORT=50051
-DATABASE_URL=postgres://kv_wallet:dev@localhost:5432/krishiverse
+DATABASE_URL=postgres://kv_wallet:dev@localhost:5432/krishalaya
 HOT_ACCOUNT_STRIPES=16
 EOF
 ```
@@ -84,7 +84,7 @@ API works without it, but timed behaviour won't fire.
 ```bash
 cat > apps/worker/.env <<'EOF'
 NODE_ENV=development
-DATABASE_URL=postgres://kv_relay:dev@localhost:5432/krishiverse
+DATABASE_URL=postgres://kv_relay:dev@localhost:5432/krishalaya
 REDIS_URL=redis://localhost:6379
 EOF
 ```
@@ -105,7 +105,7 @@ The separate "god-mode" ops API. Only needed if you want to run **web-admin** (S
 cat > apps/admin-api/.env <<'EOF'
 NODE_ENV=development
 ADMIN_PORT=4001
-DATABASE_URL=postgres://kv_app:dev@localhost:5432/krishiverse
+DATABASE_URL=postgres://kv_app:dev@localhost:5432/krishalaya
 REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=dev-secret-change-me-at-least-32-characters-long
 JWT_ISSUER=krishalaya-admin
@@ -164,7 +164,7 @@ Create its `.env`:
 cat > .env <<'EOF'
 APP_ENV=development
 API_SHARED_SECRET=dev-shared-secret-at-least-32-characters-long-xx
-INFERENCE_LOG_DB_URL=postgres://kv_relay:dev@localhost:5432/krishiverse
+INFERENCE_LOG_DB_URL=postgres://kv_relay:dev@localhost:5432/krishalaya
 AI_HTTP_TIMEOUT_MS=8000
 AI_REQUEST_MAX_BYTES=262144
 EOF

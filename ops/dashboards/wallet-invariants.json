@@ -1,5 +1,5 @@
 {
-  "uid": "krishiverse-wallet",
+  "uid": "krishalaya-wallet",
   "title": "Krishalaya \u00b7 Wallet Invariants (MONEY)",
   "schemaVersion": 39,
   "version": 1,
@@ -20,7 +20,7 @@
     ]
   },
   "tags": [
-    "krishiverse",
+    "krishalaya",
     "p0-6"
   ],
   "panels": [
@@ -43,7 +43,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "kv_recon_mismatches{namespace=\"krishiverse\"}",
+          "expr": "kv_recon_mismatches{namespace=\"krishalaya\"}",
           "legendFormat": "mismatches"
         }
       ],
@@ -71,7 +71,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "kv_recon_age_seconds{namespace=\"krishiverse\"}",
+          "expr": "kv_recon_age_seconds{namespace=\"krishalaya\"}",
           "legendFormat": "age"
         }
       ],

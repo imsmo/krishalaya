@@ -13,7 +13,7 @@ variable "region" {
 
 variable "project" {
   type    = string
-  default = "krishiverse-staging"
+  default = "krishalaya-staging"
 }
 
 variable "vpc_cidr" {
@@ -88,6 +88,6 @@ variable "redis_replicas_per_node_group" {
 
 variable "root_domain" {
   type        = string
-  description = "Staging apex — a delegated SUBDOMAIN of the prod apex, not its own registrar-level domain. Gets its own Route 53 hosted zone (module.dns), NS-delegated from inside the prod krishiverse.ai zone (see runbook step on DNS delegation)."
-  default     = "staging.krishiverse.ai"
+  description = "Staging apex — a delegated SUBDOMAIN of the prod apex, not its own registrar-level domain. Gets its own Route 53 hosted zone (module.dns), NS-delegated from inside the prod krishalaya.com zone (see runbook step on DNS delegation)."
+  default     = "staging.krishalaya.com"
 }

@@ -1,7 +1,7 @@
 # infra/terraform/modules/eks/variables.tf · runtime plane inputs
 
 variable "name" {
-  description = "Cluster name prefix (e.g. krishiverse-prod)."
+  description = "Cluster name prefix (e.g. krishalaya-prod)."
   type        = string
 }
 

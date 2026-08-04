@@ -47,12 +47,12 @@ You should see `postgres`, `redis`, `opensearch`, `localstack` all "Up".
 > OpenSearch (falls back to Postgres search) and without S3 (media upload just won't have a real bucket).
 
 **What this gives you (from `docker-compose.yml`):**
-- Postgres 16 on **localhost:5432**, superuser **`postgres`**, password **`dev`**, database **`krishiverse`**.
+- Postgres 16 on **localhost:5432**, superuser **`postgres`**, password **`dev`**, database **`krishalaya`**.
 - Redis 7 on **localhost:6379**.
 
 **Verify Postgres is reachable** (needs the `psql` client from step 1.8; if you skipped it, skip this check):
 ```bash
-psql "postgres://postgres:dev@localhost:5432/krishiverse" -c "select version();"
+psql "postgres://postgres:dev@localhost:5432/krishalaya" -c "select version();"
 ```
 
 ---
@@ -63,7 +63,7 @@ Migrations create the ~250 tables, enums, functions, RLS policies, **and the app
 database **owner** (here: the `postgres` superuser). Point the runner at it:
 
 ```bash
-export MIGRATION_DATABASE_URL="postgres://postgres:dev@localhost:5432/krishiverse"
+export MIGRATION_DATABASE_URL="postgres://postgres:dev@localhost:5432/krishalaya"
 pnpm migrate
 ```
 
@@ -84,7 +84,7 @@ permissions but **cannot connect** yet (in production their passwords come from 
 laptop you flip them to LOGIN with a dev password, **once**, after migrating:
 
 ```bash
-psql "postgres://postgres:dev@localhost:5432/krishiverse" -f db/local/local-login-roles.sql
+psql "postgres://postgres:dev@localhost:5432/krishalaya" -f db/local/local-login-roles.sql
 ```
 The script prints a table at the end — confirm `rolcanlogin = t` for all three:
 ```
@@ -124,11 +124,11 @@ pnpm seed:demo       # adds demo tenants/users/listings so you have something to
 
 ```bash
 # count tables (expect ~250+)
-psql "postgres://postgres:dev@localhost:5432/krishiverse" -c \
+psql "postgres://postgres:dev@localhost:5432/krishalaya" -c \
   "select count(*) as tables from information_schema.tables where table_schema='public';"
 
 # confirm kv_app can actually connect now (this is the role the API uses)
-psql "postgres://kv_app:dev@localhost:5432/krishiverse" -c "select current_user;"
+psql "postgres://kv_app:dev@localhost:5432/krishalaya" -c "select current_user;"
 ```
 If `current_user` prints `kv_app`, your database layer is done. ✅
 

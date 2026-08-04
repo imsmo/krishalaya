@@ -73,7 +73,7 @@ Investigated `apps/api/src/modules/payments/services/payment.service.ts` directl
   (`app-config.ts:268`, `allowSandbox = !isProd`) and prod hard-fails if
   `PAYMENTS_DEFAULT_PROVIDER=sandbox` — so this script is structurally incapable of moving real money,
   but it must still only ever be pointed at staging. `run-pilot-gate.sh` refuses to run if
-  `STAGING_API_URL` contains `api.krishiverse.ai` (the prod host string) as a blunt extra guard.
+  `STAGING_API_URL` contains `api.krishalaya.com` (the prod host string) as a blunt extra guard.
 - `online_payments` (default OFF) must be enabled on the pilot tenant for checkout to reach
   `payment_pending` at all — same flag `scripts/pilot-e2e/flow.mjs` and `scripts/staging-smoke/
   provision.md` already document turning on for exactly this reason.
@@ -185,7 +185,7 @@ the others.
 3. Temporarily set `AUTH_EXPOSE_OTP=true` on the staging api deployment.
 4. Run the identity/listing provisioning helper:
    ```bash
-   STAGING_API_URL=https://api.staging.krishiverse.ai \
+   STAGING_API_URL=https://api.staging.krishalaya.com \
    TENANT_ID=11111111-0000-7000-8000-000000000001 \
    LOAD_TEST_PHONES=+919800000001,+919800000002,+919800000003,+919800000004,+919800000005 \
    CATALOGUE_PRODUCT_ID=<a products.id under the crops category in this tenant> \

@@ -2,7 +2,7 @@
 
 variable "name" {
   type        = string
-  description = "Name prefix (e.g. krishiverse-prod)."
+  description = "Name prefix (e.g. krishalaya-prod)."
 }
 
 variable "oidc_provider_arn" {
@@ -18,7 +18,7 @@ variable "oidc_provider_url" {
 variable "namespace" {
   type        = string
   description = "Kubernetes namespace the service accounts live in."
-  default     = "krishiverse"
+  default     = "krishalaya"
 }
 
 variable "kms_key_arn" {
@@ -28,7 +28,7 @@ variable "kms_key_arn" {
 
 variable "secrets_arn_prefix" {
   type        = string
-  description = "ARN wildcard for this env's Secrets Manager entries, e.g. arn:aws:secretsmanager:ap-south-1:ACCT:secret:krishiverse-prod/*"
+  description = "ARN wildcard for this env's Secrets Manager entries, e.g. arn:aws:secretsmanager:ap-south-1:ACCT:secret:krishalaya-prod/*"
 }
 
 variable "media_bucket_arn" {
@@ -54,7 +54,7 @@ variable "tags" {
   default = {}
 }
 
-# The External Secrets Operator controller SA (reads ALL krishiverse-prod/* secrets to sync into k8s).
+# The External Secrets Operator controller SA (reads ALL krishalaya-prod/* secrets to sync into k8s).
 variable "eso_namespace" {
   type    = string
   default = "external-secrets"

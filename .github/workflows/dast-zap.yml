@@ -7,7 +7,7 @@ on:
     inputs:
       target:
         description: "Base URL to scan"
-        default: "https://api.staging.krishiverse.ai"
+        default: "https://api.staging.krishalaya.com"
         required: true
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
       - name: ZAP baseline scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: ${{ github.event.inputs.target || 'https://api.staging.krishiverse.ai' }}
+          target: ${{ github.event.inputs.target || 'https://api.staging.krishalaya.com' }}
           # rules file lets us downgrade known-accepted alerts; -I = don't fail the build (signal, not gate)
           rules_file_name: .zap/rules.tsv
           cmd_options: '-I -a'

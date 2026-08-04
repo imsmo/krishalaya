@@ -30,7 +30,7 @@ Cross-referenced runbooks (do not duplicate — follow the link when noted):
 | Redis | 1 replica (HA) | **0 replicas** (single node) | Founder decision: single Redis at pilot |
 | OpenSearch | 2-node domain | **not created at all** | No enable/disable flag exists on the module (see finding below) — the pilot module composition simply never calls `module "opensearch"`. Search is SQL at pilot (`unified_search` flag OFF, verified S0). |
 | Kafka/MSK | not wired in prod either | not wired | `stream-processor` is GA-only per founder decision — consistent with prod, no staging-specific gap |
-| Domain | `krishiverse.ai` (apex) | `staging.krishiverse.ai` (delegated subdomain, own Route 53 zone) | Isolation; doesn't require the prod apex to be delegated first |
+| Domain | `krishalaya.com` (apex) | `staging.krishalaya.com` (delegated subdomain, own Route 53 zone) | Isolation; doesn't require the prod apex to be delegated first |
 | `deletion_protection` (Aurora) | `true` | **`false`** | Staging must be destroyable while you iterate |
 | `NODE_ENV` in every Helm chart | `production` (hardcoded in `values.yaml`) | **same — `production`, unchanged** | Deliberate: this is what makes `assertProductionSecurity` exercisable in staging (§6) |
 
@@ -55,7 +55,7 @@ aws sts get-caller-identity                          # confirm you're the right 
 
 Account-level items from `Development_Program/S0_LONG_LEAD_CHECKLIST.md` that gate this runbook:
 - **#6 AWS account + billing** — done before this runbook starts (billing alarm at ₹25k/mo already set per S0).
-- **#5 Domain + DNS delegation** — you need registrar access for `krishiverse.ai` to delegate the `staging` subdomain (§4).
+- **#5 Domain + DNS delegation** — you need registrar access for `krishalaya.com` to delegate the `staging` subdomain (§4).
 - **#2 Razorpay** — you only need **test-mode** keys for staging (`rzp_test_...` + a webhook secret you invent yourself,
   ≥16 chars, not `sandbox-secret`) — `assertProductionSecurity` only checks presence + strength, not test-vs-live.
 - **#8 eKYC provider agreement** — you need the provider's **sandbox/UAT** endpoint + API key (S0 checklist already
@@ -76,15 +76,15 @@ which environment you apply first:
 ACC=$(aws sts get-caller-identity --query Account --output text)
 REGION=ap-south-1
 
-aws s3api create-bucket --bucket "krishiverse-tfstate-$ACC" \
+aws s3api create-bucket --bucket "krishalaya-tfstate-$ACC" \
   --region $REGION --create-bucket-configuration LocationConstraint=$REGION
-aws s3api put-bucket-versioning --bucket "krishiverse-tfstate-$ACC" --versioning-configuration Status=Enabled
-aws s3api put-bucket-encryption --bucket "krishiverse-tfstate-$ACC" \
+aws s3api put-bucket-versioning --bucket "krishalaya-tfstate-$ACC" --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket "krishalaya-tfstate-$ACC" \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"aws:kms"}}]}'
-aws s3api put-public-access-block --bucket "krishiverse-tfstate-$ACC" \
+aws s3api put-public-access-block --bucket "krishalaya-tfstate-$ACC" \
   --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 
-aws dynamodb create-table --table-name krishiverse-tflock \
+aws dynamodb create-table --table-name krishalaya-tflock \
   --attribute-definitions AttributeName=LockID,AttributeType=S \
   --key-schema AttributeName=LockID,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST --region $REGION
@@ -101,7 +101,7 @@ echo "Your suffix is: $ACC"   # this is the bucket_suffix value for BOTH envs' t
 
 `infra/terraform/envs/staging/backend.tf` — replace `<ACCOUNT_ID_OR_ORG>`:
 ```hcl
-bucket = "krishiverse-tfstate-123456789012"
+bucket = "krishalaya-tfstate-123456789012"
 ```
 
 `infra/terraform/envs/staging/terraform.tfvars` — replace two values:
@@ -152,21 +152,21 @@ terraform output -json > staging-outputs.json
 
 ## 5. DNS delegation (staging subdomain)
 
-Staging gets its **own** Route 53 hosted zone for `staging.krishiverse.ai` — a subdomain, not the apex — so this
-does not require the `krishiverse.ai` apex to be on Route 53 yet (it may not be, if staging is applied before prod).
+Staging gets its **own** Route 53 hosted zone for `staging.krishalaya.com` — a subdomain, not the apex — so this
+does not require the `krishalaya.com` apex to be on Route 53 yet (it may not be, if staging is applied before prod).
 
 ```bash
 terraform output route53_name_servers    # 4 ns-xxxx.awsdns-xx.* values
 ```
-At your registrar (wherever `krishiverse.ai` is registered), add an **NS record for the host `staging`** (not the
+At your registrar (wherever `krishalaya.com` is registered), add an **NS record for the host `staging`** (not the
 apex) pointing at those 4 nameservers. Most registrars support delegating a subdomain independently of the apex.
 Verify:
 ```bash
-dig +short NS staging.krishiverse.ai      # should list the same 4 ns-xxxx.awsdns servers
+dig +short NS staging.krishalaya.com      # should list the same 4 ns-xxxx.awsdns servers
 ```
 Propagation is usually minutes, up to 48h. Once it resolves, go back to Pass B in §4.
 
-> If the `krishiverse.ai` apex is *already* on Route 53 by the time you run this (e.g. prod was applied first,
+> If the `krishalaya.com` apex is *already* on Route 53 by the time you run this (e.g. prod was applied first,
 > reversing the founder's stated order), you can alternatively add the NS record inside that existing zone instead
 > of at the registrar — functionally identical, one less registrar round-trip.
 
@@ -174,9 +174,9 @@ Propagation is usually minutes, up to 48h. Once it resolves, go back to Pass B i
 
 ## 6. Secrets — what MUST exist before any pod boots
 
-Follow `SECRETS-RUNBOOK.md` in full, substituting `krishiverse-staging` for `krishiverse-prod` everywhere and using
+Follow `SECRETS-RUNBOOK.md` in full, substituting `krishalaya-staging` for `krishalaya-prod` everywhere and using
 the `staging` Terraform outputs. Terraform already created (Pass A): the KMS key, the generated
-`krishiverse-staging/jwt/access_secret` + `krishiverse-staging/api/shared_secret`, the Aurora master secret, the
+`krishalaya-staging/jwt/access_secret` + `krishalaya-staging/api/shared_secret`, the Aurora master secret, the
 Redis auth token, and **empty containers** for the 9 external-provider keys. You still owe it the rest.
 
 ### 6.1 The exact enumerated list (cross-referencing `SECRETS-RUNBOOK.md` §1 + `assertProductionSecurity` in
@@ -185,7 +185,7 @@ boot with `FATAL: insecure production config -> ...`, it does not silently start
 
 | # | Secret / env var | Requirement | Source |
 |---|---|---|---|
-| 1 | `JWT_ACCESS_SECRET` | ≥32 chars, random | Terraform-generated (`krishiverse-staging/jwt/access_secret`) |
+| 1 | `JWT_ACCESS_SECRET` | ≥32 chars, random | Terraform-generated (`krishalaya-staging/jwt/access_secret`) |
 | 2 | `JWT_REFRESH_SECRET` | ≥32 chars, random, **≠** access secret | You generate: `openssl rand -base64 32` |
 | 3 | `AUTH_HASH_PEPPER` | ≥32 chars, random | You generate: `openssl rand -base64 32` |
 | 4 | `AUTH_EXPOSE_OTP` | must be unset or `false` | Never set it |
@@ -228,21 +228,21 @@ onboarded (production only).
 
 ### 6.3 Build the per-service env JSON + install ESO
 
-Follow `SECRETS-RUNBOOK.md` §1b/§1c and `DEPLOY-RUNBOOK.md` §3 verbatim, with `krishiverse-staging` substituted for
-`krishiverse-prod`, using the staging Terraform outputs. Staging has no reader, so:
+Follow `SECRETS-RUNBOOK.md` §1b/§1c and `DEPLOY-RUNBOOK.md` §3 verbatim, with `krishalaya-staging` substituted for
+`krishalaya-prod`, using the staging Terraform outputs. Staging has no reader, so:
 ```
 "DATABASE_REPLICA_URL": "<same value as DATABASE_URL — staging has no separate reader instance>"
 ```
 Omit every `OPENSEARCH_*` key entirely (unset, not empty-string).
 
-**Important — the shipped ExternalSecret manifests are hardcoded to `krishiverse-prod/*`.** `infra/k8s/external-secrets/*.yaml`
-each hardcode `key: krishiverse-prod/<service>/env`. Applying them unmodified to the staging cluster would try to
+**Important — the shipped ExternalSecret manifests are hardcoded to `krishalaya-prod/*`.** `infra/k8s/external-secrets/*.yaml`
+each hardcode `key: krishalaya-prod/<service>/env`. Applying them unmodified to the staging cluster would try to
 sync the **prod** secrets namespace. Generate staging equivalents on the fly rather than editing the shared files
 (keeps prod's manifests untouched):
 ```bash
 mkdir -p /tmp/eso-staging
 for f in infra/k8s/external-secrets/*.yaml; do
-  sed 's#krishiverse-prod/#krishiverse-staging/#' "$f" > "/tmp/eso-staging/$(basename "$f")"
+  sed 's#krishalaya-prod/#krishalaya-staging/#' "$f" > "/tmp/eso-staging/$(basename "$f")"
 done
 
 EDNS=$(terraform -chdir=infra/terraform/envs/staging output -raw external_secrets_role_arn)
@@ -253,7 +253,7 @@ helm upgrade --install external-secrets external-secrets/external-secrets \
 
 kubectl apply -f /tmp/eso-staging/00-cluster-secret-store.yaml
 kubectl apply -f /tmp/eso-staging/   # one ExternalSecret per service
-kubectl -n krishiverse get externalsecret     # all should report SecretSynced=True
+kubectl -n krishalaya get externalsecret     # all should report SecretSynced=True
 ```
 
 ---
@@ -263,7 +263,7 @@ kubectl -n krishiverse get externalsecret     # all should report SecretSynced=T
 Run `DB-BOOTSTRAP-RUNBOOK.md`'s "one command" as-is, pointed at staging outputs:
 ```bash
 cd <repo-root>
-PROJECT=krishiverse-staging REGION=ap-south-1 \
+PROJECT=krishalaya-staging REGION=ap-south-1 \
 WRITER_HOST=$(terraform -chdir=infra/terraform/envs/staging output -raw aurora_writer_endpoint) \
 MASTER_SECRET_ARN=$(terraform -chdir=infra/terraform/envs/staging output -raw aurora_master_secret_arn) \
   ./db/prod/apply.sh
@@ -280,9 +280,9 @@ Follow `DEPLOY-RUNBOOK.md` §1–§4 and then `EDGE-RUNBOOK.md` §3–§5, subst
 - `terraform -chdir=infra/terraform/envs/staging` for every `terraform output` call
 - ECR tag convention: keep the git SHA tag scheme, but consider prefixing (`staging-$TAG`) if you want the same
   commit built for both envs to have distinguishable image tags in one shared ECR — optional, your call.
-- Ingress hosts: `api.staging.krishiverse.ai`, `admin.staging.krishiverse.ai`, etc. — i.e. every host in
+- Ingress hosts: `api.staging.krishalaya.com`, `admin.staging.krishalaya.com`, etc. — i.e. every host in
   `terraform output app_hostnames` for the staging env, NOT the prod hostnames baked into each chart's
-  `values.yaml` default (`ingress.hosts`). Override with `--set ingress.hosts[0]=api.staging.krishiverse.ai` etc.
+  `values.yaml` default (`ingress.hosts`). Override with `--set ingress.hosts[0]=api.staging.krishalaya.com` etc.
   on every `helm upgrade --install`.
 - `--set image.repository=...` / `--set image.tag=...` / `--set serviceAccount.roleArn=...` exactly as those
   runbooks describe, using the staging IRSA role ARNs (`terraform output -json irsa_role_arns`).
@@ -292,10 +292,10 @@ Follow `DEPLOY-RUNBOOK.md` §1–§4 and then `EDGE-RUNBOOK.md` §3–§5, subst
 ## 9. Verify — healthz over public HTTPS
 
 ```bash
-kubectl -n krishiverse get pods,svc,hpa,ingress
-kubectl -n krishiverse rollout status deploy/api
-curl -sS https://api.staging.krishiverse.ai/healthz     # expect 200
-curl -sSI https://staging.krishiverse.ai                # storefront 200; http:// should 301->https
+kubectl -n krishalaya get pods,svc,hpa,ingress
+kubectl -n krishalaya rollout status deploy/api
+curl -sS https://api.staging.krishalaya.com/healthz     # expect 200
+curl -sSI https://staging.krishalaya.com                # storefront 200; http:// should 301->https
 ```
 
 ---
@@ -303,7 +303,7 @@ curl -sSI https://staging.krishiverse.ai                # storefront 200; http:/
 ## 10. PITR test-restore (required — same bar as prod, per `APPLY-RUNBOOK-prod.md` §6 / `restore-drill.md`)
 
 ```bash
-SRC=krishiverse-staging-aurora
+SRC=krishalaya-staging-aurora
 aws rds restore-db-cluster-to-point-in-time \
   --source-db-cluster-identifier $SRC \
   --db-cluster-identifier ${SRC}-pitr-test \
@@ -324,11 +324,11 @@ This proves the P0-2 guarantee actually holds in a real cluster, not just in the
 (`cd apps/api && pnpm test:unit --testPathPattern app-config.security`). Do this **once staging is healthy**
 (§9 green), as a deliberate negative test:
 
-1. Pick one already-synced k8s Secret, e.g. `krishiverse-api-env`, and note its current `JWT_ACCESS_SECRET` value
+1. Pick one already-synced k8s Secret, e.g. `krishalaya-api-env`, and note its current `JWT_ACCESS_SECRET` value
    (so you can restore it after).
 2. Overwrite the AWS Secrets Manager source value with something deliberately weak:
    ```bash
-   aws secretsmanager put-secret-value --secret-id krishiverse-staging/api/env \
+   aws secretsmanager put-secret-value --secret-id krishalaya-staging/api/env \
      --secret-string '{"...same JSON as before but..." , "JWT_ACCESS_SECRET": "dev-weak-secret"}'
    ```
    (Use the real full JSON body you built in §6.3, only `JWT_ACCESS_SECRET` changed — the weak-value regex in
@@ -336,29 +336,29 @@ This proves the P0-2 guarantee actually holds in a real cluster, not just in the
    `<32`, so `dev-weak-secret` trips both the prefix match and the length check.)
 3. Force ESO to resync early (or wait out `refreshInterval: 1h`):
    ```bash
-   kubectl -n krishiverse annotate externalsecret api-env force-sync=$(date +%s) --overwrite
-   kubectl -n krishiverse get secret krishiverse-api-env -o jsonpath='{.data.JWT_ACCESS_SECRET}' | base64 -d
+   kubectl -n krishalaya annotate externalsecret api-env force-sync=$(date +%s) --overwrite
+   kubectl -n krishalaya get secret krishalaya-api-env -o jsonpath='{.data.JWT_ACCESS_SECRET}' | base64 -d
    # confirm it now shows the weak value
    ```
 4. Roll the deployment so pods pick up the new Secret (Kubernetes Secrets don't hot-reload env vars):
    ```bash
-   kubectl -n krishiverse rollout restart deploy/api
-   kubectl -n krishiverse get pods -l app=api -w
+   kubectl -n krishalaya rollout restart deploy/api
+   kubectl -n krishalaya get pods -l app=api -w
    ```
 5. **Confirm the failure**: the new pod(s) should go `CrashLoopBackOff`, and the logs should show the exact fail-closed message:
    ```bash
-   kubectl -n krishiverse logs deploy/api --tail=50
+   kubectl -n krishalaya logs deploy/api --tail=50
    # expect: FATAL: insecure production config -> JWT_ACCESS_SECRET (unique random >=32 chars); ...
    ```
    If you see this, the gate works end-to-end in a real cluster — not just in unit tests.
 6. **Restore**: put the original strong value back in Secrets Manager, force-resync, `rollout restart` again,
-   confirm `kubectl -n krishiverse rollout status deploy/api` goes healthy and `/healthz` returns 200.
+   confirm `kubectl -n krishalaya rollout status deploy/api` goes healthy and `/healthz` returns 200.
 
 ---
 
 ## 12. Rollback / destroy notes
 
-- **Roll back a bad Helm release:** `helm rollback <release> <revision> -n krishiverse` — charts keep
+- **Roll back a bad Helm release:** `helm rollback <release> <revision> -n krishalaya` — charts keep
   `revisionHistoryLimit: 5`.
 - **Roll back a bad migration:** migrations are forward-only (per `DB-BOOTSTRAP-RUNBOOK.md`) — restore from the
   PITR snapshot to just before the run (§10 mechanics), fix the migration, re-run `db/prod/apply.sh`. Never edit

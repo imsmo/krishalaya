@@ -1,11 +1,11 @@
-{{- define "krishiverse-common.ingress" -}}
+{{- define "krishalaya-common.ingress" -}}
 {{- if .Values.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "krishiverse-common.fullname" . }}
+  name: {{ include "krishalaya-common.fullname" . }}
   labels:
-    {{- include "krishiverse-common.labels" . | nindent 4 }}
+    {{- include "krishalaya-common.labels" . | nindent 4 }}
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
@@ -35,7 +35,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "krishiverse-common.fullname" $ }}
+                name: {{ include "krishalaya-common.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
     {{- end }}

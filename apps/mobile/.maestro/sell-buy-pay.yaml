@@ -3,7 +3,7 @@
 # tenant + a deterministic OTP (the staging gateway returns a fixed code for the e2e test numbers — never a real
 # OTP). Money assertions check the formatted amount renders; the server is the authority on the actual values.
 # Run: `maestro test apps/mobile/.maestro/sell-buy-pay.yaml` (CI uses Maestro Cloud on an emulator).
-appId: co.krishiverse.app
+appId: com.krishalaya.app
 env:
   SELLER_PHONE: "9800000001"   # staging test seller (deterministic OTP)
   BUYER_PHONE: "9800000002"    # staging test buyer

@@ -3,7 +3,7 @@
 nameOverride: ''
 fullnameOverride: ''
 image:
-  repository: REPLACE_ECR/krishiverse-ai-services
+  repository: REPLACE_ECR/krishalaya-ai-services
   tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 2
@@ -27,7 +27,7 @@ env:
 - name: AI_REQUEST_MAX_BYTES
   value: '262144'
 envFromSecretNames:
-- krishiverse-ai-env
+- krishalaya-ai-env
 secretEnv: []
 command: []
 args: []
@@ -84,7 +84,7 @@ extraVolumeMounts: []
 ingress:
   enabled: false
   className: alb
-  groupName: krishiverse-edge
+  groupName: krishalaya-edge
   certArn: REPLACE_ACM_CERT_ARN
   wafArn: REPLACE_WAF_ACL_ARN
   healthcheckPath: /healthz

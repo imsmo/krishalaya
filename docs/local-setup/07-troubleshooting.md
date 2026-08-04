@@ -9,15 +9,15 @@ Find your error message below. Each fix is safe to run.
 **`password authentication failed for user "kv_app"`** or **`role "kv_app" is not permitted to log in`**
 → You skipped the role-login step. Run it:
 ```bash
-psql "postgres://postgres:dev@localhost:5432/krishiverse" -f db/local/local-login-roles.sql
+psql "postgres://postgres:dev@localhost:5432/krishalaya" -f db/local/local-login-roles.sql
 ```
 
 **`permission denied for table <something>`** (from the API)
 → The role grants come from migrations. Either migrations didn't fully apply, or you connected as the wrong user.
 Confirm migrations are all applied (`pnpm migrate:status`) and that `apps/api/.env` uses
-`postgres://kv_app:dev@localhost:5432/krishiverse` (not a stray DB name like `krishi_dev`).
+`postgres://kv_app:dev@localhost:5432/krishalaya` (not a stray DB name like `krishi_dev`).
 
-**`database "krishiverse" does not exist`**
+**`database "krishalaya" does not exist`**
 → The Docker Postgres creates it from `POSTGRES_DB` in `docker-compose.yml`. Recreate cleanly:
 ```bash
 docker compose down -v   # WARNING: -v wipes the DB volume (fine locally)

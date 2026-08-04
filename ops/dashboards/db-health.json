@@ -1,5 +1,5 @@
 {
-  "uid": "krishiverse-db",
+  "uid": "krishalaya-db",
   "title": "Krishalaya \u00b7 Database Health (Aurora)",
   "schemaVersion": 39,
   "version": 1,
@@ -20,7 +20,7 @@
     ]
   },
   "tags": [
-    "krishiverse",
+    "krishalaya",
     "p0-6"
   ],
   "panels": [
@@ -43,7 +43,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "aws_rds_cpuutilization_average{dbinstance_identifier=~\"krishiverse-prod-aurora.*\"}",
+          "expr": "aws_rds_cpuutilization_average{dbinstance_identifier=~\"krishalaya-prod-aurora.*\"}",
           "legendFormat": "{{dbinstance_identifier}}"
         }
       ],

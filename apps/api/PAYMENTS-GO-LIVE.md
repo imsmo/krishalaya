@@ -12,7 +12,7 @@ live Razorpay account once the platform is deployed (it can't be done from code)
 
 ## 1. Live keys → Secrets Manager (never in git)
 
-Put the **live** dashboard keys into the API's env secret (`krishiverse-prod/api/env`, synced by External Secrets):
+Put the **live** dashboard keys into the API's env secret (`krishalaya-prod/api/env`, synced by External Secrets):
 ```
 RAZORPAY_KEY_ID=rzp_live_xxxxxxxx
 RAZORPAY_KEY_SECRET=<live>
@@ -34,8 +34,8 @@ fake money.
 
 | Webhook | URL | Active events |
 |---------|-----|---------------|
-| Pay-in | `https://api.krishiverse.ai/v1/payments/webhooks/razorpay` | `payment.captured`, `payment.failed`, `refund.processed` |
-| Payout (RazorpayX) | `https://api.krishiverse.ai/v1/payments/webhooks/razorpay/payouts` | `payout.processed`, `payout.failed`, `payout.reversed` |
+| Pay-in | `https://api.krishalaya.com/v1/payments/webhooks/razorpay` | `payment.captured`, `payment.failed`, `refund.processed` |
+| Payout (RazorpayX) | `https://api.krishalaya.com/v1/payments/webhooks/razorpay/payouts` | `payout.processed`, `payout.failed`, `payout.reversed` |
 
 Set each webhook's **secret** to the value you stored in step 1. Razorpay signs the raw body with HMAC-SHA256 and
 sends `x-razorpay-signature` (+ `x-razorpay-event-id`, which we use as the dedup key).

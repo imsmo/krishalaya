@@ -33,7 +33,7 @@ plan` runs in the user's environment (no Terraform binary / AWS creds available 
 | Root `.dockerignore` | `.dockerignore` | excludes node_modules/.git/.env*/dist/mobile — never ship secrets/junk |
 | Canonical Dockerfiles | `infra/docker/` | hardened `node-base`, generic `node-service` (ARG APP), generic `web` (Next.js), `ai-services` (Python); all non-root + tini |
 | Image build/push | `infra/docker/build-and-push.sh` + `README.md` | ECR login, repo create (scan-on-push), build+push all 10 images |
-| Helm library chart | `infra/helm/krishiverse-common` | deployment/service/hpa/pdb/serviceaccount + probe renderer; non-root, RO-rootfs, topology spread, IRSA SA annotation |
+| Helm library chart | `infra/helm/krishalaya-common` | deployment/service/hpa/pdb/serviceaccount + probe renderer; non-root, RO-rootfs, topology spread, IRSA SA annotation |
 | 8 launch-critical charts | `infra/helm/{api,admin-api,wallet-service,worker,realtime-gateway,ai-services,web,web-partner}` | complete `values.yaml` (full key set) + thin `templates/main.yaml` over the library |
 | IRSA module | `infra/terraform/modules/irsa` + wired in `envs/prod` | per-app IAM roles via OIDC: Secrets Manager read + KMS decrypt (all), S3 media r/w (api, worker); outputs `irsa_role_arns` |
 | Deploy runbook | `infra/DEPLOY-RUNBOOK.md` | IRSA apply → ECR push → namespace+secrets (External Secrets Operator) → `helm dependency build` → per-service install → verify |
@@ -44,15 +44,15 @@ propagate to a parent); every template `include` resolves to a defined block. `h
 `terraform validate` run in your environment (no helm/terraform binary available in the authoring sandbox) — see
 DEPLOY-RUNBOOK §6.
 
-## ✅ Built in the EDGE wave (this follow-on) — domain: krishiverse.ai
+## ✅ Built in the EDGE wave (this follow-on) — domain: krishalaya.com
 | Component | Path | Notes |
 |-----------|------|-------|
-| Route 53 zone | `modules/dns` | hosted zone for krishiverse.ai; outputs NS for registrar delegation |
-| Wildcard TLS | `modules/acm` | ACM cert `krishiverse.ai` + `*.krishiverse.ai`, DNS-validated in the zone |
+| Route 53 zone | `modules/dns` | hosted zone for krishalaya.com; outputs NS for registrar delegation |
+| Wildcard TLS | `modules/acm` | ACM cert `krishalaya.com` + `*.krishalaya.com`, DNS-validated in the zone |
 | WAF | `modules/waf` (filled) | WAFv2 REGIONAL web ACL: AWS managed common + known-bad + SQLi + IP-reputation + per-IP rate limit |
 | Edge IAM | `modules/alb-edge-iam` | IRSA roles for aws-load-balancer-controller + external-dns (zone-scoped) |
 | Prod wiring | `envs/prod` | dns/acm/waf/alb-edge-iam modules + `root_domain` var/tfvars + outputs (NS, cert ARN, WAF ARN, role ARNs, host map) |
-| Helm Ingress | `krishiverse-common/templates/_ingress.tpl` + per-app `ingress` values | shared ALB (group `krishiverse-edge`), ssl-redirect, cert + WAF annotations; api/admin-api/realtime + storefront(apex+www)/tenant/admin/partner hosts; wallet/worker/ai-services internal |
+| Helm Ingress | `krishalaya-common/templates/_ingress.tpl` + per-app `ingress` values | shared ALB (group `krishalaya-edge`), ssl-redirect, cert + WAF annotations; api/admin-api/realtime + storefront(apex+www)/tenant/admin/partner hosts; wallet/worker/ai-services internal |
 | Edge runbook | `infra/EDGE-RUNBOOK.md` | NS delegation → install LB controller + external-dns (Helm, IRSA) → install charts with cert/WAF → verify public HTTPS |
 
 Static verification: all 12 Terraform modules parse + cross-reference checker passes; WAF/ACM/DNS/edge-IAM wired;
@@ -60,7 +60,7 @@ every Helm `include` resolves (incl. new `ingress`); all 8 values.yaml carry a c
 
 ## ✅ P0-1 IS NOW FULLY SCOPED (foundation + deploy + edge)
 Running the three runbooks in order — `APPLY-RUNBOOK-prod.md` → `DEPLOY-RUNBOOK.md` → `EDGE-RUNBOOK.md` — stands up
-the entire platform on AWS with a public HTTPS entrypoint. When `curl https://api.krishiverse.ai/healthz` returns
+the entire platform on AWS with a public HTTPS entrypoint. When `curl https://api.krishalaya.com/healthz` returns
 200, P0-1's "Done when" (clean apply, healthy services, public HTTPS, PITR verified) is met.
 
 ## ⛔ Still deferred (NOT silently skipped — separate backlog items)

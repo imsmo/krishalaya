@@ -1,5 +1,5 @@
 {
-  "uid": "krishiverse-sms",
+  "uid": "krishalaya-sms",
   "title": "Krishalaya \u00b7 SMS Spend & Delivery",
   "schemaVersion": 39,
   "version": 1,
@@ -20,7 +20,7 @@
     ]
   },
   "tags": [
-    "krishiverse",
+    "krishalaya",
     "p0-6"
   ],
   "panels": [

@@ -9,10 +9,10 @@
 
 terraform {
   backend "s3" {
-    bucket         = "krishiverse-tfstate-<ACCOUNT_ID_OR_ORG>"
+    bucket         = "krishalaya-tfstate-<ACCOUNT_ID_OR_ORG>"
     key            = "staging/foundation.tfstate" # distinct key from prod/foundation.tfstate — separate state
     region         = "ap-south-1"
-    dynamodb_table = "krishiverse-tflock"
+    dynamodb_table = "krishalaya-tflock"
     encrypt        = true
   }
 }

@@ -10,7 +10,7 @@
 -- code/known-id so this is robust to UUID changes. Fixed UUIDs + ON CONFLICT DO NOTHING make it safe to re-run.
 --
 -- RUN IT as the DB OWNER (superuser bypasses tenant RLS so the explicit tenant_id inserts go through):
---   psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishiverse" -f db/local/local-demo-listings.sql
+--   psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishalaya" -f db/local/local-demo-listings.sql
 --
 -- NEVER run in staging/production. After running, reload http://localhost:3001/demo-fpo.
 -- ============================================================================

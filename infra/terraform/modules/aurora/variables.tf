@@ -1,7 +1,7 @@
 # infra/terraform/modules/aurora/variables.tf · Aurora PostgreSQL 16 (Serverless v2) inputs
 
 variable "name" {
-  description = "Cluster name prefix (e.g. krishiverse-prod)."
+  description = "Cluster name prefix (e.g. krishalaya-prod)."
   type        = string
 }
 
@@ -23,7 +23,7 @@ variable "allowed_security_group_ids" {
 
 variable "database_name" {
   type    = string
-  default = "krishiverse"
+  default = "krishalaya"
 }
 
 variable "master_username" {

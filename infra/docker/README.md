@@ -4,7 +4,7 @@
 
 | File | Builds | How |
 |------|--------|-----|
-| `node-base.Dockerfile` | hardened shared runtime base (tini, non-root, curl) | build/push once as `krishiverse-node-base:20` |
+| `node-base.Dockerfile` | hardened shared runtime base (tini, non-root, curl) | build/push once as `krishalaya-node-base:20` |
 | `node-service.Dockerfile` | ANY Node service (api, admin-api, wallet-service, worker, realtime-gateway) | `--build-arg APP=<dir> --build-arg APP_PKG=<pkg>` |
 | `web.Dockerfile` | ANY Next.js app (web-storefront/tenant/admin/partner) | `--build-arg APP=<dir> --build-arg APP_PKG=<pkg>` |
 | `ai-services.Dockerfile` | Python FastAPI inference service | context = `apps/ai-services` |

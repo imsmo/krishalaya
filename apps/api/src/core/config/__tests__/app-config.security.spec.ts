@@ -7,13 +7,13 @@ import { validateEnv, Env } from '../env.validation';
 // A fully-secure production env (all the things assertProductionSecurity checks, set correctly).
 const SECURE_RAW: Record<string, string> = {
   NODE_ENV: 'production',
-  DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@db.cluster.ap-south-1.rds.amazonaws.com:5432/krishiverse',
+  DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@db.cluster.ap-south-1.rds.amazonaws.com:5432/krishalaya',
   JWT_ACCESS_SECRET: 'Zx9Qw7Vb3Nm2Kp5Lr8Td1Gh4Js6Fd0Ay2Bc7Xe', // 39 chars, no dev pattern
   JWT_REFRESH_SECRET: 'Rt4Yh8Uj2Ik6Ol0Pa5Sd9Fg3Hj7Kl1Zx5Cv9Bn', // distinct
   AUTH_HASH_PEPPER: 'Pa5Sd9Fg3Hj7Kl1Zx5Cv9BnMq2Wr6Et8Yu4Io0', // 39 chars
   AUTH_EXPOSE_OTP: 'false',
   REDIS_URL: 'rediss://:tok3nXyz@redis.cluster.ap-south-1.cache.amazonaws.com:6379',
-  S3_MEDIA_BUCKET: 'krishiverse-prod-media-123456789012',
+  S3_MEDIA_BUCKET: 'krishalaya-prod-media-123456789012',
   RAZORPAY_KEY_ID: 'rzp_live_abc123',
   RAZORPAY_WEBHOOK_SECRET: 'whsec_live_strong_secret_abcdef0123456789',
   SMS_PROVIDER: 'msg91',
@@ -30,7 +30,7 @@ const SECURE_RAW: Record<string, string> = {
   RAZORPAYX_WEBHOOK_SECRET: 'rzpx_whsec_live_strong_abcdef0123456789', // verifies payout webhooks (strong)
   // KV-BL-063: the outbox relay timer's dedicated connection — MUST be kv_relay (BYPASSRLS), distinct
   // from the app's own kv_app DATABASE_URL above.
-  RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.cluster.ap-south-1.rds.amazonaws.com:5432/krishiverse',
+  RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.cluster.ap-south-1.rds.amazonaws.com:5432/krishalaya',
   // ZAP-hardening: the 4 Next.js web apps' origins allowed to read cross-origin responses (CORS).
   WEB_ORIGINS: 'https://sell.krishalaya.com,https://admin.krishalaya.com,https://krishalaya.com,https://partners.krishalaya.com',
 };
@@ -58,9 +58,9 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['weak JWT access secret', { JWT_ACCESS_SECRET: 'dev-secret-change-me-32-characters' }, /JWT_ACCESS_SECRET/],
     ['access === refresh', { JWT_REFRESH_SECRET: SECURE_RAW.JWT_ACCESS_SECRET }, /must differ/],
     ['OTP exposure on', { AUTH_EXPOSE_OTP: 'true' }, /AUTH_EXPOSE_OTP/],
-    ['DB on localhost', { DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@localhost:5432/krishiverse' }, /localhost/],
+    ['DB on localhost', { DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@localhost:5432/krishalaya' }, /localhost/],
     ['DB as superuser', { DATABASE_URL: 'postgresql://postgres:Str0ng-Db-Passw0rd-9x@db.rds.amazonaws.com:5432/k' }, /least-privilege/],
-    ['DB dev password', { DATABASE_URL: 'postgresql://kv_app:dev@db.rds.amazonaws.com:5432/krishiverse' }, /strong, non-default password/],
+    ['DB dev password', { DATABASE_URL: 'postgresql://kv_app:dev@db.rds.amazonaws.com:5432/krishalaya' }, /strong, non-default password/],
     ['DB sslmode=disable', { DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@db.rds.amazonaws.com:5432/k?sslmode=disable' }, /TLS/],
     ['Redis missing', { REDIS_URL: undefined }, /REDIS_URL must be set/],
     ['Redis non-TLS', { REDIS_URL: 'redis://redis.cache.amazonaws.com:6379' }, /TLS \(rediss/],
@@ -83,15 +83,15 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['media-scan secret weak/dev', { MEDIA_SCAN_SECRET: 'dev-secret' }, /MEDIA_SCAN_SECRET/],
     ['payments default = sandbox (fake money rail)', { PAYMENTS_DEFAULT_PROVIDER: 'sandbox' }, /PAYMENTS_DEFAULT_PROVIDER must not be "sandbox"/],
     ['relay DB not kv_relay (falls back to kv_app DATABASE_URL)', { RELAY_DATABASE_URL: undefined }, /must connect as kv_relay/],
-    ['relay DB on localhost', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@localhost:5432/krishiverse' }, /RELAY_DATABASE_URL must not point at localhost/],
-    ['relay DB weak password', { RELAY_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishiverse' }, /RELAY_DATABASE_URL must use a strong/],
-    ['relay DB sslmode=disable', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse?sslmode=disable' }, /RELAY_DATABASE_URL must require TLS/],
+    ['relay DB on localhost', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@localhost:5432/krishalaya' }, /RELAY_DATABASE_URL must not point at localhost/],
+    ['relay DB weak password', { RELAY_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishalaya' }, /RELAY_DATABASE_URL must use a strong/],
+    ['relay DB sslmode=disable', { RELAY_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Relay-Passw0rd-7z@db.rds.amazonaws.com:5432/krishalaya?sslmode=disable' }, /RELAY_DATABASE_URL must require TLS/],
     // P0-9-follow-on: scheduled-jobs runner shares the kv_relay-BYPASSRLS requirement (falls back to
     // RELAY_DATABASE_URL, then DATABASE_URL, when JOBS_DATABASE_URL is unset).
-    ['jobs DB explicitly set but not kv_relay', { JOBS_DATABASE_URL: 'postgresql://kv_app:Str0ng-Jobs-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse' }, /JOBS_DATABASE_URL must connect as kv_relay/],
-    ['jobs DB on localhost', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@localhost:5432/krishiverse' }, /JOBS_DATABASE_URL must not point at localhost/],
-    ['jobs DB weak password', { JOBS_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishiverse' }, /JOBS_DATABASE_URL must use a strong/],
-    ['jobs DB sslmode=disable', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@db.rds.amazonaws.com:5432/krishiverse?sslmode=disable' }, /JOBS_DATABASE_URL must require TLS/],
+    ['jobs DB explicitly set but not kv_relay', { JOBS_DATABASE_URL: 'postgresql://kv_app:Str0ng-Jobs-Passw0rd-7z@db.rds.amazonaws.com:5432/krishalaya' }, /JOBS_DATABASE_URL must connect as kv_relay/],
+    ['jobs DB on localhost', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@localhost:5432/krishalaya' }, /JOBS_DATABASE_URL must not point at localhost/],
+    ['jobs DB weak password', { JOBS_DATABASE_URL: 'postgresql://kv_relay:dev@db.rds.amazonaws.com:5432/krishalaya' }, /JOBS_DATABASE_URL must use a strong/],
+    ['jobs DB sslmode=disable', { JOBS_DATABASE_URL: 'postgresql://kv_relay:Str0ng-Jobs-Passw0rd-7z@db.rds.amazonaws.com:5432/krishalaya?sslmode=disable' }, /JOBS_DATABASE_URL must require TLS/],
     ['WEB_ORIGINS unset (CORS allowlist required in prod)', { WEB_ORIGINS: undefined }, /WEB_ORIGINS must be set/],
     ['WEB_ORIGINS blank/whitespace-only', { WEB_ORIGINS: '  ,  ,' }, /WEB_ORIGINS must be set/],
   ])('flags %s', (_label, overrides, pattern) => {
@@ -101,7 +101,7 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
   });
 
   it('JOBS_ENABLED=false skips the jobs kv_relay check even with a kv_app JOBS_DATABASE_URL', () => {
-    const problems = AppConfig.collectProductionProblems(envWith({ JOBS_ENABLED: 'false', JOBS_DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@db.rds.amazonaws.com:5432/krishiverse' }));
+    const problems = AppConfig.collectProductionProblems(envWith({ JOBS_ENABLED: 'false', JOBS_DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@db.rds.amazonaws.com:5432/krishalaya' }));
     expect(problems.join('; ')).not.toMatch(/JOBS_DATABASE_URL/);
   });
 

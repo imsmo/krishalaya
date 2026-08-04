@@ -1,18 +1,18 @@
 # ops/alerts/sms-budget-alerts.yml · cap SMS spend (abuse/loop protection). Sender emits kv_sms_spend_paise.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
-metadata: { name: krishiverse-sms-budget-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+metadata: { name: krishalaya-sms-budget-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
 spec:
   groups:
     - name: sms.budget
       rules:
         - alert: SmsDailySpendNearBudget
-          expr: sum(increase(kv_sms_spend_paise{namespace="krishiverse"}[24h])) > 0.8 * 5000000
+          expr: sum(increase(kv_sms_spend_paise{namespace="krishalaya"}[24h])) > 0.8 * 5000000
           for: 5m
           labels: { severity: ticket }
           annotations: { summary: "SMS spend >80% of daily budget", runbook: ops/runbooks/sms-cost-spike.md }
         - alert: SmsSendErrorRateHigh
-          expr: increase(dep_failure{namespace="krishiverse",dep="sms"}[10m]) > 20
+          expr: increase(dep_failure{namespace="krishalaya",dep="sms"}[10m]) > 20
           for: 10m
           labels: { severity: page }
           annotations: { summary: "SMS provider failing — OTP login degraded", runbook: ops/runbooks/sms-cost-spike.md }

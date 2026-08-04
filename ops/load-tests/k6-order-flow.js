@@ -1,6 +1,6 @@
 // ops/load-tests/k6-order-flow.js · buyer browse→checkout→pay happy path under load.
 // PRD-scale SLO gate (default): p95<500ms, <1% err.
-//   BASE=https://api.krishiverse.ai k6 run ops/load-tests/k6-order-flow.js
+//   BASE=https://api.krishalaya.com k6 run ops/load-tests/k6-order-flow.js
 //
 // S5 PATCH (Sprint S5, pilot calibration — see ops/load-tests/pilot/README.md):
 //   1. `GET /v1/market/pulse` was called anonymously with no `productId` — that route is actually

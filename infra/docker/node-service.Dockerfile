@@ -1,7 +1,7 @@
 # infra/docker/node-service.Dockerfile · ONE multi-stage image for ANY Node service in the monorepo.
 # Build context = repo root. Select the service with --build-arg APP and APP_PKG:
 #   docker build -f infra/docker/node-service.Dockerfile \
-#     --build-arg APP=api --build-arg APP_PKG=@krishalaya/api -t <ECR>/krishiverse-api:<tag> .
+#     --build-arg APP=api --build-arg APP_PKG=@krishalaya/api -t <ECR>/krishalaya-api:<tag> .
 # Works for: api, admin-api, wallet-service, worker, realtime-gateway.
 ARG RUNTIME_BASE=node:20-alpine
 

@@ -3,7 +3,7 @@
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
-  name: krishiverse-routing
+  name: krishalaya-routing
   namespace: monitoring
   labels: { release: kube-prometheus-stack }
 spec:
@@ -21,14 +21,14 @@ spec:
     - name: pagerduty-page
       pagerdutyConfigs:
         - routingKey:
-            name: krishiverse-alerting    # k8s Secret
+            name: krishalaya-alerting    # k8s Secret
             key: pagerduty_routing_key
           severity: critical
           description: "{{ .CommonAnnotations.summary }}"
     - name: slack-tickets
       slackConfigs:
         - apiURL:
-            name: krishiverse-alerting
+            name: krishalaya-alerting
             key: slack_webhook_url
           channel: "#kv-alerts"
           title: "{{ .CommonAnnotations.summary }}"

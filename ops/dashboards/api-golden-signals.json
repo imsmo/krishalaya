@@ -1,5 +1,5 @@
 {
-  "uid": "krishiverse-api-golden",
+  "uid": "krishalaya-api-golden",
   "title": "Krishalaya \u00b7 API Golden Signals",
   "schemaVersion": 39,
   "version": 1,
@@ -20,7 +20,7 @@
     ]
   },
   "tags": [
-    "krishiverse",
+    "krishalaya",
     "p0-6"
   ],
   "panels": [
@@ -137,7 +137,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (pod)(increase(kube_pod_container_status_restarts_total{namespace=\"krishiverse\"}[10m]))",
+          "expr": "sum by (pod)(increase(kube_pod_container_status_restarts_total{namespace=\"krishalaya\"}[10m]))",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -165,7 +165,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max by (pod)(container_memory_working_set_bytes{namespace=\"krishiverse\",container!=\"\"}) / max by (pod)(kube_pod_container_resource_limits{namespace=\"krishiverse\",resource=\"memory\"})",
+          "expr": "max by (pod)(container_memory_working_set_bytes{namespace=\"krishalaya\",container!=\"\"}) / max by (pod)(kube_pod_container_resource_limits{namespace=\"krishalaya\",resource=\"memory\"})",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -193,7 +193,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "up{namespace=\"krishiverse\"}",
+          "expr": "up{namespace=\"krishalaya\"}",
           "legendFormat": "{{job}}/{{pod}}"
         }
       ],

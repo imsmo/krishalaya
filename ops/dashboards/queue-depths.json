@@ -1,5 +1,5 @@
 {
-  "uid": "krishiverse-queues",
+  "uid": "krishalaya-queues",
   "title": "Krishalaya \u00b7 Queues & Jobs",
   "schemaVersion": 39,
   "version": 1,
@@ -20,7 +20,7 @@
     ]
   },
   "tags": [
-    "krishiverse",
+    "krishalaya",
     "p0-6"
   ],
   "panels": [
@@ -43,7 +43,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "kv_outbox_pending{namespace=\"krishiverse\"}",
+          "expr": "kv_outbox_pending{namespace=\"krishalaya\"}",
           "legendFormat": "pending"
         }
       ],
@@ -99,7 +99,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "kv_partition_days_ahead{namespace=\"krishiverse\"}",
+          "expr": "kv_partition_days_ahead{namespace=\"krishalaya\"}",
           "legendFormat": "days ahead"
         }
       ],

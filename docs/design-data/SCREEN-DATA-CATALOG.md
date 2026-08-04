@@ -12193,7 +12193,7 @@ Zero P0 beyond the 4 dated QA-fixes above (1 aria-label translation, 2×440 clas
 6. **G0-R3a W273 gold hero CTA** — KEEP; gold ratified as the store realm's commerce accent.
 7. **G0-R3b Gov blue pill** — KEEP + DOCUMENT; ratified as intentional realm differentiation.
 8. **G0-R3c W207 duplicate primary CTA** — FIX; secondary action demoted to outline style.
-9. **Q29 social handles** — `@krishiverse` family primary (fallbacks `@krishiverseapp`, `@krishiverseHQ`); hashtags `#Krishalaya`/`#FromFarmToFuture`; registration is an external action, queued, availability NOT asserted.
+9. **Q29 social handles** — `@krishalaya` family primary (fallbacks `@krishalayahq`, `@krishalayahq`); hashtags `#Krishalaya`/`#FromFarmToFuture`; registration is an external action, queued, availability NOT asserted.
 10.–11. **Q30/contract v1.3** — SIGN AS DRAFTED: the §E changelog (`13_G0-3_DELTA_REGISTER.md`) pasted into `KRISHALAYA_MASTER_WORK_CONTRACT.md` with date 2026-07-22 filled in, and every correction it names applied surgically into the contract body itself this sitting.
 
 **Records updated:** `Design_Program/12_G0-2_DECISION_REGISTER.md` (all 8 FOUNDER-PERSONAL rows Q23/24/25/26/28/29/30/31 flipped RESERVED→DECIDED, G0-4 sitting note added at bottom); `Design_Program/13_G0-3_DELTA_REGISTER.md` (DELTA-059 flipped RESERVED→DECIDED, §E marked SIGNED 2026-07-22, GATE 0 line updated); `Design_Program/11_G0_APPROVAL_LEDGER.md` (new "G0-R3 — EXECUTED" section for the 3 taste-calls, GATE 0 line updated to record founder decision debt = zero).

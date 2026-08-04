@@ -3,7 +3,7 @@
 nameOverride: ''
 fullnameOverride: ''
 image:
-  repository: REPLACE_ECR/krishiverse-realtime-gateway
+  repository: REPLACE_ECR/krishalaya-realtime-gateway
   tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 2
@@ -37,7 +37,7 @@ env:
 - name: LOG_LEVEL
   value: info
 envFromSecretNames:
-- krishiverse-realtime-env
+- krishalaya-realtime-env
 secretEnv: []
 command: []
 args: []
@@ -94,11 +94,11 @@ extraVolumeMounts: []
 ingress:
   enabled: true
   className: alb
-  groupName: krishiverse-edge
+  groupName: krishalaya-edge
   certArn: REPLACE_ACM_CERT_ARN
   wafArn: REPLACE_WAF_ACL_ARN
   healthcheckPath: /healthz
   hosts:
-  - rt.krishiverse.ai
+  - rt.krishalaya.com
   annotations:
     alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600

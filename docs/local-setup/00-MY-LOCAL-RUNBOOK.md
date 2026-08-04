@@ -20,8 +20,8 @@ psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/postgres" -c "selec
 #   rolsuper = t  → good.   (If 'f', grant: ALTER ROLE sanjayodedra SUPERUSER;  as a superuser.)
 
 # Create the database (skip if it already exists):
-createdb -U sanjayodedra krishiverse 2>/dev/null || \
-  psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/postgres" -c "CREATE DATABASE krishiverse;"
+createdb -U sanjayodedra krishalaya 2>/dev/null || \
+  psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/postgres" -c "CREATE DATABASE krishalaya;"
 
 # Redis must be running on localhost:6379 (Homebrew: `brew services start redis`, or `docker compose up -d redis`).
 redis-cli ping   # → PONG
@@ -47,12 +47,12 @@ pnpm --filter @krishalaya/sdk-js --filter @krishalaya/tokens --filter @krishalay
 ```bash
 # (a) migrations run as the OWNER (your superuser). This is already in root .env as MIGRATION_DATABASE_URL,
 #     but export it explicitly so the runner picks it up:
-export MIGRATION_DATABASE_URL="postgres://sanjayodedra:Postgres%404958@localhost:5432/krishiverse"
+export MIGRATION_DATABASE_URL="postgres://sanjayodedra:Postgres%404958@localhost:5432/krishalaya"
 pnpm migrate
 pnpm migrate:status        # everything should be "applied" (0001 … 0048)
 
 # (b) give the app roles a LOGIN (password 'dev' — matches every app .env). Run as your owner:
-psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishiverse" -f db/local/local-login-roles.sql
+psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishalaya" -f db/local/local-login-roles.sql
 #   confirm rolcanlogin = t for kv_app, kv_relay, kv_wallet
 
 # (c) seed reference + demo data:
@@ -62,7 +62,7 @@ pnpm seed:demo
 
 **Verify the DB layer:**
 ```bash
-psql "postgres://kv_app:dev@localhost:5432/krishiverse" -c "select current_user;"   # → kv_app  ✅
+psql "postgres://kv_app:dev@localhost:5432/krishalaya" -c "select current_user;"   # → kv_app  ✅
 ```
 
 ---
@@ -93,7 +93,7 @@ Created (gitignored — your secrets stay local):
 `apps/realtime-gateway/.env`, `apps/ai-services/.env`, `apps/web-{storefront,tenant,admin,partner}/.env.local`,
 `apps/mobile/.env`.
 
-- DB owner (migrations/seeds): `sanjayodedra` / `Postgres@4958` (encoded `%40`), database `krishiverse`.
+- DB owner (migrations/seeds): `sanjayodedra` / `Postgres@4958` (encoded `%40`), database `krishalaya`.
 - Apps connect as `kv_app` / `kv_wallet` / `kv_relay`, password `dev` (set in step 2b).
 - `JWT_ACCESS_SECRET` and the ai-services `AI_SERVICES_SHARED_SECRET` are strong random dev values, shared across the
   services that must agree (API ↔ realtime-gateway ↔ ai-services).
@@ -109,7 +109,7 @@ Created (gitignored — your secrets stay local):
 
 - `password authentication failed for user "kv_app"` or `role "kv_app" is not permitted to log in` → you skipped
   **step 2b** (`local-login-roles.sql`). Run it.
-- `database "krishiverse" does not exist` → step 0 (create it).
+- `database "krishalaya" does not exist` → step 0 (create it).
 - `permission denied to create role` during migrate → your `sanjayodedra` isn't a superuser; see step 0.
 - `JWT_ACCESS_SECRET ... at least 32` → won't happen (the generated value is long), but if you edit it, keep ≥32 chars.
 - Anything else → `docs/local-setup/07-troubleshooting.md`.

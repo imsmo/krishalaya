@@ -1,5 +1,5 @@
 apiVersion: v2
-name: krishiverse-common
+name: krishalaya-common
 description: Shared library chart (deployment/service/hpa/pdb/serviceaccount) for all Krishalaya services.
 type: library
 version: 0.1.0

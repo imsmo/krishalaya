@@ -3,7 +3,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  repository: ""        # e.g. 123.dkr.ecr.ap-south-1.amazonaws.com/krishiverse-api
+  repository: ""        # e.g. 123.dkr.ecr.ap-south-1.amazonaws.com/krishalaya-api
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -27,9 +27,9 @@ serviceAccount:
 # plain env vars
 env: []                 # [{name: PORT, value: "3000"}]
 # whole-secret envFrom (Secrets Manager synced via External Secrets / CSI to a k8s Secret)
-envFromSecretNames: []  # ["krishiverse-api-env"]
+envFromSecretNames: []  # ["krishalaya-api-env"]
 # individual keys from a k8s secret
-secretEnv: []           # [{name: JWT_ACCESS_SECRET, secretName: krishiverse-jwt, secretKey: access}]
+secretEnv: []           # [{name: JWT_ACCESS_SECRET, secretName: krishalaya-jwt, secretKey: access}]
 
 command: []
 args: []

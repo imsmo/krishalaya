@@ -2,18 +2,18 @@
 # db/prod/create-roles.sh · grant LOGIN to the app DB roles in PRODUCTION using strong passwords from
 # AWS Secrets Manager. Run ONCE after migrations, and again on password rotation. Requires aws + psql.
 #
-#   PROJECT=krishiverse-prod REGION=ap-south-1 ./db/prod/create-roles.sh
+#   PROJECT=krishalaya-prod REGION=ap-south-1 ./db/prod/create-roles.sh
 #
 # Expects in Secrets Manager (create these first — see SECRETS-RUNBOOK):
 #   <PROJECT>/db/kv_app_password, <PROJECT>/db/kv_wallet_password, <PROJECT>/db/kv_relay_password
 # and the Aurora master credentials secret (from Terraform output aurora_master_secret_arn).
 set -euo pipefail
 
-PROJECT="${PROJECT:-krishiverse-prod}"
+PROJECT="${PROJECT:-krishalaya-prod}"
 REGION="${REGION:-ap-south-1}"
 MASTER_SECRET_ARN="${MASTER_SECRET_ARN:?set MASTER_SECRET_ARN (terraform output aurora_master_secret_arn)}"
 WRITER_HOST="${WRITER_HOST:?set WRITER_HOST (terraform output aurora_writer_endpoint)}"
-DB_NAME="${DB_NAME:-krishiverse}"
+DB_NAME="${DB_NAME:-krishalaya}"
 
 sm() { aws secretsmanager get-secret-value --region "$REGION" --secret-id "$1" --query SecretString --output text; }
 

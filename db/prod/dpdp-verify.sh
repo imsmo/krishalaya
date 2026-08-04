@@ -2,8 +2,8 @@
 # db/prod/dpdp-verify.sh · live DPDP subject-rights check against a REAL account. Exercises consent + export +
 # deletion intake and confirms the DB rows (DSR + cooling-off). Async completion (export file / erasure) needs the
 # worker-runtime (flagged) — this verifies the request path the data-protection sign-off must witness.
-#   API=https://api.krishiverse.ai TOKEN=<subject access token> TENANT=<tenant uuid> \
-#   ADMIN_DB_URL=postgresql://kv_app:...@<writer>:5432/krishiverse ./db/prod/dpdp-verify.sh
+#   API=https://api.krishalaya.com TOKEN=<subject access token> TENANT=<tenant uuid> \
+#   ADMIN_DB_URL=postgresql://kv_app:...@<writer>:5432/krishalaya ./db/prod/dpdp-verify.sh
 set -euo pipefail
 API="${API:?set API base}"; TOKEN="${TOKEN:?set subject access TOKEN}"; TENANT="${TENANT:?set TENANT uuid}"
 DB="${ADMIN_DB_URL:?set ADMIN_DB_URL (read-only check conn)}"

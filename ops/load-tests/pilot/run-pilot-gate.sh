@@ -55,8 +55,8 @@ fi
 
 # ── money-safety guard, loud and non-negotiable ────────────────────────────────────────────────
 # S5 REVIEW FIX: host-anchored allow-on-'staging' guard. The old substring refusal
-# (*api.krishiverse.ai*) also refused legitimate staging hosts that CONTAIN the prod
-# string (e.g. api.staging.krishiverse.ai — the canonical convention per terraform/S1).
+# (*api.krishalaya.com*) also refused legitimate staging hosts that CONTAIN the prod
+# string (e.g. api.staging.krishalaya.com — the canonical convention per terraform/S1).
 # New rule: the URL host MUST contain 'staging' (or be localhost/127.0.0.1) — anything
 # else is treated as production and refused. Blocks prod under every naming scheme.
 case "${STAGING_API_URL}" in

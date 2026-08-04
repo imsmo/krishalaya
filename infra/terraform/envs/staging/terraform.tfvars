@@ -7,7 +7,7 @@
 # Edit bucket_suffix + eks_public_access_cidrs before apply (same two placeholders as prod).
 
 region        = "ap-south-1"      # Mumbai — DPDP data residency (unchanged from prod)
-project       = "krishiverse-staging"
+project       = "krishalaya-staging"
 vpc_cidr      = "10.50.0.0/16"    # distinct /16 from prod (10.40.0.0/16) — no future peering collision
 az_count      = 2                 # module minimum; a 3rd AZ buys nothing at pilot node counts
 bucket_suffix = "REPLACE_WITH_ACCOUNT_ID_OR_ORG"
@@ -57,7 +57,7 @@ redis_replicas_per_node_group = 0
 
 # Route 53 + ACM + WAF — ON, same as prod (founder decision: prove the exact edge path prod will use).
 #   Cost: hosted zone ~₹350/mo + WAF web ACL + rules ~₹700/mo ≈ ₹1,050/mo (ACM certs are free)
-root_domain = "staging.krishiverse.ai"
+root_domain = "staging.krishalaya.com"
 
 # ---------------------------------------------------------------------------------------------------------------
 # NOT overridden (module defaults kept, all effectively free or already lean):

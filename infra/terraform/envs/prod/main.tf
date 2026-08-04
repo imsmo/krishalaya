@@ -117,7 +117,7 @@ module "irsa" {
   name               = var.project
   oidc_provider_arn  = module.eks.oidc_provider_arn
   oidc_provider_url  = module.eks.oidc_provider_url
-  namespace          = "krishiverse"
+  namespace          = "krishalaya"
   kms_key_arn        = module.secrets.kms_key_arn
   secrets_arn_prefix = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${var.project}/*"
   media_bucket_arn   = module.media.media_bucket_arn

@@ -1,7 +1,7 @@
 # Security Policy
 
 ## Reporting a vulnerability
-Email **security@krishiverse.example** (PGP key on request). Do not open public issues for
+Email **security@krishalaya.example** (PGP key on request). Do not open public issues for
 vulnerabilities. We acknowledge within 72 hours. See `security/bug-bounty-policy.md`.
 
 ## Scope & controls

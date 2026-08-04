@@ -16,9 +16,9 @@ Legend: **Track** = which part of the system · **Why pending** = the honest rea
     (`infra/terraform/modules/*` + `envs/prod`) → `APPLY-RUNBOOK-prod.md`.
   - **Deploy** — `.dockerignore`, canonical Dockerfiles + `build-and-push.sh`, Helm library chart + 8 service
     charts, IRSA roles (`modules/irsa`) → `DEPLOY-RUNBOOK.md`.
-  - **Edge** — Route 53 (krishiverse.ai), wildcard ACM TLS, WAF, ALB-controller/external-dns IAM, Helm Ingresses
+  - **Edge** — Route 53 (krishalaya.com), wildcard ACM TLS, WAF, ALB-controller/external-dns IAM, Helm Ingresses
     (`modules/{dns,acm,waf,alb-edge-iam}` + `_ingress.tpl`) → `EDGE-RUNBOOK.md`.
-  - **You run** the three runbooks (apply → deploy → edge) with your AWS account; `curl https://api.krishiverse.ai/healthz`
+  - **You run** the three runbooks (apply → deploy → edge) with your AWS account; `curl https://api.krishalaya.com/healthz`
     = 200 closes the "Done when". Remaining optional/deferred items (CloudFront, ESO manifests, dev/staging,
     Phase-2 service charts) are listed in `infra/terraform/PROGRESS-P0-1.md`.
 - **Track:** `infra/terraform`, `infra/helm`, `infra/docker`

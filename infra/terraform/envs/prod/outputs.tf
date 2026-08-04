@@ -40,7 +40,7 @@ output "irsa_role_arns" {
 
 # --- edge ---
 output "route53_name_servers" {
-  description = "Set these NS records at your domain registrar to delegate krishiverse.ai to Route 53."
+  description = "Set these NS records at your domain registrar to delegate krishalaya.com to Route 53."
   value       = module.dns.name_servers
 }
 output "route53_zone_id" {

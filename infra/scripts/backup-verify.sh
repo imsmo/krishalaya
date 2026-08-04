@@ -2,9 +2,9 @@
 # infra/scripts/backup-verify.sh · prove Aurora backups are RESTORABLE (a backup you can't restore isn't a backup).
 # Restores the cluster to the latest point-in-time into a throwaway clone, waits until available, runs a sanity
 # query, records the elapsed time (RTO evidence), then deletes the clone. Run weekly + before launch.
-#   REGION=ap-south-1 SRC=krishiverse-prod-aurora ./infra/scripts/backup-verify.sh
+#   REGION=ap-south-1 SRC=krishalaya-prod-aurora ./infra/scripts/backup-verify.sh
 set -euo pipefail
-REGION="${REGION:-ap-south-1}"; SRC="${SRC:-krishiverse-prod-aurora}"
+REGION="${REGION:-ap-south-1}"; SRC="${SRC:-krishalaya-prod-aurora}"
 CLONE="${SRC}-verify-$(date +%s)"; START=$(date +%s)
 
 echo ">> restoring $SRC to latest point-in-time → $CLONE"

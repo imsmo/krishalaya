@@ -12,7 +12,7 @@ already proves the high-risk controls, the DAST that runs continuously, and the 
 
 ## 1. Pen-test scope (give this to the firm)
 
-Target: the deployed **staging** stack (identical IaC to prod) at `https://api.krishiverse.ai` (staging host) + the
+Target: the deployed **staging** stack (identical IaC to prod) at `https://api.krishalaya.com` (staging host) + the
 web apps + the admin plane. Test as: anonymous, a normal tenant user, a second tenant's user, and a tenant admin.
 
 | Area | What to probe |

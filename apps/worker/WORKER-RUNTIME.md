@@ -26,10 +26,10 @@ Every job is timed into `worker_job{job,ok}` + failures into `worker_job_failure
 
 ## Run
 ```bash
-NODE_ENV=production DATABASE_URL='postgresql://kv_relay:***@<aurora>:5432/krishiverse?sslmode=require' \
+NODE_ENV=production DATABASE_URL='postgresql://kv_relay:***@<aurora>:5432/krishalaya?sslmode=require' \
 METRICS_PORT=9090 node apps/worker/dist/main.js
 ```
-Deployed via the `worker` Helm chart (no Service; exec liveness; `kv_relay` env from `krishiverse-worker-env`).
+Deployed via the `worker` Helm chart (no Service; exec liveness; `kv_relay` env from `krishalaya-worker-env`).
 Scale to ≥1 replica; the advisory locks make >1 safe.
 
 ## Deferred: domain-handler jobs (need the api business logic)

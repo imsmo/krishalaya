@@ -1,7 +1,7 @@
 # infra/terraform/modules/waf/variables.tf
 variable "name" {
   type        = string
-  description = "Name prefix (e.g. krishiverse-prod)."
+  description = "Name prefix (e.g. krishalaya-prod)."
 }
 variable "rate_limit_per_5min" {
   type        = number

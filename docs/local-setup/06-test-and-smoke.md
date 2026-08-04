@@ -34,7 +34,7 @@ pnpm test:unit
 # 2) integration — runs against a real Postgres, proves tenant-isolation (RLS).
 #    It loads migrations+seeds into a test DB. Point it at the superuser so it can create/reset that DB:
 export DATABASE_ADMIN_URL="postgres://postgres:dev@localhost:5432/postgres"
-export MIGRATION_DATABASE_URL="postgres://postgres:dev@localhost:5432/krishiverse"
+export MIGRATION_DATABASE_URL="postgres://postgres:dev@localhost:5432/krishalaya"
 pnpm test:integration
 ```
 > Integration tests create + tear down their own test database/schema using the admin URL. If they error with

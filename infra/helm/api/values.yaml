@@ -1,9 +1,9 @@
-# infra/helm/api/values.yaml · krishiverse api (REST). Secrets via k8s Secret krishiverse-api-env (synced from AWS Secrets Manager).
+# infra/helm/api/values.yaml · krishalaya api (REST). Secrets via k8s Secret krishalaya-api-env (synced from AWS Secrets Manager).
 # COMPLETE value set (library-chart defaults do NOT propagate to a parent, so all keys live here).
 nameOverride: ''
 fullnameOverride: ''
 image:
-  repository: REPLACE_ECR/krishiverse-api
+  repository: REPLACE_ECR/krishalaya-api
   tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 2
@@ -35,7 +35,7 @@ env:
 - name: LOG_LEVEL
   value: info
 envFromSecretNames:
-- krishiverse-api-env
+- krishalaya-api-env
 secretEnv: []
 command: []
 args: []
@@ -92,10 +92,10 @@ extraVolumeMounts: []
 ingress:
   enabled: true
   className: alb
-  groupName: krishiverse-edge
+  groupName: krishalaya-edge
   certArn: REPLACE_ACM_CERT_ARN
   wafArn: REPLACE_WAF_ACL_ARN
   healthcheckPath: /healthz
   hosts:
-  - api.krishiverse.ai
+  - api.krishalaya.com
   annotations: {}

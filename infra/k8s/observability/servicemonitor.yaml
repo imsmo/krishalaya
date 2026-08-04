@@ -1,12 +1,12 @@
-# infra/k8s/observability/servicemonitor.yaml · scrape every krishiverse service's /metrics endpoint.
+# infra/k8s/observability/servicemonitor.yaml · scrape every krishalaya service's /metrics endpoint.
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: krishiverse-services
+  name: krishalaya-services
   namespace: monitoring
   labels: { release: kube-prometheus-stack }
 spec:
-  namespaceSelector: { matchNames: [krishiverse] }
+  namespaceSelector: { matchNames: [krishalaya] }
   selector:
     matchLabels: { app.kubernetes.io/part-of: krishalaya }   # set by the Helm library chart labels
   endpoints:

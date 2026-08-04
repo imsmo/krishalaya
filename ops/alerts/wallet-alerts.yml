@@ -1,14 +1,14 @@
 # ops/alerts/wallet-alerts.yml · MONEY safety — a ledger imbalance is the most severe alert we have.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
-metadata: { name: krishiverse-wallet-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+metadata: { name: krishalaya-wallet-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
 spec:
   groups:
     - name: wallet.invariants
       rules:
         # The reconciliation job (apps/worker) MUST gauge its last run: kv_recon_mismatches + kv_recon_age_seconds.
         - alert: WalletReconMismatch
-          expr: kv_recon_mismatches{namespace="krishiverse"} > 0
+          expr: kv_recon_mismatches{namespace="krishalaya"} > 0
           for: 0m            # page immediately — money is not zero-sum
           labels: { severity: page, money: "true" }
           annotations:
@@ -16,12 +16,12 @@ spec:
             description: "Σ legs ≠ 0 detected by reconciliation. Freeze affected accounts; do not deploy."
             runbook: ops/runbooks/wallet-recon-mismatch.md
         - alert: WalletReconStale
-          expr: kv_recon_age_seconds{namespace="krishiverse"} > 7200
+          expr: kv_recon_age_seconds{namespace="krishalaya"} > 7200
           for: 0m
           labels: { severity: page }
           annotations: { summary: "Reconciliation hasn't run in >2h (blind to imbalance)" }
         - alert: WalletRpcErrors
-          expr: increase(dep_failure{namespace="krishiverse",dep="wallet"}[5m]) > 5
+          expr: increase(dep_failure{namespace="krishalaya",dep="wallet"}[5m]) > 5
           for: 5m
           labels: { severity: page }
           annotations: { summary: "wallet-service RPC failing (money path degraded)" }

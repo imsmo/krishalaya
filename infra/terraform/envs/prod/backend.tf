@@ -5,10 +5,10 @@
 
 terraform {
   backend "s3" {
-    bucket         = "krishiverse-tfstate-<ACCOUNT_ID_OR_ORG>"
+    bucket         = "krishalaya-tfstate-<ACCOUNT_ID_OR_ORG>"
     key            = "prod/foundation.tfstate"
     region         = "ap-south-1"
-    dynamodb_table = "krishiverse-tflock"
+    dynamodb_table = "krishalaya-tflock"
     encrypt        = true
   }
 }

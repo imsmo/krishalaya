@@ -15,7 +15,7 @@ AWS Secrets Manager  ──(External Secrets Operator, IRSA jwt auth)──▶  
 ```
 
 - The pod authenticates to AWS with its **IRSA role** (no access keys). The ESO controller has its own role
-  (`terraform output external_secrets_role_arn`) that can read `krishiverse-prod/*`.
+  (`terraform output external_secrets_role_arn`) that can read `krishalaya-prod/*`.
 - The app reads env via **AppConfig** only; on boot in production it **fails closed** on any weak/dev/misconfigured
   value (`apps/api/src/core/config/app-config.ts` → `collectProductionProblems`, 22 regression tests).
 
@@ -23,14 +23,14 @@ AWS Secrets Manager  ──(External Secrets Operator, IRSA jwt auth)──▶  
 
 ## 1. Secrets Manager layout (create these after `terraform apply`)
 
-Terraform already created (P0-1): the platform KMS key, the generated `krishiverse-prod/jwt/access_secret` and
-`krishiverse-prod/api/shared_secret`, the Aurora master secret, the Redis auth + OpenSearch master secrets, and
+Terraform already created (P0-1): the platform KMS key, the generated `krishalaya-prod/jwt/access_secret` and
+`krishalaya-prod/api/shared_secret`, the Aurora master secret, the Redis auth + OpenSearch master secrets, and
 **empty containers** for the external provider keys. You populate the rest:
 
 **a) App DB-role passwords** (strong, ≥16 chars, no dev words):
 ```bash
 for role in kv_app kv_wallet kv_relay; do
-  aws secretsmanager create-secret --name "krishiverse-prod/db/${role}_password" \
+  aws secretsmanager create-secret --name "krishalaya-prod/db/${role}_password" \
     --secret-string "$(openssl rand -base64 24)" --region ap-south-1
 done
 ```
@@ -39,24 +39,24 @@ done
 ExternalSecrets `dataFrom.extract` turns each JSON key into a key in the k8s Secret. Example for the API
 (assemble the URLs from the Terraform outputs + the passwords from (a)):
 ```bash
-aws secretsmanager create-secret --name krishiverse-prod/api/env --region ap-south-1 --secret-string '{
-  "DATABASE_URL":      "postgresql://kv_app:<APP_PW>@<aurora_writer>:5432/krishiverse?sslmode=require",
-  "DATABASE_REPLICA_URL":"postgresql://kv_app:<APP_PW>@<aurora_reader>:5432/krishiverse?sslmode=require",
+aws secretsmanager create-secret --name krishalaya-prod/api/env --region ap-south-1 --secret-string '{
+  "DATABASE_URL":      "postgresql://kv_app:<APP_PW>@<aurora_writer>:5432/krishalaya?sslmode=require",
+  "DATABASE_REPLICA_URL":"postgresql://kv_app:<APP_PW>@<aurora_reader>:5432/krishalaya?sslmode=require",
   "REDIS_URL":         "rediss://:<redis_auth>@<redis_primary>:6379",
-  "JWT_ACCESS_SECRET": "<from krishiverse-prod/jwt/access_secret>",
+  "JWT_ACCESS_SECRET": "<from krishalaya-prod/jwt/access_secret>",
   "JWT_REFRESH_SECRET":"<unique random >=32>",
   "AUTH_HASH_PEPPER":  "<unique random >=32>",
   "S3_MEDIA_BUCKET":   "<media_bucket_name>",
   "OPENSEARCH_URL":    "https://<opensearch_endpoint>",
   "OPENSEARCH_USERNAME":"kv_search_admin",
-  "OPENSEARCH_PASSWORD":"<from krishiverse-prod/opensearch/master>",
-  "WALLET_GRPC_URL":   "krishiverse-wallet-service.krishiverse.svc.cluster.local:50051",
+  "OPENSEARCH_PASSWORD":"<from krishalaya-prod/opensearch/master>",
+  "WALLET_GRPC_URL":   "krishalaya-wallet-service.krishalaya.svc.cluster.local:50051",
   "RAZORPAY_KEY_ID":   "<live>",
   "RAZORPAY_KEY_SECRET":"<live>",
   "RAZORPAY_WEBHOOK_SECRET":"<live, strong>"
 }'
 ```
-Repeat for `krishiverse-prod/{admin-api,wallet,worker,realtime,ai}/env` with each service's vars (wallet uses the
+Repeat for `krishalaya-prod/{admin-api,wallet,worker,realtime,ai}/env` with each service's vars (wallet uses the
 `kv_wallet` URL; worker + ai-services use `kv_relay`; realtime needs the SAME `JWT_ACCESS_SECRET` as the API).
 **Never** set `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` (S3 uses the pod's IRSA role) and **never** set
 `AUTH_EXPOSE_OTP=true` — boot will refuse either.
@@ -68,8 +68,8 @@ Repeat for `krishiverse-prod/{admin-api,wallet,worker,realtime,ai}/env` with eac
 
 **c) External provider keys** — fill the empty containers Terraform made:
 ```bash
-aws secretsmanager put-secret-value --secret-id krishiverse-prod/sms/provider_api_key   --secret-string '<...>'
-aws secretsmanager put-secret-value --secret-id krishiverse-prod/ekyc/provider_api_key  --secret-string '<...>'
+aws secretsmanager put-secret-value --secret-id krishalaya-prod/sms/provider_api_key   --secret-string '<...>'
+aws secretsmanager put-secret-value --secret-id krishalaya-prod/ekyc/provider_api_key  --secret-string '<...>'
 # ...weather, ai model key, push token, razorpay/webhook as needed
 ```
 
@@ -79,7 +79,7 @@ aws secretsmanager put-secret-value --secret-id krishiverse-prod/ekyc/provider_a
 
 App roles are `NOLOGIN` until you run the **production-safe** bootstrap (never the dev `local-login-roles.sql`):
 ```bash
-PROJECT=krishiverse-prod REGION=ap-south-1 \
+PROJECT=krishalaya-prod REGION=ap-south-1 \
 MASTER_SECRET_ARN=$(terraform -chdir=infra/terraform/envs/prod output -raw aurora_master_secret_arn) \
 WRITER_HOST=$(terraform -chdir=infra/terraform/envs/prod output -raw aurora_writer_endpoint) \
   ./db/prod/create-roles.sh
@@ -100,8 +100,8 @@ helm upgrade --install external-secrets external-secrets/external-secrets \
 
 kubectl apply -f infra/k8s/external-secrets/00-cluster-secret-store.yaml
 kubectl apply -f infra/k8s/external-secrets/   # creates one ExternalSecret per service
-kubectl -n krishiverse get externalsecret      # all should report SecretSynced=True
-kubectl -n krishiverse get secret krishiverse-api-env   # the synced k8s Secret the chart envFroms
+kubectl -n krishalaya get externalsecret      # all should report SecretSynced=True
+kubectl -n krishalaya get secret krishalaya-api-env   # the synced k8s Secret the chart envFroms
 ```
 
 ---

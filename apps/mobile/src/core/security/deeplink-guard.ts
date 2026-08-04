@@ -1,12 +1,12 @@
 // apps/mobile/src/core/security/deeplink-guard.ts · INBOUND deep-link validation (guide §4). A deep link (from an
 // SMS, notification, or another app) can carry any path + params — we NEVER auto-execute an action from a link.
-// This guard: (1) only accepts our own `krishiverse://` scheme (or https app-links to our host), (2) allowlists
+// This guard: (1) only accepts our own `krishalaya://` scheme (or https app-links to our host), (2) allowlists
 // the route prefixes a link may land on, (3) rejects traversal / absolute / protocol-relative / whitespace junk,
 // and (4) treats ids in params as UNTRUSTED — the destination screen still re-reads ownership from the server
 // (IDOR defence). Sensitive actions (pay/withdraw/delete) are NEVER reachable directly by a link; they require
 // the in-app flow + auth + confirm. PURE + unit-tested.
 
-export const APP_SCHEME = 'krishiverse';
+export const APP_SCHEME = 'krishalaya';
 /** Route prefixes a deep link may open. Note: NO pay/withdraw/checkout/account-delete — those need the in-app flow. */
 export const DEEPLINK_ALLOWLIST = [
   'listing', 'order', 'orders', 'mandi', 'weather', 'tips', 'schemes', 'notifications', 'auctions', 'profile',

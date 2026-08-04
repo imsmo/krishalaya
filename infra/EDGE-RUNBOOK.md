@@ -1,21 +1,21 @@
-# Edge runbook — public HTTPS for krishiverse.ai (ALB + WAF + ACM + Route 53)
+# Edge runbook — public HTTPS for krishalaya.com (ALB + WAF + ACM + Route 53)
 
-Final P0-1 wave: expose the in-cluster services to the internet on `krishiverse.ai` over HTTPS, behind WAF.
+Final P0-1 wave: expose the in-cluster services to the internet on `krishalaya.com` over HTTPS, behind WAF.
 Prereqs: the foundation (`APPLY-RUNBOOK-prod.md`) and the services (`DEPLOY-RUNBOOK.md`) are already up.
 
 Architecture: one shared **ALB** (created by the AWS Load Balancer Controller from the Ingress group
-`krishiverse-edge`) → WAF attached → wildcard ACM cert for TLS → **external-dns** writes the Route 53 records
+`krishalaya-edge`) → WAF attached → wildcard ACM cert for TLS → **external-dns** writes the Route 53 records
 automatically from each Ingress host.
 
 Hostnames:
 ```
-krishiverse.ai, www.krishiverse.ai  -> web-storefront
-api.krishiverse.ai                   -> api
-admin.krishiverse.ai                 -> web-admin
-admin-api.krishiverse.ai             -> admin-api
-partner.krishiverse.ai               -> web-partner
-tenant.krishiverse.ai                -> web-tenant
-rt.krishiverse.ai                    -> realtime-gateway (sticky)
+krishalaya.com, www.krishalaya.com  -> web-storefront
+api.krishalaya.com                   -> api
+admin.krishalaya.com                 -> web-admin
+admin-api.krishalaya.com             -> admin-api
+partner.krishalaya.com               -> web-partner
+tenant.krishalaya.com                -> web-tenant
+rt.krishalaya.com                    -> realtime-gateway (sticky)
 ```
 (wallet-service, worker, ai-services stay internal — no Ingress.)
 
@@ -45,10 +45,10 @@ terraform output -raw external_dns_role_arn
 
 ## 2. Delegate the domain to Route 53 (one time, at your registrar)
 
-At wherever you bought `krishiverse.ai`, set the domain's **nameservers** to the 4 from
+At wherever you bought `krishalaya.com`, set the domain's **nameservers** to the 4 from
 `terraform output route53_name_servers`. Propagation is usually minutes, up to 48h. Verify:
 ```bash
-dig +short NS krishiverse.ai      # should list the AWS ns-xxxx servers
+dig +short NS krishalaya.com      # should list the AWS ns-xxxx servers
 ```
 
 ---
@@ -88,8 +88,8 @@ helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/ && he
 helm upgrade --install external-dns external-dns/external-dns -n external-dns --create-namespace \
   --set provider=aws \
   --set policy=upsert-only \
-  --set txtOwnerId=krishiverse-prod \
-  --set domainFilters[0]=krishiverse.ai \
+  --set txtOwnerId=krishalaya-prod \
+  --set domainFilters[0]=krishalaya.com \
   --set "extraArgs[0]=--zone-id-filter=$ZONE_ID" \
   --set serviceAccount.name=external-dns \
   --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$EDNS_ROLE
@@ -110,20 +110,20 @@ cd infra/helm
 
 common() { echo --set ingress.certArn=$CERT_ARN --set ingress.wafArn=$WAF_ARN; }
 
-helm upgrade --install api ./api -n krishiverse --set image.repository=$ECR/krishiverse-api --set image.tag=$TAG $(common)
-helm upgrade --install admin-api ./admin-api -n krishiverse --set image.repository=$ECR/krishiverse-admin-api --set image.tag=$TAG $(common)
-helm upgrade --install realtime-gateway ./realtime-gateway -n krishiverse --set image.repository=$ECR/krishiverse-realtime-gateway --set image.tag=$TAG $(common)
+helm upgrade --install api ./api -n krishalaya --set image.repository=$ECR/krishalaya-api --set image.tag=$TAG $(common)
+helm upgrade --install admin-api ./admin-api -n krishalaya --set image.repository=$ECR/krishalaya-admin-api --set image.tag=$TAG $(common)
+helm upgrade --install realtime-gateway ./realtime-gateway -n krishalaya --set image.repository=$ECR/krishalaya-realtime-gateway --set image.tag=$TAG $(common)
 
 # web releases — same generic chart, override image + ingress host(s):
-helm upgrade --install web-storefront ./web -n krishiverse --set image.repository=$ECR/krishiverse-web-storefront --set image.tag=$TAG $(common)
-helm upgrade --install web-tenant ./web -n krishiverse --set image.repository=$ECR/krishiverse-web-tenant --set image.tag=$TAG \
-  --set ingress.hosts[0]=tenant.krishiverse.ai --set ingress.healthcheckPath=/ $(common)
-helm upgrade --install web-admin ./web -n krishiverse --set image.repository=$ECR/krishiverse-web-admin --set image.tag=$TAG \
-  --set ingress.hosts[0]=admin.krishiverse.ai --set ingress.healthcheckPath=/ $(common)
-helm upgrade --install web-partner ./web-partner -n krishiverse --set image.repository=$ECR/krishiverse-web-partner --set image.tag=$TAG $(common)
+helm upgrade --install web-storefront ./web -n krishalaya --set image.repository=$ECR/krishalaya-web-storefront --set image.tag=$TAG $(common)
+helm upgrade --install web-tenant ./web -n krishalaya --set image.repository=$ECR/krishalaya-web-tenant --set image.tag=$TAG \
+  --set ingress.hosts[0]=tenant.krishalaya.com --set ingress.healthcheckPath=/ $(common)
+helm upgrade --install web-admin ./web -n krishalaya --set image.repository=$ECR/krishalaya-web-admin --set image.tag=$TAG \
+  --set ingress.hosts[0]=admin.krishalaya.com --set ingress.healthcheckPath=/ $(common)
+helm upgrade --install web-partner ./web-partner -n krishalaya --set image.repository=$ECR/krishalaya-web-partner --set image.tag=$TAG $(common)
 ```
 
-> All Ingresses share `group.name=krishiverse-edge`, so the controller provisions **one ALB** for everything (cheap).
+> All Ingresses share `group.name=krishalaya-edge`, so the controller provisions **one ALB** for everything (cheap).
 > external-dns then creates the A/ALIAS records for each host pointing at that ALB.
 
 ---
@@ -131,10 +131,10 @@ helm upgrade --install web-partner ./web-partner -n krishiverse --set image.repo
 ## 6. Verify public HTTPS
 
 ```bash
-kubectl -n krishiverse get ingress          # ADDRESS column = the shared ALB DNS name
-dig +short api.krishiverse.ai               # resolves to the ALB (external-dns)
-curl -sS https://api.krishiverse.ai/healthz # 200 over TLS via WAF -> ALB -> api pod
-curl -sSI https://krishiverse.ai            # storefront 200; http:// should 301 -> https
+kubectl -n krishalaya get ingress          # ADDRESS column = the shared ALB DNS name
+dig +short api.krishalaya.com               # resolves to the ALB (external-dns)
+curl -sS https://api.krishalaya.com/healthz # 200 over TLS via WAF -> ALB -> api pod
+curl -sSI https://krishalaya.com            # storefront 200; http:// should 301 -> https
 ```
 TLS valid, `/healthz` green, http→https redirect working = **P0-1 is fully closed.** 🎉
 

@@ -1,16 +1,16 @@
-{{- define "krishiverse-common.hpa" -}}
+{{- define "krishalaya-common.hpa" -}}
 {{- if .Values.autoscaling.enabled -}}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "krishiverse-common.fullname" . }}
+  name: {{ include "krishalaya-common.fullname" . }}
   labels:
-    {{- include "krishiverse-common.labels" . | nindent 4 }}
+    {{- include "krishalaya-common.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "krishiverse-common.fullname" . }}
+    name: {{ include "krishalaya-common.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:

@@ -16,7 +16,7 @@ baseline scan's spider can walk the real, RBAC-gated surface too.
 
 ## 1. Target URL (unchanged from the existing runbook)
 
-`https://api.staging.krishiverse.ai` (default in `dast-zap.yml`, override via `workflow_dispatch` input
+`https://api.staging.krishalaya.com` (default in `dast-zap.yml`, override via `workflow_dispatch` input
 for the web apps — see the S5 runbook §1 for the exact host list). This file adds nothing here; it is
 correct as-is.
 
@@ -101,7 +101,7 @@ wire it") this stays a proposal:
       - name: ZAP baseline scan (AUTHENTICATED pass)
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: ${{ github.event.inputs.target || 'https://api.staging.krishiverse.ai' }}
+          target: ${{ github.event.inputs.target || 'https://api.staging.krishalaya.com' }}
           rules_file_name: .zap/rules.tsv
           cmd_options: >-
             -I -a

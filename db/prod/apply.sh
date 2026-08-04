@@ -6,15 +6,15 @@
 # Safe to re-run (every step is idempotent). Stops on the first failure (set -e). Secrets are read from AWS
 # Secrets Manager — never passed on the CLI or echoed.
 #
-#   PROJECT=krishiverse-prod REGION=ap-south-1 \
+#   PROJECT=krishalaya-prod REGION=ap-south-1 \
 #   WRITER_HOST=$(terraform -chdir=infra/terraform/envs/prod output -raw aurora_writer_endpoint) \
 #   MASTER_SECRET_ARN=$(terraform -chdir=infra/terraform/envs/prod output -raw aurora_master_secret_arn) \
 #     ./db/prod/apply.sh
 set -euo pipefail
 
-PROJECT="${PROJECT:-krishiverse-prod}"
+PROJECT="${PROJECT:-krishalaya-prod}"
 REGION="${REGION:-ap-south-1}"
-DB_NAME="${DB_NAME:-krishiverse}"
+DB_NAME="${DB_NAME:-krishalaya}"
 WRITER_HOST="${WRITER_HOST:?set WRITER_HOST (terraform output aurora_writer_endpoint)}"
 MASTER_SECRET_ARN="${MASTER_SECRET_ARN:?set MASTER_SECRET_ARN (terraform output aurora_master_secret_arn)}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

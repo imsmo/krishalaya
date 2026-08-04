@@ -163,7 +163,7 @@ Enable exactly the three flags this suite's checks depend on: `online_payments` 
 `communication` (check 7), `kyc` (check 9, only if you're running it).
 
 ```bash
-export ADMIN_API_URL="https://staging-admin-api.krishiverse.ai"
+export ADMIN_API_URL="https://staging-admin-api.krishalaya.com"
 export ADMIN_API_TOKEN="<your admin-api bearer token>"
 
 for KEY in online_payments communication kyc; do

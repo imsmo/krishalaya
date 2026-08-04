@@ -28,7 +28,7 @@ health+TLS -> OTP login (real SMS, human types the code) -> profile fetch (RLS s
    (the composition is `infra/terraform/envs/staging/` — same modules as prod, pilot-sized, per
    `infra/DEPLOY-RUNBOOK.md` + `infra/EDGE-RUNBOOK.md`; migrations + reference-data seed applied,
    **not** `db/seeds/demo/*`). **Flagged gap found while writing this suite:** `main.tf`'s `dns`
-   module comment cites `S1_STAGING_APPLY_RUNBOOK.md §5` for the `staging.krishiverse.ai` DNS
+   module comment cites `S1_STAGING_APPLY_RUNBOOK.md §5` for the `staging.krishalaya.com` DNS
    delegation step, but no such file exists anywhere in the repo — treat the DEPLOY/EDGE runbooks
    above as the working equivalent until that file is actually written, and don't go looking for it.
 2. **Real provider keys are loaded into staging's secrets** (not this repo, not `.env`): live-mode-or-
@@ -52,12 +52,12 @@ health+TLS -> OTP login (real SMS, human types the code) -> profile fetch (RLS s
 ## Usage
 
 ```bash
-export STAGING_API_URL="https://staging-api.krishiverse.ai"      # no trailing slash
+export STAGING_API_URL="https://staging-api.krishalaya.com"      # no trailing slash
 export TENANT_ID="<pilot tenant id from provision.md>"
 export FOUNDER_PHONE="+91XXXXXXXXXX"                              # the real phone provisioned in provision.md
 
 # optional, unlocks the automated recon/ledger checks (6 + 8) instead of a manual-only fallback:
-export ADMIN_API_URL="https://staging-admin-api.krishiverse.ai"
+export ADMIN_API_URL="https://staging-admin-api.krishalaya.com"
 export ADMIN_API_TOKEN="<a platform_recon_viewer-or-better admin-api token>"
 
 node scripts/staging-smoke/smoke.mjs

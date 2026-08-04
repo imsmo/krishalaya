@@ -15,7 +15,7 @@ async function bootstrap() {
     keepCase: true, longs: String, enums: String, defaults: true, oneofs: true,
   });
   const proto = grpc.loadPackageDefinition(def) as any;
-  const walletService = proto.krishiverse.wallet.v1.Wallet.service;
+  const walletService = proto.krishalaya.wallet.v1.Wallet.service;
 
   const server = new grpc.Server({ 'grpc.max_concurrent_streams': 1000 });
   server.addService(walletService, makeWalletHandlers(svc.engine, svc.pool));

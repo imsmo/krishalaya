@@ -1,18 +1,18 @@
 # infra/k8s/external-secrets/staging/admin-api.yaml · STAGING variant, templated from ../admin-api.yaml by DEV-29 (sed substitution of the Secrets Manager key prefix only, matching S1_STAGING_APPLY_RUNBOOK.md §6.3's own documented founder command). No secret VALUES here, only the AWS Secrets Manager KEY NAME to sync from (a PLACEHOLDER-free reference, not a credential). Not applied — no cluster/AWS access in this sandbox, see Development_Program/spec_dev29.md.
-# infra/k8s/external-secrets/admin-api.yaml · sync AWS Secrets Manager -> k8s Secret krishiverse-admin-api-env (consumed by the admin-api chart)
+# infra/k8s/external-secrets/admin-api.yaml · sync AWS Secrets Manager -> k8s Secret krishalaya-admin-api-env (consumed by the admin-api chart)
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
   name: admin-api-env
-  namespace: krishiverse
+  namespace: krishalaya
 spec:
   refreshInterval: 1h
   secretStoreRef:
     name: aws-secrets-manager
     kind: ClusterSecretStore
   target:
-    name: krishiverse-admin-api-env
+    name: krishalaya-admin-api-env
     creationPolicy: Owner
   dataFrom:
     - extract:
-        key: krishiverse-staging/admin-api/env   # a JSON secret in Secrets Manager holding every env var for this service
+        key: krishalaya-staging/admin-api/env   # a JSON secret in Secrets Manager holding every env var for this service
