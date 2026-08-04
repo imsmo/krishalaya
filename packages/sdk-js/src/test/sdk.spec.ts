@@ -147,6 +147,19 @@ describe('HttpClient via resources', () => {
     expect(d.resolutionAmountMinor).toBe('50000');
   });
 
+  it('courses author surface: create POSTs; publish hits the lifecycle path (PC-26)', async () => {
+    const course = { id: 'c1', instructorId: 'i1', defaultTitle: 'Drip irrigation basics', topicId: null, audienceRoleIds: [], level: 'basic', priceMinor: '0', currencyCode: 'INR', certEnabled: false, coverMediaId: null, status: 'draft' };
+    const { fn, calls } = fakeFetch(() => ({ body: { data: course } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.courses.create({ defaultTitle: 'Drip irrigation basics' });
+    await c.courses.publish('c1');
+    await c.courses.addLesson('c1', { lessonNo: 1, defaultTitle: 'Why drip', contentKind: 'video', mediaId: 'm1' });
+    expect(calls[0].url).toBe('https://api.test/v1/education/courses');
+    expect(calls[1].url).toBe('https://api.test/v1/education/courses/c1/publish');
+    expect(calls[2].url).toBe('https://api.test/v1/education/courses/c1/lessons');
+    expect(JSON.parse(String(calls[2].init?.body)).contentKind).toBe('video');
+  });
+
   it('disputes.raise POSTs with Idempotency-Key + reason enum', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd9', orderId: 'o1', raisedBy: 'b1', againstUser: 's1', reasonId: null, description: 'late by 3 days', status: 'open', sellerRespondBy: null, resolutionType: null, resolutionAmountMinor: null, resolvedBy: null, resolvedAt: null, slaDueAt: null } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

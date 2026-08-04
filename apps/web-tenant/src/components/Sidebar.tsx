@@ -45,6 +45,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureGroupLots ? [{ key: 'group-lots', href: '/group-lots', label: t.t('nav.groupLots') }] : []),
         ...(env.featureAuditor ? [{ key: 'auditor', href: '/auditor', label: t.t('nav.auditor') }] : []),
         ...(env.featureAiReview ? [{ key: 'ai-review', href: '/ai-review', label: t.t('nav.aiReview') }] : []),
+        ...(env.featureEducation ? [{ key: 'studio', href: '/studio', label: t.t('nav.studio') }] : []),
         { key: 'disputes', href: '/disputes', label: t.t('nav.disputes') },
         { key: 'notifications', href: '/notifications', label: t.t('nav.notifications') },
         { key: 'billing', href: '/billing', label: t.t('nav.billing') },

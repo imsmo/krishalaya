@@ -19,6 +19,37 @@ export class CoursesResource {
   async lessons(courseId: string, signal?: AbortSignal): Promise<CourseLesson[]> {
     return (await this.http.request<CourseLesson[]>('GET', `education/courses/${encodeURIComponent(courseId)}/lessons`, { signal })).data;
   }
+
+  // --- AUTHOR/STUDIO surface (PC-26). Server-gated: education.author on create/update/submit/lesson/archive,
+  // education.publish on publish/pause; the `education` flag gates everything. Money bigint minor (Law 2). ---
+  /** Author: create a draft course. */
+  async create(input: { defaultTitle: string; topicId?: string | null; level?: string; priceMinor?: string; certEnabled?: boolean; coverMediaId?: string | null }): Promise<Course> {
+    return (await this.http.request<Course>('POST', 'education/courses', { body: input })).data;
+  }
+  /** Author: patch a course's editable fields (draft/review). */
+  async update(id: string, patch: Partial<{ defaultTitle: string; topicId: string | null; level: string; priceMinor: string; certEnabled: boolean; coverMediaId: string | null }>): Promise<Course> {
+    return (await this.http.request<Course>('PATCH', `education/courses/${encodeURIComponent(id)}`, { body: patch })).data;
+  }
+  /** Author: submit for review (draft → review). */
+  async submit(id: string): Promise<Course> {
+    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/submit`, {})).data;
+  }
+  /** Editor: publish (review → published). Needs education.publish. */
+  async publish(id: string): Promise<Course> {
+    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/publish`, {})).data;
+  }
+  /** Editor: pause a published course (hides it without losing enrollments). */
+  async pause(id: string): Promise<Course> {
+    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/pause`, {})).data;
+  }
+  /** Author: archive (terminal). */
+  async archive(id: string): Promise<Course> {
+    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/archive`, {})).data;
+  }
+  /** Author: add/replace one lesson (module/lesson number addressing; video/text via contentKind + mediaId/body). */
+  async addLesson(courseId: string, input: { moduleNo?: number; lessonNo: number; defaultTitle: string; contentKind: string; mediaId?: string | null; body?: string | null; durationSecs?: number | null }): Promise<CourseLesson> {
+    return (await this.http.request<CourseLesson>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons`, { body: input })).data;
+  }
 }
 
 export class EnrollmentsResource {

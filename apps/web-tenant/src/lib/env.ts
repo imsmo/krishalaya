@@ -34,4 +34,7 @@ export const env = {
   /** Console visibility switch for the AI review-queue (human-in-the-loop) surface. OFF by default; the API's own
    *  `ai_governance` flag + `ai.review` perm remain the authoritative gates. */
   featureAiReview: process.env.NEXT_PUBLIC_FEATURE_AI_REVIEW === 'true',
+  /** Console visibility switch for the education studio (PC-26). OFF by default; the API's own `education`
+   *  flag + education.author/.publish perms remain the authoritative gates. */
+  featureEducation: process.env.NEXT_PUBLIC_FEATURE_EDUCATION === 'true',
 } as const;
