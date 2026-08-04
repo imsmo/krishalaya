@@ -7,8 +7,11 @@ vpc_cidr      = "10.40.0.0/16"
 az_count      = 2
 bucket_suffix = "REPLACE_WITH_ACCOUNT_ID_OR_ORG"
 
-# SECURITY: replace with your office/VPN CIDR(s). 0.0.0.0/0 is only acceptable transiently for first bootstrap.
-eks_public_access_cidrs = ["0.0.0.0/0"]
+# SECURITY (fail-closed): replace with your office/VPN CIDR(s), e.g. ["203.0.113.7/32"].
+# The placeholder below is an INVALID CIDR on purpose: terraform plan/apply FAILS until you substitute a real
+# value, so a forgotten edit can never silently ship a world-open EKS API endpoint. If you truly need a transient
+# open bootstrap, set ["0.0.0.0/0"] explicitly and tighten immediately after first connect.
+eks_public_access_cidrs = ["REPLACE_WITH_YOUR_IP/32"]
 
 # lean sizing — raise these to scale up later (no rewrite)
 eks_node_instance_types  = ["t3.large"]

@@ -12,8 +12,11 @@ vpc_cidr      = "10.50.0.0/16"    # distinct /16 from prod (10.40.0.0/16) — no
 az_count      = 2                 # module minimum; a 3rd AZ buys nothing at pilot node counts
 bucket_suffix = "REPLACE_WITH_ACCOUNT_ID_OR_ORG"
 
-# SECURITY: replace with your office/VPN CIDR(s). 0.0.0.0/0 is only acceptable transiently for first bootstrap.
-eks_public_access_cidrs = ["0.0.0.0/0"]
+# SECURITY (fail-closed): replace with your public IP, e.g. ["203.0.113.7/32"] — see https://checkip.amazonaws.com
+# The placeholder below is an INVALID CIDR on purpose: terraform plan/apply FAILS until you substitute a real
+# value, so a forgotten edit can never silently ship a world-open EKS API endpoint. If you truly need a transient
+# open bootstrap, set ["0.0.0.0/0"] explicitly and tighten immediately after first connect.
+eks_public_access_cidrs = ["REPLACE_WITH_YOUR_IP/32"]
 
 # ---------------------------------------------------------------------------------------------------------------
 # PILOT sizing — every line below is a deliberate down-size from envs/prod/terraform.tfvars. Raise these later
