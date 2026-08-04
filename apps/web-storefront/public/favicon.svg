@@ -1,0 +1,39 @@
+<!-- PROVENANCE — Krishalaya mark, Direction A "Sharpen" OFFICIAL <24px cut (NEW file, LOGO-2).
+     Decision: BRAND-029 Exhibit E sign-off, 2026-07-19 (REFINE Direction A, founder-delegated) —
+       "an OFFICIAL <24px size-cut, 5 paths / stroke 5.0" per BRAND-030's Direction A modification
+       table ("A — <24px cut" column).
+     Derived-from: krishalaya-mark.svg (post-LOGO-2 update, this batch, standard-build stroke 4.0).
+     Change ITEMIZED against the standard build (per BRAND-030's own table, byte-verified against
+       this file):
+       - rect / rx / gradient stops: unchanged (x0 y0 80x80 rx20, #1e6f3f -> #134628).
+       - Glyph transform: unchanged (translate(16,16)).
+       - Stroke-width: 4.0 -> 5.0 (changed).
+       - Path 1 (spine, "M24 0v48"): unchanged.
+       - Paths 2-3 (arm pair y7): unchanged.
+       - Paths 4-5 (arm pair y19): unchanged.
+       - Paths 6-7 (arm pair y31, the BOTTOM arm pair): REMOVED — 7 paths -> 5 paths.
+     RIDER (BRAND-029 Exhibit E sign-off, recorded verbatim): "the <24px cut must be validated by
+       rendered evidence against the 1-bit thermal and 2-spot screen-print contexts during
+       LOGO-2/3; if 5 paths still fail there, the cut may reduce further within Direction A's
+       mandate." A first validation pass against this rider is presented on BRAND-031 (this batch);
+       full print/thermal vendor proof remains a LOGO-3 handoff item.
+     Usage: intended for renders <24px (favicon, browser tab, small app-list icons) per BRAND-030's
+       own size-ladder observations (BRAND-029 Exhibit B: the standard 7-path glyph's arms visually
+       merge below ~24px).
+     Batch: LOGO-2 (Logo Program batch 2 of 6). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <defs>
+    <linearGradient id="grad-mark-small" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e6f3f"/>
+      <stop offset="100%" stop-color="#134628"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="80" height="80" rx="20" fill="url(#grad-mark-small)"/>
+  <g transform="translate(16, 16)" fill="none" stroke="#f9c45a" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 0v48"/>
+    <path d="M14 7c0 6 4.5 9 10 9"/>
+    <path d="M34 7c0 6-4.5 9-10 9"/>
+    <path d="M14 19c0 6 4.5 9 10 9"/>
+    <path d="M34 19c0 6-4.5 9-10 9"/>
+  </g>
+</svg>

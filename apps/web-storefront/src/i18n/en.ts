@@ -486,4 +486,9 @@ export const en: Messages = {
   'account.error.pincode': 'PIN code must be 6 digits.',
   'account.error.phone': 'Please enter a valid phone number.',
   'account.error.address': 'We couldn’t save that just now. Please try again.',
+  'offline.title': 'You’re offline',
+  'offline.heading': 'No connection right now',
+  'offline.body': 'This page needs the internet. Your cart and orders are safe on the server and will be here when you’re back online.',
+  'offline.hint': 'On a farm with patchy signal? The Krishalaya mobile app works offline-first — listings and updates sync when the network returns.',
+  'offline.retry': 'Try again',
 };

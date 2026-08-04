@@ -17,7 +17,12 @@ export const metadata: Metadata = {
   title: { default: `${env.appName} — fresh from the farm`, template: `%s · ${env.appName}` },
   description: 'Krishalaya: a multi-tenant agri-commerce marketplace connecting farmers, traders and buyers.',
   robots: { index: true, follow: true },
+  // PC-24c: installability (manifest served by app/manifest.ts; iOS uses the apple-touch icon).
+  icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/icon-192.png', sizes: '192x192' }], apple: '/apple-touch-icon.png' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Krishalaya' },
 };
+
+export const viewport = { themeColor: '#15803d' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = getLanguageDef();
@@ -34,6 +39,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <main className="kv-container" id="main">{children}</main>
         <SiteFooter />
+        {/* PC-24c: register the conservative offline shell (public/sw.js — never caches authed/API responses).
+            Progressive enhancement: no SW support (or JS off) → the site works exactly as before. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}",
+          }}
+        />
       </body>
     </html>
   );
