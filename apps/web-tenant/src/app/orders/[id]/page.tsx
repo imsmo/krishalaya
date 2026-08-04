@@ -17,7 +17,8 @@ import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { sellerActions } from '../../../features/orders/lifecycle';
 import { orderTransitionAction, deliverShipmentAction } from './actions';
 import { MediaUploader } from '../../../components/MediaUploader';
-import type { OrderDetail, Shipment } from '@krishalaya/sdk-js';
+import { invoiceFileName } from '../../../features/orders/invoice';
+import type { OrderDetail, Shipment, InvoiceDownload } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,13 @@ export default async function OrderDetailPage({ params, searchParams }: { params
   let shipments: Shipment[] = [];
   try { shipments = (await tenantClient().shipments.list({ box: 'all', orderId: order.id, limit: 20 })).items; }
   catch { shipments = []; }
+
+  // Invoice PDF (PC-20, 2026-08-04): the invoices endpoint is ownership-gated to the order's buyer OR SELLER, so
+  // the seller console offers the same best-effort presigned download the storefront ships — omitted (never faked)
+  // when the invoice/PDF isn't generated yet.
+  let invoice: InvoiceDownload | null = null;
+  try { invoice = await tenantClient().payments.invoices.downloadUrl(order.id); }
+  catch { invoice = null; }
 
   const actions = sellerActions(order.status);
   const okKey = searchParams.ok ?? null;
@@ -83,6 +91,14 @@ export default async function OrderDetailPage({ params, searchParams }: { params
           ))}
         </tbody>
       </table>
+
+      {invoice && (
+        <p>
+          <a className="kv-btn--link" href={invoice.url} download={invoiceFileName(invoice.invoiceNo)} rel="noopener">
+            {t.t('orderDetail.invoiceDownload', { invoiceNo: invoice.invoiceNo })}
+          </a>
+        </p>
+      )}
 
       <dl className="kv-facts kv-facts--totals">
         {totals.map(([k, v]) => (<div key={k} className="kv-facts__row"><dt>{k}</dt><dd>{v}</dd></div>))}
