@@ -29,7 +29,12 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       cancel pre-start; asset register. SDK: NEW EquipmentResource. Canon notes: chc-maintenance = asset
       status toggle (asset lifecycle depth = PC-54 note); chc-insights → OW-6; livestock EAR-TAG LOOKUP =
       API gap (animal registry has no tag-number query param) → PC-54 `livestock-tag-lookup`.
-- [ ] **OW-4 · dairy POS (11 rows)** — dairy api: collection shifts, slips, quality, exceptions, rate charts, pay runs.
+- [x] **OW-4 · dairy POS (11 rows)** ✅ 2026-08-05 — /dairy: record collection (member+shift+weighment+FAT/SNF+
+      adulteration flags; SERVER prices every slip from the rate card — POS never computes money; idempotent,
+      409→same-slip honesty), member slip lookup (member+range → server-priced amounts), milk bills (generate
+      per period → preview[dispute window]→approve→pay idempotent run, only the legal step shows), active rate
+      charts. Canon rows pos-shift/slip/quality/exceptions/bmc/rate-chart/payout-run all BUILT (bmc = the MCC
+      registry lives in tenant /dairy; ops POS records against memberships).
 - [ ] **OW-5 · assisted money (3 rows)** — fintech AePS receipt + withdrawal (provider-wired at S2).
 - [ ] **OW-6 · insights (2 rows)** — analytics reads.
 - [ ] **OW-7 · GATED** — IoT device fleet + ops alerting (PC-54 modules first).
