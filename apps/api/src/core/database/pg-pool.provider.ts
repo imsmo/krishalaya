@@ -6,6 +6,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfig } from '../config/app-config';
+import { urlForShard } from '../sharding/shard-directory';
 
 type Role = 'writer' | 'replica';
 
@@ -19,7 +20,9 @@ export class PgPoolProvider implements OnModuleDestroy {
 
   private make(shardId: number, role: Role): Pool {
     const { writerUrl, replicaUrl, poolMax } = this.config.db;
-    const url = role === 'replica' ? replicaUrl : writerUrl;
+    // PC-52: shard N connects to ITS OWN cluster when DATABASE_URL[_REPLICA]_SHARD_N is set;
+    // unset ⇒ the default URLs (shard 0 / single-shard behaviour byte-identical to before).
+    const url = urlForShard(process.env, shardId, role, role === 'replica' ? replicaUrl : writerUrl);
     const pool = new Pool({ connectionString: url, max: poolMax, application_name: `kv-api-s${shardId}-${role}` });
     pool.on('error', (e) => this.log.error(`pg pool error (shard ${shardId} ${role}): ${e.message}`));
     return pool;
