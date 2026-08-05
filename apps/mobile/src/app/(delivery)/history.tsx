@@ -1,20 +1,22 @@
-// apps/mobile/src/app/(delivery)/history.tsx · finished work (PC-50 W10-5). Delivered/returned/cancelled
-// shipments from box=mine. HONEST MONEY NOTE: shipment.chargeMinor is what the CUSTOMER paid for delivery,
-// not the rider's cut — rider payout terms have NO backend, so no per-drop earnings are invented
-// (PC-54 `rider-payouts`); the footer says exactly that.
+// apps/mobile/src/app/(delivery)/history.tsx · finished work (PC-50 W10-5, earnings added PC-55 A7).
+// Delivered/returned/cancelled shipments from box=mine, now with the rider's REAL payout statement on top:
+// per-drop + charge-share + COD-handling under the terms that were in force on each delivery's own date
+// (server-computed; the app never prices its own pay). The note still tells the truth — the statement says
+// what the work EARNED, and settlement.paid stays false until the operator's payouts actually run.
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import type { Shipment } from '@krishalaya/sdk-js';
-import { Card, EmptyState, ScreenScaffold, SkeletonCard, StatusPill, color, font, space } from '@krishalaya/ui-native';
+import type { Shipment, RiderPayoutStatement } from '@krishalaya/sdk-js';
+import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
-import { myTasks } from '../../features/delivery-partner/delivery.api';
+import { myTasks, myPayoutStatement } from '../../features/delivery-partner/delivery.api';
 import { isActiveTask, shipmentTone } from '../../features/delivery-partner/delivery';
 
 export default function RiderHistory() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [items, setItems] = useState<Shipment[] | null>(null);
-  useFocusEffect(useCallback(() => { myTasks().then(setItems); }, []));
+  const [statement, setStatement] = useState<RiderPayoutStatement | null | undefined>(undefined);
+  useFocusEffect(useCallback(() => { myTasks().then(setItems); myPayoutStatement().then(setStatement); }, []));
 
   const done = items?.filter((s) => !isActiveTask(s.status) && s.status !== 'pending') ?? null;
   return (
@@ -34,7 +36,34 @@ export default function RiderHistory() {
               {item.deliveredAt ? <Text style={styles.muted}>{new Date(item.deliveredAt).toLocaleString()}</Text> : null}
             </Card>
           )}
-          ListFooterComponent={<Text style={styles.muted}>{t('rider.history.payoutNote')}</Text>}
+          ListHeaderComponent={
+            statement === undefined ? <SkeletonCard lines={3} /> : statement === null ? (
+              <Text style={styles.muted}>{t('rider.earn.unavailable')}</Text>
+            ) : (
+              <Card>
+                <View style={styles.between}>
+                  <Text style={styles.earnLabel}>{t('rider.earn.thisPeriod')}</Text>
+                  <MoneyText minor={statement.totalMinor} currencyCode={statement.currencyCode} langCode={lang} tone="positive" />
+                </View>
+                <Text style={styles.muted}>
+                  {t('rider.earn.counts', { delivered: String(statement.deliveredCount), failed: String(statement.failedCount) })}
+                </Text>
+                {statement.activeTerms ? (
+                  <Text style={styles.muted}>
+                    {t('rider.earn.terms')} {statement.activeTerms.termsName}
+                    {statement.activeTerms.pctOfChargeBps > 0 ? ` · ${(statement.activeTerms.pctOfChargeBps / 100).toFixed(2)}%` : ''}
+                  </Text>
+                ) : (
+                  <Text style={styles.warn}>{t('rider.earn.noTerms')}</Text>
+                )}
+                {statement.unpriced.length > 0 ? (
+                  <Text style={styles.warn}>{t('rider.earn.unpriced', { count: String(statement.unpriced.length) })}</Text>
+                ) : null}
+                {/* The truth, verbatim from the server — never a promise that money has moved. */}
+                <Text style={styles.muted}>{statement.settlement.note}</Text>
+              </Card>
+            )
+          }
         />
       )}
     </ScreenScaffold>
@@ -43,5 +72,7 @@ export default function RiderHistory() {
 const styles = StyleSheet.create({
   awb: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink800 },
   muted: { fontSize: font.size.xs, color: color.ink500, marginTop: space[1] },
+  warn: { fontSize: font.size.xs, color: color.warningDark, marginTop: space[1] },
+  earnLabel: { fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink800 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });

@@ -55,6 +55,7 @@ export * from './resources/returns';
 export * from './resources/fintech';
 export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4
 export type { EquipmentAsset, EquipmentRate, EquipmentRental } from './resources/equipment'; // PC-50 W10-6
+export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7
 // Types defined in their resource modules but previously never re-exported from this barrel — the six web
 // consoles import them via `from '@krishalaya/sdk-js'`, which failed to typecheck until now (surfaced by the
 // first full `pnpm build` of web-ops/web-gov). Grouped by module, same style as the lines above.

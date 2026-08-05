@@ -9,6 +9,8 @@
 // Saturday Village Run routes, and cold-chain (reefer/vaccine) temperature telemetry. The cold-chain breach
 // alerter + Village-Run consolidation run as worker jobs (apps/worker) — see jobs/. No master-data sub-features
 // of this module remain deferred.
+import { RiderPayoutService } from './services/rider-payout.service';
+import { RiderPayoutRepository } from './repositories/rider-payout.repository';
 import { OpsAlertService } from './services/ops-alert.service';
 import { OpsAlertRepository } from './repositories/ops-alert.repository';
 import { OpsAlertsCadenceJob } from './jobs/ops-alerts.cadence-job';
@@ -45,7 +47,7 @@ import { OrderConfirmedHandler } from './events/handlers/order-confirmed.handler
     LogisticsPartnerService, VehicleService, PickupSlotService,
     LogisticsPartnerRepository, VehicleRepository, PickupSlotRepository,
     DeliveryZoneService, DeliveryRouteService, ColdChainService,
-    DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository, OpsAlertService, OpsAlertRepository,
+    DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository, OpsAlertService, OpsAlertRepository, RiderPayoutService, RiderPayoutRepository,
     { provide: OpsAlertsCadenceJob,
       // Every 10 minutes: fast enough that a cold-chain breach is seen while the cargo can still be saved,
       // and safe to repeat because the 0086 dedupe key makes a re-fire inside the cooldown a DB no-op.

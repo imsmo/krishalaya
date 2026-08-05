@@ -6,6 +6,17 @@
 import { HttpClient } from '../http';
 import { Shipment, Page } from '../types';
 
+export interface RiderPayoutStatement {
+  riderUserId: string;
+  period: { from: string; to: string };
+  currencyCode: string;
+  activeTerms: { id: string; termsName: string; effectiveFrom: string; perDropMinor: string; pctOfChargeBps: number; codHandlingMinor: string; failedAttemptMinor: string; scope: string } | null;
+  lines: Array<{ shipmentId: string; dateIso: string; termsId: string; outcome: 'delivered' | 'failed'; perDropMinor: string; shareMinor: string; codHandlingMinor: string; totalMinor: string }>;
+  deliveredCount: number; failedCount: number; totalMinor: string;
+  unpriced: Array<{ shipmentId: string; dateIso: string; reason: string }>;
+  settlement: { paid: boolean; note: string };
+}
+
 export class ShipmentsResource {
   constructor(private readonly http: HttpClient) {}
 
@@ -103,5 +114,26 @@ export class ShipmentsResource {
   /** Run the evaluator now (so a freshly written rule can be tested without waiting for the cadence). */
   async evaluateAlertRules(): Promise<{ evaluated: number; fired: number; suppressed: number }> {
     return (await this.http.request<{ evaluated: number; fired: number; suppressed: number }>('POST', 'logistics/cold-chain/alert-rules/evaluate', { body: {} })).data;
+  }
+
+  // --- PC-55 A7 `rider-payout-terms`. Terms are APPENDED, never edited: every delivery is priced with the
+  // terms in force on ITS OWN date, so an operator cannot change what last week's riding earned. The statement
+  // is LEDGERED ARITHMETIC — settlement.paid is always false until real payouts run. ---
+  async createRiderPayoutTerms(input: { riderUserId?: string; termsName: string; perDropMinor?: string; pctOfChargeBps?: number; codHandlingMinor?: string; failedAttemptMinor?: string; currencyCode?: string; effectiveFrom: string; notes?: string }): Promise<{ id: string; effectiveFrom: string; scope: string }> {
+    return (await this.http.request<{ id: string; effectiveFrom: string; scope: string }>('POST', 'shipments/rider-payout-terms', { body: input })).data;
+  }
+  async riderPayoutTerms(riderUserId?: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'shipments/rider-payout-terms', { query: { riderUserId }, signal })).data;
+  }
+  async retireRiderPayoutTerms(id: string): Promise<{ id: string; retired: boolean }> {
+    return (await this.http.request<{ id: string; retired: boolean }>('POST', `shipments/rider-payout-terms/${encodeURIComponent(id)}/retire`, { body: {} })).data;
+  }
+  /** The rider's OWN statement (no Manage permission needed to read one's own pay). */
+  async myRiderPayoutStatement(params: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<RiderPayoutStatement> {
+    return (await this.http.request<RiderPayoutStatement>('GET', 'shipments/riders/me/payout-statement', { query: { from: params.from, to: params.to }, signal })).data;
+  }
+  /** An operator reading a specific rider's statement (Manage-gated server-side). */
+  async riderPayoutStatement(riderUserId: string, params: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<RiderPayoutStatement> {
+    return (await this.http.request<RiderPayoutStatement>('GET', `shipments/riders/${encodeURIComponent(riderUserId)}/payout-statement`, { query: { from: params.from, to: params.to }, signal })).data;
   }
 }

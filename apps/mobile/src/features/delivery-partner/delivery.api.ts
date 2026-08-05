@@ -3,7 +3,7 @@
 // transitions the server re-validates against the state machine AND the assigned rider. Delivery is the
 // money-adjacent step (it can settle COD/complete the order) → OTP 4–8 digits + optional POD photo via the
 // shared media pipeline, Idempotency-Keyed (Law 3). Reads degrade-never-die.
-import type { Shipment } from '@krishalaya/sdk-js';
+import type { Shipment, RiderPayoutStatement } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 import { uploadPickedImage, type PickedImage } from '../../core/media';
@@ -28,4 +28,10 @@ export async function uploadPod(picked: PickedImage): Promise<string | null> {
 }
 export function pingLocation(id: string, lat: number, lng: number): Promise<{ ok: boolean }> {
   return apiClient().shipments.postLocation(id, { lat, lng });
+}
+
+/** PC-55 A7: my OWN payout statement (this month by default). Ledgered arithmetic — settlement.paid is
+ *  always false until the operator's payouts actually run; the screen shows that verbatim, never a promise. */
+export async function myPayoutStatement(): Promise<RiderPayoutStatement | null> {
+  try { return await apiClient().shipments.myRiderPayoutStatement(); } catch { return null; }
 }

@@ -1517,3 +1517,21 @@ describe('ops-alert-rules', () => {
     expect(calls[1].url).toContain('alerts/feed?unacknowledgedOnly=true');
   });
 });
+
+// --- rider payout terms & statement (PC-55 A7) ---
+describe('rider-payout-terms', () => {
+  it('refuses to imply payment, exposes minor strings, and never lets a client price its own pay', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { id: 't1', effectiveFrom: '2026-08-06', scope: 'tenant_default' } } }
+      : { body: { data: { riderUserId: 'u1', period: { from: '2026-08-01', to: '2026-08-31' }, currencyCode: 'INR', activeTerms: { id: 't1', termsName: 'Standard', effectiveFrom: '2026-08-01', perDropMinor: '2000', pctOfChargeBps: 0, codHandlingMinor: '500', failedAttemptMinor: '500', scope: 'tenant_default' }, lines: [], deliveredCount: 12, failedCount: 1, totalMinor: '25500', unpriced: [], settlement: { paid: false, note: 'Nothing here has been paid yet' } } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.shipments.createRiderPayoutTerms({ termsName: 'Standard', perDropMinor: '2000', effectiveFrom: '2026-08-06' });
+    expect(calls[0].url).toBe('https://api.test/v1/shipments/rider-payout-terms');
+    const st = await c.shipments.myRiderPayoutStatement();
+    expect(calls[1].url).toContain('riders/me/payout-statement');
+    expect(st.settlement.paid).toBe(false);            // never claims money moved
+    expect(typeof st.totalMinor).toBe('string');       // Law 2 — minor-unit string
+    const body = JSON.parse(String(calls[0].init.body));
+    expect(body).not.toHaveProperty('totalMinor');     // a client never supplies an earned figure
+  });
+});

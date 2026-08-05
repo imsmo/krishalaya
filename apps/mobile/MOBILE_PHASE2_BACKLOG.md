@@ -42,8 +42,7 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       legal rider milestones (riderActionsFor mirrors domain/shipment.state.ts; assign/cancel/returned = ops
       moves; `failed` is re-attemptable); DELIVER = buyer OTP 4–8 (isValidPodOtp reused) + optional POD photo
       via the shared media pipeline, Idempotency-Keyed; FAIL requires an audited reason. SDK: rider milestone
-      methods on ShipmentsResource (89/89). HONEST MONEY: chargeMinor = what the CUSTOMER paid; rider payout
-      terms have NO backend → no invented per-drop earnings → PC-54 `rider-payouts`. Route MAP: no routing
+      methods on ShipmentsResource (89/89). HONEST MONEY: chargeMinor = what the CUSTOMER paid; rider payout terms NOW BUILT (PC-55 A7 — History shows the real statement) → no invented per-drop earnings → PC-54 `rider-payouts`. Route MAP: no routing
       backend → the task list is the route sheet (no fake map). Flag `delivery_partner` ON.
 - [x] **W10-6 · Equipment owner** ✅ 2026-08-05 — persona RESOLVED by design canon (founder-confirmed: all 520+
       screens designed; owner surfaces = screens 308–312 + 496): NEW `(equipment)` tab app (Requests/Fleet/

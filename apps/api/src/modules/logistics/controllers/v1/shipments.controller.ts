@@ -16,12 +16,24 @@ import { CreateShipmentSchema, CreateShipmentDto } from '../../dto/create-shipme
 import { AssignShipmentSchema, AssignShipmentDto, SchedulePickupSchema, SchedulePickupDto, DeliverShipmentSchema, DeliverShipmentDto, FailShipmentSchema, FailShipmentDto, ShipmentLocationSchema, ShipmentLocationDto } from '../../dto/update-shipment.dto';
 import { QueryShipmentsSchema, QueryShipmentsDto } from '../../dto/query-shipment.dto';
 import { CodRemittanceService } from '../../services/cod-remittance.service';
+import { RiderPayoutService } from '../../services/rider-payout.service';
 import { z } from 'zod';
 import { ShipmentPermissions, canManageLogistics } from '../../policies/logistics.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
+const CreateRiderTermsSchema = z.object({
+  riderUserId: z.string().uuid().optional(),                    // omit ⇒ the tenant-wide default
+  termsName: z.string().trim().min(3).max(150),
+  perDropMinor: z.string().regex(/^\d{1,15}$/).optional(),
+  pctOfChargeBps: z.number().int().min(0).max(10000).optional(), // share of the CUSTOMER's delivery charge
+  codHandlingMinor: z.string().regex(/^\d{1,15}$/).optional(),
+  failedAttemptMinor: z.string().regex(/^\d{1,15}$/).optional(),
+  currencyCode: z.string().length(3).optional(),
+  effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),      // today or later — never back-dated
+  notes: z.string().trim().max(2000).optional(),
+}).strict();
 const CreateRemittanceSchema = z.object({
   riderUserId: z.string().uuid(),
   shipmentIds: z.array(z.string().uuid()).min(1).max(500).optional(),   // omit = ALL of the rider's unremitted COD
@@ -38,7 +50,7 @@ const CancelSchema = z.object({ reason: z.string().trim().min(3).max(500) }).str
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('logistics')
 export class ShipmentsController {
-  constructor(private readonly shipments: ShipmentService, private readonly remittances: CodRemittanceService) {}
+  constructor(private readonly shipments: ShipmentService, private readonly remittances: CodRemittanceService, private readonly riderPayouts: RiderPayoutService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageLogistics(ctx) }; }
 
   @Post() @RequirePermissions(ShipmentPermissions.Manage)
@@ -54,6 +66,34 @@ export class ShipmentsController {
   }
 
   // PC-54 W54-2 `cod-recon`: the outstanding-cash worksheet (Manage-gated; static path BEFORE ':id').
+  // --- PC-55 A7 `rider-payout-terms`: what a delivery partner earns. Terms are APPENDED (never edited) and
+  // every delivery is priced with the terms in force on ITS OWN date, so past pay is immune to later edits. ---
+  @Post('rider-payout-terms') @RequirePermissions(ShipmentPermissions.Manage)
+  createRiderTerms(@CurrentContext() ctx: RequestContext, @ZodBody(CreateRiderTermsSchema) dto: z.infer<typeof CreateRiderTermsSchema>) {
+    return this.riderPayouts.createTerms(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
+  }
+  @Get('rider-payout-terms') @RequirePermissions(ShipmentPermissions.Manage)
+  riderTerms(@CurrentContext() ctx: RequestContext, @Query('riderUserId') riderUserId?: string) {
+    return this.riderPayouts.terms(ctx.tenantId, this.actor(ctx), riderUserId).then((data) => ({ data }));
+  }
+  @Post('rider-payout-terms/:id/retire') @RequirePermissions(ShipmentPermissions.Manage)
+  retireRiderTerms(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.riderPayouts.retireTerms(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+  /** A rider reads their OWN statement (no Manage needed); an operator may pass riderUserId with Manage. */
+  @Get('riders/me/payout-statement')
+  myPayoutStatement(@CurrentContext() ctx: RequestContext, @Query('from') from?: string, @Query('to') to?: string) {
+    const now = new Date();
+    const firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
+    return this.riderPayouts.statement(ctx.tenantId, this.actor(ctx), { from: from ?? firstOfMonth, to: to ?? now.toISOString().slice(0, 10) }).then((data) => ({ data }));
+  }
+  @Get('riders/:riderUserId/payout-statement') @RequirePermissions(ShipmentPermissions.Manage)
+  riderPayoutStatement(@CurrentContext() ctx: RequestContext, @Param('riderUserId') riderUserId: string, @Query('from') from?: string, @Query('to') to?: string) {
+    const now = new Date();
+    const firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
+    return this.riderPayouts.statement(ctx.tenantId, this.actor(ctx), { riderUserId, from: from ?? firstOfMonth, to: to ?? now.toISOString().slice(0, 10) }).then((data) => ({ data }));
+  }
+
   // --- PC-55 A2 `cod-remittance-ledger` (0082): rider cash → bank → second-pair-of-eyes ---
   @Post('cod/remittances') @RequirePermissions(ShipmentPermissions.Manage)
   createRemittance(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateRemittanceSchema) dto: z.infer<typeof CreateRemittanceSchema>) {
