@@ -1,0 +1,35 @@
+// @krishalaya/sdk-js · fintech servicing resource (PC-54 W54-8). The post-disbursal book, loan.manage-gated
+// server-side: DPD buckets, collections queue, the KCC drawl ledger (signed entries, server-run balance),
+// restructures (maker-checker), write-offs. Money bigint minor STRINGS (Law 2).
+import { HttpClient } from '../http';
+
+export class FintechResource {
+  constructor(private readonly http: HttpClient) {}
+
+  async dpdBuckets(signal?: AbortSignal): Promise<Array<{ bucket: string; loans: number; outstandingMinor: string }>> {
+    return (await this.http.request<Array<{ bucket: string; loans: number; outstandingMinor: string }>>('GET', 'fintech/servicing/dpd', { signal })).data;
+  }
+  async collectionsQueue(limit = 100, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'fintech/servicing/collections', { query: { limit }, signal })).data;
+  }
+  /** Signed KCC entry: +drawl/+interest, −repayment; the SERVER computes the running balance under lock. */
+  async kccEntry(loanId: string, input: { entryKind: 'drawl' | 'repayment' | 'interest'; amountMinor: string; narrative: string; destinationKind?: 'supplier_direct' | 'other'; repaymentChannel?: string }): Promise<{ loanId: string; balanceAfterMinor: string }> {
+    return (await this.http.request<{ loanId: string; balanceAfterMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/kcc/entries`, { body: input })).data;
+  }
+  async kccLedger(loanId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', `fintech/servicing/loans/${encodeURIComponent(loanId)}/kcc/ledger`, { signal })).data;
+  }
+  async proposeRestructure(loanId: string, input: Record<string, unknown>): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/restructures`, { body: input })).data;
+  }
+  async restructures(loanId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', `fintech/servicing/loans/${encodeURIComponent(loanId)}/restructures`, { signal })).data;
+  }
+  /** Maker-checker: the server refuses checker_approved from the proposer. */
+  async transitionRestructure(id: string, to: 'mediation' | 'accepted' | 'checker_approved' | 'activated' | 'rejected' | 'expired'): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `fintech/servicing/restructures/${encodeURIComponent(id)}/transition`, { body: { to } })).data;
+  }
+  async writeOff(loanId: string, reason: string): Promise<{ loanId: string; status: string; outstandingMinor: string }> {
+    return (await this.http.request<{ loanId: string; status: string; outstandingMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/write-off`, { body: { reason } })).data;
+  }
+}

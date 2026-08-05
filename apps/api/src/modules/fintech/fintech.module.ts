@@ -19,6 +19,9 @@ import { Module } from '@nestjs/common';
 import { PartnersController } from './controllers/v1/partners.controller';
 import { LoanApplicationsController } from './controllers/v1/loan-applications.controller';
 import { LoansController } from './controllers/v1/loans.controller';
+import { ServicingController } from './controllers/v1/servicing.controller';
+import { ServicingService } from './services/servicing.service';
+import { ServicingRepository } from './repositories/servicing.repository';
 import { FinancialPartnerService } from './services/financial-partner.service';
 import { LoanApplicationService } from './services/loan-application.service';
 import { LoanService } from './services/loan.service';
@@ -29,8 +32,8 @@ import { LoanRepository } from './repositories/loan.repository';
 import { LoanRepaymentRepository } from './repositories/loan-repayment.repository';
 
 @Module({
-  controllers: [PartnersController, LoanApplicationsController, LoansController],
-  providers: [FinancialPartnerService, LoanApplicationService, LoanService, FinancialPartnerRepository, LoanProductRepository, LoanApplicationRepository, LoanRepository, LoanRepaymentRepository],
+  controllers: [PartnersController, LoanApplicationsController, LoansController, ServicingController],
+  providers: [FinancialPartnerService, LoanApplicationService, LoanService, FinancialPartnerRepository, LoanProductRepository, LoanApplicationRepository, LoanRepository, LoanRepaymentRepository, ServicingService, ServicingRepository],
   exports: [FinancialPartnerService, LoanApplicationService, LoanService],
 })
 export class FintechModule {}

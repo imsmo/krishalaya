@@ -1325,3 +1325,20 @@ describe('governance', () => {
     expect(JSON.parse(String(calls[1].init.body))).toEqual({ choice: 'yes' });
   });
 });
+
+// --- fintech servicing (PC-54 W54-8) ---
+describe('fintech servicing', () => {
+  it('reads DPD, posts a signed KCC entry, and drives maker-checker restructures', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: [{ bucket: '1-30', loans: 4, outstandingMinor: '1200000' }] } }
+      : { body: { data: { loanId: 'l1', balanceAfterMinor: '350000' } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    const dpd = await c.fintech.dpdBuckets();
+    expect(calls[0].url).toBe('https://api.test/v1/fintech/servicing/dpd');
+    expect(typeof dpd[0].outstandingMinor).toBe('string');
+    await c.fintech.kccEntry('l1', { entryKind: 'drawl', amountMinor: '350000', narrative: 'Drawl — kharif kit' });
+    expect(JSON.parse(String(calls[1].init.body)).amountMinor).toBe('350000');
+    await c.fintech.transitionRestructure('r1', 'checker_approved');
+    expect(calls[2].url).toContain('restructures/r1/transition');
+  });
+});
