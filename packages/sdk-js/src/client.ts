@@ -38,7 +38,7 @@ import { RequirementsResource } from './resources/requirements';
 import { WarehousingResource } from './resources/warehousing';
 import { LivestockResource } from './resources/livestock';
 import { ReturnsResource } from './resources/returns';
-import { FintechResource } from './resources/fintech';
+import { FintechResource, InsuranceAuthoringResource } from './resources/fintech';
 import { EquipmentResource } from './resources/equipment';
 import { MarketResource, WeatherResource } from './resources/market';
 import { AssistantResource } from './resources/assistant';
@@ -86,6 +86,7 @@ export class KrishalayaClient {
   readonly livestock: LivestockResource;
   readonly returns: ReturnsResource;
   readonly fintech: FintechResource;
+  readonly insuranceAuthoring: InsuranceAuthoringResource;
   readonly equipment: EquipmentResource;
   readonly tenancy: TenancyResource;
   readonly dairy: DairyResource;
@@ -147,6 +148,7 @@ export class KrishalayaClient {
     this.livestock = new LivestockResource(this.http);
     this.returns = new ReturnsResource(this.http);
     this.fintech = new FintechResource(this.http);
+    this.insuranceAuthoring = new InsuranceAuthoringResource(this.http);
     this.equipment = new EquipmentResource(this.http);
     this.tenancy = new TenancyResource(this.http);
     this.dairy = new DairyResource(this.http);

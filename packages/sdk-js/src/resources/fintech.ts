@@ -33,3 +33,24 @@ export class FintechResource {
     return (await this.http.request<{ loanId: string; status: string; outstandingMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/write-off`, { body: { reason } })).data;
   }
 }
+
+// PC-54 W54-9 · insurer authoring surface (insurance.manage-gated server-side).
+export class InsuranceAuthoringResource {
+  constructor(private readonly http: HttpClient) {}
+  async createProduct(input: { partnerId: string; productKindId: string; defaultName: string; premiumCalc: Record<string, unknown>; sumInsuredRules?: Record<string, unknown>; govtSubsidyBps?: number; ourCommissionBps?: number; isParametric?: boolean }, idempotencyKey: string): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', 'insurance/authoring/products', { body: input, idempotencyKey })).data;
+  }
+  async updateProduct(id: string, patch: Record<string, unknown>): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('PATCH', `insurance/authoring/products/${encodeURIComponent(id)}`, { body: patch })).data;
+  }
+  /** No premium, no cover: the server refuses issuance until the premium payment is linked. */
+  async issuePolicy(id: string, input: { policyNo: string; parametricTriggers?: Record<string, unknown> }): Promise<{ id: string; status: string; policyNo: string }> {
+    return (await this.http.request<{ id: string; status: string; policyNo: string }>('POST', `insurance/authoring/policies/${encodeURIComponent(id)}/issue`, { body: input })).data;
+  }
+  async book(params: { status?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'insurance/authoring/book', { query: { status: params.status, limit: params.limit ?? 100 }, signal })).data;
+  }
+  async insights(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('GET', 'insurance/authoring/insights', { signal })).data;
+  }
+}

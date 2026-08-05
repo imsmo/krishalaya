@@ -1342,3 +1342,16 @@ describe('fintech servicing', () => {
     expect(calls[2].url).toContain('restructures/r1/transition');
   });
 });
+
+// --- insurance authoring (PC-54 W54-9) ---
+describe('insurance authoring', () => {
+  it('creates a product idempotently and issues a policy with its number', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'p1', status: 'active', policyNo: 'PMFBY-26-001' } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.insuranceAuthoring.createProduct({ partnerId: 'pt1', productKindId: 'k1', defaultName: 'PMFBY Kharif', premiumCalc: { pct_of_sum_insured: 2 } }, 'idem-ia-1');
+    expect(calls[0].url).toBe('https://api.test/v1/insurance/authoring/products');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ia-1');
+    await c.insuranceAuthoring.issuePolicy('p1', { policyNo: 'PMFBY-26-001' });
+    expect(calls[1].url).toContain('policies/p1/issue');
+  });
+});

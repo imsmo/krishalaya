@@ -31,6 +31,9 @@ import { FintechModule } from '../fintech/fintech.module';
 import { PaymentsModule } from '../payments/payments.module';
 
 import { InsuranceProductsController } from './controllers/v1/insurance-products.controller';
+import { AuthoringController } from './controllers/v1/authoring.controller';
+import { AuthoringService } from './services/authoring.service';
+import { AuthoringRepository } from './repositories/authoring.repository';
 import { InsurancePoliciesController } from './controllers/v1/insurance-policies.controller';
 import { InsuranceClaimsController } from './controllers/v1/insurance-claims.controller';
 
@@ -53,7 +56,7 @@ import { pmfbyProviderProvider, surveyorDispatchGatewayProvider, vetCertProvider
     FintechModule,   // for FinancialPartnerService — IRDAI-partner gating reuses the shared global table (Law 11)
     PaymentsModule,  // for PaymentService/MandateService — premium collection + autopay-link ride the existing chains (Law 11)
   ],
-  controllers: [InsuranceProductsController, InsurancePoliciesController, InsuranceClaimsController],
+  controllers: [InsuranceProductsController, InsurancePoliciesController, InsuranceClaimsController, AuthoringController],
   providers: [
     InsuranceProductService, InsurancePolicyService, InsuranceClaimService,
     InsuranceProductRepository, InsurancePolicyRepository, InsuranceClaimRepository,
@@ -62,8 +65,7 @@ import { pmfbyProviderProvider, surveyorDispatchGatewayProvider, vetCertProvider
     // see insurance-gateways.provider.ts) — previously defined but NEVER bound into this module (the exact
     // gap this batch's forensics identified and fixes).
     pmfbyProviderProvider, surveyorDispatchGatewayProvider, vetCertProviderProvider,
-    PmfbyPolicySyncHandler, SurveyorDispatchHandler,
-  ],
+    PmfbyPolicySyncHandler, SurveyorDispatchHandler, AuthoringService, AuthoringRepository],
   exports: [InsuranceProductService, InsurancePolicyService, InsuranceClaimService],
 })
 export class InsuranceModule implements OnModuleInit {
