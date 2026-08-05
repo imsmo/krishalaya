@@ -28,11 +28,12 @@ import { SchemeApplicationRepository } from './repositories/scheme-application.r
 import { DbtTransferRepository } from './repositories/dbt-transfer.repository';
 import { FieldVerificationRepository } from './repositories/field-verification.repository';
 import { FieldVerificationService } from './services/field-verification.service';
+import { GovExportService } from './services/gov-export.service';
 import { SchemeDocumentRepository } from './repositories/scheme-document.repository';
 
 @Module({
   controllers: [SchemesController, EligibilityController, ApplicationsController],
-  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService],
+  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService, GovExportService],
   exports: [SchemeService, SchemeApplicationService, DbtTransferService],
 })
 export class SchemesModule {}

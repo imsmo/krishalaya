@@ -23,4 +23,21 @@ export class DbtTransferRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM dbt_transfers WHERE tenant_id=$1 AND application_id=$2 AND created_at >= now() - interval '5 years' ORDER BY credited_on DESC, id DESC LIMIT 200`, [tenantId, applicationId]);
     return r.rows.map(toDomain);
   }
+
+  /** PC-54 W54-10 `dbt-read-models`: the cross-application MONITOR — per-scheme totals from ledgered
+   *  credits (partition bound). Bounce/failure tracking needs a status column → gated (`dbt-bounce-ledger`). */
+  async monitor(tenantId: string): Promise<Array<{ schemeId: string; transfers: number; amountMinor: string; lastCreditedOn: string | null }>> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT scheme_id, COUNT(*)::int AS transfers, COALESCE(SUM(amount_minor),0)::text AS amount_minor, MAX(credited_on) AS last
+         FROM dbt_transfers WHERE tenant_id=$1 AND created_at >= now() - interval '2 years'
+        GROUP BY scheme_id ORDER BY amount_minor::numeric DESC LIMIT 100`, [tenantId]);
+    return r.rows.map((x: any) => ({ schemeId: x.scheme_id, transfers: x.transfers, amountMinor: x.amount_minor, lastCreditedOn: x.last ? String(x.last).slice(0, 10) : null }));
+  }
+  /** Recent credits across ALL applications (Process oversight; keyset-free bounded read). */
+  async recent(tenantId: string, schemeId: string | undefined, limit: number): Promise<DbtTransfer[]> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT ${COLS} FROM dbt_transfers WHERE tenant_id=$1 AND ($2::uuid IS NULL OR scheme_id=$2) AND created_at >= now() - interval '2 years'
+        ORDER BY credited_on DESC, id DESC LIMIT $3`, [tenantId, schemeId ?? null, limit]);
+    return r.rows.map(toDomain);
+  }
 }

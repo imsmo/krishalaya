@@ -1355,3 +1355,19 @@ describe('insurance authoring', () => {
     expect(calls[1].url).toContain('policies/p1/issue');
   });
 });
+
+// --- gov exports + dbt read-models (PC-54 W54-10) ---
+describe('gov exports', () => {
+  it('reads the monitor and gets an audit-stamped receipt with export rows', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: [{ schemeId: 's1', transfers: 12, amountMinor: '7200000', lastCreditedOn: '2026-08-01' }] } }
+      : { body: { data: { receipt: { id: 'rcpt1', report: 'dbt_monitor', generatedAt: 'x', generatedBy: 'u1', rowCount: 1 }, rows: [{}] } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    const m = await c.schemes.dbtMonitor();
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications/dbt/monitor');
+    expect(typeof m[0].amountMinor).toBe('string');
+    const e = await c.schemes.exportReport({ report: 'dbt_monitor' });
+    expect(calls[1].url).toContain('applications/exports');
+    expect(e.receipt.id).toBe('rcpt1');
+  });
+});

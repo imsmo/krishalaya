@@ -104,4 +104,16 @@ export class SchemesResource {
   async submitFieldVisit(visitId: string, dto: { geotag: Array<{ mediaId: string; lat: number; lng: number; capturedAt: string }>; measuredValues?: Record<string, unknown>; walkTraceMediaId?: string }): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', `schemes/applications/field-visits/${encodeURIComponent(visitId)}/submit`, { body: { measuredValues: {}, ...dto } })).data;
   }
+
+  // --- PC-54 W54-10: cross-application DBT read-models + audit-stamped exports (Process-gated) ---
+  async dbtMonitor(signal?: AbortSignal): Promise<Array<{ schemeId: string; transfers: number; amountMinor: string; lastCreditedOn: string | null }>> {
+    return (await this.http.request<Array<{ schemeId: string; transfers: number; amountMinor: string; lastCreditedOn: string | null }>>('GET', 'schemes/applications/dbt/monitor', { signal })).data;
+  }
+  async dbtRecent(params: { schemeId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'schemes/applications/dbt/recent', { query: { schemeId: params.schemeId, limit: params.limit ?? 100 }, signal })).data;
+  }
+  /** The Appendix-5 law: every export returns an AUDIT-STAMPED receipt with its rows. */
+  async exportReport(input: { report: 'dbt_monitor' | 'dbt_recent'; schemeId?: string; limit?: number }): Promise<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number }; rows: unknown[] }> {
+    return (await this.http.request<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number }; rows: unknown[] }>('POST', 'schemes/applications/exports', { body: input })).data;
+  }
 }

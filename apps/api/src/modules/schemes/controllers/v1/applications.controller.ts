@@ -1,7 +1,7 @@
 // modules/schemes/controllers/v1/applications.controller.ts · scheme application lifecycle + DBT records. `schemes` flag.
 // apply/submit/resubmit/appeal = applicant (scheme.apply); verify/clarify/approve/reject/close + DBT record
 // = officer (scheme.process). Money route (submit, collects the processing fee) requires an Idempotency-Key.
-import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards, Query } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -12,10 +12,16 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { SchemeApplicationService } from '../../services/scheme-application.service';
 import { FieldVerificationService } from '../../services/field-verification.service';
+import { GovExportService } from '../../services/gov-export.service';
 import { z } from 'zod';
 
 // PC-54 W54-3 `scheme-field-visits` DTOs (zod .strict(); evidence = media ids, never blobs).
 const ScheduleVisitSchema = z.object({ scheduledFor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).strict();
+const ExportSchema = z.object({
+  report: z.enum(['dbt_monitor', 'dbt_recent']),
+  schemeId: z.string().uuid().optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+}).strict();
 const SubmitVisitSchema = z.object({
   geotag: z.array(z.object({ mediaId: z.string().uuid(), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180), capturedAt: z.string().datetime() }).strict()).min(1).max(50),
   measuredValues: z.record(z.unknown()).default({}),
@@ -36,7 +42,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('schemes')
 export class ApplicationsController {
-  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService, private readonly docs: SchemeDocumentService, private readonly visits: FieldVerificationService) {}
+  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService, private readonly docs: SchemeDocumentService, private readonly visits: FieldVerificationService, private readonly gov: GovExportService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canApply: canApply(ctx), canProcess: canProcess(ctx) }; }
 
   @Post() @RequirePermissions(SchemesPermissions.Apply)
@@ -95,6 +101,18 @@ export class ApplicationsController {
   @Post('field-visits/:visitId/submit') @RequirePermissions(SchemesPermissions.Process)
   submitVisit(@CurrentContext() ctx: RequestContext, @Param('visitId') visitId: string, @ZodBody(SubmitVisitSchema) dto: { geotag: Array<{ mediaId: string; lat: number; lng: number; capturedAt: string }>; measuredValues: Record<string, unknown>; walkTraceMediaId?: string }) {
     return this.visits.submit(ctx.tenantId, this.actor(ctx), visitId, dto).then((data) => ({ data }));
+  }
+
+  // --- PC-54 W54-10: cross-application DBT read-models + audit-stamped exports (Process-gated) ---
+  @Get('dbt/monitor') @RequirePermissions(SchemesPermissions.Process)
+  dbtMonitor(@CurrentContext() ctx: RequestContext) { return this.gov.monitor(ctx.tenantId, this.actor(ctx)).then((data) => ({ data })); }
+  @Get('dbt/recent') @RequirePermissions(SchemesPermissions.Process)
+  dbtRecent(@CurrentContext() ctx: RequestContext, @Query('schemeId') schemeId?: string, @Query('limit') limit?: string) {
+    return this.gov.recent(ctx.tenantId, this.actor(ctx), schemeId, Number(limit) || 100).then((data) => ({ data }));
+  }
+  @Post('exports') @RequirePermissions(SchemesPermissions.Process)
+  exportReport(@CurrentContext() ctx: RequestContext, @Req() r: Request, @ZodBody(ExportSchema) dto: { report: string; schemeId?: string; limit?: number }) {
+    return this.gov.export(ctx.tenantId, this.actor(ctx), ipOf(r), dto).then((data) => ({ data }));
   }
 
   @Get(':id/dbt')
