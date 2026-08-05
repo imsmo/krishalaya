@@ -51,4 +51,12 @@ export class ShipmentsResource {
   async codOutstanding(signal?: AbortSignal): Promise<Array<{ riderUserId: string | null; shipments: number; codMinor: string; oldestDeliveredAt: string | null }>> {
     return (await this.http.request<Array<{ riderUserId: string | null; shipments: number; codMinor: string; oldestDeliveredAt: string | null }>>('GET', 'shipments/cod/outstanding', { signal })).data;
   }
+
+  // --- PC-54 W54-12: iot-device-fleet + ops-alerting v1 (Manage-gated read-models) ---
+  async coldChainDevices(signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/devices', { signal })).data;
+  }
+  async coldChainBreaches(params: { hours?: number; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/breaches', { query: { hours: params.hours ?? 24, limit: params.limit ?? 100 }, signal })).data;
+  }
 }

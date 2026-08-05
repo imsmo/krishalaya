@@ -16,7 +16,17 @@ import { UpdateAssetSchema, UpdateAssetDto, SetAssetStatusSchema, SetAssetStatus
 import { QueryAssetsSchema, QueryAssetsDto } from '../../dto/query-equipment-asset.dto';
 import { CreateRateSchema, CreateRateDto } from '../../dto/create-equipment-rate.dto';
 import { QueryRatesSchema, QueryRatesDto } from '../../dto/query-equipment-rate.dto';
+import { MaintenanceService } from '../../services/maintenance.service';
+import { z } from 'zod';
 import { EquipmentPermissions, canManageEquipment, canRentEquipment, isEquipmentAdmin } from '../../policies/equipment.policies';
+
+const MaintenanceLogSchema = z.object({
+  logType: z.enum(['service', 'repair', 'breakdown', 'inspection']),
+  costMinor: z.string().regex(/^\d{1,15}$/).optional(),
+  notes: z.string().max(2000).optional(),
+  engineHoursAt: z.string().regex(/^\d{1,9}(\.\d)?$/).optional(),
+  performedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+}).strict();
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -24,7 +34,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('equipment')
 export class EquipmentController {
-  constructor(private readonly assets: EquipmentAssetService, private readonly rates: EquipmentRateService) {}
+  constructor(private readonly assets: EquipmentAssetService, private readonly rates: EquipmentRateService, private readonly maintenance: MaintenanceService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageEquipment(ctx), canRent: canRentEquipment(ctx), isAdmin: isEquipmentAdmin(ctx) }; }
 
   @Post() @RequirePermissions(EquipmentPermissions.Manage)
@@ -43,6 +53,16 @@ export class EquipmentController {
   update(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(UpdateAssetSchema) dto: UpdateAssetDto) { return this.assets.update(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
   @Post(':id/status') @RequirePermissions(EquipmentPermissions.Manage)
   setStatus(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(SetAssetStatusSchema) dto: SetAssetStatusDto) { return this.assets.setStatus(ctx.tenantId, this.actor(ctx), id, dto.status as any).then((data) => ({ data })); }
+
+  // --- PC-54 W54-12 `equipment-maintenance-alerts` (canon 312) over 0010 logs ---
+  @Get('maintenance/alerts') @RequirePermissions(EquipmentPermissions.Manage)
+  maintenanceAlerts(@CurrentContext() ctx: RequestContext) { return this.maintenance.alerts(ctx.tenantId).then((data) => ({ data })); }
+  @Post(':id/maintenance-logs') @RequirePermissions(EquipmentPermissions.Manage)
+  recordMaintenance(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(MaintenanceLogSchema) dto: z.infer<typeof MaintenanceLogSchema>) {
+    return this.maintenance.record(ctx.tenantId, ctx.userId, id, dto).then((data) => ({ data }));
+  }
+  @Get(':id/maintenance-logs')
+  maintenanceLogs(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.maintenance.logs(ctx.tenantId, id).then((data) => ({ data })); }
 
   @Post(':id/rates') @RequirePermissions(EquipmentPermissions.Manage)
   setRate(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(CreateRateSchema) dto: CreateRateDto) { return this.rates.setRate(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }

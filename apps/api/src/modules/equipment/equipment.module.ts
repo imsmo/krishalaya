@@ -12,6 +12,8 @@
 // expiry jobs + no-fly/weather pre-flight gate), maintenance logs, GPS area-trace (±2%) precise billing,
 // operator-pool integration (operator_user_id from labour), and the payments payout/intent linkage
 // (settlement here moves in-platform wallet balances).
+import { MaintenanceService } from './services/maintenance.service';
+import { MaintenanceRepository } from './repositories/maintenance.repository';
 import { Module } from '@nestjs/common';
 import { EquipmentController } from './controllers/v1/equipment.controller';
 import { RentalsController } from './controllers/v1/rentals.controller';
@@ -26,7 +28,7 @@ import { EquipmentBookingRepository } from './repositories/equipment-booking.rep
 // a privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other batch jobs.
 @Module({
   controllers: [EquipmentController, RentalsController],
-  providers: [EquipmentAssetService, EquipmentRateService, EquipmentBookingService, EquipmentAssetRepository, EquipmentRateRepository, EquipmentBookingRepository],
+  providers: [EquipmentAssetService, EquipmentRateService, EquipmentBookingService, EquipmentAssetRepository, EquipmentRateRepository, EquipmentBookingRepository, MaintenanceService, MaintenanceRepository],
   exports: [EquipmentAssetService, EquipmentRateService, EquipmentBookingService],
 })
 export class EquipmentModule {}

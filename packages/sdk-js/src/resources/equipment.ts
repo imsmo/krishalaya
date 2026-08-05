@@ -63,4 +63,15 @@ export class EquipmentResource {
   async cancelRental(id: string, reason?: string): Promise<EquipmentRental> {
     return (await this.http.request<EquipmentRental>('POST', `equipment/rentals/${encodeURIComponent(id)}/cancel`, { body: { reason } })).data;
   }
+
+  // --- PC-54 W54-12 `equipment-maintenance-alerts` (canon 312) ---
+  async maintenanceAlerts(signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'equipment/assets/maintenance/alerts', { signal })).data;
+  }
+  async recordMaintenance(assetId: string, input: { logType: 'service' | 'repair' | 'breakdown' | 'inspection'; costMinor?: string; notes?: string; engineHoursAt?: string; performedOn: string }): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', `equipment/assets/${encodeURIComponent(assetId)}/maintenance-logs`, { body: input })).data;
+  }
+  async maintenanceLogs(assetId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', `equipment/assets/${encodeURIComponent(assetId)}/maintenance-logs`, { signal })).data;
+  }
 }

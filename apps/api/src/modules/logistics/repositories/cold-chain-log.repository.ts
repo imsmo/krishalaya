@@ -62,4 +62,24 @@ export class ColdChainLogRepository {
         WHERE ${where} ORDER BY recorded_at ASC, id ASC LIMIT ${lp}`, params);
     return r.rows.map((x: any) => ({ id: String(x.id), tenantId: x.tenant_id, subjectType: x.subject_type, subjectId: x.subject_id, tempC: Number(x.temp_c), recordedAt: x.recorded_at }));
   }
+
+  /** PC-54 W54-12 `iot-device-fleet` v1: the fleet IS what the ledgered readings prove — per device_ref
+   *  last-seen / 24h reading + breach counts / last temp. No phantom registry. */
+  async deviceFleet(tenantId: string): Promise<Array<Record<string, unknown>>> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT device_ref, MAX(recorded_at) AS last_seen, COUNT(*) FILTER (WHERE recorded_at >= now() - interval '24 hours')::int AS readings_24h,
+              COUNT(*) FILTER (WHERE is_breach AND recorded_at >= now() - interval '24 hours')::int AS breaches_24h,
+              (ARRAY_AGG(temp_c ORDER BY recorded_at DESC))[1]::text AS last_temp_c
+         FROM cold_chain_logs WHERE tenant_id=$1 AND device_ref IS NOT NULL AND recorded_at >= now() - interval '30 days'
+        GROUP BY device_ref ORDER BY last_seen DESC LIMIT 200`, [tenantId]);
+    return r.rows.map((x: any) => ({ deviceRef: x.device_ref, lastSeen: new Date(x.last_seen).toISOString(), readings24h: x.readings_24h, breaches24h: x.breaches_24h, lastTempC: x.last_temp_c }));
+  }
+  /** PC-54 W54-12 `ops-alerting` v1: the breach FEED (alert rules/fan-out = gated `ops-alert-rules`). */
+  async breaches(tenantId: string, hours: number, limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT subject_type, subject_id, device_ref, temp_c::text, humidity_pct::text, recorded_at
+         FROM cold_chain_logs WHERE tenant_id=$1 AND is_breach AND recorded_at >= now() - ($2 || ' hours')::interval
+        ORDER BY recorded_at DESC LIMIT $3`, [tenantId, String(Math.min(hours, 168)), Math.min(limit, 200)]);
+    return r.rows.map((x: any) => ({ subjectType: x.subject_type, subjectId: x.subject_id, deviceRef: x.device_ref, tempC: x.temp_c, humidityPct: x.humidity_pct, recordedAt: new Date(x.recorded_at).toISOString() }));
+  }
 }

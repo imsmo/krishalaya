@@ -47,4 +47,8 @@ export class ColdChainService {
     const nextCursor = items.length === q.limit && last && last.recordedAt && last.id ? encodeFleetCursor(last.recordedAt, last.id) : null;
     return { items, nextCursor };
   }
+
+  /** PC-54 W54-12 fleet + alert reads (logistics.manage — enforced at the controller like the other reads). */
+  deviceFleet(tenantId: string) { return this.repo.deviceFleet(tenantId); }
+  breaches(tenantId: string, hours = 24, limit = 100) { return this.repo.breaches(tenantId, hours, limit); }
 }

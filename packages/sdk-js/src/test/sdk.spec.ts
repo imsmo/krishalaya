@@ -1371,3 +1371,19 @@ describe('gov exports', () => {
     expect(e.receipt.id).toBe('rcpt1');
   });
 });
+
+// --- iot fleet + alerts + maintenance (PC-54 W54-12) ---
+describe('iot fleet + maintenance', () => {
+  it('reads the device fleet/breach feed and records a maintenance log', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [] } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.shipments.coldChainDevices();
+    expect(calls[0].url).toBe('https://api.test/v1/logistics/cold-chain/devices');
+    await c.shipments.coldChainBreaches({ hours: 48 });
+    expect(calls[1].url).toContain('breaches?hours=48');
+    await c.equipment.recordMaintenance('a1', { logType: 'service', performedOn: '2026-08-05', costMinor: '250000' });
+    expect(calls[2].url).toContain('assets/a1/maintenance-logs');
+    await c.equipment.maintenanceAlerts();
+    expect(calls[3].url).toContain('maintenance/alerts');
+  });
+});

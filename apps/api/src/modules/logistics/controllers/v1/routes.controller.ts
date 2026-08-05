@@ -2,7 +2,7 @@
 // (validate→authorize→delegate, no logic). All writes need logistics.manage; gated by the `logistics` flag.
 // Route creates require an Idempotency-Key; cold-chain readings are append-only (idempotency unnecessary — each
 // reading is a distinct timestamped fact). Lists are keyset/bounded.
-import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards, Query } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -61,6 +61,14 @@ export class ColdChainController {
   record(@CurrentContext() ctx: RequestContext, @ZodBody(RecordColdChainSchema) dto: RecordColdChainDto) {
     return this.coldChain.record(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
   }
+  // PC-54 W54-12: iot-device-fleet + ops-alerting v1 (read-models over the ledgered readings).
+  @Get('devices') @RequirePermissions(ShipmentPermissions.Manage)
+  devices(@CurrentContext() ctx: RequestContext) { return this.coldChain.deviceFleet(ctx.tenantId).then((data) => ({ data })); }
+  @Get('breaches') @RequirePermissions(ShipmentPermissions.Manage)
+  breaches(@CurrentContext() ctx: RequestContext, @Query('hours') hours?: string, @Query('limit') limit?: string) {
+    return this.coldChain.breaches(ctx.tenantId, Number(hours) || 24, Number(limit) || 100).then((data) => ({ data }));
+  }
+
   @Get('readings') @RequirePermissions(ShipmentPermissions.Manage)
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryColdChainSchema) q: QueryColdChainDto) {
     return this.coldChain.listForSubject(ctx.tenantId, { ...q, cursor: decodeCursor(q.cursor) }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
