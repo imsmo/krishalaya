@@ -12,8 +12,14 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       LivestockResource. AppRole 'pashupalak' (RBAC code `pashupalak`, seeded). Flag `livestock` flipped ON
       (dev11/dev12 specs updated). HEALTH LOG: table-less/endpoint-less → honest coming-note → PC-54
       `livestock-health-records`. Old placeholders stay un-routed.
-- [ ] **W10-2 · Dairy farmer** — features/dairy screens (MilkDiary/MccSlip/MilkBill/D2cSubscription); dairy SDK
-      exists (memberships/slips/bills). Role: `dairy_farmer` (seeded).
+- [x] **W10-2 · Dairy farmer** ✅ 2026-08-05 — NEW `(dairy)` tab app (Home/Diary/Bills/Rates), a pure TRUST
+      MIRROR (zero writes — recording is the MCC counter's job): my memberships (box=mine), milk diary (owner-
+      checked collections, month pager, per-slip SERVER-priced amounts, NO client-side money totals — the
+      footer says totals live on the bill), milk bills (box=mine; detail = gross/every deduction line/net,
+      dispute-window instant-compare + honest "raise it at your centre" note — the dispute WRITE is operator-
+      side, no fake button), active rate charts (the exact counter rates, cached offline). Flag `dairy` ON;
+      AppRole 'dairy' → RBAC `dairy_farmer`. D2C SUBSCRIPTION: NO backend → coming-note → PC-54
+      `dairy-d2c-subscriptions`. Old placeholders stay un-routed.
 - [ ] **W10-3 · Vet professional** — features/vet screens (bookings calendar/detail/prescription/earnings);
       vet-side APIs exist (vets.manage, bookings box=vet, progress). Flag `vet`.
 - [ ] **W10-4 · Store owner** — features/store-owner screens (inventory/orders/batches-expiry/licence);

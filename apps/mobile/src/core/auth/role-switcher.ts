@@ -2,7 +2,7 @@
 // of selectable roles, the mapping from a server permission/role string to an app role, and which home route a
 // role lands on. Pure data + helpers (testable). The SERVER is the authority on what a user may actually do —
 // these roles only drive navigation + which dashboard to show.
-export type AppRole = 'farmer' | 'buyer' | 'worker' | 'trader' | 'owner' | 'ambassador' | 'pashupalak'; // pashupalak: PC-50 W10-1 (Phase-2 activation)
+export type AppRole = 'farmer' | 'buyer' | 'worker' | 'trader' | 'owner' | 'ambassador' | 'pashupalak' | 'dairy'; // pashupalak/dairy: PC-50 W10-1/2 (Phase-2 activation)
 
 export interface RoleDef { role: AppRole; i18nKey: string; descKey: string; homeRoute: string; }
 
@@ -14,6 +14,7 @@ export const ROLES: readonly RoleDef[] = Object.freeze([
   { role: 'owner', i18nKey: 'role.owner', descKey: 'role.owner.desc', homeRoute: '/(owner)/home' },
   { role: 'ambassador', i18nKey: 'role.ambassador', descKey: 'role.ambassador.desc', homeRoute: '/(ambassador)/home' },
   { role: 'pashupalak', i18nKey: 'role.pashupalak', descKey: 'role.pashupalak.desc', homeRoute: '/(pashupalak)/home' }, // PC-50 W10-1
+  { role: 'dairy', i18nKey: 'role.dairy', descKey: 'role.dairy.desc', homeRoute: '/(dairy)/home' }, // PC-50 W10-2
 ]);
 
 const BY_ROLE = new Map(ROLES.map((r) => [r.role, r]));
@@ -38,7 +39,7 @@ export function defaultActiveRole(serverRoles: string[]): AppRole {
 // 'vyapari', 'owner' is 'tenant_admin'. This is the ONE place that mapping lives, so onboarding.selectRole()
 // always submits a code the API actually recognises.
 const BACKEND_ROLE_CODE: Record<AppRole, string> = {
-  farmer: 'farmer', buyer: 'customer', worker: 'worker', trader: 'vyapari', owner: 'tenant_admin', ambassador: 'ambassador', pashupalak: 'pashupalak',
+  farmer: 'farmer', buyer: 'customer', worker: 'worker', trader: 'vyapari', owner: 'tenant_admin', ambassador: 'ambassador', pashupalak: 'pashupalak', dairy: 'dairy_farmer',
 };
 export function backendRoleCode(role: AppRole): string { return BACKEND_ROLE_CODE[role]; }
 

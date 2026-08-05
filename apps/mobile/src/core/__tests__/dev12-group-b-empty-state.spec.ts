@@ -51,7 +51,7 @@ describe('DEV-12 Group-B EmptyState pass — 6 operator-dirs gate', () => {
   it('all 6 new keys are additive-only — every DEV-11 and pre-existing flag is untouched', () => {
     // DEV-11's 3 areas + a sample of pre-existing keys must still resolve exactly as before this batch.
     expect(flags.isEnabled('fintech')).toBe(false);
-    expect(flags.isEnabled('dairy')).toBe(false);
+    expect(flags.isEnabled('dairy')).toBe(true); // PC-50 W10-2 Phase-2 activation
     expect(flags.isEnabled('livestock')).toBe(true); // PC-50 W10-1 Phase-2 activation
     expect(flags.isEnabled('auctions')).toBe(false);
     expect(flags.isEnabled('farmer_app')).toBe(true);
@@ -62,7 +62,7 @@ describe('DEV-12 Group-B EmptyState pass — 6 operator-dirs gate', () => {
     expect(flags.isEnabled('vet')).toBe(true);
     expect(flags.isEnabled('livestock')).toBe(true); // PC-50 W10-1 Phase-2 activation
     expect(flags.isEnabled('mcc_operator')).toBe(false);
-    expect(flags.isEnabled('dairy')).toBe(false);
+    expect(flags.isEnabled('dairy')).toBe(true); // PC-50 W10-2 Phase-2 activation
   });
 });
 

@@ -23,7 +23,7 @@ describe('DEV-11 Group-B EmptyState pass — fintech/dairy/livestock gate', () =
   for (const area of ['fintech', 'dairy', 'livestock'] as const) {
     describe(`${area} flag`, () => {
       it('default matches its phase (PC-50 W10-1 flipped livestock ON — the Pashupalak app is built)', () => {
-        expect(flags.isEnabled(area)).toBe(area === 'livestock');
+        expect(flags.isEnabled(area)).toBe(area === 'livestock' || area === 'dairy'); // PC-50 W10-1/2
       });
 
       it('the kill-switch channel can flip it ON (e.g. a founder GA-Wave rollout)', () => {

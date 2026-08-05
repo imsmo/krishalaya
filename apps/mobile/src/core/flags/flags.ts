@@ -112,7 +112,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   ambassador_training: false,
   tenant_admin_lite: false,
   fintech: false,
-  dairy: false,
+  dairy: true, // PC-50 W10-2: Phase-2 activation — the dairy-farmer app is BUILT (app/(dairy))
   livestock: true, // PC-50 W10-1: Phase-2 activation — the Pashupalak app is BUILT (app/(pashupalak))
   mcc_operator: false,
   vet: false,
