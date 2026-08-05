@@ -15,6 +15,9 @@
 // DEFERRED (schema in 0011 / admin surface): credit scoring + consent (bureau), insurance (products/
 // policies/claims), BNPL input financing, finance groups (SHG/JLG internal book), NWR-pledge collateral,
 // origination-fee revenue leg, EMI schedule generation, parametric triggers, partner-rail disbursement, jobs.
+import { LoanDisbursementService } from './services/loan-disbursement.service';
+import { LoanDisbursementRepository } from './repositories/loan-disbursement.repository';
+import { LoanDisbursementExecuteHandler } from './jobs/loan-disbursement-execute.handler';
 import { Module } from '@nestjs/common';
 import { PartnersController } from './controllers/v1/partners.controller';
 import { LoanApplicationsController } from './controllers/v1/loan-applications.controller';
@@ -33,7 +36,7 @@ import { LoanRepaymentRepository } from './repositories/loan-repayment.repositor
 
 @Module({
   controllers: [PartnersController, LoanApplicationsController, LoansController, ServicingController],
-  providers: [FinancialPartnerService, LoanApplicationService, LoanService, FinancialPartnerRepository, LoanProductRepository, LoanApplicationRepository, LoanRepository, LoanRepaymentRepository, ServicingService, ServicingRepository],
+  providers: [FinancialPartnerService, LoanApplicationService, LoanService, FinancialPartnerRepository, LoanProductRepository, LoanApplicationRepository, LoanRepository, LoanRepaymentRepository, ServicingService, ServicingRepository, LoanDisbursementService, LoanDisbursementRepository, LoanDisbursementExecuteHandler],
   exports: [FinancialPartnerService, LoanApplicationService, LoanService],
 })
 export class FintechModule {}

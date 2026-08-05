@@ -32,6 +32,26 @@ export class FintechResource {
   async writeOff(loanId: string, reason: string): Promise<{ loanId: string; status: string; outstandingMinor: string }> {
     return (await this.http.request<{ loanId: string; status: string; outstandingMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/write-off`, { body: { reason } })).data;
   }
+
+  // --- PC-55 A9 `loan-disbursement-batches`. Approved loans → QUEUED payouts. The COOLING-OFF window is
+  // sacred: an application still inside it is held back and reported with the instant it becomes eligible.
+  // Nothing executes without live payout credentials — a borrower must never owe money they did not receive. ---
+  async disbursementPreview(signal?: AbortSignal): Promise<{ candidates: number; queued: number; totalMinor: string; skipped: Array<{ applicationId: string; reason: string; coolingOffUntil?: string }>; lines: Array<Record<string, unknown>>; note: string }> {
+    return (await this.http.request<{ candidates: number; queued: number; totalMinor: string; skipped: Array<{ applicationId: string; reason: string; coolingOffUntil?: string }>; lines: Array<Record<string, unknown>>; note: string }>('GET', 'fintech/servicing/disbursement-preview', { signal })).data;
+  }
+  async createDisbursementRun(input: { confirmedBy: string; applicationIds?: string[] }, idempotencyKey: string): Promise<{ id: string; batchId: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ applicationId: string; reason: string; coolingOffUntil?: string }>; execution: { executed: boolean; note: string } }> {
+    return (await this.http.request<{ id: string; batchId: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ applicationId: string; reason: string; coolingOffUntil?: string }>; execution: { executed: boolean; note: string } }>('POST', 'fintech/servicing/disbursement-batches', { body: input, idempotencyKey })).data;
+  }
+  async disbursementRuns(limit = 50, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'fintech/servicing/disbursement-batches', { query: { limit }, signal })).data;
+  }
+  async disbursementRun(id: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('GET', `fintech/servicing/disbursement-batches/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** Refuses honestly (executed:false + reason) until the payout rail is configured. */
+  async executeDisbursementRun(id: string): Promise<{ executed: boolean; reason: string; itemsProcessed: number }> {
+    return (await this.http.request<{ executed: boolean; reason: string; itemsProcessed: number }>('POST', `fintech/servicing/disbursement-batches/${encodeURIComponent(id)}/execute`, { body: {} })).data;
+  }
 }
 
 // PC-54 W54-9 · insurer authoring surface (insurance.manage-gated server-side).

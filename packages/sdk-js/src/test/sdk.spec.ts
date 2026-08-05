@@ -1551,3 +1551,26 @@ describe('coop-payout-runs', () => {
     expect(r.skipped[0].reason).toBe('skipped_no_bank_account');  // a skipped member is named, not dropped
   });
 });
+
+// --- loan disbursement batches (PC-55 A9) ---
+describe('loan-disbursement-batches', () => {
+  it('holds back cooling-off loans, needs a second human, and never claims a borrower was paid', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { candidates: 5, queued: 3, totalMinor: '15000000', skipped: [{ applicationId: 'a4', reason: 'cooling_off', coolingOffUntil: '2026-08-07T10:00:00.000Z' }, { applicationId: 'a5', reason: 'no_bank_account' }], lines: [], note: 'Preview only' } } }
+      : n === 2
+      ? { body: { data: { id: 'run1', batchId: 'b1', queuedTotalMinor: '15000000', queuedCount: 3, skipped: [], execution: { executed: false, note: 'Loans are QUEUED' } } } }
+      : { body: { data: { executed: false, reason: 'Payout rail is not configured', itemsProcessed: 0 } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    const prev = await c.fintech.disbursementPreview();
+    expect(calls[0].url).toContain('disbursement-preview');
+    expect(prev.skipped[0].reason).toBe('cooling_off');
+    expect(prev.skipped[0].coolingOffUntil).toBeDefined();   // the borrower's protection is visible, with its clock
+    const run = await c.fintech.createDisbursementRun({ confirmedBy: '00000000-0000-7000-8000-000000000002' }, 'idem-disb-1');
+    expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-disb-1');
+    expect(JSON.parse(String(calls[1].init.body)).confirmedBy).toBeDefined();  // maker-checker in the contract
+    expect(run.execution.executed).toBe(false);
+    const ex = await c.fintech.executeDisbursementRun('run1');
+    expect(ex.executed).toBe(false);                          // refuses honestly without the payout rail
+    expect(ex.reason.toLowerCase()).toContain('not configured');
+  });
+});
