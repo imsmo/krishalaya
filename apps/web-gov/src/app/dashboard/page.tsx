@@ -13,8 +13,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dash.title'), robots: { index: false, follow: false } };
 }
 
-const BUILT = [{ key: 'schemes', href: '/schemes' }] as const; // GW-1
-const WAVES = ['dbt', 'regulator', 'verification', 'mgnrega'] as const;
+const BUILT = [{ key: 'schemes', href: '/schemes' }, { key: 'dbt', href: '/schemes' }, { key: 'regulator', href: '/registers' }] as const; // GW-1..3 (DBT register lives on the application review)
+const WAVES = ['verification', 'mgnrega'] as const;
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');

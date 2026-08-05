@@ -20,6 +20,9 @@ Timing law: waves activate at the FIRST GOVERNMENT/SCHEME PARTNERSHIP — pilot 
       'the credit happens in PFMS/bank systems — this is the register') + transfers list (GW-1). Cross-app
       batches/monitor/bounce/triggers/insights + PFMS recon = read-models + provider → PC-54 `dbt-read-models`
       (Ledger Appendix 4).
-- [ ] **GW-3 · regulator (12 rows)** — fintech/insurance reads + exports api w/ audit receipts.
+- [x] **GW-3 · regulator (12 rows)** ✅ 2026-08-05 — /registers: read-only IRDAI insurance partners/products +
+      lending partners/loan-products. Export files: api `exports` = EXPORT TRADE (not reports); admin-api
+      regulator-export = god-mode realm → audit-stamped export files = PC-54 `gov-report-exports` (Ledger
+      Appendix 5); honest note in console, no fake downloads. DBT register (GW-2) noted Live on dashboard.
 - [ ] **GW-4 · verification (9 rows)** — kyc/ai-governance/audit reads; field-visit evidence via media ids.
 - [ ] **GW-5 · GATED** — MGNREGA (PC-54 `mgnrega-program` first; musters partially via labour api).
