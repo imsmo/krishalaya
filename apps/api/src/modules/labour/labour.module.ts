@@ -16,6 +16,9 @@ import { WorkersController } from './controllers/v1/workers.controller';
 import { BookingsController } from './controllers/v1/bookings.controller';
 import { AssignmentsController } from './controllers/v1/assignments.controller';
 import { LookupsController } from './controllers/v1/lookups.controller';
+import { MgnregaController } from './controllers/v1/mgnrega.controller';
+import { MgnregaService } from './services/mgnrega.service';
+import { MgnregaRepository } from './repositories/mgnrega.repository';
 import { WorkerProfileService } from './services/worker-profile.service';
 import { LabourBookingService } from './services/labour-booking.service';
 import { MinimumWageService } from './services/minimum-wage.service';
@@ -30,11 +33,10 @@ import { AttendanceRepository } from './repositories/attendance.repository';
 // The respond-timeout worker job (jobs/booking-respond-timeout.job.ts) is instantiated by apps/worker with
 // a privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other expiry jobs.
 @Module({
-  controllers: [WorkersController, BookingsController, AssignmentsController, LookupsController],
+  controllers: [WorkersController, BookingsController, AssignmentsController, LookupsController, MgnregaController],
   providers: [
     WorkerProfileService, LabourBookingService, MinimumWageService, AttendanceService, LabourLookupsService,
-    WorkerProfileRepository, LabourBookingRepository, BookingAssignmentRepository, MinimumWageRepository, AttendanceRepository,
-  ],
+    WorkerProfileRepository, LabourBookingRepository, BookingAssignmentRepository, MinimumWageRepository, AttendanceRepository, MgnregaService, MgnregaRepository],
   exports: [WorkerProfileService, LabourBookingService],
 })
 export class LabourModule {}

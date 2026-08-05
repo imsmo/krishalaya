@@ -26,11 +26,13 @@ import { SchemeRepository } from './repositories/scheme.repository';
 import { SchemeAuthorityRepository } from './repositories/scheme-authority.repository';
 import { SchemeApplicationRepository } from './repositories/scheme-application.repository';
 import { DbtTransferRepository } from './repositories/dbt-transfer.repository';
+import { FieldVerificationRepository } from './repositories/field-verification.repository';
+import { FieldVerificationService } from './services/field-verification.service';
 import { SchemeDocumentRepository } from './repositories/scheme-document.repository';
 
 @Module({
   controllers: [SchemesController, EligibilityController, ApplicationsController],
-  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository],
+  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService],
   exports: [SchemeService, SchemeApplicationService, DbtTransferService],
 })
 export class SchemesModule {}

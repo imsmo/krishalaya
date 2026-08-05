@@ -137,4 +137,15 @@ export class LabourResource {
     const r = await this.http.request<LabourAssignment[]>('GET', 'labour/assignments', { query: { box: 'booking', bookingId, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
+
+  // --- PC-54 W54-3 `mgnrega-program` (job-card slice) ---
+  async registerJobCard(input: { jobCardNo: string; regionId?: string }, idempotencyKey: string): Promise<{ id: string; jobCardNo: string }> {
+    return (await this.http.request<{ id: string; jobCardNo: string }>('POST', 'labour/mgnrega/job-cards', { body: input, idempotencyKey })).data;
+  }
+  async myJobCards(signal?: AbortSignal): Promise<Array<{ id: string; userId: string; jobCardNo: string; regionId: string | null; daysUsedFy: number; lastSyncedAt: string | null }>> {
+    return (await this.http.request<Array<{ id: string; userId: string; jobCardNo: string; regionId: string | null; daysUsedFy: number; lastSyncedAt: string | null }>>('GET', 'labour/mgnrega/job-cards/mine', { signal })).data;
+  }
+  async jobCards(params: { regionId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<{ id: string; userId: string; jobCardNo: string; regionId: string | null; daysUsedFy: number; lastSyncedAt: string | null }>> {
+    return (await this.http.request<Array<{ id: string; userId: string; jobCardNo: string; regionId: string | null; daysUsedFy: number; lastSyncedAt: string | null }>>('GET', 'labour/mgnrega/job-cards', { query: { regionId: params.regionId, limit: params.limit ?? 50 }, signal })).data;
+  }
 }

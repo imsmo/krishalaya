@@ -1250,3 +1250,21 @@ describe('returns + cod-recon', () => {
     expect(typeof rows[0].codMinor).toBe('string');
   });
 });
+
+// --- field-visits + mgnrega (PC-54 W54-3, unblocks gov GW-5) ---
+describe('field visits + mgnrega job cards', () => {
+  it('schedules/submits a visit (media-id evidence) and registers a job card idempotently', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n <= 2
+      ? { body: { data: { id: 'v1', status: n === 1 ? 'scheduled' : 'submitted' } } }
+      : { body: { data: { id: 'jc1', jobCardNo: 'GJ-05-001234' } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.schemes.scheduleFieldVisit('app1', '2026-08-10');
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications/app1/field-visits');
+    await c.schemes.submitFieldVisit('v1', { geotag: [{ mediaId: '00000000-0000-7000-8000-000000000001', lat: 22.3, lng: 73.2, capturedAt: '2026-08-10T09:00:00Z' }] });
+    expect(calls[1].url).toContain('field-visits/v1/submit');
+    expect(JSON.parse(String(calls[1].init.body)).geotag[0].mediaId).toBeDefined();
+    await c.labour.registerJobCard({ jobCardNo: 'GJ-05-001234' }, 'idem-jc-1');
+    expect(calls[2].url).toBe('https://api.test/v1/labour/mgnrega/job-cards');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-jc-1');
+  });
+});

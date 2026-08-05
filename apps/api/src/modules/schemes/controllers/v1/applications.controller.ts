@@ -11,6 +11,16 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { SchemeApplicationService } from '../../services/scheme-application.service';
+import { FieldVerificationService } from '../../services/field-verification.service';
+import { z } from 'zod';
+
+// PC-54 W54-3 `scheme-field-visits` DTOs (zod .strict(); evidence = media ids, never blobs).
+const ScheduleVisitSchema = z.object({ scheduledFor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).strict();
+const SubmitVisitSchema = z.object({
+  geotag: z.array(z.object({ mediaId: z.string().uuid(), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180), capturedAt: z.string().datetime() }).strict()).min(1).max(50),
+  measuredValues: z.record(z.unknown()).default({}),
+  walkTraceMediaId: z.string().uuid().optional(),
+}).strict();
 import { DbtTransferService } from '../../services/dbt-transfer.service';
 import { SchemeDocumentService } from '../../services/scheme-document.service';
 import { ApplySchemeSchema, ApplySchemeDto, ClarifySchema, ClarifyDto, ApproveSchema, ApproveDto, RejectSchema, RejectDto } from '../../dto/create-scheme-application.dto';
@@ -26,7 +36,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('schemes')
 export class ApplicationsController {
-  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService, private readonly docs: SchemeDocumentService) {}
+  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService, private readonly docs: SchemeDocumentService, private readonly visits: FieldVerificationService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canApply: canApply(ctx), canProcess: canProcess(ctx) }; }
 
   @Post() @RequirePermissions(SchemesPermissions.Apply)
@@ -73,6 +83,20 @@ export class ApplicationsController {
   // DBT (observed PFMS credit) — officer records; applicant/officer reads
   @Post(':id/dbt') @RequirePermissions(SchemesPermissions.Process)
   recordDbt(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(RecordDbtSchema) dto: RecordDbtDto) { return this.dbt.record(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }
+  // --- PC-54 W54-3 field visits (0066) — Process-gated writes; party-or-Process read via the app read itself ---
+  @Post(':id/field-visits') @RequirePermissions(SchemesPermissions.Process)
+  scheduleVisit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ScheduleVisitSchema) dto: { scheduledFor?: string }) {
+    return this.visits.schedule(ctx.tenantId, this.actor(ctx), id, dto.scheduledFor).then((data) => ({ data }));
+  }
+  @Get(':id/field-visits')
+  listVisits(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.visits.list(ctx.tenantId, id).then((data) => ({ data }));
+  }
+  @Post('field-visits/:visitId/submit') @RequirePermissions(SchemesPermissions.Process)
+  submitVisit(@CurrentContext() ctx: RequestContext, @Param('visitId') visitId: string, @ZodBody(SubmitVisitSchema) dto: { geotag: Array<{ mediaId: string; lat: number; lng: number; capturedAt: string }>; measuredValues: Record<string, unknown>; walkTraceMediaId?: string }) {
+    return this.visits.submit(ctx.tenantId, this.actor(ctx), visitId, dto).then((data) => ({ data }));
+  }
+
   @Get(':id/dbt')
   listDbt(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.dbt.listForApplication(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 }
