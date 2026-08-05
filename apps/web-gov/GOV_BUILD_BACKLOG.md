@@ -24,5 +24,9 @@ Timing law: waves activate at the FIRST GOVERNMENT/SCHEME PARTNERSHIP — pilot 
       lending partners/loan-products. Export files: api `exports` = EXPORT TRADE (not reports); admin-api
       regulator-export = god-mode realm → audit-stamped export files = PC-54 `gov-report-exports` (Ledger
       Appendix 5); honest note in console, no fake downloads. DBT register (GW-2) noted Live on dashboard.
-- [ ] **GW-4 · verification (9 rows)** — kyc/ai-governance/audit reads; field-visit evidence via media ids.
+- [x] **GW-4 · verification (9 rows)** ✅ 2026-08-05 — DISPOSITIONED, no code (Ledger Appendix 6): review
+      WRITES exist (kyc/:id/review, business/:id/review) but every kyc READ is self-scoped (no queue, no case
+      read) — blind decisions are forbidden; field_verifications is table-only (0066). → PC-54
+      `kyc-review-read-models` + `scheme-field-visits` (evidence via media ids). Dashboard keeps
+      'verification' as coming.
 - [ ] **GW-5 · GATED** — MGNREGA (PC-54 `mgnrega-program` first; musters partially via labour api).
