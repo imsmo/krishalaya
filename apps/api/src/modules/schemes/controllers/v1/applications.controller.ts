@@ -13,10 +13,24 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { SchemeApplicationService } from '../../services/scheme-application.service';
 import { FieldVerificationService } from '../../services/field-verification.service';
 import { GovExportService } from '../../services/gov-export.service';
+import { DbtBounceService } from '../../services/dbt-bounce.service';
+import { BOUNCE_REASON_CODES } from '../../domain/dbt-bounce.rules';
 import { z } from 'zod';
 
 // PC-54 W54-3 `scheme-field-visits` DTOs (zod .strict(); evidence = media ids, never blobs).
 const ScheduleVisitSchema = z.object({ scheduledFor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).strict();
+// PC-55 A3 · bounce DTOs (zod .strict()).
+const RecordBounceSchema = z.object({
+  reasonCode: z.enum(BOUNCE_REASON_CODES),
+  reasonNote: z.string().trim().max(2000).optional(),          // REQUIRED by the service when reasonCode='other'
+  bouncedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  bankRef: z.string().trim().max(120).optional(),
+}).strict();
+const ResolveBounceSchema = z.object({
+  resolution: z.enum(['recredited', 'abandoned']),
+  note: z.string().trim().max(2000).optional(),                // REQUIRED for abandon
+  recreditTransferId: z.string().uuid().optional(),            // REQUIRED for recredit
+}).strict();
 const ExportSchema = z.object({
   report: z.enum(['dbt_monitor', 'dbt_recent']),
   schemeId: z.string().uuid().optional(),
@@ -42,7 +56,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('schemes')
 export class ApplicationsController {
-  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService, private readonly docs: SchemeDocumentService, private readonly visits: FieldVerificationService, private readonly gov: GovExportService) {}
+  constructor(private readonly svc: SchemeApplicationService, private readonly dbt: DbtTransferService, private readonly docs: SchemeDocumentService, private readonly visits: FieldVerificationService, private readonly gov: GovExportService, private readonly bounces: DbtBounceService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canApply: canApply(ctx), canProcess: canProcess(ctx) }; }
 
   @Post() @RequirePermissions(SchemesPermissions.Apply)
@@ -110,6 +124,27 @@ export class ApplicationsController {
   dbtRecent(@CurrentContext() ctx: RequestContext, @Query('schemeId') schemeId?: string, @Query('limit') limit?: string) {
     return this.gov.recent(ctx.tenantId, this.actor(ctx), schemeId, Number(limit) || 100).then((data) => ({ data }));
   }
+  // --- PC-55 A3 `dbt-bounce-ledger` (0083): a returned credit is a NEW observation, never a rewrite ---
+  @Post('dbt/:transferId/bounce') @RequirePermissions(SchemesPermissions.Process)
+  recordBounce(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('transferId') transferId: string, @Headers('idempotency-key') key: string, @ZodBody(RecordBounceSchema) dto: z.infer<typeof RecordBounceSchema>) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.bounces.record(ctx.tenantId, this.actor(ctx), transferId, key, dto, ipOf(r)).then((data) => ({ data }));
+  }
+  @Post('dbt/bounces/:id/resolve') @RequirePermissions(SchemesPermissions.Process)
+  resolveBounce(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(ResolveBounceSchema) dto: z.infer<typeof ResolveBounceSchema>) {
+    return this.bounces.resolve(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
+  }
+  @Get('dbt/bounces') @RequirePermissions(SchemesPermissions.Process)
+  listBounces(@CurrentContext() ctx: RequestContext, @Query('resolution') resolution?: string, @Query('schemeId') schemeId?: string, @Query('reasonCode') reasonCode?: string, @Query('limit') limit?: string) {
+    return this.bounces.list(ctx.tenantId, this.actor(ctx), { resolution, schemeId, reasonCode, limit: Number(limit) || 100 }).then((data) => ({ data }));
+  }
+  @Get('dbt/bounce-desk') @RequirePermissions(SchemesPermissions.Process)
+  bounceDesk(@CurrentContext() ctx: RequestContext) { return this.bounces.desk(ctx.tenantId, this.actor(ctx)).then((data) => ({ data })); }
+  @Get(':id/dbt-bounces')
+  bouncesForApplication(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.bounces.forApplication(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
   @Post('exports') @RequirePermissions(SchemesPermissions.Process)
   exportReport(@CurrentContext() ctx: RequestContext, @Req() r: Request, @ZodBody(ExportSchema) dto: { report: string; schemeId?: string; limit?: number }) {
     return this.gov.export(ctx.tenantId, this.actor(ctx), ipOf(r), dto).then((data) => ({ data }));

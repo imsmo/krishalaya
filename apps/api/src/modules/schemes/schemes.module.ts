@@ -14,6 +14,9 @@
 // DEFERRED (schema in 0011 / admin & platform surface): authoring schemes + authorities (admin, Law 11),
 // PFMS sync + rule-refresh + stuck-escalation + window-open jobs, AI eligibility confidence, the full
 // rule DSL, ambassador-assisted attribution beyond the assisted_by field.
+import { DbtBounceService } from './services/dbt-bounce.service';
+import { DbtBounceRepository } from './repositories/dbt-bounce.repository';
+import { PFMS_PROVIDER, pfmsProviderFromEnv } from './providers/pfms.provider';
 import { Module } from '@nestjs/common';
 import { SchemesController } from './controllers/v1/schemes.controller';
 import { EligibilityController } from './controllers/v1/eligibility.controller';
@@ -33,7 +36,8 @@ import { SchemeDocumentRepository } from './repositories/scheme-document.reposit
 
 @Module({
   controllers: [SchemesController, EligibilityController, ApplicationsController],
-  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService, GovExportService],
+  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService, GovExportService, DbtBounceService, DbtBounceRepository,
+    { provide: PFMS_PROVIDER, useFactory: () => pfmsProviderFromEnv(process.env) }],
   exports: [SchemeService, SchemeApplicationService, DbtTransferService],
 })
 export class SchemesModule {}

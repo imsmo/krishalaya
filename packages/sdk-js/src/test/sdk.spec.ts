@@ -1449,3 +1449,21 @@ describe('cod-remittance-ledger', () => {
     expect(JSON.parse(String(calls[3].init.body)).reason).toBe('mis-keyed batch');
   });
 });
+
+// --- dbt bounce ledger (PC-55 A3) ---
+describe('dbt-bounce-ledger', () => {
+  it('records a bounce idempotently without ever sending the amount, and reads the honest PFMS state', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { id: 'b1', transferId: 't1', amountMinor: '600000', resolution: 'open' } } }
+      : { body: { data: { byScheme: [], pfms: { provider: 'noop', available: false, note: 'PFMS provider integration is pending', fetchedAt: 'x', pulledRecords: 0 } } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    const b = await c.schemes.recordDbtBounce('t1', { reasonCode: 'account_closed', bouncedOn: '2026-08-05' }, 'idem-bnc-1');
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/applications/dbt/t1/bounce');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-bnc-1');
+    expect(JSON.parse(String(calls[0].init.body))).not.toHaveProperty('amountMinor');  // the credit's own amount
+    expect(typeof b.amountMinor).toBe('string');
+    const desk = await c.schemes.dbtBounceDesk();
+    expect(desk.pfms.available).toBe(false);          // never claims a recon that did not happen
+    expect(desk.pfms.provider).toBe('noop');
+  });
+});

@@ -116,4 +116,24 @@ export class SchemesResource {
   async exportReport(input: { report: 'dbt_monitor' | 'dbt_recent'; schemeId?: string; limit?: number }): Promise<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number }; rows: unknown[] }> {
     return (await this.http.request<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number }; rows: unknown[] }>('POST', 'schemes/applications/exports', { body: input })).data;
   }
+
+  // --- PC-55 A3 `dbt-bounce-ledger` (Process-gated). A returned credit is recorded as a NEW observation;
+  // the original transfer is never rewritten. The amount is the transfer's own — never sent by a client. ---
+  async recordDbtBounce(transferId: string, input: { reasonCode: string; reasonNote?: string; bouncedOn: string; bankRef?: string }, idempotencyKey: string): Promise<{ id: string; transferId: string; amountMinor: string; resolution: string }> {
+    return (await this.http.request<{ id: string; transferId: string; amountMinor: string; resolution: string }>('POST', `schemes/applications/dbt/${encodeURIComponent(transferId)}/bounce`, { body: input, idempotencyKey })).data;
+  }
+  /** recredited REQUIRES recreditTransferId (name the replacement); abandoned REQUIRES a written note. */
+  async resolveDbtBounce(id: string, input: { resolution: 'recredited' | 'abandoned'; note?: string; recreditTransferId?: string }): Promise<{ id: string; resolution: string }> {
+    return (await this.http.request<{ id: string; resolution: string }>('POST', `schemes/applications/dbt/bounces/${encodeURIComponent(id)}/resolve`, { body: input })).data;
+  }
+  async dbtBounces(params: { resolution?: string; schemeId?: string; reasonCode?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'schemes/applications/dbt/bounces', { query: { resolution: params.resolution, schemeId: params.schemeId, reasonCode: params.reasonCode, limit: params.limit ?? 100 }, signal })).data;
+  }
+  /** The desk header: per-scheme bounce stats + the HONEST PFMS provider state (available:false until onboarded). */
+  async dbtBounceDesk(signal?: AbortSignal): Promise<{ byScheme: Array<Record<string, unknown>>; pfms: { provider: string; available: boolean; note: string; fetchedAt: string; pulledRecords: number } }> {
+    return (await this.http.request<{ byScheme: Array<Record<string, unknown>>; pfms: { provider: string; available: boolean; note: string; fetchedAt: string; pulledRecords: number } }>('GET', 'schemes/applications/dbt/bounce-desk', { signal })).data;
+  }
+  async applicationDbtBounces(applicationId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', `schemes/applications/${encodeURIComponent(applicationId)}/dbt-bounces`, { signal })).data;
+  }
 }
