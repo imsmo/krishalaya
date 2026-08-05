@@ -5,6 +5,7 @@ import { LocaleSwitcher } from './LocaleSwitcher';
 
 const NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
   { href: '/dashboard', labelKey: 'nav.dashboard' },
+  { href: '/schemes', labelKey: 'nav.schemes' }, // GW-1
 ];
 
 export function Sidebar() {

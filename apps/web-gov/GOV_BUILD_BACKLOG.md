@@ -10,7 +10,11 @@ Timing law: waves activate at the FIRST GOVERNMENT/SCHEME PARTNERSHIP — pilot 
 
 ## Waves (`Yes start PC-4x`)
 - [x] **GW-0 · foundation** ✅ 2026-08-05 — this scaffold (web-ops recipe: copy + kvg rename + fresh gov files).
-- [ ] **GW-1 · schemes (25 rows)** — schemes api: definitions/rules, eligibility, applications pipeline (schemes SDK exists from tenant work).
+- [x] **GW-1 · schemes (25 rows)** ✅ 2026-08-05 — /schemes (queue w/ status filter + active definitions;
+      version note: applications stay bound to their scheme version) + /schemes/[id] (facts, form data, docs,
+      DBT transfers, legal-step-only review: verify→clarify/approve[govtAppRef]/reject[REASON REQUIRED —
+      'a farmer must always know why', appealable]→close). Eligibility-builder authoring = admin-side
+      (schemes-registry rules POST, built); gov console reviews.
 - [ ] **GW-2 · DBT (14 rows)** — schemes.dbtTransfers/recordDbt: batches, monitor, bounce desk, PFMS recon (provider-wired at S2).
 - [ ] **GW-3 · regulator (12 rows)** — fintech/insurance reads + exports api w/ audit receipts.
 - [ ] **GW-4 · verification (9 rows)** — kyc/ai-governance/audit reads; field-visit evidence via media ids.
