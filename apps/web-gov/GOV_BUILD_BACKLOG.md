@@ -15,7 +15,11 @@ Timing law: waves activate at the FIRST GOVERNMENT/SCHEME PARTNERSHIP — pilot 
       DBT transfers, legal-step-only review: verify→clarify/approve[govtAppRef]/reject[REASON REQUIRED —
       'a farmer must always know why', appealable]→close). Eligibility-builder authoring = admin-side
       (schemes-registry rules POST, built); gov console reviews.
-- [ ] **GW-2 · DBT (14 rows)** — schemes.dbtTransfers/recordDbt: batches, monitor, bounce desk, PFMS recon (provider-wired at S2).
+- [x] **GW-2 · DBT (14 rows)** ✅ 2026-08-05 — BUILT the API's real DBT surface: per-application credit
+      recording on /schemes/[id] (approved|disbursed gate; float-free amount; instalment 1–60; pfmsRef ≤120;
+      'the credit happens in PFMS/bank systems — this is the register') + transfers list (GW-1). Cross-app
+      batches/monitor/bounce/triggers/insights + PFMS recon = read-models + provider → PC-54 `dbt-read-models`
+      (Ledger Appendix 4).
 - [ ] **GW-3 · regulator (12 rows)** — fintech/insurance reads + exports api w/ audit receipts.
 - [ ] **GW-4 · verification (9 rows)** — kyc/ai-governance/audit reads; field-visit evidence via media ids.
 - [ ] **GW-5 · GATED** — MGNREGA (PC-54 `mgnrega-program` first; musters partially via labour api).

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { govClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
+import { buildDbt } from '../../features/schemes/review';
 import { SdkError } from '@krishalaya/sdk-js';
 
 function back(id: string, qs: string): never { redirect(`/schemes/${encodeURIComponent(id)}?${qs}`); }
@@ -30,4 +31,22 @@ export async function applicationAction(formData: FormData): Promise<void> {
   }
   revalidatePath(`/schemes/${id}`); revalidatePath('/schemes');
   back(id, `ok=${kind}`);
+}
+
+// GW-2: record a DBT credit against an approved application (per-application — the API's only DBT write).
+export async function recordDbtAction(formData: FormData): Promise<void> {
+  await requireSession('/schemes');
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/schemes');
+  const built = buildDbt({
+    amountMajor: String(formData.get('amountMajor') ?? ''),
+    creditedOn: String(formData.get('creditedOn') ?? ''),
+    instalmentNo: String(formData.get('instalmentNo') ?? ''),
+    pfmsRef: String(formData.get('pfmsRef') ?? ''),
+  });
+  if (!built.ok) back(id, `error=dbt_${built.error}`);
+  try { await govClient().schemes.recordDbt(id, built.value); }
+  catch (e) { back(id, `error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'dbt'}`); }
+  revalidatePath(`/schemes/${id}`);
+  back(id, 'ok=dbt');
 }

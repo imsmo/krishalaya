@@ -8,3 +8,18 @@ describe('features/schemes/review (GW-1)', () => {
     expect(isAppStatus('appealed')).toBe(true); expect(isAppStatus('x')).toBe(false);
   });
 });
+
+describe('GW-2 DBT recording', () => {
+  const { canRecordDbt, buildDbt } = require('../features/schemes/review');
+  it('gate: approved|disbursed only', () => {
+    expect(canRecordDbt('approved')).toBe(true); expect(canRecordDbt('disbursed')).toBe(true);
+    expect(canRecordDbt('submitted')).toBe(false);
+  });
+  it('builder: float-free amount, date, instalment 1-60, pfmsRef <=120', () => {
+    expect(buildDbt({ amountMajor: '2000', creditedOn: '2026-08-05', instalmentNo: '1', pfmsRef: 'PFMS-42' }))
+      .toEqual({ ok: true, value: { amountMinor: '200000', creditedOn: '2026-08-05', instalmentNo: 1, pfmsRef: 'PFMS-42' } });
+    expect(buildDbt({ amountMajor: '0', creditedOn: '2026-08-05', instalmentNo: '', pfmsRef: '' })).toEqual({ ok: false, error: 'amount' });
+    expect(buildDbt({ amountMajor: '10', creditedOn: 'x', instalmentNo: '', pfmsRef: '' })).toEqual({ ok: false, error: 'date' });
+    expect(buildDbt({ amountMajor: '10', creditedOn: '2026-08-05', instalmentNo: '61', pfmsRef: '' })).toEqual({ ok: false, error: 'instalment' });
+  });
+});

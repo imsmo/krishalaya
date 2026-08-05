@@ -8,8 +8,8 @@ import { requireSession } from '../../../lib/session';
 import { govClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import { canVerify, canClarify, canDecide, canClose } from '../../../features/schemes/review';
-import { applicationAction } from '../actions';
+import { canVerify, canClarify, canDecide, canClose, canRecordDbt } from '../../../features/schemes/review';
+import { applicationAction, recordDbtAction } from '../actions';
 import type { SchemeApplication } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -17,8 +17,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('sch.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['verify', 'clarify', 'approve', 'reject', 'close']);
-const ERR = new Set(['action', 'illegal', 'reason']);
+const OK = new Set(['verify', 'clarify', 'approve', 'reject', 'close', 'dbt']);
+const ERR = new Set(['action', 'illegal', 'reason', 'dbt', 'dbt_amount', 'dbt_date', 'dbt_instalment', 'dbt_pfms']);
 
 export default async function ApplicationPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   await requireSession(`/schemes/${params.id}`);
@@ -71,6 +71,23 @@ export default async function ApplicationPage({ params, searchParams }: { params
       <h2>{t.t('sch.dbt')}</h2>
       {dbt.length === 0 ? <p className="kv-muted">{t.t('sch.dbtEmpty')}</p> : (
         <ul className="kv-thread">{dbt.map((x) => <li key={x.id} className="kv-thread__item"><strong>{x.amountMinor ? formatMoneyMinor(x.amountMinor, 'INR', lang) : t.t('common.dash')}</strong> <span className="kv-badge">{x.status ?? ''}</span></li>)}</ul>
+      )}
+
+      {canRecordDbt(s) && (
+        <form action={recordDbtAction} className="kv-card kv-form">
+          <h2 className="kv-card__title">{t.t('sch.recordDbt')}</h2>
+          <p className="kv-field__hint">{t.t('sch.dbtHint')}</p>
+          <input type="hidden" name="id" value={a.id} />
+          <label htmlFor="db-amt" className="kv-field__label">{t.t('sch.dbtAmount')}</label>
+          <input id="db-amt" name="amountMajor" className="kv-input" required inputMode="decimal" pattern="\d{1,12}(\.\d{1,2})?" />
+          <label htmlFor="db-date" className="kv-field__label">{t.t('sch.dbtDate')}</label>
+          <input id="db-date" name="creditedOn" type="date" className="kv-input" required />
+          <label htmlFor="db-inst" className="kv-field__label">{t.t('sch.dbtInstalment')}</label>
+          <input id="db-inst" name="instalmentNo" className="kv-input" inputMode="numeric" pattern="\d{1,2}" />
+          <label htmlFor="db-pfms" className="kv-field__label">{t.t('sch.dbtPfms')}</label>
+          <input id="db-pfms" name="pfmsRef" className="kv-input" maxLength={120} />
+          <button type="submit" className="kv-btn">{t.t('sch.recordDbtBtn')}</button>
+        </form>
       )}
 
       {canVerify(s) && (
