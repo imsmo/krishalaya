@@ -56,5 +56,13 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       registerAsset/setRate (90/90). NEW flag `equipment_owner` ON. Canon 312 alerts: no maintenance-schedule
       backend → status pill is the honest alert → PC-54 `equipment-maintenance-alerts`. Renter-side canon
       297–307 = the FARMER app's rental flow (separate scope, not this role).
-- [ ] **W10-7 · MCC operator** — features/mcc-operator screens; overlaps web-ops dairy POS; decide persona
-      split (mobile POS vs kiosk) first. Flag `mcc_operator`.
+- [x] **W10-7 · MCC operator** ✅ 2026-08-05 — persona RESOLVED by design canon (screens 236–239, worker-mcc-*;
+      the mobile twin of the web-ops dairy POS — same endpoints, one truth): NEW `(mcc)` tab app (Counter/
+      Members/Centre), RBAC `dairy_farmer` (the seeded "Dairy Farmer / MCC Operator" role). Counter (237):
+      box=mcc roster (operator's centre found by operatorUserId in the REAL registry), slip entry mirroring
+      web-ops pos.ts EXACTLY (DEC bounds, seeded adulteration vocab, no price field ever) → idempotent,
+      SERVER-priced, priced result echoed back. Members + farmer ledger (239): the SAME owner-or-manage
+      slips/bills endpoints the farmer app reads — one truth, two viewers; no client totals. Centre (236):
+      registry facts + active rate charts. Day totals / shift-close (238 + ShiftClose placeholder): NO
+      per-MCC collections read-model → honest note → PC-54 `mcc-shift-summary`. Flag `mcc_operator` ON.
+      **PHASE-2 MOBILE ACTIVATION COMPLETE — W10-1..7 ALL SHIPPED.**

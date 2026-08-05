@@ -29,7 +29,7 @@ describe('DEV-12 Group-B EmptyState pass — 6 operator-dirs gate', () => {
   for (const area of AREAS) {
     describe(`${area} flag`, () => {
       it('default matches its phase (PC-50 W10-3 flipped vet ON — the vet-professional app is built)', () => {
-        expect(flags.isEnabled(area)).toBe(['vet', 'store_owner', 'delivery_partner'].includes(area)); // PC-50 W10-3/4/5
+        expect(flags.isEnabled(area)).toBe(['vet', 'store_owner', 'delivery_partner', 'mcc_operator'].includes(area)); // PC-50 W10-3/4/5/7
       });
 
       it('the kill-switch channel can flip it ON (e.g. a founder GA-Wave rollout)', () => {
@@ -62,7 +62,7 @@ describe('DEV-12 Group-B EmptyState pass — 6 operator-dirs gate', () => {
     flags.hydrate({ vet: true });
     expect(flags.isEnabled('vet')).toBe(true);
     expect(flags.isEnabled('livestock')).toBe(true); // PC-50 W10-1 Phase-2 activation
-    expect(flags.isEnabled('mcc_operator')).toBe(false);
+    expect(flags.isEnabled('mcc_operator')).toBe(true); // PC-50 W10-7 Phase-2 activation
     expect(flags.isEnabled('dairy')).toBe(true); // PC-50 W10-2 Phase-2 activation
   });
 });
