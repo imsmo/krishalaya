@@ -109,4 +109,13 @@ export class TenantCellAssignmentService {
       return { tenantId, removed: true };
     });
   }
+
+  /** PC-54 W54-11 slice 3 `capacity planner`: tenants per cell/shard from the placement ledger — the
+   *  planning read the placements list can't answer without client-side fan-out. */
+  async capacity() {
+    const r = await this.pool.query(
+      `SELECT cell_id, shard_id, COUNT(*)::int AS tenants FROM tenant_placements
+        WHERE deleted_at IS NULL GROUP BY cell_id, shard_id ORDER BY cell_id, shard_id`);
+    return r.rows;
+  }
 }

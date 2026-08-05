@@ -6,6 +6,7 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AdminAuthGuard } from '../../core/auth/admin-auth.guard';
 import { OwnerPermissionsGuard, RequireOwnerPermission, OwnerPermissions } from '../../core/rbac/owner-roles';
 import { ZodQuery } from '../../core/http/zod.pipe';
+import { CustomReportSchema, CustomReportDto } from './dto/custom-report.dto';
 import { CrossTenantAnalyticsService } from './services/cross-tenant-analytics.service';
 import { GmvRollupsService } from './services/gmv-rollups.service';
 import { CohortReportsService } from './services/cohort-reports.service';
@@ -33,6 +34,12 @@ export class PlatformReportsController {
 
   @Get('tenant-growth') @RequireOwnerPermission(OwnerPermissions.ReportsRead)
   tenantGrowth(@ZodQuery(QueryTenantGrowthSchema) q: QueryTenantGrowthDto) { return this.cohorts.tenantGrowth(q).then((data) => ({ data })); }
+
+  // PC-54 W54-11 slice 5: report builder v1 — whitelisted metric x window x bucket (never client SQL).
+  @Get('custom') @RequireOwnerPermission(OwnerPermissions.ReportsRead)
+  custom(@ZodQuery(CustomReportSchema) q: CustomReportDto) {
+    return this.analytics.customSeries(q).then((data) => ({ data }));
+  }
 
   @Get('regulator-export') @RequireOwnerPermission(OwnerPermissions.ReportsRead)
   regulatorExport(@ZodQuery(QueryRegulatorSchema) q: QueryRegulatorDto) { return this.regulator.export(q).then((data) => ({ data })); }

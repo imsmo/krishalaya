@@ -29,4 +29,12 @@ export class CrossTenantAnalyticsService {
       commerce: { gmvMinor: gmv.gmvMinor, orders: gmv.orders, platformFeeMinor: gmv.platformFeeMinor, avgOrderValueMinor: avgOrderValueMinor(BigInt(gmv.gmvMinor), gmv.orders).toString() },
     };
   }
+
+  /** PC-54 W54-11 slice 5: report builder v1 (whitelisted metrics; window defaults to the last 30 days). */
+  async customSeries(dto: { metric: 'orders' | 'gmv_minor' | 'new_tenants' | 'new_users' | 'dbt_minor'; from?: string; to?: string; bucket: 'day' | 'week' | 'month' }) {
+    const to = dto.to ? new Date(dto.to) : new Date();
+    const from = dto.from ? new Date(dto.from) : new Date(to.getTime() - 30 * 86400e3);
+    const series = await this.reads.customSeries(dto.metric, from, to, dto.bucket);
+    return { metric: dto.metric, bucket: dto.bucket, window: { from: from.toISOString(), to: to.toISOString() }, series };
+  }
 }

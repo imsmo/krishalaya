@@ -61,4 +61,22 @@ export class PlatformReportsReadModel {
          GROUP BY 1 ORDER BY 1`, [from.toISOString(), to.toISOString()]);
     return r.rows.map((x: any) => ({ period: x.period, newTenants: x.n }));
   }
+
+  /** PC-54 W54-11 slice 5 `report builder` v1: a WHITELISTED metric registry (never client SQL) bucketed
+   *  by day|week|month. Each metric maps to one ledgered aggregate. */
+  async customSeries(metric: 'orders' | 'gmv_minor' | 'new_tenants' | 'new_users' | 'dbt_minor', from: Date, to: Date, bucket: 'day' | 'week' | 'month') {
+    const SRC: Record<string, { table: string; col: string; ts: string }> = {
+      orders: { table: 'orders', col: 'COUNT(*)::text', ts: 'created_at' },
+      gmv_minor: { table: 'orders', col: "COALESCE(SUM(total_minor),0)::text", ts: 'created_at' },
+      new_tenants: { table: 'tenants', col: 'COUNT(*)::text', ts: 'created_at' },
+      new_users: { table: 'users', col: 'COUNT(*)::text', ts: 'created_at' },
+      dbt_minor: { table: 'dbt_transfers', col: "COALESCE(SUM(amount_minor),0)::text", ts: 'created_at' },
+    };
+    const m = SRC[metric];
+    const r = await this.pool.query(
+      `SELECT date_trunc('${bucket}', ${m.ts})::date::text AS bucket, ${m.col} AS value
+         FROM ${m.table} WHERE ${m.ts} >= $1 AND ${m.ts} < $2 AND deleted_at IS NULL
+        GROUP BY 1 ORDER BY 1 LIMIT 400`, [from, to]);
+    return r.rows as Array<{ bucket: string; value: string }>;
+  }
 }

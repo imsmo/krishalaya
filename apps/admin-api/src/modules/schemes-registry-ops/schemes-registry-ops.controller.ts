@@ -3,12 +3,13 @@
 // every MUTATION (a master edit ripples into every tenant's scheme catalogue + applications) needs
 // schemes.registry.manage + HardwareKeyGuard (FIDO2) + StepUpReauthGuard. validate (zod) → authorize → delegate
 // ONLY. Static/sub routes (calendar) are declared before the :id params so Nest matches them first.
-import { Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminAuthGuard, AdminRequestContext } from '../../core/auth/admin-auth.guard';
 import { HardwareKeyGuard } from '../../core/auth/hardware-key.guard';
 import { StepUpReauthGuard } from '../../core/auth/step-up-reauth.guard';
 import { OwnerPermissionsGuard, RequireOwnerPermission, OwnerPermissions } from '../../core/rbac/owner-roles';
 import { ZodBody, ZodQuery } from '../../core/http/zod.pipe';
+import { SchemesDepthService } from './depth.service';
 import { SchemeCrudService } from './services/scheme-crud.service';
 import { EligibilityRulesEditorService } from './services/eligibility-rules-editor.service';
 import { WindowCalendarService } from './services/window-calendar.service';
@@ -28,6 +29,7 @@ const bool = (v?: string) => (v === undefined ? undefined : v === 'true');
 @UseGuards(AdminAuthGuard, OwnerPermissionsGuard)
 export class SchemesRegistryOpsController {
   constructor(
+    private readonly depth: SchemesDepthService,
     private readonly crud: SchemeCrudService,
     private readonly rules: EligibilityRulesEditorService,
     private readonly window: WindowCalendarService,
@@ -54,6 +56,15 @@ export class SchemesRegistryOpsController {
   }
 
   /* ======================= schemes ======================= */
+  // PC-54 W54-11 slice 2: CROSS-TENANT scheme-applications oversight (read-only; the god-mode view the
+  // gov console can't have — gov tokens are tenant-scoped, this realm is not).
+  @Get('applications') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  applications(@Query('tenantId') tenantId?: string, @Query('status') status?: string, @Query('limit') limit?: string) {
+    return this.depth.applications({ tenantId, status, limit: Number(limit) || 100 }).then((data) => ({ data }));
+  }
+  @Get('applications/stats') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  applicationStats() { return this.depth.applicationStats().then((data) => ({ data })); }
+
   @Get('schemes') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
   listSchemes(@ZodQuery(QuerySchemesSchema) q: QuerySchemesDto) {
     return this.crud.listSchemes({ authorityId: q.authorityId, categoryId: q.categoryId, isActive: bool(q.isActive), cursor: decodeTsCursor(q.cursor), limit: q.limit }).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor } }));

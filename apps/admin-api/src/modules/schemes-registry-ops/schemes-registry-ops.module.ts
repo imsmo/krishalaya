@@ -4,6 +4,7 @@
 // Three services: scheme-crud (authority + scheme identity/lifecycle), eligibility-rules-editor (version-bumping
 // eligibility/benefit/fee/doc/region edits), window-calendar (application window + open-on-date reads). Mounts
 // under AdminCoreModule (auth / RBAC / FIDO2 / step-up / audit @Global).
+import { SchemesDepthService } from './depth.service';
 import { Module } from '@nestjs/common';
 import { SchemesRegistryOpsController } from './schemes-registry-ops.controller';
 import { SchemesRegistryRepository } from './repositories/schemes-registry.repository';
@@ -13,6 +14,6 @@ import { WindowCalendarService } from './services/window-calendar.service';
 
 @Module({
   controllers: [SchemesRegistryOpsController],
-  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService],
+  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService, SchemesDepthService],
 })
 export class SchemesRegistryOpsModule {}

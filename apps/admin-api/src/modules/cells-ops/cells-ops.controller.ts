@@ -59,6 +59,10 @@ export class CellsOpsController {
   }
 
   /* ======================= shards (static, before /cells/:id) ======================= */
+  // PC-54 W54-11 slice 3: the CAPACITY PLANNER read — tenants per cell/shard vs configured limits.
+  @Get('capacity') @RequireOwnerPermission(OwnerPermissions.CellsRead)
+  capacity() { return this.assignment.capacity().then((data: unknown) => ({ data })); }
+
   @Get('shards') @RequireOwnerPermission(OwnerPermissions.CellsRead)
   listShards(@ZodQuery(QueryShardsSchema) q: QueryShardsDto) {
     return this.registry.listShards({ cellId: q.cellId, status: q.status, cursor: decodeTsCursor(q.cursor), limit: q.limit }).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor } }));

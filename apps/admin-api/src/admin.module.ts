@@ -20,10 +20,11 @@ import { ProvidersOpsModule } from './modules/providers-ops/providers-ops.module
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { GlobalCatalogueOpsModule } from './modules/global-catalogue-ops/global-catalogue-ops.module';
 import { SchemesRegistryOpsModule } from './modules/schemes-registry-ops/schemes-registry-ops.module';
+import { CatalogueDepthModule } from './modules/catalogue-depth/catalogue-depth.module';
 import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
 
 @Module({
-  imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, CellsOpsModule],
+  imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, CellsOpsModule, CatalogueDepthModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
