@@ -11,6 +11,10 @@
 // governance (share registers / resolutions / votes), D2C subscriptions + deliveries, adulteration-pattern
 // scan, D2C route planning, Lactoscan analyzer ingestion, and BANK-DISBURSEMENT payout (payout_id) — the
 // current settlement credits the farmer's in-platform wallet; bank withdrawal rides the payments payout path.
+import { D2cDeliveryRunsCadenceJob } from './jobs/d2c-delivery-runs.cadence-job';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
+import { Inject, OnModuleInit } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { MccController } from './controllers/v1/mcc.controller';
 import { RateCardsController } from './controllers/v1/rate-cards.controller';
@@ -36,7 +40,18 @@ import { MilkBillRepository } from './repositories/milk-bill.repository';
   controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
-    MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository],
+    MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
+    { provide: D2cDeliveryRunsCadenceJob,
+      // Every 30 minutes: frequent enough that a new subscription gets today's drop quickly, cheap because
+      // the DB's unique index makes every re-run a no-op (0085).
+      useFactory: (uow: UnitOfWork, repo: D2cRepository) => new D2cDeliveryRunsCadenceJob(30 * 60_000, uow, repo),
+      inject: [UNIT_OF_WORK, D2cRepository] }],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService],
 })
-export class DairyModule {}
+export class DairyModule implements OnModuleInit {
+  constructor(
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    private readonly deliveryRuns: D2cDeliveryRunsCadenceJob,
+  ) {}
+  onModuleInit(): void { this.jobs.register(this.deliveryRuns); }
+}

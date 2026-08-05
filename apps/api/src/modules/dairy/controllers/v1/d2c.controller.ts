@@ -20,6 +20,11 @@ const CreatePlanSchema = z.object({
   pricePerDeliveryMinor: minorStr, deliveryWindow: z.string().max(40).optional(),
 }).strict();
 const SubscribeSchema = z.object({ planId: z.string().uuid(), addressId: z.string().uuid(), startsOn: dateStr }).strict();
+const SettleDeliverySchema = z.object({
+  dueOn: dateStr,                                              // the partition key — a drop is identified by (id, date)
+  qty: z.string().regex(/^\d{1,5}(\.\d{1,3})?$/).optional(),  // actual quantity handed over
+  qualityMeta: z.record(z.unknown()).optional(),               // {fat, snf, temp_c} farm-to-fork transparency
+}).strict();
 const PauseSchema = z.object({ pausedUntil: dateStr }).strict();
 
 @Controller({ path: 'dairy/d2c', version: '1' })
@@ -52,6 +57,33 @@ export class D2cController {
   resume(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.setStatus(ctx.tenantId, ctx.userId, id, 'active').then((data) => ({ data })); }
   @Post('subscriptions/:id/cancel')
   cancel(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.setStatus(ctx.tenantId, ctx.userId, id, 'cancelled').then((data) => ({ data })); }
+
+  // ===== PC-55 A5 · deliveries & statement =====
+  @Get('deliveries')
+  deliveries(@CurrentContext() ctx: RequestContext, @Query('box') box?: string, @Query('from') from?: string, @Query('to') to?: string, @Query('status') status?: string, @Query('limit') limit?: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    const monthAgo = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10);
+    return this.svc.deliveries(ctx.tenantId, this.actor(ctx), { box: (box === 'seller' ? 'seller' : 'customer'), from: from ?? monthAgo, to: to ?? today, status, limit: Number(limit) || 200 }).then((data) => ({ data }));
+  }
+  @Post('deliveries/:id/delivered') @RequirePermissions(DairyPermissions.Manage)
+  markDelivered(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(SettleDeliverySchema) dto: z.infer<typeof SettleDeliverySchema>) {
+    return this.svc.settleDelivery(ctx.tenantId, this.actor(ctx), id, dto.dueOn, 'delivered', dto).then((data) => ({ data }));
+  }
+  @Post('deliveries/:id/skipped') @RequirePermissions(DairyPermissions.Manage)
+  markSkipped(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(SettleDeliverySchema) dto: z.infer<typeof SettleDeliverySchema>) {
+    return this.svc.settleDelivery(ctx.tenantId, this.actor(ctx), id, dto.dueOn, 'skipped', dto).then((data) => ({ data }));
+  }
+  @Post('deliveries/:id/failed') @RequirePermissions(DairyPermissions.Manage)
+  markFailed(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(SettleDeliverySchema) dto: z.infer<typeof SettleDeliverySchema>) {
+    return this.svc.settleDelivery(ctx.tenantId, this.actor(ctx), id, dto.dueOn, 'failed', dto).then((data) => ({ data }));
+  }
+  /** The postpaid statement: delivered drops x the plan price. States plainly that nothing has been charged. */
+  @Get('statement')
+  statement(@CurrentContext() ctx: RequestContext, @Query('box') box?: string, @Query('from') from?: string, @Query('to') to?: string) {
+    const now = new Date();
+    const firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
+    return this.svc.statement(ctx.tenantId, this.actor(ctx), { box: (box === 'seller' ? 'seller' : 'customer'), from: from ?? firstOfMonth, to: to ?? now.toISOString().slice(0, 10) }).then((data) => ({ data }));
+  }
 
   /** PC-54 W54-5 `mcc-shift-summary` (canon 238): GET dairy/d2c/../day sheet lives on the MCC path below. */
   @Get('mccs/:mccId/day-summary') @RequirePermissions(DairyPermissions.Manage)

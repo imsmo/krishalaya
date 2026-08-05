@@ -1484,3 +1484,19 @@ describe('mgnrega-works', () => {
     expect(led.stateLedger.available).toBe(false);      // and never fakes a sync
   });
 });
+
+// --- d2c delivery runs & statement (PC-55 A5) ---
+describe('d2c-delivery-runs', () => {
+  it('settles a drop by (id,date) and reads a statement that says it is NOT an invoice', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { id: 'd1', dueOn: '2026-08-05', status: 'delivered', billable: true } } }
+      : { body: { data: { period: { from: '2026-08-01', to: '2026-08-31' }, lines: [], grandTotalMinor: '186000', billing: { mode: 'monthly_postpaid', charged: false, note: 'This is a statement of delivered drops, not an invoice.' } } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.dairy.markD2cDelivered('d1', { dueOn: '2026-08-05', qty: '1.000' });
+    expect(calls[0].url).toBe('https://api.test/v1/dairy/d2c/deliveries/d1/delivered');
+    expect(JSON.parse(String(calls[0].init.body)).dueOn).toBe('2026-08-05');   // partition key always sent
+    const st = await c.dairy.d2cStatement({ box: 'customer' });
+    expect(st.billing.charged).toBe(false);            // never claims money was taken
+    expect(typeof st.grandTotalMinor).toBe('string');  // Law 2 — minor-unit string
+  });
+});

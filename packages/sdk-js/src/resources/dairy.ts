@@ -105,4 +105,21 @@ export class DairyResource {
   async mccDaySummary(mccId: string, date?: string, signal?: AbortSignal): Promise<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>> {
     return (await this.http.request<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>>('GET', `dairy/d2c/mccs/${encodeURIComponent(mccId)}/day-summary`, { query: { date }, signal })).data;
   }
+
+  // --- PC-55 A5 `d2c-delivery-runs`. Drops are materialised by a server-side cadence job (idempotent at the
+  // DB), so no client ever creates a delivery. Settling is seller-side and never rewrites a settled outcome.
+  // The statement is a ledgered aggregate that states plainly it is NOT an invoice. ---
+  async d2cDeliveries(params: { box?: 'customer' | 'seller'; from?: string; to?: string; status?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'dairy/d2c/deliveries', { query: { box: params.box, from: params.from, to: params.to, status: params.status, limit: params.limit ?? 200 }, signal })).data;
+  }
+  /** dueOn is REQUIRED: a drop is identified by (id, date) because the table is partitioned by delivery date. */
+  async markD2cDelivered(id: string, input: { dueOn: string; qty?: string; qualityMeta?: Record<string, unknown> }): Promise<Record<string, unknown>> { return this.settleD2c(id, 'delivered', input); }
+  async markD2cSkipped(id: string, input: { dueOn: string }): Promise<Record<string, unknown>> { return this.settleD2c(id, 'skipped', input); }
+  async markD2cFailed(id: string, input: { dueOn: string }): Promise<Record<string, unknown>> { return this.settleD2c(id, 'failed', input); }
+  private async settleD2c(id: string, outcome: 'delivered' | 'skipped' | 'failed', body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('POST', `dairy/d2c/deliveries/${encodeURIComponent(id)}/${outcome}`, { body })).data;
+  }
+  async d2cStatement(params: { box?: 'customer' | 'seller'; from?: string; to?: string } = {}, signal?: AbortSignal): Promise<{ period: { from: string; to: string }; lines: Array<Record<string, unknown>>; grandTotalMinor: string; billing: { mode: string; charged: boolean; note: string } }> {
+    return (await this.http.request<{ period: { from: string; to: string }; lines: Array<Record<string, unknown>>; grandTotalMinor: string; billing: { mode: string; charged: boolean; note: string } }>('GET', 'dairy/d2c/statement', { query: { box: params.box, from: params.from, to: params.to }, signal })).data;
+  }
 }
