@@ -5,12 +5,22 @@ import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
-import { ZodBody } from '../../../../core/http/zod.pipe';
+import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../../core/idempotency/idempotency.service';
-import { BadRequestError } from '../../../../shared/errors/app-error';
+import { BadRequestError, NotFoundError } from '../../../../shared/errors/app-error';
 import { KycDocumentService } from '../../services/kyc-document.service';
+import { z } from 'zod';
+
+// PC-54 W54-1: reviewer-queue query (status defaults to the actionable box) + keyset cursor codec.
+const ReviewQueueSchema = z.object({
+  status: z.enum(['pending', 'verified', 'rejected', 'expired']).default('pending'),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
+type ReviewQueueDto = z.infer<typeof ReviewQueueSchema>;
+const decodeReviewCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 import { EkycService } from '../../services/ekyc.service';
 import { BusinessKycService } from '../../services/business-kyc.service';
 import { SubmitKycSchema, SubmitKycDto, ReviewKycSchema, ReviewKycDto } from '../../dto/create-kyc-document.dto';
@@ -69,6 +79,23 @@ export class KycController {
   async submit(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(SubmitKycSchema) dto: SubmitKycDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     const data = await this.idem.remember(key, ctx.userId, 'identity.kyc.submit', () => this.kyc.submit(ctx.tenantId, ctx.userId, dto));
+    return { data };
+  }
+
+  // --- PC-54 W54-1 `kyc-review-read-models` (Ledger Appendix 6): the reviewer's QUEUE + CASE reads.
+  // Evidence-before-decision: kyc/:id/review existed but every read was self-scoped — a blind approve is
+  // forbidden. Approve-gated; static 'review/...' paths declared BEFORE the bare @Get().
+  @Get('review/queue')
+  @RequirePermissions(IdentityPermissions.Approve)
+  reviewQueue(@CurrentContext() ctx: RequestContext, @ZodQuery(ReviewQueueSchema) q: ReviewQueueDto) {
+    return this.kyc.reviewQueue(ctx.tenantId, { status: q.status, cursor: decodeReviewCursor(q.cursor), limit: q.limit })
+      .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+  @Get('review/:id')
+  @RequirePermissions(IdentityPermissions.Approve)
+  async reviewCase(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    const data = await this.kyc.reviewCase(ctx.tenantId, id);
+    if (!data) throw new NotFoundError('kyc document not found');
     return { data };
   }
 

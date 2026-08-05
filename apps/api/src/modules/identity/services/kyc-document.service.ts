@@ -50,6 +50,21 @@ export class KycDocumentService {
     return this.kyc.listByUser(tenantId, userId, status).then((docs) => docs.map((d) => d.toProps()));
   }
 
+  /** PC-54 W54-1 `kyc-review-read-models` (Ledger Appendix 6): the reviewer QUEUE. Evidence-before-decision:
+   *  without this read, kyc/:id/review was a blind write. Approve-gated at the controller. */
+  async reviewQueue(tenantId: string, q: { status: string; cursor?: { c: string; id: string }; limit: number }) {
+    const rows = await this.kyc.listForReview(tenantId, q);
+    const items = rows.map((r) => ({ ...r.doc.toProps(), createdAt: r.createdAt }));
+    const last = rows[rows.length - 1];
+    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt}|${last.doc.id}`).toString('base64') : null;
+    return { items, nextCursor };
+  }
+  /** PC-54 W54-1: the CASE read — submission facts + the media id (evidence pointer; PII stays masked). */
+  async reviewCase(tenantId: string, id: string) {
+    const doc = await this.kyc.getById(tenantId, id);
+    return doc ? doc.toProps() : null;
+  }
+
   /** Catalogue of accepted KYC document types (seeded 'doc_type' lookup) so the client shows a name
    *  and submits a real docTypeId instead of guessing a UUID. Read-only; no PII. */
   listDocTypes(tenantId: string) {

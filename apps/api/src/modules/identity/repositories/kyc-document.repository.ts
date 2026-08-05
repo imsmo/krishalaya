@@ -39,6 +39,23 @@ export class KycDocumentRepository {
 
   /** The 'doc_type' lookup catalogue (id + code + display name) so the client submits a real docTypeId
    *  and shows a name instead of a UUID. Platform values (tenant_id NULL) + any tenant overlay; active only. */
+  /** PC-54 W54-1: the REVIEWER queue — cross-user, status-filtered, keyset (created_at,id). Read-only. */
+  async listForReview(tenantId: string, q: { status: string; cursor?: { c: string; id: string }; limit: number }): Promise<Array<{ doc: KycDocument; createdAt: string }>> {
+    const r = await this.replica.forTenant(tenantId).query<Row & { created_at: Date }>(
+      `SELECT ${COLS}, created_at FROM kyc_documents
+        WHERE tenant_id IS NOT DISTINCT FROM $1 AND status=$2::kyc_status AND deleted_at IS NULL
+          AND ($3::timestamptz IS NULL OR (created_at, id) < ($3::timestamptz, $4::uuid))
+        ORDER BY created_at DESC, id DESC LIMIT $5`,
+      [tenantId, q.status, q.cursor?.c ?? null, q.cursor?.id ?? '00000000-0000-0000-0000-000000000000', q.limit],
+    );
+    return r.rows.map((row) => ({ doc: toDomain(row), createdAt: row.created_at.toISOString() }));
+  }
+  /** PC-54 W54-1: non-locking case read for the reviewer. */
+  async getById(tenantId: string, id: string): Promise<KycDocument | null> {
+    const r = await this.replica.forTenant(tenantId).query<Row>(`SELECT ${COLS} FROM kyc_documents WHERE id=$1 AND tenant_id IS NOT DISTINCT FROM $2 AND deleted_at IS NULL`, [id, tenantId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+
   async listDocTypes(tenantId: string): Promise<{ id: string; code: string; name: string }[]> {
     const r = await this.replica.forTenant(tenantId).query<{ id: string; code: string; default_name: string }>(
       `SELECT id, code, default_name

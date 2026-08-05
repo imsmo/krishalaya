@@ -1218,3 +1218,16 @@ describe('equipment owner-side', () => {
     expect(JSON.parse(String(calls[2].init.body))).toEqual({ advanceMinor: '250000' });
   });
 });
+
+// --- kyc reviewer read-models (PC-54 W54-1) ---
+describe('kyc review reads', () => {
+  it('queue defaults to pending with keyset paging; case read hits review/:id', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [], meta: { nextCursor: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.kyc.reviewQueue({ status: 'pending' });
+    expect(calls[0].url).toContain('kyc/review/queue');
+    expect(calls[0].url).toContain('status=pending');
+    await c.kyc.reviewCase('k1');
+    expect(calls[1].url).toBe('https://api.test/v1/kyc/review/k1');
+  });
+});

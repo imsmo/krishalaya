@@ -150,6 +150,8 @@ export type KycStatus = 'pending' | 'verified' | 'rejected' | 'expired';
 export interface KycDocument { id: string; status: KycStatus; docTypeId?: string; mediaId?: string; docNoMasked?: string | null; rejectReason?: string | null; createdAt?: string; }
 /** A selectable KYC document type from the seeded 'doc_type' catalogue (id to submit + name to show). */
 export interface KycDocType { id: string; code: string; name: string; }
+/** PC-54 W54-1: a reviewer-queue row — the FULL submission props (userId visible to the Approve holder; doc number stays MASKED). */
+export interface KycReviewItem extends KycDocument { userId: string; roleId?: string | null; issuedBy?: string | null; validFrom?: string | null; validUntil?: string | null; verifyMethod?: string | null; reviewedBy?: string | null; reviewedAt?: string | null; }
 
 // --- Business KYC (buyer, P0-5). Server stores + returns MASKED GSTIN/PAN only — never the raw tax id. ---
 export type BusinessType = 'proprietorship' | 'partnership' | 'pvt_ltd' | 'llp' | 'fpo' | 'cooperative' | 'trader' | 'huf' | 'other';

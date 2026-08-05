@@ -3,7 +3,7 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycDocument, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
+import { KycDocument, KycReviewItem, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
@@ -47,6 +47,17 @@ export class KycResource {
     return (await this.http.request<BusinessKycStatus>('POST', 'kyc/business', { body: input })).data;
   }
   /** The caller's OWN business-KYC status (masked). `status:'none'` when nothing has been submitted yet. */
+  // --- PC-54 W54-1: reviewer read-models (Approve-gated server-side) ---
+  /** The reviewer QUEUE: cross-user submissions by status (default pending), keyset-paged. */
+  async reviewQueue(params: { status?: 'pending' | 'verified' | 'rejected' | 'expired'; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: KycReviewItem[]; nextCursor: string | null }> {
+    const r = await this.http.request<KycReviewItem[]>('GET', 'kyc/review/queue', { query: { status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The reviewer CASE read: submission facts + mediaId evidence pointer (PII arrives masked). */
+  async reviewCase(id: string, signal?: AbortSignal): Promise<KycReviewItem> {
+    return (await this.http.request<KycReviewItem>('GET', `kyc/review/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
   async businessStatus(signal?: AbortSignal): Promise<BusinessKycStatus> {
     return (await this.http.request<BusinessKycStatus>('GET', 'kyc/business', { signal })).data;
   }
