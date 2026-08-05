@@ -81,4 +81,27 @@ export class ShipmentsResource {
   async cancelCodRemittance(id: string, reason: string): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/cancel`, { body: { reason } })).data;
   }
+
+  // --- PC-55 A6 `ops-alert-rules` (Manage-gated). Firing rides the EXISTING notification spine: recipients
+  // are platform users whose own preferences and QUIET HOURS still apply — channelHint is a preference, never
+  // a bypass. Thresholds are validated per kind server-side, so a typo cannot silently disable a rule. ---
+  async createAlertRule(input: { kind: 'cold_chain_breach' | 'device_silent' | 'maintenance_due'; ruleName: string; threshold?: Record<string, unknown>; recipientUserIds: string[]; channelHint?: 'push' | 'sms' | 'whatsapp' | 'email' | 'inapp'; cooldownMinutes?: number }): Promise<{ id: string; kind: string; threshold: Record<string, unknown> }> {
+    return (await this.http.request<{ id: string; kind: string; threshold: Record<string, unknown> }>('POST', 'logistics/cold-chain/alert-rules', { body: input })).data;
+  }
+  async alertRules(params: { kind?: string; activeOnly?: boolean } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/alert-rules', { query: { kind: params.kind, activeOnly: params.activeOnly }, signal })).data;
+  }
+  async updateAlertRule(id: string, patch: Record<string, unknown>): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('PATCH', `logistics/cold-chain/alert-rules/${encodeURIComponent(id)}`, { body: patch })).data;
+  }
+  async alertFeed(params: { kind?: string; severity?: string; unacknowledgedOnly?: boolean; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/alerts/feed', { query: { kind: params.kind, severity: params.severity, unacknowledgedOnly: params.unacknowledgedOnly, limit: params.limit ?? 100 }, signal })).data;
+  }
+  async acknowledgeAlert(id: string): Promise<{ id: string; acknowledged: boolean }> {
+    return (await this.http.request<{ id: string; acknowledged: boolean }>('POST', `logistics/cold-chain/alerts/${encodeURIComponent(id)}/acknowledge`, { body: {} })).data;
+  }
+  /** Run the evaluator now (so a freshly written rule can be tested without waiting for the cadence). */
+  async evaluateAlertRules(): Promise<{ evaluated: number; fired: number; suppressed: number }> {
+    return (await this.http.request<{ evaluated: number; fired: number; suppressed: number }>('POST', 'logistics/cold-chain/alert-rules/evaluate', { body: {} })).data;
+  }
 }

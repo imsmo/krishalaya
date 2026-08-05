@@ -11,7 +11,7 @@ import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { DAIRY_SHIFTS, ADULTERATION_FLAGS, BILL_STATUSES, isBillStatus, canPreview, canApprove, canPay } from '../../features/dairy/pos';
 import { recordCollectionAction, generateBillAction, billLifecycleAction } from './actions';
-import type { DairyMembership, DairyCollection, MilkBill, RateCard } from '@krishalaya/sdk-js';
+import type { DairyMembership, DairyCollection, MilkBill, DairyRateCard } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +46,7 @@ export default async function DairyPosPage({ searchParams }: { searchParams: { o
   try { bills = (await client.dairy.listBills({ box: 'all', status: billStatus as MilkBill['status'], limit: 50 })).items; }
   catch { billsFailed = true; }
 
-  let rates: RateCard[] = [];
+  let rates: DairyRateCard[] = [];
   try { rates = await client.dairy.listRateCards({ activeOnly: true }); } catch { rates = []; }
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;

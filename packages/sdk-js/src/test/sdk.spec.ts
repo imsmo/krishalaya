@@ -1500,3 +1500,20 @@ describe('d2c-delivery-runs', () => {
     expect(typeof st.grandTotalMinor).toBe('string');  // Law 2 — minor-unit string
   });
 });
+
+// --- ops alert rules (PC-55 A6) ---
+describe('ops-alert-rules', () => {
+  it('creates a rule with recipients and reads the fired feed', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { id: 'r1', kind: 'cold_chain_breach', threshold: { windowHours: 6, minBreaches: 1 } } } }
+      : { body: { data: [] } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    const r = await c.shipments.createAlertRule({ kind: 'cold_chain_breach', ruleName: 'Reefer breaches', recipientUserIds: ['00000000-0000-7000-8000-000000000001'] });
+    expect(calls[0].url).toBe('https://api.test/v1/logistics/cold-chain/alert-rules');
+    const body = JSON.parse(String(calls[0].init.body));
+    expect(body.recipientUserIds).toHaveLength(1);        // a rule always names humans, never "everyone"
+    expect(r.threshold.windowHours).toBe(6);              // server applied its defaults
+    await c.shipments.alertFeed({ unacknowledgedOnly: true });
+    expect(calls[1].url).toContain('alerts/feed?unacknowledgedOnly=true');
+  });
+});

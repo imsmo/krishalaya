@@ -45,4 +45,4 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       server-computed; 403 → honest permission note) + operational snapshot (status breakdown of the LATEST 50
       per register, labeled as a snapshot never a total; true totals need read-models → PC-54 note).
       **OPS CANON FULLY DISPOSITIONED**: OW-0..6 built/resolved; OW-7 gated on PC-54.
-- [ ] **OW-7 · GATED** — IoT device fleet + ops alerting (PC-54 modules first).
+- [ ] **OW-7 · READY** — IoT device fleet + ops alerting. Backend COMPLETE: W54-12 (fleet + breach feed + maintenance alerts) + PC-55 A6 (alert rules CRUD, cadence evaluator, fired feed, acknowledge). Console wave = PC-56 OPS-5.

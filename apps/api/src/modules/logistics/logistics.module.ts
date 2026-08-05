@@ -9,6 +9,10 @@
 // Saturday Village Run routes, and cold-chain (reefer/vaccine) temperature telemetry. The cold-chain breach
 // alerter + Village-Run consolidation run as worker jobs (apps/worker) — see jobs/. No master-data sub-features
 // of this module remain deferred.
+import { OpsAlertService } from './services/ops-alert.service';
+import { OpsAlertRepository } from './repositories/ops-alert.repository';
+import { OpsAlertsCadenceJob } from './jobs/ops-alerts.cadence-job';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { CodRemittanceService } from './services/cod-remittance.service';
 import { CodRemittanceRepository } from './repositories/cod-remittance.repository';
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
@@ -41,7 +45,12 @@ import { OrderConfirmedHandler } from './events/handlers/order-confirmed.handler
     LogisticsPartnerService, VehicleService, PickupSlotService,
     LogisticsPartnerRepository, VehicleRepository, PickupSlotRepository,
     DeliveryZoneService, DeliveryRouteService, ColdChainService,
-    DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository],
+    DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository, OpsAlertService, OpsAlertRepository,
+    { provide: OpsAlertsCadenceJob,
+      // Every 10 minutes: fast enough that a cold-chain breach is seen while the cargo can still be saved,
+      // and safe to repeat because the 0086 dedupe key makes a re-fire inside the cooldown a DB no-op.
+      useFactory: (svc: OpsAlertService) => new OpsAlertsCadenceJob(10 * 60_000, svc),
+      inject: [OpsAlertService] }],
   exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService],
 })
 export class LogisticsModule implements OnModuleInit {
