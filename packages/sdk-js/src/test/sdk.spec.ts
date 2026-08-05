@@ -1535,3 +1535,19 @@ describe('rider-payout-terms', () => {
     expect(body).not.toHaveProperty('totalMinor');     // a client never supplies an earned figure
   });
 });
+
+// --- coop payout runs (PC-55 A8) ---
+describe('coop-payout-runs', () => {
+  it('requires a second human, never sends amounts, and reports queued-not-paid with skipped members named', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'run1', batchId: 'b1', purpose: 'dividend', potMinor: '10000000', queuedTotalMinor: '9800000', queuedCount: 98, skipped: [{ userId: 'u9', reason: 'skipped_no_bank_account' }], execution: { executed: false, note: 'Payouts are QUEUED' } } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    const r = await c.memberships.coopPayoutRun('res1', { confirmedBy: '00000000-0000-7000-8000-000000000002' }, 'idem-coop-1');
+    expect(calls[0].url).toBe('https://api.test/v1/governance/resolutions/res1/payout-run');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-coop-1');
+    const body = JSON.parse(String(calls[0].init.body));
+    expect(body.confirmedBy).toBeDefined();               // maker-checker is part of the request contract
+    expect(body).not.toHaveProperty('potMinor');          // the pot comes from the VOTE, never the caller
+    expect(r.execution.executed).toBe(false);             // never claims money moved
+    expect(r.skipped[0].reason).toBe('skipped_no_bank_account');  // a skipped member is named, not dropped
+  });
+});

@@ -70,4 +70,20 @@ export class MembershipsResource {
   private govStep(id: string, action: string): Promise<{ id: string; status: string }> {
     return this.http.request<{ id: string; status: string }>('POST', `governance/resolutions/${encodeURIComponent(id)}/${action}`, { body: {} }).then((r) => r.data);
   }
+
+  // --- PC-55 A8 `coop-payout-runs`: an ACTIVATED dividend/patronage vote → QUEUED payouts. Nothing executes
+  // here; execution needs live RazorpayX credentials and the response says so. One vote pays ONCE (DB-guarded),
+  // the split sums to the pot exactly, and a run needs a SECOND human (maker != checker). ---
+  async coopPayoutPreview(resolutionId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('GET', `governance/resolutions/${encodeURIComponent(resolutionId)}/payout-preview`, { signal })).data;
+  }
+  async coopPayoutRun(resolutionId: string, input: { confirmedBy: string }, idempotencyKey: string): Promise<{ id: string; batchId: string; purpose: string; potMinor: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; execution: { executed: boolean; note: string } }> {
+    return (await this.http.request<{ id: string; batchId: string; purpose: string; potMinor: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; execution: { executed: boolean; note: string } }>('POST', `governance/resolutions/${encodeURIComponent(resolutionId)}/payout-run`, { body: input, idempotencyKey })).data;
+  }
+  async coopPayoutRuns(limit = 50, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'governance/resolutions/payout-runs/list', { query: { limit }, signal })).data;
+  }
+  async coopPayoutRunDetail(runId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('GET', `governance/resolutions/payout-runs/${encodeURIComponent(runId)}`, { signal })).data;
+  }
 }

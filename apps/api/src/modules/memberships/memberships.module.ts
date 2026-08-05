@@ -8,6 +8,8 @@
 // activation path (payment intent → payments.payment_succeeded[referenceType 'membership'] →
 // confirm/activate) via MembershipPaymentSucceededHandler. Auto-renew (stored-mandate wallet auto-debit)
 // and the charge-engine member-fee override are deferred.
+import { CoopPayoutService } from './services/coop-payout.service';
+import { CoopPayoutRepository } from './repositories/coop-payout.repository';
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
@@ -27,7 +29,7 @@ import { MembershipPaymentSucceededHandler } from './events/handlers/payment-suc
 @Module({
   controllers: [MembershipTiersController, MembershipsController, GovernanceController],
   providers: [MembershipTierService, UserMembershipService, MembershipTierRepository, UserMembershipRepository,
-    MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository],
+    MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository, CoopPayoutService, CoopPayoutRepository],
   exports: [MembershipTierService, UserMembershipService],
 })
 export class MembershipsModule implements OnModuleInit {
