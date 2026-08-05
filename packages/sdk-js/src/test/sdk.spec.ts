@@ -1311,3 +1311,17 @@ describe('payout batches', () => {
     expect(calls[0].url).toContain('payouts/batches?status=executed');
   });
 });
+
+// --- governance-agm (PC-54 W54-7) ---
+describe('governance', () => {
+  it('creates a resolution idempotently and casts one ballot', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'r1', status: 'draft' } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.memberships.createResolution({ title: 'FY26 dividend 8%', resolutionType: 'dividend' }, 'idem-gov-1');
+    expect(calls[0].url).toBe('https://api.test/v1/governance/resolutions');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-gov-1');
+    await c.memberships.castVote('r1', 'yes');
+    expect(calls[1].url).toBe('https://api.test/v1/governance/resolutions/r1/vote');
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({ choice: 'yes' });
+  });
+});

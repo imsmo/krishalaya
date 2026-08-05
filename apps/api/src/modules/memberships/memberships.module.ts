@@ -13,6 +13,9 @@ import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { MembershipTiersController } from './controllers/v1/membership-tiers.controller';
 import { MembershipsController } from './controllers/v1/memberships.controller';
+import { GovernanceController } from './controllers/v1/governance.controller';
+import { GovernanceService } from './services/governance.service';
+import { GovernanceRepository } from './repositories/governance.repository';
 import { MembershipTierService } from './services/membership-tier.service';
 import { UserMembershipService } from './services/user-membership.service';
 import { MembershipTierRepository } from './repositories/membership-tier.repository';
@@ -22,9 +25,9 @@ import { MembershipPaymentSucceededHandler } from './events/handlers/payment-suc
 // The expiry worker job (jobs/membership-renewals.job.ts) is instantiated by apps/worker with a
 // privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other expiry jobs.
 @Module({
-  controllers: [MembershipTiersController, MembershipsController],
+  controllers: [MembershipTiersController, MembershipsController, GovernanceController],
   providers: [MembershipTierService, UserMembershipService, MembershipTierRepository, UserMembershipRepository,
-    MembershipPaymentSucceededHandler],
+    MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository],
   exports: [MembershipTierService, UserMembershipService],
 })
 export class MembershipsModule implements OnModuleInit {

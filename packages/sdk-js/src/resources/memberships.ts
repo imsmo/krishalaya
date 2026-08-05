@@ -50,4 +50,24 @@ export class MembershipsResource {
   async cancel(id: string): Promise<UserMembership> {
     return (await this.http.request<UserMembership>('POST', `memberships/${encodeURIComponent(id)}/cancel`, { body: {} })).data;
   }
+
+  // --- PC-54 W54-7 `governance-agm` (coop_resolutions/coop_votes) ---
+  async createResolution(input: { title: string; body?: string; resolutionType: 'agm_vote' | 'dividend' | 'patronage_bonus' | 'board_election'; votingOpens?: string; votingCloses?: string; payload?: Record<string, unknown> }, idempotencyKey: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', 'governance/resolutions', { body: input, idempotencyKey })).data;
+  }
+  async resolutions(status?: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'governance/resolutions', { query: { status }, signal })).data;
+  }
+  openResolution(id: string): Promise<{ id: string; status: string }> { return this.govStep(id, 'open'); }
+  closeResolution(id: string): Promise<{ id: string; status: string }> { return this.govStep(id, 'close'); }
+  /** One ballot per member — the server's PK is the ballot box (409 on a second vote). */
+  async castVote(id: string, choice: string): Promise<{ resolutionId: string; choice: string }> {
+    return (await this.http.request<{ resolutionId: string; choice: string }>('POST', `governance/resolutions/${encodeURIComponent(id)}/vote`, { body: { choice } })).data;
+  }
+  async resolutionResults(id: string, signal?: AbortSignal): Promise<{ resolution: Record<string, unknown>; tally: Array<{ choice: string; votes: number }> }> {
+    return (await this.http.request<{ resolution: Record<string, unknown>; tally: Array<{ choice: string; votes: number }> }>('GET', `governance/resolutions/${encodeURIComponent(id)}/results`, { signal })).data;
+  }
+  private govStep(id: string, action: string): Promise<{ id: string; status: string }> {
+    return this.http.request<{ id: string; status: string }>('POST', `governance/resolutions/${encodeURIComponent(id)}/${action}`, { body: {} }).then((r) => r.data);
+  }
 }
