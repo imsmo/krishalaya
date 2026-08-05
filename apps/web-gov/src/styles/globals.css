@@ -1,0 +1,179 @@
+/* apps/web-gov/src/styles/globals.css · console shell styles from the design tokens (mirrors
+   @krishalaya/tokens). Sidebar + content layout; accessible 44px targets. */
+:root {
+  --kv-brand-500: #558b2f; --kv-brand-700: #33691e; --kv-neutral-0: #fff; --kv-neutral-50: #fafafa;
+  --kv-neutral-100: #f5f5f5; --kv-neutral-200: #eee; --kv-neutral-600: #757575; --kv-neutral-900: #212121;
+  --kv-danger: #c62828; --kv-radius: 8px; --kv-space: 16px;
+  --kv-font: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gujarati', system-ui, sans-serif;
+}
+/* DEV-19: dark-mode remap of this app's OWN legacy --kv-* vars (this file predates @krishalaya/ui's port —
+   only the packages/ui-ported shell (AppShell/Sidebar/Topbar, wired at DEV-18) responds to [data-theme="dark"]
+   out of the box; individual page content across this app still renders through these --kv-* vars, so without
+   this block dark mode would be a no-op for every page body). Values are NOT invented: every hex below is
+   copied verbatim from @krishalaya/tokens's generated `darkColors` export (the same DEV-19 tokens-bridge
+   this batch built) — --kv-neutral-0/50/100/200 map to darkColors.surface.card/page + earth.100/border.subtle,
+   --kv-neutral-600/900 map to darkColors.ink.500/700. --kv-brand-500/700 and --kv-danger are left UNCHANGED: the canon's
+   own dark scope only remaps primary-50/100 and leaves primary-500+/danger-base untouched (verified against
+   web-tokens.css's dark block — neither appears in the remap list), so this app's brand-green/danger-red stay
+   the same saturated values in both modes, matching canon behavior exactly. DISCLOSED BOUNDARY (see
+   dev19_report.md): this is a bounded, mechanical token remap of the ~6 vars this file already defines — it is
+   NOT a full page-by-page dark-mode redesign of every .kv-* class (out of this L batch's scope, same "ship the
+   mechanism, don't force-retrofit every markup file" precedent the design canon itself used at APPLY-8/9). */
+[data-theme="dark"] {
+  --kv-neutral-0: #1b232b; --kv-neutral-50: #12171d; --kv-neutral-100: #202832; --kv-neutral-200: #29323c;
+  --kv-neutral-600: #aab4bd; --kv-neutral-900: #e8ebee;
+}
+/* DEV-19: senior-mode extension of this app's own legacy vars — engineering-owed console extension of Q48's
+   ratified 1.30x multiplier (see @krishalaya/ui's mechanisms/seniorMode.ts header comment for the full
+   scope statement: canon's own senior-mode mechanism is mobile-only). `html[data-senior="true"] { font-size:
+   130% }` correctly scales every element in this file that inherits its font-size from the document default
+   (nearly all of them — this file sets NO element-level font-size except the 2 explicit px values noted
+   below) via the standard CSS cascade, with zero risk of double-scaling since no --kv-* var itself encodes a
+   font-size. DISCLOSED RESIDUAL: `.kv-table th` and `.kv-badge` hardcode a literal `font-size: 14px`/`12px`
+   respectively (not relative units) — those 2 rules do NOT scale under this mechanism, a real, bounded, stated
+   gap (2 rules in 1 file), not silently smoothed over. */
+html[data-senior="true"] { font-size: 130%; }
+html[data-senior="true"] .kv-btn, html[data-senior="true"] .kv-input, html[data-senior="true"] .kv-locale__btn,
+html[data-senior="true"] .kv-sidebar a { min-height: 56px; }
+* { box-sizing: border-box; }
+html, body { margin: 0; font-family: var(--kv-font); color: var(--kv-neutral-900); background: var(--kv-neutral-50); }
+a { color: inherit; text-decoration: none; }
+.kv-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.kv-sidebar { background: var(--kv-neutral-0); border-inline-end: 1px solid var(--kv-neutral-200); padding: var(--kv-space); }
+.kv-sidebar a { display: block; padding: 10px 12px; border-radius: var(--kv-radius); min-height: 44px; }
+.kv-sidebar a:hover { background: var(--kv-neutral-100); }
+.kv-brand { font-weight: 700; color: var(--kv-brand-700); margin-bottom: var(--kv-space); display: block; }
+.kv-content { padding: 24px; max-width: 1100px; }
+.kv-table { width: 100%; border-collapse: collapse; }
+.kv-table th, .kv-table td { text-align: start; padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); }
+.kv-table th { color: var(--kv-neutral-600); font-weight: 600; font-size: 14px; }
+.kv-input { padding: 10px; min-height: 44px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); width: min(360px, 100%); }
+.kv-btn { padding: 10px 16px; min-height: 44px; border: 0; border-radius: var(--kv-radius); background: var(--kv-brand-500); color: #fff; font-weight: 600; cursor: pointer; }
+.kv-card { border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); padding: var(--kv-space); background: var(--kv-neutral-0); }
+.kv-error { color: var(--kv-danger); }
+.kv-badge { font-size: 12px; padding: 2px 8px; border-radius: 9999px; background: var(--kv-neutral-100); }
+
+/* --- TC-W0-01 foundation: skip-link, bare login surface, sidebar chrome, locale switcher, boundaries --- */
+.kv-skip { position: absolute; inset-inline-start: -9999px; top: 0; background: var(--kv-brand-700); color: #fff; padding: 10px 16px; border-radius: var(--kv-radius); z-index: 100; }
+.kv-skip:focus { inset-inline-start: 8px; top: 8px; }
+.kv-content--bare { display: block; margin: 48px auto; max-width: 420px; }
+
+.kv-sidebar { display: flex; flex-direction: column; }
+.kv-sidebar__who { color: var(--kv-neutral-600); font-size: 14px; margin: 0 0 var(--kv-space); }
+.kv-sidebar__nav { list-style: none; margin: 0; padding: 0; flex: 1; }
+.kv-sidebar__foot { margin-top: auto; display: grid; gap: 12px; }
+
+.kv-locale { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.kv-locale__label { color: var(--kv-neutral-600); font-size: 13px; }
+.kv-locale__btn { min-height: 44px; padding: 6px 10px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); background: var(--kv-neutral-0); cursor: pointer; font: inherit; }
+.kv-locale__btn.is-active { border-color: var(--kv-brand-500); color: var(--kv-brand-700); font-weight: 600; }
+/* DEV-21: honest "coming soon" chips (canon screen 187 pattern) — non-interactive, dashed border, muted text. */
+.kv-locale__soon-group { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-inline-start: 6px; padding-inline-start: 6px; border-inline-start: 1px dashed var(--kv-neutral-200); }
+.kv-locale__soon { font-size: 12px; color: var(--kv-neutral-600); border: 1px dashed var(--kv-neutral-200); border-radius: var(--kv-radius); padding: 3px 7px; cursor: default; }
+.kv-btn--muted { background: var(--kv-neutral-100); color: var(--kv-neutral-900); }
+.kv-btn--link { display: inline-block; min-height: 44px; padding: 10px 0; color: var(--kv-brand-700); font-weight: 600; }
+
+.kv-auth h1 { margin-top: 0; }
+.kv-form { display: grid; gap: 10px; max-width: 360px; }
+.kv-field__label { font-weight: 600; }
+.kv-field__hint { color: var(--kv-neutral-600); font-size: 13px; margin: 0; }
+.kv-muted { color: var(--kv-neutral-600); }
+.kv-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--kv-space); margin-top: var(--kv-space); }
+.kv-pager { margin-top: var(--kv-space); }
+
+.kv-loading { padding: 24px; color: var(--kv-neutral-600); }
+.kv-empty-state { padding: 24px; color: var(--kv-neutral-600); }
+.kv-empty-state h1 { color: var(--kv-neutral-900); }
+
+/* --- TC-W1-01 new-listing form: page head, select/textarea, search row, uploader, success --- */
+.kv-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--kv-space); flex-wrap: wrap; }
+.kv-success { color: var(--kv-brand-700); background: var(--kv-neutral-100); padding: 10px 12px; border-radius: var(--kv-radius); }
+.kv-select { padding: 10px; min-height: 44px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); width: min(360px, 100%); background: var(--kv-neutral-0); font: inherit; }
+.kv-textarea { padding: 10px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); width: min(480px, 100%); font: inherit; resize: vertical; }
+.kv-search { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin: var(--kv-space) 0; }
+.kv-form__actions { display: flex; align-items: center; gap: var(--kv-space); margin-top: var(--kv-space); }
+.kv-uploader { display: grid; gap: 8px; max-width: 480px; }
+.kv-upload-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.kv-upload-tile { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
+.kv-upload-tile--error { border-color: var(--kv-danger); }
+.kv-upload-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kv-upload-status { color: var(--kv-neutral-600); font-size: 13px; }
+.kv-upload-tile--error .kv-upload-status { color: var(--kv-danger); }
+.kv-upload-remove { min-height: 32px; min-width: 32px; border: 0; background: transparent; cursor: pointer; font-size: 20px; line-height: 1; color: var(--kv-neutral-600); }
+
+/* --- TC-W1-02 listing-manage: facts list, inline action form, card title, table link, gap note --- */
+.kv-link { color: var(--kv-brand-700); font-weight: 600; }
+.kv-link:hover { text-decoration: underline; }
+.kv-facts { margin: var(--kv-space) 0; display: grid; gap: 2px; }
+.kv-facts__row { display: grid; grid-template-columns: 160px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--kv-neutral-100); }
+.kv-facts__row dt { color: var(--kv-neutral-600); margin: 0; }
+.kv-facts__row dd { margin: 0; }
+.kv-inline-form { margin: var(--kv-space) 0; }
+.kv-card { max-width: 480px; }
+.kv-card__title { margin: 0 0 8px; font-size: 16px; }
+.kv-note { margin-top: 24px; }
+
+/* --- TC-W2-01 order-fulfilment: section titles, lifecycle action row, totals emphasis --- */
+.kv-section-title { font-size: 16px; margin: 24px 0 8px; }
+.kv-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: var(--kv-space) 0; }
+.kv-actions .kv-inline-form { margin: 0; }
+.kv-facts--totals { max-width: 360px; }
+.kv-facts--totals .kv-facts__row:last-child { font-weight: 700; border-bottom: 0; }
+
+/* --- TC-W3-01 payouts: destination list + add-account checkbox --- */
+.kv-account-list { list-style: none; margin: var(--kv-space) 0; padding: 0; display: grid; gap: 6px; max-width: 480px; }
+.kv-account { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
+.kv-check { display: flex; align-items: center; gap: 8px; }
+details.kv-card > summary { cursor: pointer; }
+
+/* --- TC-W4-03 notifications: filters, inbox list, preference rows --- */
+.kv-notif-filters { display: flex; gap: 12px; margin: var(--kv-space) 0; }
+.kv-btn--link.is-active { font-weight: 700; color: var(--kv-brand-700); }
+.kv-notif-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.kv-notif-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
+.kv-notif-item--unread { border-inline-start: 3px solid var(--kv-brand-500); background: var(--kv-neutral-50); }
+.kv-notif-main { display: grid; gap: 4px; }
+.kv-notif-title { font-weight: 600; }
+.kv-notif-meta { display: flex; gap: 12px; align-items: center; font-size: 13px; }
+.kv-prefs-list { list-style: none; margin: 0 0 var(--kv-space); padding: 0; display: grid; gap: 6px; }
+.kv-prefs-row { padding: 6px 0; border-bottom: 1px solid var(--kv-neutral-100); }
+
+/* --- TC-W5-01 billing: plan cards --- */
+.kv-plan { display: grid; gap: 8px; align-content: start; }
+.kv-plan__price { font-size: 18px; font-weight: 700; margin: 0; }
+
+/* --- P1-5 reviews (disputes "Your reviews" section) --- */
+.kv-label { display: block; font-size: 13px; font-weight: 600; margin: 8px 0 4px; }
+.kv-notice { color: var(--kv-brand-700); background: var(--kv-neutral-50); border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); padding: 8px 12px; margin: var(--kv-space) 0; }
+.kv-reviews { list-style: none; margin: 0 0 var(--kv-space); padding: 0; display: grid; gap: 10px; }
+.kv-review { padding: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); display: grid; gap: 6px; max-width: 560px; }
+.kv-review__head { display: flex; gap: 10px; align-items: center; margin: 0; }
+.kv-review__body { margin: 0; }
+.kv-review__response { border-inline-start: 3px solid var(--kv-brand-500); padding-inline-start: 10px; background: var(--kv-neutral-50); }
+.kv-review__response-label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--kv-neutral-500); margin: 0 0 2px; }
+.kv-review__form { display: grid; gap: 4px; }
+
+/* --- P1-6 wallet: balance card + ledger amount tones --- */
+.kv-wallet__balance { max-width: 560px; }
+.kv-wallet__total { font-size: 28px; font-weight: 700; margin: 4px 0; display: flex; align-items: center; gap: 10px; }
+.kv-wallet__split { display: flex; gap: 32px; margin: 8px 0 0; }
+.kv-wallet__split div { display: grid; gap: 2px; }
+.kv-wallet__split dt { font-size: 13px; color: var(--kv-neutral-500); }
+.kv-wallet__split dd { margin: 0; font-weight: 600; }
+.kv-badge--frozen { background: var(--kv-danger-100, #fde2e2); color: var(--kv-danger-700, #a12020); }
+.kv-amount--credit { color: var(--kv-success-700, #1f7a3d); font-weight: 600; }
+.kv-amount--debit { color: var(--kv-danger-700, #a12020); font-weight: 600; }
+
+/* settings (tenant self-config · P1-10) */
+.kv-form--grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+.kv-disclosure { margin: 12px 0; border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 8px; padding: 8px 12px; }
+.kv-disclosure > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.kv-fieldset { border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.kv-fieldset > legend { font-size: 13px; color: var(--kv-neutral-500, #737373); padding: 0 4px; }
+.kv-radio { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+.kv-radio input[type='radio'] { accent-color: var(--kv-green-700, #15803d); width: 16px; height: 16px; }
+.kv-thread { list-style: none; margin: 8px 0; padding: 0; }
+.kv-thread__item { border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 8px; padding: 8px 12px; margin-block-end: 8px; }
+.kv-thread__body { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.kv-btn--sm { padding: 4px 10px; font-size: 13px; min-height: 32px; }
+.kv-fine { font-size: 12px; }
