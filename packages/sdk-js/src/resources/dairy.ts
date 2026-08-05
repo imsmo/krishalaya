@@ -81,4 +81,28 @@ export class DairyResource {
   async payBill(id: string, idempotencyKey: string): Promise<MilkBill> {
     return (await this.http.request<MilkBill>('POST', `dairy/milk-bills/${encodeURIComponent(id)}/pay`, { idempotencyKey })).data;
   }
+
+  // --- PC-54 W54-5: D2C milk subscriptions + the MCC day sheet ---
+  async createD2cPlan(input: { productId: string; defaultName: string; frequency: 'daily' | 'alternate_day' | 'weekly' | 'monthly'; qtyPerDelivery: string; unitCode: string; pricePerDeliveryMinor: string; deliveryWindow?: string }, idempotencyKey: string): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', 'dairy/d2c/plans', { body: input, idempotencyKey })).data;
+  }
+  async d2cPlans(signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'dairy/d2c/plans', { signal })).data;
+  }
+  async subscribeD2c(input: { planId: string; addressId: string; startsOn: string }, idempotencyKey: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', 'dairy/d2c/subscriptions', { body: input, idempotencyKey })).data;
+  }
+  async myD2cSubscriptions(signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'dairy/d2c/subscriptions/mine', { signal })).data;
+  }
+  pauseD2c(id: string, pausedUntil: string): Promise<{ id: string; status: string }> { return this.d2cStep(id, 'pause', { pausedUntil }); }
+  resumeD2c(id: string): Promise<{ id: string; status: string }> { return this.d2cStep(id, 'resume', {}); }
+  cancelD2c(id: string): Promise<{ id: string; status: string }> { return this.d2cStep(id, 'cancel', {}); }
+  private d2cStep(id: string, action: string, body: Record<string, unknown>): Promise<{ id: string; status: string }> {
+    return this.http.request<{ id: string; status: string }>('POST', `dairy/d2c/subscriptions/${encodeURIComponent(id)}/${action}`, { body }).then((r) => r.data);
+  }
+  /** The honest day sheet (canon 238): per-shift slips/weight/amount aggregated from ledgered rows. */
+  async mccDaySummary(mccId: string, date?: string, signal?: AbortSignal): Promise<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>> {
+    return (await this.http.request<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>>('GET', `dairy/d2c/mccs/${encodeURIComponent(mccId)}/day-summary`, { query: { date }, signal })).data;
+  }
 }

@@ -1285,3 +1285,19 @@ describe('livestock depth', () => {
     expect(calls[2].url).toContain('pashuAadhaar=123456789012');
   });
 });
+
+// --- dairy read-models (PC-54 W54-5) ---
+describe('d2c + mcc day sheet', () => {
+  it('subscribes idempotently and reads the per-shift aggregate as minor strings', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 2
+      ? { body: { data: [{ shift: 'morning', slips: 42, weightKg: '512.500', amountMinor: '1845000', waterFlags: 1 }] } }
+      : { body: { data: { id: 's1', status: 'active' } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.dairy.subscribeD2c({ planId: 'p1', addressId: 'a1', startsOn: '2026-08-10' }, 'idem-d2c-1');
+    expect(calls[0].url).toBe('https://api.test/v1/dairy/d2c/subscriptions');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-d2c-1');
+    const rows = await c.dairy.mccDaySummary('m1', '2026-08-05');
+    expect(calls[1].url).toContain('mccs/m1/day-summary');
+    expect(typeof rows[0].amountMinor).toBe('string');
+  });
+});

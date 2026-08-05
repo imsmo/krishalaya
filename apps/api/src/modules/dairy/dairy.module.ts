@@ -14,6 +14,9 @@
 import { Module } from '@nestjs/common';
 import { MccController } from './controllers/v1/mcc.controller';
 import { RateCardsController } from './controllers/v1/rate-cards.controller';
+import { D2cController } from './controllers/v1/d2c.controller';
+import { D2cService } from './services/d2c.service';
+import { D2cRepository } from './repositories/d2c.repository';
 import { CollectionsController } from './controllers/v1/collections.controller';
 import { MilkBillsController } from './controllers/v1/milk-bills.controller';
 import { MccCentreService } from './services/mcc-centre.service';
@@ -30,11 +33,10 @@ import { MilkBillRepository } from './repositories/milk-bill.repository';
 // The cycle-close worker job (jobs/milk-bill-cycle-close.job.ts) is instantiated by apps/worker with a
 // privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other batch jobs.
 @Module({
-  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController],
+  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
-    MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository,
-  ],
+    MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService],
 })
 export class DairyModule {}
