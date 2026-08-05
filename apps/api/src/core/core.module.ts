@@ -57,6 +57,7 @@ import { SecurityHeadersMiddleware } from './http/security-headers.middleware';
 import { HttpLogMiddleware } from './http/http-log.middleware';
 import { AllExceptionsFilter } from './http/exception.filter';
 import { ResponseInterceptor } from './http/response.interceptor';
+import { BackpressureInterceptor } from './backpressure/backpressure.interceptor';
 
 import { HealthController } from './health/health.controller';
 import { MetricsController } from './observability/metrics.controller';
@@ -113,6 +114,7 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     smsSenderProvider,
     // global error envelope + success envelope
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_INTERCEPTOR, useClass: BackpressureInterceptor }, // PC-51: FIRST — shed cheaply before any work
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_GUARD, useClass: RateLimitGuard },  // global edge rate limit (per-route @RateLimit overrides)
   ],
