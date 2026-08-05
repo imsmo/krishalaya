@@ -43,9 +43,11 @@ export const webhookDeliveryJob: Job = {
     if (!kek) { metrics.setGauge('kv_webhook_delivery_disabled', 1); return; } // fail-safe: no key → don't leak/crash
     metrics.setGauge('kv_webhook_delivery_disabled', 0);
 
-    const due = await client.query<{ id: string; created_at: string; event_type: string; payload: unknown; attempt: number; url: string; secret_hash: string }>(
-      `SELECT d.id, d.created_at, d.event_type, d.payload, d.attempt, e.url, e.secret_hash
-         FROM webhook_deliveries d JOIN webhook_endpoints e ON e.id = d.endpoint_id
+    const due = await client.query<{ id: string; created_at: string; event_type: string; payload: unknown; attempt: number; url: string; secret_enc: string }>(
+      // PC-55 A10: joins webhook_delivery_targets (tenant endpoints UNION ALL partner endpoints, 0090) so a partner
+      // webhook inherits this job's signing, timeout, backoff and park semantics instead of forking them.
+      `SELECT d.id, d.created_at, d.event_type, d.payload, d.attempt, e.url, e.secret_enc
+         FROM webhook_deliveries d JOIN webhook_delivery_targets e ON e.id = d.endpoint_id
         WHERE d.succeeded = false AND d.next_retry_at IS NOT NULL AND d.next_retry_at <= now() AND e.is_active = true
         ORDER BY d.next_retry_at LIMIT $1`, [BATCH]);
 
@@ -56,7 +58,7 @@ export const webhookDeliveryJob: Job = {
       let succeeded = false; let statusCode: number | null = null;
       try {
         if (!/^https:\/\//i.test(row.url)) throw new Error('non-https endpoint');
-        const secret = openSecret(kek, row.secret_hash);
+        const secret = openSecret(kek, row.secret_enc);
         const sig = createHmac('sha256', secret).update(`${ts}.${body}`).digest('hex');
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);

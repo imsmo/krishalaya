@@ -53,6 +53,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
 export * from './resources/livestock';
 export * from './resources/returns';
 export * from './resources/fintech';
+export * from './resources/partner-api';
 export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4
 export type { EquipmentAsset, EquipmentRate, EquipmentRental } from './resources/equipment'; // PC-50 W10-6
 export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7

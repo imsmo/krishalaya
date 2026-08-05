@@ -52,10 +52,11 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 import { LookupsModule } from './modules/lookups/lookups.module';
 import { TenantIntegrationsModule } from './modules/tenant-integrations/tenant-integrations.module';
+import { PartnerApiModule } from './modules/partner-api/partner-api.module';
 import { TenantWebhooksModule } from './modules/tenant-webhooks/tenant-webhooks.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, InsuranceModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, AssistantModule, UnifiedSearchModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, PartnerApiModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, InsuranceModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, AssistantModule, UnifiedSearchModule],
 })
 export class AppModule implements NestModule {
   // security-headers (every response, incl. error paths) THEN request-id THEN tenant-context (Law 1) on every route.

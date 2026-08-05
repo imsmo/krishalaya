@@ -16,7 +16,9 @@ import { WEBHOOK_EVENT_TYPES } from './domain/webhook-events';
 @Module({
   controllers: [WebhooksController],
   providers: [TenantWebhookService, WebhookRepository],
-  exports: [TenantWebhookService],
+  // WebhookRepository is exported so modules/partner-api can enqueue into the SAME webhook_deliveries rail
+  // (PC-55 A10) instead of forking a second delivery/retry implementation.
+  exports: [TenantWebhookService, WebhookRepository],
 })
 export class TenantWebhooksModule implements OnModuleInit {
   constructor(

@@ -1574,3 +1574,41 @@ describe('loan-disbursement-batches', () => {
     expect(ex.reason.toLowerCase()).toContain('not configured');
   });
 });
+
+// --- partner API realm (PC-55 A10) ---
+describe('partner-api realm', () => {
+  it('never sends a user bearer token, carries the API key from getHeaders, and parses the cursor page', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'loan-1', tenantId: 't1', borrowerUserId: 'u1', principalMinor: '5000000', interestAprBps: 900, disbursedAt: '2026-07-01', maturityDate: null, status: 'active', outstandingMinor: '4200000', nextDueDate: '2026-09-01' }], meta: { nextCursor: 'loan-1', limit: 1 } } }));
+    const c = createClient({
+      ...base, fetchImpl: fn,
+      // A real user token EXISTS on this client; the partner realm must still not attach it (a partner call has no
+      // user session — sending one would let a leaked token authenticate a machine route).
+      getToken: async () => 'must-not-be-sent',
+      getHeaders: () => ({ 'X-Partner-Key': 'kv_pk_test_abcdef0123456789.zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' }),
+    });
+    const page = await c.partnerApi.loans({ status: 'active', limit: 1 });
+    const headers = calls[0].init.headers as Record<string, string>;
+    expect(calls[0].url).toBe('https://api.test/v1/partner-api/lending/loans?status=active&limit=1');
+    expect(headers.authorization).toBeUndefined();                       // no bearer on a partner call
+    // The SDK normalises extra header names to lower case (http.ts headers()); Express does the same on the API
+    // side, so the guard reads req.headers['x-partner-key'] — the two ends agree by construction.
+    expect(headers['x-partner-key']).toContain('kv_pk_test_');           // the credential the guard reads
+    expect(page.rows[0].outstandingMinor).toBe('4200000');
+    expect(typeof page.rows[0].outstandingMinor).toBe('string');         // money stays a minor-unit string (Law 2)
+    expect(page.nextCursor).toBe('loan-1');
+    expect(page.limit).toBe(1);
+  });
+
+  it('me() proves a credential without reading a farmer record; a short page ends the cursor loop', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { partnerId: 'p1', keyId: 'k1', scopes: ['partner:identity:read', 'insurance:book:read'], rateLimitPerHour: 1000, capabilities: 'read-only' } } }
+      : { body: { data: [{ id: 'pol-1', tenantId: 't1', holderUserId: 'u1', productId: 'pr1', policyNo: 'P/1', subjectType: 'animal', subjectId: 'a1', status: 'active', sumInsuredMinor: '3000000', premiumMinor: '90000', validFrom: '2026-04-01', validUntil: '2027-03-31' }], meta: { nextCursor: null, limit: 50 } } });
+    const c = createClient({ ...base, fetchImpl: fn, getHeaders: () => ({ 'X-Partner-Key': 'kv_pk_live_abcdef0123456789.yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy' }) });
+    const me = await c.partnerApi.me();
+    expect(calls[0].url).toBe('https://api.test/v1/partner-api/me');
+    expect(me.capabilities).toBe('read-only');                            // the realm advertises no write power
+    const page = await c.partnerApi.policies();
+    expect(calls[1].url).toBe('https://api.test/v1/partner-api/insurance/policies');
+    expect(page.nextCursor).toBeNull();                                    // stop condition, no fake total
+  });
+});
