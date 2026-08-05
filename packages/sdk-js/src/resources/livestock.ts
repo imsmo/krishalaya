@@ -68,6 +68,23 @@ export class LivestockResource {
     return (await this.http.request<{ vet: VetProfile | null; services: VetService[] }>('GET', `livestock/vets/${encodeURIComponent(id)}`, { signal })).data;
   }
 
+  // --- the vet's OWN practice (PC-50 W10-3; server-gated by vet.manage) ---
+  /** Vet self-registration — idempotent (a licence number must never double-register). */
+  async registerVet(input: { registrationNo: string; isAiTechnician?: boolean; serviceRadiusKm?: number; baseRegionId?: string }, idempotencyKey: string): Promise<VetProfile> {
+    return (await this.http.request<VetProfile>('POST', 'livestock/vets', { body: input, idempotencyKey })).data;
+  }
+  /** One price per vet+service type (idempotent upsert). priceMinor is a bigint minor STRING (Law 2). */
+  async upsertVetService(input: { serviceTypeCode: string; priceMinor: string; pricingUnit?: string; isEmergencyAvailable?: boolean }): Promise<VetService> {
+    return (await this.http.request<VetService>('POST', 'livestock/vets/services', { body: input })).data;
+  }
+  async myVetProfile(signal?: AbortSignal): Promise<{ vet: VetProfile | null; services: VetService[] }> {
+    return (await this.http.request<{ vet: VetProfile | null; services: VetService[] }>('GET', 'livestock/vets/me', { signal })).data;
+  }
+  /** The VET drives the service lifecycle: accept | en_route | in_consult | prescribed | no_show. */
+  async progressVetBooking(id: string, action: 'accept' | 'en_route' | 'in_consult' | 'prescribed' | 'no_show'): Promise<VetBooking> {
+    return (await this.http.request<VetBooking>('POST', `livestock/vet-bookings/${encodeURIComponent(id)}/progress`, { body: { action } })).data;
+  }
+
   // --- vet bookings (farmer side; fee server-snapshotted) ---
   async bookVet(input: BookVetInput, idempotencyKey: string): Promise<VetBooking> {
     return (await this.http.request<VetBooking>('POST', 'livestock/vet-bookings', { body: input, idempotencyKey })).data;

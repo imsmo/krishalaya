@@ -20,8 +20,15 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       side, no fake button), active rate charts (the exact counter rates, cached offline). Flag `dairy` ON;
       AppRole 'dairy' → RBAC `dairy_farmer`. D2C SUBSCRIPTION: NO backend → coming-note → PC-54
       `dairy-d2c-subscriptions`. Old placeholders stay un-routed.
-- [ ] **W10-3 · Vet professional** — features/vet screens (bookings calendar/detail/prescription/earnings);
-      vet-side APIs exist (vets.manage, bookings box=vet, progress). Flag `vet`.
+- [x] **W10-3 · Vet professional** ✅ 2026-08-05 — NEW `(vet)` tab app (Practice/Bookings/Earnings), the
+      PROVIDER side of Pashupalak's bookings: one-time idempotent self-registration (licence 2–60, AI-tech,
+      radius), price list from the SEEDED vet_service vocabulary (chips, never free-typed), rupees→minor by
+      string math (Law 2), idempotent one-price-per-service upsert; work queue box=vet with status filters;
+      case detail shows ONLY legal vet actions (vetActionsFor mirrors the state machine — `completed` is the
+      FARMER's confirm-and-pay, never offered); earnings = completed fees per row, NO client grand total
+      (wallet = ledger of record, footer says so). SDK: vet-side methods on LivestockResource (87/87).
+      Flag `vet` ON; AppRole 'vet' → RBAC `vet`. PRESCRIPTION CONTENT: no endpoints → coming-note → PC-54
+      `vet-prescriptions`.
 - [ ] **W10-4 · Store owner** — features/store-owner screens (inventory/orders/batches-expiry/licence);
       verify catalogue/orders seller-side contracts first. Flag `store_owner`.
 - [ ] **W10-5 · Delivery partner** — features/delivery-partner screens (tasks/route/pickup-OTP/POD/earnings);

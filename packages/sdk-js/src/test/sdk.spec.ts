@@ -1152,3 +1152,21 @@ describe('livestock resource', () => {
     expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-vb-2');
   });
 });
+
+// --- livestock vet-side (PC-50 W10-3) ---
+describe('livestock vet-side', () => {
+  it('registers the practice idempotently, lists box=vet, and progresses with a bare action', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 2
+      ? { body: { data: [], meta: { nextCursor: null } } }
+      : { body: { data: { id: 'v1', status: 'accepted' } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.livestock.registerVet({ registrationNo: 'GUJ-1234' }, 'idem-vp-1');
+    expect(calls[0].url).toBe('https://api.test/v1/livestock/vets');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-vp-1');
+    await c.livestock.vetBookings({ box: 'vet' });
+    expect(calls[1].url).toContain('box=vet');
+    await c.livestock.progressVetBooking('b1', 'accept');
+    expect(calls[2].url).toBe('https://api.test/v1/livestock/vet-bookings/b1/progress');
+    expect(JSON.parse(String(calls[2].init.body))).toEqual({ action: 'accept' });
+  });
+});

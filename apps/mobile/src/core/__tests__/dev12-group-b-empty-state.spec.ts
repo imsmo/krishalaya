@@ -28,8 +28,8 @@ describe('DEV-12 Group-B EmptyState pass — 6 operator-dirs gate', () => {
 
   for (const area of AREAS) {
     describe(`${area} flag`, () => {
-      it('did not exist before this batch and now defaults OFF (no mobile module built yet, not in master-plan §2.1/§2.2)', () => {
-        expect(flags.isEnabled(area)).toBe(false);
+      it('default matches its phase (PC-50 W10-3 flipped vet ON — the vet-professional app is built)', () => {
+        expect(flags.isEnabled(area)).toBe(area === 'vet');
       });
 
       it('the kill-switch channel can flip it ON (e.g. a founder GA-Wave rollout)', () => {
@@ -38,6 +38,7 @@ describe('DEV-12 Group-B EmptyState pass — 6 operator-dirs gate', () => {
       });
 
       it('every screen in this area gates on the SAME flag → OFF renders the "unavailable" state', () => {
+        flags.hydrate({ [area]: false });
         expect(offModuleState(flags.isEnabled(area))).toBe('off');
       });
 
