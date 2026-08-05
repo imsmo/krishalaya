@@ -65,6 +65,11 @@ export class KycDocumentService {
     return doc ? doc.toProps() : null;
   }
 
+  /** PC-54 W54-14: my documents nearing expiry — the store-licence reminder feed (self-read). */
+  listExpiring(tenantId: string, userId: string, days = 90) {
+    return this.kyc.listExpiring(tenantId, userId, days).then((docs) => docs.map((d) => d.toProps()));
+  }
+
   /** Catalogue of accepted KYC document types (seeded 'doc_type' lookup) so the client shows a name
    *  and submits a real docTypeId instead of guessing a UUID. Read-only; no PII. */
   listDocTypes(tenantId: string) {

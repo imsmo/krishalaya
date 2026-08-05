@@ -1401,3 +1401,13 @@ describe('aeps events', () => {
     expect(body).not.toHaveProperty('walletTxnId');     // a LOG, never a ledger primitive
   });
 });
+
+// --- licence reminders (PC-54 W54-14) ---
+describe('expiring documents', () => {
+  it('reads the self reminder feed', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [] } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.kyc.expiringDocuments(60);
+    expect(calls[0].url).toBe('https://api.test/v1/kyc/expiring?days=60');
+  });
+});

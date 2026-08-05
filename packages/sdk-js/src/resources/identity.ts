@@ -58,6 +58,11 @@ export class KycResource {
     return (await this.http.request<KycReviewItem>('GET', `kyc/review/${encodeURIComponent(id)}`, { signal })).data;
   }
 
+  /** PC-54 W54-14: my verified documents nearing expiry (default 90 days) — the licence reminder feed. */
+  async expiringDocuments(days = 90, signal?: AbortSignal): Promise<KycDocument[]> {
+    return (await this.http.request<KycDocument[]>('GET', 'kyc/expiring', { query: { days }, signal })).data;
+  }
+
   async businessStatus(signal?: AbortSignal): Promise<BusinessKycStatus> {
     return (await this.http.request<BusinessKycStatus>('GET', 'kyc/business', { signal })).data;
   }

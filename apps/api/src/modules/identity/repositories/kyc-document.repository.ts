@@ -76,4 +76,15 @@ export class KycDocumentRepository {
       [tenantId, code]);
     return r.rows[0]?.id ?? null;
   }
+
+  /** PC-54 W54-14 `store-licence-reminders`: the caller's OWN documents expiring within N days (or already
+   *  expired) — the honest reminder feed; push fan-out is a scheduler concern later. */
+  async listExpiring(tenantId: string, userId: string, days: number): Promise<KycDocument[]> {
+    const r = await this.replica.forTenant(tenantId).query<Row>(
+      `SELECT ${COLS} FROM kyc_documents
+        WHERE user_id=$1 AND tenant_id IS NOT DISTINCT FROM $2 AND deleted_at IS NULL AND status='verified'
+          AND valid_until IS NOT NULL AND valid_until <= CURRENT_DATE + ($3 || ' days')::interval
+        ORDER BY valid_until ASC LIMIT 50`, [userId, tenantId, String(Math.min(days, 365))]);
+    return r.rows.map(toDomain);
+  }
 }

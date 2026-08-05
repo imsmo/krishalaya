@@ -99,6 +99,12 @@ export class KycController {
     return { data };
   }
 
+  // PC-54 W54-14 `store-licence-reminders`: my expiring documents (self-read; static path before bare @Get()).
+  @Get('expiring')
+  expiring(@CurrentContext() ctx: RequestContext, @Query('days') days?: string) {
+    return this.kyc.listExpiring(ctx.tenantId, ctx.userId, Number(days) || 90).then((data) => ({ data }));
+  }
+
   // Static path declared BEFORE the bare @Get() so the catalogue route is unambiguous. Self-read of a
   // seeded vocabulary (no PII, no subject ids) — inherits AuthGuard + the 'kyc' flag from the controller.
   @Get('doc-types')
