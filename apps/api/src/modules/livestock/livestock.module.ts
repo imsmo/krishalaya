@@ -23,13 +23,15 @@ import { AnimalSpeciesRepository } from './repositories/animal-species.repositor
 import { AnimalBreedRepository } from './repositories/animal-breed.repository';
 import { VetProfileRepository } from './repositories/vet-profile.repository';
 import { VetServiceRepository } from './repositories/vet-service.repository';
+import { HealthRepository } from './repositories/health.repository';
+import { HealthService } from './services/health.service';
 import { VetBookingRepository } from './repositories/vet-booking.repository';
 
 @Module({
   controllers: [AnimalsController, VetsController, VetBookingsController],
   providers: [
     AnimalService, AnimalSpeciesService, VetService, VetBookingService,
-    AnimalRepository, AnimalSpeciesRepository, AnimalBreedRepository, VetProfileRepository, VetServiceRepository, VetBookingRepository,
+    AnimalRepository, AnimalSpeciesRepository, AnimalBreedRepository, VetProfileRepository, VetServiceRepository, VetBookingRepository, HealthRepository, HealthService,
   ],
   exports: [AnimalService, VetService, VetBookingService],
 })

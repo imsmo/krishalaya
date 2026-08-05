@@ -18,7 +18,7 @@ function toDomain(r: any): Animal {
     status: r.status as AnimalStatus, acquiredVia: r.acquired_via, createdAt: r.created_at,
   });
 }
-export interface AnimalListQuery { ownerUserId?: string; speciesId?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
+export interface AnimalListQuery { ownerUserId?: string; speciesId?: string; pashuAadhaar?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
 
 @Injectable()
 export class AnimalRepository {
@@ -57,6 +57,7 @@ export class AnimalRepository {
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.ownerUserId) where += ` AND owner_user_id=${p(q.ownerUserId)}`;
     if (q.speciesId) where += ` AND species_id=${p(q.speciesId)}`;
+    if (q.pashuAadhaar) where += ` AND pashu_aadhaar=${p(q.pashuAadhaar)}`; // PC-54 W54-4 tag lookup
     if (q.status) where += ` AND status=${p(q.status)}`;
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
     const lp = p(q.limit);

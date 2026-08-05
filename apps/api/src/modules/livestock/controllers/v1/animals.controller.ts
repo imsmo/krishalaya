@@ -16,6 +16,19 @@ import { QueryAnimalsSchema, QueryAnimalsDto } from '../../dto/query-animal.dto'
 import { QuerySpeciesSchema, QuerySpeciesDto } from '../../dto/query-animal-species.dto';
 import { QueryBreedsSchema, QueryBreedsDto } from '../../dto/query-animal-breed.dto';
 import { LivestockPermissions, canManageAnimals, isLivestockAdmin } from '../../policies/livestock.policies';
+import { HealthService } from '../../services/health.service';
+import { z } from 'zod';
+
+// PC-54 W54-4 health-event DTO (zod .strict(); eventTypeCode from the seeded 'animal_health_event' vocab).
+const RecordHealthEventSchema = z.object({
+  eventTypeCode: z.string().min(1).max(40),
+  vetBookingId: z.string().uuid().optional(),
+  batchNo: z.string().max(80).optional(),
+  diagnosis: z.string().max(2000).optional(),
+  outcome: z.string().max(2000).optional(),
+  nextDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).strict();
+type RecordHealthEventDto = z.infer<typeof RecordHealthEventSchema>;
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -23,7 +36,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('livestock')
 export class AnimalsController {
-  constructor(private readonly animals: AnimalService, private readonly taxonomy: AnimalSpeciesService) {}
+  constructor(private readonly animals: AnimalService, private readonly taxonomy: AnimalSpeciesService, private readonly health: HealthService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageAnimals(ctx), isAdmin: isLivestockAdmin(ctx) }; }
 
   @Get('species')
@@ -38,13 +51,23 @@ export class AnimalsController {
   }
   @Get('animals')
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryAnimalsSchema) q: QueryAnimalsDto) {
-    return this.animals.list(ctx.tenantId, this.actor(ctx), { box: q.box, speciesId: q.speciesId, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
+    return this.animals.list(ctx.tenantId, this.actor(ctx), { box: q.box, speciesId: q.speciesId, pashuAadhaar: q.pashuAadhaar, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
   @Get('animals/:id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.animals.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Patch('animals/:id') @RequirePermissions(LivestockPermissions.AnimalManage)
   update(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(UpdateAnimalSchema) dto: UpdateAnimalDto) { return this.animals.update(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
+  // --- PC-54 W54-4 `livestock-health-records` (0009 §18.12): the lifetime health file ---
+  @Post('animals/:id/health-events') @RequirePermissions(LivestockPermissions.AnimalManage)
+  recordHealthEvent(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(RecordHealthEventSchema) dto: RecordHealthEventDto) {
+    return this.health.recordEvent(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  }
+  @Get('animals/:id/health-events')
+  listHealthEvents(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.health.listEvents(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
   @Post('animals/:id/retire') @RequirePermissions(LivestockPermissions.AnimalManage)
   retire(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(RetireAnimalSchema) dto: RetireAnimalDto) { return this.animals.retire(ctx.tenantId, this.actor(ctx), id, dto.reason).then((data) => ({ data })); }
 }

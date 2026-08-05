@@ -10,6 +10,21 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { VetBookingService } from '../../services/vet-booking.service';
+import { HealthService } from '../../services/health.service';
+import { z } from 'zod';
+
+// PC-54 W54-4 prescription DTO: drug lines are REQUIRED text (never hollow); Schedule-H flagged per line.
+const WritePrescriptionSchema = z.object({
+  validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  items: z.array(z.object({
+    drugName: z.string().trim().min(1).max(200),
+    dosage: z.string().trim().min(1).max(200),
+    durationDays: z.number().int().min(1).max(365).optional(),
+    isScheduleH: z.boolean().optional(),
+    productId: z.string().uuid().optional(),
+  }).strict()).min(1).max(30),
+}).strict();
+type WritePrescriptionDto = z.infer<typeof WritePrescriptionSchema>;
 import { BookVetSchema, BookVetDto, VetProgressSchema, VetProgressDto } from '../../dto/create-vet-booking.dto';
 import { QueryVetBookingsSchema, QueryVetBookingsDto } from '../../dto/query-vet-booking.dto';
 import { LivestockPermissions, canBookVet, canManageVet, isLivestockAdmin } from '../../policies/livestock.policies';
@@ -20,7 +35,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('livestock')
 export class VetBookingsController {
-  constructor(private readonly svc: VetBookingService) {}
+  constructor(private readonly svc: VetBookingService, private readonly health: HealthService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canBook: canBookVet(ctx), canManageVet: canManageVet(ctx), isAdmin: isLivestockAdmin(ctx) }; }
 
   @Post() @RequirePermissions(LivestockPermissions.VetBook)
@@ -38,6 +53,16 @@ export class VetBookingsController {
 
   @Post(':id/progress') @RequirePermissions(LivestockPermissions.VetManage)
   progress(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(VetProgressSchema) dto: VetProgressDto) { return this.svc.progress(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
+
+  // --- PC-54 W54-4 `vet-prescriptions` (0009): the written pad. VET-OF-RECORD only (server-enforced). ---
+  @Post(':id/prescription') @RequirePermissions(LivestockPermissions.VetManage)
+  writePrescription(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(WritePrescriptionSchema) dto: WritePrescriptionDto) {
+    return this.health.writePrescription(ctx.tenantId, { userId: ctx.userId }, id, dto).then((data) => ({ data }));
+  }
+  @Get(':id/prescription')
+  getPrescription(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.health.getPrescription(ctx.tenantId, { userId: ctx.userId, canManage: canManageVet(ctx) }, id).then((data) => ({ data }));
+  }
 
   @Post(':id/cancel') @RequirePermissions(LivestockPermissions.VetBook)
   cancel(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Body('reason') reason?: string) { return this.svc.cancel(ctx.tenantId, this.actor(ctx), id, reason).then((data) => ({ data })); }

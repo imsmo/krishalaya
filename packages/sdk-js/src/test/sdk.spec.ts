@@ -1268,3 +1268,20 @@ describe('field visits + mgnrega job cards', () => {
     expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-jc-1');
   });
 });
+
+// --- livestock depth (PC-54 W54-4) ---
+describe('livestock depth', () => {
+  it('records a health event, writes the vet pad, and looks up by ear tag', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 3
+      ? { body: { data: [], meta: { nextCursor: null } } }
+      : { body: { data: { id: 'x1' } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.livestock.recordHealthEvent('a1', { eventTypeCode: 'vaccination', nextDueDate: '2026-11-05' });
+    expect(calls[0].url).toBe('https://api.test/v1/livestock/animals/a1/health-events');
+    await c.livestock.writePrescription('b1', { items: [{ drugName: 'Oxytetracycline', dosage: '10ml IM OD', durationDays: 3, isScheduleH: true }] });
+    expect(calls[1].url).toBe('https://api.test/v1/livestock/vet-bookings/b1/prescription');
+    expect(JSON.parse(String(calls[1].init.body)).items[0].isScheduleH).toBe(true);
+    await c.livestock.animals({ box: 'all', pashuAadhaar: '123456789012' });
+    expect(calls[2].url).toContain('pashuAadhaar=123456789012');
+  });
+});

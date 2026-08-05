@@ -87,9 +87,9 @@ export class AnimalService {
     if (animal.ownerUserId !== actor.userId && !actor.isAdmin) throw new AnimalNotFoundError(id); // 404, no cross-owner enumeration
     return this.serialize(animal);
   }
-  async list(tenantId: string, actor: AnimalActor, q: { box: 'mine' | 'all'; speciesId?: string; status?: string; cursor?: { c: string; id: string }; limit: number }) {
+  async list(tenantId: string, actor: AnimalActor, q: { box: 'mine' | 'all'; speciesId?: string; pashuAadhaar?: string; status?: string; cursor?: { c: string; id: string }; limit: number }) {
     if (q.box === 'all' && !actor.isAdmin) throw new LivestockForbiddenError('requires booking.manage');
-    const rows = await this.repo.listFor(tenantId, { ownerUserId: q.box === 'mine' ? actor.userId : undefined, speciesId: q.speciesId, status: q.status, cursor: q.cursor, limit: q.limit });
+    const rows = await this.repo.listFor(tenantId, { ownerUserId: q.box === 'mine' ? actor.userId : undefined, speciesId: q.speciesId, pashuAadhaar: q.pashuAadhaar, status: q.status, cursor: q.cursor, limit: q.limit });
     const items = rows.map((a) => this.serialize(a));
     const last = items[items.length - 1];
     const nextCursor = items.length === q.limit && last ? Buffer.from(`${(last as any).createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;

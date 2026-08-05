@@ -45,8 +45,8 @@ export class LivestockResource {
   async registerAnimal(input: CreateAnimalInput, idempotencyKey: string): Promise<Animal> {
     return (await this.http.request<Animal>('POST', 'livestock/animals', { body: input, idempotencyKey })).data;
   }
-  async animals(params: { box?: 'mine' | 'all'; speciesId?: string; status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<Animal>> {
-    const r = await this.http.request<Animal[]>('GET', 'livestock/animals', { query: { box: params.box ?? 'mine', speciesId: params.speciesId, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  async animals(params: { box?: 'mine' | 'all'; speciesId?: string; pashuAadhaar?: string; status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<Animal>> {
+    const r = await this.http.request<Animal[]>('GET', 'livestock/animals', { query: { box: params.box ?? 'mine', speciesId: params.speciesId, pashuAadhaar: params.pashuAadhaar, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   async animal(id: string, signal?: AbortSignal): Promise<Animal> {
@@ -102,5 +102,21 @@ export class LivestockResource {
   /** Completes the visit and settles the fee (the money leg) — idempotent by law. */
   async completeVetBooking(id: string, idempotencyKey: string): Promise<VetBooking> {
     return (await this.http.request<VetBooking>('POST', `livestock/vet-bookings/${encodeURIComponent(id)}/complete`, { idempotencyKey })).data;
+  }
+
+  // --- PC-54 W54-4 livestock depth ---
+  /** Lifetime health file (0009 §18.12). eventTypeCode from the 'animal_health_event' vocabulary. */
+  async recordHealthEvent(animalId: string, input: { eventTypeCode: string; vetBookingId?: string; batchNo?: string; diagnosis?: string; outcome?: string; nextDueDate?: string }): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', `livestock/animals/${encodeURIComponent(animalId)}/health-events`, { body: input })).data;
+  }
+  async healthEvents(animalId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', `livestock/animals/${encodeURIComponent(animalId)}/health-events`, { signal })).data;
+  }
+  /** The written pad — VET-OF-RECORD only (server-enforced); one per booking; Schedule-H flagged per line. */
+  async writePrescription(bookingId: string, input: { validUntil?: string; items: Array<{ drugName: string; dosage: string; durationDays?: number; isScheduleH?: boolean; productId?: string }> }): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', `livestock/vet-bookings/${encodeURIComponent(bookingId)}/prescription`, { body: input })).data;
+  }
+  async prescription(bookingId: string, signal?: AbortSignal): Promise<Record<string, unknown> | null> {
+    return (await this.http.request<Record<string, unknown> | null>('GET', `livestock/vet-bookings/${encodeURIComponent(bookingId)}/prescription`, { signal })).data;
   }
 }
