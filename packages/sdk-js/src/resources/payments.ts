@@ -60,11 +60,16 @@ export class PayoutsResource {
     const r = await this.http.request<PayoutSummary[]>('GET', 'payouts', { query: { cursor, limit }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
+  // --- PC-54 W54-6 payout-batch read-models (payout.approve-gated) ---
+  async payoutBatches(params: { status?: string; batchType?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: Array<Record<string, unknown>>; nextCursor: string | null }> {
+    const r = await this.http.request<Array<Record<string, unknown>>>('GET', 'payouts/batches', { query: { status: params.status, batchType: params.batchType, cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async payoutBatch(id: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('GET', `payouts/batches/${encodeURIComponent(id)}`, { signal })).data;
+  }
 }
 
-// Read-only projection of the wallet-service double-entry ledger (the figures the wallet UI shows). Always the
-// AUTHENTICATED caller's OWN wallet (server re-resolves the subject from the token — no userId param, zero IDOR).
-// Money is bigint minor-unit strings (Law 2); this resource NEVER moves money.
 export class WalletResource {
   constructor(private readonly http: HttpClient) {}
   /** The caller's reconciled balance (available + held), server-truth. */
@@ -132,4 +137,5 @@ export class AutopayResource {
   async executions(id: string, limit = 20, signal?: AbortSignal): Promise<MandateExecution[]> {
     return (await this.http.request<MandateExecution[]>('GET', `wallet/autopay/${encodeURIComponent(id)}/executions`, { query: { limit }, signal })).data;
   }
+
 }

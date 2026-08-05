@@ -37,6 +37,7 @@ import { AbandonedCartsJob } from './jobs/abandoned-carts.job';
 import { PaymentSucceededHandler } from './events/handlers/payment-succeeded.handler';
 import { OfferAcceptedHandler } from './events/handlers/offer-accepted.handler';
 import { QuoteAcceptedHandler } from './events/handlers/quote-accepted.handler';
+import { AuctionWonHandler } from './events/handlers/auction-won.handler';
 import { ShipmentDeliveredHandler } from './events/handlers/shipment-delivered.handler';
 import { DisputeOpenedHandler } from './events/handlers/dispute-opened.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
@@ -49,7 +50,7 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
     OrderTimelineReadModel, OrderTrackingReadModel, OrderBuyerSummaryReadModel, TenantOrderStatsReadModel, OrdersPublisher,
     CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository, DeliveryZoneRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
-    PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
+    PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, AuctionWonHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
   ],
   exports: [OrderService, SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob],
 })
@@ -58,10 +59,11 @@ export class OrdersModule implements OnModuleInit {
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     private readonly paymentSucceeded: PaymentSucceededHandler,
     private readonly offerAccepted: OfferAcceptedHandler,
+    private readonly auctionWon: AuctionWonHandler,
     private readonly quoteAccepted: QuoteAcceptedHandler,
     private readonly shipmentDelivered: ShipmentDeliveredHandler,
     private readonly disputeOpened: DisputeOpenedHandler,
     private readonly disputeResolved: DisputeResolvedHandler,
   ) {}
-  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.quoteAccepted); this.registry.register(this.shipmentDelivered); this.registry.register(this.disputeOpened); this.registry.register(this.disputeResolved); }
+  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.auctionWon); this.registry.register(this.quoteAccepted); this.registry.register(this.shipmentDelivered); this.registry.register(this.disputeOpened); this.registry.register(this.disputeResolved); }
 }

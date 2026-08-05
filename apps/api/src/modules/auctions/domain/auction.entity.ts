@@ -114,7 +114,7 @@ export class Auction {
   closeBidding(): void { this.to('ended', AuctionEventType.Ended); }
 
   /** Decide the outcome from the highest bid + bidder count. */
-  resolve(highest: { amountMinor: bigint; bidId: string } | null, bidderCount: number): void {
+  resolve(highest: { amountMinor: bigint; bidId: string; bidderUserId?: string } | null, bidderCount: number): void {
     const reserveMet = highest != null && (this.props.reservePriceMinor == null || highest.amountMinor >= this.props.reservePriceMinor);
     const enoughBidders = this.props.minBidders == null || bidderCount >= this.props.minBidders;
     if (!highest || !reserveMet || !enoughBidders) {
@@ -126,14 +126,14 @@ export class Auction {
     this.markSettled(highest);
   }
   /** Seller approves an awaiting_approval auction. */
-  approve(highest: { amountMinor: bigint; bidId: string }): void { this.markSettled(highest); }
+  approve(highest: { amountMinor: bigint; bidId: string; bidderUserId?: string }): void { this.markSettled(highest); }
   cancel(): void { this.to('cancelled', AuctionEventType.Cancelled); }
 
-  private markSettled(highest: { amountMinor: bigint; bidId: string }): void {
+  private markSettled(highest: { amountMinor: bigint; bidId: string; bidderUserId?: string }): void {
     assertTransition(this.props.status, 'settled');
     this.props.status = 'settled';
     this.props.winningBidId = highest.bidId;
-    this.events.push({ type: AuctionEventType.Won, payload: { auctionId: this.props.id, listingId: this.props.listingId, winningBidId: highest.bidId, amountMinor: highest.amountMinor.toString() } });
+    this.events.push({ type: AuctionEventType.Won, payload: { auctionId: this.props.id, listingId: this.props.listingId, winningBidId: highest.bidId, bidderUserId: highest.bidderUserId ?? null, amountMinor: highest.amountMinor.toString() } });
   }
 
   private to(status: AuctionStatus, evt: string, payload: Record<string, unknown> = {}): void {

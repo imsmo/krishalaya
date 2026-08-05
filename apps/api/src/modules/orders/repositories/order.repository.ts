@@ -67,6 +67,15 @@ export class OrderRepository {
   }
   /** Idempotency guard for the order-from-offer handler: has an order already been created for this
    *  accepted offer? (Uses idx_orders_offer; cross-partition by design — a rare, bounded lookup.) */
+  /** PC-54 W54-6 auction→order bridge: idempotency + link (auction_id existed in 0005 awaiting this). */
+  async existsForAuction(tx: TxContext, tenantId: string, auctionId: string): Promise<boolean> {
+    const r = await tx.query(`SELECT 1 FROM orders WHERE tenant_id=$1 AND auction_id=$2 LIMIT 1`, [tenantId, auctionId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+  async linkAuction(tx: TxContext, tenantId: string, orderId: string, auctionId: string): Promise<void> {
+    await tx.query(`UPDATE orders SET auction_id=$3 WHERE id=$1 AND tenant_id=$2`, [orderId, tenantId, auctionId]);
+  }
+
   async existsForOffer(tx: TxContext, tenantId: string, offerId: string): Promise<boolean> {
     const r = await tx.query(`SELECT 1 FROM orders WHERE tenant_id=$1 AND offer_id=$2 LIMIT 1`, [tenantId, offerId]);
     return (r.rowCount ?? 0) > 0;

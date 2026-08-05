@@ -90,7 +90,7 @@ export class AuctionService {
       const highest = await this.bids.highest(tx, tenantId, auctionId);
       const bidderCount = await this.bids.distinctBidderCount(tx, tenantId, auctionId);
       a.closeBidding();
-      a.resolve(highest ? { amountMinor: highest.amountMinor, bidId: highest.id } : null, bidderCount);
+      a.resolve(highest ? { amountMinor: highest.amountMinor, bidId: highest.id, bidderUserId: highest.bidderUserId } : null, bidderCount);
       if (!(await this.repo.update(tx, a))) throw new AuctionConcurrencyError(auctionId);
       await this.releaseAllEmd(tx, tenantId, auctionId, a);
       await this.repo.recordEvent(tx, tenantId, auctionId, 'ended', { status: a.status });
@@ -113,7 +113,7 @@ export class AuctionService {
       if (a.status !== 'awaiting_approval') throw new InvalidAuctionError('auction is not awaiting approval');
       const highest = await this.bids.highest(tx, tenantId, auctionId);
       if (!highest) throw new InvalidAuctionError('no winning bid');
-      a.approve({ amountMinor: highest.amountMinor, bidId: highest.id });
+      a.approve({ amountMinor: highest.amountMinor, bidId: highest.id, bidderUserId: highest.bidderUserId });
       if (!(await this.repo.update(tx, a))) throw new AuctionConcurrencyError(auctionId);
       await this.releaseAllEmd(tx, tenantId, auctionId, a);
       await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'auction.approved', entityType: 'auction', entityId: auctionId, newValue: { winningBidId: highest.id }, ip });

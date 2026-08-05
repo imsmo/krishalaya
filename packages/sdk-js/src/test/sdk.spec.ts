@@ -1301,3 +1301,13 @@ describe('d2c + mcc day sheet', () => {
     expect(typeof rows[0].amountMinor).toBe('string');
   });
 });
+
+// --- payout batches (PC-54 W54-6) ---
+describe('payout batches', () => {
+  it('reads the batch register + detail', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [], meta: { nextCursor: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.payouts.payoutBatches({ status: 'executed' });
+    expect(calls[0].url).toContain('payouts/batches?status=executed');
+  });
+});
