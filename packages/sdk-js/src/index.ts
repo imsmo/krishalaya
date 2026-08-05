@@ -51,3 +51,4 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
 // real gap, left unfixed and recorded in DEV-01_BASELINE.md as baseline-red for the mobile-completion phase (D2).]
 
 export * from './resources/livestock';
+export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4

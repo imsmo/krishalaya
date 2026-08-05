@@ -29,8 +29,14 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       (wallet = ledger of record, footer says so). SDK: vet-side methods on LivestockResource (87/87).
       Flag `vet` ON; AppRole 'vet' → RBAC `vet`. PRESCRIPTION CONTENT: no endpoints → coming-note → PC-54
       `vet-prescriptions`.
-- [ ] **W10-4 · Store owner** — features/store-owner screens (inventory/orders/batches-expiry/licence);
-      verify catalogue/orders seller-side contracts first. Flag `store_owner`.
+- [x] **W10-4 · Store owner** ✅ 2026-08-05 — NEW `(store)` tab app (Orders/Inventory/Batches/Licence),
+      RBAC `pharma_store`: orders role=seller REUSING features/orders (same data path + spec-pinned
+      nextActions/seller tabs as the farmer sell-side — one domain, one code path); inventory = my live
+      listings (features/listings) w/ low/out-of-stock pills; batch & expiry ledger (NEW SDK batch methods:
+      list/create idempotent/recall with audited reason; calendar expiry maths — expired/≤30d soon/ok; MRP
+      rupees→minor string math); licence = the REAL business-KYC record (masked PII, 'expired' is a server
+      status → honest renew note). Flag `store_owner` ON. Licence-expiry REMINDERS: no backend →
+      coming-note → PC-54 `store-licence-reminders`.
 - [ ] **W10-5 · Delivery partner** — features/delivery-partner screens (tasks/route/pickup-OTP/POD/earnings);
       verify logistics contracts first. Flag `delivery_partner`.
 - [ ] **W10-6 · Equipment operator** — NO feature screens exist (only ops-console web flow); scope from

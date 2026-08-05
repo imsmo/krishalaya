@@ -1170,3 +1170,18 @@ describe('livestock vet-side', () => {
     expect(JSON.parse(String(calls[2].init.body))).toEqual({ action: 'accept' });
   });
 });
+
+// --- product batches (PC-50 W10-4) ---
+describe('catalogue product batches', () => {
+  it('goods-inward is Idempotency-Keyed; MRP stays a minor string; recall carries the audited reason', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1 ? { body: { data: { id: 'b1' } } } : { body: { data: { ok: true } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.catalogue.createBatch({ productId: 'p1', batchNo: 'B-01', mrpMinor: '45000', qtyReceived: 20, unitCode: 'bag', expiryDate: '2027-01-31' }, 'idem-pb-1');
+    expect(calls[0].url).toBe('https://api.test/v1/product-batches');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-pb-1');
+    expect(JSON.parse(String(calls[0].init.body)).mrpMinor).toBe('45000');
+    await c.catalogue.recallBatch('b1', 'expired stock');
+    expect(calls[1].url).toBe('https://api.test/v1/product-batches/b1/recall');
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({ reason: 'expired stock' });
+  });
+});

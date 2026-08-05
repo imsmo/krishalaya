@@ -116,7 +116,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   livestock: true, // PC-50 W10-1: Phase-2 activation — the Pashupalak app is BUILT (app/(pashupalak))
   mcc_operator: false,
   vet: true, // PC-50 W10-3: Phase-2 activation — the vet-professional app is BUILT (app/(vet))
-  store_owner: false,
+  store_owner: true, // PC-50 W10-4: Phase-2 activation — the store-owner app is BUILT (app/(store))
   vyapari: false,
   delivery_partner: false,
   fpo_coordinator: false,
