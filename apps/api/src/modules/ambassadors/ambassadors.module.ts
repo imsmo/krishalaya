@@ -17,6 +17,9 @@ import { ListingsModule } from '../listings/listings.module';
 import { OnBehalfListingService } from './services/on-behalf-listing.service';
 import { docExtractionProvider } from './gateway/doc-extraction.provider';
 import { AmbassadorsController } from './controllers/v1/ambassadors.controller';
+import { AepsController } from './controllers/v1/aeps.controller';
+import { AepsService } from './services/aeps.service';
+import { AepsEventRepository } from './repositories/aeps-event.repository';
 import { ReferralsController } from './controllers/v1/referrals.controller';
 import { EarningsController } from './controllers/v1/earnings.controller';
 import { FieldOpsController } from './controllers/v1/field-ops.controller';
@@ -38,13 +41,12 @@ import { OrderCompletedHandler } from './events/handlers/order-completed.handler
 
 @Module({
   imports: [IdentityModule, ListingsModule],   // ConsentService + UserService (assisted onboarding) + ListingService (on-behalf listing) — Law 11 reuse
-  controllers: [AmbassadorsController, ReferralsController, EarningsController, FieldOpsController],
+  controllers: [AmbassadorsController, ReferralsController, EarningsController, FieldOpsController, AepsController],
   providers: [
     AmbassadorProfileService, CommissionPlanService, ReferralService, AmbassadorEarningService,
     AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, OnBehalfListingService, docExtractionProvider, LeaderboardReadModel,
     AmbassadorProfileRepository, CommissionPlanRepository, AmbassadorEarningRepository, ReferralRepository,
-    AmbassadorVisitRepository, AmbassadorTargetRepository,
-  ],
+    AmbassadorVisitRepository, AmbassadorTargetRepository, AepsService, AepsEventRepository],
   exports: [AmbassadorEarningService],
 })
 export class AmbassadorsModule implements OnModuleInit {

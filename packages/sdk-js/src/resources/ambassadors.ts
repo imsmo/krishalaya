@@ -124,4 +124,16 @@ export class AmbassadorsResource {
   async setTarget(input: SetTargetInput): Promise<AmbassadorTarget> {
     return (await this.http.request<AmbassadorTarget>('POST', 'ambassadors/targets', { body: input })).data;
   }
+
+  // --- PC-54 W54-13 `aeps-service-events` (0071) — a LOG, never a money primitive ---
+  /** Kiosk record (offline-first → idempotent). Masked last4s only; amount is the BANK-side figure. */
+  async recordAepsEvent(input: Record<string, unknown>, idempotencyKey: string): Promise<{ recorded: boolean }> {
+    return (await this.http.request<{ recorded: boolean }>('POST', 'ambassadors/aeps/events', { body: input, idempotencyKey })).data;
+  }
+  async myAepsEvents(limit = 50, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'ambassadors/aeps/events/mine', { query: { limit }, signal })).data;
+  }
+  async aepsOversight(params: { status?: string; exceptionCode?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'ambassadors/aeps/events', { query: { status: params.status, exceptionCode: params.exceptionCode, limit: params.limit ?? 100 }, signal })).data;
+  }
 }

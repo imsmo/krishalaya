@@ -1387,3 +1387,17 @@ describe('iot fleet + maintenance', () => {
     expect(calls[3].url).toContain('maintenance/alerts');
   });
 });
+
+// --- aeps service events (PC-54 W54-13) ---
+describe('aeps events', () => {
+  it('records the log idempotently and never carries money-moving fields', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { recorded: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.ambassadors.recordAepsEvent({ serviceKind: 'cash_withdrawal', amountMinor: '500000', status: 'success', attemptNo: 1, deviceCertified: true, aadhaarLast4: '1234' }, 'idem-aeps-1');
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors/aeps/events');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-aeps-1');
+    const body = JSON.parse(String(calls[0].init.body));
+    expect(body.aadhaarLast4).toHaveLength(4);          // masked-only doctrine
+    expect(body).not.toHaveProperty('walletTxnId');     // a LOG, never a ledger primitive
+  });
+});
