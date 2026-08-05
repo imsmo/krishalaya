@@ -37,8 +37,14 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       rupees→minor string math); licence = the REAL business-KYC record (masked PII, 'expired' is a server
       status → honest renew note). Flag `store_owner` ON. Licence-expiry REMINDERS: no backend →
       coming-note → PC-54 `store-licence-reminders`.
-- [ ] **W10-5 · Delivery partner** — features/delivery-partner screens (tasks/route/pickup-OTP/POD/earnings);
-      verify logistics contracts first. Flag `delivery_partner`.
+- [x] **W10-5 · Delivery partner** ✅ 2026-08-05 — NEW `(delivery)` tab app (Today/History), RBAC
+      `delivery_partner`: box=mine tasks (server-scoped to the assigned rider), task detail offers ONLY
+      legal rider milestones (riderActionsFor mirrors domain/shipment.state.ts; assign/cancel/returned = ops
+      moves; `failed` is re-attemptable); DELIVER = buyer OTP 4–8 (isValidPodOtp reused) + optional POD photo
+      via the shared media pipeline, Idempotency-Keyed; FAIL requires an audited reason. SDK: rider milestone
+      methods on ShipmentsResource (89/89). HONEST MONEY: chargeMinor = what the CUSTOMER paid; rider payout
+      terms have NO backend → no invented per-drop earnings → PC-54 `rider-payouts`. Route MAP: no routing
+      backend → the task list is the route sheet (no fake map). Flag `delivery_partner` ON.
 - [ ] **W10-6 · Equipment operator** — NO feature screens exist (only ops-console web flow); scope from
       equipment SDK (PC-33). Decide persona need before building.
 - [ ] **W10-7 · MCC operator** — features/mcc-operator screens; overlaps web-ops dairy POS; decide persona

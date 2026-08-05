@@ -29,7 +29,7 @@ describe('DEV-12 Group-B EmptyState pass — 6 operator-dirs gate', () => {
   for (const area of AREAS) {
     describe(`${area} flag`, () => {
       it('default matches its phase (PC-50 W10-3 flipped vet ON — the vet-professional app is built)', () => {
-        expect(flags.isEnabled(area)).toBe(area === 'vet' || area === 'store_owner'); // PC-50 W10-3/4
+        expect(flags.isEnabled(area)).toBe(['vet', 'store_owner', 'delivery_partner'].includes(area)); // PC-50 W10-3/4/5
       });
 
       it('the kill-switch channel can flip it ON (e.g. a founder GA-Wave rollout)', () => {

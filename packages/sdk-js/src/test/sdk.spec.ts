@@ -1185,3 +1185,19 @@ describe('catalogue product batches', () => {
     expect(JSON.parse(String(calls[1].init.body))).toEqual({ reason: 'expired stock' });
   });
 });
+
+// --- rider shipment lifecycle (PC-50 W10-5) ---
+describe('logistics rider lifecycle', () => {
+  it('walks the milestones, fails with an audited reason, and delivers with OTP idempotently', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 's1', orderId: 'o1', status: 'in_transit', requiresOtp: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.shipments.markPickedUp('s1');
+    await c.shipments.fail('s1', 'buyer not reachable');
+    await c.shipments.deliver('s1', { otp: '4321', podMediaId: 'm1' }, 'idem-dl-1');
+    expect(calls[0].url).toBe('https://api.test/v1/shipments/s1/picked-up');
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({ reason: 'buyer not reachable' });
+    expect(calls[2].url).toBe('https://api.test/v1/shipments/s1/deliver');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-dl-1');
+    expect(JSON.parse(String(calls[2].init.body))).toEqual({ otp: '4321', podMediaId: 'm1' });
+  });
+});

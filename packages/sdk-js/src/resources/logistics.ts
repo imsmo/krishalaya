@@ -28,4 +28,22 @@ export class ShipmentsResource {
   async postLocation(id: string, loc: { lat: number; lng: number; note?: string }): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('POST', `shipments/${encodeURIComponent(id)}/location`, { body: loc })).data;
   }
+
+  // --- rider lifecycle (PC-50 W10-5; the server verifies the caller IS the assigned rider) ---
+  async markPickedUp(id: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/picked-up`, { body: {} })).data;
+  }
+  async markInTransit(id: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/in-transit`, { body: {} })).data;
+  }
+  async markAtHub(id: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/at-hub`, { body: {} })).data;
+  }
+  async markOutForDelivery(id: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/out-for-delivery`, { body: {} })).data;
+  }
+  /** A failed attempt keeps the shipment re-attemptable; the reason is required and audited. */
+  async fail(id: string, reason: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/fail`, { body: { reason } })).data;
+  }
 }

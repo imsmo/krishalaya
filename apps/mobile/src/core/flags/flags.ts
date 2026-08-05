@@ -118,7 +118,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   vet: true, // PC-50 W10-3: Phase-2 activation — the vet-professional app is BUILT (app/(vet))
   store_owner: true, // PC-50 W10-4: Phase-2 activation — the store-owner app is BUILT (app/(store))
   vyapari: false,
-  delivery_partner: false,
+  delivery_partner: true, // PC-50 W10-5: Phase-2 activation — the rider app is BUILT (app/(delivery))
   fpo_coordinator: false,
 };
 
