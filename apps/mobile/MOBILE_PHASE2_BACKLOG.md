@@ -45,7 +45,16 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       methods on ShipmentsResource (89/89). HONEST MONEY: chargeMinor = what the CUSTOMER paid; rider payout
       terms have NO backend → no invented per-drop earnings → PC-54 `rider-payouts`. Route MAP: no routing
       backend → the task list is the route sheet (no fake map). Flag `delivery_partner` ON.
-- [ ] **W10-6 · Equipment operator** — NO feature screens exist (only ops-console web flow); scope from
-      equipment SDK (PC-33). Decide persona need before building.
+- [x] **W10-6 · Equipment owner** ✅ 2026-08-05 — persona RESOLVED by design canon (founder-confirmed: all 520+
+      screens designed; owner surfaces = screens 308–312 + 496): NEW `(equipment)` tab app (Requests/Fleet/
+      Earnings), RBAC `equipment_owner`. Requests box=owner w/ status chips; rental detail = ONLY legal owner
+      actions (ownerActionsFor mirrors the state machine — QUOTE advance rupees→minor on requested; START on
+      confirmed with the RENTER's OTP presence proof; COMPLETE actual usage; SETTLE idempotent money leg;
+      renter's CONFIRM never offered). Fleet: register machine (taxonomy category, zod-mirrored, idempotent),
+      status toggle active/maintenance/retired (496), rate lines per_hour/per_acre/… (string-math minor, real
+      bases). Earnings = settled totals, NO client grand total (wallet = ledger). SDK: box params +
+      registerAsset/setRate (90/90). NEW flag `equipment_owner` ON. Canon 312 alerts: no maintenance-schedule
+      backend → status pill is the honest alert → PC-54 `equipment-maintenance-alerts`. Renter-side canon
+      297–307 = the FARMER app's rental flow (separate scope, not this role).
 - [ ] **W10-7 · MCC operator** — features/mcc-operator screens; overlaps web-ops dairy POS; decide persona
       split (mobile POS vs kiosk) first. Flag `mcc_operator`.

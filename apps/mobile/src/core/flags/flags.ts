@@ -64,6 +64,7 @@ export type FlagKey =
   | 'mcc_operator'      // MCC (milk chiller centre) operator console: BMC status/member lookup/shift close/
                         // collection slip — no mobile route group exists; a web partner-console equivalent may
                         // exist per the Design Program (W-D41 MCC POS/BMC screens) — OFF
+  | 'equipment_owner'    // equipment-owner (CHC) role app — PC-50 W10-6, canon screens 308–312
   | 'vet'               // veterinarian professional console: bookings/calendar/prescriptions/earnings — distinct
                         // from the farmer-facing `livestock` flag's vet-BOOKING screen (that's the farmer booking
                         // a vet; this is the vet's OWN practice-management console) — no mobile route group
@@ -119,6 +120,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   store_owner: true, // PC-50 W10-4: Phase-2 activation — the store-owner app is BUILT (app/(store))
   vyapari: false,
   delivery_partner: true, // PC-50 W10-5: Phase-2 activation — the rider app is BUILT (app/(delivery))
+  equipment_owner: true, // PC-50 W10-6: Phase-2 activation — the equipment-owner app is BUILT (app/(equipment))
   fpo_coordinator: false,
 };
 

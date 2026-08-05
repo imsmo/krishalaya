@@ -6,7 +6,7 @@ import { HttpClient } from '../http';
 import { Page } from '../types';
 
 export interface EquipmentAsset { id: string; defaultName: string; categoryId?: string | null; status?: string; regionId?: string | null; createdAt?: string; }
-export interface EquipmentRate { id: string; assetId: string; unitCode: string; rateMinor: string; minQuantity?: string | null; isActive?: boolean; }
+export interface EquipmentRate { id: string; assetId: string; unitCode: string; rateMinor: string; rateBasis?: string; includesOperator?: boolean; includesFuel?: boolean; minQuantity?: string | null; isActive?: boolean; }
 export interface EquipmentRental {
   id: string; assetId: string; renterUserId?: string; quantity: string; unitCode: string; status: string;
   advanceMinor?: string | null; totalMinor?: string | null; scheduledAt?: string | null; startedAt?: string | null;
@@ -17,9 +17,17 @@ export class EquipmentResource {
   constructor(private readonly http: HttpClient) {}
 
   // --- assets ---
-  async assets(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<EquipmentAsset>> {
-    const r = await this.http.request<EquipmentAsset[]>('GET', 'equipment/assets', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  async assets(params: { box?: 'mine' | 'browse' | 'all'; categoryId?: string; status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<EquipmentAsset>> {
+    const r = await this.http.request<EquipmentAsset[]>('GET', 'equipment/assets', { query: { box: params.box, categoryId: params.categoryId, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** Owner: register an asset on the CHC fleet — idempotent (a machine must never double-register). */
+  async registerAsset(input: { categoryId: string; productId?: string; regNo?: string; yearOfMfg?: number; engineHours?: string; hpRating?: number; serviceRadiusKm?: number }, idempotencyKey: string): Promise<EquipmentAsset> {
+    return (await this.http.request<EquipmentAsset>('POST', 'equipment/assets', { body: input, idempotencyKey })).data;
+  }
+  /** Owner: set/replace a rate line (rateMinor is a bigint minor STRING — Law 2). */
+  async setRate(assetId: string, input: { rateBasis: string; rateMinor: string; includesOperator?: boolean; includesFuel?: boolean }): Promise<EquipmentRate> {
+    return (await this.http.request<EquipmentRate>('POST', `equipment/assets/${encodeURIComponent(assetId)}/rates`, { body: input })).data;
   }
   async setAssetStatus(id: string, status: string): Promise<EquipmentAsset> {
     return (await this.http.request<EquipmentAsset>('POST', `equipment/assets/${encodeURIComponent(id)}/status`, { body: { status } })).data;
@@ -29,8 +37,8 @@ export class EquipmentResource {
   }
 
   // --- rentals ---
-  async rentals(params: { status?: string; assetId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<EquipmentRental>> {
-    const r = await this.http.request<EquipmentRental[]>('GET', 'equipment/rentals', { query: { status: params.status, assetId: params.assetId, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  async rentals(params: { box?: 'renter' | 'owner' | 'all'; status?: string; assetId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<EquipmentRental>> {
+    const r = await this.http.request<EquipmentRental[]>('GET', 'equipment/rentals', { query: { box: params.box, status: params.status, assetId: params.assetId, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   async rental(id: string, signal?: AbortSignal): Promise<EquipmentRental> {

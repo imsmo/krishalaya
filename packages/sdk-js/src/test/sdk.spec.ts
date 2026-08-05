@@ -1201,3 +1201,20 @@ describe('logistics rider lifecycle', () => {
     expect(JSON.parse(String(calls[2].init.body))).toEqual({ otp: '4321', podMediaId: 'm1' });
   });
 });
+
+// --- equipment owner-side (PC-50 W10-6) ---
+describe('equipment owner-side', () => {
+  it('registers an asset idempotently, lists box=owner rentals, quotes a float-free advance', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 2
+      ? { body: { data: [], meta: { nextCursor: null } } }
+      : { body: { data: { id: 'a1', defaultName: 'Tractor', status: 'active' } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.equipment.registerAsset({ categoryId: 'cat1', regNo: 'GJ-01-AB-1234' }, 'idem-eq-1');
+    expect(calls[0].url).toBe('https://api.test/v1/equipment/assets');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-eq-1');
+    await c.equipment.rentals({ box: 'owner' });
+    expect(calls[1].url).toContain('box=owner');
+    await c.equipment.quoteRental('r1', '250000');
+    expect(JSON.parse(String(calls[2].init.body))).toEqual({ advanceMinor: '250000' });
+  });
+});

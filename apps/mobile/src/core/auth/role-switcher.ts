@@ -2,7 +2,7 @@
 // of selectable roles, the mapping from a server permission/role string to an app role, and which home route a
 // role lands on. Pure data + helpers (testable). The SERVER is the authority on what a user may actually do —
 // these roles only drive navigation + which dashboard to show.
-export type AppRole = 'farmer' | 'buyer' | 'worker' | 'trader' | 'owner' | 'ambassador' | 'pashupalak' | 'dairy' | 'vet' | 'store' | 'delivery'; // PC-50 W10-1..5 (Phase-2 activation)
+export type AppRole = 'farmer' | 'buyer' | 'worker' | 'trader' | 'owner' | 'ambassador' | 'pashupalak' | 'dairy' | 'vet' | 'store' | 'delivery' | 'equipment'; // PC-50 W10-1..6 (Phase-2 activation)
 
 export interface RoleDef { role: AppRole; i18nKey: string; descKey: string; homeRoute: string; }
 
@@ -18,6 +18,7 @@ export const ROLES: readonly RoleDef[] = Object.freeze([
   { role: 'vet', i18nKey: 'role.vet', descKey: 'role.vet.desc', homeRoute: '/(vet)/home' }, // PC-50 W10-3
   { role: 'store', i18nKey: 'role.store', descKey: 'role.store.desc', homeRoute: '/(store)/orders' }, // PC-50 W10-4
   { role: 'delivery', i18nKey: 'role.delivery', descKey: 'role.delivery.desc', homeRoute: '/(delivery)/tasks' }, // PC-50 W10-5
+  { role: 'equipment', i18nKey: 'role.equipment', descKey: 'role.equipment.desc', homeRoute: '/(equipment)/rentals' }, // PC-50 W10-6 (canon screens 308–312)
 ]);
 
 const BY_ROLE = new Map(ROLES.map((r) => [r.role, r]));
@@ -42,7 +43,7 @@ export function defaultActiveRole(serverRoles: string[]): AppRole {
 // 'vyapari', 'owner' is 'tenant_admin'. This is the ONE place that mapping lives, so onboarding.selectRole()
 // always submits a code the API actually recognises.
 const BACKEND_ROLE_CODE: Record<AppRole, string> = {
-  farmer: 'farmer', buyer: 'customer', worker: 'worker', trader: 'vyapari', owner: 'tenant_admin', ambassador: 'ambassador', pashupalak: 'pashupalak', dairy: 'dairy_farmer', vet: 'vet', store: 'pharma_store', delivery: 'delivery_partner',
+  farmer: 'farmer', buyer: 'customer', worker: 'worker', trader: 'vyapari', owner: 'tenant_admin', ambassador: 'ambassador', pashupalak: 'pashupalak', dairy: 'dairy_farmer', vet: 'vet', store: 'pharma_store', delivery: 'delivery_partner', equipment: 'equipment_owner',
 };
 export function backendRoleCode(role: AppRole): string { return BACKEND_ROLE_CODE[role]; }
 
