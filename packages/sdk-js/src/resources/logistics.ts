@@ -46,4 +46,9 @@ export class ShipmentsResource {
   async fail(id: string, reason: string): Promise<Shipment> {
     return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/fail`, { body: { reason } })).data;
   }
+
+  /** PC-54 W54-2 `cod-recon`: outstanding delivered COD per rider (Manage-gated). Minor strings (Law 2). */
+  async codOutstanding(signal?: AbortSignal): Promise<Array<{ riderUserId: string | null; shipments: number; codMinor: string; oldestDeliveredAt: string | null }>> {
+    return (await this.http.request<Array<{ riderUserId: string | null; shipments: number; codMinor: string; oldestDeliveredAt: string | null }>>('GET', 'shipments/cod/outstanding', { signal })).data;
+  }
 }

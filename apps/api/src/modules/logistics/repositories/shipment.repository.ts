@@ -10,6 +10,9 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { Shipment, ShipmentProps } from '../domain/shipment.entity';
 import { ShipmentStatus } from '../domain/shipment.state';
 
+// PC-54 W54-2 `cod-recon` read-model row: delivered COD not yet remitted, grouped per rider.
+export interface CodOutstandingRow { riderUserId: string | null; shipments: number; codMinor: string; oldestDeliveredAt: string | null; }
+
 const COLS = `id, tenant_id, order_id, partner_id, vehicle_id, rider_user_id, status, awb_no, pickup_address_id,
   drop_address_id, scheduled_pickup_at, scheduled_window_mins, picked_up_at, delivered_at, pickup_otp_hash,
   delivery_otp_hash, pod_media_id, charge_minor, cod_minor, requires_cold_chain, created_at`;
@@ -95,5 +98,16 @@ export class ShipmentRepository {
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM shipments WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
+  }
+
+  /** PC-54 W54-2 `cod-recon`: outstanding cash per rider — DELIVERED shipments with COD > 0. Until a
+   *  remittance ledger exists (gated: needs a migration batch), delivery marks cash AS COLLECTED and this
+   *  aggregate IS the recon worksheet — computed from the ledgered rows, never a fabricated total. */
+  async codOutstanding(tenantId: string): Promise<CodOutstandingRow[]> {
+    const r = await this.replica.forTenant(tenantId).query<{ rider_user_id: string | null; shipments: string; cod_minor: string; oldest: Date | null }>(
+      `SELECT rider_user_id, COUNT(*)::text AS shipments, COALESCE(SUM(cod_minor),0)::text AS cod_minor, MIN(delivered_at) AS oldest
+         FROM shipments WHERE tenant_id=$1 AND status='delivered' AND cod_minor > 0 AND deleted_at IS NULL
+        GROUP BY rider_user_id ORDER BY cod_minor::numeric DESC LIMIT 200`, [tenantId]);
+    return r.rows.map((row) => ({ riderUserId: row.rider_user_id, shipments: Number(row.shipments), codMinor: row.cod_minor, oldestDeliveredAt: row.oldest ? row.oldest.toISOString() : null }));
   }
 }

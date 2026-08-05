@@ -150,6 +150,12 @@ export class ShipmentService {
       }, { userId: actor.userId }));
   }
 
+  /** PC-54 W54-2 `cod-recon` read-model (logistics.manage — money oversight is an ops power). */
+  async codOutstanding(tenantId: string, actor: ShipmentActor) {
+    this.assertManager(actor);
+    return this.repo.codOutstanding(tenantId);
+  }
+
   private assertManager(actor: ShipmentActor): void { if (!actor.canManage) throw new ShipmentForbiddenError('requires logistics.manage'); }
   private assertManagerOrRider(actor: ShipmentActor, s: Shipment): void {
     if (actor.canManage) return;

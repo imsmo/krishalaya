@@ -1231,3 +1231,22 @@ describe('kyc review reads', () => {
     expect(calls[1].url).toBe('https://api.test/v1/kyc/review/k1');
   });
 });
+
+// --- returns + cod-recon (PC-54 W54-2, the commerce-trust pair) ---
+describe('returns + cod-recon', () => {
+  it('files a return idempotently, walks the lifecycle, and reads the COD worksheet', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 3
+      ? { body: { data: [{ riderUserId: 'r1', shipments: 3, codMinor: '450000', oldestDeliveredAt: '2026-08-01T00:00:00Z' }] } }
+      : { body: { data: { id: 'ret1', orderId: 'o1', status: 'requested' } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.returns.request({ orderId: 'o1', reasonCode: 'damaged' }, 'idem-ret-1');
+    expect(calls[0].url).toBe('https://api.test/v1/returns');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ret-1');
+    await c.returns.refund('ret1');
+    expect(calls[1].url).toBe('https://api.test/v1/returns/ret1/refund');
+    const rows = await c.shipments.codOutstanding();
+    expect(calls[2].url).toBe('https://api.test/v1/shipments/cod/outstanding');
+    expect(rows[0].codMinor).toBe('450000');
+    expect(typeof rows[0].codMinor).toBe('string');
+  });
+});

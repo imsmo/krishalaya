@@ -39,6 +39,13 @@ export class ShipmentsController {
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
+  // PC-54 W54-2 `cod-recon`: the outstanding-cash worksheet (Manage-gated; static path BEFORE ':id').
+  @Get('cod/outstanding')
+  @RequirePermissions(ShipmentPermissions.Manage)
+  codOutstanding(@CurrentContext() ctx: RequestContext) {
+    return this.shipments.codOutstanding(ctx.tenantId, this.actor(ctx)).then((data) => ({ data }));
+  }
+
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.shipments.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
