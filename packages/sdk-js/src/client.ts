@@ -36,6 +36,7 @@ import { MembershipsResource } from './resources/memberships';
 import { PromotionsResource } from './resources/promotions';
 import { RequirementsResource } from './resources/requirements';
 import { WarehousingResource } from './resources/warehousing';
+import { LivestockResource } from './resources/livestock';
 import { EquipmentResource } from './resources/equipment';
 import { MarketResource, WeatherResource } from './resources/market';
 import { AssistantResource } from './resources/assistant';
@@ -80,6 +81,7 @@ export class KrishalayaClient {
   readonly promotions: PromotionsResource;
   readonly requirements: RequirementsResource;
   readonly warehousing: WarehousingResource;
+  readonly livestock: LivestockResource;
   readonly equipment: EquipmentResource;
   readonly tenancy: TenancyResource;
   readonly dairy: DairyResource;
@@ -138,6 +140,7 @@ export class KrishalayaClient {
     this.promotions = new PromotionsResource(this.http);
     this.requirements = new RequirementsResource(this.http);
     this.warehousing = new WarehousingResource(this.http);
+    this.livestock = new LivestockResource(this.http);
     this.equipment = new EquipmentResource(this.http);
     this.tenancy = new TenancyResource(this.http);
     this.dairy = new DairyResource(this.http);

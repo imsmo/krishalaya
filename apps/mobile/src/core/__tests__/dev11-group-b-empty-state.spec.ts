@@ -22,8 +22,8 @@ describe('DEV-11 Group-B EmptyState pass — fintech/dairy/livestock gate', () =
 
   for (const area of ['fintech', 'dairy', 'livestock'] as const) {
     describe(`${area} flag`, () => {
-      it('did not exist before this batch and now defaults OFF (pilot-OFF, master-plan §2.2)', () => {
-        expect(flags.isEnabled(area)).toBe(false);
+      it('default matches its phase (PC-50 W10-1 flipped livestock ON — the Pashupalak app is built)', () => {
+        expect(flags.isEnabled(area)).toBe(area === 'livestock');
       });
 
       it('the kill-switch channel can flip it ON (e.g. a founder GA-Wave rollout)', () => {
@@ -32,6 +32,7 @@ describe('DEV-11 Group-B EmptyState pass — fintech/dairy/livestock gate', () =
       });
 
       it('4 screens in this area gate on the SAME flag → OFF renders the "unavailable" state', () => {
+        flags.hydrate({ [area]: false });
         expect(offModuleState(flags.isEnabled(area))).toBe('off');
       });
 

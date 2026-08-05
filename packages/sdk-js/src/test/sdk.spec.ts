@@ -1125,3 +1125,30 @@ describe('HttpClient reactive 401 refresh (onUnauthorized)', () => {
     expect(calls.length).toBe(1);
   });
 });
+
+// --- livestock (PC-50 W10-1 Pashupalak) ---
+describe('livestock resource', () => {
+  it('registers an animal with an Idempotency-Key and lists box=mine by default', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { id: 'a1', ownerUserId: 'u1', speciesId: 's1', status: 'active' } } }
+      : { body: { data: [], meta: { nextCursor: null } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.livestock.registerAnimal({ speciesId: 's1', name: 'Gauri' }, 'idem-an-1');
+    expect(calls[0].url).toBe('https://api.test/v1/livestock/animals');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-an-1');
+    await c.livestock.animals();
+    expect(calls[1].url).toContain('box=mine');
+  });
+  it('books a vet (fee NEVER client-supplied) and completes idempotently (the money leg)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'b1', farmerUserId: 'u1', vetId: 'v1', serviceId: 'sv1', urgency: 'routine', mode: 'visit', status: 'requested', feeMinor: '50000' } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    const b = await c.livestock.bookVet({ vetId: 'v1', serviceId: 'sv1', urgency: 'urgent' }, 'idem-vb-1');
+    expect(calls[0].url).toBe('https://api.test/v1/livestock/vet-bookings');
+    expect(JSON.parse(String(calls[0].init.body))).not.toHaveProperty('feeMinor');
+    expect(typeof b.feeMinor).toBe('string');
+    await c.livestock.completeVetBooking('b1', 'idem-vb-2');
+    expect(calls[1].url).toBe('https://api.test/v1/livestock/vet-bookings/b1/complete');
+    expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-vb-2');
+  });
+});

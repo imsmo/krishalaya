@@ -49,3 +49,5 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
 // barrel-export fix per DEV_PIPELINE_PLAYBOOK.md category (a); no behavior/schema change. `Skill` (imported by
 // apps/mobile/src/features/labour/skill-picker.ts) has NO definition anywhere in packages/sdk-js/src — that is a
 // real gap, left unfixed and recorded in DEV-01_BASELINE.md as baseline-red for the mobile-completion phase (D2).]
+
+export * from './resources/livestock';

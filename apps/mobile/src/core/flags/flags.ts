@@ -113,7 +113,7 @@ const DEFAULTS: Record<FlagKey, boolean> = {
   tenant_admin_lite: false,
   fintech: false,
   dairy: false,
-  livestock: false,
+  livestock: true, // PC-50 W10-1: Phase-2 activation — the Pashupalak app is BUILT (app/(pashupalak))
   mcc_operator: false,
   vet: false,
   store_owner: false,
