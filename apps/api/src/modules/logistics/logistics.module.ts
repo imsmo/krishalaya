@@ -9,6 +9,8 @@
 // Saturday Village Run routes, and cold-chain (reefer/vaccine) temperature telemetry. The cold-chain breach
 // alerter + Village-Run consolidation run as worker jobs (apps/worker) — see jobs/. No master-data sub-features
 // of this module remain deferred.
+import { CodRemittanceService } from './services/cod-remittance.service';
+import { CodRemittanceRepository } from './repositories/cod-remittance.repository';
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
@@ -39,8 +41,7 @@ import { OrderConfirmedHandler } from './events/handlers/order-confirmed.handler
     LogisticsPartnerService, VehicleService, PickupSlotService,
     LogisticsPartnerRepository, VehicleRepository, PickupSlotRepository,
     DeliveryZoneService, DeliveryRouteService, ColdChainService,
-    DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository,
-  ],
+    DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository],
   exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService],
 })
 export class LogisticsModule implements OnModuleInit {

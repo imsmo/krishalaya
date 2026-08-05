@@ -100,13 +100,17 @@ export class ShipmentRepository {
     return r.rows.map(toDomain);
   }
 
-  /** PC-54 W54-2 `cod-recon`: outstanding cash per rider — DELIVERED shipments with COD > 0. Until a
-   *  remittance ledger exists (gated: needs a migration batch), delivery marks cash AS COLLECTED and this
-   *  aggregate IS the recon worksheet — computed from the ledgered rows, never a fabricated total. */
+  /** PC-54 W54-2 `cod-recon`: outstanding cash per rider — DELIVERED shipments with COD > 0.
+   *  PC-55 A2 CORRECTION (the honesty fix that makes this number true over time): shipments whose cash has
+   *  already been remitted (linked in cod_remittance_shipments, 0082) are EXCLUDED — otherwise a rider who
+   *  banked their cash would keep showing the same outstanding total forever and the worksheet would
+   *  double-count every subsequent batch. Cancelling a remittance deletes its links, so that cash correctly
+   *  reappears here. Still computed from ledgered rows only — never a fabricated total. */
   async codOutstanding(tenantId: string): Promise<CodOutstandingRow[]> {
     const r = await this.replica.forTenant(tenantId).query<{ rider_user_id: string | null; shipments: string; cod_minor: string; oldest: Date | null }>(
       `SELECT rider_user_id, COUNT(*)::text AS shipments, COALESCE(SUM(cod_minor),0)::text AS cod_minor, MIN(delivered_at) AS oldest
-         FROM shipments WHERE tenant_id=$1 AND status='delivered' AND cod_minor > 0 AND deleted_at IS NULL
+         FROM shipments s WHERE s.tenant_id=$1 AND s.status='delivered' AND s.cod_minor > 0 AND s.deleted_at IS NULL
+           AND NOT EXISTS (SELECT 1 FROM cod_remittance_shipments l WHERE l.shipment_id = s.id)
         GROUP BY rider_user_id ORDER BY cod_minor::numeric DESC LIMIT 200`, [tenantId]);
     return r.rows.map((row) => ({ riderUserId: row.rider_user_id, shipments: Number(row.shipments), codMinor: row.cod_minor, oldestDeliveredAt: row.oldest ? row.oldest.toISOString() : null }));
   }

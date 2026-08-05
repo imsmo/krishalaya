@@ -59,4 +59,26 @@ export class ShipmentsResource {
   async coldChainBreaches(params: { hours?: number; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/breaches', { query: { hours: params.hours ?? 24, limit: params.limit ?? 100 }, signal })).data;
   }
+
+  // --- PC-55 A2 `cod-remittance-ledger` (Manage-gated). The TOTAL is server-computed: you may send
+  // expectedAmountMinor from the worksheet you were reading, and a stale figure is REFUSED (409) — never
+  // silently banked. Create is Idempotency-Keyed; reconcile enforces maker≠checker server-side. ---
+  async createCodRemittance(input: { riderUserId: string; shipmentIds?: string[]; expectedAmountMinor?: string; depositRef?: string; depositMethod?: 'bank_branch' | 'cash_office' | 'upi' | 'other'; currencyCode?: string }, idempotencyKey: string): Promise<{ id: string; status: string; amountMinor: string; shipmentCount: number }> {
+    return (await this.http.request<{ id: string; status: string; amountMinor: string; shipmentCount: number }>('POST', 'shipments/cod/remittances', { body: input, idempotencyKey })).data;
+  }
+  async codRemittances(params: { riderUserId?: string; status?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'shipments/cod/remittances', { query: { riderUserId: params.riderUserId, status: params.status, limit: params.limit ?? 100 }, signal })).data;
+  }
+  async codRemittance(id: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('GET', `shipments/cod/remittances/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  async depositCodRemittance(id: string, input: { depositRef: string; depositMethod: 'bank_branch' | 'cash_office' | 'upi' | 'other' }): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/deposit`, { body: input })).data;
+  }
+  async reconcileCodRemittance(id: string, note?: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/reconcile`, { body: note ? { note } : {} })).data;
+  }
+  async cancelCodRemittance(id: string, reason: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/cancel`, { body: { reason } })).data;
+  }
 }

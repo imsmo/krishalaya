@@ -1428,3 +1428,24 @@ describe('tenant-registration-public', () => {
     expect(JSON.parse(String(calls[0].init.body))).not.toHaveProperty('tenantId');  // an applicant HAS no tenant
   });
 });
+
+// --- cod remittance ledger (PC-55 A2) ---
+describe('cod-remittance-ledger', () => {
+  it('creates idempotently, never types the total, and walks deposit→reconcile', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'rm1', status: 'collected', amountMinor: '450000', shipmentCount: 3 } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    const r = await c.shipments.createCodRemittance({ riderUserId: 'u1', expectedAmountMinor: '450000' }, 'idem-cod-1');
+    expect(calls[0].url).toBe('https://api.test/v1/shipments/cod/remittances');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-cod-1');
+    const body = JSON.parse(String(calls[0].init.body));
+    expect(body).not.toHaveProperty('amountMinor');       // the total is SERVER-computed, never sent
+    expect(body.expectedAmountMinor).toBe('450000');      // only an optimistic check may be sent
+    expect(typeof r.amountMinor).toBe('string');          // money stays a minor STRING (Law 2)
+    await c.shipments.depositCodRemittance('rm1', { depositRef: 'UTR12345', depositMethod: 'bank_branch' });
+    expect(calls[1].url).toContain('remittances/rm1/deposit');
+    await c.shipments.reconcileCodRemittance('rm1', 'matched bank statement');
+    expect(calls[2].url).toContain('remittances/rm1/reconcile');
+    await c.shipments.cancelCodRemittance('rm1', 'mis-keyed batch');
+    expect(JSON.parse(String(calls[3].init.body)).reason).toBe('mis-keyed batch');
+  });
+});
