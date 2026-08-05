@@ -11,6 +11,7 @@
 // DEFERRED (documented in README): clock-OUT + hours/overtime calc + dual employer-confirm, worker advances/baki,
 // insurance, MGNREGA, migrant engagement, safety checklists, grievances, crews/sardars, worker availability,
 // minimum-wage admin CRUD + gazette-sync job, voice-consent capture, auto-accept, women-only matching.
+import { STATE_LEDGER_PROVIDER, stateLedgerProviderFromEnv } from './providers/state-ledger.provider';
 import { Module } from '@nestjs/common';
 import { WorkersController } from './controllers/v1/workers.controller';
 import { BookingsController } from './controllers/v1/bookings.controller';
@@ -36,7 +37,8 @@ import { AttendanceRepository } from './repositories/attendance.repository';
   controllers: [WorkersController, BookingsController, AssignmentsController, LookupsController, MgnregaController],
   providers: [
     WorkerProfileService, LabourBookingService, MinimumWageService, AttendanceService, LabourLookupsService,
-    WorkerProfileRepository, LabourBookingRepository, BookingAssignmentRepository, MinimumWageRepository, AttendanceRepository, MgnregaService, MgnregaRepository],
+    WorkerProfileRepository, LabourBookingRepository, BookingAssignmentRepository, MinimumWageRepository, AttendanceRepository, MgnregaService, MgnregaRepository,
+    { provide: STATE_LEDGER_PROVIDER, useFactory: () => stateLedgerProviderFromEnv(process.env) }],
   exports: [WorkerProfileService, LabourBookingService],
 })
 export class LabourModule {}

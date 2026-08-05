@@ -1467,3 +1467,20 @@ describe('dbt-bounce-ledger', () => {
     expect(desk.pfms.provider).toBe('noop');
   });
 });
+
+// --- mgnrega works & the 100-day ledger (PC-55 A4) ---
+describe('mgnrega-works', () => {
+  it('records a muster idempotently and reads a ledger that names the state as authoritative', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => n === 1
+      ? { body: { data: { id: 'm1', observedDays: 12.5 } } }
+      : { body: { data: { guaranteeDays: 100, observedByPlatform: { days: 12.5, musterCount: 13 }, daysRemaining: 88, authoritative: 'state_ledger', stateLedger: { provider: 'noop', available: false, note: 'NREGASoft state-ledger sync is pending', daysUsedFy: null } } } });
+    const c = createClient({ ...base, fetchImpl: fn });
+    await c.labour.recordMgnregaMuster({ workId: 'w1', jobCardId: 'jc1', attendedOn: '2026-08-05', dayFraction: 0.5 }, 'idem-mus-1');
+    expect(calls[0].url).toBe('https://api.test/v1/labour/mgnrega/musters');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-mus-1');
+    const led = await c.labour.mgnregaCardLedger('jc1');
+    expect(led.guaranteeDays).toBe(100);
+    expect(led.authoritative).toBe('state_ledger');     // the platform never claims to be the source of truth
+    expect(led.stateLedger.available).toBe(false);      // and never fakes a sync
+  });
+});

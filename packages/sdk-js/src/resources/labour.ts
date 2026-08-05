@@ -148,4 +148,24 @@ export class LabourResource {
   async jobCards(params: { regionId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<{ id: string; userId: string; jobCardNo: string; regionId: string | null; daysUsedFy: number; lastSyncedAt: string | null }>> {
     return (await this.http.request<Array<{ id: string; userId: string; jobCardNo: string; regionId: string | null; daysUsedFy: number; lastSyncedAt: string | null }>>('GET', 'labour/mgnrega/job-cards', { query: { regionId: params.regionId, limit: params.limit ?? 50 }, signal })).data;
   }
+
+  // --- PC-55 A4 `mgnrega-works` (booking.manage). Wages are BANK-SIDE informational; this platform records
+  // participation and never moves MGNREGA money. The 100-day ledger reports BOTH what the platform observed
+  // and what the state ledger says, naming the state as authoritative. ---
+  async createMgnregaWork(input: { workCode: string; workName: string; workCategory?: string; regionId?: string; siteNote?: string; sanctionedDays?: number; sanctionedAmountMinor?: string; startsOn?: string; endsOn?: string }, idempotencyKey: string): Promise<{ id: string; workCode: string; status: string }> {
+    return (await this.http.request<{ id: string; workCode: string; status: string }>('POST', 'labour/mgnrega/works', { body: input, idempotencyKey })).data;
+  }
+  async mgnregaWorks(params: { status?: string; regionId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'labour/mgnrega/works', { query: { status: params.status, regionId: params.regionId, limit: params.limit ?? 100 }, signal })).data;
+  }
+  async updateMgnregaWork(id: string, patch: { workName?: string; siteNote?: string; sanctionedDays?: number; status?: 'planned' | 'active' | 'completed' | 'suspended'; startsOn?: string; endsOn?: string }): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('PATCH', `labour/mgnrega/works/${encodeURIComponent(id)}`, { body: patch })).data;
+  }
+  /** Attendance. One card per work per day (DB-enforced); half-days supported via dayFraction. */
+  async recordMgnregaMuster(input: { workId: string; jobCardId: string; musterNo?: string; attendedOn: string; attended?: boolean; dayFraction?: number; wageMinor?: string }, idempotencyKey: string): Promise<{ id: string; observedDays: number }> {
+    return (await this.http.request<{ id: string; observedDays: number }>('POST', 'labour/mgnrega/musters', { body: input, idempotencyKey })).data;
+  }
+  async mgnregaCardLedger(jobCardId: string, signal?: AbortSignal): Promise<{ guaranteeDays: number; observedByPlatform: { days: number; musterCount: number }; daysRemaining: number; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; daysUsedFy: number | null } }> {
+    return (await this.http.request<{ guaranteeDays: number; observedByPlatform: { days: number; musterCount: number }; daysRemaining: number; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; daysUsedFy: number | null } }>('GET', `labour/mgnrega/job-cards/${encodeURIComponent(jobCardId)}/ledger`, { signal })).data;
+  }
 }

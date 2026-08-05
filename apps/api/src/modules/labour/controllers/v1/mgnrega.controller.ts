@@ -1,7 +1,7 @@
 // modules/labour/controllers/v1/mgnrega.controller.ts · PC-54 W54-3 `mgnrega-program` (job-card slice;
 // canon W346). Self-service register + self-read; the cross-region LIST is the gov/ops oversight read
 // (labour.manage). Work-demand/muster/wage sync remain gated (`mgnrega-works`) — the state ledger side.
-import { Controller, Get, Headers, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
@@ -16,12 +16,46 @@ const RegisterCardSchema = z.object({
   jobCardNo: z.string().trim().min(4).max(30),
   regionId: z.string().uuid().optional(),
 }).strict();
+const CreateWorkSchema = z.object({
+  workCode: z.string().trim().min(2).max(60),
+  workName: z.string().trim().min(2).max(250),
+  workCategory: z.string().trim().max(40).optional(),
+  regionId: z.string().uuid().optional(),
+  siteNote: z.string().trim().max(2000).optional(),
+  sanctionedDays: z.number().int().min(0).max(1000000).optional(),
+  sanctionedAmountMinor: z.string().regex(/^\d{1,15}$/).optional(),
+  startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).strict();
+const UpdateWorkSchema = z.object({
+  workName: z.string().trim().min(2).max(250).optional(),
+  siteNote: z.string().trim().max(2000).optional(),
+  sanctionedDays: z.number().int().min(0).max(1000000).optional(),
+  status: z.enum(['planned', 'active', 'completed', 'suspended']).optional(),
+  startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).strict().refine((o) => Object.keys(o).length > 0, { message: 'at least one field' });
+const RecordMusterSchema = z.object({
+  workId: z.string().uuid(),
+  jobCardId: z.string().uuid(),
+  musterNo: z.string().trim().max(60).optional(),
+  attendedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  attended: z.boolean().optional(),
+  dayFraction: z.number().min(0.25).max(1).optional(),          // half-days are real on MGNREGA sites
+  wageMinor: z.string().regex(/^\d{1,15}$/).optional(),         // BANK-SIDE informational only
+}).strict();
+const QueryWorksSchema = z.object({
+  status: z.enum(['planned', 'active', 'completed', 'suspended']).optional(),
+  regionId: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+}).strict();
 const QueryCardsSchema = z.object({ regionId: z.string().uuid().optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
 
 @Controller({ path: 'labour/mgnrega', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard)
 export class MgnregaController {
   constructor(private readonly svc: MgnregaService) {}
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: ctx.permissions.has('booking.manage') || ctx.permissions.has('*') }; }
 
   /** Worker self-registers their job card (idempotent by law — the number is nationally UNIQUE). */
   @Post('job-cards')
@@ -31,6 +65,31 @@ export class MgnregaController {
   }
   @Get('job-cards/mine')
   mine(@CurrentContext() ctx: RequestContext) { return this.svc.mine(ctx.tenantId, ctx.userId).then((data) => ({ data })); }
+  // ===== PC-55 A4 · works, musters and the 100-day ledger =====
+  @Post('works') @RequirePermissions(LabourPermissions.Manage)
+  createWork(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreateWorkSchema) dto: z.infer<typeof CreateWorkSchema>) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.createWork(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
+  }
+  @Get('works') @RequirePermissions(LabourPermissions.Manage)
+  works(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryWorksSchema) q: z.infer<typeof QueryWorksSchema>) {
+    return this.svc.works(ctx.tenantId, this.actor(ctx), q).then((data) => ({ data }));
+  }
+  @Patch('works/:id') @RequirePermissions(LabourPermissions.Manage)
+  updateWork(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(UpdateWorkSchema) dto: z.infer<typeof UpdateWorkSchema>) {
+    return this.svc.updateWork(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  }
+  @Post('musters') @RequirePermissions(LabourPermissions.Manage)
+  recordMuster(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(RecordMusterSchema) dto: z.infer<typeof RecordMusterSchema>) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.recordMuster(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
+  }
+  /** The worker's own 100-day ledger (self-read; no Manage needed for one's own card). */
+  @Get('job-cards/:id/ledger')
+  cardLedger(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.svc.cardLedger(ctx.tenantId, this.actor(ctx), id, { self: false }).then((data) => ({ data }));
+  }
+
   @Get('job-cards') @RequirePermissions(LabourPermissions.Manage)
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryCardsSchema) q: { regionId?: string; limit: number }) {
     return this.svc.list(ctx.tenantId, q).then((data) => ({ data }));

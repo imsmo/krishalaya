@@ -29,4 +29,4 @@ Timing law: waves activate at the FIRST GOVERNMENT/SCHEME PARTNERSHIP — pilot 
       read) — blind decisions are forbidden; field_verifications is table-only (0066). → PC-54
       `kyc-review-read-models` + `scheme-field-visits` (evidence via media ids). Dashboard keeps
       'verification' as coming.
-- [ ] **GW-5 · GATED** — MGNREGA (PC-54 `mgnrega-program` first; musters partially via labour api).
+- [ ] **GW-5 · READY (unblocked 2026-08-05 by PC-55 A4: mgnrega_works+musters+100-day ledger; PC-56 wave GOV-5 builds it)** — MGNREGA (PC-54 `mgnrega-program` first; musters partially via labour api).
