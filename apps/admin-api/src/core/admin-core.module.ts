@@ -17,7 +17,12 @@ import { IpAllowlistMiddleware } from './auth/ip-allowlist.middleware';
 @Global()
 @Module({
   providers: [
-    AdminConfig, AdminPool, AdminAuditWriter, IpAllowlistMiddleware,
+    // AdminConfig's ctor param is `Record<string, unknown>`, which TypeScript erases to
+    // `Object` in design:paramtypes — Nest would try to INJECT a provider for Object and
+    // fail ("can't resolve dependencies of the AdminConfig (?)"). A factory hands it
+    // process.env explicitly, mirroring apps/api/src/core/config/config.module.ts.
+    { provide: AdminConfig, useFactory: () => new AdminConfig(process.env) },
+    AdminPool, AdminAuditWriter, IpAllowlistMiddleware,
     AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard,
     { provide: APP_INTERCEPTOR, useClass: AdminAuditInterceptor },
   ],

@@ -14,6 +14,9 @@ import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { PlansController } from './controllers/v1/plans.controller';
+import { TenantApplicationsController } from './controllers/v1/tenant-applications.controller';
+import { TenantApplicationService } from './services/tenant-application.service';
+import { TenantApplicationRepository } from './repositories/tenant-application.repository';
 import { SubscriptionsController } from './controllers/v1/subscriptions.controller';
 import { TenantsController } from './controllers/v1/tenants.controller';
 import { TenantSettingsController } from './controllers/v1/tenant-settings.controller';
@@ -38,13 +41,12 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
 @Module({
-  controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController],
+  controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
     TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository,
-    SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler,
-  ],
+    SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, TenantApplicationService, TenantApplicationRepository],
   exports: [PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
 })
 export class TenancyModule implements OnModuleInit {

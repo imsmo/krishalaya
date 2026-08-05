@@ -1411,3 +1411,20 @@ describe('expiring documents', () => {
     expect(calls[0].url).toBe('https://api.test/v1/kyc/expiring?days=60');
   });
 });
+
+// --- public tenant application (PC-55 A1) ---
+describe('tenant-registration-public', () => {
+  it('posts anonymously with an Idempotency-Key and never sends a bearer', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { reference: 'A1B2C3D4', status: 'submitted' } } }));
+    // getToken IS the real token source (http.ts) — so a configured token here PROVES `anonymous: true` works.
+    const c = createClient({ ...base, fetchImpl: fn, getToken: async () => 'must-not-be-sent' });
+    const r = await c.tenancy.applyAsTenant({ orgName: 'Anand Farmer Producer Co', orgTypeOther: 'FPO', contactName: 'S Patel', contactPhone: '+919800000001' }, 'idem-ta-1');
+    expect(calls[0].url).toBe('https://api.test/v1/tenant-applications');
+    const h = calls[0].init.headers as Record<string, string>;
+    expect(h['idempotency-key']).toBe('idem-ta-1');
+    expect(h['authorization']).toBeUndefined();          // anonymous: the public door carries no token
+    expect(JSON.stringify(calls[0].init)).not.toContain('must-not-be-sent');
+    expect(r.reference).toBe('A1B2C3D4');
+    expect(JSON.parse(String(calls[0].init.body))).not.toHaveProperty('tenantId');  // an applicant HAS no tenant
+  });
+});

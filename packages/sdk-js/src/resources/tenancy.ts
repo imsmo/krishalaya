@@ -46,4 +46,17 @@ export class TenancyResource {
     const r = await this.http.request<TenantBroadcast[]>('GET', 'communication/broadcasts', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
+
+  // --- PC-55 A1 `tenant-registration-public` — the PUBLIC door (no token, no tenant) ---
+  /** Apply to become a tenant. ANONYMOUS + Idempotency-Keyed: a retried tap returns the same reference,
+   *  never a second case. The reply carries only a reference + status (no queue data ever leaks outward). */
+  async applyAsTenant(input: {
+    orgName: string; orgTypeId?: string; orgTypeOther?: string; countryCode?: string; regionIds?: string[];
+    contactName: string; contactPhone: string; contactEmail?: string; memberCountEstimate?: number;
+    pitchText?: string; docMediaIds?: string[];
+  }, idempotencyKey: string): Promise<{ reference: string; status: string }> {
+    return (await this.http.request<{ reference: string; status: string }>('POST', 'tenant-applications', {
+      body: input, idempotencyKey, anonymous: true,
+    })).data;
+  }
 }
