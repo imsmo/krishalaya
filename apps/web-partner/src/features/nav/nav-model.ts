@@ -39,6 +39,7 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/products', labelKey: 'nav.products', group: 'lending', live: true },
   { href: '/profile', labelKey: 'nav.lenderProfile', group: 'lending', live: true },
   { href: '/portfolio', labelKey: 'nav.portfolio', group: 'lending', live: true },
+  { href: '/servicing', labelKey: 'nav.servicing', group: 'lending', live: true },   // PC-55 B7 (W54-8)
   // logistics vertical (3PL partners)
   { href: '/shipments', labelKey: 'nav.shipments', group: 'fleet', live: true },
   { href: '/fleet', labelKey: 'nav.fleetSetup', group: 'fleet', live: true },
@@ -49,6 +50,7 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/insurance-claims', labelKey: 'nav.insuranceClaims', group: 'insurance', live: true },
   { href: '/insurance-policies', labelKey: 'nav.insurancePolicies', group: 'insurance', live: true },
   { href: '/insurance-products', labelKey: 'nav.insuranceProducts', group: 'insurance', live: true },
+  { href: '/insurance-book', labelKey: 'nav.insuranceBook', group: 'insurance', live: true },   // PC-55 B7 (W54-9)
 ];
 
 export function hasLending(perms: ReadonlySet<string>): boolean {

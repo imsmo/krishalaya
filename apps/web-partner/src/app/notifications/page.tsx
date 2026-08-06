@@ -3,7 +3,7 @@
 // this is a thin, honest mirror of the console inbox: list + per-item mark-read + link to preferences.
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { requirePartner } from '../../lib/partner-auth';
+import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';

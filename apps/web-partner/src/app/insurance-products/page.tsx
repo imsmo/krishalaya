@@ -1,9 +1,13 @@
-// apps/web-partner/src/app/insurance-products/page.tsx · READ-ONLY insurance catalogue (PC-2A): the IRDAI
-// partner registry + the products they underwrite (GET insurance/partners + insurance/products — the API has no
-// product-authoring endpoints; products are seeded/registered platform-side, so this page honestly shows the
-// catalogue and nothing pretends to edit it). requirePartner-gated; sections degrade independently (Law 12).
+// apps/web-partner/src/app/insurance-products/page.tsx · the insurance CATALOGUE (PC-2A): the IRDAI partner
+// registry + the products they underwrite (GET insurance/partners + insurance/products). requirePartner-gated;
+// sections degrade independently (Law 12).
+//
+// PC-55 B7: this header used to say the API had no product-authoring endpoints. W54-9 shipped them, so that claim
+// had become false — authoring (publish a product, issue a policy, read the book and the loss ratio) now lives on
+// /insurance-book, and this page links there instead of implying nothing can be edited anywhere.
 import type { Metadata } from 'next';
-import { requirePartner } from '../../lib/partner-auth';
+import Link from 'next/link';
+import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
@@ -38,6 +42,7 @@ export default async function InsuranceProductsPage() {
   return (
     <section>
       <h1>{t.t('insProducts.title')}</h1>
+      <p className="kv-field__hint"><Link href="/insurance-book" className="kv-link">{t.t('insProducts.authoringLink')}</Link></p>
       <p className="kv-field__hint">{t.t('insProducts.hint')}</p>
 
       <h2>{t.t('insProducts.products')}</h2>

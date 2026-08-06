@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { partnerClient } from '../../lib/api-client';
-import { requirePartner } from '../../lib/partner-auth';
+import { requirePartner } from '../../lib/session';
 import type { NotificationPreference } from '@krishalaya/sdk-js';
 
 export async function markReadAction(formData: FormData): Promise<void> {

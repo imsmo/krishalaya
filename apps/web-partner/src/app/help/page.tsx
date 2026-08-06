@@ -2,7 +2,7 @@
 // channels + what to include in an escalation. API credentials + partner webhooks are named here with their
 // true status (no partner-realm endpoints yet — PC-54) instead of dead settings screens.
 import type { Metadata } from 'next';
-import { requirePartner } from '../../lib/partner-auth';
+import { requirePartner } from '../../lib/session';
 import { getTranslator } from '../../lib/i18n';
 
 export function generateMetadata(): Metadata {

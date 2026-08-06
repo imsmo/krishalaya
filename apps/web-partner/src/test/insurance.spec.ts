@@ -5,6 +5,7 @@ import {
   POLICY_STATUSES, isPolicyStatus, policyStatusKey, policyStatusTone, isOnCover,
   InsuranceInputError, buildDecide, buildScheduleSurvey, buildRecordSurvey,
   buildClaimListQuery, claimsHref, buildPolicyListQuery, policiesHref,
+  canVerifyVetCert, buildVerifyVetCert,
 } from '../features/insurance/insurance';
 
 describe('claim state', () => {
@@ -131,10 +132,11 @@ describe('list queries + hrefs', () => {
 });
 
 describe('PC-2A vet-cert verification', () => {
-  const { canVerifyVetCert, buildVerifyVetCert } = require('../features/insurance/insurance');
   it('gate mirrors live pre-decision statuses', () => {
-    for (const st of ['intimated', 'docs_pending', 'survey_scheduled', 'surveyed']) expect(canVerifyVetCert(st)).toBe(true);
-    for (const st of ['approved', 'paid', 'rejected', 'closed']) expect(canVerifyVetCert(st)).toBe(false);
+    // PC-55 B7: this block used require() to dodge the union type. Typed properly now — `as const` keeps the
+    // literals in the ClaimStatus union, which is what the helper actually accepts.
+    for (const st of ['intimated', 'docs_pending', 'survey_scheduled', 'surveyed'] as const) expect(canVerifyVetCert(st)).toBe(true);
+    for (const st of ['approved', 'paid', 'rejected', 'closed'] as const) expect(canVerifyVetCert(st)).toBe(false);
   });
   it('certRef 1-120 chars, trimmed; empty/oversize throws', () => {
     expect(buildVerifyVetCert(' VET-2026-0042 ')).toEqual({ certRef: 'VET-2026-0042' });

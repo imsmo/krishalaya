@@ -2,7 +2,7 @@
 // payments.list is CALLER-scoped — these are the partner's transactions (disbursement legs, fees), read-only.
 // Money via formatMoneyMinor (bigint minor strings, Law 2). Batch views need a server read-model (PC-54).
 import type { Metadata } from 'next';
-import { requirePartner } from '../../lib/partner-auth';
+import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';

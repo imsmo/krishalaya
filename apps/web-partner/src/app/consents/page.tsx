@@ -2,7 +2,7 @@
 // consents are caller-scoped and APPEND-ONLY server-side (setConsent writes a new record — history is never
 // mutated). Toggle = one Idempotency-Keyed action per purpose.
 import type { Metadata } from 'next';
-import { requirePartner } from '../../lib/partner-auth';
+import { requirePartner } from '../../lib/session';
 import { partnerClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';

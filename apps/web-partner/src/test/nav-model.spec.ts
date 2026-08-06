@@ -12,7 +12,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasLending(perms)).toBe(true);
     expect(hasFleet(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'lending']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help', '/loan-queue', '/products', '/profile', '/portfolio']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help', '/loan-queue', '/products', '/profile', '/portfolio', '/servicing']);
     expect(soonNavForPartner(perms)).toEqual([]); // lending vertical fully built
   });
 
@@ -31,7 +31,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasLending(perms)).toBe(false);
     expect(hasFleet(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'insurance']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help', '/insurance-claims', '/insurance-policies', '/insurance-products']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/help', '/insurance-claims', '/insurance-policies', '/insurance-products', '/insurance-book']);
     expect(soonNavForPartner(perms)).toEqual([]); // insurer console fully built this batch
   });
 

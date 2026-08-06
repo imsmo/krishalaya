@@ -3,7 +3,7 @@
 // contract; hidden `pref` inputs enumerate every cell so unticked = disabled, never dropped).
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { requirePartner } from '../../../lib/partner-auth';
+import { requirePartner } from '../../../lib/session';
 import { partnerClient } from '../../../lib/api-client';
 import { getTranslator } from '../../../lib/i18n';
 import { savePreferencesAction, saveQuietHoursAction } from '../actions';
