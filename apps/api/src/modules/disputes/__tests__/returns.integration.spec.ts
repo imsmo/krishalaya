@@ -74,6 +74,12 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
     const r = await returns.request(tenantA, buyer, `idem-${randomUUID()}`, { orderId, reasonCode: 'damaged' } as any);
     returnId = r.id;
     expect(r.status).toBe('requested');
+    // PC-55 B8: the read model carries the reason CODE, not just the internal lookup id — every console needs a
+    // code to translate the reason, and an id on the wire would force each of them to fetch the lookup table.
+    expect(r.reasonCode).toBe('damaged');
+    expect((await returns.getById(tenantA, buyerActor(), returnId)).reasonCode).toBe('damaged');
+    const mine = await returns.list(tenantA, buyerActor(), { box: 'mine', limit: 20 });
+    expect(mine.items.find((x) => x.id === returnId)?.reasonCode).toBe('damaged');
     await expect(returns.request(tenantA, stranger, `idem-${randomUUID()}`, { orderId, reasonCode: 'damaged' } as any)).rejects.toBeInstanceOf(NotEligibleToReturnError);
     await expect(returns.request(tenantA, seller, `idem-${randomUUID()}`, { orderId } as any)).rejects.toBeInstanceOf(NotEligibleToReturnError);   // seller isn't the buyer
     await expect(returns.request(tenantA, buyer, `idem-${randomUUID()}`, { orderId } as any)).rejects.toBeInstanceOf(DuplicateReturnError);

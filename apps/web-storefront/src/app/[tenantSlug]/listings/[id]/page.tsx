@@ -111,7 +111,6 @@ export default async function ListingDetail(
 
       <ListingGallery
         items={gallery}
-        title={l.title}
         heading={t.t('listing.galleryTitle')}
         alt={(index, total) => t.t('listing.photoAlt', { title: l.title, index: String(index), total: String(total) })}
       />

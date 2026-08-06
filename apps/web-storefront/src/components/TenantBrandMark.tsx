@@ -13,7 +13,8 @@ export function TenantBrandMark(
   if (mark.kind === 'logo') {
     return (
       <h1 className="kv-storefront__title kv-storefront__title--logo">
-        {/* eslint-disable-next-line @next/next/no-img-element — arbitrary tenant-CDN origin, not statically optimizable */}
+        {/* Plain <img>: arbitrary tenant-CDN origin, not statically optimizable. (Next's @next/next/* rules are not
+            part of this repo's flat ESLint config, so a disable directive naming one is itself a lint error.) */}
         <img className="kv-storefront__logo" src={mark.src} alt={mark.alt} loading="eager" decoding="async" />
       </h1>
     );

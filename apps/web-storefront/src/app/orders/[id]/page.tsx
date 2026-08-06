@@ -12,7 +12,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import type { OrderDetail, Shipment, InvoiceDownload } from '@krishalaya/sdk-js';
+import type { OrderDetail, Shipment, InvoiceDownload, ReturnCase } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';
 import { serverClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
@@ -20,16 +20,17 @@ import { getTranslator, getLang } from '../../../lib/i18n';
 import { OrderTimeline } from '../../../components/OrderTimeline';
 import { orderTimeline, ORDER_STEPS } from '../../../features/orders/timeline';
 import { invoiceFileName } from '../../../features/orders/invoice';
-import { canCancelOrder, DISPUTE_REASONS } from '../../../features/orders/buyer-actions';
-import { cancelOrderAction, raiseDisputeAction } from './actions';
+import { canCancelOrder, canRequestReturn, returnAlreadyOpen, DISPUTE_REASONS } from '../../../features/orders/buyer-actions';
+import { cancelOrderAction, raiseDisputeAction, requestReturnAction } from './actions';
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {   // the title is a static translation; the id is never in it (noindex page)
   const t = getTranslator();
   return { title: t.t('order.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const BUYER_OK = new Set(['cancelled', 'dispute']);
-const BUYER_ERR = new Set(['cancel', 'cancel_illegal', 'dispute', 'dispute_reason', 'dispute_description', 'dispute_dup']);
+const BUYER_OK = new Set(['cancelled', 'dispute', 'return']);
+const BUYER_ERR = new Set(['cancel', 'cancel_illegal', 'dispute', 'dispute_reason', 'dispute_description', 'dispute_dup',
+  'return', 'return_reason', 'return_dup', 'return_ineligible']);
 
 export default async function OrderDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { status?: string; ok?: string; error?: string } }) {
   await requireSession(`/orders/${encodeURIComponent(params.id)}`);
@@ -48,6 +49,17 @@ export default async function OrderDetailPage({ params, searchParams }: { params
   // Shipment tracking is optional/flagged on the API — never let its absence break the order page.
   let shipments: Shipment[] = [];
   try { shipments = (await serverClient().shipments.list({ orderId: order.id })).items; } catch { shipments = []; }
+
+  // PC-55 B8: does this order already have a return case? Read the buyer's own box and match on order id — the
+  // list is small and buyer-scoped server-side. Best-effort: the returns rail being unavailable must not break the
+  // order page (Law 12), but note the consequence — with no read we show the FORM, and a duplicate request then
+  // fails as a 409 the action translates into "you already asked". That is the safe direction: the buyer may see one
+  // redundant refusal, never a silently-lost request.
+  let existingReturn: ReturnCase | null = null;
+  try {
+    const mine = await serverClient().returns.list({ box: 'mine', limit: 50 });
+    existingReturn = mine.items.find((r) => r.orderId === order!.id) ?? null;
+  } catch { existingReturn = null; }
 
   // Invoice PDF (P1-4): best-effort presigned download — omitted when the invoice/PDF isn't available yet.
   let invoice: InvoiceDownload | null = null;
@@ -86,7 +98,8 @@ export default async function OrderDetailPage({ params, searchParams }: { params
         </div>
         {invoice && (
           <p className="kv-order__invoice">
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages — external presigned S3 URL, not an app route */}
+            {/* Plain <a>: an external presigned S3 URL, not an app route. (Next's @next/next/* rules are not part of
+                this repo's flat ESLint config — naming one in a disable directive is itself an error.) */}
             <a href={invoice.url} className="kv-link" download={invoiceFileName(invoice.invoiceNo)} target="_blank" rel="noopener noreferrer">
               {t.t('order.downloadInvoice', { no: invoice.invoiceNo })}
             </a>
@@ -124,6 +137,37 @@ export default async function OrderDetailPage({ params, searchParams }: { params
         )}
         <Link href="/orders" className="kv-btn--link">{t.t('order.backToList')}</Link>
       </div>
+
+      {/* PC-55 B8: return the goods → returns.request. Shown only on a delivered/completed order, and replaced by
+          the case's own status once one exists — a buyer who already asked needs the state, not a second form. */}
+      {canRequestReturn(order.status) && (
+        existingReturn ? (
+          <section className="kv-form__card" aria-labelledby="ret-h">
+            <h2 id="ret-h">{t.t('order.returnTitle')}</h2>
+            <p><strong>{t.t(`returns.status.${existingReturn.status}`)}</strong></p>
+            {existingReturn.reasonCode && <p className="kv-detail__muted">{t.t(`order.disputeReason.${existingReturn.reasonCode}`)}</p>}
+            {returnAlreadyOpen(existingReturn.status) && <p className="kv-detail__muted">{t.t('order.returnOpenHint')}</p>}
+            {existingReturn.status === 'approved' && <p className="kv-detail__muted">{t.t('order.returnShipHint')}</p>}
+            {/* The API serves the refund's wallet TRANSACTION, not an amount — so we say the refund was issued and
+                point at the wallet, rather than printing a number this page did not receive (Law 2). */}
+            {existingReturn.status === 'refunded' && <p>{t.t('order.returnRefunded')}</p>}
+          </section>
+        ) : (
+          <details className="kv-form__card">
+            <summary>{t.t('order.returnTitle')}</summary>
+            <form action={requestReturnAction} className="kv-form">
+              <input type="hidden" name="id" value={order.id} />
+              <label htmlFor="r-reason" className="kv-form__label">{t.t('order.returnReason')}</label>
+              <select id="r-reason" name="reasonCode" className="kv-field__input" defaultValue="" required>
+                <option value="" disabled>{t.t('order.disputeReasonChoose')}</option>
+                {DISPUTE_REASONS.map((r) => <option key={r} value={r}>{t.t(`order.disputeReason.${r}`)}</option>)}
+              </select>
+              <p className="kv-detail__muted">{t.t('order.returnHint')}</p>
+              <button type="submit" className="kv-btn">{t.t('order.returnBtn')}</button>
+            </form>
+          </details>
+        )
+      )}
 
       {/* PC-24b: report a problem → disputes.raise (server enforces eligibility + one-per-order). */}
       <details className="kv-form__card">

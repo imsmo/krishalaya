@@ -1,4 +1,4 @@
-import { canCancelOrder, buildDisputeRaise, DISPUTE_REASONS } from '../features/orders/buyer-actions';
+import { canCancelOrder, buildDisputeRaise, DISPUTE_REASONS, canRequestReturn, buildReturnRequest, returnAlreadyOpen } from '../features/orders/buyer-actions';
 import { buildProfilePatch, buildAddress } from '../features/account/form';
 
 describe('features/orders/buyer-actions (PC-24b)', () => {
@@ -28,5 +28,39 @@ describe('features/account/form (PC-24b)', () => {
     expect(buildAddress({ line1: 'Farm 12', contactPhone: '12' })).toEqual({ ok: false, error: 'phone' });
     const r = buildAddress({ line1: 'Farm 12', pincode: '388001', contactPhone: '+91 90990 12340', isDefault: true });
     expect(r).toEqual({ ok: true, value: { line1: 'Farm 12', pincode: '388001', contactPhone: '+919099012340', isDefault: true } });
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe('features/orders/buyer-actions — return request (PC-55 B8)', () => {
+  const ORDER = '018f0000-0000-7000-8000-000000000001';
+
+  it('offers a return only where a delivery has demonstrably happened', () => {
+    // eligibility server-side comes from the orders.order_delivered handler's row (0025), not from the word itself
+    for (const s of ['delivered', 'completed']) expect(canRequestReturn(s)).toBe(true);
+    for (const s of ['created', 'confirmed', 'packed', 'ready', 'shipped', 'cancelled', '', undefined, null]) {
+      expect(canRequestReturn(s as string)).toBe(false);
+    }
+  });
+
+  it('reuses the dispute taxonomy verbatim — the API validates against the same enum', () => {
+    for (const r of DISPUTE_REASONS) {
+      expect(buildReturnRequest({ orderId: ORDER, reasonCode: r })).toEqual({ ok: true, value: { orderId: ORDER, reasonCode: r } });
+    }
+    // codes that read plausibly but are not in the lookup would be a 422 (unknown return reason)
+    for (const bad of ['not_as_described', 'quality_issue', 'changed_my_mind', '', undefined]) {
+      expect(buildReturnRequest({ orderId: ORDER, reasonCode: bad })).toEqual({ ok: false, error: 'reason' });
+    }
+  });
+
+  it('sends nothing but the order and the reason (buyer/seller/refund are server-resolved)', () => {
+    const built = buildReturnRequest({ orderId: ORDER, reasonCode: 'damaged' });
+    expect(built.ok).toBe(true);
+    if (built.ok) expect(Object.keys(built.value).sort()).toEqual(['orderId', 'reasonCode']);
+  });
+
+  it('names an already-open case so the buyer is not shown a form the API would 409', () => {
+    for (const s of ['requested', 'approved', 'in_transit', 'received']) expect(returnAlreadyOpen(s)).toBe(true);
+    for (const s of ['refunded', 'rejected', '', undefined, null]) expect(returnAlreadyOpen(s as string)).toBe(false);
   });
 });

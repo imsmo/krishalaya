@@ -104,7 +104,7 @@ export function previewSettlement(input: {
     shares = milli.map((p) => ({ id: p.id, shareMinor: 0n }));
   } else {
     shares = milli.map((p) => ({ id: p.id, shareMinor: (net * p.q) / totalQ }));
-    let allocated = shares.reduce((a, s) => a + s.shareMinor, 0n);
+    const allocated = shares.reduce((a, s) => a + s.shareMinor, 0n);
     let leftover = net - allocated;
     // distribute leftover paise, largest-quantity first (stable: index order breaks ties)
     const order = milli.map((p, i) => ({ i, q: p.q })).sort((a, b) => (b.q > a.q ? 1 : b.q < a.q ? -1 : a.i - b.i));

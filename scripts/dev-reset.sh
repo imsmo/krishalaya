@@ -6,13 +6,18 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "==> [1/2] Rebuilding shared packages the mobile app imports (sdk-js, i18n, ui-native, tokens, contracts)…"
+echo "==> [1/2] Rebuilding EVERY shared package (mobile AND the six web consoles import these)…"
+# Order matters: tokens first (ui/ui-native consume it), then the rest.
+# NOTE: packages/ui is what the six Next.js consoles import — omitting it left their dist/
+# holding stale imports (this caused "Module not found: @krishi-verse/tokens" after the rebrand).
 pnpm --filter @krishalaya/tokens    build
 pnpm --filter @krishalaya/contracts build
 pnpm --filter @krishalaya/i18n      build
 pnpm --filter @krishalaya/sdk-js    build
+pnpm --filter @krishalaya/ui        build
 pnpm --filter @krishalaya/ui-native build
-echo "    shared packages rebuilt."
+pnpm --filter @krishalaya/testing   build
+echo "    shared packages rebuilt (7)."
 
 echo "==> [2/2] Rebuilding the API…"
 pnpm --filter @krishalaya/api build

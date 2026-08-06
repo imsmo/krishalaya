@@ -1,6 +1,9 @@
 // apps/web-tenant/src/test/disputes-manage.spec.ts · unit tests for dispute moderation gating + resolve-payload
 // assembly. Gating mirrors the API state machine; resolve validation is the first gate before the authed action.
-import { canReview, canEscalate, canResolve, buildResolve } from '../features/disputes/manage';
+import {
+  canReview, canEscalate, canResolve, buildResolve,
+  canRespond, messageAuthorRole, buildDisputeMessage,
+} from '../features/disputes/manage';
 
 describe('action gating', () => {
   it('review/escalate/resolve legal while active, not when terminal', () => {
@@ -34,7 +37,6 @@ describe('buildResolve', () => {
 });
 
 describe('PC-22 party respond + thread helpers', () => {
-  const { canRespond, messageAuthorRole, buildDisputeMessage } = require('../features/disputes/manage');
   const d = { raisedBy: 'buyer1', againstUser: 'seller1' };
 
   it('canRespond only from open, only for the against-party', () => {

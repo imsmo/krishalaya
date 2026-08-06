@@ -28,7 +28,16 @@ export type AddressInput = {
 };
 export type AddressResult = { ok: true; value: AddressInput } | { ok: false; error: 'line1' | 'pincode' | 'phone' };
 
-export function buildAddress(raw: Record<string, string | undefined> & { isDefault?: boolean }): AddressResult {
+/** What an address FORM hands in: every field optional (validation below decides what's acceptable), and
+ *  `isDefault` a real boolean. NOT `Record<string, string|undefined> & { isDefault?: boolean }` — that
+ *  intersection is unsatisfiable, because the index signature requires EVERY property to be a string, so a
+ *  boolean `isDefault` can never conform and every caller fails to typecheck. */
+export type AddressFormInput = {
+  line1?: string; line2?: string; village?: string; pincode?: string;
+  contactName?: string; contactPhone?: string; isDefault?: boolean;
+};
+
+export function buildAddress(raw: AddressFormInput): AddressResult {
   const line1 = (raw.line1 ?? '').trim();
   if (line1.length < 3) return { ok: false, error: 'line1' };
   const pincode = (raw.pincode ?? '').trim();

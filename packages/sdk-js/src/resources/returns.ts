@@ -6,9 +6,18 @@ import { HttpClient } from '../http';
 import { Page } from '../types';
 
 export const RETURN_STATUSES = ['requested', 'approved', 'in_transit', 'received', 'refunded', 'rejected'] as const;
+/** The shape the API actually serializes (modules/disputes/services/return.service.ts#serialize).
+ *  • `reasonCode` is the dispute_reason CODE, resolved server-side from `reasonId` (PC-55 B8) — null when the id
+ *    resolves to nothing, so an unnameable reason reads as unknown rather than as a plausible default.
+ *  • `refundTxnId` is the wallet transaction the refund was booked as. There is deliberately NO refund AMOUNT here:
+ *    the money lives in the wallet ledger, and a field that looked like an amount but was populated by a client
+ *    guess would be exactly the fabricated money Law 2 forbids. Read the amount from the wallet txn.
+ *  • buyer/seller are NOT on the row (returns carry no party columns; they come from dispute_eligibility) — the API
+ *    resolves the caller's role instead of exposing the counterparty. */
 export interface ReturnCase {
-  id: string; orderId: string; buyerUserId?: string; sellerUserId?: string; status: string;
-  reasonCode?: string | null; disputeId?: string | null; refundedMinor?: string | null; createdAt?: string; [k: string]: unknown;
+  id: string; orderId: string; status: string;
+  reasonId?: string | null; reasonCode?: string | null; disputeId?: string | null;
+  refundTxnId?: string | null; createdAt?: string; [k: string]: unknown;
 }
 
 export class ReturnsResource {

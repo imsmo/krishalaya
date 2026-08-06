@@ -50,6 +50,23 @@ export class ReturnRepository {
     return (r.rowCount ?? 0) > 0;
   }
 
+  /** Reverse-resolve reason_id → the dispute_reason CODE, for the read model (PC-55 B8).
+   *  The aggregate rightly owns a lookup_values *id*; a CLIENT cannot do anything with one. Every consumer — buyer
+   *  app, seller console, mobile — needs the code to translate the reason into the reader's own language, and making
+   *  each of them fetch the lookup table to do it would be a per-row round trip and an internal id on the wire.
+   *  One bounded query per page instead. Platform values (tenant_id IS NULL) and the tenant's own overrides are both
+   *  resolved, preferring the tenant's row — a white-label that renamed a reason keeps its own vocabulary. */
+  async reasonCodesFor(tenantId: string, reasonIds: readonly string[]): Promise<Map<string, string>> {
+    const ids = [...new Set(reasonIds.filter(Boolean))];
+    if (ids.length === 0) return new Map();
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT id, code FROM lookup_values WHERE type_code='dispute_reason' AND id = ANY($1::uuid[])
+         AND (tenant_id IS NULL OR tenant_id=$2)`, [ids, tenantId]);
+    const out = new Map<string, string>();
+    for (const row of r.rows) out.set(row.id, row.code);
+    return out;
+  }
+
   async listFor(tenantId: string, q: ReturnListQuery): Promise<Return[]> {
     const params: unknown[] = [tenantId];
     let where = `tenant_id=$1`;

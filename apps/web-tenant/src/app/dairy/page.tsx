@@ -25,7 +25,6 @@ export function generateMetadata(): Metadata {
 }
 
 const OK = new Set(['mcc', 'mcc.on', 'mcc.off', 'member', 'ratecard', 'collection', 'bill', 'bill.previewed', 'bill.approved', 'bill.paid']);
-const MINOR = /^\d{1,15}$/;
 
 export default async function DairyPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
   if (!env.featureDairy) notFound();

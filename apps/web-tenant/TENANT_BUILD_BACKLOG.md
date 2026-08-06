@@ -235,3 +235,10 @@ When the last box is ticked, `web-tenant` flips to ✅.
 *North star: every page is server-first, secret-free, RBAC-respecting, money-safe, accessible, and degrades
 instead of dying — and reads exactly like the finished storefront pages + the SDK they stand on. Never reach past
 the typed SDK; flag the gap instead.*
+
+---
+**PC-20 correction (2026-08-04, commit a227f205):** the TC-W5-03 KYC-submission flag is CLOSED — the SDK gained
+`kyc.docTypes()` (GET kyc/doc-types) and /kyc now ships the real submission form (doc-type picker + media photo +
+masked-only doc number via pure `features/kyc/form`, unit-tested; kyc.submit + Idempotency-Key). Also added:
+seller-side invoice PDF download on /orders/[id] (`payments.invoices.downloadUrl`, degrade-not-fake). i18n
+en/hi/gu parity kept (stale `kyc.submitUnavailable` removed ×3). Full unit suite 18/118 PASS.

@@ -52,7 +52,7 @@ export class ReturnService {
           if (await this.repo.hasActiveForOrder(tx, tenantId, dto.orderId)) throw new DuplicateReturnError();
           await this.repo.insert(tx, ret);
           await this.flush(tx, tenantId, ret.id, ret.pullEvents());
-          return this.serialize(ret.toProps());
+          return this.serialize(ret.toProps(), dto.reasonCode ?? null);   // the code is in hand — no lookup round trip
         }, { userId: buyerUserId });
       }));
   }
@@ -71,24 +71,24 @@ export class ReturnService {
     const ret = await this.repo.getById(tenantId, id);
     if (!ret) throw new ReturnNotFoundError(id);
     if (!(await this.roleOf(tenantId, ret.orderId, actor))) throw new ReturnNotFoundError(id);   // 404 not 403 (no enumeration)
-    return this.serialize(ret.toProps());
+    return (await this.withReasonCodes(tenantId, [this.serialize(ret.toProps())]))[0];
   }
 
   async list(tenantId: string, actor: ReturnActor, q: { box: 'mine' | 'against' | 'all'; status?: string; cursor?: { c: string; id: string }; limit: number }) {
     if (q.box === 'all') {
       if (!actor.canModerate) throw new ReturnForbiddenError('requires dispute.resolve');
       const rows = await this.repo.listFor(tenantId, { allTenant: true, status: q.status, cursor: q.cursor, limit: q.limit });
-      return this.page(rows, q.limit);
+      return this.page(tenantId, rows, q.limit);
     }
     const role: 'buyer' | 'seller' = q.box === 'mine' ? 'buyer' : 'seller';
     const orderIds = await this.repo.orderIdsForParty(tenantId, actor.userId, role);
     const rows = await this.repo.listFor(tenantId, { orderIds, status: q.status, cursor: q.cursor, limit: q.limit });
-    return this.page(rows, q.limit);
+    return this.page(tenantId, rows, q.limit);
   }
 
   // ---- internals ----
   private async mutate(tenantId: string, actor: ReturnActor, id: string, action: string, allowed: PartyRole[], apply: (r: Return) => void, ip: string | null = null) {
-    return timed(this.metrics, `returns.${action}`, { tenant: tenantId }, () =>
+    const row = await timed(this.metrics, `returns.${action}`, { tenant: tenantId }, () =>
       this.uow.run(tenantId, async (tx) => {
         const ret = await this.repo.getForUpdate(tx, tenantId, id);
         if (!ret) throw new ReturnNotFoundError(id);
@@ -101,6 +101,8 @@ export class ReturnService {
         await this.flush(tx, tenantId, id, ret.pullEvents());
         return this.serialize(ret.toProps());
       }, { userId: actor.userId }));
+    // enriched after commit: a lookup read has no business inside the write transaction
+    return (await this.withReasonCodes(tenantId, [row]))[0];
   }
 
   /** Resolve the actor's role on the order: moderator wins; else buyer/seller from eligibility; else null. */
@@ -113,14 +115,25 @@ export class ReturnService {
     return null;
   }
 
-  private page(rows: Return[], limit: number) {
-    const items = rows.map((r) => this.serialize(r.toProps()));
+  private async page(tenantId: string, rows: Return[], limit: number) {
+    const items = await this.withReasonCodes(tenantId, rows.map((r) => this.serialize(r.toProps())));
     const last = items[items.length - 1];
     const nextCursor = items.length === limit && last ? Buffer.from(`${(last as any).createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
     return { items, nextCursor };
   }
-  private serialize(p: ReturnType<Return['toProps']>) {
-    return { id: p.id, orderId: p.orderId, disputeId: p.disputeId, status: p.status, reasonId: p.reasonId, refundTxnId: p.refundTxnId, createdAt: p.createdAt };
+  private serialize(p: ReturnType<Return['toProps']>, reasonCode?: string | null) {
+    return { id: p.id, orderId: p.orderId, disputeId: p.disputeId, status: p.status, reasonId: p.reasonId,
+      reasonCode: reasonCode ?? null, refundTxnId: p.refundTxnId, createdAt: p.createdAt };
+  }
+
+  /** Attach the human-usable reason code to already-serialized rows. `reasonCode: null` where the id resolves to
+   *  nothing is DELIBERATE: a reason we cannot name must read as unknown, never as a plausible-looking default. */
+  private async withReasonCodes<T extends { reasonId?: string | null }>(tenantId: string, rows: T[]): Promise<T[]> {
+    const ids = rows.map((r) => r.reasonId).filter((x): x is string => !!x);
+    if (ids.length === 0) return rows;
+    const codes = await this.repo.reasonCodesFor(tenantId, ids);
+    for (const r of rows) (r as { reasonCode?: string | null }).reasonCode = r.reasonId ? codes.get(r.reasonId) ?? null : null;
+    return rows;
   }
   private async flush(tx: TxContext, tenantId: string, returnId: string, events: DomainEvent[]) {
     for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'return', aggregateId: returnId, eventType: e.type, payload: { v: 1, ...e.payload } });

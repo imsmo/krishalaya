@@ -34,3 +34,30 @@ export function clearSession(): void {
 
 /** Cheap presence check (no network) — true if either cookie is set. Used by the shell to pick chrome vs bare. */
 export function hasSessionCookie(): boolean { return !!getAccessToken() || !!getRefreshToken(); }
+
+/** PC-55 B8 · best-effort read of the access token's `perms` claim — FOR DISPLAY ONLY.
+ *  Ported from apps/web-partner/src/lib/partner-auth.ts (same token shape, same caveat). The platform API
+ *  independently re-enforces RBAC on every call, so this is NEVER an authorization decision: it exists so a console
+ *  can WITHHOLD a consequential button (a return refund, a COD reconcile) instead of offering one that 403s. A
+ *  button that fails teaches an operator the control is decorative — absence teaches them it is real.
+ *  The JWT payload is decoded WITHOUT verifying the signature (the API is the authority); any malformed or absent
+ *  token yields an empty set, so the safe answer on failure is "show nothing extra". */
+export function getTenantPermissions(): ReadonlySet<string> {
+  const token = getAccessToken();
+  if (!token) return new Set();
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return new Set();
+    const json = Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const claims = JSON.parse(json) as { perms?: unknown };
+    const perms = Array.isArray(claims.perms) ? claims.perms.filter((p): p is string => typeof p === 'string') : [];
+    return new Set(perms);
+  } catch {
+    return new Set();
+  }
+}
+/** Does this session hold a permission (or the platform wildcard)? Display-gating only — see above. */
+export function tenantHasPerm(perm: string): boolean {
+  const perms = getTenantPermissions();
+  return perms.has(perm) || perms.has('*');
+}

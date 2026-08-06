@@ -53,6 +53,13 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureInbox ? [{ key: 'inbox', href: '/inbox', label: t.t('nav.inbox') }] : []),
         ...(env.featureRequirements ? [{ key: 'requirements', href: '/requirements', label: t.t('nav.requirements') }] : []),
         { key: 'disputes', href: '/disputes', label: t.t('nav.disputes') },
+        // PC-55 B8. Returns sit beside disputes (same module, same permission family) and COD beside logistics
+        // (the cash comes off deliveries), both unconditional like the rails they belong to. Governance is gated on
+        // MEMBERSHIPS: resolutions live on that resource, so with the flag off the API answers 404 and a nav entry
+        // would be a link to a dead end (Law 10 — a flag-off feature is absent, not broken).
+        { key: 'returns', href: '/returns', label: t.t('nav.returns') },
+        { key: 'cod', href: '/cod', label: t.t('nav.cod') },
+        ...(env.featureMemberships ? [{ key: 'governance', href: '/governance', label: t.t('nav.governance') }] : []),
         { key: 'notifications', href: '/notifications', label: t.t('nav.notifications') },
         { key: 'billing', href: '/billing', label: t.t('nav.billing') },
         { key: 'team', href: '/team', label: t.t('nav.team') },

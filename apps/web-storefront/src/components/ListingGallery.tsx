@@ -6,8 +6,9 @@ import type { GalleryItem } from '@krishalaya/sdk-js';
 import { orderedGallery } from '../features/listing/gallery';
 
 export function ListingGallery(
-  { items, title, heading, alt }:
-  { items: GalleryItem[]; title: string; heading: string; alt: (index: number, total: number) => string },
+  // `title` was accepted and never read — removed rather than left as a prop callers believe does something.
+  { items, heading, alt }:
+  { items: GalleryItem[]; heading: string; alt: (index: number, total: number) => string },
 ) {
   const imgs = orderedGallery(items);
   if (imgs.length === 0) return null;   // no fabricated media — render nothing
@@ -16,7 +17,8 @@ export function ListingGallery(
       <ul className="kv-gallery__grid" role="list">
         {imgs.map((it, i) => (
           <li key={it.mediaId} className="kv-gallery__item">
-            {/* eslint-disable-next-line @next/next/no-img-element — signed S3 urls, not statically optimizable */}
+            {/* Plain <img>: signed S3 urls expire, so they are not statically optimizable. (Next's @next/next/*
+                rules are not part of this repo's flat ESLint config — naming one in a disable is itself an error.) */}
             <img className="kv-gallery__img" src={it.url} alt={alt(i + 1, imgs.length)} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
           </li>
         ))}
