@@ -6,6 +6,7 @@
 // to a re-auth notice. Money via formatMoneyMinor (bigint minor-unit string — never a float). No inline styles.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { TenantTabs } from '../../../components/TenantTabs';
 import { notFound } from 'next/navigation';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { requireAdmin } from '../../../lib/admin-auth';
@@ -56,6 +57,8 @@ export default async function TenantDetailPage({ params, searchParams }: { param
     <section>
       <p className="kv-backlink"><Link href="/tenants">{t.t('tenants.back')}</Link></p>
       <h1>{card.tenant.slug}</h1>
+      {/* PC-56 ADMIN-1c · the canon's per-tenant tabs (W003). Deep links, not embedded views: one owner per concern. */}
+      <TenantTabs tenantId={params.id} active="profile" />
       {okKey && <p className="kv-success" role="status">{t.t(`tenants.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`tenants.error.${errKey}`)}</p>}
 

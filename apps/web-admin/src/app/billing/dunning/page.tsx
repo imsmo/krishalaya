@@ -3,14 +3,15 @@
 // invoice currently owed across every tenant, worst-first, keyset-paged by (days late, id) so no debtor hides at a
 // page boundary. Ageing tiers are GET-form filters (?tier=), which keeps the view linkable and back-button honest.
 //
-// WHAT THIS PAGE REFUSES TO DO. It shows a total of what is owed — but only of the balances the platform actually
-// knows. `invoice_status` can reach `partially_paid` while nothing records the amount received (there is no SaaS-
-// invoice payments table), so those rows carry NO figure and are counted separately, in words, next to the total.
-// A tidier screen would have summed the invoice totals and shown one confident number; that number would be wrong,
-// and someone would read it out on a phone call to a tenant who had already paid half. (GAP-BACKEND ADMIN-1-Q1.)
+// THE OUTSTANDING TOTAL COVERS ONLY WHAT THE PLATFORM CAN MEASURE. Migration 0092 (ADMIN-1b) closed the old hole —
+// payments are recorded now, so a part-paid invoice HAS a balance — but the queue still reports `knownRows` and
+// `unknownRows` separately, because a row whose figure the API could not resolve must not be silently folded into a
+// number somebody reads out on a phone call. When everything resolves, the unknown count is zero and the note is
+// absent; the machinery stays because the guarantee is "this total is complete or it says so".
 //
-// The ladder shown per row is DESCRIPTIVE: `dunning_attempts` is how many touches were recorded, and the suggested
-// channel is convention, not configuration — the platform has no dunning-policy table, so the page never claims one.
+// THE LADDER IS NOW REAL. Migration 0094 (ADMIN-1b) stores a versioned collections policy, so this page shows what
+// the ladder EXPECTS beside what was actually recorded, and flags rows that are BEHIND it. With no active policy the
+// page degrades to the old behaviour and calls the suggested channel a convention — which it then honestly is.
 // Money is minor-unit strings via formatMoneyMinor (Law 2). Degrade-never-die: a failed read is a notice, not a blank.
 import type { Metadata } from 'next';
 import Link from 'next/link';

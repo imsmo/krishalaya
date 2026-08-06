@@ -16,6 +16,8 @@ import { RevenueDashboardService } from './services/revenue-dashboard.service';
 import { SubscriptionViewService } from './services/subscription-view.service';
 import { InvoicePaymentsService } from './services/invoice-payments.service';
 import { DunningPolicyService } from './services/dunning-policy.service';
+import { InvoicePdfService } from './services/invoice-pdf.service';
+import { SubscriptionWriteService } from './services/subscription-write.service';
 import {
   QueryInvoicesSchema, QueryInvoicesDto, UpdateInvoiceSchema, UpdateInvoiceDto,
   QueryDunningSchema, QueryDunningDto, RecordDunningSchema, RecordDunningDto,
@@ -24,6 +26,7 @@ import {
   RecordPaymentSchema, RecordPaymentDto, ReversePaymentSchema, ReversePaymentDto,
   RequestAdjustmentSchema, RequestAdjustmentDto, DecideAdjustmentSchema, DecideAdjustmentDto,
   PublishDunningPolicySchema, PublishDunningPolicyDto,
+  ChangePlanSchema, ChangePlanDto, AddAddonSchema, AddAddonDto, CancelSubscriptionSchema, CancelSubscriptionDto,
   QueryRevenueSchema, QueryRevenueDto,
 } from './dto/billing-ops.dto';
 
@@ -49,6 +52,8 @@ export class BillingOpsController {
     private readonly subscriptions: SubscriptionViewService,
     private readonly payments: InvoicePaymentsService,
     private readonly policy: DunningPolicyService,
+    private readonly pdf: InvoicePdfService,
+    private readonly subWrite: SubscriptionWriteService,
   ) {}
 
   // ---- reads ----
@@ -100,6 +105,14 @@ export class BillingOpsController {
   @Get('dunning-policy/versions') @RequireOwnerPermission(OwnerPermissions.BillingRead)
   policyVersions() { return this.policy.versions().then((data) => ({ data })); }
 
+  // PC-56 ADMIN-1c · a time-limited link to the invoice's PDF. A READ, but an audited one: handing out a tenant's tax
+  // document is an event about a real business. The route takes an INVOICE id — never an object key, which would be an
+  // arbitrary-object-read endpoint in a realm that can already read every tenant (Law 11).
+  @Get('invoices/:id/pdf') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  invoicePdf(@Req() req: any, @Param('id') id: string) {
+    return this.pdf.downloadUrl(admin(req), id).then((data) => ({ data }));
+  }
+
   // ---- mutations: hardware-key + step-up elevation required ----
   @Patch('invoices/:id') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   updateInvoice(@Req() req: any, @Param('id') id: string, @ZodBody(UpdateInvoiceSchema) dto: UpdateInvoiceDto) {
@@ -134,6 +147,21 @@ export class BillingOpsController {
   @Post('payments/:id/reverse') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   reversePayment(@Req() req: any, @Param('id') id: string, @ZodBody(ReversePaymentSchema) dto: ReversePaymentDto) {
     return this.payments.reverse(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  // PC-56 ADMIN-1c · SUBSCRIPTION WRITES (ADMIN-1-Q10). No money moves: these change what the NEXT invoice says.
+  // Elevated anyway — they change what a tenant pays, which is consequential even when nothing is posted today.
+  @Post('subscriptions/:tenantId/plan') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  changePlan(@Req() req: any, @Param('tenantId') tenantId: string, @ZodBody(ChangePlanSchema) dto: ChangePlanDto) {
+    return this.subWrite.changePlan(admin(req), tenantId, dto).then((data) => ({ data }));
+  }
+  @Post('subscriptions/:tenantId/addons') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  addAddon(@Req() req: any, @Param('tenantId') tenantId: string, @ZodBody(AddAddonSchema) dto: AddAddonDto) {
+    return this.subWrite.addAddon(admin(req), tenantId, dto).then((data) => ({ data }));
+  }
+  @Post('subscriptions/:tenantId/cancel-at-period-end') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  cancelAtPeriodEnd(@Req() req: any, @Param('tenantId') tenantId: string, @ZodBody(CancelSubscriptionSchema) dto: CancelSubscriptionDto) {
+    return this.subWrite.setCancelAtPeriodEnd(admin(req), tenantId, dto).then((data) => ({ data }));
   }
 
   // PC-56 ADMIN-1b · publish a NEW dunning-policy version (0094). Never an in-place edit: the old ladder is why a

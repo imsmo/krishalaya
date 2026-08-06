@@ -7,7 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AppConfig } from '../config/app-config';
 import { ResilienceService } from '../resilience/resilience.service';
 import { InfraError } from '../../shared/errors/app-error';
-import { presignS3Url } from './s3/sigv4-presigner';
+import { presignS3Url } from '@krishalaya/storage';
 
 export const OBJECT_STORE = Symbol('OBJECT_STORE');
 

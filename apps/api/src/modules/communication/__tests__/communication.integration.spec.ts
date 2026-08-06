@@ -74,7 +74,10 @@ run('communication spine (integration, real Postgres + RLS + seeded catalog)', (
     const { items } = await notifications.listInbox(tenantA, user, { limit: 50 });
     expect(items.length).toBeGreaterThanOrEqual(3);
     const inapp = items.find((i: any) => i.channel === 'inapp');
-    const read = await notifications.markRead(tenantA, user, inapp.id);
+    // assert it exists rather than asserting it away: if the seeded in-app row is missing, THAT is the failure worth
+    // reporting, not a cascade of undefined-property errors further down
+    expect(inapp).toBeDefined();
+    const read = await notifications.markRead(tenantA, user, inapp!.id);
     expect(read.status).toBe('read');
   });
 

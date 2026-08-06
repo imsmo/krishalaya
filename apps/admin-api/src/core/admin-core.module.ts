@@ -13,6 +13,7 @@ import { HardwareKeyGuard } from './auth/hardware-key.guard';
 import { StepUpReauthGuard } from './auth/step-up-reauth.guard';
 import { OwnerPermissionsGuard } from './rbac/owner-roles';
 import { IpAllowlistMiddleware } from './auth/ip-allowlist.middleware';
+import { AdminObjectStore } from './media/admin-object-store';
 
 @Global()
 @Module({
@@ -22,10 +23,10 @@ import { IpAllowlistMiddleware } from './auth/ip-allowlist.middleware';
     // fail ("can't resolve dependencies of the AdminConfig (?)"). A factory hands it
     // process.env explicitly, mirroring apps/api/src/core/config/config.module.ts.
     { provide: AdminConfig, useFactory: () => new AdminConfig(process.env) },
-    AdminPool, AdminAuditWriter, IpAllowlistMiddleware,
+    AdminPool, AdminAuditWriter, AdminObjectStore, IpAllowlistMiddleware,
     AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard,
     { provide: APP_INTERCEPTOR, useClass: AdminAuditInterceptor },
   ],
-  exports: [AdminConfig, AdminPool, AdminAuditWriter, IpAllowlistMiddleware, AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard],
+  exports: [AdminObjectStore, AdminConfig, AdminPool, AdminAuditWriter, IpAllowlistMiddleware, AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard],
 })
 export class AdminCoreModule {}

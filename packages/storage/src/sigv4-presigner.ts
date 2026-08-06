@@ -1,8 +1,18 @@
-// core/media/s3/sigv4-presigner.ts
+// packages/storage/src/sigv4-presigner.ts
 // Self-contained AWS Signature V4 query-string presigner (no AWS SDK dependency — deterministic
 // crypto, fully unit-testable). Produces a time-limited URL the client uses to PUT/GET an object
 // directly against S3 (or MinIO/LocalStack via endpoint+path-style). The payload is UNSIGNED-PAYLOAD
 // (S3 standard for presigned URLs). Credentials are never placed in logs.
+//
+// WHY THIS LIVES IN A PACKAGE (PC-56 ADMIN-1c, closes ADMIN-1-Q2). It began inside apps/api. When admin-api needed to
+// hand a platform operator the PDF of a SaaS invoice, the cheap path was to copy this file across — and that would
+// have left the monorepo with TWO implementations of URL signing: two places to fix when a signing bug is found, two
+// places for an expiry default to drift, and one of them inevitably the stale one. Signing code is exactly the kind
+// of code that must exist once. So it moved here (git mv, so the history that explains each line came with it) and
+// both apps import it.
+//
+// It stays dependency-free and pure: no config, no env, no logging, no I/O. Callers supply credentials and an expiry;
+// this returns a string. That is what makes it testable against the AWS worked examples and safe to share.
 import { createHash, createHmac } from 'node:crypto';
 
 export interface PresignInput {

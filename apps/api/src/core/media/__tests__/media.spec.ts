@@ -1,5 +1,5 @@
 // core/media/__tests__/media.spec.ts · SigV4 presigner + media domain (pure).
-import { presignS3Url } from '../s3/sigv4-presigner';
+import { presignS3Url } from '@krishalaya/storage';
 import { objectKey, parseObjectKey, isMimeAllowed } from '../media.domain';
 import { MediaRepository } from '../media.repository';
 

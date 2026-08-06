@@ -98,3 +98,60 @@ export interface InvoiceRow { id: string; tenantId: string; subscriptionId: stri
 export interface InvoiceLineItemRow { desc: string; qty: number; unitMinor: string; totalMinor: string; hsn?: string | null; gstRatePct?: number | null }
 export interface DunningAttempt { id: string; invoiceId: string; attemptNo: number; channel: string; outcome: string; note: string | null; actorUserId: string; createdAt: string | null }
 export interface Adjustment { id: string; tenantId: string; subscriptionId: string | null; invoiceId: string | null; direction: string; amountMinor: string; currency: string; reason: string; walletTxnId: string; createdAt: string | null }
+
+// ---------------------------------------------------------------------------
+// Invoice-list status counts + saved views (PC-56 ADMIN-1c, canon W012)
+// ---------------------------------------------------------------------------
+// The canon shows counts on the filter chips ("issued 204 · paid 1,034 · overdue 42"). Those numbers already exist:
+// `GET /v1/billing/revenue` returns `invoiceStatusCounts`. So this is a display join between two reads the console
+// already makes, not a new endpoint — and deliberately NOT a client-side count of the current page, which would say
+// "overdue 12" while meaning "12 on this page of 50".
+
+/** Counts per status for the chips, in the canon's order, from the revenue rollup. A status the rollup did not
+ *  mention is returned as UNDEFINED rather than 0: "we do not have a count" and "there are none" look identical on a
+ *  chip and mean very different things when you click it. */
+export function invoiceChipCounts(counts: Record<string, number> | null | undefined): Array<{ status: InvoiceStatus; n: number | undefined }> {
+  const c = counts ?? {};
+  return INVOICE_STATUSES.map((status) => {
+    const raw = c[status];
+    return { status, n: Number.isFinite(Number(raw)) ? Number(raw) : undefined };
+  });
+}
+
+/** Total invoices the rollup knows about, for the "All" chip. Undefined when the rollup is unavailable, so the chip
+ *  shows no number instead of a confident zero. */
+export function invoiceTotalCount(counts: Record<string, number> | null | undefined): number | undefined {
+  if (!counts) return undefined;
+  const values = Object.values(counts).filter((v) => Number.isFinite(Number(v))).map(Number);
+  return values.length ? values.reduce((a, b) => a + b, 0) : undefined;
+}
+
+/**
+ * The canon's saved views. Each is a LINK, which is the honest form of a saved view until the platform stores
+ * per-operator views.
+ *
+ * "Due this week" DOES NOT LIVE HERE. The invoice list has no due-date filter (QueryInvoicesSchema takes tenantId +
+ * status only), and faking one by paging the whole list client-side would be slow and wrong at scale. The collection
+ * queue built in ADMIN-1 answers that exact question properly — every invoice owed, worst-first, keyset-paged — so
+ * the view links THERE instead of inventing a filter the API cannot honour.
+ */
+export interface SavedView { key: 'needs_chasing' | 'unpaid' | 'drafts'; href: string }
+export function invoiceSavedViews(): SavedView[] {
+  return [
+    // the real "due this week" surface, and it is a better answer than a date filter on this list
+    { key: 'needs_chasing', href: '/billing/dunning' },
+    { key: 'unpaid', href: '/billing/invoices?status=overdue' },
+    { key: 'drafts', href: '/billing/invoices?status=draft' },
+  ];
+}
+
+/** Build an invoice-list URL that keeps every active filter — the same discipline as the tenant directory, where a
+ *  pager that dropped a filter silently changed which list you were reading. */
+export function invoiceListHref(f: { status?: string; tenantId?: string; cursor?: string }): string {
+  const p = new URLSearchParams();
+  if (f.status) p.set('status', f.status);
+  if (f.tenantId) p.set('tenantId', f.tenantId);
+  if (f.cursor) p.set('cursor', f.cursor);
+  const s = p.toString();
+  return s ? `/billing/invoices?${s}` : '/billing/invoices';
+}

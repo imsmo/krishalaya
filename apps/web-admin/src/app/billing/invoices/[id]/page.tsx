@@ -18,6 +18,7 @@ import {
   reconcileLines, lineVarianceMinor, gstLabelPct, hsnLabel, hsnAbsentThroughout, pdfState, invoicePdfFileName,
   type LineRow,
 } from '../../../../features/billing/invoice-lines';
+import { hasPdfLink, humanBytes, type PdfLink } from '../../../../features/billing/subscription-write';
 import {
   PAYMENT_METHODS, canRecordPayment, payableBlockedReason, reversedIds, canReverse, reverseBlockedReason,
   isReversal, isOverpaid, isSettled, type PaymentRow,
@@ -68,6 +69,15 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
   const recon = reconcileLines(lines, inv.subtotalMinor);
   const variance = lineVarianceMinor(lines, inv.subtotalMinor);
   const pdf = pdfState(inv.pdfMediaId);
+
+  // PC-56 ADMIN-1c (ADMIN-1-Q2): mint the download link only when a PDF exists. The link is short-lived and minted
+  // per render, so it is never cached into a page a screenshot could outlive. A failure here degrades to "not
+  // available" — the invoice page must not break because storage is unconfigured in this deploy.
+  let pdfLink: PdfLink | null = null;
+  if (pdf === 'generated') {
+    try { pdfLink = (await adminGet<PdfLink>(`billing/invoices/${params.id}/pdf`)).data ?? null; }
+    catch { pdfLink = null; }
+  }
 
   const dunCols: Column<DunningAttempt>[] = [
     { header: t.t('billing.attempt'), cell: (d) => `#${d.attemptNo}` },
@@ -237,13 +247,30 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
           that 404s is worse than an honest sentence. Queued: GAP-BACKEND ADMIN-1-Q2. */}
       <h2>{t.t('billing.pdfTitle')}</h2>
       {pdf === 'generated' ? (
-        <dl className="kv-facts">
-          <div className="kv-facts__row"><dt>{t.t('billing.pdfState')}</dt><dd>{t.t('billing.pdf.generated')}</dd></div>
-          <div className="kv-facts__row"><dt>{t.t('billing.pdfFile')}</dt><dd><code>{invoicePdfFileName(inv.invoiceNo)}</code></dd></div>
-          <div className="kv-facts__row"><dt>{t.t('billing.pdfMediaId')}</dt><dd><code>{inv.pdfMediaId}</code></dd></div>
-        </dl>
+        <>
+          <dl className="kv-facts">
+            <div className="kv-facts__row"><dt>{t.t('billing.pdfState')}</dt><dd>{t.t('billing.pdf.generated')}</dd></div>
+            <div className="kv-facts__row"><dt>{t.t('billing.pdfFile')}</dt><dd><code>{pdfLink?.fileName ?? invoicePdfFileName(inv.invoiceNo)}</code></dd></div>
+            <div className="kv-facts__row"><dt>{t.t('billing.pdfMediaId')}</dt><dd><code>{inv.pdfMediaId}</code></dd></div>
+          </dl>
+          {hasPdfLink(pdfLink) ? (
+            <p>
+              {/* Plain <a>: a presigned S3 URL, not an app route. Downloading is audited server-side (who minted a
+                  link for whose tax document), which is why the link comes from the API and is not built here. */}
+              <a className="kv-btn" href={String(pdfLink?.url)} download={pdfLink?.fileName ?? undefined}
+                target="_blank" rel="noopener noreferrer">
+                {t.t('billing.pdfDownload')}
+                {humanBytes(pdfLink?.bytes) ? ` · ${humanBytes(pdfLink?.bytes)}` : ''}
+              </a>
+              <span className="kv-field__hint"> {t.t('billing.pdfExpiry', { n: String(pdfLink?.expiresInSec ?? 0) })}</span>
+            </p>
+          ) : (
+            // storage unconfigured in this deploy, or the link could not be minted — said plainly, because "no
+            // download button" must not be read as "no document"
+            <p className="kv-notice" role="note">{t.t('billing.pdfLinkUnavailable')}</p>
+          )}
+        </>
       ) : <p className="kv-empty">{t.t('billing.pdf.not_generated')}</p>}
-      <p className="kv-field__hint">{t.t('billing.pdfNoDownloadNote')}</p>
 
       <h2>{t.t('billing.invActions')}</h2>
       <p className="kv-muted kv-note">{t.t('billing.invActionsNote')}</p>

@@ -43,6 +43,15 @@ export class SelfApprovalError extends DomainHttpError {
 export class AdjustmentNotFoundError extends DomainHttpError {
   constructor(ref: string) { super('BILLING_ADJUSTMENT_NOT_FOUND', `adjustment ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
 }
+export class SubscriptionNotFoundError extends DomainHttpError {
+  constructor(ref: string) { super('BILLING_SUBSCRIPTION_NOT_FOUND', `no subscription for ${ref}`, HttpStatus.NOT_FOUND, { ref }); }
+}
+/** A change the commercial rules refuse (dead subscription, same plan, zero price, currency switch, backwards addon
+ *  dates). 422: the request was understood and is not allowed — the message says which rule. */
+export class InvalidSubscriptionChangeError extends DomainHttpError {
+  constructor(detail: string) { super('BILLING_SUBSCRIPTION_CHANGE_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+
 export class InvalidDunningPolicyError extends DomainHttpError {
   constructor(detail: string) { super('BILLING_DUNNING_POLICY_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
 }

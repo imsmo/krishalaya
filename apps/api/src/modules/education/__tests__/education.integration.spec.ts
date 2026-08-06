@@ -38,8 +38,9 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
   let instructors: InstructorService; let courses: CourseService; let enroll: EnrollmentService; let progress: LessonProgressService;
   const tenantA = randomUUID(); const tenantB = randomUUID(); const instr = randomUUID(); const learner = randomUUID();
   let courseId = ''; let enrollmentId = ''; const lessonIds: string[] = [];
-  const instrActor = { userId: instr, canAuthor: true, canPublish: true, isAdmin: true };
-  const learnerActor = { userId: learner, canAuthor: false, canPublish: false, isAdmin: false };
+  // canHost/canModerate were added to EducationActor when live sessions landed (PC-26b); this spec predates them.
+  const instrActor = { userId: instr, canAuthor: true, canPublish: true, canHost: true, canModerate: true, isAdmin: true };
+  const learnerActor = { userId: learner, canAuthor: false, canPublish: false, canHost: false, canModerate: false, isAdmin: false };
 
   const balUser = async (u: string) => BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [u])).rows[0]?.b ?? '0');
   const fund = (u: string, amt: bigint) => uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'order_payment', idempotencyKey: `fund:${randomUUID()}`, initiatedBy: 'system', legs: [{ account: userMain(u), amountMinor: amt }, { account: platform(PlatformAccount.Gateway), amountMinor: -amt }] }), { userId: 'system' });

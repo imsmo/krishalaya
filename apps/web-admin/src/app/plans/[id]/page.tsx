@@ -13,6 +13,7 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { DataTable, Column } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
+import { diffAgainstPrevious, isRegressive, type VersionRow } from '../../../features/plans/version-diff';
 import { planStatusKey, canPublish, canArchive, canReactivate, type PlanDetail, type FeatureCatalogueItem, type PlanChange } from '../../../features/plans/plan';
 import { lifecycleAction, setPricingAction, versionPlanAction, setFeatureAction, removeFeatureAction, setLimitAction, removeLimitAction } from '../actions';
 
@@ -36,9 +37,17 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
     notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`);
   }
 
+  // PC-56 ADMIN-1c (canon W011): the previous version of the SAME plan code, so the page can show what this version
+  // changes. Plan versions are separate rows sharing a code, so this is a filtered list read — and it degrades
+  // independently: without it the page says "no comparison available", never "nothing changed".
+  let siblings: VersionRow[] = [];
   let catalogue: FeatureCatalogueItem[] = [];
   let history: PlanChange[] = [];
   try { catalogue = (await adminGet<FeatureCatalogueItem[]>('plans/features')).data ?? []; } catch { /* degrade */ }
+  if (plan) {
+    // the plan LIST filtered by this code gives every version of it; `previousVersion` picks the highest below this one
+    try { siblings = (await adminGet<VersionRow[]>('plans', { q: plan.code, limit: 50 })).data ?? []; } catch { siblings = []; }
+  }
   try { history = (await adminGet<PlanChange[]>(`plans/${params.id}/history`, { limit: 50 })).data ?? []; } catch { /* degrade */ }
 
   if (!plan) {
@@ -174,6 +183,66 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
           <button type="submit" className="kv-btn">{t.t('plans.newVersion')}</button>
         </form>
       </div>
+
+      {/* CHANGE SUMMARY vs the previous version (PC-56 ADMIN-1c, canon W011). A plan version is a PRICE LIST, and
+          every real pricing mistake is a number that looked plausible on its own. Nothing here computes anything about
+          money — it reports "was X, now Y". A percentage rise would be arithmetic on money for presentation, and the
+          figure a pricing conversation needs is the actual price on the actual invoice. */}
+      <h2>{t.t('plans.diffHeading')}</h2>
+      {(() => {
+        const diff = diffAgainstPrevious(
+          { id: plan.id, code: plan.code, version: plan.version, defaultName: plan.defaultName, currency: plan.currency,
+            monthlyPriceMinor: plan.monthlyPriceMinor, annualPriceMinor: plan.annualPriceMinor,
+            setupFeeMinor: plan.setupFeeMinor, isPublic: plan.isPublic,
+            features: plan.features?.map((f) => ({ code: f.code, isIncluded: f.isIncluded })), limits: plan.limits },
+          siblings,
+        );
+        if (!diff.previous) {
+          // "nothing to compare against" is NOT "nothing changed" — a first version must not read as a no-op
+          return <p className="kv-empty">{t.t('plans.diffNoPrevious')}</p>;
+        }
+        if (diff.identical) {
+          return <p className="kv-notice" role="note">{t.t('plans.diffIdentical', { v: String(diff.previous.version) })}</p>;
+        }
+        return (
+          <>
+            <p className="kv-detail__muted">{t.t('plans.diffVs', { v: String(diff.previous.version) })}</p>
+            {isRegressive(diff) && <p className="kv-error" role="alert">{t.t('plans.diffRegressive')}</p>}
+            {diff.fields.length > 0 && (
+              <table className="kv-table">
+                <thead><tr>
+                  <th scope="col">{t.t('plans.diffField')}</th>
+                  <th scope="col">{t.t('plans.diffFrom')}</th>
+                  <th scope="col">{t.t('plans.diffTo')}</th>
+                </tr></thead>
+                <tbody>
+                  {diff.fields.map((f) => (
+                    <tr key={f.field}>
+                      <td>{t.t(`plans.field.${f.field}`)}</td>
+                      <td>{f.from === null ? t.t('plans.diffAbsent') : f.field.endsWith('Minor') ? formatMoneyMinor(f.from, plan.currency) : f.from}</td>
+                      <td>{f.to === null ? t.t('plans.diffAbsent') : f.field.endsWith('Minor') ? formatMoneyMinor(f.to, plan.currency) : f.to}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {/* Four separate lines, because switching a feature OFF is not the same act as adding one. */}
+            {diff.features.added.length > 0 && <p>{t.t('plans.diffAdded', { list: diff.features.added.join(', ') })}</p>}
+            {diff.features.included.length > 0 && <p>{t.t('plans.diffIncluded', { list: diff.features.included.join(', ') })}</p>}
+            {diff.features.excluded.length > 0 && <p className="kv-error">{t.t('plans.diffExcluded', { list: diff.features.excluded.join(', ') })}</p>}
+            {diff.features.removed.length > 0 && <p className="kv-error">{t.t('plans.diffRemoved', { list: diff.features.removed.join(', ') })}</p>}
+            {diff.limits.length > 0 && (
+              <ul className="kv-list" role="list">
+                {diff.limits.map((l) => (
+                  <li key={l.code}>
+                    <code>{l.code}</code>: {l.from ?? t.t('plans.diffAbsent')} → {l.to ?? t.t('plans.diffAbsent')}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        );
+      })()}
 
       <h2>{t.t('plans.historyHeading')}</h2>
       <DataTable columns={histCols} rows={history} empty={t.t('plans.noHistory')} />

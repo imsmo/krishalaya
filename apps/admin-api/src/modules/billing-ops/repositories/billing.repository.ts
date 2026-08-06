@@ -222,6 +222,19 @@ export class BillingRepository {
     return r.rows.map(toPayment);
   }
 
+  /** The stored PDF for an invoice: its media row's s3 key + mime, or null when no PDF has been generated.
+   *  Joined rather than trusted from a client: the caller names an INVOICE, and this decides which object key that
+   *  entitles them to — a route that accepted a key would be an arbitrary-object-read hole with a friendly name. */
+  async invoicePdfAsset(invoiceId: string): Promise<{ mediaId: string; s3Key: string; mimeType: string; bytes: string; invoiceNo: string } | null> {
+    const r = await this.pool.query(
+      `SELECT m.id, m.s3_key, m.mime_type, m.bytes::text AS bytes, i.invoice_no
+         FROM saas_invoices i
+         JOIN media_assets m ON m.id = i.pdf_media_id
+        WHERE i.id = $1 AND i.deleted_at IS NULL AND m.deleted_at IS NULL`, [invoiceId]);
+    const x = r.rows[0];
+    return x ? { mediaId: x.id, s3Key: x.s3_key, mimeType: x.mime_type, bytes: String(x.bytes), invoiceNo: x.invoice_no } : null;
+  }
+
   /* ---------------- billing_adjustments maker-checker (0093 · PC-56 ADMIN-1b) ---------------- */
   async insertAdjustmentRequest(client: PoolClient, a: {
     id: string; tenantId: string; subscriptionId: string | null; invoiceId: string | null; direction: string;
@@ -255,6 +268,56 @@ export class BillingRepository {
       `UPDATE billing_adjustments
           SET status='applied', wallet_txn_id=$2, idempotency_key=$3, applied_at=now(), updated_by=$4, updated_at=now()
         WHERE id=$1`, [id, walletTxnId, idempotencyKey, actorUserId]);
+  }
+
+  /* ---------------- subscription writes (PC-56 ADMIN-1c · ADMIN-1-Q10) ---------------- */
+  // `subscriptions` has no version column, so every mutation locks the row FOR UPDATE inside the caller's tx (the
+  // same discipline as saas_invoices). One subscription per tenant is the current model: the newest row wins, which is
+  // what `subscriptionForTenant` already reads.
+  async getSubscriptionForUpdate(client: PoolClient, tenantId: string): Promise<Record<string, unknown> | null> {
+    const r = await client.query(
+      `SELECT id, plan_id::text AS plan_id, status::text AS status, billing_cycle, price_minor::text AS price_minor,
+              currency_code, discount_pct::text AS discount_pct, current_period_end::text AS period_end,
+              cancel_at_period_end
+         FROM subscriptions WHERE tenant_id=$1 AND deleted_at IS NULL
+        ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [tenantId]);
+    const x = r.rows[0];
+    return x ? {
+      id: x.id, planId: x.plan_id, status: x.status, billingCycle: x.billing_cycle, priceMinor: x.price_minor,
+      currency: x.currency_code, discountPct: x.discount_pct, periodEnd: x.period_end,
+      cancelAtPeriodEnd: x.cancel_at_period_end === true,
+    } : null;
+  }
+  async planExists(client: PoolClient, planId: string): Promise<boolean> {
+    const r = await client.query(`SELECT 1 FROM plans WHERE id=$1 AND deleted_at IS NULL`, [planId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+  /** The plan/price/cycle change. `discount_pct` is only written when the caller stated one — passing null must not
+   *  wipe a negotiated discount that is still part of the agreement. */
+  async updateSubscriptionPlan(client: PoolClient, id: string, p: {
+    planId: string; priceMinor: bigint; billingCycle: string; discountPct: string | null; actorUserId: string;
+  }): Promise<void> {
+    await client.query(
+      `UPDATE subscriptions
+          SET plan_id=$2, price_minor=$3, billing_cycle=$4,
+              discount_pct = COALESCE($5::numeric, discount_pct),
+              updated_by=$6, updated_at=now()
+        WHERE id=$1`,
+      [id, p.planId, p.priceMinor.toString(), p.billingCycle, p.discountPct, p.actorUserId]);
+  }
+  async insertSubscriptionAddon(client: PoolClient, a: {
+    id: string; subscriptionId: string; addonCode: string; quantity: number; priceMinor: bigint;
+    startsOn: string; endsOn: string | null; actorUserId: string;
+  }): Promise<void> {
+    await client.query(
+      `INSERT INTO subscription_addons (id, subscription_id, addon_code, quantity, price_minor, starts_on, ends_on, created_by, updated_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8)`,
+      [a.id, a.subscriptionId, a.addonCode, a.quantity, a.priceMinor.toString(), a.startsOn, a.endsOn, a.actorUserId]);
+  }
+  async setSubscriptionCancelAtPeriodEnd(client: PoolClient, id: string, cancel: boolean, actorUserId: string): Promise<void> {
+    await client.query(
+      `UPDATE subscriptions SET cancel_at_period_end=$2, updated_by=$3, updated_at=now() WHERE id=$1`,
+      [id, cancel, actorUserId]);
   }
 
   /* ---------------- dunning_policies (0094 · PC-56 ADMIN-1b) ---------------- */

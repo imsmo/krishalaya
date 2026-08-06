@@ -115,6 +115,37 @@ export const PublishDunningPolicySchema = z.object({
 }).strict();
 export type PublishDunningPolicyDto = z.infer<typeof PublishDunningPolicySchema>;
 
+/** Change plan. The PRICE IS REQUIRED — see domain/subscription-change.ts for why there is no "keep the current
+ *  price" path. `immediate` is for corrections and does not pro-rate. */
+export const ChangePlanSchema = z.object({
+  planId: z.string().uuid(),
+  priceMinor: MinorUnits,
+  billingCycle: z.enum(['monthly', 'annual']),
+  discountPct: z.string().regex(/^\d{1,3}(\.\d{1,2})?$/).optional(),
+  currency: Currency.optional(),          // only to be REJECTED if it differs — never to convert
+  immediate: z.coerce.boolean().default(false),
+  reason: Reason,
+}).strict();
+export type ChangePlanDto = z.infer<typeof ChangePlanSchema>;
+
+export const AddAddonSchema = z.object({
+  addonCode: z.string().min(2).max(60),
+  quantity: z.coerce.number().int().min(1).max(10000).default(1),
+  priceMinor: MinorUnits,
+  startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  reason: Reason,
+}).strict();
+export type AddAddonDto = z.infer<typeof AddAddonSchema>;
+
+/** `cancel: false` REVOKES a scheduled cancellation — a tenant who changes their mind must not need a new
+ *  subscription. Defaults to true because that is the act the button performs. */
+export const CancelSubscriptionSchema = z.object({
+  cancel: z.coerce.boolean().default(true),
+  reason: Reason,
+}).strict();
+export type CancelSubscriptionDto = z.infer<typeof CancelSubscriptionSchema>;
+
 export const QueryAdjustmentsSchema = z.object({
   status: z.enum(['awaiting_approval', 'approved', 'applied', 'returned', 'rejected']).optional(),
   tenantId: z.string().uuid().optional(),

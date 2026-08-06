@@ -90,12 +90,12 @@ run('warehousing receipt spine (integration, real Postgres + RLS + storage-fee s
     expect((await bookings.store(tenantA, opActor, bookingId)).status).toBe('stored');
     const assay = await assays.record(tenantA, opActor, { storageBookingId: bookingId, assayerName: 'AgriAssay Labs', parameters: { moisture: 11.2, fm: 0.8 } } as any);
     expect(assay.assayerName).toBe('AgriAssay Labs');
-    const receipt = await nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '20000000' } as any);
+    const receipt = await nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '20000000' } as any, null);
     expect(receipt.status).toBe('issued'); expect(receipt.holderUserId).toBe(depositor);
   });
 
   it('rejects a second active eNWR for the same booking', async () => {
-    await expect(nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '1' } as any)).rejects.toThrow();
+    await expect(nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '1' } as any, null)).rejects.toThrow();
   });
 
   it('RELEASE collects the storage fee depositor → operator (zero-sum, ≥1 month)', async () => {

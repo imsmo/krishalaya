@@ -13,9 +13,14 @@
 // NO MONEY IS COMPUTED HERE. The negotiated price, the discount percentage and each add-on price are displayed as
 // stored; the page never multiplies a monthly price by twelve, never applies the discount, never totals the add-ons.
 // The invoice is the arithmetic and the billing cycle owns it (Law 2). Degrade-never-die throughout.
+//
+// PC-56 ADMIN-1c ADDED WRITES (ADMIN-1-Q10): change plan, add an add-on, schedule or revoke a cancellation. They
+// change what the NEXT invoice says and touch no issued document. They are elevation-gated server-side and each one
+// carries a mandatory reason, because a subscription's history is what gets disputed years later.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { TenantTabs } from '../../../../components/TenantTabs';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
@@ -27,6 +32,10 @@ import {
   addonActive, sortAddons, sortHistory, unsettledCount,
   type SubscriptionRow, type AddonRow, type HistoryInvoice,
 } from '../../../../features/billing/subscription-view';
+import {
+  BILLING_CYCLES, canChangeSubscription, changeBlockedReason, cancelToggleAction,
+} from '../../../../features/billing/subscription-write';
+import { changePlanAction, addAddonAction, setCancelAtPeriodEndAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +45,16 @@ export function generateMetadata(): Metadata {
 
 interface SubscriptionView { tenantId: string; subscription: SubscriptionRow | null; addons: AddonRow[]; invoices: HistoryInvoice[] }
 
-export default async function SubscriptionPage({ params }: { params: { id: string } }) {
+const OK = new Set(['plan_changed', 'addon_added', 'cancel_scheduled', 'cancel_revoked']);
+const ERR = new Set([
+  'sub_plan', 'sub_samePlan', 'sub_price', 'sub_cycle', 'sub_discount', 'sub_reason',
+  'addon_code', 'addon_quantity', 'addon_price', 'addon_startsOn', 'addon_endsOn', 'addon_order', 'addon_reason',
+  'elevation', 'illegal', 'notFound', 'generic',
+]);
+
+export default async function SubscriptionPage({ params, searchParams }: {
+  params: { id: string }; searchParams: { ok?: string; error?: string };
+}) {
   requireAdmin();
   const t = getTranslator();
   const tenantId = params.id;
@@ -58,11 +76,18 @@ export default async function SubscriptionPage({ params }: { params: { id: strin
   const cur = sub?.currency ?? 'INR';
   const addons = sortAddons(view?.addons ?? [], nowIso);
   const history = sortHistory(view?.invoices ?? []);
+  const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
+  const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
+  const blocked = changeBlockedReason(sub?.status, !!sub);
+  const today = nowIso.slice(0, 10);
 
   return (
     <section>
       <p className="kv-backlink"><Link href={backHref}>{t.t('sub.backToTenant')}</Link></p>
       <h1>{t.t('sub.title')}</h1>
+      <TenantTabs tenantId={tenantId} active="subscription" />
+      {okKey && <p className="kv-success" role="status">{t.t(`sub.ok.${okKey}`)}</p>}
+      {errKey && <p className="kv-error" role="alert">{t.t(`sub.error.${errKey}`)}</p>}
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : !sub ? (
         // A real tenant with no subscription is a legitimate state — an approved tenant awaiting its first plan.
@@ -108,8 +133,9 @@ export default async function SubscriptionPage({ params }: { params: { id: strin
             </section>
           )}
 
-          {/* Where the machine could go next — POSSIBILITIES, not history, and nothing to click: the transitions are
-              driven by the tenant lifecycle and the billing cycle, not by a button on this page. */}
+          {/* Where the machine could go next — POSSIBILITIES, not history. These particular transitions are driven by
+              the billing cycle and the tenant lifecycle, so there is nothing to click HERE; the writes this page does
+              offer (plan, add-ons, cancel-at-period-end) are further down and are a different kind of act. */}
           <section aria-labelledby="next-h">
             <h2 id="next-h">{t.t('sub.nextTitle')}</h2>
             {isTerminalSubscription(sub.status) ? (
@@ -181,6 +207,88 @@ export default async function SubscriptionPage({ params }: { params: { id: strin
               </ul>
             )}
           </section>
+
+          {/* ---- WRITES (PC-56 ADMIN-1c) ---------------------------------------------------------------------
+              A finished subscription shows no controls at all — it is re-sold, not edited — and the page says which
+              of the two reasons applies rather than rendering a form the server would refuse. */}
+          {!canChangeSubscription(sub.status) ? (
+            <p className="kv-notice" role="note">{t.t(`sub.blocked.${blocked}`)}</p>
+          ) : (
+            <>
+              <details className="kv-card kv-limit-form">
+                <summary className="kv-card__title">{t.t('sub.changePlanTitle')}</summary>
+                <p className="kv-field__hint">{t.t('sub.changePlanHint')}</p>
+                <form action={changePlanAction} className="kv-form">
+                  <input type="hidden" name="tenantId" value={tenantId} />
+                  {/* the current plan id travels so a no-op change is refused before a reason is typed */}
+                  <input type="hidden" name="currentPlanId" value={String(sub.planId ?? '')} />
+                  <label htmlFor="planId" className="kv-field__label">{t.t('sub.newPlanId')}</label>
+                  <input id="planId" name="planId" className="kv-input" required placeholder="plan UUID" />
+                  <label htmlFor="priceMajor" className="kv-field__label">{t.t('sub.newPrice', { currency: cur })}</label>
+                  <input id="priceMajor" name="priceMajor" className="kv-input" required inputMode="decimal" placeholder="4990.00" />
+                  <p className="kv-field__hint">{t.t('sub.priceRequiredHint')}</p>
+                  <label htmlFor="billingCycle" className="kv-field__label">{t.t('sub.cycleLabel')}</label>
+                  <select id="billingCycle" name="billingCycle" className="kv-input" defaultValue={sub.billingCycle ?? 'monthly'}>
+                    {BILLING_CYCLES.map((c) => <option key={c} value={c}>{t.t(`sub.cycle.${c}`)}</option>)}
+                  </select>
+                  <label htmlFor="discountPct" className="kv-field__label">{t.t('sub.discountLabel')}</label>
+                  <input id="discountPct" name="discountPct" className="kv-input" inputMode="decimal" placeholder={String(sub.discountPct ?? '0')} />
+                  <p className="kv-field__hint">{t.t('sub.discountKeepHint')}</p>
+                  <label htmlFor="immediate" className="kv-field__label">
+                    <input id="immediate" name="immediate" type="checkbox" /> {t.t('sub.immediate')}
+                  </label>
+                  <p className="kv-field__hint">{t.t('sub.immediateHint')}</p>
+                  <label htmlFor="cpReason" className="kv-field__label">{t.t('billing.reason')}</label>
+                  <input id="cpReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
+                  <button type="submit" className="kv-btn">{t.t('sub.changePlanSubmit')}</button>
+                </form>
+              </details>
+
+              <details className="kv-card kv-limit-form">
+                <summary className="kv-card__title">{t.t('sub.addAddonTitle')}</summary>
+                <p className="kv-field__hint">{t.t('sub.addAddonHint')}</p>
+                <form action={addAddonAction} className="kv-form">
+                  <input type="hidden" name="tenantId" value={tenantId} />
+                  <label htmlFor="addonCode" className="kv-field__label">{t.t('sub.addonCode')}</label>
+                  <input id="addonCode" name="addonCode" className="kv-input" required minLength={2} maxLength={60} placeholder="extra_language" />
+                  <label htmlFor="quantity" className="kv-field__label">{t.t('sub.addonQuantity')}</label>
+                  <input id="quantity" name="quantity" className="kv-input" inputMode="numeric" defaultValue="1" />
+                  <label htmlFor="addonPrice" className="kv-field__label">{t.t('sub.addonPrice', { currency: cur })}</label>
+                  <input id="addonPrice" name="priceMajor" className="kv-input" inputMode="decimal" defaultValue="0" />
+                  <p className="kv-field__hint">{t.t('sub.addonZeroHint')}</p>
+                  <label htmlFor="startsOn" className="kv-field__label">{t.t('sub.addonStarts')}</label>
+                  <input id="startsOn" name="startsOn" className="kv-input" required type="date" defaultValue={today} />
+                  <label htmlFor="endsOn" className="kv-field__label">{t.t('sub.addonEnds')}</label>
+                  <input id="endsOn" name="endsOn" className="kv-input" type="date" />
+                  <p className="kv-field__hint">{t.t('sub.addonEndsHint')}</p>
+                  <label htmlFor="adReason" className="kv-field__label">{t.t('billing.reason')}</label>
+                  <input id="adReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
+                  <button type="submit" className="kv-btn">{t.t('sub.addAddonSubmit')}</button>
+                </form>
+              </details>
+
+              {/* One form, both directions: schedule a cancellation, or revoke one. A tenant who changes their mind
+                  must not need a new subscription. */}
+              <details className="kv-card kv-limit-form">
+                <summary className="kv-card__title">
+                  {t.t(cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? 'sub.revokeCancelTitle' : 'sub.cancelTitle')}
+                </summary>
+                <p className="kv-field__hint">
+                  {t.t(cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? 'sub.revokeCancelHint' : 'sub.cancelHint')}
+                </p>
+                <form action={setCancelAtPeriodEndAction} className="kv-form">
+                  <input type="hidden" name="tenantId" value={tenantId} />
+                  <input type="hidden" name="cancel" value={cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? 'false' : 'true'} />
+                  <label htmlFor="ccReason" className="kv-field__label">{t.t('billing.reason')}</label>
+                  <input id="ccReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
+                  <button type="submit" className={`kv-btn${cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? '' : ' kv-btn--danger'}`}>
+                    {t.t(cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? 'sub.revokeCancelSubmit' : 'sub.cancelSubmit')}
+                  </button>
+                </form>
+              </details>
+              <p className="kv-field__hint">{t.t('sub.noCancelNowNote')}</p>
+            </>
+          )}
 
           <p className="kv-field__hint">{t.t('sub.noTimelineNote')}</p>
         </>

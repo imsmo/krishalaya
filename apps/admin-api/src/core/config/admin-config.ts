@@ -23,6 +23,18 @@ export interface AdminEnv {
   IMPERSONATION_TOKEN_ISSUER: string;
   IMPERSONATION_TOKEN_AUDIENCE: string;
   IMPERSONATION_MAX_TTL_SEC: number;   // hard upper bound on a grant's lifetime (time-box)
+  // ---- object storage (PC-56 ADMIN-1c) ----
+  // READ-ONLY here by intent: admin-api hands operators DOWNLOAD links for artefacts apps/api produced (SaaS-invoice
+  // PDFs). It never uploads, so no PUT presign and no bucket-write credential is wired in this realm — the blast
+  // radius of a compromised admin token stays "can read documents it is already allowed to read".
+  MEDIA_BUCKET: string;
+  MEDIA_REGION: string;
+  MEDIA_ACCESS_KEY_ID: string;
+  MEDIA_SECRET_ACCESS_KEY: string;
+  MEDIA_ENDPOINT: string | null;       // MinIO/LocalStack; absent ⇒ AWS virtual-hosted
+  MEDIA_FORCE_PATH_STYLE: boolean;
+  // Short by design: a download link for a tax document should not survive being pasted into a chat thread.
+  MEDIA_PRESIGN_EXPIRY_SEC: number;
 }
 
 function num(v: unknown, d: number): number { const n = Number(v); return Number.isFinite(n) ? n : d; }
@@ -43,6 +55,13 @@ export class AdminConfig {
       ADMIN_IP_ALLOWLIST: list(raw.ADMIN_IP_ALLOWLIST),
       ADMIN_REQUIRE_HARDWARE_KEY: bool(raw.ADMIN_REQUIRE_HARDWARE_KEY, raw.NODE_ENV === 'production'),
       ADMIN_STEP_UP_MAX_AGE_SEC: num(raw.ADMIN_STEP_UP_MAX_AGE_SEC, 900),   // 15 min
+      MEDIA_BUCKET: String(raw.MEDIA_BUCKET ?? ''),
+      MEDIA_REGION: String(raw.MEDIA_REGION ?? 'ap-south-1'),
+      MEDIA_ACCESS_KEY_ID: String(raw.MEDIA_ACCESS_KEY_ID ?? ''),
+      MEDIA_SECRET_ACCESS_KEY: String(raw.MEDIA_SECRET_ACCESS_KEY ?? ''),
+      MEDIA_ENDPOINT: raw.MEDIA_ENDPOINT ? String(raw.MEDIA_ENDPOINT) : null,
+      MEDIA_FORCE_PATH_STYLE: bool(raw.MEDIA_FORCE_PATH_STYLE, false),
+      MEDIA_PRESIGN_EXPIRY_SEC: num(raw.MEDIA_PRESIGN_EXPIRY_SEC, 120),
       DATABASE_POOL_MAX: num(raw.DATABASE_ADMIN_POOL_MAX, 10),
       WALLET_GRPC_ADDR: String(raw.WALLET_GRPC_ADDR ?? ''),
       WALLET_S2S_TOKEN: String(raw.WALLET_S2S_TOKEN ?? ''),
