@@ -43,6 +43,13 @@ export class SelfApprovalError extends DomainHttpError {
 export class AdjustmentNotFoundError extends DomainHttpError {
   constructor(ref: string) { super('BILLING_ADJUSTMENT_NOT_FOUND', `adjustment ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
 }
+export class InvalidScheduledReportError extends DomainHttpError {
+  constructor(detail: string) { super('BILLING_SCHEDULED_REPORT_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+export class ScheduledReportNotFoundError extends DomainHttpError {
+  constructor(ref: string) { super('BILLING_SCHEDULED_REPORT_NOT_FOUND', `schedule ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
+}
+
 export class InvalidExportError extends DomainHttpError {
   constructor(detail: string) { super('BILLING_EXPORT_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
 }

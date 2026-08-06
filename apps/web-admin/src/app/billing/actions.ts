@@ -13,6 +13,7 @@ import { adminPost, adminPatch, AdminApiError } from '../../lib/admin-client';
 import { buildAdjustment, buildDunning, validReason } from '../../features/billing/billing';
 import { buildPayment, buildDecision, buildLadder, parseSuspendAfterDays } from '../../features/billing/money-controls';
 import { buildBulk } from '../../features/billing/reporting';
+import { buildSchedule } from '../../features/billing/live';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -269,4 +270,43 @@ export async function bulkInvoiceAction(formData: FormData): Promise<void> {
     `illegal=${res?.illegal ?? 0}`, `notfound=${res?.notFound ?? 0}`, `failed=${res?.failed ?? 0}`,
   ];
   back(parts.join('&'));
+}
+
+// ---------------------------------------------------------------------------
+// Scheduled reports (PC-56 ADMIN-1e · closes ADMIN-1-Q9)
+// ---------------------------------------------------------------------------
+/** Create a schedule. It records a RULE — nothing is sent here, and no "send the first one now" shortcut exists,
+ *  because a create button that also delivers is not what anyone reading the form expects. */
+export async function createScheduleAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/billing/schedules?${qs}`);
+  const built = buildSchedule({
+    report: String(formData.get('report') ?? ''),
+    cadence: String(formData.get('cadence') ?? ''),
+    hourIst: String(formData.get('hourIst') ?? ''),
+    weekdayIso: String(formData.get('weekdayIso') ?? ''),
+    recipients: String(formData.get('recipients') ?? ''),
+    notes: String(formData.get('notes') ?? ''),
+  }, ['tenants', 'plans', 'invoices', 'gstr', 'revenue']);
+  if (!built.ok) back(`error=sch_${built.error}`);
+  try { await adminPost('billing/schedules', { body: built.value }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/billing/schedules');
+  back('ok=created');
+}
+
+/** Pause or resume. Resuming RECOMPUTES the next run server-side, so a schedule paused for a month does not fire the
+ *  instant it wakes up. */
+export async function toggleScheduleAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/billing/schedules?${qs}`);
+  if (!id) back('error=notFound');
+  const active = String(formData.get('active') ?? 'true') === 'true';
+  const reason = String(formData.get('reason') ?? '');
+  if (!validReason(reason)) back('error=sch_reason');
+  try { await adminPost(`billing/schedules/${encodeURIComponent(id)}/active`, { body: { active, reason: reason.trim() } }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/billing/schedules');
+  back(`ok=${active ? 'resumed' : 'paused'}`);
 }

@@ -3,7 +3,9 @@
 // adjustment) additionally require HardwareKeyGuard (FIDO2) + StepUpReauthGuard — JIT elevation for consequential
 // billing/money controls. validate (zod) → authorize (owner perm) → delegate. No business logic here. The money
 // move in POST /adjustments goes through the service → wallet-service; the controller never touches the ledger.
-import { Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Post, Req, Sse, UseGuards } from '@nestjs/common';
+import type { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { AdminAuthGuard, AdminRequestContext } from '../../core/auth/admin-auth.guard';
 import { HardwareKeyGuard } from '../../core/auth/hardware-key.guard';
 import { StepUpReauthGuard } from '../../core/auth/step-up-reauth.guard';
@@ -22,6 +24,8 @@ import { BillingExportService } from './services/billing-export.service';
 import { InvoiceBulkService } from './services/invoice-bulk.service';
 import { RevenueSeriesService } from './services/revenue-series.service';
 import { RenewalVisibilityService } from './services/renewal-visibility.service';
+import { MoneyStreamService } from './services/money-stream.service';
+import { ScheduledReportService } from './services/scheduled-report.service';
 import {
   QueryInvoicesSchema, QueryInvoicesDto, UpdateInvoiceSchema, UpdateInvoiceDto,
   QueryDunningSchema, QueryDunningDto, RecordDunningSchema, RecordDunningDto,
@@ -33,6 +37,8 @@ import {
   ChangePlanSchema, ChangePlanDto, AddAddonSchema, AddAddonDto, CancelSubscriptionSchema, CancelSubscriptionDto,
   QueryExportSchema, QueryExportDto, BulkInvoiceSchema, BulkInvoiceDto,
   QuerySeriesSchema, QuerySeriesDto, QueryRenewalPreviewSchema, QueryRenewalPreviewDto,
+  StreamCursorSchema, StreamCursorDto, QueryTodaySchema, QueryTodayDto,
+  CreateScheduleSchema, CreateScheduleDto, ToggleScheduleSchema, ToggleScheduleDto,
   QueryRevenueSchema, QueryRevenueDto,
 } from './dto/billing-ops.dto';
 
@@ -64,6 +70,8 @@ export class BillingOpsController {
     private readonly bulk: InvoiceBulkService,
     private readonly series: RevenueSeriesService,
     private readonly renewals: RenewalVisibilityService,
+    private readonly moneyStream: MoneyStreamService,
+    private readonly schedules: ScheduledReportService,
   ) {}
 
   // ---- reads ----
@@ -133,6 +141,29 @@ export class BillingOpsController {
     return this.renewals.preview(q).then((data) => ({ data }));
   }
 
+  // PC-56 ADMIN-1e · the LIVE money stream (ADMIN-1-Q8). SERVER-SENT EVENTS from THIS realm — deliberately not the
+  // tenant-facing realtime-gateway, whose channels are tenant-scoped and whose sockets carry the tenant API's JWT;
+  // teaching it to verify admin tokens and carry a cross-tenant money channel would spend exactly the isolation
+  // admin-api exists to provide. A CURSOR stream, so a reconnect resumes and no event is ever missed.
+  @Sse('stream/money') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  moneyEvents(@ZodQuery(StreamCursorSchema) q: StreamCursorDto): Observable<{ data: string }> {
+    const from = q.after && q.afterId ? { at: q.after, id: q.afterId } : null;
+    // Nest's @Sse wants MessageEvent-ish objects; the payload is JSON so the browser parses one shape per frame.
+    return this.moneyStream.stream(from).pipe(map((frame) => ({ data: JSON.stringify(frame) })));
+  }
+
+  @Get('today-by-hour') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  todayByHour(@ZodQuery(QueryTodaySchema) q: QueryTodayDto) {
+    return this.moneyStream.todayByHour(q.currency, q.tzOffsetMinutes).then((data) => ({ data }));
+  }
+
+  // PC-56 ADMIN-1e · scheduled reports (ADMIN-1-Q9). Reads; the firing is the worker's `scheduled-reports` job.
+  @Get('schedules') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  listSchedules() { return this.schedules.list().then((data) => ({ data })); }
+
+  @Get('schedules/:id/runs') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  scheduleRuns(@Param('id') id: string) { return this.schedules.runs(id).then((data) => ({ data })); }
+
   // ---- mutations: hardware-key + step-up elevation required ----
   @Patch('invoices/:id') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   updateInvoice(@Req() req: any, @Param('id') id: string, @ZodBody(UpdateInvoiceSchema) dto: UpdateInvoiceDto) {
@@ -182,6 +213,18 @@ export class BillingOpsController {
   @Post('subscriptions/:tenantId/cancel-at-period-end') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   cancelAtPeriodEnd(@Req() req: any, @Param('tenantId') tenantId: string, @ZodBody(CancelSubscriptionSchema) dto: CancelSubscriptionDto) {
     return this.subWrite.setCancelAtPeriodEnd(admin(req), tenantId, dto).then((data) => ({ data }));
+  }
+
+  // PC-56 ADMIN-1e · create / pause / resume a schedule. NOT elevated beyond the write permission: nothing here moves
+  // money or touches a tenant's data — it records when an internal digest should be computed. Over-gating a harmless
+  // control trains people to treat elevation prompts as noise.
+  @Post('schedules') @RequireOwnerPermission(OwnerPermissions.BillingManage)
+  createSchedule(@Req() req: any, @ZodBody(CreateScheduleSchema) dto: CreateScheduleDto) {
+    return this.schedules.create(admin(req), dto).then((data) => ({ data }));
+  }
+  @Post('schedules/:id/active') @RequireOwnerPermission(OwnerPermissions.BillingManage)
+  toggleSchedule(@Req() req: any, @Param('id') id: string, @ZodBody(ToggleScheduleSchema) dto: ToggleScheduleDto) {
+    return this.schedules.toggle(admin(req), id, dto).then((data) => ({ data }));
   }
 
   // PC-56 ADMIN-1d · the AUDIT-STAMPED EXPORT (ADMIN-1-Q3). A POST because it WRITES a receipt: an export is a read

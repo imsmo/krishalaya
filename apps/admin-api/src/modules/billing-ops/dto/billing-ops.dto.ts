@@ -117,6 +117,38 @@ export const PublishDunningPolicySchema = z.object({
 }).strict();
 export type PublishDunningPolicyDto = z.infer<typeof PublishDunningPolicySchema>;
 
+/** A scheduled report (ADMIN-1-Q9). Cadence is an ENUM, not cron: three options a human can reason about, because a
+ *  cron string in an admin form is a support-ticket generator and nobody needs minute-level digests. */
+export const CreateScheduleSchema = z.object({
+  report: z.enum(EXPORT_REPORTS),
+  cadence: z.enum(['daily', 'weekly', 'monthly']),
+  hourIst: z.coerce.number().int().min(0).max(23).default(7),
+  weekdayIso: z.coerce.number().int().min(1).max(7).optional(),   // required for weekly, refused otherwise (domain)
+  recipients: z.array(z.string().min(3).max(200)).min(1).max(20),
+  notes: z.string().max(1000).optional(),
+}).strict();
+export type CreateScheduleDto = z.infer<typeof CreateScheduleSchema>;
+
+export const ToggleScheduleSchema = z.object({
+  active: z.coerce.boolean().default(true),
+  reason: Reason,
+}).strict();
+export type ToggleScheduleDto = z.infer<typeof ToggleScheduleSchema>;
+
+/** The live money stream (ADMIN-1-Q8). `after`/`afterId` let a reconnecting client resume from the last event it
+ *  rendered, so nothing is missed across a dropped connection. */
+export const StreamCursorSchema = z.object({
+  after: z.string().datetime().optional(),
+  afterId: z.string().uuid().optional(),
+}).strict();
+export type StreamCursorDto = z.infer<typeof StreamCursorSchema>;
+
+export const QueryTodaySchema = z.object({
+  currency: Currency,
+  tzOffsetMinutes: z.coerce.number().int().min(-720).max(840).default(330),   // IST default
+}).strict();
+export type QueryTodayDto = z.infer<typeof QueryTodaySchema>;
+
 /** An audit-stamped export (ADMIN-1-Q3). `limit` is capped in the service too — a DTO ceiling is a courtesy, the
  *  service's is the guarantee. */
 export const QueryExportSchema = z.object({

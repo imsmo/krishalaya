@@ -9,6 +9,7 @@ import { idempotencyPurgeJob } from './jobs/idempotency-purge.job';
 import { dpdpErasureCoolingJob } from './jobs/dpdp-erasure-cooling.job';
 import { outboxGaugeJob } from './jobs/outbox-gauge.job';
 import { webhookDeliveryJob } from './jobs/webhook-delivery.job';
+import { scheduledReportsJob } from './jobs/scheduled-reports.job';
 
 export const JOBS: Job[] = [
   reconZeroSumJob,
@@ -18,4 +19,9 @@ export const JOBS: Job[] = [
   dpdpErasureCoolingJob,
   outboxGaugeJob,
   webhookDeliveryJob, // P1-11: signed outbound webhook delivery (decrypts per-endpoint secret, HMAC, backoff)
+  // PC-56 ADMIN-1e: fires the platform's scheduled reports. pg-native (bounded SQL over saas_invoices), leader-locked
+  // like every job here, and AT-MOST-ONCE by design — `next_run_at` moves before the digest is produced, so a crash
+  // misses a run rather than repeating it. Every firing writes a run row with the delivery truth: today that is
+  // `provider_pending`, because no email provider is configured anywhere in this platform.
+  scheduledReportsJob,
 ];

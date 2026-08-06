@@ -34,6 +34,16 @@ function toAdjustmentRow(r: any): Record<string, unknown> {
   };
 }
 
+function toSchedule(x: any): Record<string, unknown> {
+  return {
+    id: x.id, report: x.report, cadence: x.cadence, hourIst: x.hour_ist,
+    weekdayIso: x.weekday_iso === null ? null : Number(x.weekday_iso),
+    recipients: x.recipients ?? [], isActive: x.is_active === true,
+    nextRunAt: x.next_run_at ?? null, lastRunAt: x.last_run_at ?? null,
+    notes: x.notes ?? null, createdAt: x.created_at ?? null,
+  };
+}
+
 function toInvoice(r: any): SaasInvoice {
   return SaasInvoice.rehydrate({
     id: r.id, tenantId: r.tenant_id, subscriptionId: r.subscription_id ?? null, invoiceNo: r.invoice_no,
@@ -474,6 +484,118 @@ export class BillingRepository {
         totalMinor: String(i.total_minor), dueDate: i.due_date, paidAt: i.paid_at ?? null, createdAt: i.created_at ?? null,
       })),
     };
+  }
+
+  /* ---------------- scheduled reports (0095 · PC-56 ADMIN-1e · ADMIN-1-Q9) ---------------- */
+  async listSchedules(limit = 50): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT id, report, cadence::text AS cadence, hour_ist, weekday_iso, recipients, is_active,
+              next_run_at, last_run_at, notes, created_at
+         FROM scheduled_reports WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1`, [limit]);
+    return r.rows.map(toSchedule);
+  }
+  async getSchedule(id: string): Promise<Record<string, unknown> | null> {
+    const r = await this.pool.query(
+      `SELECT id, report, cadence::text AS cadence, hour_ist, weekday_iso, recipients, is_active,
+              next_run_at, last_run_at, notes, created_at
+         FROM scheduled_reports WHERE id=$1 AND deleted_at IS NULL`, [id]);
+    return r.rows[0] ? toSchedule(r.rows[0]) : null;
+  }
+  async insertSchedule(client: PoolClient, s: {
+    id: string; report: string; cadence: string; hourIst: number; weekdayIso: number | null;
+    recipients: string[]; notes: string | null; nextRunAt: Date; actorUserId: string;
+  }): Promise<void> {
+    await client.query(
+      `INSERT INTO scheduled_reports (id, report, cadence, hour_ist, weekday_iso, recipients, notes, next_run_at, created_by, updated_by)
+       VALUES ($1,$2,$3::scheduled_report_cadence,$4,$5,$6,$7,$8,$9,$9)`,
+      [s.id, s.report, s.cadence, s.hourIst, s.weekdayIso, s.recipients, s.notes, s.nextRunAt, s.actorUserId]);
+  }
+  /** Pause or resume. A paused schedule keeps its `next_run_at` so resuming does not fire immediately — the service
+   *  recomputes it, because a schedule paused for a month would otherwise be instantly overdue on resume. */
+  async setScheduleActive(client: PoolClient, id: string, active: boolean, nextRunAt: Date | null, actorUserId: string): Promise<void> {
+    await client.query(
+      `UPDATE scheduled_reports
+          SET is_active=$2, next_run_at = COALESCE($3, next_run_at), updated_by=$4, updated_at=now()
+        WHERE id=$1`, [id, active, nextRunAt, actorUserId]);
+  }
+  /** The run history — the answer to "I never got the Monday report". */
+  async listScheduleRuns(scheduleId: string, limit = 30): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT id, ran_at, status::text AS status, summary, row_count, recipients, detail,
+              period_start::text AS period_start, period_end::text AS period_end
+         FROM scheduled_report_runs WHERE schedule_id=$1 AND deleted_at IS NULL
+        ORDER BY ran_at DESC LIMIT $2`, [scheduleId, limit]);
+    return r.rows.map((x: any) => ({
+      id: x.id, ranAt: x.ran_at, status: x.status, summary: x.summary ?? {}, rowCount: x.row_count ?? 0,
+      recipients: x.recipients ?? [], detail: x.detail ?? null,
+      periodStart: x.period_start ?? null, periodEnd: x.period_end ?? null,
+    }));
+  }
+
+  /* ---------------- LIVE money events (PC-56 ADMIN-1e · ADMIN-1-Q8) ---------------- */
+  // A CURSOR, NOT A ROLLUP. The old "live ticker" idea was to re-read a point-in-time revenue rollup on a timer, which
+  // looks live and is stale — and worse, it can MISS events entirely (two payments between polls collapse into one
+  // changed number). This reads money events AFTER a cursor, so every event is delivered exactly once, in order, and a
+  // reconnect resumes from where the client got to. That is what makes the stream honest.
+  //
+  // The cursor is (created_at, id): monotonic and unique, so it cannot skip a row that arrived in the same millisecond.
+  async moneyEventsSince(cursor: { at: string; id: string } | null, limit: number): Promise<Array<{
+    id: string; at: string; kind: 'payment' | 'invoice_issued'; tenantSlug: string | null;
+    invoiceNo: string | null; amountMinor: string; currency: string;
+  }>> {
+    const params: unknown[] = [];
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    // Two sources UNIONed because both are money moments an operator watches: cash arriving (0092 payments) and
+    // invoices going out (the renewal run). Neither is derived from the other.
+    const after = cursor
+      ? `AND (e.at, e.id) > (${p(cursor.at)}::timestamptz, ${p(cursor.id)}::uuid)`
+      : '';
+    const lp = p(limit);
+    const r = await this.pool.query(
+      `WITH e AS (
+         SELECT pmt.id, pmt.created_at AS at, 'payment'::text AS kind, t.slug AS tenant_slug,
+                i.invoice_no, pmt.amount_minor::text AS amount_minor, pmt.currency_code
+           FROM saas_invoice_payments pmt
+           JOIN saas_invoices i ON i.id = pmt.invoice_id
+           JOIN tenants t ON t.id = pmt.tenant_id
+          WHERE pmt.deleted_at IS NULL
+         UNION ALL
+         SELECT i2.id, i2.created_at AS at, 'invoice_issued'::text AS kind, t2.slug AS tenant_slug,
+                i2.invoice_no, i2.total_minor::text AS amount_minor, i2.currency_code
+           FROM saas_invoices i2
+           JOIN tenants t2 ON t2.id = i2.tenant_id
+          WHERE i2.deleted_at IS NULL AND i2.status <> 'draft'
+       )
+       SELECT * FROM e WHERE true ${after} ORDER BY e.at, e.id LIMIT ${lp}`, params);
+    return r.rows.map((x: any) => ({
+      id: x.id, at: x.at?.toISOString?.() ?? String(x.at), kind: x.kind,
+      tenantSlug: x.tenant_slug ?? null, invoiceNo: x.invoice_no ?? null,
+      amountMinor: String(x.amount_minor), currency: x.currency_code,
+    }));
+  }
+
+  /** Today's money by HOUR (canon W112's chart), in the caller's timezone offset — computed in SQL so the bucket
+   *  boundaries are the database's single source of truth rather than each client's clock. */
+  async todayByHour(currency: string, tzOffsetMinutes: number): Promise<Array<{ hour: string; receivedMinor: string; issuedMinor: string }>> {
+    const r = await this.pool.query(
+      `WITH bounds AS (
+         SELECT date_trunc('day', now() + ($2::int * interval '1 minute')) - ($2::int * interval '1 minute') AS day_start
+       )
+       SELECT to_char(date_trunc('hour', s.at + ($2::int * interval '1 minute')), 'HH24:00') AS hour,
+              COALESCE(SUM(s.received), 0)::text AS received_minor,
+              COALESCE(SUM(s.issued), 0)::text AS issued_minor
+         FROM bounds b,
+              (SELECT pmt.created_at AS at, pmt.amount_minor AS received, 0::bigint AS issued
+                 FROM saas_invoice_payments pmt, bounds b2
+                WHERE pmt.deleted_at IS NULL AND pmt.currency_code = $1 AND pmt.created_at >= b2.day_start
+               UNION ALL
+               SELECT i.created_at AS at, 0::bigint AS received, i.total_minor AS issued
+                 FROM saas_invoices i, bounds b3
+                WHERE i.deleted_at IS NULL AND i.status <> 'draft' AND i.currency_code = $1 AND i.created_at >= b3.day_start
+              ) s
+        WHERE s.at >= b.day_start
+        GROUP BY 1 ORDER BY 1`, [currency, tzOffsetMinutes]);
+    return r.rows.map((x: any) => ({ hour: x.hour, receivedMinor: String(x.received_minor), issuedMinor: String(x.issued_minor) }));
   }
 
   /* ---------------- EXPORT reads (PC-56 ADMIN-1d · ADMIN-1-Q3) ---------------- */

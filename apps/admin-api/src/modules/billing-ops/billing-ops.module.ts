@@ -22,6 +22,8 @@ import { BillingExportService } from './services/billing-export.service';
 import { InvoiceBulkService } from './services/invoice-bulk.service';
 import { RevenueSeriesService } from './services/revenue-series.service';
 import { RenewalVisibilityService } from './services/renewal-visibility.service';
+import { MoneyStreamService } from './services/money-stream.service';
+import { ScheduledReportService } from './services/scheduled-report.service';
 
 @Module({
   controllers: [BillingOpsController],
@@ -29,6 +31,7 @@ import { RenewalVisibilityService } from './services/renewal-visibility.service'
     BillingRepository, SaasInvoicesAdminService, DunningService, ManualAdjustmentService, RevenueDashboardService, SubscriptionViewService,
     InvoicePaymentsService, DunningPolicyService, InvoicePdfService, SubscriptionWriteService,
     BillingExportService, InvoiceBulkService, RevenueSeriesService, RenewalVisibilityService,
+    MoneyStreamService, ScheduledReportService,
     // the ONLY money writer (Law 2/9): the wallet-service gRPC client behind the WalletAdminPort seam.
     { provide: WALLET_ADMIN, useFactory: (config: AdminConfig) => new WalletGrpcAdminClient(config), inject: [AdminConfig] },
   ],
