@@ -66,6 +66,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: {
         <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
         <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
         <Link href="/catalogue/translations" className="kv-chip">{t.t('cat.navTranslations')}</Link>
+        <Link href="/catalogue/crops" className="kv-chip">{t.t('cat.navCrops')}</Link>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('cat.filterKind')}>

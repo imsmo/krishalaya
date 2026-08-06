@@ -112,3 +112,54 @@ export const UpsertConversionSchema = z.object({
   reason: Reason,
 }).strict();
 export type UpsertConversionDto = z.infer<typeof UpsertConversionSchema>;
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-3c · the crop lens (W023) + calendar authoring (W110)
+// ---------------------------------------------------------------------------
+
+export const QueryCropsSchema = z.object({
+  season: z.string().max(12).optional(),
+  branch: z.string().max(80).optional(),
+}).strict();
+export type QueryCropsDto = z.infer<typeof QueryCropsSchema>;
+
+/** A stage in the timeline. `dayFrom`/`dayTo` are days RELATIVE TO SOWING — never dates, because the platform has no
+ *  per-farm sowing date it would be honest to anchor them to. */
+const Stage = z.object({
+  name: z.string().min(2).max(60),
+  dayFrom: z.coerce.number().int().min(0).max(730),
+  dayTo: z.coerce.number().int().min(0).max(730),
+  advisory: z.string().max(2000).nullish(),
+}).strict();
+
+/** `source` is REQUIRED here, in the domain, AND as a CHECK in 0104. Three layers for one rule, because the canon states
+ *  it twice and the column was nullable for the platform's whole life: agronomy advice a farmer plants by is never
+ *  fabricated, and an unattributed calendar cannot be checked by anybody. */
+export const CreateCalendarSchema = z.object({
+  cropName: z.string().min(2).max(120),
+  season: z.enum(['kharif', 'rabi', 'zaid', 'perennial']),
+  source: z.string().min(3).max(120),
+  durationDaysMin: z.coerce.number().int().min(0).max(730),
+  durationDaysMax: z.coerce.number().int().min(0).max(730),
+  stages: z.array(Stage).min(1).max(20),
+  categoryId: z.string().uuid().nullish(),
+  regionId: z.string().uuid().nullish(),
+  reason: Reason,
+}).strict();
+export type CreateCalendarDto = z.infer<typeof CreateCalendarSchema>;
+
+/** A whole-object replace rather than a patch: a stage timeline is only coherent as a set, and a partial edit that moved
+ *  one stage could leave a gap or an overlap the domain would then reject anyway. */
+export const UpdateCalendarSchema = CreateCalendarSchema;
+export type UpdateCalendarDto = z.infer<typeof UpdateCalendarSchema>;
+
+/** A mapping attaches a PRODUCT to an Agmarknet COMMODITY code. Not a crop — mandi_prices keys on product_id. */
+export const UpsertMappingSchema = z.object({
+  productId: z.string().uuid(),
+  externalId: z.string().min(4).max(40),
+  reason: Reason,
+}).strict();
+export type UpsertMappingDto = z.infer<typeof UpsertMappingSchema>;
+
+export const RemoveMappingSchema = z.object({ reason: Reason }).strict();
+export type RemoveMappingDto = z.infer<typeof RemoveMappingSchema>;

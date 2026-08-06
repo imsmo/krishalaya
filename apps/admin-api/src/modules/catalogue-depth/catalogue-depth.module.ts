@@ -5,6 +5,7 @@ import { CatalogueDepthController } from './catalogue-depth.controller';
 import { CatalogueDepthService } from './catalogue-depth.service';
 import { EavRepository } from './repositories/eav.repository';
 import { EavAdminService } from './services/eav-admin.service';
+import { CropLensService } from './services/crop-lens.service';
 
 @Module({
   controllers: [CatalogueDepthController],
@@ -15,6 +16,8 @@ import { EavAdminService } from './services/eav-admin.service';
     // mandatory reason and a catalogue_changes row, which is the standard the sibling global-catalogue-ops module has
     // always held and this one did not.
     EavRepository, EavAdminService,
+    // PC-56 ADMIN-3c: the crop lens (W023) + crop-calendar authoring (W110). DELTA-008 closed with no new table.
+    CropLensService,
   ],
 })
 export class CatalogueDepthModule {}

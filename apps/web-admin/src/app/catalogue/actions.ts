@@ -14,6 +14,7 @@ import {
   buildSetActive as buildEavSetActive, type AttributeRow,
 } from '../../features/catalogue/eav';
 import { buildTranslation, buildReview, buildGrant, buildRun } from '../../features/catalogue/translations';
+import { buildCalendar, buildMapping } from '../../features/catalogue/crops';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -480,4 +481,97 @@ export async function requestRunAction(formData: FormData): Promise<void> {
   }
   revalidatePath('/catalogue/translations');
   back(`ok=tr_requested&n=${gapCount}`);
+}
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-3c · the crop lens (canon W023) + crop calendars (W110)
+// ---------------------------------------------------------------------------
+
+/** Author a sourced calendar. Elevated: this is advice a farmer plants by. */
+export async function createCalendarAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/crop-calendars?${qs}`);
+  const built = buildCalendar((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=cal_${built.error}`);
+  try { await adminPost('catalogue/crop-calendars', { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    // the 422 here names the exact agronomy rule broken — an overlap, a gap, a timeline that does not fit its duration.
+    // Passed through verbatim because the rule IS the message.
+    if (why) back(`error=cal_rejected&why=${enc2(why)}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/crop-calendars');
+  revalidatePath('/catalogue/crops');
+  back('ok=cal_created');
+}
+
+export async function updateCalendarAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/catalogue/crop-calendars');
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/crop-calendars?${qs}`);
+  const built = buildCalendar((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=cal_${built.error}`);
+  try { await adminPost(`catalogue/crop-calendars/${enc2(id)}`, { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    if (why) back(`error=cal_rejected&why=${enc2(why)}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/crop-calendars');
+  revalidatePath('/catalogue/crops');
+  back('ok=cal_updated');
+}
+
+/** Withdraw or reinstate. Never a delete — farmers have planted by it. */
+export async function setCalendarActiveAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/crop-calendars?${qs}`);
+  if (!id) back('error=cal_generic');
+  const isActive = String(formData.get('isActive') ?? '').trim();
+  if (isActive !== 'true' && isActive !== 'false') back('error=cal_generic');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (reason.length < 10) back('error=cal_reason');
+  try { await adminPost(`catalogue/crop-calendars/${enc2(id)}/active`, { body: { isActive: isActive === 'true', reason } }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/catalogue/crop-calendars');
+  revalidatePath('/catalogue/crops');
+  back(isActive === 'true' ? 'ok=cal_activated' : 'ok=cal_deactivated');
+}
+
+/** Map a PRODUCT to an Agmarknet commodity code. */
+export async function upsertMappingAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const categoryId = String(formData.get('categoryId') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/crops/${enc2(categoryId)}?${qs}`);
+  const built = buildMapping((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=crop_${built.error}`);
+  try { await adminPost('catalogue/mandi-mappings', { body: built.value }); }
+  catch (e) {
+    // a 409 here means another product already claims this commodity code — the server's message names it
+    if (e instanceof AdminApiError && e.status === 409) back(`error=crop_duplicate&why=${enc2(e.message.slice(0, 300))}`);
+    const why = passThrough422(e);
+    if (why) back(`error=cal_rejected&why=${enc2(why)}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath(`/catalogue/crops/${categoryId}`);
+  revalidatePath('/catalogue/crops');
+  back('ok=crop_mapped');
+}
+
+export async function removeMappingAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const productId = String(formData.get('productId') ?? '').trim();
+  const categoryId = String(formData.get('categoryId') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/crops/${enc2(categoryId)}?${qs}`);
+  if (!productId) back('error=crop_productId');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (reason.length < 10) back('error=cal_reason');
+  try { await adminDelete(`catalogue/mandi-mappings/${enc2(productId)}`, { body: { reason } }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath(`/catalogue/crops/${categoryId}`);
+  revalidatePath('/catalogue/crops');
+  back('ok=crop_unmapped');
 }

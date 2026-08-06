@@ -21,6 +21,7 @@ import { StepUpReauthGuard } from '../../core/auth/step-up-reauth.guard';
 import { ZodBody, ZodQuery } from '../../core/http/zod.pipe';
 import { CatalogueDepthService } from './catalogue-depth.service';
 import { EavAdminService } from './services/eav-admin.service';
+import { CropLensService } from './services/crop-lens.service';
 import {
   QueryAttributesSchema, QueryAttributesDto,
   CreateAttributeSchema, CreateAttributeDto, UpdateAttributeSchema, UpdateAttributeDto,
@@ -28,6 +29,9 @@ import {
   CreateOptionSchema, CreateOptionDto, UpdateOptionSchema, UpdateOptionDto,
   CreateBindingSchema, CreateBindingDto, UpdateBindingSchema, UpdateBindingDto, UnbindSchema, UnbindDto,
   CreateUnitSchema, CreateUnitDto, UpsertConversionSchema, UpsertConversionDto,
+  QueryCropsSchema, QueryCropsDto, CreateCalendarSchema, CreateCalendarDto,
+  UpdateCalendarSchema, UpdateCalendarDto, UpsertMappingSchema, UpsertMappingDto,
+  RemoveMappingSchema, RemoveMappingDto,
 } from './dto/catalogue-depth.dto';
 
 /** The admin actor, as every other controller in this realm extracts it. */
@@ -39,6 +43,7 @@ export class CatalogueDepthController {
   constructor(
     private readonly svc: CatalogueDepthService,
     private readonly eav: EavAdminService,
+    private readonly crops_: CropLensService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -151,9 +156,56 @@ export class CatalogueDepthController {
   // -------------------------------------------------------------------------
   // THE CROPS LENS (W023) — unchanged, read-only, and honest about what it is
   // -------------------------------------------------------------------------
-  /** There is no crops table: crops ARE the `crops.*` category branch. Kept on the original service because ADMIN-3's
-   *  scope is the EAV plane; the crop lens and its two declared DELTAs (season + mandi mapping have no schema home) are
-   *  ADMIN-3c's. */
+  /**
+   * There is no crops table: crops ARE the `crops.*` category branch, so this is a LENS. DELTA-008 is closed without a
+   * new table — seasons are DERIVED from each crop's sourced calendars, and the mandi mapping lives in
+   * `external_entity_refs` keyed to a PRODUCT because `mandi_prices.product_id` is what prices key on.
+   */
   @Get('crops') @RequireOwnerPermission(OwnerPermissions.CatalogueRead)
-  crops() { return this.svc.crops().then((data) => ({ data })); }
+  crops(@ZodQuery(QueryCropsSchema) q: QueryCropsDto) { return this.crops_.crops(q).then((data) => ({ data })); }
+
+  /** The rollup's drill-in: this crop's products and which carry a commodity code. */
+  @Get('crops/:id/mappings') @RequireOwnerPermission(OwnerPermissions.CatalogueRead)
+  cropMappings(@Param('id') id: string) { return this.crops_.cropMappings(id).then((data) => ({ data })); }
+
+  // -------------------------------------------------------------------------
+  // CROP CALENDARS (W110) — editorial agronomy, and the source rule is the point
+  // -------------------------------------------------------------------------
+  @Get('crop-calendars') @RequireOwnerPermission(OwnerPermissions.CatalogueRead)
+  calendars(@Query('categoryId') categoryId?: string, @Query('season') season?: string) {
+    return this.crops_.calendars({ categoryId, season }).then((data) => ({ data }));
+  }
+
+  @Get('crop-calendars/:id') @RequireOwnerPermission(OwnerPermissions.CatalogueRead)
+  calendar(@Param('id') id: string) { return this.crops_.calendar(id).then((data) => ({ data })); }
+
+  /** ELEVATED. This is advice a farmer plants by: a wrong sowing window is discovered at harvest. */
+  @Post('crop-calendars') @RequireOwnerPermission(OwnerPermissions.CatalogueManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  createCalendar(@Req() req: any, @ZodBody(CreateCalendarSchema) dto: CreateCalendarDto) {
+    return this.crops_.createCalendar(admin(req), dto).then((data) => ({ data }));
+  }
+
+  /** A whole-object replace, not a patch: a stage timeline is only coherent as a set. */
+  @Post('crop-calendars/:id') @RequireOwnerPermission(OwnerPermissions.CatalogueManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  updateCalendar(@Req() req: any, @Param('id') id: string, @ZodBody(UpdateCalendarSchema) dto: UpdateCalendarDto) {
+    return this.crops_.updateCalendar(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  @Post('crop-calendars/:id/active') @RequireOwnerPermission(OwnerPermissions.CatalogueManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  setCalendarActive(@Req() req: any, @Param('id') id: string, @ZodBody(SetActiveSchema) dto: SetActiveDto) {
+    return this.crops_.setCalendarActive(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  // -------------------------------------------------------------------------
+  // THE MANDI MAPPING (DELTA-008's other half) — product ↔ Agmarknet commodity code
+  // -------------------------------------------------------------------------
+  @Post('mandi-mappings') @RequireOwnerPermission(OwnerPermissions.CatalogueManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  upsertMapping(@Req() req: any, @ZodBody(UpsertMappingSchema) dto: UpsertMappingDto) {
+    return this.crops_.upsertMapping(admin(req), dto).then((data) => ({ data }));
+  }
+
+  @Delete('mandi-mappings/:productId') @RequireOwnerPermission(OwnerPermissions.CatalogueManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  removeMapping(@Req() req: any, @Param('productId') productId: string, @ZodBody(RemoveMappingSchema) dto: RemoveMappingDto) {
+    return this.crops_.removeMapping(admin(req), productId, dto).then((data) => ({ data }));
+  }
 }

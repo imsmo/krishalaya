@@ -188,3 +188,21 @@ a { color: inherit; text-decoration: none; }
    belonging to the sentence above them rather than as a new section. */
 .kv-list { margin: 8px 0 12px; padding-inline-start: 24px; max-width: 76ch; }
 .kv-list li { margin-bottom: 4px; }
+
+/* PC-56 ADMIN-3c — a proportional bar. Used by the CSAT distribution (ADMIN-2)
+   and the crop-calendar stage timeline (W110). It was referenced by the CSAT
+   page and never styled, so that chart has been rendering as bare percentages
+   with an invisible element beside them.
+
+   DELIBERATELY UNITLESS AND UNLABELLED on the calendar: a stage bar shows a
+   PROPORTION of the growing period and never a date, because the platform has no
+   per-farm sowing date to anchor one to (W110's honestly-absent rule). A bar with
+   an axis of dates would be the fabrication that rule forbids. */
+.kv-bar {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  min-width: 2px;              /* a one-day stage must still be visible */
+  background: var(--kv-brand-500);
+  border-radius: 2px;
+}

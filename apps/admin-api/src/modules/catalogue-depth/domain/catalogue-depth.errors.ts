@@ -43,3 +43,16 @@ export class CheckerRequiredError extends DomainHttpError {
       HttpStatus.CONFLICT, { consequences });
   }
 }
+
+/** A crop calendar the rules refuse — an unsourced one, overlapping stages, a timeline that does not fit its duration.
+ *  422 with the rule named, because this is agronomy advice a farmer plants by. */
+export class InvalidCropCalendarError extends DomainHttpError {
+  constructor(detail: string) { super('CROP_CALENDAR_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+/** A mandi mapping the rules refuse — most often one aimed at a crop rather than a product. */
+export class InvalidMandiMappingError extends DomainHttpError {
+  constructor(detail: string) { super('MANDI_MAPPING_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+export class CropCalendarNotFoundError extends DomainHttpError {
+  constructor(ref: string) { super('CROP_CALENDAR_NOT_FOUND', `crop calendar ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
+}

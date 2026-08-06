@@ -15,7 +15,10 @@ import { AdminPool } from '../../../core/database/admin-pool';
 
 /** The audit kinds 0102 widened the CHECK to accept. Typed so a typo cannot reach the database and fail there. */
 export type CatalogueEntityKind =
-  | 'attribute' | 'attribute_option' | 'category_attribute' | 'unit' | 'unit_conversion';
+  | 'attribute' | 'attribute_option' | 'category_attribute' | 'unit' | 'unit_conversion'
+  // PC-56 ADMIN-3c (0104): a crop-calendar edit changes advice a farmer plants by, and a mandi mapping changes which
+  // price series a crop resolves to. Neither could be recorded before that migration.
+  | 'crop_calendar' | 'mandi_mapping';
 export type CatalogueAction =
   | 'created' | 'updated' | 'activated' | 'deactivated' | 'renamed' | 'bound' | 'unbound';
 
@@ -410,5 +413,198 @@ export class EavRepository {
       oldValue: x.old_value ?? null, newValue: x.new_value ?? null, reason: x.reason,
       actorUserId: x.actor_user_id, createdAt: iso(x.created_at),
     }));
+  }
+
+  /* ------------------------------------------------------------------ the crop lens (PC-56 ADMIN-3c) */
+
+  /**
+   * W023's crop list. There is no crops table — crops ARE the `crops.*` category branch — so this is a lens, and every
+   * column the canon shows is either a category column or a JOIN:
+   *   • Season(s): derived from this crop's SOURCED calendars (DELTA-008's answer). NULL when it has none, which renders
+   *     as "unknown" rather than as "no seasons" — a season we have not sourced is not one we have ruled out.
+   *   • Mandi feed: a rollup over the crop's PRODUCTS, because mandi_prices keys on product_id. A category-level mapping
+   *     would look right here and resolve to no price at all.
+   *   • Varieties: the `variety` attribute's options scoped to this branch, plus the global set.
+   */
+  async cropLens(limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `WITH root AS (
+         SELECT path FROM categories WHERE code = 'crops' AND deleted_at IS NULL LIMIT 1
+       ),
+       crops AS (
+         SELECT c.id, c.code, c.default_name, c.path::text AS path, c.depth, c.is_active
+           FROM categories c, root r
+          WHERE c.deleted_at IS NULL AND c.path <@ r.path AND c.id <> (SELECT id FROM categories WHERE path = r.path)
+       )
+       SELECT cr.id, cr.code, cr.default_name, cr.path, cr.depth, cr.is_active,
+              -- the seasons of this crop's own calendars, as an array (NULL when there are none)
+              (SELECT array_agg(DISTINCT cc.season)
+                 FROM crop_calendars cc
+                WHERE cc.category_id = cr.id AND cc.is_active AND cc.deleted_at IS NULL) AS seasons,
+              (SELECT count(*)::int FROM crop_calendars cc
+                WHERE cc.category_id = cr.id AND cc.is_active AND cc.deleted_at IS NULL) AS calendar_count,
+              -- products in this crop's subtree, and how many carry an Agmarknet mapping
+              (SELECT count(*)::int FROM products p
+                WHERE p.category_id = cr.id AND p.deleted_at IS NULL AND p.tenant_id IS NULL) AS product_count,
+              (SELECT count(*)::int FROM products p
+                JOIN external_entity_refs x ON x.entity_type = 'product' AND x.entity_id = p.id
+                     AND x.provider_code = 'agmarknet' AND x.deleted_at IS NULL
+                WHERE p.category_id = cr.id AND p.deleted_at IS NULL AND p.tenant_id IS NULL) AS mapped_count,
+              -- varieties offered here: this branch's own options plus the shared set
+              (SELECT count(*)::int FROM attribute_options o
+                JOIN attribute_definitions a ON a.id = o.attribute_id AND a.code = 'variety'
+                WHERE o.deleted_at IS NULL AND o.is_active
+                  AND (o.category_id = cr.id OR o.category_id IS NULL)) AS variety_count
+         FROM crops cr
+        ORDER BY cr.path
+        LIMIT $1`, [limit]);
+    return r.rows.map((x: any) => ({
+      id: x.id, code: x.code, defaultName: x.default_name, path: x.path, depth: x.depth, isActive: x.is_active,
+      // NULL, never [] — the distinction between "unknown" and "none"
+      seasons: x.seasons ?? null,
+      calendarCount: x.calendar_count ?? 0,
+      productCount: x.product_count ?? 0,
+      mappedCount: x.mapped_count ?? 0,
+      varietyCount: x.variety_count ?? 0,
+    }));
+  }
+
+  /** Calendars, optionally for one crop or one season. Platform-global rows only — a tenant's own calendars are theirs. */
+  async listCalendars(q: { categoryId?: string; season?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = [];
+    const conds = ['cc.deleted_at IS NULL', 'cc.tenant_id IS NULL'];
+    if (q.categoryId) { params.push(q.categoryId); conds.push(`cc.category_id = $${params.length}`); }
+    if (q.season) { params.push(q.season); conds.push(`cc.season = $${params.length}`); }
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `SELECT cc.id, cc.crop_name, cc.season, cc.category_id, cc.region_id, cc.duration_days_min, cc.duration_days_max,
+              cc.stages, cc.source, cc.is_active, cc.created_at,
+              c.code AS category_code, ar.default_name AS region_name
+         FROM crop_calendars cc
+         LEFT JOIN categories c ON c.id = cc.category_id
+         LEFT JOIN admin_regions ar ON ar.id = cc.region_id
+        WHERE ${conds.join(' AND ')}
+        ORDER BY cc.crop_name, cc.season
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      id: x.id, cropName: x.crop_name, season: x.season,
+      categoryId: x.category_id ?? null, categoryCode: x.category_code ?? null,
+      // NULL region = pan-India, which is a real value rather than missing data
+      regionId: x.region_id ?? null, regionName: x.region_name ?? null,
+      durationDaysMin: Number(x.duration_days_min), durationDaysMax: Number(x.duration_days_max),
+      stages: Array.isArray(x.stages) ? x.stages : [],
+      source: x.source, isActive: x.is_active, createdAt: iso(x.created_at),
+    }));
+  }
+
+  async getCalendar(id: string): Promise<Record<string, unknown> | null> {
+    const rows = await this.pool.query(
+      `SELECT id, crop_name, season, category_id, region_id, duration_days_min, duration_days_max, stages, source, is_active
+         FROM crop_calendars WHERE id = $1 AND deleted_at IS NULL`, [id]);
+    const x = rows.rows[0] as any;
+    return x ? {
+      id: x.id, cropName: x.crop_name, season: x.season, categoryId: x.category_id ?? null,
+      regionId: x.region_id ?? null, durationDaysMin: Number(x.duration_days_min),
+      durationDaysMax: Number(x.duration_days_max), stages: Array.isArray(x.stages) ? x.stages : [],
+      source: x.source, isActive: x.is_active,
+    } : null;
+  }
+
+  /** Platform-global by construction: tenant_id stays NULL. An admin authoring a calendar is authoring reference data
+   *  for every tenant, which is the only kind this console writes. */
+  async insertCalendar(client: PoolClient, p: {
+    cropName: string; season: string; source: string; durationDaysMin: number; durationDaysMax: number;
+    stages: unknown[]; categoryId: string | null; regionId: string | null; actorUserId: string;
+  }): Promise<{ id: string }> {
+    const r = await client.query(
+      `INSERT INTO crop_calendars
+         (tenant_id, crop_name, season, category_id, region_id, duration_days_min, duration_days_max,
+          stages, source, created_by)
+       VALUES (NULL,$1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)
+       RETURNING id`,
+      [p.cropName, p.season, p.categoryId, p.regionId, p.durationDaysMin, p.durationDaysMax,
+       JSON.stringify(p.stages), p.source, p.actorUserId]);
+    return { id: (r.rows[0] as any).id };
+  }
+
+  async updateCalendar(client: PoolClient, p: {
+    id: string; cropName: string; season: string; source: string;
+    durationDaysMin: number; durationDaysMax: number; stages: unknown[];
+    categoryId: string | null; regionId: string | null; actorUserId: string;
+  }): Promise<number> {
+    const r = await client.query(
+      `UPDATE crop_calendars
+          SET crop_name = $2, season = $3, category_id = $4, region_id = $5,
+              duration_days_min = $6, duration_days_max = $7, stages = $8::jsonb, source = $9,
+              updated_by = $10, updated_at = now()
+        WHERE id = $1 AND tenant_id IS NULL AND deleted_at IS NULL`,
+      [p.id, p.cropName, p.season, p.categoryId, p.regionId, p.durationDaysMin, p.durationDaysMax,
+       JSON.stringify(p.stages), p.source, p.actorUserId]);
+    return r.rowCount ?? 0;
+  }
+
+  async setCalendarActive(client: PoolClient, id: string, isActive: boolean, actorUserId: string): Promise<number> {
+    const r = await client.query(
+      `UPDATE crop_calendars SET is_active = $2, updated_by = $3, updated_at = now()
+        WHERE id = $1 AND tenant_id IS NULL AND deleted_at IS NULL AND is_active <> $2`, [id, isActive, actorUserId]);
+    return r.rowCount ?? 0;
+  }
+
+  /* ---------------- the mandi mapping: external_entity_refs, keyed to PRODUCT ---------------- */
+
+  /** A crop's products with their mapping state — what the W023 rollup is computed from, and the drill-in. */
+  async productsForCrop(categoryId: string): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT p.id AS product_id, p.default_name, p.code,
+              x.external_id, x.sync_status, x.last_synced_at
+         FROM products p
+         LEFT JOIN external_entity_refs x
+           ON x.entity_type = 'product' AND x.entity_id = p.id
+              AND x.provider_code = 'agmarknet' AND x.deleted_at IS NULL
+        WHERE p.category_id = $1 AND p.deleted_at IS NULL AND p.tenant_id IS NULL
+        ORDER BY p.default_name
+        LIMIT 200`, [categoryId]);
+    return r.rows.map((x: any) => ({
+      productId: x.product_id, defaultName: x.default_name, code: x.code ?? null,
+      externalId: x.external_id ?? null,
+      // NULL, not 'pending' — an unmapped product has no sync state at all, and inventing one would imply an attempt
+      syncStatus: x.sync_status ?? null, lastSyncedAt: iso(x.last_synced_at),
+    }));
+  }
+
+  /** Is this commodity code already claimed by a DIFFERENT product? `external_entity_refs`' second unique index would
+   *  reject it, but a named 409 beats a constraint violation. */
+  async commodityCodeOwner(externalId: string): Promise<{ productId: string; defaultName: string } | null> {
+    const r = await this.pool.query(
+      `SELECT x.entity_id AS product_id, p.default_name
+         FROM external_entity_refs x
+         JOIN products p ON p.id = x.entity_id
+        WHERE x.provider_code = 'agmarknet' AND x.entity_type = 'product'
+          AND x.external_id = $1 AND x.deleted_at IS NULL
+        LIMIT 1`, [externalId]);
+    const x = r.rows[0] as any;
+    return x ? { productId: x.product_id, defaultName: x.default_name } : null;
+  }
+
+  /**
+   * Upsert the mapping. `sync_status` is 'pending', NOT 'synced': nobody has checked that this commodity code resolves
+   * upstream, and claiming synced on insert would assert something no ingest has confirmed.
+   */
+  async upsertMapping(client: PoolClient, p: { productId: string; externalId: string; actorUserId: string }): Promise<void> {
+    await client.query(
+      `INSERT INTO external_entity_refs (provider_code, entity_type, entity_id, external_id, sync_status, created_by)
+       VALUES ('agmarknet','product',$1,$2,'pending',$3)
+       ON CONFLICT (provider_code, entity_type, entity_id) DO UPDATE
+         SET external_id = $2, sync_status = 'pending', last_synced_at = NULL,
+             deleted_at = NULL, updated_by = $3, updated_at = now()`,
+      [p.productId, p.externalId, p.actorUserId]);
+  }
+
+  async deleteMapping(client: PoolClient, productId: string, actorUserId: string): Promise<number> {
+    const r = await client.query(
+      `UPDATE external_entity_refs SET deleted_at = now(), updated_by = $2, updated_at = now()
+        WHERE provider_code = 'agmarknet' AND entity_type = 'product' AND entity_id = $1 AND deleted_at IS NULL`,
+      [productId, actorUserId]);
+    return r.rowCount ?? 0;
   }
 }

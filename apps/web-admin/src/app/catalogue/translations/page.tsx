@@ -82,6 +82,7 @@ export default async function TranslationsPage(
         <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
         <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
         <Link href="/catalogue/translations" className="kv-chip is-active" aria-current="true">{t.t('cat.navTranslations')}</Link>
+        <Link href="/catalogue/crops" className="kv-chip">{t.t('cat.navCrops')}</Link>
       </nav>
 
       <p className="kv-field__hint">
