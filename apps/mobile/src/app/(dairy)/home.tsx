@@ -1,6 +1,7 @@
 // apps/mobile/src/app/(dairy)/home.tsx · dairy-farmer home (PC-50 W10-2). My REAL MCC memberships (member
 // code, cycle, centre name) + the latest bill's honest status. D2C consumer subscriptions have NO backend →
-// honest coming-note (PC-54 `dairy-d2c-subscriptions`), never a fake storefront.
+// PC-55 B6: the D2C coming-note is gone — the subscription tab shipped on W54-5, so the note had become false.
+// It now points at the tab where the standing order actually lives.
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -51,7 +52,7 @@ export default function DairyHome() {
             </Pressable>
           </>
         )}
-        <Text style={styles.muted}>{t('dairyapp.home.d2cComing')}</Text>
+        <Text style={styles.muted}>{t('dairyapp.home.d2cWhere')}</Text>
       </ScrollView>
     </ScreenScaffold>
   );

@@ -22,3 +22,11 @@ export async function searchProducts(q: string): Promise<ProductCard[]> {
 export async function businessKyc() {
   try { return await apiClient().kyc.businessStatus(); } catch { return null; }
 }
+
+// --- PC-55 B6 · EXPIRING DOCUMENTS (PC-54 W54-14 `store-licence-reminders`). A self-read of the caller's own KYC
+// documents nearing expiry. This is what replaced the old "reminders are coming" note: the dates are REAL rows with
+// real validUntil values, so the countdown is arithmetic on the server's data rather than a fabricated one.
+export async function expiringDocuments(days = 90): Promise<Array<{ id: string; status: string; docTypeId?: string; validUntil?: string | null; docNoMasked?: string | null }>> {
+  try { return await apiClient().kyc.expiringDocuments(days) as unknown as Array<{ id: string; status: string; docTypeId?: string; validUntil?: string | null; docNoMasked?: string | null }>; }
+  catch { return []; }
+}

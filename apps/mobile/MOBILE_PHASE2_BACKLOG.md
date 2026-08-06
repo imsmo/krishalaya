@@ -25,8 +25,17 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       footer says totals live on the bill), milk bills (box=mine; detail = gross/every deduction line/net,
       dispute-window instant-compare + honest "raise it at your centre" note — the dispute WRITE is operator-
       side, no fake button), active rate charts (the exact counter rates, cached offline). Flag `dairy` ON;
-      AppRole 'dairy' → RBAC `dairy_farmer`. D2C SUBSCRIPTION: NO backend → coming-note → PC-54
-      `dairy-d2c-subscriptions`. Old placeholders stay un-routed.
+      AppRole 'dairy' → RBAC `dairy_farmer`. Old placeholders stay un-routed.
+      **D2C SHIPPED 2026-08-06 (PC-55 B6)** on W54-5 + A5 — new "Home delivery" tab; the coming-note (which had
+      become false) is now a pointer to it. The household OWNS pause / resume / cancel, each offered only in the
+      state the API accepts. PAUSE ASKS FOR AN END DATE because the API requires one and because a pause with no
+      end is an abandoned subscription nobody resumes; it must be in the future and is capped at a year (longer is
+      a cancellation being avoided). CANCEL is confirmed as FINAL — a cancelled order offers nothing further,
+      because offering cancel again would imply it can be undone. A start date in the PAST is refused: the
+      delivery run is materialised forward by a cadence job, so a back-dated start would promise drops that never
+      happened and then bill for them. NO MONTHLY-COST ARITHMETIC anywhere: the screen shows the per-delivery
+      price, how many of the last 30 days' drops ACTUALLY arrived, and says the bill is the dairy's postpaid
+      statement over real deliveries — multiplying price by frequency would be a confident lie the bill exposes.
 - [x] **W10-3 · Vet professional** ✅ 2026-08-05 — NEW `(vet)` tab app (Practice/Bookings/Earnings), the
       PROVIDER side of Pashupalak's bookings: one-time idempotent self-registration (licence 2–60, AI-tech,
       radius), price list from the SEEDED vet_service vocabulary (chips, never free-typed), rupees→minor by
@@ -81,3 +90,9 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       registry facts + active rate charts. Day totals / shift-close (238 + ShiftClose placeholder): NO
       per-MCC collections read-model → honest note → PC-54 `mcc-shift-summary`. Flag `mcc_operator` ON.
       **PHASE-2 MOBILE ACTIVATION COMPLETE — W10-1..7 ALL SHIPPED.**
+      **DEPTH ADDED 2026-08-06 (PC-55 B5/B6)** — four coming-notes retired against the PC-54/PC-55 endpoints that
+      closed their gaps: animal health file + vet prescription pad (B5), and D2C home delivery, the MCC CENTRE DAY
+      SHEET (per-shift slips/litres/amount/water-flags for a date, aggregated BY THE SERVER — the operator's app
+      still adds up nothing itself, which is why the old screen refused to show totals) and the STORE LICENCE
+      expiring-documents feed (real `validUntil` dates; an already-lapsed document is called expired rather than
+      shown as "0 days left", and a document with NO expiry date sorts LAST instead of being assumed fine) in B6.

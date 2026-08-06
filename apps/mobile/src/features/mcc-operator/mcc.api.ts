@@ -27,3 +27,11 @@ export async function memberSlips(membershipId: string, from: string, to: string
 export async function memberBills(membershipId: string): Promise<MilkBill[]> {
   try { return (await apiClient().dairy.listBills({ box: 'all', membershipId, limit: 50 })).items; } catch { return []; }
 }
+
+// --- PC-55 B6 · the CENTRE DAY SHEET (PC-54 W54-5 `mcc-shift-summary`). Aggregated by the SERVER from ledgered
+// slips — the operator's app never adds up money or litres itself, which is exactly why the old screen said the
+// totals were unavailable rather than computing them locally. Degrades to [] so a failed summary cannot blank the
+// centre's registry facts beside it.
+export async function mccDaySheet(mccId: string, date: string): Promise<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>> {
+  try { return await apiClient().dairy.mccDaySummary(mccId, date); } catch { return []; }
+}
