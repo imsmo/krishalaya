@@ -59,6 +59,11 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
   return (
     <section>
       <p className="kv-backlink"><Link href="/catalogue/categories">{t.t('cat.backCategories')}</Link></p>
+      {/* PC-56 ADMIN-3 · W020's Attributes tab. A separate route rather than a client-side tab: it is a different read
+          with a different write path, and a tab would make one page own two audit trails. */}
+      <p className="kv-field__hint">
+        <Link href={`/catalogue/categories/${encodeURIComponent(params.id)}/bindings`}>{t.t('bind.title')}</Link>
+      </p>
       <h1>{cat.code}</h1>
       {okKey && <p className="kv-success" role="status">{t.t(`cat.ok.${okKey === 'updated' ? 'categoryUpdated' : okKey === 'moved' ? 'moved' : okKey === 'activated' ? 'activated' : okKey === 'deactivated' ? 'deactivated' : 'categoryCreated'}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cat.error.${errKey}`)}</p>}

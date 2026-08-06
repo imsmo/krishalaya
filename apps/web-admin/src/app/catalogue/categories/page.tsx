@@ -58,6 +58,15 @@ export default async function CategoriesPage({ searchParams }: { searchParams: {
       {okCreated && <p className="kv-success" role="status">{t.t('cat.ok.categoryCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cat.error.${errKey}`)}</p>}
 
+      {/* The catalogue section nav. It existed only on the lookup-types page, so the categories screen was a dead end —
+          PC-56 ADMIN-3 adds it here alongside the two new lenses. */}
+      <nav className="kv-filters" aria-label={t.t('cat.nav')}>
+        <Link href="/catalogue" className="kv-chip">{t.t('cat.navTypes')}</Link>
+        <Link href="/catalogue/categories" className="kv-chip is-active" aria-current="true">{t.t('cat.navCategories')}</Link>
+        <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
+        <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
+      </nav>
+
       <nav className="kv-filters" aria-label={t.t('cat.filterKind')}>
         <Link href={qp({ commerceKind: undefined, cursor: undefined })} className={`kv-chip${!commerceKind ? ' is-active' : ''}`} aria-current={!commerceKind ? 'true' : undefined}>{t.t('cat.filterAll')}</Link>
         {COMMERCE_KINDS.map((k) => (

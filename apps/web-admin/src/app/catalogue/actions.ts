@@ -7,8 +7,12 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '../../lib/admin-auth';
-import { adminPost, adminPatch, AdminApiError } from '../../lib/admin-client';
+import { adminPost, adminPatch, adminDelete, AdminApiError } from '../../lib/admin-client';
 import { buildCreateType, buildUpdateType, buildCreateValue, buildUpdateValue, buildSetActive, buildCreateCategory, buildUpdateCategory, buildMove } from '../../features/catalogue/catalogue';
+import {
+  buildAttribute, buildAttributeEdit, buildOption, buildBinding, buildUnit, buildConversion,
+  buildSetActive as buildEavSetActive, type AttributeRow,
+} from '../../features/catalogue/eav';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -136,4 +140,218 @@ export async function setCategoryActiveAction(formData: FormData): Promise<void>
   catch (e) { redirect(`/catalogue/categories/${enc(id)}?error=${errorKey(e)}`); }
   revalidatePath(`/catalogue/categories/${id}`);
   redirect(`/catalogue/categories/${enc(id)}?ok=${built.value.isActive ? 'activated' : 'deactivated'}`);
+}
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-3 · the EAV definition plane (W020's bindings tab, W024, W025, W026, W027)
+// ---------------------------------------------------------------------------
+// Every one of these carries a MANDATORY reason, because every one writes a `catalogue_changes` row. Before this wave
+// the unit writes carried neither — the defect the migration and this wave exist to close.
+
+const enc2 = encodeURIComponent;
+
+/** A server 422 in this domain always names the rule it refused (Golden Law 9, a unit on a boolean, a cross-class
+ *  conversion). Passed through verbatim rather than mapped: the rule IS the message. */
+function passThrough422(e: unknown): string | null {
+  return e instanceof AdminApiError && e.status === 422 ? e.message.slice(0, 300) : null;
+}
+
+export async function createAttributeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/attributes?${qs}`);
+  const built = buildAttribute((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=attr_${built.error}`);
+  try { await adminPost('catalogue/attributes', { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    if (why) back(`error=attr_rejected&why=${enc2(why)}`);
+    if (e instanceof AdminApiError && e.status === 409) back('error=attr_duplicate');
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/attributes');
+  back('ok=attr_created');
+}
+
+/**
+ * Save an attribute edit. THE CHECKER GATE SURFACES HERE.
+ *
+ * The server answers 409 CATALOGUE_CHECKER_REQUIRED with the consequences in its message when the change re-interprets
+ * stored data. That is passed back to the page verbatim so the operator READS what the change does; ticking the
+ * acknowledgement re-submits with `acknowledgeConsequences`. Deliberately two steps, and deliberately not a modal that
+ * summarises: the consequence text is computed from the real binding count and must not be paraphrased.
+ */
+export async function updateAttributeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/catalogue/attributes');
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/attributes/${enc2(id)}?${qs}`);
+  const current: Pick<AttributeRow, 'defaultName' | 'dataType' | 'unitCode' | 'validation'> = {
+    defaultName: String(formData.get('currentName') ?? ''),
+    dataType: String(formData.get('currentType') ?? ''),
+    unitCode: String(formData.get('currentUnit') ?? '') || null,
+    validation: (() => {
+      const raw = String(formData.get('currentValidation') ?? '').trim();
+      if (!raw) return {};
+      try { return JSON.parse(raw) as Record<string, unknown>; } catch { return {}; }
+    })(),
+  };
+  const built = buildAttributeEdit((n) => String(formData.get(n) ?? ''), current);
+  if (!built.ok) back(`error=attr_${built.error}`);
+  try { await adminPatch(`catalogue/attributes/${enc2(id)}`, { body: built.value }); }
+  catch (e) {
+    if (e instanceof AdminApiError && e.status === 409) {
+      // the consequences, verbatim — this is the operator's only chance to read them before confirming
+      back(`error=attr_checker&why=${enc2(e.message.slice(0, 500))}`);
+    }
+    const why = passThrough422(e);
+    if (why) back(`error=attr_rejected&why=${enc2(why)}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath(`/catalogue/attributes/${id}`);
+  revalidatePath('/catalogue/attributes');
+  back('ok=attr_updated');
+}
+
+export async function setAttributeActiveAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/catalogue/attributes');
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/attributes/${enc2(id)}?${qs}`);
+  const built = buildEavSetActive((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=attr_${built.error}`);
+  try { await adminPost(`catalogue/attributes/${enc2(id)}/active`, { body: built.value }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath(`/catalogue/attributes/${id}`);
+  revalidatePath('/catalogue/attributes');
+  back(built.value.isActive ? 'ok=attr_activated' : 'ok=attr_deactivated');
+}
+
+export async function createOptionAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const attributeId = String(formData.get('attributeId') ?? '').trim();
+  if (!attributeId) redirect('/catalogue/attributes');
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/attributes/${enc2(attributeId)}?${qs}`);
+  const built = buildOption((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=opt_${built.error}`);
+  try { await adminPost(`catalogue/attributes/${enc2(attributeId)}/options`, { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    if (why) back(`error=opt_rejected&why=${enc2(why)}`);
+    if (e instanceof AdminApiError && e.status === 409) back('error=opt_duplicate');
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath(`/catalogue/attributes/${attributeId}`);
+  back('ok=opt_created');
+}
+
+export async function setOptionActiveAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const attributeId = String(formData.get('attributeId') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/attributes/${enc2(attributeId)}?${qs}`);
+  if (!id) back('error=opt_generic');
+  const built = buildEavSetActive((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=opt_${built.error}`);
+  try { await adminPost(`catalogue/options/${enc2(id)}/active`, { body: built.value }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath(`/catalogue/attributes/${attributeId}`);
+  back(built.value.isActive ? 'ok=opt_activated' : 'ok=opt_deactivated');
+}
+
+export async function bindAttributeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const categoryId = String(formData.get('categoryId') ?? '').trim();
+  if (!categoryId) redirect('/catalogue/categories');
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/categories/${enc2(categoryId)}/bindings?${qs}`);
+  const built = buildBinding((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=bind_${built.error}`);
+  try { await adminPost(`catalogue/categories/${enc2(categoryId)}/bindings`, { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    if (why) back(`error=bind_rejected&why=${enc2(why)}`);
+    if (e instanceof AdminApiError && e.status === 409) back('error=bind_duplicate');
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath(`/catalogue/categories/${categoryId}/bindings`);
+  back('ok=bind_bound');
+}
+
+export async function updateBindingAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const categoryId = String(formData.get('categoryId') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/categories/${enc2(categoryId)}/bindings?${qs}`);
+  if (!id) back('error=bind_generic');
+  const built = buildBinding((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=bind_${built.error}`);
+  try { await adminPatch(`catalogue/bindings/${enc2(id)}`, { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    if (why) back(`error=bind_rejected&why=${enc2(why)}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath(`/catalogue/categories/${categoryId}/bindings`);
+  back('ok=bind_updated');
+}
+
+/** Unbind. POSTed rather than DELETEd from the console because a Server Action form cannot issue a DELETE — the API's
+ *  verb is DELETE and this action calls it through the client's own delete helper. */
+export async function unbindAttributeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const categoryId = String(formData.get('categoryId') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/categories/${enc2(categoryId)}/bindings?${qs}`);
+  if (!id) back('error=bind_generic');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (reason.length < 10) back('error=bind_reason');
+  try { await adminDelete(`catalogue/bindings/${enc2(id)}`, { body: { reason } }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath(`/catalogue/categories/${categoryId}/bindings`);
+  back('ok=bind_unbound');
+}
+
+export async function createUnitAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/units?${qs}`);
+  const built = buildUnit((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=unit_${built.error}`);
+  try { await adminPost('catalogue/units', { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    if (why) back(`error=unit_rejected&why=${enc2(why)}`);
+    if (e instanceof AdminApiError && e.status === 409) back('error=unit_duplicate');
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/units');
+  back('ok=unit_created');
+}
+
+export async function setUnitActiveAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const code = String(formData.get('code') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/units?${qs}`);
+  if (!code) back('error=unit_generic');
+  const built = buildEavSetActive((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=unit_${built.error}`);
+  try { await adminPost(`catalogue/units/${enc2(code)}/active`, { body: built.value }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/catalogue/units');
+  back(built.value.isActive ? 'ok=unit_activated' : 'ok=unit_deactivated');
+}
+
+/** The factor. The console never parses it — `buildConversion` validates it as text and it is sent as text, so the
+ *  numeric(20,10) value the operator typed is the value the database stores. */
+export async function upsertConversionAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/units?${qs}`);
+  const built = buildConversion((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=unit_${built.error}`);
+  try { await adminPost('catalogue/unit-conversions', { body: built.value }); }
+  catch (e) {
+    const why = passThrough422(e);
+    if (why) back(`error=unit_rejected&why=${enc2(why)}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/units');
+  back('ok=unit_factorSet');
 }

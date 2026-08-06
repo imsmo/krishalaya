@@ -46,6 +46,9 @@ export default async function CatalogueTypesPage({ searchParams }: { searchParam
       <nav className="kv-filters" aria-label={t.t('cat.nav')}>
         <Link href="/catalogue" className="kv-chip is-active" aria-current="true">{t.t('cat.navTypes')}</Link>
         <Link href="/catalogue/categories" className="kv-chip">{t.t('cat.navCategories')}</Link>
+        {/* PC-56 ADMIN-3 · the EAV definition plane */}
+        <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
+        <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('cat.ok.typeCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cat.error.${errKey}`)}</p>}
