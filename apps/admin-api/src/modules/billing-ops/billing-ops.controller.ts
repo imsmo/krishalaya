@@ -13,13 +13,23 @@ import { SaasInvoicesAdminService } from './services/saas-invoices-admin.service
 import { DunningService } from './services/dunning.service';
 import { ManualAdjustmentService } from './services/manual-adjustment.service';
 import { RevenueDashboardService } from './services/revenue-dashboard.service';
+import { SubscriptionViewService } from './services/subscription-view.service';
 import {
   QueryInvoicesSchema, QueryInvoicesDto, UpdateInvoiceSchema, UpdateInvoiceDto,
   QueryDunningSchema, QueryDunningDto, RecordDunningSchema, RecordDunningDto,
+  QueryDunningQueueSchema, QueryDunningQueueDto,
   QueryAdjustmentsSchema, QueryAdjustmentsDto, ApplyAdjustmentSchema, ApplyAdjustmentDto,
   QueryRevenueSchema, QueryRevenueDto,
 } from './dto/billing-ops.dto';
 
+// the queue's cursor is (daysLate|invoiceId), not (createdAt|id) — a malformed one is IGNORED rather than 400ing,
+// because a stale bookmark should show page 1, not an error.
+const decodeQueueCursor = (c?: string) => {
+  if (!c) return undefined;
+  const [d, id] = Buffer.from(c, 'base64').toString().split('|');
+  const n = Number(d);
+  return Number.isInteger(n) && id ? { d: n, id } : undefined;
+};
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 const admin = (req: any): AdminRequestContext => req.admin;
 
@@ -31,6 +41,7 @@ export class BillingOpsController {
     private readonly dunning: DunningService,
     private readonly adjustments: ManualAdjustmentService,
     private readonly revenue: RevenueDashboardService,
+    private readonly subscriptions: SubscriptionViewService,
   ) {}
 
   // ---- reads ----
@@ -45,10 +56,24 @@ export class BillingOpsController {
   @Get('invoices/:id') @RequireOwnerPermission(OwnerPermissions.BillingRead)
   getInvoice(@Param('id') id: string) { return this.invoices.get(id).then((data) => ({ data })); }
 
+  // PC-56 ADMIN-1 · the collection queue (must be declared BEFORE any 'dunning/:x' route would shadow it, and it
+  // deliberately sits outside `invoices/` because it is not about one invoice).
+  @Get('dunning') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  dunningQueue(@ZodQuery(QueryDunningQueueSchema) q: QueryDunningQueueDto) {
+    return this.dunning.queue({ minDaysLate: q.minDaysLate, cursor: decodeQueueCursor(q.cursor), limit: q.limit })
+      .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+
   @Get('invoices/:id/dunning') @RequireOwnerPermission(OwnerPermissions.BillingRead)
   listDunning(@Param('id') id: string, @ZodQuery(QueryDunningSchema) q: QueryDunningDto) {
     return this.dunning.list({ invoiceId: id, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+
+  // PC-56 ADMIN-1 · one tenant's subscription view (state + add-ons + the invoices it produced). Read-only.
+  @Get('subscriptions/:tenantId') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  subscriptionView(@Param('tenantId') tenantId: string) {
+    return this.subscriptions.forTenant(tenantId).then((data) => ({ data }));
   }
 
   @Get('adjustments') @RequireOwnerPermission(OwnerPermissions.BillingRead)

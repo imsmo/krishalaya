@@ -13,11 +13,12 @@ import { SaasInvoicesAdminService } from './services/saas-invoices-admin.service
 import { DunningService } from './services/dunning.service';
 import { ManualAdjustmentService } from './services/manual-adjustment.service';
 import { RevenueDashboardService } from './services/revenue-dashboard.service';
+import { SubscriptionViewService } from './services/subscription-view.service';
 
 @Module({
   controllers: [BillingOpsController],
   providers: [
-    BillingRepository, SaasInvoicesAdminService, DunningService, ManualAdjustmentService, RevenueDashboardService,
+    BillingRepository, SaasInvoicesAdminService, DunningService, ManualAdjustmentService, RevenueDashboardService, SubscriptionViewService,
     // the ONLY money writer (Law 2/9): the wallet-service gRPC client behind the WalletAdminPort seam.
     { provide: WALLET_ADMIN, useFactory: (config: AdminConfig) => new WalletGrpcAdminClient(config), inject: [AdminConfig] },
   ],

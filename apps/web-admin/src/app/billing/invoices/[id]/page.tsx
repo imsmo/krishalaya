@@ -14,6 +14,10 @@ import { DataTable, Column } from '../../../../components/DataTable';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { invoiceStatusKey, canIssue, canMarkOverdue, canVoid, canDun, DUNNING_CHANNELS, DUNNING_OUTCOMES, type InvoiceRow, type DunningAttempt } from '../../../../features/billing/billing';
+import {
+  reconcileLines, lineVarianceMinor, gstLabelPct, hsnLabel, hsnAbsentThroughout, pdfState, invoicePdfFileName,
+  type LineRow,
+} from '../../../../features/billing/invoice-lines';
 import { updateInvoiceAction, recordDunningAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +51,10 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const s = invoiceStatusKey(inv.status);
+  const lines: LineRow[] = inv.lineItems ?? [];
+  const recon = reconcileLines(lines, inv.subtotalMinor);
+  const variance = lineVarianceMinor(lines, inv.subtotalMinor);
+  const pdf = pdfState(inv.pdfMediaId);
 
   const dunCols: Column<DunningAttempt>[] = [
     { header: t.t('billing.attempt'), cell: (d) => `#${d.attemptNo}` },
@@ -69,6 +77,64 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
         <div className="kv-facts__row"><dt>{t.t('billing.dueDate')}</dt><dd>{inv.dueDate ?? t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('billing.dunningAttempts')}</dt><dd>{inv.dunningAttempts.toLocaleString()}</dd></div>
       </dl>
+
+      {/* WHAT WAS BILLED (PC-56 ADMIN-1, canon W013). The lines come from `saas_invoices.line_items` exactly as filed;
+          nothing here re-derives GST or re-multiplies a line. When the visible lines do not add up to the filed
+          subtotal, the page SAYS SO rather than letting a reader total the rows and reach a different number than the
+          document — a line that could not be parsed is dropped server-side, so incompleteness is a real possibility
+          and silence about it would be the actual error. */}
+      <h2>{t.t('billing.linesTitle')}</h2>
+      {lines.length === 0 ? <p className="kv-empty">{t.t(`billing.lines.${recon === 'unknown' ? 'unknown' : 'none'}`)}</p> : (
+        <>
+          <table className="kv-table">
+            <thead>
+              <tr>
+                <th scope="col">{t.t('billing.lineDesc')}</th>
+                <th scope="col">{t.t('billing.lineQty')}</th>
+                <th scope="col">{t.t('billing.lineUnit')}</th>
+                <th scope="col">{t.t('billing.lineHsn')}</th>
+                <th scope="col">{t.t('billing.lineGst')}</th>
+                <th scope="col">{t.t('billing.lineTotal')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l, i) => (
+                <tr key={`${l.desc}-${i}`}>
+                  <td>{l.desc}</td>
+                  <td>{String(l.qty ?? 1)}</td>
+                  <td>{formatMoneyMinor(String(l.unitMinor ?? '0'), inv.currency)}</td>
+                  <td>{hsnLabel(l) ?? t.t('billing.notRecorded')}</td>
+                  <td>{gstLabelPct(l) === null ? t.t('billing.notRecorded') : `${gstLabelPct(l)}%`}</td>
+                  <td>{formatMoneyMinor(String(l.totalMinor ?? '0'), inv.currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {hsnAbsentThroughout(lines) && <p className="kv-field__hint">{t.t('billing.hsnAbsentNote')}</p>}
+          {recon === 'mismatch' && (
+            <p className="kv-error" role="alert">
+              {t.t('billing.lineMismatch', {
+                filed: formatMoneyMinor(inv.subtotalMinor, inv.currency),
+                variance: variance === null ? t.t('billing.notRecorded') : formatMoneyMinor(variance.toString(), inv.currency),
+              })}
+            </p>
+          )}
+          {recon === 'ok' && <p className="kv-field__hint">{t.t('billing.linesReconciled')}</p>}
+        </>
+      )}
+
+      {/* THE PDF (canon W441) — the artefact the tenant actually received. The media id is shown because it makes the
+          asset traceable; NO download button is rendered, because admin-api has no media-presign route and a button
+          that 404s is worse than an honest sentence. Queued: GAP-BACKEND ADMIN-1-Q2. */}
+      <h2>{t.t('billing.pdfTitle')}</h2>
+      {pdf === 'generated' ? (
+        <dl className="kv-facts">
+          <div className="kv-facts__row"><dt>{t.t('billing.pdfState')}</dt><dd>{t.t('billing.pdf.generated')}</dd></div>
+          <div className="kv-facts__row"><dt>{t.t('billing.pdfFile')}</dt><dd><code>{invoicePdfFileName(inv.invoiceNo)}</code></dd></div>
+          <div className="kv-facts__row"><dt>{t.t('billing.pdfMediaId')}</dt><dd><code>{inv.pdfMediaId}</code></dd></div>
+        </dl>
+      ) : <p className="kv-empty">{t.t('billing.pdf.not_generated')}</p>}
+      <p className="kv-field__hint">{t.t('billing.pdfNoDownloadNote')}</p>
 
       <h2>{t.t('billing.invActions')}</h2>
       <p className="kv-muted kv-note">{t.t('billing.invActionsNote')}</p>

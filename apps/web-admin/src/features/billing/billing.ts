@@ -91,6 +91,10 @@ export function buildDunning(raw: { channel?: string; outcome?: string; note?: s
 
 // ---- read-model shapes (mirror admin-api billing-ops read models; type-only, no runtime) ----
 export interface RevenueOverview { currency: string; mrrMinor: string; arrMinor: string; activeSubscriptions: number; outstandingMinor: string; collectedMinor: string; invoiceStatusCounts: Record<string, number> }
-export interface InvoiceRow { id: string; tenantId: string; subscriptionId: string | null; invoiceNo: string; status: InvoiceStatus; currency: string; subtotalMinor: string; taxMinor: string; totalMinor: string; dueDate: string | null; paidAt: string | null; dunningAttempts: number; lastDunnedAt: string | null; createdAt: string | null }
+// PC-56 ADMIN-1: `lineItems` and `pdfMediaId` are served on the DETAIL read only (billing-ops projects them there,
+// not on list pages). `lineItems` is therefore OPTIONAL rather than defaulted to []: undefined means "this read does
+// not carry lines", while [] would claim the invoice bills nothing.
+export interface InvoiceRow { id: string; tenantId: string; subscriptionId: string | null; invoiceNo: string; status: InvoiceStatus; currency: string; subtotalMinor: string; taxMinor: string; totalMinor: string; dueDate: string | null; paidAt: string | null; dunningAttempts: number; lastDunnedAt: string | null; createdAt: string | null; lineItems?: InvoiceLineItemRow[]; pdfMediaId?: string | null }
+export interface InvoiceLineItemRow { desc: string; qty: number; unitMinor: string; totalMinor: string; hsn?: string | null; gstRatePct?: number | null }
 export interface DunningAttempt { id: string; invoiceId: string; attemptNo: number; channel: string; outcome: string; note: string | null; actorUserId: string; createdAt: string | null }
 export interface Adjustment { id: string; tenantId: string; subscriptionId: string | null; invoiceId: string | null; direction: string; amountMinor: string; currency: string; reason: string; walletTxnId: string; createdAt: string | null }

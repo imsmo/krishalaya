@@ -30,6 +30,17 @@ export class DunningService {
     });
   }
 
+  /** The cross-invoice COLLECTION QUEUE (PC-56 ADMIN-1) — every invoice currently owed, worst-first. Read-only:
+   *  it changes nothing and decides nothing, it just puts the debtors in front of the officer in the order that
+   *  matters. Keyset is (days late, id) so the boundary between page 1 and page 2 cannot hide a debtor. */
+  async queue(q: { minDaysLate?: number; cursor?: { d: number; id: string }; limit: number }) {
+    const items = await this.repo.dunningQueue(q);
+    const last = items[items.length - 1];
+    const nextCursor = items.length === q.limit && last
+      ? Buffer.from(`${last.daysLate}|${last.invoiceId}`).toString('base64') : null;
+    return { items, nextCursor };
+  }
+
   async list(q: DunningListQuery) {
     const items = await this.repo.listDunning(q);
     const last = items[items.length - 1] as any;

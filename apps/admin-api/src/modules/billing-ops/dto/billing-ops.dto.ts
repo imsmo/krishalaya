@@ -29,6 +29,16 @@ export type UpdateInvoiceDto = z.infer<typeof UpdateInvoiceSchema>;
 export const QueryDunningSchema = z.object({ cursor: Cursor, limit: Limit }).strict();
 export type QueryDunningDto = z.infer<typeof QueryDunningSchema>;
 
+/** The collection queue (PC-56 ADMIN-1). `minDaysLate` lets an officer work a ladder tier (0 = everything owed,
+ *  including invoices not yet late — which is the "issued but unpaid" watchlist, deliberately reachable). Capped at
+ *  a year: beyond that it is a write-off decision, not a collections one. */
+export const QueryDunningQueueSchema = z.object({
+  minDaysLate: z.coerce.number().int().min(0).max(365).optional(),
+  cursor: Cursor,
+  limit: Limit,
+}).strict();
+export type QueryDunningQueueDto = z.infer<typeof QueryDunningQueueSchema>;
+
 export const RecordDunningSchema = z.object({
   channel: z.enum(DUNNING_CHANNELS),
   outcome: z.enum(DUNNING_OUTCOMES).default('sent'),

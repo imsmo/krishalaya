@@ -52,6 +52,29 @@ export async function recordDunningAction(formData: FormData): Promise<void> {
   redirect(`/billing/invoices/${encodeURIComponent(id)}?ok=dunning`);
 }
 
+/** PC-56 ADMIN-1 · record a dunning touch FROM THE COLLECTION QUEUE. Same server call as the invoice page (one
+ *  write path, one set of guards); what differs is where the operator is standing. Returning them to the queue with
+ *  their tier filter intact is not cosmetic — a collections officer works a list top-to-bottom, and a redirect that
+ *  dropped the filter would silently restart them on a different set of debtors. */
+export async function recordDunningFromQueueAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const tier = String(formData.get('tier') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/billing/dunning?${tier ? `tier=${encodeURIComponent(tier)}&` : ''}${qs}`);
+  if (!id) back('error=notFound');
+  const built = buildDunning({
+    channel: String(formData.get('channel') ?? ''),
+    outcome: String(formData.get('outcome') ?? ''),
+    note: String(formData.get('note') ?? ''),
+  });
+  if (!built.ok) back(`error=${built.error}`);
+  try { await adminPost(`billing/invoices/${encodeURIComponent(id)}/dunning`, { body: built.value }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/billing/dunning');
+  revalidatePath(`/billing/invoices/${id}`);
+  back('ok=dunning');
+}
+
 export async function applyAdjustmentAction(formData: FormData): Promise<void> {
   requireAdmin();
   const built = buildAdjustment({

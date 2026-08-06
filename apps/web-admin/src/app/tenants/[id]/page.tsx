@@ -62,7 +62,13 @@ export default async function TenantDetailPage({ params, searchParams }: { param
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('tenants.colStatus')}</dt><dd><span className="kv-status">{t.t(`tenants.status.${s}`)}</span></dd></div>
         <div className="kv-facts__row"><dt>{t.t('tenants.colRisk')}</dt><dd>{card.tenant.riskScore}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('tenants.subscription')}</dt><dd>{sub ? `${sub.planId} · ${sub.status} · ${formatMoneyMinor(sub.priceMinor, sub.currency)}` : t.t('common.dash')}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('tenants.subscription')}</dt><dd>
+          {sub ? `${sub.planId} · ${sub.status} · ${formatMoneyMinor(sub.priceMinor, sub.currency)}` : t.t('common.dash')}
+          {/* PC-56 ADMIN-1 · the full subscription view (state, add-ons, the invoices it produced). Offered even when
+              the scorecard shows no subscription: "this tenant has none" is worth being able to confirm on its own
+              page, and the route says so plainly rather than 404ing. */}
+          {' '}<Link href={`/tenants/${encodeURIComponent(params.id)}/subscription`} className="kv-btn--link">{t.t('tenants.viewSubscription')}</Link>
+        </dd></div>
         <div className="kv-facts__row"><dt>{t.t('tenants.liveListings')}</dt><dd>{card.liveListings.toLocaleString()}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('tenants.openDisputes')}</dt><dd>{card.openDisputes.toLocaleString()}</dd></div>
       </dl>

@@ -9,7 +9,10 @@ import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
-import { TENANT_STATUSES, statusKey, type TenantListItem } from '../../features/tenants/tenant';
+import {
+  TENANT_STATUSES, statusKey, parseQuery, parseRiskMin, directoryHref, hasActiveFilters, HIGH_RISK_MIN,
+  type TenantListItem,
+} from '../../features/tenants/tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,16 +25,24 @@ const STATUS_CLASS: Record<string, string> = {
   suspended: 'kv-status--danger', archived: 'kv-status--muted', terminated: 'kv-status--muted',
 };
 
-export default async function TenantsPage({ searchParams }: { searchParams: { cursor?: string; status?: string; q?: string } }) {
+export default async function TenantsPage({ searchParams }: {
+  searchParams: { cursor?: string; status?: string; q?: string; riskMin?: string };
+}) {
   requireAdmin();
   const t = getTranslator();
   const status = (TENANT_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;
+  // PC-56 ADMIN-1: `q` was already being forwarded to the API by this page and there was no input to type it into;
+  // `riskMin` was accepted by the API and never used at all. Both are now real, and — see directoryHref — both
+  // survive a page turn.
+  const q = parseQuery(searchParams.q);
+  const riskMin = parseRiskMin(searchParams.riskMin);
+  const filters = { status, q, riskMin };
 
   let rows: TenantListItem[] = [];
   let nextCursor: string | undefined;
   let notice: string | undefined;
   try {
-    const res = await adminGet<TenantListItem[]>('tenants', { cursor: searchParams.cursor, status, q: searchParams.q, limit: 50 });
+    const res = await adminGet<TenantListItem[]>('tenants', { cursor: searchParams.cursor, status, q, riskMin, limit: 50 });
     rows = res.data ?? [];
     nextCursor = (res.meta?.nextCursor as string | undefined) ?? undefined;
   } catch (e) {
@@ -41,29 +52,55 @@ export default async function TenantsPage({ searchParams }: { searchParams: { cu
   const columns: Column<TenantListItem>[] = [
     { header: t.t('tenants.colSlug'), cell: (r) => <Link href={`/tenants/${r.id}`}>{r.slug}</Link> },
     { header: t.t('tenants.colStatus'), cell: (r) => <span className={`kv-status ${STATUS_CLASS[r.status] ?? ''}`}>{t.t(`tenants.status.${statusKey(r.status)}`)}</span> },
-    { header: t.t('tenants.colRisk'), cell: (r) => String(r.riskScore) },
+    // risk is shown as the integer the platform holds; ≥ the triage line is marked, never re-scored here
+    { header: t.t('tenants.colRisk'), cell: (r) => (
+      <span className={r.riskScore >= HIGH_RISK_MIN ? 'kv-status kv-status--danger' : ''}>{String(r.riskScore)}</span>
+    ) },
+    { header: t.t('tenants.colCreated'), cell: (r) => r.createdAt ?? t.t('common.dash') },
   ];
-
-  const filterHref = (s?: string) => `/tenants${s ? `?status=${encodeURIComponent(s)}` : ''}`;
 
   return (
     <section>
       <h1>{t.t('tenants.title')}</h1>
       <p className="kv-muted">{t.t('tenants.lead')}</p>
 
+      {/* Search as a GET form: the query lands in the URL, so the view is linkable, shareable and back-button-safe —
+          and the pager below can carry it. A POST search would make page 2 unreachable by link. */}
+      <form method="get" action="/tenants" className="kv-form kv-form--inline" role="search">
+        <label htmlFor="tenant-q" className="kv-field__label">{t.t('tenants.searchLabel')}</label>
+        <input id="tenant-q" name="q" className="kv-input" defaultValue={q ?? ''} maxLength={120}
+          placeholder={t.t('tenants.searchPlaceholder')} />
+        <label htmlFor="tenant-risk" className="kv-field__label">{t.t('tenants.riskLabel')}</label>
+        <input id="tenant-risk" name="riskMin" className="kv-input" inputMode="numeric" maxLength={3}
+          defaultValue={riskMin === undefined ? '' : String(riskMin)} placeholder="0-100" />
+        {/* the active status chip must survive a search, or searching would silently widen the list */}
+        {status && <input type="hidden" name="status" value={status} />}
+        <button type="submit" className="kv-btn">{t.t('tenants.searchSubmit')}</button>
+        {hasActiveFilters(filters) && <Link href="/tenants" className="kv-btn kv-btn--muted">{t.t('tenants.clearFilters')}</Link>}
+      </form>
+
       <nav className="kv-filters" aria-label={t.t('tenants.filterLabel')}>
-        <Link href={filterHref()} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('tenants.filterAll')}</Link>
+        <Link href={directoryHref({ q, riskMin })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('tenants.filterAll')}</Link>
         {TENANT_STATUSES.map((s) => (
-          <Link key={s} href={filterHref(s)} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`tenants.status.${s}`)}</Link>
+          <Link key={s} href={directoryHref({ status: s, q, riskMin })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`tenants.status.${s}`)}</Link>
         ))}
       </nav>
+
+      {/* The canon's saved view. It is a LINK, not stored state: a bookmarkable URL is the honest version of a
+          "saved view" until the platform actually stores per-operator views. */}
+      <p className="kv-detail__muted">
+        <Link href={directoryHref({ status: 'trial', riskMin: HIGH_RISK_MIN })} className="kv-btn--link">
+          {t.t('tenants.savedHighRiskTrials', { min: String(HIGH_RISK_MIN) })}
+        </Link>
+      </p>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={columns} rows={rows} empty={t.t('tenants.empty')} />
           {nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={`/tenants?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${encodeURIComponent(status)}` : ''}`}>{t.t('common.nextPage')}</Link>
+              {/* every active filter travels with the cursor (this used to carry only `status`) */}
+              <Link className="kv-btn" href={directoryHref({ status, q, riskMin, cursor: nextCursor })}>{t.t('common.nextPage')}</Link>
             </p>
           )}
         </>

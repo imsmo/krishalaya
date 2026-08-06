@@ -14,6 +14,8 @@ via the wallet-service** (Law 2/9) — this module never writes the ledger.
 | PATCH | `/v1/billing/invoices/:id` | `billing.manage` | **FIDO2 + step-up** (issue/mark_overdue/void) |
 | GET | `/v1/billing/invoices/:id/dunning` | `billing.read` | — (keyset list) |
 | POST | `/v1/billing/invoices/:id/dunning` | `billing.manage` | **FIDO2 + step-up** (record a dunning touch) |
+| GET | `/v1/billing/dunning` | `billing.read` | — (**collection queue**: every invoice owed, worst-first, keyset) |
+| GET | `/v1/billing/subscriptions/:tenantId` | `billing.read` | — (subscription state + add-ons + invoices it produced) |
 | GET | `/v1/billing/adjustments` | `billing.read` | — (keyset list) |
 | POST | `/v1/billing/adjustments` | `billing.manage` | **FIDO2 + step-up** (manual money adjustment → wallet-service) |
 
@@ -66,3 +68,23 @@ a retry is clean. Fail-closed: if `WALLET_GRPC_ADDR` is unset the client refuses
 - Integration (`billing-ops.integration.spec.ts`, real Postgres, gated on `DATABASE_ADMIN_URL`): work an invoice
   draft→issued→overdue + a dunning attempt (counter + audit rows); apply a manual adjustment (record + audit +
   idempotent replay via a fake wallet port — the gRPC server isn't booted in this suite).
+
+## PC-56 ADMIN-1 additions (reads only — no new state, no new money path)
+- **Invoice detail now projects `line_items` + `pdf_media_id`.** Both columns have existed on `saas_invoices` since
+  0002 and were simply never selected, so the console could show a TOTAL but not what was billed. Lines are parsed
+  defensively (`parseLineItems`): a malformed entry is DROPPED, never rendered as ₹0.00 — a visibly missing line that
+  makes the subtotal not add up is the signal finance needs; a zero-valued line is a lie. The LIST deliberately does
+  not carry lines (a 50-row page × N lines is unbounded payload nobody reads), and `lineItems` is therefore
+  `undefined` rather than `[]` on list rows: "the list does not carry lines" ≠ "this invoice bills nothing".
+- **`GET /v1/billing/dunning` — the collection queue.** The per-invoice attempt history already existed; the view a
+  collections officer works from did not. Keyset is `(days late desc, id desc)` so a page boundary cannot hide a
+  debtor. `draft` is excluded (never sent, so nothing is owed) and so are `paid`/`void`.
+- **`GET /v1/billing/subscriptions/:tenantId`.** Current subscription + add-ons + the invoices it produced.
+
+## KNOWN GAP, NAMED RATHER THAN PAPERED OVER (queued: PC-56 ADMIN-1-Q1)
+`invoice_status` can reach **`partially_paid`**, but the platform stores **no SaaS-invoice payments table** — the
+amount received is recorded NOWHERE (0002 has `paid_at` only; 0035 adds dunning attempts, not payments). So for a
+part-paid invoice the outstanding balance is genuinely UNKNOWN, and both the queue and the console say so
+(`outstandingMinor: null` + `outstandingUnknownReason: 'part_paid_amount_not_recorded'`). Returning `total_minor`
+would overstate the debt and `0` would understate it; either sends someone to chase a wrong number in front of a
+paying customer. The fix is a payments table (+ a record-payment path), not a display default.

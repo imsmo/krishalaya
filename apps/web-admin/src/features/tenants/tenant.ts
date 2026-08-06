@@ -81,3 +81,51 @@ export function validReason(reason: string | null | undefined): boolean {
   const r = (reason ?? '').trim();
   return r.length >= 3 && r.length <= 500;
 }
+
+// ---------------------------------------------------------------------------
+// Directory filters (PC-56 ADMIN-1, canon W002)
+// ---------------------------------------------------------------------------
+// The list endpoint has always accepted `q` and `riskMin`; the page plumbed `q` through to the API but never
+// rendered an input for it, so the capability existed and was unreachable. These helpers make both filters real and
+// — more importantly — make them SURVIVE PAGINATION: the previous pager rebuilt the URL with only `status`, so
+// page 2 of a search silently became page 2 of everything. On a 1,680-tenant directory that is not a cosmetic bug;
+// it is an operator concluding a tenant does not exist.
+
+/** admin-api caps risk at 0..100 (QueryTenantsSchema). A non-integer or out-of-range value is DROPPED rather than
+ *  clamped: clamping 900 to 100 would silently answer a different question than the one that was asked. */
+export function parseRiskMin(raw: string | null | undefined): number | undefined {
+  const s = String(raw ?? '').trim();
+  if (!/^\d{1,3}$/.test(s)) return undefined;
+  const n = Number.parseInt(s, 10);
+  return n >= 0 && n <= 100 ? n : undefined;
+}
+
+/** The risk threshold the "high-risk" saved view uses. A tenant at or above this is worth a human look — it is a
+ *  triage line, not a verdict, and the number lives here so the view and its label cannot disagree. */
+export const HIGH_RISK_MIN = 70;
+
+/** Trim and bound a free-text query. Empty becomes undefined so the URL stays clean and the API is not sent `q=`. */
+export function parseQuery(raw: string | null | undefined): string | undefined {
+  const s = String(raw ?? '').trim();
+  return s ? s.slice(0, 120) : undefined;
+}
+
+export interface DirectoryFilters { status?: string; q?: string; riskMin?: number; cursor?: string }
+
+/** Build a directory URL carrying EVERY active filter. One function, used by the chips, the saved views and the
+ *  pager, so a link can no longer forget a filter that another link remembers. */
+export function directoryHref(f: DirectoryFilters): string {
+  const p = new URLSearchParams();
+  if (f.status) p.set('status', f.status);
+  if (f.q) p.set('q', f.q);
+  if (f.riskMin !== undefined) p.set('riskMin', String(f.riskMin));
+  if (f.cursor) p.set('cursor', f.cursor);
+  const s = p.toString();
+  return s ? `/tenants?${s}` : '/tenants';
+}
+
+/** True when any filter is active — the page then offers "clear filters", which is only honest if there is
+ *  something to clear. */
+export function hasActiveFilters(f: DirectoryFilters): boolean {
+  return !!f.status || !!f.q || f.riskMin !== undefined;
+}

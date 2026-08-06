@@ -7,7 +7,7 @@
 import { Injectable } from '@nestjs/common';
 import { PoolClient } from 'pg';
 import { AdminPool } from '../../../core/database/admin-pool';
-import { SaasInvoice } from '../domain/invoice.entity';
+import { SaasInvoice, parseLineItems } from '../domain/invoice.entity';
 import { InvoiceStatus } from '../domain/invoice.state';
 
 function toInvoice(r: any): SaasInvoice {
@@ -17,6 +17,9 @@ function toInvoice(r: any): SaasInvoice {
     subtotalMinor: BigInt(r.subtotal_minor), taxMinor: BigInt(r.tax_minor), totalMinor: BigInt(r.total_minor),
     dueDate: r.due_date, paidAt: r.paid_at ?? null, dunningAttempts: r.dunning_attempts ?? 0,
     lastDunnedAt: r.last_dunned_at ?? null, createdAt: r.created_at ?? null,
+    // present only on the DETAIL select (the list deliberately does not carry lines — see getInvoice)
+    lineItems: r.line_items === undefined ? undefined : parseLineItems(r.line_items),
+    pdfMediaId: r.pdf_media_id ?? null,
   });
 }
 
@@ -56,7 +59,7 @@ export class BillingRepository {
   async getInvoice(id: string): Promise<SaasInvoice | null> {
     const r = await this.pool.query(
       `SELECT id, tenant_id, subscription_id, invoice_no, status, currency_code, subtotal_minor, tax_minor, total_minor,
-              due_date, paid_at, dunning_attempts, last_dunned_at, created_at
+              due_date, paid_at, dunning_attempts, last_dunned_at, created_at, line_items, pdf_media_id
          FROM saas_invoices WHERE id=$1 AND deleted_at IS NULL`, [id]);
     return r.rows[0] ? toInvoice(r.rows[0]) : null;
   }
@@ -129,6 +132,105 @@ export class BillingRepository {
       `SELECT id, tenant_id, subscription_id, invoice_id, direction, amount_minor, currency_code, reason, wallet_txn_id, created_at
          FROM billing_adjustments WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toAdjustment);
+  }
+
+  /* ---------------- dunning QUEUE (cross-invoice collection view · PC-56 ADMIN-1) ---------------- */
+  // The per-invoice attempt history already existed; what did not was the view a collections officer actually works
+  // from — every unpaid invoice across every tenant, worst-first. This is a READ over saas_invoices + subscriptions,
+  // no new state: `dunning_attempts` (the denormalised counter this module already bumps) IS the ladder step, and
+  // days-late is arithmetic on due_date. Keyset by (days late desc, id) so a page boundary cannot hide a debtor.
+  //
+  // OUTSTANDING IS DELIBERATELY NULL FOR A PART-PAID INVOICE. `invoice_status` can reach 'partially_paid', but the
+  // platform stores no SaaS-invoice PAYMENTS table (0002/0035) — the amount received is nowhere. Returning
+  // total_minor would overstate the debt and returning 0 would understate it; both send someone to chase a wrong
+  // number. Queued as a GAP-BACKEND (saas invoice payments) rather than papered over here.
+  async dunningQueue(q: { minDaysLate?: number; cursor?: { d: number; id: string }; limit: number }): Promise<Array<{
+    invoiceId: string; invoiceNo: string; tenantId: string; tenantSlug: string | null; status: string;
+    currency: string; totalMinor: string; outstandingMinor: string | null; outstandingUnknownReason: string | null;
+    dueDate: string; daysLate: number; dunningAttempts: number; lastDunnedAt: Date | null;
+    subscriptionStatus: string | null; cancelAtPeriodEnd: boolean | null;
+  }>> {
+    const params: unknown[] = []; const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    // 'draft' is not collectible (never sent) and 'paid'/'void' are done — the queue is exactly what is owed now.
+    let where = `i.deleted_at IS NULL AND i.status IN ('issued','partially_paid','overdue')`;
+    if (q.minDaysLate !== undefined) where += ` AND (CURRENT_DATE - i.due_date) >= ${p(q.minDaysLate)}`;
+    if (q.cursor) {
+      const cd = p(q.cursor.d), ci = p(q.cursor.id);
+      where += ` AND ((CURRENT_DATE - i.due_date) < ${cd} OR ((CURRENT_DATE - i.due_date) = ${cd} AND i.id < ${ci}))`;
+    }
+    const lp = p(q.limit);
+    const r = await this.pool.query(
+      `SELECT i.id, i.invoice_no, i.tenant_id, t.slug AS tenant_slug, i.status, i.currency_code,
+              i.total_minor::text AS total_minor, i.due_date::text AS due_date,
+              (CURRENT_DATE - i.due_date)::int AS days_late,
+              i.dunning_attempts, i.last_dunned_at,
+              s.status::text AS subscription_status, s.cancel_at_period_end
+         FROM saas_invoices i
+         JOIN tenants t ON t.id = i.tenant_id
+         LEFT JOIN subscriptions s ON s.id = i.subscription_id
+        WHERE ${where}
+        ORDER BY (CURRENT_DATE - i.due_date) DESC, i.id DESC LIMIT ${lp}`, params);
+    return r.rows.map((x: any) => ({
+      invoiceId: x.id, invoiceNo: x.invoice_no, tenantId: x.tenant_id, tenantSlug: x.tenant_slug ?? null,
+      status: x.status, currency: x.currency_code, totalMinor: String(x.total_minor),
+      outstandingMinor: x.status === 'partially_paid' ? null : String(x.total_minor),
+      outstandingUnknownReason: x.status === 'partially_paid' ? 'part_paid_amount_not_recorded' : null,
+      dueDate: x.due_date, daysLate: x.days_late ?? 0,
+      dunningAttempts: x.dunning_attempts ?? 0, lastDunnedAt: x.last_dunned_at ?? null,
+      subscriptionStatus: x.subscription_status ?? null,
+      cancelAtPeriodEnd: x.cancel_at_period_end ?? null,
+    }));
+  }
+
+  /* ---------------- subscription timeline (read-only · PC-56 ADMIN-1) ---------------- */
+  // W017 asks for a "timeline". There is NO subscription-event table, so a per-transition history cannot be shown
+  // and is NOT invented: what is real is the current state (subscriptions row), the add-ons attached to it, and the
+  // invoices it has actually produced — which is a truthful billing history in date order. The possible NEXT
+  // transitions come from the status machine on the console side, mirroring the server, and are labelled as
+  // possibilities rather than as things that have happened.
+  async subscriptionForTenant(tenantId: string): Promise<{
+    subscription: Record<string, unknown> | null; addons: Array<Record<string, unknown>>; invoices: Array<Record<string, unknown>>;
+  }> {
+    const s = await this.pool.query(
+      `SELECT id, plan_id::text AS plan_id, status::text AS status, billing_cycle, price_minor::text AS price_minor,
+              currency_code, discount_pct::text AS discount_pct, anchor_terms,
+              current_period_start::text AS period_start, current_period_end::text AS period_end,
+              cancel_at_period_end, cancelled_at, created_at
+         FROM subscriptions WHERE tenant_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1`, [tenantId]);
+    const sub = s.rows[0];
+    if (!sub) return { subscription: null, addons: [], invoices: [] };
+    const [addons, invoices] = await Promise.all([
+      this.pool.query(
+        // real 0002 shape: price_minor (no per-addon currency — it bills in the subscription's) + starts_on/ends_on
+        `SELECT id, addon_code, quantity, price_minor::text AS price_minor,
+                starts_on::text AS starts_on, ends_on::text AS ends_on, created_at
+           FROM subscription_addons WHERE subscription_id=$1 AND deleted_at IS NULL ORDER BY addon_code LIMIT 100`,
+        [sub.id]).catch(() => ({ rows: [] as any[] })),
+      // bounded: the last two years of monthly billing is 24 rows; 60 leaves room without becoming a report
+      this.pool.query(
+        `SELECT id, invoice_no, status::text AS status, currency_code, total_minor::text AS total_minor,
+                due_date::text AS due_date, paid_at, created_at
+           FROM saas_invoices WHERE subscription_id=$1 AND deleted_at IS NULL
+          ORDER BY created_at DESC LIMIT 60`, [sub.id]).catch(() => ({ rows: [] as any[] })),
+    ]);
+    return {
+      subscription: {
+        id: sub.id, planId: sub.plan_id, status: sub.status, billingCycle: sub.billing_cycle,
+        priceMinor: sub.price_minor, currency: sub.currency_code, discountPct: sub.discount_pct,
+        anchorTerms: sub.anchor_terms ?? {}, periodStart: sub.period_start, periodEnd: sub.period_end,
+        cancelAtPeriodEnd: sub.cancel_at_period_end === true, cancelledAt: sub.cancelled_at ?? null,
+        createdAt: sub.created_at ?? null,
+      },
+      addons: addons.rows.map((a: any) => ({
+        id: a.id, addonCode: a.addon_code, quantity: a.quantity ?? 1, priceMinor: String(a.price_minor),
+        // an addon has no currency of its own — it bills in the subscription's, so the console formats it with that
+        startsOn: a.starts_on, endsOn: a.ends_on ?? null, createdAt: a.created_at ?? null,
+      })),
+      invoices: invoices.rows.map((i: any) => ({
+        id: i.id, invoiceNo: i.invoice_no, status: i.status, currency: i.currency_code,
+        totalMinor: String(i.total_minor), dueDate: i.due_date, paidAt: i.paid_at ?? null, createdAt: i.created_at ?? null,
+      })),
+    };
   }
 
   /* ---------------- revenue rollup (read-only; float-free in SQL) ---------------- */

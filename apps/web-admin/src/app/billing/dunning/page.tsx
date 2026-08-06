@@ -1,0 +1,179 @@
+// apps/web-admin/src/app/billing/dunning/page.tsx · the COLLECTION QUEUE (PC-56 ADMIN-1, canon W015). Server
+// component: requireAdmin gates, adminGet hits GET /v1/billing/dunning (owner perm enforced server-side) — every
+// invoice currently owed across every tenant, worst-first, keyset-paged by (days late, id) so no debtor hides at a
+// page boundary. Ageing tiers are GET-form filters (?tier=), which keeps the view linkable and back-button honest.
+//
+// WHAT THIS PAGE REFUSES TO DO. It shows a total of what is owed — but only of the balances the platform actually
+// knows. `invoice_status` can reach `partially_paid` while nothing records the amount received (there is no SaaS-
+// invoice payments table), so those rows carry NO figure and are counted separately, in words, next to the total.
+// A tidier screen would have summed the invoice totals and shown one confident number; that number would be wrong,
+// and someone would read it out on a phone call to a tenant who had already paid half. (GAP-BACKEND ADMIN-1-Q1.)
+//
+// The ladder shown per row is DESCRIPTIVE: `dunning_attempts` is how many touches were recorded, and the suggested
+// channel is convention, not configuration — the platform has no dunning-policy table, so the page never claims one.
+// Money is minor-unit strings via formatMoneyMinor (Law 2). Degrade-never-die: a failed read is a notice, not a blank.
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { requireAdmin } from '../../../lib/admin-auth';
+import { adminGet, AdminApiError } from '../../../lib/admin-client';
+import { getTranslator } from '../../../lib/i18n';
+import { adminNoticeKey } from '../../../features/nav/nav-model';
+import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { invoiceStatusKey } from '../../../features/billing/billing';
+import {
+  DUNNING_CHANNELS, ageingTier, isAgeingTier, tierMinDays, tierCounts, knownOutstanding,
+  outstandingUnknown, dunningStep, suggestedChannel, touchBlockedReason, canRecordTouch, needsWriteOffReview,
+  isLeaving, MAX_DUNNING_ATTEMPTS, type QueueRow,
+} from '../../../features/billing/dunning-queue';
+import { recordDunningFromQueueAction } from '../actions';
+
+export const dynamic = 'force-dynamic';
+
+export function generateMetadata(): Metadata {
+  return { title: getTranslator().t('dun.title'), robots: { index: false, follow: false } };
+}
+
+const OK = new Set(['dunning']);
+const ERR = new Set(['channel', 'outcome', 'note', 'elevation', 'illegal', 'notFound', 'generic']);
+const STATUS_CLASS: Record<string, string> = { issued: '', partially_paid: 'kv-status--warn', overdue: 'kv-status--danger' };
+
+export default async function DunningQueuePage({ searchParams }: {
+  searchParams: { cursor?: string; tier?: string; ok?: string; error?: string };
+}) {
+  requireAdmin();
+  const t = getTranslator();
+  const tier = isAgeingTier(searchParams.tier) ? searchParams.tier : undefined;
+
+  let rows: QueueRow[] = []; let nextCursor: string | undefined; let notice: string | undefined;
+  try {
+    const res = await adminGet<QueueRow[]>('billing/dunning', {
+      cursor: searchParams.cursor,
+      minDaysLate: tier ? tierMinDays(tier) : undefined,
+      limit: 50,
+    });
+    rows = res.data ?? [];
+    nextCursor = (res.meta?.nextCursor as string | undefined) ?? undefined;
+  } catch (e) { notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`); }
+
+  const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
+  const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
+  const owed = knownOutstanding(rows);
+  const chips = tierCounts(rows);
+  // one currency per page-load in practice (the platform bills INR today); taken from the rows rather than assumed
+  const cur = rows.find((r) => r.currency)?.currency ?? 'INR';
+  const href = (params: Record<string, string | undefined>) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
+    const s = q.toString();
+    return s ? `/billing/dunning?${s}` : '/billing/dunning';
+  };
+
+  return (
+    <section>
+      <p className="kv-backlink"><Link href="/billing">{t.t('billing.back')}</Link></p>
+      <h1>{t.t('dun.title')}</h1>
+      <p className="kv-field__hint">{t.t('dun.hint')}</p>
+
+      {okKey && <p className="kv-success" role="status">{t.t(`dun.ok.${okKey}`)}</p>}
+      {errKey && <p className="kv-error" role="alert">{t.t(`dun.error.${errKey}`)}</p>}
+
+      {notice ? <p className="kv-error" role="alert">{notice}</p> : (
+        <>
+          {/* What is owed — and, beside it, how much of the book this figure does NOT cover. */}
+          <p className="kv-card__title">
+            {t.t('dun.knownOwed', { amount: formatMoneyMinor(owed.totalMinor.toString(), cur), n: String(owed.knownRows) })}
+          </p>
+          {owed.unknownRows > 0 && (
+            <p className="kv-notice" role="note">{t.t('dun.unknownOwed', { n: String(owed.unknownRows) })}</p>
+          )}
+
+          {/* Ageing filter. `All` first, then only the tiers that actually have rows. */}
+          <nav className="kv-tabs" aria-label={t.t('dun.filter')}>
+            <Link href={href({})} className={`kv-tab${tier ? '' : ' kv-tab--active'}`} aria-current={tier ? undefined : 'page'}>
+              {t.t('dun.all')}
+            </Link>
+            {chips.map((c) => (
+              <Link key={c.tier} href={href({ tier: c.tier })} className={`kv-tab${c.tier === tier ? ' kv-tab--active' : ''}`}
+                aria-current={c.tier === tier ? 'page' : undefined}>
+                {t.t(`dun.tier.${c.tier}`)} {c.n}
+              </Link>
+            ))}
+          </nav>
+          {chips.length === 0 && !tier && <p className="kv-empty">{t.t('dun.empty')}</p>}
+          {chips.length === 0 && tier && <p className="kv-empty">{t.t('dun.emptyTier')}</p>}
+
+          <ul className="kv-list" role="list">
+            {rows.map((r) => {
+              const status = invoiceStatusKey(r.status);
+              const step = dunningStep(r);
+              const next = suggestedChannel(r);
+              const blocked = touchBlockedReason(r);
+              return (
+                <li key={r.invoiceId ?? r.invoiceNo} className="kv-card">
+                  <p className="kv-card__title">
+                    <Link href={`/billing/invoices/${encodeURIComponent(String(r.invoiceId ?? ''))}`}>{r.invoiceNo ?? t.t('common.dash')}</Link>
+                    {' '}<span className={`kv-status ${STATUS_CLASS[status] ?? ''}`}>{t.t(`billing.status.${status}`)}</span>
+                    {needsWriteOffReview(r) && <span className="kv-status kv-status--danger">{t.t('dun.writeOffReview')}</span>}
+                    {isLeaving(r) && <span className="kv-status kv-status--muted">{t.t('dun.leaving')}</span>}
+                  </p>
+
+                  <p className="kv-detail__muted">
+                    {r.tenantId
+                      ? <Link href={`/tenants/${encodeURIComponent(r.tenantId)}`}>{r.tenantSlug ?? r.tenantId.slice(0, 8)}</Link>
+                      : t.t('common.dash')}
+                    {' · '}{t.t(`dun.tier.${ageingTier(r.daysLate)}`)}
+                    {' · '}{t.t('dun.daysLate', { n: String(r.daysLate ?? 0) })}
+                    {r.dueDate ? ` · ${t.t('dun.due')}: ${formatDate(r.dueDate)}` : ''}
+                  </p>
+
+                  {/* The one number on this row, or the honest absence of it. */}
+                  <p>
+                    {outstandingUnknown(r)
+                      ? <span className="kv-status kv-status--warn">{t.t('dun.outstandingUnknown')}</span>
+                      : <strong>{t.t('dun.outstanding', { amount: formatMoneyMinor(String(r.outstandingMinor), r.currency ?? cur) })}</strong>}
+                    {' · '}{t.t('dun.invoiceTotal', { amount: formatMoneyMinor(String(r.totalMinor ?? '0'), r.currency ?? cur) })}
+                  </p>
+                  {outstandingUnknown(r) && <p className="kv-field__hint">{t.t('dun.partPaidNote')}</p>}
+
+                  <p className="kv-detail__muted">
+                    {t.t('dun.touches', { n: String(step), max: String(MAX_DUNNING_ATTEMPTS) })}
+                    {r.lastDunnedAt ? ` · ${t.t('dun.lastTouch')}: ${formatDate(r.lastDunnedAt)}` : ` · ${t.t('dun.neverTouched')}`}
+                  </p>
+
+                  {canRecordTouch(r) ? (
+                    <form action={recordDunningFromQueueAction} className="kv-form">
+                      <input type="hidden" name="id" value={String(r.invoiceId ?? '')} />
+                      <input type="hidden" name="tier" value={tier ?? ''} />
+                      <label htmlFor={`ch-${r.invoiceId}`} className="kv-field__label">{t.t('dun.channel')}</label>
+                      <select id={`ch-${r.invoiceId}`} name="channel" className="kv-input" defaultValue={next ?? 'email'}>
+                        {DUNNING_CHANNELS.map((c) => <option key={c} value={c}>{t.t(`billing.channel.${c}`)}</option>)}
+                      </select>
+                      {next && <p className="kv-field__hint">{t.t('dun.suggested', { channel: t.t(`billing.channel.${next}`) })}</p>}
+                      <label htmlFor={`oc-${r.invoiceId}`} className="kv-field__label">{t.t('dun.outcome')}</label>
+                      <select id={`oc-${r.invoiceId}`} name="outcome" className="kv-input" defaultValue="sent">
+                        {['sent', 'promised_pay', 'failed', 'no_response'].map((o) => <option key={o} value={o}>{t.t(`billing.outcome.${o}`)}</option>)}
+                      </select>
+                      <label htmlFor={`nt-${r.invoiceId}`} className="kv-field__label">{t.t('dun.note')}</label>
+                      <input id={`nt-${r.invoiceId}`} name="note" className="kv-input" maxLength={1000} />
+                      <button type="submit" className="kv-btn">{t.t('dun.recordTouch')}</button>
+                    </form>
+                  ) : (
+                    <p className="kv-notice" role="note">{t.t(`dun.blocked.${blocked}`)}</p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {nextCursor && (
+            <p className="kv-pager">
+              <Link className="kv-btn" href={href({ tier, cursor: nextCursor })}>{t.t('common.nextPage')}</Link>
+            </p>
+          )}
+        </>
+      )}
+
+      <p className="kv-field__hint">{t.t('dun.footerNote')}</p>
+    </section>
+  );
+}
