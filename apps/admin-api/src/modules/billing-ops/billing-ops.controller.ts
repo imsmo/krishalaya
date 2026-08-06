@@ -18,6 +18,10 @@ import { InvoicePaymentsService } from './services/invoice-payments.service';
 import { DunningPolicyService } from './services/dunning-policy.service';
 import { InvoicePdfService } from './services/invoice-pdf.service';
 import { SubscriptionWriteService } from './services/subscription-write.service';
+import { BillingExportService } from './services/billing-export.service';
+import { InvoiceBulkService } from './services/invoice-bulk.service';
+import { RevenueSeriesService } from './services/revenue-series.service';
+import { RenewalVisibilityService } from './services/renewal-visibility.service';
 import {
   QueryInvoicesSchema, QueryInvoicesDto, UpdateInvoiceSchema, UpdateInvoiceDto,
   QueryDunningSchema, QueryDunningDto, RecordDunningSchema, RecordDunningDto,
@@ -27,6 +31,8 @@ import {
   RequestAdjustmentSchema, RequestAdjustmentDto, DecideAdjustmentSchema, DecideAdjustmentDto,
   PublishDunningPolicySchema, PublishDunningPolicyDto,
   ChangePlanSchema, ChangePlanDto, AddAddonSchema, AddAddonDto, CancelSubscriptionSchema, CancelSubscriptionDto,
+  QueryExportSchema, QueryExportDto, BulkInvoiceSchema, BulkInvoiceDto,
+  QuerySeriesSchema, QuerySeriesDto, QueryRenewalPreviewSchema, QueryRenewalPreviewDto,
   QueryRevenueSchema, QueryRevenueDto,
 } from './dto/billing-ops.dto';
 
@@ -54,6 +60,10 @@ export class BillingOpsController {
     private readonly policy: DunningPolicyService,
     private readonly pdf: InvoicePdfService,
     private readonly subWrite: SubscriptionWriteService,
+    private readonly exports: BillingExportService,
+    private readonly bulk: InvoiceBulkService,
+    private readonly series: RevenueSeriesService,
+    private readonly renewals: RenewalVisibilityService,
   ) {}
 
   // ---- reads ----
@@ -113,6 +123,16 @@ export class BillingOpsController {
     return this.pdf.downloadUrl(admin(req), id).then((data) => ({ data }));
   }
 
+  // PC-56 ADMIN-1d · reporting reads (ADMIN-1-Q7) and the renewal-run PREVIEW (ADMIN-1-Q4, rescoped to visibility —
+  // the run itself is the worker job in apps/api and must stay the only invoice generator).
+  @Get('series') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  revenueSeries(@ZodQuery(QuerySeriesSchema) q: QuerySeriesDto) { return this.series.series(q).then((data) => ({ data })); }
+
+  @Get('renewal-preview') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  renewalPreview(@ZodQuery(QueryRenewalPreviewSchema) q: QueryRenewalPreviewDto) {
+    return this.renewals.preview(q).then((data) => ({ data }));
+  }
+
   // ---- mutations: hardware-key + step-up elevation required ----
   @Patch('invoices/:id') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   updateInvoice(@Req() req: any, @Param('id') id: string, @ZodBody(UpdateInvoiceSchema) dto: UpdateInvoiceDto) {
@@ -162,6 +182,20 @@ export class BillingOpsController {
   @Post('subscriptions/:tenantId/cancel-at-period-end') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   cancelAtPeriodEnd(@Req() req: any, @Param('tenantId') tenantId: string, @ZodBody(CancelSubscriptionSchema) dto: CancelSubscriptionDto) {
     return this.subWrite.setCancelAtPeriodEnd(admin(req), tenantId, dto).then((data) => ({ data }));
+  }
+
+  // PC-56 ADMIN-1d · the AUDIT-STAMPED EXPORT (ADMIN-1-Q3). A POST because it WRITES a receipt: an export is a read
+  // that leaves a trail, and a GET that mutates the audit ledger would be cached, prefetched and repeated by proxies.
+  @Post('exports') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  exportReport(@Req() req: any, @ZodBody(QueryExportSchema) dto: QueryExportDto) {
+    return this.exports.export(admin(req), dto).then((data) => ({ data }));
+  }
+
+  // PC-56 ADMIN-1d · BULK invoice transitions (ADMIN-1-Q11). Elevated: a bulk void moves many tenants' documents at
+  // once, which is more consequential than a single one, not less.
+  @Post('invoices/bulk') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  bulkInvoices(@Req() req: any, @ZodBody(BulkInvoiceSchema) dto: BulkInvoiceDto) {
+    return this.bulk.run(admin(req), dto).then((data) => ({ data }));
   }
 
   // PC-56 ADMIN-1b · publish a NEW dunning-policy version (0094). Never an in-place edit: the old ladder is why a

@@ -43,6 +43,13 @@ export class SelfApprovalError extends DomainHttpError {
 export class AdjustmentNotFoundError extends DomainHttpError {
   constructor(ref: string) { super('BILLING_ADJUSTMENT_NOT_FOUND', `adjustment ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
 }
+export class InvalidExportError extends DomainHttpError {
+  constructor(detail: string) { super('BILLING_EXPORT_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+export class InvalidBulkActionError extends DomainHttpError {
+  constructor(detail: string) { super('BILLING_BULK_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+
 export class SubscriptionNotFoundError extends DomainHttpError {
   constructor(ref: string) { super('BILLING_SUBSCRIPTION_NOT_FOUND', `no subscription for ${ref}`, HttpStatus.NOT_FOUND, { ref }); }
 }

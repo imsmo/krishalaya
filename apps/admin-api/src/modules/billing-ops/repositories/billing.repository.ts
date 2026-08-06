@@ -476,6 +476,206 @@ export class BillingRepository {
     };
   }
 
+  /* ---------------- EXPORT reads (PC-56 ADMIN-1d · ADMIN-1-Q3) ---------------- */
+  // Every one of these selects an EXPLICIT column list matching `domain/billing-export.ts`. No `SELECT *`: an export
+  // that widened itself when a table gained a column would be how PII leaves the building without anyone deciding.
+  async exportTenants(limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT slug, status::text AS status, risk_score, created_at, approved_at
+         FROM tenants WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1`, [limit]);
+    return r.rows.map((x: any) => ({
+      slug: x.slug, status: x.status, riskScore: x.risk_score,
+      createdAt: x.created_at?.toISOString?.() ?? x.created_at, approvedAt: x.approved_at?.toISOString?.() ?? x.approved_at,
+    }));
+  }
+
+  async exportPlans(limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT code, version, default_name, currency_code,
+              monthly_price_minor::text AS monthly_price_minor, annual_price_minor::text AS annual_price_minor,
+              setup_fee_minor::text AS setup_fee_minor, is_public, status::text AS status
+         FROM plans WHERE deleted_at IS NULL ORDER BY code, version DESC LIMIT $1`, [limit]);
+    return r.rows.map((x: any) => ({
+      code: x.code, version: x.version, defaultName: x.default_name, currency: x.currency_code,
+      monthlyPriceMinor: String(x.monthly_price_minor), annualPriceMinor: String(x.annual_price_minor),
+      setupFeeMinor: String(x.setup_fee_minor), isPublic: x.is_public === true, status: x.status,
+    }));
+  }
+
+  async exportInvoices(q: { tenantId?: string; status?: string; from?: string; to?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = []; const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    let where = 'i.deleted_at IS NULL';
+    if (q.tenantId) where += ` AND i.tenant_id=${p(q.tenantId)}`;
+    if (q.status) where += ` AND i.status=${p(q.status)}::invoice_status`;
+    if (q.from) where += ` AND i.created_at >= ${p(q.from)}::date`;
+    // `to` is INCLUSIVE of the whole day: a finance user asking for 1–31 July means the 31st, not up to its midnight
+    if (q.to) where += ` AND i.created_at < (${p(q.to)}::date + interval '1 day')`;
+    const lp = p(q.limit);
+    const r = await this.pool.query(
+      `SELECT i.invoice_no, t.slug AS tenant_slug, i.status::text AS status, i.currency_code,
+              i.subtotal_minor::text AS subtotal_minor, i.tax_minor::text AS tax_minor,
+              i.total_minor::text AS total_minor, i.paid_minor::text AS paid_minor,
+              i.due_date::text AS due_date, i.paid_at, i.created_at
+         FROM saas_invoices i JOIN tenants t ON t.id = i.tenant_id
+        WHERE ${where} ORDER BY i.created_at DESC LIMIT ${lp}`, params);
+    return r.rows.map((x: any) => ({
+      invoiceNo: x.invoice_no, tenantSlug: x.tenant_slug, status: x.status, currency: x.currency_code,
+      subtotalMinor: String(x.subtotal_minor), taxMinor: String(x.tax_minor), totalMinor: String(x.total_minor),
+      paidMinor: String(x.paid_minor), dueDate: x.due_date,
+      paidAt: x.paid_at?.toISOString?.() ?? x.paid_at, createdAt: x.created_at?.toISOString?.() ?? x.created_at,
+    }));
+  }
+
+  /**
+   * The GST return extract. Fields exactly as filed on each invoice — NOTHING is recomputed (an export that
+   * re-derived GST would produce a return that disagrees with the invoices tenants hold).
+   *
+   * `place_of_supply` is not a column anywhere, so it is taken from the FIRST TWO DIGITS OF THE TENANT'S GSTIN, which
+   * IS the state code by construction (a documented deterministic property of a GSTIN, not a guess). A tenant with no
+   * GSTIN yields EMPTY — and that emptiness is the finding: a GST return cannot be filed for them, and the export
+   * should show that rather than invent a state.
+   */
+  async exportGstr(q: { from: string; to: string; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT i.invoice_no, i.created_at::date::text AS invoice_date, t.slug AS tenant_slug,
+              t.gstin AS tenant_gstin,
+              CASE WHEN t.gstin ~ '^[0-9]{2}' THEN substring(t.gstin from 1 for 2) ELSE NULL END AS place_of_supply,
+              i.subtotal_minor::text AS taxable_value_minor, i.tax_minor::text AS tax_minor,
+              i.total_minor::text AS total_minor, i.currency_code
+         FROM saas_invoices i JOIN tenants t ON t.id = i.tenant_id
+        WHERE i.deleted_at IS NULL
+          -- a filing covers what was ISSUED in the period; drafts were never sent and void invoices were withdrawn
+          AND i.status NOT IN ('draft','void')
+          AND i.created_at >= $1::date AND i.created_at < ($2::date + interval '1 day')
+        ORDER BY i.created_at, i.invoice_no LIMIT $3`, [q.from, q.to, q.limit]);
+    return r.rows.map((x: any) => ({
+      invoiceNo: x.invoice_no, invoiceDate: x.invoice_date, tenantSlug: x.tenant_slug,
+      tenantGstin: x.tenant_gstin ?? '', placeOfSupply: x.place_of_supply ?? '',
+      taxableValueMinor: String(x.taxable_value_minor), taxMinor: String(x.tax_minor),
+      totalMinor: String(x.total_minor), currency: x.currency_code,
+    }));
+  }
+
+  /** The 12-month billed series, in export shape (same numbers the reports page charts — one query, one truth). */
+  async exportRevenueByMonth(currency: string, months: number): Promise<Array<Record<string, unknown>>> {
+    const rows = await this.billedByMonth(currency, months);
+    return rows.map((r) => ({ month: r.month, invoices: r.invoices, issuedMinor: r.issuedMinor, paidMinor: r.paidMinor }));
+  }
+
+  /* ---------------- revenue TIME SERIES + cohorts (PC-56 ADMIN-1d · ADMIN-1-Q7) ---------------- */
+  // WHY THESE COME FROM INVOICES AND NOT FROM SUBSCRIPTIONS. The canon asks for "MRR movement — 12 months". The
+  // platform stores no subscription HISTORY (there is one current row per tenant — the same gap the W017 page refuses
+  // to paper over), so a month-by-month MRR series cannot be reconstructed from subscriptions without inventing it.
+  // What IS real and dated is the invoices that were issued: they are facts, one per subscription per period, with the
+  // price that was actually charged. So the series is BILLED REVENUE per month, labelled as exactly that. It is not
+  // MRR by another name and the console does not call it MRR.
+  //
+  // All arithmetic stays in SQL on bigint (no float, Law 2); amounts leave as strings.
+  async billedByMonth(currency: string, months: number): Promise<Array<{ month: string; issuedMinor: string; paidMinor: string; invoices: number }>> {
+    const r = await this.pool.query(
+      `SELECT to_char(date_trunc('month', i.created_at), 'YYYY-MM') AS month,
+              COALESCE(SUM(i.total_minor), 0)::text AS issued_minor,
+              -- what was RECEIVED against invoices issued that month (0092). Not "collected in that month" — that is a
+              -- different question, and conflating the two is how a cash-flow chart ends up disagreeing with the bank.
+              COALESCE(SUM(i.paid_minor), 0)::text AS paid_minor,
+              count(*)::int AS invoices
+         FROM saas_invoices i
+        WHERE i.deleted_at IS NULL AND i.currency_code = $1 AND i.status <> 'void'
+          AND i.created_at >= date_trunc('month', now()) - ($2::int - 1) * interval '1 month'
+        GROUP BY 1 ORDER BY 1`, [currency, months]);
+    return r.rows.map((x: any) => ({ month: x.month, issuedMinor: String(x.issued_minor), paidMinor: String(x.paid_minor), invoices: x.invoices }));
+  }
+
+  /** Plan mix: how many live subscriptions sit on each plan and what they are worth per month. Annual prices are
+   *  normalised by INTEGER division (÷12) exactly as the MRR rollup does — never a float, and the remainder is dropped
+   *  consistently rather than rounded up, so the mix never sums to more than the book. */
+  async planMix(currency: string): Promise<Array<{ planId: string; planCode: string; subscriptions: number; monthlyMinor: string }>> {
+    const r = await this.pool.query(
+      `SELECT s.plan_id::text AS plan_id, p.code AS plan_code, count(*)::int AS subscriptions,
+              COALESCE(SUM(CASE WHEN s.billing_cycle = 'annual' THEN s.price_minor / 12 ELSE s.price_minor END), 0)::text AS monthly_minor
+         FROM subscriptions s
+         JOIN plans p ON p.id = s.plan_id
+        WHERE s.deleted_at IS NULL AND s.currency_code = $1 AND s.status IN ('trialing','active','past_due')
+        GROUP BY 1, 2 ORDER BY monthly_minor DESC`, [currency]);
+    return r.rows.map((x: any) => ({ planId: x.plan_id, planCode: x.plan_code, subscriptions: x.subscriptions, monthlyMinor: String(x.monthly_minor) }));
+  }
+
+  /**
+   * Cohort retention by signup quarter, measured in TENANTS STILL BILLING — not in revenue.
+   *
+   * The canon says "net revenue by signup quarter". Revenue retention needs a per-month revenue series per cohort, and
+   * with invoices only issued monthly per subscription that is derivable but fragile on a young book (one tenant's
+   * annual invoice would swing a quarter by 12×). Counting tenants that still have a LIVE subscription is a fact this
+   * database can state exactly, so that is what is returned — and the console labels it "tenants retained", not
+   * revenue. A retention chart that silently means something other than its axis label is worse than a simpler one.
+   */
+  async cohortRetention(quarters: number): Promise<Array<{ cohort: string; tenants: number; stillBilling: number }>> {
+    const r = await this.pool.query(
+      `WITH cohorts AS (
+         SELECT t.id, to_char(date_trunc('quarter', t.created_at), 'YYYY-"Q"Q') AS cohort
+           FROM tenants t
+          WHERE t.deleted_at IS NULL
+            AND t.created_at >= date_trunc('quarter', now()) - ($1::int - 1) * interval '3 months'
+       )
+       SELECT c.cohort, count(*)::int AS tenants,
+              count(*) FILTER (
+                WHERE EXISTS (SELECT 1 FROM subscriptions s
+                               WHERE s.tenant_id = c.id AND s.deleted_at IS NULL
+                                 AND s.status IN ('trialing','active','past_due'))
+              )::int AS still_billing
+         FROM cohorts c GROUP BY 1 ORDER BY 1`, [quarters]);
+    return r.rows.map((x: any) => ({ cohort: x.cohort, tenants: x.tenants, stillBilling: x.still_billing }));
+  }
+
+  /* ---------------- billing-cycle VISIBILITY (PC-56 ADMIN-1d · ADMIN-1-Q4, rescoped) ---------------- */
+  // THE RENEWAL RUN ALREADY EXISTS: apps/api's `RenewalInvoicesJob` (worker, kv_relay) raises one invoice per
+  // subscription per period, idempotent on (subscription, period). Adding a "run the cycle" button here would have
+  // created a SECOND invoice generator in a different app — the most expensive kind of duplicate, because the failure
+  // mode is double-billing real tenants. So admin gets VISIBILITY instead: what the next run would bill, and what the
+  // last one did. No writer.
+  /** Subscriptions the renewal run would pick up at `through` — the dry run. Mirrors the job's own finder condition
+   *  (active/trialing, period ending on or before the date) but takes NO locks and writes nothing. */
+  async renewalDuePreview(through: string, limit: number): Promise<Array<{
+    tenantId: string; tenantSlug: string | null; subscriptionId: string; planCode: string | null;
+    priceMinor: string; currency: string; billingCycle: string; periodEnd: string; alreadyInvoiced: boolean;
+  }>> {
+    const r = await this.pool.query(
+      `SELECT s.tenant_id, t.slug AS tenant_slug, s.id AS subscription_id, p.code AS plan_code,
+              s.price_minor::text AS price_minor, s.currency_code, s.billing_cycle,
+              s.current_period_end::text AS period_end,
+              -- the job is idempotent per (subscription, period); showing which rows it would SKIP is the difference
+              -- between "the run will bill 40 tenants" and "the run will bill 40 tenants, 6 of them already invoiced"
+              EXISTS (
+                SELECT 1 FROM saas_invoices i
+                 WHERE i.subscription_id = s.id AND i.deleted_at IS NULL
+                   AND to_char(s.current_period_end, 'YYYYMM') = to_char(i.due_date, 'YYYYMM')
+              ) AS already_invoiced
+         FROM subscriptions s
+         JOIN tenants t ON t.id = s.tenant_id
+         LEFT JOIN plans p ON p.id = s.plan_id
+        WHERE s.deleted_at IS NULL AND s.status IN ('trialing','active')
+          AND s.current_period_end <= $1::date
+        ORDER BY s.current_period_end, s.id LIMIT $2`, [through, limit]);
+    return r.rows.map((x: any) => ({
+      tenantId: x.tenant_id, tenantSlug: x.tenant_slug ?? null, subscriptionId: x.subscription_id,
+      planCode: x.plan_code ?? null, priceMinor: String(x.price_minor), currency: x.currency_code,
+      billingCycle: x.billing_cycle, periodEnd: x.period_end, alreadyInvoiced: x.already_invoiced === true,
+    }));
+  }
+
+  /** What the renewal run actually did lately, read from the AUDIT LEDGER (the job audits every issue as
+   *  `tenancy.saas_invoice_issued` with actor 'system'). The audit log is the only honest source here: it is written by
+   *  the job itself, so it cannot drift from what the job did. */
+  async recentRenewalRuns(days: number): Promise<Array<{ day: string; invoicesIssued: number }>> {
+    const r = await this.pool.query(
+      `SELECT to_char(date_trunc('day', a.created_at), 'YYYY-MM-DD') AS day, count(*)::int AS n
+         FROM audit_log a
+        WHERE a.action = 'tenancy.saas_invoice_issued'
+          AND a.created_at >= now() - ($1::int * interval '1 day')
+        GROUP BY 1 ORDER BY 1 DESC`, [days]).catch(() => ({ rows: [] as any[] }));
+    return r.rows.map((x: any) => ({ day: x.day, invoicesIssued: x.n }));
+  }
+
   /* ---------------- revenue rollup (read-only; float-free in SQL) ---------------- */
   async revenueRollup(currency: string, fromIso?: string, toIso?: string): Promise<{ mrrMinor: string; activeSubscriptions: number; outstandingMinor: string; collectedMinor: string; statusCounts: Record<string, number> }> {
     const subs = await this.pool.query(

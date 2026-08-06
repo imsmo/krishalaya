@@ -36,6 +36,7 @@ export default async function BillingPage() {
         <Link href="/billing/invoices" className="kv-chip">{t.t('billing.invoices')}</Link>
         <Link href="/billing/adjustments" className="kv-chip">{t.t('billing.adjustments')}</Link>
         <Link href="/billing/dunning" className="kv-chip">{t.t('billing.dunningQueue')}</Link>
+        <Link href="/billing/reports" className="kv-chip">{t.t('billing.reportsLink')}</Link>
       </nav>
 
       {notice || !data ? <p className="kv-error" role="alert">{notice ?? t.t('notice.unavailable')}</p> : (

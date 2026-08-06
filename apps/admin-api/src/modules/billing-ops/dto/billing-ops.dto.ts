@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { INVOICE_STATUSES } from '../domain/invoice.state';
 import { DUNNING_CHANNELS, DUNNING_OUTCOMES } from '../domain/dunning';
 import { PAYMENT_METHODS } from '../domain/invoice-payment';
+import { EXPORT_REPORTS } from '../domain/billing-export';
+import { BULK_ACTIONS, MAX_BULK_INVOICES } from '../domain/invoice-bulk';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
@@ -114,6 +116,44 @@ export const PublishDunningPolicySchema = z.object({
   })).min(1).max(20),
 }).strict();
 export type PublishDunningPolicyDto = z.infer<typeof PublishDunningPolicySchema>;
+
+/** An audit-stamped export (ADMIN-1-Q3). `limit` is capped in the service too — a DTO ceiling is a courtesy, the
+ *  service's is the guarantee. */
+export const QueryExportSchema = z.object({
+  report: z.enum(EXPORT_REPORTS),
+  tenantId: z.string().uuid().optional(),
+  status: z.enum(INVOICE_STATUSES).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  currency: Currency.optional(),
+  limit: z.coerce.number().int().min(1).max(5000).default(1000),
+}).strict();
+export type QueryExportDto = z.infer<typeof QueryExportSchema>;
+
+/** A BULK transition (ADMIN-1-Q11). The reason is mandatory and is recorded against EVERY invoice in the batch —
+ *  honest, because it is one decision applied to many. */
+export const BulkInvoiceSchema = z.object({
+  action: z.enum(BULK_ACTIONS),
+  invoiceIds: z.array(z.string().uuid()).min(1).max(MAX_BULK_INVOICES),
+  reason: Reason,
+}).strict();
+export type BulkInvoiceDto = z.infer<typeof BulkInvoiceSchema>;
+
+/** Revenue series + cohorts (ADMIN-1-Q7). Bounded windows: an unbounded series is a full table scan on a chart. */
+export const QuerySeriesSchema = z.object({
+  currency: Currency,
+  months: z.coerce.number().int().min(1).max(36).default(12),
+  quarters: z.coerce.number().int().min(1).max(12).default(8),
+}).strict();
+export type QuerySeriesDto = z.infer<typeof QuerySeriesSchema>;
+
+/** The renewal-run dry run (ADMIN-1-Q4, rescoped to visibility). */
+export const QueryRenewalPreviewSchema = z.object({
+  through: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  days: z.coerce.number().int().min(1).max(90).default(14),
+}).strict();
+export type QueryRenewalPreviewDto = z.infer<typeof QueryRenewalPreviewSchema>;
 
 /** Change plan. The PRICE IS REQUIRED — see domain/subscription-change.ts for why there is no "keep the current
  *  price" path. `immediate` is for corrections and does not pro-rate. */

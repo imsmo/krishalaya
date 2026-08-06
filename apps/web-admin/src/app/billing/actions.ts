@@ -12,6 +12,7 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, adminPatch, AdminApiError } from '../../lib/admin-client';
 import { buildAdjustment, buildDunning, validReason } from '../../features/billing/billing';
 import { buildPayment, buildDecision, buildLadder, parseSuspendAfterDays } from '../../features/billing/money-controls';
+import { buildBulk } from '../../features/billing/reporting';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -224,4 +225,48 @@ function majorToMinor(major: string): string | undefined {
   const m = /^(\d{1,10})(?:\.(\d{1,2}))?$/.exec(major.trim());
   if (!m) return undefined;
   return String(BigInt(m[1]) * 100n + BigInt((m[2] ?? '0').padEnd(2, '0')));
+}
+
+// ---------------------------------------------------------------------------
+// BULK invoice transitions (PC-56 ADMIN-1d · closes ADMIN-1-Q11)
+// ---------------------------------------------------------------------------
+/**
+ * Apply one action to many invoices. The selection arrives as checkbox values of `<id>:<status>`, so the action knows
+ * each row's status WITHOUT a second read — which is what lets it drop the inapplicable ones locally and tell the
+ * operator how many were skipped.
+ *
+ * Why drop them here rather than let the server report them as `illegal`: the recorded batch should equal the real
+ * intent. A batch audit row listing invoices the operator never meant to touch is a worse record than a smaller,
+ * accurate one — and the count is still reported, so nothing is hidden.
+ */
+export async function bulkInvoiceAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const status = String(formData.get('listStatus') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/billing/invoices?${status ? `status=${encodeURIComponent(status)}&` : ''}${qs}`);
+
+  const selected = formData.getAll('selected').map(String).map((v) => {
+    const [id, st] = v.split(':');
+    return { id, status: st ?? '' };
+  }).filter((r) => !!r.id);
+
+  const built = buildBulk({
+    action: String(formData.get('action') ?? ''),
+    reason: String(formData.get('reason') ?? ''),
+  }, selected);
+  if (!built.ok) back(`error=bulk_${built.error}`);
+
+  interface BulkEnvelope { moved?: number; illegal?: number; notFound?: number; failed?: number }
+  let res: BulkEnvelope | undefined;
+  try { res = (await adminPost<BulkEnvelope>('billing/invoices/bulk', { body: built.value })).data; }
+  catch (e) { back(`error=${errorKey(e)}`); }
+
+  revalidatePath('/billing/invoices');
+  revalidatePath('/billing/dunning');
+  // The outcome travels in the URL so the page can state exactly what happened — including the locally skipped rows,
+  // which the server never saw and therefore cannot report.
+  const parts = [
+    `ok=bulk`, `moved=${res?.moved ?? 0}`, `skipped=${built.skipped}`,
+    `illegal=${res?.illegal ?? 0}`, `notfound=${res?.notFound ?? 0}`, `failed=${res?.failed ?? 0}`,
+  ];
+  back(parts.join('&'));
 }
