@@ -32,6 +32,12 @@ export const OwnerPermissions = {
   AnnouncementsRead: 'announcements.read',     // announcement list + change-history reads
   CatalogueManage: 'catalogue.manage',  // platform master taxonomy: lookup vocabularies + category tree (create/edit/move/activate)
   CatalogueRead: 'catalogue.read',      // taxonomy registry (types/values/categories) + change-history reads
+  // PC-56 ADMIN-3b. DELIBERATELY NOT part of catalogue.*: curating the category tree does not entitle somebody to assert
+  // that a Tamil sentence means what the English means. And this permission is necessary but NOT sufficient — the
+  // `translation_reviewers` table (0103) decides which LANGUAGES, because a language list is data and an enum cannot
+  // carry "…but only for Gujarati".
+  TranslationsReview: 'translations.review',   // author + approve/reject translations, within one's granted languages
+  TranslationsManage: 'translations.manage',   // grant/revoke a reviewer's languages; request machine-translation runs
   SchemesRegistryManage: 'schemes.registry.manage', // govt-scheme master: authorities + schemes (create/edit/version/activate)
   SchemesRegistryRead: 'schemes.registry.read',     // scheme/authority registry + change-history + window calendar reads
   CellsManage: 'cells.manage',  // shard/cell routing directory: register cells/shards, status lifecycle, tenant placement/move (Law 8/12)
@@ -68,6 +74,11 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_announcements_viewer: [OwnerPermissions.AnnouncementsRead],   // comms / marketing — read-only
   platform_catalogue_ops: [OwnerPermissions.CatalogueManage, OwnerPermissions.CatalogueRead],
   platform_catalogue_viewer: [OwnerPermissions.CatalogueRead],   // catalogue / data-governance analyst — read-only
+  // A REVIEWER IS NOT A CATALOGUE EDITOR. They also need CatalogueRead to see the canonical text they are judging
+  // against — reviewing a translation without its source is a spelling check, not a review.
+  platform_translations_reviewer: [OwnerPermissions.TranslationsReview, OwnerPermissions.CatalogueRead],
+  // The localisation LEAD decides who speaks for a language, and reviews too.
+  platform_translations_lead: [OwnerPermissions.TranslationsManage, OwnerPermissions.TranslationsReview, OwnerPermissions.CatalogueRead],
   platform_schemes_ops: [OwnerPermissions.SchemesRegistryManage, OwnerPermissions.SchemesRegistryRead],
   platform_schemes_viewer: [OwnerPermissions.SchemesRegistryRead],   // govt-programs / policy analyst — read-only
   platform_cells_ops: [OwnerPermissions.CellsManage, OwnerPermissions.CellsRead],

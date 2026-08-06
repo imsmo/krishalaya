@@ -7,8 +7,15 @@
 // Names are LOCALE-RESOLVED: a LEFT JOIN onto `translations` returns the caller's-language label when one exists,
 // else the canonical default_name (graceful fallback — never a fabricated label). Read-only, REPLICA-backed (CQRS),
 // every list is BOUNDED (no unbounded scan), and the hot/common reads are cached with tenant-prefixed keys.
+//
+// PC-56 ADMIN-3b — THE JOIN NOW CARRIES A PREDICATE, AND ITS ABSENCE WAS A LATENT BUG. These joins had no condition
+// beyond the key match, so (a) an unreviewed MACHINE translation would have been served to a farmer as soon as anything
+// wrote one, which is exactly what the canon forbids, and (b) a soft-deleted translation was still served, so revoking a
+// bad one would not have revoked it. `servableTranslation()` is the shared rule — one copy, because three copies is how
+// one of them misses the next correction.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../core/database/read-replica.provider';
+import { servableTranslation } from '../../core/database/translation-visibility';
 import { CACHE_SERVICE, CacheService } from '../../core/cache/cache.service';
 import { METRICS, Metrics, timed } from '../../core/observability/metrics';
 
@@ -50,6 +57,7 @@ export class LookupsService {
              FROM v
              LEFT JOIN translations t
                ON t.entity_type = 'lookup_value' AND t.entity_id = v.id AND t.field = 'name' AND t.language_code = $3
+               AND ${servableTranslation('t')}
             ORDER BY v.sort_order, name
             LIMIT ${VALUE_LIMIT}`,
           [typeCode, tenantId, lc]);
@@ -73,6 +81,7 @@ export class LookupsService {
            FROM admin_regions r
            LEFT JOIN translations t
              ON t.entity_type = 'region' AND t.entity_id = r.id AND t.field = 'name' AND t.language_code = $1
+             AND ${servableTranslation('t')}
           WHERE ${where.join(' AND ')}
           ORDER BY name
           LIMIT ${REGION_LIMIT}`,

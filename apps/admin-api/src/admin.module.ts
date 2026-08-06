@@ -21,11 +21,14 @@ import { AnnouncementsModule } from './modules/announcements/announcements.modul
 import { GlobalCatalogueOpsModule } from './modules/global-catalogue-ops/global-catalogue-ops.module';
 import { SchemesRegistryOpsModule } from './modules/schemes-registry-ops/schemes-registry-ops.module';
 import { TenantApplicationsOpsModule } from './modules/tenant-applications-ops/tenant-applications-ops.module';
+import { TranslationsModule } from './modules/translations/translations.module';
 import { CatalogueDepthModule } from './modules/catalogue-depth/catalogue-depth.module';
 import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
 
 @Module({
-  imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, CellsOpsModule, CatalogueDepthModule, TenantApplicationsOpsModule],
+  imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, CellsOpsModule, CatalogueDepthModule,
+    // PC-56 ADMIN-3b: the translations plane — the first write path this table has ever had
+    TranslationsModule, TenantApplicationsOpsModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

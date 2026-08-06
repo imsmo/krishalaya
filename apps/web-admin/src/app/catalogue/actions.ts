@@ -13,6 +13,7 @@ import {
   buildAttribute, buildAttributeEdit, buildOption, buildBinding, buildUnit, buildConversion,
   buildSetActive as buildEavSetActive, type AttributeRow,
 } from '../../features/catalogue/eav';
+import { buildTranslation, buildReview, buildGrant, buildRun } from '../../features/catalogue/translations';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -354,4 +355,129 @@ export async function upsertConversionAction(formData: FormData): Promise<void> 
   }
   revalidatePath('/catalogue/units');
   back('ok=unit_factorSet');
+}
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-3b · the TRANSLATIONS plane (canon W028)
+// ---------------------------------------------------------------------------
+// A 403 here is almost always the LANGUAGE SCOPE rather than a missing permission — the reviewer holds
+// `translations.review` and does not hold this language. The server's message names which languages they DO hold, so it
+// is passed through verbatim: "forbidden" alone would send somebody to ask for a permission they already have.
+function scopeOrError(e: unknown): string | null {
+  if (e instanceof AdminApiError && e.status === 403) return e.message.slice(0, 300);
+  return null;
+}
+
+/** Author a human translation. Live on save — and language-scoped, because somebody who cannot read Tamil should not be
+ *  typing Tamil onto a farmer-facing surface any more than they should be approving it. */
+export async function createTranslationAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/translations?${qs}`);
+  const built = buildTranslation((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=tr_${built.error}`);
+  try { await adminPost('translations', { body: built.value }); }
+  catch (e) {
+    const scope = scopeOrError(e);
+    if (scope) back(`error=tr_scope&why=${enc2(scope)}`);
+    if (e instanceof AdminApiError && e.status === 422) back(`error=tr_rejected2&why=${enc2(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/translations');
+  revalidatePath('/catalogue/translations/queue');
+  back('ok=tr_created');
+}
+
+/**
+ * Judge a machine draft.
+ *
+ * The three decisions map to three different OK messages, because "approved", "approved with my correction" and
+ * "rejected and withdrawn" are three different things to have done — and the third one changes what a farmer sees back to
+ * English, which the operator should be told plainly.
+ */
+export async function reviewTranslationAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/catalogue/translations/queue');
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/translations/queue?${qs}`);
+  const built = buildReview((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=tr_${built.error}`);
+  try { await adminPost(`translations/${enc2(id)}/review`, { body: built.value }); }
+  catch (e) {
+    const scope = scopeOrError(e);
+    if (scope) back(`error=tr_scope&why=${enc2(scope)}`);
+    // 409 here is another reviewer having judged it first — never a silent overwrite of their opinion
+    if (e instanceof AdminApiError && e.status === 409) back('error=tr_alreadyReviewed');
+    if (e instanceof AdminApiError && e.status === 422) back(`error=tr_rejected2&why=${enc2(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/translations/queue');
+  revalidatePath('/catalogue/translations');
+  back(built.value.decision === 'reject' ? 'ok=tr_rejected'
+    : built.value.decision === 'approve_with_edit' ? 'ok=tr_edited' : 'ok=tr_approved');
+}
+
+/** Withdraw a live translation. The entity falls back to English — degraded and readable, rather than wrong and
+ *  confident. */
+export async function revokeTranslationAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/translations?${qs}`);
+  if (!id) back('error=tr_generic');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (reason.length < 10) back('error=tr_reason');
+  try { await adminDelete(`translations/${enc2(id)}`, { body: { reason } }); }
+  catch (e) {
+    const scope = scopeOrError(e);
+    if (scope) back(`error=tr_scope&why=${enc2(scope)}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/translations');
+  back('ok=tr_revoked');
+}
+
+/** Grant a language. Elevated — this is the act that decides who may speak for a language. */
+export async function grantReviewerAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/translations/reviewers?${qs}`);
+  const built = buildGrant((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=tr_${built.error}`);
+  try { await adminPost('translations/reviewers', { body: built.value }); }
+  catch (e) {
+    if (e instanceof AdminApiError && e.status === 409) back('error=tr_duplicate');
+    if (e instanceof AdminApiError && e.status === 422) back(`error=tr_rejected2&why=${enc2(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/translations/reviewers');
+  back('ok=tr_granted');
+}
+
+export async function revokeReviewerAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/translations/reviewers?${qs}`);
+  if (!id) back('error=tr_generic');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (reason.length < 10) back('error=tr_reason');
+  try { await adminDelete(`translations/reviewers/${enc2(id)}`, { body: { reason } }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/catalogue/translations/reviewers');
+  back('ok=tr_revokedScope');
+}
+
+/** Request a machine run. It RECORDS and translates nothing; the success message says the gap count and says so. */
+export async function requestRunAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/catalogue/translations?${qs}`);
+  const built = buildRun((n) => String(formData.get(n) ?? ''), (n) => formData.getAll(n).map((v) => String(v)));
+  if (!built.ok) back(`error=tr_${built.error}`);
+  let gapCount = 0;
+  try {
+    const res = await adminPost<{ gapCount: number }>('translations/runs', { body: built.value });
+    gapCount = Number(res.data?.gapCount ?? 0);
+  } catch (e) {
+    if (e instanceof AdminApiError && e.status === 422) back(`error=tr_rejected2&why=${enc2(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/catalogue/translations');
+  back(`ok=tr_requested&n=${gapCount}`);
 }

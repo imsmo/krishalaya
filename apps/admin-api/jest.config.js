@@ -7,9 +7,10 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       rootDir: 'src',
-      // Only the implemented modules' specs run. Add a module's path here as it's built (the other ops modules
-      // are still scaffolds with no tests).
-      testMatch: ['<rootDir>/modules/ai-models-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/tenant-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/recon-monitor/__tests__/**/*.spec.ts', '<rootDir>/modules/compliance-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/billing-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/flags-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/plans-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/impersonation/__tests__/**/*.spec.ts', '<rootDir>/modules/support-oversight/__tests__/**/*.spec.ts', '<rootDir>/modules/platform-reports/__tests__/**/*.spec.ts', '<rootDir>/modules/providers-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/announcements/__tests__/**/*.spec.ts', '<rootDir>/modules/global-catalogue-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/schemes-registry-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/cells-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/tenant-applications-ops/__tests__/**/*.spec.ts', '<rootDir>/modules/catalogue-depth/__tests__/**/*.spec.ts'],
+      // A GLOB, not an enumeration. This list used to name every module by hand, which meant a NEW module's specs were
+      // silently never run: PC-56 ADMIN-3b's translations spec compiled, passed tsc, and `jest` reported "0 matches".
+      // A test that does not run is worse than a missing one, because it looks like coverage.
+      testMatch: ['<rootDir>/modules/**/__tests__/**/*.spec.ts'],
       testPathIgnorePatterns: ['\\.integration\\.spec\\.ts$'],
     },
     {
@@ -17,7 +18,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       rootDir: 'src',
-      testMatch: ['<rootDir>/modules/ai-models-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/tenant-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/recon-monitor/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/compliance-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/billing-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/flags-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/plans-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/impersonation/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/support-oversight/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/platform-reports/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/providers-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/announcements/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/global-catalogue-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/schemes-registry-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/cells-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/tenant-applications-ops/__tests__/**/*.integration.spec.ts', '<rootDir>/modules/catalogue-depth/__tests__/**/*.integration.spec.ts'],
+      testMatch: ['<rootDir>/modules/**/__tests__/**/*.integration.spec.ts'],
     },
   ],
 };

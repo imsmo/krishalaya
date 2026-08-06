@@ -4,6 +4,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { servableTranslation } from '../../../core/database/translation-visibility';
 import { Payout, PayoutProps } from '../domain/payout.entity';
 import { PayoutStatus } from '../domain/payout.state';
 
@@ -52,7 +53,9 @@ export class PayoutRepository {
 
   /** KV-BL-023: locale-resolved labels for the (tiny, ~5-row) `payout_failure_reason` lookup_values vocabulary —
    *  bucket code → display name, platform + this tenant's own values (a tenant row shadows a platform row of the
-   *  same code), same COALESCE(translations.text, default_name) resolution LookupsService.values() uses. Loaded
+   *  same code), same COALESCE(translations.text, default_name) resolution LookupsService.values() uses — including,
+   *  since PC-56 ADMIN-3b, the same `servableTranslation()` predicate, so an unreviewed machine draft never becomes the
+   *  label on somebody's failed payout. Loaded
    *  once per list()/getById() call (the vocabulary is tiny and bounded — no per-row query, no cache needed). */
   async failureReasonLabels(tenantId: string, lang: string): Promise<Map<string, string>> {
     const lc = (lang || 'en').trim().toLowerCase().split(/[-_]/)[0] || 'en';
@@ -66,7 +69,8 @@ export class PayoutRepository {
        SELECT v.code, COALESCE(t.text, v.default_name) AS name
          FROM v
          LEFT JOIN translations t
-           ON t.entity_type = 'lookup_value' AND t.entity_id = v.id AND t.field = 'name' AND t.language_code = $2`,
+           ON t.entity_type = 'lookup_value' AND t.entity_id = v.id AND t.field = 'name' AND t.language_code = $2
+           AND ${servableTranslation('t')}`,
       [tenantId, lc]);
     return new Map(r.rows.map((x) => [x.code, x.name]));
   }
