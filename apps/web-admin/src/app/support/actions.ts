@@ -11,6 +11,13 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, AdminApiError } from '../../lib/admin-client';
 import { buildEscalate } from '../../features/support/ticket';
+import { buildMacro } from '../../features/support/desk';
+
+/** A reason is mandatory on anything that changes what the desk shows other people (mirrors the server's zod Reason). */
+function validReason(reason: string | null | undefined): boolean {
+  const r = String(reason ?? '').trim();
+  return r.length >= 3 && r.length <= 1000;
+}
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -39,4 +46,45 @@ export async function escalateTicketAction(formData: FormData): Promise<void> {
   revalidatePath('/support');
   revalidatePath('/support/sla-breaches');
   redirect(`/support/tickets/${enc(id)}?ok=escalated`);
+}
+
+// ---------------------------------------------------------------------------
+// Support macros (PC-56 ADMIN-2 · canon W053)
+// ---------------------------------------------------------------------------
+/** Author a canned answer. Not elevated beyond the write permission: it moves no money and touches no tenant record —
+ *  over-gating a harmless control trains people to treat elevation prompts as noise. */
+export async function createMacroAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/support/macros?${qs}`);
+  const built = buildMacro({
+    slug: String(formData.get('slug') ?? ''),
+    title: String(formData.get('title') ?? ''),
+    notes: String(formData.get('notes') ?? ''),
+    bodies: {
+      en: String(formData.get('body_en') ?? ''),
+      hi: String(formData.get('body_hi') ?? ''),
+      gu: String(formData.get('body_gu') ?? ''),
+    },
+  });
+  if (!built.ok) back(`error=mac_${built.error}${built.at ? `&lang=${built.at}` : ''}`);
+  try { await adminPost('support/macros', { body: built.value }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/support/macros');
+  back(`ok=created&missing=${built.value.bodies.length === 3 ? '0' : String(3 - built.value.bodies.length)}`);
+}
+
+/** Archive or restore. Never a delete — a macro used on a ticket must stay readable, or that ticket's history becomes a
+ *  reply nobody can account for. */
+export async function toggleMacroAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/support/macros?${qs}`);
+  if (!id) back('error=notFound');
+  const active = String(formData.get('active') ?? 'true') === 'true';
+  const reason = String(formData.get('reason') ?? '');
+  if (!validReason(reason)) back('error=mac_reason');
+  try { await adminPost(`support/macros/${encodeURIComponent(id)}/active`, { body: { active, reason: reason.trim() } }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath('/support/macros');
+  back(`ok=${active ? 'restored' : 'archived'}`);
 }

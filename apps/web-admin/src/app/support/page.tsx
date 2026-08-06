@@ -58,6 +58,10 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
       <nav className="kv-filters" aria-label={t.t('support.nav')}>
         <Link href="/support/sla-breaches" className="kv-chip">{t.t('support.breachesNav')}</Link>
         <Link href="/support/tenant-health" className="kv-chip">{t.t('support.healthNav')}</Link>
+        {/* PC-56 ADMIN-2 · the canon's remaining desk lenses (W053/W054/W055) */}
+        <Link href="/support/macros" className="kv-chip">{t.t('support.macrosLink')}</Link>
+        <Link href="/support/escalation" className="kv-chip">{t.t('support.escalationLink')}</Link>
+        <Link href="/support/insights" className="kv-chip">{t.t('support.insightsLink')}</Link>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('support.filterStatus')}>

@@ -25,3 +25,18 @@ export class IllegalTicketTransitionError extends Error {
     this.name = 'IllegalTicketTransitionError';
   }
 }
+
+// ---- PC-56 ADMIN-2 ----
+/** A macro the rules refuse (bad shortcut, unreviewed language, body too short to be a canned answer). 422: the
+ *  request was understood and is not allowed, and the message says which rule. */
+export class InvalidMacroError extends DomainHttpError {
+  constructor(detail: string) { super('SUPPORT_MACRO_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+/** The shortcut is already in use. 409, not 422: the request was fine, it collided — and telling an author so is how
+ *  they discover the answer they were about to write already exists. */
+export class DuplicateMacroError extends DomainHttpError {
+  constructor(slug: string) { super('SUPPORT_MACRO_DUPLICATE', `the shortcut /${slug} is already in use`, HttpStatus.CONFLICT, { slug }); }
+}
+export class MacroNotFoundError extends DomainHttpError {
+  constructor(ref: string) { super('SUPPORT_MACRO_NOT_FOUND', `macro ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
+}

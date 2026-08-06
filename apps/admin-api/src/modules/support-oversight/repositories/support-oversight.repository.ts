@@ -98,4 +98,170 @@ export class SupportOversightRepository {
          FROM support_tickets WHERE ${where} GROUP BY tenant_id${tail}`, params);
     return r.rows.map((x: any) => ({ tenantId: x.tenant_id, openCount: x.open_count ?? 0, breachedCount: x.breached_count ?? 0, p0Open: x.p0_open ?? 0, oldestOpenAgeSec: x.oldest_open_age_sec != null ? Number(x.oldest_open_age_sec) : null }));
   }
+
+  /* ================= PC-56 ADMIN-2 · support-desk depth ================= */
+
+  /**
+   * AGENT PERFORMANCE (canon W055). Every column is derived from `support_tickets` — no new table, because the ticket
+   * already records who handled it, when it was first answered, when it was resolved and what the requester scored it.
+   *
+   * TWO THINGS THIS READ REFUSES TO DO:
+   *   • it does not invent a p50 from an average. First-response time is a DISTRIBUTION with a long tail (one ticket
+   *     answered on Monday morning after a weekend would drag a mean into fiction), so the median is computed in SQL
+   *     with `percentile_cont`. The canon asks for p50 and it gets a real p50.
+   *   • it does not score an agent on tickets that are still open. `handled` counts RESOLVED tickets in the window;
+   *     an agent whose queue is full of hard open cases is not a slow agent, and counting them would say so.
+   */
+  async agentPerformance(fromIso: string, toIso: string, limit = 100): Promise<Array<{
+    agentUserId: string; handled: number; firstResponseP50Sec: number | null;
+    csatAvgBps: number | null; csatCount: number; reopenedCount: number;
+  }>> {
+    const r = await this.pool.query(
+      `SELECT t.assignee_user_id AS agent,
+              count(*) FILTER (WHERE t.resolved_at IS NOT NULL)::int AS handled,
+              -- a real median, in seconds; NULL when nobody has been answered yet in the window
+              percentile_cont(0.5) WITHIN GROUP (
+                ORDER BY EXTRACT(EPOCH FROM (t.first_responded_at - t.created_at))
+              ) FILTER (WHERE t.first_responded_at IS NOT NULL) AS fr_p50_sec,
+              -- CSAT as basis points of 5 (integer arithmetic on the way out), and the COUNT beside it: a 5.0 from one
+              -- rating is not the same fact as a 4.6 from two hundred, and a bare average hides which one you have
+              avg(t.csat_score) FILTER (WHERE t.csat_score IS NOT NULL) AS csat_avg,
+              count(*) FILTER (WHERE t.csat_score IS NOT NULL)::int AS csat_count,
+              count(*) FILTER (WHERE t.status = 'reopened')::int AS reopened
+         FROM support_tickets t
+        WHERE t.deleted_at IS NULL AND t.assignee_user_id IS NOT NULL
+          AND t.created_at >= $1::timestamptz AND t.created_at < $2::timestamptz
+        GROUP BY 1
+        ORDER BY handled DESC, agent
+        LIMIT $3`, [fromIso, toIso, limit]);
+    return r.rows.map((x: any) => ({
+      agentUserId: x.agent,
+      handled: x.handled ?? 0,
+      firstResponseP50Sec: x.fr_p50_sec === null ? null : Math.round(Number(x.fr_p50_sec)),
+      // bps of the 5-point scale so the wire carries an integer (4.6 → 9200)
+      csatAvgBps: x.csat_avg === null ? null : Math.round((Number(x.csat_avg) / 5) * 10000),
+      csatCount: x.csat_count ?? 0,
+      reopenedCount: x.reopened ?? 0,
+    }));
+  }
+
+  /**
+   * CSAT SCORES (canon W056). Real scores from `support_tickets.csat_score`.
+   *
+   * THE CANON ASKS FOR A "VERBATIM (TRANSLATED)" COLUMN AND THE PLATFORM DOES NOT STORE ONE. `support_tickets` has a
+   * 1–5 score and no comment field (0012), so this read returns scores only and the console says the verbatim column is
+   * not available rather than showing an empty column that looks like "nobody wrote anything". Queued as a GAP-BACKEND.
+   */
+  async csatScores(q: { fromIso: string; toIso: string; maxScore?: number; limit: number }): Promise<Array<{
+    ticketId: string; ticketNo: string; tenantId: string; tenantSlug: string | null;
+    score: number; severity: string; categoryId: string | null; assigneeUserId: string | null; ratedAt: string;
+  }>> {
+    const params: unknown[] = [q.fromIso, q.toIso];
+    let where = `t.deleted_at IS NULL AND t.csat_score IS NOT NULL
+                 AND t.created_at >= $1::timestamptz AND t.created_at < $2::timestamptz`;
+    if (q.maxScore !== undefined) { params.push(q.maxScore); where += ` AND t.csat_score <= $${params.length}`; }
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `SELECT t.id, t.ticket_no, t.tenant_id, tn.slug AS tenant_slug, t.csat_score, t.severity,
+              t.category_id, t.assignee_user_id,
+              -- the ticket carries no rated_at column; resolved_at is when the score could first have been given, and
+              -- created_at is the fallback. Named ratedAt with that caveat rather than pretending to a timestamp the
+              -- table does not have. (No backticks in this comment: it lives inside a template literal.)
+              COALESCE(t.resolved_at, t.created_at) AS rated_at
+         FROM support_tickets t
+         LEFT JOIN tenants tn ON tn.id = t.tenant_id
+        WHERE ${where}
+        ORDER BY t.csat_score, rated_at DESC
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      ticketId: x.id, ticketNo: x.ticket_no, tenantId: x.tenant_id, tenantSlug: x.tenant_slug ?? null,
+      score: Number(x.csat_score), severity: x.severity, categoryId: x.category_id ?? null,
+      assigneeUserId: x.assignee_user_id ?? null,
+      ratedAt: x.rated_at?.toISOString?.() ?? String(x.rated_at),
+    }));
+  }
+
+  /** CSAT distribution (1..5) for the window — the headline beside the review queue. Counts only, so a caller cannot
+   *  render an average without also seeing how thin the sample is. */
+  async csatDistribution(fromIso: string, toIso: string): Promise<Array<{ score: number; n: number }>> {
+    const r = await this.pool.query(
+      `SELECT csat_score AS score, count(*)::int AS n
+         FROM support_tickets
+        WHERE deleted_at IS NULL AND csat_score IS NOT NULL
+          AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+        GROUP BY 1 ORDER BY 1`, [fromIso, toIso]);
+    return r.rows.map((x: any) => ({ score: Number(x.score), n: x.n }));
+  }
+
+  /* ---------------- support macros (0096 · canon W053) ---------------- */
+  /** The macro list with its per-language bodies, 30-day usage and the CSAT of tickets it was used on. The usage count
+   *  is a COUNT over a window (0096 records one row per use) rather than a lifetime counter that can only grow. */
+  async listMacros(limit = 100): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT m.id, m.slug, m.title, m.category_id, m.is_active, m.notes, m.created_at,
+              COALESCE(b.langs, '{}') AS langs,
+              COALESCE(u.uses_30d, 0)::int AS uses_30d,
+              u.csat_avg
+         FROM support_macros m
+         LEFT JOIN (
+           SELECT macro_id, array_agg(language_code ORDER BY language_code) AS langs
+             FROM support_macro_bodies WHERE deleted_at IS NULL GROUP BY macro_id
+         ) b ON b.macro_id = m.id
+         LEFT JOIN (
+           SELECT mu.macro_id, count(*) AS uses_30d,
+                  avg(t.csat_score) FILTER (WHERE t.csat_score IS NOT NULL) AS csat_avg
+             FROM support_macro_uses mu
+             JOIN support_tickets t ON t.id = mu.ticket_id
+            WHERE mu.used_at >= now() - interval '30 days' AND mu.deleted_at IS NULL
+            GROUP BY 1
+         ) u ON u.macro_id = m.id
+        WHERE m.deleted_at IS NULL
+        ORDER BY m.slug
+        LIMIT $1`, [limit]);
+    return r.rows.map((x: any) => ({
+      id: x.id, slug: x.slug, title: x.title, categoryId: x.category_id ?? null,
+      isActive: x.is_active === true, notes: x.notes ?? null,
+      languages: x.langs ?? [],
+      uses30d: x.uses_30d ?? 0,
+      // NULL when no rated ticket used it — never 0, which would read as "everyone hated it"
+      csatAfterUseBps: x.csat_avg === null ? null : Math.round((Number(x.csat_avg) / 5) * 10000),
+      createdAt: x.created_at ?? null,
+    }));
+  }
+
+  async macroBodies(macroId: string): Promise<Array<{ languageCode: string; body: string }>> {
+    const r = await this.pool.query(
+      `SELECT language_code, body FROM support_macro_bodies
+        WHERE macro_id=$1 AND deleted_at IS NULL ORDER BY language_code`, [macroId]);
+    return r.rows.map((x: any) => ({ languageCode: x.language_code, body: x.body }));
+  }
+
+  async slugTaken(client: PoolClient, slug: string): Promise<boolean> {
+    const r = await client.query(`SELECT 1 FROM support_macros WHERE slug=$1`, [slug]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  async insertMacro(client: PoolClient, m: {
+    id: string; slug: string; title: string; categoryId: string | null; notes: string | null;
+    bodies: Array<{ languageCode: string; body: string }>; actorUserId: string;
+  }): Promise<void> {
+    await client.query(
+      `INSERT INTO support_macros (id, slug, title, category_id, notes, created_by, updated_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$6)`,
+      [m.id, m.slug, m.title, m.categoryId, m.notes, m.actorUserId]);
+    for (const b of m.bodies) {
+      await client.query(
+        `INSERT INTO support_macro_bodies (macro_id, language_code, body, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$4)`, [m.id, b.languageCode, b.body, m.actorUserId]);
+    }
+  }
+
+  /** Archive or restore. Never a DELETE: a macro used on a ticket must stay readable, or that ticket's history becomes
+   *  a reply nobody can account for. */
+  async setMacroActive(client: PoolClient, id: string, active: boolean, actorUserId: string): Promise<boolean> {
+    const r = await client.query(
+      `UPDATE support_macros SET is_active=$2, updated_by=$3, updated_at=now()
+        WHERE id=$1 AND deleted_at IS NULL`, [id, active, actorUserId]);
+    return (r.rowCount ?? 0) > 0;
+  }
 }

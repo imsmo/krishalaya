@@ -10,10 +10,14 @@ import { OwnerPermissionsGuard, RequireOwnerPermission, OwnerPermissions } from 
 import { ZodBody, ZodQuery } from '../../core/http/zod.pipe';
 import { SlaBreachMonitorService } from './services/sla-breach-monitor.service';
 import { TenantHealthAlertsService } from './services/tenant-health-alerts.service';
+import { SupportMacrosService } from './services/support-macros.service';
+import { SupportInsightsService } from './services/support-insights.service';
 import { TicketEscalationsService } from './services/ticket-escalations.service';
 import {
   QueryTicketsSchema, QueryTicketsDto, QueryBreachesSchema, QueryBreachesDto,
   TenantHealthSchema, TenantHealthDto, EscalateTicketSchema, EscalateTicketDto,
+  QueryInsightsSchema, QueryInsightsDto, QueryCsatSchema, QueryCsatDto,
+  CreateMacroSchema, CreateMacroDto, ToggleMacroSchema, ToggleMacroDto,
 } from './dto/support-oversight.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -27,7 +31,42 @@ export class SupportOversightController {
     private readonly monitor: SlaBreachMonitorService,
     private readonly health: TenantHealthAlertsService,
     private readonly escalations: TicketEscalationsService,
+    private readonly macros: SupportMacrosService,
+    private readonly insights: SupportInsightsService,
   ) {}
+
+  /* ================= PC-56 ADMIN-2 · support-desk depth ================= */
+  // AGENT PERFORMANCE (W055) and CSAT (W056) are reads over support_tickets — no new table, because the ticket already
+  // records who handled it, when it was answered and what the requester scored it.
+  @Get('insights/agents') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  agentInsights(@ZodQuery(QueryInsightsSchema) q: QueryInsightsDto) {
+    return this.insights.agents(q).then((data) => ({ data }));
+  }
+  @Get('insights/csat') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  csatInsights(@ZodQuery(QueryCsatSchema) q: QueryCsatDto) {
+    return this.insights.csat(q).then((data) => ({ data }));
+  }
+  // The SLA matrix the platform ACTUALLY enforces (W054). Served from the code constant, because there is no config
+  // table — and the response says so, along with the fact that the escalation chain does not exist yet.
+  @Get('sla-matrix') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  slaMatrix() { return { data: this.insights.slaMatrix() }; }
+
+  // MACROS (W053)
+  @Get('macros') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  listMacros() { return this.macros.list().then((data) => ({ data })); }
+  @Get('macros/:id/bodies') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  macroBodies(@Param('id') id: string) { return this.macros.bodies(id).then((data) => ({ data })); }
+
+  // Authoring a macro is not money and touches no tenant record, so it carries the write permission without the
+  // hardware-key ceremony — over-gating a harmless control trains people to treat elevation prompts as noise.
+  @Post('macros') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage)
+  createMacro(@Req() req: any, @ZodBody(CreateMacroSchema) dto: CreateMacroDto) {
+    return this.macros.create(admin(req), dto).then((data) => ({ data }));
+  }
+  @Post('macros/:id/active') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage)
+  toggleMacro(@Req() req: any, @Param('id') id: string, @ZodBody(ToggleMacroSchema) dto: ToggleMacroDto) {
+    return this.macros.toggle(admin(req), id, dto).then((data) => ({ data }));
+  }
 
   // ---- reads (cross-tenant NOC) ----
   @Get('tickets') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
