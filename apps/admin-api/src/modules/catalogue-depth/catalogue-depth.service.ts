@@ -1,37 +1,22 @@
 // apps/admin-api/src/modules/catalogue-depth/catalogue-depth.service.ts · PC-54 W54-11 slice 1 SQL.
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+//
+// REDUCED TO ONE METHOD BY PC-56 ADMIN-3. This file used to hold the attribute/option/unit reads and the two unit
+// writes; all of them now live in `services/eav-admin.service.ts` on top of `repositories/eav.repository.ts`, because
+// those writes needed a transaction and an audit row and a service holding raw SQL cannot express either.
+//
+// The unit writes are NOT left here as a second path. Two write paths for one table is exactly how one of them stays
+// unaudited — which is the defect this wave existed to fix, so leaving a copy would have re-created it.
+//
+// What remains is the CROPS LENS: there is no crops table, crops ARE the `crops.*` category branch. It stays read-only
+// here because ADMIN-3's scope is the EAV plane; the lens and its two declared DELTAs (season and mandi-feed mapping
+// have no schema home) belong to ADMIN-3c.
+import { Injectable } from '@nestjs/common';
 import { AdminPool } from '../../core/database/admin-pool';
 
 @Injectable()
 export class CatalogueDepthService {
   constructor(private readonly pool: AdminPool) {}
 
-  async attributes(q: string | undefined, limit: number) {
-    const r = await this.pool.query(
-      `SELECT id, code, default_name, data_type, unit_code, is_active FROM attribute_definitions
-        WHERE deleted_at IS NULL AND ($1::text IS NULL OR code ILIKE '%'||$1||'%' OR default_name ILIKE '%'||$1||'%')
-        ORDER BY code ASC LIMIT $2`, [q ?? null, Math.min(limit, 200)]);
-    return r.rows;
-  }
-  async options(attributeId: string) {
-    const r = await this.pool.query(`SELECT id, code, default_name, sort_order, is_active FROM attribute_options WHERE attribute_id=$1 AND deleted_at IS NULL ORDER BY sort_order ASC, code ASC LIMIT 500`, [attributeId]);
-    return r.rows;
-  }
-  async units(activeOnly: boolean) {
-    const r = await this.pool.query(`SELECT code, default_name, unit_class, is_active FROM units WHERE deleted_at IS NULL AND ($1 = false OR is_active = true) ORDER BY unit_class, code`, [activeOnly]);
-    return r.rows;
-  }
-  async createUnit(dto: { code: string; defaultName: string; unitClass: string }) {
-    try {
-      await this.pool.query(`INSERT INTO units (code, default_name, unit_class) VALUES ($1,$2,$3)`, [dto.code, dto.defaultName, dto.unitClass]);
-      return { code: dto.code };
-    } catch (e: any) { if (e?.code === '23505') throw new ConflictException('unit code already exists'); throw e; }
-  }
-  async setUnitActive(code: string, isActive: boolean) {
-    const r = await this.pool.query(`UPDATE units SET is_active=$2 WHERE code=$1 AND deleted_at IS NULL`, [code, isActive]);
-    if ((r.rowCount ?? 0) === 0) throw new NotFoundException('unit not found');
-    return { code, isActive };
-  }
   async crops() {
     const r = await this.pool.query(
       `SELECT c.id, c.code, c.default_name, c.path::text, c.depth, c.is_active FROM categories c
