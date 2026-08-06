@@ -165,6 +165,28 @@ export class LabourResource {
   async recordMgnregaMuster(input: { workId: string; jobCardId: string; musterNo?: string; attendedOn: string; attended?: boolean; dayFraction?: number; wageMinor?: string }, idempotencyKey: string): Promise<{ id: string; observedDays: number }> {
     return (await this.http.request<{ id: string; observedDays: number }>('POST', 'labour/mgnrega/musters', { body: input, idempotencyKey })).data;
   }
+  // --- PC-55 B2 `mgnrega-work-demands` (MGNREGA §3: work within 15 days of a demand, else the STATE owes an
+  // unemployment allowance). Every read returns the clock (dueBy / daysUntilDue / overdue / allowanceDue) computed
+  // server-side from the demand date, so no client re-implements a statutory deadline. booking.manage-gated. ---
+  async recordMgnregaDemand(input: { jobCardId: string; demandedOn: string; daysRequested: number; applicants?: number; regionId?: string; note?: string }, idempotencyKey: string): Promise<{ id: string; jobCardNo: string; demandedOn: string; status: string; dueBy: string; daysUntilDue: number; guaranteeNote: string }> {
+    return (await this.http.request<{ id: string; jobCardNo: string; demandedOn: string; status: string; dueBy: string; daysUntilDue: number; guaranteeNote: string }>('POST', 'labour/mgnrega/demands', { body: input, idempotencyKey })).data;
+  }
+  async mgnregaDemands(params: { status?: 'demanded' | 'allotted' | 'withdrawn' | 'closed'; regionId?: string; jobCardId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ allotmentWindowDays: number; authoritative: string; allowanceNote: string; demands: Array<Record<string, unknown>> }> {
+    return (await this.http.request<{ allotmentWindowDays: number; authoritative: string; allowanceNote: string; demands: Array<Record<string, unknown>> }>('GET', 'labour/mgnrega/demands', { query: { status: params.status, regionId: params.regionId, jobCardId: params.jobCardId, limit: params.limit ?? 200 }, signal })).data;
+  }
+  /** Allot a REAL work (workId required — the API refuses an allotment with nothing behind it), or end the demand. */
+  async transitionMgnregaDemand(id: string, dto: { to: 'allotted' | 'withdrawn' | 'closed'; workId?: string; allottedOn?: string; reason?: string }): Promise<{ id: string; status: string; allottedOn?: string }> {
+    return (await this.http.request<{ id: string; status: string; allottedOn?: string }>('PATCH', `labour/mgnrega/demands/${encodeURIComponent(id)}`, { body: dto })).data;
+  }
+  /** Programme counters over the WHOLE register + the state ledger's real availability (never implied freshness). */
+  async mgnregaSummary(signal?: AbortSignal): Promise<{ guaranteeDays: number; allotmentWindowDays: number; jobCards: number; works: Record<string, number>; musterDaysObserved: number; demands: { open: number; overdue: number; allotted: number; ended: number }; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; fetchedAt?: string } }> {
+    return (await this.http.request<{ guaranteeDays: number; allotmentWindowDays: number; jobCards: number; works: Record<string, number>; musterDaysObserved: number; demands: { open: number; overdue: number; allotted: number; ended: number }; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; fetchedAt?: string } }>('GET', 'labour/mgnrega/summary', { signal })).data;
+  }
+  /** The audit-stamped export: rows PLUS a receipt (id/who/when/filters/rowCount) written to the audit ledger in the
+   *  same breath — the file an officer saves carries its own provenance (Ledger Appendix 5 law). */
+  async exportMgnrega(dto: { report: 'job_cards' | 'works' | 'demands'; status?: string; regionId?: string; limit?: number }): Promise<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number; filters: Record<string, unknown> }; rows: Array<Record<string, unknown>> }> {
+    return (await this.http.request<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number; filters: Record<string, unknown> }; rows: Array<Record<string, unknown>> }>('POST', 'labour/mgnrega/exports', { body: dto })).data;
+  }
   async mgnregaCardLedger(jobCardId: string, signal?: AbortSignal): Promise<{ guaranteeDays: number; observedByPlatform: { days: number; musterCount: number }; daysRemaining: number; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; daysUsedFy: number | null } }> {
     return (await this.http.request<{ guaranteeDays: number; observedByPlatform: { days: number; musterCount: number }; daysRemaining: number; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; daysUsedFy: number | null } }>('GET', `labour/mgnrega/job-cards/${encodeURIComponent(jobCardId)}/ledger`, { signal })).data;
   }

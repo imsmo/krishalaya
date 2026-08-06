@@ -13,9 +13,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dash.title'), robots: { index: false, follow: false } };
 }
 
+// GW-1..5 — every gov wave is built (PC-55 B2 closed GW-5). There is no 'coming' list left to render, which is
+// why the wave table below has no second section: an empty "coming soon" shell would be noise, not honesty.
 const BUILT = [{ key: 'schemes', href: '/schemes' }, { key: 'dbt', href: '/schemes' }, { key: 'regulator', href: '/registers' },
-  { key: 'verification', href: '/verification' }] as const; // GW-1..4 (DBT register lives on the application review)
-const WAVES = ['mgnrega'] as const; // GW-5 stays GATED until the mgnrega-program API module exists
+  { key: 'verification', href: '/verification' }, { key: 'mgnrega', href: '/mgnrega' }] as const;
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');
@@ -32,9 +33,6 @@ export default async function DashboardPage() {
         <tbody>
           {BUILT.map((b) => (
             <tr key={b.key}><td><a href={b.href} className="kv-link">{t.t(`dash.wave.${b.key}`)}</a></td><td><span className="kv-badge">{t.t('dash.live')}</span></td></tr>
-          ))}
-          {WAVES.map((w) => (
-            <tr key={w}><td>{t.t(`dash.wave.${w}`)}</td><td><span className="kv-badge">{t.t('dash.gated')}</span></td></tr>
           ))}
         </tbody>
       </table>

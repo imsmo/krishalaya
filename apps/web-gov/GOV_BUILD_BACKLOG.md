@@ -36,4 +36,20 @@ Timing law: waves activate at the FIRST GOVERNMENT/SCHEME PARTNERSHIP — pilot 
       HONEST GAP KEPT VISIBLE: the farmer-side OTP sign-off is NOT built (field-verification.service.ts says so),
       so W337's "Send OTP"/"needs farmer OTP" buttons are NOT drawn — the form states that the record carries the
       officer's attestation, not the farmer's confirmation. Dashboard: verification is now Live; nav links it.
-- [ ] **GW-5 · READY (unblocked 2026-08-05 by PC-55 A4: mgnrega_works+musters+100-day ledger; PC-56 wave GOV-5 builds it)** — MGNREGA (PC-54 `mgnrega-program` first; musters partially via labour api).
+- [x] **GW-5 · MGNREGA** ✅ **BUILT 2026-08-06 (PC-55 B2)** — **THE GOV CONSOLE IS NOW 100%: GW-0..GW-5 all built.**
+      /mgnrega dashboard (job cards, works by status, attendance days observed, demand counts incl. OVERDUE — all
+      counted in SQL over the whole register, never over a page) · /mgnrega/job-cards register + **audit-stamped
+      exports** (job_cards | works | demands: receipt id + row count + time written to the audit ledger in the same
+      transaction, Appendix 5 law) · /mgnrega/job-cards/[id] the 100-day ledger with BOTH counts side by side (ours
+      vs the state's, higher one charged against the cap) + the muster day rows as its evidence ·
+      /mgnrega/demands the **work-demand register** with the statutory 15-day clock (dueBy, days left, OVERDUE →
+      "allowance payable by the state"), allot-a-real-work, withdraw, close-with-reason.
+      **B2 ABSORBED THE MISSING BACKEND** A4 left gated (recorded in 0091's header, not drift): migration 0091
+      `mgnrega_work_demands` + the §3 clock in pure rules + service/controller/SDK, because a console form that
+      recorded a household's demand nowhere would destroy the only evidence their legal clock ever started.
+      **FOUND + FIXED (Law 1):** `mgnrega_job_cards` has no tenant_id (a card is national, belongs to a person), so
+      the W54-3 oversight list was returning EVERY tenant's cardholders — now scoped by tenant membership
+      (user_tenant_roles) on list, cardById, counts and export.
+      HONEST GAPS KEPT VISIBLE: canon W345's "Sync now" is NOT drawn (STATE_LEDGER_PROVIDER is a documented no-op —
+      there is no sync to run); every page says the numbers are the platform's own observations with the state
+      register as authoritative; wages/allowances are named as state-paid, never platform-paid.
