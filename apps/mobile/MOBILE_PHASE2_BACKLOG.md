@@ -10,8 +10,15 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       lost), vet directory + booking (fee SERVER-snapshotted, never client-priced; cancel pre-service; farmer
       confirm-complete settles the fee idempotently — mirrors domain/vet-booking.state.ts). NEW SDK
       LivestockResource. AppRole 'pashupalak' (RBAC code `pashupalak`, seeded). Flag `livestock` flipped ON
-      (dev11/dev12 specs updated). HEALTH LOG: table-less/endpoint-less → honest coming-note → PC-54
-      `livestock-health-records`. Old placeholders stay un-routed.
+      (dev11/dev12 specs updated). Old placeholders stay un-routed.
+      **HEALTH LOG SHIPPED 2026-08-06 (PC-55 B5)** on W54-4 — the coming-note is gone (as is the one on the
+      Pashupalak home, which had become false): the animal screen now has a Details/Health tab pair with the
+      lifetime file. WHAT IS DUE NEXT leads, showing the EARLIEST unmet date so an overdue vaccination cannot
+      hide behind a later one, and overdue is unmissable (a count also rides the Health tab label). Recording
+      asks for the batch number on vaccinations/dewormings WITH the reason (a recall cannot be traced without
+      it) but never forces it — a fabricated batch is worse than none. A next-due date in the PAST is refused:
+      a reminder dated yesterday is not a reminder. The event picker is the server's seeded vocabulary, so an
+      unknown code can never be sent. No new route: a shed is a bad place to lose your position in a stack.
 - [x] **W10-2 · Dairy farmer** ✅ 2026-08-05 — NEW `(dairy)` tab app (Home/Diary/Bills/Rates), a pure TRUST
       MIRROR (zero writes — recording is the MCC counter's job): my memberships (box=mine), milk diary (owner-
       checked collections, month pager, per-slip SERVER-priced amounts, NO client-side money totals — the
@@ -27,7 +34,16 @@ real screens → i18n en/hi/gu → specs. One wave per approval (`Yes start PC-5
       case detail shows ONLY legal vet actions (vetActionsFor mirrors the state machine — `completed` is the
       FARMER's confirm-and-pay, never offered); earnings = completed fees per row, NO client grand total
       (wallet = ledger of record, footer says so). SDK: vet-side methods on LivestockResource (87/87).
-      Flag `vet` ON; AppRole 'vet' → RBAC `vet`. PRESCRIPTION CONTENT: no endpoints → coming-note → PC-54
+      Flag `vet` ON; AppRole 'vet' → RBAC `vet`.
+      **PRESCRIPTION PAD SHIPPED 2026-08-06 (PC-55 B5)** on W54-4 — the coming-note is gone. SCHEDULE H IS PER
+      LINE (one prescription routinely mixes a Schedule-H antibiotic with an ordinary supplement, so there is no
+      pad-wide toggle), and this app does NOT decide which drugs are Schedule H — no such list ships here, and
+      inventing one would be dangerous; the veterinarian marks the line because they are licensed to know. EVERY
+      line needs a medicine AND a dose ("give the white tablet" is not a prescription): an untouched row is
+      dropped, a HALF-filled row is refused and named by number. validUntil cannot already have passed. ONE
+      prescription per booking, VET-OF-RECORD only (both server-enforced) — once written, the pad is replaced by
+      the signed document, because a signed prescription is not a draft and an edit would only 409.
+      SUPERSEDED-BY-DESIGN: PRESCRIPTION CONTENT was → PC-54
       `vet-prescriptions`.
 - [x] **W10-4 · Store owner** ✅ 2026-08-05 — NEW `(store)` tab app (Orders/Inventory/Batches/Licence),
       RBAC `pharma_store`: orders role=seller REUSING features/orders (same data path + spec-pinned

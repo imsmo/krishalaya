@@ -61,3 +61,20 @@ export async function getBooking(id: string): Promise<VetBooking | null> {
 export function cancelBooking(id: string): Promise<VetBooking> { return apiClient().livestock.cancelVetBooking(id); }
 /** Confirms the visit happened and settles the fee — idempotent (Law 3). */
 export function completeBooking(id: string): Promise<VetBooking> { return apiClient().livestock.completeVetBooking(id, newId()); }
+
+// --- PC-55 B5 · the lifetime HEALTH FILE (PC-54 W54-4). Reads degrade to [] like every other private read; the
+// write THROWS so the screen can name the exact refusal. Deliberately NOT cached: a health file drives "what is
+// due next", and a stale answer here is worse than a spinner — a farmer could skip a vaccination believing it was
+// still weeks away.
+export async function listHealthEvents(animalId: string): Promise<Array<Record<string, unknown>>> {
+  try { return await apiClient().livestock.healthEvents(animalId); } catch { return []; }
+}
+export function recordHealthEvent(animalId: string, input: { eventTypeCode: string; vetBookingId?: string; batchNo?: string; diagnosis?: string; outcome?: string; nextDueDate?: string }): Promise<{ id: string }> {
+  return apiClient().livestock.recordHealthEvent(animalId, input);
+}
+/** Ear-tag (Pashu Aadhaar / INAPH) lookup — the whole tenant's registry, so it is the OPERATOR's read, not a
+ *  farmer's: the API applies the caller's own scope, and box='all' simply asks for what they are allowed to see. */
+export async function findAnimalsByEarTag(pashuAadhaar: string): Promise<Array<Record<string, unknown>>> {
+  try { return (await apiClient().livestock.animals({ box: 'all', pashuAadhaar, limit: 20 })).items as unknown as Array<Record<string, unknown>>; }
+  catch { return []; }
+}

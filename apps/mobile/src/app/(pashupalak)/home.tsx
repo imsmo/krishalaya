@@ -1,6 +1,9 @@
 // apps/mobile/src/app/(pashupalak)/home.tsx · Pashupalak home (PC-50 W10-1): my herd at a glance (REAL counts
-// from the caller's registry — never invented), in-flight vet bookings, and the honest note that the health
-// log is coming (livestock health records have NO endpoints yet — PC-54 `livestock-health-records`).
+// from the caller's registry — never invented) and in-flight vet bookings.
+// PC-55 B5: the "health log is coming" note is GONE — the health file shipped on the animal screen, so the note
+// had become false. It is replaced by a pointer to where the record actually lives. Deliberately NOT a herd-wide
+// "N reminders overdue" badge: that would need one request per animal on a home screen, and a home screen that
+// hammers a shed's connection to show a number is a worse trade than one honest sentence.
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -57,7 +60,7 @@ export default function PashupalakHome() {
             </Card>
           </Pressable>
         ))}
-        <Text style={styles.muted}>{t('pashu.home.healthComing')}</Text>
+        <Text style={styles.muted}>{t('pashu.home.healthWhere')}</Text>
       </ScrollView>
     </ScreenScaffold>
   );

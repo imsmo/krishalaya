@@ -173,7 +173,6 @@ export const en: Record<string, string> = {
   'chc.error.advance': 'Please enter a valid advance (e.g. 250.50, or 0).',
   'chc.error.otp': 'OTP must be 4–12 digits.',
   'chc.error.quantity': 'Usage must be a positive number (up to 3 decimals).',
-  'chc.livestockNote': 'Livestock ear-tag lookup: the animal registry has no tag-number search parameter yet (API gap, recorded in the build ledger) — scan lookup ships when it lands.',
   'nav.dairy': 'Dairy POS',
   'dairy.title': 'Dairy collection POS',
   'dairy.hint': 'Record collections with weighment + FAT/SNF quality (the server prices every slip from the rate card), look up member slips, run milk bills (preview → approve → pay), and see the live rate charts.',
@@ -494,4 +493,18 @@ export const en: Record<string, string> = {
   'iot.error.r_threshold_subjectType': 'That consignment type is too long.',
   'iot.error.r_threshold_silentHours': 'Silent hours must be a whole number between 1 and 720.',
   'iot.error.r_threshold_maintenanceAlert': 'Choose a maintenance flag from the list.',
+
+  // --- PC-55 B5: the ear-tag lookup that replaced OW-3's stale "API gap" note (W54-4 added pashuAadhaar).
+  'tag.title': 'Animal ear-tag lookup',
+  'tag.label': 'Ear tag (12 digits)',
+  'tag.search': 'Find animal',
+  'tag.hint': 'Type or scan the 12-digit INAPH tag. Spaces and dashes are fine — they are removed automatically.',
+  'tag.invalid': 'An ear tag is exactly 12 digits. Check the number on the tag.',
+  'tag.empty': 'No animal with that ear tag is registered with this organisation.',
+  'tag.colTag': 'Ear tag',
+  'tag.colAnimal': 'Animal',
+  'tag.colStatus': 'Status',
+  'tag.colOwner': 'Owner',
+  'tag.unnamed': '(no name)',
+  'tag.note': 'The lookup is an exact match on the full tag — there is no partial search, so a result is the animal on that tag or nothing at all.',
 };

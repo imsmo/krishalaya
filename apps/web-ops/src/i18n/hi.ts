@@ -173,7 +173,6 @@ export const hi: Record<string, string> = {
   'chc.error.advance': 'कृपया मान्य अग्रिम लिखें (जैसे 250.50, या 0)।',
   'chc.error.otp': 'OTP 4–12 अंक हो।',
   'chc.error.quantity': 'उपयोग धनात्मक संख्या हो (3 दशमलव तक)।',
-  'chc.livestockNote': 'पशु कान-टैग खोज: पशु रजिस्ट्री में अभी टैग-नंबर खोज पैरामीटर नहीं है (API कमी, बिल्ड लेजर में दर्ज) — आते ही स्कैन खोज बनेगी।',
   'nav.dairy': 'डेयरी POS',
   'dairy.title': 'दूध संग्रह POS',
   'dairy.hint': 'तौल + FAT/SNF गुणवत्ता के साथ संग्रह दर्ज करें (हर पर्ची की कीमत सर्वर रेट कार्ड से तय करता है), सदस्य पर्चियाँ देखें, दूध बिल चलाएँ (पूर्वावलोकन → स्वीकृति → भुगतान), और सक्रिय रेट चार्ट देखें।',
@@ -494,4 +493,18 @@ export const hi: Record<string, string> = {
   'iot.error.r_threshold_subjectType': 'वह खेप प्रकार बहुत लंबा है।',
   'iot.error.r_threshold_silentHours': 'चुप घंटे 1 से 720 के बीच पूर्ण संख्या हों।',
   'iot.error.r_threshold_maintenanceAlert': 'सूची से रखरखाव संकेत चुनें।',
+
+  // --- PC-55 B5: the ear-tag lookup that replaced OW-3's stale "API gap" note (W54-4 added pashuAadhaar).
+  'tag.title': 'पशु कान-टैग खोज',
+  'tag.label': 'कान-टैग (12 अंक)',
+  'tag.search': 'पशु खोजें',
+  'tag.hint': '12 अंकों का INAPH टैग लिखें या स्कैन करें। स्पेस और डैश चलेंगे — वे स्वयं हट जाते हैं।',
+  'tag.invalid': 'कान-टैग ठीक 12 अंकों का होता है। टैग पर लिखा नंबर जाँचें।',
+  'tag.empty': 'उस कान-टैग वाला कोई पशु इस संस्था में दर्ज नहीं है।',
+  'tag.colTag': 'कान-टैग',
+  'tag.colAnimal': 'पशु',
+  'tag.colStatus': 'स्थिति',
+  'tag.colOwner': 'मालिक',
+  'tag.unnamed': '(नाम नहीं)',
+  'tag.note': 'खोज पूरे टैग का ठीक मिलान है — आंशिक खोज नहीं है, इसलिए परिणाम उसी टैग का पशु होगा या कुछ नहीं।',
 };

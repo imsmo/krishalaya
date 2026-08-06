@@ -6,6 +6,7 @@ import {
   isAlertKind, isAlertSeverity, isChannelHint, defaultsFor, buildThreshold, parseRecipients, buildAlertRule,
   buildRulePatch, hoursSince, deviceHealth, fleetSummary, needsAck, feedOrder,
 } from '../features/devices/alerting';
+import { normaliseEarTag } from '../features/equipment/ear-tag';
 
 const U1 = '00000000-0000-7000-8000-000000000001';
 const U2 = '00000000-0000-7000-8000-000000000002';
@@ -176,5 +177,24 @@ describe('the fired feed puts the thing that is still on fire on top', () => {
     expect(needsAck({ acknowledgedAt: null })).toBe(true);
     expect(needsAck({})).toBe(true);
     expect(needsAck({ acknowledgedAt: '2026-08-06T10:00:00Z' })).toBe(false);
+  });
+});
+
+// --- PC-55 B5: the ear-tag lookup that replaced OW-3's stale "API gap" note ---
+describe('ear-tag normalisation (ops livestock lookup)', () => {
+  it('accepts a 12-digit tag however it is printed on the tag', () => {
+    expect(normaliseEarTag('123456789012')).toBe('123456789012');
+    expect(normaliseEarTag(' 1234 5678 9012 ')).toBe('123456789012');
+    expect(normaliseEarTag('1234-5678-9012')).toBe('123456789012');
+  });
+  it('refuses anything else locally, so a mistyped tag never costs a round trip', () => {
+    expect(normaliseEarTag('12345678901')).toBeNull();
+    expect(normaliseEarTag('1234567890123')).toBeNull();
+    expect(normaliseEarTag('12345678901A')).toBeNull();
+    expect(normaliseEarTag('')).toBeNull();
+    expect(normaliseEarTag(undefined)).toBeNull();
+  });
+  it('does NOT trim leading zeros — a tag’s zeros are part of it', () => {
+    expect(normaliseEarTag('000000000001')).toBe('000000000001');
   });
 });

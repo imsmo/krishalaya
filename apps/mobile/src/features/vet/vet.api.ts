@@ -33,3 +33,13 @@ export async function getVetBooking(id: string): Promise<VetBooking | null> {
 export function progressBooking(id: string, action: 'accept' | 'en_route' | 'in_consult' | 'prescribed' | 'no_show'): Promise<VetBooking> {
   return apiClient().livestock.progressVetBooking(id, action);
 }
+
+// --- PC-55 B5 · the PRESCRIPTION PAD (PC-54 W54-4). The API allows ONE prescription per booking and only from the
+// VET-OF-RECORD, so the read is what tells the pad whether it is still open; the write throws (a 409 means somebody
+// already wrote it, and the screen must say that rather than appear to overwrite a signed document).
+export async function getPrescription(bookingId: string): Promise<Record<string, unknown> | null> {
+  try { return await apiClient().livestock.prescription(bookingId); } catch { return null; }
+}
+export function writePrescription(bookingId: string, input: { validUntil?: string; items: Array<{ drugName: string; dosage: string; durationDays?: number; isScheduleH?: boolean }> }): Promise<{ id: string }> {
+  return apiClient().livestock.writePrescription(bookingId, input);
+}
