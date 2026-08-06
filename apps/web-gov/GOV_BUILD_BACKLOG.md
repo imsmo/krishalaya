@@ -24,9 +24,16 @@ Timing law: waves activate at the FIRST GOVERNMENT/SCHEME PARTNERSHIP — pilot 
       lending partners/loan-products. Export files: api `exports` = EXPORT TRADE (not reports); admin-api
       regulator-export = god-mode realm → audit-stamped export files = PC-54 `gov-report-exports` (Ledger
       Appendix 5); honest note in console, no fake downloads. DBT register (GW-2) noted Live on dashboard.
-- [x] **GW-4 · verification (9 rows)** ✅ 2026-08-05 — DISPOSITIONED, no code (Ledger Appendix 6): review
-      WRITES exist (kyc/:id/review, business/:id/review) but every kyc READ is self-scoped (no queue, no case
-      read) — blind decisions are forbidden; field_verifications is table-only (0066). → PC-54
-      `kyc-review-read-models` + `scheme-field-visits` (evidence via media ids). Dashboard keeps
-      'verification' as coming.
+- [x] **GW-4 · verification (9 rows)** ✅ **BUILT 2026-08-06 (PC-55 B1)** — /verification: KYC reviewer QUEUE
+      (status boxes pending/verified/rejected/expired, keyset) + CASE page reading `kyc/review/:id` (W54-1), with
+      EVIDENCE BEFORE DECISION enforced in the UI: Verify is unavailable without an attached document and the page
+      says why; Reject always demands a reason. Evidence opens through a server route that mints a short-lived
+      presigned URL at click time (never embedded in page HTML, bytes never touch this console); document numbers
+      stay masked. `verified → rejected` is offered as a REVOCATION because the API's state machine allows it.
+      Field visits (W54-3, canon W337) on the application page: schedule (you become officer of record) + submit
+      findings with photo evidence as MEDIA IDS via a gov MediaUploader (VisitEvidence), one recorded location
+      stamped per photo, measurements as `name: value` lines refused rather than silently dropped.
+      HONEST GAP KEPT VISIBLE: the farmer-side OTP sign-off is NOT built (field-verification.service.ts says so),
+      so W337's "Send OTP"/"needs farmer OTP" buttons are NOT drawn — the form states that the record carries the
+      officer's attestation, not the farmer's confirmation. Dashboard: verification is now Live; nav links it.
 - [ ] **GW-5 · READY (unblocked 2026-08-05 by PC-55 A4: mgnrega_works+musters+100-day ledger; PC-56 wave GOV-5 builds it)** — MGNREGA (PC-54 `mgnrega-program` first; musters partially via labour api).

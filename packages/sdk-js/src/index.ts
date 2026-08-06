@@ -11,7 +11,7 @@ export { nameById } from './resources/lookups';
 export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ViewsByDayPoint, ProductCard, TraceProvenance, AuthTokens, UserProfile,
   CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
-  PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType,
+  PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType, KycReviewItem,
   NotificationItem, NotificationPreference, QuietHours,
   OrderListItem, OrderItemLine, OrderDetail, OrderBuyerSummary, Shipment, OrderTracking, OrderEventPoint, ShipmentEventPoint, TrackingShipment, ReviewSummary, PublicReview, ReviewItem,
   CartItem, Cart, CheckoutResult, CheckoutPreview, CheckoutPreviewSeller, DeliveryMethod, DeliveryMethodsResult, WalletPaymentResult, Address,

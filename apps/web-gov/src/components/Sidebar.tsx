@@ -7,6 +7,7 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
   { href: '/dashboard', labelKey: 'nav.dashboard' },
   { href: '/schemes', labelKey: 'nav.schemes' }, // GW-1
   { href: '/registers', labelKey: 'nav.registers' }, // GW-3
+  { href: '/verification', labelKey: 'nav.verification' }, // GW-4 (PC-55 B1)
 ];
 
 export function Sidebar() {

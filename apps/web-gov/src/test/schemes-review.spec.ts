@@ -1,4 +1,4 @@
-import { canVerify, canClarify, canDecide, canClose, isAppStatus } from '../features/schemes/review';
+import { canVerify, canClarify, canDecide, canClose, isAppStatus, canRecordDbt, buildDbt } from '../features/schemes/review';
 describe('features/schemes/review (GW-1)', () => {
   it('gates mirror the application state machine', () => {
     expect(canVerify('submitted')).toBe(true); expect(canVerify('appealed')).toBe(true); expect(canVerify('approved')).toBe(false);
@@ -10,7 +10,6 @@ describe('features/schemes/review (GW-1)', () => {
 });
 
 describe('GW-2 DBT recording', () => {
-  const { canRecordDbt, buildDbt } = require('../features/schemes/review');
   it('gate: approved|disbursed only', () => {
     expect(canRecordDbt('approved')).toBe(true); expect(canRecordDbt('disbursed')).toBe(true);
     expect(canRecordDbt('submitted')).toBe(false);

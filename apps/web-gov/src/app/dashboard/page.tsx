@@ -13,8 +13,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dash.title'), robots: { index: false, follow: false } };
 }
 
-const BUILT = [{ key: 'schemes', href: '/schemes' }, { key: 'dbt', href: '/schemes' }, { key: 'regulator', href: '/registers' }] as const; // GW-1..3 (DBT register lives on the application review)
-const WAVES = ['verification', 'mgnrega'] as const;
+const BUILT = [{ key: 'schemes', href: '/schemes' }, { key: 'dbt', href: '/schemes' }, { key: 'regulator', href: '/registers' },
+  { key: 'verification', href: '/verification' }] as const; // GW-1..4 (DBT register lives on the application review)
+const WAVES = ['mgnrega'] as const; // GW-5 stays GATED until the mgnrega-program API module exists
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');
@@ -33,7 +34,7 @@ export default async function DashboardPage() {
             <tr key={b.key}><td><a href={b.href} className="kv-link">{t.t(`dash.wave.${b.key}`)}</a></td><td><span className="kv-badge">{t.t('dash.live')}</span></td></tr>
           ))}
           {WAVES.map((w) => (
-            <tr key={w}><td>{t.t(`dash.wave.${w}`)}</td><td><span className="kv-badge">{t.t(w === 'mgnrega' ? 'dash.gated' : 'dash.coming')}</span></td></tr>
+            <tr key={w}><td>{t.t(`dash.wave.${w}`)}</td><td><span className="kv-badge">{t.t('dash.gated')}</span></td></tr>
           ))}
         </tbody>
       </table>
