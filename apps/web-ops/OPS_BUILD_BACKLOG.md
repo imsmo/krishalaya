@@ -35,12 +35,23 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       per period → preview[dispute window]→approve→pay idempotent run, only the legal step shows), active rate
       charts. Canon rows pos-shift/slip/quality/exceptions/bmc/rate-chart/payout-run all BUILT (bmc = the MCC
       registry lives in tenant /dairy; ops POS records against memberships).
-- [x] **OW-5 · assisted money (3 rows)** ✅ 2026-08-05 — DISPOSITIONED, no code (Ledger Appendix 3): AePS is an
-      AMBASSADOR service (profiles.aeps_enabled); the aeps_service_events TABLE exists (0071, RLS-proven) but has
-      NO endpoints — and by design it is a LOG only (money moves BANK-side via NPCI, never our ledger). → PC-54
-      `aeps-service-events` (controller over the existing table + device/provider wiring at S2). Canon rules
-      preserved in the appendix (₹10k bank-set cap, 3-finger retry, no OTP fallback, W392 exceptions taxonomy)
-      so the future wave builds exactly to spec. Dashboard keeps 'money' honestly as coming.
+- [x] **OW-5 · assisted money (3 rows)** ✅ **BUILT 2026-08-06 (PC-55 B3)** — **THE OPS CONSOLE IS NOW 100%:
+      OW-0..OW-6 all built.** /money records an AePS service event on W54-13, with Ledger Appendix 3 (canon
+      W390–W392) drawn on the screen and not merely enforced: LOG-ONLY notice up top (AePS cash moves in the BANK's
+      systems over NPCI — this platform moves nothing) · masked identifiers ONLY (account/Aadhaar boxes accept
+      exactly 4 digits, maxLength=4, so a full Aadhaar cannot be typed here even by accident) · ≤3 attempts with
+      the **NO-OTP-FALLBACK** sentence written out ("there is no OTP alternative in AePS — after the third failure
+      send the customer to a bank mitra") · an uncertified reader may record ONLY a blocked
+      `device_not_rd_certified` event and the copy says switch to the certified backup · the 3rd finger-fail
+      REQUIRES the escalation note, next to "the money is untouched" · amount only on a withdrawal · bank-reported
+      balance labelled informational · the ₹10k cap deliberately NOT printed (bank-set, W391 — a hardcoded number
+      becomes a lie the day a bank changes it) · commission named as bank-side, never a ledger entry.
+      /money/oversight = the supervisor's cross-operator view, filtered by the API's own status/exception
+      vocabulary, leading with the two rows that mean somebody did not get their money (3-strike escalations and
+      uncertified-device blocks). READ-ONLY by design: no retry/reverse/resolve button exists, because only the
+      bank can complete an AePS transaction. Dashboard 'money' flips Live; nav links it; the now-callerless
+      'dash.coming' key was deleted from all three catalogues.
+
 - [x] **OW-6 · insights (2 rows)** ✅ 2026-08-05 — /insights: tenant analytics (tenancy/analytics 30-day
       server-computed; 403 → honest permission note) + operational snapshot (status breakdown of the LATEST 50
       per register, labeled as a snapshot never a total; true totals need read-models → PC-54 note).

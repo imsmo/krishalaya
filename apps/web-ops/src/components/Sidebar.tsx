@@ -9,6 +9,7 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
   { href: '/warehouse', labelKey: 'nav.warehouse' }, // OW-2
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3
   { href: '/dairy', labelKey: 'nav.dairy' }, // OW-4
+  { href: '/money', labelKey: 'nav.money' }, // OW-5 (PC-55 B3)
   { href: '/insights', labelKey: 'nav.insights' }, // OW-6
   // OW-1 kiosk · OW-2 warehouse · OW-3 equipment/CHC · OW-4 dairy POS · OW-5 assisted money · OW-6 insights
   // are appended here by their waves (OPS_BUILD_BACKLOG.md) — never linked before they exist.

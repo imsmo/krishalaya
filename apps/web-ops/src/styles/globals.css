@@ -177,3 +177,9 @@ details.kv-card > summary { cursor: pointer; }
 .kv-thread__body { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .kv-btn--sm { padding: 4px 10px; font-size: 13px; min-height: 32px; }
 .kv-fine { font-size: 12px; }
+
+/* --- OW-5 AePS oversight: status/exception filter chips (PC-55 B3) --- */
+.kv-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--kv-space) 0; }
+.kv-tab { padding: 8px 12px; min-height: 40px; display: inline-flex; align-items: center; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); color: var(--kv-neutral-900); text-decoration: none; }
+.kv-tab:hover { border-color: var(--kv-brand-700); }
+.kv-tab--active { background: var(--kv-neutral-100); border-color: var(--kv-brand-700); font-weight: 600; }
