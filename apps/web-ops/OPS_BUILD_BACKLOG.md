@@ -35,8 +35,9 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       per period → preview[dispute window]→approve→pay idempotent run, only the legal step shows), active rate
       charts. Canon rows pos-shift/slip/quality/exceptions/bmc/rate-chart/payout-run all BUILT (bmc = the MCC
       registry lives in tenant /dairy; ops POS records against memberships).
-- [x] **OW-5 · assisted money (3 rows)** ✅ **BUILT 2026-08-06 (PC-55 B3)** — **THE OPS CONSOLE IS NOW 100%:
-      OW-0..OW-6 all built.** /money records an AePS service event on W54-13, with Ledger Appendix 3 (canon
+- [x] **OW-5 · assisted money (3 rows)** ✅ **BUILT 2026-08-06 (PC-55 B3)** — OW-0..OW-6 built. (B3's tick first
+      read "the ops console is now 100%"; that was premature — OW-7 was still READY-but-unbuilt until B4. Corrected
+      here rather than quietly reworded.) /money records an AePS service event on W54-13, with Ledger Appendix 3 (canon
       W390–W392) drawn on the screen and not merely enforced: LOG-ONLY notice up top (AePS cash moves in the BANK's
       systems over NPCI — this platform moves nothing) · masked identifiers ONLY (account/Aadhaar boxes accept
       exactly 4 digits, maxLength=4, so a full Aadhaar cannot be typed here even by accident) · ≤3 attempts with
@@ -56,4 +57,22 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       server-computed; 403 → honest permission note) + operational snapshot (status breakdown of the LATEST 50
       per register, labeled as a snapshot never a total; true totals need read-models → PC-54 note).
       **OPS CANON FULLY DISPOSITIONED**: OW-0..6 built/resolved; OW-7 gated on PC-54.
-- [ ] **OW-7 · READY** — IoT device fleet + ops alerting. Backend COMPLETE: W54-12 (fleet + breach feed + maintenance alerts) + PC-55 A6 (alert rules CRUD, cadence evaluator, fired feed, acknowledge). Console wave = PC-56 OPS-5.
+- [x] **OW-7 · IoT fleet + ops alerting** ✅ **BUILT 2026-08-06 (PC-55 B4)** — **OW-0..OW-7 ALL BUILT: the ops
+      console is complete.** No backend change was needed (W54-12 fleet/breach reads + PC-55 A6 rule CRUD, cadence
+      evaluator, fired feed and acknowledge were already there).
+      /devices — sensor fleet + breach feed (6h/24h/72h/7d), with the frame stated out loud: this is NOT an
+      equipment register, a sensor appears only because it sent readings in the last 30 days, so a device nobody
+      installed is simply absent (check against your own installation list). THE WORST TRUTH WINS: a sensor that has
+      gone quiet reads as QUIET even while its last readings were breaching, because once it stops reporting nobody
+      knows what the cargo is doing. Unknown sensors are counted WITH the silent ones, never into "ok".
+      /devices/rules — rule CRUD offering exactly the threshold keys the API accepts per kind, with the API's own
+      defaults shown and applied when a box is left blank (a blank form still produces a WORKING rule, never a
+      silently disabled one). Cooldown stated in real minutes (5 … 10080) because that is the number the dedupe
+      buckets on. Recipients de-duplicated (nobody paged twice for one event). A rule can be PAUSED, never deleted,
+      so the alerts it already fired keep their author. Quiet-hours notice: channelHint is a PREFERENCE, never a
+      bypass of somebody's night — firing rides the existing notification spine.
+      /devices/alerts — fired feed ordered unacknowledged → critical → newest, so what is still on fire is on top
+      before anyone filters. Acknowledge is the ONLY act (no delete, no edit: an alert is evidence a threshold was
+      crossed). "Run the rules now" runs the SAME evaluator as the cadence and reports evaluated/fired/**suppressed**
+      verbatim — hiding the suppressed count would make a working cooldown look like a broken evaluator.
+      Dashboard row + nav added.

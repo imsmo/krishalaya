@@ -13,9 +13,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dash.title'), robots: { index: false, follow: false } };
 }
 
-// OW-1..6 — every ops wave is built (PC-55 B3 closed OW-5 with the AePS screens). No 'coming' list remains, so the
-// table below has a single section: an empty "coming soon" shell would be noise dressed as honesty.
-const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk' }, { key: 'warehouse', href: '/warehouse' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }, { key: 'money', href: '/money' }, { key: 'insights', href: '/insights' }];
+// OW-1..7 — every ops wave is built: PC-55 B3 closed OW-5 (AePS), B4 closed OW-7 (sensors + alerting). No 'coming'
+// list remains, so the table below has a single section: an empty "coming soon" shell would be noise, not honesty.
+const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk' }, { key: 'warehouse', href: '/warehouse' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }, { key: 'money', href: '/money' }, { key: 'insights', href: '/insights' }, { key: 'devices', href: '/devices' }];
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');
