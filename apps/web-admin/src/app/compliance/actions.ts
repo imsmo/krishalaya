@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, adminPatch, AdminApiError } from '../../lib/admin-client';
 import { buildDsrUpdate, buildExportDecision, buildRetention, buildOpenBreach, buildBreachUpdate } from '../../features/compliance/compliance';
+import { buildReject, buildRecordAction } from '../../features/compliance/erasure';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -92,4 +93,71 @@ export async function updateBreachAction(formData: FormData): Promise<void> {
   revalidatePath(`/compliance/breaches/${id}`);
   revalidatePath('/compliance/breaches');
   redirect(`/compliance/breaches/${enc(id)}?ok=${built.value.action}`);
+}
+
+/* ========================= ADMIN-5 · the erasure plane =========================
+   Three actions the compliance suite could not previously perform, all from W041/W042. Each maps its own server
+   refusals to its OWN error key rather than the generic `conflict`, because on this screen the refusals are
+   instructions: "not evidenced" is a list of work outstanding, and "second person" is a colleague to find.          */
+
+function dsrErrorKey(e: unknown): string {
+  if (e instanceof AdminApiError) {
+    const code = e.code;
+    if (code === 'ERASURE_NOT_EVIDENCED') return 'notEvidenced';
+    if (code === 'ERASURE_SCOPE_UNAVAILABLE') return 'noScope';
+    if (code === 'SECOND_PERSON_REQUIRED') return 'secondPerson';
+    if (code === 'DSR_ALREADY_ACKNOWLEDGED') return 'alreadyAcknowledged';
+    if (code === 'DSR_INPUT_INVALID') return 'dsrInvalid';
+    if (code === 'DSR_ERASURE_COOLING_ACTIVE' || code === 'ERASURE_COOLING_ACTIVE') return 'coolingActive';
+  }
+  return errorKey(e);
+}
+
+/** Reject on one of the three lawful grounds. Separate from `updateDsrAction` because the ground is mandatory here and
+ *  meaningless on the other two actions — one form handling all three would have made it optional everywhere, which is
+ *  how an ungrounded rejection gets sent. */
+export async function rejectDsrAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/compliance');
+  const built = buildReject({ ground: String(formData.get('ground') ?? ''), resolution: String(formData.get('resolution') ?? '') });
+  if (!built.ok) redirect(`/compliance/dsr/${enc(id)}?error=${built.error}`);
+  try { await adminPatch(`compliance/dsr/${enc(id)}`, { body: built.value }); }
+  catch (e) { redirect(`/compliance/dsr/${enc(id)}?error=${dsrErrorKey(e)}`); }
+  revalidatePath(`/compliance/dsr/${id}`);
+  revalidatePath('/compliance');
+  redirect(`/compliance/dsr/${enc(id)}?ok=reject`);
+}
+
+/** Stamp the DPDP acknowledgement — the 72-hour clock that had no timestamp to measure before migration 0107. */
+export async function acknowledgeDsrAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/compliance');
+  const note = String(formData.get('note') ?? '').trim();
+  if (note.length > 500) redirect(`/compliance/dsr/${enc(id)}?error=note`);
+  try { await adminPost(`compliance/dsr/${enc(id)}/acknowledge`, { body: note ? { note } : {} }); }
+  catch (e) { redirect(`/compliance/dsr/${enc(id)}?error=${dsrErrorKey(e)}`); }
+  revalidatePath(`/compliance/dsr/${id}`);
+  redirect(`/compliance/dsr/${enc(id)}?ok=acknowledged`);
+}
+
+/** Record what was ACTUALLY done to one data class. Until an erasure executor exists this is the only thing that can
+ *  satisfy the completion guard — which is the point: a completion now has to be earned one class at a time. */
+export async function recordErasureActionAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/compliance');
+  // The scope is not available to a Server Action (it came from the page's fetch), so the law-mismatch check is left to
+  // the server here and `null` is passed deliberately rather than a guessed scope. The client-side check still runs on
+  // the page's own submit path where the scope IS known.
+  const built = buildRecordAction({
+    dataClass: String(formData.get('dataClass') ?? ''), action: String(formData.get('action') ?? ''),
+    rowsAffected: String(formData.get('rowsAffected') ?? ''), note: String(formData.get('note') ?? ''),
+  }, null);
+  if (!built.ok) redirect(`/compliance/dsr/${enc(id)}?error=${built.error}`);
+  try { await adminPost(`compliance/dsr/${enc(id)}/erasure-actions`, { body: built.value }); }
+  catch (e) { redirect(`/compliance/dsr/${enc(id)}?error=${dsrErrorKey(e)}`); }
+  revalidatePath(`/compliance/dsr/${id}`);
+  redirect(`/compliance/dsr/${enc(id)}?ok=recorded`);
 }

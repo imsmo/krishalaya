@@ -15,6 +15,14 @@ export const OwnerPermissions = {
   ReconRead: 'recon.read',              // wallet reconciliation dashboard + run/investigation reads
   ComplianceManage: 'compliance.manage',// work DSRs, approve exports, manage retention, run breach console
   ComplianceRead: 'compliance.read',    // audit-log explorer + DSR/export/breach/retention reads
+  // ADMIN-5 — the canon names this permission by hand on W041 and W042 ("Needs compliance.dsr — DPO-designated staff
+  // only; every action is audited"). Separate from ComplianceManage because working a RIGHTS REQUEST means reading one
+  // identified person's data and deciding what happens to it, while ComplianceManage also covers retention config and
+  // export approvals, which name nobody. Somebody who tunes a retention policy has no reason to open a named farmer's
+  // erasure. W046/W047's `compliance.consent.read`/`.write` and W043's `compliance.breach` are the same argument and are
+  // NOT added here — they belong with the planes that use them (ADMIN-5b/5c), because a permission with no route behind
+  // it is a promise nothing keeps.
+  ComplianceDsr: 'compliance.dsr',      // work a DPDP rights request end to end (DPO-designated staff)
   BillingManage: 'billing.manage',      // SaaS invoice transitions + dunning + MANUAL money adjustments (via wallet-service)
   BillingRead: 'billing.read',          // revenue dashboard + invoice/adjustment/dunning reads
   FlagsManage: 'flags.manage',          // create/enable/disable flags + percent rollout + targeting + KILL-SWITCH (Law 10)
@@ -63,7 +71,11 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_tenant_viewer: [OwnerPermissions.TenantRead],
   platform_recon_ops:     [OwnerPermissions.ReconManage, OwnerPermissions.ReconRead],
   platform_recon_viewer:  [OwnerPermissions.ReconRead],
-  platform_compliance_ops:    [OwnerPermissions.ComplianceManage, OwnerPermissions.ComplianceRead],
+  platform_compliance_ops:    [OwnerPermissions.ComplianceManage, OwnerPermissions.ComplianceRead, OwnerPermissions.ComplianceDsr],
+  // The DPO works rights requests and reads the registers — and deliberately does NOT get ComplianceManage, so they
+  // cannot rewrite a retention policy to change the scope of an erasure they are about to sign off. That separation is
+  // the whole reason this role exists rather than being folded into platform_compliance_ops.
+  platform_dpo:               [OwnerPermissions.ComplianceDsr, OwnerPermissions.ComplianceRead],
   platform_compliance_viewer: [OwnerPermissions.ComplianceRead],   // DPO / auditor read-only
   platform_billing_ops:       [OwnerPermissions.BillingManage, OwnerPermissions.BillingRead],
   platform_billing_viewer:    [OwnerPermissions.BillingRead],      // finance / revenue analyst read-only

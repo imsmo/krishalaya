@@ -6,6 +6,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
+// Only the rollup helpers are used here. A PER-ROW deadline column is deliberately NOT computed in the browser: the
+// clocks live in one place (admin-api's erasure-scope domain) so the queue, the detail page and the rollup can never
+// disagree about whether a request is late. A second implementation here would be a third opinion.
+import { cleanRecordClaimable, type SlaSummary } from '../../features/compliance/erasure';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
@@ -22,6 +26,12 @@ const DSR_CLASS: Record<string, string> = { open: 'kv-status--warn', in_progress
 export default async function ComplianceDsrPage({ searchParams }: { searchParams: { cursor?: string; status?: string; requestType?: string } }) {
   requireAdmin();
   const t = getTranslator();
+
+  // W041's tiles. Fetched SEPARATELY from the queue and allowed to fail on its own (Law 12) — the queue is the work,
+  // the tiles are context, and a failed rollup must not blank the list a DPO came here to clear.
+  interface DsrSla { acknowledge: SlaSummary; resolve: SlaSummary; requests: number; openCount: number; inCoolingCount: number }
+  let sla: DsrSla | null = null;
+  try { sla = (await adminGet<DsrSla>('compliance/dsr/sla')).data ?? null; } catch { /* tiles stay blank */ }
   const status = (DSR_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;
   const requestType = (DSR_REQUEST_TYPES as readonly string[]).includes(searchParams.requestType ?? '') ? searchParams.requestType : undefined;
 
@@ -50,6 +60,38 @@ export default async function ComplianceDsrPage({ searchParams }: { searchParams
   return (
     <section>
       <h1>{t.t('compliance.title')}</h1>
+      {/* THE 72-HOUR CLOCK IS READABLE FOR THE FIRST TIME. `acknowledged_at` did not exist before migration 0107, so
+          W041's "SLA breaches YTD · 0 · clean record" was an UNMEASURED claim rather than a clean one — and an
+          unmeasured zero is what a regulator finds first. `unmeasured` is reported beside `breached`, and the clean
+          record is only claimed when both are zero. */}
+      {sla && (
+        <>
+          <div className="kv-stat-row">
+            <div className="kv-card kv-stat">
+              <div className="kv-stat__label">{t.t('era.tileOpen')}</div>
+              <div className="kv-stat__value">{String(sla.openCount)}</div>
+            </div>
+            <div className="kv-card kv-stat">
+              <div className="kv-stat__label">{t.t('era.tileCooling')}</div>
+              <div className="kv-stat__value">{String(sla.inCoolingCount)}</div>
+              <div className="kv-detail__muted">{t.t('era.tileCoolingHint')}</div>
+            </div>
+            <div className="kv-card kv-stat">
+              <div className="kv-stat__label">{t.t('era.tileAckBreaches')}</div>
+              <div className="kv-stat__value">{String(sla.acknowledge.breached)}</div>
+              <div className="kv-detail__muted">
+                {sla.acknowledge.unmeasured > 0
+                  ? t.t('era.tileUnmeasured', { n: String(sla.acknowledge.unmeasured) })
+                  : t.t('era.tileAllMeasured')}
+              </div>
+            </div>
+          </div>
+          {cleanRecordClaimable(sla.acknowledge)
+            ? <p className="kv-detail__muted">{t.t('era.cleanRecord')}</p>
+            : <p className="kv-notice">{t.t('era.notCleanRecord')}</p>}
+        </>
+      )}
+      {!sla && <p className="kv-detail__muted">{t.t('era.tilesUnavailable')}</p>}
       <p className="kv-muted">{t.t('compliance.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('compliance.nav')}>
         <Link href="/compliance" className="kv-chip is-active" aria-current="true">{t.t('compliance.navDsr')}</Link>

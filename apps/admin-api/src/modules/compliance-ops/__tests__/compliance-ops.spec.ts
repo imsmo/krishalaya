@@ -33,7 +33,9 @@ describe('DSR state machine + entity', () => {
     const ok = dsr('in_progress', { requestType: 'erasure', coolingEndsAt: past });
     expect(ok.complete('done')).toEqual({ from: 'in_progress', to: 'completed' });
   });
-  it('illegal transition throws', () => { expect(() => dsr('completed').reject('x')).toThrow(IllegalDsrTransitionError); });
+  // ADMIN-5: `reject` now REQUIRES one of the three lawful grounds — 0107's CHECK ties status and ground together, so an
+  // ungrounded rejection cannot be stored. The ground is passed here; the assertion (illegal transition) is unchanged.
+  it('illegal transition throws', () => { expect(() => dsr('completed').reject('x', 'legal_hold')).toThrow(IllegalDsrTransitionError); });
 });
 
 describe('breach state machine + entity', () => {

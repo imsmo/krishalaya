@@ -13,7 +13,11 @@ import { BreachStatus } from '../domain/breach.state';
 
 function toDsr(r: any): DataSubjectRequest {
   return DataSubjectRequest.rehydrate({ id: r.id, userId: r.user_id, requestType: r.request_type, status: r.status as DsrStatus,
-    coolingEndsAt: r.cooling_ends_at ?? null, resolution: r.resolution ?? null, exportMediaId: r.export_media_id ?? null, createdAt: r.created_at ?? null });
+    coolingEndsAt: r.cooling_ends_at ?? null, resolution: r.resolution ?? null, exportMediaId: r.export_media_id ?? null,
+    acknowledgedAt: r.acknowledged_at ?? null, rejectionGround: r.rejection_ground ?? null,
+    countersignedBy: r.countersigned_by ?? null, countersignedAt: r.countersigned_at ?? null,
+    scopeComputedAt: r.scope_computed_at ?? null, updatedBy: r.updated_by ?? null,
+    createdAt: r.created_at ?? null });
 }
 function toBreach(r: any): Breach {
   return Breach.rehydrate({ id: r.id, affectedTenantId: r.affected_tenant_id ?? null, status: r.status as BreachStatus, severity: r.severity,
@@ -39,8 +43,79 @@ export class ComplianceRepository {
   }
   async updateDsr(client: PoolClient, dsr: DataSubjectRequest, actorUserId: string): Promise<void> {
     const p = dsr.toJSON();
-    await client.query(`UPDATE data_subject_requests SET status=$2, resolution=$3, export_media_id=$4, updated_by=$5, updated_at=now() WHERE id=$1`,
-      [p.id, p.status, p.resolution, p.exportMediaId, actorUserId]);
+    await client.query(
+      `UPDATE data_subject_requests
+          SET status=$2, resolution=$3, export_media_id=$4, rejection_ground=$5, acknowledged_at=$6,
+              scope_computed_at=$7, updated_by=$8, updated_at=now()
+        WHERE id=$1`,
+      [p.id, p.status, p.resolution, p.exportMediaId, p.rejectionGround, p.acknowledgedAt, p.scopeComputedAt, actorUserId]);
+  }
+
+  /** The countersign is a SEPARATE statement, not folded into `updateDsr`, and that is the point: it must be written by
+   *  a DIFFERENT actor than `updated_by`, and `ck_dsr_countersign_ne_actor` compares the two columns. Writing both in
+   *  one UPDATE would let a single statement set them to the same value and only fail at the constraint — the split
+   *  makes the two-person rule visible in the code as well as in the schema. */
+  async countersignDsr(client: PoolClient, id: string, countersignedBy: string): Promise<void> {
+    await client.query(
+      `UPDATE data_subject_requests SET countersigned_by=$2, countersigned_at=now() WHERE id=$1`,
+      [id, countersignedBy]);
+  }
+
+  /* ---------------- the erasure scope + its evidence (0107) ---------------- */
+
+  /** The retention policies the scope preview is computed from. ALL of them, active or not — `computeScope` needs to
+   *  tell "no policy configured" apart from "every policy is switched off", and filtering here would erase that. */
+  async retentionPoliciesForScope(): Promise<Array<{ tableName: string; action: string; legalBasis: string | null; activeMonths: number; archiveMonths: number | null; isActive: boolean }>> {
+    const r = await this.pool.query(
+      `SELECT table_name, action, legal_basis, active_months, archive_months, is_active
+         FROM data_retention_policies WHERE deleted_at IS NULL ORDER BY table_name`);
+    return r.rows.map((x: any) => ({
+      tableName: x.table_name, action: x.action, legalBasis: x.legal_basis ?? null,
+      activeMonths: Number(x.active_months ?? 0),
+      archiveMonths: x.archive_months === null || x.archive_months === undefined ? null : Number(x.archive_months),
+      isActive: x.is_active === true,
+    }));
+  }
+
+  /** What an erasure has actually done, per data class. Read on the detail screen and by the completion guard. */
+  async erasureActions(requestId: string): Promise<Array<{ dataClass: string; action: string; rowsAffected: number; legalBasis: string | null; executedBy: string; executedAt: Date; note: string | null }>> {
+    const r = await this.pool.query(
+      `SELECT data_class, action, rows_affected, legal_basis, executed_by, executed_at, note
+         FROM dsr_erasure_actions WHERE request_id=$1 ORDER BY executed_at DESC, data_class`, [requestId]);
+    return r.rows.map((x: any) => ({
+      dataClass: x.data_class, action: x.action, rowsAffected: Number(x.rows_affected ?? 0),
+      legalBasis: x.legal_basis ?? null, executedBy: x.executed_by, executedAt: x.executed_at, note: x.note ?? null,
+    }));
+  }
+
+  /** Locked read inside the completion transaction. The guard must not race an executor writing the last class. */
+  async erasureActionsForUpdate(client: PoolClient, requestId: string): Promise<Array<{ dataClass: string; action: string }>> {
+    const r = await client.query(
+      `SELECT data_class, action FROM dsr_erasure_actions WHERE request_id=$1 FOR SHARE`, [requestId]);
+    return r.rows.map((x: any) => ({ dataClass: x.data_class, action: x.action }));
+  }
+
+  /** Record what was done to one data class. Append-only — there is no update path, by grant (0107). */
+  async insertErasureAction(client: PoolClient, v: { requestId: string; dataClass: string; action: string; rowsAffected: number; legalBasis: string | null; executedBy: string; note: string | null }): Promise<void> {
+    await client.query(
+      `INSERT INTO dsr_erasure_actions (request_id, data_class, action, rows_affected, legal_basis, executed_by, note)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [v.requestId, v.dataClass, v.action, v.rowsAffected, v.legalBasis, v.executedBy, v.note]);
+  }
+
+  /** The SLA rollup for W041's tiles. Cross-request, bounded to the current financial year by the caller. */
+  async dsrSlaRows(sinceIso: string): Promise<Array<{ id: string; status: string; requestType: string; createdAt: Date; acknowledgedAt: Date | null; coolingEndsAt: Date | null; decidedAt: Date | null }>> {
+    const r = await this.pool.query(
+      `SELECT id, status, request_type, created_at, acknowledged_at, cooling_ends_at,
+              CASE WHEN status IN ('completed','rejected') THEN updated_at ELSE NULL END AS decided_at
+         FROM data_subject_requests
+        WHERE created_at >= $1::timestamptz AND deleted_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 5000`, [sinceIso]);
+    return r.rows.map((x: any) => ({
+      id: x.id, status: x.status, requestType: x.request_type, createdAt: x.created_at,
+      acknowledgedAt: x.acknowledged_at ?? null, coolingEndsAt: x.cooling_ends_at ?? null, decidedAt: x.decided_at ?? null,
+    }));
   }
   async getDsr(id: string): Promise<DataSubjectRequest | null> {
     const r = await this.pool.query(`SELECT * FROM data_subject_requests WHERE id=$1`, [id]);

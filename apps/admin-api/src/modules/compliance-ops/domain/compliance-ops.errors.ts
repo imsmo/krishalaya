@@ -28,3 +28,43 @@ export class InvalidRetentionPolicyError extends DomainHttpError {
 export class InvalidBreachUpdateError extends DomainHttpError {
   constructor(detail: string) { super('BREACH_UPDATE_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
 }
+
+/* ---------------- the erasure plane (0107 / ADMIN-5) ---------------- */
+
+/** Generic 422 for this plane's inputs (rejection grounds, acknowledge shape). */
+export class InvalidDsrInputError extends DomainHttpError {
+  constructor(detail: string) { super('DSR_INPUT_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+
+/** THE GUARD THIS WAVE EXISTS FOR. An erasure may not be marked completed while in-scope data classes have no recorded
+ *  action — because until 0107 an operator could record a discharged statutory obligation that had not been discharged.
+ *  The message NAMES THE MISSING CLASSES rather than saying "not allowed": the operator has done nothing wrong, and the
+ *  list is the actual work outstanding. */
+export class ErasureNotEvidencedError extends DomainHttpError {
+  constructor(missing: string[], classesInScope: number) {
+    super(
+      'ERASURE_NOT_EVIDENCED',
+      `this erasure cannot be marked completed: ${missing.length} of ${classesInScope} data classes have no recorded `
+      + `action (${missing.slice(0, 8).join(', ')}${missing.length > 8 ? ', …' : ''}). Nothing has erased them. `
+      + 'Recording a completion now would state that a statutory obligation was discharged when it was not.',
+      HttpStatus.CONFLICT,
+      { missing, classesInScope },
+    );
+  }
+}
+
+/** No retention policy is configured, so "what will be erased" has no answer to check a completion against. */
+export class ErasureScopeUnavailableError extends DomainHttpError {
+  constructor() {
+    super('ERASURE_SCOPE_UNAVAILABLE',
+      'no active data-retention policy is configured, so the erasure scope cannot be computed and a completion cannot '
+      + 'be checked against it. Configure retention policies first — an unscoped erasure is an unbounded one.',
+      HttpStatus.CONFLICT);
+  }
+}
+
+/** An acknowledgement was attempted twice. Not an error the operator caused — the SMS may have been sent by the
+ *  worker — so it names the existing timestamp instead of scolding. */
+export class DsrAlreadyAcknowledgedError extends DomainHttpError {
+  constructor(at: string) { super('DSR_ALREADY_ACKNOWLEDGED', `this request was already acknowledged at ${at}`, HttpStatus.CONFLICT, { acknowledgedAt: at }); }
+}

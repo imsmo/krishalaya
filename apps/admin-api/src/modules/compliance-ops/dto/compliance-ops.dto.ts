@@ -21,6 +21,10 @@ export const UpdateDsrSchema = z.object({
   action: z.enum(['start', 'complete', 'reject']),
   resolution: Text,
   exportMediaId: z.string().uuid().nullish(),     // for access/portability fulfilment
+  /** ADMIN-5: one of the three lawful grounds (W042), REQUIRED on reject. Validated in the domain rather than as a zod
+   *  enum so the 422 can explain that a rights request may only be refused on a lawful ground and that the principal
+   *  receives it verbatim — "invalid enum value" teaches an operator to try the next option in the list. */
+  rejectionGround: z.string().max(32).optional(),
 }).strict();
 export type UpdateDsrDto = z.infer<typeof UpdateDsrSchema>;
 
@@ -88,3 +92,21 @@ export const UpdateBreachSchema = z.object({
   principalsNotifiedAt: z.string().datetime().optional(),
 }).strict();
 export type UpdateBreachDto = z.infer<typeof UpdateBreachSchema>;
+
+/* ---- ADMIN-5: acknowledge + the erasure evidence ledger ---- */
+
+/** Acknowledging is a one-field action. The note is OPTIONAL because the acknowledgement itself is the fact being
+ *  recorded and a mandatory note here would produce "done" — see the checker-note reasoning in the scheme-version DTO. */
+export const AcknowledgeDsrSchema = z.object({ note: z.string().min(1).max(500).optional() }).strict();
+export type AcknowledgeDsrDto = z.infer<typeof AcknowledgeDsrSchema>;
+
+/** Recording what was ACTUALLY done to one data class. One class per call, deliberately: the value of the evidence
+ *  ledger is that it cannot be satisfied by a single gesture, so there is no bulk variant of this. */
+export const RecordErasureActionSchema = z.object({
+  dataClass: z.string().regex(/^[a-z0-9_]{2,100}$/),
+  action: z.enum(['deleted', 'anonymised', 'archived', 'blocked_by_law', 'retracted']),
+  // Zero is legitimate — a class the farmer had no rows in was still checked, and that is worth recording.
+  rowsAffected: z.coerce.number().int().min(0).max(1_000_000_000).default(0),
+  note: z.string().min(1).max(1000).optional(),
+}).strict();
+export type RecordErasureActionDto = z.infer<typeof RecordErasureActionSchema>;
