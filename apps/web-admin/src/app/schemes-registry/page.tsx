@@ -60,6 +60,9 @@ export default async function AuthoritiesPage({ searchParams }: { searchParams: 
       <nav className="kv-filters" aria-label={t.t('sr.nav')}>
         <Link href="/schemes-registry" className="kv-chip is-active" aria-current="true">{t.t('sr.navAuthorities')}</Link>
         <Link href="/schemes-registry/schemes" className="kv-chip">{t.t('sr.navSchemes')}</Link>
+        <Link href="/schemes-registry/applications" className="kv-chip">{t.t('sov.navApplications')}</Link>
+        <Link href="/schemes-registry/dbt" className="kv-chip">{t.t('sov.navDbt')}</Link>
+        <Link href="/schemes-registry/performance" className="kv-chip">{t.t('sov.navPerformance')}</Link>
         <Link href="/schemes-registry/calendar" className="kv-chip">{t.t('sr.navCalendar')}</Link>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('sr.ok.authCreated')}</p>}

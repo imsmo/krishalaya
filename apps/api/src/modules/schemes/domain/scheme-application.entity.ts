@@ -15,14 +15,18 @@ export interface SchemeApplicationProps {
   schemeVersionId: string | null;
   applicantUserId: string; assistedBy: string | null;
   status: ApplicationStatus; formData: Record<string, unknown>; govtAppRef: string | null; eligibilityCheck: Record<string, unknown> | null;
-  submittedAt: Date | null; decidedAt: Date | null; rejectionReason: string | null; createdAt?: Date;
+  submittedAt: Date | null; decidedAt: Date | null; rejectionReason: string | null;
+  /** Machine-countable rejection reason (0106). NULL means UNCODED — never 'other', which means an officer looked and
+   *  none of the codes fitted. Conflating the two destroys the only signal that the code list needs work. */
+  rejectionReasonCode: string | null;
+  createdAt?: Date;
 }
 export class SchemeApplication {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: SchemeApplicationProps) {}
 
-  static draft(input: Omit<SchemeApplicationProps, 'status' | 'govtAppRef' | 'submittedAt' | 'decidedAt' | 'rejectionReason'>): SchemeApplication {
-    return new SchemeApplication({ ...input, status: 'draft', govtAppRef: null, submittedAt: null, decidedAt: null, rejectionReason: null });
+  static draft(input: Omit<SchemeApplicationProps, 'status' | 'govtAppRef' | 'submittedAt' | 'decidedAt' | 'rejectionReason' | 'rejectionReasonCode'>): SchemeApplication {
+    return new SchemeApplication({ ...input, status: 'draft', govtAppRef: null, submittedAt: null, decidedAt: null, rejectionReason: null, rejectionReasonCode: null });
   }
   static rehydrate(props: SchemeApplicationProps): SchemeApplication { return new SchemeApplication(props); }
 
@@ -45,12 +49,19 @@ export class SchemeApplication {
   requestClarification(note: string | null): void { this.transition('clarification_needed', SchemesEventType.ApplicationClarification, note ? { note } : {}); }
   resubmit(): void { this.transition('under_verification', SchemesEventType.ApplicationVerifying); }
   approve(govtAppRef: string | null, now: Date): void { this.props.govtAppRef = govtAppRef; this.props.decidedAt = now; this.transition('approved', SchemesEventType.ApplicationApproved, govtAppRef ? { govtAppRef } : {}); }
-  reject(reason: string | null, now: Date): void { this.props.rejectionReason = reason; this.props.decidedAt = now; this.transition('rejected', SchemesEventType.ApplicationRejected, reason ? { reason } : {}); }
+  reject(reason: string | null, now: Date, reasonCode: string | null = null): void {
+    this.props.rejectionReason = reason;
+    // Validated at the DTO and by a CHECK constraint; an unrecognised value here would be refused by the database
+    // rather than stored as an uncountable string, which is the failure mode worth having.
+    this.props.rejectionReasonCode = reasonCode;
+    this.props.decidedAt = now;
+    this.transition('rejected', SchemesEventType.ApplicationRejected, { ...(reason ? { reason } : {}), ...(reasonCode ? { reasonCode } : {}) });
+  }
   appeal(): void { this.transition('appealed', SchemesEventType.ApplicationAppealed); }
   markDisbursed(): void { this.transition('disbursed', SchemesEventType.ApplicationDisbursed); }
   close(): void { this.transition('closed', SchemesEventType.ApplicationClosed); }
   setEligibilityCheck(result: Record<string, unknown>): void { this.props.eligibilityCheck = result; }
 
   toJSON() { const v = this.props; return { id: v.id, schemeId: v.schemeId, schemeVersion: v.schemeVersion, schemeVersionId: v.schemeVersionId, applicantUserId: v.applicantUserId, assistedBy: v.assistedBy,
-    status: v.status, formData: v.formData, govtAppRef: v.govtAppRef, eligibilityCheck: v.eligibilityCheck, submittedAt: v.submittedAt, decidedAt: v.decidedAt, rejectionReason: v.rejectionReason, createdAt: v.createdAt }; }
+    status: v.status, formData: v.formData, govtAppRef: v.govtAppRef, eligibilityCheck: v.eligibilityCheck, submittedAt: v.submittedAt, decidedAt: v.decidedAt, rejectionReason: v.rejectionReason, rejectionReasonCode: v.rejectionReasonCode, createdAt: v.createdAt }; }
 }

@@ -4,7 +4,7 @@
 // + DBT credits are owner-scoped server-side (no IDOR). Money is bigint minor strings (Law 2). Gated server-side
 // by the `schemes` flag.
 import { HttpClient } from '../http';
-import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, SchemeApplicationDocument, DbtTransfer, ApplicationStatus, Page } from '../types';
+import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, SchemeApplicationDocument, DbtTransfer, ApplicationStatus, Page , SchemeRejectionCode } from '../types';
 
 export class SchemesResource {
   constructor(private readonly http: HttpClient) {}
@@ -80,9 +80,25 @@ export class SchemesResource {
   async approveApplication(id: string, govtAppRef?: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/approve`, { body: { govtAppRef } })).data;
   }
-  /** Reject an application with a reason. */
-  async rejectApplication(id: string, reason?: string): Promise<SchemeApplication> {
-    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/reject`, { body: { reason } })).data;
+  /**
+   * Reject an application with a reason, and OPTIONALLY a machine-countable reason code (ADMIN-4b, migration 0106).
+   *
+   * The code is what W078's fixable-rejection breakdown counts, and the prose is still where the officer says what
+   * actually happened — the code never replaces it. Optional rather than required on purpose: a mandatory code pushes
+   * an officer toward whichever value is first in a dropdown, and an optional code that is usually filled beats a
+   * mandatory one that is usually wrong. The console reports the UNCODED share prominently, which is the pressure that
+   * actually raises coverage.
+   *
+   * The parameter is added as an options object rather than a third positional argument so that adding the next field
+   * does not shuffle a caller's arguments — and existing `rejectApplication(id, reason)` calls keep working unchanged.
+   */
+  async rejectApplication(id: string, reason?: string, opts?: { reasonCode?: SchemeRejectionCode }): Promise<SchemeApplication> {
+    const body: Record<string, unknown> = {};
+    if (reason !== undefined) body.reason = reason;
+    // Omitted, not sent as null: the DTO is `.strict()` and an explicit null would be a validation failure rather
+    // than "no code given".
+    if (opts?.reasonCode !== undefined) body.reasonCode = opts.reasonCode;
+    return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/reject`, { body })).data;
   }
   /** Close a decided application. */
   async closeApplication(id: string): Promise<SchemeApplication> {

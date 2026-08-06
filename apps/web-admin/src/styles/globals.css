@@ -226,3 +226,20 @@ a { color: inherit; text-decoration: none; }
 }
 .kv-timeline__item > p { margin: 0 0 0.2rem; }
 .kv-timeline__head { font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   PC-56 ADMIN-4b — the masked-PII cell.
+   `.kv-masked` did not exist and there was nothing to reuse: no admin surface
+   had ever shown a farmer's name before this wave. It is styled here at the
+   point of first use, and styled DELIBERATELY QUIET — a masked value must read
+   as an intentional abbreviation, not as truncated or failed data. The dotted
+   underline is the affordance: it says "there is more here, and asking for it
+   is an act".
+   --------------------------------------------------------------------------- */
+.kv-masked {
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px dotted var(--kv-border, #d8ddd6);
+  cursor: help;
+}
+.kv-list { margin: 0.5rem 0 1rem; padding-left: 1.1rem; }
+.kv-list > li { margin: 0 0 0.35rem; }

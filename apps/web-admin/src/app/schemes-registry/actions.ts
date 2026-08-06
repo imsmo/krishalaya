@@ -11,6 +11,7 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, adminPatch, AdminApiError } from '../../lib/admin-client';
 import { buildCreateAuthority, buildUpdateAuthority, buildCreateScheme, buildUpdateMeta, buildUpdateRules, buildSetWindow, buildSetActive } from '../../features/schemes-registry/scheme';
 import { buildSaveDraft, buildMapPortal } from '../../features/schemes-registry/version';
+import { buildUnmask } from '../../features/schemes-registry/oversight';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -206,4 +207,25 @@ export async function unmapPortalAction(formData: FormData): Promise<void> {
   catch (e) { redirect(`/schemes-registry/authorities/${enc(id)}?error=${versionErrorKey(e)}`); }
   revalidatePath(`/schemes-registry/authorities/${id}`);
   redirect(`/schemes-registry/authorities/${enc(id)}?ok=portalUnmapped`);
+}
+
+/* ========================= ADMIN-4b · the audited PII disclosure =========================
+   The ONE action in this module that returns a farmer's real name and phone. It is a POST because it writes an audit
+   row, and the reason has a real floor (10 chars) because that row is the only record of WHY a phone number was read.
+
+   NOTE WHAT THIS ACTION DOES NOT DO: it does not put the disclosed values in a redirect query string. The Server
+   Action redirects with `?ok=unmasked` and the operator reads the number from the audited API response rendered on the
+   next page load — a phone number in a URL lands in browser history, in a proxy log, and in any Referer header the
+   next request sends.                                                                                            */
+
+export async function unmaskApplicantAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = str(formData, 'id').trim();
+  if (!id) redirect('/schemes-registry/applications');
+  const built = buildUnmask({ reason: str(formData, 'reason') });
+  if (!built.ok) redirect(`/schemes-registry/applications/${enc(id)}?error=${built.error}`);
+  try { await adminPost(`schemes-oversight/applications/${enc(id)}/unmask`, { body: built.value }); }
+  catch (e) { redirect(`/schemes-registry/applications/${enc(id)}?error=${errorKey(e)}`); }
+  revalidatePath(`/schemes-registry/applications/${id}`);
+  redirect(`/schemes-registry/applications/${enc(id)}?ok=unmasked`);
 }

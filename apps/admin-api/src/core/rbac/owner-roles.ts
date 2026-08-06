@@ -40,6 +40,14 @@ export const OwnerPermissions = {
   TranslationsManage: 'translations.manage',   // grant/revoke a reviewer's languages; request machine-translation runs
   SchemesRegistryManage: 'schemes.registry.manage', // govt-scheme master: authorities + schemes (create/edit/version/activate)
   SchemesRegistryRead: 'schemes.registry.read',     // scheme/authority registry + change-history + window calendar reads
+  // ADMIN-4b — TWO PERMISSIONS SEPARATE FROM THE REGISTRY ONES, AND THE SEPARATION IS THE WHOLE POINT.
+  // The registry is GLOBAL data with no person in it: a catalogue editor may need `schemes.registry.*` all day. The
+  // two below open cross-tenant reads over FARMERS, and W074's and W076's own restricted states name them by hand.
+  // Folding either into `schemes.registry.read` would mean anybody who can fix a typo in a scheme's name can also
+  // download every scheme applicant in the country — and in the audit ledger that export would be indistinguishable
+  // from a taxonomy dump.
+  SchemesApplicationsRead: 'schemes.applications.read', // cross-tenant scheme applications INCLUDING applicant PII
+  SchemesDbtRead: 'schemes.dbt.read',                   // cross-tenant DBT/PFMS credit observations (never bank fields)
   CellsManage: 'cells.manage',  // shard/cell routing directory: register cells/shards, status lifecycle, tenant placement/move (Law 8/12)
   CellsRead: 'cells.read',      // cell/shard map + tenant-placement + residency + change-history reads (no DSN secrets)
 } as const;

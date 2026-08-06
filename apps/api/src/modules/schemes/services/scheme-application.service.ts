@@ -109,7 +109,7 @@ export class SchemeApplicationService {
   async requestClarification(tenantId: string, actor: SchemesActor, id: string, dto: ClarifyDto) { return this.transition(tenantId, actor, id, (a) => a.requestClarification(dto.note ?? null), { officer: true, note: dto.note ?? null }); }
   async resubmit(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.resubmit(), { applicant: true }); }
   async approve(tenantId: string, actor: SchemesActor, id: string, dto: ApproveDto, ip: string | null) { return this.transition(tenantId, actor, id, (a) => a.approve(dto.govtAppRef ?? null, new Date()), { officer: true, audit: { action: 'schemes.approved', ip, value: { govtAppRef: dto.govtAppRef ?? null } } }); }
-  async reject(tenantId: string, actor: SchemesActor, id: string, dto: RejectDto, ip: string | null) { return this.transition(tenantId, actor, id, (a) => a.reject(dto.reason ?? null, new Date()), { officer: true, note: dto.reason ?? null, audit: { action: 'schemes.rejected', ip, value: { reason: dto.reason ?? null } } }); }
+  async reject(tenantId: string, actor: SchemesActor, id: string, dto: RejectDto, ip: string | null) { return this.transition(tenantId, actor, id, (a) => a.reject(dto.reason ?? null, new Date(), dto.reasonCode ?? null), { officer: true, note: dto.reason ?? null, audit: { action: 'schemes.rejected', ip, value: { reason: dto.reason ?? null, reasonCode: dto.reasonCode ?? null } } }); }
   async appeal(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.appeal(), { applicant: true }); }
   async close(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.close(), { officer: true }); }
 

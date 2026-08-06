@@ -62,6 +62,14 @@ export default async function SchemesPage({ searchParams }: { searchParams: { cu
       <h1>{t.t('sr.schemesTitle')}</h1>
       <p className="kv-muted">{t.t('sr.schemesLead')}</p>
       <p className="kv-backlink"><Link href="/schemes-registry/exports">{t.t('sxp.link')}</Link></p>
+      {/* The three OVERSIGHT lenses (ADMIN-4b). Separate permissions, so a viewer without them gets the console's
+          uniform 403 notice on arrival rather than a hidden link — an absent link on a shared screen makes an operator
+          think the feature does not exist, while a 403 tells them what to ask for. */}
+      <nav className="kv-filters" aria-label={t.t('sov.lensNav')}>
+        <Link href="/schemes-registry/applications" className="kv-chip">{t.t('sov.navApplications')}</Link>
+        <Link href="/schemes-registry/dbt" className="kv-chip">{t.t('sov.navDbt')}</Link>
+        <Link href="/schemes-registry/performance" className="kv-chip">{t.t('sov.navPerformance')}</Link>
+      </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('sr.ok.schemeCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`sr.error.${errKey}`)}</p>}
 

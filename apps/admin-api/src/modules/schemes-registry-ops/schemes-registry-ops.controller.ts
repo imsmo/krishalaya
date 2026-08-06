@@ -77,11 +77,18 @@ export class SchemesRegistryOpsController {
   /* ======================= schemes ======================= */
   // PC-54 W54-11 slice 2: CROSS-TENANT scheme-applications oversight (read-only; the god-mode view the
   // gov console can't have — gov tokens are tenant-scoped, this realm is not).
-  @Get('applications') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  //
+  // ADMIN-4b RE-GATED THESE TWO ONTO `schemes.applications.read`. They shipped under the REGISTRY read permission,
+  // which meant a scheme-catalogue editor could already enumerate every application on the platform — and adding a
+  // new permission while leaving these two behind would have made the new permission decorative. Nothing here
+  // returns PII (the SELECT never joined `users`), but the row set itself is cross-tenant application data, and the
+  // boundary belongs at the row set rather than at the columns: the next person to add a name to this query would
+  // find it already gated.
+  @Get('applications') @RequireOwnerPermission(OwnerPermissions.SchemesApplicationsRead)
   applications(@Query('tenantId') tenantId?: string, @Query('status') status?: string, @Query('limit') limit?: string) {
     return this.depth.applications({ tenantId, status, limit: Number(limit) || 100 }).then((data) => ({ data }));
   }
-  @Get('applications/stats') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  @Get('applications/stats') @RequireOwnerPermission(OwnerPermissions.SchemesApplicationsRead)
   applicationStats() { return this.depth.applicationStats().then((data) => ({ data })); }
 
   /* W2251/W2252 — the receipt law's fifth surface. POST because it MUTATES the audit ledger: no receipt, no file.

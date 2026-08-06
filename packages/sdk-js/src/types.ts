@@ -761,3 +761,10 @@ export interface MediaUploadTicket { mediaId: string; s3Key: string; uploadUrl: 
 export interface MediaConfirmResult { mediaId: string; status: string; }
 /** Time-bounded presigned GET — only returned for a clean, visible asset. */
 export interface MediaDownloadLink { mediaId: string; url: string; expiresInSec: number; }
+
+/** The machine-countable scheme rejection reasons (migration 0106). Mirrors the CHECK constraint; the platform's
+ *  performance screen counts these and reports anything uncoded as uncoded rather than as 'other'. */
+export type SchemeRejectionCode =
+  | 'aadhaar_seeding_mismatch' | 'land_record_name_variance' | 'duplicate_application' | 'window_missed'
+  | 'documents_missing' | 'ineligible_landholding' | 'ineligible_category' | 'ineligible_region'
+  | 'portal_rejected' | 'withdrawn_by_applicant' | 'other';

@@ -7,10 +7,10 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { SchemeApplication } from '../domain/scheme-application.entity';
 import { ApplicationStatus } from '../domain/scheme-application.state';
 
-const COLS = `id, tenant_id, scheme_id, scheme_version, scheme_version_id, applicant_user_id, assisted_by, status, form_data, govt_app_ref, eligibility_check, submitted_at, decided_at, rejection_reason, created_at`;
+const COLS = `id, tenant_id, scheme_id, scheme_version, scheme_version_id, applicant_user_id, assisted_by, status, form_data, govt_app_ref, eligibility_check, submitted_at, decided_at, rejection_reason, rejection_reason_code, created_at`;
 function toDomain(r: any): SchemeApplication {
   return SchemeApplication.rehydrate({ id: r.id, tenantId: r.tenant_id, schemeId: r.scheme_id, schemeVersion: r.scheme_version, schemeVersionId: r.scheme_version_id ?? null, applicantUserId: r.applicant_user_id, assistedBy: r.assisted_by,
-    status: r.status as ApplicationStatus, formData: r.form_data ?? {}, govtAppRef: r.govt_app_ref, eligibilityCheck: r.eligibility_check, submittedAt: r.submitted_at, decidedAt: r.decided_at, rejectionReason: r.rejection_reason, createdAt: r.created_at });
+    status: r.status as ApplicationStatus, formData: r.form_data ?? {}, govtAppRef: r.govt_app_ref, eligibilityCheck: r.eligibility_check, submittedAt: r.submitted_at, decidedAt: r.decided_at, rejectionReason: r.rejection_reason, rejectionReasonCode: r.rejection_reason_code ?? null, createdAt: r.created_at });
 }
 export interface AppListQuery { applicantUserId?: string; queue?: boolean; status?: string; cursor?: { c: string; id: string }; limit: number; }
 
@@ -34,8 +34,8 @@ export class SchemeApplicationRepository {
   }
   async update(tx: TxContext, a: SchemeApplication): Promise<void> {
     const p = a.toProps();
-    await tx.query(`UPDATE scheme_applications SET status=$3, form_data=$4::jsonb, govt_app_ref=$5, eligibility_check=$6::jsonb, submitted_at=$7, decided_at=$8, rejection_reason=$9, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
-      [p.id, p.tenantId, p.status, JSON.stringify(p.formData), p.govtAppRef, p.eligibilityCheck ? JSON.stringify(p.eligibilityCheck) : null, p.submittedAt, p.decidedAt, p.rejectionReason]);
+    await tx.query(`UPDATE scheme_applications SET status=$3, form_data=$4::jsonb, govt_app_ref=$5, eligibility_check=$6::jsonb, submitted_at=$7, decided_at=$8, rejection_reason=$9, rejection_reason_code=$10, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+      [p.id, p.tenantId, p.status, JSON.stringify(p.formData), p.govtAppRef, p.eligibilityCheck ? JSON.stringify(p.eligibilityCheck) : null, p.submittedAt, p.decidedAt, p.rejectionReason, p.rejectionReasonCode]);
   }
   /** Append a status-transition row to the partitioned audit trail (within the same tx). */
   async appendEvent(tx: TxContext, tenantId: string, applicationId: string, fromStatus: string | null, toStatus: string, note: string | null, actorUserId: string): Promise<void> {
