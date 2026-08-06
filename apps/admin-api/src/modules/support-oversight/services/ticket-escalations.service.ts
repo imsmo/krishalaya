@@ -49,10 +49,17 @@ export class TicketEscalationsService {
    * useless to the next agent who sees the same issue. The state machine decides legality (a closed ticket cannot be
    * re-resolved); the outcome is what makes the resolution a record.
    *
-   * NOTE ON WHAT THIS DELIBERATELY DOES NOT DO: it does not send the farmer a reply. A reply is a message in the
-   * ticket's CONVERSATION, and that rail (fan-out to the farmer's channel, attachments, read receipts) belongs to
-   * apps/api. Writing a message straight into the table from here would bypass the notification fan-out — the ticket
-   * would look answered and the farmer would never be told. That remains ADMIN-2-Q3's open half.
+   * NOTE ON WHAT THIS DELIBERATELY DOES NOT DO: it does not tell the farmer. Resolving records what was done; it does
+   * not message anybody, and a ticket closed in silence still leaves the person waiting.
+   *
+   * REPLYING IS NOW POSSIBLE, and it is a SEPARATE act on purpose — `PlatformReplyService.queue` (PC-56 ADMIN-2d).
+   * This note used to say a reply "remains ADMIN-2-Q3's open half" and assumed the answer would be a conversation
+   * message written through apps/api. It is not: `conversation_participants.user_id` references a tenant `users` row and
+   * a platform operator has none, so a message would have meant inventing a platform account inside every tenant. The
+   * reply travels the notification spine instead, attributed to the platform, executed by apps/api's cadence job — see
+   * migration 0101's header for the full reasoning. Keeping the two acts separate is deliberate: closing a ticket and
+   * answering a person are different decisions, and one button doing both would let an operator do the first while
+   * believing they had done the second.
    */
   async resolve(actor: AdminRequestContext, id: string, dto: ResolveTicketDto) {
     return this.pool.withTx(async (client) => {

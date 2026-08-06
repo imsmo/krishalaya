@@ -85,6 +85,8 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
         <Link href="/support/csat/queue" className="kv-chip">{t.t('support.reviewLink')}</Link>
         <Link href="/support/coaching" className="kv-chip">{t.t('support.coachingLink')}</Link>
         <Link href="/support/exports" className="kv-chip">{t.t('support.exportsLink')}</Link>
+        {/* PC-56 ADMIN-2d · replies an operator wrote that never reached a farmer */}
+        <Link href="/support/replies/stuck" className="kv-chip">{t.t('support.stuckRepliesLink')}</Link>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('support.filterStatus')}>

@@ -194,3 +194,12 @@ export const QueryCoachingSchema = z.object({
   tenantId: z.string().uuid().optional(),
 }).strict();
 export type QueryCoachingDto = z.infer<typeof QueryCoachingSchema>;
+
+/** A platform reply to a farmer. The language is REQUIRED and constrained to the languages the platform has reply
+ *  templates for — no default, because an operator choosing a language is the operator taking responsibility for the
+ *  farmer being able to read it. */
+export const ReplyToFarmerSchema = z.object({
+  body: z.string().min(20).max(4000),
+  languageCode: z.enum(['en', 'hi', 'gu']),
+}).strict();
+export type ReplyToFarmerDto = z.infer<typeof ReplyToFarmerSchema>;

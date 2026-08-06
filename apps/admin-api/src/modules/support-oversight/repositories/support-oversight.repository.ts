@@ -754,4 +754,58 @@ export class SupportOversightRepository {
       reviewedAt: iso(x.reviewed_at), coachingCreated: x.coaching_created === true,
     }));
   }
+
+  /* ---------------- platform replies (0101 · PC-56 ADMIN-2d) ---------------- */
+
+  /** Queue a reply. INSERT ONLY — 0101 grants this realm no UPDATE, so the admin plane cannot declare its own message
+   *  delivered. The executor in apps/api settles it. */
+  async insertPlatformReply(client: PoolClient, p: {
+    tenantId: string; ticketId: string; authorAdminId: string; body: string;
+    languageCode: string; idempotencyKey: string;
+  }): Promise<{ id: string }> {
+    const r = await client.query(
+      `INSERT INTO support_platform_replies
+         (tenant_id, ticket_id, author_admin_id, body, language_code, idempotency_key, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$3)
+       RETURNING id`,
+      [p.tenantId, p.ticketId, p.authorAdminId, p.body, p.languageCode, p.idempotencyKey]);
+    return { id: (r.rows[0] as any).id };
+  }
+
+  async platformRepliesFor(ticketId: string): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT id, ticket_id, status::text AS status, body, language_code, author_admin_id,
+              queued_at, settled_at, detail, attempts, recipient_user_id
+         FROM support_platform_replies
+        WHERE ticket_id = $1 AND deleted_at IS NULL
+        ORDER BY queued_at DESC
+        LIMIT 50`, [ticketId]);
+    return r.rows.map((x: any) => ({
+      id: x.id, ticketId: x.ticket_id, status: x.status, body: x.body, languageCode: x.language_code,
+      authorAdminId: x.author_admin_id,
+      queuedAt: iso(x.queued_at), settledAt: iso(x.settled_at),
+      detail: x.detail ?? null, attempts: Number(x.attempts ?? 0),
+      recipientUserId: x.recipient_user_id ?? null,
+    }));
+  }
+
+  /** Replies an operator wrote that never reached anybody. Refused and failed rows only — a queued row is not stuck, it
+   *  is waiting, and mixing the two would make the health view cry wolf every minute. */
+  async stuckPlatformReplies(limit = 100): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT r.id, r.ticket_id, t.ticket_no, r.tenant_id, tn.slug AS tenant_slug,
+              r.status::text AS status, r.detail, r.attempts, r.queued_at, r.settled_at, r.author_admin_id
+         FROM support_platform_replies r
+         JOIN support_tickets t ON t.id = r.ticket_id
+         LEFT JOIN tenants tn ON tn.id = r.tenant_id
+        WHERE r.status IN ('refused','failed') AND r.deleted_at IS NULL
+        ORDER BY r.queued_at DESC
+        LIMIT $1`, [limit]);
+    return r.rows.map((x: any) => ({
+      id: x.id, ticketId: x.ticket_id, ticketNo: x.ticket_no, tenantId: x.tenant_id,
+      tenantSlug: x.tenant_slug ?? null, status: x.status, detail: x.detail ?? null,
+      attempts: Number(x.attempts ?? 0), queuedAt: iso(x.queued_at), settledAt: iso(x.settled_at),
+      authorAdminId: x.author_admin_id,
+    }));
+  }
 }

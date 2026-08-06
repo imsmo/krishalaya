@@ -12,7 +12,10 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { ticketStatusKey, severityKey, slaKey, canEscalate, higherSeverities, type TicketRow } from '../../../../features/support/ticket';
-import { escalateTicketAction, resolveTicketAction } from '../../actions';
+import {
+  REPLY_LANGUAGES, MIN_BODY, deliveredCount, stuckRows, stateClass, stateKey, type ReplyRow,
+} from '../../../../features/support/reply';
+import { escalateTicketAction, resolveTicketAction, replyToFarmerAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,10 +24,12 @@ export function generateMetadata(): Metadata {
 }
 
 const SEV_CLASS: Record<string, string> = { P0: 'kv-status--danger', P1: 'kv-status--danger', P2: 'kv-status--warn', P3: 'kv-status--muted' };
-const OK = new Set(['escalated', 'resolved']);
+const OK = new Set(['escalated', 'resolved', 'queued']);
 const ERR = new Set(['severity', 'reassign', 'reason', 'outcome', 'invalid', 'illegal', 'elevation', 'notFound', 'generic']);
+// PC-56 ADMIN-2d: the reply form's own error namespace (prep_*), plus the server's verbatim 422
+const REPLY_ERR = new Set(['body', 'bodyLong', 'language', 'rejected']);
 
-export default async function TicketDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function TicketDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string } }) {
   requireAdmin();
   const t = getTranslator();
 
@@ -39,7 +44,18 @@ export default async function TicketDetailPage({ params, searchParams }: { param
     return <section><p className="kv-backlink"><Link href="/support">{t.t('support.back')}</Link></p><p className="kv-error" role="alert">{notice}</p></section>;
   }
 
+  // PC-56 ADMIN-2d. Fetched separately and allowed to fail on its own (Law 12): the reply history is important, and a
+  // ticket an operator needs to read must not go dark because one extra read broke.
+  let replies: ReplyRow[] = []; let repliesUnavailable = false;
+  try {
+    const res = await adminGet<{ items: ReplyRow[] }>(`support/tickets/${encodeURIComponent(params.id)}/replies`);
+    replies = res.data?.items ?? [];
+  } catch { repliesUnavailable = true; }
+  const delivered = deliveredCount(replies);
+  const stuck = stuckRows(replies);
+
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
+  const replyErr = searchParams.error?.startsWith('prep_') ? searchParams.error.slice(5) : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const sev = severityKey(ticket.severity);
   const statusK = ticketStatusKey(ticket.status);
@@ -50,7 +66,14 @@ export default async function TicketDetailPage({ params, searchParams }: { param
     <section>
       <p className="kv-backlink"><Link href="/support">{t.t('support.back')}</Link></p>
       <h1>{ticket.ticketNo}</h1>
-      {okKey && <p className="kv-success" role="status">{t.t(`support.ok.${okKey}`)}</p>}
+      {okKey && <p className="kv-success" role="status">{t.t(okKey === 'queued' ? 'prep.ok.queued' : `support.ok.${okKey}`)}</p>}
+      {replyErr && (
+        <p className="kv-error" role="alert">
+          {replyErr === 'rejected'
+            ? t.t('prep.error.rejected', { why: searchParams.why ?? '' })
+            : t.t(`prep.error.${REPLY_ERR.has(replyErr) ? replyErr : 'generic'}`)}
+        </p>
+      )}
       {errKey && <p className="kv-error" role="alert">{t.t(`support.error.${errKey}`)}</p>}
       {slaK === 'breached' && <p className="kv-error" role="alert">{t.t('support.breachedNote')}</p>}
 
@@ -66,6 +89,71 @@ export default async function TicketDetailPage({ params, searchParams }: { param
         <div className="kv-facts__row"><dt>{t.t('support.resolutionDue')}</dt><dd>{ticket.slaResolutionDue ?? t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('support.createdAt')}</dt><dd>{ticket.createdAt ?? t.t('common.dash')}</dd></div>
       </dl>
+
+      {/* ---------------- PC-56 ADMIN-2d · the platform's own replies ---------------- */}
+      <h2>{t.t('prep.historyTitle')}</h2>
+      {repliesUnavailable ? (
+        <p className="kv-error" role="alert">{t.t('notice.generic')}</p>
+      ) : replies.length === 0 ? (
+        <p className="kv-empty">{t.t('prep.none')}</p>
+      ) : (
+        <>
+          {/* what the farmer RECEIVED, not what was written — the operator would otherwise read the list as answers */}
+          <p className="kv-field__hint">
+            {t.t('prep.deliveredOf', { delivered: String(delivered), total: String(replies.length) })}
+          </p>
+          {stuck.length > 0 && (
+            <p className="kv-error" role="alert">{t.t('prep.stuckWarn', { n: String(stuck.length) })}</p>
+          )}
+          <table className="kv-table">
+            <thead><tr>
+              <th scope="col">{t.t('prep.when')}</th>
+              <th scope="col">{t.t('prep.state')}</th>
+              <th scope="col">{t.t('prep.words')}</th>
+              <th scope="col">{t.t('prep.language')}</th>
+              <th scope="col">{t.t('prep.author')}</th>
+            </tr></thead>
+            <tbody>
+              {replies.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.queuedAt}</td>
+                  <td>
+                    <span className={`kv-status ${stateClass(r.status)}`}>{t.t(`prep.state.${stateKey(r.status)}`)}</span>
+                    {/* the server's own sentence about this row, so the console cannot invent a cheerier wording */}
+                    {r.stateNote ? <> <span className="kv-detail__muted">{r.stateNote}</span></> : null}
+                  </td>
+                  <td>{r.body}</td>
+                  <td>{r.languageCode ? t.t(`prep.lang.${r.languageCode}`) : t.t('common.dash')}</td>
+                  <td><code>{String(r.authorAdminId ?? '').slice(0, 8) || t.t('common.dash')}</code></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+      <p className="kv-field__hint">{t.t('prep.smsNote')}</p>
+
+      <details className="kv-card kv-limit-form">
+        <summary className="kv-card__title">{t.t('prep.title')}</summary>
+        <p className="kv-field__hint">{t.t('prep.lead')}</p>
+        {/* the tenant can read this. Said BEFORE the box, not after it. */}
+        <p className="kv-notice" role="note">{t.t('prep.visibleToTenant')}</p>
+        {/* and pressing the button does not send */}
+        <p className="kv-notice" role="note">{t.t('prep.queuedWarn')}</p>
+        <form action={replyToFarmerAction} className="kv-form">
+          <input type="hidden" name="id" value={ticket.id} />
+          <label htmlFor="reply-language" className="kv-field__label">{t.t('prep.language')}</label>
+          <select id="reply-language" name="languageCode" className="kv-input" required defaultValue="">
+            <option value="" disabled>{t.t('prep.language')}</option>
+            {REPLY_LANGUAGES.map((l) => <option key={l} value={l}>{t.t(`prep.lang.${l}`)}</option>)}
+          </select>
+          <p className="kv-field__hint">{t.t('prep.languageHint')}</p>
+          <label htmlFor="reply-body" className="kv-field__label">{t.t('prep.body')}</label>
+          <textarea id="reply-body" name="body" className="kv-input" rows={4} required minLength={MIN_BODY} maxLength={4000} />
+          <p className="kv-field__hint">{t.t('prep.bodyHint')}</p>
+          <button type="submit" className="kv-btn">{t.t('prep.send')}</button>
+        </form>
+      </details>
 
       <h2>{t.t('support.escalateHeading')}</h2>
       {canEscalate(statusK) ? (

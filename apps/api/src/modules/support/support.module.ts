@@ -20,21 +20,34 @@ import { SupportThreadService } from './services/support-thread.service';
 import { SupportTicketRepository } from './repositories/support-ticket.repository';
 import { CsatResponseRepository } from './repositories/csat-response.repository';
 import { DisputeEscalatedHandler } from './events/handlers/dispute-escalated.handler';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { PlatformReplyDeliveryCadenceJob } from './jobs/platform-reply-delivery.cadence-job';
 
 @Module({
   imports: [CommunicationModule],
   controllers: [TicketsController],
   providers: [SupportTicketService, SupportThreadService, SupportTicketRepository,
     // PC-56 ADMIN-2c: the CSAT ledger (0099) — a rating is appended, never overwritten
-    CsatResponseRepository],
+    CsatResponseRepository,
+    // PC-56 ADMIN-2d: delivers a PLATFORM reply to the farmer through the notification spine. It lives in this module
+    // rather than apps/worker because the spine is module business logic the pg-only worker cannot import, and it is a
+    // cadence job rather than an outbox handler because a reply an operator has just written has not HAPPENED yet.
+    PlatformReplyDeliveryCadenceJob],
   exports: [SupportTicketService],
 })
 export class SupportModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
     private readonly tickets: SupportTicketService,
+    private readonly platformReplies: PlatformReplyDeliveryCadenceJob,
   ) {}
   onModuleInit(): void {
     this.registry.register(new DisputeEscalatedHandler(this.tickets));   // escalated dispute → auto-open P1 ticket
+    // PC-56 ADMIN-2d. NOT behind a per-job env gate, unlike the settlement/payout jobs: those move money and a founder
+    // may legitimately want them off in an environment. This one is the ONLY path by which a reply an operator has
+    // already written reaches the farmer, so a disabled tick means a queue of answers nobody receives — which is the
+    // silent failure the whole wave exists to remove. The runner-wide JOBS_ENABLED kill-switch still applies.
+    this.jobs.register(this.platformReplies);
   }
 }

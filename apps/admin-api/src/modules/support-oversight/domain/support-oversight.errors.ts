@@ -63,3 +63,9 @@ export class CoachingNotFoundError extends DomainHttpError {
 export class CsatResponseNotFoundError extends DomainHttpError {
   constructor(ref: string) { super('SUPPORT_CSAT_NOT_FOUND', `rating ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
 }
+
+/** A reply the rules refuse — too short to be an answer, or in a language the platform has no template for. 422 with
+ *  the specific rule, because the operator has just written something and needs to know what to change. */
+export class InvalidPlatformReplyError extends DomainHttpError {
+  constructor(detail: string) { super('SUPPORT_REPLY_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}

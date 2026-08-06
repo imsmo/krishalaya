@@ -12,6 +12,7 @@ import { SupportInsightsService } from './services/support-insights.service';
 import { SupportPolicyService } from './services/support-policy.service';
 import { CoachingService } from './services/coaching.service';
 import { SupportExportService } from './services/support-export.service';
+import { PlatformReplyService } from './services/platform-reply.service';
 import { TicketEscalationsService } from './services/ticket-escalations.service';
 
 @Module({
@@ -22,6 +23,8 @@ import { TicketEscalationsService } from './services/ticket-escalations.service'
     // PC-56 ADMIN-2b: the versioned support policy (0097) whose chain the worker fires
     SupportPolicyService,
     // PC-56 ADMIN-2c: the CSAT review + coaching plane (0099/0100) and the support exports
-    CoachingService, SupportExportService],
+    CoachingService, SupportExportService,
+    // PC-56 ADMIN-2d: queues a platform reply (0101). It never sends — apps/api's cadence job owns delivery.
+    PlatformReplyService],
 })
 export class SupportOversightModule {}

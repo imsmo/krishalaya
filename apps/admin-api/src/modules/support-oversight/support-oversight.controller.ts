@@ -15,6 +15,7 @@ import { SupportInsightsService } from './services/support-insights.service';
 import { SupportPolicyService } from './services/support-policy.service';
 import { CoachingService } from './services/coaching.service';
 import { SupportExportService } from './services/support-export.service';
+import { PlatformReplyService } from './services/platform-reply.service';
 import { TicketEscalationsService } from './services/ticket-escalations.service';
 import {
   QueryTicketsSchema, QueryTicketsDto, QueryBreachesSchema, QueryBreachesDto,
@@ -25,7 +26,7 @@ import {
   ReviewCsatSchema, ReviewCsatDto, CreateCoachingSchema, CreateCoachingDto,
   SettleCoachingSchema, SettleCoachingDto, ReviewQueueSchema, ReviewQueueDto,
   SupportExportSchema, SupportExportDto, QueryVerdictsSchema, QueryVerdictsDto,
-  QueryCoachingSchema, QueryCoachingDto,
+  QueryCoachingSchema, QueryCoachingDto, ReplyToFarmerSchema, ReplyToFarmerDto,
 } from './dto/support-oversight.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -44,6 +45,7 @@ export class SupportOversightController {
     private readonly policy: SupportPolicyService,
     private readonly coaching: CoachingService,
     private readonly exports: SupportExportService,
+    private readonly replies: PlatformReplyService,
   ) {}
 
   /* ================= PC-56 ADMIN-2 · support-desk depth ================= */
@@ -116,6 +118,27 @@ export class SupportOversightController {
   settleCoaching(@Req() req: any, @Param('id') id: string, @ZodBody(SettleCoachingSchema) dto: SettleCoachingDto) {
     return this.coaching.settleCoaching(admin(req), id, dto).then((data) => ({ data }));
   }
+
+  // -------------------------------------------------------------------------
+  // PC-56 ADMIN-2d · PLATFORM REPLY TO A FARMER (canon W049, W2298-2304)
+  // -------------------------------------------------------------------------
+  // ELEVATED. This sends a message to a member of the public about their own money, in the platform's name — the one
+  // support write where the hardware key is unarguable.
+  //
+  // It QUEUES. The response says `queued`, not `sent`, and it means it: delivery is performed by apps/api's
+  // PlatformReplyDeliveryCadenceJob, which owns the notification fan-out. This realm cannot and must not claim a
+  // delivery it does not perform.
+  @Post('tickets/:id/reply') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  replyToFarmer(@Req() req: any, @Param('id') id: string, @ZodBody(ReplyToFarmerSchema) dto: ReplyToFarmerDto) {
+    return this.replies.queue(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  @Get('tickets/:id/replies') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  ticketReplies(@Param('id') id: string) { return this.replies.forTicket(id).then((data) => ({ data })); }
+
+  // Replies an operator wrote that never reached anybody. A queue nobody watches is a queue.
+  @Get('replies/stuck') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  stuckReplies() { return this.replies.stuck().then((data) => ({ data })); }
 
   // -------------------------------------------------------------------------
   // PC-56 ADMIN-2c · EXPORTS (canon W1944-45, W2121-22, W2270-71)

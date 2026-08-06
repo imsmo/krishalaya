@@ -14,6 +14,7 @@ import { buildEscalate } from '../../features/support/ticket';
 import { buildMacro } from '../../features/support/desk';
 import { buildPolicy } from '../../features/support/policy';
 import { buildReview, buildCoaching, buildSettlement } from '../../features/support/review';
+import { buildReply } from '../../features/support/reply';
 
 /** A reason is mandatory on anything that changes what the desk shows other people (mirrors the server's zod Reason). */
 function validReason(reason: string | null | undefined): boolean {
@@ -214,4 +215,31 @@ export async function settleCoachingAction(formData: FormData): Promise<void> {
   }
   revalidatePath('/support/coaching');
   back('ok=settled');
+}
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-2d · a PLATFORM reply to the farmer (canon W049, W2298-2304)
+// ---------------------------------------------------------------------------
+/**
+ * Queue a reply. ELEVATED: this sends a message to a member of the public about their own money, in the platform's name.
+ *
+ * IT QUEUES — the success message says so. admin-api records the intent and apps/api's cadence job performs the delivery
+ * through the notification spine, so this action cannot and must not report a send. The ticket page shows the real state.
+ */
+export async function replyToFarmerAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/support');
+  const back: (qs: string) => never = (qs) => redirect(`/support/tickets/${enc(id)}?${qs}`);
+  const built = buildReply((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=prep_${built.error}`);
+  try { await adminPost(`support/tickets/${enc(id)}/reply`, { body: built.value }); }
+  catch (e) {
+    // a 422 is the server's own rule (too short, or a language it has no template for) — shown verbatim
+    if (e instanceof AdminApiError && e.status === 422) back(`error=prep_rejected&why=${enc(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath(`/support/tickets/${id}`);
+  revalidatePath('/support/replies/stuck');
+  back('ok=queued');
 }
