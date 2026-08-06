@@ -124,3 +124,61 @@ a { color: inherit; text-decoration: none; }
 
 /* AD-W6-03 cells — inline GET filter form (label + compact input + submit on one row) */
 .kv-filters--form { align-items: center; }
+
+/* ---------------------------------------------------------------------------
+   PC-56 ADMIN-2b — classes ADMIN-1..ADMIN-2 referenced but never styled.
+   These are not cosmetic. `kv-notice` carries every honest-gap statement in this
+   console: "this figure is unknown, not zero", "no provider can deliver this
+   step", "this policy has no night cover". All 23 of them were rendering as
+   plain body text, which is the exact opposite of the intent — a warning that
+   looks like prose is a warning nobody reads. Same for `kv-detail__muted`, which
+   is how a null is distinguished from a value, and `kv-empty`, which is how "no
+   rows" is distinguished from "still loading".
+   --------------------------------------------------------------------------- */
+
+/* A stated caveat or limitation. Deliberately NOT red: it is not an error, and
+   colouring it as one teaches operators to ignore real errors. Amber + a rule on
+   the leading edge, so it reads as an aside that must still be read. */
+.kv-notice {
+  border-inline-start: 3px solid #c77700;
+  background: var(--kv-neutral-100);
+  color: var(--kv-neutral-900);
+  padding: 10px 12px;
+  border-radius: var(--kv-radius);
+  margin: 12px 0;
+  font-size: 14px;
+  max-width: 76ch;      /* a warning nobody can scan is a warning nobody reads */
+}
+
+/* Secondary text inside a value: the REASON a figure is unknown, or the detail on
+   a row. Quieter than the value it accompanies, never quieter than legibility. */
+.kv-detail__muted { color: var(--kv-neutral-600); font-size: 13px; }
+
+/* "There is nothing here" — a statement, not an absence. Italic + muted so it is
+   visibly a sentence about the data rather than a row of it. */
+.kv-empty { color: var(--kv-neutral-600); font-style: italic; padding: 10px 0; }
+
+/* Grouped checkboxes (the policy form's severity sets). A fieldset with a visible
+   grouping, because "which severities wake somebody" is one question. */
+.kv-fieldset {
+  border: 1px solid var(--kv-neutral-200);
+  border-radius: var(--kv-radius);
+  padding: 12px;
+  margin: 12px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+.kv-fieldset legend { padding-inline: 6px; }
+/* 44px min target: these are touched on a tablet in an ops room, not only clicked. */
+.kv-check { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+
+/* A count on a filter chip (W005). Inherits colour so it stays readable on the
+   active chip's brand background. */
+.kv-chip__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-inline-start: 2px;
+}

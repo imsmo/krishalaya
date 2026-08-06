@@ -31,4 +31,11 @@ export class SlaBreachMonitorService {
     const last = items[items.length - 1];
     return items.length === limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
   }
+
+  /** Counts per status for the queue's filter chips (PC-56 ADMIN-2b, canon W005). A chip with no number is honest; a
+   *  chip with a WRONG number sends somebody to a list that does not match it, so this is the real cross-tenant count
+   *  rather than a count of the page in front of them. */
+  async ticketCounts() {
+    return { counts: await this.repo.ticketCountsByStatus() };
+  }
 }

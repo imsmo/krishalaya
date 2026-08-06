@@ -12,7 +12,7 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { ticketStatusKey, severityKey, slaKey, canEscalate, higherSeverities, type TicketRow } from '../../../../features/support/ticket';
-import { escalateTicketAction } from '../../actions';
+import { escalateTicketAction, resolveTicketAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +21,8 @@ export function generateMetadata(): Metadata {
 }
 
 const SEV_CLASS: Record<string, string> = { P0: 'kv-status--danger', P1: 'kv-status--danger', P2: 'kv-status--warn', P3: 'kv-status--muted' };
-const OK = new Set(['escalated']);
-const ERR = new Set(['severity', 'reassign', 'reason', 'invalid', 'illegal', 'elevation', 'notFound', 'generic']);
+const OK = new Set(['escalated', 'resolved']);
+const ERR = new Set(['severity', 'reassign', 'reason', 'outcome', 'invalid', 'illegal', 'elevation', 'notFound', 'generic']);
 
 export default async function TicketDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   requireAdmin();
@@ -82,6 +82,22 @@ export default async function TicketDetailPage({ params, searchParams }: { param
           <label htmlFor="escalateReason" className="kv-field__label">{t.t('support.reason')}</label>
           <input id="escalateReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
           <button type="submit" className="kv-btn kv-btn--danger">{t.t('support.escalate')}</button>
+        </form>
+      ) : <p className="kv-muted">{t.t('support.escalateClosed')}</p>}
+
+      {/* PC-56 ADMIN-2b · RESOLVE from the oversight plane (canon W049). The outcome is mandatory: a ticket closed from
+          outside the tenant's own desk with nothing saying what was done is unanswerable when the farmer comes back.
+          Maker-checker by ABSENCE — on a terminal ticket the form is not rendered at all rather than disabled. */}
+      <h2>{t.t('support.resolveTitle')}</h2>
+      {canEscalate(statusK) ? (
+        <form action={resolveTicketAction} className="kv-card kv-action-card">
+          <input type="hidden" name="id" value={ticket.id} />
+          <p className="kv-field__hint">{t.t('support.resolveHint')}</p>
+          {/* Said where an operator would otherwise assume the farmer has been answered. */}
+          <p className="kv-notice" role="note">{t.t('support.replyGap')}</p>
+          <label htmlFor="outcome" className="kv-field__label">{t.t('support.outcome')}</label>
+          <textarea id="outcome" name="outcome" className="kv-input" rows={3} required minLength={10} maxLength={2000} />
+          <button type="submit" className="kv-btn">{t.t('support.resolve')}</button>
         </form>
       ) : <p className="kv-muted">{t.t('support.escalateClosed')}</p>}
     </section>

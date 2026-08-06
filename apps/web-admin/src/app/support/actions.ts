@@ -12,6 +12,7 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, AdminApiError } from '../../lib/admin-client';
 import { buildEscalate } from '../../features/support/ticket';
 import { buildMacro } from '../../features/support/desk';
+import { buildPolicy } from '../../features/support/policy';
 
 /** A reason is mandatory on anything that changes what the desk shows other people (mirrors the server's zod Reason). */
 function validReason(reason: string | null | undefined): boolean {
@@ -87,4 +88,61 @@ export async function toggleMacroAction(formData: FormData): Promise<void> {
   catch (e) { back(`error=${errorKey(e)}`); }
   revalidatePath('/support/macros');
   back(`ok=${active ? 'restored' : 'archived'}`);
+}
+
+// ---------------------------------------------------------------------------
+// The SUPPORT POLICY (PC-56 ADMIN-2b · canon W054 + W057)
+// ---------------------------------------------------------------------------
+/**
+ * PUBLISH a new policy version. Elevated, unlike a macro: this decides who is woken at 02:00 and what the platform
+ * promises a farmer about their money problem. Over-gating a harmless control trains people to click through elevation
+ * prompts; under-gating this one means a policy can be quietly loosened.
+ *
+ * THE SERVER OWNS THE COHERENCE RULES. buildPolicy checks shape only. When admin-api's assertPolicy refuses (422), its
+ * message is passed through to the page VERBATIM rather than mapped to a generic string — the operator needs to read
+ * "P1 must have MORE first-response time than P0", not "invalid policy".
+ */
+export async function publishSupportPolicyAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const back: (qs: string) => never = (qs) => redirect(`/support/escalation?${qs}`);
+  const built = buildPolicy(
+    (n) => String(formData.get(n) ?? ''),
+    (n) => formData.getAll(n).map((v) => String(v)),
+  );
+  if (!built.ok) back(`error=pol_${built.error}${built.at ? `&at=${enc(built.at)}` : ''}`);
+  try { await adminPost('support/policy', { body: built.value }); }
+  catch (e) {
+    // 422 carries the real reason; anything else is mapped as usual
+    if (e instanceof AdminApiError && e.status === 422) back(`error=pol_rejected&why=${enc(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/support/escalation');
+  revalidatePath('/support');            // the queue's SLA column reads the same targets
+  revalidatePath('/support/sla-breaches');
+  back('ok=published');
+}
+
+// ---------------------------------------------------------------------------
+// RESOLVING from the oversight plane (PC-56 ADMIN-2b · canon W049)
+// ---------------------------------------------------------------------------
+/**
+ * Close a ticket the platform has actually dealt with, with a MANDATORY outcome.
+ *
+ * WHAT THIS DELIBERATELY DOES NOT DO: message the farmer. A reply is part of the ticket's conversation and its
+ * notification fan-out lives in apps/api; writing one from the admin realm would leave the ticket looking answered to
+ * everybody except the person waiting for it. The page says so where an operator would otherwise assume otherwise.
+ */
+export async function resolveTicketAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/support');
+  const back: (qs: string) => never = (qs) => redirect(`/support/tickets/${enc(id)}?${qs}`);
+  const outcome = String(formData.get('outcome') ?? '').trim();
+  if (outcome.length < 10 || outcome.length > 2000) back('error=outcome');
+  try { await adminPost(`support/tickets/${enc(id)}/resolve`, { body: { outcome } }); }
+  catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath(`/support/tickets/${id}`);
+  revalidatePath('/support');
+  revalidatePath('/support/sla-breaches');
+  back('ok=resolved');
 }

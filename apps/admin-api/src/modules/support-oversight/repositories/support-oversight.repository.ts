@@ -264,4 +264,131 @@ export class SupportOversightRepository {
         WHERE id=$1 AND deleted_at IS NULL`, [id, active, actorUserId]);
     return (r.rowCount ?? 0) > 0;
   }
+
+  /* ================= PC-56 ADMIN-2b · support policy (0097) + escalation ledger (0098) ================= */
+
+  /** The ACTIVE policy with its SLAs and chain. Null when none is published — a real state the console reports rather
+   *  than defaulting, because a platform with no published policy has not decided who to page. */
+  async activePolicy(): Promise<{ policy: Record<string, unknown>; slas: Array<Record<string, unknown>>; escalations: Array<Record<string, unknown>> } | null> {
+    const p = await this.pool.query(
+      `SELECT id, version, name, is_active, effective_from::text AS effective_from,
+              open_hour_ist, close_hour_ist, after_hours_severities, routing_strategy, desk_languages,
+              ai_assist_mode, ai_excluded_severities, notes, created_at
+         FROM support_policies WHERE is_active AND deleted_at IS NULL LIMIT 1`);
+    if (!p.rows[0]) return null;
+    const id = p.rows[0].id;
+    const [slas, esc] = await Promise.all([
+      this.pool.query(
+        `SELECT severity, first_response_minutes, resolution_minutes
+           FROM support_policy_slas WHERE policy_id=$1 AND deleted_at IS NULL
+          ORDER BY severity`, [id]),
+      this.pool.query(
+        `SELECT severity, after_minutes, channel::text AS channel, target_role, notes
+           FROM support_policy_escalations WHERE policy_id=$1 AND deleted_at IS NULL
+          ORDER BY severity, after_minutes`, [id]),
+    ]);
+    const x = p.rows[0];
+    return {
+      policy: {
+        id: x.id, version: x.version, name: x.name, isActive: x.is_active === true,
+        effectiveFrom: x.effective_from, openHourIst: x.open_hour_ist, closeHourIst: x.close_hour_ist,
+        afterHoursSeverities: x.after_hours_severities ?? [], routingStrategy: x.routing_strategy,
+        deskLanguages: x.desk_languages ?? [], aiAssistMode: x.ai_assist_mode,
+        aiExcludedSeverities: x.ai_excluded_severities ?? [], notes: x.notes ?? null, createdAt: x.created_at ?? null,
+      },
+      slas: slas.rows.map((r: any) => ({
+        severity: r.severity, firstResponseMinutes: r.first_response_minutes, resolutionMinutes: r.resolution_minutes,
+      })),
+      escalations: esc.rows.map((r: any) => ({
+        severity: r.severity, afterMinutes: r.after_minutes, channel: r.channel,
+        targetRole: r.target_role, notes: r.notes ?? null,
+      })),
+    };
+  }
+
+  async listPolicyVersions(limit = 30): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT id, version, name, is_active, effective_from::text AS effective_from, created_at
+         FROM support_policies WHERE deleted_at IS NULL ORDER BY version DESC LIMIT $1`, [limit]);
+    return r.rows.map((x: any) => ({
+      id: x.id, version: x.version, name: x.name, isActive: x.is_active === true,
+      effectiveFrom: x.effective_from, createdAt: x.created_at ?? null,
+    }));
+  }
+
+  async nextPolicyVersion(client: PoolClient): Promise<number> {
+    const r = await client.query(`SELECT COALESCE(MAX(version), 0) + 1 AS v FROM support_policies`);
+    return Number(r.rows[0].v);
+  }
+
+  /** Publish a new version and retire the old one, in ONE transaction — there is never a moment with two active
+   *  policies (the 0097 partial unique index would refuse it) nor a moment with none. */
+  async insertPolicy(client: PoolClient, p: {
+    id: string; version: number; actorUserId: string;
+    policy: {
+      name: string; effectiveFrom: string; openHourIst: number; closeHourIst: number;
+      afterHoursSeverities: string[]; routingStrategy: string; deskLanguages: string[];
+      aiAssistMode: string; aiExcludedSeverities: string[]; notes: string | null;
+      slas: Array<{ severity: string; firstResponseMinutes: number; resolutionMinutes: number }>;
+      escalations: Array<{ severity: string; afterMinutes: number; channel: string; targetRole: string; notes: string | null }>;
+    };
+  }): Promise<void> {
+    const v = p.policy;
+    await client.query(`UPDATE support_policies SET is_active=false, updated_at=now(), updated_by=$1 WHERE is_active`, [p.actorUserId]);
+    await client.query(
+      `INSERT INTO support_policies
+         (id, version, name, is_active, effective_from, open_hour_ist, close_hour_ist, after_hours_severities,
+          routing_strategy, desk_languages, ai_assist_mode, ai_excluded_severities, notes, created_by, updated_by)
+       VALUES ($1,$2,$3,true,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)`,
+      [p.id, p.version, v.name, v.effectiveFrom, v.openHourIst, v.closeHourIst, v.afterHoursSeverities,
+       v.routingStrategy, v.deskLanguages, v.aiAssistMode, v.aiExcludedSeverities, v.notes, p.actorUserId]);
+    for (const s of v.slas) {
+      await client.query(
+        `INSERT INTO support_policy_slas (policy_id, severity, first_response_minutes, resolution_minutes, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$5)`, [p.id, s.severity, s.firstResponseMinutes, s.resolutionMinutes, p.actorUserId]);
+    }
+    for (const e of v.escalations) {
+      await client.query(
+        `INSERT INTO support_policy_escalations (policy_id, severity, after_minutes, channel, target_role, notes, created_by, updated_by)
+         VALUES ($1,$2,$3,$4::support_escalation_channel,$5,$6,$7,$7)`,
+        [p.id, e.severity, e.afterMinutes, e.channel, e.targetRole, e.notes, p.actorUserId]);
+    }
+  }
+
+  /** What the chain ACTUALLY did lately — the answer to "was the support head really rung about TKT-8812?". */
+  async recentEscalationEvents(limit = 50): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT e.id, e.ticket_id, t.ticket_no, e.severity, e.after_minutes, e.channel::text AS channel,
+              e.target_role, e.breach_kind, e.breached_at, e.fired_at, e.status::text AS status, e.detail
+         FROM support_escalation_events e
+         LEFT JOIN support_tickets t ON t.id = e.ticket_id
+        WHERE e.deleted_at IS NULL
+        ORDER BY e.fired_at DESC LIMIT $1`, [limit]).catch(() => ({ rows: [] as any[] }));
+    return r.rows.map((x: any) => ({
+      id: x.id, ticketId: x.ticket_id, ticketNo: x.ticket_no ?? null, severity: x.severity,
+      afterMinutes: x.after_minutes, channel: x.channel, targetRole: x.target_role,
+      breachKind: x.breach_kind, breachedAt: x.breached_at, firedAt: x.fired_at,
+      status: x.status, detail: x.detail ?? null,
+    }));
+  }
+
+  /* ---------------- ticket counts by status (canon W005 chips) ---------------- */
+  /** Cross-tenant counts per status, for the queue's filter chips. ONE grouped query rather than a count per chip —
+   *  seven round trips for a header is how a NOC page becomes slow at exactly the moment it is needed. */
+  async ticketCountsByStatus(): Promise<Record<string, number>> {
+    const r = await this.pool.query(
+      `SELECT status::text AS status, count(*)::int AS n
+         FROM support_tickets WHERE deleted_at IS NULL GROUP BY 1`);
+    const out: Record<string, number> = {};
+    for (const x of r.rows as any[]) out[x.status] = x.n;
+    return out;
+  }
+
+  /** Resolve an oversight ticket. The state machine decides legality; this writes the outcome and the timestamp. */
+  async resolveTicket(client: PoolClient, id: string, status: string, actorUserId: string): Promise<void> {
+    await client.query(
+      `UPDATE support_tickets
+          SET status=$2::ticket_status, resolved_at=now(), updated_by=$3, updated_at=now()
+        WHERE id=$1`, [id, status, actorUserId]);
+  }
 }

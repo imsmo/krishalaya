@@ -12,12 +12,14 @@ import { SlaBreachMonitorService } from './services/sla-breach-monitor.service';
 import { TenantHealthAlertsService } from './services/tenant-health-alerts.service';
 import { SupportMacrosService } from './services/support-macros.service';
 import { SupportInsightsService } from './services/support-insights.service';
+import { SupportPolicyService } from './services/support-policy.service';
 import { TicketEscalationsService } from './services/ticket-escalations.service';
 import {
   QueryTicketsSchema, QueryTicketsDto, QueryBreachesSchema, QueryBreachesDto,
   TenantHealthSchema, TenantHealthDto, EscalateTicketSchema, EscalateTicketDto,
   QueryInsightsSchema, QueryInsightsDto, QueryCsatSchema, QueryCsatDto,
   CreateMacroSchema, CreateMacroDto, ToggleMacroSchema, ToggleMacroDto,
+  PublishSupportPolicySchema, PublishSupportPolicyDto, ResolveTicketSchema, ResolveTicketDto,
 } from './dto/support-oversight.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -33,6 +35,7 @@ export class SupportOversightController {
     private readonly escalations: TicketEscalationsService,
     private readonly macros: SupportMacrosService,
     private readonly insights: SupportInsightsService,
+    private readonly policy: SupportPolicyService,
   ) {}
 
   /* ================= PC-56 ADMIN-2 · support-desk depth ================= */
@@ -50,6 +53,21 @@ export class SupportOversightController {
   // table — and the response says so, along with the fact that the escalation chain does not exist yet.
   @Get('sla-matrix') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
   slaMatrix() { return { data: this.insights.slaMatrix() }; }
+
+  // PC-56 ADMIN-2b · THE SUPPORT POLICY (W054 + W057 as one object) and what its chain actually did.
+  @Get('policy') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  supportPolicy() { return this.policy.current().then((data) => ({ data })); }
+
+  // Publishing a policy changes what the platform PROMISES and who gets woken, so it carries the elevation ceremony —
+  // unlike a macro, this one really is consequential.
+  @Post('policy') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  publishPolicy(@Req() req: any, @ZodBody(PublishSupportPolicySchema) dto: PublishSupportPolicyDto) {
+    return this.policy.publish(admin(req), dto).then((data) => ({ data }));
+  }
+
+  // Counts for the queue's filter chips (W005). One grouped query, not one per chip.
+  @Get('ticket-counts') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  ticketCounts() { return this.monitor.ticketCounts().then((data) => ({ data })); }
 
   // MACROS (W053)
   @Get('macros') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
@@ -87,6 +105,13 @@ export class SupportOversightController {
   getTicket(@Param('id') id: string) { return this.monitor.getTicket(id).then((data) => ({ data })); }
 
   // ---- mutation: cross-tenant override → manage perm + FIDO2 + step-up ----
+  // PC-56 ADMIN-2b · RESOLVE with a mandatory outcome (W049). A ticket marked done with nothing saying what was done is
+  // unanswerable when the farmer comes back.
+  @Post('tickets/:id/resolve') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  resolveTicket(@Req() req: any, @Param('id') id: string, @ZodBody(ResolveTicketSchema) dto: ResolveTicketDto) {
+    return this.escalations.resolve(admin(req), id, dto).then((data) => ({ data }));
+  }
+
   @Post('tickets/:id/escalate') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   escalate(@Req() req: any, @Param('id') id: string, @ZodBody(EscalateTicketSchema) dto: EscalateTicketDto) {
     return this.escalations.escalate(admin(req), id, dto).then((data) => ({ data }));

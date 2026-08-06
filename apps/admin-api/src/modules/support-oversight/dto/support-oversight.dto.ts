@@ -84,3 +84,42 @@ export const ToggleMacroSchema = z.object({
   reason: Reason,
 }).strict();
 export type ToggleMacroDto = z.infer<typeof ToggleMacroSchema>;
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-2b · support policy + oversight resolve
+// ---------------------------------------------------------------------------
+/** RESOLVING from the oversight plane. The OUTCOME is mandatory and is the reason the endpoint exists: a ticket marked
+ *  done with nothing saying what was done is unanswerable when the farmer comes back. */
+export const ResolveTicketSchema = z.object({
+  outcome: z.string().min(10).max(2000),
+}).strict();
+export type ResolveTicketDto = z.infer<typeof ResolveTicketSchema>;
+
+/** A whole support POLICY version (0097). Sent as ONE object because it IS one promise — the domain refuses the
+ *  combinations that would read fine and behave wrongly (an SLA with no chain, a chain that wakes somebody after hours,
+ *  targets that tighten as severity falls, an AI allowed to auto-answer a P0). */
+export const PublishSupportPolicySchema = z.object({
+  name: z.string().min(3).max(120),
+  effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  openHourIst: z.coerce.number().int().min(0).max(23),
+  closeHourIst: z.coerce.number().int().min(1).max(24),
+  afterHoursSeverities: z.array(z.string().min(2).max(2)).max(4),
+  routingStrategy: z.enum(['round_robin', 'least_loaded', 'manual']),
+  deskLanguages: z.array(z.string().min(2).max(8)).min(1).max(14),
+  aiAssistMode: z.enum(['off', 'suggest', 'auto_reply']),
+  aiExcludedSeverities: z.array(z.string().min(2).max(2)).max(4),
+  slas: z.array(z.object({
+    severity: z.string().min(2).max(2),
+    firstResponseMinutes: z.coerce.number().int().min(1).max(43200),
+    resolutionMinutes: z.coerce.number().int().min(1).max(43200),
+  })).min(1).max(4),
+  escalations: z.array(z.object({
+    severity: z.string().min(2).max(2),
+    afterMinutes: z.coerce.number().int().min(0).max(10080),
+    channel: z.enum(['email', 'sms', 'whatsapp', 'call', 'in_app', 'pager']),
+    targetRole: z.string().min(2).max(60),
+    notes: z.string().max(500).optional(),
+  })).min(1).max(40),
+  notes: z.string().max(2000).optional(),
+}).strict();
+export type PublishSupportPolicyDto = z.infer<typeof PublishSupportPolicySchema>;

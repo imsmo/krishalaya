@@ -29,11 +29,30 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
   const tenantId = searchParams.tenantId?.trim() || undefined;
 
   let rows: TicketRow[] = []; let nextCursor: string | undefined; let notice: string | undefined;
+  // PC-56 ADMIN-2b · the canon's chip COUNTS (W005). Fetched separately and allowed to fail on its own: a count is a
+  // decoration on a queue, and a counts query that 500s must not take the queue with it (degrade-never-die, Law 12).
+  // They are CROSS-TENANT totals, not counts of this page — a chip whose number describes something other than the list
+  // it filters to is worse than a chip with no number, so `null` renders as nothing rather than as 0.
+  let counts: Record<string, number> | null = null;
   try {
     const res = await adminGet<TicketRow[]>('support/tickets', { cursor: searchParams.cursor, status, severity, slaBreached, assigned, tenantId, limit: 50 });
     rows = res.data ?? [];
     nextCursor = (res.meta?.nextCursor as string | undefined) ?? undefined;
   } catch (e) { notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`); }
+  try { counts = (await adminGet<{ counts: Record<string, number> }>('support/ticket-counts')).data?.counts ?? null; }
+  catch { counts = null; }   // unknown ≠ zero: no number at all beats a wrong one
+
+  /** A count for a chip, or null when unknown. A status the server did not mention genuinely has none. */
+  const countFor = (statusKey?: string): number | null => {
+    if (!counts) return null;
+    if (!statusKey) return Object.values(counts).reduce((a, b) => a + Number(b || 0), 0);
+    const v = counts[statusKey];
+    return v === undefined || v === null ? 0 : Number(v);
+  };
+  const chipCount = (statusKey?: string) => {
+    const n = countFor(statusKey);
+    return n === null ? null : <> <span className="kv-chip__count">{n}</span></>;
+  };
 
   const cols: Column<TicketRow>[] = [
     { header: t.t('support.ticketNo'), cell: (r) => <Link href={`/support/tickets/${encodeURIComponent(r.id)}`}>{r.ticketNo}</Link> },
@@ -65,9 +84,9 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('support.filterStatus')}>
-        <Link href={qp({ status: undefined, cursor: undefined })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('support.filterAll')}</Link>
+        <Link href={qp({ status: undefined, cursor: undefined })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('support.filterAll')}{chipCount()}</Link>
         {TICKET_STATUSES.map((s) => (
-          <Link key={s} href={qp({ status: s, cursor: undefined })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`support.state.${s}`)}</Link>
+          <Link key={s} href={qp({ status: s, cursor: undefined })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`support.state.${s}`)}{chipCount(s)}</Link>
         ))}
       </nav>
       <nav className="kv-filters" aria-label={t.t('support.filterSeverity')}>
@@ -77,6 +96,9 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
         ))}
         <Link href={qp({ slaBreached: slaBreached ? undefined : 'true', cursor: undefined })} className={`kv-chip${slaBreached ? ' is-active' : ''}`} aria-current={slaBreached ? 'true' : undefined}>{t.t('support.filterBreached')}</Link>
       </nav>
+
+      {/* Where the numbers come from, so nobody reads them as this page's row count. */}
+      {counts ? <p className="kv-field__hint">{t.t('support.countsHint')}</p> : <p className="kv-field__hint">{t.t('support.countUnknown')}</p>}
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>

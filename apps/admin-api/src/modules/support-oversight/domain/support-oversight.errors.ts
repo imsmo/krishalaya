@@ -40,3 +40,13 @@ export class DuplicateMacroError extends DomainHttpError {
 export class MacroNotFoundError extends DomainHttpError {
   constructor(ref: string) { super('SUPPORT_MACRO_NOT_FOUND', `macro ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
 }
+
+/** A support policy the rules refuse — a chain that wakes somebody at an hour the policy says the desk is shut, an SLA
+ *  with no chain behind it, targets that tighten as severity falls. 422 with the specific rule in the message. */
+export class InvalidSupportPolicyError extends DomainHttpError {
+  constructor(detail: string) { super('SUPPORT_POLICY_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+/** An oversight write the ticket's state machine refuses. 409: the request was fine, the ticket has moved on. */
+export class TicketStateError extends DomainHttpError {
+  constructor(detail: string) { super('SUPPORT_TICKET_STATE', detail, HttpStatus.CONFLICT, { detail }); }
+}

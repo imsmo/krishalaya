@@ -10,6 +10,7 @@ import { dpdpErasureCoolingJob } from './jobs/dpdp-erasure-cooling.job';
 import { outboxGaugeJob } from './jobs/outbox-gauge.job';
 import { webhookDeliveryJob } from './jobs/webhook-delivery.job';
 import { scheduledReportsJob } from './jobs/scheduled-reports.job';
+import { supportEscalationsJob } from './jobs/support-escalations.job';
 
 export const JOBS: Job[] = [
   reconZeroSumJob,
@@ -24,4 +25,8 @@ export const JOBS: Job[] = [
   // misses a run rather than repeating it. Every firing writes a run row with the delivery truth: today that is
   // `provider_pending`, because no email provider is configured anywhere in this platform.
   scheduledReportsJob,
+  // PC-56 ADMIN-2b: FIRES the support escalation chain (0097 policy → 0098 ledger). Before this job an SLA breach did
+  // nothing unless somebody happened to be watching the board. Idempotent per (ticket, breach kind, step), so a re-run
+  // or two replicas cannot page the same person twice for the same breach.
+  supportEscalationsJob,
 ];
