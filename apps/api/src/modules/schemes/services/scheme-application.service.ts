@@ -17,6 +17,8 @@ import { AccountRef } from '../../../core/wallet/account-codes';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { SchemeApplication } from '../domain/scheme-application.entity';
 import { DomainEvent } from '../domain/schemes.events';
+import { SchemeVersionRepository } from '../repositories/scheme-version.repository';
+import { feeForSubmission, feeDivergedFromLive } from '../domain/snapshot-fee';
 import { SchemeApplicationRepository } from '../repositories/scheme-application.repository';
 import { SchemeRepository } from '../repositories/scheme.repository';
 import { ApplySchemeDto, ClarifyDto, ApproveDto, RejectDto } from '../dto/create-scheme-application.dto';
@@ -38,6 +40,7 @@ export class SchemeApplicationService {
     @Inject(WALLET_SERVICE) private readonly wallet: WalletPort,
     private readonly repo: SchemeApplicationRepository,
     private readonly schemes: SchemeRepository,
+    private readonly versions: SchemeVersionRepository,
   ) {}
 
   async apply(tenantId: string, actor: SchemesActor, idemKey: string, dto: ApplySchemeDto) {
@@ -49,7 +52,13 @@ export class SchemeApplicationService {
           const scheme = await this.schemes.getById(tenantId, dto.schemeId, tx);
           if (!scheme) throw new SchemeNotFoundError(dto.schemeId);
           if (!scheme.isActive) throw new SchemeInactiveError(scheme.code);
-          const app = SchemeApplication.draft({ id: uuidv7(), tenantId, schemeId: scheme.id, schemeVersion: scheme.version, applicantUserId: actor.userId, assistedBy: dto.assistedBy ?? null, formData: dto.formData, eligibilityCheck: null });
+          // THE SNAPSHOT BECOMES REAL HERE (migration 0105). Read on the SAME transaction client that inserts the
+          // application, so a publish committing in between cannot leave the row stamped with a version that was
+          // superseded a moment before. Where no published version exists — a scheme created before 0105 and never
+          // republished — the pointer stays NULL rather than being pointed at a plausible-looking row: an
+          // unresolvable snapshot is a fact worth keeping, and a wrong one is not.
+          const current = await this.versions.currentPublished(tx, scheme.id);
+          const app = SchemeApplication.draft({ id: uuidv7(), tenantId, schemeId: scheme.id, schemeVersion: scheme.version, schemeVersionId: current?.id ?? null, applicantUserId: actor.userId, assistedBy: dto.assistedBy ?? null, formData: dto.formData, eligibilityCheck: null });
           await this.repo.insert(tx, app);
           await this.quota.increment(tx, tenantId, QUOTA_METRIC, 1);
           return app.toJSON();
@@ -68,16 +77,31 @@ export class SchemeApplicationService {
           if (app.applicantUserId !== actor.userId) throw new SchemesForbiddenError('only the applicant may submit');
           const scheme = await this.schemes.getById(tenantId, app.schemeId, tx);
           if (!scheme) throw new SchemeNotFoundError(app.schemeId);
+          // THE FEE COMES FROM THE VERSION THE APPLICANT FILED UNDER, not from the live row. Charging the live fee
+          // (what this did before 0105) meant a farmer who drafted at ₹0 and submitted after an operator raised the
+          // fee to ₹50 paid ₹50 — under an application that says it was filed under the older rules. See
+          // domain/snapshot-fee.ts. The pre-0105 fallback is explicit and travels in the response.
+          const snapshot = app.schemeVersionId ? await this.versions.byId(tx, app.schemeVersionId) : null;
+          const fee = feeForSubmission(snapshot, scheme.processingFeeMinor);
           const from = app.status;
           app.submit(new Date());
           await this.repo.update(tx, app);
-          await this.repo.appendEvent(tx, tenantId, app.id, from, 'submitted', null, actor.userId);
-          if (scheme.processingFeeMinor > 0n) {
+          await this.repo.appendEvent(tx, tenantId, app.id, from, 'submitted',
+            // the note is the audit trail's only record of WHICH fee was charged and why
+            `fee ${fee.feeMinor.toString()} minor from ${fee.source}`, actor.userId);
+          if (fee.feeMinor > 0n) {
             await this.wallet.post(tx, { tenantId, txnType: 'service_fee', idempotencyKey: `schemefee:${app.id}`, referenceType: 'scheme_application', referenceId: app.id, initiatedBy: actor.userId,
-              legs: [{ account: userMain(actor.userId), amountMinor: -scheme.processingFeeMinor }, { account: tenantMain(tenantId), amountMinor: scheme.processingFeeMinor }] });
+              legs: [{ account: userMain(actor.userId), amountMinor: -fee.feeMinor }, { account: tenantMain(tenantId), amountMinor: fee.feeMinor }] });
           }
           await this.flush(tx, tenantId, app.id, app.pullEvents());
-          return { ...app.toJSON(), processingFeeMinor: scheme.processingFeeMinor.toString() };
+          return {
+            ...app.toJSON(),
+            processingFeeMinor: fee.feeMinor.toString(),
+            feeSource: fee.source,
+            // Surfaced so a support agent seeing ₹0 charged against a scheme that now costs ₹50 can tell that this
+            // is correct, rather than filing it as a billing bug and "fixing" it.
+            feeDivergedFromLive: feeDivergedFromLive(fee, scheme.processingFeeMinor),
+          };
         }, { userId: actor.userId })));
   }
 

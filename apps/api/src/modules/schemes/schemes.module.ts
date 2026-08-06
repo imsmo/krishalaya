@@ -26,6 +26,7 @@ import { SchemeApplicationService } from './services/scheme-application.service'
 import { DbtTransferService } from './services/dbt-transfer.service';
 import { SchemeDocumentService } from './services/scheme-document.service';
 import { SchemeRepository } from './repositories/scheme.repository';
+import { SchemeVersionRepository } from './repositories/scheme-version.repository';
 import { SchemeAuthorityRepository } from './repositories/scheme-authority.repository';
 import { SchemeApplicationRepository } from './repositories/scheme-application.repository';
 import { DbtTransferRepository } from './repositories/dbt-transfer.repository';
@@ -36,7 +37,7 @@ import { SchemeDocumentRepository } from './repositories/scheme-document.reposit
 
 @Module({
   controllers: [SchemesController, EligibilityController, ApplicationsController],
-  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService, GovExportService, DbtBounceService, DbtBounceRepository,
+  providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeVersionRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService, GovExportService, DbtBounceService, DbtBounceRepository,
     { provide: PFMS_PROVIDER, useFactory: () => pfmsProviderFromEnv(process.env) }],
   exports: [SchemeService, SchemeApplicationService, DbtTransferService],
 })

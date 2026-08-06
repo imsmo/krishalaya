@@ -9,6 +9,7 @@ import { PoolClient } from 'pg';
 import { AdminPool } from '../../../core/database/admin-pool';
 import { SchemeAuthority, AuthorityProps } from '../domain/scheme-authority.entity';
 import { Scheme, SchemeProps } from '../domain/scheme.entity';
+import { VersionRow, VersionRules, VersionStatus } from '../domain/scheme-version';
 
 const AUTH_COLS = `id, default_name, level, region_id, created_at`;
 function toAuthority(r: any): SchemeAuthority {
@@ -26,10 +27,33 @@ function toScheme(r: any): Scheme {
   return Scheme.rehydrate(p);
 }
 
+const VERSION_COLS = `id, scheme_id, version, status, benefit_summary, eligibility_rules, required_doc_type_ids,
+  application_window, applicable_region_ids, processing_fee_minor::text AS processing_fee_minor, change_reason,
+  drafted_by, drafted_at, published_by, published_at, checker_note, is_backfilled`;
+function toVersion(r: any): VersionRow {
+  return {
+    id: r.id, schemeId: r.scheme_id, version: r.version, status: r.status as VersionStatus,
+    benefitSummary: r.benefit_summary ?? {}, eligibilityRules: r.eligibility_rules ?? {},
+    requiredDocTypeIds: r.required_doc_type_ids ?? [], applicationWindow: r.application_window ?? null,
+    applicableRegionIds: r.applicable_region_ids ?? [],
+    // TEXT in, string out. A bigint that touches a JS number is a bigint that may have lost its last digits.
+    processingFeeMinor: String(r.processing_fee_minor ?? '0'),
+    changeReason: r.change_reason, draftedBy: r.drafted_by ?? null,
+    draftedAt: r.drafted_at ? new Date(r.drafted_at).toISOString() : null,
+    publishedBy: r.published_by ?? null,
+    publishedAt: r.published_at ? new Date(r.published_at).toISOString() : null,
+    checkerNote: r.checker_note ?? null, isBackfilled: r.is_backfilled === true,
+  };
+}
+
+/** The audit ledger's object kinds, widened by 0105. A version publish logged as a scheme 'updated' would carry the
+ *  same verb as a typo fix in a name — see the migration's reasoning. */
+export type RegistryEntityType = 'authority' | 'scheme' | 'scheme_version' | 'authority_portal';
+
 export interface AuthorityListQuery { level?: string; cursor?: { c: string; id: string }; limit: number; }
 export interface SchemeListQuery { authorityId?: string; categoryId?: string; isActive?: boolean; cursor?: { c: string; id: string }; limit: number; }
 export interface CalendarQuery { onDate: string; cursor?: { c: string; id: string }; limit: number; }
-export interface ChangeListQuery { entityType: 'authority' | 'scheme'; entityId: string; cursor?: { c: string; id: string }; limit: number; }
+export interface ChangeListQuery { entityType: RegistryEntityType; entityId: string; cursor?: { c: string; id: string }; limit: number; }
 
 @Injectable()
 export class SchemesRegistryRepository {
@@ -130,11 +154,236 @@ export class SchemesRegistryRepository {
   }
 
   /* ============================ scheme_registry_changes (append-only) ============================ */
-  async insertChange(client: PoolClient, c: { entityType: 'authority' | 'scheme'; entityId: string; action: string; oldValue: unknown; newValue: unknown; reason: string; actorUserId: string }): Promise<void> {
+  async insertChange(client: PoolClient, c: { entityType: RegistryEntityType; entityId: string; action: string; oldValue: unknown; newValue: unknown; reason: string; actorUserId: string }): Promise<void> {
     await client.query(
       `INSERT INTO scheme_registry_changes (entity_type, entity_id, action, old_value, new_value, reason, actor_user_id) VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7)`,
       [c.entityType, c.entityId, c.action, c.oldValue != null ? JSON.stringify(c.oldValue) : null, c.newValue != null ? JSON.stringify(c.newValue) : null, c.reason, c.actorUserId]);
   }
+  /* ============================ scheme_versions (0105) ============================
+     The rule set per version, published-never-edited. `processing_fee_minor` is read back as TEXT for the same
+     reason it is everywhere else in this file: a bigint that passes through a JS number loses precision silently.  */
+
+  async listVersions(schemeId: string, limit: number): Promise<VersionRow[]> {
+    const r = await this.pool.query(
+      `SELECT ${VERSION_COLS} FROM scheme_versions WHERE scheme_id=$1 AND deleted_at IS NULL ORDER BY version DESC LIMIT $2`, [schemeId, limit]);
+    return r.rows.map(toVersion);
+  }
+  async getVersion(id: string): Promise<VersionRow | null> {
+    const r = await this.pool.query(`SELECT ${VERSION_COLS} FROM scheme_versions WHERE id=$1 AND deleted_at IS NULL`, [id]);
+    return r.rows[0] ? toVersion(r.rows[0]) : null;
+  }
+  async getVersionForUpdate(client: PoolClient, id: string): Promise<VersionRow | null> {
+    const r = await client.query(`SELECT ${VERSION_COLS} FROM scheme_versions WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, [id]);
+    return r.rows[0] ? toVersion(r.rows[0]) : null;
+  }
+  /** The open draft, if any. Locked, because the open-draft check and the insert that depends on it must not race. */
+  async getDraftForUpdate(client: PoolClient, schemeId: string): Promise<VersionRow | null> {
+    const r = await client.query(`SELECT ${VERSION_COLS} FROM scheme_versions WHERE scheme_id=$1 AND status='draft' AND deleted_at IS NULL FOR UPDATE`, [schemeId]);
+    return r.rows[0] ? toVersion(r.rows[0]) : null;
+  }
+  /** The version the live `schemes` row is currently a projection of. */
+  async getPublishedForUpdate(client: PoolClient, schemeId: string): Promise<VersionRow | null> {
+    const r = await client.query(`SELECT ${VERSION_COLS} FROM scheme_versions WHERE scheme_id=$1 AND status='published' AND deleted_at IS NULL FOR UPDATE`, [schemeId]);
+    return r.rows[0] ? toVersion(r.rows[0]) : null;
+  }
+  /** The highest version number EVER used for this scheme — including superseded and soft-deleted drafts.
+   *  Deliberately ignores deleted_at: a discarded draft still burned its number. Reusing v7 after discarding a v7
+   *  would make two different rule sets share a number, and an application stamped v7 would be ambiguous forever. */
+  async maxVersionEverUsed(client: PoolClient, schemeId: string): Promise<number> {
+    const r = await client.query(`SELECT COALESCE(MAX(version), 0)::int AS v FROM scheme_versions WHERE scheme_id=$1`, [schemeId]);
+    return r.rows[0]?.v ?? 0;
+  }
+  async insertVersion(client: PoolClient, v: { schemeId: string; version: number; rules: VersionRules; changeReason: string; draftedBy: string }): Promise<{ id: string }> {
+    const r = await client.query(
+      `INSERT INTO scheme_versions (scheme_id, version, status, benefit_summary, eligibility_rules, required_doc_type_ids,
+                                    application_window, applicable_region_ids, processing_fee_minor, change_reason, drafted_by, created_by, updated_by)
+       VALUES ($1,$2,'draft',$3::jsonb,$4::jsonb,$5::jsonb,$6::jsonb,$7::jsonb,$8,$9,$10,$10,$10) RETURNING id`,
+      [v.schemeId, v.version, JSON.stringify(v.rules.benefitSummary), JSON.stringify(v.rules.eligibilityRules), JSON.stringify(v.rules.requiredDocTypeIds),
+       v.rules.applicationWindow != null ? JSON.stringify(v.rules.applicationWindow) : null, JSON.stringify(v.rules.applicableRegionIds),
+       v.rules.processingFeeMinor, v.changeReason, v.draftedBy]);
+    return { id: r.rows[0].id };
+  }
+  async updateDraft(client: PoolClient, id: string, rules: VersionRules, changeReason: string, actorUserId: string): Promise<void> {
+    await client.query(
+      `UPDATE scheme_versions SET benefit_summary=$2::jsonb, eligibility_rules=$3::jsonb, required_doc_type_ids=$4::jsonb,
+              application_window=$5::jsonb, applicable_region_ids=$6::jsonb, processing_fee_minor=$7, change_reason=$8,
+              updated_by=$9, updated_at=now()
+        WHERE id=$1 AND status='draft' AND deleted_at IS NULL`,
+      [id, JSON.stringify(rules.benefitSummary), JSON.stringify(rules.eligibilityRules), JSON.stringify(rules.requiredDocTypeIds),
+       rules.applicationWindow != null ? JSON.stringify(rules.applicationWindow) : null, JSON.stringify(rules.applicableRegionIds),
+       rules.processingFeeMinor, changeReason, actorUserId]);
+  }
+  /** Discard = soft delete. The row stays for the audit trail and its version NUMBER stays burned (see
+   *  maxVersionEverUsed); only the unique partial indexes are freed so the next draft can open. */
+  async discardDraft(client: PoolClient, id: string, actorUserId: string): Promise<void> {
+    await client.query(`UPDATE scheme_versions SET deleted_at=now(), updated_by=$2, updated_at=now() WHERE id=$1 AND status='draft' AND deleted_at IS NULL`, [id, actorUserId]);
+  }
+  async publishVersion(client: PoolClient, id: string, publishedBy: string, checkerNote: string | null): Promise<void> {
+    await client.query(
+      `UPDATE scheme_versions SET status='published', published_by=$2, published_at=now(), checker_note=$3, updated_by=$2, updated_at=now()
+        WHERE id=$1 AND status='draft' AND deleted_at IS NULL`, [id, publishedBy, checkerNote]);
+  }
+  async supersedeVersion(client: PoolClient, id: string, actorUserId: string): Promise<void> {
+    await client.query(`UPDATE scheme_versions SET status='superseded', updated_by=$2, updated_at=now() WHERE id=$1 AND status='published'`, [id, actorUserId]);
+  }
+  /** THE PROJECTION (Law 5). The live `schemes` row is made to reflect the version just published — all six rule
+   *  columns plus the version number, in the publish transaction. Nothing else in this module writes these columns
+   *  any more, which is the property that makes the live row trustworthy as a cache of the published version. */
+  async projectVersionOntoScheme(client: PoolClient, schemeId: string, version: number, rules: VersionRules, actorUserId: string): Promise<void> {
+    await client.query(
+      `UPDATE schemes SET benefit_summary=$2::jsonb, eligibility_rules=$3::jsonb, required_doc_type_ids=$4::jsonb,
+              application_window=$5::jsonb, applicable_region_ids=$6::jsonb, processing_fee_minor=$7, version=$8,
+              updated_by=$9, updated_at=now()
+        WHERE id=$1 AND deleted_at IS NULL`,
+      [schemeId, JSON.stringify(rules.benefitSummary), JSON.stringify(rules.eligibilityRules), JSON.stringify(rules.requiredDocTypeIds),
+       rules.applicationWindow != null ? JSON.stringify(rules.applicationWindow) : null, JSON.stringify(rules.applicableRegionIds),
+       rules.processingFeeMinor, version, actorUserId]);
+  }
+  /** How many applications were filed under each of these versions — W070's "4,206 applications filed on v6".
+   *  Cross-tenant (kv_admin bypasses RLS, Law 11) and an AGGREGATE ONLY: no applicant, no tenant, no PII. Counts
+   *  the resolved pointer, not the integer, so a legacy row whose version cannot be resolved is not miscredited. */
+  async applicationCountsByVersion(versionIds: string[]): Promise<Map<string, number>> {
+    if (versionIds.length === 0) return new Map();
+    const r = await this.pool.query(
+      `SELECT scheme_version_id AS vid, count(*)::int AS n FROM scheme_applications
+        WHERE scheme_version_id = ANY($1::uuid[]) AND deleted_at IS NULL GROUP BY scheme_version_id`, [versionIds]);
+    return new Map(r.rows.map((x: any) => [x.vid as string, x.n as number]));
+  }
+
+  /* ============================ registry rollups (W069 / W072) ============================ */
+
+  /** Applications filed per scheme in the last 30 days — W069's "Apps 30d" column. Aggregate, cross-tenant. */
+  async applicationCounts30d(schemeIds: string[]): Promise<Map<string, number>> {
+    if (schemeIds.length === 0) return new Map();
+    const r = await this.pool.query(
+      `SELECT scheme_id, count(*)::int AS n FROM scheme_applications
+        WHERE scheme_id = ANY($1::uuid[]) AND created_at >= now() - interval '30 days' AND deleted_at IS NULL
+        GROUP BY scheme_id`, [schemeIds]);
+    return new Map(r.rows.map((x: any) => [x.scheme_id as string, x.n as number]));
+  }
+  /** Live schemes per authority — W072's "Schemes" column. Counts ACTIVE ones only: an authority credited with 84
+   *  schemes of which 40 are retired reads as far busier than it is. */
+  async activeSchemeCountsByAuthority(authorityIds: string[]): Promise<Map<string, number>> {
+    if (authorityIds.length === 0) return new Map();
+    const r = await this.pool.query(
+      `SELECT authority_id, count(*)::int AS n FROM schemes
+        WHERE authority_id = ANY($1::uuid[]) AND is_active AND deleted_at IS NULL GROUP BY authority_id`, [authorityIds]);
+    return new Map(r.rows.map((x: any) => [x.authority_id as string, x.n as number]));
+  }
+
+  /* ============================ DELTA-018: authority portal mapping ============================
+     `external_entity_refs` (0015) with entity_type='scheme_authority'. No new table — the same answer DELTA-008
+     got in 0104, for the same reason: this table already models internal-entity → provider → external-id with
+     UNIQUE both ways, and the second UNIQUE is the constraint a bespoke table forgets.                            */
+
+  async portalRefsByAuthority(authorityIds: string[]): Promise<Map<string, { providerCode: string; externalId: string; endpointLabel: string | null }>> {
+    if (authorityIds.length === 0) return new Map();
+    const r = await this.pool.query(
+      `SELECT x.entity_id, x.provider_code, x.external_id, x.payload->>'endpointLabel' AS endpoint_label
+         FROM external_entity_refs x
+        WHERE x.entity_type='scheme_authority' AND x.entity_id = ANY($1::uuid[]) AND x.deleted_at IS NULL`, [authorityIds]);
+    return new Map(r.rows.map((x: any) => [x.entity_id as string, { providerCode: x.provider_code, externalId: x.external_id, endpointLabel: x.endpoint_label ?? null }]));
+  }
+  /** Who already holds this (provider, external_id)? Checked BEFORE the insert so the 409 can name the authority,
+   *  rather than surfacing the unique violation as a 500 that names an index. */
+  async portalExternalIdOwner(client: PoolClient, providerCode: string, externalId: string): Promise<string | null> {
+    const r = await client.query(
+      `SELECT entity_id FROM external_entity_refs
+        WHERE entity_type='scheme_authority' AND provider_code=$1 AND external_id=$2 AND deleted_at IS NULL LIMIT 1`, [providerCode, externalId]);
+    return r.rows[0]?.entity_id ?? null;
+  }
+  /** sync_status is 'pending', never 'synced' — nothing in this monorepo has ever called these portals, and a row
+   *  claiming 'synced' would be the table asserting a successful exchange that never happened. */
+  async upsertPortalRef(client: PoolClient, v: { authorityId: string; providerCode: string; externalId: string; endpointLabel: string | null; actorUserId: string }): Promise<void> {
+    await client.query(
+      `INSERT INTO external_entity_refs (provider_code, entity_type, entity_id, external_id, sync_status, payload, created_by, updated_by)
+       VALUES ($1,'scheme_authority',$2,$3,'pending',$4::jsonb,$5,$5)
+       ON CONFLICT (provider_code, entity_type, entity_id)
+       DO UPDATE SET external_id=EXCLUDED.external_id, payload=EXCLUDED.payload, sync_status='pending',
+                     deleted_at=NULL, updated_by=EXCLUDED.updated_by, updated_at=now()`,
+      [v.providerCode, v.authorityId, v.externalId, JSON.stringify(v.endpointLabel ? { endpointLabel: v.endpointLabel } : {}), v.actorUserId]);
+  }
+  async deletePortalRef(client: PoolClient, authorityId: string, providerCode: string, actorUserId: string): Promise<number> {
+    const r = await client.query(
+      `UPDATE external_entity_refs SET deleted_at=now(), updated_by=$3, updated_at=now()
+        WHERE entity_type='scheme_authority' AND entity_id=$1 AND provider_code=$2 AND deleted_at IS NULL`, [authorityId, providerCode, actorUserId]);
+    return r.rowCount ?? 0;
+  }
+
+  /* ============================ W070: what languages this scheme speaks ============================
+     READ-ONLY over `translations` (ADMIN-3b owns the write path). The review state travels with each row because a
+     machine draft is NOT a language the platform speaks — the same distinction the read predicate enforces.        */
+  async schemeTranslations(schemeId: string): Promise<Array<{ languageCode: string; field: string; text: string; isMachine: boolean; reviewedAt: Date | null }>> {
+    const r = await this.pool.query(
+      `SELECT language_code, field, text, is_machine, reviewed_at FROM translations
+        WHERE entity_type='scheme' AND entity_id=$1 AND deleted_at IS NULL ORDER BY language_code, field`, [schemeId]);
+    return r.rows.map((x: any) => ({ languageCode: x.language_code, field: x.field, text: x.text, isMachine: x.is_machine, reviewedAt: x.reviewed_at ?? null }));
+  }
+
+  /* ============================ export reads (W2251 / W2252) ============================
+     Bounded, deterministic ORDER BY so a receipt's row count means something, and no PII in any of them — this
+     plane is global registry data. The applications and DBT reports are NOT here (see domain/scheme-export.ts).  */
+
+  async exportSchemeRows(limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT s.code, s.default_name, a.default_name AS authority_name, a.level AS authority_level,
+              lv.default_name AS category_name, s.version, s.is_active,
+              s.processing_fee_minor::text AS processing_fee_minor,
+              s.application_window->>'opens' AS window_opens, s.application_window->>'closes' AS window_closes,
+              s.application_window->>'season' AS window_season,
+              jsonb_array_length(s.required_doc_type_ids) AS required_doc_count,
+              jsonb_array_length(s.applicable_region_ids) AS region_count,
+              s.source_url, s.created_at
+         FROM schemes s
+         JOIN scheme_authorities a ON a.id = s.authority_id
+         LEFT JOIN lookup_values lv ON lv.id = s.category_id
+        WHERE s.deleted_at IS NULL
+        ORDER BY s.code
+        LIMIT $1`, [limit]);
+    return r.rows;
+  }
+  async exportAuthorityRows(limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT a.default_name, a.level, ar.default_name AS region_name,
+              (SELECT count(*)::int FROM schemes s WHERE s.authority_id = a.id AND s.is_active AND s.deleted_at IS NULL) AS active_schemes,
+              x.provider_code AS portal_provider, x.external_id AS portal_external_id, a.created_at
+         FROM scheme_authorities a
+         LEFT JOIN admin_regions ar ON ar.id = a.region_id
+         LEFT JOIN external_entity_refs x ON x.entity_type='scheme_authority' AND x.entity_id = a.id AND x.deleted_at IS NULL
+        WHERE a.deleted_at IS NULL
+        ORDER BY a.level, a.default_name
+        LIMIT $1`, [limit]);
+    return r.rows;
+  }
+  /** The version ledger. `is_backfilled` travels with every row because a downstream reader must be able to tell a
+   *  version a human signed from one migration 0105 recorded on the platform's behalf. */
+  async exportVersionRows(limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT s.code AS scheme_code, v.version, v.status, v.is_backfilled,
+              v.processing_fee_minor::text AS processing_fee_minor,
+              v.application_window->>'opens' AS window_opens, v.application_window->>'closes' AS window_closes,
+              v.change_reason, v.checker_note, v.drafted_at, v.published_at,
+              (v.drafted_by IS NOT NULL) AS has_maker, (v.published_by IS NOT NULL) AS has_checker
+         FROM scheme_versions v
+         JOIN schemes s ON s.id = v.scheme_id
+        WHERE v.deleted_at IS NULL
+        ORDER BY s.code, v.version DESC
+        LIMIT $1`, [limit]);
+    return r.rows;
+  }
+  async exportCalendarRows(limit: number): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT s.code, s.default_name, s.application_window->>'season' AS season,
+              s.application_window->>'opens' AS opens, s.application_window->>'closes' AS closes,
+              (s.application_window->>'opens' > s.application_window->>'closes') AS wraps_year, s.version
+         FROM schemes s
+        WHERE s.is_active AND s.deleted_at IS NULL
+          AND s.application_window ? 'opens' AND s.application_window ? 'closes'
+        ORDER BY s.application_window->>'opens', s.code
+        LIMIT $1`, [limit]);
+    return r.rows;
+  }
+
   async listChanges(q: ChangeListQuery): Promise<any[]> {
     const params: unknown[] = [q.entityType, q.entityId]; const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     let where = 'entity_type=$1 AND entity_id=$2';

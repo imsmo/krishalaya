@@ -61,6 +61,13 @@ export class TranslationsRepository {
                 WHEN 'attribute_option' THEN (SELECT o.default_name FROM attribute_options o WHERE o.id = t.entity_id)
                 WHEN 'lookup_value'     THEN (SELECT lv.default_name FROM lookup_values lv WHERE lv.id = t.entity_id)
                 WHEN 'region'           THEN (SELECT ar.default_name FROM admin_regions ar WHERE ar.id = t.entity_id)
+                -- ADMIN-4 found this branch MISSING. 'scheme' has been in TRANSLATABLE_ENTITIES since ADMIN-3b, so a
+                -- scheme translation could be queued for review — and arrived with source_text NULL, i.e. the reviewer
+                -- judging Gujarati against nothing, which is the precise failure the comment above says this column
+                -- exists to prevent. 'listing' and 'insurance_claim' are still absent and are named as debt rather than
+                -- guessed at: both are TENANT-scoped, so their canonical text needs a tenant predicate this
+                -- cross-tenant query does not carry. (NB: no backticks in a comment inside a template literal.)
+                WHEN 'scheme'           THEN (SELECT sc.default_name FROM schemes sc WHERE sc.id = t.entity_id)
               END AS source_text
          FROM translations t
         WHERE ${conds.join(' AND ')}

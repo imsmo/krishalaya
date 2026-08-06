@@ -24,6 +24,7 @@ import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inproc
 import { userMain, platform, PlatformAccount } from '../../../core/wallet/account-codes';
 import { QuotaService } from '../../../core/quota/quota.service';
 
+import { SchemeVersionRepository } from '../repositories/scheme-version.repository';
 import { SchemeRepository } from '../repositories/scheme.repository';
 import { SchemeAuthorityRepository } from '../repositories/scheme-authority.repository';
 import { SchemeApplicationRepository } from '../repositories/scheme-application.repository';
@@ -67,9 +68,10 @@ run('schemes spine (integration, real Postgres + RLS + eligibility + processing 
     const outbox = new PgOutboxWriter(); const idem = new PgIdempotencyService(pools); const metrics = new PromMetrics(); const audit = new AuditWriter(pools);
     wallet = new InProcessWalletClient(new LedgerRepository());
     const schemeRepo = new SchemeRepository(replica as any); void new SchemeAuthorityRepository(replica as any);
+    const versionRepo = new SchemeVersionRepository(replica as any);
     const appRepo = new SchemeApplicationRepository(replica as any); const dbtRepo = new DbtTransferRepository(replica as any);
     schemes = new SchemeService(schemeRepo, new SchemeAuthorityRepository(replica as any));
-    appsSvc = new SchemeApplicationService(uow, outbox, idem, new AllowAllQuota(), metrics, audit, wallet, appRepo, schemeRepo);
+    appsSvc = new SchemeApplicationService(uow, outbox, idem, new AllowAllQuota(), metrics, audit, wallet, appRepo, schemeRepo, versionRepo);
     dbt = new DbtTransferService(uow, outbox, metrics, audit, dbtRepo, appRepo);
 
     await fund(applicant, 1_000_000n);

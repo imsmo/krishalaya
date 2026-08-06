@@ -37,6 +37,9 @@ export interface PfmsProvider {
 /** The default in every environment until the government integration is live. */
 export class NoopPfmsProvider implements PfmsProvider {
   readonly name = 'noop';
+  // The Noop takes the request and deliberately ignores it — the port's signature is the contract. The shared eslint
+  // config has no argsIgnorePattern for the `_` prefix, which is named as debt rather than worked around everywhere.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async fetchRecon(_req: PfmsReconRequest): Promise<PfmsReconResult> {
     return {
       providerAvailable: false,

@@ -206,3 +206,23 @@ a { color: inherit; text-decoration: none; }
   background: var(--kv-brand-500);
   border-radius: 2px;
 }
+
+/* ---------------------------------------------------------------------------
+   PC-56 ADMIN-4 — the version-review diff table and the version timeline.
+   Both classes were about to be referenced by new pages, and this wave's own
+   predecessor (ADMIN-3c) shipped `.kv-bar` referenced by three pages and
+   styled by none, so charts had been rendering as bare numbers beside a
+   zero-height element since ADMIN-1e. Styled here at the point of first use.
+   --------------------------------------------------------------------------- */
+.kv-diff td { vertical-align: top; }
+.kv-diff th[scope='row'] { text-align: left; white-space: nowrap; font-weight: 600; }
+.kv-diff .kv-pre { margin: 0; max-width: 32rem; overflow-x: auto; }
+
+.kv-timeline { list-style: none; margin: 0.5rem 0 1.25rem; padding: 0; }
+.kv-timeline__item {
+  border-left: 3px solid var(--kv-border, #d8ddd6);
+  padding: 0.35rem 0 0.75rem 0.85rem;
+  margin: 0 0 0.35rem;
+}
+.kv-timeline__item > p { margin: 0 0 0.2rem; }
+.kv-timeline__head { font-weight: 600; }

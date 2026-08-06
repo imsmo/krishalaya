@@ -10,6 +10,7 @@ import { Pool } from 'pg';
 import { AdminConfig } from '../../../core/config/admin-config';
 import { AdminPool } from '../../../core/database/admin-pool';
 import { AdminAuditWriter } from '../../../core/audit/admin-audit.writer';
+import { SchemeVersionService } from '../services/scheme-version.service';
 import { SchemesRegistryRepository } from '../repositories/schemes-registry.repository';
 import { SchemeCrudService } from '../services/scheme-crud.service';
 import { EligibilityRulesEditorService } from '../services/eligibility-rules-editor.service';
@@ -30,8 +31,10 @@ run('schemes-registry-ops (integration, real Postgres — authority + scheme + v
     pool = new AdminPool(config);
     const repo = new SchemesRegistryRepository(pool); const audit = new AdminAuditWriter(pool);
     crud = new SchemeCrudService(pool, audit, repo);
-    rules = new EligibilityRulesEditorService(pool, audit, repo);
-    cal = new WindowCalendarService(pool, audit, repo);
+    // ADMIN-4: both of these now route through the maker-checker version plane rather than editing the live row.
+    const versions = new SchemeVersionService(pool, audit, repo);
+    rules = new EligibilityRulesEditorService(versions);
+    cal = new WindowCalendarService(repo, versions);
     inspect = new Pool({ connectionString: APP_URL });
     const cat = await inspect.query(`SELECT id FROM lookup_values WHERE type_code='scheme_category' AND code='income_support' AND tenant_id IS NULL LIMIT 1`);
     categoryId = cat.rows[0]?.id;

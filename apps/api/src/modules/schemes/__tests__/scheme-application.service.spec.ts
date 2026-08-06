@@ -5,7 +5,7 @@ import { SchemeApplicationService } from '../services/scheme-application.service
 import { SchemeApplication } from '../domain/scheme-application.entity';
 import { Scheme } from '../domain/scheme.entity';
 
-const draft = () => SchemeApplication.draft({ id: 'a1', tenantId: 't1', schemeId: 's1', schemeVersion: 1, applicantUserId: 'u1', assistedBy: null, formData: {}, eligibilityCheck: null });
+const draft = () => SchemeApplication.draft({ id: 'a1', tenantId: 't1', schemeId: 's1', schemeVersion: 1, schemeVersionId: null, applicantUserId: 'u1', assistedBy: null, formData: {}, eligibilityCheck: null });
 const scheme = (feeMinor: bigint) => Scheme.rehydrate({ id: 's1', code: 'smam', defaultName: 'SMAM', authorityId: 'au1', categoryId: 'c1', benefitSummary: {}, eligibilityRules: {}, requiredDocTypeIds: [], applicationWindow: null, applicableRegionIds: [], processingFeeMinor: feeMinor, version: 1, isActive: true });
 
 function harness(feeMinor: bigint) {
@@ -16,7 +16,10 @@ function harness(feeMinor: bigint) {
   const wallet = { post: jest.fn(async () => ({ txnId: 't', alreadyApplied: false })), balanceMinor: jest.fn() };
   const repo = { getForUpdate: jest.fn(async () => draft()), update: jest.fn(), appendEvent: jest.fn() };
   const schemes = { getById: jest.fn(async () => scheme(feeMinor)) };
-  const svc = new SchemeApplicationService(uow as any, outbox as any, idem as any, quota as any, metrics as any, audit as any, wallet as any, repo as any, schemes as any);
+  const svc = new SchemeApplicationService(uow as any, outbox as any, idem as any, quota as any, metrics as any, audit as any, wallet as any, repo as any, schemes as any,
+    // ADMIN-4: the version reader. `currentPublished` returning null keeps these existing cases on the pre-0105
+    // fallback path, which is exactly the behaviour they were written to assert.
+    { currentPublished: async () => null, byId: async () => null } as any);
   return { svc, wallet, repo };
 }
 const applicant = { userId: 'u1', canApply: true, canProcess: false };

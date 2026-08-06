@@ -13,12 +13,19 @@ import { SchemesDepthService } from './depth.service';
 import { SchemeCrudService } from './services/scheme-crud.service';
 import { EligibilityRulesEditorService } from './services/eligibility-rules-editor.service';
 import { WindowCalendarService } from './services/window-calendar.service';
+import { SchemeVersionService } from './services/scheme-version.service';
+import { AuthorityPortalService } from './services/authority-portal.service';
+import { SchemeExportService } from './services/scheme-export.service';
 import {
   CreateAuthoritySchema, CreateAuthorityDto, UpdateAuthoritySchema, UpdateAuthorityDto,
   CreateSchemeSchema, CreateSchemeDto, UpdateSchemeMetaSchema, UpdateSchemeMetaDto,
   UpdateSchemeRulesSchema, UpdateSchemeRulesDto, SetWindowSchema, SetWindowDto, SetActiveSchema, SetActiveDto,
   QueryAuthoritiesSchema, QueryAuthoritiesDto, QuerySchemesSchema, QuerySchemesDto,
   QueryCalendarSchema, QueryCalendarDto, QueryChangesSchema, QueryChangesDto,
+  SaveDraftSchema, SaveDraftDto, PublishVersionSchema, PublishVersionDto,
+  DiscardDraftSchema, DiscardDraftDto, QueryVersionsSchema, QueryVersionsDto,
+  MapPortalSchema, MapPortalDto, UnmapPortalSchema, UnmapPortalDto,
+  SchemeExportSchema, SchemeExportDto,
 } from './dto/schemes-registry.dto';
 
 const admin = (req: any): AdminRequestContext => req.admin;
@@ -33,6 +40,9 @@ export class SchemesRegistryOpsController {
     private readonly crud: SchemeCrudService,
     private readonly rules: EligibilityRulesEditorService,
     private readonly window: WindowCalendarService,
+    private readonly versions: SchemeVersionService,
+    private readonly portals: AuthorityPortalService,
+    private readonly exports: SchemeExportService,
   ) {}
 
   /* ======================= authorities ======================= */
@@ -54,6 +64,15 @@ export class SchemesRegistryOpsController {
   updateAuthority(@Req() req: any, @Param('id') id: string, @ZodBody(UpdateAuthoritySchema) dto: UpdateAuthorityDto) {
     return this.crud.updateAuthority(admin(req), id, dto).then((data) => ({ data }));
   }
+  /* DELTA-018 — which government portal an authority files through. A mapping, never a claim of a working sync. */
+  @Post('authorities/:id/portal') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  mapPortal(@Req() req: any, @Param('id') id: string, @ZodBody(MapPortalSchema) dto: MapPortalDto) {
+    return this.portals.mapPortal(admin(req), id, dto).then((data) => ({ data }));
+  }
+  @Post('authorities/:id/portal/unmap') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  unmapPortal(@Req() req: any, @Param('id') id: string, @ZodBody(UnmapPortalSchema) dto: UnmapPortalDto) {
+    return this.portals.unmapPortal(admin(req), id, dto).then((data) => ({ data }));
+  }
 
   /* ======================= schemes ======================= */
   // PC-54 W54-11 slice 2: CROSS-TENANT scheme-applications oversight (read-only; the god-mode view the
@@ -64,6 +83,13 @@ export class SchemesRegistryOpsController {
   }
   @Get('applications/stats') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
   applicationStats() { return this.depth.applicationStats().then((data) => ({ data })); }
+
+  /* W2251/W2252 — the receipt law's fifth surface. POST because it MUTATES the audit ledger: no receipt, no file.
+     Declared ahead of `schemes/:id` so Nest does not read 'exports' as a scheme id. */
+  @Post('exports') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  exportRegistry(@Req() req: any, @ZodBody(SchemeExportSchema) dto: SchemeExportDto) {
+    return this.exports.export(admin(req), dto).then((data) => ({ data }));
+  }
 
   @Get('schemes') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
   listSchemes(@ZodQuery(QuerySchemesSchema) q: QuerySchemesDto) {
@@ -98,5 +124,37 @@ export class SchemesRegistryOpsController {
   @Post('schemes/:id/active') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   setActive(@Req() req: any, @Param('id') id: string, @ZodBody(SetActiveSchema) dto: SetActiveDto) {
     return this.crud.setActive(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  /* ======================= the version plane (0105) =======================
+     READS are ordinary registry reads. WRITES: drafting and publishing are both `schemes.registry.manage` +
+     FIDO2 + step-up, and the maker-checker split is enforced by identity (assertPublishable + a CHECK constraint),
+     not by a second permission — a separate 'publish' permission would be handed to the same person. */
+
+  /** Version history + what it cannot tell you (`coverage.unrecordedBelow`). */
+  @Get('schemes/:id/versions') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  listVersions(@Param('id') id: string, @ZodQuery(QueryVersionsSchema) q: QueryVersionsDto) {
+    return this.versions.listVersions(id, q.limit).then((r) => ({ data: r.items, meta: { coverage: r.coverage, liveVersion: r.liveVersion } }));
+  }
+  /** One version with its diff against the version below — the W2254 review step. */
+  @Get('schemes/:id/versions/:versionId') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  getVersion(@Param('versionId') versionId: string) {
+    return this.versions.getVersion(versionId).then((data) => ({ data }));
+  }
+  /** MAKER — opens a draft, or edits the open one. Publishes nothing. */
+  @Post('schemes/:id/versions') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  saveDraft(@Req() req: any, @Param('id') id: string, @ZodBody(SaveDraftSchema) dto: SaveDraftDto) {
+    const { reason, ...patch } = dto;
+    return this.versions.saveDraft(admin(req), id, patch, reason).then((data) => ({ data }));
+  }
+  /** CHECKER — a DIFFERENT operator makes the draft live and the scheme row is reprojected onto it. */
+  @Post('schemes/:id/versions/publish') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  publishVersion(@Req() req: any, @Param('id') id: string, @ZodBody(PublishVersionSchema) dto: PublishVersionDto) {
+    return this.versions.publish(admin(req), id, dto.versionId, dto.checkerNote).then((data) => ({ data }));
+  }
+  /** Discard — not checker-gated: nothing a farmer can see has changed, and the maker is the likeliest to know. */
+  @Post('schemes/:id/versions/discard') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  discardDraft(@Req() req: any, @Param('id') id: string, @ZodBody(DiscardDraftSchema) dto: DiscardDraftDto) {
+    return this.versions.discardDraft(admin(req), id, dto.versionId, dto.reason).then((data) => ({ data }));
   }
 }

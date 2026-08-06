@@ -19,7 +19,7 @@ describe('scheme_applications isolation', () => {
   });
   it('insert binds tenant_id; appendEvent writes the partitioned audit row tenant-bound', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
-    const a = SchemeApplication.draft({ id: 'a1', tenantId: 'tA', schemeId: 's1', schemeVersion: 1, applicantUserId: 'u1', assistedBy: null, formData: {}, eligibilityCheck: null });
+    const a = SchemeApplication.draft({ id: 'a1', tenantId: 'tA', schemeId: 's1', schemeVersion: 1, schemeVersionId: null, applicantUserId: 'u1', assistedBy: null, formData: {}, eligibilityCheck: null });
     await new SchemeApplicationRepository(fakeReplica().provider).insert(tx as any, a);
     expect(tx.query.mock.calls[0][0]).toMatch(/INSERT INTO scheme_applications/); expect(tx.query.mock.calls[0][1]).toContain('tA');
     const tx2 = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };

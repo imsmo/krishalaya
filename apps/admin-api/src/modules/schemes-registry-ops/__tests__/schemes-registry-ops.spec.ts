@@ -154,14 +154,46 @@ describe('SchemeCrudService — FK checks + duplicate + audit-in-tx + 404', () =
       isValidCategory: jest.fn().mockResolvedValue(true),
       schemeCodeExists: jest.fn().mockResolvedValue(false),
       insertScheme: jest.fn().mockResolvedValue({ id: 's9', createdAt: new Date() }),
+      // ADMIN-4: a new scheme's v1 rules are inserted as a DRAFT in the same tx — they go through a checker too.
+      insertVersion: jest.fn().mockResolvedValue({ id: 'v-1' }),
       insertChange: jest.fn(),
     } as any;
     const svc = new SchemeCrudService(pool, audit, repo);
     const res: any = await svc.createScheme(actor, baseCreate);
     expect(res.id).toBe('s9'); expect(res.isActive).toBe(false); expect(res.version).toBe(1);
     expect(pool.withTx).toHaveBeenCalledTimes(1);
-    expect(repo.insertChange).toHaveBeenCalledTimes(1);
+    // v1 is a DRAFT, drafted by the creator, awaiting a second operator
+    expect(repo.insertVersion).toHaveBeenCalledTimes(1);
+    expect(repo.insertVersion.mock.calls[0][1]).toMatchObject({ version: 1, draftedBy: actor.userId });
+    expect(res.awaitingChecker).toBe(true);
+    // two ledger rows in the one tx: the scheme, and its first version
+    expect(repo.insertChange).toHaveBeenCalledTimes(2);
     expect(audit.write).toHaveBeenCalledTimes(1);
+  });
+
+  it('setActive(true) REFUSES a scheme with no published version — rules nobody signed never go live', async () => {
+    const pool = fakeTxPool();
+    const repo: any = {
+      getSchemeForUpdate: jest.fn().mockResolvedValue(Scheme.rehydrate(schemeProps())),
+      getPublishedForUpdate: jest.fn().mockResolvedValue(null),
+      setSchemeActive: jest.fn(), insertChange: jest.fn(),
+    };
+    const svc = new SchemeCrudService(pool, { write: jest.fn() } as any, repo);
+    await expect(svc.setActive(actor, 's1', { isActive: true, reason: 'go live' })).rejects.toMatchObject({ status: 409 });
+    expect(repo.setSchemeActive).not.toHaveBeenCalled();
+  });
+
+  it('DEACTIVATING never needs a published version — stopping a bad scheme must not need a second signature', async () => {
+    const pool = fakeTxPool();
+    const repo: any = {
+      getSchemeForUpdate: jest.fn().mockResolvedValue(Scheme.rehydrate({ ...schemeProps(), isActive: true })),
+      getPublishedForUpdate: jest.fn().mockResolvedValue(null),
+      setSchemeActive: jest.fn(), insertChange: jest.fn(),
+    };
+    const svc = new SchemeCrudService(pool, { write: jest.fn() } as any, repo);
+    await svc.setActive(actor, 's1', { isActive: false, reason: 'suspend' });
+    expect(repo.setSchemeActive).toHaveBeenCalledTimes(1);
+    expect(repo.getPublishedForUpdate).not.toHaveBeenCalled();
   });
   it('createScheme fails closed: unknown authority → 404, bad category → 422, dup code → 409', async () => {
     const pool = fakeTxPool();
@@ -181,44 +213,54 @@ describe('SchemeCrudService — FK checks + duplicate + audit-in-tx + 404', () =
   });
 });
 
-describe('EligibilityRulesEditorService — version bump + audit-in-tx', () => {
-  it('updateRules bumps version, writes a versioned change + audit, persists new version', async () => {
-    const pool = fakeTxPool(); const audit = { write: jest.fn() } as any;
-    const repo: any = {
-      getSchemeForUpdate: jest.fn().mockResolvedValue(Scheme.rehydrate(schemeProps())),
-      updateSchemeRules: jest.fn(), insertChange: jest.fn(),
-    };
-    const svc = new EligibilityRulesEditorService(pool, audit, repo);
-    const res: any = await svc.updateRules(actor, 's1', { processingFeeMinor: '500', reason: 'fee change' });
-    expect(res.version).toBe(2);
-    expect(repo.updateSchemeRules).toHaveBeenCalledTimes(1);
-    expect(repo.updateSchemeRules.mock.calls[0][2]).toMatchObject({ version: 2, processingFeeMinor: '500' });
-    expect(repo.insertChange.mock.calls[0][1]).toMatchObject({ action: 'versioned' });
-    expect(audit.write).toHaveBeenCalledTimes(1);
+describe('EligibilityRulesEditorService — now a DRAFT, not a live edit (ADMIN-4 / migration 0105)', () => {
+  // BEHAVIOUR CHANGED ON PURPOSE. This service used to lock the live `schemes` row, bump `schemes.version` and
+  // overwrite the rule jsonb in place — which is precisely what made `scheme_applications.scheme_version` a number
+  // pointing at rules nothing could retrieve. The old assertions below (version becomes 2, updateSchemeRules called)
+  // encoded that defect, so they are replaced rather than adapted.
+  it('delegates to the version plane and publishes NOTHING', async () => {
+    const versions: any = { saveDraft: jest.fn().mockResolvedValue({ versionId: 'v-7', version: 7, opened: true, diff: [] }) };
+    const svc = new EligibilityRulesEditorService(versions);
+    const res: any = await svc.updateRules(actor, 's1', { processingFeeMinor: '500', reason: 'fee change' } as any);
+    expect(versions.saveDraft).toHaveBeenCalledTimes(1);
+    expect(versions.saveDraft.mock.calls[0][2]).toMatchObject({ processingFeeMinor: '500' });
+    expect(res.status).toBe('draft');
+    // Blunt in the payload so a caller written against the old response cannot mistake a queued draft for a live
+    // rule change.
+    expect(res.publishedNothing).toBe(true);
+    expect(res.version).toBe(7);
   });
-  it('updateRules 404s on unknown scheme', async () => {
-    const pool = fakeTxPool();
-    const svc = new EligibilityRulesEditorService(pool, { write: jest.fn() } as any, { getSchemeForUpdate: jest.fn().mockResolvedValue(null) } as any);
-    await expect(svc.updateRules(actor, 'x', { processingFeeMinor: '1', reason: 'r' })).rejects.toBeInstanceOf(SchemeNotFoundError);
+  it('does not swallow the version plane errors (404 on an unknown scheme still 404s)', async () => {
+    const versions: any = { saveDraft: jest.fn().mockRejectedValue(new SchemeNotFoundError('x')) };
+    const svc = new EligibilityRulesEditorService(versions);
+    await expect(svc.updateRules(actor, 'x', { processingFeeMinor: '1', reason: 'r' } as any)).rejects.toBeInstanceOf(SchemeNotFoundError);
   });
 });
 
-describe('WindowCalendarService — window edit (no version bump) + calendar default date', () => {
-  it('setWindow persists window, audits, does NOT bump version', async () => {
-    const pool = fakeTxPool(); const audit = { write: jest.fn() } as any;
-    const repo: any = { getSchemeForUpdate: jest.fn().mockResolvedValue(Scheme.rehydrate(schemeProps())), updateSchemeWindow: jest.fn(), insertChange: jest.fn() };
-    const svc = new WindowCalendarService(pool, audit, repo);
-    const res: any = await svc.setWindow(actor, 's1', { applicationWindow: { opens: '06-01', closes: '07-31' }, reason: 'open kharif' });
-    expect(res.version).toBe(1);
-    expect(repo.updateSchemeWindow).toHaveBeenCalledTimes(1);
-    expect(audit.write.mock.calls[0][1]).toMatchObject({ action: 'schemes.scheme.window_set' });
+describe('WindowCalendarService — the window is VERSIONED now (ADMIN-4)', () => {
+  // W073's own locked state says "Window dates come from scheme versions — edit via the scheme (checker-gated)".
+  // The old test asserted the opposite (persists straight to the live row, no version bump) because the old code did.
+  it('setWindow opens a draft rather than editing the live scheme row', async () => {
+    const versions: any = { saveDraft: jest.fn().mockResolvedValue({ versionId: 'v-2', version: 2, opened: true, diff: [] }) };
+    const repo: any = { schemesOpenOn: jest.fn().mockResolvedValue([]) };
+    const svc = new WindowCalendarService(repo, versions);
+    const res: any = await svc.setWindow(actor, 's1', { applicationWindow: { opens: '06-01', closes: '07-31' }, reason: 'open kharif' } as any);
+    expect(versions.saveDraft.mock.calls[0][2]).toMatchObject({ applicationWindow: { opens: '06-01', closes: '07-31' } });
+    expect(res.status).toBe('draft');
+    expect(res.publishedNothing).toBe(true);
   });
   it('calendar defaults onDate to today (MM-DD) and passes it to the repo', async () => {
-    const pool = fakeTxPool();
     const repo: any = { schemesOpenOn: jest.fn().mockResolvedValue([]) };
-    const svc = new WindowCalendarService(pool, { write: jest.fn() } as any, repo);
+    const svc = new WindowCalendarService(repo, { saveDraft: jest.fn() } as any);
     const res: any = await svc.calendar({ limit: 50 });
     expect(res.onDate).toMatch(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/);
     expect(repo.schemesOpenOn.mock.calls[0][0].onDate).toBe(res.onDate);
+  });
+  it('the nudge queue declares itself unavailable — never an empty list', async () => {
+    const repo: any = { schemesOpenOn: jest.fn().mockResolvedValue([]) };
+    const svc = new WindowCalendarService(repo, { saveDraft: jest.fn() } as any);
+    const res: any = await svc.calendar({ limit: 50 });
+    expect(res.nudgeQueue.available).toBe(false);
+    expect(res.closingSoon).toEqual([]);
   });
 });

@@ -10,7 +10,7 @@
 // a queue of forty drafts in a sitting; a step-up prompt per row would be answered by muscle memory within ten minutes,
 // which makes the ceremony worse than absent. The language scope is the real control here, and it cannot be clicked
 // through. GRANTING a scope IS elevated — that is the act that decides who may speak for a language.
-import { Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { OwnerPermissionsGuard, RequireOwnerPermission, OwnerPermissions } from '../../core/rbac/owner-roles';
 import { AdminAuthGuard, AdminRequestContext } from '../../core/auth/admin-auth.guard';
 import { HardwareKeyGuard } from '../../core/auth/hardware-key.guard';

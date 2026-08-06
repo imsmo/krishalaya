@@ -14,6 +14,13 @@ import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { SchemeRow, SchemeChangeRow } from '../../../../features/schemes-registry/scheme';
+
+/** W070's header shows this scheme's name in Hindi and Gujarati. Read-only over `translations`; the review state
+ *  travels with each row because an unreviewed machine draft is not a language the platform speaks. */
+type SchemeDetail = SchemeRow & {
+  translations?: Array<{ languageCode: string; field: string; text: string; isMachine: boolean; reviewedAt: string | null; servable: boolean }>;
+  servedToFarmers?: boolean;
+};
 import { updateMetaAction, updateRulesAction, setWindowAction, setSchemeActiveAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
@@ -29,8 +36,8 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
   requireAdmin();
   const t = getTranslator();
 
-  let s: SchemeRow | undefined; let notice: string | undefined;
-  try { s = (await adminGet<SchemeRow>(`schemes-registry/schemes/${encodeURIComponent(params.id)}`)).data; }
+  let s: SchemeDetail | undefined; let notice: string | undefined;
+  try { s = (await adminGet<SchemeDetail>(`schemes-registry/schemes/${encodeURIComponent(params.id)}`)).data; }
   catch (e) {
     if (e instanceof AdminApiError && e.status === 404) notFound();
     notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`);
@@ -60,6 +67,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
     <section>
       <p className="kv-backlink"><Link href="/schemes-registry/schemes">{t.t('sr.backSchemes')}</Link></p>
       <h1>{s.code} <span className="kv-muted">v{s.version}</span></h1>
+      <p className="kv-backlink"><Link href={`/schemes-registry/schemes/${encodeURIComponent(s.id)}/versions`}>{t.t('sv.link')}</Link></p>
       {okKey && <p className="kv-success" role="status">{t.t(`sr.ok.${okKey === 'created' ? 'schemeCreated' : okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`sr.error.${errKey}`)}</p>}
 
@@ -74,6 +82,29 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
         <div className="kv-facts__row"><dt>{t.t('sr.benefitSummary')}</dt><dd><pre className="kv-pre">{benefitJson}</pre></dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.eligibilityRules')}</dt><dd><pre className="kv-pre">{eligJson}</pre></dd></div>
       </dl>
+
+      <h2>{t.t('sv.namesHeading')}</h2>
+      {(s.translations ?? []).length === 0
+        ? <p className="kv-empty">{t.t('sv.noTranslations')}</p>
+        : (
+          <ul>
+            {(s.translations ?? []).map((tr) => (
+              <li key={`${tr.languageCode}:${tr.field}`}>
+                <strong>{tr.languageCode}</strong> {tr.field}: {tr.text}{' '}
+                {/* THREE-WAY, not two. A reviewed machine translation and a human one are both servable; an
+                    unreviewed draft is not, and apps/api's read predicate filters exactly those out. */}
+                <span className={tr.servable ? 'kv-status kv-status--ok' : 'kv-status kv-status--warn'}>
+                  {t.t(tr.servable ? (tr.isMachine ? 'sv.tr.machineReviewed' : 'sv.tr.human') : 'sv.tr.unreviewed')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      {/* The gap ADMIN-4 found while building this panel: even a REVIEWED Gujarati scheme name never reaches a
+          Gujarati farmer, because apps/api's scheme read path does not join `translations` at all. Golden Law 6 is
+          wired for lookup values and regions and unwired for schemes. Said here rather than left for the count to
+          imply otherwise. */}
+      {s.servedToFarmers === false && <p className="kv-notice">{t.t('sv.trNotServed')}</p>}
 
       <h2>{t.t('sr.editHeading')}</h2>
       <div className="kv-action-cards">
@@ -95,7 +126,9 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
 
         <form action={updateRulesAction} className="kv-card kv-action-card">
           <input type="hidden" name="id" value={s.id} />
-          <p className="kv-field__hint">{t.t('sr.rulesHint')}</p>
+          {/* THIS FORM NO LONGER EDITS THE LIVE SCHEME. Since 0105 a rules edit opens a DRAFT that a different
+              operator publishes; the hint says so, and the version plane is where the draft is reviewed. */}
+          <p className="kv-field__hint">{t.t('sv.rulesNowDraftHint')}</p>
           <label className="kv-field__label">{t.t('sr.benefitSummary')}</label>
           <input name="benefitSummary" className="kv-input" required defaultValue={benefitJson} placeholder={t.t('sr.jsonHint')} />
           <label className="kv-field__label">{t.t('sr.eligibilityRules')}</label>
@@ -113,7 +146,8 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
 
         <form action={setWindowAction} className="kv-card kv-action-card">
           <input type="hidden" name="id" value={s.id} />
-          <p className="kv-field__hint">{t.t('sr.windowHint')}</p>
+          {/* Ditto the window — W073's own locked state says window dates come from scheme versions. */}
+          <p className="kv-field__hint">{t.t('sv.windowNowDraftHint')}</p>
           <label className="kv-field__label">{t.t('sr.windowOpens')}</label>
           <input name="opens" className="kv-input" defaultValue={win?.opens ?? ''} placeholder={t.t('sr.mmddHint')} />
           <label className="kv-field__label">{t.t('sr.windowCloses')}</label>

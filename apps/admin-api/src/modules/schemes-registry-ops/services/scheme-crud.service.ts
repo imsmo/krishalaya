@@ -9,7 +9,8 @@ import { AdminPool } from '../../../core/database/admin-pool';
 import { AdminAuditWriter } from '../../../core/audit/admin-audit.writer';
 import { AdminRequestContext } from '../../../core/auth/admin-auth.guard';
 import { SchemesRegistryRepository, AuthorityListQuery, SchemeListQuery, ChangeListQuery } from '../repositories/schemes-registry.repository';
-import { AuthorityNotFoundError, SchemeNotFoundError, DuplicateSchemeCodeError, SchemeCategoryInvalidError } from '../domain/schemes-registry.errors';
+import { AuthorityNotFoundError, SchemeNotFoundError, DuplicateSchemeCodeError, SchemeCategoryInvalidError, NoPublishedVersionError } from '../domain/schemes-registry.errors';
+import { portalStateOf } from '../domain/scheme-version';
 import { assertCode, assertSchemeName, assertAuthorityName, assertLevel, assertUuidOrNull, assertJsonObject, assertUuidArray, assertWindow, assertFeeMinor, assertSourceUrl } from '../domain/scheme-rules';
 import { CreateAuthorityDto, UpdateAuthorityDto, CreateSchemeDto, UpdateSchemeMetaDto, SetActiveDto } from '../dto/schemes-registry.dto';
 
@@ -24,15 +25,46 @@ export class SchemeCrudService {
   }
 
   /* ---------------- authorities ---------------- */
+  /** W072's list, with the two columns the canon shows and the table could not previously supply.
+   *
+   *  `activeSchemes` counts ACTIVE schemes only — an authority credited with 84 of which 40 are retired reads as far
+   *  busier than it is. `portalState` is 'mapped' or 'manual' and NEVER the canon's word "connected": a mapping row
+   *  records which portal an authority files through, and nothing in this monorepo has ever called one. An operator
+   *  who reads "connected" stops chasing a filing that is not happening.
+   */
   async listAuthorities(q: AuthorityListQuery) {
-    const items = (await this.repo.listAuthorities(q)).map((a) => a.toJSON());
+    const rows = (await this.repo.listAuthorities(q)).map((a) => a.toJSON());
+    const [counts, portals] = await Promise.all([
+      this.repo.activeSchemeCountsByAuthority(rows.map((r) => r.id)),
+      this.repo.portalRefsByAuthority(rows.map((r) => r.id)),
+    ]);
+    const items = rows.map((r) => {
+      const portal = portals.get(r.id) ?? null;
+      return {
+        ...r,
+        activeSchemes: counts.get(r.id) ?? 0,
+        portalState: portalStateOf(portal),
+        portal: portal ? { providerCode: portal.providerCode, externalId: portal.externalId, endpointLabel: portal.endpointLabel } : null,
+        // Said out loud in the payload, not left to the console to remember: a mapping is intent, not evidence.
+        portalSyncEverAttempted: false,
+      };
+    });
     const last = items[items.length - 1];
     return { items, nextCursor: items.length === q.limit && last ? tsCursor(last.createdAt, last.id) : null };
   }
   async getAuthority(id: string) {
     const a = await this.repo.getAuthority(id);
     if (!a) throw new AuthorityNotFoundError(id);
-    return a.toJSON();
+    const [counts, portals] = await Promise.all([
+      this.repo.activeSchemeCountsByAuthority([id]),
+      this.repo.portalRefsByAuthority([id]),
+    ]);
+    const portal = portals.get(id) ?? null;
+    return {
+      ...a.toJSON(), activeSchemes: counts.get(id) ?? 0, portalState: portalStateOf(portal),
+      portal: portal ? { providerCode: portal.providerCode, externalId: portal.externalId, endpointLabel: portal.endpointLabel } : null,
+      portalSyncEverAttempted: false,
+    };
   }
   async createAuthority(actor: AdminRequestContext, dto: CreateAuthorityDto) {
     const defaultName = assertAuthorityName(dto.defaultName);
@@ -66,15 +98,41 @@ export class SchemeCrudService {
   }
 
   /* ---------------- schemes (identity / lifecycle) ---------------- */
+  /** W069's list, with the "Apps 30d" column. A cross-tenant AGGREGATE (Law 11 god-mode) and nothing more: a count,
+   *  never an applicant. 0 here means zero filings, which is a real and useful fact about a scheme nobody uses. */
   async listSchemes(q: SchemeListQuery) {
-    const items = (await this.repo.listSchemes(q)).map((s) => s.toJSON());
+    const rows = (await this.repo.listSchemes(q)).map((s) => s.toJSON());
+    const counts = await this.repo.applicationCounts30d(rows.map((r) => r.id));
+    const items = rows.map((r) => ({ ...r, applications30d: counts.get(r.id) ?? 0 }));
     const last = items[items.length - 1];
     return { items, nextCursor: items.length === q.limit && last ? tsCursor(last.createdAt, last.id) : null };
   }
+  /** W070's header shows this scheme's name in Hindi and Gujarati beside the English one.
+   *
+   *  Read-only over `translations` (ADMIN-3b owns the write path), and the REVIEW STATE travels with every row,
+   *  because an unreviewed machine draft is not a language the platform speaks — apps/api's servable predicate
+   *  filters exactly these rows out. Rendering a draft as though a farmer sees it would misreport coverage on the one
+   *  screen where a founder goes to check it.
+   *
+   *  AND A GAP WORTH NAMING WHERE IT WAS FOUND: apps/api's scheme read path (`scheme.repository.ts`) does not join
+   *  `translations` at all. Even a REVIEWED Gujarati scheme name is not served to a Gujarati farmer today — the join
+   *  exists for lookup values and regions only. Golden Law 6 is unwired for schemes, and this payload's
+   *  `servedToFarmers: false` says so rather than letting the count imply otherwise.
+   */
   async getScheme(id: string) {
     const s = await this.repo.getScheme(id);
     if (!s) throw new SchemeNotFoundError(id);
-    return s.toJSON();
+    const tr = await this.repo.schemeTranslations(id);
+    return {
+      ...s.toJSON(),
+      translations: tr.map((t) => ({
+        languageCode: t.languageCode, field: t.field, text: t.text,
+        isMachine: t.isMachine, reviewedAt: t.reviewedAt ? t.reviewedAt.toISOString() : null,
+        // the same three-way the translations plane uses: reviewed human, reviewed machine, unreviewed draft
+        servable: !t.isMachine || t.reviewedAt !== null,
+      })),
+      servedToFarmers: false,
+    };
   }
   async createScheme(actor: AdminRequestContext, dto: CreateSchemeDto) {
     const code = assertCode(dto.code);
@@ -93,10 +151,21 @@ export class SchemeCrudService {
       if (!(await this.repo.isValidCategory(client, categoryId))) throw new SchemeCategoryInvalidError(categoryId);
       if (await this.repo.schemeCodeExists(client, code)) throw new DuplicateSchemeCodeError(code);
       const ins = await this.repo.insertScheme(client, { code, defaultName, authorityId, categoryId, benefitSummary, eligibilityRules, requiredDocTypeIds, applicationWindow, applicableRegionIds, processingFeeMinor, sourceUrl, actorUserId: actor.userId });
-      const newValue = { id: ins.id, code, defaultName, authorityId, categoryId, version: 1, isActive: false, processingFeeMinor };
+      // v1's RULES GO THROUGH A CHECKER TOO, and this is the point at which that becomes true. The scheme's first
+      // rule set is inserted as a DRAFT, not as a published version: a brand-new scheme is created INACTIVE
+      // (fail-safe, unchanged), and `setActive(true)` below now REFUSES until a second operator has published v1.
+      // Self-publishing v1 is not an option the schema allows — ck_scheme_version_maker_ne_checker forbids it — and
+      // that is correct rather than inconvenient: the first version of a scheme is the one nobody has ever read.
+      const v1 = await this.repo.insertVersion(client, {
+        schemeId: ins.id, version: 1,
+        rules: { benefitSummary, eligibilityRules, requiredDocTypeIds, applicationWindow, applicableRegionIds, processingFeeMinor },
+        changeReason: dto.reason, draftedBy: actor.userId,
+      });
+      const newValue = { id: ins.id, code, defaultName, authorityId, categoryId, version: 1, isActive: false, processingFeeMinor, draftVersionId: v1.id };
       await this.repo.insertChange(client, { entityType: 'scheme', entityId: ins.id, action: 'created', oldValue: null, newValue, reason: dto.reason, actorUserId: actor.userId });
+      await this.repo.insertChange(client, { entityType: 'scheme_version', entityId: v1.id, action: 'draft_opened', oldValue: null, newValue: { version: 1 }, reason: dto.reason, actorUserId: actor.userId });
       await this.audit.write(client, this.auditEntry(actor, 'schemes.scheme.created', 'scheme', ins.id, null, newValue, dto.reason));
-      return { ...newValue, createdAt: ins.createdAt };
+      return { ...newValue, createdAt: ins.createdAt, awaitingChecker: true };
     });
   }
   async updateMeta(actor: AdminRequestContext, id: string, dto: UpdateSchemeMetaDto) {
@@ -117,6 +186,10 @@ export class SchemeCrudService {
     return this.pool.withTx(async (client) => {
       const scheme = await this.repo.getSchemeForUpdate(client, id);
       if (!scheme) throw new SchemeNotFoundError(id);
+      // GOING LIVE REQUIRES RULES SOMEBODY SIGNED. Deactivating never does — a scheme being served under rules
+      // nobody checked is exactly the situation you want to be able to stop in one move, not one that needs a
+      // second signature first.
+      if (dto.isActive && !(await this.repo.getPublishedForUpdate(client, id))) throw new NoPublishedVersionError(id);
       const change = scheme.setActive(dto.isActive);   // throws SchemeAlreadyInState on no-op
       await this.repo.setSchemeActive(client, id, scheme.isActive, actor.userId);
       await this.repo.insertChange(client, { entityType: 'scheme', entityId: id, action: change.action, oldValue: change.old, newValue: change.new, reason: dto.reason, actorUserId: actor.userId });

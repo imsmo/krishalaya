@@ -11,6 +11,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { SchemeRow } from '../../../features/schemes-registry/scheme';
+import { apps30dText } from '../../../features/schemes-registry/version';
 import { createSchemeAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,10 @@ export default async function SchemesPage({ searchParams }: { searchParams: { cu
     { header: t.t('sr.schemeCode'), cell: (r) => <Link href={`/schemes-registry/schemes/${encodeURIComponent(r.id)}`}>{r.code}</Link> },
     { header: t.t('sr.schemeName'), cell: (r) => r.defaultName },
     { header: t.t('sr.fee'), cell: (r) => formatMoneyMinor(r.processingFeeMinor, 'INR') },
-    { header: t.t('sr.version'), cell: (r) => `v${r.version}` },
+    { header: t.t('sr.version'), cell: (r) => <Link href={`/schemes-registry/schemes/${encodeURIComponent(r.id)}/versions`}>v{r.version}</Link> },
+    // W069's "Apps 30d". A cross-tenant AGGREGATE (Law 11) and nothing more — a count, never an applicant. 0 is a
+    // real and useful answer here (a scheme nobody applies to), which is why it is a number rather than a state.
+    { header: t.t('sr.apps30d'), cell: (r) => apps30dText((r as SchemeRow & { applications30d?: number }).applications30d) },
     { header: t.t('sr.active'), cell: (r) => <span className={`kv-status ${r.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{r.isActive ? t.t('sr.activeYes') : t.t('sr.activeNo')}</span> },
   ];
   const qp = (extra: Record<string, string | undefined>) => {
@@ -57,6 +61,7 @@ export default async function SchemesPage({ searchParams }: { searchParams: { cu
       <p className="kv-backlink"><Link href="/schemes-registry">{t.t('sr.back')}</Link></p>
       <h1>{t.t('sr.schemesTitle')}</h1>
       <p className="kv-muted">{t.t('sr.schemesLead')}</p>
+      <p className="kv-backlink"><Link href="/schemes-registry/exports">{t.t('sxp.link')}</Link></p>
       {okCreated && <p className="kv-success" role="status">{t.t('sr.ok.schemeCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`sr.error.${errKey}`)}</p>}
 

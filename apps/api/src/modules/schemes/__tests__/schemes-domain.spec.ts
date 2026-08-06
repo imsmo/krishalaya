@@ -51,7 +51,7 @@ describe('Scheme eligibility evaluator (explainable)', () => {
 
 describe('SchemeApplication lifecycle + DBT', () => {
   it('draft→submit→verify→approve→disburse→close emits the right events; snapshots scheme_version', () => {
-    const a = SchemeApplication.draft({ id: 'a1', tenantId: 't1', schemeId: 's1', schemeVersion: 3, applicantUserId: 'u1', assistedBy: null, formData: {}, eligibilityCheck: null });
+    const a = SchemeApplication.draft({ id: 'a1', tenantId: 't1', schemeId: 's1', schemeVersion: 3, schemeVersionId: null, applicantUserId: 'u1', assistedBy: null, formData: {}, eligibilityCheck: null });
     expect(a.toProps().schemeVersion).toBe(3);
     a.submit(new Date()); a.startVerification(); a.approve('GOV-123', new Date()); a.markDisbursed(); a.close();
     expect(a.status).toBe('closed');

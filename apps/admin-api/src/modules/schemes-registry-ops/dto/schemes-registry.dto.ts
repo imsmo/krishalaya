@@ -100,3 +100,66 @@ export type QueryCalendarDto = z.infer<typeof QueryCalendarSchema>;
 
 export const QueryChangesSchema = z.object({ cursor: Cursor, limit: Limit }).strict();
 export type QueryChangesDto = z.infer<typeof QueryChangesSchema>;
+
+/* ============================ the version plane (PC-56 ADMIN-4 / migration 0105) ============================ */
+
+/** A draft edit. Every field optional (a draft is edited a field at a time) but `reason` is always required, and the
+ *  refine below refuses a body that changes nothing — an empty patch would open a version whose only content is a
+ *  reason, and a version history padded with those is a history nobody reads. */
+export const SaveDraftSchema = z.object({
+  benefitSummary: JsonObject.optional(),
+  eligibilityRules: JsonObject.optional(),
+  requiredDocTypeIds: UuidArray.optional(),
+  applicableRegionIds: UuidArray.optional(),
+  // NULLABLE and optional are different requests: `null` clears the window (an always-open scheme), absent leaves it.
+  applicationWindow: Window.nullable().optional(),
+  processingFeeMinor: FeeMinor.optional(),
+  reason: Reason,
+}).strict().refine(
+  (v) => v.benefitSummary !== undefined || v.eligibilityRules !== undefined || v.requiredDocTypeIds !== undefined
+      || v.applicableRegionIds !== undefined || v.applicationWindow !== undefined || v.processingFeeMinor !== undefined,
+  { message: 'a draft edit must change at least one versioned field' },
+);
+export type SaveDraftDto = z.infer<typeof SaveDraftSchema>;
+
+/** Publishing. `checkerNote` is OPTIONAL on purpose: a checker who agrees has nothing to add, and a mandatory note
+ *  teaches people to type 'ok' — which is worse than no note, because it looks like review. There is no `reason`
+ *  here either; the change already has one, written by the maker, and the checker's job is to agree with it or not. */
+export const PublishVersionSchema = z.object({
+  versionId: Uuid,
+  checkerNote: z.string().min(1).max(1000).optional(),
+}).strict();
+export type PublishVersionDto = z.infer<typeof PublishVersionSchema>;
+
+export const DiscardDraftSchema = z.object({ versionId: Uuid, reason: Reason }).strict();
+export type DiscardDraftDto = z.infer<typeof DiscardDraftSchema>;
+
+export const QueryVersionsSchema = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) }).strict();
+export type QueryVersionsDto = z.infer<typeof QueryVersionsSchema>;
+
+/* ============================ DELTA-018: authority portal mapping ============================ */
+
+/** `providerCode` is validated against a CLOSED LIST in the service (not here) so the 422 can explain that a portal
+ *  must be a registered integration provider rather than free text — `external_entity_refs.provider_code` is an FK
+ *  and a typo would fail as a foreign-key violation, which tells an operator nothing. */
+export const MapPortalSchema = z.object({
+  providerCode: z.string().min(2).max(60),
+  externalId: z.string().min(1).max(200),
+  endpointLabel: z.string().min(1).max(200).nullable().optional(),
+  reason: Reason,
+}).strict();
+export type MapPortalDto = z.infer<typeof MapPortalSchema>;
+
+export const UnmapPortalSchema = z.object({ providerCode: z.string().min(2).max(60), reason: Reason }).strict();
+export type UnmapPortalDto = z.infer<typeof UnmapPortalSchema>;
+
+/* ============================ exports (W2251 / W2252) ============================ */
+
+/** No date window — see domain/scheme-export.ts NO_DATE_WINDOW_REASON. `report` is a plain string rather than an
+ *  enum so the service can answer "applications" and "dbt" with the REASON they are refused instead of a generic
+ *  "unknown report", which would send an operator hunting for a typo. */
+export const SchemeExportSchema = z.object({
+  report: z.string().min(1).max(40),
+  limit: z.coerce.number().int().min(1).max(20000).optional(),
+}).strict();
+export type SchemeExportDto = z.infer<typeof SchemeExportSchema>;

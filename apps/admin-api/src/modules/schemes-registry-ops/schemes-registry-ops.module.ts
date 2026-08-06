@@ -11,9 +11,12 @@ import { SchemesRegistryRepository } from './repositories/schemes-registry.repos
 import { SchemeCrudService } from './services/scheme-crud.service';
 import { EligibilityRulesEditorService } from './services/eligibility-rules-editor.service';
 import { WindowCalendarService } from './services/window-calendar.service';
+import { SchemeVersionService } from './services/scheme-version.service';
+import { AuthorityPortalService } from './services/authority-portal.service';
+import { SchemeExportService } from './services/scheme-export.service';
 
 @Module({
   controllers: [SchemesRegistryOpsController],
-  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService, SchemesDepthService],
+  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService, SchemesDepthService, SchemeVersionService, AuthorityPortalService, SchemeExportService],
 })
 export class SchemesRegistryOpsModule {}

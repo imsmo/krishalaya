@@ -10,6 +10,10 @@ import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
 import { AUTHORITY_LEVELS, isAuthorityLevel, authorityLevelKey, type AuthorityRow } from '../../features/schemes-registry/scheme';
+import { portalState, portalClass } from '../../features/schemes-registry/version';
+
+/** The list row carries the two columns W072 shows that the table could not previously supply. */
+type AuthorityListRow = AuthorityRow & { activeSchemes?: number; portalState?: string; portal?: { providerCode?: string | null } | null };
 import { createAuthorityAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -25,19 +29,26 @@ export default async function AuthoritiesPage({ searchParams }: { searchParams: 
   const t = getTranslator();
   const level = isAuthorityLevel(searchParams.level) ? searchParams.level : undefined;
 
-  let rows: AuthorityRow[] = []; let nextCursor: string | undefined; let notice: string | undefined;
+  let rows: AuthorityListRow[] = []; let nextCursor: string | undefined; let notice: string | undefined;
   try {
-    const res = await adminGet<AuthorityRow[]>('schemes-registry/authorities', { cursor: searchParams.cursor, level, limit: 50 });
+    const res = await adminGet<AuthorityListRow[]>('schemes-registry/authorities', { cursor: searchParams.cursor, level, limit: 50 });
     rows = res.data ?? [];
     nextCursor = (res.meta?.nextCursor as string | undefined) ?? undefined;
   } catch (e) { notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`); }
 
   const okCreated = searchParams.ok === 'created';
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
-  const cols: Column<AuthorityRow>[] = [
+  const cols: Column<AuthorityListRow>[] = [
     { header: t.t('sr.authName'), cell: (r) => <Link href={`/schemes-registry/authorities/${encodeURIComponent(r.id)}`}>{r.defaultName}</Link> },
     { header: t.t('sr.level'), cell: (r) => t.t(`sr.lvl.${authorityLevelKey(r.level)}`) },
     { header: t.t('sr.regionId'), cell: (r) => r.regionId ?? t.t('common.dash') },
+    // W072's "Schemes" column. ACTIVE only: an authority credited with 84 of which 40 are retired reads as far busier
+    // than it is, and an operator picking who to chase reads this number.
+    { header: t.t('sv.activeSchemes'), cell: (r) => String(r.activeSchemes ?? 0) },
+    // DELTA-018. The canon's value here is "connected"; ours is "portal mapped", because a mapping records WHICH
+    // portal an authority files through and nothing in this monorepo has ever called one. "manual" is NOT a failure
+    // colour — a district collectorate with no API is the normal case, not somebody's oversight.
+    { header: t.t('sv.portal'), cell: (r) => <span className={portalClass(portalState(r))}>{t.t(`sv.portalState.${portalState(r)}`)}</span> },
   ];
   const filterHref = (l?: string) => `/schemes-registry${l ? `?level=${encodeURIComponent(l)}` : ''}`;
 
@@ -45,6 +56,7 @@ export default async function AuthoritiesPage({ searchParams }: { searchParams: 
     <section>
       <h1>{t.t('sr.title')}</h1>
       <p className="kv-muted">{t.t('sr.lead')}</p>
+      <p className="kv-detail__muted">{t.t('sv.portalNeverSynced')}</p>
       <nav className="kv-filters" aria-label={t.t('sr.nav')}>
         <Link href="/schemes-registry" className="kv-chip is-active" aria-current="true">{t.t('sr.navAuthorities')}</Link>
         <Link href="/schemes-registry/schemes" className="kv-chip">{t.t('sr.navSchemes')}</Link>
