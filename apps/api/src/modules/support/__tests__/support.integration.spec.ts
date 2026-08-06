@@ -16,6 +16,7 @@ import { PgIdempotencyService } from '../../../core/idempotency/idempotency.serv
 import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { SupportTicketRepository } from '../repositories/support-ticket.repository';
+import { CsatResponseRepository } from '../repositories/csat-response.repository';
 import { SupportTicketService } from '../services/support-ticket.service';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -37,7 +38,10 @@ run('support spine (integration, real Postgres + RLS + SLA)', () => {
     const shards = new ShardRouter(config);
     uow = new PgUnitOfWork(pools, shards);
     const replica = new PgReadReplicaProvider(pools, shards);
-    svc = new SupportTicketService(uow, new PgOutboxWriter(), new PgIdempotencyService(pools), new PromMetrics(), new AuditWriter(pools), new SupportTicketRepository(replica as any));
+    svc = new SupportTicketService(uow, new PgOutboxWriter(), new PgIdempotencyService(pools), new PromMetrics(), new AuditWriter(pools), new SupportTicketRepository(replica as any),
+      // PC-56 ADMIN-2c: the real ledger repository — this suite is DB-gated, so the rating and its derived column are
+      // exercised against actual rows rather than a fake
+      new CsatResponseRepository(replica as any));
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
@@ -49,7 +53,7 @@ run('support spine (integration, real Postgres + RLS + SLA)', () => {
   it('agent assigns + resolves; requester rates CSAT', async () => {
     await svc.assign(tenantA, agentActor, ticketId, agentUser, null);
     expect((await svc.transition(tenantA, agentActor, ticketId, { to: 'resolved' } as any, null)).status).toBe('resolved');
-    expect((await svc.submitCsat(tenantA, reqActor, ticketId, 5)).csatScore).toBe(5);
+    expect((await svc.submitCsat(tenantA, reqActor, ticketId, { score: 5 })).csatScore).toBe(5);
   });
   it('a stranger cannot read the ticket (404, no IDOR)', async () => {
     await expect(svc.getById(tenantA, { userId: randomUUID(), isAgent: false }, ticketId)).rejects.toMatchObject({ code: 'TICKET_NOT_FOUND' });

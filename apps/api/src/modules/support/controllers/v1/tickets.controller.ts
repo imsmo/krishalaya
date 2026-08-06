@@ -52,6 +52,13 @@ export class TicketsController {
   @Post(':id/transition') @RequirePermissions(SupportPermissions.Handle)
   transition(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(TransitionTicketSchema) dto: TransitionTicketDto) { return this.svc.transition(ctx.tenantId, this.actor(ctx), id, dto, ctx.requestId).then((data) => ({ data })); }
 
+  // PC-56 ADMIN-2c · every rating this ticket has ever had (0099). Before that migration a reopen DELETED the
+  // previous rating, so this endpoint had nothing it could have returned.
+  @Get(':id/csat')
+  csatHistory(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.svc.csatHistory(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
   @Post(':id/csat')
-  csat(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(CsatSchema) dto: CsatDto) { return this.svc.submitCsat(ctx.tenantId, this.actor(ctx), id, dto.score).then((data) => ({ data })); }
+  csat(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(CsatSchema) dto: CsatDto) { return this.svc.submitCsat(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
 }

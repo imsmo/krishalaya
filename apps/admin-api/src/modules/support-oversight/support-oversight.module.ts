@@ -10,6 +10,8 @@ import { TenantHealthAlertsService } from './services/tenant-health-alerts.servi
 import { SupportMacrosService } from './services/support-macros.service';
 import { SupportInsightsService } from './services/support-insights.service';
 import { SupportPolicyService } from './services/support-policy.service';
+import { CoachingService } from './services/coaching.service';
+import { SupportExportService } from './services/support-export.service';
 import { TicketEscalationsService } from './services/ticket-escalations.service';
 
 @Module({
@@ -18,6 +20,8 @@ import { TicketEscalationsService } from './services/ticket-escalations.service'
     // PC-56 ADMIN-2: the desk's canned answers + the insight reads (agent performance, CSAT, the real SLA matrix)
     SupportMacrosService, SupportInsightsService,
     // PC-56 ADMIN-2b: the versioned support policy (0097) whose chain the worker fires
-    SupportPolicyService],
+    SupportPolicyService,
+    // PC-56 ADMIN-2c: the CSAT review + coaching plane (0099/0100) and the support exports
+    CoachingService, SupportExportService],
 })
 export class SupportOversightModule {}

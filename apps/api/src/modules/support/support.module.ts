@@ -18,12 +18,15 @@ import { TicketsController } from './controllers/v1/tickets.controller';
 import { SupportTicketService } from './services/support-ticket.service';
 import { SupportThreadService } from './services/support-thread.service';
 import { SupportTicketRepository } from './repositories/support-ticket.repository';
+import { CsatResponseRepository } from './repositories/csat-response.repository';
 import { DisputeEscalatedHandler } from './events/handlers/dispute-escalated.handler';
 
 @Module({
   imports: [CommunicationModule],
   controllers: [TicketsController],
-  providers: [SupportTicketService, SupportThreadService, SupportTicketRepository],
+  providers: [SupportTicketService, SupportThreadService, SupportTicketRepository,
+    // PC-56 ADMIN-2c: the CSAT ledger (0099) — a rating is appended, never overwritten
+    CsatResponseRepository],
   exports: [SupportTicketService],
 })
 export class SupportModule implements OnModuleInit {

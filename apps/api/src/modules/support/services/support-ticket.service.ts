@@ -14,6 +14,7 @@ import { SupportTicket } from '../domain/support-ticket.entity';
 import { DomainEvent, TicketChannel, TicketSeverity } from '../domain/support.events';
 import { TicketStatus, isWorking } from '../domain/support-ticket.state';
 import { SupportTicketRepository } from '../repositories/support-ticket.repository';
+import { CsatResponseRepository } from '../repositories/csat-response.repository';
 import { OpenTicketDto } from '../dto/create-support-ticket.dto';
 import { TransitionTicketDto } from '../dto/update-support-ticket.dto';
 import { TicketNotFoundError, SupportForbiddenError } from '../domain/support.errors';
@@ -30,6 +31,8 @@ export class SupportTicketService {
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly audit: AuditWriter,
     private readonly repo: SupportTicketRepository,
+    // PC-56 ADMIN-2c: the append-only rating ledger (0099)
+    private readonly csat: CsatResponseRepository,
   ) {}
 
   async open(tenantId: string, actor: SupportActor, idemKey: string, dto: OpenTicketDto) {
@@ -62,15 +65,60 @@ export class SupportTicketService {
   async respond(tenantId: string, actor: SupportActor, id: string, ip: string | null) {
     return this.agentMutate(tenantId, actor, id, (t) => t.recordFirstResponse(), 'support.ticket_responded', ip);
   }
-  async submitCsat(tenantId: string, actor: SupportActor, id: string, score: number) {
+  /**
+   * Rate a ticket. PC-56 ADMIN-2c changed what this method WRITES, not who may call it.
+   *
+   * Before: the score went into `support_tickets.csat_score`, a single overwritable column that the entity CLEARS on
+   * reopen — so a rating a farmer had given was destroyed the moment the desk reopened their ticket, and the ratings
+   * most likely to be followed by a reopen are the bad ones. The desk was systematically losing exactly the feedback it
+   * needed.
+   *
+   * Now: every rating is APPENDED to `support_csat_responses` (0099), optionally with the farmer's own words and the
+   * language they wrote them in, and the ticket's column is re-derived from the ledger to mean "the latest rating".
+   * Both writes happen in ONE transaction (Law 4) — a ledger row without its derived column, or a column without its
+   * row, is a disagreement between two representations of the same fact.
+   *
+   * The ledger insert is deduped per rating OCCASION (ticket, respondent, current status), so a double-tap on a flaky
+   * connection records one rating while a genuine re-rating after the ticket moves on records a second. `recorded`
+   * tells the caller which happened, because reporting "thank you for your rating" twice for one tap is a small lie.
+   */
+  async submitCsat(tenantId: string, actor: SupportActor, id: string, dto: { score: number; comment?: string | null; commentLanguage?: string | null }) {
     return this.uow.run(tenantId, async (tx) => {
       const t = await this.repo.getForUpdate(tx, tenantId, id);
       if (!t || (t.requesterUserId !== actor.userId && !actor.isAgent)) throw new TicketNotFoundError(id);   // requester-owned, 404 IDOR
       if (t.requesterUserId !== actor.userId) throw new SupportForbiddenError('only the requester may rate the ticket');
-      t.submitCsat(score);
+
+      // The entity still owns the RULES (closable status, integer 1-5) — this method must not re-implement them.
+      t.submitCsat(dto.score);
+
+      const before = t.toProps();
+      const comment = dto.comment?.trim() || null;
+      const appended = await this.csat.append(tx, {
+        tenantId, ticketId: id, respondentUserId: actor.userId, score: dto.score,
+        comment,
+        // null when there is no comment: 0099 CHECKs the pair, and a language recorded against no text is noise
+        commentLanguage: comment ? (dto.commentLanguage ?? null) : null,
+        // copied so a later reassignment cannot silently re-attribute this rating to a different agent, and so a 5 given
+        // on a resolved ticket stays distinguishable from a 5 given on a reopened one
+        ticketStatus: before.status,
+        ratedAgentUserId: before.assigneeUserId ?? null,
+      });
+
+      // The column means "the latest rating". Read back inside the same transaction rather than assuming this insert
+      // won: if the ledger deduped, the latest rating is whatever was already there, and writing `score` regardless
+      // would let the column drift away from the ledger it is supposed to summarise.
+      const latest = await this.csat.latestScoreFor(tx, tenantId, id);
+      t.setDerivedCsatScore(latest);
       await this.repo.update(tx, t);
-      return t.toJSON();
+      return { ...t.toJSON(), csatRecorded: appended !== null, csatResponseId: appended?.id ?? null };
     }, { userId: actor.userId });
+  }
+
+  /** Every rating this ticket has ever had — impossible before 0099, because a reopen deleted the previous one. */
+  async csatHistory(tenantId: string, actor: SupportActor, id: string) {
+    const t = await this.repo.getById(tenantId, id);
+    if (!t || (t.requesterUserId !== actor.userId && !actor.isAgent)) throw new TicketNotFoundError(id);   // 404, no IDOR
+    return this.csat.historyFor(tenantId, id);
   }
   async getById(tenantId: string, actor: SupportActor, id: string) {
     const t = await this.repo.getById(tenantId, id);

@@ -6,6 +6,12 @@
 // OFFSET). Support is money-free.
 import { Injectable } from '@nestjs/common';
 import { PoolClient } from 'pg';
+
+/** A timestamp as ISO, or null. Null in null out: a missing timestamp must never become the epoch or "Invalid Date". */
+function iso(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  return (v as Date).toISOString?.() ?? String(v);
+}
 import { AdminPool } from '../../../core/database/admin-pool';
 import { SupportTicketOversight, TicketProps } from '../domain/ticket.entity';
 import { Severity } from '../domain/sla';
@@ -146,49 +152,73 @@ export class SupportOversightRepository {
   }
 
   /**
-   * CSAT SCORES (canon W056). Real scores from `support_tickets.csat_score`.
+   * The rating list — PC-56 ADMIN-2c reads it from the 0099 LEDGER instead of `support_tickets.csat_score`.
    *
-   * THE CANON ASKS FOR A "VERBATIM (TRANSLATED)" COLUMN AND THE PLATFORM DOES NOT STORE ONE. `support_tickets` has a
-   * 1–5 score and no comment field (0012), so this read returns scores only and the console says the verbatim column is
-   * not available rather than showing an empty column that looks like "nobody wrote anything". Queued as a GAP-BACKEND.
+   * THAT CHANGE FIXES TWO THINGS THIS METHOD PREVIOUSLY HAD TO APOLOGISE FOR:
+   *   1. `ratedAt` IS NOW REAL. It used to be COALESCE(resolved_at, created_at) with a comment admitting the table had
+   *      no rating timestamp, and the CSAT page had to caveat the column on screen.
+   *   2. THE SAMPLE IS NO LONGER SILENTLY PRUNED. The ticket column is cleared on reopen, so every figure this method
+   *      returned was computed over the ratings that happened not to be followed by a reopen — and a reopen is most
+   *      likely after a BAD rating. The old numbers were biased upward and nothing said so.
+   * It also carries the verbatim, which is what the canon's W056 column asked for and ADMIN-2 had to report as absent.
    */
-  async csatScores(q: { fromIso: string; toIso: string; maxScore?: number; limit: number }): Promise<Array<{
-    ticketId: string; ticketNo: string; tenantId: string; tenantSlug: string | null;
-    score: number; severity: string; categoryId: string | null; assigneeUserId: string | null; ratedAt: string;
+  async csatScores(q: { fromIso: string; toIso: string; maxScore?: number; withCommentOnly?: boolean; limit: number }): Promise<Array<{
+    responseId: string; ticketId: string; ticketNo: string; tenantId: string; tenantSlug: string | null;
+    score: number; severity: string; categoryId: string | null; assigneeUserId: string | null;
+    ratedAt: string; ratedAtIsEstimated: boolean;
+    comment: string | null; commentLanguage: string | null;
+    reviewCount: number; latestVerdict: string | null;
   }>> {
     const params: unknown[] = [q.fromIso, q.toIso];
-    let where = `t.deleted_at IS NULL AND t.csat_score IS NOT NULL
-                 AND t.created_at >= $1::timestamptz AND t.created_at < $2::timestamptz`;
-    if (q.maxScore !== undefined) { params.push(q.maxScore); where += ` AND t.csat_score <= $${params.length}`; }
+    let where = `r.deleted_at IS NULL AND r.rated_at >= $1::timestamptz AND r.rated_at < $2::timestamptz`;
+    if (q.maxScore !== undefined) { params.push(q.maxScore); where += ` AND r.score <= $${params.length}`; }
+    if (q.withCommentOnly) { where += ` AND r.comment IS NOT NULL`; }
     params.push(q.limit);
     const r = await this.pool.query(
-      `SELECT t.id, t.ticket_no, t.tenant_id, tn.slug AS tenant_slug, t.csat_score, t.severity,
-              t.category_id, t.assignee_user_id,
-              -- the ticket carries no rated_at column; resolved_at is when the score could first have been given, and
-              -- created_at is the fallback. Named ratedAt with that caveat rather than pretending to a timestamp the
-              -- table does not have. (No backticks in this comment: it lives inside a template literal.)
-              COALESCE(t.resolved_at, t.created_at) AS rated_at
-         FROM support_tickets t
-         LEFT JOIN tenants tn ON tn.id = t.tenant_id
+      `SELECT r.id AS response_id, r.ticket_id, t.ticket_no, r.tenant_id, tn.slug AS tenant_slug,
+              r.score, t.severity, t.category_id,
+              -- the agent AT THE TIME of the rating (copied into the ledger), not whoever holds the ticket now: a
+              -- reassignment must never re-attribute somebody else rating somebody else work
+              r.rated_agent_user_id,
+              r.rated_at, r.rated_at_is_estimated, r.comment, r.comment_language,
+              count(rv.id)::int AS review_count,
+              -- the most recent verdict, so the queue can show what has already been judged without a second query
+              (SELECT rv2.verdict FROM support_csat_reviews rv2
+                WHERE rv2.response_id = r.id AND rv2.deleted_at IS NULL
+                ORDER BY rv2.reviewed_at DESC LIMIT 1) AS latest_verdict
+         FROM support_csat_responses r
+         JOIN support_tickets t ON t.id = r.ticket_id
+         LEFT JOIN tenants tn ON tn.id = r.tenant_id
+         LEFT JOIN support_csat_reviews rv ON rv.response_id = r.id AND rv.deleted_at IS NULL
         WHERE ${where}
-        ORDER BY t.csat_score, rated_at DESC
+        GROUP BY r.id, t.ticket_no, t.severity, t.category_id
+        ORDER BY r.score, r.rated_at DESC
         LIMIT $${params.length}`, params);
     return r.rows.map((x: any) => ({
-      ticketId: x.id, ticketNo: x.ticket_no, tenantId: x.tenant_id, tenantSlug: x.tenant_slug ?? null,
-      score: Number(x.csat_score), severity: x.severity, categoryId: x.category_id ?? null,
-      assigneeUserId: x.assignee_user_id ?? null,
+      responseId: x.response_id, ticketId: x.ticket_id, ticketNo: x.ticket_no,
+      tenantId: x.tenant_id, tenantSlug: x.tenant_slug ?? null,
+      score: Number(x.score), severity: x.severity, categoryId: x.category_id ?? null,
+      assigneeUserId: x.rated_agent_user_id ?? null,
       ratedAt: x.rated_at?.toISOString?.() ?? String(x.rated_at),
+      // a backfilled row (0099) has a DERIVED timestamp; the screen must say so rather than presenting it as recorded
+      ratedAtIsEstimated: x.rated_at_is_estimated === true,
+      comment: x.comment ?? null, commentLanguage: x.comment_language ?? null,
+      reviewCount: x.review_count ?? 0, latestVerdict: x.latest_verdict ?? null,
     }));
   }
 
   /** CSAT distribution (1..5) for the window — the headline beside the review queue. Counts only, so a caller cannot
-   *  render an average without also seeing how thin the sample is. */
+   *  render an average without also seeing how thin the sample is.
+   *
+   *  PC-56 ADMIN-2c: reads the 0099 ledger and WINDOWS ON rated_at rather than the ticket's created_at. The old query
+   *  bucketed a rating by when the TICKET was opened, so a ticket opened in March and rated in April counted as March —
+   *  which makes a month's satisfaction figure depend on how long tickets took to close. */
   async csatDistribution(fromIso: string, toIso: string): Promise<Array<{ score: number; n: number }>> {
     const r = await this.pool.query(
-      `SELECT csat_score AS score, count(*)::int AS n
-         FROM support_tickets
-        WHERE deleted_at IS NULL AND csat_score IS NOT NULL
-          AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+      `SELECT score, count(*)::int AS n
+         FROM support_csat_responses
+        WHERE deleted_at IS NULL
+          AND rated_at >= $1::timestamptz AND rated_at < $2::timestamptz
         GROUP BY 1 ORDER BY 1`, [fromIso, toIso]);
     return r.rows.map((x: any) => ({ score: Number(x.score), n: x.n }));
   }
@@ -390,5 +420,338 @@ export class SupportOversightRepository {
       `UPDATE support_tickets
           SET status=$2::ticket_status, resolved_at=now(), updated_by=$3, updated_at=now()
         WHERE id=$1`, [id, status, actorUserId]);
+  }
+
+  /* ---------------- CSAT reviews + coaching (0099 / 0100 · canon W2019-25, W2121-25) ---------------- */
+
+  /** One rating with everything a lead needs to judge it: the words, the ticket, the agent, and what has already been
+   *  concluded about it. Null when the rating does not exist — the caller turns that into a 404. */
+  async csatResponse(id: string): Promise<Record<string, unknown> | null> {
+    const r = await this.pool.query(
+      `SELECT r.id, r.ticket_id, t.ticket_no, t.subject, t.severity, t.status AS ticket_status_now,
+              r.tenant_id, tn.slug AS tenant_slug, r.score, r.comment, r.comment_language,
+              r.rated_at, r.rated_at_is_estimated, r.ticket_status AS status_when_rated,
+              r.rated_agent_user_id, r.respondent_user_id
+         FROM support_csat_responses r
+         JOIN support_tickets t ON t.id = r.ticket_id
+         LEFT JOIN tenants tn ON tn.id = r.tenant_id
+        WHERE r.id = $1 AND r.deleted_at IS NULL`, [id]);
+    const x = r.rows[0] as any;
+    if (!x) return null;
+    return {
+      id: x.id, ticketId: x.ticket_id, ticketNo: x.ticket_no, subject: x.subject, severity: x.severity,
+      ticketStatusNow: x.ticket_status_now, tenantId: x.tenant_id, tenantSlug: x.tenant_slug ?? null,
+      score: Number(x.score), comment: x.comment ?? null, commentLanguage: x.comment_language ?? null,
+      ratedAt: x.rated_at?.toISOString?.() ?? String(x.rated_at),
+      ratedAtIsEstimated: x.rated_at_is_estimated === true,
+      // the status when rated vs now: a 1 given on a resolved ticket that has since been reopened tells a different
+      // story from a 1 on a ticket nobody touched again
+      statusWhenRated: x.status_when_rated,
+      ratedAgentUserId: x.rated_agent_user_id ?? null, respondentUserId: x.respondent_user_id ?? null,
+    };
+  }
+
+  /** Every rating a ticket has ever had. The question 0099 made askable: before it, a reopen deleted the previous one. */
+  async csatHistoryForTicket(ticketId: string): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT id, score, comment, comment_language, rated_at, rated_at_is_estimated, ticket_status
+         FROM support_csat_responses
+        WHERE ticket_id = $1 AND deleted_at IS NULL
+        ORDER BY rated_at DESC, id DESC LIMIT 50`, [ticketId]);
+    return r.rows.map((x: any) => ({
+      id: x.id, score: Number(x.score), comment: x.comment ?? null, commentLanguage: x.comment_language ?? null,
+      ratedAt: x.rated_at?.toISOString?.() ?? String(x.rated_at),
+      ratedAtIsEstimated: x.rated_at_is_estimated === true, ticketStatus: x.ticket_status,
+    }));
+  }
+
+  /** The reviews filed against one rating, newest first. */
+  async csatReviewsFor(responseId: string): Promise<Array<Record<string, unknown>>> {
+    const r = await this.pool.query(
+      `SELECT id, reviewer_admin_id, verdict, finding, coaching_id, reviewed_at
+         FROM support_csat_reviews
+        WHERE response_id = $1 AND deleted_at IS NULL
+        ORDER BY reviewed_at DESC LIMIT 50`, [responseId]);
+    return r.rows.map((x: any) => ({
+      id: x.id, reviewerAdminId: x.reviewer_admin_id, verdict: x.verdict, finding: x.finding,
+      coachingId: x.coaching_id ?? null,
+      reviewedAt: x.reviewed_at?.toISOString?.() ?? String(x.reviewed_at),
+    }));
+  }
+
+  /** File a verdict. Runs in the caller's transaction so the review and its audit row land together (Law 4).
+   *  ON CONFLICT DO NOTHING against uq_csat_review_verdict — a double submit is not two judgements. */
+  async insertCsatReview(tx: PoolClient, p: {
+    responseId: string; reviewerAdminId: string; verdict: string; finding: string;
+  }): Promise<{ id: string } | null> {
+    const r = await tx.query(
+      `INSERT INTO support_csat_reviews (response_id, reviewer_admin_id, verdict, finding, created_by)
+       VALUES ($1,$2,$3,$4,$2) ON CONFLICT DO NOTHING RETURNING id`,
+      [p.responseId, p.reviewerAdminId, p.verdict, p.finding]);
+    const row = r.rows[0] as { id: string } | undefined;
+    return row ? { id: row.id } : null;
+  }
+
+  /** VERDICT COUNTS for the window — "how many low scores were actually the desk's fault?" answered from data.
+   *  Returns rows only for verdicts that occurred; the caller must not render a zero for one that did not, because
+   *  "nobody concluded this" and "concluded zero times" are the same number and different facts only in aggregate. */
+  async csatVerdictCounts(fromIso: string, toIso: string): Promise<Array<{ verdict: string; n: number }>> {
+    const r = await this.pool.query(
+      `SELECT rv.verdict, count(*)::int AS n
+         FROM support_csat_reviews rv
+        WHERE rv.deleted_at IS NULL
+          AND rv.reviewed_at >= $1::timestamptz AND rv.reviewed_at < $2::timestamptz
+        GROUP BY 1 ORDER BY 2 DESC`, [fromIso, toIso]);
+    return r.rows.map((x: any) => ({ verdict: x.verdict, n: x.n }));
+  }
+
+  /** RATINGS AWAITING A JUDGEMENT — the review queue's actual backlog, which is not "all low scores" but "low scores
+   *  nobody has looked at". Keyset by (rated_at, id) so the queue pages without repeating or skipping a rating. */
+  async csatAwaitingReview(q: { maxScore: number; cursor?: { at: string; id: string }; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = [q.maxScore];
+    let where = `r.deleted_at IS NULL AND r.score <= $1
+                 AND NOT EXISTS (SELECT 1 FROM support_csat_reviews rv WHERE rv.response_id = r.id AND rv.deleted_at IS NULL)`;
+    if (q.cursor) {
+      params.push(q.cursor.at, q.cursor.id);
+      where += ` AND (r.rated_at, r.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`;
+    }
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `SELECT r.id, r.ticket_id, t.ticket_no, r.tenant_id, tn.slug AS tenant_slug, r.score,
+              r.comment, r.comment_language, r.rated_at, r.rated_at_is_estimated, r.rated_agent_user_id
+         FROM support_csat_responses r
+         JOIN support_tickets t ON t.id = r.ticket_id
+         LEFT JOIN tenants tn ON tn.id = r.tenant_id
+        WHERE ${where}
+        ORDER BY r.rated_at DESC, r.id DESC
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      id: x.id, ticketId: x.ticket_id, ticketNo: x.ticket_no, tenantId: x.tenant_id,
+      tenantSlug: x.tenant_slug ?? null, score: Number(x.score),
+      comment: x.comment ?? null, commentLanguage: x.comment_language ?? null,
+      ratedAt: x.rated_at?.toISOString?.() ?? String(x.rated_at),
+      ratedAtIsEstimated: x.rated_at_is_estimated === true,
+      agentUserId: x.rated_agent_user_id ?? null,
+    }));
+  }
+
+  /* ---------------- coaching (0100) ---------------- */
+
+  /** Coaching records, newest first, optionally for one agent. Includes dismissals: a record of the judgements NOT to
+   *  intervene is half the point — without them the ledger reads as a lead who ignores signals. */
+  async listCoaching(q: { agentUserId?: string; tenantId?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = [];
+    const conds = ['c.deleted_at IS NULL'];
+    if (q.agentUserId) { params.push(q.agentUserId); conds.push(`c.agent_user_id = $${params.length}`); }
+    if (q.tenantId) { params.push(q.tenantId); conds.push(`c.tenant_id = $${params.length}`); }
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `SELECT c.id, c.tenant_id, tn.slug AS tenant_slug, c.agent_user_id, c.author_admin_id,
+              c.kind::text AS kind, c.status::text AS status, c.rationale, c.signal_note,
+              c.csat_response_id, c.csat_review_id, c.scheduled_for, c.held_at, c.outcome, c.created_at,
+              cr.score AS signal_score, cr.comment AS signal_comment
+         FROM support_coaching_records c
+         LEFT JOIN tenants tn ON tn.id = c.tenant_id
+         LEFT JOIN support_csat_responses cr ON cr.id = c.csat_response_id
+        WHERE ${conds.join(' AND ')}
+        ORDER BY c.created_at DESC
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      id: x.id, tenantId: x.tenant_id, tenantSlug: x.tenant_slug ?? null,
+      agentUserId: x.agent_user_id, authorAdminId: x.author_admin_id,
+      kind: x.kind, status: x.status, rationale: x.rationale, signalNote: x.signal_note ?? null,
+      csatResponseId: x.csat_response_id ?? null, csatReviewId: x.csat_review_id ?? null,
+      scheduledFor: x.scheduled_for?.toISOString?.() ?? (x.scheduled_for ? String(x.scheduled_for) : null),
+      heldAt: x.held_at?.toISOString?.() ?? (x.held_at ? String(x.held_at) : null),
+      outcome: x.outcome ?? null,
+      createdAt: x.created_at?.toISOString?.() ?? String(x.created_at),
+      signalScore: x.signal_score === null || x.signal_score === undefined ? null : Number(x.signal_score),
+      signalComment: x.signal_comment ?? null,
+    }));
+  }
+
+  /** Create a coaching record. In the caller's transaction, with its audit row (Law 4). */
+  async insertCoaching(tx: PoolClient, p: {
+    tenantId: string; agentUserId: string; authorAdminId: string; kind: string; status: string;
+    rationale: string; signalNote: string | null; csatResponseId: string | null; csatReviewId: string | null;
+    scheduledFor: string | null;
+  }): Promise<{ id: string }> {
+    const r = await tx.query(
+      `INSERT INTO support_coaching_records
+         (tenant_id, agent_user_id, author_admin_id, kind, status, rationale, signal_note,
+          csat_response_id, csat_review_id, scheduled_for, created_by)
+       VALUES ($1,$2,$3,$4::support_coaching_kind,$5::support_coaching_status,$6,$7,$8,$9,$10,$3)
+       RETURNING id`,
+      [p.tenantId, p.agentUserId, p.authorAdminId, p.kind, p.status, p.rationale, p.signalNote,
+       p.csatResponseId, p.csatReviewId, p.scheduledFor]);
+    return { id: (r.rows[0] as any).id };
+  }
+
+  /** Point a review at the coaching it produced, so the two cannot disagree about whether anybody followed up. */
+  async linkReviewCoaching(tx: PoolClient, reviewId: string, coachingId: string): Promise<void> {
+    await tx.query(
+      `UPDATE support_csat_reviews SET coaching_id = $2, updated_at = now()
+        WHERE id = $1 AND coaching_id IS NULL AND deleted_at IS NULL`, [reviewId, coachingId]);
+  }
+
+  /** One coaching record, for the close path's state check. */
+  async coachingById(id: string): Promise<Record<string, unknown> | null> {
+    const r = await this.pool.query(
+      `SELECT id, kind::text AS kind, status::text AS status, outcome, scheduled_for, agent_user_id, tenant_id
+         FROM support_coaching_records WHERE id = $1 AND deleted_at IS NULL`, [id]);
+    const x = r.rows[0] as any;
+    return x ? {
+      id: x.id, kind: x.kind, status: x.status, outcome: x.outcome ?? null,
+      scheduledFor: x.scheduled_for?.toISOString?.() ?? (x.scheduled_for ? String(x.scheduled_for) : null),
+      agentUserId: x.agent_user_id, tenantId: x.tenant_id,
+    } : null;
+  }
+
+  /**
+   * Record what happened to a scheduled session. The ONLY update this table allows, and it is guarded on the row still
+   * being `scheduled` — so two leads closing the same session cannot overwrite each other's account of it, and an
+   * outcome can never be rewritten once filed (0100's header, point 2).
+   */
+  async settleCoaching(tx: PoolClient, p: { id: string; status: string; outcome: string | null; heldAt: string | null }): Promise<number> {
+    const r = await tx.query(
+      `UPDATE support_coaching_records
+          SET status = $2::support_coaching_status, outcome = COALESCE($3, outcome), held_at = $4, updated_at = now()
+        WHERE id = $1 AND status = 'scheduled' AND deleted_at IS NULL`,
+      [p.id, p.status, p.outcome, p.heldAt]);
+    return r.rowCount ?? 0;
+  }
+
+  /** Coaching COUNTS per agent for the window, for the performance screen's "has anybody acted on this?" column. */
+  async coachingCountsByAgent(fromIso: string, toIso: string): Promise<Array<{ agentUserId: string; sessions: number; dismissals: number }>> {
+    const r = await this.pool.query(
+      `SELECT agent_user_id,
+              count(*) FILTER (WHERE kind <> 'signal_dismissed')::int AS sessions,
+              count(*) FILTER (WHERE kind = 'signal_dismissed')::int AS dismissals
+         FROM support_coaching_records
+        WHERE deleted_at IS NULL
+          AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+        GROUP BY 1`, [fromIso, toIso]);
+    return r.rows.map((x: any) => ({ agentUserId: x.agent_user_id, sessions: x.sessions, dismissals: x.dismissals }));
+  }
+
+  /* ---------------- exports (PC-56 ADMIN-2c · canon W1944-45, W2121-22, W2270-71) ---------------- */
+  // Each returns rows keyed EXACTLY as domain/support-export.ts declares its columns. A mismatch would render an empty
+  // column rather than failing loudly, so the export spec asserts the two agree per report.
+
+  async exportTickets(q: { from: string; to: string; tenantId?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = [q.from, q.to];
+    let where = `t.deleted_at IS NULL AND t.created_at >= $1::timestamptz AND t.created_at < $2::timestamptz`;
+    if (q.tenantId) { params.push(q.tenantId); where += ` AND t.tenant_id = $${params.length}`; }
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `SELECT t.ticket_no, tn.slug AS tenant_slug, t.severity, t.status,
+              CASE
+                WHEN t.resolved_at IS NULL AND t.sla_resolution_due < now() THEN 'breached'
+                WHEN t.first_responded_at IS NULL AND t.sla_first_response_due < now() THEN 'breached'
+                ELSE 'within'
+              END AS sla,
+              t.created_at, t.first_responded_at, t.resolved_at
+         FROM support_tickets t
+         LEFT JOIN tenants tn ON tn.id = t.tenant_id
+        WHERE ${where}
+        ORDER BY t.created_at DESC
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      ticketNo: x.ticket_no, tenantSlug: x.tenant_slug ?? null, severity: x.severity, status: x.status, sla: x.sla,
+      createdAt: iso(x.created_at), firstRespondedAt: iso(x.first_responded_at), resolvedAt: iso(x.resolved_at),
+    }));
+  }
+
+  /** Breaches with the TARGET beside the overrun. A tenant may read this in an argument about a missed promise, and an
+   *  overrun with no target next to it is a number nobody can check. */
+  async exportSlaBreaches(q: { from: string; to: string; tenantId?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = [q.from, q.to];
+    let scope = `t.deleted_at IS NULL AND t.created_at >= $1::timestamptz AND t.created_at < $2::timestamptz`;
+    if (q.tenantId) { params.push(q.tenantId); scope += ` AND t.tenant_id = $${params.length}`; }
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `WITH b AS (
+         SELECT t.ticket_no, t.tenant_id, t.severity, t.status, t.created_at,
+                'first_response' AS breach_kind, t.sla_first_response_due AS due_at,
+                EXTRACT(EPOCH FROM (COALESCE(t.first_responded_at, now()) - t.sla_first_response_due))::int / 60 AS overdue_minutes
+           FROM support_tickets t
+          WHERE ${scope} AND t.sla_first_response_due IS NOT NULL
+            AND (t.first_responded_at IS NULL OR t.first_responded_at > t.sla_first_response_due)
+            AND t.sla_first_response_due < now()
+         UNION ALL
+         SELECT t.ticket_no, t.tenant_id, t.severity, t.status, t.created_at,
+                'resolution', t.sla_resolution_due,
+                EXTRACT(EPOCH FROM (COALESCE(t.resolved_at, now()) - t.sla_resolution_due))::int / 60
+           FROM support_tickets t
+          WHERE ${scope} AND t.sla_resolution_due IS NOT NULL
+            AND (t.resolved_at IS NULL OR t.resolved_at > t.sla_resolution_due)
+            AND t.sla_resolution_due < now()
+       )
+       SELECT b.*, tn.slug AS tenant_slug
+         FROM b LEFT JOIN tenants tn ON tn.id = b.tenant_id
+        ORDER BY b.overdue_minutes DESC
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      ticketNo: x.ticket_no, tenantSlug: x.tenant_slug ?? null, severity: x.severity, status: x.status,
+      breachKind: x.breach_kind, dueAt: iso(x.due_at), overdueMinutes: Number(x.overdue_minutes),
+      createdAt: iso(x.created_at),
+    }));
+  }
+
+  /** CSAT rows from the 0099 ledger. `withComment` splits the two reports: scores-without-words and words-without-the-
+   *  person-who-wrote-them (the asymmetry is deliberate — see domain/support-export.ts). */
+  async exportCsat(q: { from: string; to: string; tenantId?: string; maxScore?: number; withComment: boolean; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = [q.from, q.to];
+    let where = `r.deleted_at IS NULL AND r.rated_at >= $1::timestamptz AND r.rated_at < $2::timestamptz`;
+    if (q.tenantId) { params.push(q.tenantId); where += ` AND r.tenant_id = $${params.length}`; }
+    if (q.maxScore !== undefined) { params.push(q.maxScore); where += ` AND r.score <= $${params.length}`; }
+    if (q.withComment) where += ` AND r.comment IS NOT NULL`;
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `SELECT t.ticket_no, tn.slug AS tenant_slug, r.score, r.rated_at, r.rated_at_is_estimated,
+              t.severity, r.rated_agent_user_id, r.comment, r.comment_language,
+              (SELECT count(*)::int FROM support_csat_reviews rv WHERE rv.response_id = r.id AND rv.deleted_at IS NULL) AS review_count,
+              (SELECT rv2.verdict FROM support_csat_reviews rv2 WHERE rv2.response_id = r.id AND rv2.deleted_at IS NULL
+                ORDER BY rv2.reviewed_at DESC LIMIT 1) AS latest_verdict
+         FROM support_csat_responses r
+         JOIN support_tickets t ON t.id = r.ticket_id
+         LEFT JOIN tenants tn ON tn.id = r.tenant_id
+        WHERE ${where}
+        ORDER BY r.rated_at DESC
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      ticketNo: x.ticket_no, tenantSlug: x.tenant_slug ?? null, score: Number(x.score),
+      ratedAt: iso(x.rated_at),
+      // exported as a real column, not a footnote: a backfilled timestamp (0099) is derived, and a spreadsheet has no
+      // room for a caveat that lives only on a screen
+      ratedAtIsEstimated: x.rated_at_is_estimated === true,
+      severity: x.severity, agentUserId: x.rated_agent_user_id ?? null,
+      comment: x.comment ?? null, commentLanguage: x.comment_language ?? null,
+      reviewCount: x.review_count ?? 0, latestVerdict: x.latest_verdict ?? null,
+    }));
+  }
+
+  /** The platform's own verdicts. The reviewer IS named: the platform is accountable for its judgements, and an
+   *  anonymous verdict about somebody's work is exactly what the rest of this wave refuses. */
+  async exportCsatReviews(q: { from: string; to: string; tenantId?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
+    const params: unknown[] = [q.from, q.to];
+    let where = `rv.deleted_at IS NULL AND rv.reviewed_at >= $1::timestamptz AND rv.reviewed_at < $2::timestamptz`;
+    if (q.tenantId) { params.push(q.tenantId); where += ` AND r.tenant_id = $${params.length}`; }
+    params.push(q.limit);
+    const r = await this.pool.query(
+      `SELECT t.ticket_no, tn.slug AS tenant_slug, r.score, rv.verdict, rv.finding,
+              rv.reviewer_admin_id, rv.reviewed_at, (rv.coaching_id IS NOT NULL) AS coaching_created
+         FROM support_csat_reviews rv
+         JOIN support_csat_responses r ON r.id = rv.response_id
+         JOIN support_tickets t ON t.id = r.ticket_id
+         LEFT JOIN tenants tn ON tn.id = r.tenant_id
+        WHERE ${where}
+        ORDER BY rv.reviewed_at DESC
+        LIMIT $${params.length}`, params);
+    return r.rows.map((x: any) => ({
+      ticketNo: x.ticket_no, tenantSlug: x.tenant_slug ?? null, score: Number(x.score),
+      verdict: x.verdict, finding: x.finding, reviewerAdminId: x.reviewer_admin_id,
+      reviewedAt: iso(x.reviewed_at), coachingCreated: x.coaching_created === true,
+    }));
   }
 }

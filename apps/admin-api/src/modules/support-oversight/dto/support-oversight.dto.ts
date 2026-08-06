@@ -123,3 +123,74 @@ export const PublishSupportPolicySchema = z.object({
   notes: z.string().max(2000).optional(),
 }).strict();
 export type PublishSupportPolicyDto = z.infer<typeof PublishSupportPolicySchema>;
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-2c · CSAT review + coaching
+// ---------------------------------------------------------------------------
+/** A verdict on a rating. The FINDING is mandatory and the schema says so in its own right, not only in the domain: a
+ *  request that cannot carry a reason should not be accepted far enough to reach the rules. */
+export const ReviewCsatSchema = z.object({
+  verdict: z.enum(['agent_at_fault', 'process_at_fault', 'product_at_fault', 'outside_our_control', 'rating_mistaken', 'needs_more_info']),
+  finding: z.string().min(10).max(4000),
+}).strict();
+export type ReviewCsatDto = z.infer<typeof ReviewCsatSchema>;
+
+/** A coaching record. `rationale` is 20 characters minimum because this row is a written statement about a named
+ *  person's work — the same floor the domain and migration 0100 both enforce. */
+export const CreateCoachingSchema = z.object({
+  kind: z.enum(['shadow_session', 'review_call', 'written_feedback', 'signal_dismissed']),
+  agentUserId: z.string().uuid(),
+  tenantId: z.string().uuid(),
+  rationale: z.string().min(20).max(4000),
+  // ISO datetime. Required for the event kinds; the domain refuses the wrong combination with a sentence.
+  scheduledFor: z.string().datetime().nullish(),
+  signalNote: z.string().max(2000).nullish(),
+  csatResponseId: z.string().uuid().nullish(),
+  csatReviewId: z.string().uuid().nullish(),
+}).strict();
+export type CreateCoachingDto = z.infer<typeof CreateCoachingSchema>;
+
+/** Settling a session. An outcome is required for `held` and REFUSED for the other two — enforced in the domain, where
+ *  the reason can be stated. */
+export const SettleCoachingSchema = z.object({
+  status: z.enum(['held', 'missed', 'cancelled']),
+  outcome: z.string().max(4000).nullish(),
+}).strict();
+export type SettleCoachingDto = z.infer<typeof SettleCoachingSchema>;
+
+/** The verdict-mix window. Reuses this module's own Window convention (a required ISO from/to, from before to) rather
+ *  than inventing a second date shape for one endpoint — two date conventions in one controller is how a caller ends up
+ *  sending the wrong one. */
+export const QueryVerdictsSchema = z.object({ ...Window }).strict()
+  .refine((v) => v.from < v.to, { message: 'from must be before to', path: ['from'] });
+export type QueryVerdictsDto = z.infer<typeof QueryVerdictsSchema>;
+
+/** The review queue's read params. */
+export const ReviewQueueSchema = z.object({
+  maxScore: z.coerce.number().int().min(1).max(5).optional(),
+  cursor: z.string().max(120).optional(),
+  limit: z.coerce.number().int().min(1).max(50).optional(),
+}).strict();
+export type ReviewQueueDto = z.infer<typeof ReviewQueueSchema>;
+
+/** A support export request. `from`/`to` are NOT optional in effect — the service refuses without them, with a sentence
+ *  saying why an unbounded export of support data is not a report anybody asked a question with. They stay nullish here
+ *  so that refusal (and its reason) reaches the operator instead of a bare zod error. */
+export const SupportExportSchema = z.object({
+  report: z.string().min(3).max(40),
+  from: z.string().min(4).max(40).optional(),
+  to: z.string().min(4).max(40).optional(),
+  tenantId: z.string().uuid().optional(),
+  maxScore: z.coerce.number().int().min(1).max(5).optional(),
+  limit: z.coerce.number().int().min(1).max(5000).optional(),
+}).strict();
+export type SupportExportDto = z.infer<typeof SupportExportSchema>;
+
+/** Filters for the coaching list. Both optional: the unfiltered list is the platform-wide ledger, which is the view a
+ *  head of support needs. UUIDs only — a free-text agent filter would invite searching by name, and this table holds no
+ *  names on purpose. */
+export const QueryCoachingSchema = z.object({
+  agentUserId: z.string().uuid().optional(),
+  tenantId: z.string().uuid().optional(),
+}).strict();
+export type QueryCoachingDto = z.infer<typeof QueryCoachingSchema>;

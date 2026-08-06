@@ -6,9 +6,14 @@
 //     whose queue is full of hard open cases is not a slow agent and counting those would say so. First response is a
 //     real p50 from `percentile_cont`, not a mean — one ticket answered after a weekend would drag a mean into fiction.
 //     CSAT arrives with its COUNT beside it: a 5.0 from one rating is not the fact a 4.6 from two hundred is.
-//   • CSAT has NO VERBATIM COMMENTS. The canon's W056 shows a "Verbatim (translated)" column and `support_tickets`
-//     stores a 1–5 score with no comment field (0012). The read returns scores only and SAYS the column is unavailable,
-//     rather than rendering an empty one that would read as "nobody wrote anything".
+//   • CSAT NOW CARRIES VERBATIM COMMENTS (PC-56 ADMIN-2c). This used to say the opposite, and it was true: the canon's
+//     W056 asks for a "Verbatim (translated)" column and `support_tickets` held a 1–5 score with no comment field.
+//     Migration 0099 replaced that column with an append-only ledger — every rating, the farmer's own words, the language
+//     they wrote in, and a real `rated_at`. The payload still carries `verbatimsAvailable` so a consumer can distinguish
+//     "no comments in this window" from "this platform cannot store comments"; only the second one has stopped being
+//     possible. It also fixed a data-loss bug nobody could see: the old column was CLEARED ON REOPEN, so the bad ratings
+//     — the ones most likely to precede a reopen — were being deleted, and every CSAT figure was computed over the
+//     survivors.
 //   • THE SLA MATRIX IS THE REAL ONE. It is not read from a config table because there is no config table: the targets
 //     live in code (`domain/sla.ts`, mirroring apps/api). So the matrix is served from that constant — the actual
 //     numbers the platform enforces — and the ESCALATION CHAIN the canon also shows (who is paged at breach, +30min,
@@ -50,8 +55,15 @@ export class SupportInsightsService {
       // NULL, not 0, when nothing was rated: an unrated window is not a window everybody hated
       averageBps: rated > 0 ? Math.round((weighted / rated / 5) * 10000) : null,
       scores,
-      verbatimsAvailable: false,
-      verbatimsNote: 'support_tickets stores a 1-5 score and no comment field, so no verbatim column is served (GAP-BACKEND ADMIN-2-Q1)',
+      // PC-56 ADMIN-2c: TRUE now. ADMIN-2 hard-coded this false because support_tickets held a 1-5 integer and no comment
+      // field; migration 0099 made every rating a ledger row that carries the farmer's own words and the language they
+      // wrote them in. The flag stays in the payload rather than being deleted so a consumer can tell "no comments in
+      // this window" from "this platform cannot store comments" — which were the same thing before and are not now.
+      verbatimsAvailable: true,
+      verbatimCount: scores.filter((x) => !!x.comment && x.comment.trim().length > 0).length,
+      // and the ratings the OLD screen could never have shown: 0099 also stopped a reopen deleting the previous score
+      estimatedRatedAtCount: scores.filter((x) => x.ratedAtIsEstimated).length,
+      ratedAtNote: 'ratedAt is the moment the rating was given. Rows flagged ratedAtIsEstimated predate migration 0099 and carry the ticket\'s resolution or creation time instead.',
     };
   }
 

@@ -13,6 +13,7 @@ import { adminPost, AdminApiError } from '../../lib/admin-client';
 import { buildEscalate } from '../../features/support/ticket';
 import { buildMacro } from '../../features/support/desk';
 import { buildPolicy } from '../../features/support/policy';
+import { buildReview, buildCoaching, buildSettlement } from '../../features/support/review';
 
 /** A reason is mandatory on anything that changes what the desk shows other people (mirrors the server's zod Reason). */
 function validReason(reason: string | null | undefined): boolean {
@@ -145,4 +146,72 @@ export async function resolveTicketAction(formData: FormData): Promise<void> {
   revalidatePath('/support');
   revalidatePath('/support/sla-breaches');
   back('ok=resolved');
+}
+
+// ---------------------------------------------------------------------------
+// PC-56 ADMIN-2c · CSAT review + coaching (canon W056, W2019-25, W2121-25)
+// ---------------------------------------------------------------------------
+
+/** File a verdict on a rating. NOT elevated: it records a judgement, changes nobody's access and moves no money, and
+ *  over-gating a control a lead uses forty times a day trains people to click through elevation prompts. */
+export async function reviewCsatAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/support/insights/csat');
+  const back: (qs: string) => never = (qs) => redirect(`/support/csat/${enc(id)}?${qs}`);
+  const built = buildReview((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=rev_${built.error}`);
+  let recorded = true;
+  try {
+    const res = await adminPost<{ recorded: boolean }>(`support/csat/${enc(id)}/review`, { body: built.value });
+    recorded = res.data?.recorded !== false;
+  } catch (e) { back(`error=${errorKey(e)}`); }
+  revalidatePath(`/support/csat/${id}`);
+  revalidatePath('/support/insights/csat');
+  // a repeat of the same verdict was deduped server-side; saying so beats reporting success twice
+  back(recorded ? 'ok=filed' : 'ok=duplicate');
+}
+
+/**
+ * Record coaching, or record a decision NOT to coach.
+ *
+ * ELEVATED, unlike the verdict above. This writes a permanent statement about a named person's work into a system their
+ * employer can be shown; the hardware key is proportionate here and nowhere else in this module.
+ */
+export async function createCoachingAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const returnTo = String(formData.get('returnTo') ?? '/support/coaching').trim() || '/support/coaching';
+  const safeReturn = returnTo.startsWith('/support/') ? returnTo : '/support/coaching';
+  const back: (qs: string) => never = (qs) => redirect(`${safeReturn}?${qs}`);
+  const built = buildCoaching((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=coach_${built.error}`);
+  try { await adminPost('support/coaching', { body: built.value }); }
+  catch (e) {
+    // a 422 here is usually the server refusing to coach somebody for a verdict that blamed a process — its message
+    // says exactly that, and paraphrasing it would lose the reason
+    if (e instanceof AdminApiError && e.status === 422) back(`error=coach_rejected&why=${enc(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/support/coaching');
+  revalidatePath('/support/insights');
+  if (built.value.csatResponseId) revalidatePath(`/support/csat/${built.value.csatResponseId}`);
+  back(built.value.kind === 'signal_dismissed' ? 'ok=dismissed' : 'ok=created');
+}
+
+/** Record what happened to a scheduled session. The server refuses a second settlement, so two leads cannot overwrite
+ *  each other's account of the same conversation. */
+export async function settleCoachingAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const back: (qs: string) => never = (qs) => redirect(`/support/coaching?${qs}`);
+  if (!id) back('error=notFound');
+  const built = buildSettlement((n) => String(formData.get(n) ?? ''));
+  if (!built.ok) back(`error=coach_${built.error}`);
+  try { await adminPost(`support/coaching/${enc(id)}/settle`, { body: built.value }); }
+  catch (e) {
+    if (e instanceof AdminApiError && e.status === 422) back(`error=coach_rejected&why=${enc(e.message.slice(0, 300))}`);
+    back(`error=${errorKey(e)}`);
+  }
+  revalidatePath('/support/coaching');
+  back('ok=settled');
 }

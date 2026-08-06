@@ -81,6 +81,10 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
         <Link href="/support/macros" className="kv-chip">{t.t('support.macrosLink')}</Link>
         <Link href="/support/escalation" className="kv-chip">{t.t('support.escalationLink')}</Link>
         <Link href="/support/insights" className="kv-chip">{t.t('support.insightsLink')}</Link>
+        {/* PC-56 ADMIN-2c · the rating-review queue, the coaching ledger and the audited exports */}
+        <Link href="/support/csat/queue" className="kv-chip">{t.t('support.reviewLink')}</Link>
+        <Link href="/support/coaching" className="kv-chip">{t.t('support.coachingLink')}</Link>
+        <Link href="/support/exports" className="kv-chip">{t.t('support.exportsLink')}</Link>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('support.filterStatus')}>

@@ -1,10 +1,17 @@
-// apps/web-admin/src/app/support/insights/csat/page.tsx · CSAT EXPLORER (PC-56 ADMIN-2, canon W056).
+// apps/web-admin/src/app/support/insights/csat/page.tsx · CSAT EXPLORER (PC-56 ADMIN-2 · deepened by ADMIN-2c, canon W056).
 //
-// TWO HONESTIES ON THIS PAGE:
-//   1. THE CANON'S "VERBATIM (TRANSLATED)" COLUMN DOES NOT EXIST, and the page says so instead of rendering an empty
-//      column. `support_tickets` stores a 1–5 score and no comment field (0012), so there is nothing to translate. An
-//      empty column would read as "nobody wrote anything", which is a claim about farmers rather than about our schema.
-//      Queued as ADMIN-2-Q1.
+// THE VERBATIM COLUMN EXISTS NOW. ADMIN-2 shipped this page with a warning in capital letters: the canon's
+// "Verbatim (translated)" column had nothing behind it, because `support_tickets` held a 1–5 integer and no comment
+// field. Migration 0099 made every rating an append-only ledger row carrying the farmer's own words and the language
+// they wrote them in, so the column is real and the warning is gone.
+//
+// WHAT REPLACED THE WARNING IS NARROWER AND TRUER: when nobody in the window wrote anything, the page says THAT — a fact
+// about the window rather than a limitation of the record. Those were the same sentence before and they are not now.
+//
+// TWO MORE HONESTIES, both still load-bearing:
+//   1. A DERIVED TIMESTAMP IS MARKED ON THE ROW. 0099's backfill had no rating time to copy (the column never existed),
+//      so those rows carry the ticket's resolution time and say so in the cell — not in a footnote, which does not
+//      travel with a screenshot.
 //   2. AN UNRATED WINDOW IS NOT A BAD ONE. With no ratings the distribution renders nothing at all rather than five
 //      zero bars, which would draw a chart implying everybody scored 1, and the average is absent rather than 0%.
 //
@@ -26,13 +33,20 @@ export function generateMetadata(): Metadata {
 }
 
 interface ScoreRow {
+  // PC-56 ADMIN-2c: a rating is now a LEDGER ROW (migration 0099), so it has its own id — which is what the review
+  // drill-in is keyed on. `ticketId` is no longer unique here either: one ticket can carry several ratings now that a
+  // reopen stops deleting the previous one.
+  responseId?: string;
   ticketId: string; ticketNo: string; tenantSlug: string | null; score: number;
   severity: string; assigneeUserId: string | null; ratedAt: string;
+  ratedAtIsEstimated?: boolean;
+  comment?: string | null; commentLanguage?: string | null;
+  reviewCount?: number; latestVerdict?: string | null;
 }
 interface CsatView {
   window: { from: string; to: string };
   distribution: CsatBucket[]; ratedCount: number; averageBps: number | null;
-  scores: ScoreRow[]; verbatimsAvailable: boolean;
+  scores: ScoreRow[]; verbatimsAvailable: boolean; verbatimCount?: number; estimatedRatedAtCount?: number;
 }
 
 export default async function CsatPage({ searchParams }: { searchParams: { days?: string; low?: string } }) {
@@ -111,26 +125,58 @@ export default async function CsatPage({ searchParams }: { searchParams: { days?
                 <th scope="col">{t.t('csat.ticket')}</th>
                 <th scope="col">{t.t('csat.tenant')}</th>
                 <th scope="col">{t.t('csat.agent')}</th>
+                {/* PC-56 ADMIN-2c: the column ADMIN-2 had to report as impossible */}
+                <th scope="col">{t.t('rev.words')}</th>
+                <th scope="col">{t.t('rev.open')}</th>
               </tr></thead>
               <tbody>
                 {(view?.scores ?? []).map((s) => (
-                  <tr key={s.ticketId}>
-                    <td>{formatDate(s.ratedAt)}</td>
+                  <tr key={s.responseId ?? s.ticketId}>
+                    <td>
+                      {formatDate(s.ratedAt)}
+                      {/* marked on the row: a caveat at the foot of a page does not travel with a screenshot */}
+                      {s.ratedAtIsEstimated && <> <span className="kv-status kv-status--warn">{t.t('rev.estimated')}</span></>}
+                    </td>
                     <td>
                       <span className={`kv-status ${isLowScore(s.score) ? 'kv-status--danger' : 'kv-status--ok'}`}>{s.score}</span>
                     </td>
                     <td><Link href={`/support/tickets/${encodeURIComponent(s.ticketId)}`}>{s.ticketNo}</Link></td>
                     <td>{s.tenantSlug ?? t.t('common.dash')}</td>
                     <td><code>{String(s.assigneeUserId ?? '').slice(0, 8) || t.t('common.dash')}</code></td>
+                    <td>
+                      {s.comment
+                        ? <>{s.comment}{s.commentLanguage ? <> <span className="kv-detail__muted">({s.commentLanguage})</span></> : null}</>
+                        // a score with no words is the common case; it is not "no feedback"
+                        : <span className="kv-detail__muted">{t.t('rev.noWords')}</span>}
+                    </td>
+                    <td>
+                      {s.responseId
+                        ? <Link href={`/support/csat/${encodeURIComponent(s.responseId)}`}>
+                            {s.reviewCount && s.reviewCount > 0 ? t.t('rev.reviewedAlready') : t.t('rev.open')}
+                          </Link>
+                        : t.t('common.dash')}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
 
-          {/* The missing column, named rather than rendered empty. */}
-          {view && !view.verbatimsAvailable && <p className="kv-notice" role="note">{t.t('csat.noVerbatims')}</p>}
+          {/* NOT the old "this platform cannot store comments" warning — migration 0099 closed that. This says whether
+              anybody in THIS WINDOW wrote something, which is a fact about the window. */}
+          {view && view.verbatimsAvailable && (view.verbatimCount ?? 0) === 0 && (
+            <p className="kv-notice" role="note">{t.t('csat.noVerbatims')}</p>
+          )}
+          {(view?.estimatedRatedAtCount ?? 0) > 0 && (
+            <p className="kv-notice" role="note">{t.t('rev.estimatedNote', { n: String(view?.estimatedRatedAtCount ?? 0) })}</p>
+          )}
           <p className="kv-field__hint">{t.t('csat.ratedAtNote')}</p>
+
+          <p className="kv-field__hint">
+            <Link href="/support/csat/queue">{t.t('rev.queueTitle')}</Link>
+            {' · '}<Link href="/support/coaching">{t.t('support.coachingLink')}</Link>
+            {' · '}<Link href="/support/exports">{t.t('support.exportsLink')}</Link>
+          </p>
         </>
       )}
     </section>

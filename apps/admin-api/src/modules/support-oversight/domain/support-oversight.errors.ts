@@ -50,3 +50,16 @@ export class InvalidSupportPolicyError extends DomainHttpError {
 export class TicketStateError extends DomainHttpError {
   constructor(detail: string) { super('SUPPORT_TICKET_STATE', detail, HttpStatus.CONFLICT, { detail }); }
 }
+
+/** A review or coaching record the rules refuse — no reasoning, a session in the past, or coaching somebody for a
+ *  verdict that blamed a process rather than a person. 422 with the specific rule in the message. */
+export class InvalidCoachingError extends DomainHttpError {
+  constructor(detail: string) { super('SUPPORT_COACHING_INVALID', detail, HttpStatus.UNPROCESSABLE_ENTITY, { detail }); }
+}
+export class CoachingNotFoundError extends DomainHttpError {
+  constructor(ref: string) { super('SUPPORT_COACHING_NOT_FOUND', `coaching record ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
+}
+/** A rating that does not exist. 404 rather than a foreign-key 500: an operator can read a 404. */
+export class CsatResponseNotFoundError extends DomainHttpError {
+  constructor(ref: string) { super('SUPPORT_CSAT_NOT_FOUND', `rating ${ref} not found`, HttpStatus.NOT_FOUND, { ref }); }
+}

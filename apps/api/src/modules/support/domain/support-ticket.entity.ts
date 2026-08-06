@@ -59,6 +59,16 @@ export class SupportTicket {
     const evt = to === 'escalated' ? SupportEventType.TicketEscalated : to === 'resolved' ? SupportEventType.TicketResolved : to === 'closed' ? SupportEventType.TicketClosed : to === 'reopened' ? SupportEventType.TicketReopened : null;
     if (evt) this.events.push({ type: evt, payload: { ticketId: this.props.id, from, to } });
   }
+  /**
+   * Set the DERIVED csat column from the 0099 ledger (PC-56 ADMIN-2c). Deliberately separate from `submitCsat`:
+   * submitCsat is the FARMER'S ACT and enforces their rules (the ticket must be closable, the score must be 1-5); this
+   * is bookkeeping that copies the ledger's latest value onto the ticket. Merging them would mean either the service
+   * re-running the farmer's validation on a value that came from the database, or the entity trusting a caller to have
+   * validated — and the column is allowed to be null (the ledger may be empty), which submitCsat must never accept.
+   */
+  setDerivedCsatScore(score: number | null): void {
+    this.props.csatScore = score;
+  }
   submitCsat(score: number): void {
     if (!isClosable(this.props.status)) throw new TicketNotResolvedError(this.props.status);
     if (!Number.isInteger(score) || score < 1 || score > 5) throw new InvalidTicketError('csat_score must be an integer 1-5');

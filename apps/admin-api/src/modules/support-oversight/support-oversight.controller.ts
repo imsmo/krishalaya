@@ -13,6 +13,8 @@ import { TenantHealthAlertsService } from './services/tenant-health-alerts.servi
 import { SupportMacrosService } from './services/support-macros.service';
 import { SupportInsightsService } from './services/support-insights.service';
 import { SupportPolicyService } from './services/support-policy.service';
+import { CoachingService } from './services/coaching.service';
+import { SupportExportService } from './services/support-export.service';
 import { TicketEscalationsService } from './services/ticket-escalations.service';
 import {
   QueryTicketsSchema, QueryTicketsDto, QueryBreachesSchema, QueryBreachesDto,
@@ -20,6 +22,10 @@ import {
   QueryInsightsSchema, QueryInsightsDto, QueryCsatSchema, QueryCsatDto,
   CreateMacroSchema, CreateMacroDto, ToggleMacroSchema, ToggleMacroDto,
   PublishSupportPolicySchema, PublishSupportPolicyDto, ResolveTicketSchema, ResolveTicketDto,
+  ReviewCsatSchema, ReviewCsatDto, CreateCoachingSchema, CreateCoachingDto,
+  SettleCoachingSchema, SettleCoachingDto, ReviewQueueSchema, ReviewQueueDto,
+  SupportExportSchema, SupportExportDto, QueryVerdictsSchema, QueryVerdictsDto,
+  QueryCoachingSchema, QueryCoachingDto,
 } from './dto/support-oversight.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -36,6 +42,8 @@ export class SupportOversightController {
     private readonly macros: SupportMacrosService,
     private readonly insights: SupportInsightsService,
     private readonly policy: SupportPolicyService,
+    private readonly coaching: CoachingService,
+    private readonly exports: SupportExportService,
   ) {}
 
   /* ================= PC-56 ADMIN-2 · support-desk depth ================= */
@@ -68,6 +76,56 @@ export class SupportOversightController {
   // Counts for the queue's filter chips (W005). One grouped query, not one per chip.
   @Get('ticket-counts') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
   ticketCounts() { return this.monitor.ticketCounts().then((data) => ({ data })); }
+
+  // -------------------------------------------------------------------------
+  // PC-56 ADMIN-2c · CSAT REVIEW (canon W056, W2121-25) and COACHING (W2019-25)
+  // -------------------------------------------------------------------------
+  // The review QUEUE is low ratings nobody has judged — not all low ratings. A queue that re-shows finished work is a
+  // queue people stop trusting.
+  @Get('csat/queue') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  csatQueue(@ZodQuery(ReviewQueueSchema) q: ReviewQueueDto) { return this.coaching.reviewQueue(q).then((data) => ({ data })); }
+
+  @Get('csat/verdicts') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  csatVerdicts(@ZodQuery(QueryVerdictsSchema) q: QueryVerdictsDto) {
+    return this.coaching.verdictSummary(q.from, q.to).then((data) => ({ data }));
+  }
+
+  @Get('csat/:id') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  csatResponse(@Param('id') id: string) { return this.coaching.response(id).then((data) => ({ data })); }
+
+  // Filing a verdict is NOT elevated. It records a judgement and changes nothing about anybody's access or money, and
+  // over-gating a control operators use forty times a day trains them to click through elevation prompts.
+  @Post('csat/:id/review') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage)
+  reviewCsat(@Req() req: any, @Param('id') id: string, @ZodBody(ReviewCsatSchema) dto: ReviewCsatDto) {
+    return this.coaching.review(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  @Get('coaching') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  coachingList(@ZodQuery(QueryCoachingSchema) q: QueryCoachingDto) {
+    return this.coaching.coachingList({ agentUserId: q.agentUserId, tenantId: q.tenantId }).then((data) => ({ data }));
+  }
+
+  // A coaching record IS elevated. It is a written statement about a named person's performance held in a system their
+  // employer can be shown — the one place in this module where the hardware key is proportionate.
+  @Post('coaching') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  createCoaching(@Req() req: any, @ZodBody(CreateCoachingSchema) dto: CreateCoachingDto) {
+    return this.coaching.createCoaching(admin(req), dto).then((data) => ({ data }));
+  }
+
+  @Post('coaching/:id/settle') @RequireOwnerPermission(OwnerPermissions.SupportOversightManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  settleCoaching(@Req() req: any, @Param('id') id: string, @ZodBody(SettleCoachingSchema) dto: SettleCoachingDto) {
+    return this.coaching.settleCoaching(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  // -------------------------------------------------------------------------
+  // PC-56 ADMIN-2c · EXPORTS (canon W1944-45, W2121-22, W2270-71)
+  // -------------------------------------------------------------------------
+  // POST because it MUTATES THE AUDIT LEDGER — the receipt is a write. Same reasoning as ADMIN-1d's billing export, and
+  // it is also what keeps a prefetcher from silently producing export receipts.
+  @Post('exports') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
+  supportExport(@Req() req: any, @ZodBody(SupportExportSchema) dto: SupportExportDto) {
+    return this.exports.export(admin(req), dto).then((data) => ({ data }));
+  }
 
   // MACROS (W053)
   @Get('macros') @RequireOwnerPermission(OwnerPermissions.SupportOversightRead)
