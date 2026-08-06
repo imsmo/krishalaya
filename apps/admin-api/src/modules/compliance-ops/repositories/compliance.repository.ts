@@ -6,9 +6,9 @@
 import { Injectable } from '@nestjs/common';
 import { PoolClient } from 'pg';
 import { AdminPool } from '../../../core/database/admin-pool';
-import { DataSubjectRequest, DsrProps } from '../domain/dsr.entity';
+import { DataSubjectRequest } from '../domain/dsr.entity';
 import { DsrStatus } from '../domain/dsr.state';
-import { Breach, BreachProps } from '../domain/breach.entity';
+import { Breach } from '../domain/breach.entity';
 import { BreachStatus } from '../domain/breach.state';
 
 function toDsr(r: any): DataSubjectRequest {

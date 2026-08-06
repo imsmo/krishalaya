@@ -14,11 +14,16 @@ import { DunningService } from './services/dunning.service';
 import { ManualAdjustmentService } from './services/manual-adjustment.service';
 import { RevenueDashboardService } from './services/revenue-dashboard.service';
 import { SubscriptionViewService } from './services/subscription-view.service';
+import { InvoicePaymentsService } from './services/invoice-payments.service';
+import { DunningPolicyService } from './services/dunning-policy.service';
 import {
   QueryInvoicesSchema, QueryInvoicesDto, UpdateInvoiceSchema, UpdateInvoiceDto,
   QueryDunningSchema, QueryDunningDto, RecordDunningSchema, RecordDunningDto,
   QueryDunningQueueSchema, QueryDunningQueueDto,
-  QueryAdjustmentsSchema, QueryAdjustmentsDto, ApplyAdjustmentSchema, ApplyAdjustmentDto,
+  QueryAdjustmentsSchema, QueryAdjustmentsDto,
+  RecordPaymentSchema, RecordPaymentDto, ReversePaymentSchema, ReversePaymentDto,
+  RequestAdjustmentSchema, RequestAdjustmentDto, DecideAdjustmentSchema, DecideAdjustmentDto,
+  PublishDunningPolicySchema, PublishDunningPolicyDto,
   QueryRevenueSchema, QueryRevenueDto,
 } from './dto/billing-ops.dto';
 
@@ -42,6 +47,8 @@ export class BillingOpsController {
     private readonly adjustments: ManualAdjustmentService,
     private readonly revenue: RevenueDashboardService,
     private readonly subscriptions: SubscriptionViewService,
+    private readonly payments: InvoicePaymentsService,
+    private readonly policy: DunningPolicyService,
   ) {}
 
   // ---- reads ----
@@ -78,9 +85,20 @@ export class BillingOpsController {
 
   @Get('adjustments') @RequireOwnerPermission(OwnerPermissions.BillingRead)
   listAdjustments(@ZodQuery(QueryAdjustmentsSchema) q: QueryAdjustmentsDto) {
-    return this.adjustments.list({ tenantId: q.tenantId, cursor: decodeCursor(q.cursor), limit: q.limit })
+    return this.adjustments.list({ tenantId: q.tenantId, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
+
+  // PC-56 ADMIN-1b · every payment recorded against one invoice, plus the DERIVED money picture (paid /
+  // outstanding / overpaid). This read is what replaced "balance unknown" on the collection queue.
+  @Get('invoices/:id/payments') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  listPayments(@Param('id') id: string) { return this.payments.list(id).then((data) => ({ data })); }
+
+  // The ACTIVE collections ladder + its steps (null when no version is active — a real state, said plainly).
+  @Get('dunning-policy') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  activePolicy() { return this.policy.active().then((data) => ({ data })); }
+  @Get('dunning-policy/versions') @RequireOwnerPermission(OwnerPermissions.BillingRead)
+  policyVersions() { return this.policy.versions().then((data) => ({ data })); }
 
   // ---- mutations: hardware-key + step-up elevation required ----
   @Patch('invoices/:id') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
@@ -91,8 +109,37 @@ export class BillingOpsController {
   recordDunning(@Req() req: any, @Param('id') id: string, @ZodBody(RecordDunningSchema) dto: RecordDunningDto) {
     return this.dunning.record(admin(req), id, dto).then((data) => ({ data }));
   }
-  @Post('adjustments') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
-  applyAdjustment(@Req() req: any, @ZodBody(ApplyAdjustmentSchema) dto: ApplyAdjustmentDto) {
-    return this.adjustments.apply(admin(req), dto).then((data) => ({ data }));
+  // PC-56 ADMIN-1b · MAKER-CHECKER on adjustments (0093). Three routes because they are three different acts by
+  // (at least) two different people. REQUEST moves no money and therefore needs no elevation beyond the write
+  // permission; DECIDE and APPLY are the consequential ones and keep FIDO2 + step-up.
+  @Post('adjustments') @RequireOwnerPermission(OwnerPermissions.BillingManage)
+  requestAdjustment(@Req() req: any, @ZodBody(RequestAdjustmentSchema) dto: RequestAdjustmentDto) {
+    return this.adjustments.request(admin(req), dto).then((data) => ({ data }));
+  }
+  @Post('adjustments/:id/decision') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  decideAdjustment(@Req() req: any, @Param('id') id: string, @ZodBody(DecideAdjustmentSchema) dto: DecideAdjustmentDto) {
+    return this.adjustments.decide(admin(req), id, dto).then((data) => ({ data }));
+  }
+  @Post('adjustments/:id/apply') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  applyAdjustment(@Req() req: any, @Param('id') id: string) {
+    return this.adjustments.apply(admin(req), id).then((data) => ({ data }));
+  }
+
+  // PC-56 ADMIN-1b · payments (0092). Recording a receipt is consequential — it settles a tenant's invoice — so it
+  // carries the same elevation as every other money control here, even though it posts nothing to the ledger.
+  @Post('invoices/:id/payments') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  recordPayment(@Req() req: any, @Param('id') id: string, @ZodBody(RecordPaymentSchema) dto: RecordPaymentDto) {
+    return this.payments.record(admin(req), id, dto).then((data) => ({ data }));
+  }
+  @Post('payments/:id/reverse') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  reversePayment(@Req() req: any, @Param('id') id: string, @ZodBody(ReversePaymentSchema) dto: ReversePaymentDto) {
+    return this.payments.reverse(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  // PC-56 ADMIN-1b · publish a NEW dunning-policy version (0094). Never an in-place edit: the old ladder is why a
+  // tenant was chased the way they were, and that has to stay readable.
+  @Post('dunning-policy') @RequireOwnerPermission(OwnerPermissions.BillingManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  publishPolicy(@Req() req: any, @ZodBody(PublishDunningPolicySchema) dto: PublishDunningPolicyDto) {
+    return this.policy.publish(admin(req), dto).then((data) => ({ data }));
   }
 }

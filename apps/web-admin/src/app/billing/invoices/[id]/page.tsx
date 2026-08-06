@@ -18,7 +18,11 @@ import {
   reconcileLines, lineVarianceMinor, gstLabelPct, hsnLabel, hsnAbsentThroughout, pdfState, invoicePdfFileName,
   type LineRow,
 } from '../../../../features/billing/invoice-lines';
-import { updateInvoiceAction, recordDunningAction } from '../../actions';
+import {
+  PAYMENT_METHODS, canRecordPayment, payableBlockedReason, reversedIds, canReverse, reverseBlockedReason,
+  isReversal, isOverpaid, isSettled, type PaymentRow,
+} from '../../../../features/billing/money-controls';
+import { updateInvoiceAction, recordDunningAction, recordPaymentAction, reversePaymentAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,8 +30,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('billing.invoiceDetailTitle'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['issue', 'mark_overdue', 'void', 'dunning']);
-const ERR = new Set(['reason', 'channel', 'outcome', 'note', 'elevation', 'illegal', 'notFound', 'generic']);
+const OK = new Set(['issue', 'mark_overdue', 'void', 'dunning', 'payment', 'reversed']);
+const ERR = new Set(['reason', 'channel', 'outcome', 'note', 'elevation', 'illegal', 'notFound', 'generic',
+  'pay_amount', 'pay_reference', 'pay_method', 'pay_receivedAt', 'pay_future', 'pay_currency']);
 
 export default async function InvoiceDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   requireAdmin();
@@ -43,6 +48,14 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
   let dunning: DunningAttempt[] = [];
   try { dunning = (await adminGet<DunningAttempt[]>(`billing/invoices/${params.id}/dunning`, { limit: 50 })).data ?? []; }
   catch { /* dunning degrades independently */ }
+
+  // PC-56 ADMIN-1b · the money actually received (0092). Degrades independently: if this read fails the page still
+  // shows the invoice, and the payments section says it could not be loaded rather than implying nothing was paid —
+  // "no payments shown" and "no payments received" must never look the same on a collections screen.
+  interface PaymentsView { currency?: string; totalMinor?: string; paidMinor?: string; outstandingMinor?: string; overpaidMinor?: string; payments?: PaymentRow[] }
+  let money: PaymentsView | null = null; let moneyFailed = false;
+  try { money = (await adminGet<PaymentsView>(`billing/invoices/${params.id}/payments`)).data ?? null; }
+  catch { moneyFailed = true; }
 
   if (!inv) {
     return <section><p className="kv-backlink"><Link href="/billing/invoices">{t.t('billing.backInvoices')}</Link></p><p className="kv-error" role="alert">{notice}</p></section>;
@@ -77,6 +90,102 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
         <div className="kv-facts__row"><dt>{t.t('billing.dueDate')}</dt><dd>{inv.dueDate ?? t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('billing.dunningAttempts')}</dt><dd>{inv.dunningAttempts.toLocaleString()}</dd></div>
       </dl>
+
+      {/* WHAT WAS RECEIVED (PC-56 ADMIN-1b, canon W013 payments panel — closes ADMIN-1-Q1). Before migration 0092
+          the platform had nowhere to record this, so `partially_paid` meant "some unknown amount". Every figure below
+          comes from the server's own SUM over the payment rows — the same sum that drove the invoice's status — and
+          none of it is recomputed here, because a page that derives money a second way eventually disagrees with the
+          invoice it is displaying. */}
+      <h2>{t.t('pay.title')}</h2>
+      {moneyFailed ? <p className="kv-error" role="alert">{t.t('pay.loadError')}</p> : money && (
+        <>
+          <dl className="kv-facts">
+            <div className="kv-facts__row"><dt>{t.t('pay.received')}</dt><dd>{formatMoneyMinor(String(money.paidMinor ?? '0'), inv.currency)}</dd></div>
+            <div className="kv-facts__row"><dt>{t.t('pay.outstanding')}</dt><dd>
+              {isSettled(money)
+                ? <span className="kv-status kv-status--ok">{t.t('pay.settled')}</span>
+                : <strong>{formatMoneyMinor(String(money.outstandingMinor ?? '0'), inv.currency)}</strong>}
+            </dd></div>
+            {isOverpaid(money) && (
+              <div className="kv-facts__row"><dt>{t.t('pay.overpaid')}</dt><dd>
+                <span className="kv-status kv-status--warn">{formatMoneyMinor(String(money.overpaidMinor), inv.currency)}</span>
+              </dd></div>
+            )}
+          </dl>
+          {/* An overpayment is kept, never clamped — and it is said out loud, because the tenant will ask. */}
+          {isOverpaid(money) && <p className="kv-notice" role="note">{t.t('pay.overpaidNote')}</p>}
+
+          {(money.payments ?? []).length === 0 ? <p className="kv-empty">{t.t('pay.none')}</p> : (
+            <ul className="kv-list" role="list">
+              {(() => {
+                const rows = money.payments ?? [];
+                const reversed = reversedIds(rows);
+                return rows.map((pmt) => (
+                  <li key={pmt.id} className="kv-card">
+                    <p className="kv-card__title">
+                      {formatMoneyMinor(String(pmt.amountMinor ?? '0'), pmt.currency ?? inv.currency)}
+                      {' '}<span className={`kv-status ${isReversal(pmt) ? 'kv-status--danger' : 'kv-status--ok'}`}>
+                        {t.t(isReversal(pmt) ? 'pay.reversalLabel' : `pay.method.${String(pmt.method)}`)}
+                      </span>
+                    </p>
+                    <p className="kv-detail__muted">
+                      {t.t('pay.reference')}: <code>{pmt.reference}</code>
+                      {pmt.receivedAt ? ` · ${t.t('pay.receivedOn')} ${pmt.receivedAt}` : ''}
+                      {pmt.walletTxnId ? ` · ${t.t('pay.viaWallet')}` : ''}
+                    </p>
+                    {pmt.note && <p className="kv-detail__muted">{pmt.note}</p>}
+                    {canReverse(pmt, reversed) ? (
+                      <details className="kv-limit-form">
+                        <summary>{t.t('pay.reverse')}</summary>
+                        <p className="kv-field__hint">{t.t('pay.reverseHint')}</p>
+                        <form action={reversePaymentAction} className="kv-form">
+                          <input type="hidden" name="invoiceId" value={inv.id} />
+                          <input type="hidden" name="paymentId" value={String(pmt.id ?? '')} />
+                          <label htmlFor={`rv-${pmt.id}`} className="kv-field__label">{t.t('billing.reason')}</label>
+                          <input id={`rv-${pmt.id}`} name="reason" className="kv-input" required minLength={3} maxLength={1000} />
+                          <button type="submit" className="kv-btn kv-btn--danger">{t.t('pay.reverseSubmit')}</button>
+                        </form>
+                      </details>
+                    ) : (
+                      <p className="kv-detail__muted">{t.t(`pay.reverseBlocked.${reverseBlockedReason(pmt, reversed)}`)}</p>
+                    )}
+                  </li>
+                ));
+              })()}
+            </ul>
+          )}
+        </>
+      )}
+
+      {/* Recording a receipt. The CURRENCY is a hidden field carrying the invoice's own — never a selector, because
+          the server (correctly) refuses a mismatched currency and there is no reason to let someone discover that
+          after typing everything. The status gate mirrors `assertPayable` and NAMES the reason when it blocks. */}
+      {canRecordPayment(inv.status) ? (
+        <details className="kv-card kv-limit-form">
+          <summary className="kv-card__title">{t.t('pay.recordTitle')}</summary>
+          <p className="kv-field__hint">{t.t('pay.recordHint')}</p>
+          <form action={recordPaymentAction} className="kv-form">
+            <input type="hidden" name="id" value={inv.id} />
+            <input type="hidden" name="currency" value={inv.currency} />
+            <label htmlFor="pay-amount" className="kv-field__label">{t.t('pay.amount', { currency: inv.currency })}</label>
+            <input id="pay-amount" name="amountMajor" className="kv-input" required inputMode="decimal" placeholder="4990.00" />
+            <label htmlFor="pay-method" className="kv-field__label">{t.t('pay.methodLabel')}</label>
+            <select id="pay-method" name="method" className="kv-input" defaultValue="bank_transfer">
+              {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{t.t(`pay.method.${m}`)}</option>)}
+            </select>
+            <label htmlFor="pay-ref" className="kv-field__label">{t.t('pay.reference')}</label>
+            <input id="pay-ref" name="reference" className="kv-input" required minLength={3} maxLength={120} placeholder="UTR / cheque no" />
+            <p className="kv-field__hint">{t.t('pay.referenceHint')}</p>
+            <label htmlFor="pay-at" className="kv-field__label">{t.t('pay.receivedAt')}</label>
+            <input id="pay-at" name="receivedAt" className="kv-input" required type="datetime-local" />
+            <label htmlFor="pay-note" className="kv-field__label">{t.t('billing.note')}</label>
+            <input id="pay-note" name="note" className="kv-input" maxLength={1000} />
+            <button type="submit" className="kv-btn">{t.t('pay.recordSubmit')}</button>
+          </form>
+        </details>
+      ) : (
+        <p className="kv-notice" role="note">{t.t(`pay.blocked.${payableBlockedReason(inv.status)}`)}</p>
+      )}
 
       {/* WHAT WAS BILLED (PC-56 ADMIN-1, canon W013). The lines come from `saas_invoices.line_items` exactly as filed;
           nothing here re-derives GST or re-multiplies a line. When the visible lines do not add up to the filed

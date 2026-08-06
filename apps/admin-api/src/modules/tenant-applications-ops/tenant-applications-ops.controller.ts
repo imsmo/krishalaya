@@ -2,7 +2,7 @@
 // Reads = TenantRead. DECISIONS = TenantManage + HardwareKey + StepUp (same double-lock as tenant approve/
 // suspend — provisioning a tenant is as consequential as it gets).
 import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { AdminAuthGuard, AdminRequestContext } from '../../core/auth/admin-auth.guard';
+import { AdminAuthGuard } from '../../core/auth/admin-auth.guard';
 import { HardwareKeyGuard } from '../../core/auth/hardware-key.guard';
 import { StepUpReauthGuard } from '../../core/auth/step-up-reauth.guard';
 import { OwnerPermissionsGuard, RequireOwnerPermission, OwnerPermissions } from '../../core/rbac/owner-roles';

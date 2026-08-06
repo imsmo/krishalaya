@@ -60,7 +60,7 @@ run('cells-ops (integration, real Postgres — cell/shard registry + placement +
     expect(s1.hasDsn).toBe(true);     // a DSN was set but the value is never returned
 
     await assign.place(actor, { tenantId, cellId: a1.id, shardId: s1.id, pinned: false, reason: 'onboard' });
-    let row = await inspect.query(`SELECT placed_count FROM cells WHERE id=$1`, [a1.id]);
+    const row = await inspect.query(`SELECT placed_count FROM cells WHERE id=$1`, [a1.id]);
     expect(row.rows[0].placed_count).toBe(1);
 
     // move within the same country → allowed; counters shift

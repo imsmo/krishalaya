@@ -25,6 +25,7 @@ import {
   outstandingUnknown, dunningStep, suggestedChannel, touchBlockedReason, canRecordTouch, needsWriteOffReview,
   isLeaving, MAX_DUNNING_ATTEMPTS, type QueueRow,
 } from '../../../features/billing/dunning-queue';
+import { stepForDaysLate, nextStepAfter, behindPolicy, type LadderStep } from '../../../features/billing/money-controls';
 import { recordDunningFromQueueAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -55,6 +56,14 @@ export default async function DunningQueuePage({ searchParams }: {
     nextCursor = (res.meta?.nextCursor as string | undefined) ?? undefined;
   } catch (e) { notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`); }
 
+  // PC-56 ADMIN-1b · the ACTIVE ladder (0094). Degrades independently: with no policy the queue still works exactly as
+  // it did before, and the suggested channel goes back to being labelled a convention — which it then honestly is.
+  let ladder: LadderStep[] = []; let hasPolicy = false;
+  try {
+    const pol = (await adminGet<{ policy: unknown; steps: LadderStep[] } | null>('billing/dunning-policy')).data ?? null;
+    if (pol) { ladder = pol.steps ?? []; hasPolicy = true; }
+  } catch { /* no policy read → no policy column */ }
+
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const owed = knownOutstanding(rows);
@@ -73,6 +82,11 @@ export default async function DunningQueuePage({ searchParams }: {
       <p className="kv-backlink"><Link href="/billing">{t.t('billing.back')}</Link></p>
       <h1>{t.t('dun.title')}</h1>
       <p className="kv-field__hint">{t.t('dun.hint')}</p>
+      <p className="kv-detail__muted">
+        <Link href="/billing/dunning/policy" className="kv-btn--link">
+          {hasPolicy ? t.t('dun.policyLink') : t.t('dun.noPolicyLink')}
+        </Link>
+      </p>
 
       {okKey && <p className="kv-success" role="status">{t.t(`dun.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`dun.error.${errKey}`)}</p>}
@@ -139,6 +153,23 @@ export default async function DunningQueuePage({ searchParams }: {
                     {t.t('dun.touches', { n: String(step), max: String(MAX_DUNNING_ATTEMPTS) })}
                     {r.lastDunnedAt ? ` · ${t.t('dun.lastTouch')}: ${formatDate(r.lastDunnedAt)}` : ` · ${t.t('dun.neverTouched')}`}
                   </p>
+
+                  {/* What the LADDER expects at this lateness, beside what was actually recorded. The useful signal is
+                      not "what should I send" — it is WHO HAS BEEN FORGOTTEN, so that is what gets the warning. */}
+                  {hasPolicy && (() => {
+                    const days = Number(r.daysLate ?? 0);
+                    const due = stepForDaysLate(ladder, days);
+                    const upcoming = nextStepAfter(ladder, days);
+                    const behind = behindPolicy(ladder, days, step);
+                    return (
+                      <p className={behind ? 'kv-error' : 'kv-detail__muted'} role={behind ? 'alert' : undefined}>
+                        {behind ? t.t('dun.behindPolicy') : due
+                          ? t.t('dun.policyDue', { channel: t.t(`billing.channel.${due.channel}`), day: String(due.dayOffset) })
+                          : t.t('dun.policyNotYet')}
+                        {upcoming ? ` · ${t.t('dun.policyNext', { channel: t.t(`billing.channel.${upcoming.channel}`), day: String(upcoming.dayOffset) })}` : ''}
+                      </p>
+                    );
+                  })()}
 
                   {canRecordTouch(r) ? (
                     <form action={recordDunningFromQueueAction} className="kv-form">

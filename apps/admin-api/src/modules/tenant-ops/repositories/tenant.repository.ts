@@ -5,7 +5,7 @@
 import { Injectable } from '@nestjs/common';
 import { PoolClient } from 'pg';
 import { AdminPool } from '../../../core/database/admin-pool';
-import { Tenant, TenantProps } from '../domain/tenant.entity';
+import { Tenant } from '../domain/tenant.entity';
 import { TenantStatus } from '../domain/tenant.state';
 
 function toDomain(r: any): Tenant {

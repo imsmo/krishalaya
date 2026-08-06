@@ -3,13 +3,18 @@
 // zero-sum legs, cap); float-free revenue math; owner-RBAC for the billing roles + the NO-privilege-escalation
 // property (Law 11); DTO validation; and the services proving every write audits IN-TX, the state machine is
 // enforced, a missing invoice/tenant is a 404, money moves ONLY via the wallet-service (mocked port), the
-// adjustment is idempotent, and a wallet failure writes NO local row.
+// adjustment is MAKER-CHECKER (PC-56 ADMIN-1b): a request moves no money, the requester cannot decide their own
+// request, applying is a separate act keyed by the ROW id, and a wallet failure leaves the row approved — never
+// half-applied.
 import { SaasInvoice } from '../domain/invoice.entity';
 import { canTransition, assertTransition, IllegalInvoiceTransitionError, INVOICE_STATUSES } from '../domain/invoice.state';
 import { isDunnable, nextDunningAttempt, MAX_DUNNING_ATTEMPTS } from '../domain/dunning';
 import { assertAdjustmentAmount, buildAdjustmentLegs, MAX_ADJUSTMENT_MINOR } from '../domain/adjustment';
 import { monthlyMinor, arrMinor, sumMrr } from '../domain/revenue';
-import { InvalidAdjustmentError, InvalidDunningError, SaasInvoiceNotFoundError, BillingTenantNotFoundError, WalletAdjustmentFailedError } from '../domain/billing-ops.errors';
+import {
+  InvalidAdjustmentError, InvalidDunningError, SaasInvoiceNotFoundError, BillingTenantNotFoundError,
+  WalletAdjustmentFailedError, AdjustmentStateError, SelfApprovalError,
+} from '../domain/billing-ops.errors';
 import { SaasInvoicesAdminService } from '../services/saas-invoices-admin.service';
 import { DunningService } from '../services/dunning.service';
 import { ManualAdjustmentService } from '../services/manual-adjustment.service';
@@ -176,44 +181,107 @@ describe('DunningService', () => {
   });
 });
 
-describe('ManualAdjustmentService (money via wallet-service only)', () => {
-  const dto = { tenantId: TENANT, direction: 'credit' as const, amountMinor: '50000', currency: 'INR', reason: 'goodwill', idempotencyKey: 'adj-0001' };
+describe('ManualAdjustmentService — MAKER-CHECKER (PC-56 ADMIN-1b, 0093)', () => {
+  const req = { tenantId: TENANT, direction: 'credit' as const, amountMinor: '50000', currency: 'INR', reason: 'goodwill' };
+  const MAKER = actor.userId;
+  const checker = { ...actor, userId: '00000000-0000-4000-8000-0000000000cc' };
 
-  it('404 when tenant missing — wallet never called', async () => {
-    const { pool, audit } = harness();
-    const repo = { tenantExists: jest.fn(async () => false) } as any;
-    const wallet = { post: jest.fn() } as any;
-    await expect(new ManualAdjustmentService(pool, audit, repo, wallet).apply(actor, dto)).rejects.toBeInstanceOf(BillingTenantNotFoundError);
-    expect(wallet.post).not.toHaveBeenCalled();
-  });
-  it('idempotent replay returns the existing row without re-posting to the wallet', async () => {
-    const { pool, audit } = harness();
-    const existing = { id: 'a1', walletTxnId: 't1' };
-    const repo = { tenantExists: jest.fn(async () => true), getAdjustmentByKey: jest.fn(async () => existing) } as any;
-    const wallet = { post: jest.fn() } as any;
-    const out = await new ManualAdjustmentService(pool, audit, repo, wallet).apply(actor, dto);
-    expect(out).toBe(existing);
-    expect(wallet.post).not.toHaveBeenCalled();
-  });
-  it('happy path: posts BALANCED bigint legs to the wallet, then records + audits in-tx', async () => {
+  it('REQUEST moves no money: the wallet is never called and the row is awaiting_approval', async () => {
     const { pool, audit, client } = harness();
-    const repo = { tenantExists: jest.fn(async () => true), getAdjustmentByKey: jest.fn(async () => null), insertAdjustment: jest.fn(async () => ({ id: 'a1', walletTxnId: 't9' })) } as any;
+    const repo = {
+      tenantExists: jest.fn(async () => true),
+      insertAdjustmentRequest: jest.fn(async () => ({ id: 'a1', status: 'awaiting_approval', requestedBy: MAKER })),
+    } as any;
+    const wallet = { post: jest.fn() } as any;
+    const out: any = await new ManualAdjustmentService(pool, audit, repo, wallet).request(actor, req);
+    expect(out.status).toBe('awaiting_approval');
+    expect(wallet.post).not.toHaveBeenCalled();                       // the whole point: a request is not a payment
+    expect(repo.insertAdjustmentRequest).toHaveBeenCalledWith(client, expect.objectContaining({ amountMinor: 50000n, requestedBy: MAKER }));
+    expect(audit.write).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'billing.adjustment_requested' }));
+  });
+
+  it('404 when the tenant does not exist — nothing is written', async () => {
+    const { pool, audit } = harness();
+    const repo = { tenantExists: jest.fn(async () => false), insertAdjustmentRequest: jest.fn() } as any;
+    await expect(new ManualAdjustmentService(pool, audit, repo, { post: jest.fn() } as any).request(actor, req))
+      .rejects.toBeInstanceOf(BillingTenantNotFoundError);
+    expect(repo.insertAdjustmentRequest).not.toHaveBeenCalled();
+  });
+
+  it('REFUSES SELF-APPROVAL — the requester cannot decide their own request', async () => {
+    const { pool, audit } = harness();
+    const repo = {
+      getAdjustmentForUpdate: jest.fn(async () => ({ id: 'a1', status: 'awaiting_approval', requestedBy: MAKER })),
+      decideAdjustment: jest.fn(),
+    } as any;
+    await expect(new ManualAdjustmentService(pool, audit, repo, { post: jest.fn() } as any).decide(actor, 'a1', { decision: 'approve' }))
+      .rejects.toBeInstanceOf(SelfApprovalError);
+    expect(repo.decideAdjustment).not.toHaveBeenCalled();
+    expect(audit.write).not.toHaveBeenCalled();
+  });
+
+  it('a second operator may approve, and the decision is audited in-tx', async () => {
+    const { pool, audit, client } = harness();
+    const repo = {
+      getAdjustmentForUpdate: jest.fn(async () => ({ id: 'a1', status: 'awaiting_approval', requestedBy: MAKER, amountMinor: '50000', direction: 'credit' })),
+      decideAdjustment: jest.fn(),
+    } as any;
+    const out: any = await new ManualAdjustmentService(pool, audit, repo, { post: jest.fn() } as any).decide(checker, 'a1', { decision: 'approve' });
+    expect(out.status).toBe('approved');
+    expect(repo.decideAdjustment).toHaveBeenCalledWith(client, 'a1', 'approved', checker.userId, null);
+    expect(audit.write).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'billing.adjustment_approved' }));
+  });
+
+  it('only an awaiting_approval request can be decided', async () => {
+    const { pool, audit } = harness();
+    const repo = { getAdjustmentForUpdate: jest.fn(async () => ({ id: 'a1', status: 'applied', requestedBy: MAKER })), decideAdjustment: jest.fn() } as any;
+    await expect(new ManualAdjustmentService(pool, audit, repo, { post: jest.fn() } as any).decide(checker, 'a1', { decision: 'approve' }))
+      .rejects.toBeInstanceOf(AdjustmentStateError);
+  });
+
+  it('APPLY refuses anything that is not approved — the wallet is never called', async () => {
+    const { pool, audit } = harness();
+    const repo = { getAdjustmentForUpdate: jest.fn(async () => ({ id: 'a1', status: 'awaiting_approval', requestedBy: MAKER })) } as any;
+    const wallet = { post: jest.fn() } as any;
+    await expect(new ManualAdjustmentService(pool, audit, repo, wallet).apply(checker, 'a1')).rejects.toBeInstanceOf(AdjustmentStateError);
+    expect(wallet.post).not.toHaveBeenCalled();
+  });
+
+  it('APPLY posts BALANCED bigint legs, keys the post by the ROW id, then stamps + audits in-tx', async () => {
+    const { pool, audit, client } = harness();
+    const row = { id: 'a1', status: 'approved', requestedBy: MAKER, tenantId: TENANT, direction: 'credit', amountMinor: '50000', currency: 'INR', reason: 'goodwill' };
+    const repo = { getAdjustmentForUpdate: jest.fn(async () => row), markAdjustmentApplied: jest.fn() } as any;
     const wallet = { post: jest.fn(async () => ({ txnId: 't9', alreadyApplied: false })) } as any;
-    await new ManualAdjustmentService(pool, audit, repo, wallet).apply(actor, dto);
+    const out: any = await new ManualAdjustmentService(pool, audit, repo, wallet).apply(checker, 'a1');
     const arg = wallet.post.mock.calls[0][0];
     expect(arg.txnType).toBe('billing_adjustment');
-    expect(arg.idempotencyKey).toBe(`billing_adjustment:${TENANT}:adj-0001`);
+    // keyed by the ROW, not by a client-supplied string: a resubmitted, corrected adjustment is a different row and
+    // therefore a different key — it can never be swallowed as a replay of the one that was rejected.
+    expect(arg.idempotencyKey).toBe(`billing_adjustment:${TENANT}:a1`);
     expect(arg.legs.reduce((s: bigint, l: any) => s + l.amountMinor, 0n)).toBe(0n);   // zero-sum
     expect(arg.legs.every((l: any) => typeof l.amountMinor === 'bigint')).toBe(true); // never float
-    expect(repo.insertAdjustment).toHaveBeenCalledWith(client, expect.objectContaining({ walletTxnId: 't9', amountMinor: 50000n }));
+    expect(repo.markAdjustmentApplied).toHaveBeenCalledWith(client, 'a1', 't9', `billing_adjustment:${TENANT}:a1`, checker.userId);
     expect(audit.write).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'billing.adjustment_applied' }));
+    expect(out.status).toBe('applied');
   });
-  it('wallet failure → audit.log(failed) + typed 502, and NO local row inserted', async () => {
+
+  it('APPLY is idempotent: an already-applied row is returned without a second wallet post', async () => {
     const { pool, audit } = harness();
-    const repo = { tenantExists: jest.fn(async () => true), getAdjustmentByKey: jest.fn(async () => null), insertAdjustment: jest.fn() } as any;
+    const repo = { getAdjustmentForUpdate: jest.fn(async () => ({ id: 'a1', status: 'applied', walletTxnId: 't9' })), markAdjustmentApplied: jest.fn() } as any;
+    const wallet = { post: jest.fn() } as any;
+    const out: any = await new ManualAdjustmentService(pool, audit, repo, wallet).apply(checker, 'a1');
+    expect(out.walletTxnId).toBe('t9');
+    expect(wallet.post).not.toHaveBeenCalled();
+    expect(repo.markAdjustmentApplied).not.toHaveBeenCalled();
+  });
+
+  it('a wallet failure leaves the row APPROVED (never half-applied) + audits the failure', async () => {
+    const { pool, audit } = harness();
+    const row = { id: 'a1', status: 'approved', requestedBy: MAKER, tenantId: TENANT, direction: 'credit', amountMinor: '50000', currency: 'INR', reason: 'goodwill' };
+    const repo = { getAdjustmentForUpdate: jest.fn(async () => row), markAdjustmentApplied: jest.fn() } as any;
     const wallet = { post: jest.fn(async () => { throw new Error('insufficient balance'); }) } as any;
-    await expect(new ManualAdjustmentService(pool, audit, repo, wallet).apply(actor, dto)).rejects.toBeInstanceOf(WalletAdjustmentFailedError);
-    expect(repo.insertAdjustment).not.toHaveBeenCalled();
+    await expect(new ManualAdjustmentService(pool, audit, repo, wallet).apply(checker, 'a1')).rejects.toBeInstanceOf(WalletAdjustmentFailedError);
+    expect(repo.markAdjustmentApplied).not.toHaveBeenCalled();
     expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'billing.adjustment_failed' }));
   });
 });

@@ -1,7 +1,7 @@
 // apps/admin-api/src/modules/billing-ops/domain/invoice.entity.ts · the SaaS-invoice aggregate (pure, no I/O).
 // Holds the money as bigint MINOR UNITS (Law 2) and is the only place status changes are applied — always via
 // the state machine. The console drives issue()/void()/markOverdue(); paid/partially_paid come from payments.
-import { InvoiceStatus, assertTransition } from './invoice.state';
+import { InvoiceStatus, assertTransition, assertReconciliation } from './invoice.state';
 
 export interface InvoiceProps {
   id: string;
@@ -92,6 +92,17 @@ export class SaasInvoice {
   markOverdue(): StatusChange { return this.to('overdue'); }
   /** → void: write-off / cancellation (terminal). Reason is recorded by the service in the audit row. */
   void(): StatusChange { return this.to('void'); }
+
+  /** PC-56 ADMIN-1b · move the invoice because the RECORDED PAYMENTS say so (0092). Uses the reconciliation table,
+   *  not the operator table — that is what lets a reversal reopen a settled invoice while still making it impossible
+   *  for arithmetic to void one. Never call this with a status an operator typed; it is only ever the output of
+   *  `statusAfterPayments`. */
+  reconcileTo(next: InvoiceStatus): StatusChange {
+    const from = this.p.status;
+    assertReconciliation(from, next);
+    this.p.status = next;
+    return { from, to: next };
+  }
 
   toJSON() {
     return {
