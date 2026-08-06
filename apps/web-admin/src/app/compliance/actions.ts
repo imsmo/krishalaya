@@ -11,6 +11,7 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, adminPatch, AdminApiError } from '../../lib/admin-client';
 import { buildDsrUpdate, buildExportDecision, buildRetention, buildOpenBreach, buildBreachUpdate } from '../../features/compliance/compliance';
 import { buildReject, buildRecordAction } from '../../features/compliance/erasure';
+import { buildSaveNotice, buildOpenDraft } from '../../features/compliance/consent';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -160,4 +161,78 @@ export async function recordErasureActionAction(formData: FormData): Promise<voi
   catch (e) { redirect(`/compliance/dsr/${enc(id)}?error=${dsrErrorKey(e)}`); }
   revalidatePath(`/compliance/dsr/${id}`);
   redirect(`/compliance/dsr/${enc(id)}?ok=recorded`);
+}
+
+/* ========================= ADMIN-5b · the consent notice ladder =========================
+   Four actions the console could not previously perform. Each maps the server's refusals to its OWN key, because on this
+   screen a refusal is an instruction: `secondPerson` is a colleague to find, `noticeMissing` is a language to write,
+   `notDraft` means the words are already what somebody agreed to.                                                    */
+
+function consentErrorKey(e: unknown): string {
+  if (e instanceof AdminApiError) {
+    const code = e.code;
+    if (code === 'SECOND_PERSON_REQUIRED') return 'secondPerson';
+    if (code === 'CONSENT_NOTICE_LANGUAGE_MISSING') return 'noticeMissing';
+    if (code === 'CONSENT_VERSION_NOT_DRAFT') return 'notDraft';
+    if (code === 'CONSENT_DRAFT_OPEN') return 'draftOpen';
+    if (code === 'CONSENT_INPUT_INVALID') return 'consentInvalid';
+  }
+  return errorKey(e);
+}
+
+export async function openConsentDraftAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const code = String(formData.get('code') ?? '').trim();
+  if (!code) redirect('/compliance/consent/purposes');
+  const built = buildOpenDraft({ changeReason: String(formData.get('changeReason') ?? ''), isMandatory: String(formData.get('isMandatory') ?? '') });
+  if (!built.ok) redirect(`/compliance/consent/purposes/${enc(code)}?error=${built.error}`);
+  try { await adminPost(`consent/purposes/${enc(code)}/versions`, { body: built.value }); }
+  catch (e) { redirect(`/compliance/consent/purposes/${enc(code)}?error=${consentErrorKey(e)}`); }
+  revalidatePath(`/compliance/consent/purposes/${code}`);
+  redirect(`/compliance/consent/purposes/${enc(code)}?ok=drafted`);
+}
+
+export async function saveConsentNoticeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const code = String(formData.get('code') ?? '').trim();
+  const versionId = String(formData.get('versionId') ?? '').trim();
+  if (!code || !versionId) redirect('/compliance/consent/purposes');
+  const built = buildSaveNotice({
+    languageCode: String(formData.get('languageCode') ?? ''),
+    noticeText: String(formData.get('noticeText') ?? ''),
+    toggleLabel: String(formData.get('toggleLabel') ?? ''),
+  });
+  if (!built.ok) redirect(`/compliance/consent/purposes/${enc(code)}?error=${built.error}`);
+  try { await adminPost(`consent/versions/${enc(versionId)}/notices`, { body: built.value }); }
+  catch (e) { redirect(`/compliance/consent/purposes/${enc(code)}?error=${consentErrorKey(e)}`); }
+  revalidatePath(`/compliance/consent/purposes/${code}`);
+  redirect(`/compliance/consent/purposes/${enc(code)}?ok=noticeSaved`);
+}
+
+export async function publishConsentVersionAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const code = String(formData.get('code') ?? '').trim();
+  const versionId = String(formData.get('versionId') ?? '').trim();
+  if (!code || !versionId) redirect('/compliance/consent/purposes');
+  const note = String(formData.get('checkerNote') ?? '').trim();
+  if (note.length > 1000) redirect(`/compliance/consent/purposes/${enc(code)}?error=consentInvalid`);
+  // Absent rather than empty-string: the DTO is .strict() with min(1), so a blank note must be omitted entirely.
+  try { await adminPost(`consent/versions/${enc(versionId)}/publish`, { body: note ? { checkerNote: note } : {} }); }
+  catch (e) { redirect(`/compliance/consent/purposes/${enc(code)}?error=${consentErrorKey(e)}`); }
+  revalidatePath(`/compliance/consent/purposes/${code}`);
+  revalidatePath('/compliance/consent/purposes');
+  redirect(`/compliance/consent/purposes/${enc(code)}?ok=published`);
+}
+
+export async function discardConsentDraftAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const code = String(formData.get('code') ?? '').trim();
+  const versionId = String(formData.get('versionId') ?? '').trim();
+  if (!code || !versionId) redirect('/compliance/consent/purposes');
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (reason.length < 3 || reason.length > 1000) redirect(`/compliance/consent/purposes/${enc(code)}?error=changeReason`);
+  try { await adminPost(`consent/versions/${enc(versionId)}/discard`, { body: { reason } }); }
+  catch (e) { redirect(`/compliance/consent/purposes/${enc(code)}?error=${consentErrorKey(e)}`); }
+  revalidatePath(`/compliance/consent/purposes/${code}`);
+  redirect(`/compliance/consent/purposes/${enc(code)}?ok=discarded`);
 }

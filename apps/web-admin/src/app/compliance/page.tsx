@@ -60,6 +60,13 @@ export default async function ComplianceDsrPage({ searchParams }: { searchParams
   return (
     <section>
       <h1>{t.t('compliance.title')}</h1>
+      {/* ADMIN-5b: the consent lens. Behind its own permission (`compliance.consent.read`), so an operator without it
+          gets the console's uniform 403 notice on arrival rather than a hidden link — a hidden link makes somebody think
+          the feature does not exist, while a 403 tells them what to ask for. */}
+      <nav className="kv-filters" aria-label={t.t('cns.navLabel')}>
+        <Link href="/compliance/consent" className="kv-chip">{t.t('cns.navConsent')}</Link>
+        <Link href="/compliance/consent/purposes" className="kv-chip">{t.t('cns.navPurposes')}</Link>
+      </nav>
       {/* THE 72-HOUR CLOCK IS READABLE FOR THE FIRST TIME. `acknowledged_at` did not exist before migration 0107, so
           W041's "SLA breaches YTD · 0 · clean record" was an UNMEASURED claim rather than a clean one — and an
           unmeasured zero is what a regulator finds first. `unmeasured` is reported beside `breached`, and the clean

@@ -23,6 +23,13 @@ export const OwnerPermissions = {
   // NOT added here — they belong with the planes that use them (ADMIN-5b/5c), because a permission with no route behind
   // it is a promise nothing keeps.
   ComplianceDsr: 'compliance.dsr',      // work a DPDP rights request end to end (DPO-designated staff)
+  // ADMIN-5b — both named by the canon (W046's and W047's restricted states). Separate from ComplianceDsr and from
+  // ComplianceManage because they govern a different thing again: the REGISTRY is a cross-tenant list of people and
+  // their choices, and the PURPOSE registry is the legal text every one of those choices was given against. Somebody
+  // who works rights requests has no reason to rewrite a consent notice; somebody who authors notices has no reason to
+  // read a named farmer's consent history.
+  ComplianceConsentRead: 'compliance.consent.read',    // cross-tenant consent register + purposes (PII masked)
+  ComplianceConsentWrite: 'compliance.consent.write',  // author + publish consent notices (checker-gated on publish)
   BillingManage: 'billing.manage',      // SaaS invoice transitions + dunning + MANUAL money adjustments (via wallet-service)
   BillingRead: 'billing.read',          // revenue dashboard + invoice/adjustment/dunning reads
   FlagsManage: 'flags.manage',          // create/enable/disable flags + percent rollout + targeting + KILL-SWITCH (Law 10)
@@ -75,7 +82,10 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // The DPO works rights requests and reads the registers — and deliberately does NOT get ComplianceManage, so they
   // cannot rewrite a retention policy to change the scope of an erasure they are about to sign off. That separation is
   // the whole reason this role exists rather than being folded into platform_compliance_ops.
-  platform_dpo:               [OwnerPermissions.ComplianceDsr, OwnerPermissions.ComplianceRead],
+  platform_dpo:               [OwnerPermissions.ComplianceDsr, OwnerPermissions.ComplianceRead, OwnerPermissions.ComplianceConsentRead],
+  // The notice AUTHOR reads the registry and writes notices, and deliberately holds no rights-request permission: the
+  // person who writes the words has no business reading which named farmers accepted them.
+  platform_consent_author:    [OwnerPermissions.ComplianceConsentRead, OwnerPermissions.ComplianceConsentWrite],
   platform_compliance_viewer: [OwnerPermissions.ComplianceRead],   // DPO / auditor read-only
   platform_billing_ops:       [OwnerPermissions.BillingManage, OwnerPermissions.BillingRead],
   platform_billing_viewer:    [OwnerPermissions.BillingRead],      // finance / revenue analyst read-only

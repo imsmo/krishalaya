@@ -15,9 +15,17 @@ export class ConsentService {
     private readonly repo: ConsentRepository,
   ) {}
   async grant(tenantId: string, userId: string, dto: GrantConsentDto) {
-    const version = (await this.repo.currentVersion(tenantId, dto.purposeCode)) ?? 'v1';
+    let version = 'v1';
     await this.uow.run(tenantId, async (tx) => {
-      const c = Consent.record({ id: uuidv7(), userId, purposeCode: dto.purposeCode, version, granted: dto.granted, channel: dto.channel, assistedBy: dto.assistedBy ?? null });
+      // ADMIN-5b: resolved INSIDE the transaction, on the primary. The previous code read it from the replica BEFORE
+      // opening the tx, so a version published in between (or simply not yet replicated) stamped the consent with a
+      // version the person never saw. See ConsentRepository.currentPublishedVersion for why both halves mattered.
+      const current = await this.repo.currentPublishedVersion(tx, dto.purposeCode);
+      // No published version means the purpose has no notice anybody could have read. The label falls back to 'v1' as
+      // before so an existing caller is not broken, but the POINTER stays null — which is what makes the record honestly
+      // say "the words this person agreed to were never recorded" instead of implying they were.
+      version = current?.version ?? 'v1';
+      const c = Consent.record({ id: uuidv7(), userId, purposeCode: dto.purposeCode, version, granted: dto.granted, channel: dto.channel, assistedBy: dto.assistedBy ?? null, consentPurposeVersionId: current?.id ?? null });
       await this.repo.record(tx, c);
       await this.outbox.write(tx, { tenantId, aggregateType: 'user', aggregateId: userId, eventType: 'identity.consent_changed', payload: { v: 1, userId, purposeCode: dto.purposeCode, granted: dto.granted, version } });
     }, { userId });
