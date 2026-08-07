@@ -30,7 +30,7 @@ run('cells-ops (integration, real Postgres — cell/shard registry + placement +
     pool = new AdminPool(config);
     const repo = new CellsRepository(pool); const audit = new AdminAuditWriter(pool);
     registry = new CellRegistryService(pool, audit, repo);
-    assign = new TenantCellAssignmentService(pool, audit, repo);
+    assign = new TenantCellAssignmentService(pool, audit, repo, { recordViolation: jest.fn().mockResolvedValue('v1') } as any);
     inspect = new Pool({ connectionString: APP_URL });
     const cc = await inspect.query(`SELECT code FROM countries ORDER BY code LIMIT 5`);
     const codes: string[] = cc.rows.map((r: any) => r.code);

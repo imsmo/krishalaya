@@ -9,6 +9,8 @@ import { Injectable } from '@nestjs/common';
 import { AdminPool } from '../../../core/database/admin-pool';
 import { AdminAuditWriter } from '../../../core/audit/admin-audit.writer';
 import { AdminRequestContext } from '../../../core/auth/admin-auth.guard';
+import { ResidencyMigrationRepository } from '../repositories/residency-migration.repository';
+import { draftViolation } from '../domain/residency-evidence';
 import { CellsRepository, PlacementListQuery } from '../repositories/cells.repository';
 import {
   CellNotFoundError, ShardNotFoundError, PlacementNotFoundError, AlreadyPlacedError, ShardCellMismatchError,
@@ -22,7 +24,14 @@ const tsCursor = (createdAt: any, id: string) => Buffer.from(`${createdAt?.toISO
 
 @Injectable()
 export class TenantCellAssignmentService {
-  constructor(private readonly pool: AdminPool, private readonly audit: AdminAuditWriter, private readonly repo: CellsRepository) {}
+  constructor(
+    private readonly pool: AdminPool,
+    private readonly audit: AdminAuditWriter,
+    private readonly repo: CellsRepository,
+    // PC-56 ADMIN-8b — the residency EVIDENCE log. Injected here rather than the whole service, to keep this module's
+    // dependency on it as narrow as the one thing it needs: a place to record a refusal.
+    private readonly residencyLog: ResidencyMigrationRepository,
+  ) {}
 
   private audited(actor: AdminRequestContext, action: string, entityId: string, oldValue: unknown, newValue: unknown, reason: string) {
     return { actorUserId: actor.userId, actorRole: actor.roles[0] ?? null, action, entityType: 'tenant_placement', entityId, oldValue, newValue, reason, ip: actor.ip, requestId: actor.requestId || null };
@@ -62,6 +71,46 @@ export class TenantCellAssignmentService {
   }
 
   async move(actor: AdminRequestContext, tenantId: string, dto: MoveTenantDto) {
+    // **THE REFUSAL IS RECORDED OUTSIDE THE TRANSACTION THAT REFUSES IT.**
+    //
+    // The residency check below lives inside `withTx` and must stay there: it reads `FOR UPDATE` rows and is the
+    // authoritative guard. But a write made inside that transaction rolls back with the throw — so recording the attempt
+    // there would produce evidence that vanishes, which is the single easiest way to build W033's log and have it stay
+    // permanently empty. So the throw propagates out, and the record is written on a fresh connection here.
+    //
+    // W033's empty state — "This log fills automatically if the fail-closed boundary is ever tested" — is true from this
+    // commit and was true of nothing before it.
+    try {
+      return await this.moveInner(actor, tenantId, dto);
+    } catch (e) {
+      if (e instanceof ResidencyViolationError) {
+        await this.recordResidencyRefusal(actor, tenantId, dto).catch(() => undefined);
+        // The evidence write must NEVER mask the refusal. A logging failure that turned a blocked cross-border move into
+        // a 500 would be worse than a missing row, and one that swallowed the refusal would be catastrophic.
+      }
+      throw e;
+    }
+  }
+
+  /** Record that the boundary held. Reads fresh — the transaction that refused has rolled back, and the answer is the
+   *  same because nothing about the map changed. */
+  private async recordResidencyRefusal(actor: AdminRequestContext, tenantId: string, dto: MoveTenantDto): Promise<void> {
+    const [placement, target] = await Promise.all([
+      this.residencyLog.placementOf(tenantId),
+      this.residencyLog.cellCountry(dto.cellId),
+    ]);
+    if (!placement || !target) return;   // nothing coherent to record; the refusal itself still stands
+    await this.residencyLog.recordViolation(draftViolation({
+      attemptKind: 'move', subjectType: 'tenant', subjectId: tenantId,
+      fromCountry: placement.countryCode, toCountry: target.countryCode,
+      fromCellId: placement.cellId, toCellId: dto.cellId,
+      refusedBy: target.residencyLocked ? 'residency_lock' : 'country_mismatch',
+      outcome: 'blocked', actorAdminId: actor.userId,
+      detail: { reason: dto.reason },
+    }));
+  }
+
+  private async moveInner(actor: AdminRequestContext, tenantId: string, dto: MoveTenantDto) {
     return this.pool.withTx(async (client) => {
       const placement = await this.repo.getPlacementForUpdate(client, tenantId);
       if (!placement) throw new PlacementNotFoundError(tenantId);

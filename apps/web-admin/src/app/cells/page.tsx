@@ -56,6 +56,14 @@ export default async function CellsPage({ searchParams }: { searchParams: { curs
         <Link href="/cells/shards" className="kv-chip">{t.t('cells.navShards')}</Link>
         <Link href="/cells/placements" className="kv-chip">{t.t('cells.navPlacements')}</Link>
         <Link href="/cells/residency" className="kv-chip">{t.t('cells.navResidency')}</Link>
+        {/* PC-56 ADMIN-8/8b: these planes were built and were reachable only by typing the URL. A console screen nobody
+            can navigate to is a screen that does not exist for the person who needs it. */}
+        <Link href="/cells/capacity" className="kv-chip">{t.t('cells.navCapacity')}</Link>
+        <Link href="/cells/changes" className="kv-chip">{t.t('cells.navChanges')}</Link>
+        <Link href="/cells/residency/log" className="kv-chip">{t.t('cells.navResidencyLog')}</Link>
+        <Link href="/cells/migrations" className="kv-chip">{t.t('cells.navMigrations')}</Link>
+        <Link href="/cells/plan" className="kv-chip">{t.t('cells.navPlan')}</Link>
+        <Link href="/cells/provisioning" className="kv-chip">{t.t('cells.navProvisioning')}</Link>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('cells.ok.cellCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cells.err.${errKey}`)}</p>}

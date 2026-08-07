@@ -175,3 +175,92 @@ export const QueryMapHistorySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
 });
 export type QueryMapHistoryDto = z.infer<typeof QueryMapHistorySchema>;
+
+/* ------------------------------------------------------------------------------------------------ */
+/* PC-56 ADMIN-8b · residency evidence, the migration pipeline, the plan, provisioning               */
+/* ------------------------------------------------------------------------------------------------ */
+
+export const QueryResidencySchema = z.object({
+  days: z.coerce.number().int().min(1).max(400).optional(),
+  country: z.string().length(2).optional(),
+  cursor: z.string().max(500).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+export type QueryResidencyDto = z.infer<typeof QueryResidencySchema>;
+
+export const AttestSchema = z.object({ days: z.coerce.number().int().min(1).max(400).optional() });
+export type AttestDto = z.infer<typeof AttestSchema>;
+
+export const SetCountryProfileSchema = z.object({
+  profile: z.string().trim().min(3).max(40),
+  status: z.enum(['none', 'draft', 'ratified']),
+  note: z.string().trim().max(2_000).optional(),
+}).strict();
+export type SetCountryProfileDto = z.infer<typeof SetCountryProfileSchema>;
+
+export const DraftMigrationSchema = z.object({
+  tenantId: z.string().uuid(),
+  // The SOURCE is read from the current placement, never supplied: a move built from what a form said rather than from
+  // where the tenant actually is would be a move whose "from" could be wrong.
+  toCellId: z.string().uuid(),
+  toShardId: z.string().uuid(),
+  windowStart: z.string().datetime().optional(),
+  windowEnd: z.string().datetime().optional(),
+  reason: z.string().trim().min(20).max(2_000),
+}).strict();
+export type DraftMigrationDto = z.infer<typeof DraftMigrationSchema>;
+
+export const MigrationPreflightSchema = z.object({
+  // NULLABLE ON PURPOSE. These come from cross-plane reads that can fail, and `null` means "the check did not run" —
+  // which the domain reports as UNKNOWN and never as a pass. A schema that coerced a failed read to 0 would turn every
+  // outage into a clean preflight.
+  openPayouts: z.number().int().min(0).nullable(),
+  liveAuctions: z.number().int().min(0).nullable(),
+  outboxPending: z.number().int().min(0).nullable(),
+  estimatedBytes: z.number().int().min(0).nullable(),
+  windowBudgetBytes: z.number().int().min(0).nullable(),
+}).strict();
+export type MigrationPreflightDto = z.infer<typeof MigrationPreflightSchema>;
+
+export const AdvanceMigrationSchema = z.object({
+  to: z.enum(['copying', 'verifying', 'cutover', 'done', 'rolled_back', 'failed']),
+  sourceRows: z.number().int().min(0).optional(),
+  targetRows: z.number().int().min(0).optional(),
+  // Money as STRINGS of minor units (Law 2). A ledger sum crossing as a number would be a verify that could pass on a
+  // one-paisa difference in a very large figure.
+  sourceLedgerMinor: z.string().regex(/^-?[0-9]{1,19}$/).optional(),
+  targetLedgerMinor: z.string().regex(/^-?[0-9]{1,19}$/).optional(),
+  rollbackReason: z.string().trim().max(2_000).optional(),
+  failureDetail: z.string().trim().max(2_000).optional(),
+  waived: z.array(z.object({
+    check: z.string().max(40),
+    // Per check, so "I waived the preflight" is never something anybody can do — the granularity IS the control.
+    reason: z.string().trim().min(20).max(1_000),
+  })).max(4).optional(),
+}).strict();
+export type AdvanceMigrationDto = z.infer<typeof AdvanceMigrationSchema>;
+
+export const AddPlanStepSchema = z.object({
+  cellId: z.string().uuid().optional(),
+  targetCode: z.string().regex(/^[a-z][a-z0-9-]{1,39}$/).optional(),
+  action: z.enum(['add_shards', 'provision_cell', 'raise_capacity', 'retire_cell']),
+  addsCapacity: z.number().int().min(0).max(100_000_000).optional(),
+  // A CONDITION, not a date. `{"kind":"utilisation","percent":70}` survives a slow quarter; a calendar entry goes stale.
+  triggerSpec: z.record(z.unknown()).refine((v) => 'kind' in v, 'a trigger needs a kind'),
+  status: z.enum(['draft', 'planned', 'gated']),
+  gateReason: z.string().trim().max(2_000).optional(),
+  notes: z.string().trim().max(2_000).optional(),
+}).strict();
+export type AddPlanStepDto = z.infer<typeof AddPlanStepSchema>;
+
+export const StartProvisioningSchema = z.object({
+  targetCode: z.string().regex(/^[a-z][a-z0-9-]{1,39}$/),
+  countryCode: z.string().length(2),
+}).strict();
+export type StartProvisioningDto = z.infer<typeof StartProvisioningSchema>;
+
+export const RecordSmokeSchema = z.object({
+  outcome: z.enum(['passed', 'failed']),
+  detail: z.record(z.unknown()).default({}),
+}).strict();
+export type RecordSmokeDto = z.infer<typeof RecordSmokeSchema>;

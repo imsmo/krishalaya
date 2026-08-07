@@ -151,6 +151,21 @@ describe('CellRegistryService — retire-empty guard + audit-in-tx', () => {
 describe('TenantCellAssignmentService — fail-closed routing', () => {
   const cell = Cell.rehydrate(cellProps());
   const shard = Shard.rehydrate(shardProps());
+
+  // PC-56 ADMIN-8b: the service now takes a residency log. **THE REFUSAL IS RECORDED OUTSIDE THE TRANSACTION** that the
+  // refusal itself aborts — recording it inside would roll the evidence back with the move, leaving W033's log
+  // permanently empty no matter how often the boundary was tested.
+  function residencyLogStub(over: any = {}) {
+    return {
+      // The refusal is rebuilt from FRESH reads, because the transaction that refused has rolled back. A stub carrying
+      // only `recordViolation` records nothing — which is how this stub was first written, and the test said so.
+      placementOf: jest.fn().mockResolvedValue({ cellId: 'c1', countryCode: 'IN' }),
+      cellCountry: jest.fn().mockResolvedValue({ countryCode: 'BD', residencyLocked: true }),
+      recordViolation: jest.fn().mockResolvedValue('v1'),
+      ...over,
+    } as any;
+  }
+
   function repoWith(over: any = {}) {
     return {
       getPlacementForUpdate: jest.fn().mockResolvedValue(null),
@@ -165,7 +180,7 @@ describe('TenantCellAssignmentService — fail-closed routing', () => {
   it('place: happy path writes directory + bumps both counters + audit in tx', async () => {
     const pool = fakeTxPool(); const audit = { write: jest.fn() } as any;
     const repo = repoWith();
-    const svc = new TenantCellAssignmentService(pool, audit, repo);
+    const svc = new TenantCellAssignmentService(pool, audit, repo, residencyLogStub());
     await svc.place(actor, { tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false, reason: 'onboard' } as any);
     expect(repo.insertPlacement).toHaveBeenCalledTimes(1);
     expect(repo.bumpCellPlaced).toHaveBeenCalledWith(expect.anything(), 'c1', +1, 'u1');
@@ -175,25 +190,25 @@ describe('TenantCellAssignmentService — fail-closed routing', () => {
   it('place: already placed → 409', async () => {
     const pool = fakeTxPool();
     const repo = repoWith({ getPlacementForUpdate: jest.fn().mockResolvedValue({ tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false }) });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLogStub());
     await expect(svc.place(actor, { tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false, reason: 'r' } as any)).rejects.toBeInstanceOf(AlreadyPlacedError);
   });
   it('place: shard not in target cell → 422', async () => {
     const pool = fakeTxPool();
     const repo = repoWith({ getShardForUpdate: jest.fn().mockResolvedValue(Shard.rehydrate(shardProps({ cellId: 'OTHER' }))) });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLogStub());
     await expect(svc.place(actor, { tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false, reason: 'r' } as any)).rejects.toBeInstanceOf(ShardCellMismatchError);
   });
   it('place: non-active cell refuses (fail-closed)', async () => {
     const pool = fakeTxPool();
     const repo = repoWith({ getCellForUpdate: jest.fn().mockResolvedValue(Cell.rehydrate(cellProps({ status: 'draining' }))) });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLogStub());
     await expect(svc.place(actor, { tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false, reason: 'r' } as any)).rejects.toBeInstanceOf(NodeNotAcceptingError);
   });
   it('place: cell at capacity → 409', async () => {
     const pool = fakeTxPool();
     const repo = repoWith({ getCellForUpdate: jest.fn().mockResolvedValue(Cell.rehydrate(cellProps({ capacityTenants: 2, placedCount: 2 }))) });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLogStub());
     await expect(svc.place(actor, { tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false, reason: 'r' } as any)).rejects.toBeInstanceOf(CapacityExceededError);
   });
   it('move: cross-residency blocked when a cell is residency-locked (DPDP)', async () => {
@@ -206,19 +221,43 @@ describe('TenantCellAssignmentService — fail-closed routing', () => {
       getCellForUpdate: jest.fn().mockImplementation((_c: any, id: string) => Promise.resolve(id === 'c1' ? fromCell : toCell)),
       getShardForUpdate: jest.fn().mockResolvedValue(toShard),
     });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const residencyLog = residencyLogStub();
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLog);
     await expect(svc.move(actor, U(2), { cellId: 'c2', shardId: 's2', reason: 'r' } as any)).rejects.toBeInstanceOf(ResidencyViolationError);
+    // **A FAIL-CLOSED BOUNDARY THAT LEAVES NO TRACE WHEN TESTED IS A BOUNDARY NOBODY CAN PROVE HELD** (PC-56 ADMIN-8b).
+    // Until 0117 this refusal vanished, and W033's "this log fills automatically if the boundary is ever tested" would
+    // have read identically after a hundred blocked attempts.
+    expect(residencyLog.recordViolation).toHaveBeenCalledTimes(1);
+    const v = residencyLog.recordViolation.mock.calls[0][0];
+    expect(v).toMatchObject({ refusedBy: 'residency_lock', outcome: 'blocked', fromCountry: 'IN', toCountry: 'BD' });
+  });
+  it('move: a broken residency log never masks the refusal', async () => {
+    // The evidence write is best-effort BY DESIGN. A logging failure that turned a blocked cross-border move into a 500
+    // would be worse than a missing row, and one that swallowed the refusal would be catastrophic — so the refusal must
+    // still surface unchanged.
+    const pool = fakeTxPool();
+    const fromCell = Cell.rehydrate(cellProps({ id: 'c1', countryCode: 'IN', residencyLocked: true }));
+    const toCell = Cell.rehydrate(cellProps({ id: 'c2', code: 'bd-east-1', countryCode: 'BD', residencyLocked: true }));
+    const repo = repoWith({
+      getPlacementForUpdate: jest.fn().mockResolvedValue({ tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false }),
+      getCellForUpdate: jest.fn().mockImplementation((_c: any, id: string) => Promise.resolve(id === 'c1' ? fromCell : toCell)),
+      getShardForUpdate: jest.fn().mockResolvedValue(Shard.rehydrate(shardProps({ id: 's2', cellId: 'c2' }))),
+    });
+    const brokenLog = residencyLogStub({ recordViolation: jest.fn().mockRejectedValue(new Error('log is down')) });
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, brokenLog);
+    await expect(svc.move(actor, U(2), { cellId: 'c2', shardId: 's2', reason: 'r' } as any))
+      .rejects.toBeInstanceOf(ResidencyViolationError);
   });
   it('move: same cell+shard is a no-op → 409', async () => {
     const pool = fakeTxPool();
     const repo = repoWith({ getPlacementForUpdate: jest.fn().mockResolvedValue({ tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false }) });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLogStub());
     await expect(svc.move(actor, U(2), { cellId: 'c1', shardId: 's1', reason: 'r' } as any)).rejects.toBeInstanceOf(CellsAlreadyInStateError);
   });
   it('move / get: unknown placement → 404', async () => {
     const pool = fakeTxPool();
     const repo = repoWith({ getPlacementForUpdate: jest.fn().mockResolvedValue(null), getPlacement: jest.fn().mockResolvedValue(null) });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLogStub());
     await expect(svc.move(actor, U(9), { cellId: 'c1', shardId: 's1', reason: 'r' } as any)).rejects.toBeInstanceOf(PlacementNotFoundError);
     await expect(svc.getPlacement(U(9))).rejects.toBeInstanceOf(PlacementNotFoundError);
   });
@@ -228,7 +267,7 @@ describe('TenantCellAssignmentService — fail-closed routing', () => {
       getPlacementForUpdate: jest.fn().mockResolvedValue({ tenantId: U(2), cellId: 'c1', shardId: 's1', pinned: false }),
       getShardForUpdate: jest.fn().mockResolvedValue(null),
     });
-    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo);
+    const svc = new TenantCellAssignmentService(pool, { write: jest.fn() } as any, repo, residencyLogStub());
     await expect(svc.move(actor, U(2), { cellId: 'c1', shardId: 'sX', reason: 'r' } as any)).rejects.toBeInstanceOf(ShardNotFoundError);
   });
 });

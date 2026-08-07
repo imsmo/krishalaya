@@ -349,3 +349,158 @@ export async function runCountCheckAction(): Promise<void> {
   // implying a clean result would be the console asserting an outcome it did not compute.
   redirect('/cells/capacity?ok=counted');
 }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* PC-56 ADMIN-8b · the plan and the provisioning checklist                                          */
+/* ------------------------------------------------------------------------------------------------ */
+//
+// **THERE IS NO APPLY-INFRASTRUCTURE ACTION AND THERE NEVER WILL BE.** W038: "apply is a founder-approved pipeline step —
+// this console never holds cloud credentials." A server action that could apply Terraform would be a console holding
+// cloud credentials, which is the one thing that screen states it must not be.
+
+export async function addPlanStepAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const action = String(formData.get('action') ?? '').trim();
+  const cellId = String(formData.get('cellId') ?? '').trim();
+  const targetCode = String(formData.get('targetCode') ?? '').trim();
+  const triggerKind = String(formData.get('triggerKind') ?? '').trim();
+  const triggerValue = String(formData.get('triggerValue') ?? '').trim();
+  const status = String(formData.get('status') ?? 'draft').trim();
+  const gateReason = String(formData.get('gateReason') ?? '').trim();
+  const addsRaw = String(formData.get('addsCapacity') ?? '').trim();
+
+  if (!cellId && !targetCode) redirect('/cells/plan?error=subject');
+  if (status === 'gated' && gateReason.length < 10) redirect('/cells/plan?error=gate');
+
+  // THE TRIGGER IS A CONDITION, ASSEMBLED HERE FROM ITS PARTS rather than accepted as free JSON. A form that took raw
+  // jsonb would let an operator write a trigger no evaluator could ever read — a plan that looks structured and is prose.
+  const triggerSpec: Record<string, unknown> = { kind: triggerKind || 'manual' };
+  if (triggerKind === 'utilisation') {
+    const pct = Number(triggerValue);
+    if (!Number.isInteger(pct) || pct < 1 || pct > 100) redirect('/cells/plan?error=trigger');
+    triggerSpec.percent = pct;
+    if (cellId) triggerSpec.cellId = cellId;
+  } else if (triggerKind === 'market_entry') {
+    if (!/^[A-Za-z]{2}$/.test(triggerValue)) redirect('/cells/plan?error=trigger');
+    triggerSpec.country = triggerValue.toUpperCase();
+  }
+
+  const body: Record<string, unknown> = { action, triggerSpec, status };
+  if (cellId) body.cellId = cellId;
+  if (targetCode) body.targetCode = targetCode;
+  if (gateReason) body.gateReason = gateReason;
+  if (addsRaw) {
+    const n = Number(addsRaw);
+    if (!Number.isInteger(n) || n < 0) redirect('/cells/plan?error=adds');
+    body.addsCapacity = n;
+  }
+
+  try { await adminPost('cells/plan', { body }); }
+  catch (e) { redirect(`/cells/plan?error=${apiErrorKey(e)}`); }
+  revalidatePath('/cells/plan');
+  redirect('/cells/plan?ok=planned');
+}
+
+/** Start a provisioning run. **The market-entry gate is enforced server-side** and a refusal is recorded in the residency
+ *  log — a country whose data-protection profile is drafted rather than ratified cannot receive a cell, because the
+ *  residency lock would be enforcing a rule nobody has signed off. */
+export async function startProvisioningAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const targetCode = String(formData.get('targetCode') ?? '').trim();
+  const countryCode = String(formData.get('countryCode') ?? '').trim();
+  if (!/^[a-z][a-z0-9-]{1,39}$/.test(targetCode)) redirect('/cells/provisioning?error=code');
+  if (!/^[A-Za-z]{2}$/.test(countryCode)) redirect('/cells/provisioning?error=country');
+  try { await adminPost('cells/provisioning', { body: { targetCode, countryCode: countryCode.toUpperCase() } }); }
+  catch (e) { redirect(`/cells/provisioning?error=${apiErrorKey(e)}`); }
+  revalidatePath('/cells/provisioning');
+  redirect('/cells/provisioning?ok=provisioning');
+}
+
+/** Record the smoke result. **A FAILED SMOKE KEEPS THE CELL CLOSED** — W038's own failure state, and
+ *  `ck_cpr_open_needs_smoke` makes it a database fact rather than a screen's promise. */
+export async function recordSmokeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const outcome = String(formData.get('outcome') ?? '').trim();
+  if (!id) redirect('/cells/provisioning');
+  if (outcome !== 'passed' && outcome !== 'failed') redirect('/cells/provisioning?error=invalid');
+  try { await adminPost(`cells/provisioning/${encodeURIComponent(id)}/smoke`, { body: { outcome, detail: {} } }); }
+  catch (e) { redirect(`/cells/provisioning?error=${apiErrorKey(e)}`); }
+  revalidatePath('/cells/provisioning');
+  // `?ok=smoke` deliberately does not say "ready to open" — the verdict is whatever the test found, and a success banner
+  // over a failed smoke would be the console asserting an outcome it did not produce.
+  redirect('/cells/provisioning?ok=smoke');
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+/* PC-56 ADMIN-8b · the migration pipeline                                                           */
+/* ------------------------------------------------------------------------------------------------ */
+
+/** Run the preflight. **A BLANK BOX IS `null`, NOT ZERO** — these are observations from cross-plane reads that can fail,
+ *  and coercing an unread value to 0 would turn every outage into a clean preflight. The domain reports null as UNKNOWN
+ *  and an unknown blocks. */
+export async function runPreflightAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = str(formData, 'id').trim();
+  if (!id) redirect('/cells/migrations');
+
+  const observed: Record<string, number | null> = {};
+  for (const k of ['openPayouts', 'liveAuctions', 'outboxPending', 'estimatedBytes', 'windowBudgetBytes']) {
+    const raw = String(formData.get(k) ?? '').trim();
+    if (raw === '') { observed[k] = null; continue; }
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 0) redirect(`/cells/migrations/${enc(id)}?error=invalid`);
+    observed[k] = n;
+  }
+
+  try { await adminPost(`cells/migrations/${enc(id)}/preflight`, { body: observed }); }
+  catch (e) { redirect(`/cells/migrations/${enc(id)}?error=${apiErrorKey(e)}`); }
+  revalidatePath(`/cells/migrations/${id}`);
+  // Deliberately not `?ok=approved`-style optimism: the preflight's verdict is whatever it found, and the page prints it.
+  redirect(`/cells/migrations/${enc(id)}?ok=preflight`);
+}
+
+/** The checker on a move. The server refuses a maker who approves their own job — this action does not re-check it,
+ *  because a second copy of the rule in the console is a second place it can drift. */
+export async function approveMigrationAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = str(formData, 'id').trim();
+  if (!id) redirect('/cells/migrations');
+  try { await adminPost(`cells/migrations/${enc(id)}/approve`, { body: {} }); }
+  catch (e) { redirect(`/cells/migrations/${enc(id)}?error=${apiErrorKey(e)}`); }
+  revalidatePath(`/cells/migrations/${id}`);
+  redirect(`/cells/migrations/${enc(id)}?ok=approved`);
+}
+
+/** Advance one state. Money crosses as MINOR-UNIT STRINGS (Law 2) and is never parsed to a number here — a ledger sum
+ *  read through `Number` is a verify that can pass on a one-paisa difference in a large figure. */
+export async function advanceMigrationAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = str(formData, 'id').trim();
+  const to = str(formData, 'to').trim();
+  if (!id) redirect('/cells/migrations');
+  const STATES = ['copying', 'verifying', 'cutover', 'done', 'rolled_back', 'failed'];
+  if (!STATES.includes(to)) redirect(`/cells/migrations/${enc(id)}?error=invalid`);
+
+  const body: Record<string, unknown> = { to };
+  for (const k of ['sourceRows', 'targetRows']) {
+    const raw = String(formData.get(k) ?? '').trim();
+    if (raw === '') continue;
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 0) redirect(`/cells/migrations/${enc(id)}?error=invalid`);
+    body[k] = n;
+  }
+  for (const k of ['sourceLedgerMinor', 'targetLedgerMinor']) {
+    const raw = String(formData.get(k) ?? '').trim();
+    if (raw === '') continue;
+    if (!/^-?[0-9]{1,19}$/.test(raw)) redirect(`/cells/migrations/${enc(id)}?error=invalid`);
+    body[k] = raw;   // STRING, all the way to the database.
+  }
+  const rb = String(formData.get('rollbackReason') ?? '').trim();
+  if (rb) body.rollbackReason = rb;
+
+  try { await adminPost(`cells/migrations/${enc(id)}/advance`, { body }); }
+  catch (e) { redirect(`/cells/migrations/${enc(id)}?error=${apiErrorKey(e)}`); }
+  revalidatePath(`/cells/migrations/${id}`);
+  redirect(`/cells/migrations/${enc(id)}?ok=advanced`);
+}

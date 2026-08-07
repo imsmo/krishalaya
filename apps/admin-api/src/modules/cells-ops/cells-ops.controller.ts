@@ -13,6 +13,7 @@ import { CellRegistryService } from './services/cell-registry.service';
 import { TenantCellAssignmentService } from './services/tenant-cell-assignment.service';
 import { DataResidencyRulesService } from './services/data-residency-rules.service';
 import { MapApprovalService } from './services/map-approval.service';
+import { ResidencyMigrationService } from './services/residency-migration.service';
 import {
   CreateCellSchema, CreateCellDto, UpdateCellSchema, UpdateCellDto, SetStatusSchema, SetStatusDto,
   SetDefaultSchema, SetDefaultDto, SetResidencyLockSchema, SetResidencyLockDto,
@@ -23,6 +24,11 @@ import {
   ProposeCellChangeSchema, ProposeCellChangeDto, ProposeShardChangeSchema, ProposeShardChangeDto,
   RejectProposalSchema, RejectProposalDto, QueryProposalsSchema, QueryProposalsDto,
   QueryMapHistorySchema, QueryMapHistoryDto,
+  QueryResidencySchema, QueryResidencyDto, AttestSchema, AttestDto,
+  SetCountryProfileSchema, SetCountryProfileDto, DraftMigrationSchema, DraftMigrationDto,
+  MigrationPreflightSchema, MigrationPreflightDto, AdvanceMigrationSchema, AdvanceMigrationDto,
+  AddPlanStepSchema, AddPlanStepDto, StartProvisioningSchema, StartProvisioningDto,
+  RecordSmokeSchema, RecordSmokeDto,
 } from './dto/cells-ops.dto';
 
 const admin = (req: any): AdminRequestContext => req.admin;
@@ -37,7 +43,120 @@ export class CellsOpsController {
     private readonly assignment: TenantCellAssignmentService,
     private readonly residency: DataResidencyRulesService,
     private readonly approvals: MapApprovalService,
+    private readonly rm: ResidencyMigrationService,
   ) {}
+
+  /* ==================== PC-56 ADMIN-8b · THE FOUR DEFERRED OBJECTS ==================== */
+  //
+  // Declared before `/cells/:id` for the reason this file's header gives: Nest matches in declaration order.
+
+  /** W033. Country profiles, the cross-border posture, and **the evidence log the boundary never produced.** */
+  @Get('residency-log') @RequireOwnerPermission(OwnerPermissions.CellsRead)
+  residencyLog(@ZodQuery(QueryResidencySchema) q: QueryResidencyDto) {
+    return this.rm.residency(q).then((r) => ({
+      data: r.violations,
+      meta: { nextCursor: r.nextCursor, countries: r.countries, window: r.window, loggingSince: r.loggingSince },
+    }));
+  }
+
+  /** The attestation. It asserts a NEGATIVE, so `compliance.export` gates it — W033's own restricted state says
+   *  "Export needs `compliance.export`; the view itself is platform-ops readable." */
+  @Get('residency-attestation') @RequireOwnerPermission(OwnerPermissions.ComplianceManage)
+  residencyAttestation(@Req() req: any, @ZodQuery(AttestSchema) q: AttestDto) {
+    return this.rm.attestation(admin(req), q).then((data) => ({ data }));
+  }
+
+  /** A country's data-protection profile. `compliance.manage` and NOT `cells.manage`: whether a country's regulation is
+   *  ratified is a legal fact, and an infrastructure operator should not be able to assert one. */
+  @Post('countries/:code/profile')
+  @RequireOwnerPermission(OwnerPermissions.ComplianceManage)
+  @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  setCountryProfile(@Req() req: any, @Param('code') code: string, @ZodBody(SetCountryProfileSchema) body: SetCountryProfileDto) {
+    return this.rm.setCountryProfile(admin(req), code, body).then((data) => ({ data }));
+  }
+
+  /* ---------------- W034 · the migration pipeline (DELTA-012) ---------------- */
+
+  @Get('migrations') @RequireOwnerPermission(OwnerPermissions.CellsRead)
+  listMigrations(@ZodQuery(QueryProposalsSchema) q: QueryProposalsDto) {
+    return this.rm.listJobs({ status: q.status, cursor: q.cursor, limit: q.limit }).then((r) => ({
+      data: r.items, meta: { nextCursor: r.nextCursor, executor: r.executor },
+    }));
+  }
+
+  @Get('migrations/:id') @RequireOwnerPermission(OwnerPermissions.CellsRead)
+  getMigration(@Param('id') id: string) {
+    return this.rm.getJob(id).then((data) => ({ data }));
+  }
+
+  /** Draft a move. **A cross-border attempt is RECORDED and then refused** — W033's log fills from here. */
+  @Post('migrations')
+  @RequireOwnerPermission(OwnerPermissions.CellsManage)
+  @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  draftMigration(@Req() req: any, @ZodBody(DraftMigrationSchema) body: DraftMigrationDto) {
+    return this.rm.draftJob(admin(req), body).then((data) => ({ data }));
+  }
+
+  @Post('migrations/:id/preflight')
+  @RequireOwnerPermission(OwnerPermissions.CellsManage)
+  migrationPreflight(@Req() req: any, @Param('id') id: string, @ZodBody(MigrationPreflightSchema) body: MigrationPreflightDto) {
+    return this.rm.runPreflight(admin(req), id, body).then((data) => ({ data }));
+  }
+
+  /** The checker on a move. `cells.approve`, same as the map proposals — moving a tenant's live data between physical
+   *  stacks is the most consequential thing this plane does. */
+  @Post('migrations/:id/approve')
+  @RequireOwnerPermission(OwnerPermissions.CellsApprove)
+  @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  approveMigration(@Req() req: any, @Param('id') id: string) {
+    return this.rm.approveJob(admin(req), id).then((data) => ({ data }));
+  }
+
+  /** Advance the pipeline. The API an executor WOULD call — exposed so the state machine is exercised and auditable
+   *  before the executor exists (ADMIN-8b-Q1), and so no surface can render a state nothing produced. */
+  @Post('migrations/:id/advance')
+  @RequireOwnerPermission(OwnerPermissions.CellsManage)
+  @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  advanceMigration(@Req() req: any, @Param('id') id: string, @ZodBody(AdvanceMigrationSchema) body: AdvanceMigrationDto) {
+    const { to, ...evidence } = body;
+    return this.rm.advance(admin(req), id, to, evidence as Record<string, unknown>).then((data) => ({ data }));
+  }
+
+  /* ---------------- W037 · the plan (DELTA-013) ---------------- */
+
+  @Get('plan') @RequireOwnerPermission(OwnerPermissions.CellsRead)
+  scalePlan() {
+    return this.rm.plan().then((data) => ({ data }));
+  }
+
+  @Post('plan')
+  @RequireOwnerPermission(OwnerPermissions.CellsManage)
+  addPlanStep(@Req() req: any, @ZodBody(AddPlanStepSchema) body: AddPlanStepDto) {
+    return this.rm.addPlanStep(admin(req), body).then((data) => ({ data }));
+  }
+
+  /* ---------------- W038 · provisioning ---------------- */
+
+  @Get('provisioning') @RequireOwnerPermission(OwnerPermissions.CellsRead)
+  provisioning() {
+    return this.rm.provisioning().then((data) => ({ data }));
+  }
+
+  /** Start a provisioning run. **The market-entry gate is enforced here**: a country whose data-protection profile is
+   *  drafted rather than ratified is refused, and the refusal is recorded in the residency log. */
+  @Post('provisioning')
+  @RequireOwnerPermission(OwnerPermissions.CellsManage)
+  @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  startProvisioning(@Req() req: any, @ZodBody(StartProvisioningSchema) body: StartProvisioningDto) {
+    return this.rm.startProvisioning(admin(req), body).then((data) => ({ data }));
+  }
+
+  @Post('provisioning/:id/smoke')
+  @RequireOwnerPermission(OwnerPermissions.CellsManage)
+  recordSmoke(@Req() req: any, @Param('id') id: string, @ZodBody(RecordSmokeSchema) body: RecordSmokeDto) {
+    return this.rm.recordSmoke(admin(req), id, body.outcome, body.detail).then((data) => ({ data }));
+  }
+
 
   /* ==================== PC-56 ADMIN-8 · THE TWELFTH MAKER-CHECKER SITE ==================== */
   //

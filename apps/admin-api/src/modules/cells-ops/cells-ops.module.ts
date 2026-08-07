@@ -13,6 +13,8 @@ import { TenantCellAssignmentService } from './services/tenant-cell-assignment.s
 import { DataResidencyRulesService } from './services/data-residency-rules.service';
 import { MapApprovalRepository } from './repositories/map-approval.repository';
 import { MapApprovalService } from './services/map-approval.service';
+import { ResidencyMigrationRepository } from './repositories/residency-migration.repository';
+import { ResidencyMigrationService } from './services/residency-migration.service';
 
 @Module({
   controllers: [CellsOpsController],
@@ -20,6 +22,9 @@ import { MapApprovalService } from './services/map-approval.service';
     CellsRepository, CellRegistryService, TenantCellAssignmentService, DataResidencyRulesService,
     // PC-56 ADMIN-8 — the change-proposal gate, the map-wide history read, and capacity from real placement history.
     MapApprovalRepository, MapApprovalService,
+    // PC-56 ADMIN-8b — the residency evidence log, the migration pipeline (DELTA-012), the plan (DELTA-013) and the
+    // provisioning checklist.
+    ResidencyMigrationRepository, ResidencyMigrationService,
   ],
 })
 export class CellsOpsModule {}
