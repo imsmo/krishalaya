@@ -110,6 +110,17 @@ export const OwnerPermissions = {
   LedgerInvestigate: 'ledger.investigate',  // draft a correction against an open case; never posts
   LedgerCorrect: 'ledger.correct',          // approve and post a correction — a second person, always
   ModerationRead: 'moderation.read',   // trust & safety boards, counts, insights — no named-person risk file
+  // ADMIN-5f — the QUEUE permissions, both named by the canon and neither previously existing.
+  // W090: "Release/remove need `moderation.listings`; removals of value ≥ ₹1,00,000 are maker-checker."
+  // W092: "Message bodies need `moderation.messages` — thread text is sensitive by default."
+  //
+  // MESSAGES ARE SEPARATE FROM LISTINGS AND THAT IS THE INTERESTING SPLIT. A held listing is a public offer; a
+  // reported message is a private conversation between two people, one of whom is usually the person complaining.
+  // Reading the thread is often necessary to judge a harassment report and it is never routine, so it is its own
+  // grant — an operator can work the queue, hold listings and decide reports all day without ever opening somebody's
+  // messages, and the one who needs to open them has asked for that specifically.
+  ModerationListings: 'moderation.listings',   // hold / release / remove a listing; decide a report
+  ModerationMessages: 'moderation.messages',   // read the BODY of a reported message thread
   RiskRead: 'risk.read',               // ONE user's risk profile: score, band, explainable factors, masked identity
   RiskAct: 'risk.act',                 // band changes + platform blocklist entries (both require a second operator)
   RiskRules: 'risk.rules',             // propose/approve risk-weight changes — population-wide, dry-run gated
@@ -173,6 +184,12 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // and for the same reason.
   platform_risk_policy: [OwnerPermissions.RiskRules, OwnerPermissions.ModerationRead, OwnerPermissions.RiskRead],
   platform_trust_safety_viewer: [OwnerPermissions.ModerationRead],   // T&S analyst — boards and trends, no person file
+  // ADMIN-5f. The QUEUE desk works cases: it reads the boards, holds listings and decides reports. It does NOT hold
+  // `moderation.messages` — reading a private thread is a decision somebody makes for a named reason, not a standing
+  // capability of whoever is on shift.
+  platform_moderation_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings],
+  // The SAFETY desk is the one that reads threads, because harassment cannot be judged without them.
+  platform_safety_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings, OwnerPermissions.ModerationMessages, OwnerPermissions.RiskRead],
   // ADMIN-5e. The AUDITOR reads the trail and nothing else — the point of the role is that it can see every action
   // on the platform without being able to take one. `audit.values.read` is deliberately NOT here: reading a lifecycle
   // is the job, reading the values inside every change is a separate need with its own justification.

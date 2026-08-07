@@ -25,6 +25,7 @@ import { ConsentOpsModule } from './modules/consent-ops/consent-ops.module';
 import { TenantApplicationsOpsModule } from './modules/tenant-applications-ops/tenant-applications-ops.module';
 import { TrustSafetyModule } from './modules/trust-safety/trust-safety.module';
 import { LedgerCorrectionModule } from './modules/ledger-correction/ledger-correction.module';
+import { ModerationQueueModule } from './modules/moderation-queue/moderation-queue.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { CatalogueDepthModule } from './modules/catalogue-depth/catalogue-depth.module';
 import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
@@ -37,7 +38,9 @@ import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
   // `appeals`, which 0067 created for an admin realm that had no grant on them.
   TrustSafetyModule,
   // PC-56 ADMIN-5e: W068 — the only path by which a person's wallet balance changes by hand.
-  LedgerCorrectionModule],
+  LedgerCorrectionModule,
+  // PC-56 ADMIN-5f: the moderation queue — the first code that makes "removed" actually remove a listing.
+  ModerationQueueModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

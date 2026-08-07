@@ -1,30 +1,19 @@
 'use server';
-// apps/web-admin/src/app/moderation/actions.ts · god-mode trust & safety mutations (PC-56 ADMIN-5d).
+// apps/web-admin/src/app/moderation/actions.ts — extended for ADMIN-5f. See the ADMIN-5d header below.
 //
-// The ONLY place the admin bearer writes on this path. Every one is re-authorised SERVER-SIDE by admin-api
-// (`risk.act` or `risk.rules` + step-up) and records an audit row, so the operator's mandatory justification goes in
-// the body rather than being inferred.
-//
-// TWO THINGS THIS FILE DELIBERATELY DOES NOT DO:
-//   • It never sends a HASH. `addBlockAction` posts the RAW identifier and admin-api hashes it — the console has no
-//     business computing the value the uniqueness index depends on, and a second implementation of the normalisation
-//     rule is a second chance for it to disagree.
-//   • It passes no Idempotency-Key, because admin-api exposes none on this path. Mutations therefore never auto-retry,
-//     which on "add a platform block" is the right default: a duplicate is caught by the partial unique index and
-//     reported as already-blocked rather than silently creating a second expiry date.
-//
-// 'use server' files export ONLY async functions — every validator lives in features/trust/trust-safety.ts.
+// ADMIN-5f ADDS THE FOUR ACTS THAT TOUCH A FARMER'S LISTING. None sends a value at stake: the figure that decides
+// whether a removal needs a second operator is computed server-side from the listing row, and a client that could
+// supply it could supply ₹99,999.
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, AdminApiError } from '../../lib/admin-client';
 import { buildAddBlock, buildPropose, buildBandChange } from '../../features/trust/trust-safety';
+import { buildOrder, buildDecide } from '../../features/moderation/queue';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
     if (e.status === 403) return 'elevation';
-    // 409 is the two-person rule and the dry-run gate — a STATE conflict, not an authorisation failure. The
-    // distinction shows up in the operator's next move: find a colleague, or re-run the dry run.
     if (e.status === 409) return 'conflict';
     if (e.status === 422) return 'invalid';
     if (e.status === 404) return 'notFound';
@@ -34,7 +23,7 @@ function errorKey(e: unknown): string {
 const enc = encodeURIComponent;
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 
-/* ---------------- blocklists (W096) ---------------- */
+/* ==================== ADMIN-5d · blocklists, risk rules, bands ==================== */
 
 export async function addBlockAction(formData: FormData): Promise<void> {
   requireAdmin();
@@ -49,8 +38,6 @@ export async function addBlockAction(formData: FormData): Promise<void> {
     const r = await adminPost<{ alreadyBlocked: boolean }>('trust/blocklists', {
       body: {
         ...built.value,
-        // A `datetime-local` value has no zone. Sent as an ISO instant so the platform and the operator agree on when
-        // a block lapses — an expiry read an hour early or late is a person let back in, or kept out, by a timezone.
         ...(built.value.expiresAt ? { expiresAt: new Date(built.value.expiresAt).toISOString() } : {}),
         ...(built.value.reviewAt ? { reviewAt: new Date(built.value.reviewAt).toISOString() } : {}),
       },
@@ -59,8 +46,6 @@ export async function addBlockAction(formData: FormData): Promise<void> {
   } catch (e) { redirect(`/moderation/blocklists?error=${errorKey(e)}`); }
   revalidatePath('/moderation/blocklists');
   revalidatePath('/moderation');
-  // Reported distinctly. An operator who believes their expiry date is in force when somebody else's is would stop
-  // watching an identifier that lapses next week.
   redirect(`/moderation/blocklists?ok=${already ? 'alreadyBlocked' : 'added'}`);
 }
 
@@ -89,8 +74,6 @@ export async function liftBlockAction(formData: FormData): Promise<void> {
   revalidatePath('/moderation');
   redirect('/moderation/blocklists?ok=lifted');
 }
-
-/* ---------------- risk rules (W095) ---------------- */
 
 export async function proposeWeightAction(formData: FormData): Promise<void> {
   requireAdmin();
@@ -136,8 +119,6 @@ export async function withdrawProposalAction(formData: FormData): Promise<void> 
   redirect('/moderation/risk/rules?ok=withdrawn');
 }
 
-/* ---------------- risk profile (W094) ---------------- */
-
 export async function changeBandAction(formData: FormData): Promise<void> {
   requireAdmin();
   const userId = s(formData, 'userId');
@@ -152,4 +133,70 @@ export async function changeBandAction(formData: FormData): Promise<void> {
   revalidatePath(`/moderation/risk/accounts/${userId}`);
   revalidatePath('/moderation/risk');
   redirect(`/moderation/risk/accounts/${enc(userId)}?ok=bandChanged`);
+}
+
+/* ==================== ADMIN-5f · the queue ==================== */
+
+export async function holdAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = s(formData, 'id');
+  if (!id) redirect('/moderation/listings');
+  const built = buildOrder({
+    source: s(formData, 'source'), sourceRef: s(formData, 'sourceRef'),
+    reason: s(formData, 'reason'), languageCode: s(formData, 'languageCode'),
+  }, true);
+  if (!built.ok) redirect(`/moderation/listings/${enc(id)}?error=${built.error}`);
+  try { await adminPost(`moderation/listings/${enc(id)}/hold`, { body: built.value }); }
+  catch (e) { redirect(`/moderation/listings/${enc(id)}?error=${errorKey(e)}`); }
+  revalidatePath(`/moderation/listings/${id}`);
+  revalidatePath('/moderation/listings');
+  redirect(`/moderation/listings/${enc(id)}?ok=held`);
+}
+
+export async function releaseAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = s(formData, 'id');
+  if (!id) redirect('/moderation/listings');
+  const built = buildOrder({
+    reason: s(formData, 'reason'), languageCode: s(formData, 'languageCode'),
+    reporterUserId: s(formData, 'reporterUserId'),
+  }, false);
+  if (!built.ok) redirect(`/moderation/listings/${enc(id)}?error=${built.error}`);
+  try { await adminPost(`moderation/listings/${enc(id)}/release`, { body: built.value }); }
+  catch (e) { redirect(`/moderation/listings/${enc(id)}?error=${errorKey(e)}`); }
+  revalidatePath(`/moderation/listings/${id}`);
+  revalidatePath('/moderation/listings');
+  redirect(`/moderation/listings/${enc(id)}?ok=released`);
+}
+
+export async function removeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = s(formData, 'id');
+  if (!id) redirect('/moderation/listings');
+  const built = buildOrder({
+    reason: s(formData, 'reason'), languageCode: s(formData, 'languageCode'),
+    reporterUserId: s(formData, 'reporterUserId'), checkerNote: s(formData, 'checkerNote'),
+  }, false);
+  if (!built.ok) redirect(`/moderation/listings/${enc(id)}?error=${built.error}`);
+  try { await adminPost(`moderation/listings/${enc(id)}/remove`, { body: built.value }); }
+  catch (e) { redirect(`/moderation/listings/${enc(id)}?error=${errorKey(e)}`); }
+  revalidatePath(`/moderation/listings/${id}`);
+  revalidatePath('/moderation/listings');
+  redirect(`/moderation/listings/${enc(id)}?ok=removed`);
+}
+
+export async function decideReportAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = s(formData, 'id');
+  if (!id) redirect('/moderation/reports');
+  const built = buildDecide({
+    status: s(formData, 'status'), outcome: s(formData, 'outcome'),
+    outcomeNote: s(formData, 'outcomeNote'), languageCode: s(formData, 'languageCode'),
+  });
+  if (!built.ok) redirect(`/moderation/reports?error=${built.error}`);
+  try { await adminPost(`moderation/reports/${enc(id)}/decide`, { body: built.value }); }
+  catch (e) { redirect(`/moderation/reports?error=${errorKey(e)}`); }
+  revalidatePath('/moderation/reports');
+  revalidatePath('/moderation');
+  redirect(`/moderation/reports?ok=${built.value.status}`);
 }

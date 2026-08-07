@@ -5,6 +5,12 @@ import { IllegalListingTransitionError } from './listing.errors';
 
 export const LISTING_STATUSES = [
   'draft', 'pending_approval', 'published', 'paused',
+  // PC-56 ADMIN-5f. `held` is a PLATFORM moderation hold (W090), added to `listing_status` by 0112. It is distinct
+  // from `hidden`, which is the SELLER's own choice: a hold is temporary, imposed, reversible, and carries a 4-hour
+  // SLA because the produce underneath it is perishable and priced by the hour. W090's whole argument is "hold fast,
+  // remove slow — a held listing is reversible, a wrong removal costs a farmer income", and collapsing the two states
+  // would lose the distinction between a seller pausing their own sale and the platform stopping it.
+  'held',
   'sold_out', 'expired', 'rejected', 'hidden', 'archived',
 ] as const;
 export type ListingStatus = (typeof LISTING_STATUSES)[number];
@@ -13,8 +19,12 @@ export type ListingStatus = (typeof LISTING_STATUSES)[number];
 const TRANSITIONS: Readonly<Record<ListingStatus, readonly ListingStatus[]>> = Object.freeze({
   draft:            ['pending_approval', 'published', 'archived'],
   pending_approval: ['published', 'rejected', 'draft'],
-  published:        ['paused', 'sold_out', 'expired', 'hidden', 'archived'],
-  paused:           ['published', 'archived'],
+  published:        ['paused', 'sold_out', 'expired', 'hidden', 'held', 'archived'],
+  paused:           ['published', 'held', 'archived'],
+  // A hold RELEASES to published (the ordinary outcome — most holds are wrong, by design) or ends in archived, which
+  // is how a removal terminates. It deliberately cannot go to `hidden`: hidden is the seller's state and moving a
+  // listing there would disguise a platform action as the seller's own decision.
+  held:             ['published', 'archived'],
   rejected:         ['draft', 'archived'],
   sold_out:         ['archived', 'published'], // re-list after restock
   expired:          ['published', 'archived'],
