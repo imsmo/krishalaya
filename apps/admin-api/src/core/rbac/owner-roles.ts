@@ -81,6 +81,17 @@ export const OwnerPermissions = {
   SchemesDbtRead: 'schemes.dbt.read',                   // cross-tenant DBT/PFMS credit observations (never bank fields)
   CellsManage: 'cells.manage',  // shard/cell routing directory: register cells/shards, status lifecycle, tenant placement/move (Law 8/12)
   CellsRead: 'cells.read',      // cell/shard map + tenant-placement + residency + change-history reads (no DSN secrets)
+  // ADMIN-8 — THE CANON NAMES A CHECKER ON THIS MAP FIVE TIMES AND THERE WAS NONE.
+  //   W029 "ALL changes are maker-checker + reasoned" · W030 "requires checker (`cells.approve`)"
+  //   W031 "Weight/status changes need `cells.write` + checker" · W036 "Raising capacity_tenants needs … checker"
+  //   W038 "Set is_default for BD → open for placements (checker)"
+  // Every one of those writes was one operator with `cells.manage`, applied immediately.
+  //
+  // SEPARATE FROM `cells.manage`, AND THE SEPARATION IS WHAT MAKES THE RULE ADMINISTRABLE. `ck_cell_map_proposals_maker_
+  // ne_checker` and `assertSecondPerson` refuse self-approval even if one person holds both — so this split is not the
+  // control itself. What it buys is an access review that can grant "may propose a topology change" without granting "may
+  // authorise one", which is the difference between a two-person rule and a formality on a team of three.
+  CellsApprove: 'cells.approve',  // apply or reject a proposed cell/shard/placement change — a second person, always
   // ADMIN-5d — THE TRUST & SAFETY NAMESPACE. These four are the first `moderation.*` / `risk.*` permissions on the
   // platform; before this wave they existed only as prose inside migration 0067's rationale comment, which named them
   // as the access model for three tables nothing could reach.
@@ -216,6 +227,9 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_schemes_viewer: [OwnerPermissions.SchemesRegistryRead],   // govt-programs / policy analyst — read-only
   platform_cells_ops: [OwnerPermissions.CellsManage, OwnerPermissions.CellsRead],
   platform_cells_viewer: [OwnerPermissions.CellsRead],   // infra / SRE — read-only topology view
+  // ADMIN-8. The checker who authorises topology changes and proposes none — deliberately NOT holding `cells.manage`, so
+  // that an access review can see at a glance who may sign and who may ask.
+  platform_cells_checker: [OwnerPermissions.CellsApprove, OwnerPermissions.CellsRead],
   // ADMIN-5d. The safety DESK works cases: they read the boards and they act on individual accounts. They do NOT hold
   // `risk.rules` — the person under pressure at 22:40 to stop a fraud ring is the last person who should be able to
   // re-weight the whole population to make one cluster go away.

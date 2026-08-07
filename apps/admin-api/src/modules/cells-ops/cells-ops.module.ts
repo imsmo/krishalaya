@@ -11,9 +11,15 @@ import { CellsRepository } from './repositories/cells.repository';
 import { CellRegistryService } from './services/cell-registry.service';
 import { TenantCellAssignmentService } from './services/tenant-cell-assignment.service';
 import { DataResidencyRulesService } from './services/data-residency-rules.service';
+import { MapApprovalRepository } from './repositories/map-approval.repository';
+import { MapApprovalService } from './services/map-approval.service';
 
 @Module({
   controllers: [CellsOpsController],
-  providers: [CellsRepository, CellRegistryService, TenantCellAssignmentService, DataResidencyRulesService],
+  providers: [
+    CellsRepository, CellRegistryService, TenantCellAssignmentService, DataResidencyRulesService,
+    // PC-56 ADMIN-8 — the change-proposal gate, the map-wide history read, and capacity from real placement history.
+    MapApprovalRepository, MapApprovalService,
+  ],
 })
 export class CellsOpsModule {}

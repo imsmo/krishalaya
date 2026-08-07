@@ -194,3 +194,158 @@ export async function removePlacementAction(formData: FormData): Promise<void> {
   revalidatePath('/cells/placements');
   redirect('/cells/placements?ok=removed');
 }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* PC-56 ADMIN-8 · the TWELFTH maker-checker site                                                    */
+/* ------------------------------------------------------------------------------------------------ */
+//
+// These are the writes the canon names a checker on five times and that had none. Each is re-authorised SERVER-SIDE:
+// `cells.manage` to propose, the NEW `cells.approve` to apply or reject, plus a FIDO2 hardware key and step-up freshness
+// on both — because this map decides which physical stack and which COUNTRY a tenant's data lives in.
+//
+// NO `observed` FIELD IS SENT. The maker's observed state is read server-side from the row, because it is what the
+// staleness check compares against — and a client that could supply it could supply a snapshot matching whatever it wanted
+// applied, which defeats the point of storing one. Applying sends no body at all.
+
+/** Propose a cell change (the maker half). */
+export async function proposeCellChangeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const action = String(formData.get('action') ?? '').trim();
+  const reason = String(formData.get('reason') ?? '');
+  if (!id) redirect('/cells');
+  if (action !== 'status_changed' && action !== 'updated') redirect(`/cells/cells/${encodeURIComponent(id)}?error=invalid`);
+  // Checked here so the operator sees a field error rather than a 422, and again by Zod, and again by 0116's CHECK.
+  if (reason.trim().length < 20) redirect(`/cells/cells/${encodeURIComponent(id)}?error=reason`);
+
+  const body: Record<string, unknown> = { action, reason: reason.trim() };
+  if (action === 'status_changed') {
+    const status = String(formData.get('status') ?? '').trim();
+    if (!status) redirect(`/cells/cells/${encodeURIComponent(id)}?error=invalid`);
+    body.status = status;
+  } else {
+    const cap = String(formData.get('capacityTenants') ?? '').trim();
+    // An EMPTY capacity field means "leave it alone"; the literal string "null" means UNCAPPED. Those are different
+    // intentions and the form has to be able to express both, or raising a cap and removing one become the same gesture.
+    if (cap === 'null') body.capacityTenants = null;
+    else if (cap !== '') {
+      const n = Number(cap);
+      if (!Number.isInteger(n) || n < 0) redirect(`/cells/cells/${encodeURIComponent(id)}?error=capacity`);
+      body.capacityTenants = n;
+    }
+    const isDefault = String(formData.get('isDefault') ?? '').trim();
+    if (isDefault === 'true' || isDefault === 'false') body.isDefault = isDefault === 'true';
+    const lock = String(formData.get('residencyLocked') ?? '').trim();
+    if (lock === 'true' || lock === 'false') body.residencyLocked = lock === 'true';
+  }
+  let proposalId: string | undefined;
+  try {
+    const res = await adminPost<{ id: string }>(`cells/cells/${encodeURIComponent(id)}/proposals`, { body });
+    proposalId = res.data?.id;
+  } catch (e) {
+    redirect(`/cells/cells/${encodeURIComponent(id)}?error=${apiErrorKey(e)}`);
+  }
+  revalidatePath(`/cells/cells/${id}`);
+  revalidatePath('/cells/changes');
+  if (proposalId) redirect(`/cells/proposals/${encodeURIComponent(proposalId)}?ok=proposed`);
+  redirect('/cells/changes?ok=proposed');
+}
+
+/** Propose a shard change. W031: "Weight/status changes need `cells.write` + checker; they shift the placement hash." */
+export async function proposeShardChangeAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const action = String(formData.get('action') ?? '').trim();
+  const reason = String(formData.get('reason') ?? '');
+  if (!id) redirect('/cells/shards');
+  if (action !== 'status_changed' && action !== 'updated') redirect(`/cells/shards/${encodeURIComponent(id)}?error=invalid`);
+  if (reason.trim().length < 20) redirect(`/cells/shards/${encodeURIComponent(id)}?error=reason`);
+
+  const body: Record<string, unknown> = { action, reason: reason.trim() };
+  if (action === 'status_changed') {
+    const status = String(formData.get('status') ?? '').trim();
+    if (!status) redirect(`/cells/shards/${encodeURIComponent(id)}?error=invalid`);
+    body.status = status;
+  } else {
+    const w = String(formData.get('weight') ?? '').trim();
+    const n = Number(w);
+    // 0 IS THE INTERESTING VALUE and must be accepted: W031's "weight 0 = drain (no new placements)", which nothing
+    // enforced until 0116. A falsy check here would have made the drain gesture unreachable through the very form that
+    // exists to perform it.
+    if (w === '' || !Number.isInteger(n) || n < 0) redirect(`/cells/shards/${encodeURIComponent(id)}?error=weight`);
+    body.weight = n;
+  }
+  let proposalId: string | undefined;
+  try {
+    const res = await adminPost<{ id: string }>(`cells/shards/${encodeURIComponent(id)}/proposals`, { body });
+    proposalId = res.data?.id;
+  } catch (e) {
+    redirect(`/cells/shards/${encodeURIComponent(id)}?error=${apiErrorKey(e)}`);
+  }
+  revalidatePath(`/cells/shards/${id}`);
+  revalidatePath('/cells/changes');
+  if (proposalId) redirect(`/cells/proposals/${encodeURIComponent(proposalId)}?ok=proposed`);
+  redirect('/cells/changes?ok=proposed');
+}
+
+/** Apply an approved change — the checker half, on `cells.approve`. NO BODY. */
+export async function applyProposalAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/cells/changes');
+  try {
+    await adminPost(`cells/proposals/${encodeURIComponent(id)}/apply`, { body: {} });
+  } catch (e) {
+    redirect(`/cells/proposals/${encodeURIComponent(id)}?error=${apiErrorKey(e)}`);
+  }
+  revalidatePath(`/cells/proposals/${id}`);
+  revalidatePath('/cells');
+  revalidatePath('/cells/changes');
+  revalidatePath('/cells/capacity');
+  redirect(`/cells/proposals/${encodeURIComponent(id)}?ok=applied`);
+}
+
+export async function rejectProposalAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  const note = String(formData.get('note') ?? '');
+  if (!id) redirect('/cells/changes');
+  if (note.trim().length < 20) redirect(`/cells/proposals/${encodeURIComponent(id)}?error=note`);
+  try {
+    await adminPost(`cells/proposals/${encodeURIComponent(id)}/reject`, { body: { note: note.trim() } });
+  } catch (e) {
+    redirect(`/cells/proposals/${encodeURIComponent(id)}?error=${apiErrorKey(e)}`);
+  }
+  revalidatePath(`/cells/proposals/${id}`);
+  redirect(`/cells/proposals/${encodeURIComponent(id)}?ok=rejected`);
+}
+
+/** Mark a proposal stale. The server refuses unless it genuinely IS stale, so this cannot be used to bury a colleague's
+ *  change — that would be Reject, which demands a reason. */
+export async function staleProposalAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/cells/changes');
+  try {
+    await adminPost(`cells/proposals/${encodeURIComponent(id)}/stale`, { body: {} });
+  } catch (e) {
+    redirect(`/cells/proposals/${encodeURIComponent(id)}?error=${apiErrorKey(e)}`);
+  }
+  revalidatePath(`/cells/proposals/${id}`);
+  redirect(`/cells/proposals/${encodeURIComponent(id)}?ok=stale`);
+}
+
+/** Reconcile the denormalised placement counts against `tenant_placements`. The capacity guard reads the denormalised
+ *  number and nothing has ever compared it with the truth — ADMIN-6's cached-balance finding, one table over. */
+export async function runCountCheckAction(): Promise<void> {
+  requireAdmin();
+  try {
+    await adminPost('cells/capacity/count-check', { body: {} });
+  } catch (e) {
+    redirect(`/cells/capacity?error=${apiErrorKey(e)}`);
+  }
+  revalidatePath('/cells/capacity');
+  // `?ok=counted` deliberately does NOT say "no drift". The verdict is whatever the comparison found, and a success banner
+  // implying a clean result would be the console asserting an outcome it did not compute.
+  redirect('/cells/capacity?ok=counted');
+}
