@@ -26,6 +26,7 @@ import { TenantApplicationsOpsModule } from './modules/tenant-applications-ops/t
 import { TrustSafetyModule } from './modules/trust-safety/trust-safety.module';
 import { LedgerCorrectionModule } from './modules/ledger-correction/ledger-correction.module';
 import { ModerationQueueModule } from './modules/moderation-queue/moderation-queue.module';
+import { LedgerOpsModule } from './modules/ledger-ops/ledger-ops.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { CatalogueDepthModule } from './modules/catalogue-depth/catalogue-depth.module';
 import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
@@ -40,7 +41,9 @@ import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
   // PC-56 ADMIN-5e: W068 — the only path by which a person's wallet balance changes by hand.
   LedgerCorrectionModule,
   // PC-56 ADMIN-5f: the moderation queue — the first code that makes "removed" actually remove a listing.
-  ModerationQueueModule],
+  ModerationQueueModule,
+  // PC-56 ADMIN-6: the ledger explorer and the first code on this platform that reads `prev_hash`.
+  LedgerOpsModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

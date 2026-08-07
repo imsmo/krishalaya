@@ -64,3 +64,53 @@ export async function freezeAccountAction(formData: FormData): Promise<void> {
   revalidatePath(`/recon/accounts/${id}`);
   redirect(`/recon/accounts/${encodeURIComponent(id)}?ok=${action}`);
 }
+
+/* ==================== PC-56 ADMIN-6 · ledger truth ==================== */
+
+/** W064's "Verify chain (period)" / W065's "Verify hashes" — the first code on this platform that reads `prev_hash`.
+ *
+ *  The RESULT IS PASSED BACK IN THE URL rather than refetched, because a chain verification is a point-in-time
+ *  measurement: refetching would run the walk again and could return a different answer, which on a P0 finding is the
+ *  last thing anybody wants. The verification is also recorded server-side, so the URL is a convenience and never the
+ *  record. */
+export async function verifyChainAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const txnId = String(formData.get('txnId') ?? '').trim();
+  const accountId = String(formData.get('accountId') ?? '').trim();
+  if (!txnId || !accountId) redirect('/recon/ledger');
+  let payload = '';
+  try {
+    const r = await adminPost<Record<string, unknown>>('ledger/chain/verify', { body: { accountId } });
+    payload = Buffer.from(JSON.stringify(r.data)).toString('base64');
+  } catch (e) { redirect(`/recon/ledger/${encodeURIComponent(txnId)}?error=${ledgerErrorKey(e)}`); }
+  revalidatePath(`/recon/ledger/${txnId}`);
+  redirect(`/recon/ledger/${encodeURIComponent(txnId)}?verified=${encodeURIComponent(payload)}`);
+}
+
+/** W059's "Verify balances vs ledger", for one account. The DELTA travels back in the URL because the number is the
+ *  whole message: "they disagree" without the size and direction does not tell an operator whether a farmer has been
+ *  shown money they do not have. */
+export async function verifyBalanceAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const accountId = String(formData.get('accountId') ?? '').trim();
+  if (!accountId) redirect('/recon/accounts');
+  let matches = true; let delta = '0';
+  try {
+    const r = await adminPost<{ matches: boolean; deltaMinor: string }>(`ledger/accounts/${encodeURIComponent(accountId)}/verify-balance`, { body: {} });
+    matches = r.data?.matches !== false;
+    delta = r.data?.deltaMinor ?? '0';
+  } catch (e) { redirect(`/recon/accounts?error=${ledgerErrorKey(e)}`); }
+  revalidatePath('/recon/accounts');
+  redirect(matches ? '/recon/accounts?ok=verified' : `/recon/accounts?ok=drift&delta=${encodeURIComponent(delta)}`);
+}
+
+function ledgerErrorKey(e: unknown): string {
+  if (e instanceof AdminApiError) {
+    if (e.status === 403) return 'elevation';
+    if (e.status === 409) return 'conflict';
+    if (e.status === 413) return 'windowTooWide';
+    if (e.status === 400 || e.status === 422) return 'invalid';
+    if (e.status === 404) return 'notFound';
+  }
+  return 'generic';
+}

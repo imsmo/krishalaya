@@ -3,6 +3,7 @@
 // logic and are intentionally NOT here — see WORKER-RUNTIME.md "Deferred: domain-handler jobs".
 import { Job } from './jobs/index';
 import { reconZeroSumJob } from './jobs/recon-zero-sum.job';
+import { reconInternalBalanceJob } from './jobs/recon-internal-balance.job';
 import { ensurePartitionsJob } from './jobs/ensure-partitions.job';
 import { retentionEnforcerJob } from './jobs/retention-enforcer.job';
 import { idempotencyPurgeJob } from './jobs/idempotency-purge.job';
@@ -14,6 +15,11 @@ import { supportEscalationsJob } from './jobs/support-escalations.job';
 
 export const JOBS: Job[] = [
   reconZeroSumJob,
+  // PC-56 ADMIN-6: the per-account cached-balance-vs-ledger drift check. The query has existed twice since 0006
+  // (`runInternalBalanceCheck` in wallet-service and again in apps/api) and NEITHER COPY HAS EVER RUN — so the only
+  // check that catches a balance a farmer is SHOWN disagreeing with the ledger has never executed. The zero-sum
+  // monitor cannot substitute: a transaction's legs sum to zero whether or not every cached balance has drifted.
+  reconInternalBalanceJob,
   ensurePartitionsJob,
   retentionEnforcerJob,
   idempotencyPurgeJob,

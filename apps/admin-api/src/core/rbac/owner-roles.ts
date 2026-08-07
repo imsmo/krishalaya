@@ -107,6 +107,15 @@ export const OwnerPermissions = {
   // W068's restricted state: "Drafting needs `ledger.investigate`; posting needs a DIFFERENT user with
   // `ledger.correct`." Separate from `recon.manage` because opening an investigation is a note and posting a
   // correction MOVES A FARMER'S MONEY BY HAND — the widest gap between two acts anywhere in this console.
+  // ADMIN-6 — W064's and W065's restricted states both name `ledger.read` ("auditor role gets read-only + export
+  // only"), and W059's names it for balances. It did not exist: the ledger explorer had no route and the recon reads
+  // ran on `recon.read`.
+  //
+  // SEPARATE FROM `recon.read`, AND THE SPLIT IS THE POINT. Recon shows whether the books BALANCE — aggregates, run
+  // outcomes, mismatch counts, and no individual transaction. `ledger.read` opens the transactions themselves: every
+  // leg, every account, every counterparty, across every tenant. That is the most complete picture of who paid whom
+  // that exists on this platform, and an operator who needs to know the ledger is healthy does not need it.
+  LedgerRead: 'ledger.read',                // the transaction explorer, one txn's legs, the hash chain, balances
   LedgerInvestigate: 'ledger.investigate',  // draft a correction against an open case; never posts
   LedgerCorrect: 'ledger.correct',          // approve and post a correction — a second person, always
   ModerationRead: 'moderation.read',   // trust & safety boards, counts, insights — no named-person risk file
@@ -198,8 +207,11 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // Ledger corrections split across TWO roles that cannot be held usefully by one person, which is the entire
   // control: the investigator drafts and the controller posts. `ck_correction_maker_ne_checker` and the shared
   // two-person rule both refuse the overlap even if somebody is granted both.
-  platform_ledger_investigator: [OwnerPermissions.LedgerInvestigate, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead],
-  platform_ledger_controller: [OwnerPermissions.LedgerCorrect, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead, OwnerPermissions.AuditValuesRead],
+  platform_ledger_investigator: [OwnerPermissions.LedgerInvestigate, OwnerPermissions.LedgerRead, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead],
+  platform_ledger_controller: [OwnerPermissions.LedgerCorrect, OwnerPermissions.LedgerRead, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead, OwnerPermissions.AuditValuesRead],
+  // ADMIN-6. W064: "auditor role gets read-only + export only." This role can see every transaction on the platform
+  // and change nothing — which is what makes it safe to grant to somebody outside the money team.
+  platform_ledger_auditor: [OwnerPermissions.LedgerRead, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead],
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */

@@ -2,6 +2,7 @@
 // proven against an in-memory ledger (no DB). These are the rules an attacker / a bug must never break:
 // zero-sum, single-currency, ≥2 legs, no-zero-leg, idempotent replay, no-overdraw (user/tenant), frozen-debit
 // rejection, and a deterministic per-account hash chain.
+import { createHash } from 'node:crypto';
 import { WalletConfig } from '../core/config/wallet-config';
 import { TxnTypeRegistry } from '../ledger/txn-types.registry';
 import { PostTransactionService, LedgerLeg } from '../ledger/post-transaction.service';
@@ -90,5 +91,34 @@ describe('hash chain', () => {
     expect(h1).toMatch(/^[0-9a-f]{64}$/);
     expect(entryHash(null, 'txn1', 'acct', 100n, 100n)).toBe(h1);            // deterministic
     expect(entryHash(h1, 'txn2', 'acct', -40n, 60n)).not.toBe(h1);           // chains forward
+  });
+
+  // PC-56 ADMIN-6 · PINNED TO THE SPEC, NOT TO ITSELF.
+  //
+  // There are now THREE implementations of this formula: this one (the gRPC money writer), the private duplicate in
+  // apps/api's in-process client, and the VERIFIER in
+  // apps/admin-api/src/modules/ledger-ops/domain/hash-chain.ts. The verifier is the first code on the platform that
+  // ever reads `prev_hash`, and a verifier that disagrees with a writer is worse than no verifier at all: it pages
+  // P0 over a healthy ledger, and a team paged for a formula mismatch learns to ignore the alarm.
+  //
+  // The three cannot import each other — separate deployables — so each end is pinned to the WRITTEN PREIMAGE
+  // instead, computed here from the literal string. A change to the formula on any side now breaks a test on that
+  // side rather than silently making the checker and the writers disagree. Consolidating the three into one shared
+  // package is ADMIN-6-Q2.
+  it('matches the documented preimage exactly, so the verifier cannot diverge', () => {
+    const preimage = 'prev|txn|acct|-500|1200';
+    expect(entryHash('prev', 'txn', 'acct', -500n, 1200n))
+      .toBe(createHash('sha256').update(preimage).digest('hex'));
+  });
+  it('a NULL prev is the EMPTY STRING in the preimage, never the text "null"', () => {
+    // Getting this wrong would make every account's FIRST entry verify as broken.
+    expect(entryHash(null, 'txn', 'acct', 1n, 1n))
+      .toBe(createHash('sha256').update('|txn|acct|1|1').digest('hex'));
+  });
+  it('a balance past float precision hashes exactly', () => {
+    // If either side ever coerced these through a JS number, the verifier would report a tamper that did not happen.
+    const big = 9_007_199_254_740_993n;
+    expect(entryHash(null, 'txn', 'acct', big, big))
+      .toBe(createHash('sha256').update(`|txn|acct|${big}|${big}`).digest('hex'));
   });
 });
