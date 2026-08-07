@@ -5,7 +5,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { servableTranslation } from '../../../core/database/translation-visibility';
-import { Payout, PayoutProps } from '../domain/payout.entity';
+import { Payout } from '../domain/payout.entity';
 import { PayoutStatus } from '../domain/payout.state';
 
 const COLS = `id, tenant_id, user_id, bank_account_id, purpose_id, reference_type, reference_id, amount_minor,
@@ -90,19 +90,76 @@ export class PayoutRepository {
   }
 
   /** The gateway fund-account token for a payout's bank account (never raw bank details). */
+  /** The last four digits of the payee's bank account, for the `payout.credited` notification body.
+   *
+   *  PC-56 ADMIN-6b. Four digits and nothing else — a notification payload is read by every handler subscribed to the
+   *  event and persisted in `notifications`, so it is the last place a full account number should appear. Returns null
+   *  rather than throwing when the account is a UPI id with no `account_last4`: a message that says "sent to your bank
+   *  account ending —" is worse than one that omits the clause, and the template's `{{last4}}` renders empty. */
+  async bankLast4(tx: TxContext, tenantId: string, bankAccountId: string): Promise<string | null> {
+    const r = await tx.query<{ account_last4: string | null }>(
+      `SELECT account_last4 FROM bank_accounts WHERE id=$1 AND (tenant_id=$2 OR tenant_id IS NULL)`,
+      [bankAccountId, tenantId]);
+    return r.rows[0]?.account_last4 ?? null;
+  }
+
   async fundAccountRef(tx: TxContext, tenantId: string, bankAccountId: string): Promise<string | null> {
     const r = await tx.query<{ vault_ref: string }>(`SELECT vault_ref FROM bank_accounts WHERE id=$1 AND (tenant_id=$2 OR tenant_id IS NULL)`, [bankAccountId, tenantId]);
     return r.rows[0]?.vault_ref ?? null;
   }
 
   /** Atomically claim up to `limit` QUEUED payouts (any tenant) → mark 'processing' so no other
-   *  worker re-executes them. Runs on the privileged relay/worker connection. Highest priority first. */
+   *  worker re-executes them. Runs on the privileged relay/worker connection. Highest priority first.
+   *
+   *  PC-56 ADMIN-6b — **THE BATCH APPROVAL GATE, AND UNTIL NOW THIS QUERY DID NOT KNOW BATCHES EXISTED.**
+   *  It was `WHERE status='queued'` and nothing else. W066's subtitle is "every batch checker-approved before
+   *  execution" and W067 renders "Approve & execute" with maker ≠ checker enforced — over a claim that would already
+   *  have disbursed every payout in the batch on whichever 5-minute tick came first. An operator pressing Approve
+   *  would have believed they were the gate.
+   *
+   *  AN UNBATCHED PAYOUT IS STILL CLAIMED, and that is a deliberate line rather than an omission. A farmer requesting
+   *  their own wallet withdrawal is instructing us about their own money — KYC-gated at request, funded from their own
+   *  reserved balance. Requiring a Krishalaya employee to approve a labourer's own wages leaving their own wallet is a
+   *  control that protects nobody and blocks the thing the platform is for. What needs two people is a BATCH: money
+   *  the platform moves on many people's behalf in one act.
+   *
+   *  THE `EXISTS` IS THE SECOND LINE OF DEFENCE, NOT THE ONLY ONE. 0114 puts the same rule in a BEFORE UPDATE trigger
+   *  on `payouts`, because a money gate living in one repository method is one careless query away from being gone and
+   *  no CHECK constraint can reach another table. This clause exists so the claim SKIPS an unapproved payout quietly
+   *  (leaving it queued for the next tick) instead of the trigger raising and aborting the whole claim transaction —
+   *  which would take every other payout in the tick down with it. The trigger is the guarantee; this is the manners.
+   *
+   *  'executing' passes as well as 'approved' because `PayoutBatchService.runBatch` marks the batch executing BEFORE
+   *  disbursing its payouts. Accepting only 'approved' would refuse every payout in a run that had correctly announced
+   *  itself. */
   async claimQueued(systemTx: TxContext, limit: number): Promise<Array<{ id: string; tenantId: string }>> {
     const r = await systemTx.query<{ id: string; tenant_id: string }>(
       `UPDATE payouts SET status='processing', updated_at=now()
-        WHERE id IN (SELECT id FROM payouts WHERE status='queued' ORDER BY priority ASC, created_at ASC FOR UPDATE SKIP LOCKED LIMIT $1)
+        WHERE id IN (
+          SELECT p.id FROM payouts p
+           WHERE p.status='queued'
+             AND (p.batch_id IS NULL
+                  OR EXISTS (SELECT 1 FROM payout_batches b
+                              WHERE b.id = p.batch_id AND b.status IN ('approved','executing')))
+           ORDER BY p.priority ASC, p.created_at ASC
+           FOR UPDATE SKIP LOCKED LIMIT $1)
         RETURNING id, tenant_id`, [limit]);
     return r.rows.map((x) => ({ id: x.id, tenantId: x.tenant_id }));
+  }
+
+  /** How many queued payouts are sitting behind an unapproved batch, and how much money that is.
+   *
+   *  PC-56 ADMIN-6b. The gate above is silent by design — it skips rather than raising — and a silent gate needs a
+   *  number somewhere or it becomes indistinguishable from a stalled queue. This feeds the `kv_payouts_awaiting_
+   *  approval` gauge, which is the lesson 0113 taught: the recon staleness alarm could never fire because its gauge
+   *  was hardcoded, so a gate that holds money must publish the size of what it is holding. */
+  async awaitingApproval(systemTx: TxContext): Promise<{ count: number; totalMinor: string }> {
+    const r = await systemTx.query<{ n: string; total: string }>(
+      `SELECT count(*)::text AS n, COALESCE(SUM(p.amount_minor), 0)::text AS total
+         FROM payouts p
+         JOIN payout_batches b ON b.id = p.batch_id
+        WHERE p.status='queued' AND b.status NOT IN ('approved','executing')`);
+    return { count: Number(r.rows[0]?.n ?? '0'), totalMinor: r.rows[0]?.total ?? '0' };
   }
 
   /** Promote a labour booking's still-QUEUED payouts into the wage priority lane (lower number =

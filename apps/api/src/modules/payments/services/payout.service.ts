@@ -7,7 +7,7 @@
 // S3 review finding: requestPayout is gated on the caller's KYC (kyc_status='verified' on any active
 // role in this tenant) BEFORE any debit/ledger work — see the KycRequiredError check first in the tx.
 import { Inject, Injectable } from '@nestjs/common';
-import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
@@ -99,7 +99,23 @@ export class PayoutService {
             legs: [ { account: platform(PlatformAccount.Payouts), amountMinor: -v.amountMinor }, { account: platform(PlatformAccount.Gateway), amountMinor: v.amountMinor } ] });
           p.markSuccess();
           await this.repo.update(tx, p);
-          await this.outbox.write(tx, { tenantId, aggregateType: 'payout', aggregateId: payoutId, eventType: 'payments.payout_succeeded', payload: { v: 1, payoutId, amountMinor: v.amountMinor.toString() } });
+          // PC-56 ADMIN-6b — THE PAYLOAD GAINS A RECIPIENT, WHICH IS WHAT MADE THIS EVENT UNNOTIFIABLE. `payout.credited`
+          // has been in the notification catalogue since 0068 and nothing emitted it; adding the map row alone would not
+          // have worked, because `DomainEventFanoutHandler` reads its recipients out of the payload and this payload had
+          // no user id in it. It would have found none and returned early — silently, the same way it does for any
+          // mapped event whose recipient key is absent. So the farmer would still have been told nothing, and the fix
+          // would have looked complete.
+          //
+          // `amountMinor` stays a STRING (Law 2) and is formatted once, server-side, by the notification renderer.
+          // `last4` is the most of a bank account that ever travels on an event; the full number is in the vault and has
+          // no business in an outbox row that many handlers read.
+          await this.outbox.write(tx, {
+            tenantId, aggregateType: 'payout', aggregateId: payoutId, eventType: 'payments.payout_succeeded',
+            payload: {
+              v: 2, payoutId, amountMinor: v.amountMinor.toString(), currencyCode: v.currencyCode,
+              userId: v.userId ?? null, last4: await this.repo.bankLast4(tx, tenantId, v.bankAccountId),
+            },
+          });
         } else if (res.status === 'failed') {
           await this.wallet.post(tx, { tenantId, txnType: 'payout', idempotencyKey: `payout-reverse:${payoutId}`, referenceType: 'payout', referenceId: payoutId, initiatedBy: 'system',
             legs: [ { account: platform(PlatformAccount.Payouts), amountMinor: -v.amountMinor }, { account: userMain(v.userId ?? ''), amountMinor: v.amountMinor } ] });

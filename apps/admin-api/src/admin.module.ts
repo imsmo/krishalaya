@@ -27,6 +27,7 @@ import { TrustSafetyModule } from './modules/trust-safety/trust-safety.module';
 import { LedgerCorrectionModule } from './modules/ledger-correction/ledger-correction.module';
 import { ModerationQueueModule } from './modules/moderation-queue/moderation-queue.module';
 import { LedgerOpsModule } from './modules/ledger-ops/ledger-ops.module';
+import { PayoutOpsModule } from './modules/payout-ops/payout-ops.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { CatalogueDepthModule } from './modules/catalogue-depth/catalogue-depth.module';
 import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';

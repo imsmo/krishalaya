@@ -118,6 +118,24 @@ export const OwnerPermissions = {
   LedgerRead: 'ledger.read',                // the transaction explorer, one txn's legs, the hash chain, balances
   LedgerInvestigate: 'ledger.investigate',  // draft a correction against an open case; never posts
   LedgerCorrect: 'ledger.correct',          // approve and post a correction — a second person, always
+  // ADMIN-6b — THE MONEY DOOR. W066's restricted state: "Viewing needs `ledger.read`; execution approval needs
+  // `payouts.approve` (checker)." W062's: "Statements need `billing.read`; running the cycle needs `ledger.settle`."
+  //
+  // THERE IS ALREADY A `payout.approve`, AND IT IS A DIFFERENT PERMISSION IN A DIFFERENT REALM. Seed 0004 grants it to
+  // `tenant_admin`, and its only two uses in the whole codebase are `@Get('batches')` and `@Get('batches/:id')` in
+  // apps/api — a permission called "Approve payouts" that has never guarded an approval, because no approve endpoint
+  // existed anywhere. That one governs a tenant admin looking at their own members' payouts and is deliberately left
+  // alone; this one is the platform checker on a cross-tenant batch. They are not the same act and merging them would
+  // let a tenant admin approve the platform's disbursements.
+  //
+  // SEPARATE FROM `ledger.correct`, THOUGH BOTH MOVE MONEY, because they move it in opposite directions and the
+  // failure modes do not resemble each other. A correction adjusts the record of money already inside the platform; an
+  // approval sends money OUT to 214 bank accounts and cannot be undone by another entry. The person who reconciles the
+  // books is not automatically the person who should authorise a disbursement, and on a platform this is the one place
+  // where being wrong is irreversible.
+  PayoutApprove: 'payouts.approve',         // approve OR return a payout batch — a second person, always
+  SettlementRead: 'settlement.read',        // the settlement cycle, its statements, one statement's lines + PDF
+  LedgerSettle: 'ledger.settle',            // run a settlement cycle on demand (generates statements; moves no money)
   ModerationRead: 'moderation.read',   // trust & safety boards, counts, insights — no named-person risk file
   // ADMIN-5f — the QUEUE permissions, both named by the canon and neither previously existing.
   // W090: "Release/remove need `moderation.listings`; removals of value ≥ ₹1,00,000 are maker-checker."
@@ -212,6 +230,15 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // ADMIN-6. W064: "auditor role gets read-only + export only." This role can see every transaction on the platform
   // and change nothing — which is what makes it safe to grant to somebody outside the money team.
   platform_ledger_auditor: [OwnerPermissions.LedgerRead, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead],
+  // ADMIN-6b. THE CHECKER ROLE DOES NOT INCLUDE THE MAKER'S GRANT, and that is not an oversight — a batch is opened by
+  // the settlement/wage machinery or by an operator with `ledger.settle`, and approved here. Somebody holding both can
+  // still be refused by `ck_payout_batches_maker_ne_checker` and by `assertSecondPerson`, so this separation is
+  // convenience for an access review rather than the control itself. The control is in the database.
+  platform_payout_checker: [OwnerPermissions.PayoutApprove, OwnerPermissions.LedgerRead, OwnerPermissions.SettlementRead],
+  // Finance reads the settlement cycle and its statements and approves nothing — the commonest shape of request on this
+  // plane, and previously impossible to grant because neither permission existed.
+  platform_settlement_viewer: [OwnerPermissions.SettlementRead, OwnerPermissions.BillingRead],
+  platform_settlement_ops: [OwnerPermissions.SettlementRead, OwnerPermissions.LedgerSettle, OwnerPermissions.BillingRead, OwnerPermissions.ReconRead],
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */

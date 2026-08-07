@@ -27,4 +27,14 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'memberships.payment_confirmed', eventCode: 'payment.success',     recipientKeys: ['userId'] },
   // PC-55 A6 · ops alerting rides the SAME spine as everything else — no private channel for urgency.
   { outboxType: 'ops.alert_fired',              eventCode: 'ops.alert_fired',      recipientKeys: ['recipientUserIds'] },
+  // PC-56 ADMIN-6b · **`payout.credited` WAS SEEDED IN 0068 AND NOTHING HAS EVER EMITTED IT.** W063 says "Farmer SMS
+  // queued — celebratory Gujarati message sends on payout success"; W067's confirm dialog promises "farmers get the
+  // celebratory SMS on success". `PayoutService.execute` writes `payments.payout_succeeded` — a DIFFERENT code, absent
+  // from this map, consumed by no notification handler. So the money arrived and the platform said nothing.
+  //
+  // AND THE ROW ALONE WOULD NOT HAVE FIXED IT. The event's payload was `{ v: 1, payoutId, amountMinor }` — no user id,
+  // so `DomainEventFanoutHandler` would have found no recipient and returned early, silently, exactly as it does for a
+  // mapped event with a missing key. The payload is enriched in `payout.service.ts` in the same wave; a map row
+  // pointing at a payload with no recipient is the shape of fix that looks done and changes nothing.
+  { outboxType: 'payments.payout_succeeded',    eventCode: 'payout.credited',      recipientKeys: ['userId'] },
 ];
