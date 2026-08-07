@@ -89,6 +89,26 @@ export const OwnerPermissions = {
   //     re-bands the whole population at once. W095's dry-run panel exists because a −3 adjustment moved 312 users
   //     and put 41 into payout delay. Somebody who may restrict one suspected fraudster has not thereby been trusted
   //     to move three hundred people at midnight.
+  // ADMIN-5e — THE AUDIT SPLIT THE CANON FILED AND THE CODE NEVER MADE.
+  // W039's restricted state: "Needs `audit.read`; old/new values additionally need `audit.values.read` (PII in
+  // diffs)." W040's: "Diffs masked — old/new values need `audit.values.read` — timeline stays visible, diffs show
+  // ▪▪▪." Neither existed; the explorer has been running on `compliance.read`, so anybody who can read the DSR queue
+  // can also read every privileged action ever taken on the platform.
+  //
+  // THE SECOND PERMISSION IS THE INTERESTING ONE, AND IT RESOLVES A TENSION AN EARLIER WAVE LOGGED AS UNRESOLVED.
+  // The explorer deliberately never selects `old_value`/`new_value` because a diff can carry anything the changed
+  // row carried — a phone number, an address, a bank reference. W040 needs exactly those to draw a change diff. The
+  // ADMIN-5 verdict called that a genuine conflict needing a decision. **The canon had already decided it**: the
+  // timeline is `audit.read` and the DIFF is its own permission, so the history of what happened stays widely
+  // readable and the contents of what changed do not. An auditor reconstructing a lifecycle needs the first; only
+  // an investigation needs the second.
+  AuditRead: 'audit.read',                  // the append-only trail: who did what, when, to which entity
+  AuditValuesRead: 'audit.values.read',     // …and the before/after VALUES, which can carry anything the row carried
+  // W068's restricted state: "Drafting needs `ledger.investigate`; posting needs a DIFFERENT user with
+  // `ledger.correct`." Separate from `recon.manage` because opening an investigation is a note and posting a
+  // correction MOVES A FARMER'S MONEY BY HAND — the widest gap between two acts anywhere in this console.
+  LedgerInvestigate: 'ledger.investigate',  // draft a correction against an open case; never posts
+  LedgerCorrect: 'ledger.correct',          // approve and post a correction — a second person, always
   ModerationRead: 'moderation.read',   // trust & safety boards, counts, insights — no named-person risk file
   RiskRead: 'risk.read',               // ONE user's risk profile: score, band, explainable factors, masked identity
   RiskAct: 'risk.act',                 // band changes + platform blocklist entries (both require a second operator)
@@ -153,6 +173,16 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // and for the same reason.
   platform_risk_policy: [OwnerPermissions.RiskRules, OwnerPermissions.ModerationRead, OwnerPermissions.RiskRead],
   platform_trust_safety_viewer: [OwnerPermissions.ModerationRead],   // T&S analyst — boards and trends, no person file
+  // ADMIN-5e. The AUDITOR reads the trail and nothing else — the point of the role is that it can see every action
+  // on the platform without being able to take one. `audit.values.read` is deliberately NOT here: reading a lifecycle
+  // is the job, reading the values inside every change is a separate need with its own justification.
+  platform_auditor: [OwnerPermissions.AuditRead],
+  platform_audit_investigator: [OwnerPermissions.AuditRead, OwnerPermissions.AuditValuesRead],
+  // Ledger corrections split across TWO roles that cannot be held usefully by one person, which is the entire
+  // control: the investigator drafts and the controller posts. `ck_correction_maker_ne_checker` and the shared
+  // two-person rule both refuse the overlap even if somebody is granted both.
+  platform_ledger_investigator: [OwnerPermissions.LedgerInvestigate, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead],
+  platform_ledger_controller: [OwnerPermissions.LedgerCorrect, OwnerPermissions.ReconRead, OwnerPermissions.AuditRead, OwnerPermissions.AuditValuesRead],
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */

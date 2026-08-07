@@ -96,3 +96,9 @@ export class BreachSignOffRequiredError extends DomainHttpError {
 export class BreachStepNotFoundError extends DomainHttpError {
   constructor(step: string) { super('BREACH_STEP_NOT_FOUND', `no live '${step}' step to retract on this breach`, HttpStatus.NOT_FOUND, { step }); }
 }
+
+/** ADMIN-5e — W040's entity drill. A malformed reference is the operator's typo, not a missing entity: "no history
+ *  for this entity" would send them looking for a data problem that does not exist. */
+export class InvalidComplianceQueryError extends DomainHttpError {
+  constructor(message: string) { super('INVALID_COMPLIANCE_QUERY', message, 400); }
+}

@@ -6,11 +6,12 @@ import { Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/com
 import { AdminAuthGuard, AdminRequestContext } from '../../core/auth/admin-auth.guard';
 import { HardwareKeyGuard } from '../../core/auth/hardware-key.guard';
 import { StepUpReauthGuard } from '../../core/auth/step-up-reauth.guard';
-import { OwnerPermissionsGuard, RequireOwnerPermission, OwnerPermissions } from '../../core/rbac/owner-roles';
+import { OwnerPermissionsGuard, RequireOwnerPermission, OwnerPermissions, hasOwnerPermission } from '../../core/rbac/owner-roles';
 import { ZodBody, ZodQuery } from '../../core/http/zod.pipe';
 import { DataSubjectRequestsQueueService } from './services/data-subject-requests-queue.service';
 import { TenantExportApprovalsService } from './services/tenant-export-approvals.service';
 import { AuditLogExplorerService } from './services/audit-log-explorer.service';
+import { AuditTrailService } from './services/audit-trail.service';
 import { RetentionPolicyAdminService } from './services/retention-policy-admin.service';
 import { BreachResponseConsoleService } from './services/breach-response-console.service';
 import { CompliancePostureService } from './services/compliance-posture.service';
@@ -22,6 +23,7 @@ import {
   AcknowledgeDsrSchema, AcknowledgeDsrDto, RecordErasureActionSchema, RecordErasureActionDto,
   RecordBreachStepSchema, RecordBreachStepDto, RetractBreachStepSchema, RetractBreachStepDto,
   SignOffBreachSchema, SignOffBreachDto,
+  QueryEntityTrailSchema, QueryEntityTrailDto,
 } from './dto/compliance-ops.dto';
 
 /** Indian financial year (1 April). Same reasoning as the scheme-performance report: W041's "SLA breaches YTD" on a
@@ -43,6 +45,7 @@ export class ComplianceOpsController {
     private readonly dsr: DataSubjectRequestsQueueService,
     private readonly exports: TenantExportApprovalsService,
     private readonly audit: AuditLogExplorerService,
+    private readonly trail: AuditTrailService,
     private readonly retention: RetentionPolicyAdminService,
     private readonly breaches: BreachResponseConsoleService,
     private readonly posture: CompliancePostureService,
@@ -96,9 +99,27 @@ export class ComplianceOpsController {
   }
 
   // ---- audit-log explorer (read-only) ----
-  @Get('audit') @RequireOwnerPermission(OwnerPermissions.ComplianceRead)
+  // ADMIN-5e RE-GATED THIS ROUTE. It shipped on `compliance.read`, which meant anybody who could open the DSR queue
+  // could also read every privileged action ever taken on the platform. W039's own restricted state names
+  // `audit.read`, and the trail is a different object from a rights request — an auditor needs one and a DPO the
+  // other. Same correction as ADMIN-4b's re-gating of the two application routes, and for the same reason.
+  @Get('audit') @RequireOwnerPermission(OwnerPermissions.AuditRead)
   exploreAudit(@ZodQuery(QueryAuditSchema) q: QueryAuditDto) {
     return this.audit.explore({ actorUserId: q.actorUserId, entityType: q.entityType, entityId: q.entityId, action: q.action, tenantId: q.tenantId, from: q.from, to: q.to, cursor: auditCursor(q.cursor), limit: q.limit }).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor } }));
+  }
+
+  /** W040 — the per-entity lifecycle drill.
+   *
+   *  `audit.read` gets the TIMELINE; the change diffs additionally need `audit.values.read`, and a viewer without it
+   *  sees every event with the values withheld rather than an error. That split is the canon's own answer to a
+   *  tension the ADMIN-5 verdict recorded as unresolved: W039 says "old/new values additionally need
+   *  `audit.values.read` (PII in diffs)" and W040 says "timeline stays visible, diffs show ▪▪▪".
+   */
+  @Get('audit/entity') @RequireOwnerPermission(OwnerPermissions.AuditRead)
+  entityTrail(@ZodQuery(QueryEntityTrailSchema) q: QueryEntityTrailDto, @Req() req: any) {
+    const a: AdminRequestContext = req.admin;
+    const canReadValues = hasOwnerPermission(a.permissions, OwnerPermissions.AuditValuesRead);
+    return this.trail.trail(a, q.ref, q.limit, canReadValues).then((data) => ({ data }));
   }
 
   // ---- retention policies ----

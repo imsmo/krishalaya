@@ -4,6 +4,7 @@
 // PARTITION KEY first — so PG prunes to one partition (Law 8). No PII is selected beyond what the schema already
 // holds (audit payloads are PII-free by writer contract; DSR/breach store categories + uuids, not raw PII).
 import { Injectable } from '@nestjs/common';
+import { MONEY_ACTION_PREFIXES, READ_ACTION_SUFFIXES } from '../domain/audit-trail';
 import { PoolClient } from 'pg';
 import { AdminPool } from '../../../core/database/admin-pool';
 import { DataSubjectRequest } from '../domain/dsr.entity';
@@ -40,7 +41,14 @@ function toBreach(r: any): Breach {
 export interface KeysetCursor { c: string; id: string }
 export interface DsrListQuery { status?: DsrStatus; requestType?: string; cursor?: KeysetCursor; limit: number; }
 export interface ExportListQuery { approvalStatus?: string; jobKind?: string; cursor?: KeysetCursor; limit: number; }
-export interface AuditQuery { actorUserId?: string; entityType?: string; entityId?: string; action?: string; tenantId?: string; from?: string; to?: string; cursor?: { ts: string; id: string }; limit: number; }
+export interface AuditQuery { actorUserId?: string; entityType?: string; entityId?: string; action?: string; tenantId?: string; from?: string; to?: string; cursor?: { ts: string; id: string }; limit: number;
+  /** ADMIN-5e. W039's saved views, applied in SQL rather than after the page is fetched — filtering a keyset page
+   *  in memory silently returns short pages and eventually an empty one that looks like "no matches". */
+  view?: 'all' | 'writes' | 'money';
+  /** Only ever true when the caller holds `audit.values.read`. The column list changes, not a post-filter: a value
+   *  that was never selected cannot be leaked by a logging mistake three layers up. */
+  withValues?: boolean;
+}
 export interface BreachListQuery { status?: BreachStatus; cursor?: KeysetCursor; limit: number; }
 
 @Injectable()
@@ -178,11 +186,40 @@ export class ComplianceRepository {
     if (q.action) where += ` AND action=${p(q.action)}`;
     if (q.tenantId) where += ` AND tenant_id=${p(q.tenantId)}`;
     if (q.cursor) { const cc = p(q.cursor.ts), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    // W039's saved views. `money` is prefix-matched against the namespaces the platform actually writes; the
+    // prefixes are a list in domain/audit-trail.ts rather than a regex here, so adding a money module is a data
+    // change and not a silent gap in the view that exists to catch money moving.
+    if (q.view === 'money') {
+      const ors = MONEY_ACTION_PREFIXES.map((pre) => `action LIKE ${p(`${pre}%`)}`).join(' OR ');
+      where += ` AND (${ors})`;
+    }
+    if (q.view === 'writes' || q.view === 'money') {
+      const ands = READ_ACTION_SUFFIXES.map((suf) => `action NOT LIKE ${p(`%${suf}`)}`).join(' AND ');
+      where += ` AND (${ands})`;
+    }
     const lp = p(q.limit);
+    // THE VALUE COLUMNS ARE ADDED TO THE SELECT, not filtered out of the result. `old_value`/`new_value` can carry
+    // anything the changed row carried, and the safest place to withhold them is the one place they are named.
+    const valueCols = q.withValues ? ', old_value, new_value' : '';
     const r = await this.pool.query(
-      `SELECT id::text AS id, tenant_id, actor_user_id, actor_role, action, entity_type, entity_id, reason, ip::text AS ip, request_id, created_at
+      `SELECT id::text AS id, tenant_id, actor_user_id, actor_role, action, entity_type, entity_id, reason, ip::text AS ip, request_id, user_agent, created_at${valueCols}
          FROM audit_log WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
-    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, actorUserId: x.actor_user_id, actorRole: x.actor_role, action: x.action, entityType: x.entity_type, entityId: x.entity_id, reason: x.reason, ip: x.ip, requestId: x.request_id, createdAt: x.created_at }));
+    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, actorUserId: x.actor_user_id, actorRole: x.actor_role, action: x.action, entityType: x.entity_type, entityId: x.entity_id, reason: x.reason, ip: x.ip, requestId: x.request_id, userAgent: x.user_agent ?? null, createdAt: x.created_at, oldValue: q.withValues ? (x.old_value ?? null) : undefined, newValue: q.withValues ? (x.new_value ?? null) : undefined }));
+  }
+
+  /** W040's per-entity trail. Served by `idx_audit_entity (entity_type, entity_id, created_at DESC)` from 0014 —
+   *  exactly the index this read needs, which is why the drill is cheap and the explorer's action filter was not
+   *  (0111 adds `idx_audit_action`).
+   *
+   *  OLDEST FIRST, unlike every other audit read on the platform. W040 is a LIFECYCLE — "complete lifecycle from
+   *  audit_log" — and a lifecycle read newest-first is a story told backwards. */
+  async entityTrail(q: { entityType: string; entityId: string; limit: number; withValues: boolean }): Promise<any[]> {
+    const valueCols = q.withValues ? ', old_value, new_value' : '';
+    const r = await this.pool.query(
+      `SELECT id::text AS id, tenant_id, actor_user_id, actor_role, action, entity_type, entity_id, reason, ip::text AS ip, request_id, user_agent, created_at${valueCols}
+         FROM audit_log WHERE entity_type = $1 AND entity_id = $2 ORDER BY created_at ASC, id ASC LIMIT $3`,
+      [q.entityType, q.entityId, q.limit]);
+    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, actorUserId: x.actor_user_id, actorRole: x.actor_role, action: x.action, entityType: x.entity_type, entityId: x.entity_id, reason: x.reason, ip: x.ip, requestId: x.request_id, userAgent: x.user_agent ?? null, createdAt: x.created_at, oldValue: q.withValues ? (x.old_value ?? null) : undefined, newValue: q.withValues ? (x.new_value ?? null) : undefined }));
   }
 
   /* ---------------- retention policies (config) ---------------- */

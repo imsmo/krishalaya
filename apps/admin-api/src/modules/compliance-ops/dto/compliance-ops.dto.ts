@@ -51,9 +51,19 @@ export const QueryAuditSchema = z.object({
   tenantId: z.string().uuid().optional(),
   from: z.string().datetime().optional(),        // partition-prune lower bound
   to: z.string().datetime().optional(),
+  /** ADMIN-5e — W039's one-tap saved views. */
+  view: z.enum(['all', 'writes', 'money']).default('all'),
   cursor: Cursor, limit: Limit,
 }).strict();
 export type QueryAuditDto = z.infer<typeof QueryAuditSchema>;
+
+/** W040's drill. `ref` is the canon's display form `listing/LST-2026-084497`; it is parsed in the domain so the
+ *  refusal explains the shape rather than quoting a regex. */
+export const QueryEntityTrailSchema = z.object({
+  ref: z.string().min(3).max(200),
+  limit: z.coerce.number().int().min(1).max(500).default(200),
+}).strict();
+export type QueryEntityTrailDto = z.infer<typeof QueryEntityTrailSchema>;
 
 /* ---- retention policies (config) ---- */
 export const UpsertRetentionSchema = z.object({

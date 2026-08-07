@@ -9,6 +9,7 @@ import { ComplianceRepository } from './repositories/compliance.repository';
 import { DataSubjectRequestsQueueService } from './services/data-subject-requests-queue.service';
 import { TenantExportApprovalsService } from './services/tenant-export-approvals.service';
 import { AuditLogExplorerService } from './services/audit-log-explorer.service';
+import { AuditTrailService } from './services/audit-trail.service';
 import { RetentionPolicyAdminService } from './services/retention-policy-admin.service';
 import { BreachResponseConsoleService } from './services/breach-response-console.service';
 import { CompliancePostureService } from './services/compliance-posture.service';
@@ -19,6 +20,7 @@ import { CompliancePostureService } from './services/compliance-posture.service'
     ComplianceRepository,
     DataSubjectRequestsQueueService, TenantExportApprovalsService, AuditLogExplorerService,
     RetentionPolicyAdminService, BreachResponseConsoleService, CompliancePostureService,
+    AuditTrailService,
   ],
 })
 export class ComplianceOpsModule {}
