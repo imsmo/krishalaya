@@ -70,6 +70,29 @@ export const OwnerPermissions = {
   SchemesDbtRead: 'schemes.dbt.read',                   // cross-tenant DBT/PFMS credit observations (never bank fields)
   CellsManage: 'cells.manage',  // shard/cell routing directory: register cells/shards, status lifecycle, tenant placement/move (Law 8/12)
   CellsRead: 'cells.read',      // cell/shard map + tenant-placement + residency + change-history reads (no DSN secrets)
+  // ADMIN-5d — THE TRUST & SAFETY NAMESPACE. These four are the first `moderation.*` / `risk.*` permissions on the
+  // platform; before this wave they existed only as prose inside migration 0067's rationale comment, which named them
+  // as the access model for three tables nothing could reach.
+  //
+  // WHY FOUR AND NOT ONE. Every split below is a different KIND of power, and the canon's own restricted states name
+  // them separately (W093: "Needs `risk.read`; freezes/blocks need `risk.act` + checker for blocked band"; W095:
+  // "Needs `risk.rules` + checker — weights change real access for real people").
+  //   • ModerationRead is the widest and the least dangerous: boards, counts, insights. An analyst asking "is the
+  //     marketplace getting safer" needs it and needs nothing else.
+  //   • RiskRead opens ONE NAMED PERSON'S risk profile — their phone, their score, the events behind it. That is a
+  //     cross-tenant read over a farmer, and folding it into ModerationRead would mean anybody who can look at a
+  //     trend line can also pull up a named farmer's fraud file.
+  //   • RiskAct changes what a real person may do — restrict a band, add a device block. Separate from reading it
+  //     because the overwhelming majority of trust work is looking, and standing write access to an access ladder is
+  //     the thing you least want held by default.
+  //   • RiskRules is separate AGAIN, and is the narrowest of the four. A weight change does not affect one person; it
+  //     re-bands the whole population at once. W095's dry-run panel exists because a −3 adjustment moved 312 users
+  //     and put 41 into payout delay. Somebody who may restrict one suspected fraudster has not thereby been trusted
+  //     to move three hundred people at midnight.
+  ModerationRead: 'moderation.read',   // trust & safety boards, counts, insights — no named-person risk file
+  RiskRead: 'risk.read',               // ONE user's risk profile: score, band, explainable factors, masked identity
+  RiskAct: 'risk.act',                 // band changes + platform blocklist entries (both require a second operator)
+  RiskRules: 'risk.rules',             // propose/approve risk-weight changes — population-wide, dry-run gated
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
@@ -121,6 +144,15 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_schemes_viewer: [OwnerPermissions.SchemesRegistryRead],   // govt-programs / policy analyst — read-only
   platform_cells_ops: [OwnerPermissions.CellsManage, OwnerPermissions.CellsRead],
   platform_cells_viewer: [OwnerPermissions.CellsRead],   // infra / SRE — read-only topology view
+  // ADMIN-5d. The safety DESK works cases: they read the boards and they act on individual accounts. They do NOT hold
+  // `risk.rules` — the person under pressure at 22:40 to stop a fraud ring is the last person who should be able to
+  // re-weight the whole population to make one cluster go away.
+  platform_trust_safety: [OwnerPermissions.ModerationRead, OwnerPermissions.RiskRead, OwnerPermissions.RiskAct],
+  // The risk POLICY owner sets weights and reads the boards, and deliberately holds no `risk.act`: whoever writes the
+  // rule does not also get to apply it by hand to a particular person. Same separation as platform_consent_author,
+  // and for the same reason.
+  platform_risk_policy: [OwnerPermissions.RiskRules, OwnerPermissions.ModerationRead, OwnerPermissions.RiskRead],
+  platform_trust_safety_viewer: [OwnerPermissions.ModerationRead],   // T&S analyst — boards and trends, no person file
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */

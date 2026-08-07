@@ -31,6 +31,10 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: '/catalogue', labelKey: 'nav.catalogue', live: true },
   { href: '/schemes-registry', labelKey: 'nav.schemes', live: true },
   { href: '/cells', labelKey: 'nav.cells', live: true },
+  // PC-56 ADMIN-5d. The canon's sidebar has carried "Moderation" since W089 and the route did not exist; it does now,
+  // for the risk and blocklist half. The queue half (listings, reports, appeals) is ADMIN-5f/ADMIN-6 and is named on
+  // the overview page rather than linked — this model's own rule is a link only when the route is built.
+  { href: '/moderation', labelKey: 'nav.moderation', live: true },
 ];
 
 /** Built routes — rendered as real links. */
