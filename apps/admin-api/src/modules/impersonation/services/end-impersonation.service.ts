@@ -27,6 +27,20 @@ export class EndImpersonationService {
       await this.audit.write(client, { actorUserId: actor.userId, actorRole: actor.roles[0] ?? null,
         action: `impersonation.${change.to}`, entityType: 'impersonation_grant', entityId: id,
         oldValue: { status: before }, newValue: { status: change.to }, reason, ip: actor.ip, requestId: actor.requestId || null });
+      // PC-56 ADMIN-9b. The close notice carries WHAT HAPPENED, not just that it happened: the count of pages opened is
+      // the difference between a notice a farmer can act on and one they can only be alarmed by. Counted outside the
+      // transaction's own writes (the actions were written by apps/api on its own connections) and therefore read as of
+      // now — a page opened microseconds before the close may land after this count, which is why the console's action
+      // log is the authority and this number is described as "at the time the session ended".
+      const counts = await this.repo.actionCounts(id);
+      await this.repo.emitNotification(client, {
+        eventType: 'impersonation.session_ended',
+        grantId: id, targetTenantId: grant.targetTenantId, targetUserId: grant.targetUserId,
+        payload: {
+          endKind: change.to, actionCount: counts.served,
+          blockedWrites: counts.refusedWrite, grantId: id,
+        },
+      });
       return grant.toJSON();
     });
   }

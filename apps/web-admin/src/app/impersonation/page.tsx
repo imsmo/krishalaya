@@ -10,7 +10,9 @@ import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
-import { GRANT_STATUSES, grantStatusKey, TTL_DEFAULT_SEC, type GrantRow } from '../../features/impersonation/grant';
+import {
+  GRANT_STATUSES, grantStatusKey, TTL_DEFAULT_SEC, isElapsedButActive, minutesLeft, type GrantRow,
+} from '../../features/impersonation/grant';
 import { startGrantAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -28,11 +30,18 @@ export default async function ImpersonationPage({ searchParams }: { searchParams
   const status = (GRANT_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;
 
   let rows: GrantRow[] = []; let nextCursor: string | undefined; let notice: string | undefined;
+  let staleActive = 0;
   try {
     const res = await adminGet<GrantRow[]>('impersonation/grants', { cursor: searchParams.cursor, status, limit: 50 });
     rows = res.data ?? [];
     nextCursor = (res.meta?.nextCursor as string | undefined) ?? undefined;
   } catch (e) { notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`); }
+  try {
+    // The elapsed-but-unreconciled backlog. Its own read, so a failure here costs the count and not the register.
+    const st = await adminGet<{ count: number }>('impersonation/stale-active');
+    staleActive = Number(st.data?.count ?? 0);
+  } catch { staleActive = 0; }
+  const nowMs = Date.now();
 
   const okMinted = searchParams.ok === 'minted';
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
@@ -41,7 +50,24 @@ export default async function ImpersonationPage({ searchParams }: { searchParams
     { header: t.t('imp.operator'), cell: (r) => r.adminUserId },
     { header: t.t('imp.targetUser'), cell: (r) => r.targetUserId },
     { header: t.t('imp.status'), cell: (r) => { const s = grantStatusKey(r.status); return <span className={`kv-status ${ST_CLASS[s]}`}>{t.t(`imp.state.${s}`)}</span>; } },
-    { header: t.t('imp.expiresAt'), cell: (r) => r.expiresAt ?? t.t('common.dash') },
+    {
+      header: t.t('imp.expiresAt'),
+      cell: (r) => {
+        // **AN ELAPSED GRANT THAT STILL READS `active` IS A DIFFERENT FACT FROM A LIVE ONE.** Expiry had no writer at
+        // all before this wave, so this row could have been showing "active" for hours — and holding the
+        // one-active-per-(operator, target) slot the whole time.
+        if (isElapsedButActive(r.status, r.expiresAt ?? null, nowMs)) {
+          return <span className="kv-status kv-status--warn">{t.t('imp.elapsedNotReconciled')}</span>;
+        }
+        const left = r.status === 'active' ? minutesLeft(r.expiresAt ?? null, nowMs) : null;
+        return (
+          <>
+            {r.expiresAt ?? t.t('common.dash')}
+            {left !== null ? <><br /><small>{t.t('imp.minutesLeft', { n: String(left) })}</small></> : null}
+          </>
+        );
+      },
+    },
   ];
   const filterHref = (s?: string) => `/impersonation${s ? `?status=${encodeURIComponent(s)}` : ''}`;
 
@@ -50,6 +76,14 @@ export default async function ImpersonationPage({ searchParams }: { searchParams
       <h1>{t.t('imp.title')}</h1>
       <p className="kv-error" role="note">{t.t('imp.warning')}</p>
       <p className="kv-muted">{t.t('imp.lead')}</p>
+      {/* PC-56 ADMIN-9b · WHAT IS ACTUALLY ENFORCED, at the top, because every other claim on this page depends on it.
+          Until this wave `apps/api` had no verifier: the token was inert, "read_only" was a stored string, the action
+          log was the operator self-reporting, and the target tenant was told nothing. */}
+      <p className="kv-note is-ok">{t.t('imp.enforce.full')}</p>
+      <p className="kv-note">{t.t('imp.transparency')}</p>
+      {staleActive > 0 && (
+        <p className="kv-note is-warn" role="status">{t.t('imp.staleActive', { n: String(staleActive) })}</p>
+      )}
       {okMinted && <p className="kv-success" role="status">{t.t('imp.ok.minted')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`imp.error.${errKey}`)}</p>}
 

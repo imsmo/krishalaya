@@ -73,3 +73,90 @@ export interface GrantRow {
   endedAt: string | null; endedBy: string | null; endReason: string | null; createdAt: string | null;
 }
 export interface ActionRow { id: string; grantId: string; method: string; path: string; action: string | null; createdAt: string | null }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* PC-56 ADMIN-9b · WHAT THE PLATFORM CAN HONESTLY CLAIM ABOUT A SESSION                             */
+/* ------------------------------------------------------------------------------------------------ */
+//
+// Until this wave `apps/api` had no verifier, so a minted token was inert and every promise on W008 — "read_only by
+// design", "every page view is recorded", "the target tenant is notified of session end" — described behaviour that
+// did not exist. These helpers keep the console's claims tied to the state of the enforcement rather than to the copy.
+
+export interface EnforcementState {
+  verifierExists: boolean;
+  readOnlyEnforcedAtRequestTime: boolean;
+  perRequestLoggingByPlatform: boolean;
+  revocationTakesEffect: string;
+  formatDuplicationOwner: string;
+}
+
+export function enforcementKey(e: EnforcementState | null | undefined): string {
+  if (!e) return 'imp.enforce.unknown';
+  if (!e.verifierExists) return 'imp.enforce.absent';
+  return e.readOnlyEnforcedAtRequestTime && e.perRequestLoggingByPlatform
+    ? 'imp.enforce.full' : 'imp.enforce.partial';
+}
+
+export function enforcementClass(e: EnforcementState | null | undefined): string {
+  const k = enforcementKey(e);
+  if (k === 'imp.enforce.full') return 'kv-note is-ok';
+  // An UNKNOWN enforcement state is drawn as loudly as an absent one: a console that cannot say whether the read-only
+  // rule is running must not imply that it is.
+  return k === 'imp.enforce.partial' ? 'kv-note is-warn' : 'kv-note is-danger';
+}
+
+export interface ActionCounts { served: number; refusedWrite: number; refusedGrant: number }
+
+/** The session's shape in one sentence. A blocked write and a use-after-end are the two rows a reviewer is looking
+ *  for, so they get their own keys rather than being folded into a total. */
+export function sessionShapeKey(c: ActionCounts | null | undefined): string {
+  if (!c) return 'imp.actions.unknown';
+  if (c.refusedGrant > 0) return 'imp.actions.usedAfterEnd';
+  if (c.refusedWrite > 0) return 'imp.actions.blockedWrites';
+  return c.served === 0 ? 'imp.actions.none' : 'imp.actions.served';
+}
+
+export function sessionShapeClass(c: ActionCounts | null | undefined): string {
+  if (!c) return 'kv-note';
+  if (c.refusedGrant > 0) return 'kv-note is-danger';
+  return c.refusedWrite > 0 ? 'kv-note is-warn' : 'kv-note';
+}
+
+export function actionOutcomeKey(outcome: string): string {
+  const known = ['served', 'refused_write', 'refused_grant'];
+  return known.includes(outcome) ? `imp.outcome.${outcome}` : 'imp.outcome.other';
+}
+
+export function actionOutcomeClass(outcome: string): string {
+  if (outcome === 'refused_grant') return 'kv-badge is-danger';
+  if (outcome === 'refused_write') return 'kv-badge is-warn';
+  return 'kv-badge';
+}
+
+/**
+ * **AN ELAPSED GRANT THAT STILL READS `active` IS A DIFFERENT FACT FROM A LIVE ONE, AND THE LIST MUST SAY SO.** Expiry
+ * had no writer, so a grant whose window closed hours ago showed as active on every surface — and kept holding the
+ * one-active-per-(operator, target) slot. Reconciliation now runs on the read path; this covers the instant between an
+ * elapsed window and the row catching up.
+ */
+export function isElapsedButActive(status: string, expiresAt: string | null, nowMs: number): boolean {
+  if (status !== 'active' || !expiresAt) return false;
+  const t = Date.parse(expiresAt);
+  return Number.isFinite(t) && t <= nowMs;
+}
+
+/** Minutes left, floored, for a live grant. Floored so a session is never described as having more time than it has. */
+export function minutesLeft(expiresAt: string | null, nowMs: number): number | null {
+  if (!expiresAt) return null;
+  const t = Date.parse(expiresAt);
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.floor((t - nowMs) / 60000));
+}
+
+/** Whether the target was told. A session the tenant was never notified of is the defect W008's transparency claim was
+ *  written against, and old grants (before 0119) genuinely have no notice — so `null` reads as "not recorded", never
+ *  as "not sent". */
+export function noticeKey(notified: boolean | null | undefined): string {
+  if (notified === null || notified === undefined) return 'imp.notice.unknown';
+  return notified ? 'imp.notice.sent' : 'imp.notice.none';
+}

@@ -44,6 +44,15 @@ export class StartImpersonationService {
       await this.audit.write(client, { actorUserId: actor.userId, actorRole: actor.roles[0] ?? null,
         action: 'impersonation.started', entityType: 'impersonation_grant', entityId: id,
         newValue: { targetTenantId: dto.targetTenantId, targetUserId: dto.targetUserId, scope: 'read_only', expiresAt: expiresAt.toISOString() }, reason: dto.reason, ip: actor.ip, requestId: actor.requestId || null });
+      // PC-56 ADMIN-9b · **THE TARGET IS TOLD, IN THE SAME TRANSACTION.** W008 calls tenant visibility "the policy" and
+      // nothing emitted anything. In-tx (Law 4) so a session cannot exist without the notice being queued, and the
+      // payload carries the REASON the operator typed — a notice saying only "support accessed your account" is
+      // technically transparent and practically useless to the person deciding whether to complain.
+      await this.repo.emitNotification(client, {
+        eventType: 'impersonation.session_started',
+        grantId: id, targetTenantId: dto.targetTenantId, targetUserId: dto.targetUserId,
+        payload: { reason: dto.reason, expiresAt: expiresAt.toISOString(), grantId: id },
+      });
       // The token is a secret — returned ONCE to the operator's session, never persisted.
       return { grant: grant.toJSON(), token, expiresAt: new Date(expSec * 1000).toISOString() };
     });

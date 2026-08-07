@@ -28,6 +28,13 @@ export class ImpersonationGrant {
   get id(): string { return this.p.id; }
   get status(): GrantStatus { return this.p.status; }
   get expiresAt(): Date { return this.p.expiresAt; }
+  // PC-56 ADMIN-9b: the close path needs to address the person being impersonated, because ending a session now emits
+  // a notice to them. Exposed as getters rather than read off `toJSON()` — a caller reaching into a serialisation shape
+  // to find a domain fact is a caller that breaks when the shape changes for a screen.
+  get targetTenantId(): string { return this.p.targetTenantId; }
+  get targetUserId(): string { return this.p.targetUserId; }
+  get adminUserId(): string { return this.p.adminUserId; }
+  get reason(): string { return this.p.reason; }
 
   isExpired(now: Date): boolean { return this.p.expiresAt.getTime() <= now.getTime(); }
 

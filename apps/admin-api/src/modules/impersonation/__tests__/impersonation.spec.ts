@@ -147,12 +147,47 @@ describe('StartImpersonationService', () => {
   });
   it('happy path: inserts grant + audits in-tx + returns a verifiable read-only token', async () => {
     const { pool, audit, client } = harness();
-    const repo = { findTenantUser: jest.fn(async () => ({ isPrivileged: false })), insertGrant: jest.fn(async () => grant('active')) } as any;
+    const repo = {
+      findTenantUser: jest.fn(async () => ({ isPrivileged: false })),
+      insertGrant: jest.fn(async () => grant('active')),
+      emitNotification: jest.fn(),
+    } as any;
     const out: any = await new StartImpersonationService(pool, audit, repo, cfg()).start(actor, dto);
     expect(repo.insertGrant).toHaveBeenCalled();
     expect(audit.write).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'impersonation.started' }));
     const c = verifyImpersonationToken(out.token, SECRET, 'krishalaya-impersonation', 'krishalaya-api');
     expect(c.act.sub).toBe(ADMIN); expect(c.sub).toBe(TARGET); expect(c.scope).toBe('read_only');
+  });
+
+  // PC-56 ADMIN-9b · **THE TARGET IS TOLD, IN THE SAME TRANSACTION AS THE GRANT.** W008 calls tenant visibility "the
+  // policy" and nothing emitted anything — no outbox type, no event code, no template. In-tx (Law 4) so a session
+  // cannot exist without the notice having been queued.
+  it('emits the session-started notification in the SAME transaction, with a recipient and the reason', async () => {
+    const { pool, audit, client } = harness();
+    const repo = {
+      findTenantUser: jest.fn(async () => ({ isPrivileged: false })),
+      insertGrant: jest.fn(async () => grant('active')),
+      emitNotification: jest.fn(),
+    } as any;
+    await new StartImpersonationService(pool, audit, repo, cfg()).start(actor, dto);
+    expect(repo.emitNotification).toHaveBeenCalledTimes(1);
+    const [txClient, ev] = repo.emitNotification.mock.calls[0];
+    expect(txClient).toBe(client);
+    expect(ev).toMatchObject({ eventType: 'impersonation.session_started', targetUserId: TARGET });
+    // The RECIPIENT has to be resolvable from the payload — ADMIN-6b's finding was a map row pointing at a payload
+    // with no recipient, which looks fixed and delivers nothing.
+    expect(ev.targetUserId).toBeTruthy();
+    // And the REASON travels: a notice saying only "support accessed your account" is technically transparent and
+    // practically useless to the person deciding whether to complain.
+    expect(ev.payload.reason).toBe(dto.reason);
+  });
+
+  it('emits NO notification when the grant is refused', async () => {
+    const { pool, audit } = harness();
+    const repo = { findTenantUser: jest.fn(async () => ({ isPrivileged: true })), emitNotification: jest.fn() } as any;
+    await expect(new StartImpersonationService(pool, audit, repo, cfg()).start(actor, dto)).rejects.toThrow();
+    // Telling somebody their account was opened when it was not would be its own breach of trust.
+    expect(repo.emitNotification).not.toHaveBeenCalled();
   });
 });
 
@@ -164,14 +199,28 @@ describe('EndImpersonationService', () => {
   });
   it('end: transitions + audits old→new in-tx', async () => {
     const { pool, audit, client } = harness();
-    const repo = { getGrantForUpdate: jest.fn(async () => grant('active')), closeGrant: jest.fn() } as any;
+    const repo = {
+      getGrantForUpdate: jest.fn(async () => grant('active')),
+      closeGrant: jest.fn(),
+      emitNotification: jest.fn(),
+      actionCounts: jest.fn(async () => ({ served: 7, refusedWrite: 2, refusedGrant: 0 })),
+    } as any;
     await new EndImpersonationService(pool, audit, repo).end(actor, 'g1', 'finished reproducing');
     expect(repo.closeGrant).toHaveBeenCalledWith(client, 'g1', 'ended', ADMIN, 'finished reproducing', ADMIN);
     expect(audit.write).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'impersonation.ended', oldValue: { status: 'active' } }));
+    // PC-56 ADMIN-9b: the close notice carries WHAT HAPPENED. "7 pages were opened and nothing was changed" is a notice
+    // a farmer can act on; "a session ended" is one they can only be alarmed by.
+    expect(repo.emitNotification).toHaveBeenCalledWith(client, expect.objectContaining({
+      eventType: 'impersonation.session_ended',
+      payload: expect.objectContaining({ endKind: 'ended', actionCount: 7, blockedWrites: 2 }),
+    }));
   });
   it('closing an already-closed grant throws + audits nothing', async () => {
     const { pool, audit } = harness();
-    const repo = { getGrantForUpdate: jest.fn(async () => grant('ended')), closeGrant: jest.fn() } as any;
+    const repo = {
+      getGrantForUpdate: jest.fn(async () => grant('ended')), closeGrant: jest.fn(),
+      emitNotification: jest.fn(), actionCounts: jest.fn(),
+    } as any;
     await expect(new EndImpersonationService(pool, audit, repo).revoke(actor, 'g1', 'too late')).rejects.toBeInstanceOf(IllegalGrantTransitionError);
     expect(audit.write).not.toHaveBeenCalled();
   });

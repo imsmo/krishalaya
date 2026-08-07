@@ -16,6 +16,11 @@ export class ImpersonationHistoryService {
   constructor(private readonly pool: AdminPool, private readonly audit: AdminAuditWriter, private readonly repo: ImpersonationRepository) {}
 
   async listGrants(q: GrantListQuery) {
+    // PC-56 ADMIN-9b · **RECONCILE BEFORE READING.** Expiry was a column and an unused index: no job, no trigger, no
+    // read filter, so an elapsed grant read `active` for ever — and kept holding `uq_imp_active_per_admin_target`, so
+    // that operator could never get a fresh grant for that target again. Reconciled at the door for the same reason
+    // 0118 put dormancy in the guard: the two jobs this platform relied on for reconciliation had both silently stopped.
+    await this.repo.reconcileExpired();
     const items = (await this.repo.listGrants(q)).map((g) => g.toJSON());
     const last = items[items.length - 1] as any;
     const nextCursor = items.length === q.limit && last
@@ -24,9 +29,41 @@ export class ImpersonationHistoryService {
   }
 
   async getGrant(id: string) {
+    await this.repo.reconcileExpired(id);
     const grant = await this.repo.getGrant(id);
     if (!grant) throw new GrantNotFoundError(id);
-    return grant.toJSON();
+    const counts = await this.repo.actionCounts(id);
+    return {
+      ...grant.toJSON(),
+      // The action counts, split by outcome. "12 pages opened" and "12 pages opened, 3 write attempts blocked" are
+      // different sessions, and the second is the one somebody needs to look at.
+      actionCounts: counts,
+      // **WHETHER THE HONOURING SIDE IS ACTUALLY RUNNING.** Every claim on W008 depends on it, and before this wave the
+      // answer was no — silently. A console that cannot say which half is live is a console that lets the reader assume
+      // both are.
+      enforcement: this.enforcementState(),
+    };
+  }
+
+  /** What this platform can honestly claim about an act-as session today. Read by the console and by nothing else, so
+   *  the sentence and the state cannot drift apart. */
+  enforcementState() {
+    return {
+      // Built in ADMIN-9b: apps/api verifies the token, refuses mutating methods, checks the grant on every request,
+      // and writes one action row per request from the server rather than from the operator.
+      verifierExists: true,
+      readOnlyEnforcedAtRequestTime: true,
+      perRequestLoggingByPlatform: true,
+      revocationTakesEffect: 'the next request the operator makes',
+      // Named rather than implied: the two realms verify one token format with two implementations.
+      formatDuplicationOwner: 'ADMIN-9b-Q1',
+    };
+  }
+
+  /** The backlog `ck_imp_terminal_has_ended_at` was landed NOT VALID for: grants whose window elapsed while nothing
+   *  reconciled them. Surfaced rather than quietly fixed, because the count IS the finding. */
+  async staleActive() {
+    return { count: await this.repo.staleActiveCount() };
   }
 
   async listActions(q: ActionListQuery) {

@@ -35,6 +35,13 @@ export class ImpersonationController {
     return this.history.listGrants({ adminUserId: q.adminUserId, targetTenantId: q.targetTenantId, targetUserId: q.targetUserId, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
+  /** PC-56 ADMIN-9b: the elapsed-but-unreconciled backlog. A count, on its own route, because it is a property of the
+   *  TABLE rather than of any one grant. */
+  @Get('stale-active') @RequireOwnerPermission(OwnerPermissions.ImpersonationRead)
+  staleActive() {
+    return this.history.staleActive().then((data) => ({ data }));
+  }
+
   @Get('grants/:id') @RequireOwnerPermission(OwnerPermissions.ImpersonationRead)
   getGrant(@Param('id') id: string) { return this.history.getGrant(id).then((data) => ({ data })); }
 

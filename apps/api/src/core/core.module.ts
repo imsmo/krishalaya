@@ -52,6 +52,11 @@ import { PermissionsGuard } from './auth/permissions.guard';
 import { TenantResolver } from './tenancy-context/tenant-resolver';
 import { TenantSlugResolver } from './tenancy-context/tenant-slug-resolver';
 import { TenantContextMiddleware } from './tenancy-context/tenant-context.middleware';
+// PC-56 ADMIN-9b: the honouring half of impersonation. admin-api has minted act-as tokens since 0038 and this realm
+// had no verifier, so every W008 promise described behaviour that did not exist.
+import { ImpersonationGate } from './auth/impersonation.gate';
+import { ImpersonationReadOnlyGuard } from './auth/impersonation-read-only.guard';
+import { ImpersonationInterceptor } from './auth/impersonation.interceptor';
 import { RequestIdMiddleware } from './http/request-id.middleware';
 import { SecurityHeadersMiddleware } from './http/security-headers.middleware';
 import { HttpLogMiddleware } from './http/http-log.middleware';
@@ -103,6 +108,7 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     },
     RealtimeFanoutRegistrar,
     AuthGuard, PermissionsGuard,
+    ImpersonationGate, ImpersonationReadOnlyGuard, ImpersonationInterceptor,
     TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware,
     HttpLogMiddleware,
     // auth + RBAC platform services (used by the identity module's auth flow)
@@ -119,14 +125,21 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     { provide: APP_INTERCEPTOR, useClass: BackpressureInterceptor }, // PC-51: FIRST — shed cheaply before any work
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_GUARD, useClass: RateLimitGuard },  // global edge rate limit (per-route @RateLimit overrides)
+    // PC-56 ADMIN-9b. GLOBAL, not a decorator: a read-only rule that has to be remembered on each new route is a rule
+    // that will be forgotten on one. The guard refuses a mutating method under an act-as token; the interceptor checks
+    // the grant is still live and writes the per-request record W008 promises.
+    { provide: APP_GUARD, useClass: ImpersonationReadOnlyGuard },
+    { provide: APP_INTERCEPTOR, useClass: ImpersonationInterceptor },
   ],
   exports: [
     OUTBOX_WRITER, QUOTA_SERVICE, IDEMPOTENCY_SERVICE, METRICS, PromMetrics,
+    ImpersonationGate,
     ResilienceService, RESILIENCE,
     WALLET_SERVICE, InProcessWalletClient, LedgerRepository, ReconciliationService,
     OutboxHandlerRegistry, OUTBOX_HANDLER_REGISTRY,
     ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY,
-    AuthGuard, PermissionsGuard, TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware,
+    AuthGuard, PermissionsGuard,
+    ImpersonationGate, ImpersonationReadOnlyGuard, ImpersonationInterceptor, TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware,
     HttpLogMiddleware,
     TokenService, TOKEN_SERVICE, OtpService, OTP_SERVICE, RefreshTokenService,
     RoleCacheService, ROLE_CACHE_SERVICE, SMS_SENDER,

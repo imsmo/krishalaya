@@ -37,4 +37,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // mapped event with a missing key. The payload is enriched in `payout.service.ts` in the same wave; a map row
   // pointing at a payload with no recipient is the shape of fix that looks done and changes nothing.
   { outboxType: 'payments.payout_succeeded',    eventCode: 'payout.credited',      recipientKeys: ['userId'] },
+  // PC-56 ADMIN-9b · **W008 CALLS TENANT VISIBILITY "THE POLICY" AND NOTHING EMITTED ANYTHING.** A platform operator
+  // could open a farmer's account, read their invoices and their wallet statement, and the farmer was told nothing —
+  // by any channel, ever. The grant, its audit row and this event are now one transaction, so a session cannot exist
+  // without the notice being queued. `userId` is the IMPERSONATED user, and it is in the payload rather than assumed:
+  // ADMIN-6b's finding was a map row pointing at a payload with no recipient, which looks fixed and changes nothing.
+  { outboxType: 'impersonation.session_started', eventCode: 'impersonation.session_started', recipientKeys: ['userId'] },
+  { outboxType: 'impersonation.session_ended',   eventCode: 'impersonation.session_ended',   recipientKeys: ['userId'] },
 ];

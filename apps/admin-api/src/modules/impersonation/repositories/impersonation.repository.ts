@@ -95,4 +95,64 @@ export class ImpersonationRepository {
       `SELECT id, grant_id, method, path, action, created_at FROM impersonation_actions WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map((x: any) => ({ id: x.id, grantId: x.grant_id, method: x.method, path: x.path, action: x.action ?? null, createdAt: x.created_at }));
   }
+
+  /* ------------------------------------------------------------------------------------------------ */
+  /* PC-56 ADMIN-9b                                                                                    */
+  /* ------------------------------------------------------------------------------------------------ */
+
+  /**
+   * **THE TARGET IS TOLD, ON THE SPINE EVERYTHING ELSE USES.** W008 states "tenants can see this too — transparency is
+   * the policy" and its revoke dialog promises "the target tenant is notified of session end". Nothing emitted
+   * anything: `grep -i impersonat` across the notification map, the outbox types and the templates returned zero.
+   *
+   * Written INSIDE the caller's transaction (Law 4): the grant, its audit row and the notification are one unit, so a
+   * session can never exist without the notice having been queued. The payload carries `userId` because
+   * `DomainEventFanoutHandler` resolves recipients from the payload — the ADMIN-6b lesson, where a map row pointed at a
+   * payload with no recipient and the fix looked done and changed nothing.
+   */
+  async emitNotification(client: PoolClient, v: {
+    eventType: 'impersonation.session_started' | 'impersonation.session_ended';
+    grantId: string; targetTenantId: string; targetUserId: string;
+    payload: Record<string, unknown>;
+  }): Promise<void> {
+    await client.query(
+      `INSERT INTO outbox_events (tenant_id, aggregate_type, aggregate_id, event_type, payload)
+       VALUES ($1, 'impersonation_grant', $2, $3, $4::jsonb)`,
+      [v.targetTenantId, v.grantId, v.eventType, JSON.stringify({ v: 1, userId: v.targetUserId, ...v.payload })],
+    );
+  }
+
+  /** Flip elapsed grants to `expired`. The SQL lives in 0119 so admin-api, apps/api and any future reader cannot
+   *  disagree about what expired means — and it runs on the READ path, because the two times this platform left a
+   *  reconciliation to a scheduled job (0113, 0114) the job had silently stopped. */
+  async reconcileExpired(grantId?: string): Promise<number> {
+    const r = await this.pool.query('SELECT reconcile_expired_impersonation_grants($1) AS n', [grantId ?? null]);
+    return Number(r.rows[0]?.n ?? 0);
+  }
+
+  /** Per-grant action counts, split by outcome. The console needs the split rather than a total: "12 pages opened" and
+   *  "12 pages opened, 3 write attempts blocked" are different sessions. */
+  async actionCounts(grantId: string): Promise<{ served: number; refusedWrite: number; refusedGrant: number }> {
+    const r = await this.pool.query(
+      `SELECT
+         count(*) FILTER (WHERE outcome = 'served')::int         AS served,
+         count(*) FILTER (WHERE outcome = 'refused_write')::int  AS refused_write,
+         count(*) FILTER (WHERE outcome = 'refused_grant')::int  AS refused_grant
+       FROM impersonation_actions WHERE grant_id = $1`, [grantId]);
+    const x = r.rows[0] ?? {};
+    return {
+      served: Number(x.served ?? 0),
+      refusedWrite: Number(x.refused_write ?? 0),
+      refusedGrant: Number(x.refused_grant ?? 0),
+    };
+  }
+
+  /** Grants whose window has elapsed and whose status has not caught up — the backlog `ck_imp_terminal_has_ended_at`
+   *  was landed NOT VALID for. Shown on the console rather than silently reconciled, because the count IS the finding:
+   *  every one of these has been reading `active` to every surface since it elapsed. */
+  async staleActiveCount(): Promise<number> {
+    const r = await this.pool.query(
+      "SELECT count(*)::int AS n FROM impersonation_grants WHERE status = 'active' AND expires_at <= now() AND deleted_at IS NULL");
+    return Number(r.rows[0]?.n ?? 0);
+  }
 }

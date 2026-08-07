@@ -12,7 +12,11 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
-import { grantStatusKey, canEndGrant, canRevokeGrant, type GrantRow, type ActionRow } from '../../../../features/impersonation/grant';
+import {
+  grantStatusKey, canEndGrant, canRevokeGrant, actionOutcomeClass, actionOutcomeKey, enforcementClass, enforcementKey,
+  isElapsedButActive, minutesLeft, sessionShapeClass, sessionShapeKey,
+  type ActionCounts, type EnforcementState, type GrantRow, type ActionRow,
+} from '../../../../features/impersonation/grant';
 import { endGrantAction, revokeGrantAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
@@ -29,15 +33,18 @@ export default async function GrantDetailPage({ params, searchParams }: { params
   requireAdmin();
   const t = getTranslator();
 
-  let grant: GrantRow | undefined; let notice: string | undefined;
-  try { grant = (await adminGet<GrantRow>(`impersonation/grants/${encodeURIComponent(params.id)}`)).data; }
+  // PC-56 ADMIN-9b: the detail payload now carries the action counts and the enforcement state, because every claim on
+  // this page depends on whether the honouring side is actually running — and until this wave it was not.
+  type GrantDetail = GrantRow & { actionCounts?: ActionCounts; enforcement?: EnforcementState };
+  let grant: GrantDetail | undefined; let notice: string | undefined;
+  try { grant = (await adminGet<GrantDetail>(`impersonation/grants/${encodeURIComponent(params.id)}`)).data; }
   catch (e) {
     if (e instanceof AdminApiError && e.status === 404) notFound();
     notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`);
   }
 
-  let actions: ActionRow[] = [];
-  try { actions = (await adminGet<ActionRow[]>(`impersonation/grants/${encodeURIComponent(params.id)}/actions`, { limit: 50 })).data ?? []; } catch { /* degrade */ }
+  let actions: (ActionRow & { outcome?: string; statusCode?: number | null; detail?: string | null })[] = [];
+  try { actions = (await adminGet<(ActionRow & { outcome?: string })[]>(`impersonation/grants/${encodeURIComponent(params.id)}/actions`, { limit: 50 })).data ?? []; } catch { /* degrade */ }
 
   if (!grant) {
     return <section><p className="kv-backlink"><Link href="/impersonation">{t.t('imp.back')}</Link></p><p className="kv-error" role="alert">{notice}</p></section>;
@@ -47,11 +54,32 @@ export default async function GrantDetailPage({ params, searchParams }: { params
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const s = grantStatusKey(grant.status);
 
-  const actionCols: Column<ActionRow>[] = [
+  const nowMs = Date.now();
+  const elapsed = isElapsedButActive(grant.status, grant.expiresAt ?? null, nowMs);
+  const left = s === 'active' && !elapsed ? minutesLeft(grant.expiresAt ?? null, nowMs) : null;
+
+  type ActionRowX = ActionRow & { outcome?: string; statusCode?: number | null; detail?: string | null };
+  const actionCols: Column<ActionRowX>[] = [
     { header: t.t('imp.actWhen'), cell: (a) => a.createdAt ?? t.t('common.dash') },
     { header: t.t('imp.actMethod'), cell: (a) => a.method },
     { header: t.t('imp.actPath'), cell: (a) => a.path },
     { header: t.t('imp.actName'), cell: (a) => a.action ?? t.t('common.dash') },
+    {
+      // **W008's THIRD ROW IS A REFUSAL** — "write attempt blocked — listings.update denied (scope read_only)" — and
+      // before this wave the log had no column that could express one. A blocked write and a use-after-end are the two
+      // rows a reviewer is actually looking for.
+      header: t.t('imp.actOutcome'),
+      cell: (a) => {
+        const o = a.outcome ?? 'served';
+        return (
+          <>
+            <span className={actionOutcomeClass(o)}>{t.t(actionOutcomeKey(o))}</span>
+            {a.statusCode ? <> {a.statusCode}</> : null}
+            {a.detail ? <><br /><small>{a.detail}</small></> : null}
+          </>
+        );
+      },
+    },
   ];
 
   return (
@@ -60,6 +88,24 @@ export default async function GrantDetailPage({ params, searchParams }: { params
       <h1>{t.t('imp.detailTitle')}</h1>
       {okKey && <p className="kv-success" role="status">{t.t(`imp.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`imp.error.${errKey}`)}</p>}
+
+      {/* WHAT IS ENFORCED — first, because it qualifies everything below it. */}
+      <p className={enforcementClass(grant.enforcement)}>{t.t(enforcementKey(grant.enforcement))}</p>
+      {grant.enforcement ? (
+        <p className="kv-note">
+          {t.t('imp.revocationTakesEffect', { when: grant.enforcement.revocationTakesEffect })}
+        </p>
+      ) : null}
+      {/* THE SESSION'S SHAPE IN ONE SENTENCE. */}
+      <p className={sessionShapeClass(grant.actionCounts)}>
+        {t.t(sessionShapeKey(grant.actionCounts), {
+          served: String(grant.actionCounts?.served ?? 0),
+          blocked: String(grant.actionCounts?.refusedWrite ?? 0),
+          after: String(grant.actionCounts?.refusedGrant ?? 0),
+        })}
+      </p>
+      {elapsed ? <p className="kv-note is-warn">{t.t('imp.elapsedNotReconciled')}</p> : null}
+      {left !== null ? <p className="kv-note">{t.t('imp.minutesLeft', { n: String(left) })}</p> : null}
 
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('imp.status')}</dt><dd><span className={`kv-status ${ST_CLASS[s]}`}>{t.t(`imp.state.${s}`)}</span></dd></div>
@@ -100,7 +146,10 @@ export default async function GrantDetailPage({ params, searchParams }: { params
       ) : <p className="kv-muted">{t.t('imp.closed')}</p>}
 
       <h2>{t.t('imp.actionsHeading')}</h2>
+      {/* The note this page could not honestly make before: the rows are written by the SERVER that served each
+          request, not by the operator choosing to report themselves. */}
       <p className="kv-field__hint">{t.t('imp.actionsNote')}</p>
+      <p className="kv-note">{t.t('imp.actionsWrittenBy')}</p>
       <DataTable columns={actionCols} rows={actions} empty={t.t('imp.actionsEmpty')} />
     </section>
   );

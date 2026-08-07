@@ -30,6 +30,14 @@ export const EnvSchema = z.object({
   JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(900),        // 15 min
   JWT_REFRESH_TTL_SEC: z.coerce.number().int().positive().default(2592000),   // 30 days
   AUTH_HASH_PEPPER: z.string().min(16).default('dev-pepper-change-me-min-32-chars!'),
+  // --- PC-56 ADMIN-9b: honouring an admin-realm act-as token ---
+  // The DEDICATED secret admin-api signs act-as tokens with. NOT the access secret and not the refresh secret: the
+  // god-mode realm must never hold the key that mints ordinary user sessions, which is the property that made an
+  // un-upgraded apps/api fail closed. Empty by default and empty means OFF — an impersonation bearer is then simply an
+  // unrecognised token and produces the ordinary 401.
+  IMPERSONATION_TOKEN_SECRET: z.string().default(''),
+  IMPERSONATION_TOKEN_ISSUER: z.string().default('krishalaya-admin'),
+  IMPERSONATION_TOKEN_AUDIENCE: z.string().default('krishalaya-api'),
   OTP_TTL_SEC: z.coerce.number().int().positive().default(300),               // 5 min
   OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
   OTP_MAX_VERIFY_ATTEMPTS: z.coerce.number().int().positive().default(5),

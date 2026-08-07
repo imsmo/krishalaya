@@ -38,6 +38,16 @@ export class AppConfig {
     if (weak(env.JWT_REFRESH_SECRET)) p.push('JWT_REFRESH_SECRET (unique random >=32 chars)');
     if (weak(env.AUTH_HASH_PEPPER)) p.push('AUTH_HASH_PEPPER (unique random >=32 chars)');
     if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) p.push('JWT access and refresh secrets must differ');
+    // PC-56 ADMIN-9b: if act-as honouring is configured at all, its key must be strong AND distinct from the user
+    // secrets. A shared key would mean an act-as token could be minted by whatever holds the access secret — and worse,
+    // that an ordinary session could be forged by the god-mode realm.
+    if (env.IMPERSONATION_TOKEN_SECRET.length > 0) {
+      if (weak(env.IMPERSONATION_TOKEN_SECRET)) p.push('IMPERSONATION_TOKEN_SECRET (unique random >=32 chars)');
+      if (env.IMPERSONATION_TOKEN_SECRET === env.JWT_ACCESS_SECRET
+        || env.IMPERSONATION_TOKEN_SECRET === env.JWT_REFRESH_SECRET) {
+        p.push('IMPERSONATION_TOKEN_SECRET must differ from the JWT access and refresh secrets');
+      }
+    }
     if (env.AUTH_EXPOSE_OTP === 'true') p.push('AUTH_EXPOSE_OTP must be false in production');
 
     // --- CORS: the 4 Next.js web apps call this API from the browser and NEED an explicit allowlist in
@@ -186,6 +196,18 @@ export class AppConfig {
   get redis()  { return { url: this.env.REDIS_URL ?? null }; }
   get search() { return { url: this.env.OPENSEARCH_URL ?? null, username: this.env.OPENSEARCH_USERNAME ?? null, password: this.env.OPENSEARCH_PASSWORD ?? null, indexPrefix: this.env.OPENSEARCH_INDEX_PREFIX }; }
   get jwt()    { return { accessSecret: this.env.JWT_ACCESS_SECRET, issuer: this.env.JWT_ISSUER, audience: this.env.JWT_AUDIENCE }; }
+  /** PC-56 ADMIN-9b. `enabled` is derived from the SECRET rather than from a separate flag on purpose: a flag that said
+   *  "on" while the secret was missing would be a switch that appears to enable a feature and cannot. admin-api has its
+   *  own kill-switch for MINTING; this is the honouring side, and it is off until it is configured. */
+  get impersonation() {
+    const secret = this.env.IMPERSONATION_TOKEN_SECRET;
+    return {
+      enabled: secret.length > 0,
+      secret,
+      issuer: this.env.IMPERSONATION_TOKEN_ISSUER,
+      audience: this.env.IMPERSONATION_TOKEN_AUDIENCE,
+    };
+  }
   get auth() {
     return {
       accessSecret: this.env.JWT_ACCESS_SECRET,
