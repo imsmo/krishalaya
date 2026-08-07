@@ -4,7 +4,36 @@
 // minor units, never floated), counts via ::int. Time-windowed queries filter on created_at so PG prunes the
 // PARTITIONED orders / login_events tables to the window (Law 8). No mutations.
 import { Injectable } from '@nestjs/common';
+import { PoolClient } from 'pg';
 import { AdminPool } from '../../../core/database/admin-pool';
+
+export type SeriesMetric = 'orders' | 'gmv_minor' | 'new_tenants' | 'new_users' | 'dbt_minor';
+export type SeriesBucket = 'day' | 'week' | 'month';
+
+/**
+ * The whitelisted series, as ONE definition both callers use.
+ *
+ * **THE TABLE AND COLUMN ARE INTERPOLATED AND THAT IS ONLY SAFE BECAUSE THIS MAP IS FROZEN AND THE KEY IS AN ENUM.**
+ * `metric` reaches here through a zod enum and `bucket` through another, so no caller-controlled string is ever
+ * concatenated. Written down explicitly because the shape — string interpolation into SQL — is the shape a reviewer must
+ * stop, and the reason it is acceptable here has to be legible without tracing three callers.
+ */
+const SERIES_SRC: Readonly<Record<SeriesMetric, { table: string; col: string; ts: string }>> = Object.freeze({
+  orders: { table: 'orders', col: 'COUNT(*)::text', ts: 'created_at' },
+  gmv_minor: { table: 'orders', col: 'COALESCE(SUM(total_minor),0)::text', ts: 'created_at' },
+  new_tenants: { table: 'tenants', col: 'COUNT(*)::text', ts: 'created_at' },
+  new_users: { table: 'users', col: 'COUNT(*)::text', ts: 'created_at' },
+  dbt_minor: { table: 'dbt_transfers', col: 'COALESCE(SUM(amount_minor),0)::text', ts: 'created_at' },
+});
+
+const SERIES_ROW_CAP = 400;
+
+function seriesSql(metric: SeriesMetric, bucket: SeriesBucket): string {
+  const m = SERIES_SRC[metric];
+  return `SELECT date_trunc('${bucket}', ${m.ts})::date::text AS bucket, ${m.col} AS value
+            FROM ${m.table} WHERE ${m.ts} >= $1 AND ${m.ts} < $2 AND deleted_at IS NULL
+           GROUP BY 1 ORDER BY 1 LIMIT ${SERIES_ROW_CAP}`;
+}
 
 // Tenant lifecycle states considered "live" for active-tenant headline counts.
 const ACTIVE_TENANT_STATES = ['active', 'trial', 'grace'];
@@ -64,19 +93,21 @@ export class PlatformReportsReadModel {
 
   /** PC-54 W54-11 slice 5 `report builder` v1: a WHITELISTED metric registry (never client SQL) bucketed
    *  by day|week|month. Each metric maps to one ledgered aggregate. */
-  async customSeries(metric: 'orders' | 'gmv_minor' | 'new_tenants' | 'new_users' | 'dbt_minor', from: Date, to: Date, bucket: 'day' | 'week' | 'month') {
-    const SRC: Record<string, { table: string; col: string; ts: string }> = {
-      orders: { table: 'orders', col: 'COUNT(*)::text', ts: 'created_at' },
-      gmv_minor: { table: 'orders', col: "COALESCE(SUM(total_minor),0)::text", ts: 'created_at' },
-      new_tenants: { table: 'tenants', col: 'COUNT(*)::text', ts: 'created_at' },
-      new_users: { table: 'users', col: 'COUNT(*)::text', ts: 'created_at' },
-      dbt_minor: { table: 'dbt_transfers', col: "COALESCE(SUM(amount_minor),0)::text", ts: 'created_at' },
-    };
-    const m = SRC[metric];
-    const r = await this.pool.query(
-      `SELECT date_trunc('${bucket}', ${m.ts})::date::text AS bucket, ${m.col} AS value
-         FROM ${m.table} WHERE ${m.ts} >= $1 AND ${m.ts} < $2 AND deleted_at IS NULL
-        GROUP BY 1 ORDER BY 1 LIMIT 400`, [from, to]);
+  async customSeries(metric: SeriesMetric, from: Date, to: Date, bucket: SeriesBucket) {
+    const r = await this.pool.query(seriesSql(metric, bucket), [from, to]);
+    return r.rows as Array<{ bucket: string; value: string }>;
+  }
+
+  /**
+   * PC-56 ADMIN-10 · the same series, run on a CALLER-SUPPLIED CONNECTION.
+   *
+   * The builder needs `SET LOCAL statement_timeout` to apply to this query, and `SET LOCAL` only binds inside the
+   * transaction it is issued in — so the timeout and the query have to share a connection. A caller that set the timeout
+   * on a pool checkout and then ran the query through `this.pool.query()` would get a fresh connection with no timeout
+   * and would never notice: W111's "the 60s replica limit protects everyone" would be a limit set on an idle session.
+   */
+  async customSeriesOn(client: PoolClient, metric: SeriesMetric, from: Date, to: Date, bucket: SeriesBucket) {
+    const r = await client.query(seriesSql(metric, bucket), [from, to]);
     return r.rows as Array<{ bucket: string; value: string }>;
   }
 }

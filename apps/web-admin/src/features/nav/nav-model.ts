@@ -30,6 +30,9 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   // PC-56 ADMIN-9: the realm's own operators. Before 0118 there was no list of the people this console lets in.
   { href: '/staff', labelKey: 'nav.staff', live: true },
   { href: '/staff/me', labelKey: 'nav.myWork', live: true },
+  // PC-56 ADMIN-10: the builder and the export receipts. The dashboard is already the console's root.
+  { href: '/analytics/reports', labelKey: 'nav.reportBuilder', live: true },
+  { href: '/analytics/exports', labelKey: 'nav.exports', live: true },
   { href: '/announcements', labelKey: 'nav.announcements', live: true },
   { href: '/catalogue', labelKey: 'nav.catalogue', live: true },
   { href: '/schemes-registry', labelKey: 'nav.schemes', live: true },

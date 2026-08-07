@@ -187,6 +187,21 @@ export const OwnerPermissions = {
   // counterpart and there must not be: granting a platform permission is a code review and a deploy, and a database
   // path that could do it would make this catalogue advisory (Law 5, Law 11).
   RbacRead: 'rbac.read',
+  /* ---- PC-56 ADMIN-10 · reports, analytics and exports. THREE PERMISSIONS THE CANON NAMES BY HAND AND NONE OF WHICH
+     EXISTED. Only `reports.read` did, so a single grant covered the exec dashboard, the cross-tenant analytics and
+     every export — and W001's own restricted state describes a split that could not happen: "Your role (Ops · L2) can't
+     view platform revenue. Ask a Platform Owner for the metrics.revenue.read permission." ---- */
+  // **THE MOST SENSITIVE FIGURES ON THE PLATFORM'S FRONT PAGE.** MRR, ARR and GMV are the numbers a competitor would pay
+  // for and an operator on the support desk has no reason to see. Separate from `reports.read` so the dashboard can serve
+  // the degraded page the canon describes — everything except the money — rather than a 403 for the whole screen.
+  MetricsRevenueRead: 'metrics.revenue.read',
+  // The ad-hoc builder. Separate from `reports.read` because a fixed dashboard answers questions somebody has already
+  // reviewed, and a builder answers whatever the operator asks — a different risk against the same tables.
+  AnalyticsRead: 'analytics.read',
+  // **EXPORT IS ITS OWN GRANT, and it is the one that matters.** Reading a figure on screen and walking out with a file
+  // are different acts: the file survives the session, the screenshot policy and the leaver process. W111 says so
+  // itself — "Needs analytics.read; exports need analytics.export."
+  AnalyticsExport: 'analytics.export',
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
@@ -203,6 +218,17 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_staff_checker:  [OwnerPermissions.StaffReinstate, OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
   // Read-only: the roster, the matrix, the step-up history. What an auditor asking "who could have done this" needs.
   platform_staff_auditor:  [OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
+  /* ---- PC-56 ADMIN-10 ---- */
+  // The exec/board reader: the dashboard, the money on it, the analytics, and the ability to take a file away.
+  platform_analytics_ops:   [OwnerPermissions.ReportsRead, OwnerPermissions.MetricsRevenueRead,
+    OwnerPermissions.AnalyticsRead, OwnerPermissions.AnalyticsExport],
+  // Reads everything and takes nothing out. The commonest shape of request on a reporting plane, and previously
+  // impossible: `reports.read` carried the export with it.
+  platform_analytics_viewer: [OwnerPermissions.ReportsRead, OwnerPermissions.MetricsRevenueRead,
+    OwnerPermissions.AnalyticsRead],
+  // **THE ROLE W001'S RESTRICTED STATE IS WRITTEN FOR.** Sees the dashboard and not the revenue — the operational
+  // picture without the platform's own money. This is the role that made the permission split worth building.
+  platform_ops_dashboard:   [OwnerPermissions.ReportsRead],
   platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead, OwnerPermissions.AiReview],
   platform_ai_auditor:    [OwnerPermissions.AiModelRead],
   // ADMIN-7. The reviewer who works the queue and cannot change a model — the commonest shape of request on this plane
