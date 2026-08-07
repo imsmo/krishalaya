@@ -9,6 +9,17 @@ import { Reflector } from '@nestjs/core';
 export const OwnerPermissions = {
   AiModelManage: 'ai.model.manage',     // register/promote/retire models + tune thresholds
   AiModelRead: 'ai.model.read',         // browse the registry + fairness reports
+  // ADMIN-7 — W082: "Needs `ai.review` (AI Ops Officer); fraud cases additionally need risk scope."
+  //
+  // IT EXISTED ONLY IN THE TENANT REALM. `apps/api/.../ai-governance.policies.ts` checks `ai.review` for a tenant's own
+  // reviewer working their own cases; the PLATFORM officer W082 is written for — `platform_ai_ops` — had no permission
+  // and no surface at all. Not the same act and not reusable across realms: a tenant reviews their own farmers' cases,
+  // a platform officer reviews everybody's, and one grant covering both would hand a tenant admin cross-tenant reach.
+  //
+  // SEPARATE FROM `ai.model.read`, THOUGH BOTH LOOK AT AI, because reading what models decided is an auditor's job and
+  // deciding a case changes what happens to a farmer's listing today. The decision explorer (W084) is gated on the read
+  // permission and the queue on this one, which is exactly the split the two screens' restricted states describe.
+  AiReview: 'ai.review',                // work the human-in-the-loop queue: claim, accept, reject
   TenantManage: 'tenant.manage',        // approve/suspend/archive tenants + limit overrides (consequential)
   TenantRead: 'tenant.read',            // search tenants + read scorecards
   ReconManage: 'recon.manage',          // open/resolve mismatch investigations + FREEZE wallet accounts
@@ -158,8 +169,11 @@ export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermis
 // granted to a tenant user (Law 11); the tenant DB's role_permissions has no row for any of these codes.
 const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.freeze({
   super_admin:            ['*'],
-  platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead],
+  platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead, OwnerPermissions.AiReview],
   platform_ai_auditor:    [OwnerPermissions.AiModelRead],
+  // ADMIN-7. The reviewer who works the queue and cannot change a model — the commonest shape of request on this plane
+  // and previously impossible to grant, because the only AI roles were "manage everything" and "read the registry".
+  platform_ai_reviewer:   [OwnerPermissions.AiReview, OwnerPermissions.AiModelRead],
   platform_tenant_ops:    [OwnerPermissions.TenantManage, OwnerPermissions.TenantRead],
   platform_tenant_viewer: [OwnerPermissions.TenantRead],
   platform_recon_ops:     [OwnerPermissions.ReconManage, OwnerPermissions.ReconRead],

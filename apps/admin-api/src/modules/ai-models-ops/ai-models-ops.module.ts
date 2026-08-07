@@ -7,9 +7,17 @@ import { ModelRegistryService } from './services/model-registry.service';
 import { ThresholdTuningService } from './services/threshold-tuning.service';
 import { FairnessAuditReportsService } from './services/fairness-audit-reports.service';
 import { AiModelRepository } from './repositories/ai-model.repository';
+import { AiReviewOpsController } from './ai-review-ops.controller';
+import { AiGovernanceRepository } from './repositories/ai-governance.repository';
+import { FairnessGateService } from './services/fairness-gate.service';
+import { AiReviewService } from './services/ai-review.service';
 
 @Module({
-  controllers: [AiModelsOpsController],
-  providers: [ModelRegistryService, ThresholdTuningService, FairnessAuditReportsService, AiModelRepository],
+  controllers: [AiModelsOpsController, AiReviewOpsController],
+  providers: [
+    ModelRegistryService, ThresholdTuningService, FairnessAuditReportsService, AiModelRepository,
+    // PC-56 ADMIN-7 — the fairness gate, the cross-tenant review queue and the decision explorer.
+    AiGovernanceRepository, FairnessGateService, AiReviewService,
+  ],
 })
 export class AiModelsOpsModule {}
