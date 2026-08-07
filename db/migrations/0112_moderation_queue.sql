@@ -247,3 +247,50 @@ GRANT SELECT ON listing_moderation_orders, moderation_action_notices TO kv_reado
 --     is reversible and frequently wrong by design ("hold fast, remove slow"), and scoring somebody down for being
 --     briefly suspected would make the risk ladder a record of how often operators looked at you. ADMIN-5d already
 --     recorded that nothing reads a band, so the event is written for the day something does.
+
+-- ---------------------------------------------------------------------------
+-- 6. THE NOTIFICATION EVENT AND ITS TEMPLATES — SEEDED HERE, NOT IN db/seeds
+-- ---------------------------------------------------------------------------
+-- 0101 established both halves of this and its header records the worst bug it nearly shipped, which applies verbatim
+-- here. In `NotificationService.dispatchOne()`:
+--
+--     const rendered = template ? template.render(a.payload) : { subject: null, body: '' };
+--
+-- **WITH NO TEMPLATE ROW A NOTIFICATION IS CREATED AND DELIVERED WITH AN EMPTY BODY.** The farmer would receive a
+-- genuine notification from Krishalaya containing nothing, the notice row would say `delivered`, and the operator
+-- would believe the seller had been told why their listing was stopped. Not a crash and not a log line — a real
+-- message with the words removed. And `fanout` is fail-closed on an unknown EVENT code, so a missing catalogue row
+-- means notices accepted and silently never delivered.
+--
+-- Both therefore ship in the migration rather than in db/seeds: a seed can be skipped, a migration cannot.
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable)
+VALUES ('moderation.decision_notice', 'A moderation decision about your listing', 'important',
+        '["inapp","push"]', false, false)
+ON CONFLICT (code) DO NOTHING;
+-- `user_can_opt_out` is FALSE, and here that is not a convenience. W089's second principle is that every action
+-- explains itself in the farmer's language with an appeal path — a stale channel preference swallowing the reason a
+-- listing was stopped would be the platform hiding behind a checkbox on the one message the person needs. Not
+-- batchable: a hold on perishable produce is not digest material.
+
+-- THE TEMPLATE IS A CARRIER, NOT A REWRITE. `{{body}}` is the operator's verbatim reason plus the appeal path; a
+-- template that summarised it would be the platform editing an explanation after a human approved it.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active)
+SELECT v.event_code, v.channel, v.language_code, NULL, v.subject, v.body, NULL, true
+FROM (VALUES
+  ('moderation.decision_notice', 'inapp', 'en', 'A decision about your listing', '{{body}}'),
+  ('moderation.decision_notice', 'inapp', 'hi', 'Aapki listing ke baare mein faisla', '{{body}}'),
+  ('moderation.decision_notice', 'inapp', 'gu', 'Tamari listing vishe nirnay', '{{body}}'),
+  ('moderation.decision_notice', 'push', 'en', 'Krishalaya · your listing', '{{body}}'),
+  ('moderation.decision_notice', 'push', 'hi', 'Krishalaya · aapki listing', '{{body}}'),
+  ('moderation.decision_notice', 'push', 'gu', 'Krishalaya · tamari listing', '{{body}}')
+) AS v(event_code, channel, language_code, subject, body)
+-- Only for languages the platform actually has. A template row for a language with no `languages` row would be a
+-- carrier for a rendering nobody can read.
+WHERE EXISTS (SELECT 1 FROM languages l WHERE l.code = v.language_code)
+ON CONFLICT DO NOTHING;
+
+-- NO SMS ROW, and the omission is deliberate rather than an oversight. In India a transactional SMS needs a
+-- DLT-registered template, the DLT ids do not exist yet (the same founder-physical gap ADMIN-1e and ADMIN-2b named),
+-- and 0101's placeholder rows had to be deactivated immediately for that reason. Seeding placeholders here would
+-- repeat that in a wave whose entire subject is claims the platform cannot keep. The notice reaches the farmer
+-- in-app and by push; SMS is one INSERT the day the ids are issued.
