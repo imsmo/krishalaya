@@ -28,6 +28,7 @@ import {
   type SupportExportReport,
 } from '../domain/support-export';
 import type { SupportExportDto } from '../dto/support-oversight.dto';
+import { contentDigest, DIGEST_BASIS } from '../../../core/export/receipt';
 
 /** Hard ceiling, matching the billing plane. Past this an export is a warehouse question, not a console download. */
 export const MAX_SUPPORT_EXPORT_ROWS = 5000;
@@ -90,6 +91,7 @@ export class SupportExportService {
       receipt: {
         id: receiptId, report, generatedAt, generatedBy: actor.userId,
         rowCount: rows.length, truncated: rows.length >= limit,
+        contentSha256: contentDigest(supportExportColumns(report), rows), digestBasis: DIGEST_BASIS,
         containsFreeText: hasVerbatim,
         filters: { from: dto.from, to: dto.to, tenantId: dto.tenantId ?? null, maxScore: dto.maxScore ?? null },
       },

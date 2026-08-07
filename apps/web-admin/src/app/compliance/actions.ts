@@ -12,6 +12,7 @@ import { adminPost, adminPatch, AdminApiError } from '../../lib/admin-client';
 import { buildDsrUpdate, buildExportDecision, buildRetention, buildOpenBreach, buildBreachUpdate } from '../../features/compliance/compliance';
 import { buildReject, buildRecordAction } from '../../features/compliance/erasure';
 import { buildSaveNotice, buildOpenDraft } from '../../features/compliance/consent';
+import { buildRecordStep } from '../../features/compliance/breach-notification';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -235,4 +236,50 @@ export async function discardConsentDraftAction(formData: FormData): Promise<voi
   catch (e) { redirect(`/compliance/consent/purposes/${enc(code)}?error=${consentErrorKey(e)}`); }
   revalidatePath(`/compliance/consent/purposes/${code}`);
   redirect(`/compliance/consent/purposes/${enc(code)}?ok=discarded`);
+}
+
+/* ========================= ADMIN-5c · the breach notification checklist =========================
+   Before this, `notify` needed two timestamps an operator typed. These two actions are what stands behind the word
+   "notified" now. Each refusal gets its own key, because each needs a different next move: more evidence, or a
+   colleague.                                                                                                        */
+
+function breachErrorKey(e: unknown): string {
+  if (e instanceof AdminApiError) {
+    const code = e.code;
+    if (code === 'BREACH_NOTIFICATION_INCOMPLETE') return 'notEvidenced';
+    if (code === 'BREACH_SIGNOFF_REQUIRED') return 'signOffRequired';
+    if (code === 'SECOND_PERSON_REQUIRED') return 'secondPerson';
+    if (code === 'BREACH_STEP_NOT_FOUND') return 'stepNotFound';
+    if (code === 'BREACH_UPDATE_INVALID' || code === 'INVALID_BREACH_UPDATE') return 'looksLikePii';
+  }
+  return errorKey(e);
+}
+
+export async function recordBreachStepAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/compliance/breaches');
+  const built = buildRecordStep({
+    step: String(formData.get('step') ?? ''), outcome: String(formData.get('outcome') ?? ''),
+    evidenceRef: String(formData.get('evidenceRef') ?? ''), reachedCount: String(formData.get('reachedCount') ?? ''),
+    channel: String(formData.get('channel') ?? ''), note: String(formData.get('note') ?? ''),
+  });
+  if (!built.ok) redirect(`/compliance/breaches/${enc(id)}?error=${built.error}`);
+  try { await adminPost(`compliance/breaches/${enc(id)}/notification/steps`, { body: built.value }); }
+  catch (e) { redirect(`/compliance/breaches/${enc(id)}?error=${breachErrorKey(e)}`); }
+  revalidatePath(`/compliance/breaches/${id}`);
+  redirect(`/compliance/breaches/${enc(id)}?ok=stepRecorded`);
+}
+
+export async function signOffBreachAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/compliance/breaches');
+  const note = String(formData.get('note') ?? '').trim();
+  if (note.length > 2000) redirect(`/compliance/breaches/${enc(id)}?error=note`);
+  // Absent rather than empty-string: the DTO is .strict() with min(1).
+  try { await adminPost(`compliance/breaches/${enc(id)}/notification/sign-off`, { body: note ? { note } : {} }); }
+  catch (e) { redirect(`/compliance/breaches/${enc(id)}?error=${breachErrorKey(e)}`); }
+  revalidatePath(`/compliance/breaches/${id}`);
+  redirect(`/compliance/breaches/${enc(id)}?ok=signedOff`);
 }

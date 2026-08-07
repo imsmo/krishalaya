@@ -110,3 +110,28 @@ export const RecordErasureActionSchema = z.object({
   note: z.string().min(1).max(1000).optional(),
 }).strict();
 export type RecordErasureActionDto = z.infer<typeof RecordErasureActionSchema>;
+
+/* ---- ADMIN-5c: the breach notification checklist ---- */
+
+/** One recorded act. Shape only here; the DOMAIN decides whether the evidence is sufficient, so the 422 can explain
+ *  that a tick without a filing reference is what the two typed timestamps already were. */
+export const RecordBreachStepSchema = z.object({
+  step: z.enum(['board_filing', 'principals_notified', 'tenant_briefed']),
+  outcome: z.enum(['done', 'not_applicable']),
+  evidenceRef: z.string().max(200).optional(),
+  reachedCount: z.coerce.number().int().min(0).max(1_000_000_000).optional(),
+  channel: z.string().max(40).optional(),
+  note: z.string().max(2000).optional(),
+}).strict();
+export type RecordBreachStepDto = z.infer<typeof RecordBreachStepSchema>;
+
+export const RetractBreachStepSchema = z.object({
+  step: z.enum(['board_filing', 'principals_notified', 'tenant_briefed']),
+  reason: z.string().min(3).max(1000),
+}).strict();
+export type RetractBreachStepDto = z.infer<typeof RetractBreachStepSchema>;
+
+/** The DPO sign-off. The note is OPTIONAL — a DPO who agrees has nothing to add, and a mandatory field produces "ok",
+ *  which is worse than blank because it looks like review. */
+export const SignOffBreachSchema = z.object({ note: z.string().min(1).max(2000).optional() }).strict();
+export type SignOffBreachDto = z.infer<typeof SignOffBreachSchema>;

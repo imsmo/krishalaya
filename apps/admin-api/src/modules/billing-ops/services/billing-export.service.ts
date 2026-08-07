@@ -18,6 +18,7 @@
 //
 // Reads only. Bounded (`MAX_EXPORT_ROWS`) — an unbounded export is an availability incident waiting for a slow month.
 import { Injectable } from '@nestjs/common';
+import { contentDigest, DIGEST_BASIS } from '../../../core/export/receipt';
 import { randomUUID } from 'node:crypto';
 import { AdminAuditWriter } from '../../../core/audit/admin-audit.writer';
 import { AdminRequestContext } from '../../../core/auth/admin-auth.guard';
@@ -71,6 +72,9 @@ export class BillingExportService {
       receipt: {
         id: receiptId, report, generatedAt, generatedBy: actor.userId, rowCount: rows.length,
         truncated: rows.length >= limit,
+        // ADMIN-5c: the digest the receipt law has promised on every export chain screen since ADMIN-1d and never
+        // carried. See core/export/receipt.ts for exactly what it covers — the DATA, not the delivered bytes.
+        contentSha256: contentDigest(exportColumns(report), rows), digestBasis: DIGEST_BASIS,
         filters: { tenantId: dto.tenantId ?? null, status: dto.status ?? null, from: dto.from ?? null, to: dto.to ?? null },
       },
       columns: exportColumns(report),

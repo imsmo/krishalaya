@@ -22,6 +22,7 @@ import {
   type TaxonomyExportReport,
 } from '../domain/taxonomy-export';
 import type { TaxonomyExportDto } from '../dto/translations.dto';
+import { contentDigest, DIGEST_BASIS } from '../../../core/export/receipt';
 
 export const MAX_TAXONOMY_EXPORT_ROWS = 20_000;
 const DEFAULT_ROWS = 5_000;
@@ -75,6 +76,7 @@ export class TaxonomyExportService {
       receipt: {
         id: receiptId, report, generatedAt, generatedBy: actor.userId,
         rowCount: rows.length, truncated: rows.length >= limit,
+        contentSha256: contentDigest(taxonomyExportColumns(report), rows), digestBasis: DIGEST_BASIS,
         filters: { languageCode: languageCode ?? null },
       },
       columns: taxonomyExportColumns(report),

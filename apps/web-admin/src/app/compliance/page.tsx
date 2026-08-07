@@ -64,6 +64,7 @@ export default async function ComplianceDsrPage({ searchParams }: { searchParams
           gets the console's uniform 403 notice on arrival rather than a hidden link — a hidden link makes somebody think
           the feature does not exist, while a 403 tells them what to ask for. */}
       <nav className="kv-filters" aria-label={t.t('cns.navLabel')}>
+        <Link href="/compliance/posture" className="kv-chip">{t.t('pos.navLink')}</Link>
         <Link href="/compliance/consent" className="kv-chip">{t.t('cns.navConsent')}</Link>
         <Link href="/compliance/consent/purposes" className="kv-chip">{t.t('cns.navPurposes')}</Link>
       </nav>

@@ -22,6 +22,7 @@ import {
 } from '../domain/scheme-export';
 import { ExportReportUnknownError } from '../domain/schemes-registry.errors';
 import type { SchemeExportDto } from '../dto/schemes-registry.dto';
+import { contentDigest, DIGEST_BASIS } from '../../../core/export/receipt';
 
 export const MAX_SCHEME_EXPORT_ROWS = 20_000;
 const DEFAULT_ROWS = 5_000;
@@ -49,7 +50,7 @@ export class SchemeExportService {
     await this.audit.log({
       actorUserId: actor.userId, actorRole: actor.roles[0] ?? null,
       action: 'schemes.registry_exported', entityType: 'scheme_export_receipt', entityId: receiptId,
-      newValue: { report, filters: { limit }, rowCount: rows.length, truncated, generatedAt },
+      newValue: { report, filters: { limit }, rowCount: rows.length, truncated, generatedAt, contentSha256: contentDigest(schemeExportColumns(report), rows) },
       reason: `scheme registry export: ${report}`,
       ip: actor.ip, requestId: actor.requestId || null,
     });
@@ -58,6 +59,7 @@ export class SchemeExportService {
       receipt: {
         id: receiptId, report, generatedAt, generatedBy: actor.userId,
         rowCount: rows.length, truncated,
+        contentSha256: contentDigest(schemeExportColumns(report), rows), digestBasis: DIGEST_BASIS,
         fileName: schemeExportFileName(report, receiptId, generatedAtDate),
         filters: { limit },
       },

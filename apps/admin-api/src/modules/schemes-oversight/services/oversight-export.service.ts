@@ -22,6 +22,7 @@ import { assertFilters } from '../domain/application-oversight';
 import { maskName, maskPhone } from '../domain/pii-mask';
 import { assertNoBankFields, DBT_EXPORT_COLUMNS, DBT_BOUNCE_EXPORT_COLUMNS } from '../domain/dbt-safety';
 import type { OversightExportDto } from '../dto/schemes-oversight.dto';
+import { contentDigest, DIGEST_BASIS } from '../../../core/export/receipt';
 
 export const OVERSIGHT_EXPORT_REPORTS = ['applications', 'dbt_credits', 'dbt_bounces', 'rejections'] as const;
 export type OversightExportReport = (typeof OVERSIGHT_EXPORT_REPORTS)[number];
@@ -95,6 +96,7 @@ export class OversightExportService {
       receipt: {
         id: receiptId, report, generatedAt: generatedAt.toISOString(), generatedBy: actor.userId,
         rowCount: rows.length, truncated, piiMasked: true,
+        contentSha256: contentDigest(columns, rows), digestBasis: DIGEST_BASIS,
         fileName: exportFileName(report, receiptId, generatedAt),
         filters: { limit, days },
       },

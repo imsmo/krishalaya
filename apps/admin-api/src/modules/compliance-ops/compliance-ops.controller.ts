@@ -13,12 +13,15 @@ import { TenantExportApprovalsService } from './services/tenant-export-approvals
 import { AuditLogExplorerService } from './services/audit-log-explorer.service';
 import { RetentionPolicyAdminService } from './services/retention-policy-admin.service';
 import { BreachResponseConsoleService } from './services/breach-response-console.service';
+import { CompliancePostureService } from './services/compliance-posture.service';
 import {
   QueryDsrSchema, QueryDsrDto, UpdateDsrSchema, UpdateDsrDto,
   QueryExportsSchema, QueryExportsDto, DecideExportSchema, DecideExportDto,
   QueryAuditSchema, QueryAuditDto, UpsertRetentionSchema, UpsertRetentionDto,
   QueryBreachesSchema, QueryBreachesDto, OpenBreachSchema, OpenBreachDto, UpdateBreachSchema, UpdateBreachDto,
   AcknowledgeDsrSchema, AcknowledgeDsrDto, RecordErasureActionSchema, RecordErasureActionDto,
+  RecordBreachStepSchema, RecordBreachStepDto, RetractBreachStepSchema, RetractBreachStepDto,
+  SignOffBreachSchema, SignOffBreachDto,
 } from './dto/compliance-ops.dto';
 
 /** Indian financial year (1 April). Same reasoning as the scheme-performance report: W041's "SLA breaches YTD" on a
@@ -42,6 +45,7 @@ export class ComplianceOpsController {
     private readonly audit: AuditLogExplorerService,
     private readonly retention: RetentionPolicyAdminService,
     private readonly breaches: BreachResponseConsoleService,
+    private readonly posture: CompliancePostureService,
   ) {}
 
   // ---- DSR queue ----
@@ -120,4 +124,37 @@ export class ComplianceOpsController {
   updateBreach(@Req() req: any, @Param('id') id: string, @ZodBody(UpdateBreachSchema) dto: UpdateBreachDto) {
     return this.breaches.update(admin(req), id, dto).then((data) => ({ data }));
   }
+
+  /* ======================= ADMIN-5c · the notification checklist (W043) =======================
+     `compliance.breach` — W043's own restricted state names it ("DPO + security"). Reads are not elevated; every write
+     is, because each one is a claim about a statutory act.                                                          */
+
+  @Get('breaches/:id/notification') @RequireOwnerPermission(OwnerPermissions.ComplianceBreach)
+  breachNotification(@Param('id') id: string) {
+    return this.breaches.notificationView(id).then((data) => ({ data }));
+  }
+
+  /** One act per call. A "mark all notified" endpoint would recreate the two-typed-timestamps problem in a new shape. */
+  @Post('breaches/:id/notification/steps') @RequireOwnerPermission(OwnerPermissions.ComplianceBreach) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  recordBreachStep(@Req() req: any, @Param('id') id: string, @ZodBody(RecordBreachStepSchema) dto: RecordBreachStepDto) {
+    return this.breaches.recordStep(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  @Post('breaches/:id/notification/retract') @RequireOwnerPermission(OwnerPermissions.ComplianceBreach) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  retractBreachStep(@Req() req: any, @Param('id') id: string, @ZodBody(RetractBreachStepSchema) dto: RetractBreachStepDto) {
+    return this.breaches.retractStep(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  /** The DPO sign-off — refused to whoever declared the breach, by the service and by a CHECK constraint. */
+  @Post('breaches/:id/notification/sign-off') @RequireOwnerPermission(OwnerPermissions.ComplianceBreach) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  signOffBreach(@Req() req: any, @Param('id') id: string, @ZodBody(SignOffBreachSchema) dto: SignOffBreachDto) {
+    return this.breaches.signOff(admin(req), id, dto.note ?? null).then((data) => ({ data }));
+  }
+
+  /* ======================= ADMIN-5c · W048 posture =======================
+     `compliance.read` and not `compliance.breach`: the overview is aggregate-only and names nobody, and it is the page a
+     founder or an enterprise buyer's auditor is shown. Gating it behind the breach permission would mean the people who
+     most need to see the posture cannot.                                                                            */
+  @Get('posture') @RequireOwnerPermission(OwnerPermissions.ComplianceRead)
+  compliancePosture() { return this.posture.posture().then((data) => ({ data })); }
 }

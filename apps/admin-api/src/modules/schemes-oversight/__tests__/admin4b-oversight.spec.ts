@@ -9,7 +9,13 @@ import {
 import {
   rate, LOW_SAMPLE_BELOW, REJECTION_CODES, isFixable, rejectionBreakdown, fixableShare, medianDuration, benefitTotal,
 } from '../domain/performance';
-import { UnmaskReasonRequiredError, InvalidOversightQueryError } from '../domain/schemes-oversight.errors';
+import { InvalidOversightQueryError } from '../domain/schemes-oversight.errors';
+// ADMIN-5b lifted masking out of this module into core/pii/mask.ts, and the error class went with it. This spec kept
+// importing from the old home and the suite has been RED since that wave — invisible because admin-api's tsconfig does
+// not include specs, so tsc stayed green and only a full `jest` run (not the per-module run each wave does) shows it.
+// The same enumeration blind spot already logged against apps/api, now demonstrated here. Waves run their own module's
+// tests; nothing runs everything.
+import { UnmaskReasonRequiredError } from '../../../core/pii/mask';
 import { financialYearStart } from '../services/scheme-performance.service';
 
 describe('ADMIN-4b · phone masking', () => {

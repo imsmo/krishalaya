@@ -68,3 +68,31 @@ export class ErasureScopeUnavailableError extends DomainHttpError {
 export class DsrAlreadyAcknowledgedError extends DomainHttpError {
   constructor(at: string) { super('DSR_ALREADY_ACKNOWLEDGED', `this request was already acknowledged at ${at}`, HttpStatus.CONFLICT, { acknowledgedAt: at }); }
 }
+
+/* ---------------- the breach notification checklist (0109 / ADMIN-5c) ---------------- */
+
+/** THE GUARD THIS WAVE EXISTS FOR. `notified` used to need two timestamps an operator typed. Now it needs the three
+ *  acts W043 lists, each with its evidence — and the message NAMES the outstanding ones, because the operator has done
+ *  nothing wrong and the list is the actual work remaining. */
+export class BreachNotificationIncompleteError extends DomainHttpError {
+  constructor(outstanding: string[]) {
+    super('BREACH_NOTIFICATION_INCOMPLETE',
+      `this breach cannot be recorded as notified: ${outstanding.join(', ')} ${outstanding.length === 1 ? 'has' : 'have'} `
+      + 'no recorded outcome. Nobody has evidenced those steps, and recording a notification now would state that a '
+      + 'statutory duty was discharged when it was not.',
+      HttpStatus.CONFLICT, { outstanding });
+  }
+}
+/** All three steps are evidenced but no DPO has signed off. Separate from the above because the next action is a
+ *  different person rather than more work. */
+export class BreachSignOffRequiredError extends DomainHttpError {
+  constructor() {
+    super('BREACH_SIGNOFF_REQUIRED',
+      'all three notification steps are recorded, but a DPO has not signed off. The sign-off must come from somebody '
+      + 'other than the person who declared the breach.',
+      HttpStatus.CONFLICT);
+  }
+}
+export class BreachStepNotFoundError extends DomainHttpError {
+  constructor(step: string) { super('BREACH_STEP_NOT_FOUND', `no live '${step}' step to retract on this breach`, HttpStatus.NOT_FOUND, { step }); }
+}

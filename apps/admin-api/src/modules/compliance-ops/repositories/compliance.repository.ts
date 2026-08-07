@@ -19,6 +19,17 @@ function toDsr(r: any): DataSubjectRequest {
     scopeComputedAt: r.scope_computed_at ?? null, updatedBy: r.updated_by ?? null,
     createdAt: r.created_at ?? null });
 }
+function toStep(x: any) {
+  return {
+    step: x.step, outcome: x.outcome, evidenceRef: x.evidence_ref ?? null,
+    // NULL is not zero: omitting the count means nobody counted, zero means we counted and reached none. On a breach
+    // notification those are different statements.
+    reachedCount: x.reached_count === null || x.reached_count === undefined ? null : Number(x.reached_count),
+    channel: x.channel ?? null, note: x.note ?? null,
+    performedBy: x.performed_by,
+    performedAt: x.performed_at ? new Date(x.performed_at).toISOString() : null,
+  };
+}
 function toBreach(r: any): Breach {
   return Breach.rehydrate({ id: r.id, affectedTenantId: r.affected_tenant_id ?? null, status: r.status as BreachStatus, severity: r.severity,
     title: r.title, affectedCount: Number(r.affected_count ?? 0), detectedAt: r.detected_at, containedAt: r.contained_at ?? null,
@@ -221,5 +232,98 @@ export class ComplianceRepository {
     const lp = p(q.limit);
     const r = await this.pool.query(`SELECT * FROM data_breaches WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toBreach);
+  }
+
+  /* ---------------- breach notification evidence (0109) ---------------- */
+
+  async notificationSteps(breachId: string) {
+    const r = await this.pool.query(
+      `SELECT step, outcome, evidence_ref, reached_count, channel, note, performed_by, performed_at
+         FROM breach_notification_steps WHERE breach_id=$1 ORDER BY performed_at DESC`, [breachId]);
+    return r.rows.map(toStep);
+  }
+
+  /** Locked read inside the notify transaction — the guard must not race a step being recorded. */
+  async notificationStepsForUpdate(client: PoolClient, breachId: string) {
+    const r = await client.query(
+      `SELECT step, outcome, evidence_ref, reached_count, channel, note, performed_by, performed_at
+         FROM breach_notification_steps WHERE breach_id=$1 FOR SHARE`, [breachId]);
+    return r.rows.map(toStep);
+  }
+
+  /** Append-only. A correction retracts the live row first (see the service) and never updates it in place. */
+  async insertNotificationStep(client: PoolClient, v: { breachId: string; step: string; outcome: string; evidenceRef: string | null; reachedCount: number | null; channel: string | null; note: string | null; performedBy: string }): Promise<void> {
+    await client.query(
+      `INSERT INTO breach_notification_steps (breach_id, step, outcome, evidence_ref, reached_count, channel, note, performed_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [v.breachId, v.step, v.outcome, v.evidenceRef, v.reachedCount, v.channel, v.note, v.performedBy]);
+  }
+
+  /** Retract the live row for a step so a corrected one can be inserted. The retracted row STAYS: on a statutory
+   *  notification, a claim that was made and then withdrawn is itself a fact somebody may have to explain. */
+  async retractNotificationStep(client: PoolClient, breachId: string, step: string): Promise<number> {
+    const r = await client.query(
+      `UPDATE breach_notification_steps SET outcome='retracted' WHERE breach_id=$1 AND step=$2 AND outcome <> 'retracted'`,
+      [breachId, step]);
+    return r.rowCount ?? 0;
+  }
+
+  async signOffBreach(client: PoolClient, id: string, dpoUserId: string, note: string | null): Promise<void> {
+    await client.query(
+      `UPDATE data_breaches SET dpo_signed_off_by=$2, dpo_signed_off_at=now(), dpo_note=$3, updated_by=$2, updated_at=now() WHERE id=$1`,
+      [id, dpoUserId, note]);
+  }
+
+  /** The sign-off and clock fields the breach entity does not carry. Read separately rather than widening the entity:
+   *  they belong to the NOTIFICATION workflow rather than to the breach's own state machine. */
+  async breachSignOff(id: string): Promise<{ signedOffBy: string | null; signedOffAt: Date | null; note: string | null; openedBy: string | null; detectedAt: Date | null; containedAt: Date | null; regulatorNotifiedAt: Date | null; affectedCount: number | null } | null> {
+    const r = await this.pool.query(
+      `SELECT dpo_signed_off_by, dpo_signed_off_at, dpo_note, opened_by, detected_at, contained_at,
+              regulator_notified_at, affected_count
+         FROM data_breaches WHERE id=$1`, [id]);
+    const x = r.rows[0];
+    return x ? {
+      signedOffBy: x.dpo_signed_off_by ?? null, signedOffAt: x.dpo_signed_off_at ?? null, note: x.dpo_note ?? null,
+      openedBy: x.opened_by ?? null, detectedAt: x.detected_at ?? null, containedAt: x.contained_at ?? null,
+      regulatorNotifiedAt: x.regulator_notified_at ?? null,
+      affectedCount: x.affected_count === null || x.affected_count === undefined ? null : Number(x.affected_count),
+    } : null;
+  }
+
+  async breachOpenedBy(client: PoolClient, id: string): Promise<string | null> {
+    const r = await client.query(`SELECT opened_by FROM data_breaches WHERE id=$1 FOR UPDATE`, [id]);
+    return r.rows[0]?.opened_by ?? null;
+  }
+
+  /* ---------------- W048 posture ---------------- */
+
+  async postureCounts(): Promise<{ openDsr: number; openBreaches: number; containedBreaches: number; mandatoryPurposes: number; purposesWithoutNotice: number }> {
+    const r = await this.pool.query(
+      `SELECT
+         (SELECT count(*)::int FROM data_subject_requests WHERE status IN ('open','in_progress') AND deleted_at IS NULL) AS open_dsr,
+         (SELECT count(*)::int FROM data_breaches WHERE status = 'open' AND deleted_at IS NULL) AS open_breaches,
+         (SELECT count(*)::int FROM data_breaches WHERE status = 'contained' AND deleted_at IS NULL) AS contained_breaches,
+         (SELECT count(*)::int FROM consent_purposes WHERE is_mandatory AND deleted_at IS NULL) AS mandatory_purposes,
+         (SELECT count(*)::int FROM consent_purposes p WHERE p.deleted_at IS NULL AND NOT EXISTS (
+            SELECT 1 FROM consent_purpose_versions v JOIN consent_purpose_notices n ON n.version_id = v.id
+             WHERE v.purpose_code = p.code AND v.status = 'published' AND v.deleted_at IS NULL)) AS purposes_without_notice`);
+    const x = r.rows[0] ?? {};
+    return {
+      openDsr: x.open_dsr ?? 0, openBreaches: x.open_breaches ?? 0, containedBreaches: x.contained_breaches ?? 0,
+      mandatoryPurposes: x.mandatory_purposes ?? 0, purposesWithoutNotice: x.purposes_without_notice ?? 0,
+    };
+  }
+
+  async retentionPolicyShapes(): Promise<Array<{ action: string; isActive: boolean }>> {
+    const r = await this.pool.query(`SELECT action, is_active FROM data_retention_policies WHERE deleted_at IS NULL`);
+    return r.rows.map((x: any) => ({ action: x.action, isActive: x.is_active === true }));
+  }
+
+  /** Breaches not yet notified — W048's attention list reads their clocks. */
+  async breachesNeedingNotification(): Promise<Array<{ id: string; title: string; detectedAt: Date | null; status: string }>> {
+    const r = await this.pool.query(
+      `SELECT id, title, detected_at, status FROM data_breaches
+        WHERE status IN ('open','contained') AND deleted_at IS NULL ORDER BY detected_at ASC LIMIT 50`);
+    return r.rows.map((x: any) => ({ id: x.id, title: x.title, detectedAt: x.detected_at ?? null, status: x.status }));
   }
 }

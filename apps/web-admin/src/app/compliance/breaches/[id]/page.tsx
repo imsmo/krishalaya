@@ -12,7 +12,13 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { breachStatusKey, breachSeverityKey, canContainBreach, canNotifyBreach, canCloseBreach, type BreachRow } from '../../../../features/compliance/compliance';
-import { updateBreachAction } from '../../actions';
+import {
+  NOTIFICATION_STEPS, stepState, stepClass, notifyOfferable, notifyBlockedKey, signOffOfferable,
+  clockClass, clockKey, reachShortfall,
+  type ChecklistLine, type Notifiable, type NotifyClock,
+} from '../../../../features/compliance/breach-notification';
+import { adminUserId } from '../../../../lib/admin-auth';
+import { updateBreachAction, recordBreachStepAction, signOffBreachAction } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +27,20 @@ export function generateMetadata(): Metadata {
 }
 
 const SEV_CLASS: Record<string, string> = { low: 'kv-status--muted', medium: 'kv-status--warn', high: 'kv-status--danger', critical: 'kv-status--danger' };
-const OK = new Set(['contain', 'notify', 'close']);
-const ERR = new Set(['action', 'note', 'notifiedAt', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
+const OK = new Set(['contain', 'notify', 'close', 'stepRecorded', 'signedOff']);
+const ERR = new Set([
+  'action', 'note', 'notifiedAt', 'step', 'outcome', 'evidenceRef', 'reachedCount', 'looksLikePii',
+  'notEvidenced', 'signOffRequired', 'secondPerson', 'stepNotFound',
+  'elevation', 'conflict', 'invalid', 'notFound', 'generic',
+]);
+
+interface NotificationView {
+  checklist: ChecklistLine[];
+  signedOffBy: string | null; signedOffAt: string | null; dpoNote: string | null; openedBy: string | null;
+  notifyClock: NotifyClock; containmentMinutes: number | null;
+  affectedCount: number | null; reached: number | null; unreached: number | null;
+  notifiable: Notifiable;
+}
 
 export default async function BreachDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   requireAdmin();
@@ -35,9 +53,20 @@ export default async function BreachDetailPage({ params, searchParams }: { param
     notice = t.t(`notice.${adminNoticeKey(e instanceof AdminApiError ? e.status : undefined)}`);
   }
 
+  // The checklist degrades independently of the breach itself (Law 12): the incident record is what somebody came for.
+  let nv: NotificationView | undefined;
+  try { nv = (await adminGet<NotificationView>(`compliance/breaches/${encodeURIComponent(params.id)}/notification`)).data; }
+  catch { /* the lifecycle below still renders; the checklist section says it could not be read */ }
+
   if (!breach) {
     return <section><p className="kv-backlink"><Link href="/compliance/breaches">{t.t('compliance.backBreaches')}</Link></p><p className="kv-error" role="alert">{notice}</p></section>;
   }
+
+  // DISPLAY GATING ONLY — the unverified `sub` claim. `ck_breach_signoff_ne_opener` and the service both refuse.
+  const viewerId = adminUserId();
+  const notifyOK = notifyOfferable(nv?.notifiable);
+  const blockedKey = notifyBlockedKey(nv?.notifiable);
+  const shortfall = reachShortfall(nv?.affectedCount, nv?.reached);
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
@@ -64,6 +93,89 @@ export default async function BreachDetailPage({ params, searchParams }: { param
         <div className="kv-facts__row"><dt>{t.t('compliance.resolutionNote')}</dt><dd>{breach.resolutionNote ?? t.t('common.dash')}</dd></div>
       </dl>
 
+      <h2>{t.t('bn.clockHeading')}</h2>
+      {!nv ? <p className="kv-error" role="alert">{t.t('bn.unavailable')}</p> : (
+        <>
+          <dl className="kv-facts">
+            <div className="kv-facts__row">
+              <dt>{t.t('bn.notifyWindow')}</dt>
+              {/* The clock runs from DETECTION and does NOT stop at containment — containing fast is a different
+                  achievement, and stopping the clock there would let a contained-but-unreported breach show green. */}
+              <dd><span className={clockClass(nv.notifyClock)}>{t.t(`bn.clock.${clockKey(nv.notifyClock)}`)}</span></dd>
+            </div>
+            {nv.containmentMinutes !== null && (
+              <div className="kv-facts__row"><dt>{t.t('bn.contained')}</dt><dd>{t.t('bn.containedIn', { n: String(nv.containmentMinutes) })}</dd></div>
+            )}
+            <div className="kv-facts__row">
+              <dt>{t.t('bn.reach')}</dt>
+              {/* NULL is not zero. A fabricated "0 unreached" converts "nobody counted" into "everybody was told". */}
+              <dd>{shortfall.known ? t.t('bn.reachLine', { reached: String(nv.reached ?? 0), affected: String(nv.affectedCount ?? 0), missing: String(shortfall.missing) }) : t.t('bn.reachUnknown')}</dd>
+            </div>
+            {nv.signedOffBy && (
+              <div className="kv-facts__row"><dt>{t.t('bn.signedOff')}</dt><dd>{nv.signedOffBy} · {nv.signedOffAt}{nv.dpoNote ? ` — ${nv.dpoNote}` : ''}</dd></div>
+            )}
+          </dl>
+
+          <h2>{t.t('bn.checklistHeading')}</h2>
+          <p className="kv-muted">{t.t('bn.checklistLead')}</p>
+          <ul className="kv-list">
+            {nv.checklist.map((l) => (
+              <li key={l.step}>
+                <span className={stepClass(l)}>{t.t(`bn.state.${stepState(l)}`)}</span> {t.t(`bn.step.${l.step}`)}
+                {l.evidenceRef && <> — <span className="kv-detail__muted">{l.evidenceRef}</span></>}
+                {typeof l.reachedCount === 'number' && <> · {t.t('bn.reached', { n: String(l.reachedCount) })}</>}
+                {l.channel && <> · {l.channel}</>}
+                {l.note && <><br /><span className="kv-detail__muted">{l.note}</span></>}
+                {l.performedBy && <><br /><span className="kv-detail__muted">{t.t('bn.by', { who: l.performedBy, when: l.performedAt ?? '' })}</span></>}
+              </li>
+            ))}
+          </ul>
+
+          <h3>{t.t('bn.recordHeading')}</h3>
+          {/* One act per call. A "mark all notified" control would recreate the two-typed-timestamps problem. */}
+          <form action={recordBreachStepAction} className="kv-card kv-action-card">
+            <input type="hidden" name="id" value={breach.id} />
+            <p className="kv-field__hint">{t.t('bn.recordHint')}</p>
+            <label className="kv-field__label" htmlFor="step">{t.t('bn.stepLabel')}</label>
+            <select id="step" name="step" className="kv-input" defaultValue="board_filing">
+              {NOTIFICATION_STEPS.map((x) => <option key={x} value={x}>{t.t(`bn.step.${x}`)}</option>)}
+            </select>
+            <label className="kv-field__label" htmlFor="outcome">{t.t('bn.outcomeLabel')}</label>
+            <select id="outcome" name="outcome" className="kv-input" defaultValue="done">
+              <option value="done">{t.t('bn.state.done')}</option>
+              <option value="not_applicable">{t.t('bn.state.notApplicable')}</option>
+            </select>
+            <label className="kv-field__label" htmlFor="evidenceRef">{t.t('bn.evidenceRef')}</label>
+            <input id="evidenceRef" name="evidenceRef" className="kv-input" maxLength={200} />
+            <p className="kv-field__hint">{t.t('bn.evidenceHint')}</p>
+            <label className="kv-field__label" htmlFor="reachedCount">{t.t('bn.reachedCount')}</label>
+            <input id="reachedCount" name="reachedCount" className="kv-input kv-input--sm" inputMode="numeric" />
+            <p className="kv-field__hint">{t.t('bn.reachedHint')}</p>
+            <label className="kv-field__label" htmlFor="channel">{t.t('bn.channel')}</label>
+            <input id="channel" name="channel" className="kv-input" maxLength={40} />
+            <label className="kv-field__label" htmlFor="stepNote">{t.t('compliance.note')}</label>
+            <input id="stepNote" name="note" className="kv-input" maxLength={2000} />
+            <button type="submit" className="kv-btn">{t.t('bn.record')}</button>
+          </form>
+
+          <h3>{t.t('bn.signOffHeading')}</h3>
+          {/* THE FIFTH TWO-PERSON CONTROL. Not offered to whoever declared the breach — they are the person most
+              motivated to see the row closed, usually at the worst hour of the night. */}
+          {signOffOfferable(nv.openedBy, viewerId, !!nv.signedOffBy) ? (
+            <form action={signOffBreachAction} className="kv-card kv-action-card">
+              <input type="hidden" name="id" value={breach.id} />
+              <p className="kv-field__hint">{t.t('bn.signOffHint')}</p>
+              <label className="kv-field__label" htmlFor="dpoNote">{t.t('bn.dpoNote')}</label>
+              <input id="dpoNote" name="note" className="kv-input" maxLength={2000} />
+              <p className="kv-field__hint">{t.t('bn.dpoNoteOptional')}</p>
+              <button type="submit" className="kv-btn">{t.t('bn.signOff')}</button>
+            </form>
+          ) : (
+            <p className="kv-notice">{t.t(nv.signedOffBy ? 'bn.alreadySigned' : 'bn.signOffBlocked')}</p>
+          )}
+        </>
+      )}
+
       <h2>{t.t('compliance.breachLifecycle')}</h2>
       {canContainBreach(st) || canNotifyBreach(st) || canCloseBreach(st) ? (
         <div className="kv-action-cards">
@@ -75,7 +187,14 @@ export default async function BreachDetailPage({ params, searchParams }: { param
               <button type="submit" className="kv-btn">{t.t('compliance.contain')}</button>
             </form>
           )}
-          {canNotifyBreach(st) && (
+          {/* THE NOTIFY CONTROL IS ABSENT UNTIL THE CHECKLIST IS COMPLETE AND SIGNED.
+              Before ADMIN-5c this form was the whole gate: two timestamps an operator typed and the register stated
+              that the Data Protection Board had been notified. A button that always 409s would teach an operator the
+              checklist is paperwork — which is the attitude that let the timestamps stand in for a statutory act. */}
+          {canNotifyBreach(st) && !notifyOK && (
+            <p className="kv-notice">{t.t(`bn.notifyBlocked.${blockedKey ?? 'unknown'}`)}</p>
+          )}
+          {canNotifyBreach(st) && notifyOK && (
             <form action={updateBreachAction} className="kv-card kv-action-card">
               <input type="hidden" name="id" value={breach.id} /><input type="hidden" name="action" value="notify" />
               <p className="kv-field__hint">{t.t('compliance.notifyHint')}</p>

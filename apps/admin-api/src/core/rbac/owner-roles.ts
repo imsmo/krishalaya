@@ -30,6 +30,11 @@ export const OwnerPermissions = {
   // read a named farmer's consent history.
   ComplianceConsentRead: 'compliance.consent.read',    // cross-tenant consent register + purposes (PII masked)
   ComplianceConsentWrite: 'compliance.consent.write',  // author + publish consent notices (checker-gated on publish)
+  // ADMIN-5c — W043's restricted state names it ("Needs compliance.breach (DPO + security)"). Separate again because a
+  // breach register is a SECURITY object as much as a privacy one: the people who need it are the on-call and the DPO,
+  // not whoever tunes retention policies. W043 also says declaring is never blocked — any staff member can raise one
+  // via the incident line — so this permission gates the CONSOLE, not the ability to report.
+  ComplianceBreach: 'compliance.breach',
   BillingManage: 'billing.manage',      // SaaS invoice transitions + dunning + MANUAL money adjustments (via wallet-service)
   BillingRead: 'billing.read',          // revenue dashboard + invoice/adjustment/dunning reads
   FlagsManage: 'flags.manage',          // create/enable/disable flags + percent rollout + targeting + KILL-SWITCH (Law 10)
@@ -82,7 +87,10 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // The DPO works rights requests and reads the registers — and deliberately does NOT get ComplianceManage, so they
   // cannot rewrite a retention policy to change the scope of an erasure they are about to sign off. That separation is
   // the whole reason this role exists rather than being folded into platform_compliance_ops.
-  platform_dpo:               [OwnerPermissions.ComplianceDsr, OwnerPermissions.ComplianceRead, OwnerPermissions.ComplianceConsentRead],
+  platform_dpo:               [OwnerPermissions.ComplianceDsr, OwnerPermissions.ComplianceRead, OwnerPermissions.ComplianceConsentRead, OwnerPermissions.ComplianceBreach],
+  // Security on-call works the breach register and reads the posture page, and holds nothing else — they have no reason
+  // to open a named farmer's rights request at 3am.
+  platform_security_oncall:   [OwnerPermissions.ComplianceBreach, OwnerPermissions.ComplianceRead],
   // The notice AUTHOR reads the registry and writes notices, and deliberately holds no rights-request permission: the
   // person who writes the words has no business reading which named farmers accepted them.
   platform_consent_author:    [OwnerPermissions.ComplianceConsentRead, OwnerPermissions.ComplianceConsentWrite],

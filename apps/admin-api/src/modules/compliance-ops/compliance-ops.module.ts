@@ -11,13 +11,14 @@ import { TenantExportApprovalsService } from './services/tenant-export-approvals
 import { AuditLogExplorerService } from './services/audit-log-explorer.service';
 import { RetentionPolicyAdminService } from './services/retention-policy-admin.service';
 import { BreachResponseConsoleService } from './services/breach-response-console.service';
+import { CompliancePostureService } from './services/compliance-posture.service';
 
 @Module({
   controllers: [ComplianceOpsController],
   providers: [
     ComplianceRepository,
     DataSubjectRequestsQueueService, TenantExportApprovalsService, AuditLogExplorerService,
-    RetentionPolicyAdminService, BreachResponseConsoleService,
+    RetentionPolicyAdminService, BreachResponseConsoleService, CompliancePostureService,
   ],
 })
 export class ComplianceOpsModule {}
