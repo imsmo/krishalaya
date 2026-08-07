@@ -14,6 +14,10 @@ import { StepUpReauthGuard } from './auth/step-up-reauth.guard';
 import { OwnerPermissionsGuard } from './rbac/owner-roles';
 import { IpAllowlistMiddleware } from './auth/ip-allowlist.middleware';
 import { AdminObjectStore } from './media/admin-object-store';
+// PC-56 ADMIN-9: the operator registry lives in core because AdminAuthGuard reads it on EVERY request. One repository
+// for these four tables rather than one in core and one in the module — two mappers over one table is how the console
+// starts disagreeing with the guard about who is suspended.
+import { OperatorRegistryRepository } from './auth/operator-registry.repository';
 
 @Global()
 @Module({
@@ -23,10 +27,10 @@ import { AdminObjectStore } from './media/admin-object-store';
     // fail ("can't resolve dependencies of the AdminConfig (?)"). A factory hands it
     // process.env explicitly, mirroring apps/api/src/core/config/config.module.ts.
     { provide: AdminConfig, useFactory: () => new AdminConfig(process.env) },
-    AdminPool, AdminAuditWriter, AdminObjectStore, IpAllowlistMiddleware,
+    AdminPool, AdminAuditWriter, AdminObjectStore, IpAllowlistMiddleware, OperatorRegistryRepository,
     AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard,
     { provide: APP_INTERCEPTOR, useClass: AdminAuditInterceptor },
   ],
-  exports: [AdminObjectStore, AdminConfig, AdminPool, AdminAuditWriter, IpAllowlistMiddleware, AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard],
+  exports: [AdminObjectStore, AdminConfig, AdminPool, AdminAuditWriter, OperatorRegistryRepository, IpAllowlistMiddleware, AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard],
 })
 export class AdminCoreModule {}

@@ -173,6 +173,20 @@ export const OwnerPermissions = {
   RiskRead: 'risk.read',               // ONE user's risk profile: score, band, explainable factors, masked identity
   RiskAct: 'risk.act',                 // band changes + platform blocklist entries (both require a second operator)
   RiskRules: 'risk.rules',             // propose/approve risk-weight changes — population-wide, dry-run gated
+  /* ---- PC-56 ADMIN-9 · THE REALM'S OWN OPERATORS. W104 names `staff.manage`; W105 names `rbac.manage`. NEITHER
+     EXISTED IN ANY REALM, which is consistent: there was no staff registry to manage and no way to change a role
+     except a deploy. ---- */
+  StaffRead: 'staff.read',             // the operator roster, one operator, their sessions and step-up history
+  // Suspend an operator, restrict a permission (deny only), request a reinstatement, revoke somebody's session.
+  StaffManage: 'staff.manage',
+  // **A SEPARATE GRANT FOR THE CHECKER, and the separation is the control**: reinstatement needs a second person, and a
+  // second person holding the SAME permission as the first is a second pair of hands rather than a second pair of eyes.
+  // Whoever can suspend cannot, by permission alone, readmit.
+  StaffReinstate: 'staff.reinstate',
+  // The role matrix is a READ of the compiled catalogue (owner-roles.ts is this file). There is no `rbac.manage`
+  // counterpart and there must not be: granting a platform permission is a code review and a deploy, and a database
+  // path that could do it would make this catalogue advisory (Law 5, Law 11).
+  RbacRead: 'rbac.read',
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
@@ -180,6 +194,15 @@ export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermis
 // granted to a tenant user (Law 11); the tenant DB's role_permissions has no row for any of these codes.
 const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.freeze({
   super_admin:            ['*'],
+  /* ---- PC-56 ADMIN-9 ---- */
+  // The desk that runs the realm's own access: suspend, restrict, revoke a session, request a reinstatement. It
+  // deliberately does NOT hold StaffReinstate — the desk that removes access is not the desk that restores it.
+  platform_staff_ops:      [OwnerPermissions.StaffManage, OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
+  // The checker. Holds reinstatement and the reads, and cannot suspend — so the two halves of the two-person rule sit
+  // in two different roles rather than relying on two people who could each do both.
+  platform_staff_checker:  [OwnerPermissions.StaffReinstate, OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
+  // Read-only: the roster, the matrix, the step-up history. What an auditor asking "who could have done this" needs.
+  platform_staff_auditor:  [OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
   platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead, OwnerPermissions.AiReview],
   platform_ai_auditor:    [OwnerPermissions.AiModelRead],
   // ADMIN-7. The reviewer who works the queue and cannot change a model — the commonest shape of request on this plane
@@ -270,6 +293,31 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */
+/* ------------------------------------------------------------------------------------------------ */
+/* PC-56 ADMIN-9 · READING the catalogue, so W105's matrix shows the thing that actually enforces     */
+/* ------------------------------------------------------------------------------------------------ */
+//
+// W105 says it plainly in its own error state: "Enforcement reads from the compiled policy, not this view." That is
+// true, and it is the reason the role editor can be built HONESTLY as a read and cannot be built at all as a write:
+// this object IS the compiled policy. A console that appeared to grant a permission would be editing a frozen constant
+// in a running process — the change would survive until the next request and nothing would have been granted.
+//
+// So the catalogue is exposed for projection. Deliberately a COPY, not the object: a caller that could mutate the map
+// it was handed would be a caller that can escalate, and `Object.freeze` on the outer record does not freeze the arrays.
+export interface OwnerRoleGrant { role: string; permissions: readonly string[]; isGodMode: boolean }
+
+export function ownerRoleCatalogue(): OwnerRoleGrant[] {
+  return Object.entries(OWNER_ROLE_GRANTS)
+    .map(([role, perms]) => ({ role, permissions: [...perms], isGodMode: perms.includes('*') }))
+    .sort((a, b) => a.role.localeCompare(b.role));
+}
+
+/** Every permission code the platform realm knows. The matrix's row set, and the allow-list a restriction is checked
+ *  against — a restriction naming a code that does not exist would deny nothing while looking like a control. */
+export function ownerPermissionCodes(): string[] {
+  return [...new Set(Object.values(OwnerPermissions) as string[])].sort();
+}
+
 export function resolveOwnerPermissions(roles: string[]): Set<string> {
   const perms = new Set<string>();
   for (const r of roles) for (const p of OWNER_ROLE_GRANTS[r] ?? []) perms.add(p);

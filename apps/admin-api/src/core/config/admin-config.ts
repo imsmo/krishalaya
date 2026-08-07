@@ -14,6 +14,10 @@ export interface AdminEnv {
   ADMIN_IP_ALLOWLIST: string[];        // CIDR-free exact IPs/prefixes; empty = allow-all (non-prod only)
   ADMIN_REQUIRE_HARDWARE_KEY: boolean; // require amr=hwk (FIDO2 at login)
   ADMIN_STEP_UP_MAX_AGE_SEC: number;   // sensitive ops require a re-auth this recent
+  // PC-56 ADMIN-9: the operator registry — AdminAuthGuard checks the realm's own record of the operator (suspension,
+  // session revocation, dormancy, deny-only restrictions). DEFAULT ON: a security control that ships off is a security
+  // control nobody turns on. The switch exists so a defect in a front-door read is recoverable without a deploy.
+  ADMIN_OPERATOR_REGISTRY_ENABLED: boolean;
   DATABASE_POOL_MAX: number;
   WALLET_GRPC_ADDR: string;            // wallet-service gRPC endpoint — the ONLY money writer (Law 2/9)
   WALLET_S2S_TOKEN: string;            // service-to-service bearer for the wallet call (never logged)
@@ -55,6 +59,7 @@ export class AdminConfig {
       ADMIN_IP_ALLOWLIST: list(raw.ADMIN_IP_ALLOWLIST),
       ADMIN_REQUIRE_HARDWARE_KEY: bool(raw.ADMIN_REQUIRE_HARDWARE_KEY, raw.NODE_ENV === 'production'),
       ADMIN_STEP_UP_MAX_AGE_SEC: num(raw.ADMIN_STEP_UP_MAX_AGE_SEC, 900),   // 15 min
+      ADMIN_OPERATOR_REGISTRY_ENABLED: bool(raw.ADMIN_OPERATOR_REGISTRY_ENABLED, true),
       MEDIA_BUCKET: String(raw.MEDIA_BUCKET ?? ''),
       MEDIA_REGION: String(raw.MEDIA_REGION ?? 'ap-south-1'),
       MEDIA_ACCESS_KEY_ID: String(raw.MEDIA_ACCESS_KEY_ID ?? ''),
@@ -83,6 +88,9 @@ export class AdminConfig {
     if (weak(this.env.ADMIN_JWT_SECRET)) problems.push('ADMIN_JWT_SECRET (unique random >=32 chars)');
     if (this.env.ADMIN_IP_ALLOWLIST.length === 0) problems.push('ADMIN_IP_ALLOWLIST must be set (god-mode is IP-restricted)');
     if (!this.env.ADMIN_REQUIRE_HARDWARE_KEY) problems.push('ADMIN_REQUIRE_HARDWARE_KEY must be true in production');
+    // Running production with the registry off means no suspension, no session revocation and no dormancy limit — the
+    // pre-0118 realm, where a dismissed operator keeps god mode until their token expires.
+    if (!this.env.ADMIN_OPERATOR_REGISTRY_ENABLED) problems.push('ADMIN_OPERATOR_REGISTRY_ENABLED must be true in production (operator suspension + session revocation depend on it)');
     if (!this.env.DATABASE_ADMIN_URL) problems.push('DATABASE_ADMIN_URL must be set');
     // If impersonation is enabled in prod, its dedicated signing key must be strong (act-as is the riskiest control).
     if (this.env.IMPERSONATION_ENABLED && weak(this.env.IMPERSONATION_TOKEN_SECRET)) problems.push('IMPERSONATION_TOKEN_SECRET (unique random >=32 chars) is required when IMPERSONATION_ENABLED');

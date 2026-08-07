@@ -12,6 +12,9 @@ export interface AdminPrincipal {
   amr: string[];
   authTimeSec: number;     // epoch seconds of the last strong re-auth (step-up checks freshness)
   sessionId: string;
+  /** PC-56 ADMIN-9: the token's own `exp`, carried through so the session registry can tell "revoked by a human" apart
+   *  from "expired on its own" without inventing either. */
+  expSec: number;
 }
 export class AdminTokenError extends Error { constructor(msg: string) { super(msg); this.name = 'AdminTokenError'; } }
 
@@ -41,5 +44,6 @@ export function verifyAdminToken(token: string, config: AdminConfig, nowSec = Ma
     amr: Array.isArray(payload.amr) ? payload.amr.map(String) : [],
     authTimeSec: typeof payload.auth_time === 'number' ? payload.auth_time : 0,
     sessionId: String(payload.sid ?? ''),
+    expSec: payload.exp,
   };
 }

@@ -72,17 +72,30 @@ describe('owner roles', () => {
 });
 
 // ---------- elevation guards ----------
-const ctxWith = (admin: any) => ({ switchToHttp: () => ({ getRequest: () => ({ admin }) }) } as any);
+const ctxWith = (admin: any) => ({ switchToHttp: () => ({ getRequest: () => ({ admin, method: 'POST', url: '/v1/x' }) }) } as any);
+// PC-56 ADMIN-9: both guards now RECORD their outcome (W439's step-up log had no source before 0118). The registry is a
+// stub here and the assertions below stay exactly as they were — the recording must never change the decision, and this
+// is the cheapest place to prove it: same inputs, same verdicts, with a logger attached.
+const registryStub = () => ({ recordStepUp: jest.fn().mockResolvedValue(undefined) }) as any;
 describe('elevation guards', () => {
   it('hardware-key guard requires amr=hwk when enforced', () => {
-    const g = new HardwareKeyGuard(cfg);
-    expect(g.canActivate(ctxWith({ amr: ['pwd', 'hwk'] }))).toBe(true);
-    expect(() => g.canActivate(ctxWith({ amr: ['pwd'] }))).toThrow(/hardware-key/);
+    const reg = registryStub();
+    const g = new HardwareKeyGuard(cfg, reg);
+    expect(g.canActivate(ctxWith({ amr: ['pwd', 'hwk'], userId: 'a1', sessionId: 's1', ip: null }))).toBe(true);
+    expect(() => g.canActivate(ctxWith({ amr: ['pwd'], userId: 'a1', sessionId: 's1', ip: null }))).toThrow(/hardware-key/);
+    // **THE REFUSAL IS THE ROW THAT MATTERS.** A log of successful elevations answers "did I re-authenticate"; only the
+    // refusals answer "did somebody try to reach a gated action without the key".
+    expect(reg.recordStepUp).toHaveBeenCalledTimes(2);
+    expect(reg.recordStepUp.mock.calls[1][0]).toMatchObject({ gate: 'hardware_key', outcome: 'refused' });
   });
   it('step-up guard requires a recent auth_time', () => {
-    const g = new StepUpReauthGuard(cfg);
-    expect(g.canActivate(ctxWith({ authTimeSec: Math.floor(Date.now() / 1000) }))).toBe(true);
-    expect(() => g.canActivate(ctxWith({ authTimeSec: Math.floor(Date.now() / 1000) - 99999 }))).toThrow(/step-up/);
+    const reg = registryStub();
+    const g = new StepUpReauthGuard(cfg, reg);
+    expect(g.canActivate(ctxWith({ authTimeSec: Math.floor(Date.now() / 1000), userId: 'a1', sessionId: 's1', ip: null }))).toBe(true);
+    expect(() => g.canActivate(ctxWith({ authTimeSec: Math.floor(Date.now() / 1000) - 99999, userId: 'a1', sessionId: 's1', ip: null }))).toThrow(/step-up/);
+    // The refusal carries the age that caused it: "your last strong re-auth was 99999s ago; the limit is 900s" is
+    // actionable where "step-up required" leaves an operator guessing which of three things is wrong.
+    expect(reg.recordStepUp.mock.calls[1][0].detail).toMatch(/the limit is/);
   });
 });
 
