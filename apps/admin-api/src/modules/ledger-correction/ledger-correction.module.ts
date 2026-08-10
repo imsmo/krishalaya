@@ -5,11 +5,16 @@
 // module would mean sharing a permission surface, and `recon.manage` — held by anybody who works the recon board —
 // would become the permission that can post a correction against a farmer's wallet.
 import { Module } from '@nestjs/common';
+// Money moves ONLY through the wallet-service (Law 2/9). WalletAdminModule binds the WALLET_ADMIN seam and is
+// imported explicitly here — not inherited from billing-ops, whose permission surface this module deliberately
+// does not share (see the header above).
+import { WalletAdminModule } from '../../core/wallet/wallet-admin.module';
 import { LedgerCorrectionController } from './ledger-correction.controller';
 import { CorrectionRepository } from './repositories/correction.repository';
 import { CorrectionService } from './services/correction.service';
 
 @Module({
+  imports: [WalletAdminModule],
   controllers: [LedgerCorrectionController],
   providers: [CorrectionRepository, CorrectionService],
 })

@@ -250,6 +250,12 @@ export function overrideRateClass(r: number | null | undefined): string {
 
 /** Is the requested window inside the partition limit? Mirrors the server so the operator is told in the form rather
  *  than by a 409, and the server still refuses — a client-side rule is a courtesy, not a constraint. */
+// The decisions log (`ai_inferences`) is partitioned monthly, so an unbounded range scans every partition. 31 days is
+// the refusal boundary, not a suggestion — see the header of app/ai-models/decisions/page.tsx. It lives here rather
+// than in the page because a Next.js App Router page module may only export Next's own reserved fields (`default`,
+// `metadata`/`generateMetadata`, `dynamic`, …); any other export fails the build's Page type check.
+export const MAX_WINDOW_DAYS = 31;
+
 export function windowTooWide(from: string | undefined, to: string | undefined, maxDays: number): boolean {
   if (!from || !to) return false;
   const a = Date.parse(from); const b = Date.parse(to);

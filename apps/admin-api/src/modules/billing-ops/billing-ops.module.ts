@@ -4,9 +4,7 @@
 // here through the WALLET_ADMIN token to the gRPC client (apps/wallet-service is the sole money writer). Mounts
 // under AdminCoreModule (auth/RBAC/FIDO2/step-up/audit are @Global).
 import { Module } from '@nestjs/common';
-import { AdminConfig } from '../../core/config/admin-config';
-import { WALLET_ADMIN } from '../../core/wallet/wallet-admin.port';
-import { WalletGrpcAdminClient } from '../../core/wallet/wallet-grpc.client';
+import { WalletAdminModule } from '../../core/wallet/wallet-admin.module';
 import { BillingOpsController } from './billing-ops.controller';
 import { BillingRepository } from './repositories/billing.repository';
 import { SaasInvoicesAdminService } from './services/saas-invoices-admin.service';
@@ -26,14 +24,15 @@ import { MoneyStreamService } from './services/money-stream.service';
 import { ScheduledReportService } from './services/scheduled-report.service';
 
 @Module({
+  // the ONLY money writer (Law 2/9): the wallet-service gRPC client behind the WalletAdminPort seam, bound once in
+  // WalletAdminModule and shared with the ledger-correction plane (which must not depend on this module).
+  imports: [WalletAdminModule],
   controllers: [BillingOpsController],
   providers: [
     BillingRepository, SaasInvoicesAdminService, DunningService, ManualAdjustmentService, RevenueDashboardService, SubscriptionViewService,
     InvoicePaymentsService, DunningPolicyService, InvoicePdfService, SubscriptionWriteService,
     BillingExportService, InvoiceBulkService, RevenueSeriesService, RenewalVisibilityService,
     MoneyStreamService, ScheduledReportService,
-    // the ONLY money writer (Law 2/9): the wallet-service gRPC client behind the WalletAdminPort seam.
-    { provide: WALLET_ADMIN, useFactory: (config: AdminConfig) => new WalletGrpcAdminClient(config), inject: [AdminConfig] },
   ],
 })
 export class BillingOpsModule {}

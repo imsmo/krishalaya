@@ -19,12 +19,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import {
-  formatRate, outputSummary, overriddenClass, windowTooWide,
+  MAX_WINDOW_DAYS, formatRate, outputSummary, overriddenClass, windowTooWide,
 } from '../../../features/ai-governance/ai-governance';
 
 export const dynamic = 'force-dynamic';
-
-export const MAX_WINDOW_DAYS = 31;
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ai.decisions.title'), robots: { index: false, follow: false } };
