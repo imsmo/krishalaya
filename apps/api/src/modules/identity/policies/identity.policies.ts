@@ -11,4 +11,8 @@ export const IdentityPermissions = {
    *  implied by the roster read**: seeing that a member EXISTS and seeing how to telephone them are different acts, and
    *  the screen's restricted state says so ("viewing needs member-desk scope; PII stays masked"). */
   RevealPii: 'member.pii.reveal',
+  /** PC-56 TENANT-1b-3 · W155: "Needs `member.view360` — the deepest per-person view in your console, so the narrowest
+   *  grant." One page that assembles everything an organisation knows about one person: land, twelve months of realised
+   *  income, scheme benefits, every season. It is not a bigger `report.view`; it is a different decision. */
+  View360: 'member.view360',
 } as const;

@@ -69,4 +69,5 @@ export type { Requirement, RequirementResponse } from './resources/requirements'
 // renders the field picker from it, so the list cannot drift from the server's closed enum).
 export { REVEALABLE_MEMBER_FIELDS, kycSeverity, isFullyVerified, rosterKycLabel, MIN_SUSPENSION_REASON } from './resources/members';
 export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail, MemberRoleDetail, MemberGlance,
-  MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel, SuspensionRecord, SuspensionResult } from './resources/members';
+  MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel, SuspensionRecord, SuspensionResult,
+  Farmer360, Farmer360Income, Farmer360Season, Farmer360Scheme, Farmer360CreditEvidence, LandByUnit } from './resources/members';

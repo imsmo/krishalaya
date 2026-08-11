@@ -188,6 +188,74 @@ export interface SuspensionResult {
 /** Same floor as a PII reveal. Below twenty characters people type "fraud" and move on. */
 export const MIN_SUSPENSION_REASON = 20;
 
+/* ------------------------------------------------------------------------------------------------------------ */
+/* THE 360 (W155, PC-56 TENANT-1b-3)                                                                              */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+/** One unit's worth of land. **NEVER SUMMED ACROSS UNITS** — a hectare is 2.47 acres and `SUM(area_value)` over a mixed
+ *  holding returns a number that is a quantity in no unit at all. */
+export interface LandByUnit { unit: string; area: string; parcels: number; verifiedParcels: number }
+
+export interface Farmer360Income {
+  cropRealizedMinor: string;
+  cropPayoutCount: number;
+  /** null when this tenant runs no dairy for the member — not the same as zero litres of income. */
+  dairyRealizedMinor: string | null;
+  dairyBillCount: number;
+  /** null when dairy is unknown: a total that treats unknown as zero is a wrong total. */
+  totalRealizedMinor: string | null;
+}
+
+export interface Farmer360Season {
+  season: string;
+  year: number;
+  productName: string | null;
+  parcelArea: string;
+  parcelAreaUnit: string;
+  sownOn: string | null;
+  expectedHarvest: string | null;
+  expectedYield: string | null;
+  /** **null means NOT RECORDED, never a failed harvest and never the expected figure.** W155: "Yields are his records +
+   *  FPO weighbridge — never estimated without saying so." */
+  actualYield: string | null;
+  status: string;
+}
+
+export interface Farmer360Scheme {
+  schemeCode: string;
+  schemeName: string;
+  creditedMinor: string;
+  transfers: number;
+  lastCreditedOn: string | null;
+}
+
+export interface Farmer360CreditEvidence {
+  settledPayouts12mo: number;
+  /** The figure a KCC desk actually asks for: regularity, not total. */
+  monthsWithIncome12mo: number;
+  landParcelsOnFile: number;
+  landParcelsVerified: number;
+  allRolesKycVerified: boolean;
+  /** **ALWAYS null.** No lender rule exists on this platform. A farmer told they are "KCC-ready" who loses a day's wages
+   *  to a bank that refuses them has paid for a number we invented. The evidence above is what staff hand a banker. */
+  readiness: null;
+}
+
+export interface Farmer360 {
+  userId: string;
+  fullName: string | null;
+  income: Farmer360Income;
+  land: { byUnit: LandByUnit[]; irrigation: string[]; parcelsWithRecord: number };
+  schemesYtd: Farmer360Scheme[];
+  schemesYtdTotalMinor: string;
+  seasons: Farmer360Season[];
+  credit: Farmer360CreditEvidence;
+  /** **ALWAYS empty.** No rules engine, and no record of stored unsold stock for the suggestions to reason over. */
+  advisory: never[];
+  /** The timestamp that was written to the audit log, so the console prints the same one it recorded. */
+  viewedAt: string;
+}
+
 export class MembersResource {
   constructor(private readonly http: HttpClient) {}
 
@@ -250,6 +318,17 @@ export class MembersResource {
   async reinstate(userId: string, reason: string): Promise<SuspensionResult> {
     return (await this.http.request<SuspensionResult>(
       'DELETE', `members/roster/${encodeURIComponent(userId)}/suspension`, { body: { reason } })).data;
+  }
+
+  /**
+   * The 360 (W155). Needs `member.view360` — the narrowest grant in the tenant console.
+   *
+   * **OPENING THIS IS RECORDED BEFORE THE DATA COMES BACK.** A page that assembles everything an organisation knows about
+   * one person — twelve months of income, their land, their scheme benefits, every season they have planted — is the
+   * deepest read in the console, and a view nobody can prove happened is surveillance with better manners.
+   */
+  async view360(userId: string, signal?: AbortSignal): Promise<Farmer360> {
+    return (await this.http.request<Farmer360>('GET', `members/roster/${encodeURIComponent(userId)}/360`, { signal })).data;
   }
 
   /** The live episode (or null) plus the history. Needs `report.view`. */

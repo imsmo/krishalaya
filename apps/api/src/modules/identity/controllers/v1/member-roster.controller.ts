@@ -18,6 +18,7 @@ import { NotFoundError } from '../../../../shared/errors/app-error';
 import { IdentityPermissions } from '../../policies/identity.policies';
 import { QueryRosterSchema, QueryRosterDto, RevealPiiSchema, RevealPiiDto, SuspendMemberSchema, SuspendMemberDto } from '../../dto/member-roster.dto';
 import { MemberSuspensionService } from '../../services/member-suspension.service';
+import { Farmer360Service } from '../../services/farmer-360.service';
 
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
 const reqIdOf = (req: Request) => (req.headers['x-request-id'] as string) || null;
@@ -30,6 +31,7 @@ export class MemberRosterController {
     private readonly detail: MemberDetailReadModel,
     private readonly pii: MemberPiiService,
     private readonly suspensions: MemberSuspensionService,
+    private readonly farmer360: Farmer360Service,
   ) {}
 
   /** The roster. Every phone on it is masked in the read model, so this response cannot leak one. */
@@ -69,6 +71,24 @@ export class MemberRosterController {
   async member(@CurrentContext() ctx: RequestContext, @Param('userId') userId: string) {
     const data = await this.detail.get(ctx.tenantId, userId);
     if (!data) throw new NotFoundError('member not found in this organisation');
+    return { data };
+  }
+
+  /**
+   * THE 360 (W155). Assembled at query time, no new tables, and **the view is recorded before the data is returned** —
+   * `member.view360` is the narrowest grant in this console because this is the deepest per-person read in it.
+   *
+   * A GET that writes an audit row, which is the one shape this programme otherwise refuses (a proxy caches a GET, a
+   * browser prefetches one). It is right here and the reveal was right to be a POST, for opposite reasons: a reveal
+   * CHANGES what the caller knows and must be deliberate, while opening a profile IS the read — making it a POST would
+   * break the back button on the page a field officer opens forty times a day. The route is `Cache-Control: no-store` at
+   * the app level and the audit row carries the request id, so a duplicated prefetch is visible rather than invisible.
+   */
+  @Get(':userId/360')
+  @RequirePermissions(IdentityPermissions.View360)
+  async view360(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('userId') userId: string) {
+    const data = await this.farmer360.view(
+      ctx.tenantId, { userId: ctx.userId!, ip: ipOf(req), requestId: reqIdOf(req) }, userId);
     return { data };
   }
 
