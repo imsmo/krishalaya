@@ -24,6 +24,19 @@ export class TenancyResource {
     return (await this.http.request<Subscription>('POST', 'subscriptions', { idempotencyKey, body: input })).data;
   }
   /** Change the plan on an existing subscription (server prices it; the app never computes money — Law 2/11). */
+  /**
+   * Create an organisation from a verified phone — W113's door.
+   *
+   * **PUBLIC: no session is needed, and none could exist.** `verifyOtp` requires a tenant id, so somebody who belongs to no
+   * organisation cannot authenticate; this route verifies the phone itself and returns the first session.
+   *
+   * `resumed: true` means this phone already administers an organisation and was returned to it rather than given a second
+   * one (W113: "one active storefront per verified phone number"). Requires an Idempotency-Key.
+   */
+  async signUp(input: TenantSignupInput, idempotencyKey: string): Promise<TenantSignupResult> {
+    return (await this.http.request<TenantSignupResult>('POST', 'tenant-signup', { body: input, idempotencyKey })).data;
+  }
+
   /** W119's compare table, the current plan, live usage, and any scheduled change. Read-only. */
   async comparePlans(signal?: AbortSignal): Promise<PlanCompareView> {
     return (await this.http.request<PlanCompareView>('GET', 'subscriptions/plans/compare', { signal })).data;
@@ -273,4 +286,28 @@ export interface PlanChangeRecord {
   limitBreaches: unknown;
   reason: string | null;
   createdAt: string;
+}
+
+/** W113's form. **No plan, price or status is sendable** — a public route that could set those could provision terms nobody agreed. */
+export interface TenantSignupInput {
+  phone: string;
+  code: string;
+  fullName: string;
+  orgName: string;
+  /** A `lookup_values` id from the `tenant_type` registry — the list comes from the platform, not from the app. */
+  orgTypeId: string;
+  lang?: 'en' | 'hi' | 'gu';
+  countryCode?: string;
+  device?: { fingerprint: string; platform?: 'android' | 'ios' | 'web'; model?: string; appVersion?: string };
+}
+
+export interface TenantSignupResult {
+  tenantId: string;
+  slug: string;
+  displayName: string;
+  /** True when the phone already administered an organisation and was resumed into it. Nothing was created. */
+  resumed: boolean;
+  /** null on a resume — the existing organisation's trial, if any, is its own business. */
+  trialEndsOn: string | null;
+  tokens: { accessToken: string; refreshToken: string; expiresInSec: number };
 }

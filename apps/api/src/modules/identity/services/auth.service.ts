@@ -31,6 +31,9 @@ import { DeviceRepository } from '../repositories/device.repository';
 import { LoginEventRepository } from '../repositories/login-event.repository';
 import { VerifyOtpDto, RefreshDto } from '../dto/auth.dto';
 
+/** What `openSessionIn` accepts for a device — the same shape `DeviceSchema` validates on the login route. */
+export interface DeviceInput { fingerprint: string; platform?: string; model?: string; osVersion?: string; appVersion?: string; pushToken?: string }
+
 export interface AuthTokens { accessToken: string; refreshToken: string; expiresInSec: number; user: ReturnType<User['toPublic']>; }
 
 @Injectable()
@@ -98,12 +101,8 @@ export class AuthService {
         user.touchActive();
         await this.users.update(tx, user);
       }
-      const deviceId = dto.device ? await this.devices.upsert(tx, user.id, dto.device) : null;
-      const sessionId = uuidv7();
-      const r = this.refresh.issue();
-      const session = Session.create({ id: sessionId, userId: user.id, deviceId, refreshTokenHash: r.hash, ip, expiresAt: r.expiresAt });
-      await this.sessions.insert(tx, session);
-      await this.loginEvents.record(tx, { userId: user.id, phone, succeeded: true, method: 'otp', ip, deviceFingerprint: dto.device?.fingerprint ?? null });
+      const { sessionId, refreshToken } = await this.openSessionIn(tx, user.id, { ip, device: dto.device, phone, method: 'otp' });
+      const r = { token: refreshToken };
       await this.outbox.write(tx, { tenantId: dto.tenantId, aggregateType: 'user', aggregateId: user.id, eventType: 'identity.logged_in', payload: { v: 1, userId: user.id, sessionId } });
       return { user, sessionId, refreshToken: r.token };
     }, { userId: undefined }));
@@ -153,6 +152,41 @@ export class AuthService {
   }
 
   // --- helpers ---
+  /**
+   * Open a session for a user INSIDE the caller's transaction, and record the login.
+   *
+   * **EXTRACTED FROM `verifyOtp`'s TAIL IN PC-56 TENANT-1d-3a, NOT WRITTEN A SECOND TIME.** Self-serve signup needs the
+   * same thing login needs — a device row, a session, a rotated refresh token, a login event — and the one place in this
+   * platform that mints credentials must stay one place. A second copy is how a hardening fix lands on one path only.
+   */
+  async openSessionIn(
+    tx: TxContext,
+    userId: string,
+    ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; method: 'otp' | 'signup' },
+  ): Promise<{ sessionId: string; refreshToken: string }> {
+    const deviceId = ctx.device ? await this.devices.upsert(tx, userId, ctx.device) : null;
+    const sessionId = uuidv7();
+    const r = this.refresh.issue();
+    const session = Session.create({ id: sessionId, userId, deviceId, refreshTokenHash: r.hash, ip: ctx.ip, expiresAt: r.expiresAt });
+    await this.sessions.insert(tx, session);
+    // A signup is a login too, and it belongs in the same ledger: an operator investigating an account takeover must see
+    // the first session as well as every one after it.
+    await this.loginEvents.record(tx, {
+      userId, phone: ctx.phone ?? null, succeeded: true, method: ctx.method === 'signup' ? 'otp' : ctx.method,
+      ip: ctx.ip, deviceFingerprint: ctx.device?.fingerprint ?? null,
+    });
+    return { sessionId, refreshToken: r.token };
+  }
+
+  /**
+   * Open a session in its OWN transaction and mint tokens for it — the entry point self-serve signup uses once the tenant
+   * exists. An access token carries the tenant id, so it cannot be minted before there is a tenant to carry.
+   */
+  async openSessionFor(user: User, tenantId: string, ip: string | null, device?: DeviceInput): Promise<AuthTokens> {
+    const out = await this.uow.run(tenantId, (tx) => this.openSessionIn(tx, user.id, { ip, device, method: 'signup' }));
+    return this.mint(user, tenantId, out.sessionId, out.refreshToken);
+  }
+
   private async mint(user: User, tenantId: string, sessionId: string, refreshToken: string): Promise<AuthTokens> {
     const access = await this.roleCache.effectiveAccess(user.id, tenantId);
     const accessToken = this.tokens.mintAccessToken({ sub: user.id, tid: tenantId, sid: sessionId, roles: access.roles, perms: access.permissions });

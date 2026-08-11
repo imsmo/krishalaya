@@ -75,7 +75,8 @@ export type { BulkImportJob, BulkImportStatus, BulkValidationReport, BulkValidat
 // PC-56 TENANT-1c · the console home.
 export type { TenantDashboard, DashboardTiles, DashboardAction, DashboardActionKind, TenantPlanHealth,
   GoLiveState, GoLiveStep, GoLiveStepKey,
-  ComparePlan, PlanCompareView, PlanLimitBreach, PlanChangePreview, PlanChangeRecord } from './resources/tenancy';
+  ComparePlan, PlanCompareView, PlanLimitBreach, PlanChangePreview, PlanChangeRecord,
+  TenantSignupInput, TenantSignupResult } from './resources/tenancy';
 export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail, MemberRoleDetail, MemberGlance,
   MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel, SuspensionRecord, SuspensionResult,
   Farmer360, Farmer360Income, Farmer360Season, Farmer360Scheme, Farmer360CreditEvidence, LandByUnit } from './resources/members';

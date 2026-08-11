@@ -99,6 +99,9 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
   ],
   // public surface for other modules (Law 11): services + cross-module event handlers + jobs
   exports: [
+    // PC-56 TENANT-1d-3a: TenancyModule's self-serve signup opens the first session through AuthService rather than
+    // minting tokens a second way.
+    AuthService, UserRepository,
     UserService, ConsentService, UserTenantRoleService, RoleService, PermissionService, KycDocumentService,
     OrderCompletedHandler, DisputeResolvedHandler,
     KycExpiryRemindersJob, DpdpErasureCoolingJob, RiskScoreRecomputeJob,

@@ -15,6 +15,10 @@ import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { PlansController } from './controllers/v1/plans.controller';
 import { TenantApplicationsController } from './controllers/v1/tenant-applications.controller';
+import { TenantSignupController } from './controllers/v1/tenant-signup.controller';
+import { TenantSignupService } from './services/tenant-signup.service';
+import { TenantSignupRepository } from './repositories/tenant-signup.repository';
+import { IdentityModule } from '../identity/identity.module';
 import { TenantApplicationService } from './services/tenant-application.service';
 import { TenantApplicationRepository } from './repositories/tenant-application.repository';
 import { SubscriptionsController } from './controllers/v1/subscriptions.controller';
@@ -48,13 +52,18 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
 @Module({
-  controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController],
+  // IdentityModule for AuthService only: self-serve signup must open the first session through the SAME path a login
+  // uses (one place mints credentials). IdentityModule imports nothing, so there is no cycle.
+  imports: [IdentityModule],
+  controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
     TenantDashboardReadModel, GoLiveReadModel,
     // PC-56 TENANT-1d-2: the plane 0126 and domain/proration.ts were built for, and which nothing called.
     PlanChangeService, PlanChangeRepository, PlanCompareReadModel, BillingTaxRate,
+    // PC-56 TENANT-1d-3a: the door W113 promises and the platform did not have.
+    TenantSignupService, TenantSignupRepository,
     TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository,
     SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, TenantApplicationService, TenantApplicationRepository],
   exports: [PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
