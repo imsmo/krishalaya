@@ -24,6 +24,23 @@ export class IllegalNotificationTransitionError extends DomainError {
 export class CommForbiddenError extends DomainError {
   constructor(detail = 'forbidden') { super('COMM_FORBIDDEN', detail, 403, {}); }
 }
+/**
+ * **SECURITY COPY IS PLATFORM-CONTROLLED (PC-56 ADMIN-11b).** W101 states the rule — "auth.otp and dispute events are
+ * opt-out-locked and tenant overrides are disabled on them; security copy stays platform-controlled" — and until that
+ * wave nothing enforced it in either realm: `TemplateAdminService.upsert` checked only that the event existed, and
+ * `resolve()` sorts `tenant_id NULLS LAST`, so a tenant row BEAT the platform default for every event including
+ * `auth.otp`. A tenant holding `notification.manage` could replace the wording of the one-time-password message its
+ * farmers receive.
+ *
+ * 403 rather than 422: the request is well formed and the refusal is about who owns the words.
+ */
+export class SecurityCopyPlatformOnlyError extends DomainError {
+  constructor(eventCode: string) {
+    super('SECURITY_COPY_PLATFORM_ONLY',
+      `'${eventCode}' is opt-out-locked or critical: its wording is platform-controlled and cannot be overridden per tenant`,
+      403, { eventCode });
+  }
+}
 export class InvalidPushDeviceError extends DomainError {
   constructor(detail = 'Invalid push device registration') { super('PUSH_DEVICE_INVALID', detail, 400, {}); }
 }

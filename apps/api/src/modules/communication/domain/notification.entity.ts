@@ -6,6 +6,10 @@ import { NotifStatus, assertTransition } from './notification.state';
 
 export interface NotificationProps {
   id: string; tenantId: string | null; userId: string; eventCode: string; channel: NotifChannel; templateId: string | null;
+  /** The IMMUTABLE template version whose words were rendered into this notification (0122). `templateId` alone pointed
+   *  at a row whose body could be replaced afterwards, so the log recorded which template was used and could not say
+   *  what was sent. NULL for a send with no template (the recorded 'no_template' failure) — never a guess. */
+  templateVersionId?: string | null;
   languageCode: string | null; payload: Record<string, unknown>; status: NotifStatus; providerMsgRef: string | null;
   costMinor: number | null; batchedInto: string | null; createdAt?: Date; sentAt: Date | null; readAt: Date | null;
 }

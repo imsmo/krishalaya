@@ -109,7 +109,14 @@ export class NotificationService {
     let template = await this.templates.resolve(a.tenantId, a.event, a.channel, a.lang, tx);
     for (const fb of FALLBACK_LANGS) { if (template) break; template = await this.templates.resolve(a.tenantId, a.event, a.channel, fb, tx); }
     const rendered = template ? template.render(a.payload) : { subject: null, body: '' };
-    const n = Notification.queue({ id, tenantId: a.tenantId, userId: a.userId, eventCode: a.event, channel: a.channel, templateId: template?.id ?? null, languageCode: template?.languageCode ?? a.lang, payload: a.payload });
+    const n = Notification.queue({ id, tenantId: a.tenantId, userId: a.userId, eventCode: a.event, channel: a.channel,
+      templateId: template?.id ?? null,
+      // **THE VERSION, NOT ONLY THE TEMPLATE (0122).** `template_id` points at a row whose body used to be replaced in
+      // place, so the log recorded WHICH template was used and could not say WHAT WAS SENT — and `payload` holds the
+      // variables, not the rendered text. The version is immutable, so this is the column that answers a farmer's "the
+      // OTP message never arrived" and a regulator's "what wording went out under this DLT header".
+      templateVersionId: template?.versionId ?? null,
+      languageCode: template?.languageCode ?? a.lang, payload: a.payload });
 
     if (a.channel === 'inapp') {
       n.markSent(null, null);   // the inbox row IS the in-app item; nothing to send externally

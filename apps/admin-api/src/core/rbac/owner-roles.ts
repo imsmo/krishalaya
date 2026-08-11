@@ -215,6 +215,16 @@ export const OwnerPermissions = {
   // switch a module off for every tenant on the platform. Separate grant, so the desk that flips is not the desk that
   // widens.
   FlagsApprove: 'flags.approve',
+  /* ---- PC-56 ADMIN-11b · notification templates. W101 and W102 both name `templates.manage` by hand in their
+     read-only states, and `grep -rn "templates.manage" apps` returned nothing across every app — so the registry's
+     restricted state could not happen and one grant would have covered reading the OTP wording and rewriting it. ---- */
+  TemplatesRead: 'templates.read',
+  // Author a version, submit it, register a sender id. **NOT approve** — see below.
+  TemplatesManage: 'templates.manage',
+  // **THE SECURITY SIGN-OFF W102 NAMES: "auth/dispute templates additionally need security sign-off."** Approving is
+  // what moves the serving pointer, which is the only act on this plane a recipient can see. Separate grant, because the
+  // desk that writes the words is not the desk that decides they may be sent.
+  TemplatesApprove: 'templates.approve',
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
@@ -252,6 +262,15 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // The checker. Approves a widened flag and reads everything; cannot propose, so the two halves of the rule live in
   // two roles rather than relying on two people who could each do both (the ADMIN-9 pattern).
   platform_config_checker: [OwnerPermissions.FlagsApprove, OwnerPermissions.SettingsRead, OwnerPermissions.FlagsRead],
+  /* ---- PC-56 ADMIN-11b ---- */
+  // The copy desk: writes and submits wording, and cannot approve its own. The sixteenth maker-checker site is only real
+  // if the two halves can be held by two roles rather than by one person exercising restraint.
+  platform_templates_ops:     [OwnerPermissions.TemplatesManage, OwnerPermissions.TemplatesRead],
+  // The security sign-off on OTP and dispute wording. Approves and cannot author.
+  platform_templates_checker: [OwnerPermissions.TemplatesApprove, OwnerPermissions.TemplatesRead],
+  // Reads every template and every version, including tenant overrides — the "what did we send" question, which before
+  // this wave had no answer at all.
+  platform_templates_auditor: [OwnerPermissions.TemplatesRead],
   platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead, OwnerPermissions.AiReview],
   platform_ai_auditor:    [OwnerPermissions.AiModelRead],
   // ADMIN-7. The reviewer who works the queue and cannot change a model — the commonest shape of request on this plane

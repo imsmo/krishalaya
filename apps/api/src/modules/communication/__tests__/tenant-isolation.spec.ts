@@ -48,7 +48,17 @@ describe('templates resolution (tenant override → platform default)', () => {
     const { provider, exec } = fakeReplica();
     await new NotificationTemplateRepository(provider).resolve('tenantA', 'order.delivered', 'push', 'en');
     const [sql, params] = exec.query.mock.calls[0];
-    expect(sql).toMatch(/tenant_id=\$4 OR tenant_id IS NULL/); expect(sql).toMatch(/ORDER BY tenant_id NULLS LAST/);
+    // Aliased in PC-56 ADMIN-11b: the words now come from the serving VERSION rather than the mutable row, so the
+    // table is `t` and the isolation clause is `t.tenant_id`. The assertion is strengthened rather than relaxed —
+    // the join and the lifecycle filter are asserted too, because those are the two things that were missing and
+    // whose absence let a rejected template keep sending.
+    expect(sql).toMatch(/t\.tenant_id=\$4 OR t\.tenant_id IS NULL/);
+    expect(sql).toMatch(/ORDER BY t\.tenant_id NULLS LAST/);
+    expect(sql).toMatch(/JOIN notification_template_versions v/);
+    expect(sql).toMatch(/v\.id = t\.serving_version_id AND v\.lifecycle = 'approved'/);
+    // The body must NOT be read from the template row: that column is what the old upsert rewrote in place.
+    expect(sql).toMatch(/v\.body AS body/);
+    expect(sql).not.toMatch(/t\.body/);
     expect(params).toEqual(['order.delivered', 'push', 'en', 'tenantA']);
   });
   it('listFor scopes to tenant + platform, keyset (no OFFSET)', async () => {

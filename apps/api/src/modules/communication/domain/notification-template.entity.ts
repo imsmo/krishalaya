@@ -5,6 +5,10 @@ import { NotifChannel } from './communication.events';
 export interface NotificationTemplateProps {
   id: string; eventCode: string; channel: NotifChannel; languageCode: string; tenantId: string | null;
   subject: string | null; body: string; providerTemplateRef: string | null; isActive: boolean; createdAt?: Date;
+  /** The immutable version (0122) these words came from. Recorded on the delivery row: it is the only thing that can
+   *  answer "what did the message say" once somebody edits the template. NULL only for a row no version points at. */
+  versionId?: string | null;
+  versionNo?: number | null;
 }
 // Conservative, ReDoS-safe token: {{ alphanum/underscore/dot path }} only.
 const TOKEN = /\{\{\s*([a-zA-Z0-9_.]{1,64})\s*\}\}/g;
@@ -16,6 +20,8 @@ export class NotificationTemplate {
   get channel() { return this.props.channel; }
   get languageCode() { return this.props.languageCode; }
   get providerTemplateRef() { return this.props.providerTemplateRef; }
+  get versionId() { return this.props.versionId ?? null; }
+  get versionNo() { return this.props.versionNo ?? null; }
   get isTenantOverride() { return this.props.tenantId !== null; }
 
   /** Interpolate {{vars}} from the payload. Missing keys render as '' (never leak '{{x}}' to a user). */

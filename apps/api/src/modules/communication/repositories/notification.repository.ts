@@ -13,7 +13,7 @@ import { NotifStatus } from '../domain/notification.state';
 const COLS = `id, tenant_id, user_id, event_code, channel, template_id, language_code, payload, status, provider_msg_ref, cost_minor, batched_into, created_at, sent_at, read_at`;
 function toDomain(r: any): Notification {
   return Notification.rehydrate({ id: r.id, tenantId: r.tenant_id, userId: r.user_id, eventCode: r.event_code, channel: r.channel as NotifChannel,
-    templateId: r.template_id, languageCode: r.language_code, payload: r.payload ?? {}, status: r.status as NotifStatus, providerMsgRef: r.provider_msg_ref,
+    templateId: r.template_id, templateVersionId: r.template_version_id ?? null, languageCode: r.language_code, payload: r.payload ?? {}, status: r.status as NotifStatus, providerMsgRef: r.provider_msg_ref,
     costMinor: r.cost_minor, batchedInto: r.batched_into, createdAt: r.created_at, sentAt: r.sent_at, readAt: r.read_at });
 }
 export interface InboxQuery { status?: string; unreadOnly?: boolean; cursor?: { c: string; id: string }; limit: number; }
@@ -26,9 +26,9 @@ export class NotificationRepository {
   async insert(tx: TxContext, n: Notification): Promise<void> {
     const p = n.toProps();
     await tx.query(
-      `INSERT INTO notifications (id, tenant_id, user_id, event_code, channel, template_id, language_code, payload, status, provider_msg_ref, cost_minor, sent_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12)`,
-      [p.id, p.tenantId, p.userId, p.eventCode, p.channel, p.templateId, p.languageCode, JSON.stringify(p.payload), p.status, p.providerMsgRef, p.costMinor, p.sentAt]);
+      `INSERT INTO notifications (id, tenant_id, user_id, event_code, channel, template_id, template_version_id, language_code, payload, status, provider_msg_ref, cost_minor, sent_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13)`,
+      [p.id, p.tenantId, p.userId, p.eventCode, p.channel, p.templateId, p.templateVersionId ?? null, p.languageCode, JSON.stringify(p.payload), p.status, p.providerMsgRef, p.costMinor, p.sentAt]);
   }
 
   /** A user's own inbox (keyset, bounded). */
