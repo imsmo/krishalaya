@@ -24,7 +24,43 @@ export class TenancyResource {
     return (await this.http.request<Subscription>('POST', 'subscriptions', { idempotencyKey, body: input })).data;
   }
   /** Change the plan on an existing subscription (server prices it; the app never computes money — Law 2/11). */
-  async changePlan(subscriptionId: string, planId: string): Promise<Subscription> {
+  /** W119's compare table, the current plan, live usage, and any scheduled change. Read-only. */
+  async comparePlans(signal?: AbortSignal): Promise<PlanCompareView> {
+    return (await this.http.request<PlanCompareView>('GET', 'subscriptions/plans/compare', { signal })).data;
+  }
+
+  /**
+   * What a plan change would cost and what it would break. **CHARGES NOTHING** — W119: "proration always previews before
+   * any payment".
+   */
+  async planPreview(subscriptionId: string, planId: string, signal?: AbortSignal): Promise<PlanChangePreview> {
+    return (await this.http.request<PlanChangePreview>('GET', `subscriptions/${encodeURIComponent(subscriptionId)}/plan-preview`, { query: { planId }, signal })).data;
+  }
+
+  /**
+   * Change plan. An upgrade applies now and is invoiced with to-the-day proration; a downgrade is SCHEDULED for the period
+   * end (W119: "no clawbacks mid-cycle").
+   *
+   * **NO AMOUNT IS SENT.** The API recomputes every figure — a client that could post the total due could post a smaller
+   * one. `replayed: true` means this exact change was already recorded and the SAME invoice is being returned, which is what
+   * "a double click cannot charge twice" has to mean to somebody on a slow connection.
+   */
+  async changePlan(subscriptionId: string, planId: string, reason?: string): Promise<{ change: PlanChangeRecord; replayed: boolean }> {
+    return (await this.http.request<{ change: PlanChangeRecord; replayed: boolean }>('POST', `subscriptions/${encodeURIComponent(subscriptionId)}/change-plan`, { body: { planId, ...(reason ? { reason } : {}) } })).data;
+  }
+
+  /** Every plan change on this subscription, with each component of its arithmetic kept. */
+  async planChanges(subscriptionId: string, signal?: AbortSignal): Promise<PlanChangeRecord[]> {
+    return (await this.http.request<PlanChangeRecord[]>('GET', `subscriptions/${encodeURIComponent(subscriptionId)}/plan-changes`, { signal })).data;
+  }
+
+  /** Cancel a scheduled downgrade before its effective date. */
+  async cancelPendingPlanChange(subscriptionId: string): Promise<{ cancelled: boolean }> {
+    return (await this.http.request<{ cancelled: boolean }>('DELETE', `subscriptions/${encodeURIComponent(subscriptionId)}/pending-change`, {})).data;
+  }
+
+  /** @deprecated superseded by `changePlan` above — kept only so the old shape is not silently re-added. */
+  async changePlanLegacy(subscriptionId: string, planId: string): Promise<Subscription> {
     return (await this.http.request<Subscription>('POST', `subscriptions/${encodeURIComponent(subscriptionId)}/change-plan`, { body: { planId } })).data;
   }
   /** Cancel a subscription — at period end (default, keeps access until renewal) or immediately. */
@@ -147,4 +183,94 @@ export class ConsoleHomeResource {
   async goLive(signal?: AbortSignal): Promise<GoLiveState> {
     return (await this.http.request<GoLiveState>('GET', 'tenancy/console/go-live', { signal })).data;
   }
+}
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+/* PC-56 TENANT-1d-2 · W119 — the upgrade that used to be free                                                        */
+/* ---------------------------------------------------------------------------------------------------------------- */
+
+export interface ComparePlan {
+  id: string;
+  code: string;
+  name: string;
+  monthlyPriceMinor: string;
+  annualPriceMinor: string;
+  currencyCode: string;
+  isCurrent: boolean;
+  /** limit_code → value. `-1` is unlimited (0002) and stays -1: the console decides the word. */
+  limits: Record<string, string>;
+  features: Record<string, boolean>;
+}
+
+export interface PlanCompareView {
+  plans: ComparePlan[];
+  limitCodes: string[];
+  features: Array<{ code: string; name: string }>;
+  current: {
+    subscriptionId: string; planId: string; planName: string; billingCycle: string;
+    priceMinor: string; currencyCode: string; periodStart: string; periodEnd: string; status: string;
+  } | null;
+  /** Live counts of members and staff — not a monthly counter. */
+  usage: Record<string, string>;
+  /** W119's "Custom plan in force": the subscription's price differs from its plan's list price. Derived, never a flag. */
+  customPricing: boolean;
+  pending: { planId: string; planName: string; priceMinor: string; effectiveDate: string; reason: string | null } | null;
+}
+
+export interface PlanLimitBreach { limitCode: string; limitValue: string; currentUsage: string }
+
+export interface PlanChangePreview {
+  subscriptionId: string;
+  fromPlan: { id: string; code: string; name: string; priceMinor: string };
+  toPlan: { id: string; code: string; name: string; priceMinor: string };
+  currencyCode: string;
+  periodStart: string;
+  periodEnd: string;
+  today: string;
+  taxBp: number;
+  /** No platform override exists, so the shipped rate applies. Normal. */
+  taxUsedDefault: boolean;
+  /** The rate could not be READ. A preview renders with the caveat; an upgrade refuses rather than invoicing a guess. */
+  taxUnavailable: boolean;
+  lines: {
+    direction: 'upgrade' | 'downgrade' | 'lateral';
+    daysInPeriod: number;
+    daysRemaining: number;
+    newPlanChargeMinor: string;
+    unusedCreditMinor: string;
+    netDueMinor: string;
+    taxMinor: string;
+    /** **RENDER THIS, never the sum of the lines above** — the parts are rounded for display, the total is not. */
+    totalDueMinor: string;
+    effectiveDate: string;
+    scheduled: boolean;
+  };
+  breaches: PlanLimitBreach[];
+  idempotencyKey: string;
+}
+
+/** One row of `subscription_plan_changes` — every input kept, so an invoice can be explained a year later. */
+export interface PlanChangeRecord {
+  id: string;
+  subscriptionId: string;
+  fromPlanId: string;
+  toPlanId: string;
+  direction: 'upgrade' | 'downgrade' | 'lateral';
+  effectiveDate: string;
+  /** NULL while a scheduled downgrade waits for its date. */
+  appliedAt: string | null;
+  daysInPeriod: number;
+  daysRemaining: number;
+  newPlanChargeMinor: string;
+  unusedCreditMinor: string;
+  netDueMinor: string;
+  taxBp: number;
+  taxMinor: string;
+  totalDueMinor: string;
+  currencyCode: string;
+  invoiceId: string | null;
+  idempotencyKey: string;
+  limitBreaches: unknown;
+  reason: string | null;
+  createdAt: string;
 }

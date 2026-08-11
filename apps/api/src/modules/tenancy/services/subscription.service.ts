@@ -50,21 +50,19 @@ export class SubscriptionService {
       }));
   }
 
-  async changePlan(tenantId: string, actor: TenancyActor, id: string, newPlanId: string, ip: string | null) {
-    if (!actor.canManageSub) throw new SubscriptionForbiddenError('requires tenant.settings');
-    const plan = await this.plans.getById(tenantId, newPlanId);
-    if (!plan) throw new PlanNotFoundError(newPlanId);
-    if (!plan.isActive) throw new PlanNotSubscribableError();
-    return this.uow.run(tenantId, async (tx) => {
-      const sub = await this.repo.getForUpdate(tx, tenantId, id);
-      if (!sub) throw new SubscriptionNotFoundError(id);
-      sub.changePlan(plan.id, plan.priceFor(sub.toProps().billingCycle));
-      await this.repo.update(tx, sub);
-      await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'subscription.plan_changed', entityType: 'subscription', entityId: id, newValue: { planId: plan.id }, ip });
-      await this.flush(tx, tenantId, id, sub.pullEvents());
-      return this.serialize(sub);
-    }, { userId: actor.userId });
-  }
+  /**
+   * **REMOVED IN PC-56 TENANT-1d-2 — IT BILLED NOTHING.**
+   *
+   * This method swapped `plan_id` and `price_minor`, wrote one `subscription.plan_changed` audit line, and charged nothing:
+   * every upgrade the platform processed was free, and a downgrade applied the same second, taking away capability the
+   * tenant had already paid for. TENANT-1d built the proration arithmetic and 0126's tables to fix exactly that, and this
+   * method was never changed — so the defect stayed live behind a route that looked correct.
+   *
+   * A tenant plan change now goes through `PlanChangeService.change`: preview, recompute, invoice an upgrade with a 7-day
+   * due date, schedule a downgrade for the period end, one row in `subscription_plan_changes` keyed for idempotency.
+   *
+   * Deleted rather than deprecated on purpose. A second path that still compiles is a path something will call.
+   */
 
   async cancel(tenantId: string, actor: TenancyActor, id: string, atPeriodEnd: boolean, ip: string | null) {
     if (!actor.canManageSub) throw new SubscriptionForbiddenError('requires tenant.settings');

@@ -9,7 +9,7 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { planPriceMinor, mergeUsageRows } from '../../features/billing/plan';
-import { applyPlanAction, changePlanAction, cancelSubscriptionAction } from './actions';
+import { applyPlanAction, cancelSubscriptionAction } from './actions';
 import type { Plan, Subscription } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -93,8 +93,12 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
         <p className="kv-empty-state">{t.t('billing.noPlans')}</p>
       ) : (
         <div className="kv-cards">
+          {/* W119 lives on its own route: the compare table, the proration preview and the confirm chain. */}
           {plans.map((p) => (
-            <form key={p.id} action={sub && sub.planId !== p.id ? changePlanAction : applyPlanAction} className="kv-card kv-plan">
+            /* **A PLAN CHANGE NO LONGER POSTS FROM THIS CARD.** It now raises a real prorated invoice (TENANT-1d-2), and
+               W119 is explicit that "proration always previews before any payment" — so an existing tenant gets a LINK to
+               the preview, and only the FIRST subscription (nothing to prorate against) is applied from here. */
+            <form key={p.id} action={applyPlanAction} className="kv-card kv-plan">
               <h3 className="kv-card__title">{p.defaultName}</h3>
               <p className="kv-plan__price">{formatMoneyMinor(planPriceMinor(p, 'monthly'), p.currencyCode, lang)} / {t.t('billing.perMonth')}</p>
               <p className="kv-field__hint">{t.t('billing.annual')}: {formatMoneyMinor(planPriceMinor(p, 'annual'), p.currencyCode, lang)} · {t.t('billing.setup')}: {formatMoneyMinor(p.setupFeeMinor, p.currencyCode, lang)}</p>
@@ -109,9 +113,13 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
                   </select>
                 </>
               )}
-              <button type="submit" className="kv-btn" disabled={!!sub && sub.planId === p.id}>
-                {sub ? (sub.planId === p.id ? t.t('billing.currentPlan') : t.t('billing.changeTo')) : t.t('billing.apply')}
-              </button>
+              {sub ? (
+                sub.planId === p.id
+                  ? <span className="kv-badge kv-badge--success">{t.t('billing.currentPlan')}</span>
+                  : <a href={`/billing/upgrade?planId=${encodeURIComponent(p.id)}`} className="kv-btn">{t.t('billing.previewChange')}</a>
+              ) : (
+                <button type="submit" className="kv-btn">{t.t('billing.apply')}</button>
+              )}
             </form>
           ))}
         </div>

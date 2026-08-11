@@ -25,19 +25,10 @@ export async function applyPlanAction(formData: FormData): Promise<void> {
   redirect('/billing?ok=applied');
 }
 
-export async function changePlanAction(formData: FormData): Promise<void> {
-  await requireSession('/billing');
-  const subscriptionId = String(formData.get('subscriptionId') ?? '').trim();
-  const planId = String(formData.get('planId') ?? '').trim();
-  if (!subscriptionId || !planId) redirect('/billing?error=apply');
-  try {
-    await tenantClient().tenancy.changePlan(subscriptionId, planId);
-  } catch (e) {
-    redirect(`/billing?error=${encodeURIComponent(e instanceof SdkError ? (e.code || 'apply') : 'apply')}`);
-  }
-  revalidatePath('/billing');
-  redirect('/billing?ok=changed');
-}
+// **`changePlanAction` REMOVED (PC-56 TENANT-1d-2).** It posted a plan id straight from the /billing plan cards with no
+// preview. That was harmless while a plan change billed nothing; now that an upgrade raises a prorated invoice due in 7
+// days, a one-click change with no invoice shown first would charge a tenant money they had never been quoted — and W119's
+// own promise is "proration always previews before any payment". The card links to /billing/upgrade instead.
 
 export async function cancelSubscriptionAction(formData: FormData): Promise<void> {
   await requireSession('/billing');

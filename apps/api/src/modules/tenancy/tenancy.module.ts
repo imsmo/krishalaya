@@ -31,6 +31,10 @@ import { SubscriptionService } from './services/subscription.service';
 import { TenantService } from './services/tenant.service';
 import { TenantDomainService } from './services/tenant-domain.service';
 import { SaasInvoiceService } from './services/saas-invoice.service';
+import { PlanChangeService } from './services/plan-change.service';
+import { PlanChangeRepository } from './repositories/plan-change.repository';
+import { PlanCompareReadModel } from './read-models/plan-compare.read-model';
+import { BillingTaxRate } from './read-models/billing-tax-rate';
 import { PlanRepository } from './repositories/plan.repository';
 import { SubscriptionRepository } from './repositories/subscription.repository';
 import { TenantRepository } from './repositories/tenant.repository';
@@ -49,6 +53,8 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
     TenantDashboardReadModel, GoLiveReadModel,
+    // PC-56 TENANT-1d-2: the plane 0126 and domain/proration.ts were built for, and which nothing called.
+    PlanChangeService, PlanChangeRepository, PlanCompareReadModel, BillingTaxRate,
     TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository,
     SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, TenantApplicationService, TenantApplicationRepository],
   exports: [PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],

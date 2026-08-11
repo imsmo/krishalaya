@@ -12,6 +12,7 @@ import { outboxGaugeJob } from './jobs/outbox-gauge.job';
 import { webhookDeliveryJob } from './jobs/webhook-delivery.job';
 import { scheduledReportsJob } from './jobs/scheduled-reports.job';
 import { supportEscalationsJob } from './jobs/support-escalations.job';
+import { pendingPlanChangeJob } from './jobs/pending-plan-change.job';
 
 export const JOBS: Job[] = [
   reconZeroSumJob,
@@ -35,4 +36,10 @@ export const JOBS: Job[] = [
   // nothing unless somebody happened to be watching the board. Idempotent per (ticket, breach kind, step), so a re-run
   // or two replicas cannot page the same person twice for the same breach.
   supportEscalationsJob,
+  // PC-56 TENANT-1d-2: APPLIES a scheduled plan downgrade on its effective date. 0126 added the pending pointer and an
+  // index whose comment calls it "the worker's sweep", and there was no sweep — so a downgrade the tenant was shown a
+  // date for ("takes effect 01 Aug") would never have applied, leaving them on the old plan at the old price with a
+  // console still promising the change. pg-native for the reason stated in the job file: the four api-side tenancy job
+  // classes are not registered anywhere, so a fifth would have been another thing that never runs.
+  pendingPlanChangeJob,
 ];
