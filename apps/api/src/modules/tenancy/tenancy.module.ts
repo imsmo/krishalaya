@@ -23,6 +23,9 @@ import { TenantSettingsController } from './controllers/v1/tenant-settings.contr
 import { AnalyticsController } from './controllers/v1/analytics.controller';
 import { TenantAnalyticsService } from './services/tenant-analytics.service';
 import { TenantAnalyticsReadModel } from './read-models/tenant-analytics.read-model';
+import { TenantDashboardReadModel } from './read-models/tenant-dashboard.read-model';
+import { GoLiveReadModel } from './read-models/go-live.read-model';
+import { ConsoleHomeController } from './controllers/v1/console-home.controller';
 import { PlanService } from './services/plan.service';
 import { SubscriptionService } from './services/subscription.service';
 import { TenantService } from './services/tenant.service';
@@ -41,10 +44,11 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
 @Module({
-  controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController],
+  controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
+    TenantDashboardReadModel, GoLiveReadModel,
     TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository,
     SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, TenantApplicationService, TenantApplicationRepository],
   exports: [PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],

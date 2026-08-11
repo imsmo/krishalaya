@@ -60,3 +60,91 @@ export class TenancyResource {
     })).data;
   }
 }
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* THE CONSOLE HOME — W117's dashboard and W116's go-live checklist (PC-56 TENANT-1c)                             */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+export interface DashboardTiles {
+  gmvThisMonthMinor: string;
+  /** The SAME elapsed interval into the previous month, so a comparison on the 13th is 13 days against 13 days. */
+  gmvPrevMonthSameDayMinor: string;
+  /** Basis points. **null when the previous window was zero** — a percentage against nothing is not a fact. */
+  gmvChangeBp: number | null;
+  payoutsPendingMinor: string;
+  payoutsPendingFarmers: number;
+  liveListings: number;
+  listingsNewToday: number;
+  listingsInQc: number;
+  openDisputes: number;
+  /** Age of the oldest open dispute in hours — what makes it urgent rather than merely present. */
+  oldestDisputeHours: number | null;
+}
+
+export type DashboardActionKind = 'qc_queue' | 'payout_batch' | 'dispute';
+
+export interface DashboardAction {
+  kind: DashboardActionKind;
+  count: number;
+  oldestHours: number | null;
+  amountMinor: string | null;
+  href: string;
+}
+
+export interface TenantPlanHealth {
+  planCode: string | null;
+  planName: string | null;
+  status: string | null;
+  membersUsed: number;
+  /** **null means NO CAP** (or an unconfigured one). Never a negative number on screen: -1 is 0002's "unlimited". */
+  memberLimit: number | null;
+  currentPeriodEnd: string | null;
+}
+
+export interface TenantDashboard {
+  tiles: DashboardTiles;
+  /** **EMPTY ON A QUIET DAY.** W117: "The dashboard stays honest — no manufactured urgency." */
+  needsYouToday: DashboardAction[];
+  planHealth: TenantPlanHealth;
+}
+
+export type GoLiveStepKey = 'organisation' | 'plan' | 'kyc' | 'team' | 'members' | 'payouts';
+
+export interface GoLiveStep {
+  key: GoLiveStepKey;
+  done: boolean;
+  /** The underlying FACT's own timestamp. Never invented, and null while the step is not done. */
+  doneAt: string | null;
+  /** Only ever `kyc`, and only for `payouts` — money genuinely cannot move before the organisation is verified. */
+  blockedBy: GoLiveStepKey | null;
+  /** Exactly one step carries this: the first that is neither done nor blocked. */
+  isNext: boolean;
+}
+
+export interface GoLiveState {
+  steps: GoLiveStep[];
+  progress: { done: number; total: number };
+  live: boolean;
+  blocked: { key: GoLiveStepKey; blockedBy: GoLiveStepKey }[];
+  staffCount: number;
+  memberCount: number;
+}
+
+/**
+ * The tenant console's home reads.
+ *
+ * **THE CHECKLIST IS DERIVED FROM FACTS, NOT READ FROM A CHECKLIST TABLE.** There is no table: each of W116's six steps is a
+ * row that already exists (the tenant, the subscription, a verified business KYC profile, two staff, one member, a
+ * penny-verified bank account), so the state cannot drift from reality and the timestamps cannot be backdated.
+ */
+export class ConsoleHomeResource {
+  constructor(private readonly http: HttpClient) {}
+
+  async dashboard(signal?: AbortSignal): Promise<TenantDashboard> {
+    return (await this.http.request<TenantDashboard>('GET', 'tenancy/console/dashboard', { signal })).data;
+  }
+
+  async goLive(signal?: AbortSignal): Promise<GoLiveState> {
+    return (await this.http.request<GoLiveState>('GET', 'tenancy/console/go-live', { signal })).data;
+  }
+}

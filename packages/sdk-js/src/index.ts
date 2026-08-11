@@ -71,6 +71,9 @@ export { REVEALABLE_MEMBER_FIELDS, kycSeverity, isFullyVerified, rosterKycLabel,
 // PC-56 TENANT-1b-4 · the template generator is a VALUE export so the console cannot drift from the parser's column list.
 export { MEMBER_IMPORT_COLUMNS, memberImportTemplateCsv } from './resources/bulk-imports';
 export type { BulkImportJob, BulkImportStatus, BulkValidationReport, BulkValidationIssue } from './resources/bulk-imports';
+// PC-56 TENANT-1c · the console home.
+export type { TenantDashboard, DashboardTiles, DashboardAction, DashboardActionKind, TenantPlanHealth,
+  GoLiveState, GoLiveStep, GoLiveStepKey } from './resources/tenancy';
 export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail, MemberRoleDetail, MemberGlance,
   MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel, SuspensionRecord, SuspensionResult,
   Farmer360, Farmer360Income, Farmer360Season, Farmer360Scheme, Farmer360CreditEvidence, LandByUnit } from './resources/members';

@@ -68,6 +68,26 @@ function enumColumns(labels: Map<string, Set<string>>): Map<string, { type: stri
  * line and `po.status = '…'` on the next, so a line-by-line scan for the word "payouts" beside the comparison saw nothing.
  * A guard that misses the defect it was written for is worse than no guard, because it reports health.
  */
+/**
+ * **COMMENTS ARE REMOVED BEFORE SCANNING, AND THE FOURTH REPEAT OF THIS LESSON IS THE ONE THAT ACTUALLY COST SOMETHING.**
+ *
+ * `tenant-dashboard.read-model.ts` EXPLAINS this very defect in its header — it contains the words `payouts.status = 'paid'`
+ * as prose. So the guard flagged its own documentation, went red, and stayed red through a whole batch of mutation runs:
+ * five verdicts in that batch were meaningless, because the suite was already failing for a reason unrelated to the mutant.
+ *
+ * The three earlier repeats only cost a fix. This one corrupted a measurement, which is worse — a red suite makes every
+ * mutation look killed. Comments out, then scan.
+ */
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')   // block comments, including the JSDoc that documents the rules
+    .split('\n')
+    .map((l) => l.replace(/\/\/.*$/, ''))    // line comments
+    // SQL comments live INSIDE template literals, so they survive the two above and have to go too.
+    .map((l) => l.replace(/--.*$/, ''))
+    .join('\n');
+}
+
 function statusComparisons(): { file: string; table: string; literal: string; snippet: string }[] {
   const found: { file: string; table: string; literal: string; snippet: string }[] = [];
   const walk = (dir: string) => {
@@ -75,7 +95,7 @@ function statusComparisons(): { file: string; table: string; literal: string; sn
       const p = path.join(dir, e.name);
       if (e.isDirectory()) { if (e.name !== '__tests__' && e.name !== 'node_modules') walk(p); continue; }
       if (!e.name.endsWith('.ts')) continue;
-      const text = fs.readFileSync(p, 'utf8');
+      const text = stripComments(fs.readFileSync(p, 'utf8'));
       const rel = path.relative(API_SRC, p);
 
       // alias → table, from every FROM/JOIN in the file. `FROM payouts po`, `JOIN listings l ON …`, `FROM payouts` (no alias).

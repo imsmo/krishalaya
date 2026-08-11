@@ -31,6 +31,9 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
       key: 'primary',
       items: [
         { key: 'dashboard', href: '/dashboard', label: t.t('nav.dashboard') },
+        // PC-56 TENANT-1c · W116's own sidebar places "Get started" directly under Dashboard, and it stays after go-live
+        // because the canon says the page "becomes your health check — it returns whenever something needs attention".
+        { key: 'get-started', href: '/get-started', label: t.t('nav.getStarted') },
         { key: 'listings', href: '/listings', label: t.t('nav.listings') },
         { key: 'orders', href: '/orders', label: t.t('nav.orders') },
         { key: 'logistics', href: '/logistics', label: t.t('nav.logistics') },
