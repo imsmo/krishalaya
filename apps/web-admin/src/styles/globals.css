@@ -215,7 +215,10 @@ a { color: inherit; text-decoration: none; }
    zero-height element since ADMIN-1e. Styled here at the point of first use.
    --------------------------------------------------------------------------- */
 .kv-diff td { vertical-align: top; }
-.kv-diff th[scope='row'] { text-align: left; white-space: nowrap; font-weight: 600; }
+/* PC-56 ADMIN-SWEEP · RTL spot-check: LOGICAL properties, not physical. `text-align: left` pins a row header to the
+   left of the viewport, which under dir=rtl puts it on the wrong side of its own row. `start` follows the writing
+   direction, which is the whole point of the ar readiness bar (07_RTL owns the deep pass). */
+.kv-diff th[scope='row'] { text-align: start; white-space: nowrap; font-weight: 600; }
 .kv-diff .kv-pre { margin: 0; max-width: 32rem; overflow-x: auto; }
 
 .kv-timeline { list-style: none; margin: 0.5rem 0 1.25rem; padding: 0; }
@@ -241,5 +244,7 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px dotted var(--kv-border, #d8ddd6);
   cursor: help;
 }
-.kv-list { margin: 0.5rem 0 1rem; padding-left: 1.1rem; }
+/* `padding-left` on a list puts the bullet indent on the left in every language; `padding-inline-start` puts it on the
+   side the text starts from. Two lines, and they were the only physical-direction rules left in this app's stylesheet. */
+.kv-list { margin: 0.5rem 0 1rem; padding-inline-start: 1.1rem; }
 .kv-list > li { margin: 0 0 0.35rem; }
