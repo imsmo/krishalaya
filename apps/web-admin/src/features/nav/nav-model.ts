@@ -35,6 +35,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: '/analytics/exports', labelKey: 'nav.exports', live: true },
   // PC-56 ADMIN-11: the typed platform registry. `scope='platform'` rows were unreachable by every surface until 0121.
   { href: '/templates', labelKey: 'nav.templates', live: true },
+  { href: '/integrations', labelKey: 'nav.integrations', live: true },
   { href: '/settings', labelKey: 'nav.settings', live: true },
   { href: '/announcements', labelKey: 'nav.announcements', live: true },
   { href: '/catalogue', labelKey: 'nav.catalogue', live: true },

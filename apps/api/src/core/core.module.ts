@@ -4,7 +4,7 @@
 // business modules depend only on tokens (UNIT_OF_WORK, OUTBOX_WRITER, …) and
 // never on `pg`, Redis, etc. Swapping an implementation (e.g. OpenSearch search,
 // Kafka outbox) is a one-line change here — no module rewrites.
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, OnModuleInit } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import Redis from 'ioredis';
 
@@ -36,6 +36,9 @@ import { IDEMPOTENCY_SERVICE } from './idempotency/idempotency.service';
 import { PgIdempotencyService } from './idempotency/idempotency.service.pg';
 import { METRICS } from './observability/metrics';
 import { ResilienceService, RESILIENCE } from './resilience/resilience.service';
+import { CircuitEventRecorder } from './resilience/circuit-event.recorder';
+import { INBOUND_WEBHOOK_SINK } from './webhooks/inbound-webhook.recorder';
+import { PgInboundWebhookSink } from './webhooks/inbound-webhook.sink.pg';
 import { WALLET_SERVICE } from './wallet/wallet.port';
 import { InProcessWalletClient } from './wallet/wallet.client.inprocess';
 import { LedgerRepository } from './wallet/ledger.repository';
@@ -80,6 +83,11 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     PromMetrics,
     { provide: METRICS, useExisting: PromMetrics },
     ResilienceService, { provide: RESILIENCE, useExisting: ResilienceService },
+    // PC-56 ADMIN-11c. The breaker transition sink and the inbound receipt sink. **BOTH ARE EXPORTED**, because the
+    // ADMIN-10 lesson was a module that imported three services and listed none: it compiled clean and 500'd at the
+    // first request.
+    CircuitEventRecorder,
+    { provide: INBOUND_WEBHOOK_SINK, useClass: PgInboundWebhookSink },
     LedgerRepository, InProcessWalletClient, { provide: WALLET_SERVICE, useExisting: InProcessWalletClient },
     ReconciliationService,
     OutboxHandlerRegistry, { provide: OUTBOX_HANDLER_REGISTRY, useExisting: OutboxHandlerRegistry },
@@ -134,7 +142,7 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
   exports: [
     OUTBOX_WRITER, QUOTA_SERVICE, IDEMPOTENCY_SERVICE, METRICS, PromMetrics,
     ImpersonationGate,
-    ResilienceService, RESILIENCE,
+    ResilienceService, RESILIENCE, CircuitEventRecorder, INBOUND_WEBHOOK_SINK,
     WALLET_SERVICE, InProcessWalletClient, LedgerRepository, ReconciliationService,
     OutboxHandlerRegistry, OUTBOX_HANDLER_REGISTRY,
     ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY,
@@ -146,4 +154,22 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule, FeatureFlagsModule, I18nModule,
   ],
 })
-export class CoreModule {}
+export class CoreModule implements OnModuleInit {
+  constructor(
+    private readonly resilience: ResilienceService,
+    private readonly circuitEvents: CircuitEventRecorder,
+  ) {}
+
+  /**
+   * PC-56 ADMIN-11c: install the breaker transition sink BEFORE anything can make an outbound call.
+   *
+   * **THE ORDER MATTERS AND IS EASY TO GET WRONG.** `ResilienceService` creates a breaker lazily, on the first call to a
+   * dependency, and hands it whatever observer is installed AT THAT MOMENT. Installing the sink later than the first
+   * outbound call would leave that dependency's breaker permanently silent — visible to nobody, and looking exactly
+   * like a dependency that never fails. `onModuleInit` runs before the HTTP server accepts a request, which is the
+   * only point where "before any call" is guaranteed.
+   */
+  onModuleInit(): void {
+    this.resilience.useCircuitObserver(this.circuitEvents);
+  }
+}

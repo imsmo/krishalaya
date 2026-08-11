@@ -218,6 +218,16 @@ export const OwnerPermissions = {
   /* ---- PC-56 ADMIN-11b · notification templates. W101 and W102 both name `templates.manage` by hand in their
      read-only states, and `grep -rn "templates.manage" apps` returned nothing across every app — so the registry's
      restricted state could not happen and one grant would have covered reading the OTP wording and rewriting it. ---- */
+  /* ---- PC-56 ADMIN-11c · providers, API keys & webhooks. W106 names both grants by hand ("Needs platform.api.read;
+     revoking needs platform.api.manage + reason") and `grep -rn "platform.api" apps packages` returned nothing — so one
+     grant covered reading every tenant's integration list AND switching it off. ---- */
+  PlatformApiRead: 'platform.api.read',
+  PlatformApiManage: 'platform.api.manage',
+  // **W007 GATES THE SECRET REFERENCES AND NOT THE HEALTH METRICS**, in those words: "Secret refs (AWS ARN) require
+  // providers.secrets.read. Health metrics remain visible to all ops roles." A single provider grant would have made the
+  // canon's own restricted state unreachable, which is the third time this programme has found a screen describing a
+  // permission split the code could not express.
+  ProvidersSecretsRead: 'providers.secrets.read',
   TemplatesRead: 'templates.read',
   // Author a version, submit it, register a sender id. **NOT approve** — see below.
   TemplatesManage: 'templates.manage',
@@ -271,6 +281,15 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // Reads every template and every version, including tenant overrides — the "what did we send" question, which before
   // this wave had no answer at all.
   platform_templates_auditor: [OwnerPermissions.TemplatesRead],
+  /* ---- PC-56 ADMIN-11c ---- */
+  // The integrations desk: sees every key, endpoint and callback, and can revoke. Deliberately WITHOUT
+  // `providers.secrets.read` — the desk that watches traffic is not the desk that reads credentials.
+  platform_integrations_ops:     [OwnerPermissions.PlatformApiManage, OwnerPermissions.PlatformApiRead],
+  // Read-only oversight: the shape of request this plane will get most often, and previously impossible to grant.
+  platform_integrations_viewer:  [OwnerPermissions.PlatformApiRead],
+  // The role W007's restricted state is written for: reads the secret REFERENCES (never the secrets) as well as the
+  // health metrics. Separate from the ops role so a credential reference is a deliberate grant.
+  platform_integrations_secrets: [OwnerPermissions.PlatformApiRead, OwnerPermissions.ProvidersSecretsRead],
   platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead, OwnerPermissions.AiReview],
   platform_ai_auditor:    [OwnerPermissions.AiModelRead],
   // ADMIN-7. The reviewer who works the queue and cannot change a model — the commonest shape of request on this plane

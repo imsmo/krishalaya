@@ -15,6 +15,7 @@ import { Bulkhead, BulkheadOptions } from './bulkhead';
 import { withTimeout } from './timeout';
 import { withRetry } from './retry';
 import { withFallback, Fallback } from './fallback.registry';
+import { CircuitObserver, NULL_CIRCUIT_OBSERVER } from './circuit-observer';
 
 export const RESILIENCE = Symbol('RESILIENCE');
 
@@ -43,7 +44,16 @@ export class ResilienceService {
   private readonly bulkheads = new Map<string, Bulkhead>();
   private readonly policies = new Map<string, DepPolicy>();
 
+  /** PC-56 ADMIN-11c: where breaker transitions are published so admin-api can answer W007's Circuit column. Optional
+   *  in the constructor so every existing test that builds a ResilienceService with just metrics keeps compiling — and
+   *  so a missing sink degrades to "no console visibility" rather than to a boot failure. */
+  private observer: CircuitObserver = NULL_CIRCUIT_OBSERVER;
+
   constructor(@Inject(METRICS) private readonly metrics: Metrics) {}
+
+  /** Install the transition sink. Called once at module init; breakers created before it keep the null observer, which
+   *  is why `core.module.ts` installs it before anything can make a call. */
+  useCircuitObserver(observer: CircuitObserver): void { this.observer = observer; }
 
   /** Register/override a dependency's policy (call once at module init; otherwise DEFAULT applies). */
   configure(dep: string, policy: Partial<DepPolicy>): void {
@@ -81,7 +91,7 @@ export class ResilienceService {
 
   private breaker(dep: string, c: CircuitOptions): CircuitBreaker {
     let b = this.breakers.get(dep);
-    if (!b) { b = new CircuitBreaker(dep, c); this.breakers.set(dep, b); }
+    if (!b) { b = new CircuitBreaker(dep, { ...c, observer: this.observer }); this.breakers.set(dep, b); }
     return b;
   }
   private bulkhead(dep: string, c: BulkheadOptions): Bulkhead {
