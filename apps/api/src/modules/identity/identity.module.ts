@@ -38,6 +38,8 @@ import { PrivacyController } from './controllers/v1/privacy.controller';
 
 // Repositories
 import { MemberRosterReadModel } from './read-models/member-roster.read-model';
+import { MemberPiiService } from './services/member-pii.service';
+import { MemberRosterController } from './controllers/v1/member-roster.controller';
 import { UserRepository } from './repositories/user.repository';
 import { RoleRepository } from './repositories/role.repository';
 import { PermissionRepository } from './repositories/permission.repository';
@@ -63,13 +65,13 @@ import { DpdpErasureCoolingJob } from './jobs/dpdp-erasure-cooling.job';
 import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
 
 @Module({
-  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, AddressesController, BankAccountsController, ConsentsController, PrivacyController],
+  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController],
   providers: [
     AuthService, UserService, UserTenantRoleService, OnboardingService, RoleService, PermissionService,
     KycDocumentService, EkycService, BusinessKycService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
     ekycProviderProvider,
     fundAccountTokeniserProvider,
-    MemberRosterReadModel,
+    MemberRosterReadModel, MemberPiiService,
     UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository, BusinessKycRepository, EkycSessionRepository,
     AddressRepository, BankAccountRepository, DeviceRepository, SessionRepository, LoginEventRepository,
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,

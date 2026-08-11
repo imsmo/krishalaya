@@ -7,4 +7,8 @@ export const IdentityPermissions = {
   Impersonate: 'user.impersonate',
   Report: 'report.view',          // list/inspect users in a tenant
   TenantSettings: 'tenant.settings',
+  /** PC-56 TENANT-1b · W153: "PII stays masked — full reveal is per-field, recorded, and reasoned." **Its own grant, never
+   *  implied by the roster read**: seeing that a member EXISTS and seeing how to telephone them are different acts, and
+   *  the screen's restricted state says so ("viewing needs member-desk scope; PII stays masked"). */
+  RevealPii: 'member.pii.reveal',
 } as const;
