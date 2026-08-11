@@ -221,6 +221,10 @@ export const OwnerPermissions = {
   /* ---- PC-56 ADMIN-11c · providers, API keys & webhooks. W106 names both grants by hand ("Needs platform.api.read;
      revoking needs platform.api.manage + reason") and `grep -rn "platform.api" apps packages` returned nothing — so one
      grant covered reading every tenant's integration list AND switching it off. ---- */
+  /* ---- PC-56 ADMIN-SWEEP · price intelligence. Reading the pulse is `analytics.read` (W107 says so). **DECIDING on a
+     quarantined price is its own grant**: releasing an observation is what lets a number reach a farmer's selling
+     decision, and that is not the same authority as reading a chart. ---- */
+  MarketPriceReview: 'market.price.review',
   PlatformApiRead: 'platform.api.read',
   PlatformApiManage: 'platform.api.manage',
   // **W007 GATES THE SECRET REFERENCES AND NOT THE HEALTH METRICS**, in those words: "Secret refs (AWS ARN) require
@@ -285,6 +289,10 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // The integrations desk: sees every key, endpoint and callback, and can revoke. Deliberately WITHOUT
   // `providers.secrets.read` — the desk that watches traffic is not the desk that reads credentials.
   platform_integrations_ops:     [OwnerPermissions.PlatformApiManage, OwnerPermissions.PlatformApiRead],
+  /* ---- PC-56 ADMIN-SWEEP ---- */
+  // The market desk: reads the pulse and clears the anomaly queue. Deliberately NOT holding `analytics.export` — the
+  // desk that judges a price does not need to walk out with the price file.
+  platform_market_ops:           [OwnerPermissions.MarketPriceReview, OwnerPermissions.AnalyticsRead],
   // Read-only oversight: the shape of request this plane will get most often, and previously impossible to grant.
   platform_integrations_viewer:  [OwnerPermissions.PlatformApiRead],
   // The role W007's restricted state is written for: reads the secret REFERENCES (never the secrets) as well as the

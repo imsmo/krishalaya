@@ -19,6 +19,7 @@ import { PricePredictionService } from './services/price-prediction.service';
 import { PriceAlertService } from './services/price-alert.service';
 import { MandiPulseReadModel } from './read-models/mandi-pulse.read-model';
 import { MarketNamesReadModel } from './read-models/market-names.read-model';
+import { MarketSettingsReadModel } from './read-models/market-settings.read-model';
 import { MandiRepository } from './repositories/mandi.repository';
 import { MandiPriceRepository } from './repositories/mandi-price.repository';
 import { PricePredictionRepository } from './repositories/price-prediction.repository';
@@ -27,7 +28,7 @@ import { PriceAlertRepository } from './repositories/price-alert.repository';
 @Module({
   controllers: [MandiPricesController, PredictionsController, PriceAlertsController],
   providers: [
-    MandiService, MandiPriceService, PricePredictionService, PriceAlertService, MandiPulseReadModel, MarketNamesReadModel,
+    MandiService, MandiPriceService, PricePredictionService, PriceAlertService, MandiPulseReadModel, MarketNamesReadModel, MarketSettingsReadModel,
     MandiRepository, MandiPriceRepository, PricePredictionRepository, PriceAlertRepository,
   ],
   exports: [MandiPriceService, PricePredictionService],

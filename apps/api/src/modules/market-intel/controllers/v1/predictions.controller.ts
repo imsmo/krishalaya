@@ -1,6 +1,6 @@
 // modules/market-intel/controllers/v1/predictions.controller.ts · fair-price bands.
 // generate needs market.manage; the latest-band read is any authenticated user. `market_intel` flag.
-import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';

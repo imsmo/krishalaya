@@ -15,6 +15,8 @@ import { PgReadReplicaProvider } from '../../../core/database/read-replica.pg';
 import { PgOutboxWriter } from '../../../core/outbox/outbox.writer.pg';
 import { PgIdempotencyService } from '../../../core/idempotency/idempotency.service.pg';
 import { PromMetrics } from '../../../core/observability/metrics.prom';
+import { MarketNamesReadModel } from '../read-models/market-names.read-model';
+import { MarketSettingsReadModel } from '../read-models/market-settings.read-model';
 import { MandiPriceRepository } from '../repositories/mandi-price.repository';
 import { PricePredictionRepository } from '../repositories/price-prediction.repository';
 import { PriceAlertRepository } from '../repositories/price-alert.repository';
@@ -47,10 +49,16 @@ run('market-intel spine (integration, real Postgres + RLS + alerts)', () => {
     const replica = new PgReadReplicaProvider(pools, shards);
     const outbox = new PgOutboxWriter(); const idem = new PgIdempotencyService(pools); const metrics = new PromMetrics();
     const priceRepo = new MandiPriceRepository(replica as any); const predRepo = new PricePredictionRepository(replica as any); const alertRepo = new PriceAlertRepository(replica as any);
-    prices = new MandiPriceService(uow, outbox, idem, metrics, priceRepo, alertRepo);
+    const marketNames = new MarketNamesReadModel(replica as any);
+    // PC-56 ADMIN-SWEEP: the anomaly policy read model. Real, against the same pools — so this suite exercises the gate
+    // reading its threshold out of `setting_definitions` exactly as production does.
+    const marketSettings = new MarketSettingsReadModel(pools);
+    prices = new MandiPriceService(uow, outbox, idem, metrics, priceRepo, alertRepo, marketNames, marketSettings);
     predictions = new PricePredictionService(uow, outbox, metrics, predRepo, priceRepo);
     alerts = new PriceAlertService(uow, outbox, metrics, alertRepo);
-    pulse = new MandiPulseReadModel(priceRepo, predRepo);
+    // Third argument added by an earlier wave and never updated here — one of the pre-existing red apps/api suites.
+    // Fixed while this wave was in the file rather than left for the next reader to trip over.
+    pulse = new MandiPulseReadModel(priceRepo, predRepo, marketNames);
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
