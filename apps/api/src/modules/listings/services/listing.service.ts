@@ -16,6 +16,7 @@ import { CACHE_SERVICE, CacheService } from '../../../core/cache/cache.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ForbiddenError } from '../../../shared/errors/app-error';
+import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { Listing, ListingDomainEvent } from '../domain/listing.entity';
 import { ListingConcurrencyError, ListingNotFoundError, PhotoMediaInvalidError, TooManyPhotosError } from '../domain/listing.errors';
 import { AuditWriter } from '../../../core/audit/audit.writer';
@@ -81,6 +82,11 @@ export class ListingService {
           ListingAttribute.of({ id: uuidv7(), tenantId, listingId: id, attributeId: a.attributeId, value: toAttrValue(a) }));
 
         await this.uow.run(tenantId, async (tx) => {
+          // **A SUSPENDED SELLER ADDS NO NEW SUPPLY (PC-56 TENANT-1b-2).** Inside the transaction, before the insert:
+          // the same question the quota check asks — may this seller put produce on this tenant's market right now —
+          // and refusing here means the idempotency record is never completed, so a retry re-asks rather than replaying
+          // a success that never happened.
+          await this.assertSellerNotSuspendedTx(tx, tenantId, sellerUserId);
           await this.repo.insert(tx, listing);
           if (attrEntities.length) await this.attrs.upsertMany(tx, attrEntities);
           if (dto.mediaIds?.length) await this.media.attach(tx, tenantId, id, dto.mediaIds);
@@ -128,6 +134,10 @@ export class ListingService {
       await this.uow.run(tenantId, async (tx) => {
         const listing = await this.repo.getForUpdate(tx, tenantId, id);
         this.assertCanMutate(listing, actor);
+        // Publishing is the act that puts a listing in front of buyers, so a suspended seller is refused here even for a
+        // draft they wrote before the suspension. Checked INSIDE the transaction, against the LISTING's seller rather
+        // than the actor: a moderator publishing on a suspended member's behalf must hit the same wall.
+        await this.assertSellerNotSuspendedTx(tx, tenantId, listing.sellerUserId);
         listing.publish();
         await this.repo.update(tx, listing);
         await this.flushEvents(tx, tenantId, id, listing.pullEvents());
@@ -145,6 +155,8 @@ export class ListingService {
       await this.uow.run(tenantId, async (tx) => {
         const listing = await this.repo.getForUpdate(tx, tenantId, id);
         this.assertCanMutate(listing, actor); // ownership (moderator bypass); status validated by domain
+        // A repost is a fresh publish of old produce; same rule, same reason.
+        await this.assertSellerNotSuspendedTx(tx, tenantId, listing.sellerUserId);
         const old = listing.price.minor;
         listing.repost(opts.durationDays, new Date(), opts.newPriceMinor);
         await this.repo.update(tx, listing);
@@ -276,6 +288,24 @@ export class ListingService {
   }
 
   /** Authorization: the seller owns it, OR the caller may moderate (admin). Else 403. */
+  /**
+   * **A SUSPENDED SELLER MAY NOT ADD OR RE-EXPOSE SUPPLY (PC-56 TENANT-1b-2).**
+   *
+   * W154 promises that suspension "pauses listings", and the read side (six public paths, one shared predicate) hides
+   * what is already live. This is the other half: without it, a suspended member could keep publishing into a market
+   * that hides each new listing, which would look to them like the platform silently swallowing their work.
+   *
+   * They can still EDIT and still SEE their own catalogue. The refusal is on exposure, not on their own records.
+   */
+  private async assertSellerNotSuspendedTx(tx: TxContext, tenantId: string, sellerUserId: string): Promise<void> {
+    const r = await tx.query<{ suspended: boolean }>(
+      `SELECT ${memberSuspendedSql('$2', '$1')} AS suspended`, [sellerUserId, tenantId]);
+    if (r.rows[0]?.suspended === true) {
+      this.metrics.inc('listing.refused_seller_suspended', { tenant: tenantId });
+      throw new ForbiddenError('this member is suspended in this organisation and cannot list', { reason: 'seller_suspended' });
+    }
+  }
+
   private assertCanMutate(listing: Listing, actor: ListingActor): void {
     if (actor.canModerate) return;
     if (listing.sellerUserId !== actor.userId) {

@@ -15,6 +15,7 @@
 // regardless of publish/visibility state. Strangers still only ever see a published+public gallery.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
+import { sellerSuspendedExpr, isPubliclyVisible } from '../../../shared/sql/member-suspension.sql';
 import { OBJECT_STORE, ObjectStore } from '../../../core/media/s3-presign.service';
 
 export interface GalleryItem { mediaId: string; url: string; sortOrder: number; }
@@ -34,11 +35,15 @@ export class ListingGalleryReadModel {
    *  [] if neither condition holds, or the listing has no clean media. */
   async forListing(tenantId: string, listingId: string, viewer?: GalleryViewer): Promise<{ items: GalleryItem[]; expiresInSec: number }> {
     const db = this.replica.forTenant(tenantId);
-    const l = await db.query<{ status: string; visibility: string; seller_user_id: string }>(
-      `SELECT status, visibility, seller_user_id FROM listings WHERE id=$1`, [listingId]);
+    // The suspension is SELECTED rather than recomputed here: the rule lives in one place (shared/sql), and expressing
+    // it once in SQL and once in TypeScript would be the same drift in a different costume. PC-56 TENANT-1b-2.
+    const l = await db.query<{ status: string; visibility: string; seller_user_id: string; seller_suspended: boolean }>(
+      `SELECT status, visibility, seller_user_id,
+              ${sellerSuspendedExpr('$2', 'seller_user_id')} AS seller_suspended
+         FROM listings WHERE id=$1`, [listingId, tenantId]);
     const listing = l.rows[0];
     if (!listing) return { items: [], expiresInSec: URL_TTL_SEC };
-    const publiclyVisible = listing.status === 'published' && (listing.visibility === 'public' || listing.visibility === 'cross_tenant');
+    const publiclyVisible = isPubliclyVisible({ ...listing, sellerSuspended: listing.seller_suspended === true });
     const isOwnerOrAdmin = !!viewer && (viewer.canModerate || (!!viewer.userId && listing.seller_user_id === viewer.userId));
     if (!publiclyVisible && !isOwnerOrAdmin) return { items: [], expiresInSec: URL_TTL_SEC };
 

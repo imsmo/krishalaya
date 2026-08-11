@@ -10,6 +10,7 @@ import { PgPoolProvider } from '../database/pg-pool.provider';
 import { ShardRouter } from '../sharding/shard-router';
 import { CACHE_SERVICE, CacheService } from '../cache/cache.service';
 import { CacheKeys } from '../cache/cache-keys';
+import { memberSuspendedSql } from '../../shared/sql/member-suspension.sql';
 
 export interface EffectiveAccess { roles: string[]; permissions: string[]; }
 const TTL_SECONDS = 300;
@@ -38,6 +39,25 @@ export class RoleCacheService {
     try {
       await client.query('BEGIN READ ONLY');
       await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
+
+      // **A MEMBER SUSPENDED BY THIS TENANT RESOLVES TO NOTHING IN THIS TENANT (PC-56 TENANT-1b-2).**
+      //
+      // This is the single authority for what somebody may do inside a tenant — every token mint, every refresh, and
+      // every impersonation resolution comes through here — so one check covers all of them, and it costs one indexed
+      // probe on a path that already opens a transaction. **AND IT IS SCOPED TO `tenantId`, WHICH IS THE ENTIRE POINT**:
+      // a farmer suspended by Anand FPO resolves normally for the other FPO they belong to and for the storefront,
+      // because `users.status` (which is GLOBAL) is deliberately not what a tenant console writes. 0127's header carries
+      // the full argument.
+      //
+      // ZERO ROLES AND ZERO PERMISSIONS, returned before the two queries below rather than by filtering their results: a
+      // suspended member should cost the database less, not more, and an early return cannot be defeated by a role or
+      // override added later.
+      const susRes = await client.query(
+        `SELECT ${memberSuspendedSql('$2', '$1')} AS suspended`, [userId, tenantId]);
+      if (susRes.rows[0]?.suspended === true) {
+        await client.query('COMMIT');
+        return { roles: [], permissions: [] };
+      }
 
       const rolesRes = await client.query(
         `SELECT r.code

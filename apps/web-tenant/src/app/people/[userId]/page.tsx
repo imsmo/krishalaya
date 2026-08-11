@@ -12,8 +12,10 @@
 // often the member opened the app for a DIFFERENT one. Twelfth time this programme has hit the realm-identity problem,
 // and the answer is the same every time.
 //
-// **THE DANGER ZONE IS DELIBERATELY NOT RENDERED.** See the note above `SuspensionNotice` — the wiring that looks obvious
-// would let one tenant's staff lock a member out of every other tenant on the platform.
+// **AND THE DANGER ZONE IS NOW BUILT, TENANT-SCOPED (PC-56 TENANT-1b-2).** The previous wave refused to render it, because
+// the obvious wiring — `UserService.changeStatus`, which existed with no route — sets `users.status`, a column on the
+// GLOBAL users table: one FPO's member desk would have locked a farmer out of every OTHER FPO, the storefront and the app.
+// 0127 replaced it with a tenant-scoped record enforced at four points, and `SuspensionPanel` below is the control.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -22,8 +24,12 @@ import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import type { Translator } from '@krishalaya/i18n';
 import { formatMoneyMinor, formatDate, formatRelative } from '@krishalaya/i18n';
-import { SdkError, type MemberDetail } from '@krishalaya/sdk-js';
+import { SdkError, type MemberDetail, type SuspensionRecord } from '@krishalaya/sdk-js';
 import { disputeRecordKey, hasRoleLabel, hasKycLabel, MIN_REVEAL_REASON } from '../../../features/people/roster';
+import {
+  suspensionState, isSelf, SUSPENSION_EFFECT_KEYS, MIN_SUSPENSION_REASON,
+} from '../../../features/people/suspension';
+import { suspendMemberAction, reinstateMemberAction } from './actions';
 import { RevealField } from '../RevealField';
 
 export const dynamic = 'force-dynamic';
@@ -35,15 +41,35 @@ export function generateMetadata(): Metadata {
 const roleName = (code: string, t: Translator) => (hasRoleLabel(code) ? t.t(`people.role.${code}`) : code);
 const kycName = (s: string, t: Translator) => (hasKycLabel(s) ? t.t(`people.kycStatus.${s}`) : s);
 
-export default async function MemberPage({ params }: { params: { userId: string } }) {
+const OK_KEYS = new Set(['suspended', 'alreadySuspended', 'reinstated']);
+const ERR_KEYS = new Set(['reason', 'forbidden', 'notFound', 'notSuspended', 'failed']);
+
+export default async function MemberPage(
+  { params, searchParams }: { params: { userId: string }; searchParams: { ok?: string; error?: string } },
+) {
   await requireSession(`/people/${params.userId}`);
   const t = getTranslator();
   const lang = getLang();
 
   let m: MemberDetail | null = null;
+  let live: SuspensionRecord | null = null;
+  let history: SuspensionRecord[] = [];
+  let viewerUserId: string | null = null;
   let failed = false;
   try {
-    m = await tenantClient().members.get(params.userId);
+    const client = tenantClient();
+    // Three reads in parallel. The suspension status and the viewer's own id are allowed to FAIL SOFTLY (Law 12): a
+    // member desk that cannot render a profile because the suspension history endpoint hiccuped is worse than one that
+    // renders the profile and hides one panel. The detail read is the one that must succeed.
+    const [detail, suspension, me] = await Promise.all([
+      client.members.get(params.userId),
+      client.members.suspensionStatus(params.userId).catch(() => ({ live: null, history: [] as SuspensionRecord[] })),
+      client.users.me().catch(() => null),
+    ]);
+    m = detail;
+    live = suspension.live;
+    history = suspension.history;
+    viewerUserId = me?.id ?? null;
   } catch (e) {
     // 404 is a real Next 404: "they may have moved tenants — membership history stays with the member, not with you"
     // (W154's own words). Any other failure is the load-error state, because **partial data is never shown as complete**.
@@ -61,6 +87,8 @@ export default async function MemberPage({ params }: { params: { userId: string 
   }
 
   const dispute = disputeRecordKey(m.glance);
+  const okKey = searchParams.ok && OK_KEYS.has(searchParams.ok) ? searchParams.ok : null;
+  const errorKey = searchParams.error && ERR_KEYS.has(searchParams.error) ? searchParams.error : null;
   const revealLabels = {
     open: t.t('people.reveal.open'),
     heading: t.t('people.reveal.heading'),
@@ -108,6 +136,17 @@ export default async function MemberPage({ params }: { params: { userId: string 
           tenant's own books unreachable.
         */}
         {m.membershipInactive && <p className="kv-notice" role="status">{t.t('member.inactive')}</p>}
+        {okKey && <p className="kv-success" role="status">{t.t(`member.ok.${okKey}`)}</p>}
+        {errorKey && <p className="kv-error" role="alert">{t.t(`member.error.${errorKey}`)}</p>}
+        {/* **THE SUSPENSION IS ANNOUNCED AT THE TOP, NOT ONLY IN THE DANGER ZONE AT THE BOTTOM.** Every number on this
+            page — the money, the orders, the dairy — reads differently once you know the member is currently suspended,
+            and a staff member should not have to scroll to find that out. */}
+        {suspensionState(live) === 'suspended' && (
+          <p className="kv-error" role="status">
+            {t.t('member.suspendedBanner', { date: formatDate(live!.createdAt, lang) })}{' '}
+            <strong>{live!.reason}</strong>
+          </p>
+        )}
       </div>
 
       {/* ---------------------------------------------------------------- At a glance */}
@@ -275,7 +314,10 @@ export default async function MemberPage({ params }: { params: { userId: string 
         </div>
       </dl>
 
-      <SuspensionNotice t={t} />
+      <SuspensionPanel
+        t={t} userId={m.userId} live={live} history={history}
+        self={isSelf(viewerUserId, m.userId)} lang={lang}
+      />
 
       <p><Link href="/people" className="kv-link">{t.t('member.back')}</Link></p>
     </section>
@@ -283,31 +325,97 @@ export default async function MemberPage({ params }: { params: { userId: string 
 }
 
 /**
- * **W154's DANGER ZONE, RENDERED AS A DISCLOSED ABSENCE RATHER THAN A BUTTON — AND THIS IS THE WAVE'S MAIN FINDING.**
+ * **W154's DANGER ZONE, BUILT — AND SCOPED TO THIS ORGANISATION ONLY (PC-56 TENANT-1b-2).**
  *
- * The screen offers "Suspend member (user_status: suspended)" with the promise "pauses listings and app access; money owed
- * still pays out". Three facts about the code underneath:
+ * The previous wave rendered this as a disclosed absence, because the obvious implementation was dangerous:
+ * `UserService.changeStatus` existed with no route, and `users.status` is a column on the GLOBAL `users` table, so wiring
+ * it here would have let one FPO's member desk lock a farmer out of every OTHER FPO they belong to, out of the consumer
+ * storefront, and out of the app. 0127 replaces it with a tenant-scoped record, enforced at four points, and this is the
+ * control on top of it.
  *
- *  1. `UserService.changeStatus` already exists, with a reason, an audit row and a state machine — and has **no HTTP
- *     route**. Wiring it to a tenant console is a five-line change and it is the wrong change.
- *  2. `users.status` is a column on the GLOBAL `users` table, not on `user_tenant_roles`. So a tenant suspending its
- *     member would set that person's status **platform-wide**: locked out of every other FPO they belong to, out of the
- *     consumer storefront, out of the app entirely. One tenant's staff would hold a cross-tenant lockout switch with an
- *     audit row attached. At 15,000 tenants that is a denial-of-service surface, and under rule zero it breaks trust.
- *  3. "Pauses listings" is not true today for any actor: nothing in the marketplace read path consults a member's status,
- *     and there are five separate published-listing read sites (search feed, gallery, links, seller profile, mandi band)
- *     plus the offers service. Enforcing it in three of five would be worse than enforcing it in none.
- *
- * So the control is **not rendered** — the same maker-checker-by-absence discipline this programme has used before: a
- * control whose promise the code cannot keep does not get a button. The honest fix is a TENANT-SCOPED suspension with its
- * own record (reason, who, when, and a lift), plus the read-side pause across all five sites, and that is a wave of its
- * own (TENANT-1b-2) rather than a paragraph here.
+ * **THE EFFECT LIST IS PRINTED BEFORE THE BUTTON, INCLUDING THE TWO THINGS THIS DOES NOT DO.** A staff member's first
+ * question is whether suspension stops the member's money; the answer — it does not, money owed still pays out — belongs
+ * on the screen and not in a manual. The list is generated from the same key set the API's `SUSPENSION_EFFECTS` mirrors,
+ * so the screen and the code describe one act.
  */
-function SuspensionNotice({ t }: { t: Translator }) {
+function SuspensionPanel(
+  { t, userId, live, history, self, lang }:
+  { t: Translator; userId: string; live: SuspensionRecord | null; history: SuspensionRecord[]; self: boolean; lang: string },
+) {
+  const state = suspensionState(live);
+  const past = history.filter((h) => h.liftedAt !== null);
+
   return (
     <>
       <h2 className="kv-section-title">{t.t('member.suspendHeading')}</h2>
-      <p className="kv-notice">{t.t('member.suspendAbsent')}</p>
+
+      {/* SCOPE FIRST. The sentence that stops somebody assuming this is a platform ban. */}
+      <p className="kv-notice">{t.t('member.suspendScope')}</p>
+
+      <ul className="kv-prefs-list">
+        {SUSPENSION_EFFECT_KEYS.map((k) => (
+          <li key={k} className="kv-prefs-row">{t.t(`member.suspendEffect.${k}`)}</li>
+        ))}
+      </ul>
+
+      {/* **THE CONTROL IS HIDDEN ON YOUR OWN RECORD, NOT DISABLED.** The API and the CHECK constraint both refuse a
+          self-suspension, so offering a form that cannot succeed would only waste somebody's typing. */}
+      {self ? (
+        <p className="kv-fine">{t.t('member.suspendSelf')}</p>
+      ) : state === 'active' ? (
+        <details className="kv-disclosure">
+          <summary className="kv-btn--link">{t.t('member.suspendOpen')}</summary>
+          <form action={suspendMemberAction} className="kv-form">
+            <input type="hidden" name="userId" value={userId} />
+            <label htmlFor="susReason" className="kv-field__label">{t.t('member.suspendReason')}</label>
+            <textarea
+              id="susReason" name="reason" className="kv-textarea" rows={3} required
+              minLength={MIN_SUSPENSION_REASON} maxLength={500} aria-describedby="susHint"
+            />
+            <p id="susHint" className="kv-field__hint">{t.t('member.suspendReasonHint', { min: MIN_SUSPENSION_REASON })}</p>
+            <button type="submit" className="kv-btn kv-danger">{t.t('member.suspendSubmit')}</button>
+          </form>
+        </details>
+      ) : (
+        <details className="kv-disclosure" open>
+          <summary className="kv-btn--link">{t.t('member.reinstateOpen')}</summary>
+          {/* The ORIGINAL reason and its author are shown beside the reinstate form, because the person lifting a
+              suspension is frequently not the person who applied it. */}
+          <p className="kv-fine">
+            {t.t('member.suspendedSince', { date: formatDate(live!.createdAt, lang) })} · {live!.reason}
+          </p>
+          <form action={reinstateMemberAction} className="kv-form">
+            <input type="hidden" name="userId" value={userId} />
+            <label htmlFor="liftReason" className="kv-field__label">{t.t('member.reinstateReason')}</label>
+            <textarea
+              id="liftReason" name="reason" className="kv-textarea" rows={3} required
+              minLength={MIN_SUSPENSION_REASON} maxLength={500} aria-describedby="liftHint"
+            />
+            <p id="liftHint" className="kv-field__hint">{t.t('member.reinstateReasonHint', { min: MIN_SUSPENSION_REASON })}</p>
+            <button type="submit" className="kv-btn">{t.t('member.reinstateSubmit')}</button>
+          </form>
+        </details>
+      )}
+
+      {/* **THE HISTORY, BECAUSE A TABLE RATHER THAN A FLAG IS THE WHOLE REASON 0127 EXISTS.** A member suspended three
+          times over two seasons is a different conversation from one suspended once, and a boolean column would have told
+          staff neither. */}
+      {past.length > 0 && (
+        <>
+          <h3 className="kv-section-title">{t.t('member.suspendHistory')}</h3>
+          <ul className="kv-notif-list">
+            {past.map((h) => (
+              <li key={h.id} className="kv-notif-item">
+                <span className="kv-notif-title">{h.reason}</span>
+                <span className="kv-notif-meta">
+                  {formatDate(h.createdAt, lang)} → {formatDate(h.liftedAt!, lang)}
+                  {h.liftReason ? ` · ${h.liftReason}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   );
 }

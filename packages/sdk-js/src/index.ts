@@ -67,6 +67,6 @@ export type { MembershipTier, UserMembership } from './resources/memberships';
 export type { Requirement, RequirementResponse } from './resources/requirements';
 // PC-56 TENANT-1b · the people roster + member detail. `REVEALABLE_MEMBER_FIELDS` is a VALUE export (the console
 // renders the field picker from it, so the list cannot drift from the server's closed enum).
-export { REVEALABLE_MEMBER_FIELDS, kycSeverity, isFullyVerified, rosterKycLabel } from './resources/members';
+export { REVEALABLE_MEMBER_FIELDS, kycSeverity, isFullyVerified, rosterKycLabel, MIN_SUSPENSION_REASON } from './resources/members';
 export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail, MemberRoleDetail, MemberGlance,
-  MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel } from './resources/members';
+  MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel, SuspensionRecord, SuspensionResult } from './resources/members';

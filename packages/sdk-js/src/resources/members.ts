@@ -163,6 +163,31 @@ export function rosterKycLabel(roles: RosterRole[]): KycLabel {
   return { key: 'mixed', count: active.length, status: worst.kycStatus, roleCode: worst.roleCode };
 }
 
+/* ------------------------------------------------------------------------------------------------------------ */
+/* SUSPENSION (W154's danger zone, PC-56 TENANT-1b-2)                                                             */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+export interface SuspensionRecord {
+  id: string;
+  userId: string;
+  reason: string;
+  suspendedBy: string;
+  createdAt: string;
+  liftedAt: string | null;
+  liftedBy: string | null;
+  liftReason: string | null;
+}
+
+export interface SuspensionResult {
+  /** `already_suspended` is a SUCCESS carrying the EXISTING episode — the new reason was not recorded, and the console
+   *  must say so rather than implying it was. */
+  outcome: 'suspended' | 'already_suspended' | 'lifted';
+  record: SuspensionRecord;
+}
+
+/** Same floor as a PII reveal. Below twenty characters people type "fraud" and move on. */
+export const MIN_SUSPENSION_REASON = 20;
+
 export class MembersResource {
   constructor(private readonly http: HttpClient) {}
 
@@ -201,5 +226,35 @@ export class MembersResource {
   async revealField(userId: string, field: RevealableMemberField, reason: string): Promise<{ field: RevealableMemberField; value: string | null }> {
     return (await this.http.request<{ field: RevealableMemberField; value: string | null }>(
       'POST', `members/roster/${encodeURIComponent(userId)}/reveal`, { body: { field, reason } })).data;
+  }
+
+  /**
+   * Suspend a member's participation in THIS organisation.
+   *
+   * **THE SCOPE IS NOT A PARAMETER, AND THAT IS THE FEATURE.** There is no `platformWide` flag to pass, because
+   * `users.status` is a global column and a tenant console setting it would lock the member out of every other
+   * organisation they belong to and out of the consumer storefront. This writes a tenant-scoped record instead.
+   *
+   * Effects: no new token for this tenant, zero permissions here, no listing create/publish/repost, and their live
+   * listings leave the six public read paths. **Payouts are untouched — money owed still pays out.** Needs `user.approve`.
+   */
+  async suspend(userId: string, reason: string): Promise<SuspensionResult> {
+    return (await this.http.request<SuspensionResult>(
+      'POST', `members/roster/${encodeURIComponent(userId)}/suspension`, { body: { reason } })).data;
+  }
+
+  /**
+   * Reinstate. **ONE person with a reason, exactly like the suspension** — requiring a second signature to LIFT would
+   * keep a wrongly-suspended farmer off the marketplace for longer, and the whole harm of a mistake is theirs.
+   */
+  async reinstate(userId: string, reason: string): Promise<SuspensionResult> {
+    return (await this.http.request<SuspensionResult>(
+      'DELETE', `members/roster/${encodeURIComponent(userId)}/suspension`, { body: { reason } })).data;
+  }
+
+  /** The live episode (or null) plus the history. Needs `report.view`. */
+  async suspensionStatus(userId: string, signal?: AbortSignal): Promise<{ live: SuspensionRecord | null; history: SuspensionRecord[] }> {
+    return (await this.http.request<{ live: SuspensionRecord | null; history: SuspensionRecord[] }>(
+      'GET', `members/roster/${encodeURIComponent(userId)}/suspension`, { signal })).data;
   }
 }

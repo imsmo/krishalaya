@@ -10,6 +10,21 @@ export class InvalidPhoneError extends DomainError {
 export class UserNotActiveError extends DomainError {
   constructor(status: string) { super('USER_NOT_ACTIVE', `User is ${status}`, 403, { status }); }
 }
+/**
+ * PC-56 TENANT-1b-2. **DISTINCT FROM `UserNotActiveError`, AND THE DIFFERENCE IS THE WHOLE FEATURE.**
+ *
+ * `UserNotActiveError` means the PLATFORM has stopped this person — every tenant, every surface. This one means ONE
+ * organisation has suspended their membership, and the app must be able to tell the member which it is: "your access to
+ * Anand FPO is paused" is actionable, "your account is suspended" when they can still trade through their other FPO is a
+ * lie that sends them to the wrong support desk. The tenant is NOT named in the message the client renders from the code
+ * alone — the console supplies its own name — but the code is separate so the client can choose the right sentence.
+ */
+export class TenantMembershipSuspendedError extends DomainError {
+  constructor() {
+    super('TENANT_MEMBERSHIP_SUSPENDED', 'Your membership of this organisation is currently suspended', 403,
+      { scope: 'tenant' });
+  }
+}
 export class IllegalUserTransitionError extends DomainError {
   constructor(from: string, to: string) { super('USER_ILLEGAL_TRANSITION', `Cannot move user ${from}→${to}`, 409, { from, to }); }
 }

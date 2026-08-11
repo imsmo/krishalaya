@@ -40,6 +40,8 @@ import { PrivacyController } from './controllers/v1/privacy.controller';
 import { MemberRosterReadModel } from './read-models/member-roster.read-model';
 import { MemberDetailReadModel } from './read-models/member-detail.read-model';
 import { MemberPiiService } from './services/member-pii.service';
+import { MemberSuspensionService } from './services/member-suspension.service';
+import { MemberSuspensionRepository } from './repositories/member-suspension.repository';
 import { MemberRosterController } from './controllers/v1/member-roster.controller';
 import { UserRepository } from './repositories/user.repository';
 import { RoleRepository } from './repositories/role.repository';
@@ -73,6 +75,7 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
     ekycProviderProvider,
     fundAccountTokeniserProvider,
     MemberRosterReadModel, MemberDetailReadModel, MemberPiiService,
+    MemberSuspensionService, MemberSuspensionRepository,
     UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository, BusinessKycRepository, EkycSessionRepository,
     AddressRepository, BankAccountRepository, DeviceRepository, SessionRepository, LoginEventRepository,
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,

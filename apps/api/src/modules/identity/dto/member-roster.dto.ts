@@ -19,3 +19,16 @@ export const RevealPiiSchema = z.object({
   reason: z.string().trim().min(MIN_REASON_LENGTH).max(300),
 }).strict();
 export type RevealPiiDto = z.infer<typeof RevealPiiSchema>;
+
+/**
+ * PC-56 TENANT-1b-2. A suspension or a reinstatement: a reason, and nothing else.
+ *
+ * **NO `scope` FIELD, NO `platformWide` FLAG, NO DURATION.** The scope is not the caller's to choose — a tenant console
+ * can only ever suspend within its own tenant, and offering a knob would invite the very cross-tenant act 0127 exists to
+ * prevent. A duration is refused too: a suspension that expires on a timer ends itself while the reason for it may still
+ * be true, and nobody would have looked.
+ */
+export const SuspendMemberSchema = z.object({
+  reason: z.string().trim().min(20).max(500),
+}).strict();
+export type SuspendMemberDto = z.infer<typeof SuspendMemberSchema>;

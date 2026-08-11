@@ -21,7 +21,8 @@ import { tryGetRequestContext } from '../../../core/tenancy-context/request-cont
 import { AppConfig } from '../../../core/config/app-config';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
-import { InvalidPhoneError, InvalidOtpError, InvalidRefreshError, UserNotActiveError } from '../domain/identity.errors';
+import { InvalidPhoneError, InvalidOtpError, InvalidRefreshError, UserNotActiveError, TenantMembershipSuspendedError } from '../domain/identity.errors';
+import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { User } from '../domain/user.entity';
 import { Session } from '../domain/session.entity';
 import { UserRepository } from '../repositories/user.repository';
@@ -86,6 +87,14 @@ export class AuthService {
         await this.flush(tx, user.id, user.pullEvents());
       } else {
         if (!user.isLoginable) throw new UserNotActiveError(user.toProps().status);
+        // **AND THEN THE TENANT-SCOPED CHECK, WHICH IS A DIFFERENT QUESTION (PC-56 TENANT-1b-2).** `isLoginable` above
+        // asks whether the PLATFORM has stopped this person; this asks whether THIS organisation has suspended their
+        // membership. A farmer suspended by Anand FPO signs into their other FPO on the very next line of this method.
+        //
+        // The refusal is EXPLICIT rather than letting `RoleCacheService` mint a token with zero permissions: an empty
+        // permission set produces a console that looks broken, and a member who is being told "your membership is paused"
+        // needs to be told that, not shown a blank screen. Both guards exist — see the note on `assertNotSuspended`.
+        await this.assertNotSuspended(tx, dto.tenantId, user.id);
         user.touchActive();
         await this.users.update(tx, user);
       }
@@ -112,6 +121,12 @@ export class AuthService {
       if (!session || !session.isValid()) return null;
       const user = await this.users.getForUpdate(tx, session.userId);
       if (!user || !user.isLoginable) return null;
+      // A live refresh token must not survive a suspension for THIS tenant — otherwise the member keeps renewing access
+      // for thirty days. Their refresh token still works for other tenants, which is correct: the token identifies the
+      // person, the suspension concerns one relationship. Thrown rather than returned as null so the client gets
+      // TENANT_MEMBERSHIP_SUSPENDED instead of a generic invalid-refresh (which would make them re-enter an OTP and hit
+      // the same wall without ever learning why).
+      await this.assertNotSuspended(tx, dto.tenantId, user.id);
       const r = this.refresh.issue();
       session.rotate(r.hash, r.expiresAt);
       await this.sessions.rotate(tx, session);
@@ -143,6 +158,28 @@ export class AuthService {
     const accessToken = this.tokens.mintAccessToken({ sub: user.id, tid: tenantId, sid: sessionId, roles: access.roles, perms: access.permissions });
     return { accessToken, refreshToken, expiresInSec: this.config.auth.accessTtlSec, user: user.toPublic() };
   }
+  /**
+   * Refuse a token for a tenant that has suspended this member (PC-56 TENANT-1b-2).
+   *
+   * **THIS IS THE SECOND OF TWO GUARDS ON THE SAME OUTCOME, AND THAT IS DELIBERATE.** `RoleCacheService.resolveFromDb`
+   * also returns zero roles and zero permissions for a suspended member, so deleting EITHER guard alone leaves the member
+   * unable to do anything — which means each is an equivalent mutant of the other and neither can be killed on its own.
+   * ADMIN-SWEEP hit exactly this shape and the lesson stands: **verify the PAIR, and keep both.** This one gives the
+   * member a sentence they can act on; that one is the backstop that holds for any future path which resolves access
+   * without coming through here.
+   *
+   * No tenant id means no tenant to be suspended from (the anonymous/self-service path), so there is nothing to check.
+   */
+  private async assertNotSuspended(tx: TxContext, tenantId: string | undefined, userId: string): Promise<void> {
+    if (!tenantId) return;
+    const r = await tx.query<{ suspended: boolean }>(
+      `SELECT ${memberSuspendedSql('$2', '$1')} AS suspended`, [userId, tenantId]);
+    if (r.rows[0]?.suspended === true) {
+      this.metrics.inc('auth.refused_tenant_suspended');
+      throw new TenantMembershipSuspendedError();
+    }
+  }
+
   private async flush(tx: TxContext, userId: string, events: { type: string; payload: Record<string, unknown> }[]) {
     for (const e of events) await this.outbox.write(tx, { tenantId: null, aggregateType: 'user', aggregateId: userId, eventType: e.type, payload: { v: 1, ...e.payload } });
   }

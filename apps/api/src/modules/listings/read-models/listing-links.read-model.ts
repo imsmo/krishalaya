@@ -8,6 +8,7 @@
 // over the auction's life (scheduled→live→ended→settled) — is read fresh per request, not frozen in an entity cache.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
+import { sellerSuspendedExpr, isPubliclyVisible } from '../../../shared/sql/member-suspension.sql';
 
 export interface ListingLinks {
   /** Farm-to-fork QR scan token for this listing's trace lot, or null if none. NON-PII (public by design). */
@@ -30,10 +31,14 @@ export class ListingLinksReadModel {
   async forListing(tenantId: string, listingId: string): Promise<ListingLinks> {
     const db = this.replica.forTenant(tenantId);
 
-    const l = await db.query<{ status: string; visibility: string }>(
-      `SELECT status, visibility FROM listings WHERE id=$1`, [listingId]);
+    // PC-56 TENANT-1b-2: a suspended seller's trace QR and auction link stop resolving publicly, for the same reason
+    // their listing leaves the feed. The rule is SELECTED from the shared predicate, never re-expressed.
+    const l = await db.query<{ status: string; visibility: string; seller_suspended: boolean }>(
+      `SELECT status, visibility, ${sellerSuspendedExpr('$2', 'seller_user_id')} AS seller_suspended
+         FROM listings WHERE id=$1`, [listingId, tenantId]);
     const listing = l.rows[0];
-    const publiclyVisible = !!listing && listing.status === 'published' && (listing.visibility === 'public' || listing.visibility === 'cross_tenant');
+    const publiclyVisible = !!listing
+      && isPubliclyVisible({ ...listing, sellerSuspended: listing.seller_suspended === true });
     if (!publiclyVisible) return { ...EMPTY };
 
     // qr_token: present once the seller declares provenance (trace_lots.listing_id). Soft-deleted lots excluded.

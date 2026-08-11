@@ -4,7 +4,7 @@
 // `member.pii.reveal` to see how to telephone them. **W153's restricted state is exactly this split** — "viewing needs
 // member-desk scope; PII stays masked — full reveal is per-field, recorded, and reasoned" — and one grant covering both
 // would make the masking a formality.
-import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -16,7 +16,8 @@ import { MemberDetailReadModel } from '../../read-models/member-detail.read-mode
 import { MemberPiiService } from '../../services/member-pii.service';
 import { NotFoundError } from '../../../../shared/errors/app-error';
 import { IdentityPermissions } from '../../policies/identity.policies';
-import { QueryRosterSchema, QueryRosterDto, RevealPiiSchema, RevealPiiDto } from '../../dto/member-roster.dto';
+import { QueryRosterSchema, QueryRosterDto, RevealPiiSchema, RevealPiiDto, SuspendMemberSchema, SuspendMemberDto } from '../../dto/member-roster.dto';
+import { MemberSuspensionService } from '../../services/member-suspension.service';
 
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
 const reqIdOf = (req: Request) => (req.headers['x-request-id'] as string) || null;
@@ -28,6 +29,7 @@ export class MemberRosterController {
     private readonly roster: MemberRosterReadModel,
     private readonly detail: MemberDetailReadModel,
     private readonly pii: MemberPiiService,
+    private readonly suspensions: MemberSuspensionService,
   ) {}
 
   /** The roster. Every phone on it is masked in the read model, so this response cannot leak one. */
@@ -68,6 +70,54 @@ export class MemberRosterController {
     const data = await this.detail.get(ctx.tenantId, userId);
     if (!data) throw new NotFoundError('member not found in this organisation');
     return { data };
+  }
+
+  /**
+   * SUSPEND a member of this organisation (W154's danger zone, PC-56 TENANT-1b-2).
+   *
+   * **`user.approve` AND NOT A NEW PERMISSION.** That grant's seeded description is already "approve users/roles, review
+   * KYC, change status" — this IS the status act a member desk performs, and inventing `member.suspend` would leave the
+   * two halves of one job behind two grants nobody remembers to give together.
+   *
+   * The route says `suspension` rather than `status`, because what it writes is a tenant-scoped suspension record and
+   * NOT `users.status`. A route named after the global column would invite exactly the mistake 0127 refuses.
+   */
+  @Post(':userId/suspension')
+  @RequirePermissions(IdentityPermissions.Approve)
+  async suspend(
+    @CurrentContext() ctx: RequestContext,
+    @Req() req: Request,
+    @Param('userId') userId: string,
+    @ZodBody(SuspendMemberSchema) body: SuspendMemberDto,
+  ) {
+    const data = await this.suspensions.suspend(
+      ctx.tenantId, { userId: ctx.userId!, ip: ipOf(req), requestId: reqIdOf(req) }, userId, body.reason);
+    return { data };
+  }
+
+  /**
+   * REINSTATE. A DELETE on the suspension resource, with a reason in the body — the suspension record is not deleted (no
+   * DELETE grant exists on that table, by design); the EPISODE is closed and stays readable.
+   */
+  @Delete(':userId/suspension')
+  @RequirePermissions(IdentityPermissions.Approve)
+  async lift(
+    @CurrentContext() ctx: RequestContext,
+    @Req() req: Request,
+    @Param('userId') userId: string,
+    @ZodBody(SuspendMemberSchema) body: SuspendMemberDto,
+  ) {
+    const data = await this.suspensions.lift(
+      ctx.tenantId, { userId: ctx.userId!, ip: ipOf(req), requestId: reqIdOf(req) }, userId, body.reason);
+    return { data };
+  }
+
+  /** The live episode plus the history. Same grant as the roster: seeing that a member is suspended is part of reading
+   *  the roster, while CHANGING it is the approve grant above. */
+  @Get(':userId/suspension')
+  @RequirePermissions(IdentityPermissions.Report)
+  async suspensionStatus(@CurrentContext() ctx: RequestContext, @Param('userId') userId: string) {
+    return { data: await this.suspensions.statusFor(ctx.tenantId, userId) };
   }
 
   /**

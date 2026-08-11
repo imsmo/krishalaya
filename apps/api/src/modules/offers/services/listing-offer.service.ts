@@ -10,6 +10,7 @@ import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer'
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
+import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { ListingService } from '../../listings/services/listing.service';
 import { ListingOffer } from '../domain/listing-offer.entity';
 import { DomainEvent, OfferParty } from '../domain/offers.events';
@@ -52,6 +53,10 @@ export class ListingOfferService {
       timed(this.metrics, 'offers.make', { tenant: tenantId }, async () => {
         const l: any = await this.listings.getById(tenantId, dto.listingId);
         if (!l || l.status !== 'published') throw new InvalidOfferError('listing not found or not published');
+        // **THE SIXTH SITE (PC-56 TENANT-1b-2).** `getById` reads the listing directly rather than through the public
+        // feed, so the suspension filter on the five read models does not reach it — and an offer is the act the feed
+        // exists to lead to. Without this a buyer holding a stale link could still negotiate with a suspended seller, and
+        // the platform would be brokering a deal it has decided not to show.
         if (l.sellerUserId === buyerUserId) throw new SellerCannotOfferError();
         const qty = Number(dto.quantity);
         if (qty < Number(l.minOrderQty)) throw new InvalidOfferError('quantity is below the listing minimum order');
@@ -62,6 +67,14 @@ export class ListingOfferService {
           quantity: dto.quantity, offeredPriceMinor: BigInt(dto.offeredPriceMinor), expiresAt,
         });
         return this.uow.run(tenantId, async (tx) => {
+          // **THE SEVENTH ENFORCEMENT SITE (PC-56 TENANT-1b-2).** `getById` above reads the listing directly rather than
+          // through the public feed, so the filter on the five read models does not reach it — and an offer is the act
+          // the feed exists to lead to. Without this, a buyer holding a stale link could still negotiate with a seller
+          // the platform has decided not to show.
+          //
+          // Checked INSIDE the existing transaction rather than by injecting a read replica: one connection, one
+          // consistent view, and no new dependency on a service whose module did not have one.
+          await this.assertSellerNotSuspended(tx, tenantId, l.sellerUserId);
           await this.repo.insert(tx, offer);
           const p = offer.toProps();
           await this.flush(tx, tenantId, p.id, offer.pullEvents());
@@ -143,5 +156,19 @@ export class ListingOfferService {
 
   private async flush(tx: TxContext, tenantId: string, offerId: string, events: DomainEvent[]) {
     for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'listing_offer', aggregateId: offerId, eventType: e.type, payload: { v: 1, ...e.payload } });
+  }
+
+  /**
+   * Is the seller suspended in this tenant? Uses the SAME predicate as the five listing read models
+   * (`shared/sql/member-suspension.sql`), so there is one rule and not two.
+   *
+   * The refusal reuses the "not found or not published" message ON PURPOSE: a buyer must not learn from an error message
+   * that a particular farmer has been suspended by their FPO. That is the member's business, and the buyer's question is
+   * only whether they can transact.
+   */
+  private async assertSellerNotSuspended(tx: TxContext, tenantId: string, sellerUserId: string): Promise<void> {
+    const r = await tx.query<{ suspended: boolean }>(
+      `SELECT ${memberSuspendedSql('$2', '$1')} AS suspended`, [sellerUserId, tenantId]);
+    if (r.rows[0]?.suspended === true) throw new InvalidOfferError('listing not found or not published');
   }
 }

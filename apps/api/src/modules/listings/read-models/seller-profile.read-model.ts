@@ -5,6 +5,7 @@
 // NO email, NO KYC. A non-existent / non-active seller → null (404 in the controller, no enumeration).
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
+import { sellerNotSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 
 export interface SellerPublicProfile {
   sellerId: string; displayName: string | null; regionId: string | null; memberSince: string | null;
@@ -28,7 +29,11 @@ export class SellerProfileReadModel {
         `SELECT count(*)::int AS n, COALESCE(avg(stars),0)::numeric(3,2) AS avg
            FROM reviews WHERE target_type='seller' AND target_id=$1 AND status='published' AND deleted_at IS NULL`, [sellerId]),
       db.query<{ n: string }>(
-        `SELECT count(*)::text AS n FROM listings WHERE seller_user_id=$1 AND status='published' AND deleted_at IS NULL`, [sellerId]),
+        // PC-56 TENANT-1b-2: the public "listings active" count must agree with the feed. Leaving it unfiltered would
+        // advertise 14 live listings on a suspended seller's profile and show a buyer none of them.
+        `SELECT count(*)::text AS n FROM listings
+          WHERE seller_user_id=$1 AND status='published' AND deleted_at IS NULL
+            AND ${sellerNotSuspendedSql('listings')}`, [sellerId]),
     ]);
     return {
       sellerId, displayName: user.full_name, regionId: user.region_id,
