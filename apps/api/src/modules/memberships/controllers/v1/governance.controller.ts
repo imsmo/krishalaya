@@ -10,6 +10,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { GovernanceService, RESOLUTION_TYPES } from '../../services/governance.service';
 import { CoopPayoutService } from '../../services/coop-payout.service';
+import { ShareRegisterReadModel } from '../../read-models/share-register.read-model';
 import { z } from 'zod';
 
 const CreateResolutionSchema = z.object({
@@ -27,7 +28,8 @@ const VoteSchema = z.object({ choice: z.string().trim().min(1).max(20) }).strict
 @Controller({ path: 'governance/resolutions', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard)
 export class GovernanceController {
-  constructor(private readonly svc: GovernanceService, private readonly payouts: CoopPayoutService) {}
+  constructor(private readonly svc: GovernanceService, private readonly payouts: CoopPayoutService,
+              private readonly register_: ShareRegisterReadModel) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: ctx.permissions.has('tenant.settings') || ctx.permissions.has('*') }; }
 
   @Post() @RequirePermissions('tenant.settings')
@@ -43,9 +45,43 @@ export class GovernanceController {
   open(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.transition(ctx.tenantId, this.actor(ctx), id, 'open').then((data) => ({ data })); }
   @Post(':id/close') @RequirePermissions('tenant.settings')
   close(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.transition(ctx.tenantId, this.actor(ctx), id, 'closed').then((data) => ({ data })); }
+  /**
+   * Cast or CHANGE this member's own vote.
+   *
+   * **NO PERMISSION DECORATOR, AND THAT IS CORRECT — BUT IT WAS NOT SUFFICIENT.** W198 is explicit: "the vote itself belongs
+   * to every eligible member — this console never casts votes for anyone." A permission would be the wrong tool, because a
+   * vote is not a staff capability; the right gate is ELIGIBILITY, decided from the tenant's bylaws. Before PC-56 TENANT-1e
+   * there was neither, so any authenticated user in the tenant could vote in an FPO's AGM. `GovernanceService.vote` now
+   * refuses a non-member, a suspended member, somebody short of the shareholding bylaw, and somebody inside the tenure rule.
+   *
+   * `ctx.userId` and never a body parameter: the console cannot vote on somebody else's behalf because there is nowhere to
+   * say whose behalf.
+   */
   @Post(':id/vote')
   vote(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(VoteSchema) dto: { choice: string }) {
     return this.svc.vote(ctx.tenantId, ctx.userId, id, dto.choice).then((data) => ({ data }));
+  }
+
+  /** May I vote, and if not, what would I need? Read-only, about the CALLER only — the console shows it before offering a
+   *  ballot, so a member reads "eligible from November" rather than tapping and being refused. */
+  /**
+   * W197's share register, tiles and bylaw panel.
+   *
+   * **`report.view`, THE SAME GRANT AS THE MEMBER ROSTER, AND NOT `tenant.settings`.** W197's restricted state reads
+   * "Register edits are board + checker; members see their own holding in their app" — so READING the register is a member-desk
+   * capability while EDITING it is not, and the two must not share a permission. There is no edit route in this wave: share
+   * allotment is a money movement at first settlement ("Rs 200 deducted with consent"), and a register write with no allotment
+   * path behind it would be a control whose promise the code cannot keep.
+   */
+  @Get('register')
+  @RequirePermissions('report.view')
+  register(@CurrentContext() ctx: RequestContext, @Query('cursor') cursor?: string) {
+    return this.register_.view(ctx.tenantId, cursor).then((data) => ({ data }));
+  }
+
+  @Get('me/eligibility')
+  eligibility(@CurrentContext() ctx: RequestContext) {
+    return this.svc.eligibilityFor(ctx.tenantId, ctx.userId).then((data) => ({ data }));
   }
   // --- PC-55 A8 `coop-payout-runs`: an ACTIVATED dividend/patronage vote becomes queued payouts. ---
   @Get(':id/payout-preview') @RequirePermissions('tenant.settings')

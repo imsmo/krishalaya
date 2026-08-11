@@ -61,11 +61,28 @@ export class MembershipsResource {
   openResolution(id: string): Promise<{ id: string; status: string }> { return this.govStep(id, 'open'); }
   closeResolution(id: string): Promise<{ id: string; status: string }> { return this.govStep(id, 'close'); }
   /** One ballot per member — the server's PK is the ballot box (409 on a second vote). */
-  async castVote(id: string, choice: string): Promise<{ resolutionId: string; choice: string }> {
-    return (await this.http.request<{ resolutionId: string; choice: string }>('POST', `governance/resolutions/${encodeURIComponent(id)}/vote`, { body: { choice } })).data;
+  /** `changed: true` when this replaced an earlier ballot — W198's "changeable until close". */
+  async castVote(id: string, choice: string): Promise<{ resolutionId: string; choice: string; changed: boolean }> {
+    return (await this.http.request<{ resolutionId: string; choice: string; changed: boolean }>('POST', `governance/resolutions/${encodeURIComponent(id)}/vote`, { body: { choice } })).data;
   }
-  async resolutionResults(id: string, signal?: AbortSignal): Promise<{ resolution: Record<string, unknown>; tally: Array<{ choice: string; votes: number }> }> {
-    return (await this.http.request<{ resolution: Record<string, unknown>; tally: Array<{ choice: string; votes: number }> }>('GET', `governance/resolutions/${encodeURIComponent(id)}/results`, { signal })).data;
+  /**
+   * W197's share register — tiles, bylaw panel, one keyset page of rows with a per-member verdict.
+   *
+   * The verdict is computed by the API from the SAME domain rule the vote path enforces, never read from
+   * `coop_share_registers.voting_eligible` (which 0130 documents as deliberately unread). So a row that says "eligible" is a
+   * row whose ballot will be accepted.
+   */
+  async shareRegister(cursor?: string, signal?: AbortSignal): Promise<ShareRegisterView> {
+    return (await this.http.request<ShareRegisterView>('GET', 'governance/resolutions/register', { query: { cursor }, signal })).data;
+  }
+
+  /** May the CALLER vote, and if not, what would they need? About themselves only — there is no user parameter. */
+  async myVotingEligibility(signal?: AbortSignal): Promise<MyVotingEligibility> {
+    return (await this.http.request<MyVotingEligibility>('GET', 'governance/resolutions/me/eligibility', { signal })).data;
+  }
+
+  async resolutionResults(id: string, signal?: AbortSignal): Promise<{ resolution: Record<string, unknown>; tally: ResolutionTally }> {
+    return (await this.http.request<{ resolution: Record<string, unknown>; tally: ResolutionTally }>('GET', `governance/resolutions/${encodeURIComponent(id)}/results`, { signal })).data;
   }
   private govStep(id: string, action: string): Promise<{ id: string; status: string }> {
     return this.http.request<{ id: string; status: string }>('POST', `governance/resolutions/${encodeURIComponent(id)}/${action}`, { body: {} }).then((r) => r.data);
@@ -86,4 +103,78 @@ export class MembershipsResource {
   async coopPayoutRunDetail(runId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
     return (await this.http.request<Record<string, unknown>>('GET', `governance/resolutions/payout-runs/${encodeURIComponent(runId)}`, { signal })).data;
   }
+}
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+/* PC-56 TENANT-1e · W197/W198 · the co-operative's own arithmetic                                                    */
+/* ---------------------------------------------------------------------------------------------------------------- */
+
+/** The tenant's bylaws, as data (0130). Not compiled in — a Bangladeshi society's minimum shareholding is not Gujarat's. */
+export interface CoopBylaws { minShares: number; minMembershipMonths: number; quorumBp: number }
+
+export type VoteIneligibleReason = 'not_a_member' | 'suspended' | 'too_few_shares' | 'too_new';
+
+export interface VotingVerdict {
+  eligible: boolean;
+  reason: VoteIneligibleReason | null;
+  /** How many more shares would be needed. 0 when shares are not the obstacle. */
+  sharesShort: number;
+  /** When the tenure rule is satisfied — W197's "eligible Nov 2026". null when unknowable. */
+  eligibleFrom: string | null;
+}
+
+export interface ShareRegisterRow {
+  userId: string;
+  fullName: string | null;
+  phoneMasked: string | null;
+  sharesHeld: number;
+  /** Minor units, string (Law 2). TOTAL value of the holding, not a per-share face value. */
+  valueMinor: string;
+  memberSince: string | null;
+  verdict: VotingVerdict;
+}
+
+export interface ShareRegisterTiles {
+  members: number;
+  shareholders: number;
+  pendingAllotment: number;
+  totalShares: number;
+  shareCapitalMinor: string;
+  /** null when the register holds shares issued at different prices — see the API's own note. */
+  faceValueMinor: string | null;
+  votingEligible: number;
+  eligibleOfShareholdersBp: number | null;
+  /** `eligible`/`turnoutBp` are null for a resolution closed before its denominator was recorded — unknown, not zero. */
+  lastAgm: { resolutionId: string; title: string; closedAt: string | null; cast: number; eligible: number | null; turnoutBp: number | null } | null;
+}
+
+export interface ShareRegisterView {
+  tiles: ShareRegisterTiles;
+  bylaws: CoopBylaws;
+  rows: ShareRegisterRow[];
+  nextCursor: string | null;
+}
+
+export interface MyVotingEligibility {
+  bylaws: CoopBylaws;
+  facts: { isMember: boolean; memberSince: string | null; sharesHeld: number; suspended: boolean };
+  verdict: VotingVerdict;
+}
+
+/**
+ * A resolution's tally, with a denominator.
+ *
+ * **`cast` COUNTS MEMBERS, NEVER SHARES.** One member, one vote is a co-operative principle rather than a setting, and it is
+ * protected structurally: the API's tally function receives counts and has no access to shareholdings.
+ */
+export interface ResolutionTally {
+  cast: number;
+  eligible: number;
+  turnoutBp: number;
+  quorumBp: number;
+  quorumMet: boolean;
+  byChoice: Array<{ choice: string; votes: number }>;
+  /** Share of CAST votes in favour. null when nobody has voted — "0% in favour" reads as a rejection, and no votes is not one. */
+  inFavourBp: number | null;
+  passed: boolean | null;
 }

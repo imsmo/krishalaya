@@ -61,8 +61,23 @@ export async function castVoteAction(formData: FormData): Promise<void> {
   if (!id) redirect('/governance');
   const built = buildVote({ choice: String(formData.get('choice') ?? '') });
   if (!built.ok) back(`error=res_${built.error}`);
-  try { await tenantClient().memberships.castVote(id, built.value.choice); }
-  catch (e) { back(`error=${errKey(e)}`); }
+  // **THE REFUSAL CARRIES ITS REASON BACK TO THE MEMBER.** A bare "forbidden" on an AGM ballot sends a farmer to a field
+  // officer who cannot explain it either; "you need 4 more shares" and "you can vote from November" are answers.
+  let changed = false;
+  try { changed = (await tenantClient().memberships.castVote(id, built.value.choice)).changed; }
+  catch (e) {
+    if (e instanceof SdkError && e.code === 'COOP_NOT_ELIGIBLE_TO_VOTE') {
+      const d = e.details ?? {};
+      const reason = String(d.reason ?? '');
+      const q = new URLSearchParams({ error: `ineligible_${reason}` });
+      if (typeof d.sharesShort === 'number') q.set('short', String(d.sharesShort));
+      if (typeof d.eligibleFrom === 'string') q.set('from', d.eligibleFrom);
+      back(q.toString());
+    }
+    back(`error=${errKey(e)}`);
+  }
   revalidatePath('/governance');
-  back('ok=voted');
+  // W198 promises a vote is "changeable until close", so the confirmation says which of the two happened — a member who
+  // meant to correct a mistake needs to know the correction landed, not just that "your vote was recorded".
+  back(changed ? 'ok=changed' : 'ok=voted');
 }

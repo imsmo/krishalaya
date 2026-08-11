@@ -18,6 +18,7 @@ import { MembershipsController } from './controllers/v1/memberships.controller';
 import { GovernanceController } from './controllers/v1/governance.controller';
 import { GovernanceService } from './services/governance.service';
 import { GovernanceRepository } from './repositories/governance.repository';
+import { ShareRegisterReadModel } from './read-models/share-register.read-model';
 import { MembershipTierService } from './services/membership-tier.service';
 import { UserMembershipService } from './services/user-membership.service';
 import { MembershipTierRepository } from './repositories/membership-tier.repository';
@@ -29,7 +30,7 @@ import { MembershipPaymentSucceededHandler } from './events/handlers/payment-suc
 @Module({
   controllers: [MembershipTiersController, MembershipsController, GovernanceController],
   providers: [MembershipTierService, UserMembershipService, MembershipTierRepository, UserMembershipRepository,
-    MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository, CoopPayoutService, CoopPayoutRepository],
+    MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository, ShareRegisterReadModel, CoopPayoutService, CoopPayoutRepository],
   exports: [MembershipTierService, UserMembershipService],
 })
 export class MembershipsModule implements OnModuleInit {

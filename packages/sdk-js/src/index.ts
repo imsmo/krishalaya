@@ -63,7 +63,8 @@ export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7
 export type { StorageBooking, AssayReport, NwrReceipt } from './resources/warehousing';
 export type { Coupon, CouponRedemption, Promotion } from './resources/promotions';
 export type { EduChannel, LiveSession } from './resources/education';
-export type { MembershipTier, UserMembership } from './resources/memberships';
+export type { MembershipTier, UserMembership, CoopBylaws, VoteIneligibleReason, VotingVerdict,
+  ShareRegisterRow, ShareRegisterTiles, ShareRegisterView, MyVotingEligibility, ResolutionTally } from './resources/memberships';
 export type { Requirement, RequirementResponse } from './resources/requirements';
 // PC-56 TENANT-1b · the people roster + member detail. `REVEALABLE_MEMBER_FIELDS` is a VALUE export (the console
 // renders the field picker from it, so the list cannot drift from the server's closed enum).

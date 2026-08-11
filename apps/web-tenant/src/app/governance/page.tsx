@@ -19,6 +19,8 @@ import {
   hasPayoutConsequence, isResolutionStatus, offeredTransition, shareBps, sortTally, totalVotes, voteBlockedReason, votingLive,
   type ResolutionRow, type TallyRow,
 } from '../../features/governance/agm';
+import { quorumLine, outcomeLabel, mayChange } from '../../features/governance/register';
+import type { ResolutionTally } from '@krishalaya/sdk-js';
 import { castVoteAction, createResolutionAction, transitionResolutionAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -26,12 +28,14 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('gov.title'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['created', 'open', 'closed', 'voted']);
+const OK = new Set(['created', 'open', 'closed', 'voted', 'changed']);
 const ERR = new Set(['generic', 'forbidden', 'notFound', 'illegal', 'invalid',
   'res_title', 'res_type', 'res_body', 'res_opens', 'res_closes', 'res_windowOrder', 'res_choice', 'res_to']);
+/** The four eligibility refusals, each with its own sentence — see actions.ts. */
+const INELIGIBLE = new Set(['too_few_shares', 'too_new', 'suspended', 'not_a_member']);
 
 export default async function GovernancePage({ searchParams }: {
-  searchParams: { status?: string; id?: string; ok?: string; error?: string };
+  searchParams: { status?: string; id?: string; ok?: string; error?: string; short?: string; from?: string };
 }) {
   await requireSession('/governance');
   const t = getTranslator();
@@ -45,7 +49,7 @@ export default async function GovernancePage({ searchParams }: {
   catch { failed = true; }
 
   // The results read is per-resolution, so it loads only for the one being inspected (and degrades on its own).
-  let results: { resolution?: ResolutionRow; tally?: TallyRow[] } | null = null;
+  let results: { resolution?: ResolutionRow; tally?: ResolutionTally } | null = null;
   if (openId) {
     try { results = await tenantClient().memberships.resolutionResults(openId); }
     catch { results = null; }
@@ -53,6 +57,8 @@ export default async function GovernancePage({ searchParams }: {
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
+  const rawIneligible = (searchParams.error ?? '').startsWith('ineligible_') ? (searchParams.error ?? '').slice('ineligible_'.length) : '';
+  const ineligible = INELIGIBLE.has(rawIneligible) ? rawIneligible : null;
 
   return (
     <section>
@@ -60,12 +66,23 @@ export default async function GovernancePage({ searchParams }: {
       <p className="kv-field__hint">{t.t('gov.hint')}</p>
       {okKey && <p className="kv-success" role="status">{t.t(`gov.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`gov.error.${errKey}`)}</p>}
+      {ineligible && (
+        <div className="kv-error" role="alert">
+          <strong>{t.t('reg.notEligible')}</strong>
+          <p>{t.t(`reg.notEligible.${ineligible}`, {
+            n: Number(searchParams.short ?? 0),
+            d: searchParams.from ? formatDate(searchParams.from, lang, { dateStyle: 'medium' }) : '',
+          })}</p>
+        </div>
+      )}
 
       <nav className="kv-tabs" aria-label={t.t('gov.filter')}>
         <a href="/governance" className={`kv-tab${!status ? ' kv-tab--active' : ''}`} aria-current={!status ? 'page' : undefined}>{t.t('gov.all')}</a>
         {RESOLUTION_STATUSES.map((s) => (
           <a key={s} href={`/governance?status=${s}`} className={`kv-tab${s === status ? ' kv-tab--active' : ''}`} aria-current={s === status ? 'page' : undefined}>{t.t(`gov.state.${s}`)}</a>
         ))}
+        {/* W197's own header offers both halves of the governance area. */}
+        <a href="/governance/register" className="kv-tab">{t.t('reg.tab.register')}</a>
       </nav>
 
       {failed ? <p className="kv-error" role="alert">{t.t('gov.loadError')}</p> : rows.length === 0 ? (
@@ -110,21 +127,31 @@ export default async function GovernancePage({ searchParams }: {
                   <option value="" disabled>{t.t('gov.chooseVote')}</option>
                   {VOTE_CHOICES.map((c) => <option key={c} value={c}>{t.t(`gov.choice.${c}`)}</option>)}
                 </select>
-                <p className="kv-detail__muted">{t.t('gov.oneBallotNote')}</p>
+                {/* **THE NOTE USED TO SAY THE BALLOT WAS FINAL, AND THE CANON SAYS IT IS NOT.** W198: "changeable until
+                    close, final at 18:00 Sunday". The API now honours that, so the screen stops warning about a rule that
+                    no longer exists — and the button says "change" once the window makes that the truthful verb. */}
+                <p className="kv-detail__muted">
+                  {mayChange(String(r.status), r.votingCloses ? String(r.votingCloses) : null, nowIso)
+                    ? t.t('reg.changeable')
+                    : t.t('gov.oneBallotNote')}
+                </p>
                 <button type="submit" className="kv-btn">{t.t('gov.castBtn')}</button>
               </form>
             ) : null}
 
             {openId === String(r.id) ? (
-              results ? (() => {
-                const tally = sortTally(results.tally ?? []);
-                const total = totalVotes(tally);
+              results && results.tally ? (() => {
+                const tallyData = results.tally;
+                const rowsT = sortTally(tallyData.byChoice as TallyRow[]);
+                const total = totalVotes(rowsT);
+                const q = quorumLine(tallyData, t);
+                const outcome = outcomeLabel(tallyData, String(r.status), t);
                 return (
                   <div className="kv-card">
                     <strong>{t.t('gov.results')}</strong>
                     {total === 0 ? <p className="kv-detail__muted">{t.t('gov.noVotesYet')}</p> : (
                       <ul className="kv-account-list">
-                        {tally.map((row) => {
+                        {rowsT.map((row) => {
                           const bps = shareBps(row.votes, total);
                           return (
                             <li key={String(row.choice)}>
@@ -135,6 +162,16 @@ export default async function GovernancePage({ searchParams }: {
                         })}
                       </ul>
                     )}
+                    {/* **THE QUORUM LINE — W198 PRINTED IT AND NOTHING COMPUTED IT.** The denominator is ELIGIBLE members,
+                        never all members: a co-operative still allotting shares would otherwise never reach quorum. */}
+                    <p className="kv-detail__muted">{q.text}</p>
+                    {q.state === 'ready' && (
+                      <p className={q.met ? 'kv-success' : 'kv-notice'} role="note">
+                        {q.met ? t.t('reg.quorum.met') : t.t('reg.quorum.notMet')}
+                      </p>
+                    )}
+                    {/* null while nobody has voted — announcing a defeat nobody voted for is worse than saying nothing. */}
+                    {outcome ? <p><strong>{outcome}</strong></p> : null}
                     <p className="kv-detail__muted">{t.t('gov.tallyNote', { n: String(total) })}</p>
                   </div>
                 );
