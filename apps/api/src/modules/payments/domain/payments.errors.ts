@@ -73,6 +73,24 @@ export class KycRequiredError extends DomainError {
   constructor() { super('KYC_REQUIRED', 'Complete KYC verification before this action', 403); }
 }
 
+/**
+ * **THE REFUSAL THAT NAMES THE ROLE (PC-56 TENANT-1).** KYC is per role, not per person: a member verified as a worker
+ * may not draw a farmer settlement. A bare "KYC required" on that path is a refusal a field officer cannot act on and a
+ * member cannot fix, so this carries the purpose, the roles it accepts, and the role the decision turned on.
+ *
+ * 403 like its parent — the request is well formed and the caller is who they say they are; what they lack is the
+ * verified capacity to receive THIS money.
+ */
+export class RoleKycRequiredError extends DomainError {
+  constructor(detail: { purpose: string; eligibleRoles: string[]; decidingRole: string | null; decidingStatus: string | null; reason: string }) {
+    super('ROLE_KYC_REQUIRED',
+      detail.decidingRole
+        ? `${detail.purpose} money is claimed as ${detail.eligibleRoles.join(' or ') || 'a fully verified member'}; your ${detail.decidingRole} verification is ${detail.decidingStatus}`
+        : `${detail.purpose} money is claimed as ${detail.eligibleRoles.join(' or ') || 'a fully verified member'}, and you hold no such verified role in this organisation`,
+      403, detail);
+  }
+}
+
 /** A UPI autopay mandate was not found in the caller's scope (404, never 403 — no enumeration). */
 export class MandateNotFoundError extends NotFoundError {
   constructor(id: string) { super('Mandate not found'); (this as any).details = { id }; }

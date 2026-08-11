@@ -5,7 +5,11 @@
 // by the worker's payout-execution job (next wave). Idempotent on the caller's key; the wallet debit
 // is itself idempotent, so a retry can never double-debit.
 // S3 review finding: requestPayout is gated on the caller's KYC (kyc_status='verified' on any active
-// role in this tenant) BEFORE any debit/ledger work — see the KycRequiredError check first in the tx.
+// role in this tenant) BEFORE any debit/ledger work.
+//
+// **PC-56 TENANT-1 CORRECTED THAT PARENTHESIS.** "Any active role" was the defect: KYC is per ROLE (W153), so the gate
+// now resolves the payout's PURPOSE first, reads the roles that purpose accepts (0125's declared map), and requires a
+// verified status on one of THOSE — with an unmapped purpose requiring every active role verified rather than any.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -21,7 +25,8 @@ import { PayoutRepository } from '../repositories/payout.repository';
 import { PAYOUT_GATEWAY, PayoutGateway } from '../gateway/payout-gateway.port';
 import { CreatePayoutDto } from '../dto/create-payout.dto';
 import { BadRequestError, ForbiddenError } from '../../../shared/errors/app-error';
-import { KycRequiredError } from '../domain/payments.errors';
+import { RoleKycRequiredError } from '../domain/payments.errors';
+import { kycVerdictFor } from '../domain/payout-kyc';
 
 export interface PayoutActor { userId: string; canModerate: boolean; }
 
@@ -43,17 +48,35 @@ export class PayoutService {
     return this.idem.remember(idemKey, userId, 'payments.request_payout', () =>
       timed(this.metrics, 'payments.request_payout', { tenant: tenantId }, async () =>
         this.uow.run(tenantId, async (tx) => {
-          // S3 review finding: gate money-out on verified KYC BEFORE any debit/ledger work — an
-          // unapproved self-serve caller (kyc_status 'none' straight off POST /v1/onboarding/roles)
-          // must never reach the wallet debit below. 'pending'/'rejected'/'expired' fail closed too.
-          if (!(await this.repo.callerKycVerified(tx, tenantId, userId))) {
-            throw new KycRequiredError();
+          // **THE MONEY-OUT KYC GATE, PER ROLE (PC-56 TENANT-1).** It used to pass on a verified status on ANY active
+          // role, so a member verified as a WORKER could draw a SETTLEMENT payout — crop sale proceeds on the strength
+          // of a wage-receipt check. W153 states the rule the other way round ("KYC is per role, not per person") and
+          // the schema modelled it correctly all along; only this gate collapsed it.
+          //
+          // The purpose is resolved FIRST now, because the purpose is what says under which capacity the money is being
+          // claimed — and the gate cannot be evaluated without it. Still before any debit or ledger work.
+          const purposeCode = dto.purpose ?? 'settlement';
+          const purposeId = await this.repo.resolvePurposeId(tx, purposeCode);
+          if (!purposeId) throw new BadRequestError('unknown payout purpose');
+
+          const [purposeRoles, roleKyc] = await Promise.all([
+            this.repo.rolesForPurpose(tx, purposeCode),
+            this.repo.callerRoleKyc(tx, tenantId, userId),
+          ]);
+          const verdict = kycVerdictFor(purposeRoles, roleKyc);
+          if (!verdict.allowed) {
+            this.metrics.inc('payments.payout.role_kyc_refused', { tenant: tenantId, purpose: purposeCode, reason: verdict.reason });
+            // The refusal NAMES the role and its status: "settlement money is claimed as farmer or dairy_farmer; your
+            // farmer verification is pending" is something a field officer can act on today. A bare "KYC required" is
+            // not, and that is what a member used to be told when they were told anything at all.
+            throw new RoleKycRequiredError({
+              purpose: purposeCode, eligibleRoles: verdict.eligibleRoles,
+              decidingRole: verdict.decidingRole, decidingStatus: verdict.decidingStatus, reason: verdict.reason,
+            });
           }
           if (!(await this.repo.bankAccountBelongsTo(tx, tenantId, userId, dto.bankAccountId))) {
             throw new ForbiddenError('bank account does not belong to you');   // anti-IDOR / anti-fraud
           }
-          const purposeId = await this.repo.resolvePurposeId(tx, dto.purpose ?? 'settlement');
-          if (!purposeId) throw new BadRequestError('unknown payout purpose');
 
           const amount = BigInt(dto.amountMinor);
           const id = uuidv7();

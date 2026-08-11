@@ -6,6 +6,7 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { servableTranslation } from '../../../core/database/translation-visibility';
 import { Payout } from '../domain/payout.entity';
+import { RoleKyc } from '../domain/payout-kyc';
 import { PayoutStatus } from '../domain/payout.state';
 
 const COLS = `id, tenant_id, user_id, bank_account_id, purpose_id, reference_type, reference_id, amount_minor,
@@ -33,17 +34,42 @@ export class PayoutRepository {
     return (r.rowCount ?? 0) > 0;
   }
 
-  /** S3 review finding: money-out KYC gate. Payout is user-level (not role-specific), so this passes
-   *  as soon as the caller has kyc_status='verified' on ANY of their active roles in this tenant —
-   *  'none'/'pending'/'rejected'/'expired' all fail closed. `user_tenant_roles` is a shared core table
-   *  (communication's broadcast.repository reads it the same cross-module way) so payments queries it
-   *  directly rather than reaching into modules/identity. Read-only, tenant-scoped (Law 1); run inside
-   *  the caller's tx so the check and the debit that follows see the same snapshot. */
-  async callerKycVerified(tx: TxContext, tenantId: string, userId: string): Promise<boolean> {
-    const r = await tx.query(
-      `SELECT 1 FROM user_tenant_roles WHERE tenant_id=$1 AND user_id=$2 AND is_active=true AND kyc_status='verified' AND deleted_at IS NULL LIMIT 1`,
+  /**
+   * The caller's roles in this tenant, each with the KYC status that belongs to THAT role.
+   *
+   * **THIS REPLACES A GATE THAT WAS WRONG IN THE PERMISSIVE DIRECTION (PC-56 TENANT-1).** The old
+   * `callerKycVerified` returned true "as soon as the caller has kyc_status='verified' on ANY of their active roles" —
+   * its own comment said so — while W153 states the platform's rule as "KYC is per role, not per person". So a member
+   * verified as a WORKER could draw a SETTLEMENT payout: crop sale proceeds on the strength of a wage-receipt check.
+   * The schema had it right since 0003 (`user_tenant_roles.kyc_status` is per person × tenant × role); the money path
+   * collapsed it.
+   *
+   * Returns the rows rather than a boolean, because the refusal has to be able to NAME the role and status — "KYC
+   * required" with nothing attached is a refusal a field officer cannot act on and a member cannot fix. Run inside the
+   * caller's tx so the check and the debit that follows see one snapshot (Law 4).
+   */
+  async callerRoleKyc(tx: TxContext, tenantId: string, userId: string): Promise<RoleKyc[]> {
+    const r = await tx.query<{ role_code: string; kyc_status: string; is_active: boolean }>(
+      `SELECT r.code AS role_code, utr.kyc_status, utr.is_active
+         FROM user_tenant_roles utr
+         JOIN roles r ON r.id = utr.role_id
+        WHERE utr.tenant_id = $1 AND utr.user_id = $2 AND utr.deleted_at IS NULL`,
       [tenantId, userId]);
-    return (r.rowCount ?? 0) > 0;
+    return r.rows.map((x) => ({ roleCode: String(x.role_code), kycStatus: String(x.kyc_status), isActive: Boolean(x.is_active) }));
+  }
+
+  /**
+   * Which roles may receive money for this purpose (0125's declared map).
+   *
+   * **AN EMPTY RESULT IS MEANINGFUL AND IS NOT AN ERROR**: it means the purpose is unmapped, and the domain turns that
+   * into the STRICTEST reading (every active role verified) rather than the permissive one. A map read that failed open
+   * would rebuild the defect this whole change exists to remove.
+   */
+  async rolesForPurpose(tx: TxContext, purposeCode: string): Promise<string[]> {
+    const r = await tx.query<{ role_code: string }>(
+      `SELECT role_code FROM payout_purpose_roles WHERE purpose_code = $1 AND deleted_at IS NULL ORDER BY role_code`,
+      [purposeCode]);
+    return r.rows.map((x) => String(x.role_code));
   }
 
   async resolvePurposeId(tx: TxContext, code: string): Promise<string | null> {
