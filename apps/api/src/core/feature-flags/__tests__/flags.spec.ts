@@ -4,7 +4,15 @@ import { FlagsService } from '../flags.service';
 
 function svc(row: any) {
   const pools: any = { replica: () => ({ query: async () => ({ rows: row ? [row] : [], rowCount: row ? 1 : 0 }) }) };
-  const cache: any = { wrap: (_k: string, _t: number, load: any) => load() };
+  // PC-56 ADMIN-11: `set`/`get` were absent from this stub, and the stale-value fail-safe calls both. A cache without
+  // `set` throws synchronously, so the service now guards the call itself — and the stub carries the full shape so the
+  // stale path is exercised rather than merely tolerated.
+  const store = new Map<string, unknown>();
+  const cache: any = {
+    wrap: (_k: string, _t: number, load: any) => load(),
+    set: async (k: string, v: unknown) => { store.set(k, v); },
+    get: async (k: string) => store.get(k) ?? null,
+  };
   return new FlagsService(pools, cache);
 }
 
@@ -12,7 +20,12 @@ function svc(row: any) {
 function svcWithRows(rows: Array<{ key: string; is_enabled: boolean }>) {
   const query = jest.fn().mockResolvedValue({ rows, rowCount: rows.length });
   const pools: any = { replica: () => ({ query }) };
-  const cache: any = { wrap: (_k: string, _t: number, load: any) => load() };
+  const store = new Map<string, unknown>();
+  const cache: any = {
+    wrap: (_k: string, _t: number, load: any) => load(),
+    set: async (k: string, v: unknown) => { store.set(k, v); },
+    get: async (k: string) => store.get(k) ?? null,
+  };
   return { svc: new FlagsService(pools, cache), query };
 }
 

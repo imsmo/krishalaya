@@ -22,6 +22,8 @@ import { AnnouncementsModule } from './modules/announcements/announcements.modul
 // request from a token alone and had no list of the people it let in, no way to deactivate one, and no way to end a
 // session.
 import { PlatformStaffModule } from './modules/platform-staff/platform-staff.module';
+// PC-56 ADMIN-11: the typed platform settings registry — `scope='platform'` rows were unreachable by every surface.
+import { SettingsOpsModule } from './modules/settings-ops/settings-ops.module';
 import { GlobalCatalogueOpsModule } from './modules/global-catalogue-ops/global-catalogue-ops.module';
 import { SchemesRegistryOpsModule } from './modules/schemes-registry-ops/schemes-registry-ops.module';
 import { SchemesOversightModule } from './modules/schemes-oversight/schemes-oversight.module';
@@ -39,7 +41,7 @@ import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
 @Module({
   imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, SchemesOversightModule, ConsentOpsModule, CellsOpsModule, CatalogueDepthModule,
     // PC-56 ADMIN-3b: the translations plane — the first write path this table has ever had
-    TranslationsModule, TenantApplicationsOpsModule, PlatformStaffModule,
+    TranslationsModule, TenantApplicationsOpsModule, PlatformStaffModule, SettingsOpsModule,
   // PC-56 ADMIN-5d: the trust & safety plane — the first code ever to reach `platform_blocklists` / `risk_rules` /
   // `appeals`, which 0067 created for an admin realm that had no grant on them.
   TrustSafetyModule,

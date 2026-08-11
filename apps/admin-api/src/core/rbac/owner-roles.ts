@@ -202,6 +202,19 @@ export const OwnerPermissions = {
   // are different acts: the file survives the session, the screenshot policy and the leaver process. W111 says so
   // itself — "Needs analytics.read; exports need analytics.export."
   AnalyticsExport: 'analytics.export',
+  /* ---- PC-56 ADMIN-11 · the configuration control plane. W103 names both by hand ("Viewing needs `settings.read`;
+     changes need `settings.manage` + checker") and NEITHER existed — `grep -rn "settings.manage" apps` returned
+     nothing across every app. ---- */
+  SettingsRead: 'settings.read',
+  // Define, set, revert, retype and re-classify a platform setting. Money-path and security keys additionally need a
+  // second administrator, which is a rule in the service rather than a second permission: the same person may hold
+  // `settings.manage` and still be unable to approve their own change.
+  SettingsManage: 'settings.manage',
+  // **THE CHECKER ON A FLAG THAT WIDENS.** W004: "Every toggle requires a reason and is maker-checker gated for
+  // module-level flags." The reason was enforced; the second person was enforced nowhere, and `flags.manage` alone could
+  // switch a module off for every tenant on the platform. Separate grant, so the desk that flips is not the desk that
+  // widens.
+  FlagsApprove: 'flags.approve',
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
@@ -229,6 +242,16 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // **THE ROLE W001'S RESTRICTED STATE IS WRITTEN FOR.** Sees the dashboard and not the revenue — the operational
   // picture without the platform's own money. This is the role that made the permission split worth building.
   platform_ops_dashboard:   [OwnerPermissions.ReportsRead],
+  /* ---- PC-56 ADMIN-11 ---- */
+  // Reads the registry and changes nothing — an auditor asking "what is this platform configured to do".
+  platform_config_viewer:  [OwnerPermissions.SettingsRead, OwnerPermissions.FlagsRead],
+  // Proposes and applies configuration. Holds neither checker grant: the desk that changes settings and flips flags is
+  // deliberately not the desk that approves a money-path setting or widens a module flag.
+  platform_config_ops:     [OwnerPermissions.SettingsManage, OwnerPermissions.SettingsRead,
+    OwnerPermissions.FlagsManage, OwnerPermissions.FlagsRead],
+  // The checker. Approves a widened flag and reads everything; cannot propose, so the two halves of the rule live in
+  // two roles rather than relying on two people who could each do both (the ADMIN-9 pattern).
+  platform_config_checker: [OwnerPermissions.FlagsApprove, OwnerPermissions.SettingsRead, OwnerPermissions.FlagsRead],
   platform_ai_ops:        [OwnerPermissions.AiModelManage, OwnerPermissions.AiModelRead, OwnerPermissions.AiReview],
   platform_ai_auditor:    [OwnerPermissions.AiModelRead],
   // ADMIN-7. The reviewer who works the queue and cannot change a model — the commonest shape of request on this plane
