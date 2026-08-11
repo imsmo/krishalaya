@@ -68,6 +68,9 @@ export type { Requirement, RequirementResponse } from './resources/requirements'
 // PC-56 TENANT-1b · the people roster + member detail. `REVEALABLE_MEMBER_FIELDS` is a VALUE export (the console
 // renders the field picker from it, so the list cannot drift from the server's closed enum).
 export { REVEALABLE_MEMBER_FIELDS, kycSeverity, isFullyVerified, rosterKycLabel, MIN_SUSPENSION_REASON } from './resources/members';
+// PC-56 TENANT-1b-4 · the template generator is a VALUE export so the console cannot drift from the parser's column list.
+export { MEMBER_IMPORT_COLUMNS, memberImportTemplateCsv } from './resources/bulk-imports';
+export type { BulkImportJob, BulkImportStatus, BulkValidationReport, BulkValidationIssue } from './resources/bulk-imports';
 export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail, MemberRoleDetail, MemberGlance,
   MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel, SuspensionRecord, SuspensionResult,
   Farmer360, Farmer360Income, Farmer360Season, Farmer360Scheme, Farmer360CreditEvidence, LandByUnit } from './resources/members';

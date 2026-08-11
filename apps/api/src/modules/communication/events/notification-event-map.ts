@@ -43,5 +43,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // without the notice being queued. `userId` is the IMPERSONATED user, and it is in the payload rather than assumed:
   // ADMIN-6b's finding was a map row pointing at a payload with no recipient, which looks fixed and changes nothing.
   { outboxType: 'impersonation.session_started', eventCode: 'impersonation.session_started', recipientKeys: ['userId'] },
+  // PC-56 TENANT-1b-4 · W156: "the invite SMS says who added them and why, in their language, with a decline path". The
+  // applier emits the FACT (a member was imported) and this row decides who hears about it — which is why the applier
+  // needs no dependency on the communication module, and why an import in a module that does not import CommunicationModule
+  // was a DI defect rather than a style preference. Templates and the event row are seeded by 0129, versioned so the
+  // 0122 send-time gate resolves them.
+  { outboxType: 'identity.member_imported',     eventCode: 'member.invited',       recipientKeys: ['userId'] },
   { outboxType: 'impersonation.session_ended',   eventCode: 'impersonation.session_ended',   recipientKeys: ['userId'] },
 ];

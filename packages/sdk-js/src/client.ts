@@ -49,6 +49,7 @@ import { ParcelsResource } from './resources/parcels';
 import { PrivacyResource } from './resources/privacy';
 import { OnboardingResource } from './resources/onboarding';
 import { MembersResource } from './resources/members';
+import { BulkImportsResource } from './resources/bulk-imports';
 
 export class KrishalayaClient {
   private readonly http: HttpClient;
@@ -106,6 +107,8 @@ export class KrishalayaClient {
   readonly users: UsersResource;
   /** PC-56 TENANT-1b · the PEOPLE roster (W153) + member detail (W154). Not `memberships`, which is the paid-tier manager. */
   readonly members: MembersResource;
+  /** PC-56 TENANT-1b-4 · bulk imports with W156's validate-first triage. */
+  readonly bulkImports: BulkImportsResource;
   readonly market: MarketResource;
   readonly weather: WeatherResource;
   readonly resources: ResourcesResource;
@@ -170,6 +173,7 @@ export class KrishalayaClient {
     this.disputes = new DisputesResource(this.http);
     this.users = new UsersResource(this.http);
     this.members = new MembersResource(this.http);
+    this.bulkImports = new BulkImportsResource(this.http);
     this.market = new MarketResource(this.http);
     this.weather = new WeatherResource(this.http);
     this.resources = new ResourcesResource(this.http);

@@ -10,6 +10,15 @@ export function normalizePhoneE164(raw: string, defaultCountry = '+91'): string 
   if (s.startsWith('+')) return E164.test(s) ? s : null;
   s = s.replace(/\D/g, '');
   if (defaultCountry === '+91') {
+    // **A LEADING ZERO IS THE STD PREFIX, NOT PART OF THE NUMBER (PC-56 TENANT-1b-4).** "098765 43210" is how a phone
+    // number is written on paper across India, and it was returning null — so a paper-first member import would have
+    // flagged a large share of a real SHG register as an invalid phone and sent staff to correct nothing. No Indian mobile
+    // number begins with 0, so stripping exactly one leading zero from an 11-digit string is unambiguous.
+    //
+    // This change only ever turns a REFUSAL into an acceptance, so no number that resolved before resolves differently
+    // now: existing accounts are untouched and the login path gains the same tolerance, which is correct — 098765 43210
+    // and +91 98765 43210 are one subscriber and must be one person.
+    if (s.length === 11 && s.startsWith('0')) s = s.slice(1);
     if (s.length === 10) return E164.test('+91' + s) ? '+91' + s : null;
     if (s.length === 12 && s.startsWith('91')) return E164.test('+' + s) ? '+' + s : null;
     return null;

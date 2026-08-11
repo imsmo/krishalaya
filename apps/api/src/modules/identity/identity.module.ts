@@ -43,6 +43,8 @@ import { MemberPiiService } from './services/member-pii.service';
 import { MemberSuspensionService } from './services/member-suspension.service';
 import { Farmer360Service } from './services/farmer-360.service';
 import { Farmer360ReadModel } from './read-models/farmer-360.read-model';
+import { MemberBulkApplier } from './bulk/member-bulk-applier';
+import { BULK_APPLIER_REGISTRY, BulkApplierRegistry } from '../../core/bulk/bulk-applier.registry';
 import { MemberSuspensionRepository } from './repositories/member-suspension.repository';
 import { MemberRosterController } from './controllers/v1/member-roster.controller';
 import { UserRepository } from './repositories/user.repository';
@@ -79,6 +81,7 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
     MemberRosterReadModel, MemberDetailReadModel, MemberPiiService,
     MemberSuspensionService, MemberSuspensionRepository,
     Farmer360Service, Farmer360ReadModel,
+    MemberBulkApplier,
     UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository, BusinessKycRepository, EkycSessionRepository,
     AddressRepository, BankAccountRepository, DeviceRepository, SessionRepository, LoginEventRepository,
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,
@@ -106,9 +109,15 @@ export class IdentityModule implements OnModuleInit {
     @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobRegistry: ScheduledJobRegistry,
     private readonly config: AppConfig,
     private readonly kycExpiryRemindersCadenceJob: KycExpiryRemindersCadenceJob,
+    @Inject(BULK_APPLIER_REGISTRY) private readonly bulkRegistry: BulkApplierRegistry,
+    private readonly memberApplier: MemberBulkApplier,
   ) {}
   onModuleInit(): void {
     // per-job env gate (KYC_EXPIRY_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
     if (this.config.jobs.kycExpiryReminders.enabled) this.jobRegistry.register(this.kycExpiryRemindersCadenceJob);
+    // PC-56 TENANT-1b-4: the 'members' importer W156 needs. Registered here in the module that OWNS users and roles —
+    // core/bulk stays generic plumbing and never learns what a member is (the same contract catalogue's 'products'
+    // applier follows). Before this line, `importType: 'members'` was a 422 and the whole screen pointed at nothing.
+    this.bulkRegistry.register(this.memberApplier);
   }
 }

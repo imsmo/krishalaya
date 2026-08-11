@@ -97,6 +97,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: RawPa
         {/* The cross-link that keeps the two "members" pages from being a trap. */}
         <p className="kv-fine">
           {t.t('people.tierHint')} <Link href="/members" className="kv-link">{t.t('people.tierLink')}</Link>
+          {' · '}<Link href="/people/import" className="kv-link">{t.t('people.importLink')}</Link>
         </p>
       </div>
 
@@ -229,6 +230,8 @@ export default async function PeoplePage({ searchParams }: { searchParams: RawPa
             // Two different empty states, because they are two different situations for two different readers.
             <p className="kv-empty-state">
               {isFiltered(f) ? t.t('people.emptyFiltered') : t.t('people.emptyNone')}
+              {/* W156's own empty-state call to action: "Start with bulk import…". PC-56 TENANT-1b-4. */}
+              {!isFiltered(f) && <> <Link href="/people/import" className="kv-link">{t.t('people.importLink')}</Link></>}
             </p>
           )}
 

@@ -7,5 +7,5 @@ export type BulkImportEventType = (typeof BulkImportEventType)[keyof typeof Bulk
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 
 // bulk_import_jobs.status enum (db/migrations/0030).
-export const BULK_STATUSES = ['pending', 'processing', 'completed', 'partially_completed', 'failed', 'cancelled'] as const;
+export const BULK_STATUSES = ['pending', 'validating', 'validated', 'processing', 'completed', 'partially_completed', 'failed', 'cancelled'] as const;
 export type BulkStatus = (typeof BULK_STATUSES)[number];
