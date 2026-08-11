@@ -77,7 +77,13 @@ describe('TENANT-1b-3 · realized income means SETTLED', () => {
     const crop = h.seen.find((s) => /FROM payouts p\s+JOIN lookup_values/.test(s.sql))!.sql;
     const dairy = h.seen.find((s) => /FROM milk_bills mb/.test(s.sql))!.sql;
     // "Unsold stock counts when paid, never before." A queued payout and an approved-but-unpaid bill are not income.
-    expect(crop).toMatch(/p\.status = 'paid'/);
+    //
+    // **AND THIS ASSERTION USED TO PIN THE WRONG WORD, WHICH IS THE SHARPEST VERSION OF THIS LESSON: A TEST CAN DEFEND A
+    // BUG.** It read `p.status = 'paid'` and passed — because the code said `'paid'` too. `payout_status` is an ENUM (0006)
+    // with labels queued|processing|success|failed|reversed|cancelled and NO `paid`, so the query would have raised
+    // `invalid input value for enum payout_status` against a real database. Both the code and the test agreed, and both were
+    // wrong. `milk_bills.status` is a varchar where 'paid' IS correct, which is where the word came from.
+    expect(crop).toMatch(/p\.status = 'success'/);
     expect(dairy).toMatch(/mb\.status = 'paid'/);
   });
 

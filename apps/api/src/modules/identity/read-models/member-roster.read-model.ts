@@ -132,8 +132,14 @@ export class MemberRosterReadModel {
               -- order that never settled is not income, and W155 says exactly that: unsold stock counts when paid, never
               -- before. Bounded by the page CTE, so this is 25 indexed lookups and not an aggregate over the whole table;
               -- the unbounded lifetime figure still wants a rollup at scale (TENANT-1b-Q1).
+              -- **success, NOT paid — AND paid IS WHAT THIS FILE SHIPPED WITH (found by TENANT-1c).** payout_status is an
+              -- ENUM (0006): queued|processing|success|failed|reversed|cancelled. There is no paid label. Comparing an enum
+              -- column to a label it does not have does NOT return zero rows — Postgres raises invalid input value for enum
+              -- payout_status: "paid" — so this query errored and the screen it feeds was recorded as shipped. The wrong word
+              -- came from milk_bills.status, a varchar where 'paid' IS legitimate; a test now pins every enum comparison in
+              -- the codebase against the labels the migrations actually declare.
               COALESCE((SELECT SUM(po.amount_minor) FROM payouts po
-                         WHERE po.user_id = u.id AND po.tenant_id = $1 AND po.status = 'paid'), 0)::text AS received_minor
+                         WHERE po.user_id = u.id AND po.tenant_id = $1 AND po.status = 'success'), 0)::text AS received_minor
          FROM page
          JOIN users u ON u.id = page.id
          -- is_default, which is what the column is actually called (0003) -- and LEFT, because a member with no address

@@ -158,7 +158,7 @@ export class Farmer360ReadModel {
   /**
    * W155's "Farm income (12mo, realized) — crops + dairy — unsold stock counts when paid, never before".
    *
-   * **REALIZED MEANS SETTLED, AND THAT IS THE WHOLE CLAIM.** Crop income is `payouts` with `status = 'paid'`; dairy income
+   * **REALIZED MEANS SETTLED, AND THAT IS THE WHOLE CLAIM.** Crop income is `payouts` with `status = 'success'`; dairy income
    * is `milk_bills` with `status = 'paid'`. An order that was placed, a listing that is live, a bill that is approved but
    * unpaid — none of them are income, and W155 says so in its own words. Counting them would inflate the number a banker
    * is shown.
@@ -174,7 +174,7 @@ export class Farmer360ReadModel {
         `SELECT COALESCE(SUM(p.amount_minor), 0)::text AS minor, COUNT(*)::int AS n
            FROM payouts p
            JOIN lookup_values lv ON lv.id = p.purpose_id
-          WHERE p.tenant_id = $1 AND p.user_id = $2 AND p.status = 'paid' AND p.deleted_at IS NULL
+          WHERE p.tenant_id = $1 AND p.user_id = $2 AND p.status = 'success' AND p.deleted_at IS NULL
             AND p.created_at >= now() - interval '12 months'
             -- The SELLING purposes. Wages are labour income, not farm income, and a dividend is a return on shares —
             -- folding either into "farm income" would answer a different question from the one the tile asks.
@@ -345,7 +345,7 @@ export class Farmer360ReadModel {
         `SELECT COUNT(*)::int AS n,
                 COUNT(DISTINCT date_trunc('month', p.created_at))::int AS months
            FROM payouts p
-          WHERE p.tenant_id = $1 AND p.user_id = $2 AND p.status = 'paid' AND p.deleted_at IS NULL
+          WHERE p.tenant_id = $1 AND p.user_id = $2 AND p.status = 'success' AND p.deleted_at IS NULL
             AND p.created_at >= now() - interval '12 months'`,
         [tenantId, userId]),
       db.query<{ n: number; verified: number }>(

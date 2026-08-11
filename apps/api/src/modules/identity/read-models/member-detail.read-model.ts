@@ -212,9 +212,9 @@ export class MemberDetailReadModel {
     const [money, dairy, animals, disputes] = await Promise.all([
       db.query<{ received_minor: string; paid_count: number; order_count: number; first_order_at: string | null }>(
         `SELECT COALESCE((SELECT SUM(p.amount_minor) FROM payouts p
-                           WHERE p.tenant_id = $1 AND p.user_id = $2 AND p.status = 'paid'), 0)::text AS received_minor,
+                           WHERE p.tenant_id = $1 AND p.user_id = $2 AND p.status = 'success'), 0)::text AS received_minor,
                 (SELECT COUNT(*)::int FROM payouts p2
-                  WHERE p2.tenant_id = $1 AND p2.user_id = $2 AND p2.status = 'paid') AS paid_count,
+                  WHERE p2.tenant_id = $1 AND p2.user_id = $2 AND p2.status = 'success') AS paid_count,
                 -- W154 says "42 orders since Nov 2024". Orders the member SOLD, in this tenant. Cancelled orders are
                 -- excluded: a cancelled order is not a sale, and counting it would flatter the number the console
                 -- prints next to a money figure.
