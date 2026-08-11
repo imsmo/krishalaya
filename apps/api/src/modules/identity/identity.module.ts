@@ -37,6 +37,7 @@ import { ChangePhoneService } from './services/change-phone.service';
 import { PrivacyController } from './controllers/v1/privacy.controller';
 
 // Repositories
+import { MemberRosterReadModel } from './read-models/member-roster.read-model';
 import { UserRepository } from './repositories/user.repository';
 import { RoleRepository } from './repositories/role.repository';
 import { PermissionRepository } from './repositories/permission.repository';
@@ -68,6 +69,7 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
     KycDocumentService, EkycService, BusinessKycService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
     ekycProviderProvider,
     fundAccountTokeniserProvider,
+    MemberRosterReadModel,
     UserRepository, RoleRepository, PermissionRepository, UserTenantRoleRepository, KycDocumentRepository, BusinessKycRepository, EkycSessionRepository,
     AddressRepository, BankAccountRepository, DeviceRepository, SessionRepository, LoginEventRepository,
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,
