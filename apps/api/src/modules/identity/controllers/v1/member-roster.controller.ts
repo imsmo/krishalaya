@@ -12,7 +12,9 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { MemberRosterReadModel } from '../../read-models/member-roster.read-model';
+import { MemberDetailReadModel } from '../../read-models/member-detail.read-model';
 import { MemberPiiService } from '../../services/member-pii.service';
+import { NotFoundError } from '../../../../shared/errors/app-error';
 import { IdentityPermissions } from '../../policies/identity.policies';
 import { QueryRosterSchema, QueryRosterDto, RevealPiiSchema, RevealPiiDto } from '../../dto/member-roster.dto';
 
@@ -24,6 +26,7 @@ const reqIdOf = (req: Request) => (req.headers['x-request-id'] as string) || nul
 export class MemberRosterController {
   constructor(
     private readonly roster: MemberRosterReadModel,
+    private readonly detail: MemberDetailReadModel,
     private readonly pii: MemberPiiService,
   ) {}
 
@@ -47,6 +50,24 @@ export class MemberRosterController {
           : null,
       },
     };
+  }
+
+  /**
+   * ONE MEMBER (W154). Same grant as the roster — `report.view` — and deliberately so: the detail shows no PII the
+   * roster does not already show masked. The money tiles are the tenant's own payouts and orders, which a member desk
+   * has to see to answer "have I been paid"; W154's separate "money figures need finance scope" line describes a
+   * refinement of report.view this platform's grant vocabulary does not yet carry (TENANT-1b-Q4), and splitting it
+   * badly here would be worse than naming it.
+   *
+   * **404 AND NOT 403 FOR A NON-MEMBER**, matching `MemberPiiService`: "that person exists but is not yours" is an
+   * enumeration oracle across 15,000 tenants.
+   */
+  @Get(':userId')
+  @RequirePermissions(IdentityPermissions.Report)
+  async member(@CurrentContext() ctx: RequestContext, @Param('userId') userId: string) {
+    const data = await this.detail.get(ctx.tenantId, userId);
+    if (!data) throw new NotFoundError('member not found in this organisation');
+    return { data };
   }
 
   /**

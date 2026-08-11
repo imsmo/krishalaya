@@ -48,6 +48,7 @@ import { SupportResource } from './resources/support';
 import { ParcelsResource } from './resources/parcels';
 import { PrivacyResource } from './resources/privacy';
 import { OnboardingResource } from './resources/onboarding';
+import { MembersResource } from './resources/members';
 
 export class KrishalayaClient {
   private readonly http: HttpClient;
@@ -103,6 +104,8 @@ export class KrishalayaClient {
   readonly rbac: RbacResource;
   readonly disputes: DisputesResource;
   readonly users: UsersResource;
+  /** PC-56 TENANT-1b · the PEOPLE roster (W153) + member detail (W154). Not `memberships`, which is the paid-tier manager. */
+  readonly members: MembersResource;
   readonly market: MarketResource;
   readonly weather: WeatherResource;
   readonly resources: ResourcesResource;
@@ -166,6 +169,7 @@ export class KrishalayaClient {
     this.rbac = new RbacResource(this.http);
     this.disputes = new DisputesResource(this.http);
     this.users = new UsersResource(this.http);
+    this.members = new MembersResource(this.http);
     this.market = new MarketResource(this.http);
     this.weather = new WeatherResource(this.http);
     this.resources = new ResourcesResource(this.http);

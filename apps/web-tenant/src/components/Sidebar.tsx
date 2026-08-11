@@ -47,6 +47,9 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureAiReview ? [{ key: 'ai-review', href: '/ai-review', label: t.t('nav.aiReview') }] : []),
         ...(env.featureEducation ? [{ key: 'studio', href: '/studio', label: t.t('nav.studio') }] : []),
         ...(env.featureComms ? [{ key: 'comms', href: '/comms', label: t.t('nav.comms') }] : []),
+        // The PEOPLE register is core and ungated: an FPO with no paid membership tiers still has members, and hiding
+        // the roster behind the `memberships` flag would leave a tenant unable to see who belongs to them.
+        { key: 'people', href: '/people', label: t.t('nav.people') },
         ...(env.featureMemberships ? [{ key: 'members', href: '/members', label: t.t('nav.members') }] : []),
         ...(env.featurePromotions ? [{ key: 'promotions', href: '/promotions', label: t.t('nav.promotions') }] : []),
         ...(env.featureMarket ? [{ key: 'market', href: '/market', label: t.t('nav.market') }] : []),
