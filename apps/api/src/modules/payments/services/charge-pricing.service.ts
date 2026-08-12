@@ -10,6 +10,16 @@ import { ChargeDefinitionRepository } from '../repositories/charge-definition.re
 
 export interface CheckoutCharges { deliveryFeeMinor: bigint; platformFeeMinor: bigint; }
 
+/** PC-56 TENANT-3a: what the order freezes as its price basis. The RESOLVED definition (code, method, config,
+ *  effective date) rather than the computed amount alone — an amount cannot be re-checked, a rule can. */
+export interface ChargeSnapshot {
+  resolvedAt: string;
+  /** Set by checkout when a membership benefit overrode a resolved amount — without it the frozen rules would
+   *  disagree with what the buyer actually paid, and a snapshot that disagrees with the money is worse than none. */
+  memberBenefit?: { freeDelivery: boolean; platformFeeBpsOverride: number | null; appliedDeliveryFeeMinor: string; appliedPlatformFeeMinor: string };
+  charges: Array<{ code: string; calcMethod: string; config: unknown; definitionId: string | null; effectiveFrom: string | null; tenantOverride: boolean; amountMinor: string }>;
+}
+
 @Injectable()
 export class ChargePricingService {
   constructor(private readonly defs: ChargeDefinitionRepository) {}
@@ -36,5 +46,35 @@ export class ChargePricingService {
       this.quote(tx, tenantId, 'buyer_platform_fee', { amountMinor: subtotalMinor }),
     ]);
     return { deliveryFeeMinor, platformFeeMinor };
+  }
+
+  /** THE SAME TWO CHARGES, PLUS THE RULES THEY CAME FROM (PC-56 TENANT-3a). The order row freezes this so
+   *  "snapshotted at order time, never recalculated" stops being a comment over an empty column: a definition
+   *  edited or expired next month can no longer change what an FPO's accountant reads about last month's order.
+   *  A charge with no active definition contributes 0 and is recorded as ABSENT rather than omitted — "no fee
+   *  applied" and "no rule existed" are different facts about the same ₹0. */
+  async checkoutChargesWithSnapshot(tx: TxContext, tenantId: string, subtotalMinor: bigint, now: Date): Promise<CheckoutCharges & { snapshot: ChargeSnapshot }> {
+    const codes = ['delivery_fee', 'buyer_platform_fee'] as const;
+    const resolved = await Promise.all(codes.map(async (code) => {
+      const def = await this.defs.resolve(tx, tenantId, code);
+      const amountMinor = def ? computeCharge(def.calcMethod, def.config, { amountMinor: subtotalMinor }) : 0n;
+      return {
+        code,
+        // 'none' is a REAL value here: no active definition existed, which is a different fact from a rule that
+        // computed zero — the order freezes which of the two it was.
+        calcMethod: def ? def.calcMethod : 'none',
+        config: def ? def.config : null,
+        definitionId: def?.id ?? null,
+        effectiveFrom: def?.effectiveFrom ?? null,
+        tenantOverride: def?.isTenantOverride === true,
+        amountMinor: amountMinor.toString(),
+      };
+    }));
+    const by = (code: string) => BigInt(resolved.find((r) => r.code === code)!.amountMinor);
+    return {
+      deliveryFeeMinor: by('delivery_fee'),
+      platformFeeMinor: by('buyer_platform_fee'),
+      snapshot: { resolvedAt: now.toISOString(), charges: resolved },
+    };
   }
 }

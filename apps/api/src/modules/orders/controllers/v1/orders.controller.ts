@@ -6,7 +6,7 @@ import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/perm
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
-import { BadRequestError, ForbiddenError } from '../../../../shared/errors/app-error';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../../../../shared/errors/app-error';
 import { OrderService } from '../../services/order.service';
 import { OrderPaymentService } from '../../services/order-payment.service';
 import { OrderItemService } from '../../services/order-item.service';
@@ -19,6 +19,9 @@ import { QueryOrderSchema, QueryOrderDto } from '../../dto/query-order.dto';
 import { CancelOrderSchema, CancelOrderDto, DisputeOrderSchema, DisputeOrderDto } from '../../dto/update-order.dto';
 import { RecordDeliveredItemSchema, RecordDeliveredItemDto } from '../../dto/create-order-item.dto';
 import { OrderPermissions, canModerateOrder } from '../../policies/orders.policies';
+import { OrderConsoleReadModel } from '../../read-models/order-console.read-model';
+import { orderMoneyView } from '../../domain/order-money';
+import { ConsoleOrdersSchema, ConsoleOrdersDto, parseOrderCursor, buildOrderCursor } from '../../dto/order-console.dto';
 
 const ipOf = (req: Request) => req.ip || null;
 
@@ -34,6 +37,7 @@ export class OrdersController {
     private readonly orderItems: OrderItemService,
     private readonly groups: CheckoutGroupService,
     private readonly stats: TenantOrderStatsReadModel,
+    private readonly console: OrderConsoleReadModel,          // PC-56 TENANT-3a: W133 views + W134 timeline/money
   ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateOrder(ctx) }; }
 
@@ -52,6 +56,41 @@ export class OrdersController {
 
   // --- static routes declared BEFORE ':id' so they aren't captured as an order id ---
   /** Order stats: a moderator sees the whole tenant; a seller is scoped to their own orders. */
+  // ---- PC-56 TENANT-3a · W133's working views + W134's timeline and money box ----
+
+  /** W133's five tabs over the 15-state machine, from ONE mapping — including an `unmapped` count, because a
+   *  status that no tab claims is an order nobody works. Staff scope (the same moderation rule scope=tenant uses). */
+  @Get('console/views')
+  async consoleViews(@CurrentContext() ctx: RequestContext) {
+    if (!canModerateOrder(ctx)) throw new ForbiddenError('the order console needs order moderation permission');
+    return { data: await this.console.viewCounts(ctx.tenantId) };
+  }
+
+  /** The staff worklist, one working view at a time, keyset (never OFFSET; no page numbers by decision). */
+  @Get('console/list')
+  async consoleList(@CurrentContext() ctx: RequestContext, @ZodQuery(ConsoleOrdersSchema) q: ConsoleOrdersDto) {
+    if (!canModerateOrder(ctx)) throw new ForbiddenError('the order console needs order moderation permission');
+    const rows = await this.console.list(ctx.tenantId, { view: q.view, cursor: parseOrderCursor(q.cursor), limit: q.limit });
+    return { data: { items: rows, nextCursor: rows.length === q.limit ? buildOrderCursor(rows[rows.length - 1]) : null } };
+  }
+
+  /** W134's timeline — order_events, recorded on every hop since 0005 and read by no tenant surface until now.
+   *  Party-scoped: the buyer, the seller, or a moderator (the same rule the order detail read enforces). */
+  @Get(':id/events')
+  async events(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    const o = await this.orders.getById(ctx.tenantId, this.actor(ctx), id);
+    return { data: await this.console.timeline(ctx.tenantId, id, new Date(o.createdAt)) };
+  }
+
+  /** W134's money box: the FROZEN figures plus, for each line, where its number comes from. Party-scoped. */
+  @Get(':id/money')
+  async money(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    await this.orders.getById(ctx.tenantId, this.actor(ctx), id);   // authorises (404s a stranger)
+    const row = await this.console.money(ctx.tenantId, id);
+    if (!row) throw new NotFoundError('order not found');
+    return { data: { ...orderMoneyView(row), currencyCode: row.currencyCode } };
+  }
+
   @Get('stats') statsFor(@CurrentContext() ctx: RequestContext) {
     const a = this.actor(ctx);
     return this.stats.stats(ctx.tenantId, { sellerUserId: a.canModerate ? null : ctx.userId }).then((data) => ({ data }));

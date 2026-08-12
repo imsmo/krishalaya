@@ -18,6 +18,8 @@ import { sellerActions } from '../../../features/orders/lifecycle';
 import { orderTransitionAction, deliverShipmentAction } from './actions';
 import { MediaUploader } from '../../../components/MediaUploader';
 import { invoiceFileName } from '../../../features/orders/invoice';
+import { basisKey, showMoneyLine, snapshotKey } from '../../../features/orders/console';
+import type { OrderMoneyBox, OrderTimelineEvent } from '@krishalaya/sdk-js';
 import type { OrderDetail, Shipment, InvoiceDownload } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -62,6 +64,13 @@ export default async function OrderDetailPage({ params, searchParams }: { params
     [t.t('orderDetail.commission'), money(order.commissionMinor)],
     [t.t('orderDetail.total'), money(order.totalMinor)],
   ];
+
+  // ---- PC-56 TENANT-3a · W134's timeline + money box. Both degrade to absence: a card that cannot load must
+  // never take the order page down with it (Law 12). ----
+  let events: OrderTimelineEvent[] = []; let eventsFailed = false;
+  try { events = await tenantClient().orders.events(params.id); } catch { eventsFailed = true; }
+  let moneyBox: OrderMoneyBox | null = null;   // (`money` is already this file's formatter — kept distinct)
+  try { moneyBox = await tenantClient().orders.money(params.id); } catch { moneyBox = null; }
 
   return (
     <section>
@@ -143,6 +152,50 @@ export default async function OrderDetailPage({ params, searchParams }: { params
           )}
         </div>
       ))}
+      {/* ---- W134's timeline: order_events, recorded on every hop since 0005 and read here for the first time ---- */}
+      <h2 className="kv-section-title">{t.t('od.timeline')}</h2>
+      {eventsFailed ? (
+        <p className="kv-fine">{t.t('od.timelineFailed')}</p>
+      ) : events.length === 0 ? (
+        <p className="kv-empty-state">{t.t('od.timelineEmpty')}</p>
+      ) : (
+        <ul>
+          {events.map((e, i) => (
+            <li key={i}>
+              <span className="kv-badge">{e.toStatus}</span>{' '}
+              {e.fromStatus && <span className="kv-fine">{t.t('od.from', { from: e.fromStatus })} </span>}
+              {formatDate(e.at, lang)}
+              {e.actorName && <span className="kv-fine"> · {e.actorName}</span>}
+              {e.note && <span className="kv-fine"> · {e.note}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* ---- W134's money box: the FROZEN figures, each with the basis its number comes from ---- */}
+      <h2 className="kv-section-title">{t.t('od.moneyHeading')}</h2>
+      {moneyBox ? (
+        <>
+          <dl className="kv-facts">
+            {moneyBox.lines.filter(showMoneyLine).map((l) => (
+              <div key={l.key} className="kv-facts__row">
+                <dt>{t.t(`od.line.${l.key}` as never)}</dt>
+                <dd>
+                  {formatMoneyMinor(l.minor, moneyBox!.currencyCode, lang)}
+                  <div className="kv-detail__muted">{t.t(`od.basis.${basisKey(l.basis)}` as never)}</div>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="kv-fine">{t.t('od.buyerPaid', { total: formatMoneyMinor(moneyBox.buyerPaidMinor, moneyBox.currencyCode, lang) })}</p>
+          <p className="kv-fine">{t.t('od.sellerGross', { gross: formatMoneyMinor(moneyBox.sellerGrossMinor, moneyBox.currencyCode, lang) })}</p>
+          {/* The snapshot verdict — including the one that cannot be recovered. */}
+          <p className="kv-fine kv-note">{t.t(`od.snapshot.${snapshotKey(moneyBox.snapshot)}` as never)}</p>
+          <p className="kv-fine">{t.t('od.tdsNote')}</p>
+        </>
+      ) : (
+        <p className="kv-fine">{t.t('od.moneyFailed')}</p>
+      )}
     </section>
   );
 }

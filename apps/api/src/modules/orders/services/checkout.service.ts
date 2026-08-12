@@ -131,15 +131,31 @@ export class CheckoutService {
             await this.quota.assertWithinLimit(tenantId, QUOTA);
             // buyer-side charges (delivery slab + platform fee) on this seller's subtotal — flagged
             const subtotal = g.items.reduce((a, it) => a + it.props.lineTotalMinor, 0n);
-            let { deliveryFeeMinor, platformFeeMinor } = applyCharges
-              ? await this.charges.checkoutCharges(tx, tenantId, subtotal)
-              : { deliveryFeeMinor: 0n, platformFeeMinor: 0n };
+            // PC-56 TENANT-3a: the same two charges, PLUS the rules they came from — frozen onto the order so
+            // W133/W134's "snapshotted at order time, never recalculated" stops being a promise over a column
+            // (commission_rule_snapshot) that nothing had ever written since 0005.
+            const quoted = applyCharges
+              ? await this.charges.checkoutChargesWithSnapshot(tx, tenantId, subtotal, g.createdAt)
+              : { deliveryFeeMinor: 0n, platformFeeMinor: 0n, snapshot: null };
+            let { deliveryFeeMinor, platformFeeMinor } = quoted;
+            const chargeSnapshot = quoted.snapshot;
             // membership benefits override the buyer-side charges (free delivery + sliding platform fee)
             if (applyCharges && applyMemberBenefits) {
               const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
               if (ben) {
                 if (ben.freeDelivery) deliveryFeeMinor = 0n;
                 if (ben.platformFeeBpsOverride != null) platformFeeMinor = applyBpsFloor(subtotal, ben.platformFeeBpsOverride);
+                // **THE OVERRIDE GOES INTO THE SNAPSHOT TOO, OR THE SNAPSHOT LIES.** A membership benefit changes
+                // the amount AFTER the rules were resolved; freezing only the rules would leave an accountant
+                // reading a ₹340 delivery slab against a ₹0 charge and finding no explanation on the record.
+                if (chargeSnapshot) {
+                  chargeSnapshot.memberBenefit = {
+                    freeDelivery: ben.freeDelivery === true,
+                    platformFeeBpsOverride: ben.platformFeeBpsOverride ?? null,
+                    appliedDeliveryFeeMinor: deliveryFeeMinor.toString(),
+                    appliedPlatformFeeMinor: platformFeeMinor.toString(),
+                  };
+                }
               }
             }
             // coupon discount: redeemed atomically in THIS tx against the primary order (promotions flag)
@@ -152,7 +168,8 @@ export class CheckoutService {
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
               sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryFeeMinor, platformFeeMinor, discountMinor,
               couponCode: discountMinor > 0n ? (dto.couponCode ?? null) : null,
-              deliveryMethodId: dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt });
+              deliveryMethodId: dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt,
+              commissionRuleSnapshot: chargeSnapshot as Record<string, unknown> | null });
             await this.orders.insertGraph(tx, order, g.items);
             await this.quota.increment(tx, tenantId, QUOTA, 1);
             await this.flush(tx, tenantId, g.orderId, order.pullEvents());

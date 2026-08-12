@@ -16,6 +16,11 @@ export interface OrderProps {
   acceptanceDeadline: Date | null; qualityWindowEnds: Date | null;
   cancelReasonId: string | null; cancelledBy: string | null; version: number;
   createdAt: Date; completedAt: Date | null;
+  /** PC-56 TENANT-3a: the charge rules this order was PRICED with, frozen at placement. 0005 has carried the
+   *  column since day one and nothing ever wrote it, while W133/W134 promised "snapshotted at order time, never
+   *  recalculated" — an immutability promise over an empty column. Written at checkout (the one place the rules
+   *  are resolved); NULL on every order placed before this wave, which the read says rather than guesses. */
+  commissionRuleSnapshot?: Record<string, unknown> | null;
 }
 
 const ACCEPTANCE_WINDOW_MS = 24 * 3600_000;
@@ -30,7 +35,7 @@ export class Order {
     id: string; tenantId: string; orderNo: string; checkoutGroupId: string | null; buyerUserId: string;
     sellerUserId: string; source: string; offerId?: string | null; requirementId?: string | null; currencyCode: string; items: OrderItem[];
     deliveryFeeMinor?: bigint; platformFeeMinor?: bigint; discountMinor?: bigint; couponCode?: string | null; deliveryMethodId: string | null; deliveryAddressId: string | null;
-    requiresPayment: boolean; now?: Date;
+    requiresPayment: boolean; now?: Date; commissionRuleSnapshot?: Record<string, unknown> | null;
   }): Order {
     const now = input.now ?? new Date();
     const subtotal = input.items.reduce((s, it) => s + it.props.lineTotalMinor, 0n);
@@ -49,6 +54,7 @@ export class Order {
       deliveryMethodId: input.deliveryMethodId, deliveryAddressId: input.deliveryAddressId,
       acceptanceDeadline: new Date(now.getTime() + ACCEPTANCE_WINDOW_MS), qualityWindowEnds: null,
       cancelReasonId: null, cancelledBy: null, version: 1, createdAt: now, completedAt: null,
+      commissionRuleSnapshot: input.commissionRuleSnapshot ?? null,
     });
     // buyerUserId + discount + couponCode travel so the promotions module can record/back-stop the
     // coupon redemption from the event (decoupled — orders never imports promotions' repo; Law 11).

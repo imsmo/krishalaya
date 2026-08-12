@@ -7,14 +7,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
-import { Order, OrderProps } from '../domain/order.entity';
+import { Order } from '../domain/order.entity';
 import { OrderItem } from '../domain/order-item.entity';
 import { OrderStatus } from '../domain/order.state';
 
 const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, requirement_id, currency_code,
   subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
   total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, quality_window_ends,
-  cancel_reason_id, cancelled_by, version, created_at, completed_at`;
+  cancel_reason_id, cancelled_by, version, created_at, completed_at, commission_rule_snapshot`;
 // partition-prune window around the v7 id's embedded time (clock skew tolerant)
 const PRUNE = `created_at >= uuid_v7_time($1) - interval '5 seconds' AND created_at < uuid_v7_time($1) + interval '5 seconds'`;
 const big = (v: any) => BigInt(v);
@@ -26,7 +26,8 @@ function toDomain(r: any): Order {
     tdsMinor: big(r.tds_minor), totalMinor: big(r.total_minor), status: r.status as OrderStatus,
     deliveryMethodId: r.delivery_method_id, deliveryAddressId: r.delivery_address_id, acceptanceDeadline: r.acceptance_deadline,
     qualityWindowEnds: r.quality_window_ends, cancelReasonId: r.cancel_reason_id, cancelledBy: r.cancelled_by,
-    version: r.version, createdAt: r.created_at, completedAt: r.completed_at });
+    version: r.version, createdAt: r.created_at, completedAt: r.completed_at,
+    commissionRuleSnapshot: r.commission_rule_snapshot ?? null });
 }
 
 @Injectable()
@@ -43,12 +44,14 @@ export class OrderRepository {
       // so the correct 24-column list carries them ONLY at the end (matching the params order).
       `INSERT INTO orders (id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, currency_code,
         subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
-        total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, version, created_at, offer_id, requirement_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+        total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, version, created_at, offer_id, requirement_id,
+        commission_rule_snapshot)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb)`,
       [p.id, p.tenantId, p.orderNo, p.checkoutGroupId, p.buyerUserId, p.sellerUserId, p.source, p.currencyCode,
        p.subtotalMinor.toString(), p.deliveryFeeMinor.toString(), p.discountMinor.toString(), p.taxMinor.toString(),
        p.commissionMinor.toString(), p.platformFeeMinor.toString(), p.tdsMinor.toString(), p.totalMinor.toString(),
-       p.status, p.deliveryMethodId, p.deliveryAddressId, p.acceptanceDeadline, p.version, p.createdAt, p.offerId, p.requirementId]);
+       p.status, p.deliveryMethodId, p.deliveryAddressId, p.acceptanceDeadline, p.version, p.createdAt, p.offerId, p.requirementId,
+       p.commissionRuleSnapshot ? JSON.stringify(p.commissionRuleSnapshot) : null]);
     for (const it of items) {
       const v = it.props;
       await tx.query(

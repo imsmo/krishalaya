@@ -4,7 +4,7 @@
 // client only reflects what's allowed. Lifecycle POSTs carry an Idempotency-Key (Law 3): a retried "confirm" from a
 // flaky network can't double-apply. Money is bigint minor-unit strings (Law 2).
 import { HttpClient } from '../http';
-import { OrderListItem, OrderDetail, WalletPaymentResult, OrderTracking, OrderBuyerSummary, Page } from '../types';
+import { OrderListItem, OrderDetail, WalletPaymentResult, OrderTracking, OrderBuyerSummary, Page, OrderViewCounts, ConsoleOrderRow, OrderTimelineEvent, OrderMoneyBox } from '../types';
 
 export type OrderRole = 'buyer' | 'seller';
 
@@ -57,5 +57,27 @@ export class OrdersResource {
 
   private transition(id: string, action: string, idempotencyKey: string): Promise<{ ok: boolean }> {
     return this.http.request<{ ok: boolean }>('POST', `orders/${encodeURIComponent(id)}/${action}`, { idempotencyKey, body: {} }).then((r) => r.data);
+  }
+
+  // ---- PC-56 TENANT-3a · the order console (W133) + the record (W134). Staff scope server-side. ----
+
+  /** W133's five working-view counts over the 15-state machine, plus `unmapped` (a status no tab claims). */
+  async consoleViews(signal?: AbortSignal): Promise<OrderViewCounts> {
+    return (await this.http.request<OrderViewCounts>('GET', 'orders/console/views', { signal })).data;
+  }
+
+  /** The staff worklist, one working view at a time, keyset cursor. */
+  async consoleList(query: { view?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: ConsoleOrderRow[]; nextCursor: string | null }> {
+    return (await this.http.request<{ items: ConsoleOrderRow[]; nextCursor: string | null }>('GET', 'orders/console/list', { signal, query })).data;
+  }
+
+  /** W134's timeline: every recorded state hop (order_events). Party-scoped. */
+  async events(id: string, signal?: AbortSignal): Promise<OrderTimelineEvent[]> {
+    return (await this.http.request<OrderTimelineEvent[]>('GET', `orders/${encodeURIComponent(id)}/events`, { signal })).data;
+  }
+
+  /** W134's money box: frozen figures, each with the BASIS its number comes from. Party-scoped. */
+  async money(id: string, signal?: AbortSignal): Promise<OrderMoneyBox> {
+    return (await this.http.request<OrderMoneyBox>('GET', `orders/${encodeURIComponent(id)}/money`, { signal })).data;
   }
 }

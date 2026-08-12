@@ -808,3 +808,20 @@ export interface QcReviewPayload {
   band: { productId: string; regionId: string; lowMinor: string; modalMinor: string; highMinor: string; sampleSize: number } | null;
   selfReview: boolean;
 }
+
+// ---- PC-56 TENANT-3a · order console + record (W133/W134) ----
+export type OrderWorkingView = 'needs_action' | 'in_progress' | 'completed' | 'disputed' | 'cancelled_refunded';
+export type OrderViewCounts = Record<OrderWorkingView, number> & { all: number; unmapped: number };
+export interface ConsoleOrderRow {
+  id: string; orderNo: string; status: string; totalMinor: string; currencyCode: string;
+  buyerUserId: string; buyerName: string | null; sellerUserId: string; sellerName: string | null;
+  itemSummary: string | null; createdAt: string; updatedAt: string;
+  acceptanceDeadline: string | null; disputeId: string | null;
+}
+export interface OrderTimelineEvent { fromStatus: string | null; toStatus: string; note: string | null; actorUserId: string | null; actorName: string | null; at: string }
+export type OrderMoneyBasis = 'charged_at_order' | 'settlement_time' | 'not_applicable_at_order';
+export interface OrderMoneyBox {
+  lines: Array<{ key: string; minor: string; basis: OrderMoneyBasis }>;
+  snapshot: { present: boolean; reason: 'recorded' | 'placed_before_snapshot' | 'no_charges_applied' };
+  buyerPaidMinor: string; sellerGrossMinor: string; currencyCode: string;
+}
