@@ -13,18 +13,24 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Dispute } from '../domain/dispute.entity';
-import { DisputeMessage } from '../domain/dispute-message.entity';
 import { DomainEvent, ResolutionType } from '../domain/disputes.events';
-import { isActive } from '../domain/dispute.state';
-import { DisputeNotFoundError, DisputeForbiddenError, NotEligibleToDisputeError, DuplicateDisputeError, InvalidDisputeError, DisputeNotActiveError } from '../domain/disputes.errors';
+import { DisputeNotFoundError, DisputeForbiddenError, NotEligibleToDisputeError, DuplicateDisputeError, InvalidDisputeError } from '../domain/disputes.errors';
 import { DisputeRepository } from '../repositories/dispute.repository';
 import { DisputeMessageRepository } from '../repositories/dispute-message.repository';
 import { DisputeMessageService } from './dispute-message.service';
 import { CreateDisputeDto } from '../dto/create-dispute.dto';
 import { ResolveDisputeDto } from '../dto/update-dispute.dto';
 import { CreateDisputeMessageDto } from '../dto/create-dispute-message.dto';
+import { RefundApprovalService } from './refund-approval.service';
+import { assertRefundAllowed } from '../domain/refund-gate';
 
-export interface DisputeActor { userId: string; canModerate: boolean; }
+export interface DisputeActor {
+  userId: string;
+  canModerate: boolean;
+  /** order.refund — the MONEY key, seeded for the first time by 0139. Deciding a dispute and releasing the cash are
+   *  two different acts, so they are two different permissions (0139 §139.4). */
+  canRefund?: boolean;
+}
 const SELLER_RESPOND_MS = 48 * 3600_000;   // respondent has 48h
 const SLA_MS = 7 * 24 * 3600_000;          // platform SLA 7d
 
@@ -39,6 +45,7 @@ export class DisputeService {
     private readonly repo: DisputeRepository,
     private readonly messages: DisputeMessageRepository,
     private readonly messageService: DisputeMessageService,
+    private readonly approvals: RefundApprovalService,
   ) {}
 
   /** A party to a delivered order raises a dispute against the counterparty. */
@@ -54,9 +61,14 @@ export class DisputeService {
         const reasonId = await this.repo.resolveReasonId(tenantId, dto.reasonCode);
         if (!reasonId) throw new InvalidDisputeError('unknown dispute reason');
         const now = new Date();
+        // W141's "disputed value ₹12,820 (2 of 10 qtl) — only this amount is frozen". Recorded here, at raise, or
+        // not at all: 0139 never backfills it, and an absent scope reads as "not recorded" everywhere downstream
+        // rather than as a claim on the whole order.
         const dispute = Dispute.raise({
           id: uuidv7(), tenantId, orderId: dto.orderId, raisedBy, againstUser, reasonId, description: dto.description ?? null,
           sellerRespondBy: new Date(now.getTime() + SELLER_RESPOND_MS), slaDueAt: new Date(now.getTime() + SLA_MS), now,
+          disputedAmountMinor: dto.disputedAmountMinor ? BigInt(dto.disputedAmountMinor) : null,
+          disputedQuantity: dto.disputedQuantity ?? null,
         });
         return this.uow.run(tenantId, async (tx) => {
           if (await this.repo.hasActiveForOrderRaiser(tx, tenantId, dto.orderId, raisedBy)) throw new DuplicateDisputeError();
@@ -74,11 +86,61 @@ export class DisputeService {
   startReview(t: string, a: DisputeActor, id: string, ip: string | null) { return this.mutate(t, a, id, 'review', { moderator: true, audit: true }, (d) => d.startReview(), ip); }
   escalate(t: string, a: DisputeActor, id: string, ip: string | null) { return this.mutate(t, a, id, 'escalate', { moderator: true, audit: true }, (d) => d.escalate(), ip); }
 
-  /** Moderator decision → resolved/rejected; emits dispute_resolved (orders applies refund/release). */
+  /** Moderator decision → resolved/rejected; emits dispute_resolved (payments applies the refund/release).
+   *
+   *  **A REFUND RESOLUTION IS TWO ACTS, AND THIS METHOD NOW TREATS THEM AS TWO.** Deciding the dispute needs
+   *  `dispute.resolve`; moving money needs `order.refund` AND, at or above the tenant's threshold, an approval
+   *  signed by somebody else (W140/W141/W142's "maker-checker ≥ ₹10,000", which no code has ever enforced).
+   *  `replacement` and `rejected` move no money and are untouched. */
   resolve(tenantId: string, actor: DisputeActor, id: string, dto: ResolveDisputeDto, ip: string | null) {
+    const type = dto.resolutionType as ResolutionType;
+    const isRefund = type === 'refund_full' || type === 'refund_partial';
     if (!actor.canModerate) throw new DisputeForbiddenError('requires dispute.resolve');
-    return this.mutate(tenantId, actor, id, 'resolve', { moderator: true, audit: true },
-      (d) => d.resolve(actor.userId, dto.resolutionType as ResolutionType, dto.resolutionAmountMinor ? BigInt(dto.resolutionAmountMinor) : null), ip, dto.note ?? null);
+    if (!isRefund) {
+      return this.mutate(tenantId, actor, id, 'resolve', { moderator: true, audit: true },
+        (d) => d.resolve(actor.userId, type, dto.resolutionAmountMinor ? BigInt(dto.resolutionAmountMinor) : null), ip, dto.note ?? null);
+    }
+    if (!actor.canRefund) throw new DisputeForbiddenError('requires order.refund');
+    const note = dto.note ?? null;
+    return timed(this.metrics, 'disputes.resolve', { tenant: tenantId }, () =>
+      this.uow.run(tenantId, async (tx) => {
+        const dispute = await this.repo.getForUpdate(tx, tenantId, id);
+        if (!dispute) throw new DisputeNotFoundError(id);
+        // THE FIGURE MUST EXIST BEFORE THE GATE CAN MEAN ANYTHING. A 'refund_full' with no amount and no recorded
+        // scope used to sail through as "the whole payment, computed downstream" — which would let any refund of any
+        // size past a threshold that never saw a number. Refused, by name, instead.
+        const stated = dto.resolutionAmountMinor ? BigInt(dto.resolutionAmountMinor) : null;
+        const amount = stated ?? dispute.disputedAmountMinor;
+        if (amount == null || amount <= 0n) {
+          throw new InvalidDisputeError('this dispute records no disputed amount — state the refund amount explicitly');
+        }
+        const { gate } = await this.approvals.gateInTx(tx, tenantId, 'dispute', id, amount);
+        assertRefundAllowed(gate);
+        dispute.resolve(actor.userId, type, amount);
+        await this.repo.update(tx, dispute);
+        if (gate.kind === 'ready') await this.approvals.markApplied(tx, tenantId, gate.approvalId);
+        await this.audit.write(tx, {
+          tenantId, actorUserId: actor.userId, action: 'dispute.resolve', entityType: 'dispute', entityId: id,
+          newValue: { status: dispute.status, resolutionType: type, amountMinor: amount.toString(), gate: gate.kind },
+          reason: note, ip,
+        });
+        await this.flush(tx, tenantId, id, dispute.pullEvents());
+        return this.serialize(dispute.toProps());
+      }, { userId: actor.userId }));
+  }
+
+  /** W141's money card + the refund gate as the screen must render it, without moving anything. */
+  async refundState(tenantId: string, actor: DisputeActor, id: string, amountMinor: bigint) {
+    const dispute = await this.repo.getById(tenantId, id);
+    if (!dispute) throw new DisputeNotFoundError(id);
+    if (!this.isParty(dispute, actor)) throw new DisputeNotFoundError(id);
+    return this.uow.run(tenantId, async (tx) => {
+      const g = await this.approvals.gateInTx(tx, tenantId, 'dispute', id, amountMinor);
+      return {
+        gate: g.gate.kind, approvalId: 'approvalId' in g.gate ? g.gate.approvalId : null,
+        thresholdMinor: g.thresholdMinor.toString(), usedDefaultThreshold: g.usedDefault,
+      };
+    }, { userId: actor.userId });
   }
 
   /** A party (or moderator) posts threaded evidence while the dispute is active. Delegated to the
@@ -130,6 +192,7 @@ export class DisputeService {
     return { id: p.id, orderId: p.orderId, raisedBy: p.raisedBy, againstUser: p.againstUser, reasonId: p.reasonId,
       description: p.description, status: p.status, sellerRespondBy: p.sellerRespondBy,
       resolutionType: p.resolutionType, resolutionAmountMinor: p.resolutionAmountMinor?.toString() ?? null,
+      disputedAmountMinor: p.disputedAmountMinor?.toString() ?? null, disputedQuantity: p.disputedQuantity,
       resolvedBy: p.resolvedBy, resolvedAt: p.resolvedAt, slaDueAt: p.slaDueAt, createdAt: p.createdAt };
   }
   private async flush(tx: TxContext, tenantId: string, disputeId: string, events: DomainEvent[]) {

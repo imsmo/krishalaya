@@ -19,7 +19,7 @@ import { SearchResource } from './resources/search';
 import { TenantConfigResource } from './resources/tenant-config';
 import { IntegrationsResource } from './resources/integrations';
 import { WebhooksResource } from './resources/webhooks';
-import { RbacResource, DisputesResource, UsersResource } from './resources/admin';
+import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { OrdersResource } from './resources/orders';
 import { ShipmentsResource } from './resources/logistics';
@@ -104,6 +104,8 @@ export class KrishalayaClient {
   readonly webhooks: WebhooksResource;
   readonly rbac: RbacResource;
   readonly disputes: DisputesResource;
+  /** PC-56 TENANT-3b: the refund maker-checker plane (propose → decide → applied by the refund itself). */
+  readonly refundApprovals: RefundApprovalsResource;
   readonly users: UsersResource;
   /** PC-56 TENANT-1b · the PEOPLE roster (W153) + member detail (W154). Not `memberships`, which is the paid-tier manager. */
   readonly members: MembersResource;
@@ -173,6 +175,7 @@ export class KrishalayaClient {
     this.webhooks = new WebhooksResource(this.http);
     this.rbac = new RbacResource(this.http);
     this.disputes = new DisputesResource(this.http);
+    this.refundApprovals = new RefundApprovalsResource(this.http);
     this.users = new UsersResource(this.http);
     this.members = new MembersResource(this.http);
     this.bulkImports = new BulkImportsResource(this.http);

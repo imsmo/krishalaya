@@ -9,11 +9,14 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { Return } from '../domain/return.entity';
 import { ReturnStatus } from '../domain/return.state';
 
-const COLS = `id, tenant_id, order_id, dispute_id, status, reason_id, refund_txn_id, created_at`;
+const COLS = `id, tenant_id, order_id, dispute_id, status, reason_id, refund_txn_id, created_at,
+  refund_amount_minor, inspected_at, inspected_by, inspection_note`;
 function toDomain(r: any): Return {
   return Return.rehydrate({
     id: r.id, tenantId: r.tenant_id, orderId: r.order_id, disputeId: r.dispute_id,
     status: r.status as ReturnStatus, reasonId: r.reason_id, refundTxnId: r.refund_txn_id, createdAt: r.created_at,
+    refundAmountMinor: r.refund_amount_minor == null ? null : BigInt(r.refund_amount_minor),
+    inspectedAt: r.inspected_at, inspectedBy: r.inspected_by, inspectionNote: r.inspection_note,
   });
 }
 export interface ReturnListQuery { orderIds?: string[]; allTenant?: boolean; status?: string; cursor?: { c: string; id: string }; limit: number; }
@@ -25,8 +28,9 @@ export class ReturnRepository {
   async insert(tx: TxContext, r: Return): Promise<void> {
     const p = r.toProps();
     await tx.query(
-      `INSERT INTO returns (id, tenant_id, order_id, dispute_id, status, reason_id) VALUES ($1,$2,$3,$4,$5,$6)`,
-      [p.id, p.tenantId, p.orderId, p.disputeId, p.status, p.reasonId]);
+      `INSERT INTO returns (id, tenant_id, order_id, dispute_id, status, reason_id, refund_amount_minor)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [p.id, p.tenantId, p.orderId, p.disputeId, p.status, p.reasonId, p.refundAmountMinor?.toString() ?? null]);
   }
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Return | null> {
     const r = await tx.query(`SELECT ${COLS} FROM returns WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]);
@@ -40,8 +44,11 @@ export class ReturnRepository {
   async update(tx: TxContext, r: Return): Promise<void> {
     const p = r.toProps();
     await tx.query(
-      `UPDATE returns SET status=$3, reason_id=$4, refund_txn_id=$5, updated_at=now() WHERE id=$1 AND tenant_id=$2`,
-      [p.id, p.tenantId, p.status, p.reasonId, p.refundTxnId]);
+      `UPDATE returns SET status=$3, reason_id=$4, refund_txn_id=$5, refund_amount_minor=$6,
+         inspected_at=$7, inspected_by=$8, inspection_note=$9, updated_at=now()
+        WHERE id=$1 AND tenant_id=$2`,
+      [p.id, p.tenantId, p.status, p.reasonId, p.refundTxnId, p.refundAmountMinor?.toString() ?? null,
+       p.inspectedAt, p.inspectedBy, p.inspectionNote]);
   }
   /** The order already has an ACTIVE return? (one at a time — bounds abuse). */
   async hasActiveForOrder(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
@@ -82,6 +89,24 @@ export class ReturnRepository {
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM returns WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
+  }
+
+  /** Stamp the ledger reversal txn id on a refunded return — the payments module's ReturnRefundedHandler calls this
+   *  through the module boundary. IDEMPOTENT: only stamps a return that has none, so a relay replay cannot rewrite
+   *  the link between a decision and the money that moved. */
+  async stampRefundTxn(tx: TxContext, tenantId: string, id: string, txnId: string): Promise<void> {
+    await tx.query(
+      `UPDATE returns SET refund_txn_id=$3, updated_at=now()
+        WHERE id=$1 AND tenant_id=$2 AND refund_txn_id IS NULL`, [id, tenantId, txnId]);
+  }
+
+  /** The refund amount recorded on a return, read inside the money leg's transaction. Returned as a string so the
+   *  caller decides the bigint boundary (the handler does), and null where nothing was recorded. */
+  async refundAmountFor(tx: TxContext, tenantId: string, id: string): Promise<{ amountMinor: string | null; orderId: string; status: string } | null> {
+    const r = await tx.query(
+      `SELECT refund_amount_minor::text AS amount, order_id, status FROM returns WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
+    const row = r.rows[0];
+    return row ? { amountMinor: row.amount, orderId: row.order_id, status: row.status } : null;
   }
 
   /** order ids on which `userId` is the buyer (box 'mine') or the seller (box 'against'). Bounded. */

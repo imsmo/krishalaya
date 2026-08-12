@@ -755,6 +755,9 @@ export interface Dispute {
   id: string; orderId: string; raisedBy: string; againstUser: string | null; reasonId: string | null; description: string | null;
   status: string; sellerRespondBy: string | null; resolutionType: string | null; resolutionAmountMinor: string | null;
   resolvedBy: string | null; resolvedAt: string | null; slaDueAt: string | null; createdAt?: string;
+  /** PC-56 TENANT-3b (0139): W141's disputed SCOPE, recorded at raise. **null MEANS NOT RECORDED**, never "the whole
+   *  order" — the console says so, and the refund path refuses to bound itself by a number nobody wrote. */
+  disputedAmountMinor?: string | null; disputedQuantity?: string | null;
 }
 /** One append-only message in a dispute's evidence thread. `authorUserId` is an id (no display name on this
  * contract) — the UI derives a role (complainant/respondent/moderator) by matching it against the dispute. */

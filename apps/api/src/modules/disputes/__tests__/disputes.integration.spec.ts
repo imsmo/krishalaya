@@ -31,6 +31,8 @@ import { DisputeOpenedHandler } from '../../orders/events/handlers/dispute-opene
 import { DisputeResolvedHandler } from '../../orders/events/handlers/dispute-resolved.handler';
 import { DisputeRepository } from '../repositories/dispute.repository';
 import { DisputeMessageRepository } from '../repositories/dispute-message.repository';
+import { RefundApprovalRepository } from '../repositories/refund-approval.repository';
+import { RefundApprovalService } from '../services/refund-approval.service';
 import { DisputeService } from '../services/dispute.service';
 import { DisputeMessageService } from '../services/dispute-message.service';
 import { OrderDeliveredHandler } from '../events/handlers/order-delivered.handler';
@@ -81,7 +83,9 @@ run('disputes slice (integration, real Postgres + RLS + outbox relay)', () => {
     const disputeRepo = new DisputeRepository(replica as any);
     const msgRepo = new DisputeMessageRepository(replica as any);
     const msgService = new DisputeMessageService(uow, outbox, metrics, disputeRepo, msgRepo);
-    disputes = new DisputeService(uow, outbox, idem, metrics, audit, disputeRepo, msgRepo, msgService);
+    // PC-56 TENANT-3b: resolving with a REFUND now consults the maker-checker plane (0139) first.
+    const approvals = new RefundApprovalService(uow, audit, new RefundApprovalRepository(replica as any));
+    disputes = new DisputeService(uow, outbox, idem, metrics, audit, disputeRepo, msgRepo, msgService, approvals);
 
     const orderRepo = new OrderRepository(replica as any);
     const registry = new OutboxHandlerRegistry();

@@ -1,7 +1,7 @@
 // modules/disputes/__tests__/dispute.service.spec.ts · pure-domain unit tests: the dispute_status state
 // machine (Law 5) + the Dispute aggregate (raise/respond/withdraw/escalate/resolve guards) + the
 // DisputeMessage value object. The service's eligibility gate / UoW / outbox are covered by integration.
-import { canTransition, isActive, isTerminal, IllegalDisputeTransitionError, DISPUTE_STATUSES, DisputeStatus } from '../domain/dispute.state';
+import { canTransition, isActive, isTerminal, DISPUTE_STATUSES, DisputeStatus } from '../domain/dispute.state';
 import { Dispute } from '../domain/dispute.entity';
 import { DisputeMessage } from '../domain/dispute-message.entity';
 import { DisputeEventType } from '../domain/disputes.events';

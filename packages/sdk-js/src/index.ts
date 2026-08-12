@@ -52,6 +52,9 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
 
 export * from './resources/livestock';
 export * from './resources/returns';
+// PC-56 TENANT-3b: the dispute console reads + the refund maker-checker plane live in resources/admin.ts.
+export type { DisputeKpis, DisputeQueueRow, DisputeMoneyState, RefundGateState, RefundApproval } from './resources/admin';
+export { RefundApprovalsResource } from './resources/admin';
 export * from './resources/fintech';
 export * from './resources/partner-api';
 export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4

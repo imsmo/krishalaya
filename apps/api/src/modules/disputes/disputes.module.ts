@@ -20,22 +20,35 @@ import { DisputeMessageRepository } from './repositories/dispute-message.reposit
 import { ReturnRepository } from './repositories/return.repository';
 import { OrderDeliveredHandler } from './events/handlers/order-delivered.handler';
 import { DisputeRefundedHandler } from './events/handlers/dispute-refunded.handler';
+import { ReturnRefundedStampHandler } from './events/handlers/return-refunded-stamp.handler';
+import { RefundApprovalService } from './services/refund-approval.service';
+import { RefundApprovalRepository } from './repositories/refund-approval.repository';
+import { DisputeConsoleReadModel } from './read-models/dispute-console.read-model';
+import { RefundApprovalsController } from './controllers/v1/refund-approvals.controller';
 
 @Module({
-  controllers: [DisputesController, ReturnsController],
+  controllers: [DisputesController, ReturnsController, RefundApprovalsController],
   providers: [
-    DisputeService, DisputeMessageService, ReturnService,
-    DisputeRepository, DisputeMessageRepository, ReturnRepository,
-    OrderDeliveredHandler, DisputeRefundedHandler,
+    DisputeService, DisputeMessageService, ReturnService, RefundApprovalService,
+    DisputeRepository, DisputeMessageRepository, ReturnRepository, RefundApprovalRepository,
+    DisputeConsoleReadModel,
+    OrderDeliveredHandler, DisputeRefundedHandler, ReturnRefundedStampHandler,
   ],
-  exports: [DisputeService, ReturnService],
+  exports: [DisputeService, ReturnService, RefundApprovalService],
 })
 export class DisputesModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     private readonly orderDelivered: OrderDeliveredHandler,
     private readonly disputeRefunded: DisputeRefundedHandler,
+    private readonly returnRefundedStamp: ReturnRefundedStampHandler,
   ) {}
   // record dispute eligibility when an order is delivered (orders.order_delivered)
-  onModuleInit(): void { this.registry.register(this.orderDelivered); this.registry.register(this.disputeRefunded); }
+  onModuleInit(): void {
+    this.registry.register(this.orderDelivered);
+    this.registry.register(this.disputeRefunded);
+    // payments.return_refunded → stamp returns.refund_txn_id. Registered for the first time in TENANT-3b: the
+    // return money trail had neither an executor nor a stamp before it.
+    this.registry.register(this.returnRefundedStamp);
+  }
 }

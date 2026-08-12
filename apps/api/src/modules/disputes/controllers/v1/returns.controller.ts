@@ -15,7 +15,10 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { ReturnService } from '../../services/return.service';
 import { CreateReturnSchema, CreateReturnDto } from '../../dto/create-return.dto';
 import { QueryReturnsSchema, QueryReturnsDto } from '../../dto/query-return.dto';
-import { DisputePermissions, canModerateDispute } from '../../policies/disputes.policies';
+import { DisputePermissions, canModerateDispute, canRefund } from '../../policies/disputes.policies';
+import { InspectReturnSchema, InspectReturnDto } from '../../dto/create-return.dto';
+import { DisputeConsoleReadModel } from '../../read-models/dispute-console.read-model';
+import { parseDisputeCursor, buildDisputeCursor } from '../../dto/query-dispute-console.dto';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -24,8 +27,8 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('disputes')
 export class ReturnsController {
-  constructor(private readonly returns: ReturnService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateDispute(ctx) }; }
+  constructor(private readonly returns: ReturnService, private readonly console: DisputeConsoleReadModel) {}
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateDispute(ctx), canRefund: canRefund(ctx) }; }
 
   @Post() @RequirePermissions(DisputePermissions.Raise)
   request(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreateReturnSchema) dto: CreateReturnDto) {
@@ -38,6 +41,20 @@ export class ReturnsController {
     return this.returns.list(ctx.tenantId, this.actor(ctx), { box: q.box, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
+
+  /** W142's queue + tab counts: the refund value 0139 gave the table, the inspection state, and whether a refund is
+   *  already waiting on a checker. Staff-only, like the disputes console. */
+  @Get('console/list') @RequirePermissions(DisputePermissions.Resolve)
+  consoleList(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryReturnsSchema) q: QueryReturnsDto) {
+    return this.console.returnsQueue(ctx.tenantId, { status: q.status, cursor: parseDisputeCursor(q.cursor), limit: q.limit })
+      .then((rows) => ({
+        data: rows,
+        meta: { nextCursor: rows.length === q.limit && rows.length > 0 ? buildDisputeCursor(rows[rows.length - 1]) : null },
+      }));
+  }
+
+  @Get('console/counts') @RequirePermissions(DisputePermissions.Resolve)
+  counts(@CurrentContext() ctx: RequestContext) { return this.console.returnCounts(ctx.tenantId).then((data) => ({ data })); }
 
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.returns.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
@@ -54,6 +71,13 @@ export class ReturnsController {
   @Post(':id/receive')
   receive(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.returns.receive(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }
 
-  @Post(':id/refund') @RequirePermissions(DisputePermissions.Resolve)
+  /** W142's "Inspect" — a received parcel, opened, with a note the buyer can read (0139). */
+  @Post(':id/inspect')
+  inspect(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(InspectReturnSchema) dto: InspectReturnDto) {
+    return this.returns.inspect(ctx.tenantId, this.actor(ctx), id, dto.note, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /** THE MONEY LEG: `order.refund` (0139's new permission) on top of dispute.resolve, plus the maker-checker gate. */
+  @Post(':id/refund') @RequirePermissions(DisputePermissions.Refund)
   refund(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.returns.refund(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }
 }

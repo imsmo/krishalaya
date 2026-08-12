@@ -29,7 +29,9 @@ import { DisputeRepository } from '../repositories/dispute.repository';
 import { ReturnService } from '../services/return.service';
 import { SellerResponseTimeoutJob } from '../jobs/seller-response-timeout.job';
 import { SlaEscalationJob } from '../jobs/sla-escalation.job';
-import { NotEligibleToReturnError, DuplicateReturnError, ReturnForbiddenError, ReturnNotFoundError } from '../domain/disputes.errors';
+import { NotEligibleToReturnError, DuplicateReturnError, ReturnForbiddenError, ReturnNotFoundError, InvalidReturnError } from '../domain/disputes.errors';
+import { RefundApprovalRepository } from '../repositories/refund-approval.repository';
+import { RefundApprovalService } from '../services/refund-approval.service';
 import { IllegalReturnTransitionError } from '../domain/return.state';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -44,10 +46,14 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
   const buyer = randomUUID(); const seller = randomUUID(); const stranger = randomUUID();
   const orderId = uuidv7();
   let returnId = '';
+  // `canRefund` mirrors 0139's `order.refund` — the MONEY key. A moderator who can decide a case is not
+  // automatically the person who releases the cash, so the actors say which keys they hold.
   const buyerActor = () => ({ userId: buyer, canModerate: false });
   const sellerActor = () => ({ userId: seller, canModerate: false });
   const strangerActor = () => ({ userId: stranger, canModerate: false });
-  const moderator = () => ({ userId: randomUUID(), canModerate: true });
+  const moderator = () => ({ userId: randomUUID(), canModerate: true, canRefund: true });
+  /** Holds dispute.resolve but NOT order.refund — the split 0139 introduced. */
+  const decider = () => ({ userId: randomUUID(), canModerate: true, canRefund: false });
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
@@ -62,7 +68,10 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
     const replica = new PgReadReplicaProvider(pools, shards);
     const returnRepo = new ReturnRepository(replica as any);
     const disputeRepo = new DisputeRepository(replica as any);
-    returns = new ReturnService(uow, new PgOutboxWriter(), new PgIdempotencyService(pools), new PromMetrics(), new AuditWriter(pools), returnRepo, disputeRepo);
+    // PC-56 TENANT-3b: the service now consults the refund maker-checker plane (0139) before any money leg.
+    const approvalRepo = new RefundApprovalRepository(replica as any);
+    const approvals = new RefundApprovalService(uow, new AuditWriter(pools), approvalRepo);
+    returns = new ReturnService(uow, new PgOutboxWriter(), new PgIdempotencyService(pools), new PromMetrics(), new AuditWriter(pools), returnRepo, disputeRepo, approvals);
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
@@ -101,6 +110,13 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
     const received = await returns.receive(tenantA, sellerActor(), returnId, null);
     expect(received.status).toBe('received');
     await expect(returns.refund(tenantA, sellerActor(), returnId, null)).rejects.toBeInstanceOf(ReturnForbiddenError);   // only a moderator refunds
+    // PC-56 TENANT-3b: THREE new refusals before any money moves — the money key, the inspection, and the amount.
+    await expect(returns.refund(tenantA, decider(), returnId, null)).rejects.toBeInstanceOf(ReturnForbiddenError);       // dispute.resolve is not order.refund
+    await expect(returns.refund(tenantA, moderator(), returnId, null)).rejects.toBeInstanceOf(InvalidReturnError);       // no recorded amount
+    await admin.query(`UPDATE returns SET refund_amount_minor = 625000 WHERE id = $1`, [returnId]);
+    await expect(returns.refund(tenantA, moderator(), returnId, null)).rejects.toBeInstanceOf(InvalidReturnError);       // not inspected
+    const inspected = await returns.inspect(tenantA, moderator(), returnId, 'Opened the crate: 5 bags soaked, weighed 4 kg short.', null);
+    expect(inspected.inspectedAt).toBeTruthy();
     const refunded = await returns.refund(tenantA, moderator(), returnId, null);
     expect(refunded.status).toBe('refunded');
     const ev = await admin.query(`SELECT count(*)::int c FROM outbox_events WHERE aggregate_type='return' AND aggregate_id=$1 AND event_type='disputes.return_refunded'`, [returnId]);

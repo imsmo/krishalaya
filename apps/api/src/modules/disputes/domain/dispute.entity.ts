@@ -12,6 +12,8 @@ export interface DisputeProps {
   description: string | null; status: DisputeStatus; sellerRespondBy: Date | null; aiTriage: Record<string, unknown> | null;
   resolutionType: string | null; resolutionAmountMinor: bigint | null; resolutionTxnId: string | null;
   resolvedBy: string | null; resolvedAt: Date | null; slaDueAt: Date | null; createdAt: Date;
+  /** The SCOPE of the claim, recorded at raise time (0139). NULL means nobody wrote it down — never "everything". */
+  disputedAmountMinor: bigint | null; disputedQuantity: string | null;
 }
 
 export class Dispute {
@@ -21,14 +23,19 @@ export class Dispute {
   static raise(input: {
     id: string; tenantId: string; orderId: string; raisedBy: string; againstUser: string; reasonId: string;
     description?: string | null; sellerRespondBy?: Date | null; slaDueAt?: Date | null; now?: Date;
+    disputedAmountMinor?: bigint | null; disputedQuantity?: string | null;
   }): Dispute {
     if (input.raisedBy === input.againstUser) throw new InvalidDisputeError('cannot dispute against yourself');
     if (input.description != null && input.description.length > 4000) throw new InvalidDisputeError('description exceeds 4000 chars');
+    // W141's "disputed value ₹12,820 (2 of 10 qtl)". A scope of zero or below is not a smaller claim, it is a
+    // malformed one — and it must not be stored as "unrecorded", which is a different fact (0139's comment).
+    if (input.disputedAmountMinor != null && input.disputedAmountMinor <= 0n) throw new InvalidDisputeError('disputed amount must be positive');
     const d = new Dispute({
       id: input.id, tenantId: input.tenantId, orderId: input.orderId, raisedBy: input.raisedBy, againstUser: input.againstUser,
       reasonId: input.reasonId, description: input.description ?? null, status: 'open', sellerRespondBy: input.sellerRespondBy ?? null,
       aiTriage: null, resolutionType: null, resolutionAmountMinor: null, resolutionTxnId: null, resolvedBy: null, resolvedAt: null,
       slaDueAt: input.slaDueAt ?? null, createdAt: input.now ?? new Date(),
+      disputedAmountMinor: input.disputedAmountMinor ?? null, disputedQuantity: input.disputedQuantity ?? null,
     });
     d.events.push({ type: DisputeEventType.Opened, payload: { disputeId: d.props.id, orderId: d.props.orderId, raisedBy: d.props.raisedBy, againstUser: d.props.againstUser } });
     return d;
@@ -40,6 +47,7 @@ export class Dispute {
   get orderId() { return this.props.orderId; }
   get raisedBy() { return this.props.raisedBy; }
   get againstUser() { return this.props.againstUser; }
+  get disputedAmountMinor() { return this.props.disputedAmountMinor; }
   toProps(): Readonly<DisputeProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
 
@@ -68,6 +76,13 @@ export class Dispute {
     if (!isActive(this.props.status)) throw new DisputeNotActiveError(this.props.status);
     if (resolutionType === 'refund_partial' && (resolutionAmountMinor == null || resolutionAmountMinor <= 0n)) throw new InvalidDisputeError('refund_partial requires a positive amount');
     if (resolutionType === 'refund_full' && resolutionAmountMinor != null && resolutionAmountMinor < 0n) throw new InvalidDisputeError('amount cannot be negative');
+    // **A REFUND CANNOT EXCEED WHAT WAS DISPUTED** (0139's ck_disputes_resolution_within_scope, stated here so the
+    // API names the field instead of surfacing a constraint violation). Only where a scope was RECORDED: an
+    // unscoped dispute is bounded by the payment instead, in the service, which is the only layer that knows it.
+    const scope = this.props.disputedAmountMinor;
+    if (scope != null && resolutionAmountMinor != null && resolutionAmountMinor > scope) {
+      throw new InvalidDisputeError(`refund exceeds the disputed amount (${scope.toString()} minor units)`);
+    }
     const target: DisputeStatus = resolutionType === 'rejected' ? 'rejected' : 'resolved';
     this.props.resolutionType = resolutionType;
     this.props.resolutionAmountMinor = resolutionType === 'refund_partial' ? resolutionAmountMinor : (resolutionType === 'refund_full' ? resolutionAmountMinor : null);

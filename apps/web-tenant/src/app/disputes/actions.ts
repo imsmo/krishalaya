@@ -103,3 +103,60 @@ export async function postDisputeMessageAction(formData: FormData): Promise<void
   revalidatePath(`/disputes/${id}`);
   back(id, 'ok=message');
 }
+
+// ---------------------------------------------------------------------------
+// PC-56 TENANT-3b · the refund maker-checker plane (W141's "≥ ₹10,000 needs checker", enforced for the first time)
+// ---------------------------------------------------------------------------
+// PROPOSING needs dispute.resolve; DECIDING needs order.refund — the permission 0139 seeds, which W142 and W133 both
+// named and no file granted. Every refusal is translated BY NAME: a generic error on a refund is the message that
+// makes an operator press the button a second time.
+const GATE_ERRORS: Record<string, string> = {
+  REFUND_NEEDS_CHECKER: 'needsChecker',
+  REFUND_AWAITING_CHECKER: 'awaitingChecker',
+  REFUND_REJECTED_BY_CHECKER: 'rejectedByChecker',
+  REFUND_AMOUNT_CHANGED: 'amountChanged',
+  REFUND_ALREADY_APPLIED: 'alreadyApplied',
+  REFUND_CHECKER_IS_MAKER: 'checkerIsMaker',
+  REFUND_NOTE_TOO_SHORT: 'noteTooShort',
+  REFUND_FORBIDDEN: 'refundPerm',
+  REFUND_PROPOSAL_DUPLICATE: 'proposalDuplicate',
+};
+function gateErr(e: unknown, fallback: string): string {
+  const code = e instanceof SdkError ? String((e as { code?: string }).code ?? '') : '';
+  return GATE_ERRORS[code] ?? (e instanceof SdkError && e.status === 403 ? 'refundPerm' : fallback);
+}
+
+export async function proposeRefundAction(formData: FormData): Promise<void> {
+  await requireSession('/disputes');
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/disputes');
+  const amountMinor = String(formData.get('amountMinor') ?? '').trim();
+  const note = String(formData.get('note') ?? '').trim();
+  // Checked here as well as server-side, so a 20-character floor is a form message rather than a round trip.
+  if (!/^[1-9]\d{0,15}$/.test(amountMinor)) back(id, 'error=amount');
+  if (note.length < 20) back(id, 'error=noteTooShort');
+  try {
+    await tenantClient().refundApprovals.propose({ subjectType: 'dispute', subjectId: id, amountMinor, note });
+  } catch (e) { back(id, `error=${gateErr(e, 'propose')}`); }
+  revalidatePath(`/disputes/${id}`);
+  revalidatePath('/disputes');
+  back(id, 'ok=proposed');
+}
+
+export async function decideRefundAction(formData: FormData): Promise<void> {
+  await requireSession('/disputes');
+  const id = String(formData.get('id') ?? '').trim();
+  const approvalId = String(formData.get('approvalId') ?? '').trim();
+  if (!id || !approvalId) redirect('/disputes');
+  const decision = String(formData.get('decision') ?? '');
+  if (decision !== 'approved' && decision !== 'rejected') back(id, 'error=decide');
+  const note = String(formData.get('note') ?? '').trim();
+  // A REFUSAL OWES THE PROPOSER A SENTENCE (0139's CHECK). An approval does not — forcing one produces "ok".
+  if (decision === 'rejected' && note.length < 20) back(id, 'error=noteTooShort');
+  try {
+    await tenantClient().refundApprovals.decide(approvalId, { decision, note: note || undefined });
+  } catch (e) { back(id, `error=${gateErr(e, 'decide')}`); }
+  revalidatePath(`/disputes/${id}`);
+  revalidatePath('/disputes');
+  back(id, `ok=${decision}`);
+}

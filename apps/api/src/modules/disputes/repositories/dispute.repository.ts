@@ -9,7 +9,8 @@ import { Dispute } from '../domain/dispute.entity';
 import { DisputeStatus } from '../domain/dispute.state';
 
 const COLS = `id, tenant_id, order_id, raised_by, against_user, reason_id, description, status, seller_respond_by,
-  ai_triage, resolution_type, resolution_amount_minor, resolution_txn_id, resolved_by, resolved_at, sla_due_at, created_at`;
+  ai_triage, resolution_type, resolution_amount_minor, resolution_txn_id, resolved_by, resolved_at, sla_due_at, created_at,
+  disputed_amount_minor, disputed_quantity`;
 const big = (v: any) => (v == null ? null : BigInt(v));
 function toDomain(r: any): Dispute {
   return Dispute.rehydrate({
@@ -17,6 +18,10 @@ function toDomain(r: any): Dispute {
     description: r.description, status: r.status as DisputeStatus, sellerRespondBy: r.seller_respond_by, aiTriage: r.ai_triage,
     resolutionType: r.resolution_type, resolutionAmountMinor: big(r.resolution_amount_minor), resolutionTxnId: r.resolution_txn_id,
     resolvedBy: r.resolved_by, resolvedAt: r.resolved_at, slaDueAt: r.sla_due_at, createdAt: r.created_at,
+    disputedAmountMinor: big(r.disputed_amount_minor),
+    // numeric(14,3) arrives as a string from pg and STAYS one — parsing it to a float is how 2.500 qtl becomes
+    // 2.4999999999999996 in a document a farmer reads.
+    disputedQuantity: r.disputed_quantity == null ? null : String(r.disputed_quantity),
   });
 }
 export interface DisputeListQuery { raisedBy?: string; againstUser?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
@@ -48,9 +53,11 @@ export class DisputeRepository {
   async insert(tx: TxContext, d: Dispute): Promise<void> {
     const p = d.toProps();
     await tx.query(
-      `INSERT INTO disputes (id, tenant_id, order_id, raised_by, against_user, reason_id, description, status, seller_respond_by, sla_due_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [p.id, p.tenantId, p.orderId, p.raisedBy, p.againstUser, p.reasonId, p.description, p.status, p.sellerRespondBy, p.slaDueAt]);
+      `INSERT INTO disputes (id, tenant_id, order_id, raised_by, against_user, reason_id, description, status, seller_respond_by, sla_due_at,
+                             disputed_amount_minor, disputed_quantity)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [p.id, p.tenantId, p.orderId, p.raisedBy, p.againstUser, p.reasonId, p.description, p.status, p.sellerRespondBy, p.slaDueAt,
+       p.disputedAmountMinor?.toString() ?? null, p.disputedQuantity]);
   }
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Dispute | null> {
     const r = await tx.query(`SELECT ${COLS} FROM disputes WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]);

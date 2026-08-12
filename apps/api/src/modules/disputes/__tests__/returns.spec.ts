@@ -37,11 +37,15 @@ describe('Return aggregate', () => {
     const ev = r.pullEvents().find((e) => e.type === ReturnEventType.Requested)!;
     expect(ev.payload).toMatchObject({ orderId: 'o1' });
   });
+  // UPDATED BY PC-56 TENANT-3b: a refund now requires an INSPECTION and a RECORDED AMOUNT (0139). The old happy
+  // path refunded a parcel nobody had opened, for a figure nobody had written down — and since
+  // `disputes.return_refunded` had no subscriber, the status said refunded while no money moved at all.
   it('drives the full lifecycle to refunded + stamps the refund txn', () => {
-    const r = mk(); r.pullEvents();
+    const r = mk({ refundAmountMinor: 418000n }); r.pullEvents();
     r.approve(); expect(r.status).toBe('approved');
     r.ship(); expect(r.status).toBe('in_transit');
     r.receive(); expect(r.status).toBe('received');
+    r.inspect('u-staff', 'Opened the parcel: 3 of 12 seed packets torn, photographed.');
     r.refund('txn-1'); expect(r.status).toBe('refunded');
     expect(r.toProps().refundTxnId).toBe('txn-1');
     expect(r.pullEvents().map((e) => e.type)).toContain(ReturnEventType.Refunded);

@@ -72,9 +72,31 @@ export class DisputesResource {
     const r = await this.http.request<DisputeMessage[]>('GET', `disputes/${encodeURIComponent(id)}/messages`, { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
+  // ---- PC-56 TENANT-3b: W140's console, W141's money card, and the refund maker-checker plane ----
+  /** W140's four KPI cards + tab counts (dispute.resolve — tenant-wide figures, not one party's own cases). */
+  async consoleKpis(signal?: AbortSignal): Promise<{ kpis: DisputeKpis; counts: Record<string, number> }> {
+    return (await this.http.request<{ kpis: DisputeKpis; counts: Record<string, number> }>('GET', 'disputes/console/kpis', { signal })).data;
+  }
+  /** W140's table, one tab at a time. Keyset only — there is no page number to ask for. */
+  async consoleList(params: { view?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DisputeQueueRow>> {
+    const r = await this.http.request<DisputeQueueRow[]>('GET', 'disputes/console/list', { query: { view: params.view, cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** W141's money card. Reports what is ACTUALLY held, with its basis — see the api's dispute-money-state.ts for
+   *  why this does not repeat the canon's "only this amount is frozen". */
+  async money(id: string, signal?: AbortSignal): Promise<DisputeMoneyState | null> {
+    return (await this.http.request<DisputeMoneyState | null>('GET', `disputes/${encodeURIComponent(id)}/money`, { signal })).data;
+  }
+  /** The refund gate for an amount, as a read: what stands between this refund and the money moving. */
+  async refundState(id: string, amountMinor: string, signal?: AbortSignal): Promise<RefundGateState> {
+    return (await this.http.request<RefundGateState>('GET', `disputes/${encodeURIComponent(id)}/refund-state`, { query: { amountMinor }, signal })).data;
+  }
+
   /** BUYER action (PC-24b): raise a dispute against an order (needs dispute.raise; eligibility — own order,
-   * legal window — enforced in the service). Idempotency-Key required (Law 3). reasonCode is the server enum. */
-  async raise(input: { orderId: string; reasonCode: string; description?: string }, idempotencyKey: string): Promise<Dispute> {
+   * legal window — enforced in the service). Idempotency-Key required (Law 3). reasonCode is the server enum.
+   * `disputedAmountMinor`/`disputedQuantity` are W141's disputed SCOPE (0139) — optional, and absent means
+   * "not recorded", never "the whole order". */
+  async raise(input: { orderId: string; reasonCode: string; description?: string; disputedAmountMinor?: string; disputedQuantity?: string }, idempotencyKey: string): Promise<Dispute> {
     return (await this.http.request<Dispute>('POST', 'disputes', { idempotencyKey, body: input })).data;
   }
   /** PARTY action (PC-22): the respondent marks the dispute responded (seller_responded transition, 48h window).
@@ -105,5 +127,66 @@ export class UsersResource {
   /** Admin-add a farmer who can't self-register (idempotent). Needs identity.approve. PII-minimal payload. */
   async create(input: { phone: string; fullName?: string; languageCode?: string; countryCode?: string }, idempotencyKey: string): Promise<UserProfile> {
     return (await this.http.request<UserProfile>('POST', 'users', { idempotencyKey, body: input })).data;
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// PC-56 TENANT-3b · the refund maker-checker plane (api: modules/disputes, schema 0139)
+// ---------------------------------------------------------------------------
+export interface DisputeKpis {
+  activeCount: number; activeUnder24h: number; escalatedCount: number;
+  /** null = NOTHING CLOSED IN THE WINDOW. Never render a 0 here — it reads as "we resolve instantly". */
+  medianResolutionHours: number | null;
+  resolvedInWindow: number;
+  outcomes: { raiser: number; respondent: number; amicable: number; noDecision: number };
+  outcomeUnknownParty: number; windowDays: number;
+}
+export interface DisputeQueueRow {
+  id: string; status: string; reasonCode: string | null; orderId: string; orderNo: string | null;
+  raisedBy: string; raisedByName: string | null; againstUser: string; againstUserName: string | null;
+  disputedAmountMinor: string | null; disputedQuantity: string | null; currencyCode: string | null;
+  slaDueAt: string | null; sellerRespondBy: string | null; createdAt: string;
+  aiTriageConfidence: string | null; aiTriageClassification: string | null; pendingApprovalId: string | null;
+}
+export interface DisputeMoneyState {
+  orderId: string; orderNo: string | null; currencyCode: string | null;
+  /** escrow_holds_order_gross | settled_to_seller_before_dispute | no_escrowed_payment */
+  basis: string;
+  heldMinor: string | null; disputedMinor: string | null; disputedQuantity: string | null;
+  scopeRecorded: boolean; undisputedMinor: string | null;
+  /** TRUE when the undisputed remainder is held too — the sentence W141 does not have. */
+  undisputedHeldToo: boolean;
+  maxRefundableMinor: string | null; resolutionAmountMinor: string | null; resolutionTxnId: string | null;
+}
+export interface RefundGateState {
+  /** single_signature | needs_proposal | awaiting_checker | rejected_by_checker | ready | amount_changed | already_applied */
+  gate: string;
+  approvalId: string | null; thresholdMinor: string; usedDefaultThreshold: boolean;
+}
+export interface RefundApproval {
+  id: string; subjectType: 'dispute' | 'return'; subjectId: string; orderId: string;
+  amountMinor: string; resolutionType: string | null; status: 'pending' | 'approved' | 'rejected' | 'applied';
+  proposedBy: string; proposedAt: string; proposalNote: string; thresholdMinor: string;
+  decidedBy: string | null; decidedAt: string | null; decisionNote: string | null; appliedAt: string | null;
+}
+
+/** Propose → decide → (the refund applies it). W140/W141/W142's "maker-checker >= Rs 10,000", which nothing
+ *  enforced before TENANT-3b. Proposing needs dispute.resolve; DECIDING needs order.refund and a different human. */
+export class RefundApprovalsResource {
+  constructor(private readonly http: HttpClient) {}
+  async propose(input: { subjectType: 'dispute' | 'return'; subjectId: string; amountMinor: string; resolutionType?: 'refund_full' | 'refund_partial'; note: string }): Promise<RefundApproval & { needsChecker: boolean; usedDefaultThreshold: boolean }> {
+    return (await this.http.request<RefundApproval & { needsChecker: boolean; usedDefaultThreshold: boolean }>('POST', 'refund-approvals', { body: input })).data;
+  }
+  async decide(id: string, input: { decision: 'approved' | 'rejected'; note?: string }): Promise<RefundApproval> {
+    return (await this.http.request<RefundApproval>('POST', `refund-approvals/${encodeURIComponent(id)}/decision`, { body: input })).data;
+  }
+  /** The checker queue — OLDEST FIRST (a refund waiting three days is the one that matters). Keyset. */
+  async pending(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<RefundApproval>> {
+    const r = await this.http.request<RefundApproval[]>('GET', 'refund-approvals', { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async history(subjectType: 'dispute' | 'return', subjectId: string, signal?: AbortSignal): Promise<RefundApproval[]> {
+    return (await this.http.request<RefundApproval[]>('GET', `refund-approvals/${subjectType}/${encodeURIComponent(subjectId)}`, { signal })).data;
   }
 }

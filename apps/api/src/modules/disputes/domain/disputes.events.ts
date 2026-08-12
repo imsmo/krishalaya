@@ -21,5 +21,9 @@ export const ReturnEventType = {
   Rejected:  'disputes.return_rejected',
   InTransit: 'disputes.return_in_transit',
   Received:  'disputes.return_received',
-  Refunded:  'disputes.return_refunded',     // → orders/payments apply the refund (downstream)
+  Inspected: 'disputes.return_inspected',   // W142's "inspect within 24h" — evidence, not a status hop (0139)
+  // → payments' ReturnRefundedHandler applies the wallet reversal (TENANT-3b). **BEFORE 0139 THIS EVENT HAD NO
+  // SUBSCRIBER IN ANY APP**: a return reached 'refunded' and no money moved, while W142 promised "refunds are
+  // ledger reversals (refund_txn_id) — the money trail always closes". The trail did not start.
+  Refunded:  'disputes.return_refunded',
 } as const;

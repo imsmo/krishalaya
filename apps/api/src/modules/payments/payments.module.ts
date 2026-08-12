@@ -47,6 +47,7 @@ import { CommissionRuleService } from './services/commission-rule.service';
 import { gatewayRegistryProvider, payoutGatewayProvider, mandateGatewayProvider } from './gateway/payment-gateways.provider';
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
+import { ReturnRefundedHandler } from './events/handlers/return-refunded.handler';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
 import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
 import { PaymentsPublisher } from './events/payments.publisher';
@@ -87,6 +88,7 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     OrderCompletedHandler,
     TradeInvoiceHandler,
     DisputeResolvedHandler,
+    ReturnRefundedHandler,
     BookingClockedOutHandler,
     RazorpayPayoutWebhookHandler,
     PaymentsPublisher,
@@ -137,6 +139,7 @@ export class PaymentsModule implements OnModuleInit {
     private readonly orderCompleted: OrderCompletedHandler,
     private readonly tradeInvoice: TradeInvoiceHandler,
     private readonly disputeResolved: DisputeResolvedHandler,
+    private readonly returnRefunded: ReturnRefundedHandler,
     private readonly bookingClockedOut: BookingClockedOutHandler,
     private readonly config: AppConfig,
     private readonly settlementStatementsCadenceJob: SettlementStatementsCadenceJob,
@@ -146,6 +149,9 @@ export class PaymentsModule implements OnModuleInit {
     this.registry.register(this.orderCompleted);   // settlement split + settlement line
     this.registry.register(this.tradeInvoice);     // buyer GST invoice (fan-out to the same event)
     this.registry.register(this.disputeResolved);  // dispute refund: escrow → buyer wallet (flag dispute_refunds)
+    // PC-56 TENANT-3b: return refund: escrow → buyer wallet (flag dispute_refunds). `disputes.return_refunded` had
+    // NO subscriber in any app before this line — a return reached 'refunded' and no money moved.
+    this.registry.register(this.returnRefunded);
     this.registry.register(this.bookingClockedOut); // labour.wages_paid → promote wage payouts (flag wage_priority_payout)
     // per-job env gate (SETTLEMENT_STATEMENTS_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
     if (this.config.jobs.settlementStatements.enabled) this.jobRegistry.register(this.settlementStatementsCadenceJob);

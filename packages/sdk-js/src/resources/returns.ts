@@ -17,14 +17,29 @@ export const RETURN_STATUSES = ['requested', 'approved', 'in_transit', 'received
 export interface ReturnCase {
   id: string; orderId: string; status: string;
   reasonId?: string | null; reasonCode?: string | null; disputeId?: string | null;
-  refundTxnId?: string | null; createdAt?: string; [k: string]: unknown;
+  refundTxnId?: string | null; createdAt?: string;
+  /** PC-56 TENANT-3b (0139): W142's "Refund value" column, recorded at request and bounded by the order total
+   *  SERVER-SIDE. The note above about "no refund amount here" described the schema BEFORE 0139 — the amount is now
+   *  a recorded claim rather than a client guess, and the refund path refuses without it. */
+  refundAmountMinor?: string | null;
+  /** W142's "inspect within 24h → refund". A refund on an uninspected parcel is refused server-side. */
+  inspectedAt?: string | null; inspectedBy?: string | null; inspectionNote?: string | null;
+  [k: string]: unknown;
+}
+
+/** W142's queue row — the console read (returns/console/list), which joins the order number and currency and says
+ *  whether a refund on this return is already waiting on a checker. */
+export interface ReturnQueueRow {
+  id: string; status: string; reasonCode: string | null; orderId: string; orderNo: string | null;
+  refundAmountMinor: string | null; currencyCode: string | null; inspectedAt: string | null;
+  createdAt: string; pendingApprovalId: string | null;
 }
 
 export class ReturnsResource {
   constructor(private readonly http: HttpClient) {}
 
   /** Buyer: request a return (reason from the dispute taxonomy). Idempotent — a tap must never double-file. */
-  async request(input: { orderId: string; reasonCode?: string; disputeId?: string }, idempotencyKey: string): Promise<ReturnCase> {
+  async request(input: { orderId: string; reasonCode?: string; disputeId?: string; refundAmountMinor?: string }, idempotencyKey: string): Promise<ReturnCase> {
     return (await this.http.request<ReturnCase>('POST', 'returns', { body: input, idempotencyKey })).data;
   }
   async list(params: { box?: 'mine' | 'against' | 'all'; status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<ReturnCase>> {
@@ -39,8 +54,21 @@ export class ReturnsResource {
   reject(id: string): Promise<ReturnCase> { return this.step(id, 'reject'); }
   ship(id: string): Promise<ReturnCase> { return this.step(id, 'ship'); }
   receive(id: string): Promise<ReturnCase> { return this.step(id, 'receive'); }
-  /** The money leg (Resolve-gated server-side). */
+  /** W142's Inspect (0139): a received parcel, opened, with a note ≥20 chars that the buyer can read. */
+  async inspect(id: string, note: string): Promise<ReturnCase> {
+    return (await this.http.request<ReturnCase>('POST', `returns/${encodeURIComponent(id)}/inspect`, { body: { note } })).data;
+  }
+  /** THE MONEY LEG. Needs `order.refund` (0139) AND an inspection AND a recorded amount AND — at or above the
+   *  tenant's threshold — an approval signed by somebody else. */
   refund(id: string): Promise<ReturnCase> { return this.step(id, 'refund'); }
+  /** W142's queue + tab counts (dispute.resolve). Keyset. */
+  async consoleList(params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<ReturnQueueRow>> {
+    const r = await this.http.request<ReturnQueueRow[]>('GET', 'returns/console/list', { query: { status: params.status, cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async counts(signal?: AbortSignal): Promise<Record<string, number>> {
+    return (await this.http.request<Record<string, number>>('GET', 'returns/console/counts', { signal })).data;
+  }
   private step(id: string, action: string): Promise<ReturnCase> {
     return this.http.request<ReturnCase>('POST', `returns/${encodeURIComponent(id)}/${action}`, { body: {} }).then((r) => r.data);
   }
