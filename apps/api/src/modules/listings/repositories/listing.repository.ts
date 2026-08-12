@@ -15,6 +15,9 @@ const COLS = `id, tenant_id, seller_user_id, product_id, category_id, title, des
   quantity_total, quantity_available, min_order_qty, unit_code, price_minor, currency_code,
   organic_claim, status, sale_type, pincode, region_id, lat, lng, visibility, ai_extracted,
   publish_at, published_at, expires_at, version`;
+// PC-56 TENANT-2a: reads also carry the QC clock (0138), the rejection reason (0005's column, finally written)
+// and the read-only staff creator. INSERT deliberately does NOT — a new listing has no QC history to write.
+const READ_COLS = `${COLS}, qc_submitted_at, qc_reviewed_by, qc_reviewed_at, reject_reason, created_by`;
 
 @Injectable()
 export class ListingRepository {
@@ -42,10 +45,12 @@ export class ListingRepository {
       `UPDATE listings SET
          title=$3, description=$4, quantity_total=$5, quantity_available=$6, min_order_qty=$7,
          price_minor=$8, status=$9, published_at=$10, expires_at=$11,
+         qc_submitted_at=$13, qc_reviewed_by=$14, qc_reviewed_at=$15, reject_reason=$16,
          version = version + 1, updated_at = now()
        WHERE id=$1 AND tenant_id=$2 AND version=$12 AND deleted_at IS NULL`,
       [p.id, p.tenantId, p.title, p.description ?? null, p.quantityTotal, p.quantityAvailable,
-       p.minOrderQty, p.priceMinor.toString(), p.status, p.publishedAt ?? null, p.expiresAt ?? null, p.version],
+       p.minOrderQty, p.priceMinor.toString(), p.status, p.publishedAt ?? null, p.expiresAt ?? null, p.version,
+       p.qcSubmittedAt ?? null, p.qcReviewedBy ?? null, p.qcReviewedAt ?? null, p.rejectReason ?? null],
     );
     if (r.rowCount === 0) throw new ListingConcurrencyError(p.id);
   }
@@ -58,7 +63,7 @@ export class ListingRepository {
   /** READ for mutation — fetch on the WRITE connection inside a tx (consistent read). */
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Listing> {
     const r = await tx.query<ListingRow>(
-      `SELECT ${COLS} FROM listings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`,
+      `SELECT ${READ_COLS} FROM listings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`,
       [id, tenantId],
     );
     if (!r.rows[0]) throw new ListingNotFoundError(id);
@@ -68,7 +73,7 @@ export class ListingRepository {
   /** READ — single listing off a replica (no lock; tolerant of small lag). */
   async findById(tenantId: string, id: string): Promise<Listing | null> {
     const r = await this.replica.forTenant(tenantId).query<ListingRow>(
-      `SELECT ${COLS} FROM listings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+      `SELECT ${READ_COLS} FROM listings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
       [id, tenantId],
     );
     return r.rows[0] ? ListingMapper.toDomain(r.rows[0]) : null;
@@ -77,7 +82,7 @@ export class ListingRepository {
   /** READ — seller's listings, cursor-paginated off a replica. */
   async listBySeller(tenantId: string, sellerUserId: string, afterId: string | null, limit: number): Promise<Listing[]> {
     const r = await this.replica.forTenant(tenantId).query<ListingRow>(
-      `SELECT ${COLS} FROM listings
+      `SELECT ${READ_COLS} FROM listings
        WHERE tenant_id=$1 AND seller_user_id=$2 AND deleted_at IS NULL
          AND ($3::uuid IS NULL OR id < $3)
        ORDER BY id DESC LIMIT $4`,
@@ -89,7 +94,7 @@ export class ListingRepository {
   /** JOB READ — active listings past expiry, locked for this worker (per-tenant shard). */
   async findDueForExpiry(tx: TxContext, tenantId: string, now: Date, limit: number): Promise<Listing[]> {
     const r = await tx.query<ListingRow>(
-      `SELECT ${COLS} FROM listings
+      `SELECT ${READ_COLS} FROM listings
        WHERE tenant_id=$1 AND status='published' AND expires_at IS NOT NULL AND expires_at < $2 AND deleted_at IS NULL
        ORDER BY expires_at ASC LIMIT $3 FOR UPDATE SKIP LOCKED`,
       [tenantId, now, limit],
@@ -100,7 +105,7 @@ export class ListingRepository {
   /** JOB READ — listings whose scheduled publish_at has arrived (per-tenant shard). */
   async findDueForPublish(tx: TxContext, tenantId: string, now: Date, limit: number): Promise<Listing[]> {
     const r = await tx.query<ListingRow>(
-      `SELECT ${COLS} FROM listings
+      `SELECT ${READ_COLS} FROM listings
        WHERE tenant_id=$1 AND status='draft' AND publish_at IS NOT NULL AND publish_at <= $2 AND deleted_at IS NULL
        ORDER BY publish_at ASC LIMIT $3 FOR UPDATE SKIP LOCKED`,
       [tenantId, now, limit],

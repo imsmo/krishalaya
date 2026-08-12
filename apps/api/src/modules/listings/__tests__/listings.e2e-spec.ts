@@ -7,7 +7,8 @@
 import request from 'supertest';
 
 describe.skip('listings e2e (requires test-DB harness)', () => {
-  let app: any; // INestApplication
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let app: any; // INestApplication — assigned when the test-DB harness lands (bootstrapTestApp below)
   let http: any;
   const tenant = 'tenant-e2e';
   const auth = { Authorization: 'Bearer test-seller', 'x-tenant-id': tenant };

@@ -3,7 +3,7 @@
 // DTO (zod) validation, tenant/idempotency header extraction, mapping to service
 // calls, and envelope shaping. No business logic lives here. Browse/detail are
 // @Public (anonymous storefront; tenant resolved from token or X-Tenant-Id).
-import { Body, Controller, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../core/auth/permissions.guard';
 import { Public } from '../../../core/auth/public.decorator';

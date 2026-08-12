@@ -5,6 +5,7 @@ import { Money } from '../../../shared/utils/money';
 import { ListingStatus, assertTransition, isPurchasable } from './listing.state';
 import {
   InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError, InvalidExtendDurationError,
+  ListingSelfReviewError, ListingRejectReasonError,
 } from './listing.errors';
 
 export interface ListingProps {
@@ -34,6 +35,12 @@ export interface ListingProps {
   publishedAt?: Date | null;
   expiresAt?: Date | null;
   version: number;
+  // PC-56 TENANT-2a · the QC clock (0138). Read-only from persistence; written only by the QC verbs below.
+  qcSubmittedAt?: Date | null;
+  qcReviewedBy?: string | null;
+  qcReviewedAt?: Date | null;
+  rejectReason?: string | null;   // 0005's column, written for the first time by rejectQc()
+  createdBy?: string | null;      // std column, read-only here — the staff creator when one was recorded
 }
 
 /** Domain events raised by the aggregate, drained by the service into the outbox. */
@@ -44,7 +51,12 @@ export type ListingDomainEvent =
   | { type: 'listing.stock_changed'; listingId: string; available: number }
   | { type: 'listing.sold_out'; listingId: string }
   | { type: 'listing.status_changed'; listingId: string; from: ListingStatus; to: ListingStatus }
-  | { type: 'listing.extended'; listingId: string; expiresAt: string; days: number };
+  | { type: 'listing.extended'; listingId: string; expiresAt: string; days: number }
+  // PC-56 TENANT-2a · the QC verbs' own events (Law 4): submission starts the clock, decisions carry the outcome
+  // the member is notified with — a rejection always names its teaching reason.
+  | { type: 'listing.qc_submitted'; listingId: string; sellerUserId: string }
+  | { type: 'listing.qc_approved'; listingId: string; sellerUserId: string; reviewedBy: string }
+  | { type: 'listing.qc_rejected'; listingId: string; sellerUserId: string; reviewedBy: string; reason: string };
 
 const EDITABLE_STATUSES: ReadonlySet<ListingStatus> = new Set(['draft', 'pending_approval', 'published', 'paused']);
 
@@ -93,6 +105,53 @@ export class Listing {
   }
 
   submitForApproval(): void { this.transition('pending_approval'); }
+
+  // ---- PC-56 TENANT-2a · the QC verbs (W126/W127). Until this wave, `pending_approval` was a vocabulary with no
+  // verbs: submitForApproval() had zero callers, reject() none, reject_reason was never written, and the queue's
+  // every number would have been invented. The reviewer rules live HERE (0138's CHECK is the backstop, not the law).
+
+  /** SUBMIT FOR QC — starts the waiting clock W126 measures. */
+  submitForQc(now: Date = new Date()): void {
+    this.transition('pending_approval');
+    this.props.qcSubmittedAt = now;
+    this.events.push({ type: 'listing.qc_submitted', listingId: this.props.id, sellerUserId: this.props.sellerUserId });
+  }
+
+  /** No self-review, in both identities: the SELLER may not clear their own lot, and the STAFF CREATOR (when one
+   *  was recorded) may not review the draft they typed — W127's own restricted state. */
+  private assertReviewer(reviewerId: string): void {
+    if (reviewerId === this.props.sellerUserId) {
+      throw new ListingSelfReviewError('QC_OWN_LISTING', 'the seller cannot review their own listing');
+    }
+    if (this.props.createdBy && reviewerId === this.props.createdBy) {
+      throw new ListingSelfReviewError('QC_OWN_DRAFT', 'you created this draft — a different staff member must review it');
+    }
+  }
+
+  /** APPROVE — publishes immediately (pending_approval → published) and records who decided, when. */
+  approveQc(reviewerId: string, now: Date = new Date()): void {
+    this.assertReviewer(reviewerId);
+    this.transition('published');
+    this.props.publishedAt = now;
+    this.props.qcReviewedBy = reviewerId;
+    this.props.qcReviewedAt = now;
+    this.events.push({ type: 'listing.published', listingId: this.props.id, priceMinor: this.props.priceMinor.toString() });
+    this.events.push({ type: 'listing.qc_approved', listingId: this.props.id, sellerUserId: this.props.sellerUserId, reviewedBy: reviewerId });
+  }
+
+  /** REJECT — teaches, never scolds: the reason is mandatory, comes from the closed lookup vocabulary (validated
+   *  by the service against lookup_values — Law 6), and lands on the listing AND in the member's notification. */
+  rejectQc(reviewerId: string, reasonCode: string, now: Date = new Date()): void {
+    this.assertReviewer(reviewerId);
+    if (!reasonCode || reasonCode.trim().length === 0) {
+      throw new ListingRejectReasonError('a rejection without a reason teaches nothing — the reason is mandatory');
+    }
+    this.transition('rejected');
+    this.props.rejectReason = reasonCode.trim();
+    this.props.qcReviewedBy = reviewerId;
+    this.props.qcReviewedAt = now;
+    this.events.push({ type: 'listing.qc_rejected', listingId: this.props.id, sellerUserId: this.props.sellerUserId, reviewedBy: reviewerId, reason: reasonCode.trim() });
+  }
 
   publish(now: Date = new Date()): void {
     this.transition('published');

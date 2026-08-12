@@ -12,6 +12,9 @@ export interface ListingRow {
   region_id: string | null; lat: string | null; lng: string | null; visibility: string;
   ai_extracted: boolean; publish_at: Date | null; published_at: Date | null;
   expires_at: Date | null; version: number;
+  // PC-56 TENANT-2a (0138) — present on READ_COLS selects; absent (undefined) on legacy narrow rows.
+  qc_submitted_at?: Date | null; qc_reviewed_by?: string | null; qc_reviewed_at?: Date | null;
+  reject_reason?: string | null; created_by?: string | null;
 }
 
 export const ListingMapper = {
@@ -28,6 +31,9 @@ export const ListingMapper = {
       lng: r.lng ? Number(r.lng) : null, visibility: r.visibility as ListingProps['visibility'],
       aiExtracted: r.ai_extracted, publishAt: r.publish_at, publishedAt: r.published_at,
       expiresAt: r.expires_at, version: r.version,
+      qcSubmittedAt: r.qc_submitted_at ?? null, qcReviewedBy: r.qc_reviewed_by ?? null,
+      qcReviewedAt: r.qc_reviewed_at ?? null, rejectReason: r.reject_reason ?? null,
+      createdBy: r.created_by ?? null,
     };
     return Listing.rehydrate(props);
   },

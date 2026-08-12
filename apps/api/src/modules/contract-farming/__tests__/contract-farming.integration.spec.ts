@@ -86,7 +86,7 @@ run('contract-farming spine (integration, real Postgres + RLS + advance/settleme
   it('enrols a grower + disburses a ₹2,000 advance (buyer → grower wallet)', async () => {
     growerId = (await growers.enrol(tenantA, buyerActor, contractId, `idem-${randomUUID()}`, { farmerUserId: farmer, committedQuantity: '10.000' } as any)).id;
     const gBefore = await bal(farmer); const bBefore = await bal(buyer);
-    const adv = await advances.disburse(tenantA, buyerActor, contractId, `idem-${randomUUID()}`, { growerId, valueMinor: '200000', description: 'Seed + fertiliser' } as any);
+    const adv = await advances.disburse(tenantA, buyerActor, contractId, `idem-${randomUUID()}`, { growerId, valueMinor: '200000', description: 'Seed + fertiliser' } as any, null);   // TENANT-2a sweep: disburse gained the audit ip param
     expect(adv.valueMinor).toBe('200000');
     expect((await bal(farmer)) - gBefore).toBe(200000n);   // grower funded
     expect(bBefore - (await bal(buyer))).toBe(200000n);    // buyer debited

@@ -1,6 +1,6 @@
 // modules/listings/__tests__/listing.entity.spec.ts
 // Pure unit tests for the aggregate's business invariants. No DB, no framework.
-import { Listing, ListingProps } from '../domain/listing.entity';
+import { Listing } from '../domain/listing.entity';
 import { InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError, InvalidExtendDurationError } from '../domain/listing.errors';
 import { IllegalListingTransitionError } from '../domain/listing.errors';
 

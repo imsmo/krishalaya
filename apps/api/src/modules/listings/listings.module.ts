@@ -9,6 +9,7 @@ import { CommunicationModule } from '../communication/communication.module'; // 
 
 // Controllers (HTTP edge)
 import { ListingsController } from './controllers/listings.controller';
+import { ListingQcController } from './controllers/listing-qc.controller';
 import { BoostsController } from './controllers/boosts.controller';
 import { GroupLotsController } from './controllers/group-lots.controller';
 import { SellersController } from './controllers/sellers.controller';
@@ -27,6 +28,7 @@ import { GroupLotPledgeService } from './services/group-lot-pledge.service';
 // Read-models (CQRS read path)
 import { ListingSearchReadModel } from './read-models/listing-search.read-model';
 import { MandiBandReadModel } from './read-models/mandi-band.read-model';
+import { ListingConsoleReadModel } from './read-models/listing-console.read-model';
 import { ListingAnalyticsReadModel } from './read-models/listing-analytics.read-model';
 import { SellerProfileReadModel } from './read-models/seller-profile.read-model';
 import { ListingGalleryReadModel } from './read-models/listing-gallery.read-model';
@@ -53,11 +55,11 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
 
 @Module({
   imports: [MediaModule, CommunicationModule],
-  controllers: [ListingsController, BoostsController, GroupLotsController, SellersController, TrustDocumentsController],
+  controllers: [ListingsController, ListingQcController, BoostsController, GroupLotsController, SellersController, TrustDocumentsController],
   providers: [
     ListingService, ListingBoostService, ListingViewService, ListingInquiryService, ListingTrustDocumentService,
     ListingAttributeService, GroupLotService, GroupLotPledgeService,
-    ListingSearchReadModel, MandiBandReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
+    ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository, ListingTrustDocumentRepository,
     OrderCompletedHandler, AuctionSettledHandler,

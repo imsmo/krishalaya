@@ -85,7 +85,7 @@ run('auction watchers + EMD-release glue (integration, real Postgres + RLS)', ()
     const bidRepo = new BidRepository(replica as any);
     const watcherRepo = new AuctionWatcherRepository(replica as any);
     const publisher = new AuctionsPublisher(outbox);
-    auctions = new AuctionService(uow, outbox, idem, metrics, wallet, audit, listings, auctionRepo, bidRepo);
+    auctions = new AuctionService(uow, outbox, idem, metrics, wallet, audit, listings, auctionRepo, bidRepo, new AuctionWatcherRepository(replica as any), publisher);   // TENANT-2a sweep: ctor gained watchers + publisher
     bidsSvc = new BidService(uow, outbox, idem, metrics, wallet, listings, auctionRepo, bidRepo, publisher);
     watchers = new AuctionWatcherService(uow, metrics, auctionRepo, watcherRepo, publisher);
     paymentHandler = new AuctionPaymentSucceededHandler(wallet, auctionRepo, bidRepo, publisher);

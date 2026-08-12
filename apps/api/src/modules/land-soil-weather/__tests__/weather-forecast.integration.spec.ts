@@ -48,7 +48,7 @@ run('weather forecast + advisory push (integration, real Postgres)', () => {
     const replica = new PgReadReplicaProvider(pools, shards);
     const advisories = new WeatherAlertService(new WeatherAlertRepository(replica as any));
     // a provider that is "down" → forces the degrade-to-advisory path (never fabricates)
-    forecast = new ForecastService(new NoopWeatherForecastProvider() as any, new InMemoryCacheService(), config, advisories);
+    forecast = new ForecastService(new NoopWeatherForecastProvider() as any, { reverse: async () => null } as any, new InMemoryCacheService(), config, advisories);   // TENANT-2a sweep: ctor gained the geocoder; a null-geocode stub keeps the degrade path under test
     pushJob = new WeatherAdvisoryPushJob(uow, new PgOutboxWriter());
   }, 30000);
 

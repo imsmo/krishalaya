@@ -1,6 +1,6 @@
 // @krishalaya/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
 import { HttpClient } from '../http';
-import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page } from '../types';
+import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page, ConsoleListingRow, ConsoleCounts, QcQueuePayload, QcReviewPayload } from '../types';
 
 export class ListingsResource {
   constructor(private readonly http: HttpClient) {}
@@ -54,6 +54,55 @@ export class ListingsResource {
    *  new price (bigint minor string — Law 2) + durationDays (server defaults to 7). Owner-only (server-enforced). */
   async repost(id: string, opts: { newPriceMinor?: string; durationDays?: number } = {}): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/repost`, { body: opts })).data;
+  }
+
+  /** AUTHED gallery read — same route as media(), but with the bearer token so an owner or moderator sees
+   *  their own/reviewable clean photos regardless of listing status (the QC review's photo panel). */
+  async mediaOwn(id: string, signal?: AbortSignal): Promise<GalleryItem[]> {
+    return (await this.http.request<GalleryItem[]>('GET', `listings/${encodeURIComponent(id)}/media`, { signal })).data;
+  }
+
+  // ---- PC-56 TENANT-2a · staff console + QC (W123/W126/W127). Console reads need `listing.view_any`;
+  // QC reads/decisions need `listing.approve` — the server enforces both, these are just the typed doors.
+
+  /** W123 — every seller's listings, one status tab at a time (closed vocabulary), keyset cursor. */
+  async consoleList(query: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: ConsoleListingRow[]; nextCursor: string | null }> {
+    return (await this.http.request<{ items: ConsoleListingRow[]; nextCursor: string | null }>('GET', 'listings/console/list', { signal, query })).data;
+  }
+
+  /** W123's tabs — a count for every status in the machine, zero included. */
+  async consoleCounts(signal?: AbortSignal): Promise<ConsoleCounts> {
+    return (await this.http.request<ConsoleCounts>('GET', 'listings/console/counts', { signal })).data;
+  }
+
+  /** W126 — the QC queue (oldest first), its measured KPIs and the closed rejection vocabulary. */
+  async qcQueue(signal?: AbortSignal): Promise<QcQueuePayload> {
+    return (await this.http.request<QcQueuePayload>('GET', 'listings/qc/queue', { signal })).data;
+  }
+
+  /** W127 — one submission with the honest review facts (seller record, peer price band, self-review flag). */
+  async qcReview(id: string, signal?: AbortSignal): Promise<QcReviewPayload> {
+    return (await this.http.request<QcReviewPayload>('GET', `listings/qc/review/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
+  /** Send a draft to QC — starts the waiting clock. Owner (or moderator). */
+  async submitForQc(id: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/submit-qc`)).data;
+  }
+
+  /** Approve — publishes immediately. Reviewer ≠ seller/creator is the server's law. */
+  async qcApprove(id: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/qc/approve`)).data;
+  }
+
+  /** Reject with a teaching reason from the closed vocabulary. */
+  async qcReject(id: string, reasonCode: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/qc/reject`, { body: { reasonCode } })).data;
+  }
+
+  /** Pause the seller's own published listing (their hand, not the platform's `held`). */
+  async pause(id: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/pause`)).data;
   }
 
   /** The paid-boost tier catalogue (id + name + server price/days). Show real prices; submit a real tier id. */

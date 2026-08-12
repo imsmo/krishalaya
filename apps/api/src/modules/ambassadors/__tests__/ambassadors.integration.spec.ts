@@ -72,7 +72,7 @@ run('ambassadors spine (integration, real Postgres + RLS + commission payout)', 
     await referrals.activate(tenantA, adminActor, referralId);
     const { items } = await earnings.listForAmbassador(tenantA, ambassadorId, { limit: 50 });
     const onboard = items.find((e: any) => e.eventCode === 'farmer_onboarded');
-    expect(onboard).toBeTruthy(); expect(onboard.amountMinor).toBe('2500');   // ₹25 from seed 0207
+    expect(onboard).toBeTruthy(); expect(onboard!.amountMinor).toBe('2500');   // ₹25 from seed 0207
   });
 
   it('payout settles unpaid earnings to the ambassador wallet (zero-sum commission)', async () => {

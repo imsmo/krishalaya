@@ -49,3 +49,17 @@ export class PhotoMediaInvalidError extends DomainError {
 export class TooManyPhotosError extends DomainError {
   constructor(max: number) { super('LISTING_TOO_MANY_PHOTOS', `A listing may have at most ${max} photos`, 422, { max }); }
 }
+
+// ---- PC-56 TENANT-2a · QC (W126/W127) ----
+export class ListingSelfReviewError extends DomainError {
+  constructor(code: 'QC_OWN_LISTING' | 'QC_OWN_DRAFT', message: string) { super(code, message, 403, {}); }
+}
+export class ListingRejectReasonError extends DomainError {
+  constructor(message: string) { super('QC_REJECT_REASON', message, 422, {}); }
+}
+export class UnknownRejectReasonError extends DomainError {
+  constructor(code: string, known: string[]) {
+    super('QC_UNKNOWN_REJECT_REASON',
+      `"${code}" is not a rejection reason this platform teaches with — the vocabulary is: ${known.join(', ')} (lookup 'listing_reject_reason'). Nothing was decided.`, 422, { code, known });
+  }
+}

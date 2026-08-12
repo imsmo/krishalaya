@@ -1,5 +1,5 @@
 // modules/listings/controllers/group-lots.controller.ts · FPO group-lot endpoints.
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../core/feature-flags/flags.guard';

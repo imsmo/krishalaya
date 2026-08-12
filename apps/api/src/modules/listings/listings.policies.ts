@@ -11,6 +11,9 @@ export const ListingPermissions = {
   Update: 'listing.update',
   Publish: 'listing.publish',
   Moderate: 'listing.moderate',     // tenant admin / support: reject, force-pause
+  // PC-56 TENANT-2a: seeded + granted to tenant_admin in 0004, checked by NOTHING until this wave — a granted
+  // permission with no route behind it is a promise nothing keeps (0120's rule, met from its third side).
+  Approve: 'listing.approve',       // QC: decide pending_approval (W126/W127); separate from creation — no self-review
   ViewAny: 'listing.view_any',      // see other sellers' listings within tenant
   Boost: 'listing.boost',
   GroupLotManage: 'group_lot.manage',

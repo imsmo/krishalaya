@@ -768,3 +768,34 @@ export type SchemeRejectionCode =
   | 'aadhaar_seeding_mismatch' | 'land_record_name_variance' | 'duplicate_application' | 'window_missed'
   | 'documents_missing' | 'ineligible_landholding' | 'ineligible_category' | 'ineligible_region'
   | 'portal_rejected' | 'withdrawn_by_applicant' | 'other';
+
+// ---- PC-56 TENANT-2a · staff console + listing QC (W123/W126/W127) ----
+export interface ConsoleListingRow {
+  id: string; title: string; status: string; sellerUserId: string; sellerName: string | null;
+  productName: string | null; priceMinor: string; currencyCode: string; unitCode: string;
+  quantityAvailable: string; quantityTotal: string; saleType: string;
+  publishedAt: string | null; createdAt: string; qcSubmittedAt: string | null;
+}
+export type ConsoleCounts = Record<string, number> & { all: number };
+export interface QcQueueItem {
+  id: string; title: string; sellerUserId: string; sellerName: string | null;
+  priceMinor: string; currencyCode: string; unitCode: string; quantityTotal: string;
+  productId: string; regionId: string | null; qcSubmittedAt: string | null; createdBy: string | null;
+}
+export interface QcKpis {
+  waiting: number; oldestSubmittedAt: string | null; unclockedWaiting: number;
+  approvedToday: number; rejectedToday: number;
+  medianDecisionMinutes7d: number | null; decided7d: number; todayBasis: string;
+}
+export interface QcRejectReason { code: string; name: string }
+export interface QcQueuePayload { queue: QcQueueItem[]; kpis: QcKpis; reasons: QcRejectReason[] }
+export interface QcReviewPayload {
+  detail: QcQueueItem & {
+    status: string; productName: string | null; organicClaim: string; saleType: string;
+    quantityAvailable: string; minOrderQty: string; harvestDate: string | null;
+  };
+  sellerHistory: { previousListings: number; rejections: number };
+  reasons: QcRejectReason[];
+  band: { productId: string; regionId: string; lowMinor: string; modalMinor: string; highMinor: string; sampleSize: number } | null;
+  selfReview: boolean;
+}

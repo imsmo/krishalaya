@@ -18,7 +18,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { ForbiddenError } from '../../../shared/errors/app-error';
 import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { Listing, ListingDomainEvent } from '../domain/listing.entity';
-import { ListingConcurrencyError, ListingNotFoundError, PhotoMediaInvalidError, TooManyPhotosError } from '../domain/listing.errors';
+import { ListingConcurrencyError, ListingNotFoundError, PhotoMediaInvalidError, TooManyPhotosError, UnknownRejectReasonError } from '../domain/listing.errors';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { PriceHistory } from '../domain/price-history.entity';
 import { ListingAttribute, AttrValue } from '../domain/listing-attribute.entity';
@@ -304,6 +304,81 @@ export class ListingService {
       this.metrics.inc('listing.refused_seller_suspended', { tenant: tenantId });
       throw new ForbiddenError('this member is suspended in this organisation and cannot list', { reason: 'seller_suspended' });
     }
+  }
+
+  // ---- PC-56 TENANT-2a · the QC verbs (W126/W127) — pending_approval gains its writers after 133 migrations.
+
+  /** SUBMIT FOR QC — the seller (or a moderator) sends a draft to review; the waiting clock W126 measures
+   *  starts HERE. Suspension is not checked at submit (nothing reaches buyers yet) — it is checked where it
+   *  bites, at approve, against the SELLER (a reviewer approving a suspended member's lot hits the same wall
+   *  as publish). */
+  async submitForQc(tenantId: string, actor: ListingActor, id: string): Promise<void> {
+    await timed(this.metrics, 'listing.qc_submit', { tenant: tenantId }, async () => {
+      await this.uow.run(tenantId, async (tx) => {
+        const listing = await this.repo.getForUpdate(tx, tenantId, id);
+        this.assertCanMutate(listing, actor);
+        listing.submitForQc();
+        await this.repo.update(tx, listing);
+        await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.auditOverride(tx, tenantId, actor, listing, 'listing.qc_submitted');
+      }, { userId: actor.userId });
+      await this.cache.del(cacheKey(tenantId, id));
+    });
+  }
+
+  /** QC APPROVE — publishes immediately (W127: "publishes immediately; buyers with alerts are notified" rides
+   *  the listing.published outbox event). Reviewer ≠ seller and ≠ staff creator, asserted in the DOMAIN with its
+   *  own codes and backstopped by 0138's CHECK. The controller requires `listing.approve` — the permission that
+   *  had been granted since 0004 with nothing checking it. */
+  async qcApprove(tenantId: string, reviewer: { userId: string }, id: string): Promise<void> {
+    await timed(this.metrics, 'listing.qc_approve', { tenant: tenantId }, async () => {
+      await this.uow.run(tenantId, async (tx) => {
+        const listing = await this.repo.getForUpdate(tx, tenantId, id);
+        await this.assertSellerNotSuspendedTx(tx, tenantId, listing.sellerUserId);
+        listing.approveQc(reviewer.userId);
+        await this.repo.update(tx, listing);
+        await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.audit.write(tx, { tenantId, actorUserId: reviewer.userId, action: 'listing.qc_approved', entityType: 'listing', entityId: id, oldValue: { status: 'pending_approval' }, newValue: { status: 'published' } });
+      }, { userId: reviewer.userId });
+      await this.cache.del(cacheKey(tenantId, id));
+    });
+  }
+
+  /** QC REJECT — the reason is mandatory AND from the closed lookup vocabulary (Law 6: reasons are rows, not
+   *  code). Validated inside the same tx; an unknown code names the vocabulary and decides NOTHING. The member
+   *  is notified via the listing.qc_rejected outbox event, reason included — a rejection always teaches. */
+  async qcReject(tenantId: string, reviewer: { userId: string }, id: string, reasonCode: string): Promise<void> {
+    await timed(this.metrics, 'listing.qc_reject', { tenant: tenantId }, async () => {
+      await this.uow.run(tenantId, async (tx) => {
+        const known = await tx.query<{ code: string }>(
+          `SELECT code FROM lookup_values WHERE type_code = 'listing_reject_reason' AND is_active
+            AND (tenant_id IS NULL OR tenant_id = $1) ORDER BY sort_order, code`, [tenantId]);
+        const codes = known.rows.map((x) => x.code);
+        if (!codes.includes(reasonCode)) throw new UnknownRejectReasonError(reasonCode, codes);
+        const listing = await this.repo.getForUpdate(tx, tenantId, id);
+        listing.rejectQc(reviewer.userId, reasonCode);
+        await this.repo.update(tx, listing);
+        await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.audit.write(tx, { tenantId, actorUserId: reviewer.userId, action: 'listing.qc_rejected', entityType: 'listing', entityId: id, oldValue: { status: 'pending_approval' }, newValue: { status: 'rejected', reason: reasonCode } });
+      }, { userId: reviewer.userId });
+      await this.cache.del(cacheKey(tenantId, id));
+    });
+  }
+
+  /** PAUSE — the seller's own hand on their own sale (distinct from the platform's `held`, by design — see
+   *  listing.state.ts). W123/W124's Pause finally gets its route; the state machine validates published→paused. */
+  async pause(tenantId: string, actor: ListingActor, id: string): Promise<void> {
+    await timed(this.metrics, 'listing.pause', { tenant: tenantId }, async () => {
+      await this.uow.run(tenantId, async (tx) => {
+        const listing = await this.repo.getForUpdate(tx, tenantId, id);
+        this.assertCanMutate(listing, actor);
+        listing.pause();
+        await this.repo.update(tx, listing);
+        await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.auditOverride(tx, tenantId, actor, listing, 'listing.paused');
+      }, { userId: actor.userId });
+      await this.cache.del(cacheKey(tenantId, id));
+    });
   }
 
   private assertCanMutate(listing: Listing, actor: ListingActor): void {

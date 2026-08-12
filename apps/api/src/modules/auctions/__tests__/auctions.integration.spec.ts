@@ -37,6 +37,7 @@ import { BidRepository } from '../repositories/bid.repository';
 import { AuctionService } from '../services/auction.service';
 import { BidService } from '../services/bid.service';
 import { AuctionsPublisher } from '../events/auctions.publisher';
+import { AuctionWatcherRepository } from '../repositories/auction-watcher.repository';
 import { SellerCannotBidError, BidTooLowError } from '../domain/auctions.errors';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -88,7 +89,7 @@ run('auctions slice (integration, real Postgres + RLS)', () => {
     const auctionRepo = new AuctionRepository(replica as any);
     const bidRepo = new BidRepository(replica as any);
     const publisher = new AuctionsPublisher(outbox);
-    auctions = new AuctionService(uow, outbox, idem, metrics, wallet, audit, listings, auctionRepo, bidRepo);
+    auctions = new AuctionService(uow, outbox, idem, metrics, wallet, audit, listings, auctionRepo, bidRepo, new AuctionWatcherRepository(replica as any), publisher);   // TENANT-2a sweep: ctor gained watchers + publisher
     bidsSvc = new BidService(uow, outbox, idem, metrics, wallet, listings, auctionRepo, bidRepo, publisher);
 
     // fund both bidders so EMD holds succeed
