@@ -86,8 +86,21 @@ export class Order {
   }
 
   /** Online payment succeeded → confirm (payments module calls this via event handler). */
-  markPaid(): void { if (this.props.status === 'payment_pending') this.to('confirmed', OrderEventType.Confirmed, {}, undefined); }
-  confirm(bySeller: string): void { this.assertSeller(bySeller); this.to('confirmed', OrderEventType.Confirmed, {}, bySeller); }
+  // PC-56 TENANT-3c-1: the confirm event now carries the order's MONEY COMPONENTS and its delivery address, because
+  // the trade invoice is generated here (W151: "auto-generated on order confirm") and a statutory document must be
+  // built from the amounts actually charged — not from a total with one blended rate applied to it. Same shape from
+  // both doors (an online payment confirming itself, and a seller confirming) so the invoice cannot depend on which.
+  private confirmedPayload(): Record<string, unknown> {
+    return {
+      buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId,
+      subtotalMinor: this.props.subtotalMinor.toString(), deliveryFeeMinor: this.props.deliveryFeeMinor.toString(),
+      discountMinor: this.props.discountMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(),
+      totalMinor: this.props.totalMinor.toString(), currencyCode: this.props.currencyCode,
+      deliveryAddressId: this.props.deliveryAddressId, source: this.props.source,
+    };
+  }
+  markPaid(): void { if (this.props.status === 'payment_pending') this.to('confirmed', OrderEventType.Confirmed, this.confirmedPayload(), undefined); }
+  confirm(bySeller: string): void { this.assertSeller(bySeller); this.to('confirmed', OrderEventType.Confirmed, this.confirmedPayload(), bySeller); }
   markPacked(bySeller: string): void { this.assertSeller(bySeller); this.to('packed', OrderEventType.Packed, {}, bySeller); }
   markReady(bySeller: string): void { this.assertSeller(bySeller); this.to('ready', OrderEventType.Ready, {}, bySeller); }
   markDelivered(by: string, now: Date = new Date()): void {

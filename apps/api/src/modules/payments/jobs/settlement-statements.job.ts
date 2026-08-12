@@ -25,7 +25,8 @@ export class SettlementStatementsJob {
       await client.query('COMMIT');
     } catch (e) { await client.query('ROLLBACK').catch(() => undefined); throw e; } finally { client.release(); }
 
-    let generated = 0, skipped = 0, failed = 0;
+    let generated = 0; let failed = 0;
+    const skipped = 0;   // never incremented — the loop either generates or fails (prefer-const)
     for (const s of sellers) {
       try {
         const row = await this.statements.generate(s.tenantId, s.sellerUserId, from, to, actorUserId, null);

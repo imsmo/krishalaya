@@ -16,3 +16,13 @@ export function canModeratePayment(ctx: RequestContext): boolean {
 export function canManageCommissionRules(ctx: RequestContext): boolean {
   return ctx.permissions.has('payout.approve') || ctx.permissions.has('wallet.adjust') || ctx.permissions.has('*');
 }
+
+/**
+ * FINANCE SCOPE, as W151 and W152 name it ("GST exports need finance scope", "Full GSTIN reveal and credit notes
+ * need finance scope"). Mapped onto `report.view` — an EXISTING seeded permission — rather than inventing a code the
+ * canon never names: this wave already learned from 0139 that a permission string on a screen with no row behind it
+ * is its own defect, and the inverse (a row nobody asked for) is how a role catalogue becomes noise.
+ */
+export function canReadFinance(ctx: RequestContext): boolean {
+  return ctx.permissions.has('report.view') || ctx.permissions.has('*');
+}

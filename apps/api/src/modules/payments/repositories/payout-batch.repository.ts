@@ -7,7 +7,7 @@
 import { Injectable } from '@nestjs/common';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { PayoutBatch, PayoutBatchProps } from '../domain/payout-batch.entity';
+import { PayoutBatch } from '../domain/payout-batch.entity';
 import { PayoutBatchStatus } from '../domain/payout-batch.state';
 
 const COLS = `id, tenant_id, batch_type, total_minor, count, status, executed_at, created_at`;

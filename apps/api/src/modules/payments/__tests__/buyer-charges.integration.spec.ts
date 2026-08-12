@@ -16,7 +16,6 @@ import { ShardRouter } from '../../../core/sharding/shard-router';
 import { PgUnitOfWork } from '../../../core/database/unit-of-work.pg';
 import { PgReadReplicaProvider } from '../../../core/database/read-replica.pg';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
-import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { LedgerRepository } from '../../../core/wallet/ledger.repository';
 import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
 import { FlagsService } from '../../../core/feature-flags/flags.service';

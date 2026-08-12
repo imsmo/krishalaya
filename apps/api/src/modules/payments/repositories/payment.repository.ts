@@ -5,7 +5,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { Payment, PaymentProps } from '../domain/payment.entity';
+import { Payment } from '../domain/payment.entity';
 import { PaymentStatus } from '../domain/payment.state';
 
 const COLS = `id, tenant_id, user_id, purpose_id, reference_type, reference_id, amount_minor, refunded_minor,

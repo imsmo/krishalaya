@@ -48,6 +48,12 @@ import { gatewayRegistryProvider, payoutGatewayProvider, mandateGatewayProvider 
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
 import { ReturnRefundedHandler } from './events/handlers/return-refunded.handler';
+import { OrderConfirmedInvoiceHandler } from './events/handlers/order-confirmed-invoice.handler';
+import { InvoiceConsoleReadModel } from './read-models/invoice-console.read-model';
+import { CreditNoteRepository } from './repositories/credit-note.repository';
+import { CreditNoteService } from './services/credit-note.service';
+import { Gstr1ExportService } from './services/gstr1-export.service';
+import { DisputesModule } from '../disputes/disputes.module';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
 import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
 import { PaymentsPublisher } from './events/payments.publisher';
@@ -65,7 +71,9 @@ import { MandateExecutionRepository } from './repositories/mandate-execution.rep
 import { AutopayController } from './controllers/v1/autopay.controller';
 
 @Module({
-  imports: [MediaModule, TenancyModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
+  // DisputesModule for RefundApprovalService — 0139's maker-checker plane, which 0140 widened to cover credit notes
+  // (its PUBLIC service, never its repository; DisputesModule imports nothing, so there is no cycle).
+  imports: [MediaModule, TenancyModule, DisputesModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
   controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, CommissionRulesController, WalletController, AutopayController],
   providers: [
     PaymentService,
@@ -89,6 +97,11 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     TradeInvoiceHandler,
     DisputeResolvedHandler,
     ReturnRefundedHandler,
+    OrderConfirmedInvoiceHandler,
+    InvoiceConsoleReadModel,
+    CreditNoteRepository,
+    CreditNoteService,
+    Gstr1ExportService,
     BookingClockedOutHandler,
     RazorpayPayoutWebhookHandler,
     PaymentsPublisher,
@@ -140,6 +153,7 @@ export class PaymentsModule implements OnModuleInit {
     private readonly tradeInvoice: TradeInvoiceHandler,
     private readonly disputeResolved: DisputeResolvedHandler,
     private readonly returnRefunded: ReturnRefundedHandler,
+    private readonly orderConfirmedInvoice: OrderConfirmedInvoiceHandler,
     private readonly bookingClockedOut: BookingClockedOutHandler,
     private readonly config: AppConfig,
     private readonly settlementStatementsCadenceJob: SettlementStatementsCadenceJob,
@@ -152,6 +166,9 @@ export class PaymentsModule implements OnModuleInit {
     // PC-56 TENANT-3b: return refund: escrow → buyer wallet (flag dispute_refunds). `disputes.return_refunded` had
     // NO subscriber in any app before this line — a return reached 'refunded' and no money moved.
     this.registry.register(this.returnRefunded);
+    // PC-56 TENANT-3c-1: the trade invoice is raised at CONFIRM (W151's own words, and the law's timing for goods).
+    // `tradeInvoice` below stays registered on order_completed as the idempotent backstop.
+    this.registry.register(this.orderConfirmedInvoice);
     this.registry.register(this.bookingClockedOut); // labour.wages_paid → promote wage payouts (flag wage_priority_payout)
     // per-job env gate (SETTLEMENT_STATEMENTS_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
     if (this.config.jobs.settlementStatements.enabled) this.jobRegistry.register(this.settlementStatementsCadenceJob);

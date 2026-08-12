@@ -106,9 +106,13 @@ export class RefundApprovalRepository {
    *  carried its own order id would let a caller attach a signature to a different order's money. Returns null when
    *  the subject does not exist in this tenant (RLS + the tenant predicate), which the service turns into a 404. */
   async subjectOrderId(tx: TxContext, tenantId: string, subjectType: RefundSubject, subjectId: string): Promise<string | null> {
+    // One statement per subject table, chosen by an internal enum — never string-built from a caller's value.
     const sql = subjectType === 'dispute'
       ? `SELECT order_id FROM disputes WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`
-      : `SELECT order_id FROM returns  WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`;
+      : subjectType === 'return'
+        ? `SELECT order_id FROM returns WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`
+        // 0140: a credit-note proposal's subject is the INVOICE, and its order is the invoice's own.
+        : `SELECT order_id FROM trade_invoices WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`;
     const r = await tx.query(sql, [subjectId, tenantId]);
     return r.rows[0]?.order_id ?? null;
   }

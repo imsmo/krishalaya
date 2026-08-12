@@ -4,7 +4,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { Mandate, MandateProps } from '../domain/mandate.entity';
+import { Mandate } from '../domain/mandate.entity';
 import { MandateStatus } from '../domain/mandate.state';
 import { PaymentConcurrencyError } from '../domain/payments.errors';
 

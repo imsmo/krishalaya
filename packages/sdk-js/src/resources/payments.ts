@@ -18,6 +18,82 @@ export class InvoicesResource {
   async downloadUrl(orderId: string, signal?: AbortSignal): Promise<InvoiceDownload> {
     return (await this.http.request<InvoiceDownload>('GET', `invoices/order/${encodeURIComponent(orderId)}/download`, { signal })).data;
   }
+
+  // ---- PC-56 TENANT-3c-1 · W151's month view, W152's document, the GSTR-1 export and credit notes ----
+  // These are FINANCE-SCOPED (report.view) and tenant-wide: a list of every invoice with taxable values and buyer
+  // identifiers is not a buyer's own document, so the API answers 404 to a caller without the scope.
+
+  /** W151. Keyset only — there is no page number to ask for. `period` is a GST month (YYYY-MM); with it, `meta.kpis`
+   *  carries the month's totals AND the count of invoices whose breakdown was never recorded. */
+  async list(params: { period?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: TradeInvoiceRow[]; nextCursor: string | null; kpis: InvoiceMonthKpis | null }> {
+    const r = await this.http.request<TradeInvoiceRow[]>('GET', 'invoices', { query: { period: params.period, cursor: params.cursor, limit: params.limit ?? 25 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, kpis: (r.meta?.kpis as InvoiceMonthKpis | null) ?? null };
+  }
+
+  /** W152 — the document, its lines, and the credit notes against it. */
+  async detail(id: string, signal?: AbortSignal): Promise<TradeInvoiceDetail> {
+    return (await this.http.request<TradeInvoiceDetail>('GET', `invoices/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
+  /** W151's "Export GSTR-1 data (month)". REFUSES an open period (GSTR1_PERIOD_OPEN) and a month larger than the row
+   *  cap (GSTR1_TOO_LARGE) rather than returning part of a return. The receipt carries sha256 + coverage. */
+  async exportGstr1(period: string): Promise<Gstr1ExportResult> {
+    return (await this.http.request<Gstr1ExportResult>('POST', 'invoices/gstr1', { body: { period } })).data;
+  }
+
+  /** W152's "Issue credit note (checker)". `approvalId` is an APPROVED refund_approvals row with subject 'credit_note'
+   *  (0139's plane, widened by 0140) — it carries the amount, so this call cannot choose one. */
+  async issueCreditNote(invoiceId: string, input: { approvalId: string; reasonCode: string; reasonText: string }): Promise<CreditNoteResult> {
+    return (await this.http.request<CreditNoteResult>('POST', `invoices/${encodeURIComponent(invoiceId)}/credit-notes`, { body: input })).data;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PC-56 TENANT-3c-1 types (api: modules/payments, schema 0140)
+// ---------------------------------------------------------------------------
+export interface TradeInvoiceRow {
+  id: string; invoiceNo: string; orderId: string; orderNo: string | null;
+  buyerGstin: string | null; totalMinor: string;
+  /** **null MEANS THE BREAKDOWN WAS NEVER RECORDED** (a pre-0140 invoice, computed as one blended rate over the whole
+   *  order). It is not zero, and the console must not render it as ₹0. */
+  taxMinor: string | null; taxableMinor: string | null; exemptMinor: string | null;
+  /** 'intra' | 'inter' | 'unknown' — unknown means neither party's state could be established, not intra-state. */
+  supplyType: string | null; placeOfSupplyCode: string | null;
+  /** false = a line's rate could not be resolved; the invoice is excluded from the GSTR-1 export by name. */
+  taxBasisComplete: boolean | null;
+  issuedAt: string | null; createdAt: string;
+  /** Total already credited back against this invoice (0140's credit_notes). */
+  creditedMinor: string;
+}
+export interface TradeInvoiceLine {
+  key: string; hsn: string | null; grossMinor: string; taxableMinor: string; exemptMinor: string;
+  rateBps: number; taxMinor: string;
+  /** 'resolved' | 'exempt_by_rule' | 'not_recorded' — the last one is UNKNOWN, never an exemption. */
+  rateBasis: string; legalRef: string | null;
+}
+export interface TradeInvoiceDetail extends TradeInvoiceRow {
+  sellerGstin: string | null; lines: TradeInvoiceLine[] | null; taxBreakup: Record<string, unknown>;
+  creditNotes: Array<{ id: string; creditNoteNo: string; reasonCode: string; reasonText: string; totalMinor: string; taxMinor: string; issuedAt: string; issuedBy: string }>;
+}
+export interface InvoiceMonthKpis {
+  count: number; taxableMinor: string; taxMinor: string; exemptMinor: string;
+  withoutBreakdown: number; incompleteBasis: number; windowFromIso: string; windowToIso: string;
+}
+export interface Gstr1ExportResult {
+  period: string;
+  sections: Record<string, Array<{ invoiceNo: string; buyerGstin: string | null; placeOfSupplyCode: string | null; totalMinor: string; taxableMinor: string; taxMinor: string }>>;
+  creditNotes: Array<{ creditNoteNo: string; invoiceId: string; totalMinor: string; taxableMinor: string; taxMinor: string; reasonCode: string; placeOfSupplyCode: string | null }>;
+  excluded: Array<{ invoiceNo: string; reason: string }>;
+  summary: {
+    sections: Record<string, { count: number; taxableMinor: string; taxMinor: string }>;
+    excluded: Record<string, number>; excludedCount: number; filableCount: number;
+    coverage: 'complete' | 'partial' | 'empty';
+  };
+  receipt: { fileName: string; rowCount: number; sha256: string; digestBasis: string; generatedAt: string; requestedBy: string; coverage: string; omissions: Array<{ reason: string; count: number }> };
+}
+export interface CreditNoteResult {
+  id: string; creditNoteNo: string; invoiceId: string; totalMinor: string; taxableMinor: string;
+  exemptMinor: string; taxMinor: string; reasonCode: string; issuedAt: string;
 }
 
 export class PaymentsResource {

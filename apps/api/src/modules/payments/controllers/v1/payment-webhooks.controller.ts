@@ -3,7 +3,7 @@
 // by the HMAC signature over the raw body (verified in the gateway adapter); the tenant is read
 // from the signature-verified order notes. The raw bytes come from req.rawBody (main.ts sets
 // rawBody:true) so the signature matches exactly. Processing is idempotent on the gateway event id.
-import { Controller, Headers, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
+import { Controller, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { PaymentService } from '../../services/payment.service';

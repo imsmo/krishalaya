@@ -14,7 +14,7 @@
 // unknown/terminal payout is a no-op. Webhook bodies/secrets are NEVER logged.
 import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork } from '../../../../core/database/unit-of-work';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../../core/observability/metrics';
 import { AuditWriter } from '../../../../core/audit/audit.writer';

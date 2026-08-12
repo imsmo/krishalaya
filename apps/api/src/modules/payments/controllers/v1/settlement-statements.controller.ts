@@ -1,7 +1,7 @@
 // modules/payments/controllers/v1/settlement-statements.controller.ts
 // A seller reads THEIR settlement statements; finance (payout.approve) generates a statement for a
 // seller+cycle. Generation is idempotent (per seller+period). Reads are owner-scoped (404 to others).
-import { Controller, Get, Headers, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';

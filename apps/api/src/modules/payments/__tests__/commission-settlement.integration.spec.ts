@@ -20,7 +20,7 @@ import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memor
 import { LedgerRepository } from '../../../core/wallet/ledger.repository';
 import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
-import { platform, userMain, tenantCommission, PlatformAccount } from '../../../core/wallet/account-codes';
+import { platform, PlatformAccount } from '../../../core/wallet/account-codes';
 
 import { CommissionRuleRepository } from '../repositories/commission-rule.repository';
 import { TaxRuleRepository } from '../repositories/tax-rule.repository';

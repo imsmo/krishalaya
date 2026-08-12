@@ -11,7 +11,6 @@ import { IdempotencyService } from '../../../core/idempotency/idempotency.servic
 import { Metrics } from '../../../core/observability/metrics';
 import { WalletPort, PostTxnInput, PostTxnResult } from '../../../core/wallet/wallet.port';
 import { AuditWriter } from '../../../core/audit/audit.writer';
-import { AccountRef } from '../../../core/wallet/account-codes';
 import { PaymentService } from '../services/payment.service';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
@@ -51,7 +50,9 @@ class FakeWallet implements WalletPort {
     this.posts.push(input);
     return { txnId: `txn_${this.posts.length}`, alreadyApplied: false };
   }
-  async balanceMinor(_tx: TxContext, _account: AccountRef): Promise<bigint> { return 0n; }
+  // eslint's no-unused-vars does not exempt leading-underscore params in this config, and the port's
+  // signature is fixed — so the stub takes none and satisfies the interface structurally.
+  async balanceMinor(): Promise<bigint> { return 0n; }
 }
 
 /** In-memory stand-in for the real (SQL) PaymentRepository. Duck-typed — cast at the call site. */

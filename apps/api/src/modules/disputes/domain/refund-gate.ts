@@ -20,7 +20,10 @@ export const DEFAULT_CHECKER_THRESHOLD_MINOR = 1_000_000n;
  *  field is short instead of surfacing a constraint violation). */
 export const MIN_NOTE_CHARS = 20;
 
-export const REFUND_SUBJECTS = ['dispute', 'return'] as const;
+// 'credit_note' added by 0140 (PC-56 TENANT-3c-1): a GST credit note is the same act from this plane's point of
+// view — tenant money going back to a buyer, proposed by one person and signed by another, at an amount pinned on the
+// approval row. Widening the set beat growing a second maker-checker with its own threshold to forget.
+export const REFUND_SUBJECTS = ['dispute', 'return', 'credit_note'] as const;
 export type RefundSubject = (typeof REFUND_SUBJECTS)[number];
 export const APPROVAL_STATUSES = ['pending', 'approved', 'rejected', 'applied'] as const;
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];

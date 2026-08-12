@@ -55,6 +55,8 @@ export * from './resources/returns';
 // PC-56 TENANT-3b: the dispute console reads + the refund maker-checker plane live in resources/admin.ts.
 export type { DisputeKpis, DisputeQueueRow, DisputeMoneyState, RefundGateState, RefundApproval } from './resources/admin';
 export { RefundApprovalsResource } from './resources/admin';
+// PC-56 TENANT-3c-1: W151/W152 + the GSTR-1 export live on payments.invoices.
+export type { TradeInvoiceRow, TradeInvoiceLine, TradeInvoiceDetail, InvoiceMonthKpis, Gstr1ExportResult, CreditNoteResult } from './resources/payments';
 export * from './resources/fintech';
 export * from './resources/partner-api';
 export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4
