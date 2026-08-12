@@ -81,4 +81,5 @@ export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail,
   MemberPreferences, MemberActivityItem, RevealableMemberField, KycLabel, SuspensionRecord, SuspensionResult,
   Farmer360, Farmer360Income, Farmer360Season, Farmer360Scheme, Farmer360CreditEvidence, LandByUnit } from './resources/members';
 // PC-56 TENANT-2a · staff console + listing QC (W123/W126/W127)
+export { LISTING_IMPORT_COLUMNS, listingImportTemplateCsv } from './resources/bulk-imports';   // TENANT-2c
 export type { ConsoleListingRow, ConsoleCounts, QcQueueItem, QcKpis, QcRejectReason, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from './types';

@@ -78,6 +78,7 @@ export default async function ListingsPage({ searchParams }: {
         <p className="kv-fine">
           {canApprove && <Link href="/listings/qc" className="kv-link">{t.t('lc.qcLink')}{counts ? ` (${counts.pending_approval})` : ''}</Link>}
           {' · '}<Link href="/listings/new" className="kv-link">{t.t('listings.newCta')}</Link>
+          {' · '}<Link href="/listings/import" className="kv-link">{t.t('limport.title')}</Link>
         </p>
       </div>
 

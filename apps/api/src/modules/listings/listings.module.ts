@@ -3,7 +3,7 @@
 // modules depend on the SERVICES exported here, never on repositories or the DB.
 // Core infra (UnitOfWork, OutboxWriter, ReadReplica, Quota, Idempotency, Cache,
 // Search, Metrics) is provided by CoreModule (global) and injected by token.
-import { Module } from '@nestjs/common';
+import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { MediaModule } from '../../core/media/media.module';
 import { IdentityModule } from '../identity/identity.module';   // TENANT-2b: ConsentService for the on-behalf gate (Law 11 reuse — the ambassadors precedent)   // OBJECT_STORE for public listing-gallery presign
 import { CommunicationModule } from '../communication/communication.module'; // ConversationService for :id/inquiries (KV-BL-031)
@@ -26,6 +26,8 @@ import { ListingAttributeService } from './services/listing-attribute.service';
 import { GroupLotService } from './services/group-lot.service';
 import { GroupLotPledgeService } from './services/group-lot-pledge.service';
 import { OnBehalfConsoleService } from './services/on-behalf-console.service';
+import { ListingBulkApplier } from './bulk/listing-bulk-applier';
+import { BULK_APPLIER_REGISTRY, BulkApplierRegistry } from '../../core/bulk/bulk-applier.registry';
 
 // Read-models (CQRS read path)
 import { ListingSearchReadModel } from './read-models/listing-search.read-model';
@@ -60,7 +62,7 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
   controllers: [ListingsController, ListingQcController, BoostsController, GroupLotsController, SellersController, TrustDocumentsController],
   providers: [
     ListingService, ListingBoostService, ListingViewService, ListingInquiryService, ListingTrustDocumentService,
-    ListingAttributeService, GroupLotService, GroupLotPledgeService, OnBehalfConsoleService,
+    ListingAttributeService, GroupLotService, GroupLotPledgeService, OnBehalfConsoleService, ListingBulkApplier,
     ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository, ListingTrustDocumentRepository,
@@ -72,4 +74,15 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
             ExpireListingsJob, BoostExpiryJob, PublishScheduledJob,
             OrderCompletedHandler, AuctionSettledHandler],
 })
-export class ListingsModule {}
+export class ListingsModule implements OnModuleInit {
+  constructor(
+    @Inject(BULK_APPLIER_REGISTRY) private readonly bulkRegistry: BulkApplierRegistry,
+    private readonly listingApplier: ListingBulkApplier,
+  ) {}
+  onModuleInit(): void {
+    // PC-56 TENANT-2c: the 'listings' importer W128 needs. Registered in the module that OWNS listings — core/bulk
+    // stays generic plumbing and never learns what a lot is (the contract 'products' and 'members' already follow).
+    // Before this line, `importType: 'listings'` was a 422 and W128's whole screen pointed at nothing.
+    this.bulkRegistry.register(this.listingApplier);
+  }
+}

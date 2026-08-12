@@ -125,3 +125,17 @@ export class BulkImportsResource {
 export function memberImportTemplateCsv(): string {
   return `${MEMBER_IMPORT_COLUMNS.join(',')}\n9876543210,Meera Ben J.,farmer,gu,Vanthali\n`;
 }
+
+/** The columns W128's listing template carries (PC-56 TENANT-2c). `phone` (whose produce) + `product` (what) are
+ *  the two a row cannot do without. */
+export const LISTING_IMPORT_COLUMNS = ['phone', 'product', 'quantity', 'unit', 'price', 'min_order_qty', 'harvest_date', 'title'] as const;
+
+/**
+ * W128's "Download template". GENERATED FROM THE SAME COLUMN LIST THE IMPORTER READS, so a template that drifts
+ * from the parser is impossible. The sample row is the shape an FPO secretary actually writes — a real Gujarati
+ * lot with a plain ten-digit number and a PER-QUINTAL price, because the per-kilo mistake is the one this file
+ * exists to catch.
+ */
+export function listingImportTemplateCsv(): string {
+  return `${LISTING_IMPORT_COLUMNS.join(',')}\n9876543210,Wheat,18,quintal,2640,2,2026-03-15,Lokwan wheat (stored)\n`;
+}
