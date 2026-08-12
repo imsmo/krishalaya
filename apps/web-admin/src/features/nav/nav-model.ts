@@ -35,6 +35,8 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: '/analytics/exports', labelKey: 'nav.exports', live: true },
   // PC-56 ADMIN-11: the typed platform registry. `scope='platform'` rows were unreachable by every surface until 0121.
   { href: '/analytics/mandi-pulse', labelKey: 'nav.mandiPulse', live: true },
+  // PC-56 ADMIN-SWEEP-b4: W109 — linked the day it stopped 404ing.
+  { href: '/analytics/farmer-360', labelKey: 'nav.farmer360', live: true },
   { href: '/templates', labelKey: 'nav.templates', live: true },
   { href: '/integrations', labelKey: 'nav.integrations', live: true },
   { href: '/settings', labelKey: 'nav.settings', live: true },

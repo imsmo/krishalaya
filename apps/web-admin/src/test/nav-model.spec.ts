@@ -3,7 +3,7 @@ import { ADMIN_NAV, liveNav, soonNav, adminNoticeKey } from '../features/nav/nav
 
 describe('admin nav model', () => {
   it('live routes are exactly the built ones (grows as waves land)', () => {
-    expect(liveNav().map((i) => i.href)).toEqual(['/dashboard', '/ai-models', '/tenants', '/reports', '/flags', '/recon', '/billing', '/plans', '/providers', '/support', '/compliance', '/impersonation', '/staff', '/staff/me', '/analytics/reports', '/analytics/exports', '/analytics/mandi-pulse', '/templates', '/integrations', '/settings', '/announcements', '/catalogue', '/schemes-registry', '/cells', '/moderation']);
+    expect(liveNav().map((i) => i.href)).toEqual(['/dashboard', '/ai-models', '/tenants', '/reports', '/flags', '/recon', '/billing', '/plans', '/providers', '/support', '/compliance', '/impersonation', '/staff', '/staff/me', '/analytics/reports', '/analytics/exports', '/analytics/mandi-pulse', '/analytics/farmer-360', '/templates', '/integrations', '/settings', '/announcements', '/catalogue', '/schemes-registry', '/cells', '/moderation']);
   });
   it('every nav item is either live or soon, never both; partition covers the whole map', () => {
     expect(liveNav().length + soonNav().length).toBe(ADMIN_NAV.length);

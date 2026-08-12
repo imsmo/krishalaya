@@ -244,9 +244,10 @@ describe('ADMIN-10 · the three permissions the canon names and nothing had', ()
     expect(codes).toContain('metrics.revenue.read');
     expect(codes).toContain('analytics.read');
     expect(codes).toContain('analytics.export');
-    // NOT added: W111 names `analytics.farmer360` as the gate for row-level person data and this realm has no
-    // farmer-360 surface. A permission with no route behind it is a promise nothing keeps.
-    expect(codes).not.toContain('analytics.farmer360');
+    // ADMIN-10 pinned `analytics.farmer360` as ABSENT ("a permission with no route behind it is a promise nothing
+    // keeps") and 0120's header deferred it to the wave that builds the route. ADMIN-SWEEP-b4 is that wave: the
+    // route exists, so the pin flips — the same rule, now satisfied from the other side.
+    expect(codes).toContain('analytics.farmer360');
   });
 
   // **THE ROLE W001'S RESTRICTED STATE IS WRITTEN FOR**: sees the dashboard, not the money.

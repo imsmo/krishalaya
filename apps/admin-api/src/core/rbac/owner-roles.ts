@@ -226,6 +226,12 @@ export const OwnerPermissions = {
   // The ad-hoc builder. Separate from `reports.read` because a fixed dashboard answers questions somebody has already
   // reviewed, and a builder answers whatever the operator asks — a different risk against the same tables.
   AnalyticsRead: 'analytics.read',
+  // ADMIN-SWEEP-b4 — W109/W111: "PII aggregates unless farmer360 grant". 0120's header deferred this permission
+  // ("a permission with no route behind it is a promise nothing keeps") to the wave that builds the route; this is
+  // that wave. SEPARATE FROM `analytics.read`, and the split IS the lens: every other analytics surface answers
+  // questions about POPULATIONS; this one opens ONE NAMED FARMER's whole life with the platform — the deepest
+  // per-person view there is, so the narrowest grant (the same sentence W155's tenant twin uses for member.view360).
+  AnalyticsFarmer360: 'analytics.farmer360',
   // **EXPORT IS ITS OWN GRANT, and it is the one that matters.** Reading a figure on screen and walking out with a file
   // are different acts: the file survives the session, the screenshot policy and the leaver process. W111 says so
   // itself — "Needs analytics.read; exports need analytics.export."
@@ -287,6 +293,12 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // The exec/board reader: the dashboard, the money on it, the analytics, and the ability to take a file away.
   platform_analytics_ops:   [OwnerPermissions.ReportsRead, OwnerPermissions.MetricsRevenueRead,
     OwnerPermissions.AnalyticsRead, OwnerPermissions.AnalyticsExport],
+  // ADMIN-SWEEP-b4. A DEDICATED role, not a line on platform_analytics_ops — the schemes_oversight reasoning again:
+  // watching aggregates all day must not thereby open one named farmer's whole life. Whoever holds this holds it
+  // because somebody decided they may see a person, and an access review can read that decision in one line.
+  // AnalyticsExport is deliberately NOT here: exporting a person's profile needs BOTH grants (the service enforces
+  // the conjunction), so the reviewer who may look is not automatically the one who may take the file away.
+  platform_farmer360: [OwnerPermissions.AnalyticsFarmer360, OwnerPermissions.AnalyticsRead],
   // Reads everything and takes nothing out. The commonest shape of request on a reporting plane, and previously
   // impossible: `reports.read` carried the export with it.
   platform_analytics_viewer: [OwnerPermissions.ReportsRead, OwnerPermissions.MetricsRevenueRead,
