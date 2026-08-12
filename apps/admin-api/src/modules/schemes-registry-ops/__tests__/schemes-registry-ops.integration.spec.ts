@@ -33,7 +33,7 @@ run('schemes-registry-ops (integration, real Postgres — authority + scheme + v
     crud = new SchemeCrudService(pool, audit, repo);
     // ADMIN-4: both of these now route through the maker-checker version plane rather than editing the live row.
     const versions = new SchemeVersionService(pool, audit, repo);
-    rules = new EligibilityRulesEditorService(versions);
+    rules = new EligibilityRulesEditorService(versions, repo);   // c2: the editor validates + dry-runs through the repo now
     cal = new WindowCalendarService(repo, versions);
     inspect = new Pool({ connectionString: APP_URL });
     const cat = await inspect.query(`SELECT id FROM lookup_values WHERE type_code='scheme_category' AND code='income_support' AND tenant_id IS NULL LIMIT 1`);
