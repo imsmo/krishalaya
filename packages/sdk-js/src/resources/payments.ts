@@ -96,10 +96,35 @@ export interface CreditNoteResult {
   exemptMinor: string; taxMinor: string; reasonCode: string; issuedAt: string;
 }
 
+/** W150's charges & taxes (PC-56 TENANT-3c-2). The charge table is tenant-configurable through a PROPOSAL that a
+ *  second admin signs (`tenant.settings` on both sides, maker != checker); the tax table is READ-ONLY by design —
+ *  "statutory correctness is our job, not your risk" — so this resource has no tax write method at all. */
+export class ChargesResource {
+  constructor(private readonly http: HttpClient) {}
+  async overview(signal?: AbortSignal): Promise<ChargeOverview> {
+    return (await this.http.request<ChargeOverview>('GET', 'charges', { signal })).data;
+  }
+  /** Add / change / end an override. The ACTION is re-derived server-side from what the tenant already owns, so a
+   *  wrong one cannot create the overlapping window 0141's EXCLUDE constraint forbids. `effectiveFrom` must be
+   *  TOMORROW or later: two prices in one day cannot be explained to the buyer who paid the first. */
+  async propose(input: { chargeCode: string; action: 'add' | 'change' | 'end'; label?: string; calcMethod?: 'flat' | 'percent' | 'slab' | 'per_unit'; config?: Record<string, unknown>; currencyCode?: string; effectiveFrom: string; note: string }): Promise<ChargeProposalResult> {
+    return (await this.http.request<ChargeProposalResult>('POST', 'charges/proposals', { body: input })).data;
+  }
+  async decide(proposalId: string, input: { decision: 'approved' | 'rejected'; note?: string }): Promise<{ id: string; status: string; chargeCode: string }> {
+    return (await this.http.request<{ id: string; status: string; chargeCode: string }>('POST', `charges/proposals/${encodeURIComponent(proposalId)}/decision`, { body: input })).data;
+  }
+  /** Apply an APPROVED proposal — inserts the new dated row and end-dates the previous one. Never an edit. */
+  async apply(proposalId: string): Promise<{ id: string; status: string; definitionId: string | null; chargeCode: string; effectiveFrom: string }> {
+    return (await this.http.request<{ id: string; status: string; definitionId: string | null; chargeCode: string; effectiveFrom: string }>('POST', `charges/proposals/${encodeURIComponent(proposalId)}/apply`, { body: {} })).data;
+  }
+}
+
 export class PaymentsResource {
   /** GST trade-invoice sub-resource: `client.payments.invoices.getByOrder(...) / .downloadUrl(...)`. */
   readonly invoices: InvoicesResource;
-  constructor(private readonly http: HttpClient) { this.invoices = new InvoicesResource(http); }
+  /** W150's charges & taxes: `client.payments.charges.overview() / .propose(...)`. */
+  readonly charges: ChargesResource;
+  constructor(private readonly http: HttpClient) { this.invoices = new InvoicesResource(http); this.charges = new ChargesResource(http); }
 
   /** Create a payment intent (e.g. purpose 'wallet_recharge'). Returns the gateway order id to open checkout. */
   async createIntent(input: { purpose: string; amountMinor: string; currencyCode?: string; referenceType?: string; referenceId?: string }, idempotencyKey: string): Promise<PaymentIntent> {
@@ -214,4 +239,43 @@ export class AutopayResource {
     return (await this.http.request<MandateExecution[]>('GET', `wallet/autopay/${encodeURIComponent(id)}/executions`, { query: { limit }, signal })).data;
   }
 
+}
+
+// ---------------------------------------------------------------------------
+// PC-56 TENANT-3c-2 · W150's charges & taxes (api: modules/payments, schema 0141)
+// ---------------------------------------------------------------------------
+export interface ChargeRow {
+  id: string; chargeCode: string; label: string | null;
+  /** Which surface prices with this code — 'not_read_by_any_code' when NO call site reads it. */
+  surface: string;
+  calcMethod: string; config: Record<string, unknown>; currencyCode: string;
+  effectiveFrom: string; effectiveTo: string | null; isActive: boolean;
+  /** false = the PLATFORM default this tenant falls back to. A tenant can never write one (0141's RLS). */
+  isTenantOverride: boolean;
+  /** TRUE for the row the pricing engine would pick TODAY. */
+  inForce: boolean;
+  pendingProposalId: string | null;
+  /** false = the pricing engine would THROW on this row (an unimplemented calc_method). */
+  computable: boolean;
+}
+export interface TaxRuleRow {
+  taxCode: string; rateBps: number; hsnPrefix: string | null; split: Record<string, unknown>;
+  thresholdMinor: string | null; effectiveFrom: string; legalRef: string | null;
+  /** Which code path reads this rule — 'not_read_by_any_code' where none does. */
+  readBy: string;
+  categoryScoped: boolean;
+}
+export interface ChargeProposalRow {
+  id: string; chargeCode: string; action: 'add' | 'change' | 'end'; label: string | null;
+  calcMethod: string | null; config: Record<string, unknown> | null; currencyCode: string;
+  effectiveFrom: string; supersedesId: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'applied';
+  proposedBy: string; proposedAt: string; proposalNote: string;
+  decidedBy: string | null; decidedAt: string | null; decisionNote: string | null;
+  appliedAt: string | null; appliedDefinitionId: string | null;
+}
+export interface ChargeOverview { charges: ChargeRow[]; taxRules: TaxRuleRow[]; proposals: ChargeProposalRow[] }
+export interface ChargeProposalResult {
+  id: string; chargeCode: string; action: string; effectiveFrom: string; status: 'pending';
+  diff: Array<{ field: string; from: string | null; to: string | null }>;
 }

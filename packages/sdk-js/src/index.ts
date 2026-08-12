@@ -57,6 +57,9 @@ export type { DisputeKpis, DisputeQueueRow, DisputeMoneyState, RefundGateState, 
 export { RefundApprovalsResource } from './resources/admin';
 // PC-56 TENANT-3c-1: W151/W152 + the GSTR-1 export live on payments.invoices.
 export type { TradeInvoiceRow, TradeInvoiceLine, TradeInvoiceDetail, InvoiceMonthKpis, Gstr1ExportResult, CreditNoteResult } from './resources/payments';
+// PC-56 TENANT-3c-2: W150's charges & taxes.
+export type { ChargeRow, TaxRuleRow, ChargeProposalRow, ChargeOverview, ChargeProposalResult } from './resources/payments';
+export { ChargesResource } from './resources/payments';
 export * from './resources/fintech';
 export * from './resources/partner-api';
 export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4

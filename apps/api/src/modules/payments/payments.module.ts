@@ -53,6 +53,10 @@ import { InvoiceConsoleReadModel } from './read-models/invoice-console.read-mode
 import { CreditNoteRepository } from './repositories/credit-note.repository';
 import { CreditNoteService } from './services/credit-note.service';
 import { Gstr1ExportService } from './services/gstr1-export.service';
+import { ChargesController } from './controllers/v1/charges.controller';
+import { ChargeChangeRepository } from './repositories/charge-change.repository';
+import { ChargeChangeService } from './services/charge-change.service';
+import { ChargeConsoleReadModel } from './read-models/charge-console.read-model';
 import { DisputesModule } from '../disputes/disputes.module';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
 import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
@@ -74,7 +78,7 @@ import { AutopayController } from './controllers/v1/autopay.controller';
   // DisputesModule for RefundApprovalService — 0139's maker-checker plane, which 0140 widened to cover credit notes
   // (its PUBLIC service, never its repository; DisputesModule imports nothing, so there is no cycle).
   imports: [MediaModule, TenancyModule, DisputesModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
-  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, CommissionRulesController, WalletController, AutopayController],
+  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, ChargesController, CommissionRulesController, WalletController, AutopayController],
   providers: [
     PaymentService,
     PayoutService,
@@ -102,6 +106,9 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     CreditNoteRepository,
     CreditNoteService,
     Gstr1ExportService,
+    ChargeChangeRepository,
+    ChargeChangeService,
+    ChargeConsoleReadModel,
     BookingClockedOutHandler,
     RazorpayPayoutWebhookHandler,
     PaymentsPublisher,
