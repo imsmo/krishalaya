@@ -170,6 +170,18 @@ export const OwnerPermissions = {
   // messages, and the one who needs to open them has asked for that specifically.
   ModerationListings: 'moderation.listings',   // hold / release / remove a listing; decide a report
   ModerationMessages: 'moderation.messages',   // read the BODY of a reported message thread
+  // ADMIN-SWEEP-b1 — W097's restricted state: "Deciding needs `moderation.appeals` AND ≠ original reviewer
+  // (enforced)." **THE EIGHTH UNGRANTABLE PERMISSION**: it had existed only inside 0067/0110 rationale comments —
+  // the exact shape TENANT-1b-3 found seven times in the tenant realm, this time on the grant behind the appeal
+  // path every removal notice has promised farmers since 0112.
+  //
+  // SEPARATE FROM `moderation.listings`, AND THE SEPARATION IS THE ≠-REVIEWER RULE MADE ADMINISTRABLE. The people
+  // most likely to decide appeals are the same desks that made the original calls, and `chk_appeals_reviewer_neq`
+  // (0067) plus the claim path's own skip refuse the overlap PER APPEAL even when one person holds both — so this
+  // split is not the control itself, same as cells.approve. What it buys is that an access review can grant "may
+  // work the moderation queue" without granting "may sit in judgement on the queue's own decisions", and that a
+  // future dedicated appeals desk is one grant line, not a code change to every moderation route.
+  ModerationAppeals: 'moderation.appeals',     // claim ("Take next") and decide an appeal; never the original act
   RiskRead: 'risk.read',               // ONE user's risk profile: score, band, explainable factors, masked identity
   RiskAct: 'risk.act',                 // band changes + platform blocklist entries (both require a second operator)
   RiskRules: 'risk.rules',             // propose/approve risk-weight changes — population-wide, dry-run gated
@@ -343,6 +355,13 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_translations_lead: [OwnerPermissions.TranslationsManage, OwnerPermissions.TranslationsReview, OwnerPermissions.CatalogueRead],
   platform_schemes_ops: [OwnerPermissions.SchemesRegistryManage, OwnerPermissions.SchemesRegistryRead],
   platform_schemes_viewer: [OwnerPermissions.SchemesRegistryRead],   // govt-programs / policy analyst — read-only
+  // ADMIN-SWEEP-b1 — THE NINTH AND TENTH UNGRANTABLE PERMISSIONS, found the day the reachability guard first ran.
+  // ADMIN-4b split `schemes.applications.read` and `schemes.dbt.read` out of the registry grants precisely because
+  // they open cross-tenant reads over FARMERS — and then granted them to nobody, so W074/W076's oversight routes
+  // 403'd every operator below god mode. A DEDICATED role rather than a line on platform_schemes_ops, for ADMIN-4b's
+  // own stated reason: the person who fixes a typo in a scheme's name must not thereby be able to download every
+  // scheme applicant in the country. Whoever holds this role holds it because somebody decided they may see farmers.
+  platform_schemes_oversight: [OwnerPermissions.SchemesApplicationsRead, OwnerPermissions.SchemesDbtRead, OwnerPermissions.SchemesRegistryRead],
   platform_cells_ops: [OwnerPermissions.CellsManage, OwnerPermissions.CellsRead],
   platform_cells_viewer: [OwnerPermissions.CellsRead],   // infra / SRE — read-only topology view
   // ADMIN-8. The checker who authorises topology changes and proposes none — deliberately NOT holding `cells.manage`, so
@@ -360,9 +379,9 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // ADMIN-5f. The QUEUE desk works cases: it reads the boards, holds listings and decides reports. It does NOT hold
   // `moderation.messages` — reading a private thread is a decision somebody makes for a named reason, not a standing
   // capability of whoever is on shift.
-  platform_moderation_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings],
+  platform_moderation_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings, OwnerPermissions.ModerationAppeals],
   // The SAFETY desk is the one that reads threads, because harassment cannot be judged without them.
-  platform_safety_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings, OwnerPermissions.ModerationMessages, OwnerPermissions.RiskRead],
+  platform_safety_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings, OwnerPermissions.ModerationMessages, OwnerPermissions.RiskRead, OwnerPermissions.ModerationAppeals],
   // ADMIN-5e. The AUDITOR reads the trail and nothing else — the point of the role is that it can see every action
   // on the platform without being able to take one. `audit.values.read` is deliberately NOT here: reading a lifecycle
   // is the job, reading the values inside every change is a separate need with its own justification.

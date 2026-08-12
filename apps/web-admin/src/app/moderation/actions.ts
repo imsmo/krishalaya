@@ -10,6 +10,7 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminPost, AdminApiError } from '../../lib/admin-client';
 import { buildAddBlock, buildPropose, buildBandChange } from '../../features/trust/trust-safety';
 import { buildOrder, buildDecide } from '../../features/moderation/queue';
+import { buildDecide as buildAppealDecide } from '../../features/moderation/appeals';
 
 function errorKey(e: unknown): string {
   if (e instanceof AdminApiError) {
@@ -199,4 +200,37 @@ export async function decideReportAction(formData: FormData): Promise<void> {
   revalidatePath('/moderation/reports');
   revalidatePath('/moderation');
   redirect(`/moderation/reports?ok=${built.value.status}`);
+}
+
+/* ==================== ADMIN-SWEEP-b1 · appeals (W097 + W1953–W1955) ==================== */
+
+/** "Take next" — deliberately carries NOTHING but the click. Which appeal the operator gets is the queue's decision
+ *  (oldest deadline they are allowed to judge, ≠-reviewer applied server-side); a claim that could name its appeal
+ *  would let a reviewer cherry-pick. Success lands ON the claimed case; an empty queue explains WHICH empty it is. */
+export async function takeNextAppealAction(): Promise<void> {
+  requireAdmin();
+  let r: { claimed: boolean; appeal?: { id: string }; empty?: { kind: string } };
+  try { r = (await adminPost<{ claimed: boolean; appeal?: { id: string }; empty?: { kind: string } }>('moderation/appeals/take-next', { body: {} })).data; }
+  catch (e) { redirect(`/moderation/appeals?error=${errorKey(e)}`); }
+  revalidatePath('/moderation/appeals');
+  if (r.claimed && r.appeal) redirect(`/moderation/appeals/${enc(r.appeal.id)}?ok=claimed`);
+  redirect(`/moderation/appeals?empty=${r.empty?.kind === 'only_your_own' ? 'onlyYourOwn' : 'queueClear'}`);
+}
+
+/** Decide (uphold / overturn). The W1953 confirm step is the form itself — it states the four consequences with
+ *  their real provider states before this action fires; W1954/W1955 are the ok/error states it lands on. */
+export async function decideAppealAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = s(formData, 'id');
+  if (!id) redirect('/moderation/appeals');
+  const built = buildAppealDecide({
+    outcome: s(formData, 'outcome'), reason: s(formData, 'reason'), languageCode: s(formData, 'languageCode'),
+  });
+  if (!built.ok) redirect(`/moderation/appeals/${enc(id)}?error=${built.error}`);
+  try { await adminPost(`moderation/appeals/${enc(id)}/decide`, { body: built.value }); }
+  catch (e) { redirect(`/moderation/appeals/${enc(id)}?error=${errorKey(e)}`); }
+  revalidatePath(`/moderation/appeals/${id}`);
+  revalidatePath('/moderation/appeals');
+  revalidatePath('/moderation');
+  redirect(`/moderation/appeals/${enc(id)}?ok=${built.value.outcome}`);
 }

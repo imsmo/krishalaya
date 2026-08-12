@@ -10,7 +10,12 @@ module.exports = {
       // A GLOB, not an enumeration. This list used to name every module by hand, which meant a NEW module's specs were
       // silently never run: PC-56 ADMIN-3b's translations spec compiled, passed tsc, and `jest` reported "0 matches".
       // A test that does not run is worse than a missing one, because it looks like coverage.
-      testMatch: ['<rootDir>/modules/**/__tests__/**/*.spec.ts'],
+      //
+      // ADMIN-SWEEP-b1 widened `modules/**` to `**`: the same defect had survived the fix one directory up — every
+      // spec under src/core/ (the media suite, and this wave's owner-permission-reachability guard) compiled, passed
+      // tsc, and was never executed. The guard that makes ungrantable permissions impossible to reintroduce is only a
+      // guard while it RUNS.
+      testMatch: ['<rootDir>/**/__tests__/**/*.spec.ts'],
       testPathIgnorePatterns: ['\\.integration\\.spec\\.ts$'],
     },
     {

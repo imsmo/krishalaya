@@ -129,13 +129,18 @@ export default async function ModerationOverviewPage() {
 
       <h2>{t.t('ts.sectionsHeading')}</h2>
       <ul className="kv-list">
+        <li ><Link href="/moderation/listings">{t.t('ts.nav.listings')}</Link></li>
+        <li ><Link href="/moderation/reports">{t.t('ts.nav.reports')}</Link></li>
+        {/* ADMIN-SWEEP-b1: linked the day it stopped 404ing — this list's own rule. The appealsPending tile above
+            stops being 0/0-forever with the same commit. */}
+        <li ><Link href="/moderation/appeals">{t.t('ts.nav.appeals')}</Link></li>
         <li ><Link href="/moderation/risk">{t.t('ts.nav.risk')}</Link></li>
         <li ><Link href="/moderation/risk/rules">{t.t('ts.nav.rules')}</Link></li>
         <li ><Link href="/moderation/blocklists">{t.t('ts.nav.blocklists')}</Link></li>
         <li ><Link href="/moderation/insights">{t.t('ts.nav.insights')}</Link></li>
       </ul>
-      {/* Listings, reports and appeals are named as NOT BUILT rather than linked to a 404 or silently omitted — the
-          nav model's own rule (a link only when the route exists), applied to sections a reader will look for. */}
+      {/* This paragraph once named listings, reports and appeals as NOT BUILT (the nav rule: a link only when the
+          route exists). All three exist now; the line records that the warning retired rather than vanishing. */}
       <p className="kv-detail__muted">{t.t('ts.notBuilt')}</p>
     </section>
   );

@@ -21,8 +21,9 @@ import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer'
 import { TxContext } from '../../../core/database/unit-of-work';
 import { DomainEvent } from '../domain/ai-governance.events';
 
-/** The ai-governance aggregates that publish events (matches the outbox aggregate_type written today). */
-export type AiAggregateType = 'ai_review' | 'moderation_report' | 'ai_model';
+/** The ai-governance aggregates that publish events (matches the outbox aggregate_type written today).
+ *  'appeal' added by ADMIN-SWEEP-b1 — an appeal is not a report and must not masquerade as one in the event log. */
+export type AiAggregateType = 'ai_review' | 'moderation_report' | 'ai_model' | 'appeal';
 
 @Injectable()
 export class AiGovernancePublisher {

@@ -16,7 +16,10 @@ import { ModelsController } from './controllers/v1/models.controller';
 import { InferencesController } from './controllers/v1/inferences.controller';
 import { ReviewQueueController } from './controllers/v1/review-queue.controller';
 import { ModerationController } from './controllers/v1/moderation.controller';
+import { AppealsController } from './controllers/v1/appeals.controller';
 import { AiModelService } from './services/ai-model.service';
+import { AppealService } from './services/appeal.service';
+import { AppealRepository } from './repositories/appeal.repository';
 import { AiInferenceService } from './services/ai-inference.service';
 import { AiReviewService } from './services/ai-review.service';
 import { ModerationService } from './services/moderation.service';
@@ -31,9 +34,12 @@ import { ModerationNoticeDeliveryCadenceJob } from './jobs/moderation-notice-del
 
 @Module({
   imports: [CommunicationModule],
-  controllers: [ModelsController, InferencesController, ReviewQueueController, ModerationController],
+  controllers: [ModelsController, InferencesController, ReviewQueueController, ModerationController,
+    // PC-56 ADMIN-SWEEP-b1: the one-tap appeal path every removal notice has promised since 0112.
+    AppealsController],
   providers: [AiModelService, AiInferenceService, AiReviewService, ModerationService, AiGovernancePublisher,
     AiModelRepository, AiInferenceRepository, AiReviewRepository, ModerationReportRepository,
+    AppealService, AppealRepository,
     // PC-56 ADMIN-5f: delivers a moderation DECISION NOTICE to the farmer and the reporter through the notification
     // spine. It lives here rather than in apps/worker because the spine is module business logic the pg-only worker
     // cannot import, and it is a cadence job rather than an outbox handler because a notice admin-api has just queued
