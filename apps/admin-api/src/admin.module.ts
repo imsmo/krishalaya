@@ -37,6 +37,7 @@ import { LedgerCorrectionModule } from './modules/ledger-correction/ledger-corre
 import { ModerationQueueModule } from './modules/moderation-queue/moderation-queue.module';
 import { AppealsModule } from './modules/appeals/appeals.module';
 import { CommHubModule } from './modules/comm-hub/comm-hub.module';
+import { SafetyDeskModule } from './modules/safety-desk/safety-desk.module';
 import { LedgerOpsModule } from './modules/ledger-ops/ledger-ops.module';
 import { PayoutOpsModule } from './modules/payout-ops/payout-ops.module';
 import { TranslationsModule } from './modules/translations/translations.module';
@@ -60,6 +61,9 @@ import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
   // PC-56 ADMIN-SWEEP-b2: the communication hub — one thread per principal, joined on users.id (0133's
   // channel-identity decision), claimed pull-first because no routing engine exists and the screen says so.
   CommHubModule,
+  // PC-56 ADMIN-SWEEP-b3: the emergency & safety desk — records human acts in 0098's honest vocabulary; no paging
+  // provider exists and no step ever claims one fired.
+  SafetyDeskModule,
   // PC-56 ADMIN-6: the ledger explorer and the first code on this platform that reads `prev_hash`.
   LedgerOpsModule],
 })

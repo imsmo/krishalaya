@@ -16,6 +16,7 @@ import { buildPolicy } from '../../features/support/policy';
 import { buildReview, buildCoaching, buildSettlement } from '../../features/support/review';
 import { buildReply } from '../../features/support/reply';
 import { buildPresence as buildHubPresence } from '../../features/support/hub';
+import { buildStep as buildEmergencyStep } from '../../features/support/emergency';
 
 /** A reason is mandatory on anything that changes what the desk shows other people (mirrors the server's zod Reason). */
 function validReason(reason: string | null | undefined): boolean {
@@ -271,4 +272,39 @@ export async function hubPresenceAction(formData: FormData): Promise<void> {
   catch (e) { redirect(`/support/hub?error=${errorKey(e)}`); }
   revalidatePath('/support/hub');
   redirect(`/support/hub?ok=${built.value.status === 'break' ? 'onBreak' : 'available'}`);
+}
+
+/* ==================== ADMIN-SWEEP-b3 · the emergency & safety desk (W058 + W2151–W2153) ==================== */
+
+/** "Join" carries nothing but the click — who joined is the token's fact, and the register is of people in the
+ *  room. Idempotent server-side: a double click is one presence. */
+export async function joinCaseAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/support/emergency');
+  let already = false;
+  try { already = (await adminPost<{ already: boolean }>(`support/emergency/cases/${encodeURIComponent(id)}/join`, { body: {} })).data.already; }
+  catch (e) { redirect(`/support/emergency/${encodeURIComponent(id)}?error=${errorKey(e)}`); }
+  revalidatePath(`/support/emergency/${id}`);
+  revalidatePath('/support/emergency');
+  redirect(`/support/emergency/${encodeURIComponent(id)}?ok=${already ? 'alreadyJoined' : 'joined'}`);
+}
+
+/** Record a protocol step. The provider_pending honesty text is composed SERVER-side — this form cannot write a
+ *  sentence claiming a page was sent. */
+export async function recordStepAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/support/emergency');
+  const built = buildEmergencyStep({
+    stepCode: String(formData.get('stepCode') ?? ''), kind: String(formData.get('kind') ?? ''),
+    detail: String(formData.get('detail') ?? ''), vetProfileId: String(formData.get('vetProfileId') ?? ''),
+  });
+  if (!built.ok) redirect(`/support/emergency/${encodeURIComponent(id)}?error=${built.error}`);
+  let status = '';
+  try { status = (await adminPost<{ status: string }>(`support/emergency/cases/${encodeURIComponent(id)}/steps`, { body: built.value })).data.status; }
+  catch (e) { redirect(`/support/emergency/${encodeURIComponent(id)}?error=${errorKey(e)}`); }
+  revalidatePath(`/support/emergency/${id}`);
+  revalidatePath('/support/emergency');
+  redirect(`/support/emergency/${encodeURIComponent(id)}?ok=${status === 'provider_pending' ? 'stepPending' : 'stepRecorded'}`);
 }

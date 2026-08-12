@@ -66,6 +66,12 @@ export const OwnerPermissions = {
   // thread — the deepest support read there is, one person's contacts across every tenant they touch — so holding
   // it is a decision somebody makes about a named agent, not a side effect of being allowed to watch the board.
   SupportHub: 'support.hub',
+  // ADMIN-SWEEP-b3 — W058's restricted state: "Access limited to safety-team roles; even platform owner sees case
+  // metadata only, not thread content." The second half is structural fact (no admin-api code reads `messages` at
+  // all — thread text stays in the tenant realm behind `moderation.messages`-class decisions); the first half is
+  // this grant. SEPARATE FROM `support.hub`, because a women_safety case register is not a workbench queue: who may
+  // even SEE that a named person raised a protected-category alert is the narrowest support question there is.
+  SafetyDesk: 'safety.desk',
   ReportsRead: 'reports.read',          // read-only exec dashboards (MRR/ARR/GMV/active-tenants/active-users)
   ProvidersManage: 'providers.manage',  // enable/disable an integration provider platform-wide (Law 12 degrade)
   ProvidersRead: 'providers.read',      // provider registry + credential-ref health reads (no secrets)
@@ -391,7 +397,7 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // capability of whoever is on shift.
   platform_moderation_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings, OwnerPermissions.ModerationAppeals],
   // The SAFETY desk is the one that reads threads, because harassment cannot be judged without them.
-  platform_safety_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings, OwnerPermissions.ModerationMessages, OwnerPermissions.RiskRead, OwnerPermissions.ModerationAppeals],
+  platform_safety_desk: [OwnerPermissions.ModerationRead, OwnerPermissions.ModerationListings, OwnerPermissions.ModerationMessages, OwnerPermissions.RiskRead, OwnerPermissions.ModerationAppeals, OwnerPermissions.SafetyDesk],
   // ADMIN-5e. The AUDITOR reads the trail and nothing else — the point of the role is that it can see every action
   // on the platform without being able to take one. `audit.values.read` is deliberately NOT here: reading a lifecycle
   // is the job, reading the values inside every change is a separate need with its own justification.
