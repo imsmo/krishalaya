@@ -61,6 +61,10 @@ export const en: Messages = {
   'login.failed': 'Sign-in did not complete. Contact platform security.',
   'login.cta': 'Sign in with hardware key →',
   'login.note': 'Sessions are short-lived; sensitive operations prompt for fresh re-authentication.',
+  // DEV-56 Part 3: only rendered when env.devLoginEnabled is true (local dev, flag on) — never shown in production.
+  'login.devDivider': 'Local development only',
+  'login.devCta': 'Sign in with dev bypass (localhost only)',
+  'login.devNote': 'Mints a real super_admin session token from this machine’s own admin API. Refused outside development, refused off-loopback, refused if this flag is ever on in production.',
 
   // dashboard
   'dashboard.title': 'Platform operations',

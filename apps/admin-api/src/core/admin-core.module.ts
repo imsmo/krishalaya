@@ -18,9 +18,15 @@ import { AdminObjectStore } from './media/admin-object-store';
 // for these four tables rather than one in core and one in the module — two mappers over one table is how the console
 // starts disagreeing with the guard about who is suspended.
 import { OperatorRegistryRepository } from './auth/operator-registry.repository';
+// DEV-56 Part 3: the dev-ONLY login bypass (see dev-login.controller.ts's own header for the full safety case —
+// defaults OFF, boot refuses if ever true in production, loopback-only). Mounted unconditionally: the ROUTE always
+// exists, but the HANDLER itself refuses every request unless ADMIN_DEV_LOGIN_ENABLED is on AND NODE_ENV is not
+// 'production' AND the caller is loopback — so its mere presence in a production build is not a security hole.
+import { DevLoginController } from './auth/dev-login.controller';
 
 @Global()
 @Module({
+  controllers: [DevLoginController],
   providers: [
     // AdminConfig's ctor param is `Record<string, unknown>`, which TypeScript erases to
     // `Object` in design:paramtypes — Nest would try to INJECT a provider for Object and

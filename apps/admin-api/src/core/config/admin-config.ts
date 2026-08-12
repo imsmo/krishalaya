@@ -18,6 +18,11 @@ export interface AdminEnv {
   // session revocation, dormancy, deny-only restrictions). DEFAULT ON: a security control that ships off is a security
   // control nobody turns on. The switch exists so a defect in a front-door read is recoverable without a deploy.
   ADMIN_OPERATOR_REGISTRY_ENABLED: boolean;
+  // DEV-56 Part 3: a DEV-ONLY way into the god-mode realm (see `core/auth/dev-login.controller.ts`) — the founder's
+  // local machine has no seeded operator, no dev bypass and no live IdP integration, so there is no other way in
+  // today. Defaults OFF (Law 8) and is asserted OFF below whenever NODE_ENV==='production' — mirrors apps/api's own
+  // `AUTH_EXPOSE_OTP` production guard exactly (see `apps/api/src/core/config/app-config.ts`).
+  ADMIN_DEV_LOGIN_ENABLED: boolean;
   DATABASE_POOL_MAX: number;
   WALLET_GRPC_ADDR: string;            // wallet-service gRPC endpoint — the ONLY money writer (Law 2/9)
   WALLET_S2S_TOKEN: string;            // service-to-service bearer for the wallet call (never logged)
@@ -60,6 +65,7 @@ export class AdminConfig {
       ADMIN_REQUIRE_HARDWARE_KEY: bool(raw.ADMIN_REQUIRE_HARDWARE_KEY, raw.NODE_ENV === 'production'),
       ADMIN_STEP_UP_MAX_AGE_SEC: num(raw.ADMIN_STEP_UP_MAX_AGE_SEC, 900),   // 15 min
       ADMIN_OPERATOR_REGISTRY_ENABLED: bool(raw.ADMIN_OPERATOR_REGISTRY_ENABLED, true),
+      ADMIN_DEV_LOGIN_ENABLED: bool(raw.ADMIN_DEV_LOGIN_ENABLED, false),   // Law 8: default OFF
       MEDIA_BUCKET: String(raw.MEDIA_BUCKET ?? ''),
       MEDIA_REGION: String(raw.MEDIA_REGION ?? 'ap-south-1'),
       MEDIA_ACCESS_KEY_ID: String(raw.MEDIA_ACCESS_KEY_ID ?? ''),
@@ -94,6 +100,9 @@ export class AdminConfig {
     if (!this.env.DATABASE_ADMIN_URL) problems.push('DATABASE_ADMIN_URL must be set');
     // If impersonation is enabled in prod, its dedicated signing key must be strong (act-as is the riskiest control).
     if (this.env.IMPERSONATION_ENABLED && weak(this.env.IMPERSONATION_TOKEN_SECRET)) problems.push('IMPERSONATION_TOKEN_SECRET (unique random >=32 chars) is required when IMPERSONATION_ENABLED');
+    // DEV-56 Part 3: the dev-only login bypass must be IMPOSSIBLE to run in production, not merely off by default —
+    // the process refuses to boot if this is ever true here, exactly like AUTH_EXPOSE_OTP in apps/api.
+    if (this.env.ADMIN_DEV_LOGIN_ENABLED) problems.push('ADMIN_DEV_LOGIN_ENABLED must be false in production (dev-only auth bypass)');
     if (problems.length) throw new Error(`FATAL: insecure admin-api config -> ${problems.join('; ')}`);
   }
 

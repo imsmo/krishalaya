@@ -17,7 +17,11 @@ describe('ADMIN-SWEEP-b4 · Farmer 360 console logic', () => {
   it('lakh formatting holds across magnitudes', () => {
     expect(formatMinor('112000')).toBe('₹1,120.00');
     expect(formatMinor('1600000')).toBe('₹16,000.00');
-    expect(formatMinor('-500')).toBe('−₹5.00');
+    // DEV-56 Part 5: formatMinor now delegates to the canonical formatMoneyMinor (@krishalaya/i18n), whose negative
+    // sign is Intl's own en-IN `minusSign` literal — verified directly (Node ICU) to be the ASCII hyphen for this
+    // locale, not the U+2212 this file used to hardcode. Deliberate, disclosed change; matches every other money
+    // surface in the app that already calls formatMoneyMinor directly (e.g. billing/plans pages).
+    expect(formatMinor('-500')).toBe('-₹5.00');
   });
   it('the export gate shares the server floor; search refuses a population sweep', () => {
     expect(EXPORT_REASON_MIN).toBe(10);

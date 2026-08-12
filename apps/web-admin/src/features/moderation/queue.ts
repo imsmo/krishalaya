@@ -1,5 +1,6 @@
 // apps/web-admin/src/features/moderation/queue.ts · PURE helpers for W090/W091/W092 (PC-56 ADMIN-5f).
 // No fetch, no React → unit-tested.
+import { formatMoneyMinor } from '@krishalaya/i18n';
 //
 // W089's first principle is the design of this whole plane: **"Hold fast, remove slow — a held listing is reversible,
 // a wrong removal costs a farmer income."** Every control below is asymmetric in that direction. Hold is one click.
@@ -61,15 +62,13 @@ export function valueDrift(nowMinor: string | null | undefined, atHoldMinor: str
   return { drifted: BigInt(nowMinor) !== BigInt(atHoldMinor), known: true };
 }
 
-/** Rupees for display, from a STRING of minor units. BigInt throughout — a ₹4,48,200 listing is small, and the next
- *  one might not be. Grouped en-IN (lakh/crore), which is the separator placement an Indian operator reads. */
+/** For display, from a STRING of minor units. DEV-56 Part 5: delegates to the canonical `formatMoneyMinor`
+ *  (`@krishalaya/i18n`) instead of hand-rolling the bigint math — see `features/ledger/ledger.ts`'s `formatMinor`
+ *  for the full rationale (same bug class: hardcoded `/100n`, and every non-INR amount rendered with no symbol).
+ *  Listing values on this platform are INR-only today, so the default is real behaviour, not a guess. */
 export function formatMinor(minor: string | null | undefined, currency = 'INR'): string {
   if (typeof minor !== 'string' || !/^-?[0-9]{1,19}$/.test(minor.trim())) return '—';
-  const v = BigInt(minor.trim());
-  const neg = v < 0n;
-  const abs = neg ? -v : v;
-  const sym = currency === 'INR' ? '₹' : '';
-  return `${neg ? '−' : ''}${sym}${(abs / 100n).toLocaleString('en-IN')}.${(abs % 100n).toString().padStart(2, '0')}`;
+  return formatMoneyMinor(minor.trim(), currency);
 }
 
 export type OrderAction = 'hold' | 'release' | 'remove';

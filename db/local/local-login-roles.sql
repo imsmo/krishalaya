@@ -20,9 +20,13 @@
 ALTER ROLE kv_app    WITH LOGIN PASSWORD 'dev';   -- the API / worker / web SSR connect as this (RLS-enforced)
 ALTER ROLE kv_wallet WITH LOGIN PASSWORD 'dev';   -- ONLY the wallet-service connects as this (ledger writer)
 ALTER ROLE kv_relay  WITH LOGIN PASSWORD 'dev';   -- outbox relay / ai-services audit log (BYPASSRLS infra role)
+-- [DEV-56 2026-08-12 FIX] kv_admin was missing from this file — admin-api's DATABASE_ADMIN_URL connects as this
+-- role (0014/0118: BYPASSRLS, every query audited), and without a LOGIN here the founder's local admin panel
+-- cannot open a DB connection at all. Same weak-dev-password pattern as the three roles above, on purpose.
+ALTER ROLE kv_admin  WITH LOGIN PASSWORD 'dev';   -- admin-api connects as this (BYPASSRLS, god-mode realm)
 
--- Sanity print: confirm all three can now log in (rolcanlogin = t).
+-- Sanity print: confirm all four can now log in (rolcanlogin = t).
 SELECT rolname, rolcanlogin, rolbypassrls
 FROM pg_roles
-WHERE rolname IN ('kv_app','kv_wallet','kv_relay')
+WHERE rolname IN ('kv_app','kv_wallet','kv_relay','kv_admin')
 ORDER BY rolname;

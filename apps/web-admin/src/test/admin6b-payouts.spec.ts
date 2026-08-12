@@ -11,7 +11,10 @@ describe('formatMinor', () => {
   it('formats from a STRING through bigint, en-IN grouped', () => {
     expect(formatMinor('482120000')).toBe('₹48,21,200.00');
     expect(formatMinor('5')).toBe('₹0.05');
-    expect(formatMinor('-100')).toBe('−₹1.00');
+    // DEV-56 Part 5: formatMinor now delegates to the canonical formatMoneyMinor (@krishalaya/i18n) — its negative
+    // sign is Intl's own en-IN minusSign literal (ASCII hyphen, verified directly), not the U+2212 hardcoded here
+    // before. Deliberate, disclosed change.
+    expect(formatMinor('-100')).toBe('-₹1.00');
   });
   it('renders an unreadable figure as an em dash, NEVER as ₹0.00', () => {
     // "₹0.00 awaiting approval" and "we could not read this figure" are opposite statements. On the money door the

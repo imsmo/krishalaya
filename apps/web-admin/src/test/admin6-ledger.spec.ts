@@ -20,7 +20,10 @@ const verified = (over: Partial<VerifyResult> = {}): VerifyResult => ({
 describe('ADMIN-6 console · money and hashes for display', () => {
   it('formats from a STRING, en-IN grouped, exact past float precision', () => {
     expect(formatMinor('864124800')).toBe('₹86,41,248.00');
-    expect(formatMinor('-4860000')).toBe('−₹48,600.00');
+    // DEV-56 Part 5: formatMinor now delegates to the canonical formatMoneyMinor (@krishalaya/i18n) — its negative
+    // sign is Intl's own en-IN minusSign literal (ASCII hyphen for this locale, verified directly, not the U+2212
+    // this file used to hardcode). Deliberate, disclosed change.
+    expect(formatMinor('-4860000')).toBe('-₹48,600.00');
     expect(formatMinor('9007199254740993')).toBe('₹9,00,71,99,25,47,409.93');
     expect(formatMinor('5')).toBe('₹0.05');
   });

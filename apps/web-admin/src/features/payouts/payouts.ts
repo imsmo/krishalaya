@@ -1,4 +1,5 @@
 // apps/web-admin/src/features/payouts/payouts.ts · W062/W063/W066/W067/W442 view logic, PURE (PC-56 ADMIN-6b).
+import { formatMoneyMinor } from '@krishalaya/i18n';
 //
 // Every function here is a pure mapping from a server field to a class name or an i18n KEY. No text lives in this file:
 // web-admin is EN-only today and will not always be, and a string returned from a formatter is a string no translator
@@ -12,16 +13,18 @@
 /* MONEY                                                                                             */
 /* ------------------------------------------------------------------------------------------------ */
 
+// DEV-56 Part 5: delegates to the canonical `formatMoneyMinor` (`@krishalaya/i18n`) instead of hand-rolling the
+// bigint math — see `features/ledger/ledger.ts`'s `formatMinor` for the full rationale (identical bug class: a
+// hardcoded `/100n` broke any non-2-decimal currency, and every non-INR amount rendered with NO symbol at all).
+// The malformed/absent-input guard is unchanged. Payouts/settlements are INR-only in production today (RazorpayX
+// has no other rail wired in), so the `currency = 'INR'` default is real behaviour, not a guess — but it is a
+// parameter precisely so a future multi-currency payout rail is one call-site argument away, not a rewrite.
 export function formatMinor(minor: string | null | undefined, currency = 'INR'): string {
   if (minor === null || minor === undefined || minor === '') return '—';
-  let v: bigint;
   // An unparseable money string renders as an em dash rather than as 0. "₹0.00 awaiting approval" and "we could not
   // read this figure" are opposite statements, and on the money door the second must never be shown as the first.
-  try { v = BigInt(minor); } catch { return '—'; }
-  const neg = v < 0n;
-  const abs = neg ? -v : v;
-  const sym = currency === 'INR' ? '₹' : '';
-  return `${neg ? '−' : ''}${sym}${(abs / 100n).toLocaleString('en-IN')}.${(abs % 100n).toString().padStart(2, '0')}`;
+  if (!/^-?[0-9]+$/.test(minor)) return '—';
+  return formatMoneyMinor(minor, currency);
 }
 
 /** Σ a column of money strings. Returns null when ANY entry is unreadable rather than skipping it.

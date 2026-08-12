@@ -17,21 +17,32 @@ export type SeriesBucket = 'day' | 'week' | 'month';
  * `metric` reaches here through a zod enum and `bucket` through another, so no caller-controlled string is ever
  * concatenated. Written down explicitly because the shape — string interpolation into SQL — is the shape a reviewer must
  * stop, and the reason it is acceptable here has to be legible without tracing three callers.
+ *
+ * **`softDelete` IS NOT A STYLE CHOICE — IT IS WHETHER THE TABLE ACTUALLY HAS A `deleted_at` COLUMN.**
+ * [DEV-57 2026-08-12 FIX] This map used to append `AND deleted_at IS NULL` unconditionally for every table. `orders`
+ * (`db/migrations/0005_commerce.sql`) and `dbt_transfers` (`db/migrations/0011_fintech_schemes.sql`) were NEVER given
+ * a `deleted_at` column — grep-verified against every migration, and confirmed live: every call to `customSeries()`
+ * for `orders`/`gmv_minor`/`dbt_minor` 500'd with Postgres `42703 column "deleted_at" does not exist`, on ANY
+ * database, populated or empty (`/dashboard`'s 14-day GMV trend hits this every single load — this is why
+ * `reports/dashboard` never worked, not an empty-DB fragility). `tenants` and `users` DO carry `deleted_at`
+ * (0002_tenancy_billing.sql / 0003_identity_access.sql) and the filter is correct for those two. Each metric now
+ * declares whether its table is soft-deletable, and the clause is only emitted when true.
  */
-const SERIES_SRC: Readonly<Record<SeriesMetric, { table: string; col: string; ts: string }>> = Object.freeze({
-  orders: { table: 'orders', col: 'COUNT(*)::text', ts: 'created_at' },
-  gmv_minor: { table: 'orders', col: 'COALESCE(SUM(total_minor),0)::text', ts: 'created_at' },
-  new_tenants: { table: 'tenants', col: 'COUNT(*)::text', ts: 'created_at' },
-  new_users: { table: 'users', col: 'COUNT(*)::text', ts: 'created_at' },
-  dbt_minor: { table: 'dbt_transfers', col: 'COALESCE(SUM(amount_minor),0)::text', ts: 'created_at' },
+const SERIES_SRC: Readonly<Record<SeriesMetric, { table: string; col: string; ts: string; softDelete: boolean }>> = Object.freeze({
+  orders: { table: 'orders', col: 'COUNT(*)::text', ts: 'created_at', softDelete: false },
+  gmv_minor: { table: 'orders', col: 'COALESCE(SUM(total_minor),0)::text', ts: 'created_at', softDelete: false },
+  new_tenants: { table: 'tenants', col: 'COUNT(*)::text', ts: 'created_at', softDelete: true },
+  new_users: { table: 'users', col: 'COUNT(*)::text', ts: 'created_at', softDelete: true },
+  dbt_minor: { table: 'dbt_transfers', col: 'COALESCE(SUM(amount_minor),0)::text', ts: 'created_at', softDelete: false },
 });
 
 const SERIES_ROW_CAP = 400;
 
 function seriesSql(metric: SeriesMetric, bucket: SeriesBucket): string {
   const m = SERIES_SRC[metric];
+  const deletedClause = m.softDelete ? ' AND deleted_at IS NULL' : '';
   return `SELECT date_trunc('${bucket}', ${m.ts})::date::text AS bucket, ${m.col} AS value
-            FROM ${m.table} WHERE ${m.ts} >= $1 AND ${m.ts} < $2 AND deleted_at IS NULL
+            FROM ${m.table} WHERE ${m.ts} >= $1 AND ${m.ts} < $2${deletedClause}
            GROUP BY 1 ORDER BY 1 LIMIT ${SERIES_ROW_CAP}`;
 }
 

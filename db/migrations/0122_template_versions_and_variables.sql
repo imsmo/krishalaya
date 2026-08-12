@@ -189,9 +189,19 @@ ALTER TABLE notification_templates
 -- Demos-are-deployments: the rows in this table are LIVE templates, several seeded by migrations 0086/0101/0112/0114/
 -- 0119 and sending today. Leaving them without a version would mean the send path had to special-case "no version
 -- yet" for ever, and the first edit of a seeded OTP template would produce a v2 with no v1 to diff against.
+-- [DEV-56 2026-08-12 FIX] added `approved_by_admin_id` to both the column list and the SELECT below — without it
+-- this INSERT raised `23514 ck_ntv_approval_pair` for every row where the CASE two blocks down set a non-NULL
+-- `approved_at` (any is_active template), since `approved_by_admin_id` then defaulted to NULL and the pairing
+-- CHECK ((approved_by_admin_id IS NULL) = (approved_at IS NULL)) failed; never committed on any real Postgres.
+-- `approved_by_admin_id` carries NO foreign key (see the CREATE TABLE above — deliberately, so this fix invents no
+-- referential row): the nil UUID below is an explicit, self-documenting SYSTEM/MIGRATION-BACKFILL sentinel, never
+-- a real admin's identity — it must never be fabricated as a named human's approval. Any console reading this
+-- column should special-case this exact value as "approved by the 0122 backfill, not a human", the same honesty
+-- discipline `is_backfilled` gives 0105/0108's sibling version tables (this table has no such flag of its own).
 INSERT INTO notification_template_versions (
   template_id, tenant_id, event_code, channel, language_code, version_no, subject, body,
-  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_at, reason, created_at)
+  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_by_admin_id, approved_at, reason,
+  created_at)
 SELECT
   t.id, t.tenant_id, t.event_code, t.channel, t.language_code, 1, t.subject, t.body,
   t.provider_template_ref, encode(digest(t.body, 'sha256'), 'hex'),
@@ -208,6 +218,9 @@ SELECT
   -- The second-person flag as it WOULD have been decided at authoring time, so the history reads consistently with
   -- every version written after this migration.
   (e.user_can_opt_out = false OR e.priority = 'critical'),
+  -- Paired with approved_at directly below per ck_ntv_approval_pair: non-NULL exactly when approved_at is.
+  CASE WHEN t.is_active AND t.lifecycle_status NOT IN ('rejected', 'paused')
+       THEN '00000000-0000-0000-0000-000000000000'::uuid END,
   CASE WHEN t.is_active AND t.lifecycle_status NOT IN ('rejected', 'paused') THEN COALESCE(t.verdict_at, t.created_at) END,
   'Backfilled by 0122 from the pre-version row: this is the wording that was live when versioning shipped.',
   t.created_at

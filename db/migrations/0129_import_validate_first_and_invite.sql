@@ -111,13 +111,16 @@ ON CONFLICT DO NOTHING;
 -- `serving_version_id` with `lifecycle = 'approved'`. **A SEEDED TEMPLATE THAT SKIPS VERSIONING RESOLVES TO NOTHING AND THE
 -- SEND IS RECORDED AS `no_template` — SILENTLY.** 0123 hit this and fed the gate; so does this file. Checked before writing
 -- rather than discovered when the first import sent 214 invisible invites.
+-- [DEV-56 2026-08-12 FIX] added `approved_by_admin_id` (nil-UUID system sentinel — same convention, same
+-- ck_ntv_approval_pair reasoning as the identical fix in 0122/0123 above): without it this raised
+-- `23514 ck_ntv_approval_pair` unconditionally, on every attempt, on any real Postgres.
 INSERT INTO notification_template_versions (
   template_id, tenant_id, event_code, channel, language_code, version_no, subject, body,
-  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_at, reason)
+  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_by_admin_id, approved_at, reason)
 SELECT t.id, NULL, t.event_code, t.channel, t.language_code, 1, t.subject, t.body, NULL,
        encode(digest(t.body, 'sha256'), 'hex'), 'approved',
        -- Not security copy and the member CAN opt out, so a second person is not required to change the wording later.
-       false, now(),
+       false, '00000000-0000-0000-0000-000000000000'::uuid, now(),
        'Seeded with 0129 alongside the member.invited event: platform-authored consent copy naming the inviter and the reason, approved on insert.'
   FROM notification_templates t
  WHERE t.event_code = 'member.invited' AND t.tenant_id IS NULL

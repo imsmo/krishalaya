@@ -58,7 +58,11 @@ describe('ADMIN-5f console · value at stake', () => {
     expect(formatMinor('44820000')).toBe('₹4,48,200.00');
     expect(formatMinor('10000000')).toBe('₹1,00,000.00');
     expect(formatMinor('5')).toBe('₹0.05');
-    expect(formatMinor('-100')).toBe('−₹1.00');
+    // DEV-56 Part 5: formatMinor now delegates to the canonical formatMoneyMinor (@krishalaya/i18n) — its negative
+    // sign is Intl's own en-IN minusSign literal (verified: ASCII hyphen for this locale, not the U+2212 this file
+    // used to hardcode). Deliberate, disclosed change, consistent with every other money surface already calling
+    // formatMoneyMinor directly.
+    expect(formatMinor('-100')).toBe('-₹1.00');
   });
   it('is EXACT beyond float precision', () => {
     // The result must survive, not just the parse — a cancelling or small value would prove nothing here.

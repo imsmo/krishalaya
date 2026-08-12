@@ -71,7 +71,16 @@ import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
   Farmer360Module,
   DemandMapModule,
   // PC-56 ADMIN-6: the ledger explorer and the first code on this platform that reads `prev_hash`.
-  LedgerOpsModule],
+  LedgerOpsModule,
+  // [DEV-56 2026-08-12 FIX] PayoutOpsModule (PC-56 ADMIN-6b) was IMPORTED above but never listed here — the only
+  // such case among every module in this file (grep-verified). Its controller, repository and both services were
+  // therefore never instantiated by Nest: every route it declares (`recon/payouts`, `recon/payouts/:id`,
+  // `recon/settlements`, `recon/settlements/:id` and their sub-actions) 404'd, silently, with no error at boot,
+  // because a module missing from `imports` is not a Nest error — it is simply absent from the graph. See
+  // `payout-ops.module.ts`'s own header for why this plane is deliberately separate from ledger-ops/ledger-correction.
+  // Negative-tested (DEV-56): temporarily removed again, `admin-module-boot.spec.ts`'s two structural tests both
+  // failed with `payout-ops` named explicitly, then this mount was restored and the suite went green again.
+  PayoutOpsModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

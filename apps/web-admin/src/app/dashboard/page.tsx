@@ -16,6 +16,7 @@
 // operator who sees the dashboard and not the money — a 403 for the page would make that state unreachable.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
@@ -55,8 +56,12 @@ interface Alerts {
   unavailable: { alert: string; reason: string }[];
 }
 
-const rupees = (minor: string) => `₹${(Number(BigInt(minor) / 100n)).toLocaleString('en-IN')}`;
-
+// DEV-56 Part 5 — the front door had its own money bug and its own fix: this page hardcoded
+// `` `₹${Number(BigInt(minor)/100n).toLocaleString('en-IN')}` `` in a local `rupees()` helper — a BigInt→Number cast
+// that loses precision past 2^53 (this platform's own GMV target), a hardcoded ₹, and a hardcoded 2-decimal
+// assumption, all on the platform owner's first screen. `Dashboard.currency` was already present in the API
+// response and simply never read. Replaced every call with the canonical `formatMoneyMinor` (`@krishalaya/i18n`),
+// passed the REAL `d.currency` from the response instead of assuming INR, and deleted the local helper entirely.
 export default async function AdminDashboard() {
   requireAdmin();
   const t = getTranslator();
@@ -67,12 +72,43 @@ export default async function AdminDashboard() {
     d = res.data ?? null; meta = res.meta as unknown as Meta;
   } catch (e) {
     notice = e instanceof AdminApiError && e.status === 403 ? 'rp.restricted.dashboard' : 'rp.error.dashboard';
+    // [DEV-57 2026-08-12 FIX] This catch used to turn EVERY failure — a 500 from a genuine SQL bug, a timeout, a
+    // network blip — into the same opaque `rp.error.dashboard` sentence with nothing else recorded anywhere, which is
+    // exactly why a `column "deleted_at" does not exist` 500 took a full debugging session to actually see (the
+    // browser only ever showed "The dashboard could not be loaded."). The browser copy is unchanged (Law: never leak
+    // internals to the client) — this only logs SERVER-SIDE, in the Next.js server component's own process, so an
+    // operator with terminal/log access can see the upstream status/code/message/requestId without admin-api ever
+    // exposing them over the wire. `console.error` because no server-side logging convention exists anywhere in this
+    // app yet (grep-verified: zero prior `console.error`/`console.warn` calls under `apps/web-admin/src`) — this is
+    // the first one, not a divergence from an established pattern.
+    if (e instanceof AdminApiError) {
+      // eslint-disable-next-line no-console
+      console.error(`[dashboard] reports/dashboard failed: status=${e.status} code=${e.code} requestId=${e.requestId ?? 'none'} message=${e.message}`);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error('[dashboard] reports/dashboard failed with a non-API error:', e);
+    }
   }
 
   let alerts: Alerts | null = null;
   // Its own read, so a failure costs the alert stack and not the figures — and the stack's own empty state distinguishes
   // "nothing is wrong" from "we are not checking".
-  try { alerts = (await adminGet<Alerts>('reports/dashboard/alerts')).data ?? null; } catch { alerts = null; }
+  try {
+    alerts = (await adminGet<Alerts>('reports/dashboard/alerts')).data ?? null;
+  } catch (e) {
+    // [DEV-57 2026-08-12 FIX] This previously swallowed EVERY failure with a bare `catch { alerts = null; }` — no
+    // notice, no log, nothing: the alert stack would silently degrade and the only visible trace was the operator
+    // reading `rp.alerts.clear` on a page where alerts genuinely could not be checked. Logged server-side for the
+    // same reason and under the same constraint as the dashboard fetch above (never surfaced to the browser).
+    alerts = null;
+    if (e instanceof AdminApiError) {
+      // eslint-disable-next-line no-console
+      console.error(`[dashboard] reports/dashboard/alerts failed: status=${e.status} code=${e.code} requestId=${e.requestId ?? 'none'} message=${e.message}`);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error('[dashboard] reports/dashboard/alerts failed with a non-API error:', e);
+    }
+  }
 
   const tile = (label: string, f: Figure, extra?: React.ReactNode) => (
     <div className={figureClass(f)}>
@@ -104,7 +140,7 @@ export default async function AdminDashboard() {
           </p>
 
           <dl className="kv-stat-row">
-            {tile('rp.tile.gmvToday', { ...d.headline.gmvToday, value: hasValue(d.headline.gmvToday) ? rupees(d.headline.gmvToday.value!) : null },
+            {tile('rp.tile.gmvToday', { ...d.headline.gmvToday, value: hasValue(d.headline.gmvToday) ? formatMoneyMinor(d.headline.gmvToday.value!, d.currency) : null },
               <><br /><span className={deltaClass(d.headline.gmvToday.delta)}>
                 {t.t(deltaKey(d.headline.gmvToday.delta), {
                   pct: d.headline.gmvToday.delta.bps ? bpsToPercent(d.headline.gmvToday.delta.bps) : '0',
@@ -146,8 +182,8 @@ export default async function AdminDashboard() {
             <h2 id="rp-rev" className="kv-panel__title">{t.t('rp.revenue.title')}</h2>
             {d.revenue ? (
               <dl className="kv-stat-row">
-                <div><dt>{t.t('rp.revenue.mrr')}</dt><dd>{rupees(d.revenue.mrrMinor)}</dd></div>
-                <div><dt>{t.t('rp.revenue.arr')}</dt><dd>{rupees(d.revenue.arrMinor)}</dd></div>
+                <div><dt>{t.t('rp.revenue.mrr')}</dt><dd>{formatMoneyMinor(d.revenue.mrrMinor, d.currency)}</dd></div>
+                <div><dt>{t.t('rp.revenue.arr')}</dt><dd>{formatMoneyMinor(d.revenue.arrMinor, d.currency)}</dd></div>
                 <div><dt>{t.t('rp.revenue.subs')}</dt><dd>{d.revenue.activeSubscriptions}</dd></div>
               </dl>
             ) : (
@@ -198,7 +234,7 @@ export default async function AdminDashboard() {
                 <thead><tr><th scope="col">{t.t('rp.trend.day')}</th><th scope="col">{t.t('rp.trend.gmv')}</th></tr></thead>
                 <tbody>
                   {d.trend.series.map((p) => (
-                    <tr key={p.bucket}><td>{p.bucket}</td><td>{rupees(p.value)}</td></tr>
+                    <tr key={p.bucket}><td>{p.bucket}</td><td>{formatMoneyMinor(p.value, d.currency)}</td></tr>
                   ))}
                 </tbody>
               </table>

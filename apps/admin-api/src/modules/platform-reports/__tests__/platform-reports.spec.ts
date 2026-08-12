@@ -11,6 +11,7 @@ import { GmvRollupsService } from '../services/gmv-rollups.service';
 import { RegulatorExportsService } from '../services/regulator-exports.service';
 import { QueryWindowSchema, QueryGmvSchema, QueryRegulatorSchema } from '../dto/platform-reports.dto';
 import { resolveOwnerPermissions, hasOwnerPermission, OwnerPermissions } from '../../../core/rbac/owner-roles';
+import { PlatformReportsReadModel, type SeriesMetric } from '../read-models/platform-reports.read-model';
 
 describe('metric math (float-free)', () => {
   it('monthly normalisation (annual÷12 floor), ARR, sumMrr — all bigint', () => {
@@ -98,5 +99,47 @@ describe('services compose the read-model (money bigint-string, ratios bps)', ()
     expect(out.metrics.gmvMinor).toBe('5000');
     expect(out.metrics.newTenantsInWindow).toBe(1);
     expect(typeof out.generatedAt).toBe('string');
+  });
+});
+
+/**
+ * [DEV-57 2026-08-12 REGRESSION] `customSeries()`'s generated SQL used to append `AND deleted_at IS NULL`
+ * unconditionally for every metric — and `orders` (backing `orders`/`gmv_minor`) and `dbt_transfers` (backing
+ * `dbt_minor`) have NEVER had a `deleted_at` column (grep-verified against `0005_commerce.sql` /
+ * `0011_fintech_schemes.sql`; confirmed live via `information_schema.columns`). Every dashboard load called
+ * `customSeries('gmv_minor', ...)` for the 14-day trend, so this 500'd Postgres `42703 column "deleted_at" does
+ * not exist` on EVERY load, against ANY database — not an empty-DB fragility, a genuine schema/SQL mismatch
+ * that happened to be first noticed via the empty-DB reproduction. This test inspects the SQL text `pg` actually
+ * receives (no live database needed — this is the "unit" jest project, always runs in CI) and would have failed
+ * on the pre-fix code for exactly the three broken metrics, while confirming the two soft-deletable metrics
+ * (`new_tenants`/`new_users`, backed by `tenants`/`users`, which DO carry `deleted_at`) keep their filter.
+ */
+describe('customSeries SQL shape — deleted_at only for tables that actually have the column', () => {
+  async function capturedSql(metric: SeriesMetric): Promise<string> {
+    let captured = '';
+    const pool = { query: jest.fn(async (text: string) => { captured = text; return { rows: [] }; }) } as any;
+    await new PlatformReportsReadModel(pool).customSeries(metric, new Date('2026-01-01'), new Date('2026-01-02'), 'day');
+    return captured;
+  }
+
+  it('orders/gmv_minor (orders table — NO deleted_at column) never filter on deleted_at', async () => {
+    expect(await capturedSql('orders')).not.toMatch(/deleted_at/);
+    expect(await capturedSql('gmv_minor')).not.toMatch(/deleted_at/);
+  });
+
+  it('dbt_minor (dbt_transfers table — NO deleted_at column) never filters on deleted_at', async () => {
+    expect(await capturedSql('dbt_minor')).not.toMatch(/deleted_at/);
+  });
+
+  it('new_tenants/new_users (tenants/users — DO have deleted_at) keep the soft-delete filter', async () => {
+    expect(await capturedSql('new_tenants')).toMatch(/AND deleted_at IS NULL/);
+    expect(await capturedSql('new_users')).toMatch(/AND deleted_at IS NULL/);
+  });
+
+  it('every generated query is still window-bounded on the metric-appropriate timestamp column', async () => {
+    for (const m of ['orders', 'gmv_minor', 'new_tenants', 'new_users', 'dbt_minor'] as SeriesMetric[]) {
+      const sql = await capturedSql(m);
+      expect(sql).toMatch(/created_at >= \$1 AND created_at < \$2/);
+    }
   });
 });

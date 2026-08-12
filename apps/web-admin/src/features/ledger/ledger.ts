@@ -1,5 +1,6 @@
 // apps/web-admin/src/features/ledger/ledger.ts · PURE helpers for W059/W064/W065 (PC-56 ADMIN-6).
 // No fetch, no React → unit-tested.
+import { formatMoneyMinor } from '@krishalaya/i18n';
 //
 // W064 calls the ledger "the single source of money truth". Three things follow, and every helper here defends one:
 //   • A HASH CLAIM IS WORTH THE LAST TIME SOMEBODY CHECKED. "intact" with no date is what these screens printed for
@@ -11,15 +12,19 @@
 
 /* ===================== money ===================== */
 
-/** Minor units → a rupee string, from a STRING, en-IN grouped. BigInt throughout: a platform escrow balance is already
- *  in the crores and this platform is aiming considerably higher. */
+/** Minor units → a localized currency string, from a STRING. DEV-56 Part 5: delegates to the canonical
+ *  `formatMoneyMinor` (`@krishalaya/i18n`, already the standing formatter for billing/plans/tenants elsewhere in
+ *  this app) instead of hand-rolling the bigint math again. The hand-rolled version this replaced divided by a
+ *  hardcoded `100n` (wrong for a 0-decimal currency like JPY/KRW/VND or a 3-decimal one like BHD/KWD/OMR/JOD/TND)
+ *  and rendered EVERY non-INR currency with NO symbol at all (`currency === 'INR' ? '₹' : ''`) — silently
+ *  mislabelling any non-INR ledger leg as a bare number. The malformed-input guard is unchanged (same regex), so a
+ *  bad string still degrades to '—' before ever reaching the formatter. One disclosed, intentional behaviour change:
+ *  a negative amount's sign is now `-` (what `formatMoneyMinor`/Intl actually emit for en-IN, verified directly —
+ *  ICU's own `minusSign` part for this locale IS the ASCII hyphen, not U+2212) rather than the U+2212 this file used
+ *  to hardcode; this matches every other money surface in the app that already calls `formatMoneyMinor` directly. */
 export function formatMinor(minor: string | null | undefined, currency = 'INR'): string {
   if (typeof minor !== 'string' || !/^-?[0-9]{1,19}$/.test(minor.trim())) return '—';
-  const v = BigInt(minor.trim());
-  const neg = v < 0n;
-  const abs = neg ? -v : v;
-  const sym = currency === 'INR' ? '₹' : '';
-  return `${neg ? '−' : ''}${sym}${(abs / 100n).toLocaleString('en-IN')}.${(abs % 100n).toString().padStart(2, '0')}`;
+  return formatMoneyMinor(minor.trim(), currency);
 }
 
 /** A hash for display. The API returns all 64 characters because a responder comparing hashes needs them; the
@@ -54,7 +59,13 @@ export function txnTypeCell(t: Pick<TxnRow, 'txnType' | 'txnTypeResolved'>): { k
 }
 
 /** The magnitude cell. NEVER a Σ: a healthy transaction's legs sum to zero, so a sum column would read ₹0.00 on every
- *  row and tell an operator scanning for a large movement nothing at all. */
+ *  row and tell an operator scanning for a large movement nothing at all.
+ *
+ *  DEV-56 Part 5 DATA GAP (disclosed, not silently patched): `TxnRow` carries no currency code — each `Leg` does
+ *  (`currencyCode` on the `Leg` interface below), but the txn-list view this cell renders never surfaces one, so
+ *  `formatMinor` falls through to its INR default here. That is today's real behaviour (this platform is INR-only
+ *  in production) and not a regression from the pre-DEV-56 code, which had the identical gap — flagged so a future
+ *  multi-currency ledger wave adds `currencyCode` to the list query rather than assuming this cell already reads it. */
 export function magnitudeText(t: Pick<TxnRow, 'magnitudeMinor' | 'magnitudeText'>): string {
   if (t.magnitudeText) return t.magnitudeText;
   return formatMinor(t.magnitudeMinor);

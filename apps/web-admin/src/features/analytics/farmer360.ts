@@ -2,16 +2,25 @@
 //
 // The one rule this file owns outright: NULL IS NOT ZERO. A tile whose value is null prints "unknown" with its
 // basis — a farmer with no dairy membership must never read as a farmer earning ₹0 from dairy.
+import { formatMoneyMinor } from '@krishalaya/i18n';
 
 export interface MoneyTile { valueMinor: string | null; basis: string; n: number }
 
+/** DEV-56 Part 5: delegates to the canonical `formatMoneyMinor` (`@krishalaya/i18n`) instead of hand-rolling string
+ *  arithmetic on the minor-unit string directly — the version this replaced never used BigInt at all (string
+ *  slicing + a fixed `padStart(3,'0')`/`-2` split) and, being hand-maintained arithmetic rather than a real
+ *  currency formatter, hardcoded BOTH the ₹ symbol and the 2-decimal-currency assumption with no parameter to
+ *  override either.
+ *
+ *  DATA GAP, DISCLOSED RATHER THAN SILENTLY PATCHED: this function has no `currency` parameter because nothing
+ *  upstream carries one — `MoneyTile` (this file) and the Farmer 360 dashboard's timeline entries (grep-verified
+ *  against `app/analytics/farmer-360/page.tsx`'s own interfaces) have no `currency` field anywhere in the API
+ *  response. The INR default below preserves this file's pre-existing (always-₹) behaviour; it is not a claim that
+ *  a currency was checked and found to be INR. A future wave that makes Farmer 360 currency-aware needs a real
+ *  `currency` column on the underlying query, not a parameter default here. */
 export function formatMinor(v: string | null): string {
   if (v === null) return '';
-  const neg = v.startsWith('-');
-  const s = (neg ? v.slice(1) : v).padStart(3, '0');
-  // Indian grouping: the last three digits, then pairs — ₹8,64,200.00, never ₹864,200.00.
-  const rupees = s.slice(0, -2).replace(/(\d)(?=(\d\d)+\d$)/g, '$1,');
-  return `${neg ? '−' : ''}₹${rupees}.${s.slice(-2)}`;
+  return formatMoneyMinor(v, 'INR');
 }
 
 /** What a tile prints: a figure, or the honest word for its absence. */

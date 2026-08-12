@@ -1,5 +1,6 @@
 // apps/web-admin/src/features/audit/audit-console.ts · PURE helpers for W039, W040 and W068 (PC-56 ADMIN-5e).
 // No fetch, no React → unit-tested.
+import { formatMoneyMinor } from '@krishalaya/i18n';
 //
 // Two screens with the same governing idea. W039: "Nothing here can be edited or deleted — by anyone." W068:
 // "There is no delete. A wrong correction is fixed by another correction — the ledger tells the whole story
@@ -225,12 +226,12 @@ export function sumLegs(amounts: readonly string[]): { known: boolean; sumMinor:
   return { known: true, sumMinor: sum.toString() };
 }
 
-/** Minor units → a rupee string, for anything the server did not preformat. Takes and returns STRINGS. */
+/** Minor units → a localized currency string, for anything the server did not preformat. Takes and returns
+ *  STRINGS. DEV-56 Part 5: delegates to the canonical `formatMoneyMinor` (`@krishalaya/i18n`) instead of
+ *  hand-rolling the bigint math — see `features/ledger/ledger.ts`'s `formatMinor` for the full rationale (same bug
+ *  class: hardcoded `/100n`, and every non-INR amount rendered with no symbol). Ledger corrections (W068) are
+ *  posted against this platform's own wallet ledger, which is INR-only today, so the default is real behaviour. */
 export function formatMinorText(minor: string | null | undefined, currency = 'INR'): string {
   if (typeof minor !== 'string' || !/^-?[0-9]{1,18}$/.test(minor.trim())) return '—';
-  const v = BigInt(minor.trim());
-  const neg = v < 0n;
-  const abs = neg ? -v : v;
-  const sym = currency === 'INR' ? '₹' : '';
-  return `${neg ? '−' : ''}${sym}${(abs / 100n).toLocaleString('en-IN')}.${(abs % 100n).toString().padStart(2, '0')}`;
+  return formatMoneyMinor(minor.trim(), currency);
 }

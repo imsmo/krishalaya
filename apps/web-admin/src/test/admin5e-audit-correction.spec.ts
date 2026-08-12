@@ -140,7 +140,10 @@ describe('ADMIN-5e console · money never becomes a JavaScript number', () => {
   });
   it('formats from a STRING and never round-trips through a number', () => {
     expect(formatMinorText('1245000')).toBe('₹12,450.00');
-    expect(formatMinorText('-1245000')).toBe('−₹12,450.00');
+    // DEV-56 Part 5: formatMinorText now delegates to the canonical formatMoneyMinor (@krishalaya/i18n) — its
+    // negative sign is Intl's own en-IN minusSign literal (ASCII hyphen, verified directly), not the U+2212
+    // hardcoded here before. Deliberate, disclosed change.
+    expect(formatMinorText('-1245000')).toBe('-₹12,450.00');
     expect(formatMinorText('5')).toBe('₹0.05');
     expect(formatMinorText('bad')).toBe('—');
     expect(formatMinorText(null)).toBe('—');

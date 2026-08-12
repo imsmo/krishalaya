@@ -57,7 +57,17 @@ CREATE UNIQUE INDEX uq_cod_remittances_idem ON cod_remittances (idempotency_key)
 -- its rows (the service DELETEs the links on cancel) so a mis-keyed batch is fixable without orphaning cash.
 CREATE TABLE cod_remittance_shipments (
   remittance_id uuid NOT NULL REFERENCES cod_remittances(id) ON DELETE CASCADE,
-  shipment_id   uuid NOT NULL REFERENCES shipments(id),
+  -- [DEV-56 2026-08-12 FIX] was `REFERENCES shipments(id)` — invalid DDL: `shipments` is
+  -- `PARTITION BY RANGE (created_at)` with composite PK `(id, created_at)` (0007_logistics.sql), so a bare
+  -- `id` column there is NOT unique and Postgres refuses the FK ("no unique constraint matching given keys for
+  -- referenced table"). This migration has therefore never successfully committed on ANY real Postgres — its
+  -- CREATE TABLE fails inside migrate.js's own single transaction and rolls back completely every time, so no
+  -- environment anywhere has an applied `0082_cod_remittances` row in `schema_migrations`; editing it in place
+  -- (rather than fixing forward with a new migration) mutates no deployed state, unlike 0057. Fix: drop the FK,
+  -- app-validate instead — the platform's own established, documented precedent for referencing this exact
+  -- partitioned table (`freight_invoice_lines.shipment_id`, 0070_freight_invoices.sql:79, and
+  -- `shipment_events.shipment_id`, 0007_logistics.sql:96 — neither ever had an FK to shipments(id) either).
+  shipment_id   uuid NOT NULL,          -- app-validated against shipments.id — no FK (shipments is partitioned)
   tenant_id     uuid NOT NULL REFERENCES tenants(id),
   cod_minor     bigint NOT NULL CHECK (cod_minor > 0),           -- snapshot of the shipment's COD at remit time
   PRIMARY KEY (remittance_id, shipment_id)

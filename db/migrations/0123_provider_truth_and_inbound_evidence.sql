@@ -141,6 +141,17 @@ CALL add_std_columns('provider_dependencies');
 REVOKE ALL ON provider_dependencies FROM kv_relay;
 GRANT SELECT ON provider_dependencies TO kv_app, kv_readonly;
 
+-- [DEV-56 2026-08-12 FIX] `integration_providers` has never had an 'msg91' row anywhere in this repo — not this
+-- migration, not any other migration, not any seed (grep-verified: only 0002's own PK doc-comment and this
+-- file's prose ever mention the string). So the `provider_dependencies` INSERT below raised
+-- `23503 provider_dependencies_provider_code_fkey` on 'msg91' unconditionally, on every attempt, on any real
+-- Postgres — not a seed-ordering issue like 0057/0086/0122 above, simply a row nobody ever wrote. 0104_crop_lens
+-- and 0105_scheme_versions already establish this repo's own pattern of a migration inserting the
+-- `integration_providers` row it itself needs (see 'agmarknet'/'pfms'/'ikhedut'/'pmkisan'); this follows it.
+INSERT INTO integration_providers (code, default_name, category, is_active) VALUES
+  ('msg91', 'MSG91 (DLT SMS / OTP)', 'sms', true)
+ON CONFLICT (code) DO NOTHING;
+
 -- Seeded from the dependency keys that actually appear in `resilience` call sites and the fallbacks those call sites
 -- pass. Read out of the code, not invented — a row here for a dependency nothing calls would be this table telling the
 -- same lie the screen was telling.
@@ -245,11 +256,16 @@ ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
 -- 0122 versioned template wording: these two rows need their version 1, or they resolve to nothing and the notice this
 -- migration exists to send would be recorded as `no_template`. **A SEEDED TEMPLATE THAT SKIPS VERSIONING IS SILENT**,
 -- which is exactly the failure the previous wave's send-time gate introduced by design — so the gate has to be fed.
+-- [DEV-56 2026-08-12 FIX] added `approved_by_admin_id` (nil-UUID system sentinel, same convention and same
+-- reasoning as 0122's identical fix above) — without it this raised `23514 ck_ntv_approval_pair` unconditionally
+-- (lifecycle='approved' + non-NULL approved_at + NULL approved_by_admin_id), on every attempt, on any real
+-- Postgres; not a seed-ordering issue, a same-file omission repeating 0122's.
 INSERT INTO notification_template_versions (
   template_id, tenant_id, event_code, channel, language_code, version_no, subject, body,
-  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_at, reason)
+  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_by_admin_id, approved_at, reason)
 SELECT t.id, NULL, t.event_code, t.channel, t.language_code, 1, t.subject, t.body, NULL,
-       encode(digest(t.body, 'sha256'), 'hex'), 'approved', true, now(),
+       encode(digest(t.body, 'sha256'), 'hex'), 'approved', true,
+       '00000000-0000-0000-0000-000000000000'::uuid, now(),
        'Seeded with 0123 alongside the api_key.revoked event: platform-authored security copy, approved on insert.'
   FROM notification_templates t
  WHERE t.event_code = 'api_key.revoked' AND t.tenant_id IS NULL
