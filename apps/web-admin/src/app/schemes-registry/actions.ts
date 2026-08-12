@@ -154,6 +154,25 @@ export async function saveDraftAction(formData: FormData): Promise<void> {
   redirect(versionId ? `/schemes-registry/schemes/${enc(id)}/versions/${enc(versionId)}?ok=drafted` : `/schemes-registry/schemes/${enc(id)}/versions?ok=drafted`);
 }
 
+/** ADMIN-SWEEP-c2 · W071: the cohort dry run. Saves nothing (the server says so in its payload); the validator's
+ *  422 sentence — the "did you mean landholding_max_acres?" suggestion — is shown VERBATIM, because a mapped
+ *  generic string would throw away exactly the words the operator needs. Results travel as counts in the query. */
+export async function dryRunRulesAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const id = str(formData, 'id').trim();
+  if (!id) redirect('/schemes-registry/schemes');
+  const raw = str(formData, 'eligibilityRules').trim();
+  let rules: unknown;
+  try { rules = JSON.parse(raw); } catch { redirect(`/schemes-registry/schemes/${enc(id)}/versions?error=dryJson`); }
+  let d: { publishedEligible: number | null; draftEligible: number; gained: number; lost: number; unconvertibleParcels: number; expansionOnly: boolean };
+  try { d = (await adminPost<typeof d>(`schemes-registry/schemes/${enc(id)}/versions/dry-run`, { body: { eligibilityRules: rules } })).data; }
+  catch (e) {
+    if (e instanceof AdminApiError && e.status === 422) redirect(`/schemes-registry/schemes/${enc(id)}/versions?error=dryRejected&why=${enc(e.message.slice(0, 400))}`);
+    redirect(`/schemes-registry/schemes/${enc(id)}/versions?error=${errorKey(e)}`);
+  }
+  redirect(`/schemes-registry/schemes/${enc(id)}/versions?ok=dryRun&dv=${d.draftEligible}&pv=${d.publishedEligible ?? ''}&g=${d.gained}&l=${d.lost}&uc=${d.unconvertibleParcels}&xo=${d.expansionOnly ? '1' : '0'}`);
+}
+
 export async function publishVersionAction(formData: FormData): Promise<void> {
   requireAdmin();
   const id = str(formData, 'id').trim();

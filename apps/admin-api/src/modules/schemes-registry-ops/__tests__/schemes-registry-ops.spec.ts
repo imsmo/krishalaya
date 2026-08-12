@@ -220,7 +220,7 @@ describe('EligibilityRulesEditorService — now a DRAFT, not a live edit (ADMIN-
   // encoded that defect, so they are replaced rather than adapted.
   it('delegates to the version plane and publishes NOTHING', async () => {
     const versions: any = { saveDraft: jest.fn().mockResolvedValue({ versionId: 'v-7', version: 7, opened: true, diff: [] }) };
-    const svc = new EligibilityRulesEditorService(versions);
+    const svc = new EligibilityRulesEditorService(versions, {} as any);
     const res: any = await svc.updateRules(actor, 's1', { processingFeeMinor: '500', reason: 'fee change' } as any);
     expect(versions.saveDraft).toHaveBeenCalledTimes(1);
     expect(versions.saveDraft.mock.calls[0][2]).toMatchObject({ processingFeeMinor: '500' });
@@ -232,7 +232,7 @@ describe('EligibilityRulesEditorService — now a DRAFT, not a live edit (ADMIN-
   });
   it('does not swallow the version plane errors (404 on an unknown scheme still 404s)', async () => {
     const versions: any = { saveDraft: jest.fn().mockRejectedValue(new SchemeNotFoundError('x')) };
-    const svc = new EligibilityRulesEditorService(versions);
+    const svc = new EligibilityRulesEditorService(versions, {} as any);
     await expect(svc.updateRules(actor, 'x', { processingFeeMinor: '1', reason: 'r' } as any)).rejects.toBeInstanceOf(SchemeNotFoundError);
   });
 });

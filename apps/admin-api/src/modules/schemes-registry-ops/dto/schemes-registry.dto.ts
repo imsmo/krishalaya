@@ -62,6 +62,13 @@ export const UpdateSchemeMetaSchema = z.object({
 }).strict().refine((d) => ['defaultName', 'authorityId', 'categoryId', 'sourceUrl'].some((k) => (d as Record<string, unknown>)[k] !== undefined), { message: 'at least one mutable meta field is required' });
 export type UpdateSchemeMetaDto = z.infer<typeof UpdateSchemeMetaSchema>;
 
+/** ADMIN-SWEEP-c2 · W071: the dry run carries ONLY the candidate rules — no version id, no reason, nothing to
+ *  save. The validator (domain/eligibility-fields.ts) owns the real shape; zod only rules out the absurd. */
+export const DryRunRulesSchema = z.object({
+  eligibilityRules: z.record(z.unknown()),
+}).strict();
+export type DryRunRulesDto = z.infer<typeof DryRunRulesSchema>;
+
 export const UpdateSchemeRulesSchema = z.object({
   benefitSummary: JsonObject.optional(),
   eligibilityRules: JsonObject.optional(),

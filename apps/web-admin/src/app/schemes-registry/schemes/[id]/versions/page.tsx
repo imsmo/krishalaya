@@ -21,7 +21,7 @@ import {
   VersionRow, Coverage, versionKind, versionClass, showsSignature, coverageNote,
   projectionDiverged, openDraft, publishBlockedReason, feeText,
 } from '../../../../../features/schemes-registry/version';
-import { saveDraftAction, discardDraftAction } from '../../../actions';
+import { dryRunRulesAction, saveDraftAction, discardDraftAction } from '../../../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +36,8 @@ const ERR = new Set([
   'checkerNote', 'elevation', 'conflict', 'invalid', 'notFound', 'generic',
 ]);
 
-export default async function SchemeVersionsPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function SchemeVersionsPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string; dv?: string; pv?: string; g?: string; l?: string; uc?: string; xo?: string } }) {
+  const sp = searchParams;
   requireAdmin();
   const t = getTranslator();
   const id = params.id;
@@ -142,6 +143,39 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
           </form>
         </>
       )}
+
+      {/* ================= ADMIN-SWEEP-c2 · W071: the cohort dry run ================= */}
+      <h2>{t.t('dr.heading')}</h2>
+      <p className="kv-muted">{t.t('dr.lead')}</p>
+      {sp.error === 'dryRejected' && sp.why && (
+        // the validator's own sentence, verbatim — "did you mean landholding_max_acres?" is the error message
+        <p className="kv-error" role="alert">{decodeURIComponent(sp.why)}</p>
+      )}
+      {sp.error === 'dryJson' && <p className="kv-error" role="alert">{t.t('dr.badJson')}</p>}
+      {sp.ok === 'dryRun' && (
+        <div className="kv-card">
+          <p>
+            {sp.pv !== '' && sp.pv !== undefined && <span className="kv-status">{t.t('dr.published', { n: String(sp.pv) })}</span>}{' '}
+            <span className="kv-status">{t.t('dr.draft', { n: String(sp.dv) })}</span>{' '}
+            <span className="kv-status kv-status--ok">{t.t('dr.gained', { n: String(sp.g) })}</span>{' '}
+            <span className={Number(sp.l) > 0 ? 'kv-status kv-status--err' : 'kv-status kv-status--ok'}>{t.t('dr.lost', { n: String(sp.l) })}</span>
+          </p>
+          {sp.xo === '1'
+            ? <p className="kv-success" role="status">{t.t('dr.expansionOnly')}</p>
+            : Number(sp.l) > 0
+              ? <p className="kv-error" role="alert">{t.t('dr.losers', { n: String(sp.l) })}</p>
+              : <p className="kv-detail__muted">{t.t('dr.firstVersion')}</p>}
+          {Number(sp.uc) > 0 && <p className="kv-detail__muted">{t.t('dr.unconvertible', { n: String(sp.uc) })}</p>}
+          <p className="kv-detail__muted">{t.t('dr.savedNothing')}</p>
+        </div>
+      )}
+      <form action={dryRunRulesAction} className="kv-card kv-action-card">
+        <input type="hidden" name="id" value={id} />
+        <label className="kv-field__label" htmlFor="dryRules">{t.t('dr.rulesLabel')}</label>
+        <input id="dryRules" name="eligibilityRules" className="kv-input" defaultValue="" placeholder={t.t('dr.rulesHint')} />
+        <button type="submit" className="kv-btn kv-btn--secondary">{t.t('dr.run')}</button>
+      </form>
+      <p className="kv-detail__muted">{t.t('dr.vocabulary')}</p>
 
       <h2>{draft ? t.t('sv.editDraftHeading') : t.t('sv.openDraftHeading')}</h2>
       <p className="kv-notice">{t.t('sv.draftNothingLive')}</p>

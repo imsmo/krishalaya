@@ -20,7 +20,7 @@ import { PortalSyncService } from './services/portal-sync.service';
 import {
   CreateAuthoritySchema, CreateAuthorityDto, UpdateAuthoritySchema, UpdateAuthorityDto,
   CreateSchemeSchema, CreateSchemeDto, UpdateSchemeMetaSchema, UpdateSchemeMetaDto,
-  UpdateSchemeRulesSchema, UpdateSchemeRulesDto, SetWindowSchema, SetWindowDto, SetActiveSchema, SetActiveDto,
+  UpdateSchemeRulesSchema, UpdateSchemeRulesDto, DryRunRulesSchema, DryRunRulesDto, SetWindowSchema, SetWindowDto, SetActiveSchema, SetActiveDto,
   QueryAuthoritiesSchema, QueryAuthoritiesDto, QuerySchemesSchema, QuerySchemesDto,
   QueryCalendarSchema, QueryCalendarDto, QueryChangesSchema, QueryChangesDto,
   SaveDraftSchema, SaveDraftDto, PublishVersionSchema, PublishVersionDto,
@@ -160,6 +160,15 @@ export class SchemesRegistryOpsController {
     return this.versions.getVersion(versionId).then((data) => ({ data }));
   }
   /** MAKER — opens a draft, or edits the open one. Publishes nothing. */
+  /* ADMIN-SWEEP-c2 · W071: the cohort dry run. Manage-gated (it is the author's loop) but NOT step-up/FIDO2
+     gated, deliberately: it is a pure computation that saves nothing — over-gating a harmless control trains
+     people to click through elevation prompts (the macro precedent), and the response carries savedNothing:true
+     so no caller can mistake a test for a change. */
+  @Post('schemes/:id/versions/dry-run') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage)
+  dryRun(@Param('id') id: string, @ZodBody(DryRunRulesSchema) dto: DryRunRulesDto) {
+    return this.rules.dryRun(id, dto.eligibilityRules).then((data) => ({ data }));
+  }
+
   @Post('schemes/:id/versions') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   saveDraft(@Req() req: any, @Param('id') id: string, @ZodBody(SaveDraftSchema) dto: SaveDraftDto) {
     const { reason, ...patch } = dto;

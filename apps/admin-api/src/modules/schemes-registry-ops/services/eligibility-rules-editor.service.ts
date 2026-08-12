@@ -15,16 +15,31 @@
 // operator runbook already names; repointing it is the change, and a 404 on a familiar path would just look like an
 // outage. What it RETURNS is now a draft, and the response says so — `status: 'draft'` and `publishedNothing: true`
 // exist so a caller written against the old behaviour cannot mistake a queued draft for a live rule change.
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { AdminRequestContext } from '../../../core/auth/admin-auth.guard';
 import { SchemeVersionService } from './scheme-version.service';
+import { SchemesRegistryRepository } from '../repositories/schemes-registry.repository';
+import { assertEligibilityRules, expansionOnly, EligibilityRuleError, type CohortDiff } from '../domain/eligibility-fields';
 import { UpdateSchemeRulesDto } from '../dto/schemes-registry.dto';
+
+/** 422 with the validator's own sentence — the suggestion IS the error message (W071's canon state). */
+function refuse(e: EligibilityRuleError): never {
+  throw new HttpException({ code: e.code, message: e.message }, HttpStatus.UNPROCESSABLE_ENTITY);
+}
 
 @Injectable()
 export class EligibilityRulesEditorService {
-  constructor(private readonly versions: SchemeVersionService) {}
+  constructor(private readonly versions: SchemeVersionService, private readonly repo: SchemesRegistryRepository) {}
 
   async updateRules(actor: AdminRequestContext, id: string, dto: UpdateSchemeRulesDto) {
+    // ADMIN-SWEEP-c2: validate BEFORE the draft opens — "Nothing saved. Fix and re-test" (W071). A draft holding a
+    // field the evaluator ignores would carry a rule that silently does nothing into the maker-checker pipeline.
+    if (dto.eligibilityRules !== undefined) {
+      try { assertEligibilityRules(dto.eligibilityRules); } catch (e) {
+        if (e instanceof EligibilityRuleError) refuse(e);
+        throw e;
+      }
+    }
     const saved = await this.versions.saveDraft(actor, id, {
       benefitSummary: dto.benefitSummary, eligibilityRules: dto.eligibilityRules,
       requiredDocTypeIds: dto.requiredDocTypeIds, applicableRegionIds: dto.applicableRegionIds,
@@ -37,5 +52,23 @@ export class EligibilityRulesEditorService {
       // though the rules changed is now told, in the payload, that they did not.
       publishedNothing: true,
     };
+  }
+
+  /**
+   * The cohort DRY RUN (W071): validate the candidate rules, then count who qualifies over the LIVE population and
+   * diff against the published version's rules. READ-ONLY by construction — it writes nothing, saves nothing, and
+   * says so in the payload; the whole point of a dry run is that running it twice changes nothing either time.
+   * The verdict the canon banners is `expansionOnly`: only a diff with ZERO losers may skip the re-notification
+   * wave, and the count of losers is reported, never rounded away.
+   */
+  async dryRun(id: string, rules: unknown): Promise<CohortDiff & { expansionOnly: boolean; savedNothing: true }> {
+    let validated: Record<string, unknown>;
+    try { validated = assertEligibilityRules(rules); } catch (e) {
+      if (e instanceof EligibilityRuleError) refuse(e);
+      throw e;
+    }
+    const published = await this.repo.publishedRules(id);
+    const diff = await this.repo.cohortDiff(validated, published);
+    return { ...diff, expansionOnly: expansionOnly(diff), savedNothing: true };
   }
 }

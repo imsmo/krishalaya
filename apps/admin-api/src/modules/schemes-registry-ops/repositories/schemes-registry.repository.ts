@@ -433,4 +433,82 @@ export class SchemesRegistryRepository {
            WHERE x.entity_type = 'scheme_authority' AND x.entity_id = a.id AND x.deleted_at IS NULL)`);
     return Number(r.rows[0]?.n ?? 0);
   }
+
+  /* ============================ ADMIN-SWEEP-c2: the cohort dry run (W071) ============================
+     A COUNT over the live population, mirroring the apps/api evaluator's semantics EXACTLY — including its
+     forgiveness: a null profile value passes the constraint that reads it (the evaluator skips the check), so a
+     farmer with no recorded gender is not silently excluded by a gender rule. The rules arrive PRE-VALIDATED
+     against the closed vocabulary (domain/eligibility-fields.ts), which is what makes this SQL safe to compose:
+     every branch below is keyed to a known field and every value is a bind parameter.                            */
+
+  /** The published version's rules, or null when none exists (a first draft has nothing to lose against). */
+  async publishedRules(schemeId: string): Promise<Record<string, unknown> | null> {
+    const r = await this.pool.query(
+      `SELECT eligibility_rules FROM scheme_versions
+        WHERE scheme_id = $1 AND status = 'published' AND deleted_at IS NULL
+        ORDER BY version DESC LIMIT 1`, [schemeId]);
+    return r.rows[0]?.eligibility_rules ?? null;
+  }
+
+  /** Eligible-user COUNT for one rule set, and the LOSERS count against a second (published) rule set. */
+  async cohortDiff(draft: Record<string, unknown>, published: Record<string, unknown> | null): Promise<{ draftEligible: number; publishedEligible: number | null; gained: number; lost: number; unconvertibleParcels: number }> {
+    const build = (rules: Record<string, unknown>, p: unknown[]) => {
+      // population: active users holding at least one active tenant role — the platform's working definition of a
+      // person a scheme could reach.
+      const conds: string[] = [`u.deleted_at IS NULL AND u.status = 'active'`];
+      if (Array.isArray(rules.roles) && rules.roles.length > 0) {
+        p.push(rules.roles);
+        conds.push(`EXISTS (SELECT 1 FROM user_tenant_roles utr JOIN roles ro ON ro.id = utr.role_id
+                     WHERE utr.user_id = u.id AND utr.is_active AND utr.deleted_at IS NULL AND ro.code = ANY($${p.length}::text[]))`);
+      } else {
+        conds.push(`EXISTS (SELECT 1 FROM user_tenant_roles utr WHERE utr.user_id = u.id AND utr.is_active AND utr.deleted_at IS NULL)`);
+      }
+      if (typeof rules.landholding_max_acres === 'number') {
+        p.push(rules.landholding_max_acres);
+        // evaluator semantics: the check applies only when a landholding NUMBER exists — a farmer with no acre-unit
+        // parcels has an unknown landholding and PASSES (unknown ≠ over the limit).
+        conds.push(`(NOT EXISTS (SELECT 1 FROM land_parcels lp WHERE lp.owner_user_id = u.id AND lp.area_unit = 'acre' AND lp.deleted_at IS NULL)
+                     OR (SELECT COALESCE(SUM(lp.area_value), 0) FROM land_parcels lp
+                          WHERE lp.owner_user_id = u.id AND lp.area_unit = 'acre' AND lp.deleted_at IS NULL) <= $${p.length}::numeric)`);
+      }
+      if (typeof rules.gender === 'string') {
+        p.push(rules.gender);
+        conds.push(`(u.gender IS NULL OR u.gender = $${p.length})`);
+      }
+      if (typeof rules.age_min === 'number') {
+        p.push(rules.age_min);
+        conds.push(`(u.dob IS NULL OR date_part('year', age(u.dob)) >= $${p.length}::int)`);
+      }
+      if (typeof rules.age_max === 'number') {
+        p.push(rules.age_max);
+        conds.push(`(u.dob IS NULL OR date_part('year', age(u.dob)) <= $${p.length}::int)`);
+      }
+      return conds.join(' AND ');
+    };
+
+    const p: unknown[] = [];
+    const draftWhere = build(draft, p);
+    if (published === null) {
+      const r = await this.pool.query(
+        `SELECT count(*)::int AS n FROM users u WHERE ${draftWhere}`, p);
+      const uc = await this.pool.query(
+        `SELECT count(*)::int AS n FROM land_parcels WHERE area_unit <> 'acre' AND deleted_at IS NULL`);
+      return { draftEligible: Number(r.rows[0]?.n ?? 0), publishedEligible: null, gained: 0, lost: 0,
+               unconvertibleParcels: Number(uc.rows[0]?.n ?? 0) };
+    }
+    const pubWhere = build(published, p);
+    const r = await this.pool.query(
+      `WITH draft_ok AS (SELECT u.id FROM users u WHERE ${draftWhere}),
+            pub_ok   AS (SELECT u.id FROM users u WHERE ${pubWhere})
+       SELECT (SELECT count(*) FROM draft_ok)::int AS draft_n,
+              (SELECT count(*) FROM pub_ok)::int AS pub_n,
+              (SELECT count(*) FROM draft_ok d WHERE NOT EXISTS (SELECT 1 FROM pub_ok x WHERE x.id = d.id))::int AS gained,
+              (SELECT count(*) FROM pub_ok x WHERE NOT EXISTS (SELECT 1 FROM draft_ok d WHERE d.id = x.id))::int AS lost`, p);
+    const uc = await this.pool.query(
+      `SELECT count(*)::int AS n FROM land_parcels WHERE area_unit <> 'acre' AND deleted_at IS NULL`);
+    const row = r.rows[0] ?? {};
+    return { draftEligible: Number(row.draft_n ?? 0), publishedEligible: Number(row.pub_n ?? 0),
+             gained: Number(row.gained ?? 0), lost: Number(row.lost ?? 0),
+             unconvertibleParcels: Number(uc.rows[0]?.n ?? 0) };
+  }
 }
