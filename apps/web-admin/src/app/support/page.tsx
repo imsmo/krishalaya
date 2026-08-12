@@ -75,6 +75,8 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
       <h1>{t.t('support.title')}</h1>
       <p className="kv-muted">{t.t('support.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('support.nav')}>
+        {/* ADMIN-SWEEP-b2: W050's Hub tab — linked the day it stopped 404ing. */}
+        <Link href="/support/hub" className="kv-chip">{t.t('support.hubNav')}</Link>
         <Link href="/support/sla-breaches" className="kv-chip">{t.t('support.breachesNav')}</Link>
         <Link href="/support/tenant-health" className="kv-chip">{t.t('support.healthNav')}</Link>
         {/* PC-56 ADMIN-2 · the canon's remaining desk lenses (W053/W054/W055) */}

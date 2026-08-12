@@ -15,6 +15,7 @@ import { buildMacro } from '../../features/support/desk';
 import { buildPolicy } from '../../features/support/policy';
 import { buildReview, buildCoaching, buildSettlement } from '../../features/support/review';
 import { buildReply } from '../../features/support/reply';
+import { buildPresence as buildHubPresence } from '../../features/support/hub';
 
 /** A reason is mandatory on anything that changes what the desk shows other people (mirrors the server's zod Reason). */
 function validReason(reason: string | null | undefined): boolean {
@@ -242,4 +243,32 @@ export async function replyToFarmerAction(formData: FormData): Promise<void> {
   revalidatePath(`/support/tickets/${id}`);
   revalidatePath('/support/replies/stuck');
   back('ok=queued');
+}
+
+/* ==================== ADMIN-SWEEP-b2 · the communication hub (W050 + W2099–W2101) ==================== */
+
+/** "Next in queue" carries nothing but the click — which ticket you get is the queue's decision (worst
+ *  first-response deadline nobody owns in either realm), never a parameter. Success lands ON the claimed case. */
+export async function hubTakeNextAction(): Promise<void> {
+  requireAdmin();
+  let r: { claimed: boolean; ticketId?: string };
+  try { r = (await adminPost<{ claimed: boolean; ticketId?: string }>('support/hub/next', { body: {} })).data; }
+  catch (e) {
+    if (e instanceof AdminApiError && e.status === 409) redirect('/support/hub?error=onBreak');
+    redirect(`/support/hub?error=${errorKey(e)}`);
+  }
+  revalidatePath('/support/hub');
+  if (r.claimed && r.ticketId) redirect(`/support/tickets/${encodeURIComponent(r.ticketId)}?ok=claimed`);
+  redirect('/support/hub?empty=nothingToClaim');
+}
+
+/** "Take a break 🌾" / "I'm back" — a recorded, audited fact the claim gate reads; not a UI mood. */
+export async function hubPresenceAction(formData: FormData): Promise<void> {
+  requireAdmin();
+  const built = buildHubPresence({ status: String(formData.get('status') ?? '') });
+  if (!built.ok) redirect(`/support/hub?error=${built.error}`);
+  try { await adminPost('support/hub/presence', { body: built.value }); }
+  catch (e) { redirect(`/support/hub?error=${errorKey(e)}`); }
+  revalidatePath('/support/hub');
+  redirect(`/support/hub?ok=${built.value.status === 'break' ? 'onBreak' : 'available'}`);
 }

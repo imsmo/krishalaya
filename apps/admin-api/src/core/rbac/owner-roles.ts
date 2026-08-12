@@ -56,6 +56,16 @@ export const OwnerPermissions = {
   ImpersonationRead: 'impersonation.read',   // impersonation grant + action history reads (audit)
   SupportOversightRead: 'support.oversight.read',     // cross-tenant ticket + SLA-breach + tenant-health reads
   SupportOversightManage: 'support.oversight.manage', // escalate a ticket (raise severity / status / reassign)
+  // ADMIN-SWEEP-b2 — W050's restricted state names it: "Needs `support.hub` — L1+ agents; thread PII masks apply
+  // per role." It had never existed (the ungrantable-permission guard now counts these; this one was caught at
+  // design time rather than by the spec, which is the cheap place to catch it).
+  //
+  // SEPARATE FROM `support.oversight.read`, because the hub is a WORKBENCH and the oversight plane is a WINDOW: a
+  // NOC viewer reads queues, SLA boards and tenant health all day without ever owning a farmer's conversation.
+  // `support.hub` claims tickets ("Next in queue"), flips presence ("Take a break"), and opens the per-principal
+  // thread — the deepest support read there is, one person's contacts across every tenant they touch — so holding
+  // it is a decision somebody makes about a named agent, not a side effect of being allowed to watch the board.
+  SupportHub: 'support.hub',
   ReportsRead: 'reports.read',          // read-only exec dashboards (MRR/ARR/GMV/active-tenants/active-users)
   ProvidersManage: 'providers.manage',  // enable/disable an integration provider platform-wide (Law 12 degrade)
   ProvidersRead: 'providers.read',      // provider registry + credential-ref health reads (no secrets)
@@ -339,7 +349,7 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_plans_viewer:      [OwnerPermissions.PlansRead],        // pricing / product analyst read-only
   platform_support_impersonator: [OwnerPermissions.ImpersonationGrant, OwnerPermissions.ImpersonationRead],
   platform_impersonation_auditor: [OwnerPermissions.ImpersonationRead],   // read-only audit of act-as sessions
-  platform_support_oversight: [OwnerPermissions.SupportOversightManage, OwnerPermissions.SupportOversightRead],
+  platform_support_oversight: [OwnerPermissions.SupportOversightManage, OwnerPermissions.SupportOversightRead, OwnerPermissions.SupportHub],
   platform_support_oversight_viewer: [OwnerPermissions.SupportOversightRead],   // NOC / support-lead read-only
   platform_reports_viewer: [OwnerPermissions.ReportsRead],   // exec / finance / analyst — read-only dashboards
   platform_providers_ops: [OwnerPermissions.ProvidersManage, OwnerPermissions.ProvidersRead],
