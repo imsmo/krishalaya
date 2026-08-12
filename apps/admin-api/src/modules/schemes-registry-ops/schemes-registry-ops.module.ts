@@ -14,9 +14,10 @@ import { WindowCalendarService } from './services/window-calendar.service';
 import { SchemeVersionService } from './services/scheme-version.service';
 import { AuthorityPortalService } from './services/authority-portal.service';
 import { SchemeExportService } from './services/scheme-export.service';
+import { PortalSyncService } from './services/portal-sync.service';
 
 @Module({
   controllers: [SchemesRegistryOpsController],
-  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService, SchemesDepthService, SchemeVersionService, AuthorityPortalService, SchemeExportService],
+  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService, SchemesDepthService, SchemeVersionService, AuthorityPortalService, SchemeExportService, PortalSyncService],
 })
 export class SchemesRegistryOpsModule {}

@@ -16,6 +16,7 @@ import { WindowCalendarService } from './services/window-calendar.service';
 import { SchemeVersionService } from './services/scheme-version.service';
 import { AuthorityPortalService } from './services/authority-portal.service';
 import { SchemeExportService } from './services/scheme-export.service';
+import { PortalSyncService } from './services/portal-sync.service';
 import {
   CreateAuthoritySchema, CreateAuthorityDto, UpdateAuthoritySchema, UpdateAuthorityDto,
   CreateSchemeSchema, CreateSchemeDto, UpdateSchemeMetaSchema, UpdateSchemeMetaDto,
@@ -36,6 +37,7 @@ const bool = (v?: string) => (v === undefined ? undefined : v === 'true');
 @UseGuards(AdminAuthGuard, OwnerPermissionsGuard)
 export class SchemesRegistryOpsController {
   constructor(
+    private readonly portalSyncSvc: PortalSyncService,
     private readonly depth: SchemesDepthService,
     private readonly crud: SchemeCrudService,
     private readonly rules: EligibilityRulesEditorService,
@@ -46,6 +48,15 @@ export class SchemesRegistryOpsController {
   ) {}
 
   /* ======================= authorities ======================= */
+  /* ============ ADMIN-SWEEP-c1 · W077: the portal sync registry — a read that cannot lie ============
+     Rides on `schemes.registry.read`, DELIBERATELY not a new `schemes.sync` grant: nothing writes sync state yet
+     (no pull worker, no portal client exists), and a permission with no route behind it is a promise nothing
+     keeps (0120's rule). The day a pull worker lands, its trigger route brings the grant with it. */
+  @Get('portal-sync') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
+  portalSync() {
+    return this.portalSyncSvc.registry().then((data) => ({ data }));
+  }
+
   @Get('authorities') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryRead)
   listAuthorities(@ZodQuery(QueryAuthoritiesSchema) q: QueryAuthoritiesDto) {
     return this.crud.listAuthorities({ level: q.level, cursor: decodeTsCursor(q.cursor), limit: q.limit }).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor } }));

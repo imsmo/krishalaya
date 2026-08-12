@@ -393,4 +393,44 @@ export class SchemesRegistryRepository {
       `SELECT id, entity_type, entity_id, action, old_value, new_value, reason, actor_user_id, created_at FROM scheme_registry_changes WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map((x: any) => ({ id: x.id, entityType: x.entity_type, entityId: x.entity_id, action: x.action, oldValue: x.old_value ?? null, newValue: x.new_value ?? null, reason: x.reason, actorUserId: x.actor_user_id, createdAt: x.created_at }));
   }
+
+  /* ============================ ADMIN-SWEEP-c1: the portal sync REGISTRY reads (W077) ============================
+     Everything below is read-only truth over what exists: mapped portals (rows above), REAL pending-push counts
+     (submitted applications with no portal acknowledgement, through schemes.authority_id), and ack lag over the
+     rows 0136's clock has actually stamped. No read here can say 'synced' or 'healthy' — no pull has ever run,
+     and the domain words the health column accordingly.                                                          */
+
+  /** Every mapped portal with its authority, plus the two real figures per authority. */
+  async portalRegistry(): Promise<any[]> {
+    const r = await this.pool.query(
+      `SELECT x.entity_id AS "authorityId", a.default_name AS "authorityName", a.level,
+              x.provider_code AS "providerCode", x.external_id AS "externalId",
+              x.payload->>'endpointLabel' AS "endpointLabel",
+              x.sync_status AS "syncStatus", x.last_synced_at AS "lastSyncedAt", x.created_at AS "mappedAt",
+              agg.pending_pushes AS "pendingPushes", agg.acked_n AS "ackedN", agg.ack_lag_p50_hours AS "ackLagP50Hours"
+         FROM external_entity_refs x
+         JOIN scheme_authorities a ON a.id = x.entity_id
+         LEFT JOIN LATERAL (
+           SELECT count(*) FILTER (WHERE sa.submitted_at IS NOT NULL AND sa.govt_app_ref IS NULL)::int AS pending_pushes,
+                  count(*) FILTER (WHERE sa.govt_acked_at IS NOT NULL)::int AS acked_n,
+                  round((percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (sa.govt_acked_at - sa.submitted_at)))
+                        FILTER (WHERE sa.govt_acked_at IS NOT NULL AND sa.submitted_at IS NOT NULL) / 3600.0)::numeric, 1) AS ack_lag_p50_hours
+             FROM scheme_applications sa
+             JOIN schemes s ON s.id = sa.scheme_id
+            WHERE s.authority_id = x.entity_id AND sa.deleted_at IS NULL
+         ) agg ON true
+        WHERE x.entity_type = 'scheme_authority' AND x.deleted_at IS NULL
+        ORDER BY a.default_name`);
+    return r.rows;
+  }
+
+  /** Authorities with NO portal mapping — W077's own footer: 'manual-mode authorities file via ambassador console'. */
+  async manualAuthorityCount(): Promise<number> {
+    const r = await this.pool.query(
+      `SELECT count(*)::int AS n FROM scheme_authorities a
+        WHERE a.deleted_at IS NULL AND NOT EXISTS (
+          SELECT 1 FROM external_entity_refs x
+           WHERE x.entity_type = 'scheme_authority' AND x.entity_id = a.id AND x.deleted_at IS NULL)`);
+    return Number(r.rows[0]?.n ?? 0);
+  }
 }

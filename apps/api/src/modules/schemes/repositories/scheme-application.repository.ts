@@ -34,7 +34,10 @@ export class SchemeApplicationRepository {
   }
   async update(tx: TxContext, a: SchemeApplication): Promise<void> {
     const p = a.toProps();
-    await tx.query(`UPDATE scheme_applications SET status=$3, form_data=$4::jsonb, govt_app_ref=$5, eligibility_check=$6::jsonb, submitted_at=$7, decided_at=$8, rejection_reason=$9, rejection_reason_code=$10, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+    // W077 (ADMIN-SWEEP-c1): the moment a portal acknowledgement number FIRST lands, its timestamp lands with it —
+    // in the UPDATE itself rather than in any one service path, so no caller can record a ref without starting the
+    // ack-lag clock. Never rewritten once set, and never set without a ref.
+    await tx.query(`UPDATE scheme_applications SET status=$3, form_data=$4::jsonb, govt_app_ref=$5, govt_acked_at=CASE WHEN govt_acked_at IS NULL AND govt_app_ref IS NULL AND $5::varchar IS NOT NULL THEN now() ELSE govt_acked_at END, eligibility_check=$6::jsonb, submitted_at=$7, decided_at=$8, rejection_reason=$9, rejection_reason_code=$10, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
       [p.id, p.tenantId, p.status, JSON.stringify(p.formData), p.govtAppRef, p.eligibilityCheck ? JSON.stringify(p.eligibilityCheck) : null, p.submittedAt, p.decidedAt, p.rejectionReason, p.rejectionReasonCode]);
   }
   /** Append a status-transition row to the partitioned audit trail (within the same tx). */
