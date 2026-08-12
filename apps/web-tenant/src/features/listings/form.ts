@@ -54,11 +54,12 @@ export interface RawListingForm {
   quantityTotal?: string; minOrderQty?: string; priceMajor?: string;
   saleType?: string; organicClaim?: string; visibility?: string; pincode?: string; regionId?: string;
   mediaIds?: string[];
+  harvestDate?: string;   // TENANT-2b: YYYY-MM-DD (W125's field; 0005's column, first carried)
 }
 
 export type BuildResult =
   | { ok: true; value: CreateListingInput }
-  | { ok: false; error: 'errorProduct' | 'errorTitle' | 'errorQty' | 'errorPrice' };
+  | { ok: false; error: 'errorProduct' | 'errorTitle' | 'errorQty' | 'errorPrice' | 'errorHarvest' };
 
 /** Validate + assemble the CreateListingInput from raw form fields. Pure: returns either the typed payload or an
  *  i18n error key. The API re-validates (zod .strict) authoritatively — this is the first, friendly gate. */
@@ -87,6 +88,12 @@ export function buildCreateListingInput(raw: RawListingForm): BuildResult {
   const organicClaim = (ORGANIC as readonly string[]).includes(raw.organicClaim ?? '') ? (raw.organicClaim as CreateListingInput['organicClaim']) : 'none';
   const visibility = (VISIBILITY as readonly string[]).includes(raw.visibility ?? '') ? (raw.visibility as CreateListingInput['visibility']) : 'tenant';
 
+  // A harvest date is optional, but a malformed one is refused rather than silently dropped — a wrong season
+  // on a produce listing misleads every buyer who reads it (TENANT-2b).
+  const harvestRaw = (raw.harvestDate ?? '').trim();
+  if (harvestRaw && !/^\d{4}-\d{2}-\d{2}$/.test(harvestRaw)) return { ok: false, error: 'errorHarvest' };
+  const harvestDate = harvestRaw || undefined;
+
   const description = (raw.description ?? '').trim() || undefined;
   const pincode = (raw.pincode ?? '').trim() || undefined;
   const regionId = (raw.regionId ?? '').trim() || undefined;
@@ -99,10 +106,19 @@ export function buildCreateListingInput(raw: RawListingForm): BuildResult {
       title, description, quantityTotal, minOrderQty,
       priceMinor, currencyCode: 'INR',
       saleType, organicClaim, visibility,
-      pincode, regionId,
+      pincode, regionId, harvestDate,
       mediaIds: mediaIds.length ? mediaIds : undefined,
     },
   };
+}
+
+/** W2357's law as a helper (TENANT-2b): on a validation refusal the values the member typed are PRESERVED —
+ *  they travel back in the redirect query and re-fill the form. Empties are dropped; mediaIds ride as repeats. */
+export function preservedQuery(fields: Record<string, string | undefined>, mediaIds: string[] = []): string {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(fields)) { const t = (v ?? '').trim(); if (t) p.set(k, t); }
+  for (const m of mediaIds) if (m.trim()) p.append('mediaIds', m.trim());
+  return p.toString();
 }
 
 export const LISTING_SALE_TYPES = SALE_TYPES;

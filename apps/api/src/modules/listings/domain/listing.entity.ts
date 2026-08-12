@@ -40,7 +40,10 @@ export interface ListingProps {
   qcReviewedBy?: string | null;
   qcReviewedAt?: Date | null;
   rejectReason?: string | null;   // 0005's column, written for the first time by rejectQc()
-  createdBy?: string | null;      // std column, read-only here — the staff creator when one was recorded
+  // PC-56 TENANT-2b: recorded at create when a STAFF hand typed the draft (on-behalf) — the identity
+  // QC_OWN_DRAFT turns on. NULL = the seller listed for themselves.
+  createdBy?: string | null;
+  harvestDate?: string | null;    // 0005's column (date), carried since TENANT-2b — W124/W125 show it
 }
 
 /** Domain events raised by the aggregate, drained by the service into the outbox. */
@@ -55,6 +58,8 @@ export type ListingDomainEvent =
   // PC-56 TENANT-2a · the QC verbs' own events (Law 4): submission starts the clock, decisions carry the outcome
   // the member is notified with — a rejection always names its teaching reason.
   | { type: 'listing.qc_submitted'; listingId: string; sellerUserId: string }
+  | { type: 'listing.redrafted'; listingId: string; sellerUserId: string }
+  | { type: 'listing.archived'; listingId: string; sellerUserId: string; reason: string }
   | { type: 'listing.qc_approved'; listingId: string; sellerUserId: string; reviewedBy: string }
   | { type: 'listing.qc_rejected'; listingId: string; sellerUserId: string; reviewedBy: string; reason: string };
 
@@ -110,11 +115,23 @@ export class Listing {
   // verbs: submitForApproval() had zero callers, reject() none, reject_reason was never written, and the queue's
   // every number would have been invented. The reviewer rules live HERE (0138's CHECK is the backstop, not the law).
 
-  /** SUBMIT FOR QC — starts the waiting clock W126 measures. */
+  /** SUBMIT FOR QC — starts the waiting clock W126 measures. A fresh submission clears the previous rejection's
+   *  teaching reason: the reviewer must judge THIS submission, not be anchored by the last one's verdict. */
   submitForQc(now: Date = new Date()): void {
     this.transition('pending_approval');
     this.props.qcSubmittedAt = now;
+    this.props.rejectReason = null;
     this.events.push({ type: 'listing.qc_submitted', listingId: this.props.id, sellerUserId: this.props.sellerUserId });
+  }
+
+  /** REDRAFT (PC-56 TENANT-2b) — the way back: a REJECTED listing returns to draft for its one-tap fix-and-relist
+   *  (W127's own audit note), and a listing submitted by mistake can be WITHDRAWN from the queue. The machine
+   *  validates both sources (rejected → draft, pending_approval → draft). Withdrawing stops the waiting clock —
+   *  a listing not in the queue must not age in it. */
+  redraft(): void {
+    this.transition('draft');
+    this.props.qcSubmittedAt = null;
+    this.events.push({ type: 'listing.redrafted', listingId: this.props.id, sellerUserId: this.props.sellerUserId });
   }
 
   /** No self-review, in both identities: the SELLER may not clear their own lot, and the STAFF CREATOR (when one

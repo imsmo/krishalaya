@@ -43,6 +43,13 @@ export interface ListingCard {
   auctionId?: string | null;
   auctionStatus?: string | null;
   auctionEndsAt?: string | null;
+  /** Owner/moderator reads only (TENANT-2b) — stripped from public detail reads server-side. */
+  expiresAt?: string | null;
+  publishedAt?: string | null;
+  harvestDate?: string | null;
+  qcSubmittedAt?: string | null;
+  rejectReason?: string | null;
+  createdBy?: string | null;
 }
 export interface ListingQuery {
   q?: string; categoryId?: string; regionId?: string; saleType?: string; organic?: boolean;
@@ -788,6 +795,8 @@ export interface QcKpis {
   medianDecisionMinutes7d: number | null; decided7d: number; todayBasis: string;
 }
 export interface QcRejectReason { code: string; name: string }
+export interface PriceHistoryEntry { oldPriceMinor: string | null; newPriceMinor: string; changedBy: string; changedByName: string | null; at: string }
+export interface FairPriceGuide { band: { productId: string; regionId: string; lowMinor: string; modalMinor: string; highMinor: string; sampleSize: number } | null; regionId: string | null }
 export interface QcQueuePayload { queue: QcQueueItem[]; kpis: QcKpis; reasons: QcRejectReason[] }
 export interface QcReviewPayload {
   detail: QcQueueItem & {

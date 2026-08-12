@@ -1,6 +1,6 @@
 // @krishalaya/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
 import { HttpClient } from '../http';
-import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page, ConsoleListingRow, ConsoleCounts, QcQueuePayload, QcReviewPayload } from '../types';
+import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page, ConsoleListingRow, ConsoleCounts, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from '../types';
 
 export class ListingsResource {
   constructor(private readonly http: HttpClient) {}
@@ -141,8 +141,34 @@ export class ListingsResource {
 
   /** Archive (remove) the caller's OWN listing — terminal, no transition back out (screen 112 Remove cta;
    *  KV-MF-08). Owner-only (server-enforced). Idempotency-keyed (Law 3) — a retried tap returns the same result. */
-  async archive(id: string, idempotencyKey: string): Promise<{ id: string; status: string }> {
-    return (await this.http.request<{ id: string; status: string }>('POST', `listings/${encodeURIComponent(id)}/archive`, { idempotencyKey })).data;
+  /** TENANT-2b: `reason` is MANDATORY when a staff hand archives a member's listing (the server enforces the
+   *  actor≠seller rule and the seller is notified with it); optional for a seller removing their own. */
+  async archive(id: string, idempotencyKey: string, reason?: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `listings/${encodeURIComponent(id)}/archive`, { idempotencyKey, body: reason ? { reason } : {} })).data;
+  }
+
+  // ---- PC-56 TENANT-2b · W124/W125 ----
+
+  /** The price trail (owner-or-moderator; 404 to anyone else). Newest first. */
+  async priceHistory(id: string, signal?: AbortSignal): Promise<PriceHistoryEntry[]> {
+    return (await this.http.request<PriceHistoryEntry[]>('GET', `listings/${encodeURIComponent(id)}/price-history`, { signal })).data;
+  }
+
+  /** rejected → draft (one-tap fix-and-relist) or pending_approval → draft (withdraw from the queue). */
+  async redraft(id: string): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', `listings/${encodeURIComponent(id)}/redraft`)).data;
+  }
+
+  /** W125's fair-price guide: the peer band (same read QC trusts) resolved from a pincode. Null band = no
+   *  comparable published listings or unmappable pincode — the caller says which, never invents a range. */
+  async fairPrice(productId: string, pincode: string, signal?: AbortSignal): Promise<FairPriceGuide> {
+    return (await this.http.request<FairPriceGuide>('GET', 'listings/fair-price', { signal, query: { productId, pincode } })).data;
+  }
+
+  /** Staff listing on a MEMBER's behalf — consent-gated server-side (purpose on_behalf_listing); needs
+   *  listing.moderate. The staff identity is recorded, so QC's no-self-review sees it. */
+  async createOnBehalf(dto: CreateListingInput & { sellerUserId: string }, idempotencyKey: string): Promise<{ id: string }> {
+    return (await this.http.request<{ id: string }>('POST', 'listings/on-behalf', { idempotencyKey, body: dto })).data;
   }
 
   /** Paginated buyer inquiries into the caller's OWN listing (owner-only, 404 else; keyset cursor). */
@@ -174,4 +200,5 @@ export interface CreateListingInput {
   organicClaim?: 'none' | 'natural' | 'certified';
   pincode?: string; regionId?: string; visibility?: 'tenant' | 'cross_tenant' | 'public';
   mediaIds?: string[];
+  harvestDate?: string;   // TENANT-2b: YYYY-MM-DD — 0005's column, first carried
 }

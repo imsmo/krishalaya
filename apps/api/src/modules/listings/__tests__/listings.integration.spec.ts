@@ -87,7 +87,7 @@ run('listings slice (integration, real Postgres + RLS)', () => {
     const metrics = new PromMetrics();
     const repo = new ListingRepository(replica as any);
     svc = new ListingService(uow, outbox, quota, idem, cache, metrics, repo,
-      new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), new AuditWriter(pools));
+      new PriceHistoryRepository(replica as any), new ListingAttributeRepository(), new ListingMediaRepository(), new AuditWriter(pools));
     readModel = new ListingSearchReadModel(replica as any, metrics);
 
     inspect = new Pool({ connectionString: APP_URL });

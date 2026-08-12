@@ -28,6 +28,7 @@ export const CreateListingSchema = z.object({
   lng: z.number().min(-180).max(180).optional(),
   visibility: z.enum(['tenant', 'cross_tenant', 'public']).default('tenant'),
   publishAt: z.string().datetime().optional(),
+  harvestDate: z.string().date().optional(),   // TENANT-2b: 0005's column, first carried — W124/W125 show it
   attributes: z.array(AttrValueSchema).max(50).optional(),
   mediaIds: z.array(z.string().uuid()).max(10).optional(),
 }).strict();

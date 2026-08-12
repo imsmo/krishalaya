@@ -70,7 +70,7 @@ run('order-from-accepted-quote via outbox relay (integration, real Postgres)', (
     const metrics = new PromMetrics();
     const audit = new AuditWriter(pools);
     const cache = new InMemoryCacheService();
-    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
+    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(replica as any), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     const reqRepo = new RequirementRepository(replica as any);
     const respRepo = new RequirementResponseRepository(replica as any);
     requirements = new RequirementService(uow, outbox, idem, metrics, audit, reqRepo);

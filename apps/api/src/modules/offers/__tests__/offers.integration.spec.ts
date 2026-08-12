@@ -75,7 +75,7 @@ run('offers slice (integration, real Postgres + RLS)', () => {
     const cache = new InMemoryCacheService();
     const metrics = new PromMetrics();
     const audit = new AuditWriter(pools);
-    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
+    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(replica as any), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     repo = new ListingOfferRepository(replica as any);
     offers = new ListingOfferService(uow, outbox, idem, metrics, listings, repo);
 

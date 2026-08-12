@@ -223,10 +223,10 @@ describe('ListingService.archive — KV-MF-08 (screen 112 Remove cta)', () => {
     expect(stub.archive).not.toHaveBeenCalled();
   });
 
-  it('a moderator MAY archive a listing they do not own, and it is audited', async () => {
+  it('a moderator MAY archive a listing they do not own — WITH the reason the seller will read (TENANT-2b)', async () => {
     const { svc, repo, audit } = build();
     repo.getForUpdate.mockResolvedValue(archivableStub());
-    await svc.archive('t1', { userId: 'admin-Z', canModerate: true }, 'idem-arc-6', 'L1');
+    await svc.archive('t1', { userId: 'admin-Z', canModerate: true }, 'idem-arc-6', 'L1', 'duplicate listing, seller notified');
     expect(audit.write).toHaveBeenCalled();
   });
 

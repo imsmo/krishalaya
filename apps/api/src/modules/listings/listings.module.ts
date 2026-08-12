@@ -4,7 +4,8 @@
 // Core infra (UnitOfWork, OutboxWriter, ReadReplica, Quota, Idempotency, Cache,
 // Search, Metrics) is provided by CoreModule (global) and injected by token.
 import { Module } from '@nestjs/common';
-import { MediaModule } from '../../core/media/media.module';   // OBJECT_STORE for public listing-gallery presign
+import { MediaModule } from '../../core/media/media.module';
+import { IdentityModule } from '../identity/identity.module';   // TENANT-2b: ConsentService for the on-behalf gate (Law 11 reuse — the ambassadors precedent)   // OBJECT_STORE for public listing-gallery presign
 import { CommunicationModule } from '../communication/communication.module'; // ConversationService for :id/inquiries (KV-BL-031)
 
 // Controllers (HTTP edge)
@@ -24,6 +25,7 @@ import { ListingTrustDocumentService } from './services/listing-trust-document.s
 import { ListingAttributeService } from './services/listing-attribute.service';
 import { GroupLotService } from './services/group-lot.service';
 import { GroupLotPledgeService } from './services/group-lot-pledge.service';
+import { OnBehalfConsoleService } from './services/on-behalf-console.service';
 
 // Read-models (CQRS read path)
 import { ListingSearchReadModel } from './read-models/listing-search.read-model';
@@ -54,11 +56,11 @@ import { BoostExpiryJob } from './jobs/boost-expiry.job';
 import { PublishScheduledJob } from './jobs/publish-scheduled.job';
 
 @Module({
-  imports: [MediaModule, CommunicationModule],
+  imports: [MediaModule, CommunicationModule, IdentityModule],
   controllers: [ListingsController, ListingQcController, BoostsController, GroupLotsController, SellersController, TrustDocumentsController],
   providers: [
     ListingService, ListingBoostService, ListingViewService, ListingInquiryService, ListingTrustDocumentService,
-    ListingAttributeService, GroupLotService, GroupLotPledgeService,
+    ListingAttributeService, GroupLotService, GroupLotPledgeService, OnBehalfConsoleService,
     ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository, ListingTrustDocumentRepository,

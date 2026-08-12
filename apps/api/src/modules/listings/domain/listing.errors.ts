@@ -63,3 +63,23 @@ export class UnknownRejectReasonError extends DomainError {
       `"${code}" is not a rejection reason this platform teaches with — the vocabulary is: ${known.join(', ')} (lookup 'listing_reject_reason'). Nothing was decided.`, 422, { code, known });
   }
 }
+
+// ---- PC-56 TENANT-2b · detail + form (W124/W125) ----
+export class OnBehalfConsentMissingError extends DomainError {
+  constructor(memberUserId: string) {
+    super('LISTING_ONBEHALF_CONSENT',
+      'staff-created listings need the member\'s recorded on-behalf consent (purpose on_behalf_listing) before anything is created — their produce, their yes', 403, { memberUserId });
+  }
+}
+export class ArchiveReasonError extends DomainError {
+  constructor() {
+    super('LISTING_ARCHIVE_REASON',
+      'archiving removes the listing from every buyer surface and the seller is told why — a reason of at least 5 characters is required, and the seller sees it', 422, {});
+  }
+}
+export class ListingInQcError extends DomainError {
+  constructor() {
+    super('LISTING_IN_QC',
+      'this listing is waiting for QC — a reviewer decides it (approve publishes, reject teaches). To edit it instead, withdraw it back to draft first', 409, {});
+  }
+}

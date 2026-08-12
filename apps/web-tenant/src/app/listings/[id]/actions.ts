@@ -70,3 +70,56 @@ export async function boostListingAction(formData: FormData): Promise<void> {
   revalidatePath('/listings');
   redirect(`/listings/${encodeURIComponent(id)}?ok=boosted`);
 }
+
+// ---- PC-56 TENANT-2b · W124's verbs ----
+
+function verbErrorKey(e: unknown): string {
+  if (e instanceof SdkError) {
+    if (e.code === 'LISTING_IN_QC') return 'inqc';
+    if (e.code === 'LISTING_ARCHIVE_REASON') return 'archivereason';
+    if (e.code === 'LISTING_ILLEGAL_TRANSITION') return 'raced';
+  }
+  return 'failed';
+}
+
+async function verb(id: string, fn: () => Promise<unknown>, ok: string): Promise<void> {
+  await requireSession('/listings');
+  if (!id) redirect('/listings');
+  try { await fn(); }
+  catch (e) { redirect(`/listings/${encodeURIComponent(id)}?error=${verbErrorKey(e)}`); }
+  revalidatePath(`/listings/${id}`);
+  revalidatePath('/listings');
+  redirect(`/listings/${encodeURIComponent(id)}?ok=${ok}`);
+}
+
+/** Draft → QC: the waiting clock starts server-side; the QC queue takes it from here. */
+export async function submitQcAction(formData: FormData): Promise<void> {
+  const id = String(formData.get('id') ?? '').trim();
+  await verb(id, () => tenantClient().listings.submitForQc(id), 'submitted');
+}
+
+/** The seller's own hand on their own sale. */
+export async function pauseListingAction(formData: FormData): Promise<void> {
+  const id = String(formData.get('id') ?? '').trim();
+  await verb(id, () => tenantClient().listings.pause(id), 'paused');
+}
+
+/** rejected → draft (fix-and-relist) or pending_approval → draft (withdraw from the queue). */
+export async function redraftListingAction(formData: FormData): Promise<void> {
+  const id = String(formData.get('id') ?? '').trim();
+  await verb(id, () => tenantClient().listings.redraft(id), 'redrafted');
+}
+
+/** W124's danger zone — terminal, so the reason travels: mandatory when a staff hand removes a member's
+ *  produce (the server enforces actor≠seller and the seller is notified with it). */
+export async function archiveListingAction(formData: FormData): Promise<void> {
+  await requireSession('/listings');
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect('/listings');
+  const reason = String(formData.get('reason') ?? '').trim();
+  try { await tenantClient().listings.archive(id, randomUUID(), reason || undefined); }
+  catch (e) { redirect(`/listings/${encodeURIComponent(id)}?error=${verbErrorKey(e)}`); }
+  revalidatePath(`/listings/${id}`);
+  revalidatePath('/listings');
+  redirect(`/listings/${encodeURIComponent(id)}?ok=archived`);
+}

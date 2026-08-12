@@ -34,4 +34,16 @@ export class MandiBandReadModel {
         modalMinor: String(Math.round(row.modal)), highMinor: String(Math.round(row.high)), sampleSize: Number(row.n) };
     });
   }
+
+  /** W125's fair-price guide (PC-56 TENANT-2b): the form knows a PINCODE, the band is keyed by REGION — resolve
+   *  through the pincodes table and reuse the same read the QC review trusts. Null when the pincode resolves to
+   *  no region OR no comparable published listings exist — unknown ≠ a band, and the form says which. */
+  async bandForPincode(tenantId: string, productId: string, pincode: string): Promise<{ band: MandiBand | null; regionId: string | null }> {
+    const pool = await this.replica.forTenant(tenantId);
+    const r = await pool.query<{ region_id: string | null }>(
+      `SELECT region_id FROM pincodes WHERE pincode = $1 AND country_code = 'IN'`, [pincode]);
+    const regionId = r.rows[0]?.region_id ?? null;
+    if (!regionId) return { band: null, regionId: null };
+    return { band: await this.band(tenantId, productId, regionId), regionId };
+  }
 }

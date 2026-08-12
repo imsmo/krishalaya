@@ -6,7 +6,10 @@ import { minorToMajor } from '../features/listings/form';
 
 describe('canPublish', () => {
   it('surfaces for publishable statuses', () => {
-    for (const s of ['draft', 'pending_approval', 'paused', 'sold_out', 'expired', 'hidden']) expect(canPublish(s)).toBe(true);
+    // TENANT-2b: pending_approval left this list — once in the QC queue a REVIEWER decides; the server
+    // refuses the bare verb there (LISTING_IN_QC), so the button would be a door drawn on a wall.
+    for (const s of ['draft', 'paused', 'sold_out', 'expired', 'hidden']) expect(canPublish(s)).toBe(true);
+    expect(canPublish('pending_approval')).toBe(false);
   });
   it('hidden for already-published / archived / rejected / unknown / empty', () => {
     for (const s of ['published', 'archived', 'rejected', 'weird', '', undefined, null]) expect(canPublish(s as string)).toBe(false);

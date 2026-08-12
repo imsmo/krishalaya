@@ -18,7 +18,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { ForbiddenError } from '../../../shared/errors/app-error';
 import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { Listing, ListingDomainEvent } from '../domain/listing.entity';
-import { ListingConcurrencyError, ListingNotFoundError, PhotoMediaInvalidError, TooManyPhotosError, UnknownRejectReasonError } from '../domain/listing.errors';
+import { ListingConcurrencyError, ListingNotFoundError, PhotoMediaInvalidError, TooManyPhotosError, UnknownRejectReasonError, ArchiveReasonError, ListingInQcError } from '../domain/listing.errors';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { PriceHistory } from '../domain/price-history.entity';
 import { ListingAttribute, AttrValue } from '../domain/listing-attribute.entity';
@@ -61,8 +61,10 @@ export class ListingService {
     }
   }
 
-  /** CREATE — idempotent, quota-enforced, atomic, event-emitting. */
-  async create(tenantId: string, sellerUserId: string, idemKey: string, dto: CreateListingDto): Promise<{ id: string }> {
+  /** CREATE — idempotent, quota-enforced, atomic, event-emitting. `createdBy` (PC-56 TENANT-2b) records the
+   *  STAFF hand when the draft was typed on a member's behalf — the identity QC's no-self-review (QC_OWN_DRAFT)
+   *  turns on; omitted (NULL) when the seller lists for themselves. */
+  async create(tenantId: string, sellerUserId: string, idemKey: string, dto: CreateListingDto, createdBy?: string): Promise<{ id: string }> {
     return this.idem.remember(idemKey, sellerUserId, 'listings.create', () =>
       timed(this.metrics, 'listing.create', { tenant: tenantId }, async () => {
         await this.quota.assertWithinLimit(tenantId, QUOTA_METRIC);
@@ -77,6 +79,7 @@ export class ListingService {
           lat: dto.lat ?? null, lng: dto.lng ?? null, visibility: dto.visibility,
           aiExtracted: false, publishAt: dto.publishAt ? new Date(dto.publishAt) : null,
           publishedAt: null, expiresAt: null,
+          createdBy: createdBy ?? null, harvestDate: dto.harvestDate ?? null,
         });
         const attrEntities = (dto.attributes ?? []).map((a) =>
           ListingAttribute.of({ id: uuidv7(), tenantId, listingId: id, attributeId: a.attributeId, value: toAttrValue(a) }));
@@ -134,6 +137,10 @@ export class ListingService {
       await this.uow.run(tenantId, async (tx) => {
         const listing = await this.repo.getForUpdate(tx, tenantId, id);
         this.assertCanMutate(listing, actor);
+        // PC-56 TENANT-2b: once a listing is IN the queue, a REVIEWER decides it — the bare publish verb records
+        // no reviewer, so allowing it from pending_approval would be QC with an unguarded side door. The machine
+        // permits the TRANSITION (that is the approve path); the VERB refuses. Withdraw to draft first (redraft).
+        if (listing.status === 'pending_approval') throw new ListingInQcError();
         // Publishing is the act that puts a listing in front of buyers, so a suspended seller is refused here even for a
         // draft they wrote before the suspension. Checked INSIDE the transaction, against the LISTING's seller rather
         // than the actor: a moderator publishing on a suspended member's behalf must hit the same wall.
@@ -199,22 +206,60 @@ export class ListingService {
    *  domain entity already exposed `archive()` (and the state machine already allowed → 'archived' from every
    *  non-terminal status) — this was the missing service+endpoint wiring (the entity method existed with no
    *  caller, mirroring the pattern already shipped for cms/education/services-marketplace `archive`). */
-  async archive(tenantId: string, actor: ListingActor, idemKey: string, id: string): Promise<{ id: string; status: string }> {
+  async archive(tenantId: string, actor: ListingActor, idemKey: string, id: string, reason?: string): Promise<{ id: string; status: string }> {
     return this.idem.remember(idemKey, actor.userId, 'listings.archive', () =>
       timed(this.metrics, 'listing.archive', { tenant: tenantId }, async () => {
         let status = '';
         await this.uow.run(tenantId, async (tx) => {
           const listing = await this.repo.getForUpdate(tx, tenantId, id);
           this.assertCanMutate(listing, actor);
+          // PC-56 TENANT-2b (W124's danger zone): when a hand that is NOT the seller's removes their produce
+          // from every buyer surface, the seller is TOLD WHY — the reason is mandatory and travels in the event
+          // their notification rides. A seller removing their own listing owes themselves no explanation.
+          const trimmed = (reason ?? '').trim();
+          const byStaff = listing.sellerUserId !== actor.userId;
+          if (byStaff && trimmed.length < 5) throw new ArchiveReasonError();
           listing.archive();
           await this.repo.update(tx, listing);
           await this.flushEvents(tx, tenantId, id, listing.pullEvents());
-          await this.auditOverride(tx, tenantId, actor, listing, 'listing.archived');
+          await this.outbox.write(tx, {
+            tenantId, aggregateType: 'listing', aggregateId: id, eventType: 'listing.archived',
+            payload: { v: 1, listingId: id, sellerUserId: listing.sellerUserId, reason: trimmed || null, byStaff },
+          });
+          await this.audit.write(tx, {
+            tenantId, actorUserId: actor.userId, action: 'listing.archived', entityType: 'listing', entityId: id,
+            oldValue: null, newValue: { seller: listing.sellerUserId, byStaff }, reason: trimmed || null,
+          });
           status = listing.status;
         }, { userId: actor.userId });
         await this.cache.del(cacheKey(tenantId, id));
         return { id, status };
       }));
+  }
+
+  /** REDRAFT (PC-56 TENANT-2b) — rejected → draft (the one-tap fix-and-relist W127 promised) and
+   *  pending_approval → draft (withdraw a mistaken submission; the bare publish verb refuses from the queue). */
+  async redraft(tenantId: string, actor: ListingActor, id: string): Promise<void> {
+    await timed(this.metrics, 'listing.redraft', { tenant: tenantId }, async () => {
+      await this.uow.run(tenantId, async (tx) => {
+        const listing = await this.repo.getForUpdate(tx, tenantId, id);
+        this.assertCanMutate(listing, actor);
+        listing.redraft();
+        await this.repo.update(tx, listing);
+        await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+        await this.auditOverride(tx, tenantId, actor, listing, 'listing.redrafted');
+      }, { userId: actor.userId });
+      await this.cache.del(cacheKey(tenantId, id));
+    });
+  }
+
+  /** PRICE HISTORY (PC-56 TENANT-2b) — W124's card reads the trail 0005 has recorded on every change and
+   *  nothing had ever read back. OWNER-OR-MODERATOR only: a competitor must not walk a seller's pricing story. */
+  async priceTrail(tenantId: string, viewer: ListingActor, id: string, limit = 20) {
+    const l = await this.getById(tenantId, id);
+    if (!l) throw new ListingNotFoundError(id);
+    if (!viewer.canModerate && l.sellerUserId !== viewer.userId) throw new ListingNotFoundError(id);  // 404, not 403 — no probing
+    return this.priceHistory.listForListing(tenantId, id, limit);
   }
 
   /** CHANGE PRICE — ownership + optimistic-locked, writes price history, emits event. */
@@ -277,6 +322,14 @@ export class ListingService {
     const publiclyVisible = l.status === 'published' && (l.visibility === 'public' || l.visibility === 'cross_tenant');
     const isOwnerOrAdmin = viewer.canModerate || l.sellerUserId === viewer.userId;
     if (!publiclyVisible && !isOwnerOrAdmin) throw new ListingNotFoundError(id);
+    if (!isOwnerOrAdmin) {
+      // PC-56 TENANT-2b: the QC trail is the seller's and the reviewers' business, not the storefront's — a
+      // public read must not carry reviewer identities, staff creator ids or teaching reasons (fields the 2a
+      // wave added to the props this read spreads; caught and shaped here in the same program).
+      const pub = { ...(l as Record<string, unknown>) };
+      for (const k of ['qcSubmittedAt', 'qcReviewedBy', 'qcReviewedAt', 'rejectReason', 'createdBy']) delete pub[k];
+      return pub;
+    }
     return l;
   }
 

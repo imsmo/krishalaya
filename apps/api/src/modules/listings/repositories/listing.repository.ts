@@ -17,7 +17,9 @@ const COLS = `id, tenant_id, seller_user_id, product_id, category_id, title, des
   publish_at, published_at, expires_at, version`;
 // PC-56 TENANT-2a: reads also carry the QC clock (0138), the rejection reason (0005's column, finally written)
 // and the read-only staff creator. INSERT deliberately does NOT — a new listing has no QC history to write.
-const READ_COLS = `${COLS}, qc_submitted_at, qc_reviewed_by, qc_reviewed_at, reject_reason, created_by`;
+const READ_COLS = `${COLS}, qc_submitted_at, qc_reviewed_by, qc_reviewed_at, reject_reason, created_by, harvest_date::text AS harvest_date`;
+// TENANT-2b: INSERT also writes the two create-time facts the entity now carries.
+const INSERT_COLS = `${COLS}, created_by, harvest_date`;
 
 @Injectable()
 export class ListingRepository {
@@ -28,13 +30,13 @@ export class ListingRepository {
     const p = l.toProps();
     await tx.query(
       `INSERT INTO listings
-        (${COLS})
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
+        (${INSERT_COLS})
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)`,
       [p.id, p.tenantId, p.sellerUserId, p.productId, p.categoryId, p.title, p.description ?? null,
        p.quantityTotal, p.quantityAvailable, p.minOrderQty, p.unitCode, p.priceMinor.toString(),
        p.currencyCode, p.organicClaim, p.status, p.saleType, p.pincode ?? null, p.regionId ?? null,
        p.lat ?? null, p.lng ?? null, p.visibility, p.aiExtracted, p.publishAt ?? null,
-       p.publishedAt ?? null, p.expiresAt ?? null, p.version],
+       p.publishedAt ?? null, p.expiresAt ?? null, p.version, p.createdBy ?? null, p.harvestDate ?? null],
     );
   }
 

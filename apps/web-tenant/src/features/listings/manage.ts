@@ -8,8 +8,10 @@ export const LISTING_STATUSES = [
 ] as const;
 export type ListingStatus = (typeof LISTING_STATUSES)[number];
 
-// Statuses from which a transition to 'published' is legal (publish button surfaces only for these).
-const PUBLISHABLE_FROM: ReadonlySet<string> = new Set(['draft', 'pending_approval', 'paused', 'sold_out', 'expired', 'hidden']);
+// Statuses from which the bare publish VERB is offered. pending_approval is deliberately ABSENT since
+// PC-56 TENANT-2b: once a listing is in the QC queue a REVIEWER decides it — the server refuses the bare verb
+// there (LISTING_IN_QC), so offering the button would be a door drawn on a wall.
+const PUBLISHABLE_FROM: ReadonlySet<string> = new Set(['draft', 'paused', 'sold_out', 'expired', 'hidden']);
 
 /** Can the owner attempt to publish from this status? (Server re-validates the transition.) */
 export function canPublish(status: string | undefined | null): boolean {
@@ -19,6 +21,26 @@ export function canPublish(status: string | undefined | null): boolean {
 /** Can the owner attempt a price change? Allowed unless the listing is archived (terminal). */
 export function canChangePrice(status: string | undefined | null): boolean {
   return status !== 'archived';
+}
+
+/** Draft → QC: the submit button (the waiting clock starts server-side). */
+export function canSubmitQc(status: string | undefined | null): boolean {
+  return status === 'draft';
+}
+
+/** The way back (TENANT-2b): rejected → draft (fix-and-relist) and pending_approval → draft (withdraw). */
+export function canRedraft(status: string | undefined | null): boolean {
+  return status === 'rejected' || status === 'pending_approval';
+}
+
+/** The seller's own hand on their own sale (published → paused). */
+export function canPause(status: string | undefined | null): boolean {
+  return status === 'published';
+}
+
+/** Archive is terminal and offered from any non-terminal status (the server's machine re-validates). */
+export function canArchive(status: string | undefined | null): boolean {
+  return !!status && status !== 'archived';
 }
 
 /** Map an SDK error code from changePrice to a UI reason key (optimistic-concurrency conflict vs generic). */

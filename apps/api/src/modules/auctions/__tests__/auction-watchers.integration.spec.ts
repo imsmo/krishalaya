@@ -80,7 +80,7 @@ run('auction watchers + EMD-release glue (integration, real Postgres + RLS)', ()
     const outbox = new PgOutboxWriter(); const quota = new PgQuotaService(pools, shards); const idem = new PgIdempotencyService(pools);
     const metrics = new PromMetrics(); const audit = new AuditWriter(pools); const cache = new InMemoryCacheService();
     wallet = new InProcessWalletClient(new LedgerRepository());
-    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
+    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(replica as any), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     const auctionRepo = new AuctionRepository(replica as any);
     const bidRepo = new BidRepository(replica as any);
     const watcherRepo = new AuctionWatcherRepository(replica as any);

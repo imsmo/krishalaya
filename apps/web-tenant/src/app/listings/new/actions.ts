@@ -12,7 +12,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
-import { buildCreateListingInput } from '../../../features/listings/form';
+import { buildCreateListingInput, preservedQuery } from '../../../features/listings/form';
 import { SdkError, type MediaKind, type MediaUploadTicket } from '@krishalaya/sdk-js';
 
 /** Step 1: mint a presigned PUT ticket (authed). The browser uploads the bytes to ticket.uploadUrl itself. */
@@ -27,11 +27,14 @@ export async function confirmUploadAction(mediaId: string, input: { bytes: numbe
   return tenantClient().media.confirmUpload(mediaId, input, randomUUID());
 }
 
-/** Create the draft listing from the submitted form, then redirect to the listings list with a success flag. */
+/** Create the draft listing (own, or on a MEMBER's behalf — consent-gated server-side), then land on the
+ *  draft's detail page: that page IS the review-before-submit (W2358 met as a real state — the next thing that
+ *  should happen to a draft is somebody reading it, then Submit for QC). On any refusal the member's typed
+ *  values are PRESERVED in the redirect (W2357's law — "values you entered are preserved, nothing was saved"). */
 export async function createListingAction(formData: FormData): Promise<void> {
   await requireSession('/listings/new');
   const idempotencyKey = String(formData.get('idempotencyKey') ?? '').trim() || randomUUID();
-  const built = buildCreateListingInput({
+  const fields = {
     product: String(formData.get('product') ?? ''),
     title: String(formData.get('title') ?? ''),
     description: String(formData.get('description') ?? ''),
@@ -43,16 +46,29 @@ export async function createListingAction(formData: FormData): Promise<void> {
     visibility: String(formData.get('visibility') ?? ''),
     pincode: String(formData.get('pincode') ?? ''),
     regionId: String(formData.get('regionId') ?? ''),
-    mediaIds: formData.getAll('mediaIds').map((m) => String(m)),
-  });
-  if (!built.ok) redirect(`/listings/new?error=${built.error}`);
+    harvestDate: String(formData.get('harvestDate') ?? ''),
+    member: String(formData.get('member') ?? ''),
+    memberName: String(formData.get('memberName') ?? ''),
+  };
+  const mediaIds = formData.getAll('mediaIds').map((m) => String(m));
+  const back = (error: string) => `/listings/new?${preservedQuery(fields, mediaIds)}&error=${encodeURIComponent(error)}`;
 
+  const built = buildCreateListingInput({ ...fields, mediaIds });
+  if (!built.ok) redirect(back(built.error));
+
+  let id = '';
   try {
-    await tenantClient().listings.create(built.value, idempotencyKey);
+    if (fields.member) {
+      // On behalf of a member: the server checks the member's recorded consent BEFORE creating anything and
+      // records the staff hand (created_by) so QC's no-self-review sees it.
+      ({ id } = await tenantClient().listings.createOnBehalf({ ...built.value, sellerUserId: fields.member }, idempotencyKey));
+    } else {
+      ({ id } = await tenantClient().listings.create(built.value, idempotencyKey));
+    }
   } catch (e) {
     const code = e instanceof SdkError ? e.code : 'CREATE_FAILED';
-    redirect(`/listings/new?error=${encodeURIComponent(code)}`);
+    redirect(back(code === 'LISTING_ONBEHALF_CONSENT' ? 'consent' : code));
   }
   revalidatePath('/listings');
-  redirect('/listings?created=1');
+  redirect(`/listings/${encodeURIComponent(id)}?ok=created`);
 }

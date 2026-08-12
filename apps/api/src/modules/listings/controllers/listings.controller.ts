@@ -19,12 +19,15 @@ import { ListingSearchReadModel } from '../read-models/listing-search.read-model
 import { ListingAnalyticsReadModel } from '../read-models/listing-analytics.read-model';
 import { ListingGalleryReadModel } from '../read-models/listing-gallery.read-model';
 import { ListingLinksReadModel } from '../read-models/listing-links.read-model';
+import { MandiBandReadModel } from '../read-models/mandi-band.read-model';
+import { OnBehalfConsoleService } from '../services/on-behalf-console.service';
 import { ListingBoostService } from '../services/listing-boost.service';
 import { CreateListingDto, CreateListingSchema } from '../dto/create-listing.dto';
 import { AddListingPhotoDto, AddListingPhotoSchema } from '../dto/add-listing-photo.dto';
 import { ChangePriceDto, ChangePriceSchema } from '../dto/change-price.dto';
 import { RepostListingDto, RepostListingSchema } from '../dto/repost-listing.dto';
 import { ExtendListingDto, ExtendListingSchema } from '../dto/extend-listing.dto';
+import { ArchiveListingSchema, ArchiveListingDto, OnBehalfCreateSchema, OnBehalfCreateDto, FairPriceSchema, FairPriceDto } from '../dto/listing-detail.dto';
 import { QueryListingDto, QueryListingSchema } from '../dto/query-listing.dto';
 import { QueryListingInquiriesDto, QueryListingInquiriesSchema } from '../dto/query-listing-inquiries.dto';
 import { ListingNotFoundError } from '../domain/listing.errors';
@@ -46,6 +49,8 @@ export class ListingsController {
     private readonly galleryRM: ListingGalleryReadModel,
     private readonly linksRM: ListingLinksReadModel,
     private readonly boosts: ListingBoostService,
+    private readonly bandRM: MandiBandReadModel,             // TENANT-2b: W125's fair-price guide
+    private readonly onBehalf: OnBehalfConsoleService,       // TENANT-2b: W125's consent-gated staff create
   ) {}
 
   /** Public browse/search — replica-backed read-model; tenant scoped + RLS. The route stays @Public for the
@@ -64,6 +69,15 @@ export class ListingsController {
   /** The paid-boost tier catalogue (id + name + server price/days) — so the client shows real prices. */
   @Get('boost-tiers')
   boostTiers(@CurrentContext() ctx: RequestContext) { return this.boosts.tiers(ctx.tenantId).then((data) => ({ data })); }
+
+  /** W125's fair-price guide (TENANT-2b): the peer band (P10–P90 of THIS tenant's published listings for the
+   *  same product × area — the same read QC trusts, labelled as what it is) resolved from the form's pincode.
+   *  Null band = no comparable listings or unmappable pincode; the form says which, never invents a range.
+   *  Declared BEFORE the ':id' route — a single static segment would otherwise be swallowed as an id. */
+  @Get('fair-price')
+  async fairPrice(@CurrentContext() ctx: RequestContext, @ZodQuery(FairPriceSchema) q: FairPriceDto) {
+    return { data: await this.bandRM.bandForPincode(ctx.tenantId, q.productId, q.pincode) };
+  }
 
   @Public() @Get(':id')
   async getOne(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
@@ -210,11 +224,45 @@ export class ListingsController {
   async archive(
     @CurrentContext() ctx: RequestContext, @Param('id') id: string,
     @Headers('idempotency-key') idemKey: string,
+    @ZodBody(ArchiveListingSchema) dto: ArchiveListingDto,
   ) {
     if (!idemKey) throw new BadRequestError('Idempotency-Key header required');
     const data = await this.service.archive(
-      ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, idemKey, id,
+      ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, idemKey, id, dto.reason,
     );
     return { data };
+  }
+
+  // ---- PC-56 TENANT-2b · W124/W125 ----
+
+  /** The price trail 0005 recorded on every change and nothing ever read back. Owner-or-moderator (404 to
+   *  anyone else — a competitor must not walk a seller's pricing story). */
+  @Get(':id/price-history')
+  async priceHistory(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return { data: await this.service.priceTrail(ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, id) };
+  }
+
+  /** The way back: rejected → draft (one-tap fix-and-relist) and pending_approval → draft (withdraw). */
+  @Post(':id/redraft')
+  @RequirePermissions(ListingPermissions.Update)
+  async redraft(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    await this.service.redraft(ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, id);
+    return { data: { ok: true } };
+  }
+
+  /** W125 — a staff hand lists a MEMBER's produce: consent-gated (purpose on_behalf_listing, the member's own
+   *  recorded yes — the same wall the ambassador path honours), created_by recorded so QC's no-self-review has
+   *  the identity it needs. `listing.moderate` is the staff-authority grant that already exists — no new
+   *  permission minted. Idempotency-keyed (Law 3). */
+  @Post('on-behalf')
+  @RequirePermissions(ListingPermissions.Moderate)
+  async createOnBehalf(
+    @CurrentContext() ctx: RequestContext,
+    @Headers('idempotency-key') idemKey: string,
+    @ZodBody(OnBehalfCreateSchema) dto: OnBehalfCreateDto,
+  ) {
+    if (!idemKey) throw new BadRequestError('Idempotency-Key header required');
+    const { sellerUserId, ...create } = dto;
+    return { data: await this.onBehalf.create(ctx.tenantId, { userId: ctx.userId }, idemKey, sellerUserId, create) };
   }
 }

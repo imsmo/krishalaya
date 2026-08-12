@@ -73,7 +73,7 @@ run('order-from-accepted-offer via outbox relay (integration, real Postgres)', (
     const audit = new AuditWriter(pools);
     const cache = new InMemoryCacheService();
     const quota = new PgQuotaService(pools, shards);
-    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
+    const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(replica as any), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     const offerRepo = new ListingOfferRepository(replica as any);
     offers = new ListingOfferService(uow, outbox, idem, metrics, listings, offerRepo);
 

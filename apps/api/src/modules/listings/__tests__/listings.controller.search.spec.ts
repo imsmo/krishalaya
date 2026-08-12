@@ -15,7 +15,7 @@ function ctx(userId: string) {
 function build() {
   const searchRM: any = { query: jest.fn().mockResolvedValue({ items: [], total: null, nextCursor: null }) };
   const controller = new ListingsController(
-    {} as any, {} as any, {} as any, searchRM, {} as any, {} as any, {} as any, {} as any,
+    {} as any, {} as any, {} as any, searchRM, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,   // TENANT-2b: + bandRM, onBehalf
   );
   return { controller, searchRM };
 }
@@ -47,21 +47,21 @@ describe('ListingsController.archive — KV-MF-08 (screen 112 Remove cta)', () =
   function buildWithArchive() {
     const service: any = { archive: jest.fn().mockResolvedValue({ id: 'L1', status: 'archived' }) };
     const controller = new ListingsController(
-      service, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,
+      service, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,   // TENANT-2b: + bandRM, onBehalf
     );
     return { controller, service };
   }
 
   it('requires an Idempotency-Key header (BadRequestError otherwise), never calls the service', async () => {
     const { controller, service } = buildWithArchive();
-    await expect(controller.archive(ctx('seller-1'), 'L1', '')).rejects.toBeTruthy();
+    await expect(controller.archive(ctx('seller-1'), 'L1', '', {})).rejects.toBeTruthy();
     expect(service.archive).not.toHaveBeenCalled();
   });
 
   it('delegates to service.archive with the caller as actor (owner-only enforced downstream)', async () => {
     const { controller, service } = buildWithArchive();
-    const res = await controller.archive(ctx('seller-1'), 'L1', 'idem-1');
-    expect(service.archive).toHaveBeenCalledWith('t1', { userId: 'seller-1', canModerate: false }, 'idem-1', 'L1');
+    const res = await controller.archive(ctx('seller-1'), 'L1', 'idem-1', {});
+    expect(service.archive).toHaveBeenCalledWith('t1', { userId: 'seller-1', canModerate: false }, 'idem-1', 'L1', undefined);
     expect(res).toEqual({ data: { id: 'L1', status: 'archived' } });
   });
 });

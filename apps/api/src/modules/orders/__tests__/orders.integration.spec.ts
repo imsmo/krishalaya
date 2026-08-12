@@ -107,7 +107,7 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     const flags = new FlagsService(pools, cache);
 
     const listings = new ListingService(uow, outbox, quota, idem, cache, metrics,
-      new ListingRepository(replica as any), new PriceHistoryRepository(), new ListingAttributeRepository(),
+      new ListingRepository(replica as any), new PriceHistoryRepository(replica as any), new ListingAttributeRepository(),
       new ListingMediaRepository(), audit);
     const cartRepo = new CartRepository(replica as any);
     const cartItemRepo = new CartItemRepository(replica as any);

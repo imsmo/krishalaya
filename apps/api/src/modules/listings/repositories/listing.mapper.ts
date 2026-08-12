@@ -14,7 +14,7 @@ export interface ListingRow {
   expires_at: Date | null; version: number;
   // PC-56 TENANT-2a (0138) — present on READ_COLS selects; absent (undefined) on legacy narrow rows.
   qc_submitted_at?: Date | null; qc_reviewed_by?: string | null; qc_reviewed_at?: Date | null;
-  reject_reason?: string | null; created_by?: string | null;
+  reject_reason?: string | null; created_by?: string | null; harvest_date?: string | null;
 }
 
 export const ListingMapper = {
@@ -33,7 +33,7 @@ export const ListingMapper = {
       expiresAt: r.expires_at, version: r.version,
       qcSubmittedAt: r.qc_submitted_at ?? null, qcReviewedBy: r.qc_reviewed_by ?? null,
       qcReviewedAt: r.qc_reviewed_at ?? null, rejectReason: r.reject_reason ?? null,
-      createdBy: r.created_by ?? null,
+      createdBy: r.created_by ?? null, harvestDate: r.harvest_date ?? null,
     };
     return Listing.rehydrate(props);
   },
