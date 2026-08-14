@@ -119,6 +119,67 @@ export class ChargesResource {
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// PC-56 TENANT-4a · THE ORGANISATION's wallet (W143/W144) — NOT the caller's personal wallet above.
+// Subject is the TENANT, resolved server-side from the token; gated by `wallet.org_view` (0142). Read-only: there
+// is no add-funds method because no tenant top-up product exists, and the overview names that gap by code.
+// ---------------------------------------------------------------------------------------------------------------
+export class OrgWalletResource {
+  constructor(private readonly http: HttpClient) {}
+  /** The three accounts (main/commission/hold) with their basis, today's movement, escrow held for this tenant,
+   *  and the ledger health the tenant can assert about its OWN book. */
+  async overview(currency = 'INR', signal?: AbortSignal): Promise<OrgWalletOverview> {
+    return (await this.http.request<OrgWalletOverview>('GET', 'org-wallet', { query: { currency }, signal })).data;
+  }
+  /** W144's ledger view. Keyset only — there is no page number and no total, on purpose. */
+  async ledger(opts: { cursor?: string; limit?: number; account?: 'main' | 'commission' | 'hold'; type?: string; from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<Page<OrgLedgerRow> & { window?: OrgLedgerWindow }> {
+    const r = await this.http.request<OrgLedgerRow[]>('GET', 'org-wallet/ledger', { query: { cursor: opts.cursor, limit: opts.limit ?? 50, account: opts.account, type: opts.type, from: opts.from, to: opts.to, currency: opts.currency ?? 'INR' }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, window: r.meta?.window as OrgLedgerWindow | undefined };
+  }
+  /** The txn types present in this tenant's own ledger — the filter chips, from the rows, not a hardcoded list. */
+  async txnTypes(currency = 'INR', signal?: AbortSignal): Promise<Array<{ code: string; count: number }>> {
+    return (await this.http.request<Array<{ code: string; count: number }>>('GET', 'org-wallet/txn-types', { query: { currency }, signal })).data;
+  }
+  /** W144's Export CSV, with the audit receipt. REFUSES (WALLET_EXPORT_TOO_LARGE) rather than truncating. */
+  async export(opts: { account?: 'main' | 'commission' | 'hold'; type?: string; from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<OrgLedgerExport> {
+    return (await this.http.request<OrgLedgerExport>('GET', 'org-wallet/export', { query: { account: opts.account, type: opts.type, from: opts.from, to: opts.to, currency: opts.currency ?? 'INR' }, signal })).data;
+  }
+}
+
+export type OrgTenantAccountCode = 'main' | 'commission' | 'hold';
+export type OrgBalanceVerdict =
+  | { kind: 'reconciled'; minor: string }
+  | { kind: 'drifted'; minor: string; cachedMinor: string; driftMinor: string }
+  | { kind: 'never_used'; minor: '0' };
+export interface OrgAccountRow {
+  code: OrgTenantAccountCode; verdict: OrgBalanceVerdict; minor: string;
+  isFrozen: boolean; entryCount: number; lastEntryAt: string | null;
+}
+export interface OrgMovementRow {
+  entryId: string; txnId: string; txnType: string | null; accountCode: string; amountMinor: string;
+  currencyCode: string; referenceType: string | null; referenceId: string | null; description: string | null; createdAt: string;
+}
+export interface OrgLedgerRow extends OrgMovementRow { balanceAfterMinor: string }
+export interface OrgLedgerWindow { fromIso: string; toIso: string; days: number; clamped: boolean }
+export interface OrgHealthLine { check: 'cached_vs_ledger' | 'own_chain' | 'platform_recon'; state: 'ok' | 'attention' | 'unverifiable' | 'not_ours_to_assert'; detail?: string }
+export interface OrgWalletOverview {
+  currencyCode: string;
+  accounts: OrgAccountRow[];
+  holdBasis: 'no_freeze_path' | 'frozen_by_ledger';
+  escrow: { heldMinor: string; orderCount: number; basis: 'ledger_net_by_tenant' };
+  today: OrgMovementRow[];
+  health: OrgHealthLine[];
+  chain: { accountCode: OrgTenantAccountCode; verdict: { kind: string; checked?: number; lastHash?: string | null; atEntryId?: string; reason?: string }; headMatches: boolean | null } | null;
+  /** The surfaces W143 draws that have no backend, named by code so every screen says the same thing. */
+  gaps: Array<'add_funds' | 'payout_bank_change' | 'tenant_hold_freeze'>;
+}
+export interface OrgLedgerExport {
+  receipt: { fileName: string; rowCount: number; sha256: string; digestBasis: string; generatedAt: string; requestedBy: string; coverage: string; omissions: Array<{ reason: string; count: number }> };
+  header: string[];
+  rows: string[][];
+  window: OrgLedgerWindow;
+}
+
 export class PaymentsResource {
   /** GST trade-invoice sub-resource: `client.payments.invoices.getByOrder(...) / .downloadUrl(...)`. */
   readonly invoices: InvoicesResource;

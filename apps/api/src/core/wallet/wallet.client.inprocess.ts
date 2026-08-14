@@ -9,17 +9,15 @@
 //   5. NO OVERDRAW of user/tenant accounts; frozen accounts reject debits.
 //   6. TAMPER-EVIDENT: per-account hash chain (prev_hash → entry_hash).
 import { Injectable } from '@nestjs/common';
-import { createHash } from 'node:crypto';
 import { TxContext } from '../database/unit-of-work';
 import { WalletPort, PostTxnInput, PostTxnResult } from './wallet.port';
 import { AccountRef } from './account-codes';
 import { LedgerRepository } from './ledger.repository';
 import { LedgerNotBalancedError, InvalidLedgerTxnError, InsufficientWalletBalanceError, WalletFrozenError } from './wallet.errors';
 import { InfraError } from '../../shared/errors/app-error';
-
-function entryHash(prev: string | null, txnId: string, accountId: string, amount: bigint, balanceAfter: bigint): string {
-  return createHash('sha256').update(`${prev ?? ''}|${txnId}|${accountId}|${amount}|${balanceAfter}`).digest('hex');
-}
+// PC-56 TENANT-4a: the hash formula moved to core/wallet/hash-chain.ts so the tenant-realm verifier
+// computes it with THE WRITER'S OWN FUNCTION rather than a second copy that can drift from this one.
+import { entryHash } from './hash-chain';
 
 @Injectable()
 export class InProcessWalletClient implements WalletPort {

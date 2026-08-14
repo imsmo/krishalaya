@@ -57,6 +57,11 @@ import { ChargesController } from './controllers/v1/charges.controller';
 import { ChargeChangeRepository } from './repositories/charge-change.repository';
 import { ChargeChangeService } from './services/charge-change.service';
 import { ChargeConsoleReadModel } from './read-models/charge-console.read-model';
+// PC-56 TENANT-4a: the ORGANISATION's wallet (W143/W144) — the tenant's own three accounts, read for the
+// first time. Separate from WalletController, which is the caller's personal wallet.
+import { OrgWalletController } from './controllers/v1/org-wallet.controller';
+import { OrgWalletReadModel } from './read-models/org-wallet.read-model';
+import { OrgWalletExportService } from './services/org-wallet-export.service';
 import { DisputesModule } from '../disputes/disputes.module';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
 import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
@@ -78,7 +83,7 @@ import { AutopayController } from './controllers/v1/autopay.controller';
   // DisputesModule for RefundApprovalService — 0139's maker-checker plane, which 0140 widened to cover credit notes
   // (its PUBLIC service, never its repository; DisputesModule imports nothing, so there is no cycle).
   imports: [MediaModule, TenancyModule, DisputesModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
-  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, ChargesController, CommissionRulesController, WalletController, AutopayController],
+  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, ChargesController, CommissionRulesController, WalletController, OrgWalletController, AutopayController],
   providers: [
     PaymentService,
     PayoutService,
@@ -109,6 +114,8 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     ChargeChangeRepository,
     ChargeChangeService,
     ChargeConsoleReadModel,
+    OrgWalletReadModel,
+    OrgWalletExportService,
     BookingClockedOutHandler,
     RazorpayPayoutWebhookHandler,
     PaymentsPublisher,

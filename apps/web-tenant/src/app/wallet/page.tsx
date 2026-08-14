@@ -1,85 +1,170 @@
-// apps/web-tenant/src/app/wallet/page.tsx · the tenant's wallet (balance + ledger statement). Server-first,
-// requireSession-gated. Read-only CQRS projection of the wallet-service double-entry ledger (Law 2/11 — this NEVER
-// moves money): wallet.balance gives the reconciled available + held figure (server-truth, never computed here),
-// wallet.ledger gives the per-entry statement with a server-computed running balance (balanceAfterMinor). Money via
-// formatMoneyMinor from bigint minor-unit strings (signed). Each read degrades independently (Law 12); noindex.
+// apps/web-tenant/src/app/wallet/page.tsx · W143 — THE ORGANISATION's wallet (PC-56 TENANT-4a).
+// Server-first, requireSession-gated, noindex, every string via i18n.
 //
-// P1-6: previously this shipped the payments list only with a "balance unavailable" note, because the seller SDK
-// exposed no wallet-balance/ledger read. The SDK now has wallet.balance + wallet.ledger (both the caller's OWN
-// wallet, server re-resolves the subject from the token — zero IDOR), so the real ledger-derived balance and the
-// running-balance statement are shown. No figure is computed client-side; the held amount is shown but flagged as
-// reserved (not withdrawable).
+// WHAT CHANGED HERE, AND WHY IT IS NOT A REGRESSION.
+// Until this wave this page read `wallet.balance` / `wallet.ledger`, and both resolve their subject from
+// `ctx.userId` — the signed-in STAFF MEMBER's PERSONAL wallet. In the FPO's own console, under a sidebar
+// that says Money, that is the wrong party: an FPO with money in its main account saw a staff member's
+// personal balance, which for most staff is zero. The organisation's three accounts (main · commission ·
+// hold) have been written since 0006 by five code paths and read by nothing, anywhere. This page is the
+// first reader. A staff member's personal wallet lives in the member app, and the page says so rather
+// than leaving somebody to wonder where their own balance went.
+//
+// WHAT THIS PAGE SAYS THAT THE CANON'S SCREEN CANNOT:
+//   • each card's figure is the LEDGER's own sum, and where the cached balance disagrees the card says so;
+//   • the hold card reads zero and states WHY — no code path freezes tenant money (TENANT-3b);
+//   • ledger health reports only what a tenant can assert about its OWN book (its cached balances against
+//     its own entries; its own hash chain, verified with the writer's own function) and says plainly that
+//     platform-wide reconciliation is the platform's assurance, not a number restated here;
+//   • the escrow figure is the exact net of escrow legs carrying this tenant's id, labelled with that basis;
+//   • "Add funds (UPI)" and the payout-bank change with its 24h cooling period are NAMED as not built,
+//     rather than drawn as controls that would look like they moved money.
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
-import { DataTable } from '../../components/DataTable';
+import { tenantHasPerm } from '../../lib/auth';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import type { WalletBalance, WalletLedgerEntry } from '@krishalaya/sdk-js';
-import { presentLedgerEntry, totalWalletMinor } from '../../features/wallet/ledger';
+import {
+  ORG_ACCOUNTS, cardMinor, cardState, needsDriftNotice, holdNoteKey, healthIcon, healthLabelKey,
+  chainPhraseKey, escrowNoteKey, direction, gapNoteKey, isGapNamed, referenceHref,
+} from '../../features/wallet/org-console';
+import type { OrgWalletOverview } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
-  return { title: getTranslator().t('wallet.title'), robots: { index: false, follow: false } };
+  return { title: getTranslator().t('wal.title'), robots: { index: false, follow: false } };
 }
 
-export default async function WalletPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function WalletPage() {
   await requireSession('/wallet');
   const t = getTranslator();
   const lang = getLang();
+  const canView = tenantHasPerm('wallet.org_view');
 
-  let balance: WalletBalance | null = null;
-  let items: WalletLedgerEntry[] = []; let nextCursor: string | null = null; let failed = false;
-  const [balRes, ledRes] = await Promise.allSettled([
-    tenantClient().wallet.balance(),
-    tenantClient().wallet.ledger(searchParams.cursor, 50),
-  ]);
-  if (balRes.status === 'fulfilled') balance = balRes.value;
-  if (ledRes.status === 'fulfilled') { items = ledRes.value.items; nextCursor = ledRes.value.nextCursor; } else { failed = true; }
+  // Reflect-never-grant: the permission gate is the API's (0142's `wallet.org_view`); the page reflects it
+  // so an operator without the key reads a sentence instead of an empty screen that looks broken.
+  if (!canView) {
+    return (
+      <section>
+        <h1>{t.t('wal.title')}</h1>
+        <p className="kv-empty" role="status">{t.t('wal.restricted')}</p>
+      </section>
+    );
+  }
 
-  const ccy = balance?.currencyCode ?? 'INR';
+  let ov: OrgWalletOverview | null = null;
+  try {
+    ov = await tenantClient().orgWallet.overview();
+  } catch {
+    ov = null;
+  }
+
+  if (!ov) {
+    return (
+      <section>
+        <h1>{t.t('wal.title')}</h1>
+        {/* Law 12: the balances failed to load; the ledger is unaffected and payouts run on schedule. */}
+        <p className="kv-error" role="alert">{t.t('wal.loadError')}</p>
+      </section>
+    );
+  }
+
+  const ccy = ov.currencyCode;
+  const hold = ov.accounts.find((a) => a.code === 'hold');
 
   return (
     <section>
-      <h1>{t.t('wallet.title')}</h1>
-      <p className="kv-muted">{t.t('wallet.intro')}</p>
+      <h1>{t.t('wal.title')}</h1>
+      <p className="kv-muted">{t.t('wal.intro')}</p>
+      {/* The personal wallet is a different party's money and lives in a different app. Said once, here. */}
+      <p className="kv-field__hint">{t.t('wal.notYourPersonalWallet')}</p>
 
-      <div className="kv-card kv-wallet__balance">
-        <h2 className="kv-card__title">{t.t('wallet.balanceTitle')}</h2>
-        {balance ? (
-          <>
-            <p className="kv-wallet__total">{formatMoneyMinor(totalWalletMinor(balance.availableMinor, balance.heldMinor), ccy, lang)}
-              {balance.isFrozen && <span className="kv-badge kv-badge--frozen">{t.t('wallet.frozen')}</span>}
-            </p>
-            <dl className="kv-wallet__split">
-              <div><dt>{t.t('wallet.available')}</dt><dd>{formatMoneyMinor(balance.availableMinor, ccy, lang)}</dd></div>
-              <div><dt>{t.t('wallet.held')}</dt><dd>{formatMoneyMinor(balance.heldMinor, ccy, lang)}</dd></div>
-            </dl>
-            <p className="kv-field__hint kv-note">{t.t('wallet.heldHint')}</p>
-          </>
-        ) : (
-          <p className="kv-muted">{t.t('wallet.balanceLoadError')}</p>
-        )}
+      <div className="kv-cards">
+        {ORG_ACCOUNTS.map((code) => {
+          const a = ov!.accounts.find((x) => x.code === code)!;
+          return (
+            <div key={code} className="kv-card kv-card--money">
+              <h2 className="kv-card__title">{t.t(`wal.account.${code}`)}</h2>
+              <p className="kv-card__figure">{formatMoneyMinor(cardMinor(a.verdict), ccy, lang)}</p>
+              <p className="kv-field__hint">{t.t(`wal.accountMeaning.${code}`)}</p>
+              <p className="kv-badge">{t.t(`wal.state.${cardState(a.verdict)}`)}</p>
+              {a.isFrozen && <p className="kv-badge kv-badge--frozen">{t.t('wal.frozen')}</p>}
+              {/* Drift is stated on the card that has it — the figure above is the ledger's, always. */}
+              {needsDriftNotice(a.verdict) && a.verdict.kind === 'drifted' && (
+                <p className="kv-note" role="status">
+                  {t.t('wal.driftNotice', { cached: formatMoneyMinor(a.verdict.cachedMinor, ccy, lang), drift: formatMoneyMinor(a.verdict.driftMinor, ccy, lang) })}
+                </p>
+              )}
+              {code === 'hold' && <p className="kv-note">{t.t(holdNoteKey(ov!.holdBasis))}</p>}
+            </div>
+          );
+        })}
       </div>
 
-      <h2 className="kv-section-title">{t.t('wallet.statement')}</h2>
-      {failed ? <p className="kv-error" role="alert">{t.t('wallet.loadError')}</p> : (
-        <DataTable
-          rows={items}
-          empty={t.t('wallet.empty')}
-          columns={[
-            { header: t.t('wallet.colDate'), cell: (e) => (e.createdAt ? formatDate(e.createdAt, lang) : t.t('common.dash')) },
-            { header: t.t('wallet.colType'), cell: (e) => <span className="kv-badge">{e.txnType ?? e.description ?? t.t('common.dash')}</span> },
-            { header: t.t('wallet.colAmount'), cell: (e) => {
-              const v = presentLedgerEntry(e);
-              return <span className={v.tone === 'credit' ? 'kv-amount--credit' : v.tone === 'debit' ? 'kv-amount--debit' : ''}>{formatMoneyMinor(v.amountMinor, e.currencyCode, lang)}</span>;
-            } },
-            { header: t.t('wallet.colBalance'), cell: (e) => formatMoneyMinor(e.balanceAfterMinor, e.currencyCode, lang) },
-          ]}
-        />
+      {/* W143's "Add funds (UPI)" and the payout-bank card: named, not drawn. */}
+      <div className="kv-card">
+        <h2 className="kv-card__title">{t.t('wal.gapsTitle')}</h2>
+        <ul className="kv-list">
+          {isGapNamed(ov.gaps, 'add_funds') && <li>{t.t(gapNoteKey('add_funds'))}</li>}
+          {isGapNamed(ov.gaps, 'payout_bank_change') && <li>{t.t(gapNoteKey('payout_bank_change'))}</li>}
+          {isGapNamed(ov.gaps, 'tenant_hold_freeze') && <li>{t.t(gapNoteKey('tenant_hold_freeze'))}</li>}
+        </ul>
+      </div>
+
+      <h2 className="kv-section-title">{t.t('wal.todayTitle')}</h2>
+      {ov.today.length === 0 ? (
+        <p className="kv-empty" role="status">{t.t('wal.todayEmpty')}</p>
+      ) : (
+        <ul className="kv-feed">
+          {ov.today.map((m) => {
+            const href = referenceHref(m.referenceType, m.referenceId);
+            return (
+              <li key={m.entryId} className={`kv-feed__row kv-feed__row--${direction(m.amountMinor)}`}>
+                <span className="kv-feed__type">{m.txnType ?? t.t('common.dash')}</span>
+                <span className="kv-feed__amount">{formatMoneyMinor(m.amountMinor, m.currencyCode, lang)}</span>
+                <span className="kv-feed__account">{t.t(`wal.account.${m.accountCode}`)}</span>
+                <span className="kv-feed__ref">
+                  {href ? <Link href={href}>{m.referenceId}</Link> : (m.referenceId ?? t.t('common.dash'))}
+                </span>
+                <span className="kv-feed__at">{formatDate(m.createdAt, lang)}</span>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      {nextCursor && <p className="kv-pager"><a href={`/wallet?cursor=${encodeURIComponent(nextCursor)}`} className="kv-btn--link">{t.t('common.nextPage')}</a></p>}
+
+      <h2 className="kv-section-title">{t.t('wal.healthTitle')}</h2>
+      <ul className="kv-list kv-health">
+        {ov.health.map((h) => (
+          <li key={h.check} className={`kv-health__row kv-health__row--${h.state}`}>
+            <span aria-hidden="true">{healthIcon(h.state)}</span>
+            <span>{t.t(healthLabelKey(h.check))}</span>
+            {/* Four vocabularies, deliberately: 'unverifiable' must never read as a tick. */}
+            <span className="kv-badge">{t.t(`wal.healthState.${h.state}`)}</span>
+            {h.check === 'own_chain' && ov!.chain && (
+              <span className="kv-muted">{t.t(chainPhraseKey(ov!.chain.verdict.kind as never, ov!.chain.headMatches))}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="kv-field__hint">{t.t('wal.healthPlatformNote')}</p>
+
+      <h2 className="kv-section-title">{t.t('wal.escrowTitle')}</h2>
+      <div className="kv-card">
+        <p className="kv-card__figure">{formatMoneyMinor(ov.escrow.heldMinor, ccy, lang)}</p>
+        <p className="kv-field__hint">{t.t(escrowNoteKey(ov.escrow.heldMinor), { count: String(ov.escrow.orderCount) })}</p>
+        {/* The basis, named on the screen: this is the net of the platform escrow account's legs that carry
+            this tenant's id — arithmetic off the book, not a cached projection. */}
+        <p className="kv-note">{t.t('wal.escrowBasis')}</p>
+      </div>
+
+      <p className="kv-pager">
+        <Link href="/wallet/transactions" className="kv-btn--link">{t.t('wal.openLedger')}</Link>
+      </p>
+      {hold && hold.entryCount === 0 && <p className="kv-field__hint">{t.t('wal.holdNeverWritten')}</p>}
     </section>
   );
 }

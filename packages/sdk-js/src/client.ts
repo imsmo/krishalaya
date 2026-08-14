@@ -8,7 +8,7 @@ import { LookupsResource } from './resources/lookups';
 import { TraceabilityResource } from './resources/traceability';
 import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
-import { PaymentsResource, PayoutsResource, WalletResource, AutopayResource } from './resources/payments';
+import { PaymentsResource, PayoutsResource, WalletResource, OrgWalletResource, AutopayResource } from './resources/payments';
 import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
 import { TenancyResource, ConsoleHomeResource } from './resources/tenancy';
 import { DairyResource } from './resources/dairy';
@@ -62,6 +62,8 @@ export class KrishalayaClient {
   readonly payments: PaymentsResource;
   readonly payouts: PayoutsResource;
   readonly wallet: WalletResource;
+  /** PC-56 TENANT-4a: the ORGANISATION's wallet (W143/W144) — the tenant's own book, not the caller's. */
+  readonly orgWallet: OrgWalletResource;
   readonly autopay: AutopayResource;
   readonly kyc: KycResource;
   readonly bankAccounts: BankAccountsResource;
@@ -134,6 +136,7 @@ export class KrishalayaClient {
     this.payments = new PaymentsResource(this.http);
     this.payouts = new PayoutsResource(this.http);
     this.wallet = new WalletResource(this.http);
+    this.orgWallet = new OrgWalletResource(this.http);
     this.autopay = new AutopayResource(this.http);
     this.kyc = new KycResource(this.http);
     this.bankAccounts = new BankAccountsResource(this.http);

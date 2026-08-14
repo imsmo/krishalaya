@@ -60,6 +60,11 @@ export type { TradeInvoiceRow, TradeInvoiceLine, TradeInvoiceDetail, InvoiceMont
 // PC-56 TENANT-3c-2: W150's charges & taxes.
 export type { ChargeRow, TaxRuleRow, ChargeProposalRow, ChargeOverview, ChargeProposalResult } from './resources/payments';
 export { ChargesResource } from './resources/payments';
+// PC-56 TENANT-4a: W143/W144 — the ORGANISATION's wallet (the tenant's own three accounts), distinct from the
+// caller's personal wallet on `client.wallet`.
+export { OrgWalletResource } from './resources/payments';
+export type { OrgWalletOverview, OrgAccountRow, OrgBalanceVerdict, OrgMovementRow, OrgLedgerRow, OrgLedgerWindow, OrgHealthLine, OrgLedgerExport, OrgTenantAccountCode } from './resources/payments';
+
 export * from './resources/fintech';
 export * from './resources/partner-api';
 export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4

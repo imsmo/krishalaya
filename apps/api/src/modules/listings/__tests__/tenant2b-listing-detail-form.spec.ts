@@ -205,7 +205,15 @@ describe('TENANT-2b · the routes and absences (comments stripped)', () => {
   });
 
   it('no migration was needed — 0005 already carried every column this wave reads and writes', () => {
+    // THIS ASSERTION USED TO READ `filter((f) => f.startsWith('0139')).toEqual([])`, which was a claim about
+    // the NEXT wave's migration number rather than about this wave. It went red the moment TENANT-3b shipped
+    // 0139_dispute_refund_gate.sql, and stayed red through 3c-1 and 3c-2 — a suite is worth nothing if a
+    // passing test depends on nobody else doing any work. Repaired in TENANT-4a to assert what is actually
+    // true and stays true: every migration header names the wave that authored it, and none names this one.
     const dir = path.join(__dirname, '..', '..', '..', '..', '..', '..', 'db', 'migrations');
-    expect(fs.readdirSync(dir).filter((f) => f.startsWith('0139'))).toEqual([]);
+    const authoredForThisWave = fs.readdirSync(dir)
+      .filter((f) => f.endsWith('.sql'))
+      .filter((f) => fs.readFileSync(path.join(dir, f), 'utf8').includes('TENANT-2b'));
+    expect(authoredForThisWave).toEqual([]);
   });
 });
