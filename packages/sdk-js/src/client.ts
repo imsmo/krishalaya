@@ -8,7 +8,7 @@ import { LookupsResource } from './resources/lookups';
 import { TraceabilityResource } from './resources/traceability';
 import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
-import { PaymentsResource, PayoutsResource, WalletResource, OrgWalletResource, PayoutConsoleResource, AutopayResource } from './resources/payments';
+import { PaymentsResource, PayoutsResource, WalletResource, OrgWalletResource, PayoutConsoleResource, SettlementsResource, AutopayResource } from './resources/payments';
 import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
 import { TenancyResource, ConsoleHomeResource } from './resources/tenancy';
 import { DairyResource } from './resources/dairy';
@@ -66,6 +66,8 @@ export class KrishalayaClient {
   readonly orgWallet: OrgWalletResource;
   /** PC-56 TENANT-4b: the ORGANISATION's payout queue + batch approval (W145/W146). */
   readonly payoutConsole: PayoutConsoleResource;
+  /** PC-56 TENANT-4c: settlement cycles + statements (W147/W148). */
+  readonly settlements: SettlementsResource;
   readonly autopay: AutopayResource;
   readonly kyc: KycResource;
   readonly bankAccounts: BankAccountsResource;
@@ -140,6 +142,7 @@ export class KrishalayaClient {
     this.wallet = new WalletResource(this.http);
     this.orgWallet = new OrgWalletResource(this.http);
     this.payoutConsole = new PayoutConsoleResource(this.http);
+    this.settlements = new SettlementsResource(this.http);
     this.autopay = new AutopayResource(this.http);
     this.kyc = new KycResource(this.http);
     this.bankAccounts = new BankAccountsResource(this.http);

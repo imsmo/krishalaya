@@ -253,6 +253,87 @@ export interface PayoutBatchPrepared {
   checkerThresholdMinor: string; needsChecker: boolean;
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// PC-56 TENANT-4c · W147/W148 — the settlement cycle and the statements it produces. Every method needs
+// `settlement.close` server-side; the checker must be a different person than the requester.
+// ---------------------------------------------------------------------------------------------------------------
+export class SettlementsResource {
+  constructor(private readonly http: HttpClient) {}
+  /** W147: the live cycle (opened on first read), its progress, the per-seller table and the deduction basis. */
+  async overview(signal?: AbortSignal): Promise<SettlementOverview> {
+    return (await this.http.request<SettlementOverview>('GET', 'settlements', { signal })).data;
+  }
+  /** Step one of "Close current cycle" — a REQUEST. The period must have ended and have sellers to settle. */
+  async requestClose(cycleId: string): Promise<SettlementCycle> {
+    return (await this.http.request<SettlementCycle>('POST', `settlements/${encodeURIComponent(cycleId)}/close-request`, { body: {} })).data;
+  }
+  /** Step two — a DIFFERENT person approves, or rejects with a reason of at least 20 characters. */
+  async decideClose(cycleId: string, input: { decision: 'approved' | 'rejected'; note?: string }): Promise<SettlementCycle> {
+    return (await this.http.request<SettlementCycle>('POST', `settlements/${encodeURIComponent(cycleId)}/close-decision`, { body: input })).data;
+  }
+  /** ONE bounded, resumable generation pass. Call again until `progress.kind === 'complete'`. */
+  async generate(cycleId: string): Promise<SettlementCycle & { generatedNow: number; failed: number }> {
+    return (await this.http.request<SettlementCycle & { generatedNow: number; failed: number }>('POST', `settlements/${encodeURIComponent(cycleId)}/generate`, { body: {} })).data;
+  }
+  /** W148: every statement this tenant has issued, keyset. */
+  async statements(opts: { cycleId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<SettlementStatementsPage> {
+    return (await this.http.request<SettlementStatementsPage>('GET', 'settlements/statements', { query: { cycleId: opts.cycleId, cursor: opts.cursor, limit: opts.limit ?? 50 }, signal })).data;
+  }
+  /** W148's org monthly statement — DERIVED from the ledger, with a receipt. Refuses an open month. */
+  async orgStatement(period: string, signal?: AbortSignal): Promise<OrgStatementResult> {
+    return (await this.http.request<OrgStatementResult>('GET', 'settlements/org-statement', { query: { period }, signal })).data;
+  }
+}
+
+export type SettlementCycleStatus = 'open' | 'pending_close' | 'closing' | 'closed' | 'rejected';
+export type SettlementProgress =
+  | { kind: 'not_started' }
+  | { kind: 'generating'; generated: number; expected: number; remaining: number }
+  | { kind: 'complete'; generated: number }
+  | { kind: 'over_generated'; generated: number; expected: number };
+export interface SettlementCycle {
+  id: string; tenantId: string; periodStart: string; periodEnd: string; status: SettlementCycleStatus;
+  requestedBy: string | null; requestedAt: string | null;
+  decidedBy: string | null; decidedAt: string | null; decisionNote: string | null;
+  sellersExpected: number | null; statementsGenerated: number;
+  grossMinor: string; netMinor: string; closedAt: string | null; createdAt: string;
+  progress: SettlementProgress;
+}
+export interface SettlementCycleSellerRow {
+  sellerUserId: string; sellerName: string | null; orders: number;
+  grossMinor: string; commissionMinor: string; taxMinor: string; netMinor: string; reconciles: boolean;
+}
+export interface SettlementOverview {
+  cycle: SettlementCycle | null;
+  recent: SettlementCycle[];
+  sellers: SettlementCycleSellerRow[];
+  sellerCount: number;
+  cycleGrossMinor: string;
+  deductionBasis: 'charged_to_buyer' | 'charged_to_seller' | 'no_rule_resolved';
+  legacyDailyStatements: number;
+  statementCount: number;
+}
+export interface SettlementStatementListRow {
+  id: string; statementNo: string; sellerUserId: string; sellerName: string | null;
+  periodStart: string; periodEnd: string; periodKind: 'cycle' | 'legacy_daily'; dayCount: number;
+  grossMinor: string; commissionMinor: string; taxMinor: string; netMinor: string;
+  reconciles: boolean; hasPdf: boolean; createdAt: string;
+}
+export interface SettlementStatementsPage {
+  items: SettlementStatementListRow[]; nextCursor: string | null;
+  counts: { total: number; cycleBased: number; legacyDaily: number };
+}
+export interface OrgStatementResult {
+  statement: {
+    period: string; openingMinor: string; closingMinor: string;
+    lines: Array<{ txnType: string; creditMinor: string; debitMinor: string; count: number }>;
+    reconciles: boolean; basis: 'derived_from_ledger';
+  };
+  receipt: { fileName: string; rowCount: number; sha256: string; digestBasis: string; generatedAt: string; requestedBy: string; coverage: string; omissions: Array<{ reason: string; count: number }> };
+  header: string[];
+  rows: string[][];
+}
+
 export class PaymentsResource {
   /** GST trade-invoice sub-resource: `client.payments.invoices.getByOrder(...) / .downloadUrl(...)`. */
   readonly invoices: InvoicesResource;

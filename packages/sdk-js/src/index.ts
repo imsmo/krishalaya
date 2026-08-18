@@ -65,6 +65,9 @@ export { ChargesResource } from './resources/payments';
 export { OrgWalletResource } from './resources/payments';
 // PC-56 TENANT-4b: W145/W146 — the organisation's payout queue and the batch approval gate.
 export { PayoutConsoleResource } from './resources/payments';
+// PC-56 TENANT-4c: W147/W148 — the settlement cycle and its statements.
+export { SettlementsResource } from './resources/payments';
+export type { SettlementCycle, SettlementCycleStatus, SettlementProgress, SettlementOverview, SettlementCycleSellerRow, SettlementStatementListRow, SettlementStatementsPage, OrgStatementResult } from './resources/payments';
 export type { PayoutQueueRow, PayoutQueuePage, PayoutBatchRow, PayoutBatchReview, PayoutBatchPrepared, PayoutPreflight, PayoutPreflightLine, PayoutPreflightCheck, PayoutRetryPlan } from './resources/payments';
 export type { OrgWalletOverview, OrgAccountRow, OrgBalanceVerdict, OrgMovementRow, OrgLedgerRow, OrgLedgerWindow, OrgHealthLine, OrgLedgerExport, OrgTenantAccountCode } from './resources/payments';
 

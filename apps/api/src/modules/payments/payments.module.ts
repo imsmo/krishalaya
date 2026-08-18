@@ -65,6 +65,12 @@ import { OrgWalletExportService } from './services/org-wallet-export.service';
 // PC-56 TENANT-4b: W145/W146 — the payout queue and the maker-checker gate over a run.
 import { PayoutApprovalService } from './services/payout-approval.service';
 import { PayoutConsoleReadModel } from './read-models/payout-console.read-model';
+// PC-56 TENANT-4c: W147/W148 — the settlement cycle that did not exist, and the statements it produces.
+import { SettlementCyclesController } from './controllers/v1/settlement-cycles.controller';
+import { SettlementCycleRepository } from './repositories/settlement-cycle.repository';
+import { SettlementCycleService } from './services/settlement-cycle.service';
+import { OrgStatementService } from './services/org-statement.service';
+import { SettlementConsoleReadModel } from './read-models/settlement-console.read-model';
 import { DisputesModule } from '../disputes/disputes.module';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
 import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
@@ -86,7 +92,7 @@ import { AutopayController } from './controllers/v1/autopay.controller';
   // DisputesModule for RefundApprovalService — 0139's maker-checker plane, which 0140 widened to cover credit notes
   // (its PUBLIC service, never its repository; DisputesModule imports nothing, so there is no cycle).
   imports: [MediaModule, TenancyModule, DisputesModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
-  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, ChargesController, CommissionRulesController, WalletController, OrgWalletController, AutopayController],
+  controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, ChargesController, CommissionRulesController, WalletController, OrgWalletController, SettlementCyclesController, AutopayController],
   providers: [
     PaymentService,
     PayoutService,
@@ -121,6 +127,10 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     OrgWalletExportService,
     PayoutApprovalService,
     PayoutConsoleReadModel,
+    SettlementCycleRepository,
+    SettlementCycleService,
+    OrgStatementService,
+    SettlementConsoleReadModel,
     BookingClockedOutHandler,
     RazorpayPayoutWebhookHandler,
     PaymentsPublisher,
