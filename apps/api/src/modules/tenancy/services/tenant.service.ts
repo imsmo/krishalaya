@@ -13,11 +13,12 @@ import { Tenant } from '../domain/tenant.entity';
 import { TenantSetting } from '../domain/tenant-settings.entity';
 import { allowsSelfServeWrites } from '../domain/tenant.state';
 import { DomainEvent } from '../domain/tenancy.events';
-import { TenantNotFoundError, TenantForbiddenError, TenantNotWritableError, UnknownSettingError } from '../domain/tenancy.errors';
+import { TenantNotFoundError, TenantForbiddenError, TenantNotWritableError, UnknownSettingError , InvalidTenantProfileError } from '../domain/tenancy.errors';
 import { TenantRepository } from '../repositories/tenant.repository';
 import { TenantSettingsRepository } from '../repositories/tenant-settings.repository';
 import { TenantFeatureRepository } from '../repositories/tenant-feature.repository';
 import { UsageCounterRepository } from '../repositories/usage-counter.repository';
+import { CurrentIdentity, checksumSupported, diffOf, isNoOp, reasonProblem, reasonRequired, validateAll } from '../domain/tax-identity';
 import { UpdateTenantProfileDto } from '../dto/update-tenant.dto';
 import { PutTenantSettingDto } from '../dto/create-tenant-settings.dto';
 import { TenantActor } from '../policies/tenancy.policies';
@@ -53,12 +54,77 @@ export class TenantService {
           const t = await this.tenants.getForUpdate(tx, tenantId);
           if (!t) throw new TenantNotFoundError(tenantId);
           if (!allowsSelfServeWrites(t.status)) throw new TenantNotWritableError(t.status);
-          const diff = t.updateProfile(dto);
+          // PC-56 TENANT-4d-3: the tenant's COUNTRY formats, resolved before validation — the Indian GSTIN/PAN
+          // regexes that used to be hardcoded in the entity refused every other country's identifier outright.
+          const formats = await this.tenants.taxIdentityFormats(tenantId, t.countryCode);
+          const before = t.identity();
+          const { reason, ...patch } = dto;
+          const diff = t.updateProfile(patch, formats);
+          // W2426 promises the audit entry carries a REASON. `audit_log.reason` and `AuditEntry.reason` have both
+          // existed all along; this action never passed one, so the fourth of the four promised facts was a dead
+          // column. Required only when a value is being REPLACED or CLEARED (see reasonProblem) — "why did this
+          // tenant's GSTIN change?" is the question asked of a document already filed.
+          const rows = diffOf(before, diff.new as Partial<CurrentIdentity>);
+          const problem = reasonProblem(reason, rows);
+          if (problem) throw new InvalidTenantProfileError(`reason is ${problem}`, [{ field: 'reason', reason: problem }]);
           await this.tenants.updateProfile(tx, t);
-          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'tenancy.tenant_profile_updated', entityType: 'tenant', entityId: tenantId, oldValue: diff.old, newValue: diff.new, ip });
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'tenancy.tenant_profile_updated', entityType: 'tenant', entityId: tenantId, oldValue: diff.old, newValue: diff.new, reason: reason?.trim() || null, ip });
           await this.flush(tx, tenantId, t.pullEvents());
           return this.serialize(t);
         }, { userId: actor.userId })));
+  }
+
+  /**
+   * W2424 + W2425 in one read-only call: validate the whole patch and return EVERY error with its reason, plus
+   * the diff against the tenant's current values. **Nothing is saved.**
+   *
+   * This is not a second write path — it shares the exact validator the write uses (`validateAll`), so the
+   * review screen cannot show a diff the write would compute differently. It exists because the two things
+   * W2424/W2425 promise (all errors at once, and a diff before submitting) are impossible to deliver from a
+   * write endpoint that throws on the first bad field and only reports success after it has already saved.
+   */
+  async previewProfile(tenantId: string, actor: TenantActor, dto: UpdateTenantProfileDto) {
+    this.assertManager(actor);
+    const t = await this.tenants.getById(tenantId);
+    if (!t) throw new TenantNotFoundError(tenantId);
+    const formats = await this.tenants.taxIdentityFormats(tenantId, t.countryCode);
+    const { reason, ...patch } = dto;
+    const result = validateAll(formats, {
+      gstin: patch.gstin, pan: patch.pan, cin_or_reg_no: patch.cinOrRegNo, fssai_license: patch.fssaiLicense,
+      legalName: patch.legalName, ownerName: patch.ownerName, ownerPhone: patch.ownerPhone, ownerEmail: patch.ownerEmail,
+    });
+    const diff = diffOf(t.identity(), result.cleaned);
+    return {
+      // A tenant whose status forbids self-serve writes learns that HERE, before filling in a form.
+      writable: allowsSelfServeWrites(t.status),
+      errors: result.errors,
+      verdicts: result.verdicts,
+      diff,
+      noOp: isNoOp(diff),
+      reasonRequired: reasonRequired(diff),
+      reasonProblem: reasonProblem(reason, diff),
+    };
+  }
+
+  /** W2424's form: the fields this tenant's COUNTRY defines, with labels as i18n keys and examples. */
+  async taxIdentityFields(tenantId: string, actor: TenantActor) {
+    this.assertManager(actor);
+    const t = await this.tenants.getById(tenantId);
+    if (!t) throw new TenantNotFoundError(tenantId);
+    const formats = await this.tenants.taxIdentityFormats(tenantId, t.countryCode);
+    return {
+      countryCode: t.countryCode,
+      // An empty list is a REAL state the screen must render ("we have not recorded your country's formats"),
+      // not an error and not a reason to fall back to India's.
+      fields: formats.map((f) => ({
+        fieldCode: f.fieldCode, labelKey: f.labelKey, maxLength: f.maxLength, example: f.example,
+        isRequired: f.isRequired,
+        // Whether a check digit will actually be verified, so the form can say so up front rather than
+        // implying every field is machine-checked.
+        checksum: f.checksumAlgo === null ? ('not_applicable' as const) : checksumSupported(f.checksumAlgo) ? ('verified' as const) : ('not_verifiable' as const),
+      })),
+      current: t.identity(),
+    };
   }
 
   /** Signal the god-mode plane that onboarding is ready for approval. Does NOT change status (Law 11). */

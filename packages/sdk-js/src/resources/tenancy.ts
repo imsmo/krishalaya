@@ -8,7 +8,9 @@ export class TenancyResource {
   /** W120's billing surface: `client.tenancy.billing.console() / .invoices(tab) / .invoice(id) / .payQuote(id)`.
    *  Before PC-56 TENANT-4d-2 there was no route to a tenant's own SaaS invoices at all. */
   readonly billing: SaasBillingResource;
-  constructor(private readonly http: HttpClient) { this.billing = new SaasBillingResource(http); }
+  /** W2424-W2427's tax-identity chain: `client.tenancy.profile.taxIdentity() / .preview(patch) / .update(...)`. */
+  readonly profile: TenantProfileResource;
+  constructor(private readonly http: HttpClient) { this.billing = new SaasBillingResource(http); this.profile = new TenantProfileResource(http); }
 
   /** Public plan catalogue (apply screen). */
   async plans(signal?: AbortSignal): Promise<Plan[]> {
@@ -440,5 +442,93 @@ export class SaasBillingResource {
    */
   async payQuote(id: string, signal?: AbortSignal): Promise<SaasPayQuote> {
     return (await this.http.request<SaasPayQuote>('GET', `billing/invoices/${encodeURIComponent(id)}/pay-quote`, { signal })).data;
+  }
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* W2424-W2427 — THE TENANT'S OWN TAX IDENTITY (PC-56 TENANT-4d-3)                                              */
+/*                                                                                                              */
+/* `GET /v1/tenants/me` and `PATCH /v1/tenants/me` have existed since TENANT-1 and this SDK had NO METHOD for    */
+/* either, so no console screen could reach the profile plane even if one existed — which is why W120's "Update  */
+/* GST details" button led nowhere. These are those methods.                                                    */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+export const TAX_FIELD_CODES = ['gstin', 'pan', 'cin_or_reg_no', 'fssai_license'] as const;
+export type TaxFieldCode = (typeof TAX_FIELD_CODES)[number];
+
+/** Whether a check digit was actually verified. `failed` is an ADVISORY the review step shows — the API stores
+ *  the value and lets a human decide, because a checksum that is subtly wrong would refuse correct numbers. */
+export type ChecksumVerdict = 'verified' | 'failed' | 'not_applicable' | 'not_verifiable';
+
+export type TaxFieldErrorReason = 'malformed' | 'too_long' | 'not_plain_text' | 'required';
+
+export interface TaxFieldError { field: string; reason: TaxFieldErrorReason; detail?: string }
+
+export interface TaxIdentityField {
+  fieldCode: TaxFieldCode;
+  /** An i18n KEY, never a label: "GSTIN" is India's word for this field and Bangladesh's row says BIN. */
+  labelKey: string;
+  maxLength: number;
+  example: string | null;
+  isRequired: boolean;
+  checksum: Exclude<ChecksumVerdict, 'verified' | 'failed'>;
+}
+
+export interface TaxIdentityForm {
+  countryCode: string;
+  /** EMPTY is a real state the screen must render — this country's formats are not recorded, so identifiers are
+   *  accepted as length-capped plain text. It is never a reason to fall back to another country's rules. */
+  fields: TaxIdentityField[];
+  current: {
+    gstin: string | null; pan: string | null; cinOrRegNo: string | null; fssaiLicense: string | null;
+    legalName: string; ownerName: string | null; ownerPhone: string | null; ownerEmail: string | null;
+  };
+}
+
+export interface TenantProfilePatch {
+  legalName?: string; displayName?: string; regionId?: string | null;
+  gstin?: string | null; pan?: string | null; cinOrRegNo?: string | null; fssaiLicense?: string | null;
+  ownerName?: string | null; ownerPhone?: string | null; ownerEmail?: string | null;
+  /** W2426's audit reason. Required by the API exactly when a value is REPLACED or CLEARED. */
+  reason?: string;
+}
+
+export interface ProfileDiffRow { field: string; from: string | null; to: string | null }
+
+export interface ProfilePreview {
+  /** False when the tenant's status forbids self-serve writes — learned BEFORE filling in a form. */
+  writable: boolean;
+  /** EVERY invalid field with its reason (W2424), not just the first. */
+  errors: TaxFieldError[];
+  verdicts: Partial<Record<TaxFieldCode, { kind: 'ok'; checksum: ChecksumVerdict } | { kind: 'cleared' }>>;
+  /** W2425's diff, computed from the CLEANED values — what would actually be stored. */
+  diff: ProfileDiffRow[];
+  noOp: boolean;
+  reasonRequired: boolean;
+  reasonProblem: TaxFieldErrorReason | null;
+}
+
+export class TenantProfileResource {
+  constructor(private readonly http: HttpClient) {}
+
+  /** The tenant's own row. */
+  async get(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('GET', 'tenants/me', { signal })).data;
+  }
+
+  /** W2424's field list for THIS TENANT'S COUNTRY, plus its current values. */
+  async taxIdentity(signal?: AbortSignal): Promise<TaxIdentityForm> {
+    return (await this.http.request<TaxIdentityForm>('GET', 'tenants/me/tax-identity', { signal })).data;
+  }
+
+  /** W2424 + W2425: validate everything and diff it, WITHOUT saving. */
+  async preview(patch: TenantProfilePatch, signal?: AbortSignal): Promise<ProfilePreview> {
+    return (await this.http.request<ProfilePreview>('POST', 'tenants/me/preview', { body: patch, signal })).data;
+  }
+
+  /** The audited write. Idempotency-keyed (Law 3), so W2427's Retry cannot apply a change twice. */
+  async update(patch: TenantProfilePatch, idempotencyKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return (await this.http.request<Record<string, unknown>>('PATCH', 'tenants/me', { idempotencyKey, body: patch, signal })).data;
   }
 }

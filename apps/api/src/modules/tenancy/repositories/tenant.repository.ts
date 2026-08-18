@@ -7,6 +7,7 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Tenant } from '../domain/tenant.entity';
 import { TenantStatus } from '../domain/tenant.state';
+import { TaxFieldCode, TaxIdentityFormat } from '../domain/tax-identity';
 
 const COLS = `id, slug, legal_name, display_name, tenant_type_id, country_code, region_id, gstin, pan, cin_or_reg_no,
   fssai_license, owner_name, owner_phone, owner_email, status, risk_score, approved_at, created_at`;
@@ -32,6 +33,29 @@ export class TenantRepository {
     const r = await tx.query(`SELECT ${COLS} FROM tenants WHERE id=$1 FOR UPDATE`, [tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
+  /**
+   * The tax/registration identifier formats for a COUNTRY (0147). Platform reference data — no tenant_id, no
+   * RLS, SELECT-only for kv_app — so this is the one read in this repository that is not tenant-scoped, and it
+   * is keyed by the country of the tenant the caller already resolved rather than by anything user-supplied.
+   *
+   * An EMPTY result is a real answer, not an error: a country whose formats nobody has recorded accepts
+   * length-capped plain text (see domain/tax-identity.ts). Refusing a correct number because we have not
+   * researched the country is the defect 0147 exists to fix.
+   */
+  async taxIdentityFormats(tenantId: string, countryCode: string): Promise<TaxIdentityFormat[]> {
+    // `tenantId` is passed for SHARD ROUTING only (forTenant picks the replica and sets app.tenant_id); the row
+    // filter is the country. It is the caller's own tenant, never anything user-supplied.
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT field_code, label_key, pattern, max_length, example, checksum_algo, is_required, sort_order
+         FROM tax_identity_formats WHERE country_code = $1 AND deleted_at IS NULL ORDER BY sort_order, field_code`,
+      [countryCode]);
+    return r.rows.map((x: any) => ({
+      fieldCode: x.field_code as TaxFieldCode, labelKey: x.label_key, pattern: x.pattern,
+      maxLength: Number(x.max_length), example: x.example ?? null, checksumAlgo: x.checksum_algo ?? null,
+      isRequired: x.is_required === true, sortOrder: Number(x.sort_order),
+    }));
+  }
+
   /** Profile-only UPDATE — deliberately omits status/slug/tenant_type_id/country_code/risk_score (god-mode). */
   async updateProfile(tx: TxContext, t: Tenant): Promise<void> {
     const p = t.toProps();

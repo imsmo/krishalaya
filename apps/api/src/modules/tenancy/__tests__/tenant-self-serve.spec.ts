@@ -26,29 +26,57 @@ describe('tenant.state vocabulary', () => {
   });
 });
 
+
+// PC-56 TENANT-4d-3: the formats are now an ARGUMENT, resolved per country from `tax_identity_formats` (0147),
+// because the Indian GSTIN/PAN regexes that used to be hardcoded in the entity refused every other country's
+// identifier outright. India's four rows, as the migration seeds them.
+const IN_FORMATS = [
+  { fieldCode: 'gstin' as const, labelKey: 'tax.field.gstin', pattern: '^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$', maxLength: 15, example: '24AABCU9603R1Z5', checksumAlgo: 'gstin_mod36', isRequired: false, sortOrder: 10 },
+  { fieldCode: 'pan' as const, labelKey: 'tax.field.pan', pattern: '^[A-Z]{5}[0-9]{4}[A-Z]$', maxLength: 10, example: 'AABCU9603R', checksumAlgo: null, isRequired: false, sortOrder: 20 },
+];
+
 describe('Tenant profile (self-serve)', () => {
   it('updates editable fields, validates GSTIN/PAN/email, emits profile_updated', () => {
     const t = tenant();
-    const diff = t.updateProfile({ displayName: 'Acme Farmer Producer Co', gstin: '29ABCDE1234F1Z5', ownerEmail: 'Owner@Acme.IN' });
+    // 29ABCDE1234F1Z5 is shape-valid but its CHECK DIGIT is wrong, which the old regex could not see. With a
+    // real GSTIN it passes; the checksum case is asserted in tenant4d3-tax-identity.spec.ts.
+    const diff = t.updateProfile({ displayName: 'Acme Farmer Producer Co', gstin: '24AABCU9603R1Z5', ownerEmail: 'Owner@Acme.IN' }, IN_FORMATS);
     expect(diff.new.displayName).toBe('Acme Farmer Producer Co');
-    expect(t.toProps().gstin).toBe('29ABCDE1234F1Z5');
+    expect(t.toProps().gstin).toBe('24AABCU9603R1Z5');
     expect(t.toProps().ownerEmail).toBe('owner@acme.in');      // normalised
     expect(t.pullEvents().map((e) => e.type)).toContain(TenancyEventType.TenantProfileUpdated);
   });
-  it('rejects malformed GSTIN/PAN/phone/email and markup', () => {
-    expect(() => tenant().updateProfile({ gstin: 'NOPE' })).toThrow(InvalidTenantProfileError);
-    expect(() => tenant().updateProfile({ pan: '1234567890' })).toThrow(InvalidTenantProfileError);
-    expect(() => tenant().updateProfile({ ownerPhone: 'abc' })).toThrow(InvalidTenantProfileError);
-    expect(() => tenant().updateProfile({ ownerEmail: 'not-an-email' })).toThrow(InvalidTenantProfileError);
-    expect(() => tenant().updateProfile({ displayName: '<script>' })).toThrow(InvalidTenantProfileError);
+  it('rejects malformed GSTIN/PAN/phone/email and markup — against the COUNTRY\'s formats', () => {
+    expect(() => tenant().updateProfile({ gstin: 'NOPE' }, IN_FORMATS)).toThrow(InvalidTenantProfileError);
+    expect(() => tenant().updateProfile({ pan: '1234567890' }, IN_FORMATS)).toThrow(InvalidTenantProfileError);
+    expect(() => tenant().updateProfile({ ownerPhone: 'abc' }, IN_FORMATS)).toThrow(InvalidTenantProfileError);
+    expect(() => tenant().updateProfile({ ownerEmail: 'not-an-email' }, IN_FORMATS)).toThrow(InvalidTenantProfileError);
+    expect(() => tenant().updateProfile({ displayName: '<script>' }, IN_FORMATS)).toThrow(InvalidTenantProfileError);
+  });
+  it('EVERY invalid field is reported, not just the first (W2424)', () => {
+    // The old validator threw inside the first failing helper, so a form with three problems reported one and
+    // the tenant learned the other two on two more round trips.
+    try {
+      tenant().updateProfile({ gstin: 'NOPE', pan: 'ALSO-BAD', ownerEmail: 'not-an-email' }, IN_FORMATS);
+      throw new Error('expected a refusal');
+    } catch (e) {
+      const fields = (e as InvalidTenantProfileError).fields ?? [];
+      expect(fields.map((f) => f.field).sort()).toEqual(['gstin', 'ownerEmail', 'pan']);
+    }
+  });
+  it('a country with NO recorded formats is not blocked — the identifier is stored as plain text', () => {
+    // Rule zero: refusing a correct Bangladeshi BIN because nobody has seeded its format is the defect.
+    const t = tenant({ countryCode: 'BD' });
+    t.updateProfile({ gstin: 'BIN-1234567890' }, []);
+    expect(t.toProps().gstin).toBe('BIN-1234567890');
   });
   it('a no-op patch throws (nothing to change)', () => {
-    expect(() => tenant({ displayName: 'Acme' }).updateProfile({ displayName: 'Acme' })).toThrow(InvalidTenantProfileError);
+    expect(() => tenant({ displayName: 'Acme' }).updateProfile({ displayName: 'Acme' }, IN_FORMATS)).toThrow(InvalidTenantProfileError);
   });
   it('cannot touch status/slug/risk — unknown keys are ignored, status unchanged (Law 11)', () => {
     const t = tenant({ status: 'active' });
     // @ts-expect-error status is not part of TenantProfilePatch — it is ignored, leaving no real change
-    expect(() => t.updateProfile({ status: 'terminated' })).toThrow(InvalidTenantProfileError);
+    expect(() => t.updateProfile({ status: 'terminated' }, IN_FORMATS)).toThrow(InvalidTenantProfileError);
     expect(t.toProps().status).toBe('active');   // never mutated by the self-serve path
   });
   it('submitForReview is allowed only when pending and never changes status', () => {

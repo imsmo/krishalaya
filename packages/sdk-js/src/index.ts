@@ -107,4 +107,7 @@ export type { ConsoleListingRow, ConsoleCounts, QcQueueItem, QcKpis, QcRejectRea
 export type { PlanUsageView, PlanMeter, PlanMeterState, PlanMeterVerdict, PlanProjection, ChoosablePlanRow } from './resources/tenancy';
 // PC-56 TENANT-4d-2 — W120's billing console.
 export { SaasBillingResource, SAAS_INVOICE_TABS } from './resources/tenancy';
+// PC-56 TENANT-4d-3 — W2424-W2427's tax-identity chain.
+export { TenantProfileResource, TAX_FIELD_CODES } from './resources/tenancy';
+export type { TaxIdentityForm, TaxIdentityField, TaxFieldCode, TaxFieldError, TaxFieldErrorReason, ChecksumVerdict, TenantProfilePatch, ProfilePreview, ProfileDiffRow } from './resources/tenancy';
 export type { BillingConsoleView, SaasInvoiceRow, SaasInvoiceDetail, SaasPayQuote, SaasInvoiceTab, BillingMechanismVerdict } from './resources/tenancy';

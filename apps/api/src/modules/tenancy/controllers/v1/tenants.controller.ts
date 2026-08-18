@@ -36,6 +36,30 @@ export class TenantsController {
     return this.tenants.updateProfile(ctx.tenantId, tenantActorOf(ctx), reqKey(key), dto, ipOf(r)).then((data) => ({ data }));
   }
 
+  /**
+   * PC-56 TENANT-4d-3 · W2424's field list: the tax/registration identifiers THIS TENANT'S COUNTRY defines
+   * (0147), with i18n label keys, examples, and whether a check digit will actually be verified. A tenant
+   * outside India gets its own country's fields — or an empty list, which the screen states rather than
+   * falling back to India's.
+   *
+   * Flag-gated separately from the rest of this controller: reading the tenant profile is old behaviour, the
+   * tax-identity FORM is new. Hence the guard here rather than on the class.
+   */
+  @Get('me/tax-identity') @RequirePermissions(TenancyPermissions.ManageTenant) @FeatureFlag('tenant_tax_identity_form')
+  taxIdentity(@CurrentContext() ctx: RequestContext) {
+    return this.tenants.taxIdentityFields(ctx.tenantId, tenantActorOf(ctx)).then((data) => ({ data }));
+  }
+
+  /**
+   * W2424 + W2425: validate the whole patch and return EVERY error with its reason, plus the diff against
+   * current values. **A read that writes nothing** — POST only because a patch body is not a query string.
+   * No Idempotency-Key: there is nothing to be idempotent about.
+   */
+  @Post('me/preview') @RequirePermissions(TenancyPermissions.ManageTenant) @FeatureFlag('tenant_tax_identity_form')
+  preview(@CurrentContext() ctx: RequestContext, @ZodBody(UpdateTenantProfileSchema) dto: UpdateTenantProfileDto) {
+    return this.tenants.previewProfile(ctx.tenantId, tenantActorOf(ctx), dto).then((data) => ({ data }));
+  }
+
   @Post('me/submit') @RequirePermissions(TenancyPermissions.ManageTenant)
   submit(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string) {
     return this.tenants.submitForReview(ctx.tenantId, tenantActorOf(ctx), reqKey(key), ipOf(r)).then((data) => ({ data }));

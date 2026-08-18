@@ -20,7 +20,19 @@ export class SubscriptionNotLiveError extends AppError { constructor(status: str
 export class TenantNotFoundError extends NotFoundError { constructor(id: string) { super('Tenant not found'); (this as any).details = { id }; } }
 /** The actor lacks tenant.settings on this tenant. */
 export class TenantForbiddenError extends AppError { constructor(message = 'Tenant administration requires tenant.settings') { super('TENANT_FORBIDDEN', message, 403); } }
-export class InvalidTenantProfileError extends DomainError { constructor(message: string) { super('TENANT_PROFILE_INVALID', message, 422); } }
+/**
+ * PC-56 TENANT-4d-3: carries EVERY invalid field, not just the first.
+ *
+ * W2424's own promise is "every invalid field is listed with its reason", and the previous validator threw on
+ * the first bad field — so a form with three problems reported one, and the tenant learned the other two on
+ * two more round trips. `fields` is what the screen renders; the message stays human for logs. The parameter is
+ * optional so every existing throw site still compiles and simply carries no list.
+ */
+export class InvalidTenantProfileError extends DomainError {
+  constructor(message: string, readonly fields?: ReadonlyArray<{ field: string; reason: string; detail?: string }>) {
+    super('TENANT_PROFILE_INVALID', message, 422, fields ? { fields } : undefined);
+  }
+}
 /** Self-serve writes refused because the tenant is suspended/archived/terminated (fail closed). */
 export class TenantNotWritableError extends AppError { constructor(status: string) { super('TENANT_NOT_WRITABLE', `Tenant is not self-serve writable (status: ${status})`, 409, { status }); } }
 /** submitForReview is only valid from 'pending'. */
