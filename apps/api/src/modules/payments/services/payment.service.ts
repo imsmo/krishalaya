@@ -28,6 +28,8 @@ import { BadRequestError, InfraError } from '../../../shared/errors/app-error';
 // module import — OrdersModule already imports PaymentsModule, so the reverse module import would cycle.
 import { OrderRepository } from '../../orders/repositories/order.repository';
 import { OrderNotFoundError, OrderNotAwaitingPaymentError } from '../../orders/domain/orders.errors';
+import { SaasInvoiceService } from '../../tenancy/services/saas-invoice.service';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 
 export interface PaymentActor { userId: string; canModerate: boolean; }
 
@@ -43,6 +45,10 @@ export class PaymentService {
     private readonly repo: PaymentRepository,
     private readonly gateways: GatewayRegistry,
     private readonly orders: OrderRepository,
+    // PC-56 TENANT-4d-2: the tenancy module's PUBLIC invoice service, for the 'saas_invoice' reference guard
+    // below. TenancyModule is already in this module's imports (for TenantService) and exports this service.
+    private readonly saasInvoices: SaasInvoiceService,
+    private readonly flags: FlagsService,
   ) {}
 
   /** Create a payment intent: persist 'initiated' + create the gateway order, in one tx. */
@@ -86,6 +92,20 @@ export class PaymentService {
    *  wrong party's record being advanced — but a bogus reference of THOSE types still gets a real
    *  gateway order today. Tracked as follow-on hardening (see the payments module README). */
   private async assertValidReference(tenantId: string, userId: string, dto: CreatePaymentIntentDto): Promise<void> {
+    // PC-56 TENANT-4d-2: 'saas_invoice' is the second referenceType to be validated here, which is the
+    // "follow-on hardening" the comment above names. W2428 lets a tenant pay its own SaaS bill, and without
+    // this guard the amount would be whatever the caller typed: a ₹1 intent against a ₹7,954 invoice would
+    // capture, the invoice would go `partially_paid`, and the tenant would believe it had paid. TenancyModule
+    // is ALREADY imported by this module and SaasInvoiceService is its PUBLIC service (never its repository),
+    // so this adds no new coupling — only the check that was missing.
+    if (dto.referenceType === 'saas_invoice') {
+      if (!dto.referenceId) throw new BadRequestError("referenceId is required when referenceType is 'saas_invoice'");
+      const selfPay = await this.flags.isEnabled('saas_invoice_self_pay', { tenantId }).catch(() => false);
+      // Throws by name when the invoice is unpayable, in another currency, or the amount is not EXACTLY what
+      // is outstanding. Fail closed, before the (real, billable) gateway call.
+      await this.saasInvoices.assertPayableAmount(tenantId, dto.referenceId, BigInt(dto.amountMinor), dto.currencyCode.toUpperCase(), selfPay);
+      return;
+    }
     if (dto.referenceType !== 'order') return;
     if (!dto.referenceId) throw new BadRequestError("referenceId is required when referenceType is 'order'");
     // Read-only, no lock: the gateway call happens OUTSIDE any tx (Law: never hold a row lock across an

@@ -50,14 +50,28 @@ export class Payment {
   attachGatewayOrder(gatewayOrderId: string): void { this.props.gatewayOrderId = gatewayOrderId; }
 
   /** Gateway captured the money. Idempotent: a repeat capture is a no-op (returns false). */
-  markCaptured(gatewayPaymentId: string, method: string | null, ledgerTxnId: string): boolean {
+  /**
+   * PC-56 TENANT-4d-2: the payload is WIDENED, additively. It used to carry
+   * `{paymentId, amountMinor, referenceType, referenceId}` — a verdict with no evidence. A consumer that wants
+   * to RECORD the payment as a fact (0092's append-only `saas_invoice_payments`, whose `recorded_by` is NOT
+   * NULL) needs who paid, by what instrument, in what currency, against what gateway reference, and when. None
+   * of it was in the envelope, so the only thing a consumer could do with this event was assert an outcome —
+   * which is exactly how the SaaS-invoice consumer ended up typing a status instead of summing receipts.
+   * Existing consumers (orders) read the same four keys and are unaffected.
+   */
+  markCaptured(gatewayPaymentId: string, method: string | null, ledgerTxnId: string, at: Date = new Date()): boolean {
     if (this.props.status === 'success') return false;
     assertTransition(this.props.status, 'success');
     this.props.status = 'success';
     this.props.gatewayPaymentId = gatewayPaymentId;
     this.props.method = method;
     this.props.ledgerTxnId = ledgerTxnId;
-    this.events.push({ type: PaymentEventType.Succeeded, payload: { paymentId: this.props.id, amountMinor: this.props.amountMinor.toString(), referenceType: this.props.referenceType, referenceId: this.props.referenceId } });
+    this.events.push({ type: PaymentEventType.Succeeded, payload: {
+      paymentId: this.props.id, amountMinor: this.props.amountMinor.toString(),
+      referenceType: this.props.referenceType, referenceId: this.props.referenceId,
+      payerUserId: this.props.userId, currencyCode: this.props.currencyCode,
+      method: this.props.method, gatewayPaymentId: this.props.gatewayPaymentId, capturedAt: at.toISOString(),
+    } });
     return true;
   }
 

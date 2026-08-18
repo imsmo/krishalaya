@@ -98,7 +98,14 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
 
     const registry = new GatewayRegistry();
     registry.register(new SandboxGateway(SECRET), true);
-    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry, new OrderRepository(replica as any));
+    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry, new OrderRepository(replica as any),
+    // PC-56 TENANT-4d-2: PaymentService now asks the tenancy module whether a 'saas_invoice' reference's amount
+    // is exactly what is outstanding, and reads the self-pay flag. Neither is exercised by THIS suite (no intent
+    // here carries that referenceType), so both are stubbed to throw/deny — a stub that silently allowed would
+    // make a future test pass for the wrong reason.
+    { assertPayableAmount: async () => { throw new Error('saas_invoice reference not expected in this suite'); } } as any,
+    { isEnabled: async () => false } as any,
+    );
     payouts = new PayoutService(uow, outbox, idem, metrics, wallet, new SandboxPayoutGateway('success'), audit, new PayoutRepository(replica as any));
 
     // the relay + both handlers (orders consumes payment_succeeded; payments consumes order_completed)

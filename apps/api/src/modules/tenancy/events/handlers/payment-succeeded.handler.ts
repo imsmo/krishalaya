@@ -24,6 +24,22 @@ export class SaasInvoicePaymentHandler implements OutboxHandler {
     let amountMinor: bigint;
     try { amountMinor = BigInt(amountRaw as any); } catch { return; }   // malformed amount → ignore (fail closed)
     if (amountMinor <= 0n) return;
-    await this.invoices.applyPayment(tx, tenantId, invoiceId, amountMinor, new Date());   // idempotent
+    const paymentId = typeof p.paymentId === 'string' ? p.paymentId : undefined;
+    // Without the payment's own id there is no idempotency key for the receipt, and without one an
+    // at-least-once relay would record the same money twice. Fail closed rather than double-count.
+    if (!paymentId) return;
+    const str = (k: string) => (typeof p[k] === 'string' && (p[k] as string).length > 0 ? (p[k] as string) : null);
+    // `capturedAt` is the moment the gateway captured; the relay's own clock is the fallback and is minutes
+    // later at worst. Never silently a different day: an unparseable value falls back rather than being coerced.
+    const capturedAt = str('capturedAt') ? new Date(str('capturedAt') as string) : new Date();
+    await this.invoices.applyPayment(tx, tenantId, invoiceId, {
+      amountMinor,
+      at: Number.isNaN(capturedAt.getTime()) ? new Date() : capturedAt,
+      paymentId,
+      method: str('method'),
+      currencyCode: str('currencyCode'),
+      payerUserId: str('payerUserId'),
+      gatewayPaymentId: str('gatewayPaymentId'),
+    });   // idempotent at the receipt's unique key AND at the invoice's state machine
   }
 }

@@ -105,3 +105,6 @@ export type { OrderWorkingView, OrderViewCounts, ConsoleOrderRow, OrderTimelineE
 export type { ConsoleListingRow, ConsoleCounts, QcQueueItem, QcKpis, QcRejectReason, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from './types';
 // PC-56 TENANT-4d-1: W118's meters and W115's plan cards.
 export type { PlanUsageView, PlanMeter, PlanMeterState, PlanMeterVerdict, PlanProjection, ChoosablePlanRow } from './resources/tenancy';
+// PC-56 TENANT-4d-2 — W120's billing console.
+export { SaasBillingResource, SAAS_INVOICE_TABS } from './resources/tenancy';
+export type { BillingConsoleView, SaasInvoiceRow, SaasInvoiceDetail, SaasPayQuote, SaasInvoiceTab, BillingMechanismVerdict } from './resources/tenancy';

@@ -5,7 +5,10 @@ import { HttpClient } from '../http';
 import { Plan, Subscription, TenantAnalytics, TenantBroadcast, Page } from '../types';
 
 export class TenancyResource {
-  constructor(private readonly http: HttpClient) {}
+  /** W120's billing surface: `client.tenancy.billing.console() / .invoices(tab) / .invoice(id) / .payQuote(id)`.
+   *  Before PC-56 TENANT-4d-2 there was no route to a tenant's own SaaS invoices at all. */
+  readonly billing: SaasBillingResource;
+  constructor(private readonly http: HttpClient) { this.billing = new SaasBillingResource(http); }
 
   /** Public plan catalogue (apply screen). */
   async plans(signal?: AbortSignal): Promise<Plan[]> {
@@ -355,4 +358,87 @@ export interface ChoosablePlanRow {
   code: string; version: number; name: string; monthlyPriceMinor: string; annualPriceMinor: string;
   currencyCode: string; isPublic: boolean; isActive: boolean; countryCode: string | null;
   limits: Record<string, number>;
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* W120 — THE TENANT'S OWN SAAS INVOICES (PC-56 TENANT-4d-2)                                                    */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+export const SAAS_INVOICE_TABS = ['all', 'issued', 'paid', 'overdue'] as const;
+export type SaasInvoiceTab = (typeof SAAS_INVOICE_TABS)[number];
+
+/** The four sentences W120 states about the billing MECHANISM. Not one of them has a subject in the platform
+ *  today, so each carries the verdict the code can actually support and the console prints THAT. */
+export type BillingMechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state';
+
+export interface SaasInvoiceRow {
+  id: string; invoiceNo: string; subscriptionId: string | null; status: string; currencyCode: string;
+  subtotalMinor: string; taxMinor: string; totalMinor: string;
+  /** Money actually RECEIVED — the SUM of the invoice's payment rows, not an inference from one payment. */
+  paidMinor: string; outstandingMinor: string; overpaidMinor: string;
+  dueDate: string; paidAt: string | null; dunningAttempts: number;
+  periodTag: string | null;
+  /** The rate the invoice was raised at, frozen. null = none recorded, which is NOT "0% GST". */
+  taxBp: number | null;
+  billToGstin: string | null; billToLegalName: string | null;
+  lineItems: Array<{ desc: string; qty: number; unitMinor: string; totalMinor: string }>;
+  createdAt: string | null;
+}
+
+export interface SaasInvoiceDetail extends SaasInvoiceRow {
+  receipts: Array<{ id: string; amountMinor: string; currencyCode: string; method: string; reference: string; receivedAt: string; isReversal: boolean }>;
+}
+
+export interface BillingConsoleView {
+  openBalanceMinor: string | null;
+  openBalanceCurrency: string;
+  openBalanceCurrencies: string[];
+  openInvoiceCount: number;
+  openBalancePartial: boolean;
+  oldestOpen: {
+    id: string; invoiceNo: string; status: string; dueDate: string; outstandingMinor: string; currencyCode: string;
+    description: string; taxLine: 'stated' | 'zero_rated' | 'not_recorded'; taxBp: number | null; taxMinor: string;
+  } | null;
+  paidToDate: {
+    year: number; minor: string; currencyCode: string; invoiceCount: number;
+    onTime: number; late: number; unknown: number; allOnTime: boolean; mixedCurrencies: string[];
+  };
+  tabCounts: Record<string, number>;
+  billTo: { gstinMasked: string | null; legalName: string | null; source: 'snapshot' | 'not_on_invoice' };
+  subscription: { id: string; status: string; billingCycle: string; priceMinor: string; currencyCode: string; currentPeriodEnd: string | null } | null;
+  mechanism: { autopay: BillingMechanismVerdict; nextDebit: BillingMechanismVerdict; gracePeriod: BillingMechanismVerdict; retryAndNotify: BillingMechanismVerdict };
+  selfPayEnabled: boolean;
+}
+
+export type SaasPayQuote =
+  | { payable: true; invoiceNo: string; amountMinor: string; currencyCode: string }
+  | { payable: false; invoiceNo: string; reason: 'already_paid' | 'voided' | 'not_yet_issued' | 'nothing_outstanding' | 'self_pay_off' };
+
+export class SaasBillingResource {
+  constructor(private readonly http: HttpClient) {}
+
+  /** W120's header in one read: open balance, oldest-due invoice, paid-to-date, tab counts, billed identity. */
+  async console(signal?: AbortSignal): Promise<BillingConsoleView> {
+    return (await this.http.request<BillingConsoleView>('GET', 'billing/console', { signal })).data;
+  }
+
+  /** The keyset page behind a tab. Keyset only — never an offset, so the page cannot drift as invoices are raised. */
+  async invoices(opts: { tab?: SaasInvoiceTab; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<SaasInvoiceRow>> {
+    const r = await this.http.request<SaasInvoiceRow[]>('GET', 'billing/invoices', { query: { tab: opts.tab, cursor: opts.cursor, limit: opts.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+
+  async invoice(id: string, signal?: AbortSignal): Promise<SaasInvoiceDetail> {
+    return (await this.http.request<SaasInvoiceDetail>('GET', `billing/invoices/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
+  /**
+   * What is outstanding on this invoice, resolved SERVER-SIDE, or the reason it cannot be paid. The AMOUNT IS
+   * NEVER SENT BY THE CALLER: pass this quote's `amountMinor` straight to `payments.createIntent` and the API
+   * re-checks it against the invoice before any gateway order is created.
+   */
+  async payQuote(id: string, signal?: AbortSignal): Promise<SaasPayQuote> {
+    return (await this.http.request<SaasPayQuote>('GET', `billing/invoices/${encodeURIComponent(id)}/pay-quote`, { signal })).data;
+  }
 }

@@ -39,6 +39,8 @@ import { SubscriptionService } from './services/subscription.service';
 import { TenantService } from './services/tenant.service';
 import { TenantDomainService } from './services/tenant-domain.service';
 import { SaasInvoiceService } from './services/saas-invoice.service';
+import { BillingConsoleReadModel } from './read-models/billing-console.read-model';
+import { SaasInvoicesController } from './controllers/v1/saas-invoices.controller';
 import { PlanChangeService } from './services/plan-change.service';
 import { PlanChangeRepository } from './repositories/plan-change.repository';
 import { PlanCompareReadModel } from './read-models/plan-compare.read-model';
@@ -62,7 +64,7 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
   // (W118's pause), so the two modules are mutually dependent and both sides use forwardRef. That is the
   // module blueprint's allowance — public service, never a repository — not an exception to it.
   imports: [forwardRef(() => IdentityModule)],
-  controllers: [PlanUsageController, PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController],
+  controllers: [SaasInvoicesController, PlanUsageController, PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
@@ -72,7 +74,9 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
     // PC-56 TENANT-1d-3a: the door W113 promises and the platform did not have.
     TenantSignupService, TenantSignupRepository,
     TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository, PlanUsageRepository, PlanUsageService,
-    SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, TenantApplicationService, TenantApplicationRepository],
+    // PC-56 TENANT-4d-2: W120 finally has a route. The read service and its repository shipped in TENANT-1
+    // with no controller anywhere in apps/api — a tenant could not see a bill we raised to it.
+    SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, BillingConsoleReadModel, TenantApplicationService, TenantApplicationRepository],
   exports: [PlanUsageService, PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
 })
 export class TenancyModule implements OnModuleInit {

@@ -88,7 +88,14 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
     const wallet = new InProcessWalletClient(new LedgerRepository());
     const registry = new GatewayRegistry();
     registry.register(new SandboxGateway(SECRET), true);
-    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry, new OrderRepository(replica as any));
+    payments = new PaymentService(uow, outbox, idem, metrics, wallet, audit, new PaymentRepository(replica as any), registry, new OrderRepository(replica as any),
+    // PC-56 TENANT-4d-2: PaymentService now asks the tenancy module whether a 'saas_invoice' reference's amount
+    // is exactly what is outstanding, and reads the self-pay flag. Neither is exercised by THIS suite (no intent
+    // here carries that referenceType), so both are stubbed to throw/deny — a stub that silently allowed would
+    // make a future test pass for the wrong reason.
+    { assertPayableAmount: async () => { throw new Error('saas_invoice reference not expected in this suite'); } } as any,
+    { isEnabled: async () => false } as any,
+    );
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;

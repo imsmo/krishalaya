@@ -218,9 +218,24 @@ export class PlanChangeService {
                      qty: 1, unitMinor: -lines.unusedCreditMinor, totalMinor: -lines.unusedCreditMinor }]
                 : []),
             ],
-            // Not the billing period: two upgrades in one month must both invoice, and a per-period key would swallow the
-            // second one silently. The plan-change key is what makes this idempotent.
-            periodTag: `pc-${idemKey.slice(0, 24)}`,
+            // **THIS USED TO READ `pc-${idemKey.slice(0, 24)}`, AND IT MADE EVERY MID-CYCLE UPGRADE FAIL (PC-56
+            //   TENANT-4d-2, found by applying 0146 to a real Postgres).** `doc_number_series.period` is
+            //   varchar(10) (0001 §0.8); that string is 27 characters, so `next_doc_number` raised
+            //   "value too long for type character varying(10)" from inside the plpgsql function, the whole
+            //   change transaction rolled back, and the tenant's upgrade returned a 500. TENANT-1d-2 set out to
+            //   fix an upgrade that charged nothing and shipped an upgrade that could not happen — and no unit
+            //   test could see it, because the width lives in the database.
+            //   The DOCUMENT SERIES key is now the calendar month, which is what a gapless document series is
+            //   for: two upgrades in one month draw 000001 and 000002 from the same series. 1d-2's worry that a
+            //   per-period key would "swallow the second one silently" was about the old `existsForPeriod` LIKE
+            //   read; that is gone, and `periodic: false` below means no `period_tag` is stored, so 0146's
+            //   one-invoice-per-period unique index deliberately does not apply to a proration invoice at all.
+            periodTag: today.slice(0, 7).replace('-', ''),
+            // PC-56 TENANT-4d-2: this invoice covers a CHANGE, not a period (see the paragraph above).
+            periodic: false,
+            // The rate this invoice's tax figure was computed at, frozen onto the row (0146 §146.2). `change()`
+            // has already refused to get here when the rate could not be READ, so this is never a guess.
+            taxBp: p.taxBp,
           });
           invoiceId = inv?.id ?? null;
         }
