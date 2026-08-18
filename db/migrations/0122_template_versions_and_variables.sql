@@ -339,7 +339,27 @@ GRANT SELECT ON notification_event_variables TO kv_app, kv_readonly;
 -- read out of `db/seeds/core/0007_notification_events_templates.sql` and the migration-seeded platform defaults, not
 -- invented. Events not listed here have an EMPTY catalogue, and the authoring plane says "not declared yet" rather
 -- than "no variables" — unknown is not zero, in the sixth place this wave found to say it.
-INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+--
+-- **PC-56 TENANT-4d-5 CHAIN REPAIR: EVERY EVENT CODE BELOW IS SEED-OWNED, AND SEEDS RUN AFTER MIGRATIONS.**
+-- `notification_event_variables.event_code` REFERENCES `notification_events(code)`, and all five codes here
+-- (`auth.otp`, `order.delivered`, `bid.outbid`, `wage.paid`, `scheme.approved`) are created by
+-- `db/seeds/core/0007_notification_events_templates.sql`. `db/prod/apply.sh` runs migrate (step 1) then seed
+-- (step 4), so on a fresh database this statement had no parent rows and failed with
+--     ERROR: insert or update on table "notification_event_variables" violates foreign key constraint
+--            "notification_event_variables_event_code_fkey"
+-- and since `db/scripts/migrate.js` wraps each file in ONE transaction and `return`s on failure, the chain
+-- stopped here — for the SECOND independent reason in this one file (see `ck_ntv_approval_pair` above).
+--
+-- **THE GUARD IS NOT THE WHOLE FIX, AND SAYING SO MATTERS.** `WHERE EXISTS` alone would make this file apply
+-- and quietly declare nothing, leaving the catalogue empty on every fresh deployment — a migration that
+-- succeeds by doing nothing is the shape this programme keeps finding. So these eight declarations have ALSO
+-- been added to `db/seeds/core/0007_notification_events_templates.sql`, beside the events and the template
+-- bodies they describe, which is where a declaration about SEEDED copy belongs; 0048 set that precedent when
+-- it moved its templates to the seed for the same ordering reason. The guard below keeps this file correct for
+-- a database that already holds the events (the rows insert exactly as before), and the seed's own
+-- `ON CONFLICT (event_code, name) DO NOTHING` keeps the two from ever producing a duplicate.
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required)
+SELECT v.event_code, v.name, v.source_ref, v.sample_value, v.is_required FROM (VALUES
   ('auth.otp',        'otp',            'generated one-time code (never stored in clear)', '482913',            true),
   ('order.delivered', 'order_id',       'orders.order_no',                                 'ORD-2026-088412',   true),
   ('order.delivered', 'amount',         'orders.total_minor + currency (formatted)',       '₹12,450',           false),
@@ -348,6 +368,8 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
   ('bid.outbid',      'lot_name',       'auction_lots.title',                              'Cotton · 12 quintal', true),
   ('wage.paid',       'amount',         'wage_payments.amount_minor + currency',           '₹1,250',            true),
   ('scheme.approved', 'scheme_name',    'schemes.default_name',                            'PM-KISAN',          true)
+) AS v(event_code, name, source_ref, sample_value, is_required)
+WHERE EXISTS (SELECT 1 FROM notification_events e WHERE e.code = v.event_code)
 ON CONFLICT (event_code, name) DO NOTHING;
 
 -- ---------------------------------------------------------------------------

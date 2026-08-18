@@ -80,7 +80,13 @@ run('tenancy SaaS invoicing (integration, real Postgres + RLS + relay)', () => {
     const audit = new AuditWriter(pools);
     invRepo = new SaasInvoiceRepository(replica as any);
     subRepo = new SubscriptionRepository(replica as any);
-    invoices = new SaasInvoiceService(uow, outbox, metrics, audit, invRepo);
+    // PC-56 TENANT-4d-5 added the billing-notice enricher to this service's constructor. A no-op here on
+    // purpose: these integration specs exercise the money arithmetic and RLS against real Postgres, and
+    // returning the payload unchanged is exactly what the real service does for a tenant with billing
+    // notices switched off — which is the default on every deployment. The notice plane has its own
+    // behavioural suite (tenant4d5-billing-notices.spec.ts).
+    const noNotices = { enrich: async (_tx: unknown, _t: string, _e: string, payload: unknown) => payload } as never;
+    invoices = new SaasInvoiceService(uow, outbox, metrics, audit, invRepo, noNotices);
     taxRate = new BillingTaxRate(pools);
     renewalJob = new RenewalInvoicesJob(admin, subRepo, invoices, taxRate);
     payHandler = new SaasInvoicePaymentHandler(invoices);

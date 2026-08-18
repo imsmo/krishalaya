@@ -29,6 +29,13 @@ CALL add_std_columns('upi_mandate_executions');
 CREATE UNIQUE INDEX uq_mandate_exec_idem ON upi_mandate_executions(tenant_id, idempotency_key);
 CREATE INDEX idx_mandate_exec_mandate ON upi_mandate_executions(mandate_id, created_at DESC);
 
+
+-- The parent vocabulary this insert needs (`lookup_types` / `languages` / `integration_providers`) is
+-- guaranteed by **0056a_reference_data_the_chain_depends_on.sql**, which exists because
+-- `db/prod/apply.sh` runs migrate BEFORE seed and this statement's parent rows live in `db/seeds/core/`.
+-- Read 0056a's header for the full finding: the chain halted at 0057 and migrations 0057-0149 had never
+-- applied to any database. Not repeated per file, deliberately — one authority, one explanation.
+
 -- ledger_txn_type value for the collection move. Guarded by NOT EXISTS (the UNIQUE index treats NULL tenant_id
 -- as distinct, so ON CONFLICT wouldn't dedupe a platform value — this is the safe idempotent form).
 INSERT INTO lookup_values (type_code, tenant_id, code, default_name, meta, sort_order)

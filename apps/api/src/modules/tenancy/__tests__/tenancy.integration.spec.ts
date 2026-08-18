@@ -65,7 +65,13 @@ run('tenancy slice (integration, real Postgres + RLS + quota)', () => {
     const planRepo = new PlanRepository(replica as any);
     const subRepo = new SubscriptionRepository(replica as any);
     plans = new PlanService(uow, outbox, idem, metrics, audit, planRepo);
-    subscriptions = new SubscriptionService(uow, outbox, idem, metrics, audit, planRepo, subRepo);
+    // PC-56 TENANT-4d-5 added the billing-notice enricher to this service's constructor. A no-op here on
+    // purpose: these integration specs exercise the money arithmetic and RLS against real Postgres, and
+    // returning the payload unchanged is exactly what the real service does for a tenant with billing
+    // notices switched off — which is the default on every deployment. The notice plane has its own
+    // behavioural suite (tenant4d5-billing-notices.spec.ts).
+    const noNotices = { enrich: async (_tx: unknown, _t: string, _e: string, payload: unknown) => payload } as never;
+    subscriptions = new SubscriptionService(uow, outbox, idem, metrics, audit, planRepo, subRepo, noNotices);
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;

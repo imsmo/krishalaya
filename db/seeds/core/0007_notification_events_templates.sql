@@ -65,3 +65,27 @@ INSERT INTO notification_templates (event_code,channel,language_code,tenant_id,s
  ('auction.ended','push','en',NULL,'Auction ended','An auction you watched has ended — see the result.',NULL,true),
  ('auction.ended','inapp','en',NULL,'Auction ended','An auction you watched has ended — see the result.',NULL,true)
 ON CONFLICT (event_code,channel,language_code,tenant_id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------------------------------
+-- THE VARIABLE DECLARATIONS FOR THE COPY ABOVE (moved here by PC-56 TENANT-4d-5, chain repair)
+-- ---------------------------------------------------------------------------------------------------
+-- 0122 introduced `notification_event_variables` so that "a required variable missing from a body is
+-- refused at authoring time", and declared these eight from the bodies in THIS file. It could not: the
+-- table's `event_code` REFERENCES `notification_events(code)`, and every code below is created here — in a
+-- SEED, which `db/prod/apply.sh` runs at step 4, AFTER migrations at step 1. So 0122 failed its foreign
+-- key on every fresh database and, because the runner wraps each file in one transaction and stops the
+-- chain on failure, nothing from 0122 onwards had ever applied anywhere.
+--
+-- A declaration about seeded copy belongs beside that copy, which is also why 0048 moved its templates
+-- here. 0122 keeps its own guarded insert for databases that already hold these events; the ON CONFLICT
+-- below means the two can never produce a duplicate, and either order gives exactly one row.
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('auth.otp',        'otp',            'generated one-time code (never stored in clear)', '482913',            true),
+ ('order.delivered', 'order_id',       'orders.order_no',                                 'ORD-2026-088412',   true),
+ ('order.delivered', 'amount',         'orders.total_minor + currency (formatted)',       '₹12,450',           false),
+ ('order.delivered', 'payment_status', 'payments.status label (localized)',               'Paid',              false),
+ ('order.delivered', 'receipt_url',    'short link (kvs.in)',                             'kvs.in/r/8xk2',     false),
+ ('bid.outbid',      'lot_name',       'auction_lots.title',                              'Cotton · 12 quintal', true),
+ ('wage.paid',       'amount',         'wage_payments.amount_minor + currency',           '₹1,250',            true),
+ ('scheme.approved', 'scheme_name',    'schemes.default_name',                            'PM-KISAN',          true)
+ON CONFLICT (event_code, name) DO NOTHING;

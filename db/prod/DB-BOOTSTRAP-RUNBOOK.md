@@ -27,7 +27,15 @@ secrets created (P0-2 / SECRETS-RUNBOOK §1a: `krishalaya-prod/db/{kv_app,kv_wal
 
 | # | Step | Command (under the hood) | Proves |
 |---|------|--------------------------|--------|
-| 1 | **Migrate** | `node db/scripts/migrate.js` (owner conn) | all 48 migrations applied; re-run = no-op (checksum-guarded) |
+> **PC-56 TENANT-4d-5 — READ THIS BEFORE TRUSTING STEP ORDER.** Migrate (step 1) runs before Seed (step 4),
+> and migrations 0057 onwards insert rows whose parents are seeded — so on a truly empty database the chain
+> halted at 0057 and **migrations 0057-0149 had never been applied anywhere.** The minimal reference data those
+> migrations depend on is now guaranteed by `db/migrations/0056a_reference_data_the_chain_depends_on.sql`, which
+> runs inside step 1; the seeds remain the owners of the full catalogues. If you add a migration that inserts a
+> row whose parent lives in `db/seeds/`, add the parent to 0056a — `tenant4d5-chain-repair.spec.ts` will fail if
+> you do not. The counts in this table are the state at 0150 and drift as migrations are added.
+
+| 1 | **Migrate** | `node db/scripts/migrate.js` (owner conn) | all 151 migrations applied; re-run = no-op (checksum-guarded) |
 | 2 | **Partitions** | `node db/scripts/ensure-partitions.js` | partition runway so partitioned inserts don't fail |
 | 3 | **Role logins** | `db/prod/create-roles.sh` | kv_app/kv_wallet/kv_relay get LOGIN with **strong** SM passwords (refuses weak/dev) |
 | 4 | **Seed reference** | `NODE_ENV=production node db/scripts/seed.js` | core/rules/catalogue lookups loaded; **demo skipped** |

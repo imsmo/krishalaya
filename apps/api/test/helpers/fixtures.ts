@@ -9,9 +9,35 @@ import type { Pool } from 'pg';
 const rnd = () => randomUUID();
 const ltreeLabel = () => 'c' + rnd().replace(/-/g, '').slice(0, 16); // valid ltree label (alnum)
 
-/** A tenant. */
+/**
+ * A tenant.
+ *
+ * **THIS INSERTED A COLUMN THAT HAS NEVER EXISTED (PC-56 TENANT-4d-5 CHAIN REPAIR).** It was
+ * `INSERT INTO tenants (id, name)`, and `tenants` (0002) has no `name` column — it has `slug`,
+ * `legal_name`, `display_name`, `tenant_type_id` and `country_code`, all NOT NULL. Every integration
+ * spec that makes a tenant therefore failed at the first fixture with
+ *     error: column "name" of relation "tenants" does not exist
+ * — 494 occurrences across 67 suites, all one cause.
+ *
+ * It was invisible because the suite could not START: its globalSetup builds the database from the real
+ * `db/migrations`, and the migration chain halted at 0057 (and then 0082, 0086, 0108, 0122, 0123, 0125,
+ * 0140, 0145) on a fresh database. Three waves of this programme recorded "the api integration suite
+ * cannot bootstrap" as a pre-existing quirk and ran the unit suites instead. Once 0056a and 0150 made
+ * the chain apply, the suite bootstrapped for the first time and this fixture was the next thing in the
+ * way.
+ *
+ * `tenant_type_id` REFERENCES `lookup_values(id)`, so the type is resolved from the seeded
+ * `tenant_type` vocabulary rather than invented — `fpo`, because a Farmer Producer Organisation is the
+ * tenant this platform's canon is written about.
+ */
 export async function makeTenant(admin: Pool, id = rnd(), name = 'T'): Promise<string> {
-  await admin.query(`INSERT INTO tenants (id, name) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING`, [id, name]);
+  await admin.query(
+    `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status)
+     SELECT $1, $2, $3, $3, lv.id, 'IN', 'active'
+       FROM lookup_values lv
+      WHERE lv.type_code = 'tenant_type' AND lv.code = 'fpo' AND lv.tenant_id IS NULL
+     ON CONFLICT (id) DO NOTHING`,
+    [id, 't' + String(id).replace(/-/g, '').slice(0, 20), name]);
   return id;
 }
 

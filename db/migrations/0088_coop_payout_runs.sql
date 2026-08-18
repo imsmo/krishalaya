@@ -80,6 +80,13 @@ END $$;
 
 GRANT SELECT, INSERT, UPDATE ON coop_payout_runs TO kv_app;
 
+
+-- The parent vocabulary this insert needs (`lookup_types` / `languages` / `integration_providers`) is
+-- guaranteed by **0056a_reference_data_the_chain_depends_on.sql**, which exists because
+-- `db/prod/apply.sh` runs migrate BEFORE seed and this statement's parent rows live in `db/seeds/core/`.
+-- Read 0056a's header for the full finding: the chain halted at 0057 and migrations 0057-0149 had never
+-- applied to any database. Not repeated per file, deliberately — one authority, one explanation.
+
 -- The payout_purpose vocabulary rows this run needs (payouts.purpose_id is a FK into lookup_values).
 INSERT INTO lookup_values (type_code, tenant_id, code, default_name, meta, sort_order) VALUES
  ('payout_purpose', NULL, 'dividend',        'Co-op dividend',        '{}', 20),

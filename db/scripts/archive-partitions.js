@@ -37,7 +37,18 @@ async function coldCandidates(client) {
     SELECT table_name, active_months, archive_months, action
     FROM data_retention_policies WHERE is_active AND action <> 'keep_forever'`)).rows;
   const out = [];
+  const unknownTables = [];
   for (const p of policies) {
+    // **AN UNKNOWN TABLE IS SKIPPED AND REPORTED, NOT FATAL (PC-56 TENANT-4d-5 CHAIN REPAIR).**
+    // `data_retention_policies.table_name` is free text and cannot be foreign-keyed to a catalogue, so a
+    // typo is undetectable by the database. `$1::regclass` on a missing relation THROWS, and this loop had
+    // no guard — so ONE bad row aborted the whole run and every other table's retention policy went
+    // unenforced with it. 0107 seeded exactly such a row (`user_devices`; the real table is
+    // `push_devices`), which is why this script has never completed. Law 12: degrade, never die — the
+    // remaining policies are enforced and the bad row is named in the summary so it gets fixed.
+    const exists = (await client.query(
+      `SELECT 1 FROM pg_class WHERE oid = to_regclass($1)`, [p.table_name])).rowCount > 0;
+    if (!exists) { unknownTables.push(p.table_name); continue; }
     const parts = (await client.query(`
       SELECT i.inhrelid::regclass::text AS child, pg_get_expr(c.relpartbound, c.oid) AS bound
       FROM pg_inherits i JOIN pg_class c ON c.oid=i.inhrelid
@@ -51,6 +62,12 @@ async function coldCandidates(client) {
   }
   // oldest first
   out.sort((a, b) => a.upperBound.localeCompare(b.upperBound));
+  if (unknownTables.length) {
+    // Surfaced on stderr as well as in the return value: a retention policy pointing at nothing means a
+    // table's data is being kept for ever with a row that claims otherwise, and that must not be quiet.
+    console.error(`[archive-partitions] WARNING: ${unknownTables.length} retention policy row(s) name a relation that does not exist and were skipped: ${unknownTables.join(', ')}`);
+  }
+  out.unknownTables = unknownTables;
   return out;
 }
 

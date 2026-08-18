@@ -135,7 +135,17 @@ COMMENT ON INDEX idx_subscriptions_period_end_live IS
 -- switches a tenant off the instant their period ends, which is the exact behaviour this wave exists to
 -- remove, and it would be reached by a typo.
 INSERT INTO setting_definitions (key, value_type, scope, risk_class, default_value, description)
-SELECT 'billing.grace_days', 'int', 'tenant', 'operational', '7'::jsonb,
+-- **PC-56 TENANT-4d-5 CHAIN REPAIR: `risk_class` WAS 'operational', WHICH 0121's CHECK FORBIDS.**
+-- `setting_definitions.risk_class` is constrained to ('ordinary', 'money_path', 'security') by
+-- 0121_config_control_plane.sql, so this row failed with
+--     ERROR: new row for relation "setting_definitions" violates check constraint
+--            "setting_definitions_risk_class_check"
+-- and the runner's one-transaction-per-file rollback stopped the chain here. **The consequence is not
+-- cosmetic: this setting definition has never existed in any database**, so the value this wave moved out
+-- of code and into configuration was never configurable. 'ordinary' is the right class — this threshold
+-- is neither a money path nor security copy — and a spec now asserts every migration's `risk_class`
+-- against 0121's vocabulary, which is what would have caught it.
+SELECT 'billing.grace_days', 'int', 'tenant', 'ordinary', '7'::jsonb,
        'Days a tenant''s service continues after an unpaid period end before the subscription expires (W120: "nothing switches off for 7 days"). A value outside 1..90 falls back to 7 rather than to 0, because 0 would switch a tenant off the moment their period ended — the behaviour PC-56 TENANT-4d-4 removed — and would be reached by a typo. 0 is deliberately NOT a way to disable the grace period: use the `saas_billing_grace` flag for that.'
 WHERE NOT EXISTS (SELECT 1 FROM setting_definitions WHERE key = 'billing.grace_days');
 

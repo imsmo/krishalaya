@@ -191,19 +191,28 @@ SELECT p.code, p.current_version, 'published', p.is_mandatory,
        'Backfilled by migration 0108 from consent_purposes.current_version. Nobody drafted or published this version '
        || 'through the maker-checker path, and NO NOTICE TEXT EXISTS FOR IT — the platform never had a column to store '
        || 'one, so the words these consents were given against were never recorded anywhere.',
-       -- [DEV-56 2026-08-12 FIX] was `p.created_at, p.created_at` — `consent_purposes` (0003_identity_access.sql)
-       -- has NO `created_at` column (it is a bare code/default_name/is_mandatory/current_version vocabulary row,
-       -- never passed through `add_std_columns`); this INSERT therefore raised `42703 column p.created_at does
-       -- not exist` on every attempt and never committed on any real Postgres. Using `now()` for both
-       -- `drafted_at`/`published_at` is the honest backfill value here: this migration already documents that it
-       -- does not know a real history for these versions (`is_backfilled = true`, no maker/checker signature) —
-       -- stamping "now" says exactly that, rather than fabricating a `created_at` that was never tracked.
-       NULL, now(), now(), true
+       -- **PC-56 TENANT-4d-5 CHAIN REPAIR: THIS READ TWO COLUMNS THAT DO NOT EXIST.** It was written
+       -- `NULL, p.created_at, p.created_at, true … WHERE p.deleted_at IS NULL`, and `consent_purposes`
+       -- (0003) is one of the few tables in this schema with NO `CALL add_std_columns(...)` — it has
+       -- exactly `code`, `default_name`, `is_mandatory`, `current_version` and nothing else. So this
+       -- file failed on every fresh database with `column p.created_at does not exist`, and because
+       -- `db/scripts/migrate.js` wraps each file in ONE transaction and `return`s on failure, **THE
+       -- CHAIN STOPPED HERE.** TypeScript never sees a column list — the same class as 0140's
+       -- varchar(10), 0139's NULL CHECK and 0142's `r.tenant_id`, and the fourth time this programme
+       -- has met it.
+       --
+       -- **AND THE REPAIR IS MORE HONEST THAN THE ORIGINAL INTENT, NOT LESS.** Using a purpose's
+       -- creation date as its version's PUBLICATION date would assert that these words were published
+       -- to users on the day the purpose row was made, which nobody knows and which this file's own
+       -- header goes out of its way to refuse ("NO NOTICE TEXT EXISTS FOR IT"). So:
+       --   • `drafted_at` = now(), which is a fact: this row is being drafted by this migration, and
+       --     the column is NOT NULL so it must say something true rather than something convenient;
+       --   • `published_at` = NULL — unknown, and `ck_cpv_published` explicitly permits a NULL on a
+       --     backfilled row for exactly this reason.
+       -- A DPO reading these rows now sees a version with no publication date and `is_backfilled` set,
+       -- which is the truth, instead of a date that would survive into an audit as evidence.
+       NULL, now(), NULL, true
   FROM consent_purposes p
-  -- [DEV-56 2026-08-12 FIX] was `WHERE p.deleted_at IS NULL` — `consent_purposes` has no `deleted_at` column
-  -- either (same root cause as the `created_at` fix above: it was never passed through `add_std_columns`), so
-  -- this raised `42703 column p.deleted_at does not exist` immediately after the first fix. `consent_purposes`
-  -- has no soft-delete at all, so there is nothing to filter — every row is backfilled.
 ON CONFLICT DO NOTHING;
 
 -- **NO NOTICE ROWS ARE FABRICATED.** This is the most important omission in the file. It would be easy to insert

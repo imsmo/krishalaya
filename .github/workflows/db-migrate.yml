@@ -45,7 +45,13 @@ jobs:
         run: node db/scripts/archive-partitions.js --json
       - name: Load core/rules/catalogue seeds
         run: node db/scripts/seed.js
-      - name: Sanity — expect ~250 tables created
+      # PC-56 TENANT-4d-5: this step printed a count and ASSERTED NOTHING, so it could not fail — a gate with
+      # the word "sanity" in its name that was decoration. It now enforces a floor. The figure is deliberately a
+      # floor and not an equality: partition children are real tables and their number grows every month as
+      # ensure-partitions extends the runway, so an exact expectation would go red on a calendar boundary.
+      - name: Sanity — assert the schema actually built
         run: |
-          psql "$MIGRATION_DATABASE_URL" -tAc \
-          "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
+          n=$(psql "$MIGRATION_DATABASE_URL" -tAc \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';")
+          echo "public tables (incl. partition children): $n"
+          if [ "$n" -lt 400 ]; then echo "FATAL: only $n tables — the schema did not build"; exit 1; fi

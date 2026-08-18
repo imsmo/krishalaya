@@ -49,6 +49,13 @@
 --    needs a DIFFERENT user with `ledger.correct`." Neither permission exists anywhere in the codebase.
 -- ============================================================================
 
+
+-- The parent vocabulary this insert needs (`lookup_types` / `languages` / `integration_providers`) is
+-- guaranteed by **0056a_reference_data_the_chain_depends_on.sql**, which exists because
+-- `db/prod/apply.sh` runs migrate BEFORE seed and this statement's parent rows live in `db/seeds/core/`.
+-- Read 0056a's header for the full finding: the chain halted at 0057 and migrations 0057-0149 had never
+-- applied to any database. Not repeated per file, deliberately — one authority, one explanation.
+
 -- ---------------------------------------------------------------------------
 -- 1. `correction` JOINS THE LEDGER VOCABULARY
 -- ---------------------------------------------------------------------------

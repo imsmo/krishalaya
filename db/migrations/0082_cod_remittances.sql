@@ -57,17 +57,33 @@ CREATE UNIQUE INDEX uq_cod_remittances_idem ON cod_remittances (idempotency_key)
 -- its rows (the service DELETEs the links on cancel) so a mis-keyed batch is fixable without orphaning cash.
 CREATE TABLE cod_remittance_shipments (
   remittance_id uuid NOT NULL REFERENCES cod_remittances(id) ON DELETE CASCADE,
-  -- [DEV-56 2026-08-12 FIX] was `REFERENCES shipments(id)` — invalid DDL: `shipments` is
-  -- `PARTITION BY RANGE (created_at)` with composite PK `(id, created_at)` (0007_logistics.sql), so a bare
-  -- `id` column there is NOT unique and Postgres refuses the FK ("no unique constraint matching given keys for
-  -- referenced table"). This migration has therefore never successfully committed on ANY real Postgres — its
-  -- CREATE TABLE fails inside migrate.js's own single transaction and rolls back completely every time, so no
-  -- environment anywhere has an applied `0082_cod_remittances` row in `schema_migrations`; editing it in place
-  -- (rather than fixing forward with a new migration) mutates no deployed state, unlike 0057. Fix: drop the FK,
-  -- app-validate instead — the platform's own established, documented precedent for referencing this exact
-  -- partitioned table (`freight_invoice_lines.shipment_id`, 0070_freight_invoices.sql:79, and
-  -- `shipment_events.shipment_id`, 0007_logistics.sql:96 — neither ever had an FK to shipments(id) either).
-  shipment_id   uuid NOT NULL,          -- app-validated against shipments.id — no FK (shipments is partitioned)
+  -- **NO FOREIGN KEY TO `shipments`, AND THE ORIGINAL ONE COULD NEVER HAVE EXISTED (PC-56 TENANT-4d-5
+  -- CHAIN REPAIR).** This column was written `REFERENCES shipments(id)`. `shipments` (0007) is
+  -- PARTITIONED BY RANGE (created_at) with a COMPOSITE `(id, created_at)` primary key, and Postgres
+  -- requires an FK to reference a unique constraint on exactly the referenced columns — so this line
+  -- failed on every fresh database with
+  --     ERROR: there is no unique constraint matching given keys for referenced table "shipments"
+  -- and, because `db/scripts/migrate.js` wraps each file in ONE transaction and `return`s on failure,
+  -- **THE ENTIRE CHAIN STOPPED HERE**: this file and every migration after it had never applied
+  -- anywhere. It is also the failure the api integration suite's globalSetup has been dying on, which
+  -- three waves of this programme recorded as a pre-existing test-harness quirk. It was not: it was
+  -- the deployment chain being broken, seen through a test.
+  --
+  -- 0070_freight_invoices.sql had already met and solved this exact problem TWELVE MIGRATIONS EARLIER
+  -- and wrote the answer down: "shipment_id uuid, -- app-validated against shipments.id — no FK
+  -- (shipments is partitioned with a composite PK)". Same shape, same fix.
+  --
+  -- AND THE GUARANTEE HERE IS STRONGER THAN THE FK WOULD HAVE BEEN, which is why this is a repair and
+  -- not a downgrade: `CodRemittanceRepository.lockRemittable` SELECTs the candidate shipments
+  -- `FOR UPDATE OF s` and `link()` inserts these rows in the SAME transaction, so every shipment is
+  -- proven to exist AND row-locked at link time — a constraint check cannot promise the row will still
+  -- be there a statement later, and this does. Shipments are soft-deleted (`deleted_at`), never
+  -- removed, so a link cannot be orphaned afterwards either.
+  --
+  -- The stronger alternative — carry `shipment_created_at` and FK on `(shipment_id, shipment_created_at)`
+  -- — is real and is NAMED rather than taken: it needs a new column the writer must populate on a money
+  -- path, and adding that inside a chain repair would be a larger change than the defect it fixes.
+  shipment_id   uuid NOT NULL,
   tenant_id     uuid NOT NULL REFERENCES tenants(id),
   cod_minor     bigint NOT NULL CHECK (cod_minor > 0),           -- snapshot of the shipment's COD at remit time
   PRIMARY KEY (remittance_id, shipment_id)

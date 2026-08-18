@@ -94,7 +94,17 @@
 -- 145.1  THE NOTICE THRESHOLD BECOMES THE NUMBER ON THE SCREEN, AND A TENANT CAN MOVE IT
 -- ---------------------------------------------------------------------------------------------
 INSERT INTO setting_definitions (key, value_type, scope, risk_class, default_value, description)
-SELECT 'plans.usage_alert_threshold_pct', 'int', 'tenant', 'operational', '90'::jsonb,
+-- **PC-56 TENANT-4d-5 CHAIN REPAIR: `risk_class` WAS 'operational', WHICH 0121's CHECK FORBIDS.**
+-- `setting_definitions.risk_class` is constrained to ('ordinary', 'money_path', 'security') by
+-- 0121_config_control_plane.sql, so this row failed with
+--     ERROR: new row for relation "setting_definitions" violates check constraint
+--            "setting_definitions_risk_class_check"
+-- and the runner's one-transaction-per-file rollback stopped the chain here. **The consequence is not
+-- cosmetic: this setting definition has never existed in any database**, so the value this wave moved out
+-- of code and into configuration was never configurable. 'ordinary' is the right class — this threshold
+-- is neither a money path nor security copy — and a spec now asserts every migration's `risk_class`
+-- against 0121's vocabulary, which is what would have caught it.
+SELECT 'plans.usage_alert_threshold_pct', 'int', 'tenant', 'ordinary', '90'::jsonb,
        'Percentage of a plan limit at which a tenant is notified (W118: "at 90% of any limit you get a console + email notice"). The alert job used a hardcoded 80. A value outside 1..100 falls back to 90 rather than to 0, because a threshold of 0 would alert on every metric for every tenant for ever.'
 WHERE NOT EXISTS (SELECT 1 FROM setting_definitions WHERE key = 'plans.usage_alert_threshold_pct');
 

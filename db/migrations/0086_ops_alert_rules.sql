@@ -100,6 +100,13 @@ INSERT INTO notification_events (code, default_name, priority, default_channels,
 VALUES ('ops.alert_fired', 'Operations alert', 'important', '["push","sms"]', true, false)
 ON CONFLICT (code) DO NOTHING;
 
+
+-- The parent vocabulary this insert needs (`lookup_types` / `languages` / `integration_providers`) is
+-- guaranteed by **0056a_reference_data_the_chain_depends_on.sql**, which exists because
+-- `db/prod/apply.sh` runs migrate BEFORE seed and this statement's parent rows live in `db/seeds/core/`.
+-- Read 0056a's header for the full finding: the chain halted at 0057 and migrations 0057-0149 had never
+-- applied to any database. Not repeated per file, deliberately — one authority, one explanation.
+
 INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
  ('ops.alert_fired','push','en',NULL,'{{title}}','{{body}}',NULL,true),
  ('ops.alert_fired','push','hi',NULL,'{{title}}','{{body}}',NULL,true),
