@@ -1,7 +1,7 @@
 // modules/identity/controllers/v1/auth.controller.ts · phone-OTP login, refresh, logout, sessions.
 // Login endpoints are @Public (anonymous can authenticate); tenant is taken from the body
 // for login/refresh and from the token context for session management.
-import { Body, Controller, Delete, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';

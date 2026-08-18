@@ -12,8 +12,10 @@ const JOB_CODE = 'usage_limit_alerts';
 export class UsageLimitAlertsJob {
   constructor(private readonly systemPool: Pool) {}
 
-  /** `thresholdPct` in [0,1]; default 0.8. */
-  async run(limit = 2000, thresholdPct = 0.8, now: Date = new Date()): Promise<{ alerted: number; skipped: boolean }> {
+  /** `thresholdPct` in [0,1]. PC-56 TENANT-4d-1: the default was 0.8 while W118 promises a notice "at 90%
+   *  of any limit" — a tenant told 90 heard at 80. The default now comes from the domain constant the screen
+   *  also reads (0145 makes it a per-tenant setting, which the caller may pass in). */
+  async run(limit = 2000, thresholdPct = DEFAULT_ALERT_THRESHOLD_PCT / 100, now: Date = new Date()): Promise<{ alerted: number; skipped: boolean }> {
     const runDate = now.toISOString().slice(0, 10);
     const client: PoolClient = await this.systemPool.connect();
     try {

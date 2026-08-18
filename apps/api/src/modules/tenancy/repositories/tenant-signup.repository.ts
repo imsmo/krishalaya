@@ -61,6 +61,16 @@ export class TenantSignupRepository {
    * on one would hand a co-operative capability nobody priced. Returns null rather than a fallback: the route REFUSES
    * instead of guessing which plan somebody should be billed for.
    */
+  /** W115's three cards, as codes: public, active plans for this country. The signup service validates a
+   *  chosen code against THIS list rather than trusting the client (PC-56 TENANT-4d-1). */
+  async publicPlanCodes(tx: TxContext, countryCode: string): Promise<string[]> {
+    const r = await tx.query<{ code: string }>(
+      `SELECT DISTINCT code FROM plans
+        WHERE is_public = true AND is_active = true AND country_code = $1 AND deleted_at IS NULL
+        ORDER BY code`, [countryCode]);
+    return r.rows.map((x) => x.code);
+  }
+
   async trialPlan(tx: TxContext, code: string, countryCode: string): Promise<{ id: string; currencyCode: string; monthlyPriceMinor: string } | null> {
     const r = await tx.query(
       `SELECT id, currency_code, monthly_price_minor::text AS monthly

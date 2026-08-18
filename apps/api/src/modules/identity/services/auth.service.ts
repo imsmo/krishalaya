@@ -56,7 +56,13 @@ export class AuthService {
   ) {}
 
   /** Step 1: send an OTP. Enumeration-safe (same response whether or not the user exists). */
-  async requestOtp(rawPhone: string, _channel: string): Promise<{ sent: true; resendInSec: number; devCode?: string }> {
+  // The channel is part of the public contract (callers pass 'sms' | 'whatsapp') and is chosen inside the OTP
+  // provider today; dropping the parameter would silently change every call site's arity.
+  async requestOtp(
+    rawPhone: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _channel: string,
+  ): Promise<{ sent: true; resendInSec: number; devCode?: string }> {
     const phone = normalizePhoneE164(rawPhone);
     if (!phone) throw new InvalidPhoneError();
     return timed(this.metrics, 'auth.request_otp', {}, async () => {

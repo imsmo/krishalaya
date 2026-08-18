@@ -14,6 +14,10 @@ export const TenantSignupSchema = z.object({
   orgName: z.string().trim().min(3).max(200),
   /** A `lookup_values` id from the `tenant_type` registry — W113: "more are added without app updates". */
   orgTypeId: z.string().uuid(),
+  /** W115 step 3 of 4: the plan the co-operative CHOSE. Optional, and honoured only when the
+   *  `signup_plan_choice` flag is on (0145) — otherwise every signup lands on the platform's configured
+   *  trial plan, which is what happened to every tenant before PC-56 TENANT-4d-1. */
+  planCode: z.string().trim().min(2).max(40).optional(),
   lang: z.enum(['en', 'hi', 'gu']).optional(),
   countryCode: z.string().length(2).optional(),
   device: z.object({

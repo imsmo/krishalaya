@@ -14,7 +14,8 @@ function parse(d: string | undefined, fallback: Date): Date {
 export function resolveWindow(fromStr: string | undefined, toStr: string | undefined, now: Date = new Date()): { from: Date; to: Date } {
   const to = parse(toStr, now);
   const from = parse(fromStr, new Date(to.getTime() - 30 * DAY));
-  let lo = from, hi = to;
+  let lo = from;
+  const hi = to;
   if (lo.getTime() >= hi.getTime()) lo = new Date(hi.getTime() - 30 * DAY);     // empty/inverted → default 30d back
   if (hi.getTime() - lo.getTime() > MAX_WINDOW_DAYS * DAY) lo = new Date(hi.getTime() - MAX_WINDOW_DAYS * DAY);
   return { from: lo, to: hi };

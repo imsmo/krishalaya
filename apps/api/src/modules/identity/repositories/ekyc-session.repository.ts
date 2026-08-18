@@ -4,7 +4,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { EkycSession, EkycSessionProps, EkycDoc } from '../domain/ekyc-session.entity';
+import { EkycSession, EkycDoc } from '../domain/ekyc-session.entity';
 import { EkycSessionStatus } from '../domain/ekyc-session.state';
 import { ConcurrencyError } from '../domain/identity.errors';
 

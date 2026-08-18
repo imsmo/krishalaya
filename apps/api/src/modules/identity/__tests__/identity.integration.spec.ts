@@ -83,7 +83,10 @@ run('identity slice (integration, real Postgres + RLS)', () => {
       new UserRepository(replica as any), new SessionRepository(replica as any), new DeviceRepository(),
       new LoginEventRepository());
     rbac = new UserTenantRoleService(uow, outbox, audit, roleCache, new UserTenantRoleRepository(replica as any),
-      new RoleRepository(replica as any), new UserRepository(replica as any));
+      new RoleRepository(replica as any), new UserRepository(replica as any),
+      // PC-56 TENANT-4d-1: the member-seat gate (W118's pause). `plan_limit_enforcement` is OFF by default,
+      // so the real service would allow here too; stubbed to keep this suite about identity.
+      { assertMemberSeatAvailable: async () => ({ kind: 'allow' as const }) } as any);
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;

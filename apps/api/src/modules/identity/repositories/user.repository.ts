@@ -4,7 +4,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { User, UserProps } from '../domain/user.entity';
+import { User } from '../domain/user.entity';
 import { UserStatus } from '../domain/user.state';
 
 const COLS = `id, phone, phone_verified_at, full_name, gender, dob, language_code, country_code, email, email_verified_at, photo_media_id, status, aadhaar_last4, aadhaar_vault_ref, pan_vault_ref, is_test, last_active_at`;

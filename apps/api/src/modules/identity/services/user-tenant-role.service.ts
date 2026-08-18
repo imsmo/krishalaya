@@ -13,6 +13,7 @@ import { ForbiddenError } from '../../../shared/errors/app-error';
 import { UserTenantRole } from '../domain/user-tenant-role.entity';
 import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
 import { RoleRepository } from '../repositories/role.repository';
+import { PlanUsageService } from '../../tenancy/services/plan-usage.service';
 import { UserRepository } from '../repositories/user.repository';
 import { AssignRoleDto, StaffOverrideDto } from '../dto/create-user-tenant-role.dto';
 
@@ -28,6 +29,9 @@ export class UserTenantRoleService {
     private readonly utr: UserTenantRoleRepository,
     private readonly roles: RoleRepository,
     private readonly users: UserRepository,
+    // PC-56 TENANT-4d-1: the tenancy module's PUBLIC service (never its repositories — module blueprint).
+    // W118: "at 100% new additions pause (existing operations never do)", which had no code anywhere.
+    private readonly planUsage: PlanUsageService,
   ) {}
 
   async assign(tenantId: string, actorUserId: string, dto: AssignRoleDto, ip: string | null) {
@@ -42,6 +46,13 @@ export class UserTenantRoleService {
     id = await this.uow.run(tenantId, async (tx) => {
       const existing = await this.utr.findExisting(tenantId, dto.userId, role.id);
       if (existing) throw new RoleAlreadyAssignedError();
+      // THE PLAN's MEMBER LIMIT (W118), checked inside this write's own transaction so the count the refusal
+      // cites is the count as of the write. Behind `plan_limit_enforcement` (0145, default OFF); a person who
+      // already holds a role in this tenant is not a new member, so the check runs only for a NEW member —
+      // adding a second role to an existing member never consumes a seat.
+      if (!(await this.utr.hasAnyRole(tx, tenantId, dto.userId))) {
+        await this.planUsage.assertMemberSeatAvailable(tx, tenantId);
+      }
       if (ADULT_ROLES.has(role.code)) {
         const u = await this.users.getForUpdate(tx, dto.userId);
         if (!u) throw new UserNotFoundError(dto.userId);

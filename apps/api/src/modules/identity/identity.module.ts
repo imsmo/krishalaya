@@ -3,6 +3,8 @@
 // globally by CoreModule and injected by token/class. Other modules depend only on
 // the public services exported here (Law 11: never on repositories).
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { forwardRef } from '@nestjs/common';
+import { TenancyModule } from '../tenancy/tenancy.module';
 import { AppConfig } from '../../core/config/app-config';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 
@@ -72,6 +74,11 @@ import { DpdpErasureCoolingJob } from './jobs/dpdp-erasure-cooling.job';
 import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
 
 @Module({
+  // PC-56 TENANT-4d-1: UserTenantRoleService asks tenancy's PUBLIC PlanUsageService whether a seat is free
+  // before attaching a NEW member (W118's "at 100% new additions pause"). Module blueprint: a module may use
+  // another's public service, never its repositories. forwardRef because TenancyModule's signup path already
+  // reaches back into identity's AuthService (see the note below), so the two are mutually dependent.
+  imports: [forwardRef(() => TenancyModule)],
   controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController],
   providers: [
     AuthService, UserService, UserTenantRoleService, OnboardingService, RoleService, PermissionService,

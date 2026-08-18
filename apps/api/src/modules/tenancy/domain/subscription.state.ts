@@ -24,5 +24,14 @@ export function canTransition(from: SubscriptionStatus, to: SubscriptionStatus):
 export function assertTransition(from: SubscriptionStatus, to: SubscriptionStatus): void { if (!canTransition(from, to)) throw new IllegalSubscriptionTransitionError(from, to); }
 /** A live subscription occupies the tenant's single subscription slot (can't subscribe twice). */
 export function isLive(s: SubscriptionStatus): boolean { return s === 'trialing' || s === 'active' || s === 'past_due' || s === 'paused'; }
-/** Quotas apply only while active (matches QuotaService). */
-export function grantsQuota(s: SubscriptionStatus): boolean { return s === 'active'; }
+/** PC-56 TENANT-4d-1: A TRIAL CARRIES THE LIMITS OF THE PLAN IT IS A TRIAL OF.
+ *  This used to read `s === 'active'`, so a trialing tenant escaped every plan limit while W115 sells
+ *  "14 days free" ON A CHOSEN PLAN — and a fresh trial is the cheapest place on any platform to mine
+ *  resources, which made the exemption exactly backwards. `past_due` keeps its limits too: a tenant inside
+ *  the grace period is still operating on a plan they have not yet paid for. `paused`, `cancelled` and
+ *  `expired` do not — there is no plan in force to take a limit from, and refusing writes over a billing
+ *  state is the hostage-taking W118 rules out ("existing operations never do"). The single list lives in
+ *  domain/plan-usage.ts so the quota path and the meters cannot disagree about who is limited. */
+export function grantsQuota(s: SubscriptionStatus): boolean {
+  return s === 'trialing' || s === 'active' || s === 'past_due';
+}

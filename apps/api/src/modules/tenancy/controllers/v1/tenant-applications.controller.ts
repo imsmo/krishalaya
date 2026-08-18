@@ -3,7 +3,7 @@
 // @Public() (no AuthGuard) + a tight per-IP rate limit (abuse surface) + a REQUIRED Idempotency-Key so a
 // double-tap on a flaky rural connection can never file two cases. The reply is deliberately minimal —
 // a reference and a status, nothing about the platform's queue (Rule Zero: trust, no leakage).
-import { Body, Controller, Headers, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Headers, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { Public } from '../../../../core/auth/public.decorator';

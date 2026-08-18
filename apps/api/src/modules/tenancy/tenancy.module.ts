@@ -11,6 +11,9 @@
 // COLLECTION / void / manual adjustment / dunning ESCALATION are god-mode and live in apps/admin-api billing-ops
 // (which READS these invoices) — Law 11. Tenant LIFECYCLE (status) + feature GRANTS likewise live in tenant-ops.
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { PlanUsageController } from './controllers/v1/plan-usage.controller';
+import { PlanUsageRepository } from './repositories/plan-usage.repository';
+import { PlanUsageService } from './services/plan-usage.service';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { PlansController } from './controllers/v1/plans.controller';
@@ -18,6 +21,7 @@ import { TenantApplicationsController } from './controllers/v1/tenant-applicatio
 import { TenantSignupController } from './controllers/v1/tenant-signup.controller';
 import { TenantSignupService } from './services/tenant-signup.service';
 import { TenantSignupRepository } from './repositories/tenant-signup.repository';
+import { forwardRef } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
 import { TenantApplicationService } from './services/tenant-application.service';
 import { TenantApplicationRepository } from './repositories/tenant-application.repository';
@@ -52,10 +56,13 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
 @Module({
-  // IdentityModule for AuthService only: self-serve signup must open the first session through the SAME path a login
-  // uses (one place mints credentials). IdentityModule imports nothing, so there is no cycle.
-  imports: [IdentityModule],
-  controllers: [PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController],
+  // IdentityModule for AuthService only: self-serve signup must open the first session through the SAME path a
+  // login uses (one place mints credentials).
+  // PC-56 TENANT-4d-1: identity now also asks THIS module's PlanUsageService whether a member seat is free
+  // (W118's pause), so the two modules are mutually dependent and both sides use forwardRef. That is the
+  // module blueprint's allowance — public service, never a repository — not an exception to it.
+  imports: [forwardRef(() => IdentityModule)],
+  controllers: [PlanUsageController, PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
@@ -64,9 +71,9 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
     PlanChangeService, PlanChangeRepository, PlanCompareReadModel, BillingTaxRate,
     // PC-56 TENANT-1d-3a: the door W113 promises and the platform did not have.
     TenantSignupService, TenantSignupRepository,
-    TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository,
+    TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository, PlanUsageRepository, PlanUsageService,
     SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, TenantApplicationService, TenantApplicationRepository],
-  exports: [PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
+  exports: [PlanUsageService, PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
 })
 export class TenancyModule implements OnModuleInit {
   constructor(

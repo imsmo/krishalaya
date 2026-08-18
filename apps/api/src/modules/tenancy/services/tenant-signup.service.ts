@@ -17,6 +17,7 @@
 // cannot touch an existing tenant.
 // ---------------------------------------------------------------------------------------------------------------------
 import { Inject, Injectable } from '@nestjs/common';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OTP_SERVICE, OtpService } from '../../../core/auth/otp.service';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -39,6 +40,8 @@ export interface SignupInput {
   fullName: string;
   orgName: string;
   orgTypeId: string;
+  /** W115's chosen plan (PC-56 TENANT-4d-1). Honoured only behind the `signup_plan_choice` flag. */
+  planCode?: string;
   lang?: string;
   countryCode?: string;
   device?: { fingerprint: string; platform?: string; model?: string; appVersion?: string };
@@ -64,6 +67,7 @@ export class TenantSignupService {
     private readonly users: UserRepository,
     private readonly auth: AuthService,
     private readonly repo: TenantSignupRepository,
+    private readonly flags: FlagsService,
   ) {}
 
   /**
@@ -120,12 +124,30 @@ export class TenantSignupService {
         throw new BadRequestError('choose an organisation type from the list');
       }
 
-      const plan = await this.repo.trialPlan(tx, policy.trialPlanCode, countryCode);
+      // W115's CHOICE (PC-56 TENANT-4d-1). Until this wave the tenant's choice was not a parameter of signup
+      // at all: `policy.trialPlanCode` is one platform setting, so every co-operative on the platform was
+      // trialing whichever plan the platform picked, while W115 drew three cards and three buttons. A chosen
+      // code is honoured only behind the flag, validated against PUBLIC ACTIVE plans for their country, and
+      // REFUSED BY NAME if it is not one of them — a co-operative that picked Professional and silently got
+      // Starter would find out from an invoice.
+      let planCode = policy.trialPlanCode;
+      if (input.planCode) {
+        const choiceAllowed = await this.flags.isEnabled('signup_plan_choice', {}).catch(() => false);
+        if (choiceAllowed) {
+          const offered = await this.repo.publicPlanCodes(tx, countryCode);
+          if (!offered.includes(input.planCode)) {
+            throw new BadRequestError('choose a plan from the list', { code: 'SIGNUP_PLAN_NOT_OFFERED', planCode: input.planCode });
+          }
+          planCode = input.planCode;
+        }
+      }
+
+      const plan = await this.repo.trialPlan(tx, planCode, countryCode);
       if (!plan) {
         // **REFUSED, NOT GUESSED.** Picking "some cheap plan" would put a co-operative on terms nobody chose for their
         // country, and they would discover it on their first invoice.
         throw new InfraError('SIGNUP_TRIAL_PLAN_UNAVAILABLE',
-          `no public plan '${policy.trialPlanCode}' for ${countryCode} — nothing was created`);
+          `no public plan '${planCode}' for ${countryCode} — nothing was created`);
       }
 
       const tenantId = uuidv7();
@@ -157,7 +179,7 @@ export class TenantSignupService {
         entityType: 'tenant', entityId: tenantId,
         newValue: {
           slug: tenant.slug, displayName: org.value, countryCode, lang,
-          planCode: policy.trialPlanCode, trialDays: policy.trialDays, trialEndsOn: periodEnd,
+          planCode, trialDays: policy.trialDays, trialEndsOn: periodEnd,
           userCreated, status: 'trial',
         },
         ip,

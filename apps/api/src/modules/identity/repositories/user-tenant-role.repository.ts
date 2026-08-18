@@ -18,6 +18,15 @@ function toDomain(r: Row, roleCode = ''): UserTenantRole {
 export class UserTenantRoleRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
+  /** Does this person already hold ANY live role in this tenant? PC-56 TENANT-4d-1: a member is a PERSON, so
+   *  a second role for somebody already on the roster must not consume a second seat. */
+  async hasAnyRole(tx: TxContext, tenantId: string, userId: string): Promise<boolean> {
+    const r = await tx.query(
+      `SELECT 1 FROM user_tenant_roles WHERE tenant_id=$1 AND user_id=$2 AND deleted_at IS NULL LIMIT 1`,
+      [tenantId, userId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
   async insert(tx: TxContext, utr: UserTenantRole): Promise<void> {
     const p = utr.toProps();
     await tx.query(

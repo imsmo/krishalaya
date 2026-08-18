@@ -11,6 +11,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { MemberSuspensionService } from '../services/member-suspension.service';
+import { MemberSuspensionRepository } from '../repositories/member-suspension.repository';
 import {
   requireReason, assertNotSelf, suspendVerdict, liftVerdict, isLive, signInGraceSeconds,
   SUSPENSION_EFFECTS, MIN_SUSPENSION_REASON,
@@ -53,7 +54,7 @@ function harness(opts: { existing?: typeof LIVE | null; memberRows?: unknown[]; 
   const audit = { write: jest.fn(async (t: unknown, e: Record<string, unknown>) => { void t; void e; }) };
   const outbox = { write: jest.fn(async (t: unknown, e: Record<string, unknown>) => { void t; void e; }) };
   const roleCache = { invalidate: jest.fn(async (u: string, t: string) => { void u; void t; }) };
-  const repo = new (require('../repositories/member-suspension.repository').MemberSuspensionRepository)(replica as never);
+  const repo = new MemberSuspensionRepository(replica as never);
   const svc = new MemberSuspensionService(
     uow as never, outbox as never, replica as never, audit as never, repo, roleCache as never);
   return { svc, tx, audit, outbox, roleCache, replicaQuery, calls };

@@ -5,7 +5,7 @@
 // identity.phone_changed. Money-free. start is idempotent on the caller's key (Law 3) so a retried tap doesn't
 // re-spam SMS; the OTP itself is single-use + throttled inside OtpService.
 import { Inject, Injectable } from '@nestjs/common';
-import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';

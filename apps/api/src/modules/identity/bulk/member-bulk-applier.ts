@@ -27,7 +27,7 @@ import { User } from '../domain/user.entity';
 import { UserTenantRole } from '../domain/user-tenant-role.entity';
 import { UserRepository } from '../repositories/user.repository';
 import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
-import { readMemberRow, memberImportIdemKey, MEMBER_IMPORT_COLUMNS } from '../domain/member-import-row';
+import { readMemberRow, MEMBER_IMPORT_COLUMNS } from '../domain/member-import-row';
 
 export const MEMBER_INVITE_EVENT = 'member.invited';
 

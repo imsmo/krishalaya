@@ -1,5 +1,5 @@
 // modules/identity/controllers/v1/users.controller.ts · self profile + admin user management.
-import { Body, Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { Inject } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';

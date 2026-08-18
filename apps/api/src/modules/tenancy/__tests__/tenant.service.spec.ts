@@ -1,7 +1,7 @@
 // modules/tenancy/__tests__/tenant.service.spec.ts · pure-domain unit tests: the subscription state
 // machine (Law 5) + the Plan and Subscription aggregates. The services' UoW/outbox/quota link are
 // covered by the integration spec.
-import { canTransition, isLive, grantsQuota, IllegalSubscriptionTransitionError, SUBSCRIPTION_STATUSES, SubscriptionStatus } from '../domain/subscription.state';
+import { canTransition, isLive, grantsQuota, SUBSCRIPTION_STATUSES, SubscriptionStatus } from '../domain/subscription.state';
 import { Plan } from '../domain/plan.entity';
 import { Subscription } from '../domain/subscription.entity';
 import { TenancyEventType } from '../domain/tenancy.events';
@@ -18,7 +18,17 @@ describe('subscription.state machine', () => {
     expect(canTransition('past_due', 'active')).toBe(true);
     expect(canTransition('cancelled', 'active')).toBe(false);
     expect(isLive('paused')).toBe(true); expect(isLive('expired')).toBe(false);
-    expect(grantsQuota('active')).toBe(true); expect(grantsQuota('trialing')).toBe(false);
+    // PC-56 TENANT-4d-1: a trial now carries the limits of the plan it is a trial of. This assertion used to
+    // read `grantsQuota('trialing') === false`, which meant a trialing tenant escaped every plan limit while
+    // W115 sells "14 days free" ON A CHOSEN PLAN — and a fresh trial is the cheapest place to mine a
+    // platform, so the exemption was backwards. `past_due` keeps its limits too (still on the plan, inside
+    // the grace period); `paused`/`cancelled`/`expired` do not, because no plan is in force to limit.
+    expect(grantsQuota('active')).toBe(true);
+    expect(grantsQuota('trialing')).toBe(true);
+    expect(grantsQuota('past_due')).toBe(true);
+    expect(grantsQuota('paused')).toBe(false);
+    expect(grantsQuota('cancelled')).toBe(false);
+    expect(grantsQuota('expired')).toBe(false);
   });
   it('covers every status', () => { for (const s of SUBSCRIPTION_STATUSES) expect(() => canTransition(s, 'expired' as SubscriptionStatus)).not.toThrow(); });
 });

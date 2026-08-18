@@ -5,7 +5,7 @@
 // IDOR). Idempotent on the caller's key (Law 3) AND deduped to one OPEN request per kind. Erasure carries the
 // statutory 90-day cooling-off (set in the domain). Each request emits an outbox event for the fulfilment plane.
 import { Inject, Injectable } from '@nestjs/common';
-import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';

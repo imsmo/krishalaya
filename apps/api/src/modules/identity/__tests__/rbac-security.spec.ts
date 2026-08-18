@@ -12,7 +12,11 @@ function svc(role: Role | null) {
   const noop: any = { write: jest.fn(), invalidate: jest.fn() };
   const utr: any = { getForUpdate: jest.fn() };
   const users: any = {};
-  return new UserTenantRoleService(uow, noop, noop, noop, utr, roles, users);
+  // PC-56 TENANT-4d-1: the service now asks tenancy's PlanUsageService for a member seat before attaching a
+  // NEW member (W118's pause). This suite is about RBAC, so the seat check is stubbed to allow — the pause
+  // itself is covered by tenant4d1-plan-usage.spec.ts.
+  const planUsage = { assertMemberSeatAvailable: async () => ({ kind: 'allow' as const }) } as any;
+  return new UserTenantRoleService(uow, noop, noop, noop, utr, roles, users, planUsage);
 }
 const platform = new Role({ id: 'r', code: 'super_admin', defaultName: 'SA', scope: 'platform', requiresKyc: true, requiresApproval: false, moduleCode: null, isActive: true });
 

@@ -108,6 +108,25 @@ export class TenancyResource {
       body: input, idempotencyKey, anonymous: true,
     })).data;
   }
+
+  /* ---------------------------------------------------------------------------------------------------------
+   * PC-56 TENANT-4d-1 · W118's meters and W115's plan cards. Read-only.
+   * ------------------------------------------------------------------------------------------------------- */
+  /** W118: the plan (with the version it is price-locked to), the four meters with an HONEST STATE each
+   *  (enforced / counted_only / not_measured), the notice threshold in force, the projection, and the metrics
+   *  thirteen modules gate on that no plan prices. */
+  async planUsage(signal?: AbortSignal): Promise<PlanUsageView> {
+    return (await this.http.request<PlanUsageView>('GET', 'plan-usage', { signal })).data;
+  }
+  /** The member-seat pre-check, so a roster screen can withhold "Add member" instead of letting it fail. */
+  async memberSeat(signal?: AbortSignal): Promise<{ used: number; limit: number | null; state: PlanMeterState }> {
+    return (await this.http.request<{ used: number; limit: number | null; state: PlanMeterState }>('GET', 'plan-usage/member-seat', { signal })).data;
+  }
+  /** W115's cards: public active plans for a country, newest version of each code. */
+  async choosablePlans(country = 'IN', signal?: AbortSignal): Promise<ChoosablePlanRow[]> {
+    return (await this.http.request<ChoosablePlanRow[]>('GET', 'plan-usage/plans', { query: { country }, signal })).data;
+  }
+
 }
 
 /* ------------------------------------------------------------------------------------------------------------ */
@@ -310,4 +329,30 @@ export interface TenantSignupResult {
   /** null on a resume — the existing organisation's trial, if any, is its own business. */
   trialEndsOn: string | null;
   tokens: { accessToken: string; refreshToken: string; expiresInSec: number };
+}
+
+// PC-56 TENANT-4d-1 · W118/W115.
+export type PlanMeterState = 'enforced' | 'counted_only' | 'not_measured';
+export type PlanMeterVerdict =
+  | { kind: 'not_measured'; reason: 'no_source' | 'no_limit' }
+  | { kind: 'unlimited'; used: number }
+  | { kind: 'within'; used: number; limit: number; pct: number; atNotice: boolean }
+  | { kind: 'at_limit'; used: number; limit: number; pct: 100 }
+  | { kind: 'over_limit'; used: number; limit: number; pct: number };
+export interface PlanMeter {
+  code: string; shape: 'stock' | 'flow'; state: PlanMeterState; verdict: PlanMeterVerdict;
+  limitCode: string | null; enforcedBy: string | null;
+}
+export type PlanProjection =
+  | { kind: 'not_available'; reason: 'insufficient_history' | 'no_limit' | 'not_growing' }
+  | { kind: 'reaches'; monthsAway: number; perMonth: number };
+export interface PlanUsageView {
+  planName: string | null; planLabel: string | null; planVersion: number | null;
+  subscriptionStatus: string | null; limitsApply: boolean; thresholdPct: number; enforcementOn: boolean;
+  meters: PlanMeter[]; projection: PlanProjection; unpricedGatedMetrics: string[];
+}
+export interface ChoosablePlanRow {
+  code: string; version: number; name: string; monthlyPriceMinor: string; annualPriceMinor: string;
+  currencyCode: string; isPublic: boolean; isActive: boolean; countryCode: string | null;
+  limits: Record<string, number>;
 }
