@@ -16,6 +16,7 @@ import { DomainEvent, BillingCycle } from '../domain/tenancy.events';
 import { SubscriptionNotFoundError, SubscriptionForbiddenError, PlanNotFoundError, PlanNotSubscribableError, AlreadySubscribedError } from '../domain/tenancy.errors';
 import { PlanRepository } from '../repositories/plan.repository';
 import { SubscriptionRepository } from '../repositories/subscription.repository';
+import { graceUntil } from '../domain/billing-grace';
 import { SubscribeDto } from '../dto/create-subscription.dto';
 import { TenancyActor } from './plan.service';
 
@@ -85,6 +86,39 @@ export class SubscriptionService {
       await this.repo.update(tx, sub);
       await this.flush(tx, tenantId, id, sub.pullEvents());
     }, { userId: 'system' });
+  }
+
+  /**
+   * PC-56 TENANT-4d-4 · open the grace window W120 promises. `graceDays` comes from `billing.grace_days` for
+   * this tenant (resolved by the caller, which is the only place that may read a setting).
+   */
+  async enterGrace(tenantId: string, id: string, graceDays: number, now: Date = new Date()): Promise<boolean> {
+    return this.uow.run(tenantId, async (tx) => {
+      const sub = await this.repo.getForUpdate(tx, tenantId, id);
+      if (!sub) return false;
+      const until = graceUntil(sub.currentPeriodEnd, graceDays);
+      if (!sub.enterGrace(until, now)) return false;
+      await this.repo.update(tx, sub);
+      await this.audit.write(tx, { tenantId, actorUserId: 'system', action: 'tenancy.subscription_grace_started', entityType: 'subscription', entityId: id, newValue: { graceUntil: until, graceDays }, ip: null });
+      await this.flush(tx, tenantId, id, sub.pullEvents());
+      return true;
+    }, { userId: 'system' });
+  }
+
+  /**
+   * PC-56 TENANT-4d-4 · **THE ROLL NOTHING EVER DID.** Driven by `tenancy.saas_invoice_paid`, the event that
+   * had no subscriber (0148 defect 2). Runs INSIDE the relay's transaction so the period advance and the
+   * event that caused it commit together (Law 4), and idempotent: a re-delivered paid event finds the period
+   * already rolled past `now` and `rollPeriod` returns false.
+   */
+  async rollPeriod(tx: TxContext, tenantId: string, id: string, now: Date = new Date()): Promise<boolean> {
+    const sub = await this.repo.getForUpdate(tx, tenantId, id);
+    if (!sub) return false;
+    if (!sub.rollPeriod(now)) return false;
+    await this.repo.update(tx, sub);
+    await this.flush(tx, tenantId, id, sub.pullEvents());
+    this.metrics.inc('tenancy.subscription_renewed', { tenant: tenantId });
+    return true;
   }
 
   /** The tenant's current subscription + its plan limits + current-month usage (the quota dashboard). */

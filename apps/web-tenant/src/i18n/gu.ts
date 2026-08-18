@@ -3357,4 +3357,11 @@ export const gu: Messages = {
   'tax.retryEdit': 'Pachhā jaīne field sudhāro',
   'tax.retryConfirm': 'Pharī prayās karo',
   'tax.retryNone': 'Ā yahānthī pharī karī shakāy nahi.',
+
+  // ---- PC-56 TENANT-4d-4 · W120's footnote, once it is true (the grace window) --------------------
+  'bill.grace.open': 'Tamārī subscription nu chukavanu bāki chhe, ane kai band karāyu nathi. Sevā {days} divas vadhu chālshe, {date} sudhī.',
+  'bill.grace.lastDay': 'Āje tamārā grace gālā no chhello divas chhe. Sevā āje ({date}) sudhī chālshe; te pachhī bill chukavāy tyā sudhī subscription atkī jashe.',
+  'bill.grace.payNow': 'Badhu chālu rākhvā mate upar nu bāki invoice chukvo. Ā daramyān tamārā members par koi asar nathi.',
+  'bill.grace.contact': 'Tamāro platform samparka chukavanī nī sūchanā mokalshe. Ā daramyān tamārā members par koi asar nathi.',
+  'bill.gap.noNotification': 'Hāl banāvāyu nathi — ame ā vishe email ke message nahi mokalīe, tethi kripā karī ā pānu joyā karo.',
 };

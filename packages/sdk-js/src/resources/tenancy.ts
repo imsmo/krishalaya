@@ -372,7 +372,7 @@ export type SaasInvoiceTab = (typeof SAAS_INVOICE_TABS)[number];
 
 /** The four sentences W120 states about the billing MECHANISM. Not one of them has a subject in the platform
  *  today, so each carries the verdict the code can actually support and the console prints THAT. */
-export type BillingMechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state';
+export type BillingMechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state' | 'no_notification';
 
 export interface SaasInvoiceRow {
   id: string; invoiceNo: string; subscriptionId: string | null; status: string; currencyCode: string;
@@ -408,7 +408,11 @@ export interface BillingConsoleView {
   };
   tabCounts: Record<string, number>;
   billTo: { gstinMasked: string | null; legalName: string | null; source: 'snapshot' | 'not_on_invoice' };
-  subscription: { id: string; status: string; billingCycle: string; priceMinor: string; currencyCode: string; currentPeriodEnd: string | null } | null;
+  subscription: { id: string; status: string; billingCycle: string; priceMinor: string; currencyCode: string; currentPeriodEnd: string | null; graceUntil: string | null } | null;
+  /** PC-56 TENANT-4d-4 · W120's footnote as this tenant's actual situation. `advice` is what the tenant can DO
+   *  — pay the open invoice — because there is no autopay mandate to retry against and this platform does not
+   *  claim to be retrying anything. */
+  grace: { inGrace: boolean; graceUntil: string | null; daysLeft: number; advice: 'pay_open_invoice' | 'contact_platform' | 'none' };
   mechanism: { autopay: BillingMechanismVerdict; nextDebit: BillingMechanismVerdict; gracePeriod: BillingMechanismVerdict; retryAndNotify: BillingMechanismVerdict };
   selfPayEnabled: boolean;
 }

@@ -210,28 +210,12 @@ export function maskGstin(gstin: string | null): string | null {
   return `${s.slice(0, 2)}${'•'.repeat(Math.min(8, s.length - 5))}${s.slice(-3)}`;
 }
 
-/**
- * The four sentences W120 states about the billing MECHANISM, each with the verdict the code can actually
- * support. This is the wave's honesty surface: the canon's screen asserts an autopay mandate, a next debit
- * date, a grace period and a retry loop, and not one of them has a subject in this codebase.
- */
-export type MechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state';
-
-export interface MechanismLines {
-  /** "UPI autopay · mandate active" — the autopay plane has no notion of a subscription or a SaaS invoice. */
-  autopay: MechanismVerdict;
-  /** "next debit 01 Aug" — nothing schedules one: RenewalInvoicesJob is in no worker registry. */
-  nextDebit: MechanismVerdict;
-  /** "grace period — nothing switches off for 7 days" — `past_due` has no writer anywhere in the monorepo,
-   *  and the job named for the grace period expires the subscription instead. TENANT-4d-3. */
-  gracePeriod: MechanismVerdict;
-  /** "while we retry and notify you" — there is no retry loop for a SaaS renewal and no dunning notice. */
-  retryAndNotify: MechanismVerdict;
-}
-
-export function mechanismLines(): MechanismLines {
-  return { autopay: 'no_saas_mandate', nextDebit: 'not_scheduled', gracePeriod: 'no_grace_state', retryAndNotify: 'no_grace_state' };
-}
+// **W120's FOUR MECHANISM SENTENCES MOVED OUT OF THIS FILE (PC-56 TENANT-4d-4).** They lived here as CONSTANTS
+// — `mechanismLines()` returning four hardcoded gaps — which was honest while none of the four existed. Now that
+// the grace period is a real state behind two flags, a constant would go stale the moment a founder switched
+// them on, and the screen would keep telling tenants there is no grace period while there is one. The verdicts
+// are DERIVED from what is actually enabled, in `domain/billing-grace.ts` → `mechanismLines({graceEnabled,
+// cadenceEnabled})`. One function, one place, and it cannot drift from the flags.
 
 /**
  * Whether a payment row may be RECORDED against this invoice. Money that arrived is a fact, so an already

@@ -134,7 +134,16 @@ export class SaasInvoice {
     // `paid_at` is the moment the invoice BECAME settled, and it is cleared when a reversal un-settles it —
     // otherwise a re-opened invoice would keep a payment date and W120 would call it "on time" for ever.
     this.p.paidAt = to === 'paid' ? at : null;
-    this.events.push({ type: TenancyEventType.SaasInvoicePaid, payload: { invoiceId: this.p.id, tenantId: this.p.tenantId, status: to, statusFrom: from, paidMinor: paidMinor.toString(), totalMinor: this.p.totalMinor.toString() } });
+    // PC-56 TENANT-4d-4: `subscriptionId` joins the payload. Without it the paid event could not tell the
+    // subscription plane WHICH subscription had just been paid for, so the handler that rolls the billing
+    // period had nothing to act on — the same "a verdict with no evidence" shape 0146 defect 2 found on
+    // payments.payment_succeeded, one layer up. `periodTag` travels too, so a consumer can tell a renewal
+    // invoice from an upgrade proration without re-reading the row.
+    this.events.push({ type: TenancyEventType.SaasInvoicePaid, payload: {
+      invoiceId: this.p.id, tenantId: this.p.tenantId, subscriptionId: this.p.subscriptionId,
+      periodTag: this.p.periodTag, status: to, statusFrom: from,
+      paidMinor: paidMinor.toString(), totalMinor: this.p.totalMinor.toString(),
+    } });
     return true;
   }
 

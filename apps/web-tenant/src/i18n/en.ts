@@ -3359,4 +3359,11 @@ export const en: Messages = {
   'tax.retryEdit': 'Go back and fix the fields',
   'tax.retryConfirm': 'Try again',
   'tax.retryNone': 'This one cannot be retried from here.',
+
+  // ---- PC-56 TENANT-4d-4 · W120's footnote, once it is true (the grace window) --------------------
+  'bill.grace.open': 'Your subscription payment is outstanding, and nothing has been switched off. Service continues for {days} more day(s), through {date}.',
+  'bill.grace.lastDay': 'Today is the last day of your grace period. Service continues through today ({date}); after that the subscription lapses until the bill is settled.',
+  'bill.grace.payNow': 'Pay the open invoice above to keep everything running. Your members are not affected in the meantime.',
+  'bill.grace.contact': 'Your platform contact will send you payment instructions. Your members are not affected in the meantime.',
+  'bill.gap.noNotification': 'Not built yet — we will not email or message you about this, so please check this page.',
 };

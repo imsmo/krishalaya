@@ -285,6 +285,14 @@ export class AppConfig {
         intervalMs: this.env.PAYOUT_EXECUTION_JOB_INTERVAL_MS,
         batchSize: this.env.PAYOUT_EXECUTION_JOB_BATCH_SIZE,
       },
+      // PC-56 TENANT-4d-4: the SaaS billing clock. Four job classes sat in modules/tenancy/jobs that no
+      // runtime ran; TENANT-4d-2 refused to wire them because expiring subscriptions before the period could
+      // roll would have switched off every paying tenant. The roll exists now, so the cycle can be scheduled.
+      saasBillingCycle: {
+        enabled: this.env.SAAS_BILLING_CYCLE_JOB_ENABLED !== 'false',
+        intervalMs: this.env.SAAS_BILLING_CYCLE_JOB_INTERVAL_MS,
+        batchSize: this.env.SAAS_BILLING_CYCLE_JOB_BATCH_SIZE,
+      },
     };
   }
   get razorpay(){ return { keyId: this.env.RAZORPAY_KEY_ID, webhookSecret: this.env.RAZORPAY_WEBHOOK_SECRET }; }

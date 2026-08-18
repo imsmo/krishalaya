@@ -78,7 +78,7 @@ export function gstinKey(source: 'snapshot' | 'not_on_invoice'): string {
 /* THE FOUR MECHANISM SENTENCES — the wave's honesty surface                                               */
 /* ------------------------------------------------------------------------------------------------------- */
 
-export type MechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state';
+export type MechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state' | 'no_notification';
 
 export const MECHANISM_ORDER = ['autopay', 'nextDebit', 'gracePeriod', 'retryAndNotify'] as const;
 export type MechanismKey = (typeof MECHANISM_ORDER)[number];
@@ -100,8 +100,37 @@ export function mechanismKey(k: MechanismKey, v: MechanismVerdict): string {
  *  same reason say so identically. `exists` has no reason line. */
 export function gapReasonKey(v: MechanismVerdict): string | null {
   if (v === 'exists') return null;
-  return `bill.gap.${v === 'no_saas_mandate' ? 'noMandate' : v === 'not_scheduled' ? 'notScheduled' : 'noGrace'}`;
+  if (v === 'no_saas_mandate') return 'bill.gap.noMandate';
+  if (v === 'not_scheduled') return 'bill.gap.notScheduled';
+  // PC-56 TENANT-4d-4: "we notify you" is its own gap now that the grace period is real. Collapsing it into
+  // "no grace" would tell a tenant in an ACTIVE grace window that there is no grace period.
+  if (v === 'no_notification') return 'bill.gap.noNotification';
+  return 'bill.gap.noGrace';
 }
+
+/* ------------------------------------------------------------------------------------------------------- */
+/* W120's FOOTNOTE, ONCE IT IS TRUE (PC-56 TENANT-4d-4)                                                    */
+/* ------------------------------------------------------------------------------------------------------- */
+
+export interface GraceView { inGrace: boolean; graceUntil: string | null; daysLeft: number; advice: 'pay_open_invoice' | 'contact_platform' | 'none' }
+
+/** The banner a tenant inside the grace window sees. `daysLeft` of 0 is the LAST day, not "expired" — the
+ *  window closes at the end of its date — and it gets its own sentence because "0 days left" reads as over. */
+export function graceBannerKey(g: GraceView): string | null {
+  if (!g.inGrace) return null;
+  return g.daysLeft === 0 ? 'bill.grace.lastDay' : 'bill.grace.open';
+}
+
+/** What the tenant can DO. Never "we are retrying": there is no autopay mandate for a subscription, so a
+ *  retry has no instrument, and telling a tenant to wait for one would be the fake surface. */
+export function graceAdviceKey(g: GraceView): string | null {
+  if (!g.inGrace) return null;
+  return g.advice === 'pay_open_invoice' ? 'bill.grace.payNow' : 'bill.grace.contact';
+}
+
+/** True while service continues — the state W120 calls "your members never feel a billing hiccup". Used to
+ *  style the banner as a NOTICE rather than an error: nothing is switched off yet, and saying so is the point. */
+export function graceIsWarningNotError(g: GraceView): boolean { return g.inGrace; }
 
 /** True when at least one mechanism sentence is a gap — the block is then shown as a notice rather than as
  *  reassuring detail. */

@@ -178,6 +178,14 @@ export const EnvSchema = z.object({
   PAYOUT_EXECUTION_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
   PAYOUT_EXECUTION_JOB_INTERVAL_MS: z.coerce.number().int().min(30_000).max(86_400_000).default(300_000), // default: every 5 min
   PAYOUT_EXECUTION_JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100), // max payouts claimed per tick
+  // --- saas-billing-cycle cadence job (PC-56 TENANT-4d-4: raise renewal -> overdue -> grace -> expire).
+  // DAILY by default: the unit of this cycle is a DAY (a period ends on a date, a grace window is counted in
+  // whole days), so a frequent tick would do nothing almost every time. Two feature flags gate the BEHAVIOUR
+  // (`saas_billing_cadence`, `saas_billing_grace`) on top of this env switch — the flags are the kill switch a
+  // founder reaches for, this is the deployment one.
+  SAAS_BILLING_CYCLE_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
+  SAAS_BILLING_CYCLE_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000),
+  SAAS_BILLING_CYCLE_JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(200),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

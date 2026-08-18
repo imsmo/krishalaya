@@ -14,9 +14,11 @@ import { Injectable } from '@nestjs/common';
 import { SaasInvoiceRepository } from '../repositories/saas-invoice.repository';
 import { SubscriptionRepository } from '../repositories/subscription.repository';
 import {
-  InvoiceFigures, INVOICE_TABS, MechanismLines, gstinLine, maskGstin, mechanismLines, openBalance, paidToDate,
+  InvoiceFigures, INVOICE_TABS, gstinLine, maskGstin, openBalance, paidToDate,
   taxLine, timeliness,
 } from '../domain/saas-invoice-balance';
+// PC-56 TENANT-4d-4: the four mechanism verdicts are DERIVED from what is switched on, not constants.
+import { MechanismVerdict, graceAdvice, graceDaysLeft, mechanismLines } from '../domain/billing-grace';
 
 export interface BillingConsoleView {
   /** The open balance, or null with the currencies named where the open invoices are not all in one currency —
@@ -43,9 +45,13 @@ export interface BillingConsoleView {
    *  recent invoice — never from the tenant's current profile, which would re-address history. */
   billTo: { gstinMasked: string | null; legalName: string | null; source: 'snapshot' | 'not_on_invoice' };
   /** The subscription context W120 shows above the invoices. */
-  subscription: { id: string; status: string; billingCycle: string; priceMinor: string; currencyCode: string; currentPeriodEnd: string | null } | null;
+  subscription: { id: string; status: string; billingCycle: string; priceMinor: string; currencyCode: string; currentPeriodEnd: string | null; graceUntil: string | null } | null;
   /** The four mechanism sentences W120 states, each with the verdict the code can support. See the type. */
-  mechanism: MechanismLines;
+  mechanism: { autopay: MechanismVerdict; nextDebit: MechanismVerdict; gracePeriod: MechanismVerdict; retryAndNotify: MechanismVerdict };
+  /** PC-56 TENANT-4d-4 · W120's footnote, as this tenant's actual situation. `inGrace` is the state the
+   *  canon calls "service continues"; `daysLeft` is what the tenant needs to know; `advice` is what they can
+   *  DO about it — which is to pay the open invoice, NOT to wait for a retry that does not exist. */
+  grace: { inGrace: boolean; graceUntil: string | null; daysLeft: number; advice: 'pay_open_invoice' | 'contact_platform' | 'none' };
   /** Whether a tenant may pay its own invoices at all right now (the flag), so the screen can withhold the
    *  button with a reason instead of showing one that refuses. */
   selfPayEnabled: boolean;
@@ -58,7 +64,7 @@ const PAID_LIMIT = 500;
 export class BillingConsoleReadModel {
   constructor(private readonly invoices: SaasInvoiceRepository, private readonly subs: SubscriptionRepository) {}
 
-  async view(tenantId: string, now: Date, selfPayEnabled: boolean): Promise<BillingConsoleView> {
+  async view(tenantId: string, now: Date, selfPayEnabled: boolean, flags: { graceEnabled: boolean; cadenceEnabled: boolean } = { graceEnabled: false, cadenceEnabled: false }): Promise<BillingConsoleView> {
     const year = now.getUTCFullYear();
     const [openRows, paidRows, tabRaw, sub] = await Promise.all([
       this.invoices.openInvoices(tenantId, OPEN_LIMIT),
@@ -116,8 +122,14 @@ export class BillingConsoleReadModel {
         id: subP.id, status: subP.status, billingCycle: subP.billingCycle, priceMinor: subP.priceMinor.toString(),
         currencyCode: subP.currencyCode,
         currentPeriodEnd: subP.currentPeriodEnd ? new Date(subP.currentPeriodEnd).toISOString().slice(0, 10) : null,
+        graceUntil: subP.graceUntil ?? null,
       } : null,
-      mechanism: mechanismLines(),
+      mechanism: mechanismLines(flags),
+      grace: (() => {
+        const gu = subP?.graceUntil ?? null;
+        const inGrace = subP?.status === 'past_due' && gu !== null && graceDaysLeft(gu, now) >= 0 && gu >= now.toISOString().slice(0, 10);
+        return { inGrace, graceUntil: gu, daysLeft: graceDaysLeft(gu, now), advice: graceAdvice({ inGrace, selfPayEnabled }) };
+      })(),
       selfPayEnabled,
     };
   }

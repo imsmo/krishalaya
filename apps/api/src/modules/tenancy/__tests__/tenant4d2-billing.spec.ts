@@ -4,9 +4,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
-  INVOICE_TABS, InvoiceFigures, acceptsPayment, gstinLine, isPastDue, maskGstin, mechanismLines, openBalance,
+  INVOICE_TABS, InvoiceFigures, acceptsPayment, gstinLine, isPastDue, maskGstin, openBalance,
   outstandingMinor, overpaidMinor, paidToDate, payVerdict, statusFromPaid, statusesForTab, taxLine, timeliness,
 } from '../domain/saas-invoice-balance';
+// PC-56 TENANT-4d-4 moved the four mechanism verdicts here and made them DERIVED from what is switched on.
+import { mechanismLines } from '../domain/billing-grace';
 import { MIN_RECEIPT_REFERENCE, SaasInvoiceService, mapReceiptMethod, receiptReference } from '../services/saas-invoice.service';
 import { taxOn } from '../domain/proration';
 import { SaasInvoice } from '../domain/saas-invoice.entity';
@@ -232,36 +234,54 @@ describe('TENANT-4d-2 · paying an open invoice (W2428)', () => {
 
 /* ---------------------------------------------------------------------------------------------------------- */
 describe('TENANT-4d-2 · the four sentences W120 states about the MECHANISM', () => {
-  it('NOT ONE OF THEM HAS A SUBJECT IN THIS CODEBASE, and the code says so', () => {
-    const m = mechanismLines();
+  /** PC-56 TENANT-4d-4 rewrote this: the verdicts are now DERIVED from what is switched on, so the screen
+   *  cannot keep telling a tenant there is no grace period after a founder enables one. With both flags OFF —
+   *  the shipped state — the answers are exactly what 4d-2 asserted. */
+  it('WITH THE FLAGS OFF, NOT ONE OF THEM HAS A SUBJECT, and the code says so', () => {
+    const m = mechanismLines({ graceEnabled: false, cadenceEnabled: false });
     expect(m.autopay).toBe('no_saas_mandate');        // the autopay plane has no notion of a subscription
-    expect(m.nextDebit).toBe('not_scheduled');        // RenewalInvoicesJob is in no worker registry
-    expect(m.gracePeriod).toBe('no_grace_state');     // nothing in the monorepo ever writes `past_due`
-    expect(m.retryAndNotify).toBe('no_grace_state');  // no retry loop, no dunning notice
+    expect(m.nextDebit).toBe('no_saas_mandate');      // a scheduled INVOICE is not a scheduled debit
+    expect(m.gracePeriod).toBe('no_grace_state');
+    expect(m.retryAndNotify).toBe('no_notification'); // the five tenancy events have no notification row
     expect(Object.values(m)).not.toContain('exists');
   });
 
-  it('`past_due` STILL has no writer — if this fails, TENANT-4d-3 has landed and the verdict must change', () => {
-    // A grep asserted as a test: the moment a writer appears, this must be revisited rather than quietly
-    // continuing to tell tenants there is no grace period when there now is one.
-    const src = read('services', 'subscription.service.ts') + read('jobs', 'grace-period.job.ts');
-    expect(src).not.toMatch(/'past_due'\s*\)/);
-    expect(src).not.toMatch(/toPastDue|markPastDue/);
+  /**
+   * **THIS TEST DID ITS JOB.** 4d-2 wrote it as "`past_due` STILL has no writer — if this fails, a later wave
+   * has landed and the verdict must change". TENANT-4d-4 landed and it failed. `past_due` now has exactly ONE
+   * writer, and the assertion is inverted to pin that there is exactly one: a second producer of the grace
+   * state would be two mechanisms over one window.
+   */
+  it('`past_due` NOW HAS A WRITER, and exactly one', () => {
+    expect(read('domain', 'subscription.entity.ts')).toContain('enterGrace(graceUntilDate: string');
+    expect(read('services', 'subscription.service.ts')).toContain('sub.enterGrace(until, now)');
+    const writers = ['domain/subscription.entity.ts', 'services/subscription.service.ts', 'jobs/saas-billing-cycle.job.ts']
+      .map((f) => read(...f.split('/')))
+      .join('\n')
+      .match(/status = 'past_due'/g) ?? [];
+    expect(writers).toHaveLength(1);
   });
 
-  it('the job named for the grace period EXPIRES, and its header says so', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'jobs', 'grace-period.job.ts'), 'utf8');
-    expect(src).toContain('EXPIRE subscriptions past their current_period_end');
-    expect(read('jobs', 'grace-period.job.ts')).toContain('expire(');
+  it('the job named for the grace period is GONE, superseded rather than left as a second mechanism', () => {
+    // It moved live → EXPIRED the moment a period ended, which with the un-rolling period was a platform-wide
+    // kill switch. `saas-billing-cycle.job.ts` replaces it; leaving both would be two clocks over one cycle.
+    expect(fs.existsSync(path.join(__dirname, '..', 'jobs', 'grace-period.job.ts'))).toBe(false);
+    // Read RAW here, not through `read()`: this assertion is about the successor's HEADER recording why the
+    // old job is gone, and `read()` strips comments on purpose everywhere else.
+    const cycle = fs.readFileSync(path.join(__dirname, '..', 'jobs', 'saas-billing-cycle.job.ts'), 'utf8');
+    expect(cycle).toContain('superseded by phase 4 here and is deleted in this wave');
   });
 
-  it('this wave deliberately does NOT schedule the billing cadence, and the renewal job records why', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'jobs', 'renewal-invoices.job.ts'), 'utf8');
-    expect(src).toContain('THIS JOB IS IN NO WORKER REGISTRY');
-    // The claim is checked, not just asserted: if someone wires it before the grace state exists, this fails.
+  it('the cadence is scheduled on the API-SIDE host (TENANT-4d-4), not in the worker', () => {
+    // apps/worker takes only pg-native jobs; the api-side ScheduledJobsRunner (S4) is the host for jobs that
+    // need module services, and three others already run on it. 4d-2 recorded these as unschedulable from
+    // `pending-plan-change.job.ts`'s stale premise that the worker was the only option.
     const registry = fs.readFileSync(path.join(__dirname, '../../../../../worker/src/registry.ts'), 'utf8');
     expect(registry).not.toContain('RenewalInvoicesJob');
-    expect(registry).not.toContain('GracePeriodJob');
+    expect(registry).not.toContain('SaasBillingCycleJob');
+    const mod = read('..', 'tenancy', 'tenancy.module.ts');
+    expect(mod).toContain('this.jobRegistry.register(this.saasBillingCycleCadenceJob)');
+    expect(mod).toContain('config.jobs.saasBillingCycle.enabled');
   });
 });
 

@@ -6,6 +6,11 @@ export const TenancyEventType = {
   PlanChanged:        'tenancy.subscription_plan_changed',
   SubscriptionCancelled: 'tenancy.subscription_cancelled',
   SubscriptionExpired:   'tenancy.subscription_expired',
+  // PC-56 TENANT-4d-4 · the grace window opening, and the period actually rolling. Both are new EVENTS
+  // because both are new FACTS: before this wave `past_due` had no writer and `current_period_end` never
+  // moved, so neither had ever happened to any tenant.
+  SubscriptionGraceStarted: 'tenancy.subscription_grace_started',
+  SubscriptionRenewed:      'tenancy.subscription_renewed',
   // self-serve (profile / onboarding / domains / settings)
   TenantProfileUpdated:    'tenancy.tenant_profile_updated',
   TenantOnboardingSubmitted: 'tenancy.tenant_onboarding_submitted',

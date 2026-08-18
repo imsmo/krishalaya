@@ -43,7 +43,13 @@ export class SaasInvoicesController {
     // Read, not gate: the console renders either way and says WHY the pay button is absent. `.catch(() => false)`
     // because an unreadable flag must degrade to "off", never to an unpayable-invoice error (Law 12).
     const selfPay = await this.flags.isEnabled('saas_invoice_self_pay', { tenantId: ctx.tenantId }).catch(() => false);
-    return { data: await this.console.view(ctx.tenantId, new Date(), selfPay) };
+    // PC-56 TENANT-4d-4: W120's footnote is rendered from what is actually switched on, so the screen cannot
+    // keep telling a tenant there is no grace period after a founder enables one (or the reverse).
+    const [graceEnabled, cadenceEnabled] = await Promise.all([
+      this.flags.isEnabled('saas_billing_grace', { tenantId: ctx.tenantId }).catch(() => false),
+      this.flags.isEnabled('saas_billing_cadence', { tenantId: ctx.tenantId }).catch(() => false),
+    ]);
+    return { data: await this.console.view(ctx.tenantId, new Date(), selfPay, { graceEnabled, cadenceEnabled }) };
   }
 
   /** The keyset page behind each tab. Keyset only — a tenant with ten years of monthly invoices pages in

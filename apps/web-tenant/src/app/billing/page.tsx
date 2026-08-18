@@ -27,8 +27,8 @@ import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { planPriceMinor, mergeUsageRows } from '../../features/billing/plan';
 import {
-  MECHANISM_ORDER, TABS, anyMechanismMissing, balanceKey, balanceState, gapReasonKey, gstinKey, mechanismKey,
-  paidToDateKey, payButtonKey, refusalKey, tabOf, taxLineKey,
+  MECHANISM_ORDER, TABS, anyMechanismMissing, balanceKey, balanceState, gapReasonKey, graceAdviceKey,
+  graceBannerKey, gstinKey, mechanismKey, paidToDateKey, payButtonKey, refusalKey, tabOf, taxLineKey,
 } from '../../features/billing/invoices';
 import { applyPlanAction, cancelSubscriptionAction, payInvoiceAction } from './actions';
 import type { Plan, Subscription, BillingConsoleView, SaasInvoiceRow, SaasPayQuote } from '@krishalaya/sdk-js';
@@ -97,6 +97,19 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
       {/* ---------- W120: the open balance, the invoices, and what the billing mechanism actually is ------- */}
       {canBilling && view && (
         <>
+          {/* W120's FOOTNOTE, ONCE IT IS TRUE (PC-56 TENANT-4d-4). A NOTICE, not an error: the whole promise is
+              that nothing is switched off yet — "your members never feel a billing hiccup" — and styling this
+              as a failure would contradict the mechanism it is announcing. The advice is to PAY, never "we are
+              retrying", because there is no autopay mandate to retry against. */}
+          {graceBannerKey(view.grace) && (
+            <div className="kv-card kv-card--notice kv-grace" role="status">
+              <p>{t.t(graceBannerKey(view.grace) as string, {
+                days: String(view.grace.daysLeft),
+                date: view.grace.graceUntil ? formatDate(view.grace.graceUntil, lang) : '—',
+              })}</p>
+              {graceAdviceKey(view.grace) && <p className="kv-field__hint">{t.t(graceAdviceKey(view.grace) as string)}</p>}
+            </div>
+          )}
           <div className="kv-card kv-billing__balance">
             <h2 className="kv-card__title">{t.t('bill.balanceTitle')}</h2>
             {(() => {

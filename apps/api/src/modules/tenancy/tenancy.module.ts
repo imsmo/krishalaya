@@ -54,6 +54,12 @@ import { TenantFeatureRepository } from './repositories/tenant-feature.repositor
 import { UsageCounterRepository } from './repositories/usage-counter.repository';
 import { SaasInvoiceRepository } from './repositories/saas-invoice.repository';
 import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.handler';
+import { SaasInvoicePaidHandler } from './events/handlers/saas-invoice-paid.handler';
+import { SaasBillingCycleJob } from './jobs/saas-billing-cycle.job';
+import { SaasBillingCycleCadenceJob } from './jobs/saas-billing-cycle.cadence-job';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { FlagsService } from '../../core/feature-flags/flags.service';
+import { AppConfig } from '../../core/config/app-config';
 
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
@@ -76,14 +82,46 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
     TenantRepository, TenantDomainRepository, TenantSettingsRepository, TenantFeatureRepository, UsageCounterRepository, PlanUsageRepository, PlanUsageService,
     // PC-56 TENANT-4d-2: W120 finally has a route. The read service and its repository shipped in TENANT-1
     // with no controller anywhere in apps/api — a tenant could not see a bill we raised to it.
-    SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, BillingConsoleReadModel, TenantApplicationService, TenantApplicationRepository],
+    SaasInvoiceService, SaasInvoiceRepository, SaasInvoicePaymentHandler, BillingConsoleReadModel,
+    // PC-56 TENANT-4d-4: the paid event finally has a subscriber (it rolls the billing period), and the
+    // billing cycle finally has a clock.
+    SaasInvoicePaidHandler,
+    {
+      provide: SaasBillingCycleJob,
+      useFactory: (subs: SubscriptionRepository, invoices: SaasInvoiceRepository, subscriptions: SubscriptionService,
+                   invoiceService: SaasInvoiceService, taxRate: BillingTaxRate, flags: FlagsService,
+                   settings: TenantSettingsRepository) =>
+        new SaasBillingCycleJob(subs, invoices, subscriptions, invoiceService, taxRate, flags,
+          // The job never touches a settings table itself — it is handed a reader for the ONE key it needs.
+          (tenantId: string) => settings.effectiveValue(tenantId, 'billing.grace_days')),
+      inject: [SubscriptionRepository, SaasInvoiceRepository, SubscriptionService, SaasInvoiceService,
+               BillingTaxRate, FlagsService, TenantSettingsRepository],
+    },
+    {
+      provide: SaasBillingCycleCadenceJob,
+      useFactory: (config: AppConfig, job: SaasBillingCycleJob) =>
+        new SaasBillingCycleCadenceJob(config.jobs.saasBillingCycle.intervalMs, job, config.jobs.saasBillingCycle.batchSize),
+      inject: [AppConfig, SaasBillingCycleJob],
+    }, TenantApplicationService, TenantApplicationRepository],
   exports: [PlanUsageService, PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
 })
 export class TenancyModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobRegistry: ScheduledJobRegistry,
+    private readonly config: AppConfig,
+    private readonly saasInvoicePaid: SaasInvoicePaidHandler,
+    private readonly saasBillingCycleCadenceJob: SaasBillingCycleCadenceJob,
     private readonly saasInvoicePayment: SaasInvoicePaymentHandler,
   ) {}
   // payments.payment_succeeded (referenceType='saas_invoice') → mark the SaaS invoice paid
-  onModuleInit(): void { this.registry.register(this.saasInvoicePayment); }
+  onModuleInit(): void {
+    this.registry.register(this.saasInvoicePayment);
+    // PC-56 TENANT-4d-4: `tenancy.saas_invoice_paid` had NO subscriber — it was emitted, relayed and dropped,
+    // so the one event that should advance a subscription's billing period did nothing. This is the join.
+    this.registry.register(this.saasInvoicePaid);
+    // …and the clock, on the api-side cadence host S4 built (per-job env gate, independent of the
+    // runner-wide JOBS_ENABLED kill switch — the same convention payments and identity use).
+    if (this.config.jobs.saasBillingCycle.enabled) this.jobRegistry.register(this.saasBillingCycleCadenceJob);
+  }
 }

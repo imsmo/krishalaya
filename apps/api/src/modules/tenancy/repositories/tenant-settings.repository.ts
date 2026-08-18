@@ -25,6 +25,24 @@ export class TenantSettingsRepository {
       [p.tenantId, p.key, JSON.stringify(p.value)]);
   }
 
+  /**
+   * ONE effective setting value for a tenant: the tenant's override if it has one, the registry default
+   * otherwise. PC-56 TENANT-4d-4 needs `billing.grace_days` per tenant inside a cross-tenant sweep, and
+   * `listEffective` would have fetched every setting the tenant has to read one of them.
+   *
+   * Returns undefined only when the KEY IS NOT IN THE REGISTRY — i.e. the migration that defines it has not
+   * run. That is a different thing from "the tenant has no override", and the caller must be able to tell:
+   * a missing definition means fall back to the code default and say so, never treat it as zero.
+   */
+  async effectiveValue(tenantId: string, key: string): Promise<unknown | undefined> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT COALESCE(ts.value, d.default_value) AS value
+         FROM setting_definitions d
+         LEFT JOIN tenant_settings ts ON ts.key = d.key AND ts.tenant_id = $1
+        WHERE d.key = $2`, [tenantId, key]);
+    return r.rows[0] ? (r.rows[0] as { value: unknown }).value : undefined;
+  }
+
   /** Effective settings for the tenant = definition defaults overlaid with tenant overrides (bounded). */
   async listEffective(tenantId: string, limit: number): Promise<Array<{ key: string; value: unknown; isDefault: boolean }>> {
     const r = await this.replica.forTenant(tenantId).query(

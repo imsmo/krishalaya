@@ -3357,4 +3357,11 @@ export const hi: Messages = {
   'tax.retryEdit': 'Wapas jaakar field theek karein',
   'tax.retryConfirm': 'Phir koshish karein',
   'tax.retryNone': 'Ise yahan se phir nahin kiya ja sakta.',
+
+  // ---- PC-56 TENANT-4d-4 · W120's footnote, once it is true (the grace window) --------------------
+  'bill.grace.open': 'Aapki subscription ka bhugtan baki hai, aur kuch band nahin kiya gaya. Sewa {days} din aur chalegi, {date} tak.',
+  'bill.grace.lastDay': 'Aaj aapki grace avadhi ka aakhri din hai. Sewa aaj ({date}) tak chalegi; uske baad bill chukane tak subscription ruk jayegi.',
+  'bill.grace.payNow': 'Sab chalu rakhne ke liye upar ka baki invoice chuka dein. Is beech aapke members par koi asar nahin.',
+  'bill.grace.contact': 'Aapka platform sampark bhugtan ke nirdesh bhejega. Is beech aapke members par koi asar nahin.',
+  'bill.gap.noNotification': 'Abhi banaya nahin gaya — hum iske baare mein email ya message nahin bhejenge, isliye kripya yah panna dekhte rahein.',
 };
