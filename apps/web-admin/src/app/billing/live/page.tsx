@@ -15,6 +15,7 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { barPct } from '../../../features/billing/reporting';
 import { MoneyTicker } from '../../../components/MoneyTicker';
+import { EmptyState } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +54,7 @@ export default async function LiveMoneyPage() {
           hours regardless of their machine's clock. */}
       <h2>{t.t('live.todayTitle')}</h2>
       {notice ? <p className="kv-error" role="alert">{notice}</p> : hours.length === 0 ? (
-        <p className="kv-empty">{t.t('live.noToday')}</p>
+        <EmptyState title={t.t('live.noToday')} />
       ) : (
         <table className="kv-table">
           <thead><tr>

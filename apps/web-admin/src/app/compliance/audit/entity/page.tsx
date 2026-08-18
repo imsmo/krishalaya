@@ -18,8 +18,11 @@ import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
-import { diffStateKey, diffSign, diffLineClass, valueCell, retentionKey, type DiffPanel } from '../../../../features/audit/audit-console';
+import { diffStateKey, diffSign, diffLineTone, valueCell, retentionKey, type DiffPanel } from '../../../../features/audit/audit-console';
 
+import {
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -57,19 +60,19 @@ export default async function AuditEntityPage({ searchParams }: { searchParams: 
       <form method="get" className="kv-form kv-filters" aria-label={t.t('aud.entityFilters')}>
         <label htmlFor="ref" className="kv-field__label">{t.t('aud.ref')}</label>
         <input id="ref" name="ref" className="kv-input" defaultValue={ref ?? ''} placeholder="listing/LST-2026-084497" maxLength={200} />
-        <button type="submit" className="kv-btn">{t.t('aud.open')}</button>
+        <Button type="submit">{t.t('aud.open')}</Button>
       </form>
 
       {notice && <p className="kv-error" role="alert">{notice}</p>}
-      {!ref && <p className="kv-empty">{t.t('aud.enterRef')}</p>}
+      {!ref && <EmptyState title={t.t('aud.enterRef')} />}
 
       {trail && (
         <>
           <h2>{trail.ref}</h2>
           {/* W040's "Diffs masked" state, drawn from a fact the server sends rather than inferred from empty panels. */}
-          {!trail.valuesDisclosed && <p className="kv-notice" role="note">{t.t('aud.diffsMasked')}</p>}
+          {!trail.valuesDisclosed && <Callout>{t.t('aud.diffsMasked')}</Callout>}
           {trail.entries.length === 0 && (
-            <p className="kv-empty">{t.t('aud.noHistory')}</p>
+            <EmptyState title={t.t('aud.noHistory')} />
           )}
 
           <ol className="kv-timeline">
@@ -108,7 +111,7 @@ export default async function AuditEntityPage({ searchParams }: { searchParams: 
                     <ul className="kv-diff">
                       {e.diff.lines.map((l) => (
                         <li key={l.key}>
-                          <span className={diffLineClass(l.kind)}>{diffSign(l.kind)}</span>{' '}
+                          <StatusPill tone={diffLineTone(l.kind)} label={diffSign(l.kind)} />{' '}
                           <code>{l.key}</code>
                           {l.before !== null && <> <del>{valueCell(l.before, false)}</del></>}
                           {l.after !== null && <> <ins>{valueCell(l.after, false)}</ins></>}

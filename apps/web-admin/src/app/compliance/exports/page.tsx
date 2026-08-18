@@ -12,13 +12,14 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { EXPORT_APPROVAL_STATUSES, exportApprovalKey, canDecideExport, type ExportRow } from '../../../features/compliance/compliance';
 import { decideExportAction } from '../actions';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('compliance.exportsTitle'), robots: { index: false, follow: false } };
 }
 
-const AP_CLASS: Record<string, string> = { pending: 'kv-status--warn', approved: 'kv-status--ok', rejected: 'kv-status--muted' };
+const AP_TONE: Record<string, StatusTone> = { pending: 'warning', approved: 'success', rejected: 'neutral' };
 const OK = new Set(['approve', 'reject']);
 const ERR = new Set(['decision', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
@@ -53,9 +54,9 @@ export default async function ExportApprovalsPage({ searchParams }: { searchPara
       {errKey && <p className="kv-error" role="alert">{t.t(`compliance.error.${errKey}`)}</p>}
 
       <nav className="kv-filters" aria-label={t.t('compliance.filterApproval')}>
-        <Link href={qp({ approvalStatus: undefined, cursor: undefined })} className={`kv-chip${!approvalStatus ? ' is-active' : ''}`} aria-current={!approvalStatus ? 'true' : undefined}>{t.t('compliance.filterAll')}</Link>
+        <Chip as={Link} href={qp({ approvalStatus: undefined, cursor: undefined })} aria-current={!approvalStatus ? 'true' : undefined} active={!approvalStatus}>{t.t('compliance.filterAll')}</Chip>
         {EXPORT_APPROVAL_STATUSES.map((s) => (
-          <Link key={s} href={qp({ approvalStatus: s, cursor: undefined })} className={`kv-chip${approvalStatus === s ? ' is-active' : ''}`} aria-current={approvalStatus === s ? 'true' : undefined}>{t.t(`compliance.approval.${s}`)}</Link>
+          <Chip as={Link} key={s} href={qp({ approvalStatus: s, cursor: undefined })} aria-current={approvalStatus === s ? 'true' : undefined} active={approvalStatus === s}>{t.t(`compliance.approval.${s}`)}</Chip>
         ))}
       </nav>
 
@@ -70,19 +71,19 @@ export default async function ExportApprovalsPage({ searchParams }: { searchPara
                   <td>{r.id}</td>
                   <td>{r.jobKind}</td>
                   <td>{r.tenantId ?? t.t('common.dash')}</td>
-                  <td><span className={`kv-status ${AP_CLASS[ak]}`}>{t.t(`compliance.approval.${ak}`)}</span></td>
+                  <td><StatusPill tone={AP_TONE[ak]} label={t.t(`compliance.approval.${ak}`)} /></td>
                   <td>
                     {canDecideExport(r.approvalStatus) ? (
                       <div className="kv-action-cards">
                         <form action={decideExportAction} className="kv-inline-form">
                           <input type="hidden" name="id" value={r.id} /><input type="hidden" name="decision" value="approve" />
                           <input name="reason" className="kv-input kv-input--sm" required minLength={3} maxLength={2000} placeholder={t.t('compliance.reason')} />
-                          <button type="submit" className="kv-btn--link">{t.t('compliance.approve')}</button>
+                          <Button type="submit" variant="tertiary">{t.t('compliance.approve')}</Button>
                         </form>
                         <form action={decideExportAction} className="kv-inline-form">
                           <input type="hidden" name="id" value={r.id} /><input type="hidden" name="decision" value="reject" />
                           <input name="reason" className="kv-input kv-input--sm" required minLength={3} maxLength={2000} placeholder={t.t('compliance.reason')} />
-                          <button type="submit" className="kv-btn--link">{t.t('compliance.reject')}</button>
+                          <Button type="submit" variant="tertiary">{t.t('compliance.reject')}</Button>
                         </form>
                       </div>
                     ) : t.t('common.dash')}
@@ -91,7 +92,7 @@ export default async function ExportApprovalsPage({ searchParams }: { searchPara
               );
             })}</tbody>
           </table>
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

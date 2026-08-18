@@ -4,6 +4,12 @@
 // The admin console has never seen the consent tables. Everything here exists to stop the first view of them saying
 // something the data does not support — and the two claims most at risk are "this person consented to v2" (when v2's
 // words were never stored) and "12/12 languages ✓" (when the twelve is a hardcoded number and the notices are slogans).
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): `decisionClass`/`provenanceClass`/`coverageClass`/`versionClass`
+// now return a `StatusTone` instead of a raw `kv-status kv-status--X` string — disposition (c), same pattern as
+// `ai-governance.ts`. Call sites render `<StatusPill tone={...} label={...} />`.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ===================== the registry (W046) ===================== */
 
@@ -47,12 +53,12 @@ export function decisionKey(d: DecisionKind | string): 'granted' | 'withdrawn' |
 }
 /** A withdrawal is NOT a failure colour. Somebody exercising a right is the system working; colouring it red would
  *  train an operator to read consent withdrawal as a problem to fix. A REFUSAL is not a failure either. */
-export function decisionClass(d: DecisionKind | string): string {
+export function decisionTone(d: DecisionKind | string): StatusTone {
   switch (decisionKey(d)) {
-    case 'granted': return 'kv-status kv-status--ok';
-    case 'withdrawn': return 'kv-status kv-status--muted';
-    case 'refused': return 'kv-status kv-status--muted';
-    default: return 'kv-status kv-status--warn';
+    case 'granted': return 'success';
+    case 'withdrawn': return 'neutral';
+    case 'refused': return 'neutral';
+    default: return 'warning';
   }
 }
 
@@ -69,12 +75,12 @@ export function provenanceKey(p: NoticeProvenance | null | undefined): 'resolved
   if (p.kind === 'words_never_recorded') return 'wordsLost';
   return 'unversioned';
 }
-export function provenanceClass(p: NoticeProvenance | null | undefined): string {
+export function provenanceTone(p: NoticeProvenance | null | undefined): StatusTone {
   const k = provenanceKey(p);
-  if (k === 'resolved') return 'kv-status kv-status--ok';
+  if (k === 'resolved') return 'success';
   // A warning, not a failure: nobody did anything wrong, the platform simply had nowhere to keep the words. But it must
   // not read as fine, because it is the weakest kind of consent record the platform holds.
-  return 'kv-status kv-status--warn';
+  return 'warning';
 }
 
 /** The assisted share W046 shows. Labelled as an EVENT share because that is what it is — the canon's "38% assisted" is
@@ -136,10 +142,10 @@ export function coverageState(p: Pick<PurposeRow, 'noticeNeverRecorded' | 'notic
  *  consent obtained without a notice, and it deserves the strongest colour on the screen. The same gap on an OPTIONAL
  *  purpose is a warning: speakers of the missing languages simply are not asked, which is a real cost but not a wrong.
  */
-export function coverageClass(state: NoticeCoverageState, isMandatory: boolean): string {
-  if (state === 'complete') return 'kv-status kv-status--ok';
-  if (state === 'unknown') return 'kv-status kv-status--muted';
-  return isMandatory ? 'kv-status kv-status--danger' : 'kv-status kv-status--warn';
+export function coverageTone(state: NoticeCoverageState, isMandatory: boolean): StatusTone {
+  if (state === 'complete') return 'success';
+  if (state === 'unknown') return 'neutral';
+  return isMandatory ? 'danger' : 'warning';
 }
 
 /** Coverage as text, against the ACTIVE platform languages rather than a hardcoded twelve.
@@ -183,13 +189,13 @@ export function versionKind(v: Pick<ConsentVersionRow, 'status' | 'isBackfilled'
   if (v.status === 'superseded') return 'superseded';
   return 'unknown';
 }
-export function versionClass(k: VersionKind): string {
+export function versionTone(k: VersionKind): StatusTone {
   switch (k) {
-    case 'current': return 'kv-status kv-status--ok';
-    case 'draft': return 'kv-status kv-status--warn';
+    case 'current': return 'success';
+    case 'draft': return 'warning';
     // Not a failure colour. A backfilled version is the platform being honest that versioning arrived after the consents
     // did — but it carries no notice, which the coverage cell reports separately and loudly.
-    default: return 'kv-status kv-status--muted';
+    default: return 'neutral';
   }
 }
 /** Only a version a human actually signed gets a signature line. `ck_cpv_backfill` guarantees a backfilled row names no

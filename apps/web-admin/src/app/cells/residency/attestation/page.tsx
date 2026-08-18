@@ -12,8 +12,11 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
-import { attestationClass, attestationKey, claimKey } from '../../../../features/cells/residency-migration';
+import { attestationTone, attestationKey, claimKey } from '../../../../features/cells/residency-migration';
 
+import {
+  Button, Callout, StatusPill,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -60,14 +63,14 @@ export default async function AttestationPage({ searchParams }: { searchParams: 
         <p className="kv-page__sub">{t.t('rz.attest.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       <form className="kv-filters" method="get" action="/cells/residency/attestation">
         <div className="kv-field">
           <label className="kv-field__label" htmlFor="rz-adays">{t.t('rz.filter.days')}</label>
           <input className="kv-input" id="rz-adays" name="days" type="number" min={1} max={400} defaultValue={days ?? '90'} />
         </div>
-        <button className="kv-btn" type="submit">{t.t('common.apply')}</button>
+        <Button type="submit">{t.t('common.apply')}</Button>
       </form>
 
       {r && a ? (
@@ -75,7 +78,7 @@ export default async function AttestationPage({ searchParams }: { searchParams: 
           <section className="kv-panel" aria-labelledby="rz-verdict">
             <h2 id="rz-verdict" className="kv-panel__title">{t.t('rz.attest.verdict')}</h2>
             <p>
-              <span className={attestationClass(a.kind)}>{t.t(attestationKey(a.kind))}</span>{' '}
+              <StatusPill tone={attestationTone(a.kind)} label={t.t(attestationKey(a.kind))} />{' '}
               {a.windowFrom.slice(0, 10)} → {a.windowTo.slice(0, 10)}
             </p>
             {/* THE CLAIM, as one translatable sentence. It ends up in a compliance record and must read identically
@@ -83,11 +86,11 @@ export default async function AttestationPage({ searchParams }: { searchParams: 
             <p className="kv-pre">{t.t(claimKey(r.claim))}</p>
 
             {a.kind === 'no_evidence' ? (
-              <p className="kv-note is-danger" role="alert">
+              <Callout tone="danger" live="assertive">
                 {a.since
                   ? t.t('rz.attest.gap', { since: a.since.slice(0, 10) })
                   : t.t('rz.attest.noLog')}
-              </p>
+              </Callout>
             ) : null}
 
             {a.kind === 'clean' ? (
@@ -102,27 +105,27 @@ export default async function AttestationPage({ searchParams }: { searchParams: 
 
             {a.kind === 'transfers_occurred' ? (
               <>
-                <p className="kv-note is-warn">
+                <Callout tone="warning">
                   {t.t('rz.attest.transfers', { n: String(a.allowed ?? 0) })}
-                </p>
+                </Callout>
                 {(a.withoutBasis ?? 0) > 0 ? (
-                  <p className="kv-note is-danger" role="alert">
+                  <Callout tone="danger" live="assertive">
                     {t.t('rz.attest.withoutBasis', { n: String(a.withoutBasis ?? 0) })}
-                  </p>
+                  </Callout>
                 ) : null}
               </>
             ) : null}
 
             {a.countries?.length ? (
-              <p className="kv-note">{t.t('rz.attest.countries', { list: a.countries.join(', ') })}</p>
+              <Callout>{t.t('rz.attest.countries', { list: a.countries.join(', ') })}</Callout>
             ) : null}
           </section>
 
           {/* **NOT SIGNED.** W033 calls this an attestation and there is still no signing key on this platform — the same
               gap W018, W039, W064 and W084 name. ADMIN-5c's content digest is not a signature, and a document labelled
               "signed attestation" without one would be worse than an unsigned honest record. */}
-          <p className="kv-note is-warn">{t.t('rz.attest.unsigned')}</p>
-          <p className="kv-note"><small>{r.signingGap}</small></p>
+          <Callout tone="warning">{t.t('rz.attest.unsigned')}</Callout>
+          <Callout><small>{r.signingGap}</small></Callout>
         </>
       ) : null}
     </main>

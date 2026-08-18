@@ -14,8 +14,9 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
 import { revokeKeyAction } from './actions';
+import { Button, Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  backlogClass, backlogKey, canRevoke, idleKey, keyStateClass, keyStateKey, registryKey, registryNoticeKey,
+  backlogClass, backlogKey, canRevoke, idleKey, keyStateTone, keyStateKey, registryKey, registryNoticeKey,
   revokeWithheldKey, successClass, successKey, tenantEmptyKey, usageKey,
   type DeliveryHealth, type KeyRow,
 } from '../../features/integrations/api-oversight';
@@ -61,13 +62,13 @@ export default async function IntegrationsPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('ap11.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`ap11.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`ap11.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`ap11.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`ap11.err.${searchParams.error}`)}</Callout> : null}
 
       {/* SECRETS ARE HASHES, and this console never reads one — not even a hash, because a hash on a screen is a hash
           in a screenshot. */}
-      <p className="kv-note">{t.t('ap11.hashesOnly')}</p>
+      <Callout tone="info">{t.t('ap11.hashesOnly')}</Callout>
 
       {meta ? (
         <>
@@ -92,7 +93,7 @@ export default async function IntegrationsPage({ searchParams }: {
 
           {/* THE SENTENCE THE SCHEMA COULD NOT SAY. Printed whether the count is zero or not. */}
           {meta.tenantRegistryHasNoIssuer ? (
-            <p className="kv-note is-warn">{t.t('ap11.reg.noIssuer', { owner: meta.keyIssuanceOwner })}</p>
+            <Callout tone="warning">{t.t('ap11.reg.noIssuer', { owner: meta.keyIssuanceOwner })}</Callout>
           ) : null}
 
           {health ? (
@@ -117,22 +118,23 @@ export default async function IntegrationsPage({ searchParams }: {
       ) : null}
 
       <nav className="kv-filters" aria-label={t.t('ap11.filterGroup')}>
-        <Link className={`kv-chip${!registry ? ' is-active' : ''}`} href="/integrations">{t.t('common.all')}</Link>
-        <Link className={`kv-chip${registry === 'partner' ? ' is-active' : ''}`} href="/integrations?registry=partner">
+        <Chip as={Link} href="/integrations" active={!registry}>{t.t('common.all')}</Chip>
+        <Chip as={Link} href="/integrations?registry=partner" active={registry === 'partner'}>
           {t.t('ap11.reg.partner')}
-        </Link>
-        <Link className={`kv-chip${registry === 'tenant' ? ' is-active' : ''}`} href="/integrations?registry=tenant">
+        </Chip>
+        <Chip as={Link} href="/integrations?registry=tenant" active={registry === 'tenant'}>
           {t.t('ap11.reg.tenant')}
-        </Link>
-        <Link className="kv-chip" href="/integrations/inbound">{t.t('ap11.inboundLog')}</Link>
-        <Link className="kv-chip" href="/providers/health">{t.t('ap11.providerHealth')}</Link>
+        </Chip>
+        <Chip as={Link} href="/integrations/inbound">{t.t('ap11.inboundLog')}</Chip>
+        <Chip as={Link} href="/providers/health">{t.t('ap11.providerHealth')}</Chip>
       </nav>
 
       {keys.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('ap11.keys.emptyTitle')}</h2>
-          <p>{t.t(tenantEmptyKey(Boolean(meta?.tenantRegistryHasNoIssuer)), { owner: meta?.keyIssuanceOwner ?? '' })}</p>
-        </div>
+        <EmptyState
+          variant="empty"
+          title={t.t('ap11.keys.emptyTitle')}
+          body={t.t(tenantEmptyKey(Boolean(meta?.tenantRegistryHasNoIssuer)), { owner: meta?.keyIssuanceOwner ?? '' })}
+        />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('ap11.keys.caption')}</caption>
@@ -155,7 +157,7 @@ export default async function IntegrationsPage({ searchParams }: {
                   <td>
                     {k.ownerName ?? k.ownerId.slice(0, 8)}
                     <br /><small>{t.t(registryKey(k.registry))}</small>
-                    {registryNoticeKey(k.registry) ? <><br /><small className="kv-badge is-warn">{t.t('ap11.reg.dormantBadge')}</small></> : null}
+                    {registryNoticeKey(k.registry) ? <><br /><StatusPill tone="neutral" icon={false} label={t.t('ap11.reg.dormantBadge')} /></> : null}
                   </td>
                   {/* THE PREFIX ONLY. The hash is never selected by the read model, let alone rendered. */}
                   <td className="kv-mono">{k.keyPrefix}<br /><small>{k.name}</small></td>
@@ -166,7 +168,7 @@ export default async function IntegrationsPage({ searchParams }: {
                     <br /><small>{t.t(usageKey(k), { n: String(k.hourlyUsage ?? 0), owner: meta?.usageCounterOwner ?? '' })}</small>
                   </td>
                   <td>{t.t(idleKey(k), { when: (k.lastUsedAt ?? '').slice(0, 10), days: String(k.idleDays ?? 0) })}</td>
-                  <td><span className={keyStateClass(k.state)}>{t.t(keyStateKey(k.state))}</span></td>
+                  <td><StatusPill tone={keyStateTone(k.state)} label={t.t(keyStateKey(k.state))} /></td>
                   <td>
                     {canRevoke(k) ? (
                       <form action={revokeKeyAction}>
@@ -174,13 +176,13 @@ export default async function IntegrationsPage({ searchParams }: {
                         <input type="hidden" name="registry" value={k.registry} />
                         <input className="kv-input" name="reason" required minLength={20} maxLength={300}
                           aria-label={t.t('ap11.revokeReason')} />
-                        <button className="kv-btn" type="submit">{t.t('ap11.revoke')}</button>
+                        <Button type="submit">{t.t('ap11.revoke')}</Button>
                         <p className="kv-field__help">{t.t('ap11.revokeHelp')}</p>
                       </form>
                     ) : (
-                      <p className="kv-note">
+                      <Callout tone="info">
                         {t.t(withheld ?? 'ap11.key.revokedWithReason', { reason: k.revokedReason ?? '', when: (k.revokedAt ?? '').slice(0, 10) })}
-                      </p>
+                      </Callout>
                     )}
                   </td>
                 </tr>
@@ -190,7 +192,7 @@ export default async function IntegrationsPage({ searchParams }: {
         </table>
       )}
 
-      <p className="kv-note"><small>{t.t('ap11.noIssuanceHere')}</small></p>
+      <Callout tone="info"><small>{t.t('ap11.noIssuanceHere')}</small></Callout>
     </main>
   );
 }

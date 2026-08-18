@@ -6,9 +6,9 @@
 //   • no deliveries attempted is not a 100% success rate;
 //   • our own unconfigured secret is not a provider's signature failure.
 import {
-  backlogClass, backlogKey, canRevoke, circuitClass, circuitKey, fallbackClass, fallbackKey, fleetKey, idleKey,
-  keyStateClass, keyStateKey, metricKey, outcomeKey, payloadNoteKey, registryKey, registryNoticeKey,
-  revokeWithheldKey, successClass, successKey, tenantEmptyKey, usageKey, verdictClass, verdictKey,
+  backlogClass, backlogKey, canRevoke, circuitTone, circuitKey, fallbackTone, fallbackKey, fleetKey, idleKey,
+  keyStateTone, keyStateKey, metricKey, outcomeKey, payloadNoteKey, registryKey, registryNoticeKey,
+  revokeWithheldKey, successClass, successKey, tenantEmptyKey, usageKey, verdictTone, verdictKey,
 } from '../features/integrations/api-oversight';
 import { en } from '../i18n/en';
 
@@ -50,9 +50,9 @@ describe('ADMIN-11c · key state', () => {
   it('labels all four states and treats a never-used key as a warning', () => {
     for (const s of ['active', 'revoked', 'dormant', 'never_used'] as const) expect(dict[keyStateKey(s)]).toBeTruthy();
     // An unused credential is a credential nobody would notice being stolen.
-    expect(keyStateClass('never_used')).toContain('is-warn');
-    expect(keyStateClass('dormant')).toContain('is-warn');
-    expect(keyStateClass('active')).toContain('is-ok');
+    expect(keyStateTone('never_used')).toBe('warning');
+    expect(keyStateTone('dormant')).toBe('warning');
+    expect(keyStateTone('active')).toBe('success');
   });
 
   it('shows the idle days only when they matter', () => {
@@ -95,11 +95,11 @@ describe('ADMIN-11c · a circuit breaker is per-process and the console says so'
     for (const s of ['closed', 'open', 'half_open'] as const) expect(dict[circuitKey(s)]).toBeTruthy();
     expect(circuitKey('unknown')).toBe('ap11.circ.unknown');
     expect(circuitKey('tripped')).toBe('ap11.circ.unknown');
-    expect(circuitClass('open')).toContain('is-danger');
-    expect(circuitClass('half_open')).toContain('is-warn');
-    expect(circuitClass('closed')).toContain('is-ok');
+    expect(circuitTone('open')).toBe('danger');
+    expect(circuitTone('half_open')).toBe('warning');
+    expect(circuitTone('closed')).toBe('success');
     // Silence is not health — the sixth time this programme has had to make that explicit.
-    expect(circuitClass('unknown')).toContain('is-warn');
+    expect(circuitTone('unknown')).toBe('warning');
   });
 
   it('counts the instances rather than inventing one platform answer', () => {
@@ -120,9 +120,9 @@ describe('ADMIN-11c · a circuit breaker is per-process and the console says so'
     expect(fallbackKey({ fallbackStrategy: 'voice-OTP', isMoney: false, fallbackActive: true })).toBe('ap11.fb.active');
     expect(dict['ap11.fb.forbidden']).toMatch(/failed debit must fail/);
     // An undefended dependency is a warning; a money call with no fallback is correct and is not.
-    expect(fallbackClass({ fallbackStrategy: null, isMoney: false, fallbackActive: false })).toContain('is-warn');
-    expect(fallbackClass({ fallbackStrategy: null, isMoney: true, fallbackActive: false })).not.toContain('is-warn');
-    expect(fallbackClass({ fallbackStrategy: 'voice-OTP', isMoney: false, fallbackActive: true })).toContain('is-warn');
+    expect(fallbackTone({ fallbackStrategy: null, isMoney: false, fallbackActive: false })).toBe('warning');
+    expect(fallbackTone({ fallbackStrategy: null, isMoney: true, fallbackActive: false })).not.toBe('warning');
+    expect(fallbackTone({ fallbackStrategy: 'voice-OTP', isMoney: false, fallbackActive: true })).toBe('warning');
   });
 
   it('renders p95 and error rate as absent, with the reason on the page', () => {
@@ -172,9 +172,9 @@ describe('ADMIN-11c · inbound receipts, which had no source at all', () => {
 
   it('treats an unsettled receipt as a finding, not a pass', () => {
     expect(verdictKey({ signatureOk: null, signatureReason: null })).toBe('ap11.sig.undecided');
-    expect(verdictClass({ signatureOk: null })).toContain('is-warn');
-    expect(verdictClass({ signatureOk: true })).toContain('is-ok');
-    expect(verdictClass({ signatureOk: false })).toContain('is-danger');
+    expect(verdictTone({ signatureOk: null })).toBe('warning');
+    expect(verdictTone({ signatureOk: true })).toBe('success');
+    expect(verdictTone({ signatureOk: false })).toBe('danger');
   });
 
   it('calls a refused callback ignored rather than failed', () => {

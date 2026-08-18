@@ -14,13 +14,16 @@ import {
 import { BULK_ACTIONS, MAX_BULK_INVOICES, bulkAppliesTo } from '../../../features/billing/reporting';
 import { bulkInvoiceAction } from '../actions';
 
+import {
+  Button, Callout, Chip, StatusPill, type StatusTone,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('billing.invoicesTitle'), robots: { index: false, follow: false } };
 }
 
-const STATUS_CLASS: Record<string, string> = { draft: 'kv-status--muted', issued: '', partially_paid: 'kv-status--warn', overdue: 'kv-status--danger', paid: 'kv-status--ok', void: 'kv-status--muted' };
+const STATUS_TONE: Record<string, StatusTone> = { draft: 'neutral', issued: 'neutral', partially_paid: 'warning', overdue: 'danger', paid: 'success', void: 'neutral' };
 
 const BULK_ERR = new Set(['bulk_action', 'bulk_empty', 'bulk_tooMany', 'bulk_reason', 'bulk_noneApplicable',
   'elevation', 'notFound', 'generic']);
@@ -83,28 +86,27 @@ export default async function InvoicesPage({ searchParams }: {
       {/* This list is reachable filtered to ONE tenant (the tenant tab strip links here that way), so it says so —
           otherwise an operator reads a filtered book as the whole platform's. */}
       {tenantId && (
-        <p className="kv-notice" role="note">
+        <Callout>
           {t.t('billing.filteredToTenant')} <code>{tenantId.slice(0, 8)}</code>{' '}
-          <Link href={invoiceListHref({ status })} className="kv-btn--link">{t.t('billing.clearTenantFilter')}</Link>
-        </p>
+          <Button as={Link} href={invoiceListHref({ status })} variant="tertiary">{t.t('billing.clearTenantFilter')}</Button>
+        </Callout>
       )}
 
       <nav className="kv-filters" aria-label={t.t('billing.filterLabel')}>
-        <Link href={invoiceListHref({ tenantId })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>
+        <Chip as={Link} href={invoiceListHref({ tenantId })} aria-current={!status ? 'true' : undefined} active={!status}>
           {t.t('billing.filterAll')}{total !== undefined ? ` ${total.toLocaleString()}` : ''}
-        </Link>
+        </Chip>
         {chips.map((c) => (
-          <Link key={c.status} href={invoiceListHref({ status: c.status, tenantId })}
-            className={`kv-chip${status === c.status ? ' is-active' : ''}`} aria-current={status === c.status ? 'true' : undefined}>
+          <Chip as={Link} key={c.status} href={invoiceListHref({ status: c.status, tenantId })} aria-current={status === c.status ? 'true' : undefined} active={status === c.status}>
             {t.t(`billing.status.${c.status}`)}{c.n !== undefined ? ` ${c.n.toLocaleString()}` : ''}
-          </Link>
+          </Chip>
         ))}
       </nav>
       {/* The canon's saved views, as bookmarkable links. "Needs chasing" points at the collection queue rather than
           faking a due-date filter this endpoint does not have. */}
       <p className="kv-detail__muted">
         {invoiceSavedViews().map((v) => (
-          <Link key={v.key} href={v.href} className="kv-btn--link">{t.t(`billing.view.${v.key}`)}{' '}</Link>
+          <Button as={Link} key={v.key} href={v.href} variant="tertiary">{t.t(`billing.view.${v.key}`)}{' '}</Button>
         ))}
       </p>
 
@@ -136,7 +138,7 @@ export default async function InvoicesPage({ searchParams }: {
                         <input id={`sel-${r.id}`} type="checkbox" name="selected" value={`${r.id}:${st}`} />
                       </td>
                       <td><Link href={`/billing/invoices/${r.id}`}>{r.invoiceNo}</Link></td>
-                      <td><span className={`kv-status ${STATUS_CLASS[st] ?? ''}`}>{t.t(`billing.status.${st}`)}</span></td>
+                      <td><StatusPill tone={STATUS_TONE[st] ?? 'neutral'} label={t.t(`billing.status.${st}`)} /></td>
                       <td>{formatMoneyMinor(r.totalMinor, r.currency)}</td>
                       <td>{r.dunningAttempts.toLocaleString()}</td>
                     </tr>
@@ -160,12 +162,12 @@ export default async function InvoicesPage({ searchParams }: {
                 <label htmlFor="bulk-reason" className="kv-field__label">{t.t('billing.reason')}</label>
                 <input id="bulk-reason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
                 <p className="kv-field__hint">{t.t('bulk.reasonHint')}</p>
-                <button type="submit" className="kv-btn kv-btn--danger">{t.t('bulk.submit')}</button>
+                <Button type="submit" variant="danger">{t.t('bulk.submit')}</Button>
               </details>
             )}
           </form>
           {/* the tenant filter travels with the cursor too — the same bug class as the tenant directory's pager */}
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={invoiceListHref({ status, tenantId, cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={invoiceListHref({ status, tenantId, cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

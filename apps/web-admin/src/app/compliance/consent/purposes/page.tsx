@@ -20,7 +20,8 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
-import { coverageState, coverageClass, coverageText, optInText, type PurposeRow } from '../../../../features/compliance/consent';
+import { coverageState, coverageTone, coverageText, optInText, type PurposeRow } from '../../../../features/compliance/consent';
+import { Callout, StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,8 +49,8 @@ export default async function ConsentPurposesPage() {
     {
       header: t.t('cns.mandatory'),
       cell: (r) => (r.isMandatory
-        ? <span className="kv-status kv-status--warn">{t.t('cns.isMandatory')}</span>
-        : <span className="kv-status kv-status--muted">{t.t('cns.isOptional')}</span>),
+        ? <StatusPill tone="warning" label={t.t('cns.isMandatory')} />
+        : <StatusPill tone="neutral" label={t.t('cns.isOptional')} />),
     },
     { header: t.t('cns.currentVersion'), cell: (r) => r.currentVersion },
     {
@@ -57,9 +58,8 @@ export default async function ConsentPurposesPage() {
       cell: (r) => {
         const st = coverageState(r);
         return (
-          <span className={coverageClass(st, r.isMandatory)}>
-            {st === 'never' ? t.t('cns.cov.never') : `${t.t(`cns.cov.${st}`)} ${coverageText(r)}`}
-          </span>
+          <StatusPill tone={coverageTone(st, r.isMandatory)}
+            label={st === 'never' ? t.t('cns.cov.never') : `${t.t(`cns.cov.${st}`)} ${coverageText(r)}`} />
         );
       },
     },
@@ -110,7 +110,7 @@ export default async function ConsentPurposesPage() {
         <li>{t.t('cns.ladder3')}</li>
         <li>{t.t('cns.ladder4')}</li>
       </ol>
-      <p className="kv-notice">{t.t('cns.ladderGap')}</p>
+      <Callout tone="warning">{t.t('cns.ladderGap')}</Callout>
       <p className="kv-detail__muted">{t.t('cns.oldGrantsStayValid')}</p>
     </section>
   );

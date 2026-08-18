@@ -13,6 +13,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { investigationStatusKey, severityKey, canStart, canResolve, canFalsePositive, type Investigation } from '../../../../features/recon/recon';
 import { updateInvestigationAction } from '../../actions';
 
+import { Button } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -75,7 +76,7 @@ function NoteForm({ id, action, verb, label }: { id: string; action: string; ver
       <input type="hidden" name="action" value={action} />
       <label className="kv-field__label">{label}</label>
       <input name="note" className="kv-input" required minLength={3} maxLength={1000} />
-      <button type="submit" className="kv-btn">{verb}</button>
+      <Button type="submit">{verb}</Button>
     </form>
   );
 }

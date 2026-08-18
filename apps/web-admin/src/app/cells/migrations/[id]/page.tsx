@@ -19,8 +19,11 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { runPreflightAction, approveMigrationAction, advanceMigrationAction } from '../../actions';
 import {
-  checkClass, checkKey, checkState, cleanupKey, dataLocationKey, executorNoticeKey,
-  freezeClass, freezeKey, jobClass, jobKey, showWaiver,
+  Button, Callout, StatusPill,
+} from '@krishalaya/ui';
+import {
+  checkTone, checkKey, checkState, cleanupKey, dataLocationKey, executorNoticeKey,
+  freezeClass, freezeKey, jobTone, jobKey, showWaiver,
 } from '../../../../features/cells/residency-migration';
 
 export const dynamic = 'force-dynamic';
@@ -78,23 +81,23 @@ export default async function MigrationDetailPage({ params, searchParams }: {
         <span>{params.id.slice(0, 8)}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`rz.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`rz.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`rz.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`rz.err.${searchParams.error}`)}</Callout> : null}
 
       {j ? (
         <>
           <header className="kv-page__head">
             <h1>{t.t('rz.job.title', { id: j.id.slice(0, 8) })}</h1>
             <p className="kv-page__sub">
-              <span className={jobClass(j.status)}>{t.t(jobKey(j.status))}</span>{' '}
+              <StatusPill tone={jobTone(j.status)} label={t.t(jobKey(j.status))} />{' '}
               {/* The most consequential fact on the page: only `done` means the tenant moved. */}
               · {t.t(dataLocationKey(j.status))}
             </p>
           </header>
 
           {executorNotice ? (
-            <p className="kv-note is-warn" role="status">{t.t(executorNotice, { owner: j.executor.owner })}</p>
+            <Callout tone="warning" live="polite">{t.t(executorNotice, { owner: j.executor.owner })}</Callout>
           ) : null}
 
           {/* ---------------- THE MOVE ---------------- */}
@@ -117,33 +120,33 @@ export default async function MigrationDetailPage({ params, searchParams }: {
               <div><dt>{t.t('rz.job.reason')}</dt><dd>{j.reason ?? '—'}</dd></div>
             </dl>
             {/* A same-country move is the only kind that can exist here; the refused ones are in the residency log. */}
-            <p className="kv-note">
+            <Callout>
               {t.t('rz.jobs.residencyNote')}{' '}
               <Link href="/cells/residency/log">{t.t('rz.log.title')}</Link>
-            </p>
+            </Callout>
           </section>
 
           {/* ---------------- THE PREFLIGHT ---------------- */}
           <section className="kv-panel" aria-labelledby="rz-pf">
             <h2 id="rz-pf" className="kv-panel__title">{t.t('rz.pf.title')}</h2>
             {j.preflight === null ? (
-              <p className="kv-note is-warn">{t.t('rz.pf.notRun')}</p>
+              <Callout tone="warning">{t.t('rz.pf.notRun')}</Callout>
             ) : (
               <>
-                <p className={j.preflight.pass ? 'kv-note is-ok' : 'kv-note is-danger'}>
+                <Callout tone={j.preflight.pass ? 'success' : 'danger'}>
                   {j.preflight.pass ? t.t('rz.pf.pass') : t.t('rz.pf.fail')}
-                </p>
+                </Callout>
                 {j.preflight.unknown.length > 0 ? (
-                  <p className="kv-note is-danger" role="alert">
+                  <Callout tone="danger" live="assertive">
                     {t.t('rz.pf.unknownBlocks', { n: String(j.preflight.unknown.length) })}
-                  </p>
+                  </Callout>
                 ) : null}
                 <ul className="kv-list">
                   {j.preflight.checks.map((c) => {
                     const state = checkState(c);
                     return (
                       <li key={c.check}>
-                        <span className={checkClass(state)}>{t.t(checkKey(c.check))}</span>{' '}
+                        <StatusPill tone={checkTone(state)} label={t.t(checkKey(c.check))} />{' '}
                         {c.detail ? <small>{c.detail}</small> : null}
                         {/* THE WAIVER CONTROL IS SIMPLY NOT HERE for an unwaivable or an unknown check. */}
                         {showWaiver(c.check, state) ? <><br /><small>{t.t('rz.pf.waivable')}</small></> : null}
@@ -182,7 +185,7 @@ export default async function MigrationDetailPage({ params, searchParams }: {
               </div>
               {/* An empty box means "could not be read", which the domain reports as UNKNOWN and never as a pass. */}
               <p className="kv-field__help">{t.t('rz.pf.blankIsUnknown')}</p>
-              <button className="kv-btn" type="submit">{t.t('rz.pf.run')}</button>
+              <Button type="submit">{t.t('rz.pf.run')}</Button>
             </form>
           </section>
 
@@ -190,23 +193,23 @@ export default async function MigrationDetailPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="rz-appr">
             <h2 id="rz-appr" className="kv-panel__title">{t.t('rz.job.approval')}</h2>
             {j.approvedByAdminId ? (
-              <p className="kv-note is-ok">
+              <Callout tone="success">
                 {t.t('rz.job.approvedBy', { who: j.approvedByAdminId.slice(0, 8) })}
-              </p>
+              </Callout>
             ) : (
-              <p className="kv-note is-warn">{t.t('rz.notApproved')}</p>
+              <Callout tone="warning">{t.t('rz.notApproved')}</Callout>
             )}
             {iAmTheMaker && !j.approvedByAdminId ? (
               // The explanation stays even though the control is gone — absence with no reason is just a missing button.
-              <p className="kv-note">{t.t('rz.job.youDrafted')}</p>
+              <Callout>{t.t('rz.job.youDrafted')}</Callout>
             ) : null}
             {!j.preflight?.pass && !j.approvedByAdminId ? (
-              <p className="kv-note">{t.t('rz.job.needsPreflight')}</p>
+              <Callout>{t.t('rz.job.needsPreflight')}</Callout>
             ) : null}
             {canApprove ? (
               <form action={approveMigrationAction}>
                 <input type="hidden" name="id" value={j.id} />
-                <button className="kv-btn kv-btn--primary" type="submit">{t.t('rz.job.approve')}</button>
+                <Button type="submit">{t.t('rz.job.approve')}</Button>
               </form>
             ) : null}
           </section>
@@ -217,17 +220,17 @@ export default async function MigrationDetailPage({ params, searchParams }: {
             <p className={freezeClass(j.freeze.kind, j.freeze.overBudget)}>
               {t.t(freezeKey(j.freeze.kind, j.freeze.overBudget))}
             </p>
-            <p className="kv-note">
+            <Callout>
               {t.t('rz.job.freezeBudget', {
                 budget: String(j.freezeBudgetSeconds),
                 elapsed: j.freeze.elapsedSeconds === undefined ? '—' : String(j.freeze.elapsedSeconds),
               })}
-            </p>
-            <p className="kv-note">
+            </Callout>
+            <Callout>
               {t.t(cleanupKey(j.cleanup.kind))}
               {j.cleanup.kind === 'holding' ? ` (${j.cleanup.daysRemaining}d)` : ''}
               {' — '}{t.t('rz.job.holdWhy', { days: String(j.safetyHoldDays) })}
-            </p>
+            </Callout>
           </section>
 
           {/* ---------------- ADVANCE ---------------- */}
@@ -237,7 +240,7 @@ export default async function MigrationDetailPage({ params, searchParams }: {
               {/* THE API AN EXECUTOR WOULD CALL, exposed so the state machine is exercised and auditable before the
                   executor exists — every transition checked, and `cutover` additionally requiring a verify that compares
                   row counts and the ledger sum as bigint strings. */}
-              <p className="kv-note is-warn">{t.t('rz.job.advanceManual')}</p>
+              <Callout tone="warning">{t.t('rz.job.advanceManual')}</Callout>
               <form action={advanceMigrationAction}>
                 <input type="hidden" name="id" value={j.id} />
                 <div className="kv-field">
@@ -274,7 +277,7 @@ export default async function MigrationDetailPage({ params, searchParams }: {
                   <input className="kv-input" id="adv-rb" name="rollbackReason" maxLength={2000} />
                   <p className="kv-field__help">{t.t('rz.job.rollbackHelp')}</p>
                 </div>
-                <button className="kv-btn" type="submit">{t.t('rz.job.advanceBtn')}</button>
+                <Button type="submit">{t.t('rz.job.advanceBtn')}</Button>
               </form>
             </section>
           ) : null}
@@ -283,7 +286,7 @@ export default async function MigrationDetailPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="rz-steps">
             <h2 id="rz-steps" className="kv-panel__title">{t.t('rz.job.steps')}</h2>
             {j.steps.length === 0 ? (
-              <p className="kv-note">{t.t('rz.job.noSteps')}</p>
+              <Callout>{t.t('rz.job.noSteps')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -308,8 +311,8 @@ export default async function MigrationDetailPage({ params, searchParams }: {
             )}
           </section>
 
-          {j.rollbackReason ? <p className="kv-note is-warn">{j.rollbackReason}</p> : null}
-          {j.failureDetail ? <p className="kv-note is-danger">{j.failureDetail}</p> : null}
+          {j.rollbackReason ? <Callout tone="warning">{j.rollbackReason}</Callout> : null}
+          {j.failureDetail ? <Callout tone="danger">{j.failureDetail}</Callout> : null}
         </>
       ) : null}
     </main>

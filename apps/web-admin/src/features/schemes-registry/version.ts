@@ -7,6 +7,7 @@
 // SAYS something the data does not support — which, on a screen about what a farmer is entitled to, is the part that
 // goes wrong quietly.
 
+import type { StatusTone } from '@krishalaya/ui';
 import { parseJsonObject, parseUuidList, buildWindow } from './scheme';
 
 /* ===================== read-model shapes ===================== */
@@ -37,15 +38,15 @@ export function versionKind(v: Pick<VersionRow, 'status' | 'isBackfilled'>): Ver
   return 'unknown';                               // a status this console does not know is NOT quietly a current one
 }
 
-export function versionClass(kind: VersionKind): string {
+export function versionTone(kind: VersionKind): StatusTone {
   switch (kind) {
-    case 'current': return 'kv-status kv-status--ok';
-    case 'draft': return 'kv-status kv-status--warn';
+    case 'current': return 'success';
+    case 'draft': return 'warning';
     // Deliberately NOT a failure colour. A backfilled version is not somebody's mistake; it is the platform being
     // honest that versioning arrived after these rules did.
-    case 'backfilled': return 'kv-status kv-status--muted';
-    case 'superseded': return 'kv-status kv-status--muted';
-    default: return 'kv-status kv-status--muted';
+    case 'backfilled': return 'neutral';
+    case 'superseded': return 'neutral';
+    default: return 'neutral';
   }
 }
 
@@ -153,8 +154,8 @@ export function portalState(row: { portalState?: string | null; portal?: { provi
 }
 /** `manual` is NOT styled as a failure. An authority with no API is the normal case for a district collectorate, and
  *  a red cell against it would be a criticism of a fact. */
-export function portalClass(state: PortalState): string {
-  return state === 'mapped' ? 'kv-status kv-status--ok' : 'kv-status kv-status--muted';
+export function portalTone(state: PortalState): StatusTone {
+  return state === 'mapped' ? 'success' : 'neutral';
 }
 
 export const PORTAL_PROVIDERS = ['pfms', 'ikhedut', 'pmkisan'] as const;
@@ -195,13 +196,13 @@ export type CloseState =
 /** How to style a deadline. `no_window` is an always-open scheme (pm_kisan, kcc) and gets NO urgency styling at all —
  *  it is not a deadline, and colouring it like one would put pm_kisan permanently at the top of an operator's
  *  worry list. `unparseable` and `impossible_date` ARE failures: both mean a stored window nobody can act on. */
-export function closeClass(s: CloseState): string {
+export function closeTone(s: CloseState): StatusTone {
   switch (s.kind) {
-    case 'closes_today': return 'kv-status kv-status--danger';
-    case 'closes_in': return s.days <= 2 ? 'kv-status kv-status--danger' : s.days <= 14 ? 'kv-status kv-status--warn' : 'kv-status kv-status--ok';
+    case 'closes_today': return 'danger';
+    case 'closes_in': return s.days <= 2 ? 'danger' : s.days <= 14 ? 'warning' : 'success';
     case 'unparseable':
-    case 'impossible_date': return 'kv-status kv-status--danger';
-    default: return 'kv-status kv-status--muted';
+    case 'impossible_date': return 'danger';
+    default: return 'neutral';
   }
 }
 /** The i18n key for a close state. A state this console does not recognise resolves to `unparseable`, never to a

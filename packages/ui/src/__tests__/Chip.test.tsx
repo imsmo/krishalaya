@@ -16,4 +16,17 @@ describe('Chip', () => {
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('kvw-chip-active');
   });
+
+  it('DEV-59: polymorphic `as` renders a real navigation element carrying the canon chip classes', () => {
+    const html = renderToStaticMarkup(
+      <Chip as="a" href="/tenants?status=trial" active label="Trial">
+        Trial
+      </Chip>,
+    );
+    expect(html).toContain('<a');
+    expect(html).not.toContain('<button');
+    expect(html).toContain('kvw-chip');
+    expect(html).toContain('kvw-chip-active');
+    expect(html).toContain('href="/tenants?status=trial"');
+  });
 });

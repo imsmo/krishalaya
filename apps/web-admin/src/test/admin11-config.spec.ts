@@ -7,8 +7,8 @@
 //   * "this reaches every tenant" and "this reaches every tenant that has not overridden it".
 import {
   canNarrowDirectly, canRevert, canSetDirectly, canWidenDirectly, checkerNoticeKey, effectiveValue, excludesUnknowns,
-  overridesKey, provenanceClass, provenanceKey, radiusClass, radiusKey, riskClassName, riskKey, targetingSummaryKey,
-  tierClass, tierKey, widenNoticeKey,
+  overridesKey, provenanceTone, provenanceKey, radiusClass, radiusKey, riskTone, riskKey, targetingSummaryKey,
+  tierTone, tierKey, widenNoticeKey,
 } from '../features/settings/setting';
 import { en } from '../i18n/en';
 
@@ -34,8 +34,8 @@ describe('ADMIN-11 · the shipped default and the set value are different facts'
   });
 
   it('marks a set value as distinct from a shipped one', () => {
-    expect(provenanceClass({ onShippedDefault: false })).toContain('is-info');
-    expect(provenanceClass({ onShippedDefault: true })).not.toContain('is-info');
+    expect(provenanceTone({ onShippedDefault: false })).toBe('info');
+    expect(provenanceTone({ onShippedDefault: true })).not.toBe('info');
   });
 
   it('only offers a revert when something is set', () => {
@@ -48,11 +48,11 @@ describe('ADMIN-11 · the shipped default and the set value are different facts'
 
 describe('ADMIN-11 · risk class and scope answer different questions', () => {
   it('draws money-path loudest and an unknown class as a warning', () => {
-    expect(riskClassName('money_path')).toContain('is-danger');
-    expect(riskClassName('security')).toContain('is-warn');
-    expect(riskClassName('ordinary')).not.toContain('is-warn');
+    expect(riskTone('money_path')).toBe('danger');
+    expect(riskTone('security')).toBe('warning');
+    expect(riskTone('ordinary')).not.toBe('warning');
     // A class this console cannot describe must not be drawn as harmless.
-    expect(riskClassName('founder_only')).toContain('is-warn');
+    expect(riskTone('founder_only')).toBe('warning');
     expect(riskKey('founder_only')).toBe('st11.risk.other');
     expect(dict['st11.risk.other']).toBeTruthy();
   });
@@ -107,9 +107,9 @@ describe('ADMIN-11 · W004 · flag tiers and the asymmetry', () => {
   it('labels every tier and draws a kill switch loudest', () => {
     for (const t of ['module', 'experiment', 'kill_switch']) expect(dict[tierKey(t)]).toBeTruthy();
     expect(tierKey('vip')).toBe('st11.tier.other');
-    expect(tierClass('kill_switch')).toContain('is-danger');
-    expect(tierClass('module')).toContain('is-warn');
-    expect(tierClass('experiment')).not.toContain('is-warn');
+    expect(tierTone('kill_switch')).toBe('danger');
+    expect(tierTone('module')).toBe('warning');
+    expect(tierTone('experiment')).not.toBe('warning');
   });
 
   // **THE ASYMMETRY THE WHOLE PLANE TURNS ON.** Narrowing is always available; widening a module flag or releasing a

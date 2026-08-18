@@ -1,6 +1,20 @@
 // apps/web-admin/src/features/audit/audit-console.ts · PURE helpers for W039, W040 and W068 (PC-56 ADMIN-5e).
 // No fetch, no React → unit-tested.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): `diffLineClass`/`statusClass`/`balanceClass` now return a
+// `StatusTone` instead of a raw `kv-status kv-status--X` string — disposition (c), same pattern as
+// `ai-governance.ts`. Call sites render `<StatusPill tone={...} label={...} />`. THIS FILE IS A MONEY SURFACE
+// (W068 manual ledger corrections, reachable from recon/investigations, plus the audit log's own diff viewer) —
+// every call site was hand-audited: no conditional gating, ARIA role, i18n key, or control visibility changed,
+// only the class-string-to-tone-prop swap. `viewChipClass` (W039's saved-view chip, a plain active/inactive
+// toggle with no tone concept) is renamed `isActiveView` and now returns a `boolean` — its call site already had
+// `Chip` imported from `@krishalaya/ui` (used one line below for the entity-drill chip) and `Chip`'s own `active`
+// boolean prop is the exact semantic this helper computed, so this is the same "helper's OUTPUT becomes the
+// packages/ui primitive's own prop" disposition, just not a `StatusTone` one. `statusClass`/`balanceClass` here
+// are unrelated to the identically-named exports in `ledger.ts`, `payouts.ts` and `staff/operators.ts` — different
+// files, different vocabularies, out of this slice's scope.
 import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { StatusTone } from '@krishalaya/ui';
 //
 // Two screens with the same governing idea. W039: "Nothing here can be edited or deleted — by anyone." W068:
 // "There is no delete. A wrong correction is fixed by another correction — the ledger tells the whole story
@@ -49,10 +63,10 @@ export function diffSign(k: DiffKind): '+' | '−' | '±' {
   if (k === 'removed') return '−';
   return '±';
 }
-export function diffLineClass(k: DiffKind): string {
-  if (k === 'added') return 'kv-status kv-status--ok';
-  if (k === 'removed') return 'kv-status kv-status--danger';
-  return 'kv-status kv-status--warn';
+export function diffLineTone(k: DiffKind): StatusTone {
+  if (k === 'added') return 'success';
+  if (k === 'removed') return 'danger';
+  return 'warning';
 }
 
 /** What to print in a value cell. Masked panels render the MASK, never an empty cell — a blank looks like a value
@@ -63,8 +77,8 @@ export function valueCell(v: string | null, masked: boolean): string {
 }
 
 /** W039's action filter and the money view are SERVER-side. This is only the chip's active state. */
-export function viewChipClass(current: SavedView, chip: SavedView): string {
-  return current === chip ? 'kv-chip is-active' : 'kv-chip';
+export function isActiveView(current: SavedView, chip: SavedView): boolean {
+  return current === chip;
 }
 
 /** The retention line. W039 claims "7-year immutable retention"; the platform honours half of it, and the console
@@ -120,22 +134,22 @@ export function stepOf(status: DraftStatus | null | undefined, balanced: boolean
   return null;   // rejected / withdrawn / unknown — the flow is over
 }
 
-export function statusClass(s: DraftStatus | null | undefined): string {
+export function statusTone(s: DraftStatus | null | undefined): StatusTone {
   switch (s) {
-    case 'posted': return 'kv-status kv-status--ok';
-    case 'awaiting_checker': return 'kv-status kv-status--warn';
-    case 'rejected': return 'kv-status kv-status--danger';
-    case 'withdrawn': return 'kv-status kv-status--muted';
-    case 'drafting': return 'kv-status kv-status--muted';
-    default: return 'kv-status kv-status--muted';
+    case 'posted': return 'success';
+    case 'awaiting_checker': return 'warning';
+    case 'rejected': return 'danger';
+    case 'withdrawn': return 'neutral';
+    case 'drafting': return 'neutral';
+    default: return 'neutral';
   }
 }
 
 /** The Σ readout. BALANCED is the only green state; an unbalanced sum is a FAILURE, not a note in progress —
  *  W068's own state is "Legs do not balance — Σ = +12,450 ≠ 0. The form will not submit unbalanced." */
-export function balanceClass(b: BalanceView | null | undefined): string {
-  if (!b) return 'kv-status kv-status--muted';
-  return b.balanced ? 'kv-status kv-status--ok' : 'kv-status kv-status--danger';
+export function balanceTone(b: BalanceView | null | undefined): StatusTone {
+  if (!b) return 'neutral';
+  return b.balanced ? 'success' : 'danger';
 }
 export function balanceText(b: BalanceView | null | undefined): string {
   if (!b) return '—';

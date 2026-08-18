@@ -3,11 +3,11 @@
 // the platform does not actually produce. Both failure directions here are FLATTERING ones — an enforced-looking
 // band, a zero where nothing is measured — which is why they are typed rather than remembered.
 import {
-  IDENTIFIER_TYPES, blockStateClass, attemptsText, countersignOfferable, buildAddBlock, REASON_MIN,
-  approveBlockedKey, firedText, driftClass, dryRunState, buildPropose,
-  RISK_BANDS, bandClass, readingClass, equationRenderable, equationText, factorNoticeKey,
-  effectClass, advisoryBannerVisible, buildBandChange, blockOfferable, shareText, censusShortfall, BAND_REASON_MIN,
-  tileValue, tileText, slaClass, attentionClass, allQuiet, unreadSources, sampleNote,
+  IDENTIFIER_TYPES, blockStateTone, attemptsText, countersignOfferable, buildAddBlock, REASON_MIN,
+  approveBlockedKey, firedText, driftTone, dryRunState, buildPropose,
+  RISK_BANDS, bandTone, readingTone, equationRenderable, equationText, factorNoticeKey,
+  effectTone, advisoryBannerVisible, buildBandChange, blockOfferable, shareText, censusShortfall, BAND_REASON_MIN,
+  tileValue, tileText, slaTone, attentionTone, allQuiet, unreadSources, sampleNote,
   type BlockRow, type ProposalView, type FactorPanel, type BandEffect, type SourcesRead, type AttentionItem,
 } from '../features/trust/trust-safety';
 
@@ -16,13 +16,13 @@ const READ: SourcesRead = { reports: true, appeals: true, blocklist: true, risk:
 /* ================================================================================================ */
 describe('ADMIN-5d console · the blocklist', () => {
   it('an UNBOUNDED block is a failure colour — W096 prohibits indefinite blocks without review', () => {
-    expect(blockStateClass('unbounded')).toContain('danger');
+    expect(blockStateTone('unbounded')).toBe('danger');
     // EXPIRED is muted, not a failure: it lapsed, which is the rule working.
-    expect(blockStateClass('expired')).toContain('muted');
-    expect(blockStateClass('lifted')).toContain('muted');
-    expect(blockStateClass('active')).toContain('ok');
-    expect(blockStateClass(null)).toContain('muted');
-    expect(blockStateClass(undefined)).toContain('muted');
+    expect(blockStateTone('expired')).toBe('neutral');
+    expect(blockStateTone('lifted')).toBe('neutral');
+    expect(blockStateTone('active')).toBe('success');
+    expect(blockStateTone(null)).toBe('neutral');
+    expect(blockStateTone(undefined)).toBe('neutral');
   });
   it('ATTEMPTS IS A DASH, NEVER 0 — nothing on the platform reads this list', () => {
     // "0 attempts blocked" says the block is installed and nobody has tried. Nothing is checking.
@@ -129,9 +129,9 @@ describe('ADMIN-5d console · the Approve control is ABSENT until the dry run st
   });
   it('a weight the code does not use is a FAILURE colour, not a note', () => {
     // The table is being read as policy and it is not policy.
-    expect(driftClass('weight_mismatch')).toContain('danger');
-    expect(driftClass('no_producer')).toContain('warn');
-    expect(driftClass('unconfigured')).toContain('muted');
+    expect(driftTone('weight_mismatch')).toBe('danger');
+    expect(driftTone('no_producer')).toBe('warning');
+    expect(driftTone('unconfigured')).toBe('neutral');
   });
   it('the FIRED count is a dash when unreadable, never 0', () => {
     // For three of the five seeded rules 0 is the TRUE answer — which is exactly why an unreadable count must not
@@ -203,10 +203,10 @@ describe('ADMIN-5d console · the score equation is rendered ONLY when it closes
 
 describe('ADMIN-5d console · band effects never look enforced', () => {
   it('an unenforced effect is muted', () => {
-    expect(effectClass({ key: 'payoutDelay48h', enforced: false, enforcedBy: null })).toContain('muted');
-    expect(effectClass({ key: 'walletStillWithdrawable', enforced: true, enforcedBy: 'x' })).toContain('ok');
-    expect(effectClass(null)).toContain('muted');
-    expect(effectClass(undefined)).toContain('muted');
+    expect(effectTone({ key: 'payoutDelay48h', enforced: false, enforcedBy: null })).toBe('neutral');
+    expect(effectTone({ key: 'walletStillWithdrawable', enforced: true, enforcedBy: 'x' })).toBe('success');
+    expect(effectTone(null)).toBe('neutral');
+    expect(effectTone(undefined)).toBe('neutral');
   });
   it('the ADVISORY BANNER shows whenever no real restriction is enforced', () => {
     const unenforced: BandEffect[] = [{ key: 'payoutDelay48h', enforced: false, enforcedBy: null }, { key: 'bidCap', enforced: false, enforcedBy: null }];
@@ -223,20 +223,20 @@ describe('ADMIN-5d console · band effects never look enforced', () => {
 
 describe('ADMIN-5d console · bands and readings', () => {
   it('restricted and blocked are failure colours — for what they do to the person', () => {
-    expect(bandClass('blocked')).toContain('danger');
-    expect(bandClass('restricted')).toContain('danger');
-    expect(bandClass('caution')).toContain('warn');
-    expect(bandClass('trusted')).toContain('ok');
-    expect(bandClass('gold')).toContain('muted');
-    expect(bandClass(null)).toContain('muted');
+    expect(bandTone('blocked')).toBe('danger');
+    expect(bandTone('restricted')).toBe('danger');
+    expect(bandTone('caution')).toBe('warning');
+    expect(bandTone('trusted')).toBe('success');
+    expect(bandTone('gold')).toBe('neutral');
+    expect(bandTone(null)).toBe('neutral');
   });
   it('an INCONSISTENT row is a failure and LADDER DRIFT is a warning', () => {
     // Inconsistent means somebody's access is governed by a value nothing computed.
-    expect(readingClass({ kind: 'inconsistent', band: 'blocked', expected: 'trusted', score: 85 })).toContain('danger');
-    expect(readingClass({ kind: 'ladder_drift', band: 'standard', canon: 'trusted', score: 75 })).toContain('warn');
-    expect(readingClass({ kind: 'unknown', reason: 'x' })).toContain('muted');
-    expect(readingClass({ kind: 'agreed', band: 'trusted', score: 85 })).toContain('ok');
-    expect(readingClass(null)).toContain('muted');
+    expect(readingTone({ kind: 'inconsistent', band: 'blocked', expected: 'trusted', score: 85 })).toBe('danger');
+    expect(readingTone({ kind: 'ladder_drift', band: 'standard', canon: 'trusted', score: 75 })).toBe('warning');
+    expect(readingTone({ kind: 'unknown', reason: 'x' })).toBe('neutral');
+    expect(readingTone({ kind: 'agreed', band: 'trusted', score: 85 })).toBe('success');
+    expect(readingTone(null)).toBe('neutral');
   });
   it('a share with no denominator is a DASH, never 0%', () => {
     expect(shareText(null)).toEqual({ known: false, text: '—' });
@@ -295,19 +295,19 @@ describe('ADMIN-5d console · the overview tiles', () => {
     expect(tileText({ kind: 'unavailable', reason: 'x' })).toBe('—');
   });
   it('UNMEASURED SLA is a warning, not a pass', () => {
-    expect(slaClass({ kind: 'unmeasured' })).toContain('warn');
-    expect(slaClass({ kind: 'unmeasured' })).not.toContain('--ok');
-    expect(slaClass({ kind: 'breached', overHours: 1 })).toContain('danger');
-    expect(slaClass({ kind: 'due_soon', ageHours: 3.5 })).toContain('warn');
-    expect(slaClass({ kind: 'ok', ageHours: 1 })).toContain('ok');
-    expect(slaClass(null)).toContain('muted');
-    expect(slaClass(null)).not.toContain('--ok');
+    expect(slaTone({ kind: 'unmeasured' })).toBe('warning');
+    expect(slaTone({ kind: 'unmeasured' })).not.toBe('success');
+    expect(slaTone({ kind: 'breached', overHours: 1 })).toBe('danger');
+    expect(slaTone({ kind: 'due_soon', ageHours: 3.5 })).toBe('warning');
+    expect(slaTone({ kind: 'ok', ageHours: 1 })).toBe('success');
+    expect(slaTone(null)).toBe('neutral');
+    expect(slaTone(null)).not.toBe('success');
   });
   it('overdue and blocking are failures; due-soon is a warning', () => {
-    expect(attentionClass('overdue')).toContain('danger');
-    expect(attentionClass('blocking')).toContain('danger');
-    expect(attentionClass('due_soon')).toContain('warn');
-    expect(attentionClass('info')).toContain('muted');
+    expect(attentionTone('overdue')).toBe('danger');
+    expect(attentionTone('blocking')).toBe('danger');
+    expect(attentionTone('due_soon')).toBe('warning');
+    expect(attentionTone('info')).toBe('neutral');
   });
   it('ALL QUIET needs an empty list AND every register read', () => {
     const item: AttentionItem = { id: 'x', severity: 'info', messageKey: 'y' };

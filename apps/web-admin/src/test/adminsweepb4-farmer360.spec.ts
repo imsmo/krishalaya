@@ -1,5 +1,5 @@
 // apps/web-admin/src/test/adminsweepb4-farmer360.spec.ts · W109 console logic (PC-56 ADMIN-SWEEP-b4).
-import { tileText, bandClass, formatMinor, buildExport, buildSearch, EXPORT_REASON_MIN } from '../features/analytics/farmer360';
+import { tileText, bandTone, formatMinor, buildExport, buildSearch, EXPORT_REASON_MIN } from '../features/analytics/farmer360';
 import { en } from '../i18n/en';
 
 describe('ADMIN-SWEEP-b4 · Farmer 360 console logic', () => {
@@ -8,11 +8,12 @@ describe('ADMIN-SWEEP-b4 · Farmer 360 console logic', () => {
     expect(tileText({ valueMinor: '0', basis: 'b', n: 1 })).toEqual({ key: 'value', text: '₹0.00' });
     expect(tileText({ valueMinor: '86420000', basis: 'b', n: 42 }).text).toBe('₹8,64,200.00');
   });
-  it('band chips: trusted ok, caution warn, restricted/blocked err, unscored neutral', () => {
-    expect(bandClass('trusted')).toContain('ok');
-    expect(bandClass('caution')).toContain('warn');
-    expect(bandClass('blocked')).toContain('err');
-    expect(bandClass(null)).not.toContain('ok');
+  it('band tones: trusted success, caution warning, restricted/blocked danger, unscored neutral', () => {
+    expect(bandTone('trusted')).toBe('success');
+    expect(bandTone('caution')).toBe('warning');
+    expect(bandTone('blocked')).toBe('danger');
+    expect(bandTone('restricted')).toBe('danger');
+    expect(bandTone(null)).toBe('neutral');
   });
   it('lakh formatting holds across magnitudes', () => {
     expect(formatMinor('112000')).toBe('₹1,120.00');

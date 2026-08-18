@@ -18,8 +18,9 @@ import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
-import { stateClass, stateKey, type ReplyRow } from '../../../../features/support/reply';
+import { stateTone, stateKey, type ReplyRow } from '../../../../features/support/reply';
 
+import { EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -44,7 +45,7 @@ export default async function StuckRepliesPage() {
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : rows.length === 0 ? (
         // a positive statement: an empty list here is good news and must not look like a broken page
-        <p className="kv-empty">{t.t('prep.stuckNone')}</p>
+        <EmptyState title={t.t('prep.stuckNone')} />
       ) : (
         <table className="kv-table">
           <thead><tr>
@@ -65,7 +66,7 @@ export default async function StuckRepliesPage() {
                     : (r.ticketNo ?? t.t('common.dash'))}
                 </td>
                 <td>{r.tenantSlug ?? t.t('common.dash')}</td>
-                <td><span className={`kv-status ${stateClass(r.status)}`}>{t.t(`prep.state.${stateKey(r.status)}`)}</span></td>
+                <td><StatusPill tone={stateTone(r.status)} label={t.t(`prep.state.${stateKey(r.status)}`)} /></td>
                 {/* the reason is the whole value of this page — never a blank cell */}
                 <td>{r.detail ?? <span className="kv-detail__muted">{t.t('common.dash')}</span>}</td>
                 <td>{String(r.attempts ?? 0)}</td>

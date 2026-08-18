@@ -24,6 +24,9 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { POLICY_CHANNELS, type LadderStep } from '../../../../features/billing/money-controls';
 import { publishDunningPolicyAction } from '../../actions';
 
+import {
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -82,18 +85,18 @@ export default async function DunningPolicyPage({ searchParams }: {
         <>
           {/* No active policy is a REAL state and is said plainly — an empty step table would read as a policy of
               doing nothing, which is a different (and worse) claim. */}
-          {!view ? <p className="kv-notice" role="note">{t.t('pol.noneActive')}</p> : (
+          {!view ? <Callout>{t.t('pol.noneActive')}</Callout> : (
             <dl className="kv-facts">
               <div className="kv-facts__row"><dt>{t.t('pol.active')}</dt><dd>v{view.policy.version} · {view.policy.name}</dd></div>
               <div className="kv-facts__row"><dt>{t.t('pol.effectiveFrom')}</dt><dd>{view.policy.effectiveFrom}</dd></div>
               <div className="kv-facts__row"><dt>{t.t('pol.suspendAfter')}</dt><dd>
                 {view.policy.suspendAfterDays === null
-                  ? <span className="kv-status kv-status--ok">{t.t('pol.neverSuspend')}</span>
+                  ? <StatusPill tone="success" label={t.t('pol.neverSuspend')} />
                   : t.t('pol.suspendDays', { n: String(view.policy.suspendAfterDays) })}
               </dd></div>
             </dl>
           )}
-          {view?.policy.suspendAfterDays !== null && view && <p className="kv-notice" role="note">{t.t('pol.suspendManualNote')}</p>}
+          {view?.policy.suspendAfterDays !== null && view && <Callout>{t.t('pol.suspendManualNote')}</Callout>}
 
           <h2>{t.t('pol.editTitle')}</h2>
           <p className="kv-field__hint">{t.t('pol.editHint')}</p>
@@ -156,18 +159,18 @@ export default async function DunningPolicyPage({ searchParams }: {
             <label htmlFor="pol-notes" className="kv-field__label">{t.t('pol.notes')}</label>
             <input id="pol-notes" name="notes" className="kv-input" maxLength={2000} />
 
-            <button type="submit" className="kv-btn">{t.t('pol.publish')}</button>
+            <Button type="submit">{t.t('pol.publish')}</Button>
             <p className="kv-field__hint">{t.t('pol.publishNote')}</p>
           </form>
 
           <h2>{t.t('pol.versionsTitle')}</h2>
-          {versions.length === 0 ? <p className="kv-empty">{t.t('pol.noVersions')}</p> : (
+          {versions.length === 0 ? <EmptyState title={t.t('pol.noVersions')} /> : (
             <ul className="kv-list" role="list">
               {versions.map((v) => (
                 <li key={v.id} className="kv-card">
                   <p className="kv-card__title">
                     v{v.version} · {v.name}
-                    {v.isActive && <> <span className="kv-status kv-status--ok">{t.t('pol.activeBadge')}</span></>}
+                    {v.isActive && <> <StatusPill tone="success" label={t.t('pol.activeBadge')} /></>}
                   </p>
                   <p className="kv-detail__muted">
                     {t.t('pol.effectiveFrom')}: {v.effectiveFrom}

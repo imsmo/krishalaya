@@ -20,6 +20,7 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { cellClass, cellStateKey, matrixIsWritable } from '../../../features/staff/operators';
 
+import { Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -69,30 +70,29 @@ export default async function RoleMatrixPage({ searchParams }: { searchParams: {
         <p className="kv-page__sub">{t.t('st.matrix.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {meta ? (
         <>
           {/* **NO SUBMIT CONTROL, AND THE REASON IS THE FIRST THING ON THE PAGE.** */}
-          <p className="kv-note is-warn">{meta.noWritePathReason}</p>
-          <p className="kv-note">
+          <Callout tone="warning">{meta.noWritePathReason}</Callout>
+          <Callout tone="info">
             {t.t('st.matrix.source', { source: meta.source })} ·{' '}
             {t.t('st.matrix.counts', { perms: String(meta.permissionCount), roles: String(meta.roleCount) })}
-          </p>
+          </Callout>
 
           {/* THE HOLES IN A LEAST-PRIVILEGE CATALOGUE: permissions no ordinary role holds, so every use of them is a use
               of the most powerful credential on the platform. */}
           {meta.godModeOnly.length > 0 ? (
-            <p className="kv-note is-warn">
+            <Callout tone="warning">
               {t.t('st.matrix.godModeOnly', { n: String(meta.godModeOnly.length), list: meta.godModeOnly.join(', ') })}
-            </p>
+            </Callout>
           ) : null}
 
           <nav className="kv-filters" aria-label={t.t('st.matrix.filterGroup')}>
-            <Link className={`kv-chip${!group ? ' is-active' : ''}`} href="/staff/roles">{t.t('common.all')}</Link>
+            <Chip as={Link} href="/staff/roles" active={!group}>{t.t('common.all')}</Chip>
             {meta.groups.map((g) => (
-              <Link key={g} className={`kv-chip${group === g ? ' is-active' : ''}`}
-                href={`/staff/roles?group=${encodeURIComponent(g)}`}>{g}</Link>
+              <Chip as={Link} key={g} href={`/staff/roles?group=${encodeURIComponent(g)}`} active={group === g}>{g}</Chip>
             ))}
           </nav>
 
@@ -112,7 +112,9 @@ export default async function RoleMatrixPage({ searchParams }: { searchParams: {
                   <tr key={r.role}>
                     <td>
                       {r.role}
-                      {r.isGodMode ? <> <span className="kv-badge is-warn">{t.t('st.matrix.godMode')}</span></> : null}
+                      {/* [QA-FIX 2026-08-15] was hardcoded tone="neutral", discarding the original
+                          `kv-badge is-warn` modifier — a god-mode role marker on the RBAC matrix must stand out. */}
+                      {r.isGodMode ? <> <StatusPill tone="warning" icon={false} label={t.t('st.matrix.godMode')} /></> : null}
                     </td>
                     {/* A god-mode role's count is the whole catalogue, not the literal length of `['*']` — "super_admin
                         holds 1 permission" is arithmetically true and a lie about what it can do. */}
@@ -122,14 +124,11 @@ export default async function RoleMatrixPage({ searchParams }: { searchParams: {
                 ))}
               </tbody>
             </table>
-            <p className="kv-note is-warn">{t.t('st.matrix.membershipObserved', { owner: meta.membershipCaveatOwner })}</p>
+            <Callout tone="warning">{t.t('st.matrix.membershipObserved', { owner: meta.membershipCaveatOwner })}</Callout>
           </section>
 
           {rows.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('st.matrix.empty.title')}</h2>
-              <p>{t.t('st.matrix.empty.body')}</p>
-            </div>
+            <EmptyState title={t.t('st.matrix.empty.title')} body={t.t('st.matrix.empty.body')} />
           ) : (
             <div className="kv-table-scroll">
               <table className="kv-table">
@@ -164,7 +163,7 @@ export default async function RoleMatrixPage({ searchParams }: { searchParams: {
           )}
 
           {/* Asserted rather than assumed: if this ever returns true, the page is lying and the spec fails. */}
-          {matrixIsWritable() ? <p className="kv-note is-danger">{t.t('st.matrix.writableBug')}</p> : null}
+          {matrixIsWritable() ? <Callout tone="danger">{t.t('st.matrix.writableBug')}</Callout> : null}
         </>
       ) : null}
     </main>

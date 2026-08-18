@@ -12,6 +12,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { residencyAtRisk, type ResidencyRow } from '../../../features/cells/cell';
 
+import { Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -31,9 +32,9 @@ export default async function ResidencyPage() {
     { header: t.t('cells.country'), cell: (r) => r.countryCode },
     { header: t.t('cells.resCells'), cell: (r) => String(r.cells) },
     { header: t.t('cells.resActive'), cell: (r) => String(r.activeCells) },
-    { header: t.t('cells.resLocked'), cell: (r) => r.allResidencyLocked ? t.t('cells.locked') : <span className="kv-status kv-status--warn">{t.t('cells.partial')}</span> },
+    { header: t.t('cells.resLocked'), cell: (r) => r.allResidencyLocked ? t.t('cells.locked') : <StatusPill tone="warning" label={t.t('cells.partial')} /> },
     { header: t.t('cells.placed'), cell: (r) => String(r.placedTenants) },
-    { header: t.t('cells.resPosture'), cell: (r) => residencyAtRisk(r) ? <span className="kv-status kv-status--danger">{t.t('cells.atRisk')}</span> : <span className="kv-status kv-status--ok">{t.t('cells.compliant')}</span> },
+    { header: t.t('cells.resPosture'), cell: (r) => residencyAtRisk(r) ? <StatusPill tone="danger" label={t.t('cells.atRisk')} /> : <StatusPill tone="success" label={t.t('cells.compliant')} /> },
   ];
 
   return (
@@ -41,10 +42,10 @@ export default async function ResidencyPage() {
       <h1>{t.t('cells.residencyTitle')}</h1>
       <p className="kv-muted">{t.t('cells.residencyLead')}</p>
       <nav className="kv-filters" aria-label={t.t('cells.nav')}>
-        <Link href="/cells" className="kv-chip">{t.t('cells.navCells')}</Link>
-        <Link href="/cells/shards" className="kv-chip">{t.t('cells.navShards')}</Link>
-        <Link href="/cells/placements" className="kv-chip">{t.t('cells.navPlacements')}</Link>
-        <Link href="/cells/residency" className="kv-chip is-active" aria-current="true">{t.t('cells.navResidency')}</Link>
+        <Chip as={Link} href="/cells">{t.t('cells.navCells')}</Chip>
+        <Chip as={Link} href="/cells/shards">{t.t('cells.navShards')}</Chip>
+        <Chip as={Link} href="/cells/placements">{t.t('cells.navPlacements')}</Chip>
+        <Chip as={Link} href="/cells/residency" aria-current="true" active>{t.t('cells.navResidency')}</Chip>
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (

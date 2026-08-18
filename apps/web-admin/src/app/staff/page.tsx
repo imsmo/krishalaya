@@ -21,8 +21,9 @@ import Link from 'next/link';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
+import { Button, Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  censusLabelKey, dormancyClass, dormancyKey, fido2ClaimKey, pastLineIsNotSuspended, statusClass, statusKey,
+  censusLabelKey, dormancyTone, dormancyKey, fido2ClaimKey, pastLineIsNotSuspended, statusTone, statusKey,
   suspendKindKey, type Dormancy,
 } from '../../features/staff/operators';
 
@@ -84,16 +85,16 @@ export default async function StaffRosterPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('st.roster.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`st.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`st.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`st.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`st.err.${searchParams.error}`)}</Callout> : null}
 
       {meta ? (
         <>
           {/* **THE REGISTRY SWITCH.** If it is off, this page is a record of a control that is not being consulted, and
               that has to be the loudest thing on the screen. */}
           {!meta.registryEnabled ? (
-            <p className="kv-note is-danger" role="alert">{t.t('st.roster.registryOff')}</p>
+            <Callout tone="danger" live="assertive">{t.t('st.roster.registryOff')}</Callout>
           ) : null}
 
           {/* THE CENSUS, with its basis attached to it rather than in a footnote somebody will read once. */}
@@ -108,37 +109,34 @@ export default async function StaffRosterPage({ searchParams }: {
               <div><dt>{t.t('st.census.restricted')}</dt><dd>{meta.census.restricted}</dd></div>
               <div><dt>{t.t('st.census.seenToday')}</dt><dd>{meta.census.seenToday}</dd></div>
             </dl>
-            <p className="kv-note is-warn">{t.t(censusLabelKey(), { owner: meta.censusCaveatOwner })}</p>
+            <Callout tone="warning">{t.t(censusLabelKey(), { owner: meta.censusCaveatOwner })}</Callout>
             {/* The claim W104 makes that this platform cannot make, and the reason. */}
-            <p className="kv-note is-warn">{t.t(fido2ClaimKey(meta.fido2EnrolmentKnown), { owner: meta.fido2Gap })}</p>
-            <p className="kv-note">
+            <Callout tone="warning">{t.t(fido2ClaimKey(meta.fido2EnrolmentKnown), { owner: meta.fido2Gap })}</Callout>
+            <Callout tone="info">
               {t.t('st.policy.lines', {
                 dormant: String(meta.policy.dormantAfterDays),
                 suspend: String(meta.policy.suspendAfterDays),
               })}
               {!meta.policyFromDatabase ? ` ${t.t('st.policy.fallback')}` : ''}
-            </p>
+            </Callout>
           </section>
 
           <nav className="kv-filters" aria-label={t.t('st.filter.status')}>
-            <Link className={`kv-chip${!status ? ' is-active' : ''}`} href="/staff">{t.t('common.all')}</Link>
+            <Chip as={Link} href="/staff" active={!status}>{t.t('common.all')}</Chip>
             {STATUSES.map((s) => (
-              <Link key={s} className={`kv-chip${status === s ? ' is-active' : ''}`} href={`/staff?status=${s}`}>
+              <Chip as={Link} key={s} href={`/staff?status=${s}`} active={status === s}>
                 {t.t(statusKey(s))}
-              </Link>
+              </Chip>
             ))}
-            <Link className="kv-chip" href="/staff/roles">{t.t('st.nav.roles')}</Link>
-            <Link className="kv-chip" href="/staff/security">{t.t('st.nav.security')}</Link>
-            <Link className="kv-chip" href="/staff/me">{t.t('st.nav.myWork')}</Link>
+            <Chip as={Link} href="/staff/roles">{t.t('st.nav.roles')}</Chip>
+            <Chip as={Link} href="/staff/security">{t.t('st.nav.security')}</Chip>
+            <Chip as={Link} href="/staff/me">{t.t('st.nav.myWork')}</Chip>
           </nav>
 
           {rows.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('st.roster.empty.title')}</h2>
-              {/* An empty roster in a realm that has just started recording is not an empty platform — it is a platform
-                  that has not yet seen a request. Said explicitly, because the opposite reading is the natural one. */}
-              <p>{t.t('st.roster.empty.body')}</p>
-            </div>
+            /* An empty roster in a realm that has just started recording is not an empty platform — it is a platform
+               that has not yet seen a request. Said explicitly, because the opposite reading is the natural one. */
+            <EmptyState title={t.t('st.roster.empty.title')} body={t.t('st.roster.empty.body')} />
           ) : (
             <table className="kv-table">
               <caption className="kv-table__caption">{t.t('st.roster.caption')}</caption>
@@ -166,25 +164,28 @@ export default async function StaffRosterPage({ searchParams }: {
                       <br /><small>{t.t('st.col.rolesSeenHint')}</small>
                     </td>
                     <td>
+                      {/* [QA-FIX 2026-08-15] both branches were hardcoded tone="neutral", discarding the original
+                          `kv-badge is-ok` (hardware key present) / `is-warn` (no second factor) modifiers on this
+                          staff-security surface. */}
                       {o.hasHardwareKeyFactor
-                        ? <span className="kv-badge is-ok">{t.t('st.factor.hwk')}</span>
-                        : <span className="kv-badge is-warn">{t.t('st.factor.none')}</span>}
+                        ? <StatusPill tone="success" icon={false} label={t.t('st.factor.hwk')} />
+                        : <StatusPill tone="warning" icon={false} label={t.t('st.factor.none')} />}
                     </td>
                     <td>{o.restrictionCount === 0 ? '—' : `−${o.restrictionCount}`}</td>
                     <td>
                       {o.lastSeenAt.slice(0, 16).replace('T', ' ')}
                       <br />
-                      <span className={dormancyClass(o.dormancy)}>{t.t(dormancyKey(o.dormancy), {
+                      <StatusPill tone={dormancyTone(o.dormancy)} label={t.t(dormancyKey(o.dormancy), {
                         days: String(o.dormancy?.daysSinceSeen ?? 0),
                         toSuspend: String(o.dormancy?.daysToSuspend ?? 0),
-                      })}</span>
+                      })} />
                       {/* THE SENTENCE THAT KEEPS THIS COLUMN HONEST. */}
                       {pastLineIsNotSuspended(o.dormancy)
                         ? <><br /><small>{t.t('st.dormancy.notYetSuspended')}</small></>
                         : null}
                     </td>
                     <td>
-                      <span className={statusClass(o.status)}>{t.t(statusKey(o.status))}</span>
+                      <StatusPill tone={statusTone(o.status)} label={t.t(statusKey(o.status))} />
                       {o.status === 'suspended' ? (
                         <>
                           <br /><small>{t.t(suspendKindKey(o.suspendKind))}</small>
@@ -202,9 +203,9 @@ export default async function StaffRosterPage({ searchParams }: {
 
           {meta.nextCursor ? (
             <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-              <Link className="kv-btn" href={`/staff?${status ? `status=${status}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
+              <Button as={Link} href={`/staff?${status ? `status=${status}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
                 {t.t('common.next')}
-              </Link>
+              </Button>
             </nav>
           ) : null}
         </>

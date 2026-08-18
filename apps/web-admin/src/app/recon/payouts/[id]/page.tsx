@@ -19,9 +19,10 @@ import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { approveBatchAction, returnBatchAction, preflightBatchAction } from '../actions';
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
   approvalNoticeClass, approvalNoticeKey, bankCell, driftKey, failureKey, formatMinor, laneKey,
-  payableDiffers, payoutStatusClass, phaseClass, phaseKey, preflightClass, preflightKey, preflightVerdict,
+  payableDiffers, payoutStatusTone, phaseTone, phaseKey, preflightTone, preflightKey, preflightVerdict,
   showApprove, showReturn, shortfallKey, type ApprovalKind, type Phase,
 } from '../../../../features/payouts/payouts';
 
@@ -81,16 +82,16 @@ export default async function PayoutBatchPage({ params, searchParams }: {
         <span>{params.id.slice(0, 8)}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`po.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`po.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`po.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`po.err.${searchParams.error}`)}</Callout> : null}
 
       {d ? (
         <>
           <header className="kv-page__head">
             <h1>{t.t('po.batch.title')} {d.id.slice(0, 8)}</h1>
             <p className="kv-page__sub">
-              <span className={phaseClass(d.phase)}>{t.t(phaseKey(d.phase))}</span>{' '}
+              <StatusPill tone={phaseTone(d.phase)} label={t.t(phaseKey(d.phase))} />{' '}
               {d.batchType} · {t.t('po.awaiting.count', { n: String(d.count) })} ·{' '}
               {/* REQUESTED, not "total". The figure under review is the Σ of the payouts inside the batch; `total_minor`
                   is what the run has SETTLED so far and is 0 until it executes. Two different numbers, both shown, each
@@ -101,9 +102,9 @@ export default async function PayoutBatchPage({ params, searchParams }: {
                 ? ` · ${t.t('po.settled')}: ${formatMinor(d.settledMinor)}` : ''}
             </p>
             {d.shortfall ? (
-              <p className="kv-note is-danger" role="alert">
+              <Callout tone="danger" live="assertive">
                 {t.t(shortfallKey(true) ?? 'po.batch.shortfall', { amount: formatMinor(d.shortfallMinor) })}
-              </p>
+              </Callout>
             ) : null}
           </header>
 
@@ -111,22 +112,22 @@ export default async function PayoutBatchPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="po-pf">
             <h2 id="po-pf" className="kv-panel__title">{t.t('po.pf.title')}</h2>
             <p>
-              <span className={preflightClass(verdict)}>{t.t(preflightKey(verdict))}</span>
+              <StatusPill tone={preflightTone(verdict)} label={t.t(preflightKey(verdict))} />
               {d.preflight ? (
                 <> {t.t('po.pf.checked', { n: String(d.preflight.checked), blocked: String(d.preflight.blocked) })}</>
               ) : null}
             </p>
             {d.preflightOverLimit ? (
-              <p className="kv-note is-danger">
+              <Callout tone="danger">
                 {t.t('po.pf.overLimit', { limit: String(d.preflightOverLimit.limit) })}
-              </p>
+              </Callout>
             ) : null}
             {d.preflight && payableDiffers(d.preflight.payableMinor, d.preflight.totalMinor) ? (
-              <p className="kv-note is-danger">
+              <Callout tone="danger">
                 {t.t('po.pf.payable', {
                   payable: formatMinor(d.preflight.payableMinor), total: formatMinor(d.preflight.totalMinor),
                 })}
-              </p>
+              </Callout>
             ) : null}
             {d.preflight && Object.keys(d.preflight.byFailure).length > 0 ? (
               <ul>
@@ -139,16 +140,16 @@ export default async function PayoutBatchPage({ params, searchParams }: {
                 silently redraw a signed decision; one showing only the stored figure would hide a wallet frozen five
                 minutes ago. */}
             {d.recordedPreflightAt ? (
-              <p className="kv-note">{t.t('po.pf.recorded', { at: d.recordedPreflightAt.slice(0, 16).replace('T', ' ') })}</p>
+              <Callout tone="info">{t.t('po.pf.recorded', { at: d.recordedPreflightAt.slice(0, 16).replace('T', ' ') })}</Callout>
             ) : null}
-            {drift ? <p className="kv-note is-danger" role="alert">{t.t(drift)}</p> : null}
+            {drift ? <Callout tone="danger" live="assertive">{t.t(drift)}</Callout> : null}
 
             {/* Re-running the preflight is itself recorded, including a FAILING result — which is the evidence that
                 somebody looked. */}
             {d.status === 'open' ? (
               <form action={preflightBatchAction}>
                 <input type="hidden" name="id" value={d.id} />
-                <button className="kv-btn" type="submit">{t.t('po.pf.run')}</button>
+                <Button type="submit">{t.t('po.pf.run')}</Button>
               </form>
             ) : null}
           </section>
@@ -202,8 +203,8 @@ export default async function PayoutBatchPage({ params, searchParams }: {
                   n: String(d.preflight?.checked ?? d.count),
                   amount: formatMinor(d.preflight?.payableMinor ?? d.requestedMinor),
                 })}</p>
-                <p className="kv-note">{t.t('po.confirm.recorded')}</p>
-                <button className="kv-btn kv-btn--danger" type="submit">{t.t('po.approve')}</button>
+                <Callout tone="info">{t.t('po.confirm.recorded')}</Callout>
+                <Button type="submit" variant="danger">{t.t('po.approve')}</Button>
               </form>
             ) : null}
 
@@ -218,7 +219,7 @@ export default async function PayoutBatchPage({ params, searchParams }: {
                     aria-describedby="po-reason-help" />
                   <p className="kv-field__help" id="po-reason-help">{t.t('po.return.help')}</p>
                 </div>
-                <button className="kv-btn" type="submit">{t.t('po.return')}</button>
+                <Button type="submit">{t.t('po.return')}</Button>
               </form>
             ) : null}
           </section>
@@ -246,13 +247,14 @@ export default async function PayoutBatchPage({ params, searchParams }: {
                   <td>{p.purposeCode ?? '—'}</td>
                   <td>{bankCell(p.bankLast4, p.bankIfsc)}</td>
                   <td>{formatMinor(p.amountMinor)}</td>
-                  <td><span className={payoutStatusClass(p.status)}>{p.status}</span></td>
+                  <td><StatusPill tone={payoutStatusTone(p.status)} label={p.status} /></td>
                   <td>{t.t(laneKey(p.priority))}</td>
+                  {/* [QA-FIX 2026-08-15] was hardcoded tone="neutral" by the Callout/static-literal sweep,
+                      discarding the original `kv-badge is-danger` modifier — preflight failures are a
+                      money-blocking condition and must render danger, not a neutral/grey pill. */}
                   <td>
                     {p.preflightFailures.length === 0 ? '—' : (
-                      <span className="kv-badge is-danger">
-                        {p.preflightFailures.map((f) => t.t(failureKey(f))).join(', ')}
-                      </span>
+                      <StatusPill tone="danger" icon={false} label={p.preflightFailures.map((f) => t.t(failureKey(f))).join(', ')} />
                     )}
                   </td>
                 </tr>
@@ -261,17 +263,14 @@ export default async function PayoutBatchPage({ params, searchParams }: {
           </table>
 
           {d.payouts.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('po.lines.empty.title')}</h2>
-              <p>{t.t('po.lines.empty.body')}</p>
-            </div>
+            <EmptyState variant="empty" title={t.t('po.lines.empty.title')} body={t.t('po.lines.empty.body')} />
           ) : null}
 
           {d.nextCursor ? (
             <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-              <Link className="kv-btn" href={`/recon/payouts/${encodeURIComponent(d.id)}?cursor=${encodeURIComponent(d.nextCursor)}`}>
+              <Button as={Link} href={`/recon/payouts/${encodeURIComponent(d.id)}?cursor=${encodeURIComponent(d.nextCursor)}`}>
                 {t.t('common.next')}
-              </Link>
+              </Button>
             </nav>
           ) : null}
         </>

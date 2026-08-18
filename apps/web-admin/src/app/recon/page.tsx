@@ -12,6 +12,7 @@ import { adminNoticeKey } from '../../features/nav/nav-model';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { ReconOverview } from '../../features/recon/recon';
 
+import { Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -31,7 +32,7 @@ export default async function ReconOverviewPage() {
     { header: t.t('recon.runType'), cell: (r) => r.runType },
     { header: t.t('recon.runStatus'), cell: (r) => r.status },
     { header: t.t('recon.checked'), cell: (r) => r.checkedCount.toLocaleString() },
-    { header: t.t('recon.mismatches'), cell: (r) => <span className={r.mismatchCount > 0 ? 'kv-status kv-status--danger' : ''}>{r.mismatchCount.toLocaleString()}</span> },
+    { header: t.t('recon.mismatches'), cell: (r) => r.mismatchCount > 0 ? <StatusPill tone="danger" label={r.mismatchCount.toLocaleString()} /> : r.mismatchCount.toLocaleString() },
   ];
 
   return (
@@ -39,8 +40,8 @@ export default async function ReconOverviewPage() {
       <h1>{t.t('recon.title')}</h1>
       <p className="kv-muted">{t.t('recon.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('recon.nav')}>
-        <Link href="/recon/runs" className="kv-chip">{t.t('recon.runs')}</Link>
-        <Link href="/recon/investigations" className="kv-chip">{t.t('recon.investigations')}</Link>
+        <Chip as={Link} href="/recon/runs">{t.t('recon.runs')}</Chip>
+        <Chip as={Link} href="/recon/investigations">{t.t('recon.investigations')}</Chip>
       </nav>
 
       {notice || !data ? <p className="kv-error" role="alert">{notice ?? t.t('notice.unavailable')}</p> : (
@@ -53,8 +54,8 @@ export default async function ReconOverviewPage() {
             </div>
             <div className="kv-card kv-stat">
               <div className="kv-stat__label">{t.t('recon.balanced')}</div>
-              <div className={`kv-stat__value ${data.ledgerZeroSum.balanced ? 'kv-status--ok' : 'kv-status--danger'}`}>
-                {data.ledgerZeroSum.balanced ? t.t('recon.balancedYes') : t.t('recon.balancedNo')}
+              <div className="kv-stat__value">
+                <StatusPill tone={data.ledgerZeroSum.balanced ? 'success' : 'danger'} label={data.ledgerZeroSum.balanced ? t.t('recon.balancedYes') : t.t('recon.balancedNo')} />
               </div>
             </div>
           </div>

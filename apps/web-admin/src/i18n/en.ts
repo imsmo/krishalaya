@@ -33,6 +33,9 @@ export const en: Messages = {
   'nav.soonTitle': 'admin-api module not surfaced in this app yet',
   'nav.signOut': 'Sign out',
   'nav.skipToContent': 'Skip to content',
+  // DEV-61 (shell adoption): AdminTopbar's userMenu fallback — adminUserId() returns null when the session
+  // token is missing/unreadable (display-gating only, never an authorization decision — see admin-auth.ts).
+  'nav.operatorUnknown': 'Unknown operator',
 
   // common
   'common.loading': 'Loading…',

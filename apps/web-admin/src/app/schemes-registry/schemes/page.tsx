@@ -14,6 +14,7 @@ import type { SchemeRow } from '../../../features/schemes-registry/scheme';
 import { apps30dText } from '../../../features/schemes-registry/version';
 import { createSchemeAction } from '../actions';
 
+import { Button, Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -46,7 +47,7 @@ export default async function SchemesPage({ searchParams }: { searchParams: { cu
     // W069's "Apps 30d". A cross-tenant AGGREGATE (Law 11) and nothing more — a count, never an applicant. 0 is a
     // real and useful answer here (a scheme nobody applies to), which is why it is a number rather than a state.
     { header: t.t('sr.apps30d'), cell: (r) => apps30dText((r as SchemeRow & { applications30d?: number }).applications30d) },
-    { header: t.t('sr.active'), cell: (r) => <span className={`kv-status ${r.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{r.isActive ? t.t('sr.activeYes') : t.t('sr.activeNo')}</span> },
+    { header: t.t('sr.active'), cell: (r) => <StatusPill tone={r.isActive ? 'success' : 'neutral'} label={r.isActive ? t.t('sr.activeYes') : t.t('sr.activeNo')} /> },
   ];
   const qp = (extra: Record<string, string | undefined>) => {
     const sp = new URLSearchParams();
@@ -66,23 +67,23 @@ export default async function SchemesPage({ searchParams }: { searchParams: { cu
           uniform 403 notice on arrival rather than a hidden link — an absent link on a shared screen makes an operator
           think the feature does not exist, while a 403 tells them what to ask for. */}
       <nav className="kv-filters" aria-label={t.t('sov.lensNav')}>
-        <Link href="/schemes-registry/applications" className="kv-chip">{t.t('sov.navApplications')}</Link>
-        <Link href="/schemes-registry/dbt" className="kv-chip">{t.t('sov.navDbt')}</Link>
-        <Link href="/schemes-registry/performance" className="kv-chip">{t.t('sov.navPerformance')}</Link>
+        <Chip as={Link} href="/schemes-registry/applications">{t.t('sov.navApplications')}</Chip>
+        <Chip as={Link} href="/schemes-registry/dbt">{t.t('sov.navDbt')}</Chip>
+        <Chip as={Link} href="/schemes-registry/performance">{t.t('sov.navPerformance')}</Chip>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('sr.ok.schemeCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`sr.error.${errKey}`)}</p>}
 
       <nav className="kv-filters" aria-label={t.t('sr.filterActive')}>
-        <Link href={qp({ active: undefined, cursor: undefined })} className={`kv-chip${!active ? ' is-active' : ''}`} aria-current={!active ? 'true' : undefined}>{t.t('sr.filterAll')}</Link>
-        <Link href={qp({ active: 'true', cursor: undefined })} className={`kv-chip${active === 'true' ? ' is-active' : ''}`} aria-current={active === 'true' ? 'true' : undefined}>{t.t('sr.activeYes')}</Link>
-        <Link href={qp({ active: 'false', cursor: undefined })} className={`kv-chip${active === 'false' ? ' is-active' : ''}`} aria-current={active === 'false' ? 'true' : undefined}>{t.t('sr.activeNo')}</Link>
+        <Chip as={Link} href={qp({ active: undefined, cursor: undefined })} aria-current={!active ? 'true' : undefined} active={!active}>{t.t('sr.filterAll')}</Chip>
+        <Chip as={Link} href={qp({ active: 'true', cursor: undefined })} aria-current={active === 'true' ? 'true' : undefined} active={active === 'true'}>{t.t('sr.activeYes')}</Chip>
+        <Chip as={Link} href={qp({ active: 'false', cursor: undefined })} aria-current={active === 'false' ? 'true' : undefined} active={active === 'false'}>{t.t('sr.activeNo')}</Chip>
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('sr.schemesEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -118,7 +119,7 @@ export default async function SchemesPage({ searchParams }: { searchParams: { cu
           <input name="sourceUrl" className="kv-input" placeholder="https://…" />
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sr.createSchemeSubmit')}</button>
+          <Button type="submit">{t.t('sr.createSchemeSubmit')}</Button>
         </form>
       </details>
     </section>

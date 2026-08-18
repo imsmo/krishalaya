@@ -29,6 +29,9 @@ import {
 import { stepForDaysLate, nextStepAfter, behindPolicy, type LadderStep } from '../../../features/billing/money-controls';
 import { recordDunningFromQueueAction } from '../actions';
 
+import {
+  Button, Callout, EmptyState, StatusPill, type StatusTone,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -37,7 +40,7 @@ export function generateMetadata(): Metadata {
 
 const OK = new Set(['dunning']);
 const ERR = new Set(['channel', 'outcome', 'note', 'elevation', 'illegal', 'notFound', 'generic']);
-const STATUS_CLASS: Record<string, string> = { issued: '', partially_paid: 'kv-status--warn', overdue: 'kv-status--danger' };
+const STATUS_TONE: Record<string, StatusTone> = { issued: 'neutral', partially_paid: 'warning', overdue: 'danger' };
 
 export default async function DunningQueuePage({ searchParams }: {
   searchParams: { cursor?: string; tier?: string; ok?: string; error?: string };
@@ -84,9 +87,9 @@ export default async function DunningQueuePage({ searchParams }: {
       <h1>{t.t('dun.title')}</h1>
       <p className="kv-field__hint">{t.t('dun.hint')}</p>
       <p className="kv-detail__muted">
-        <Link href="/billing/dunning/policy" className="kv-btn--link">
+        <Button as={Link} href="/billing/dunning/policy" variant="tertiary">
           {hasPolicy ? t.t('dun.policyLink') : t.t('dun.noPolicyLink')}
-        </Link>
+        </Button>
       </p>
 
       {okKey && <p className="kv-success" role="status">{t.t(`dun.ok.${okKey}`)}</p>}
@@ -99,7 +102,7 @@ export default async function DunningQueuePage({ searchParams }: {
             {t.t('dun.knownOwed', { amount: formatMoneyMinor(owed.totalMinor.toString(), cur), n: String(owed.knownRows) })}
           </p>
           {owed.unknownRows > 0 && (
-            <p className="kv-notice" role="note">{t.t('dun.unknownOwed', { n: String(owed.unknownRows) })}</p>
+            <Callout>{t.t('dun.unknownOwed', { n: String(owed.unknownRows) })}</Callout>
           )}
 
           {/* Ageing filter. `All` first, then only the tiers that actually have rows. */}
@@ -114,8 +117,8 @@ export default async function DunningQueuePage({ searchParams }: {
               </Link>
             ))}
           </nav>
-          {chips.length === 0 && !tier && <p className="kv-empty">{t.t('dun.empty')}</p>}
-          {chips.length === 0 && tier && <p className="kv-empty">{t.t('dun.emptyTier')}</p>}
+          {chips.length === 0 && !tier && <EmptyState title={t.t('dun.empty')} />}
+          {chips.length === 0 && tier && <EmptyState title={t.t('dun.emptyTier')} />}
 
           <ul className="kv-list" role="list">
             {rows.map((r) => {
@@ -127,9 +130,9 @@ export default async function DunningQueuePage({ searchParams }: {
                 <li key={r.invoiceId ?? r.invoiceNo} className="kv-card">
                   <p className="kv-card__title">
                     <Link href={`/billing/invoices/${encodeURIComponent(String(r.invoiceId ?? ''))}`}>{r.invoiceNo ?? t.t('common.dash')}</Link>
-                    {' '}<span className={`kv-status ${STATUS_CLASS[status] ?? ''}`}>{t.t(`billing.status.${status}`)}</span>
-                    {needsWriteOffReview(r) && <span className="kv-status kv-status--danger">{t.t('dun.writeOffReview')}</span>}
-                    {isLeaving(r) && <span className="kv-status kv-status--muted">{t.t('dun.leaving')}</span>}
+                    {' '}<StatusPill tone={STATUS_TONE[status] ?? 'neutral'} label={t.t(`billing.status.${status}`)} />
+                    {needsWriteOffReview(r) && <StatusPill tone="danger" label={t.t('dun.writeOffReview')} />}
+                    {isLeaving(r) && <StatusPill tone="neutral" label={t.t('dun.leaving')} />}
                   </p>
 
                   <p className="kv-detail__muted">
@@ -144,7 +147,7 @@ export default async function DunningQueuePage({ searchParams }: {
                   {/* The one number on this row, or the honest absence of it. */}
                   <p>
                     {outstandingUnknown(r)
-                      ? <span className="kv-status kv-status--warn">{t.t('dun.outstandingUnknown')}</span>
+                      ? <StatusPill tone="warning" label={t.t('dun.outstandingUnknown')} />
                       : <strong>{t.t('dun.outstanding', { amount: formatMoneyMinor(String(r.outstandingMinor), r.currency ?? cur) })}</strong>}
                     {' · '}{t.t('dun.invoiceTotal', { amount: formatMoneyMinor(String(r.totalMinor ?? '0'), r.currency ?? cur) })}
                   </p>
@@ -187,10 +190,10 @@ export default async function DunningQueuePage({ searchParams }: {
                       </select>
                       <label htmlFor={`nt-${r.invoiceId}`} className="kv-field__label">{t.t('dun.note')}</label>
                       <input id={`nt-${r.invoiceId}`} name="note" className="kv-input" maxLength={1000} />
-                      <button type="submit" className="kv-btn">{t.t('dun.recordTouch')}</button>
+                      <Button type="submit">{t.t('dun.recordTouch')}</Button>
                     </form>
                   ) : (
-                    <p className="kv-notice" role="note">{t.t(`dun.blocked.${blocked}`)}</p>
+                    <Callout>{t.t(`dun.blocked.${blocked}`)}</Callout>
                   )}
                 </li>
               );
@@ -199,7 +202,7 @@ export default async function DunningQueuePage({ searchParams }: {
 
           {nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={href({ tier, cursor: nextCursor })}>{t.t('common.nextPage')}</Link>
+              <Button as={Link} href={href({ tier, cursor: nextCursor })}>{t.t('common.nextPage')}</Button>
             </p>
           )}
         </>

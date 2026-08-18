@@ -53,6 +53,30 @@ describe('Sidebar', () => {
     expect(html).not.toContain('Krishalaya');
   });
 
+  // DEV-61: a nav item for a route that does not exist yet in the consuming app ("coming soon") must never
+  // render a real, broken `<a href>` — it renders a non-navigating, non-focusable `<span aria-disabled="true">`.
+  it('renders a disabled item as a non-navigating span, never an <a>, and ignores its current/badge', () => {
+    const disabledSections = [
+      {
+        key: 'ops',
+        items: [
+          { key: 'listings', label: 'Listings', href: '/listings', current: true },
+          { key: 'soon', label: 'Not built yet (soon)', href: '/not-built', disabled: true, current: true, badge: { label: '3' } },
+        ],
+      },
+    ];
+    const html = renderToStaticMarkup(
+      <Sidebar brand={{ name: 'Acme' }} sections={disabledSections} navLabel="Primary" />,
+    );
+    expect(html).not.toContain('href="/not-built"');
+    expect(html).toContain('aria-disabled="true"');
+    expect(html).toContain('Not built yet (soon)');
+    // The disabled item's own current/badge must not leak through as a real aria-current or badge markup.
+    const disabledSpanMatch = html.match(/<span aria-disabled="true">.*?<\/span><\/li>/s);
+    expect(disabledSpanMatch).not.toBeNull();
+    expect(disabledSpanMatch![0]).not.toContain('kvw-nav-badge');
+  });
+
   it('renders the realm pill from realmLabel only, never a baked "ADMIN"/"GOV" string', () => {
     const admin = renderToStaticMarkup(
       <Sidebar brand={{ name: 'Acme' }} sections={sections} navLabel="Primary" realm="admin" realmLabel="Env: Admin" />,

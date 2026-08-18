@@ -4,6 +4,16 @@
 // geometry exists anywhere on the platform, only admin_regions CENTROIDS. So the map drawn here is the honest one:
 // centroid marks placed by real coordinates, toned by real intensity, with districts that HAVE no centroid listed
 // beside it rather than dropped. Boundary polygons are GAP-BACKEND, named in the tracker, not faked in SVG.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): `gapClass` now returns a `StatusTone` (packages/ui's own
+// vocabulary) instead of a raw `kv-status kv-status--X` string — disposition (c), same pattern as
+// `ai-governance.ts`'s and `map-approval.ts`'s DEV-60 conversions. The call site renders
+// `<StatusPill tone={...} label={...} />`. Unlike those two files' `kv-badge` findings, `kv-status--danger` and
+// `kv-status--warn` DO have real CSS rules in globals.css (colored text) — so this is not a dead-CSS fix, but the
+// founder's standing ruling that `kv-status` renders as a PILL (not inline coloured text) is still a genuine,
+// disclosed visual-shape change for this cell.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export type Built<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -55,6 +65,6 @@ export function weekLabel(isoWeek: string, startIso: string, endIso: string): st
 
 /** Gap cells tone like risk, covered cells stay quiet — there is deliberately no green: supply meeting demand is
  *  the normal state of a marketplace, not an achievement to celebrate into a chip. */
-export function gapClass(pct: number): string {
-  return pct >= 50 ? 'kv-status kv-status--danger' : 'kv-status kv-status--warn';
+export function gapTone(pct: number): StatusTone {
+  return pct >= 50 ? 'danger' : 'warning';
 }

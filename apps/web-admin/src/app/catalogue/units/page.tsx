@@ -19,6 +19,9 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { createUnitAction, setUnitActiveAction, upsertConversionAction } from '../actions';
 import {
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
   UNIT_CLASSES, factorForDisplay, MIN_REASON, type UnitRow, type ConversionRow,
 } from '../../../features/catalogue/eav';
 
@@ -61,7 +64,7 @@ export default async function UnitsPage(
       <h1>{t.t('unit.title')}</h1>
       <p className="kv-muted">{t.t('unit.lead')}</p>
       {/* first, before any control that could change one */}
-      <p className="kv-notice" role="note">{view?.regionalNote ?? t.t('unit.regionalWarn')}</p>
+      <Callout>{view?.regionalNote ?? t.t('unit.regionalWarn')}</Callout>
 
       {okKey && <p className="kv-success" role="status">{t.t(`unit.ok.${okKey}`)}</p>}
       {errKey && (
@@ -90,18 +93,17 @@ export default async function UnitsPage(
       )}
 
       <nav className="kv-filters" aria-label={t.t('unit.class')}>
-        <Link href={href()} className={`kv-chip${!unitClass ? ' is-active' : ''}`} aria-current={!unitClass ? 'true' : undefined}>
+        <Chip as={Link} href={href()} aria-current={!unitClass ? 'true' : undefined} active={!unitClass}>
           {t.t('attr.filterAllTypes')}
-        </Link>
+        </Chip>
         {UNIT_CLASSES.map((c) => (
-          <Link key={c} href={href(c)} className={`kv-chip${unitClass === c ? ' is-active' : ''}`}
-            aria-current={unitClass === c ? 'true' : undefined}>{t.t(`unit.class.${c}`)}</Link>
+          <Chip as={Link} key={c} href={href(c)} aria-current={unitClass === c ? 'true' : undefined} active={unitClass === c}>{t.t(`unit.class.${c}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
-          {units.length === 0 ? <p className="kv-empty">{t.t('unit.none')}</p> : (
+          {units.length === 0 ? <EmptyState title={t.t('unit.none')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('unit.code')}</th>
@@ -118,9 +120,7 @@ export default async function UnitsPage(
                     <td>{t.t(`unit.class.${u.unitClass}`)}</td>
                     <td>{Number(u.usedByAttrs ?? 0) > 0 ? String(u.usedByAttrs) : t.t('common.dash')}</td>
                     <td>
-                      <span className={`kv-status ${u.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>
-                        {t.t(u.isActive ? 'cat.active' : 'eav.inactive')}
-                      </span>
+                      <StatusPill tone={u.isActive ? 'success' : 'neutral'} label={t.t(u.isActive ? 'cat.active' : 'eav.inactive')} />
                     </td>
                   </tr>
                 ))}
@@ -129,7 +129,7 @@ export default async function UnitsPage(
           )}
 
           <h2>{t.t('unit.convTitle')}</h2>
-          {conversions.length === 0 ? <p className="kv-empty">{t.t('unit.convNone')}</p> : (
+          {conversions.length === 0 ? <EmptyState title={t.t('unit.convNone')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('unit.from')}</th>
@@ -168,7 +168,7 @@ export default async function UnitsPage(
           <label htmlFor="u-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="u-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
           <p className="kv-field__hint">{t.t('eav.reasonHint')}</p>
-          <button type="submit" className="kv-btn">{t.t('unit.create')}</button>
+          <Button type="submit">{t.t('unit.create')}</Button>
         </form>
       </details>
 
@@ -199,7 +199,7 @@ export default async function UnitsPage(
           <p className="kv-field__hint">{t.t('unit.factorHint')}</p>
           <label htmlFor="c-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="c-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('unit.convSave')}</button>
+          <Button type="submit" variant="danger">{t.t('unit.convSave')}</Button>
         </form>
       </details>
 
@@ -222,7 +222,7 @@ export default async function UnitsPage(
             </select>
             <label htmlFor="ua-reason" className="kv-field__label">{t.t('eav.reason')}</label>
             <input id="ua-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-            <button type="submit" className="kv-btn kv-btn--muted">{t.t('unit.state')}</button>
+            <Button type="submit" variant="secondary">{t.t('unit.state')}</Button>
           </form>
         </details>
       )}

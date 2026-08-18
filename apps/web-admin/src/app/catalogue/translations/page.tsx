@@ -19,7 +19,10 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { createTranslationAction, requestRunAction } from '../actions';
 import {
-  TRANSLATABLE_ENTITIES, coverageClass, pctText, totalPending, MIN_REASON, MAX_TEXT,
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  TRANSLATABLE_ENTITIES, coverageTone, pctText, totalPending, MIN_REASON, MAX_TEXT,
   type CoverageRow, type LanguageRow, type RunRow,
 } from '../../../features/catalogue/translations';
 
@@ -61,7 +64,7 @@ export default async function TranslationsPage(
       <p className="kv-backlink"><Link href="/catalogue">{t.t('cat.back')}</Link></p>
       <h1>{t.t('tr.title')}</h1>
       <p className="kv-muted">{t.t('tr.lead')}</p>
-      <p className="kv-notice" role="note">{t.t('tr.law6')}</p>
+      <Callout>{t.t('tr.law6')}</Callout>
 
       {okKey && (
         <p className="kv-success" role="status">
@@ -77,12 +80,12 @@ export default async function TranslationsPage(
       )}
 
       <nav className="kv-filters" aria-label={t.t('cat.nav')}>
-        <Link href="/catalogue" className="kv-chip">{t.t('cat.navTypes')}</Link>
-        <Link href="/catalogue/categories" className="kv-chip">{t.t('cat.navCategories')}</Link>
-        <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
-        <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
-        <Link href="/catalogue/translations" className="kv-chip is-active" aria-current="true">{t.t('cat.navTranslations')}</Link>
-        <Link href="/catalogue/crops" className="kv-chip">{t.t('cat.navCrops')}</Link>
+        <Chip as={Link} href="/catalogue">{t.t('cat.navTypes')}</Chip>
+        <Chip as={Link} href="/catalogue/categories">{t.t('cat.navCategories')}</Chip>
+        <Chip as={Link} href="/catalogue/attributes">{t.t('cat.navAttributes')}</Chip>
+        <Chip as={Link} href="/catalogue/units">{t.t('cat.navUnits')}</Chip>
+        <Chip as={Link} href="/catalogue/translations" aria-current="true" active>{t.t('cat.navTranslations')}</Chip>
+        <Chip as={Link} href="/catalogue/crops">{t.t('cat.navCrops')}</Chip>
       </nav>
 
       <p className="kv-field__hint">
@@ -95,7 +98,7 @@ export default async function TranslationsPage(
         <>
           <h2>{t.t('tr.coverageTitle')}</h2>
           {/* the sentence that stops the two numbers being confused */}
-          <p className="kv-notice" role="note">{view?.basis ?? t.t('tr.coverageBasis')}</p>
+          <Callout>{view?.basis ?? t.t('tr.coverageBasis')}</Callout>
 
           <table className="kv-table">
             <thead><tr>
@@ -112,8 +115,8 @@ export default async function TranslationsPage(
                     <td key={c.languageCode}>
                       {/* "no keys", never 0% — the question does not apply */}
                       {c.pct === null
-                        ? <span className="kv-status kv-status--muted" title={t.t('tr.notApplicableHint')}>{t.t('tr.notApplicable')}</span>
-                        : <span className={`kv-status ${coverageClass(c.pct)}`}>{pctText(c.pct)}</span>}
+                        ? <StatusPill tone="neutral" label={t.t('tr.notApplicable')} title={t.t('tr.notApplicableHint')} />
+                        : <StatusPill tone={coverageTone(c.pct)} label={pctText(c.pct) ?? ''} />}
                     </td>
                   ))}
                 </tr>
@@ -123,9 +126,9 @@ export default async function TranslationsPage(
 
           {/* ---------------- drafts, kept well away from the percentages ---------------- */}
           <h2>{t.t('tr.pendingTitle')}</h2>
-          {pendingTotal === 0 ? <p className="kv-empty">{t.t('tr.pendingNone')}</p> : (
+          {pendingTotal === 0 ? <EmptyState title={t.t('tr.pendingNone')} /> : (
             <>
-              <p className="kv-notice" role="note">{t.t('tr.pendingTotal', { n: String(pendingTotal) })}</p>
+              <Callout>{t.t('tr.pendingTotal', { n: String(pendingTotal) })}</Callout>
               <p className="kv-field__hint">
                 {pending.map((p) => `${p.languageCode}: ${p.pending}`).join(' · ')}
               </p>
@@ -169,14 +172,14 @@ export default async function TranslationsPage(
           <textarea id="t-text" name="text" className="kv-input" rows={2} required maxLength={MAX_TEXT} />
           <label htmlFor="t-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="t-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('tr.create')}</button>
+          <Button type="submit">{t.t('tr.create')}</Button>
         </form>
       </details>
 
       {/* ---------------- machine runs: recorded, and honest that nothing runs ---------------- */}
       <h2>{t.t('tr.runsTitle')}</h2>
-      <p className="kv-notice" role="note">{t.t('tr.runsLead')}</p>
-      {runs.length === 0 ? <p className="kv-empty">{t.t('tr.runsNone')}</p> : (
+      <Callout>{t.t('tr.runsLead')}</Callout>
+      {runs.length === 0 ? <EmptyState title={t.t('tr.runsNone')} /> : (
         <table className="kv-table">
           <thead><tr>
             <th scope="col">{t.t('tr.when')}</th>
@@ -198,9 +201,8 @@ export default async function TranslationsPage(
                   ? <span className="kv-detail__muted">{t.t('tr.runNotRun')}</span>
                   : String(r.producedCount)}</td>
                 <td>
-                  <span className={`kv-status ${r.status === 'completed' ? 'kv-status--ok' : r.status === 'failed' ? 'kv-status--danger' : 'kv-status--warn'}`}>
-                    {t.t(`tr.runStatus.${r.status}`)}
-                  </span>
+                  <StatusPill tone={r.status === 'completed' ? 'success' : r.status === 'failed' ? 'danger' : 'warning'}
+                    label={t.t(`tr.runStatus.${r.status}`)} />
                   {r.detail ? <> <span className="kv-detail__muted">{r.detail}</span></> : null}
                 </td>
               </tr>
@@ -230,7 +232,7 @@ export default async function TranslationsPage(
           </fieldset>
           <label htmlFor="r-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="r-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-          <button type="submit" className="kv-btn kv-btn--muted">{t.t('tr.runRequest')}</button>
+          <Button type="submit" variant="secondary">{t.t('tr.runRequest')}</Button>
         </form>
       </details>
     </section>

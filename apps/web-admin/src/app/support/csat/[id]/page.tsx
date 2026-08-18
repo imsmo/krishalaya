@@ -25,6 +25,7 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { reviewCsatAction, createCoachingAction } from '../../actions';
+import { Button, Callout, EmptyState, StatusPill, type StatusTone } from '@krishalaya/ui';
 import {
   CSAT_VERDICTS, COACHING_KINDS, verdictSupportsCoaching, MIN_FINDING, MIN_RATIONALE,
   type CsatRow, type ReviewRow, type CoachingRow,
@@ -46,7 +47,7 @@ interface ResponseView {
   agentCoaching: CoachingRow[];
 }
 
-const SCORE_CLASS = (n: number) => (n <= 2 ? 'kv-status--danger' : n === 3 ? 'kv-status--warn' : 'kv-status--ok');
+const scoreTone = (n: number): StatusTone => (n <= 2 ? 'danger' : n === 3 ? 'warning' : 'success');
 
 export default async function CsatReviewPage(
   { params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string } },
@@ -102,7 +103,7 @@ export default async function CsatReviewPage(
       <h2>{t.t('rev.ratingHeading')}</h2>
       <dl className="kv-detail">
         <dt>{t.t('rev.score')}</dt>
-        <dd><span className={`kv-status ${SCORE_CLASS(r.score)}`}>{r.score}/5</span></dd>
+        <dd><StatusPill tone={scoreTone(r.score)} label={`${r.score}/5`} /></dd>
         <dt>{t.t('rev.ticket')}</dt>
         <dd>
           <Link href={`/support/tickets/${encodeURIComponent(r.ticketId)}`}>{r.ticketNo ?? r.ticketId.slice(0, 8)}</Link>
@@ -113,7 +114,7 @@ export default async function CsatReviewPage(
         <dd>
           {r.ratedAt}
           {/* marked on the row, not only in a note at the top */}
-          {r.ratedAtIsEstimated && <> <span className="kv-status kv-status--warn">{t.t('rev.estimated')}</span></>}
+          {r.ratedAtIsEstimated && <> <StatusPill tone="warning" label={t.t('rev.estimated')} /></>}
         </dd>
         <dt>{t.t('rev.statusWhenRated')}</dt><dd>{r.statusWhenRated ?? t.t('common.dash')}</dd>
         <dt>{t.t('rev.statusNow')}</dt><dd>{r.ticketStatusNow ?? t.t('common.dash')}</dd>
@@ -130,7 +131,7 @@ export default async function CsatReviewPage(
       {/* ---------------- every rating this ticket has had ---------------- */}
       <h2>{t.t('rev.historyTitle')}</h2>
       <p className="kv-field__hint">{t.t('rev.historyHint')}</p>
-      {history.length <= 1 ? <p className="kv-empty">{t.t('rev.historyOne')}</p> : (
+      {history.length <= 1 ? <EmptyState title={t.t('rev.historyOne')} /> : (
         <table className="kv-table">
           <thead><tr>
             <th scope="col">{t.t('rev.score')}</th>
@@ -141,10 +142,10 @@ export default async function CsatReviewPage(
           <tbody>
             {history.map((h) => (
               <tr key={h.id ?? h.ratedAt}>
-                <td><span className={`kv-status ${SCORE_CLASS(h.score)}`}>{h.score}/5</span></td>
+                <td><StatusPill tone={scoreTone(h.score)} label={`${h.score}/5`} /></td>
                 <td>
                   {h.ratedAt}
-                  {h.ratedAtIsEstimated && <> <span className="kv-status kv-status--warn">{t.t('rev.estimated')}</span></>}
+                  {h.ratedAtIsEstimated && <> <StatusPill tone="warning" label={t.t('rev.estimated')} /></>}
                 </td>
                 <td>{(h as any).ticketStatus ?? t.t('common.dash')}</td>
                 <td>{h.comment ?? <span className="kv-detail__muted">{t.t('rev.noWords')}</span>}</td>
@@ -156,7 +157,7 @@ export default async function CsatReviewPage(
 
       {/* ---------------- verdicts already filed ---------------- */}
       <h2>{t.t('rev.reviewsTitle')}</h2>
-      {reviews.length === 0 ? <p className="kv-empty">{t.t('rev.reviewsNone')}</p> : (
+      {reviews.length === 0 ? <EmptyState title={t.t('rev.reviewsNone')} /> : (
         <table className="kv-table">
           <thead><tr>
             <th scope="col">{t.t('rev.verdict')}</th>
@@ -173,7 +174,7 @@ export default async function CsatReviewPage(
                 <td>{rv.reviewerAdminId}</td>
                 <td>{rv.reviewedAt}</td>
                 <td>{rv.coachingId
-                  ? <span className="kv-status kv-status--ok">{t.t('rev.coachingLinked')}</span>
+                  ? <StatusPill tone="success" label={t.t('rev.coachingLinked')} />
                   : t.t('common.dash')}</td>
               </tr>
             ))}
@@ -194,7 +195,7 @@ export default async function CsatReviewPage(
           </select>
           <label htmlFor="finding" className="kv-field__label">{t.t('rev.finding')}</label>
           <textarea id="finding" name="finding" className="kv-input" rows={3} required minLength={MIN_FINDING} maxLength={4000} />
-          <button type="submit" className="kv-btn">{t.t('rev.file')}</button>
+          <Button type="submit">{t.t('rev.file')}</Button>
         </form>
       </details>
 
@@ -203,7 +204,7 @@ export default async function CsatReviewPage(
         coachingCoherent ? (
           <details className="kv-card kv-limit-form">
             <summary className="kv-card__title">{t.t('coach.newTitle')}</summary>
-            <p className="kv-notice" role="note">{t.t('rev.coachingAvailable')}</p>
+            <Callout>{t.t('rev.coachingAvailable')}</Callout>
             <p className="kv-field__hint">{t.t('coach.newHint')}</p>
             <form action={createCoachingAction} className="kv-form">
               <input type="hidden" name="returnTo" value={`/support/csat/${params.id}`} />
@@ -221,12 +222,12 @@ export default async function CsatReviewPage(
               <input id="scheduledFor" name="scheduledFor" type="datetime-local" className="kv-input" />
               <label htmlFor="rationale" className="kv-field__label">{t.t('coach.rationale')}</label>
               <textarea id="rationale" name="rationale" className="kv-input" rows={3} required minLength={MIN_RATIONALE} maxLength={4000} />
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('coach.create')}</button>
+              <Button type="submit" variant="danger">{t.t('coach.create')}</Button>
             </form>
           </details>
         ) : (
           // NOT a disabled button: the control is absent and the reason is stated
-          <p className="kv-notice" role="note">{t.t('rev.coachingUnavailable')}</p>
+          <Callout>{t.t('rev.coachingUnavailable')}</Callout>
         )
       )}
 
@@ -242,7 +243,7 @@ export default async function CsatReviewPage(
           <input type="hidden" name="csatResponseId" value={params.id} />
           <label htmlFor="dismiss-rationale" className="kv-field__label">{t.t('coach.rationale')}</label>
           <textarea id="dismiss-rationale" name="rationale" className="kv-input" rows={3} required minLength={MIN_RATIONALE} maxLength={4000} />
-          <button type="submit" className="kv-btn kv-btn--muted">{t.t('coach.dismiss')}</button>
+          <Button type="submit" variant="secondary">{t.t('coach.dismiss')}</Button>
         </form>
       </details>
 

@@ -2,6 +2,17 @@
 //
 // Every function maps a server field to a class name or an i18n KEY. No text here: web-admin is EN-only today and will
 // not always be, and a string returned from a formatter is a string no translator will ever find.
+//
+// DEV-60 (UI Port Program batch 3, Part 1 continuation): the 6 `kv-badge`-returning helpers below
+// (proposalClass/actionClass/headroomClass/rateClass/countCheckClass/trafficClass) now return a `StatusTone`
+// instead of a raw `kv-badge is-X` string — disposition (c), same pattern as `ai-governance.ts`'s DEV-60 Part-1
+// conversion. Call sites render `<StatusPill tone={...} label={...} />`. DISCLOSED VISUAL CHANGE: web-admin's own
+// `.kv-badge` CSS has no `is-ok`/`is-warn`/`is-danger`/`is-info` rules, so these badges have rendered uniform grey
+// regardless of tone — this swap makes them render real canon colour for the first time. `kv-note`-returning
+// helpers in this file (approvalNoticeClass/defaultNotActiveClass/zeroWeightClass) are OUT OF SCOPE — `kv-note`
+// never matched the 98/29 population's own grep and is a Callout-shaped population addressed under Part 2.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ------------------------------------------------------------------------------------------------ */
 /* THE PROPOSAL                                                                                      */
@@ -9,17 +20,17 @@
 
 export type ProposalStatus = 'open' | 'applied' | 'rejected' | 'stale';
 
-export function proposalClass(s: string): string {
+export function proposalTone(s: string): StatusTone {
   switch (s) {
     // OPEN IS A WARNING, not a neutral note. On this screen an unsigned proposal is a routing change somebody is waiting
     // on — and one of them could be "drain the default cell", which stops a country's onboarding.
-    case 'open': return 'kv-badge is-warn';
-    case 'applied': return 'kv-badge is-ok';
-    case 'rejected': return 'kv-badge';
+    case 'open': return 'warning';
+    case 'applied': return 'success';
+    case 'rejected': return 'neutral';
     // STALE IS DANGER rather than neutral: it means somebody wrote a change against a world that has moved, and the
     // interesting question is what moved.
-    case 'stale': return 'kv-badge is-danger';
-    default: return 'kv-badge';
+    case 'stale': return 'danger';
+    default: return 'neutral';
   }
 }
 
@@ -120,10 +131,10 @@ export function entityKey(e: string): string {
 
 /** `moved` is drawn as consequential: it is a tenant's live data relocating between physical stacks. `placed` and
  *  `removed` are ordinary traffic. */
-export function actionClass(a: string): string {
-  if (a === 'moved') return 'kv-badge is-warn';
-  if (a === 'status_changed') return 'kv-badge is-info';
-  return 'kv-badge';
+export function actionTone(a: string): StatusTone {
+  if (a === 'moved') return 'warning';
+  if (a === 'status_changed') return 'info';
+  return 'neutral';
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -134,14 +145,14 @@ export type Headroom = { known: true; percent: number; placed: number; capacity:
 
 /** The headroom bar's class. Thresholds mirror the server's plan trigger so one screen cannot call comfortable what
  *  another flags for a scale plan. */
-export function headroomClass(h: Headroom, triggerPercentUsed: number): string {
+export function headroomTone(h: Headroom, triggerPercentUsed: number): StatusTone {
   // UNCAPPED IS NOT "PLENTY". An uncapped cell has no headroom to report and no guard protecting it, which is a different
   // condition from a roomy one — drawing it green would say the opposite of what it means.
-  if (!h.known) return 'kv-badge';
+  if (!h.known) return 'neutral';
   const used = 100 - h.percent;
-  if (used >= 90) return 'kv-badge is-danger';
-  if (used >= triggerPercentUsed) return 'kv-badge is-warn';
-  return 'kv-badge is-ok';
+  if (used >= 90) return 'danger';
+  if (used >= triggerPercentUsed) return 'warning';
+  return 'success';
 }
 
 export function headroomText(h: Headroom): { text: string; unknownKey: string | null } {
@@ -161,10 +172,10 @@ export function rateText(r: Rate): { text: string; unknownKey: string | null } {
 
 /** A SHRINKING cell is drawn as a note rather than as good news: tenants leaving is a churn signal, and a capacity screen
  *  that painted it green would be the wrong screen to learn it from. */
-export function rateClass(r: Rate): string {
-  if (!r.known) return 'kv-badge';
-  if (r.perWeek < 0) return 'kv-badge is-warn';
-  return 'kv-badge';
+export function rateTone(r: Rate): StatusTone {
+  if (!r.known) return 'neutral';
+  if (r.perWeek < 0) return 'warning';
+  return 'neutral';
 }
 
 export type TimeToFull = { known: true; weeks: number } | { known: false; reason: string };
@@ -201,10 +212,10 @@ export type CountCheck = { kind: 'match' | 'over' | 'under'; stored?: number; de
 /** The reconciliation claim. NULL means NEVER CHECKED, which is the state of every node on the platform today — and it is
  *  drawn as a warning rather than as neutral, on the ADMIN-6 rule that an unverified figure says so rather than implying
  *  verification. */
-export function countCheckClass(c: CountCheck): string {
-  if (c === null) return 'kv-badge is-warn';
-  if (c.kind === 'match') return 'kv-badge is-ok';
-  return c.urgent ? 'kv-badge is-danger' : 'kv-badge is-warn';
+export function countCheckTone(c: CountCheck): StatusTone {
+  if (c === null) return 'warning';
+  if (c.kind === 'match') return 'success';
+  return c.urgent ? 'danger' : 'warning';
 }
 
 export function countCheckKey(c: CountCheck): string {
@@ -260,15 +271,15 @@ export function shardTraffic(status: string, weight: number): ShardTraffic {
 
 export function trafficKey(t: ShardTraffic): string { return `cm.traffic.${t}`; }
 
-export function trafficClass(t: ShardTraffic): string {
+export function trafficTone(t: ShardTraffic): StatusTone {
   switch (t) {
-    case 'accepting': return 'kv-badge is-ok';
-    case 'draining_by_weight': return 'kv-badge is-warn';
-    case 'draining_by_status': return 'kv-badge is-warn';
-    case 'frozen': return 'kv-badge is-info';
-    case 'retired': return 'kv-badge';
+    case 'accepting': return 'success';
+    case 'draining_by_weight': return 'warning';
+    case 'draining_by_status': return 'warning';
+    case 'frozen': return 'info';
+    case 'retired': return 'neutral';
     // UNKNOWN IS DANGER on a routing table. A shard whose traffic state cannot be read is a shard nobody can say is safe
     // to place onto.
-    default: return 'kv-badge is-danger';
+    default: return 'danger';
   }
 }

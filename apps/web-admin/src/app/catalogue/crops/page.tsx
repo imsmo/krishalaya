@@ -18,6 +18,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { SEASONS, seasonsText, seasonsUnknown, mandiClass, mandiKey, type CropRow } from '../../../features/catalogue/crops';
 
+import { Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -46,30 +47,30 @@ export default async function CropsPage({ searchParams }: { searchParams: { seas
       <h1>{t.t('crop.title')}</h1>
       <p className="kv-muted">{t.t('crop.lead')}</p>
       {/* the schema truth and the two derivations, said once */}
-      <p className="kv-notice" role="note">{view?.basis ?? t.t('crop.basis')}</p>
+      <Callout>{view?.basis ?? t.t('crop.basis')}</Callout>
 
       <nav className="kv-filters" aria-label={t.t('cat.nav')}>
-        <Link href="/catalogue" className="kv-chip">{t.t('cat.navTypes')}</Link>
-        <Link href="/catalogue/categories" className="kv-chip">{t.t('cat.navCategories')}</Link>
-        <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
-        <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
-        <Link href="/catalogue/translations" className="kv-chip">{t.t('cat.navTranslations')}</Link>
-        <Link href="/catalogue/crops" className="kv-chip is-active" aria-current="true">{t.t('cat.navCrops')}</Link>
+        <Chip as={Link} href="/catalogue">{t.t('cat.navTypes')}</Chip>
+        <Chip as={Link} href="/catalogue/categories">{t.t('cat.navCategories')}</Chip>
+        <Chip as={Link} href="/catalogue/attributes">{t.t('cat.navAttributes')}</Chip>
+        <Chip as={Link} href="/catalogue/units">{t.t('cat.navUnits')}</Chip>
+        <Chip as={Link} href="/catalogue/translations">{t.t('cat.navTranslations')}</Chip>
+        <Chip as={Link} href="/catalogue/crops" aria-current="true" active>{t.t('cat.navCrops')}</Chip>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('crop.seasons')}>
-        <Link href="/catalogue/crops" className={`kv-chip${!season ? ' is-active' : ''}`}>{t.t('attr.filterAllTypes')}</Link>
+        <Chip as={Link} href="/catalogue/crops" active={!season}>{t.t('attr.filterAllTypes')}</Chip>
         {SEASONS.map((s) => (
-          <Link key={s} href={`/catalogue/crops?season=${s}`} className={`kv-chip${season === s ? ' is-active' : ''}`}>
+          <Chip as={Link} key={s} href={`/catalogue/crops?season=${s}`} active={season === s}>
             {t.t(`crop.season.${s}`)}
-          </Link>
+          </Chip>
         ))}
       </nav>
 
       <p className="kv-field__hint"><Link href="/catalogue/crop-calendars">{t.t('cal.title')}</Link></p>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : rows.length === 0 ? (
-        <p className="kv-empty">{t.t('crop.none')}</p>
+        <EmptyState title={t.t('crop.none')} />
       ) : (
         <table className="kv-table">
           <thead><tr>
@@ -95,7 +96,7 @@ export default async function CropsPage({ searchParams }: { searchParams: { seas
                   <td>
                     {/* UNKNOWN, not a dash — a dash could read as "none" */}
                     {unknown || !label
-                      ? <span className="kv-status kv-status--muted" title={t.t('crop.seasonsUnknownHint')}>{t.t('crop.seasonsUnknown')}</span>
+                      ? <StatusPill tone="neutral" label={t.t('crop.seasonsUnknown')} title={t.t('crop.seasonsUnknownHint')} />
                       : label.split(' · ').map((s) => t.t(`crop.season.${s}`)).join(' · ')}
                   </td>
                   <td>

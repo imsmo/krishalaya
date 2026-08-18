@@ -12,8 +12,9 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { categoryKey, providerHealthKey, type ProviderHealthRow } from '../../../features/providers/provider';
 import {
-  circuitClass, circuitKey, fallbackClass, fallbackKey, fleetKey, metricKey, type CircuitCard,
+  circuitTone, circuitKey, fallbackTone, fallbackKey, fleetKey, metricKey, type CircuitCard,
 } from '../../../features/integrations/api-oversight';
+import { Callout, EmptyState, StatusPill, type StatusTone } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('providers.healthTitle'), robots: { index: false, follow: false } };
 }
 
-const HEALTH_CLASS: Record<string, string> = { active: 'kv-status--ok', degraded: 'kv-status--danger', disabled: 'kv-status--muted' };
+const HEALTH_TONE: Record<string, StatusTone> = { active: 'success', degraded: 'danger', disabled: 'neutral' };
 
 export default async function ProviderHealthPage() {
   requireAdmin();
@@ -50,7 +51,7 @@ export default async function ProviderHealthPage() {
   const cols: Column<ProviderHealthRow>[] = [
     { header: t.t('providers.code'), cell: (r) => <Link href={`/providers/${encodeURIComponent(r.code)}`}>{r.code}</Link> },
     { header: t.t('providers.category'), cell: (r) => t.t(`providers.cat.${categoryKey(r.category)}`) },
-    { header: t.t('providers.health'), cell: (r) => { const k = providerHealthKey(r); return <span className={`kv-status ${HEALTH_CLASS[k]}`}>{t.t(`providers.healthState.${k}`)}</span>; } },
+    { header: t.t('providers.health'), cell: (r) => { const k = providerHealthKey(r); return <StatusPill tone={HEALTH_TONE[k]} label={t.t(`providers.healthState.${k}`)} />; } },
     { header: t.t('providers.configuredTenants'), cell: (r) => r.health.configuredTenants.toLocaleString() },
     { header: t.t('providers.activeTenants'), cell: (r) => r.health.activeTenants.toLocaleString() },
   ];
@@ -77,23 +78,20 @@ export default async function ProviderHealthPage() {
         <h2 id="ap11-runtime" className="kv-panel__title">{t.t('ap11.providerHealth')}</h2>
         <p className="kv-muted">{t.t('ap11.ph.sub')}</p>
 
-        {runtimeNotice ? <p className="kv-note is-danger" role="alert">{t.t(runtimeNotice)}</p> : null}
+        {runtimeNotice ? <Callout tone="danger" live="assertive">{t.t(runtimeNotice)}</Callout> : null}
 
         {runtimeMeta ? (
           <>
             {/* The sentence that keeps the Circuit column honest. */}
-            <p className="kv-note is-warn">{t.t(runtimeMeta.circuitIsPerInstance)}</p>
+            <Callout tone="warning">{t.t(runtimeMeta.circuitIsPerInstance)}</Callout>
             {/* And the two columns the canon draws that have no source anywhere on this platform. */}
-            <p className="kv-note">{t.t('ap11.ph.noMetrics', { owner: runtimeMeta.latencyOwner })}</p>
-            <p className="kv-note">{t.t('ap11.ph.noProbe', { owner: runtimeMeta.probeOwner })}</p>
+            <Callout tone="info">{t.t('ap11.ph.noMetrics', { owner: runtimeMeta.latencyOwner })}</Callout>
+            <Callout tone="info">{t.t('ap11.ph.noProbe', { owner: runtimeMeta.probeOwner })}</Callout>
           </>
         ) : null}
 
         {circuits.length === 0 && !runtimeNotice ? (
-          <div className="kv-empty">
-            <h3>{t.t('ap11.ph.emptyTitle')}</h3>
-            <p>{t.t('ap11.ph.emptyBody')}</p>
-          </div>
+          <EmptyState variant="empty" title={t.t('ap11.ph.emptyTitle')} body={t.t('ap11.ph.emptyBody')} />
         ) : (
           <table className="kv-table">
             <caption className="kv-table__caption">{t.t('ap11.ph.caption')}</caption>
@@ -113,14 +111,12 @@ export default async function ProviderHealthPage() {
                   <td className="kv-mono">{c.dep}<br /><small>{c.displayName ?? ''}</small></td>
                   <td>{c.category ?? '—'}</td>
                   <td>
-                    <span className={circuitClass(c.fleetState)}>{t.t(circuitKey(c.fleetState))}</span>
+                    <StatusPill tone={circuitTone(c.fleetState)} label={t.t(circuitKey(c.fleetState))} />
                     {/* HOW MANY INSTANCES SAID SO — the true shape of a distributed circuit. */}
                     <br /><small>{t.t(fleetKey(c), { open: String(c.instancesOpen), total: String(c.instancesReporting) })}</small>
                   </td>
                   <td>
-                    <span className={fallbackClass(c)}>
-                      {t.t(fallbackKey(c), { strategy: c.fallbackStrategy ?? '' })}
-                    </span>
+                    <StatusPill tone={fallbackTone(c)} label={t.t(fallbackKey(c), { strategy: c.fallbackStrategy ?? '' })} />
                   </td>
                   {/* ABSENT, WITH THE REASON — never approximated from the failure count this wave does have. */}
                   <td>{t.t(metricKey(c.p95LatencyMs), { n: String(c.p95LatencyMs ?? 0) })}</td>

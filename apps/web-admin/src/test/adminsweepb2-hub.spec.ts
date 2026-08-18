@@ -1,5 +1,5 @@
 // apps/web-admin/src/test/adminsweepb2-hub.spec.ts · W050 console logic (PC-56 ADMIN-SWEEP-b2).
-import { slaText, slaClass, channelChip, presenceAction, takeNextBlockedKey, buildPresence } from '../features/support/hub';
+import { slaText, slaTone, channelChip, presenceAction, takeNextBlockedKey, buildPresence } from '../features/support/hub';
 import { en } from '../i18n/en';
 
 describe('ADMIN-SWEEP-b2 · hub console logic', () => {
@@ -8,9 +8,11 @@ describe('ADMIN-SWEEP-b2 · hub console logic', () => {
     expect(slaText({ kind: 'due', inMinutes: 130 })).toEqual({ key: 'due', amount: '2h' });
     expect(slaText({ kind: 'breached', overMinutes: 12 })).toEqual({ key: 'over', amount: '12m' });
     expect(slaText({ kind: 'unset' })).toEqual({ key: 'unset', amount: '' });
-    expect(slaClass({ kind: 'breached', overMinutes: 1 })).toContain('err');
-    expect(slaClass({ kind: 'due', inMinutes: 30 })).toContain('warn');
-    expect(slaClass({ kind: 'unset' })).not.toContain('ok');   // no clock ≠ on time
+    // DEV-60: breached maps to 'danger' — a real fix of a dead-CSS bug: the prior 'kv-status--err' literal had no
+    // rule anywhere in globals.css, so a breached SLA rendered with NO colour at all until this conversion.
+    expect(slaTone({ kind: 'breached', overMinutes: 1 })).toBe('danger');
+    expect(slaTone({ kind: 'due', inMinutes: 30 })).toBe('warning');
+    expect(slaTone({ kind: 'unset' })).toBe('neutral');   // no clock ≠ on time
   });
   it('a non-carried channel chip is always marked declared — the platform did not carry that message', () => {
     expect(channelChip({ channel: 'app', standing: 'carried' })).toEqual({ label: 'app', declared: false });

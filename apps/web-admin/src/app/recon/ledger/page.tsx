@@ -16,6 +16,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { referenceText, txnTypeCell, magnitudeText, windowTooWide, MAX_LIVE_WINDOW_DAYS, type TxnRow } from '../../../features/ledger/ledger';
 
+import { Button, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -61,8 +62,8 @@ export default async function LedgerExplorerPage({ searchParams }: {
       <p className="kv-muted">{t.t('lg.lead')}</p>
 
       <nav className="kv-filters">
-        <Link href="/recon/ledger" className="kv-chip">{t.t('lg.today')}</Link>
-        <Link href="/recon/accounts" className="kv-chip">{t.t('lg.navAccounts')}</Link>
+        <Chip as={Link} href="/recon/ledger">{t.t('lg.today')}</Chip>
+        <Chip as={Link} href="/recon/accounts">{t.t('lg.navAccounts')}</Chip>
       </nav>
 
       {/* The query is not SENT when the window is too wide: the point of the rule is to avoid the partition scan, so
@@ -84,7 +85,7 @@ export default async function LedgerExplorerPage({ searchParams }: {
         </select>
         <label htmlFor="accountCode" className="kv-field__label">{t.t('lg.accountCode')}</label>
         <input id="accountCode" name="accountCode" className="kv-input kv-input--sm" defaultValue={f.accountCode ?? ''} />
-        <button type="submit" className="kv-btn">{t.t('lg.apply')}</button>
+        <Button type="submit">{t.t('lg.apply')}</Button>
       </form>
 
       <table className="kv-table">
@@ -102,7 +103,7 @@ export default async function LedgerExplorerPage({ searchParams }: {
                 <td><Link href={`/recon/ledger/${r.id}`}><code>{r.id.slice(0, 8)}…</code></Link></td>
                 {/* An unresolvable type is a data fault, not a transaction without a type. A blank would read as the
                     second. */}
-                <td>{ty.known ? ty.text : <span className="kv-status kv-status--danger">{t.t('lg.typeUnresolved')}</span>}</td>
+                <td>{ty.known ? ty.text : <StatusPill tone="danger" label={t.t('lg.typeUnresolved')} />}</td>
                 <td>{referenceText(r)}</td>
                 <td>{r.legCount ?? t.t('common.dash')}</td>
                 <td>{magnitudeText(r)}</td>
@@ -112,7 +113,7 @@ export default async function LedgerExplorerPage({ searchParams }: {
           })}
         </tbody>
       </table>
-      {rows.length === 0 && !notice && !tooWide && <p className="kv-empty">{t.t('lg.empty')}</p>}
+      {rows.length === 0 && !notice && !tooWide && <EmptyState variant="empty" title={t.t('lg.empty')} />}
       {meta?.nextCursor && <p className="kv-pager"><Link href={`/recon/ledger?${q({ cursor: meta.nextCursor })}`}>{t.t('common.next')}</Link></p>}
 
       <p className="kv-detail__muted">{t.t('lg.typesAreData')}</p>

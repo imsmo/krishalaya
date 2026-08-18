@@ -17,9 +17,10 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import {
-  tileValue, retentionKey, retentionClass, attentionClass, allQuiet, unreadSources, certificationHeld,
-  certificationClass, type Tile, type RetentionTile, type AttentionItem, type SourcesRead, type Certification,
+  tileValue, retentionKey, retentionTone, attentionTone, allQuiet, unreadSources, certificationHeld,
+  certificationTone, type Tile, type RetentionTile, type AttentionItem, type SourcesRead, type Certification,
 } from '../../../features/compliance/breach-notification';
+import { Callout, StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,9 +89,8 @@ export default async function CompliancePosturePage() {
         <div className="kv-card kv-stat">
           <div className="kv-stat__label">{t.t('pos.retention')}</div>
           <div className="kv-stat__value">
-            <span className={retentionClass(p.tiles.retention)}>
-              {p.tiles.retention.kind === 'coverage' ? `${p.tiles.retention.runnable}/${p.tiles.retention.total}` : t.t('pos.unavailable')}
-            </span>
+            <StatusPill tone={retentionTone(p.tiles.retention)}
+              label={p.tiles.retention.kind === 'coverage' ? `${p.tiles.retention.runnable}/${p.tiles.retention.total}` : t.t('pos.unavailable')} />
           </div>
           {/* Not a tick. The gap is named, with the actions that have no pipeline. */}
           <div className="kv-detail__muted">
@@ -106,13 +106,13 @@ export default async function CompliancePosturePage() {
       {/* THE CLAIM THIS PAGE IS MOST LIKELY TO GET WRONG. An empty list is only "all quiet" when everything was read. */}
       {quiet && <p className="kv-success" role="status">{t.t('pos.allQuiet')}</p>}
       {!quiet && p.attention.length === 0 && (
-        <p className="kv-notice">{t.t('pos.quietButUnread', { sources: unread.map((s) => t.t(`pos.source.${s}`)).join(', ') })}</p>
+        <Callout tone="warning">{t.t('pos.quietButUnread', { sources: unread.map((s) => t.t(`pos.source.${s}`)).join(', ') })}</Callout>
       )}
       {p.attention.length > 0 && (
         <ul className="kv-list">
           {p.attention.map((a) => (
             <li key={a.id}>
-              <span className={attentionClass(a.severity)}>{t.t(`pos.sev.${a.severity}`)}</span>{' '}
+              <StatusPill tone={attentionTone(a.severity)} label={t.t(`pos.sev.${a.severity}`)} />{' '}
               {t.t(`pos.msg.${a.messageKey}`, a.params ?? {})}
               {a.href && <> — <Link href={a.href}>{t.t('pos.open')}</Link></>}
             </li>
@@ -122,12 +122,12 @@ export default async function CompliancePosturePage() {
 
       <h2>{t.t('pos.certHeading')}</h2>
       {/* W048: "No certification is claimed before it is held — the public trust page mirrors this list verbatim." */}
-      <p className="kv-notice">{t.t('pos.certRule')}</p>
+      <Callout tone="warning">{t.t('pos.certRule')}</Callout>
       <ul className="kv-list">
         {p.certifications.map((c) => (
           <li key={c.code}>
             <strong>{c.name}</strong>{' '}
-            <span className={certificationClass(c)}>{t.t(certificationHeld(c) ? 'pos.cert.held' : `pos.cert.${c.state}`)}</span>
+            <StatusPill tone={certificationTone(c)} label={t.t(certificationHeld(c) ? 'pos.cert.held' : `pos.cert.${c.state}`)} />
             <br /><span className="kv-detail__muted">{c.note}</span>
           </li>
         ))}

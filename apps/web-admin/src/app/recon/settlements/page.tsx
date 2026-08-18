@@ -17,8 +17,9 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { requestCycleAction } from '../payouts/actions';
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  balanceClass, balanceKey, basisKey, formatMinor, outcomeClass, outcomeKey, pdfClass, pdfKey,
+  balanceTone, balanceKey, basisKey, formatMinor, outcomeTone, outcomeKey, pdfTone, pdfKey,
   tileText, type RunOutcomeKind, type Tile,
 } from '../../../features/payouts/payouts';
 
@@ -94,9 +95,9 @@ export default async function SettlementQueuePage({ searchParams }: {
         <p className="kv-page__sub">{t.t('po.stl.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`po.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`po.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`po.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`po.err.${searchParams.error}`)}</Callout> : null}
 
       {/* ---------------- THE FOUR TILES ---------------- */}
       {tiles ? (
@@ -115,7 +116,7 @@ export default async function SettlementQueuePage({ searchParams }: {
                   <dt>{t.t(key)}</dt>
                   <dd>{v.value}</dd>
                   {/* THE UNKNOWN IS WORDS, NOT ₹0.00. This is the whole point of the tile type. */}
-                  {v.unknownKey ? <dd className="kv-note is-warn">{t.t(v.unknownKey)}</dd> : null}
+                  {v.unknownKey ? <dd><Callout tone="warning">{t.t(v.unknownKey)}</Callout></dd> : null}
                 </div>
               );
             })}
@@ -123,7 +124,7 @@ export default async function SettlementQueuePage({ searchParams }: {
           {/* Which basis the totals used. A total that silently switches between "this run's aggregates" and "everything
               filed for this period" is worse than one that says which it is — and every statement generated before 0114
               has no run to describe it. */}
-          {basis ? <p className="kv-note">{t.t(basis)}</p> : null}
+          {basis ? <Callout tone="info">{t.t(basis)}</Callout> : null}
         </section>
       ) : null}
 
@@ -132,7 +133,7 @@ export default async function SettlementQueuePage({ searchParams }: {
         <section className="kv-panel" aria-labelledby="po-cycle">
           <h2 id="po-cycle" className="kv-panel__title">{t.t('po.cycle.title')}</h2>
           <p>
-            <span className={outcomeClass(outcome.kind)}>{t.t(outcomeKey(outcome.kind))}</span>{' '}
+            <StatusPill tone={outcomeTone(outcome.kind)} label={t.t(outcomeKey(outcome.kind))} />{' '}
             {meta.run.periodStart} → {meta.run.periodEnd} ·{' '}
             {t.t('po.cycle.counts', {
               scanned: String(meta.run.sellersScanned),
@@ -144,20 +145,20 @@ export default async function SettlementQueuePage({ searchParams }: {
               rather than "completed with failures", because folding it into `completed` would hide the one outcome that
               needs a second look. */}
           {outcome.kind === 'partial' || outcome.kind === 'failed' ? (
-            <p className="kv-note is-danger">{t.t('po.cycle.retry')}</p>
+            <Callout tone="danger">{t.t('po.cycle.retry')}</Callout>
           ) : null}
           {/* ABANDONED is derived from the ABSENCE of an ending, because a crashed process cannot write its own epitaph.
               It is drawn as seriously as a failure: nobody was told, and the statements tomorrow's payouts are built
-              from are missing. */}
+              from are missing. role="alert" preserved exactly — see packages/ui gap note above. */}
           {outcome.kind === 'abandoned' ? (
-            <p className="kv-note is-danger" role="alert">{t.t('po.cycle.abandoned')}</p>
+            <Callout tone="danger" live="assertive">{t.t('po.cycle.abandoned')}</Callout>
           ) : null}
           {meta.run.failureDetail ? <p className="kv-pre">{meta.run.failureDetail}</p> : null}
-          <p className="kv-note">
+          <Callout tone="info">
             {meta.run.triggeredByAdminId
               ? t.t('po.cycle.byOperator', { who: meta.run.triggeredByAdminId.slice(0, 8) })
               : t.t('po.cycle.byCadence')}
-          </p>
+          </Callout>
         </section>
       ) : null}
 
@@ -167,7 +168,7 @@ export default async function SettlementQueuePage({ searchParams }: {
         {/* The button RECORDS A REQUEST. Statement generation belongs to the settlement worker, which owns the
             tenant-scoped unit of work, the per-aggregate zero-sum validation and the line linking that makes a run
             idempotent — reimplementing any of it here would be a second settlement engine in a different service. */}
-        <p className="kv-note">{t.t('po.run.note')}</p>
+        <Callout tone="info">{t.t('po.run.note')}</Callout>
         <form action={requestCycleAction}>
           <div className="kv-field">
             <label className="kv-field__label" htmlFor="po-from">{t.t('po.run.from')}</label>
@@ -177,7 +178,7 @@ export default async function SettlementQueuePage({ searchParams }: {
             <label className="kv-field__label" htmlFor="po-to">{t.t('po.run.to')}</label>
             <input className="kv-input" id="po-to" name="periodEnd" type="date" required />
           </div>
-          <button className="kv-btn" type="submit">{t.t('po.run.submit')}</button>
+          <Button type="submit">{t.t('po.run.submit')}</Button>
         </form>
       </section>
 
@@ -191,17 +192,18 @@ export default async function SettlementQueuePage({ searchParams }: {
           <label className="kv-field__label" htmlFor="po-tenant">{t.t('po.filter.tenant')}</label>
           <input className="kv-input" id="po-tenant" name="tenantId" defaultValue={tenantId ?? ''} />
         </div>
-        <button className="kv-btn" type="submit">{t.t('common.apply')}</button>
+        <Button type="submit">{t.t('common.apply')}</Button>
       </form>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('po.stl.empty.title')}</h2>
-          {/* The two empty cases are DIFFERENT SENTENCES. "No statements this cycle" means no delivered orders; "no
-              cycle has run" means the scheduler did not fire. Before `settlement_runs` existed the screen could not
-              tell them apart, which is why the tile above says which. */}
-          <p>{meta?.run ? t.t('po.stl.empty.body') : t.t('po.stl.empty.noRun')}</p>
-        </div>
+        // The two empty cases are DIFFERENT SENTENCES. "No statements this cycle" means no delivered orders; "no
+        // cycle has run" means the scheduler did not fire. Before `settlement_runs` existed the screen could not
+        // tell them apart, which is why the tile above says which.
+        <EmptyState
+          variant="empty"
+          title={t.t('po.stl.empty.title')}
+          body={meta?.run ? t.t('po.stl.empty.body') : t.t('po.stl.empty.noRun')}
+        />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">
@@ -233,8 +235,8 @@ export default async function SettlementQueuePage({ searchParams }: {
                 {/* RECOMPUTED PER ROW, EVEN IN THE LIST. A statement whose four numbers do not add up is a corrupted
                     financial document, and it should be visible here rather than only on whichever screen somebody
                     happens to open. */}
-                <td><span className={balanceClass(s.balanced)}>{t.t(balanceKey(s.balanced))}</span></td>
-                <td><span className={pdfClass(s.pdf.kind)}>{t.t(pdfKey(s.pdf.kind))}</span></td>
+                <td><StatusPill tone={balanceTone(s.balanced)} label={t.t(balanceKey(s.balanced))} /></td>
+                <td><StatusPill tone={pdfTone(s.pdf.kind)} label={t.t(pdfKey(s.pdf.kind))} /></td>
               </tr>
             ))}
           </tbody>
@@ -243,7 +245,7 @@ export default async function SettlementQueuePage({ searchParams }: {
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Link>
+          <Button as={Link} href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Button>
         </nav>
       ) : null}
     </main>

@@ -15,13 +15,14 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { flagState, canEnable, canDisable, canSetRollout, canSetTargeting, canKill, canUnlock, type FlagRow, type FlagChange } from '../../../features/flags/flag';
 import { enableFlagAction, disableFlagAction, killFlagAction, unlockFlagAction, setRolloutAction, setTargetingAction } from '../actions';
 
+import { Button, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('flags.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const STATE_CLASS: Record<string, string> = { on: 'kv-status--ok', off: 'kv-status--muted', locked: 'kv-status--danger' };
+const STATE_TONE: Record<string, StatusTone> = { on: 'success', off: 'neutral', locked: 'danger' };
 const OK = new Set(['created', 'enable', 'disable', 'kill', 'unlock', 'rollout', 'targeting']);
 const ERR = new Set(['reason', 'rolloutPct', 'tenantIds', 'plans', 'countries', 'elevation', 'locked', 'notFound', 'generic']);
 
@@ -75,7 +76,7 @@ export default async function FlagDetailPage({ params, searchParams }: { params:
       {errKey && <p className="kv-error" role="alert">{t.t(`flags.error.${errKey}`)}</p>}
 
       <dl className="kv-facts">
-        <div className="kv-facts__row"><dt>{t.t('flags.colState')}</dt><dd><span className={`kv-status ${STATE_CLASS[s]}`}>{t.t(`flags.state.${s}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('flags.colState')}</dt><dd><StatusPill tone={STATE_TONE[s]} label={t.t(`flags.state.${s}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('flags.colRollout')}</dt><dd>{flag.rolloutPct}%</dd></div>
         <div className="kv-facts__row"><dt>{t.t('flags.targeting')}</dt><dd>{targetingSummary}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('flags.fieldDescription')}</dt><dd>{flag.description || t.t('common.dash')}</dd></div>
@@ -99,7 +100,7 @@ export default async function FlagDetailPage({ params, searchParams }: { params:
             <input id="pct" name="rolloutPct" className="kv-input" inputMode="numeric" required defaultValue={String(flag.rolloutPct)} />
             <label htmlFor="rolloutReason" className="kv-field__label">{t.t('flags.reason')}</label>
             <input id="rolloutReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('flags.setRolloutSubmit')}</button>
+            <Button type="submit">{t.t('flags.setRolloutSubmit')}</Button>
           </form>
         </details>
       )}
@@ -118,7 +119,7 @@ export default async function FlagDetailPage({ params, searchParams }: { params:
             <input id="countries" name="countries" className="kv-input" placeholder="IN, US" />
             <label htmlFor="targetReason" className="kv-field__label">{t.t('flags.reason')}</label>
             <input id="targetReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('flags.setTargetingSubmit')}</button>
+            <Button type="submit">{t.t('flags.setTargetingSubmit')}</Button>
           </form>
         </details>
       )}
@@ -137,7 +138,7 @@ function ReasonForm({ id, action, verb, reasonLabel, danger }: {
       <input type="hidden" name="key" value={id} />
       <label className="kv-field__label">{reasonLabel}</label>
       <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-      <button type="submit" className={`kv-btn${danger ? ' kv-btn--danger' : ''}`}>{verb}</button>
+      <Button type="submit" variant={danger ? 'danger' : 'primary'}>{verb}</Button>
     </form>
   );
 }

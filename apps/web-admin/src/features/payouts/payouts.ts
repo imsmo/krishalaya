@@ -1,5 +1,15 @@
 // apps/web-admin/src/features/payouts/payouts.ts · W062/W063/W066/W067/W442 view logic, PURE (PC-56 ADMIN-6b).
 import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { StatusTone } from '@krishalaya/ui';
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B — MONEY-ADJACENT, hand-audited): the 6 `kv-badge`-returning
+// helpers below (phaseClass/preflightClass/payoutStatusClass/outcomeClass/pdfClass/balanceClass) now return a
+// `StatusTone` — disposition (c), domain logic stays, output becomes a semantic token consumed by
+// `<StatusPill tone={...} label={...} />`. DISCLOSED VISUAL CHANGE: `.kv-badge`'s `is-ok`/`is-warn`/`is-danger`/
+// `is-info` modifiers have no matching CSS rules in this app (same dead-CSS finding as `ai-governance.ts`'s
+// DEV-60 conversion), so these payout/settlement badges have rendered uniform grey — this swap makes them render
+// real canon colour for the first time. Every conditional branch below is byte-equivalent to the class string it
+// replaces; this is the payout batch/settlement path, so no branch was reordered or reworded.
 //
 // Every function here is a pure mapping from a server field to a class name or an i18n KEY. No text lives in this file:
 // web-admin is EN-only today and will not always be, and a string returned from a formatter is a string no translator
@@ -51,15 +61,15 @@ export type Phase = 'awaiting_checker' | 'approved' | 'returned' | 'executing' |
 
 /** The badge class. `awaiting_checker` is a WARNING and not a neutral note, deliberately: on this screen a batch nobody
  *  has signed is money sitting still, and farmers are waiting for it. Grey would make the queue restful. */
-export function phaseClass(p: Phase): string {
+export function phaseTone(p: Phase): StatusTone {
   switch (p) {
-    case 'awaiting_checker': return 'kv-badge is-warn';
-    case 'approved': return 'kv-badge is-info';
-    case 'executing': return 'kv-badge is-info';
-    case 'executed': return 'kv-badge is-ok';
-    case 'returned': return 'kv-badge';
-    case 'failed': return 'kv-badge is-danger';
-    default: return 'kv-badge';
+    case 'awaiting_checker': return 'warning';
+    case 'approved': return 'info';
+    case 'executing': return 'info';
+    case 'executed': return 'success';
+    case 'returned': return 'neutral';
+    case 'failed': return 'danger';
+    default: return 'neutral';
   }
 }
 
@@ -151,13 +161,13 @@ export function preflightVerdict(
   return pf.pass ? 'pass' : 'blocked';
 }
 
-export function preflightClass(v: PreflightVerdict): string {
+export function preflightTone(v: PreflightVerdict): StatusTone {
   switch (v) {
-    case 'pass': return 'kv-badge is-ok';
-    case 'blocked': return 'kv-badge is-danger';
+    case 'pass': return 'success';
+    case 'blocked': return 'danger';
     // NOT RUN AND OVER LIMIT ARE BOTH DANGER, not neutral. Each one means the screen cannot vouch for the set below it,
     // and a grey badge over 214 unchecked payouts is exactly the reassurance this wave exists to withdraw.
-    default: return 'kv-badge is-danger';
+    default: return 'danger';
   }
 }
 
@@ -193,15 +203,15 @@ export function laneKey(priority: number): string {
   return 'po.lane.settlement';
 }
 
-export function payoutStatusClass(s: string): string {
+export function payoutStatusTone(s: string): StatusTone {
   switch (s) {
-    case 'success': return 'kv-badge is-ok';
-    case 'queued': return 'kv-badge';
-    case 'processing': return 'kv-badge is-info';
-    case 'failed': return 'kv-badge is-danger';
-    case 'reversed': return 'kv-badge is-warn';
-    case 'cancelled': return 'kv-badge';
-    default: return 'kv-badge';
+    case 'success': return 'success';
+    case 'queued': return 'neutral';
+    case 'processing': return 'info';
+    case 'failed': return 'danger';
+    case 'reversed': return 'warning';
+    case 'cancelled': return 'neutral';
+    default: return 'neutral';
   }
 }
 
@@ -228,16 +238,16 @@ export function tileText(t: Tile): { value: string; unknownKey: string | null } 
 
 export type RunOutcomeKind = 'running' | 'clean' | 'partial' | 'failed' | 'abandoned' | 'unknown';
 
-export function outcomeClass(k: RunOutcomeKind): string {
+export function outcomeTone(k: RunOutcomeKind): StatusTone {
   switch (k) {
-    case 'clean': return 'kv-badge is-ok';
-    case 'running': return 'kv-badge is-info';
-    case 'partial': return 'kv-badge is-warn';
+    case 'clean': return 'success';
+    case 'running': return 'info';
+    case 'partial': return 'warning';
     // ABANDONED IS AS SERIOUS AS FAILED and is drawn the same. A cycle that stopped without saying so is worse than one
     // that reported a failure: nobody was told, and the statements the next day's payouts are built from are missing.
-    case 'failed': return 'kv-badge is-danger';
-    case 'abandoned': return 'kv-badge is-danger';
-    default: return 'kv-badge';
+    case 'failed': return 'danger';
+    case 'abandoned': return 'danger';
+    default: return 'neutral';
   }
 }
 
@@ -255,15 +265,15 @@ export function basisKey(basis: string): string | null {
 
 export type PdfKind = 'not_generated' | 'never_hashed' | 'anchored' | 'mismatch';
 
-export function pdfClass(k: PdfKind): string {
+export function pdfTone(k: PdfKind): StatusTone {
   switch (k) {
-    case 'anchored': return 'kv-badge is-ok';
-    case 'mismatch': return 'kv-badge is-danger';
+    case 'anchored': return 'success';
+    case 'mismatch': return 'danger';
     // NEVER HASHED IS A WARNING, NOT AN OK. W442 calls the PDF "hash-anchored to the zero-sum ledger" and until 0114
     // there was no column to anchor it in, so this is the state almost every existing statement is in — and the screen
     // says so rather than printing "signed" over nothing, which is what it did before.
-    case 'never_hashed': return 'kv-badge is-warn';
-    default: return 'kv-badge';
+    case 'never_hashed': return 'warning';
+    default: return 'neutral';
   }
 }
 
@@ -280,8 +290,8 @@ export function shortHash(h: string | null | undefined): string {
 
 /** The statement's own arithmetic. FALSE means the document contradicts itself, which W442's whole claim ("the
  *  arithmetic below is the ledger's, to the rupee") rests on not happening. */
-export function balanceClass(balanced: boolean): string {
-  return balanced ? 'kv-badge is-ok' : 'kv-badge is-danger';
+export function balanceTone(balanced: boolean): StatusTone {
+  return balanced ? 'success' : 'danger';
 }
 
 export function balanceKey(balanced: boolean): string {

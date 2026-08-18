@@ -15,13 +15,14 @@ import {
 } from '../../features/impersonation/grant';
 import { startGrantAction } from './actions';
 
+import { Button, Callout, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('imp.title'), robots: { index: false, follow: false } };
 }
 
-const ST_CLASS: Record<string, string> = { active: 'kv-status--danger', ended: 'kv-status--muted', expired: 'kv-status--muted', revoked: 'kv-status--warn' };
+const ST_TONE: Record<string, StatusTone> = { active: 'danger', ended: 'neutral', expired: 'neutral', revoked: 'warning' };
 const ERR = new Set(['targetTenantId', 'targetUserId', 'reason', 'ttlSec', 'scope', 'disabled', 'privileged', 'targetNotFound', 'activeExists', 'self', 'elevation', 'conflict', 'notFound', 'generic']);
 
 export default async function ImpersonationPage({ searchParams }: { searchParams: { cursor?: string; status?: string; ok?: string; error?: string } }) {
@@ -49,7 +50,7 @@ export default async function ImpersonationPage({ searchParams }: { searchParams
     { header: t.t('imp.grant'), cell: (r) => <Link href={`/impersonation/grants/${encodeURIComponent(r.id)}`}>{r.id}</Link> },
     { header: t.t('imp.operator'), cell: (r) => r.adminUserId },
     { header: t.t('imp.targetUser'), cell: (r) => r.targetUserId },
-    { header: t.t('imp.status'), cell: (r) => { const s = grantStatusKey(r.status); return <span className={`kv-status ${ST_CLASS[s]}`}>{t.t(`imp.state.${s}`)}</span>; } },
+    { header: t.t('imp.status'), cell: (r) => { const s = grantStatusKey(r.status); return <StatusPill tone={ST_TONE[s]} label={t.t(`imp.state.${s}`)} />; } },
     {
       header: t.t('imp.expiresAt'),
       cell: (r) => {
@@ -57,7 +58,7 @@ export default async function ImpersonationPage({ searchParams }: { searchParams
         // all before this wave, so this row could have been showing "active" for hours — and holding the
         // one-active-per-(operator, target) slot the whole time.
         if (isElapsedButActive(r.status, r.expiresAt ?? null, nowMs)) {
-          return <span className="kv-status kv-status--warn">{t.t('imp.elapsedNotReconciled')}</span>;
+          return <StatusPill tone="warning" label={t.t('imp.elapsedNotReconciled')} />;
         }
         const left = r.status === 'active' ? minutesLeft(r.expiresAt ?? null, nowMs) : null;
         return (
@@ -79,25 +80,25 @@ export default async function ImpersonationPage({ searchParams }: { searchParams
       {/* PC-56 ADMIN-9b · WHAT IS ACTUALLY ENFORCED, at the top, because every other claim on this page depends on it.
           Until this wave `apps/api` had no verifier: the token was inert, "read_only" was a stored string, the action
           log was the operator self-reporting, and the target tenant was told nothing. */}
-      <p className="kv-note is-ok">{t.t('imp.enforce.full')}</p>
-      <p className="kv-note">{t.t('imp.transparency')}</p>
+      <Callout tone="success">{t.t('imp.enforce.full')}</Callout>
+      <Callout tone="info">{t.t('imp.transparency')}</Callout>
       {staleActive > 0 && (
-        <p className="kv-note is-warn" role="status">{t.t('imp.staleActive', { n: String(staleActive) })}</p>
+        <Callout tone="warning" live="polite">{t.t('imp.staleActive', { n: String(staleActive) })}</Callout>
       )}
       {okMinted && <p className="kv-success" role="status">{t.t('imp.ok.minted')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`imp.error.${errKey}`)}</p>}
 
       <nav className="kv-filters" aria-label={t.t('imp.filterStatus')}>
-        <Link href={filterHref()} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('imp.filterAll')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('imp.filterAll')}</Chip>
         {GRANT_STATUSES.map((s) => (
-          <Link key={s} href={filterHref(s)} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`imp.state.${s}`)}</Link>
+          <Chip as={Link} key={s} href={filterHref(s)} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`imp.state.${s}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('imp.empty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/impersonation?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/impersonation?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -115,7 +116,7 @@ export default async function ImpersonationPage({ searchParams }: { searchParams
           <input id="scope" name="scope" className="kv-input" value="read_only" readOnly aria-readonly="true" />
           <label htmlFor="mintReason" className="kv-field__label">{t.t('imp.reason')}</label>
           <input id="mintReason" name="reason" className="kv-input" required minLength={8} maxLength={1000} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('imp.mintSubmit')}</button>
+          <Button type="submit" variant="danger">{t.t('imp.mintSubmit')}</Button>
         </form>
       </details>
     </section>

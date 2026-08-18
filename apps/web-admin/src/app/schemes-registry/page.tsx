@@ -10,12 +10,13 @@ import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
 import { AUTHORITY_LEVELS, isAuthorityLevel, authorityLevelKey, type AuthorityRow } from '../../features/schemes-registry/scheme';
-import { portalState, portalClass } from '../../features/schemes-registry/version';
+import { portalState, portalTone } from '../../features/schemes-registry/version';
 
 /** The list row carries the two columns W072 shows that the table could not previously supply. */
 type AuthorityListRow = AuthorityRow & { activeSchemes?: number; portalState?: string; portal?: { providerCode?: string | null } | null };
 import { createAuthorityAction } from './actions';
 
+import { Button, Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -48,7 +49,7 @@ export default async function AuthoritiesPage({ searchParams }: { searchParams: 
     // DELTA-018. The canon's value here is "connected"; ours is "portal mapped", because a mapping records WHICH
     // portal an authority files through and nothing in this monorepo has ever called one. "manual" is NOT a failure
     // colour — a district collectorate with no API is the normal case, not somebody's oversight.
-    { header: t.t('sv.portal'), cell: (r) => <span className={portalClass(portalState(r))}>{t.t(`sv.portalState.${portalState(r)}`)}</span> },
+    { header: t.t('sv.portal'), cell: (r) => <StatusPill tone={portalTone(portalState(r))} label={t.t(`sv.portalState.${portalState(r)}`)} /> },
   ];
   const filterHref = (l?: string) => `/schemes-registry${l ? `?level=${encodeURIComponent(l)}` : ''}`;
 
@@ -58,29 +59,29 @@ export default async function AuthoritiesPage({ searchParams }: { searchParams: 
       <p className="kv-muted">{t.t('sr.lead')}</p>
       <p className="kv-detail__muted">{t.t('sv.portalNeverSynced')}</p>
       <nav className="kv-filters" aria-label={t.t('sr.nav')}>
-        <Link href="/schemes-registry" className="kv-chip is-active" aria-current="true">{t.t('sr.navAuthorities')}</Link>
-        <Link href="/schemes-registry/schemes" className="kv-chip">{t.t('sr.navSchemes')}</Link>
+        <Chip as={Link} href="/schemes-registry" aria-current="true" active>{t.t('sr.navAuthorities')}</Chip>
+        <Chip as={Link} href="/schemes-registry/schemes">{t.t('sr.navSchemes')}</Chip>
         {/* ADMIN-SWEEP-c1: W077 — linked the day it stopped 404ing. */}
-        <Link href="/schemes-registry/portal-sync" className="kv-chip">{t.t('sr.portalSyncNav')}</Link>
-        <Link href="/schemes-registry/applications" className="kv-chip">{t.t('sov.navApplications')}</Link>
-        <Link href="/schemes-registry/dbt" className="kv-chip">{t.t('sov.navDbt')}</Link>
-        <Link href="/schemes-registry/performance" className="kv-chip">{t.t('sov.navPerformance')}</Link>
-        <Link href="/schemes-registry/calendar" className="kv-chip">{t.t('sr.navCalendar')}</Link>
+        <Chip as={Link} href="/schemes-registry/portal-sync">{t.t('sr.portalSyncNav')}</Chip>
+        <Chip as={Link} href="/schemes-registry/applications">{t.t('sov.navApplications')}</Chip>
+        <Chip as={Link} href="/schemes-registry/dbt">{t.t('sov.navDbt')}</Chip>
+        <Chip as={Link} href="/schemes-registry/performance">{t.t('sov.navPerformance')}</Chip>
+        <Chip as={Link} href="/schemes-registry/calendar">{t.t('sr.navCalendar')}</Chip>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('sr.ok.authCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`sr.error.${errKey}`)}</p>}
 
       <nav className="kv-filters" aria-label={t.t('sr.filterLevel')}>
-        <Link href={filterHref()} className={`kv-chip${!level ? ' is-active' : ''}`} aria-current={!level ? 'true' : undefined}>{t.t('sr.filterAll')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!level ? 'true' : undefined} active={!level}>{t.t('sr.filterAll')}</Chip>
         {AUTHORITY_LEVELS.map((l) => (
-          <Link key={l} href={filterHref(l)} className={`kv-chip${level === l ? ' is-active' : ''}`} aria-current={level === l ? 'true' : undefined}>{t.t(`sr.lvl.${l}`)}</Link>
+          <Chip as={Link} key={l} href={filterHref(l)} aria-current={level === l ? 'true' : undefined} active={level === l}>{t.t(`sr.lvl.${l}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('sr.authEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/schemes-registry?cursor=${encodeURIComponent(nextCursor)}${level ? `&level=${level}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/schemes-registry?cursor=${encodeURIComponent(nextCursor)}${level ? `&level=${level}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -95,7 +96,7 @@ export default async function AuthoritiesPage({ searchParams }: { searchParams: 
           <input id="regionId" name="regionId" className="kv-input" placeholder={t.t('sr.regionHint')} />
           <label htmlFor="authReason" className="kv-field__label">{t.t('sr.reason')}</label>
           <input id="authReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sr.createAuthSubmit')}</button>
+          <Button type="submit">{t.t('sr.createAuthSubmit')}</Button>
         </form>
       </details>
     </section>

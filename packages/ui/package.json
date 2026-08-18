@@ -11,7 +11,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "jest",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "sync": "node sync-from-design-system.js",
+    "sync:check": "node sync-from-design-system.js --check",
+    "fidelity": "node verify-canon-fidelity.js"
   },
   "peerDependencies": { "react": "^18.3.1" },
   "dependencies": {

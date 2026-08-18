@@ -14,6 +14,7 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { getTranslator } from '../../../lib/i18n';
 import { SCHEME_EXPORT_REPORTS } from '../../../features/schemes-registry/version';
 
+import { Button, Callout } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -35,7 +36,7 @@ export default function SchemeExportsPage({ searchParams }: { searchParams: { er
       {errKey && <p className="kv-error" role="alert">{t.t(`sxp.error.${errKey === 'elevation' ? 'elevation' : errKey.replace('sxp_', '')}`)}</p>}
 
       {/* The receipt promise, stated before the button rather than after the download. */}
-      <p className="kv-notice">{t.t('sxp.receiptPromise')}</p>
+      <Callout>{t.t('sxp.receiptPromise')}</Callout>
 
       <form action="/schemes-registry/exports/download" method="get" className="kv-card kv-action-card">
         <label className="kv-field__label" htmlFor="report">{t.t('sxp.report')}</label>
@@ -45,7 +46,7 @@ export default function SchemeExportsPage({ searchParams }: { searchParams: { er
         <label className="kv-field__label" htmlFor="limit">{t.t('sxp.limit')}</label>
         <input id="limit" name="limit" className="kv-input kv-input--sm" inputMode="numeric" placeholder="5000" />
         <p className="kv-field__hint">{t.t('sxp.limitHint')}</p>
-        <button type="submit" className="kv-btn">{t.t('sxp.download')}</button>
+        <Button type="submit">{t.t('sxp.download')}</Button>
       </form>
 
       {/* No date window, and the reason — a registry is a current state, not a stream of events. */}

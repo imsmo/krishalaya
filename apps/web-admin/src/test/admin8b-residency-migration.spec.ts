@@ -6,10 +6,10 @@
 //   • an UNKNOWN preflight check is drawn louder than a failed one, and offers no waiver;
 //   • only `done` means the tenant's data moved.
 import {
-  attestationClass, attestationKey, canOpenCell, checkClass, checkKey, checkState, claimKey, cleanupKey,
-  dataLocationKey, emptyLogClass, emptyLogKey, executorNoticeKey, freezeClass, freezeKey, gateClass, jobClass, jobKey,
-  outcomeClass, planStatusClass, planStatusKey, postureClass, postureKey, provisioningClass, provisioningKey,
-  refusalIsBoundary, refusalKey, regulationClass, regulationKey, showWaiver, smokeClass, smokeKey, stepKey,
+  attestationTone, attestationKey, canOpenCell, checkTone, checkKey, checkState, claimKey, cleanupKey,
+  dataLocationKey, emptyLogClass, emptyLogKey, executorNoticeKey, freezeClass, freezeKey, gateClass, jobTone, jobKey,
+  outcomeTone, planStatusTone, planStatusKey, postureTone, postureKey, provisioningTone, provisioningKey,
+  refusalIsBoundary, refusalKey, regulationTone, regulationKey, showWaiver, smokeTone, smokeKey, stepKey,
   triggerKey, PROVISIONING_STEPS,
 } from '../features/cells/residency-migration';
 import { en } from '../i18n/en';
@@ -53,10 +53,10 @@ describe('ADMIN-8b · refusals', () => {
   // is flagged in danger on the attestation where the count lives. Painting every permitted row red would teach an
   // operator that the loud colour means "unusual" rather than "wrong".
   it('draws a PERMITTED transfer apart from a blocked one, without calling it a violation', () => {
-    expect(outcomeClass('allowed')).toContain('is-warn');
-    expect(outcomeClass('allowed')).not.toContain('is-ok');
-    expect(outcomeClass('blocked')).toContain('is-ok');
-    expect(outcomeClass('allowed')).not.toBe(outcomeClass('blocked'));
+    expect(outcomeTone('allowed')).toBe('warning');
+    expect(outcomeTone('allowed')).not.toBe('success');
+    expect(outcomeTone('blocked')).toBe('success');
+    expect(outcomeTone('allowed')).not.toBe(outcomeTone('blocked'));
     // The danger belongs to the basis-less subset, and it is stated there.
     expect(dict['rz.attest.withoutBasis']).toMatch(/no lawful transfer without one/i);
   });
@@ -64,9 +64,9 @@ describe('ADMIN-8b · refusals', () => {
 
 describe('ADMIN-8b · the attestation', () => {
   it('makes "cannot attest" the loudest verdict', () => {
-    expect(attestationClass('no_evidence')).toContain('is-danger');
-    expect(attestationClass('unknown')).toContain('is-danger');
-    expect(attestationClass('clean')).toContain('is-ok');
+    expect(attestationTone('no_evidence')).toBe('danger');
+    expect(attestationTone('unknown')).toBe('danger');
+    expect(attestationTone('clean')).toBe('success');
   });
 
   // A clean verdict and an unattestable one must never share a label — the whole point is that they are different.
@@ -91,18 +91,18 @@ describe('ADMIN-8b · country posture', () => {
   // "The boundary holds" and "there is nothing here to protect" are different statements.
   it('distinguishes no_cells from blocked', () => {
     expect(postureKey('no_cells')).not.toBe(postureKey('blocked'));
-    expect(postureClass('partial')).toContain('is-danger');
-    expect(postureClass('blocked')).toContain('is-ok');
+    expect(postureTone('partial')).toBe('danger');
+    expect(postureTone('blocked')).toBe('success');
     // A country with no cells is neither good news nor bad news.
-    expect(postureClass('no_cells')).not.toContain('is-ok');
-    expect(postureClass('no_cells')).not.toContain('is-danger');
+    expect(postureTone('no_cells')).not.toBe('success');
+    expect(postureTone('no_cells')).not.toBe('danger');
   });
 
   it('does not dress a draft profile as a profile', () => {
     expect(regulationKey('draft')).toBe('rz.reg.draft');
-    expect(regulationClass('draft')).not.toContain('is-ok');
-    expect(regulationClass('ratified')).toContain('is-ok');
-    expect(regulationClass('none')).toContain('is-danger');
+    expect(regulationTone('draft')).not.toBe('success');
+    expect(regulationTone('ratified')).toBe('success');
+    expect(regulationTone('none')).toBe('danger');
   });
 
   it('draws a closed market-entry gate as a warning and an open one as ok', () => {
@@ -128,7 +128,7 @@ describe('ADMIN-8b · where the data is', () => {
       expect(dict[jobKey(s)]).toBeTruthy();
     }
     expect(jobKey('teleporting')).toBe('rz.job.unknown');
-    expect(jobClass('cutover')).toContain('is-danger');   // the tenant is offline
+    expect(jobTone('cutover')).toBe('danger');   // the tenant is offline
   });
 });
 
@@ -178,9 +178,9 @@ describe('ADMIN-8b · the preflight', () => {
   // **UNKNOWN IS LOUDER THAN BLOCKED**, which inverts the usual severity ordering and is deliberate: a failure is a known
   // problem with a next step; an unrun guard is a blind one.
   it('draws unknown louder than blocked', () => {
-    expect(checkClass('unknown')).toContain('is-danger');
-    expect(checkClass('blocked')).toContain('is-warn');
-    expect(checkClass('pass')).toContain('is-ok');
+    expect(checkTone('unknown')).toBe('danger');
+    expect(checkTone('blocked')).toBe('warning');
+    expect(checkTone('pass')).toBe('success');
   });
 
   it('offers no waiver for an unwaivable check', () => {
@@ -221,8 +221,8 @@ describe('ADMIN-8b · the plan', () => {
   });
 
   it('does not colour a gated step as done', () => {
-    expect(planStatusClass('gated')).toContain('is-warn');
-    expect(planStatusClass('done')).toContain('is-ok');
+    expect(planStatusTone('gated')).toBe('warning');
+    expect(planStatusTone('done')).toBe('success');
     expect(planStatusKey('nonsense')).toBeTruthy();
     expect(dict[planStatusKey('nonsense')]).toBeTruthy();
   });
@@ -252,9 +252,9 @@ describe('ADMIN-8b · provisioning', () => {
   });
 
   it('draws a not-run smoke as a warning rather than as neutral', () => {
-    expect(smokeClass('passed')).toContain('is-ok');
-    expect(smokeClass('failed')).toContain('is-danger');
-    expect(smokeClass(null)).toContain('is-warn');
+    expect(smokeTone('passed')).toBe('success');
+    expect(smokeTone('failed')).toBe('danger');
+    expect(smokeTone(null)).toBe('warning');
     expect(dict[smokeKey(null)]).toBeTruthy();
   });
 
@@ -262,7 +262,7 @@ describe('ADMIN-8b · provisioning', () => {
     for (const s of ['drafting', 'awaiting_infra', 'smoke', 'ready', 'open', 'abandoned']) {
       expect(dict[provisioningKey(s)]).toBeTruthy();
     }
-    expect(provisioningClass('open')).toContain('is-ok');
+    expect(provisioningTone('open')).toBe('success');
   });
 
   // The console never applies infrastructure, and the sentence saying so must survive a refactor of this page.

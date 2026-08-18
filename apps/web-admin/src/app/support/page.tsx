@@ -11,13 +11,14 @@ import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
 import { TICKET_STATUSES, SEVERITIES, ticketStatusKey, severityKey, slaKey, type TicketRow } from '../../features/support/ticket';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('support.title'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { P0: 'kv-status--danger', P1: 'kv-status--danger', P2: 'kv-status--warn', P3: 'kv-status--muted' };
+const SEV_TONE: Record<string, StatusTone> = { P0: 'danger', P1: 'danger', P2: 'warning', P3: 'neutral' };
 
 export default async function SupportPage({ searchParams }: { searchParams: { cursor?: string; status?: string; severity?: string; slaBreached?: string; assigned?: string; tenantId?: string } }) {
   requireAdmin();
@@ -57,9 +58,9 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
   const cols: Column<TicketRow>[] = [
     { header: t.t('support.ticketNo'), cell: (r) => <Link href={`/support/tickets/${encodeURIComponent(r.id)}`}>{r.ticketNo}</Link> },
     { header: t.t('support.subject'), cell: (r) => r.subject ?? t.t('common.dash') },
-    { header: t.t('support.severity'), cell: (r) => { const s = severityKey(r.severity); return <span className={`kv-status ${SEV_CLASS[s]}`}>{t.t(`support.sev.${s}`)}</span>; } },
+    { header: t.t('support.severity'), cell: (r) => { const s = severityKey(r.severity); return <StatusPill tone={SEV_TONE[s] ?? 'neutral'} label={t.t(`support.sev.${s}`)} />; } },
     { header: t.t('support.status'), cell: (r) => t.t(`support.state.${ticketStatusKey(r.status)}`) },
-    { header: t.t('support.sla'), cell: (r) => { const k = slaKey(r.sla); return <span className={`kv-status ${k === 'breached' ? 'kv-status--danger' : 'kv-status--ok'}`}>{t.t(`support.slaState.${k}`)}</span>; } },
+    { header: t.t('support.sla'), cell: (r) => { const k = slaKey(r.sla); return <StatusPill tone={k === 'breached' ? 'danger' : 'success'} label={t.t(`support.slaState.${k}`)} />; } },
   ];
 
   const qp = (extra: Record<string, string | undefined>) => {
@@ -76,34 +77,34 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
       <p className="kv-muted">{t.t('support.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('support.nav')}>
         {/* ADMIN-SWEEP-b2/b3: W050's Hub and W058's Emergency tabs — linked the day each stopped 404ing. */}
-        <Link href="/support/hub" className="kv-chip">{t.t('support.hubNav')}</Link>
-        <Link href="/support/emergency" className="kv-chip">{t.t('support.emergencyNav')}</Link>
-        <Link href="/support/sla-breaches" className="kv-chip">{t.t('support.breachesNav')}</Link>
-        <Link href="/support/tenant-health" className="kv-chip">{t.t('support.healthNav')}</Link>
+        <Chip as={Link} href="/support/hub">{t.t('support.hubNav')}</Chip>
+        <Chip as={Link} href="/support/emergency">{t.t('support.emergencyNav')}</Chip>
+        <Chip as={Link} href="/support/sla-breaches">{t.t('support.breachesNav')}</Chip>
+        <Chip as={Link} href="/support/tenant-health">{t.t('support.healthNav')}</Chip>
         {/* PC-56 ADMIN-2 · the canon's remaining desk lenses (W053/W054/W055) */}
-        <Link href="/support/macros" className="kv-chip">{t.t('support.macrosLink')}</Link>
-        <Link href="/support/escalation" className="kv-chip">{t.t('support.escalationLink')}</Link>
-        <Link href="/support/insights" className="kv-chip">{t.t('support.insightsLink')}</Link>
+        <Chip as={Link} href="/support/macros">{t.t('support.macrosLink')}</Chip>
+        <Chip as={Link} href="/support/escalation">{t.t('support.escalationLink')}</Chip>
+        <Chip as={Link} href="/support/insights">{t.t('support.insightsLink')}</Chip>
         {/* PC-56 ADMIN-2c · the rating-review queue, the coaching ledger and the audited exports */}
-        <Link href="/support/csat/queue" className="kv-chip">{t.t('support.reviewLink')}</Link>
-        <Link href="/support/coaching" className="kv-chip">{t.t('support.coachingLink')}</Link>
-        <Link href="/support/exports" className="kv-chip">{t.t('support.exportsLink')}</Link>
+        <Chip as={Link} href="/support/csat/queue">{t.t('support.reviewLink')}</Chip>
+        <Chip as={Link} href="/support/coaching">{t.t('support.coachingLink')}</Chip>
+        <Chip as={Link} href="/support/exports">{t.t('support.exportsLink')}</Chip>
         {/* PC-56 ADMIN-2d · replies an operator wrote that never reached a farmer */}
-        <Link href="/support/replies/stuck" className="kv-chip">{t.t('support.stuckRepliesLink')}</Link>
+        <Chip as={Link} href="/support/replies/stuck">{t.t('support.stuckRepliesLink')}</Chip>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('support.filterStatus')}>
-        <Link href={qp({ status: undefined, cursor: undefined })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('support.filterAll')}{chipCount()}</Link>
+        <Chip as={Link} href={qp({ status: undefined, cursor: undefined })} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('support.filterAll')}{chipCount()}</Chip>
         {TICKET_STATUSES.map((s) => (
-          <Link key={s} href={qp({ status: s, cursor: undefined })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`support.state.${s}`)}{chipCount(s)}</Link>
+          <Chip as={Link} key={s} href={qp({ status: s, cursor: undefined })} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`support.state.${s}`)}{chipCount(s)}</Chip>
         ))}
       </nav>
       <nav className="kv-filters" aria-label={t.t('support.filterSeverity')}>
-        <Link href={qp({ severity: undefined, cursor: undefined })} className={`kv-chip${!severity ? ' is-active' : ''}`} aria-current={!severity ? 'true' : undefined}>{t.t('support.filterAll')}</Link>
+        <Chip as={Link} href={qp({ severity: undefined, cursor: undefined })} aria-current={!severity ? 'true' : undefined} active={!severity}>{t.t('support.filterAll')}</Chip>
         {SEVERITIES.map((s) => (
-          <Link key={s} href={qp({ severity: s, cursor: undefined })} className={`kv-chip${severity === s ? ' is-active' : ''}`} aria-current={severity === s ? 'true' : undefined}>{t.t(`support.sev.${s}`)}</Link>
+          <Chip as={Link} key={s} href={qp({ severity: s, cursor: undefined })} aria-current={severity === s ? 'true' : undefined} active={severity === s}>{t.t(`support.sev.${s}`)}</Chip>
         ))}
-        <Link href={qp({ slaBreached: slaBreached ? undefined : 'true', cursor: undefined })} className={`kv-chip${slaBreached ? ' is-active' : ''}`} aria-current={slaBreached ? 'true' : undefined}>{t.t('support.filterBreached')}</Link>
+        <Chip as={Link} href={qp({ slaBreached: slaBreached ? undefined : 'true', cursor: undefined })} aria-current={slaBreached ? 'true' : undefined} active={!!slaBreached}>{t.t('support.filterBreached')}</Chip>
       </nav>
 
       {/* Where the numbers come from, so nobody reads them as this page's row count. */}
@@ -112,7 +113,7 @@ export default async function SupportPage({ searchParams }: { searchParams: { cu
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('support.empty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

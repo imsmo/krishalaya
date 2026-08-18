@@ -18,12 +18,21 @@ export interface StatusPillProps {
   /** Optional leading glyph — canon renders a plain 6px dot by default (`.dot`), any icon may replace it. */
   icon?: React.ReactNode;
   className?: string;
+  /**
+   * DEV-60 addition: native `title` tooltip passthrough. Several web-admin call sites (e.g.
+   * `catalogue/attributes`, `catalogue/crops`, `catalogue/crop-calendars`, `catalogue/translations`)
+   * carry an a11y tooltip hint (`title={t.t('...Hint')}`) on the span this component replaces —
+   * `StatusPillProps` previously had no passthrough, so those sites were correctly left unconverted
+   * rather than silently dropping the hint. This is a plain, optional, additive prop — no visual/tone
+   * behavior changes for any existing caller that doesn't pass it.
+   */
+  title?: string;
 }
 
-export function StatusPill({ label, tone = 'neutral', icon, className }: StatusPillProps): React.ReactElement {
+export function StatusPill({ label, tone = 'neutral', icon, className, title }: StatusPillProps): React.ReactElement {
   const classes = ['kvw-badge', `kvw-badge-${tone}`, className || ''].filter(Boolean).join(' ');
   return (
-    <span className={classes} data-kv-component="status-pill">
+    <span className={classes} data-kv-component="status-pill" title={title}>
       {icon ?? <span className="dot" aria-hidden="true" />}
       {label}
     </span>

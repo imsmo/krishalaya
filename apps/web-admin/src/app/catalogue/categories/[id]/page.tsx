@@ -14,6 +14,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { COMMERCE_KINDS, commerceKindKey, type CategoryRow, type CatalogueChangeRow } from '../../../../features/catalogue/catalogue';
 import { updateCategoryAction, moveCategoryAction, setCategoryActiveAction } from '../../actions';
 
+import { Button, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -48,7 +49,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
   const childCols: Column<CategoryRow>[] = [
     { header: t.t('cat.path'), cell: (c) => <Link href={`/catalogue/categories/${encodeURIComponent(c.id)}`}>{c.code}</Link> },
     { header: t.t('cat.name'), cell: (c) => c.defaultName },
-    { header: t.t('cat.active'), cell: (c) => <span className={`kv-status ${c.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{c.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')}</span> },
+    { header: t.t('cat.active'), cell: (c) => <StatusPill tone={c.isActive ? 'success' : 'neutral'} label={c.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')} /> },
   ];
   const histCols: Column<CatalogueChangeRow>[] = [
     { header: t.t('cat.histAction'), cell: (h) => h.action },
@@ -75,7 +76,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
         <div className="kv-facts__row"><dt>{t.t('cat.requiresLicense')}</dt><dd>{cat.requiresLicense ? t.t('cat.yes') : t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cat.requiresCertificate')}</dt><dd>{cat.requiresCertificate ? t.t('cat.yes') : t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cat.minAge')}</dt><dd>{cat.minAge ?? t.t('common.dash')}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('cat.active')}</dt><dd><span className={`kv-status ${cat.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{cat.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('cat.active')}</dt><dd><StatusPill tone={cat.isActive ? 'success' : 'neutral'} label={cat.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')} /></dd></div>
       </dl>
 
       <h2>{t.t('cat.childrenHeading')}</h2>
@@ -99,7 +100,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
           <input name="sortOrder" className="kv-input" inputMode="numeric" defaultValue={String(cat.sortOrder)} />
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('cat.save')}</button>
+          <Button type="submit">{t.t('cat.save')}</Button>
         </form>
 
         <form action={moveCategoryAction} className="kv-card kv-action-card">
@@ -109,7 +110,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
           <input name="newParentId" className="kv-input" placeholder={t.t('cat.parentHint')} />
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('cat.move')}</button>
+          <Button type="submit">{t.t('cat.move')}</Button>
         </form>
 
         <form action={setCategoryActiveAction} className="kv-card kv-action-card">
@@ -118,7 +119,7 @@ export default async function CategoryDetailPage({ params, searchParams }: { par
           <p className="kv-field__hint">{cat.isActive ? t.t('cat.deactivateCatHint') : t.t('cat.activateHint')}</p>
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className={`kv-btn${cat.isActive ? ' kv-btn--danger' : ''}`}>{cat.isActive ? t.t('cat.deactivate') : t.t('cat.activate')}</button>
+          <Button type="submit" variant={cat.isActive ? 'danger' : 'primary'}>{cat.isActive ? t.t('cat.deactivate') : t.t('cat.activate')}</Button>
         </form>
       </div>
 

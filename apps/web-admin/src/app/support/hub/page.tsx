@@ -16,8 +16,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { hubTakeNextAction, hubPresenceAction } from '../actions';
-import { slaText, slaClass, channelChip, presenceAction, takeNextBlockedKey, type HubSla } from '../../../features/support/hub';
+import { slaText, slaTone, channelChip, presenceAction, takeNextBlockedKey, type HubSla } from '../../../features/support/hub';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -62,24 +63,24 @@ export default async function CommHubPage({ searchParams }: { searchParams: { cu
       {/* W2100/W2101 as states: the action's outcome (or refusal, with nothing changed) lands here. */}
       {okKey && <p className="kv-success" role="status">{t.t(`hub.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`hub.error.${errKey}`)}</p>}
-      {searchParams.empty === 'nothingToClaim' && <p className="kv-notice" role="note">{t.t('hub.nothingToClaim')}</p>}
+      {searchParams.empty === 'nothingToClaim' && <Callout>{t.t('hub.nothingToClaim')}</Callout>}
 
       {meta && (
         <>
           {/* The canon's decor "My load: 6 open" is a real, server-computed figure here. */}
           <p>
-            <span className="kv-status">{t.t('hub.myLoad', { n: String(meta.myLoad) })}</span>{' '}
-            <span className="kv-status">{t.t('hub.unclaimed', { n: String(meta.unclaimed) })}</span>{' '}
-            {meta.presence === 'break' && <span className="kv-status kv-status--warn">{t.t('hub.onBreakSince', { t: meta.presenceSince ?? '' })}</span>}
+            <StatusPill tone="neutral" label={t.t('hub.myLoad', { n: String(meta.myLoad) })} />{' '}
+            <StatusPill tone="neutral" label={t.t('hub.unclaimed', { n: String(meta.unclaimed) })} />{' '}
+            {meta.presence === 'break' && <StatusPill tone="warning" label={t.t('hub.onBreakSince', { t: meta.presenceSince ?? '' })} />}
           </p>
           {/* W2099's confirm is the pair of forms: each states its consequence; the audit row carries actor+reason. */}
           <form action={hubTakeNextAction} style={{ display: 'inline' }}>
-            <button type="submit" className="kv-btn" disabled={blocked !== null}>{t.t('hub.takeNext')}</button>
+            <Button type="submit" disabled={blocked !== null}>{t.t('hub.takeNext')}</Button>
           </form>{' '}
           {pa && (
             <form action={hubPresenceAction} style={{ display: 'inline' }}>
               <input type="hidden" name="status" value={pa.to} />
-              <button type="submit" className="kv-btn kv-btn--secondary">{t.t(`hub.${pa.key}`)}</button>
+              <Button type="submit">{t.t(`hub.${pa.key}`)}</Button>
             </form>
           )}
           {blocked && <p className="kv-detail__muted">{t.t(`hub.blocked.${blocked}`)}</p>}
@@ -96,7 +97,7 @@ export default async function CommHubPage({ searchParams }: { searchParams: { cu
             const sla = slaText(r.sla);
             return (
               <tr key={r.userId}>
-                <td><span className={slaClass(r.sla)}>{t.t(`hub.sla.${sla.key}`, { t: sla.amount })}</span></td>
+                <td><StatusPill tone={slaTone(r.sla)} label={t.t(`hub.sla.${sla.key}`, { t: sla.amount })} /></td>
                 <td>
                   <Link href={`/support/hub/${r.userId}`}>{r.name ?? t.t('common.dash')}</Link>
                   <div className="kv-detail__muted">{r.phone ?? t.t('common.dash')} · {r.languageCode}</div>
@@ -110,7 +111,7 @@ export default async function CommHubPage({ searchParams }: { searchParams: { cu
                 <td>{r.latestSubject ?? t.t('common.dash')}</td>
                 <td>{r.openTickets}{r.tenants > 1 ? ` · ${t.t('hub.tenants', { n: String(r.tenants) })}` : ''}</td>
                 <td>{r.worstSeverity ?? t.t('common.dash')}</td>
-                <td><Link href={`/support/tickets/${r.latestTicketId}`} className="kv-btn kv-btn--link">{t.t('hub.openTicket')}</Link></td>
+                <td><Button as={Link} href={`/support/tickets/${r.latestTicketId}`} variant="tertiary">{t.t('hub.openTicket')}</Button></td>
               </tr>
             );
           })}
@@ -118,7 +119,7 @@ export default async function CommHubPage({ searchParams }: { searchParams: { cu
       </table>
       {rows.length === 0 && !notice && (
         // W050's inbox-zero, with its break offer — and the offer is the REAL presence control, not a sticker.
-        <p className="kv-empty">{t.t('hub.inboxZero')}</p>
+        <EmptyState title={t.t('hub.inboxZero')} />
       )}
       {meta && meta.orphans > 0 && (
         // Tickets with no requester recorded do not fit a person-grouped inbox; they are counted and pointed at,

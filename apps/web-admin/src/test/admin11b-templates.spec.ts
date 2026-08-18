@@ -8,9 +8,9 @@
 //   * "no tenant has overridden this" and "no tenant may" (a zero beside OTP copy);
 //   * "recorded by an operator" and "confirmed by a provider" (there is no provider).
 import {
-  approveWithheldKey, canApprove, canOverridePerTenant, channelKey, draftNoticeKey, gapClass, gapSeverityKey,
-  hasUnservedDraft, lifecycleClass, lifecycleKey, overridesKey, refBlocksApproval, securityNoticeKey,
-  securityOverrideClass, securityOverrideKey, segmentClass, segmentKey, sendStateClass, sendStateKey, unversionedKey,
+  approveWithheldKey, canApprove, canOverridePerTenant, channelKey, draftNoticeKey, gapTone, gapSeverityKey,
+  hasUnservedDraft, lifecycleTone, lifecycleKey, overridesKey, refBlocksApproval, securityNoticeKey,
+  securityOverrideClass, securityOverrideKey, segmentClass, segmentKey, sendStateTone, sendStateKey, unversionedKey,
 } from '../features/templates/template';
 import { en } from '../i18n/en';
 
@@ -23,7 +23,7 @@ describe('ADMIN-11b · active and sending are different facts', () => {
 
   it('says "sending" only for an approved, active template', () => {
     expect(sendStateKey(row())).toBe('tp11.state.sending');
-    expect(sendStateClass(row())).toContain('is-ok');
+    expect(sendStateTone(row())).toBe('success');
   });
 
   // **THE STATE THE OLD SCHEMA COULD NOT SHOW.** `resolve()` sent on `is_active` alone, so a template WhatsApp had
@@ -31,29 +31,29 @@ describe('ADMIN-11b · active and sending are different facts', () => {
   it('draws an active row with no approved wording as DANGER, not as neutral', () => {
     const r = row({ lifecycle: 'draft', sendable: false });
     expect(sendStateKey(r)).toBe('tp11.state.activeButUnapproved');
-    expect(sendStateClass(r)).toContain('is-danger');
+    expect(sendStateTone(r)).toBe('danger');
     expect(dict['tp11.state.activeButUnapproved']).toBeTruthy();
   });
 
   it('draws a rejected template as danger and an inactive draft as ordinary', () => {
     expect(sendStateKey(row({ lifecycle: 'rejected', sendable: false }))).toBe('tp11.state.rejected');
-    expect(sendStateClass(row({ lifecycle: 'rejected', sendable: false }))).toContain('is-danger');
+    expect(sendStateTone(row({ lifecycle: 'rejected', sendable: false }))).toBe('danger');
     const draft = row({ isActive: false, lifecycle: 'draft', sendable: false });
     expect(sendStateKey(draft)).toBe('tp11.state.draft');
-    expect(sendStateClass(draft)).not.toContain('is-danger');
+    expect(sendStateTone(draft)).not.toBe('danger');
   });
 
   it('treats a row with no version at all as a warning rather than as new', () => {
     // After 0122's backfill an unversioned row means a writer that predates this plane: a send whose words cannot be
     // reconstructed. Drawn as a warning so nobody reads the blank as "nothing has happened here yet".
     expect(lifecycleKey(null)).toBe('tp11.life.unversioned');
-    expect(lifecycleClass(null)).toContain('is-warn');
+    expect(lifecycleTone(null)).toBe('warning');
     expect(dict['tp11.life.unversioned']).toBeTruthy();
   });
 
   it('treats an unrecognised lifecycle as neither approved nor blank', () => {
     expect(lifecycleKey('quarantined')).toBe('tp11.life.other');
-    expect(lifecycleClass('quarantined')).not.toContain('is-ok');
+    expect(lifecycleTone('quarantined')).not.toBe('success');
   });
 });
 
@@ -186,9 +186,9 @@ describe('ADMIN-11b · the cost an author must see before saving', () => {
 describe('ADMIN-11b · coverage and the sender registry', () => {
   it('ranks a gap on critical copy loudest', () => {
     expect(gapSeverityKey('critical')).toBe('tp11.gap.critical');
-    expect(gapClass('critical')).toContain('is-danger');
-    expect(gapClass('important')).toContain('is-warn');
-    expect(gapClass('ordinary')).not.toContain('is-warn');
+    expect(gapTone('critical')).toBe('danger');
+    expect(gapTone('important')).toBe('warning');
+    expect(gapTone('ordinary')).not.toBe('warning');
     expect(gapSeverityKey('nonsense')).toBe('tp11.gap.ordinary');
   });
 

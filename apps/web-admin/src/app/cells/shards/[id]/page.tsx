@@ -14,11 +14,17 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { statusTargets, nodeStatusKey, nodeStatusTone, isNodeStatus, type NodeStatus, type ShardRow, type CellChangeRow } from '../../../../features/cells/cell';
 import { updateShardAction, setShardStatusAction } from '../../actions';
 
+import { Button, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('cells.shardDetailTitle'), robots: { index: false, follow: false } };
 }
+
+// DEV-60 static-literal sweep: nodeStatusTone (features/cells/cell.ts) still returns the OLD tone-suffix
+// vocabulary ('ok'|'warn'|'danger'|'muted'), not StatusTone — that helper is a features/** file, out of
+// scope for this page-only sweep, so the remap lives here at the call site instead.
+const NODE_TONE: Record<string, StatusTone> = { ok: 'success', warn: 'warning', danger: 'danger', muted: 'neutral' };
 
 const OK = new Set(['created', 'updated', 'status']);
 const ERR = new Set(['weight', 'notes', 'reason', 'status', 'illegal', 'noChange', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
@@ -61,10 +67,10 @@ export default async function ShardDetailPage({ params, searchParams }: { params
 
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('cells.cellId')}</dt><dd><Link href={`/cells/cells/${encodeURIComponent(shard.cellId)}`}>{shard.cellId}</Link></dd></div>
-        <div className="kv-facts__row"><dt>{t.t('cells.status')}</dt><dd><span className={`kv-status kv-status--${nodeStatusTone(shard.status)}`}>{t.t(nodeStatusKey(shard.status))}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('cells.status')}</dt><dd><StatusPill tone={NODE_TONE[nodeStatusTone(shard.status)]} label={t.t(nodeStatusKey(shard.status))} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('cells.weight')}</dt><dd>{shard.weight}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cells.placed')}</dt><dd>{shard.placedCount}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('cells.dsn')}</dt><dd>{shard.hasDsn ? t.t('cells.dsnSet') : <span className="kv-status kv-status--warn">{t.t('cells.dsnMissing')}</span>}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('cells.dsn')}</dt><dd>{shard.hasDsn ? t.t('cells.dsnSet') : <StatusPill tone="warning" label={t.t('cells.dsnMissing')} />}</dd></div>
         {shard.notes && <div className="kv-facts__row"><dt>{t.t('cells.notes')}</dt><dd>{shard.notes}</dd></div>}
       </dl>
 
@@ -78,7 +84,7 @@ export default async function ShardDetailPage({ params, searchParams }: { params
           <input name="notes" className="kv-input" maxLength={2000} defaultValue={shard.notes ?? ''} />
           <label className="kv-field__label">{t.t('cells.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('cells.save')}</button>
+          <Button type="submit">{t.t('cells.save')}</Button>
         </form>
       </details>
 
@@ -92,7 +98,7 @@ export default async function ShardDetailPage({ params, searchParams }: { params
             <select name="status" className="kv-input" defaultValue={targets[0]}>{targets.map((s) => <option key={s} value={s}>{t.t(nodeStatusKey(s))}</option>)}</select>
             <label className="kv-field__label">{t.t('cells.reason')}</label>
             <input name="reason" className="kv-input" required minLength={3} maxLength={500} />
-            <button type="submit" className="kv-btn">{t.t('cells.applyStatus')}</button>
+            <Button type="submit">{t.t('cells.applyStatus')}</Button>
           </form>
         </details>
       ) : <p className="kv-muted">{t.t('cells.statusTerminal')}</p>}

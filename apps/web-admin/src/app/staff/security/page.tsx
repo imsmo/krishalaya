@@ -19,9 +19,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { revokeOwnSessionAction } from '../actions';
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
-  canRevokeSession, dormancyClass, dormancyKey, gateKey, keyListKey, keyListState, revokeLabelKey, sessionClass,
-  sessionKey, sessionState, stepUpClass, stepUpOutcomeClass, stepUpStateKey, type Dormancy,
+  canRevokeSession, dormancyTone, dormancyKey, gateKey, keyListKey, keyListState, revokeLabelKey, sessionTone,
+  sessionKey, sessionState, stepUpClass, stepUpOutcomeTone, stepUpStateKey, type Dormancy,
 } from '../../../features/staff/operators';
 
 export const dynamic = 'force-dynamic';
@@ -75,19 +76,19 @@ export default async function MySecurityPage({ searchParams }: { searchParams: {
         <p className="kv-page__sub">{t.t('st.security.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`st.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`st.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`st.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`st.err.${searchParams.error}`)}</Callout> : null}
 
       {m ? (
         <>
           {/* THE KEYS — an honest absence rather than an empty list. */}
           <section className="kv-panel" aria-labelledby="st-keys">
             <h2 id="st-keys" className="kv-panel__title">{t.t('st.keys.title')}</h2>
-            <p className="kv-note is-warn">{t.t(keyListKey(keys), { owner: m.fido2.gap })}</p>
-            <p className="kv-note">
+            <Callout tone="warning">{t.t(keyListKey(keys), { owner: m.fido2.gap })}</Callout>
+            <Callout tone="info">
               {m.fido2.knownFromToken ? t.t('st.keys.factorPresent') : t.t('st.keys.factorAbsent')}
-            </p>
+            </Callout>
           </section>
 
           {/* STEP-UP STATE + HISTORY */}
@@ -102,7 +103,7 @@ export default async function MySecurityPage({ searchParams }: { searchParams: {
             {m.stepUps.length === 0 ? (
               // Recording began with this release, so an empty log is not a clean history — the same distinction the
               // residency evidence log had to make in ADMIN-8b.
-              <p className="kv-note">{t.t('st.stepUp.noneYet')}</p>
+              <Callout tone="info">{t.t('st.stepUp.noneYet')}</Callout>
             ) : (
               <table className="kv-table">
                 <caption className="kv-table__caption">{t.t('st.stepUp.caption')}</caption>
@@ -124,7 +125,7 @@ export default async function MySecurityPage({ searchParams }: { searchParams: {
                       <td>
                         {/* THE REFUSALS ARE THE HALF THAT MATTERS: a log of successes answers "did I re-authenticate";
                             only the refusals answer "did somebody try to reach a gated action without the key". */}
-                        <span className={stepUpOutcomeClass(e.outcome)}>{t.t(`st.stepUp.${e.outcome}`)}</span>
+                        <StatusPill tone={stepUpOutcomeTone(e.outcome)} label={t.t(`st.stepUp.${e.outcome}`)} />
                         {e.detail ? <><br /><small>{e.detail}</small></> : null}
                       </td>
                       <td>{e.userAgent ?? '—'}</td>
@@ -133,32 +134,30 @@ export default async function MySecurityPage({ searchParams }: { searchParams: {
                 </tbody>
               </table>
             )}
-            <p className="kv-note">{t.t('st.stepUp.immutable')}</p>
+            <Callout tone="info">{t.t('st.stepUp.immutable')}</Callout>
           </section>
 
           {/* DORMANCY */}
           <section className="kv-panel" aria-labelledby="st-dorm2">
             <h2 id="st-dorm2" className="kv-panel__title">{t.t('st.me.dormancy')}</h2>
-            <p className={dormancyClass(m.dormancy)}>
-              {t.t(dormancyKey(m.dormancy), {
-                days: String(m.dormancy?.daysSinceSeen ?? 0),
-                toSuspend: String(m.dormancy?.daysToSuspend ?? 0),
-              })}
-            </p>
-            <p className="kv-note">{t.t('st.policy.lines', {
+            <p><StatusPill tone={dormancyTone(m.dormancy)} label={t.t(dormancyKey(m.dormancy), {
+              days: String(m.dormancy?.daysSinceSeen ?? 0),
+              toSuspend: String(m.dormancy?.daysToSuspend ?? 0),
+            })} /></p>
+            <Callout tone="info">{t.t('st.policy.lines', {
               dormant: String(m.policy.dormantAfterDays), suspend: String(m.policy.suspendAfterDays),
-            })}</p>
+            })}</Callout>
             {/* The reactivation path W439 describes, and the half of it this realm enforces: a reinstatement needs two
                 administrators, which is 0118's fourteenth maker-checker site. */}
-            <p className="kv-note">{t.t('st.me.reactivation')}</p>
+            <Callout tone="info">{t.t('st.me.reactivation')}</Callout>
           </section>
 
           {/* SESSIONS — the first revocation this realm has ever had. */}
           <section className="kv-panel" aria-labelledby="st-sess2">
             <h2 id="st-sess2" className="kv-panel__title">{t.t('st.session.title')}</h2>
-            <p className="kv-note">{t.t('st.session.takesEffect', { when: 'next request to admin-api' })}</p>
+            <Callout tone="info">{t.t('st.session.takesEffect', { when: 'next request to admin-api' })}</Callout>
             {m.sessions.length === 0 ? (
-              <p className="kv-note">{t.t('st.session.none')}</p>
+              <Callout tone="info">{t.t('st.session.none')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -181,7 +180,7 @@ export default async function MySecurityPage({ searchParams }: { searchParams: {
                           {s.tokenExpiresAt ? <><br /><small>{t.t('st.session.expires', { at: s.tokenExpiresAt.slice(11, 16) })}</small></> : null}
                         </td>
                         <td>
-                          <span className={sessionClass(state)}>{t.t(sessionKey(state))}</span>
+                          <StatusPill tone={sessionTone(state)} label={t.t(sessionKey(state))} />
                           {s.revokeReason ? <><br /><small>{s.revokeReason}</small></> : null}
                         </td>
                         <td>
@@ -192,7 +191,7 @@ export default async function MySecurityPage({ searchParams }: { searchParams: {
                                 placeholder={t.t('st.session.reasonHint')} />
                               {/* The button says what pressing it does BEFORE it is pressed: revoking the session you
                                   are holding signs you out. */}
-                              <button className="kv-btn kv-btn--danger" type="submit">{t.t(revokeLabelKey(state))}</button>
+                              <Button type="submit" variant="danger">{t.t(revokeLabelKey(state))}</Button>
                             </form>
                           ) : null}
                         </td>

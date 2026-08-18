@@ -23,6 +23,7 @@ type SchemeDetail = SchemeRow & {
 };
 import { updateMetaAction, updateRulesAction, setWindowAction, setSchemeActiveAction } from '../../actions';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -73,7 +74,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
 
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('sr.schemeName')}</dt><dd>{s.defaultName}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('sr.active')}</dt><dd><span className={`kv-status ${s.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{s.isActive ? t.t('sr.activeYes') : t.t('sr.activeNo')}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('sr.active')}</dt><dd><StatusPill tone={s.isActive ? 'success' : 'neutral'} label={s.isActive ? t.t('sr.activeYes') : t.t('sr.activeNo')} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.fee')}</dt><dd>{formatMoneyMinor(s.processingFeeMinor, 'INR')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.window')}</dt><dd>{win ? `${win.opens} → ${win.closes}${win.season ? ` (${win.season})` : ''}` : t.t('sr.windowNone')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.authorityId')}</dt><dd>{s.authorityId}</dd></div>
@@ -85,7 +86,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
 
       <h2>{t.t('sv.namesHeading')}</h2>
       {(s.translations ?? []).length === 0
-        ? <p className="kv-empty">{t.t('sv.noTranslations')}</p>
+        ? <EmptyState title={t.t('sv.noTranslations')} />
         : (
           <ul>
             {(s.translations ?? []).map((tr) => (
@@ -93,9 +94,8 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
                 <strong>{tr.languageCode}</strong> {tr.field}: {tr.text}{' '}
                 {/* THREE-WAY, not two. A reviewed machine translation and a human one are both servable; an
                     unreviewed draft is not, and apps/api's read predicate filters exactly those out. */}
-                <span className={tr.servable ? 'kv-status kv-status--ok' : 'kv-status kv-status--warn'}>
-                  {t.t(tr.servable ? (tr.isMachine ? 'sv.tr.machineReviewed' : 'sv.tr.human') : 'sv.tr.unreviewed')}
-                </span>
+                <StatusPill tone={tr.servable ? 'success' : 'warning'}
+                  label={t.t(tr.servable ? (tr.isMachine ? 'sv.tr.machineReviewed' : 'sv.tr.human') : 'sv.tr.unreviewed')} />
               </li>
             ))}
           </ul>
@@ -104,7 +104,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
           Gujarati farmer, because apps/api's scheme read path does not join `translations` at all. Golden Law 6 is
           wired for lookup values and regions and unwired for schemes. Said here rather than left for the count to
           imply otherwise. */}
-      {s.servedToFarmers === false && <p className="kv-notice">{t.t('sv.trNotServed')}</p>}
+      {s.servedToFarmers === false && <Callout>{t.t('sv.trNotServed')}</Callout>}
 
       <h2>{t.t('sr.editHeading')}</h2>
       <div className="kv-action-cards">
@@ -121,7 +121,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
           <input name="sourceUrl" className="kv-input" defaultValue={s.sourceUrl ?? ''} placeholder="https://…" />
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sr.saveMeta')}</button>
+          <Button type="submit">{t.t('sr.saveMeta')}</Button>
         </form>
 
         <form action={updateRulesAction} className="kv-card kv-action-card">
@@ -141,7 +141,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
           <input name="processingFeeMinor" className="kv-input" inputMode="numeric" defaultValue={s.processingFeeMinor} />
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sr.saveRules')}</button>
+          <Button type="submit">{t.t('sr.saveRules')}</Button>
         </form>
 
         <form action={setWindowAction} className="kv-card kv-action-card">
@@ -156,7 +156,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
           <input name="season" className="kv-input" defaultValue={win?.season ?? ''} placeholder={t.t('sr.seasonHint')} />
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sr.saveWindow')}</button>
+          <Button type="submit">{t.t('sr.saveWindow')}</Button>
         </form>
 
         <form action={setSchemeActiveAction} className="kv-card kv-action-card">
@@ -165,7 +165,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
           <p className="kv-field__hint">{s.isActive ? t.t('sr.deactivateHint') : t.t('sr.activateHint')}</p>
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className={`kv-btn${s.isActive ? ' kv-btn--danger' : ''}`}>{s.isActive ? t.t('sr.deactivate') : t.t('sr.activate')}</button>
+          <Button type="submit" variant={s.isActive ? 'danger' : 'primary'}>{s.isActive ? t.t('sr.deactivate') : t.t('sr.activate')}</Button>
         </form>
       </div>
 

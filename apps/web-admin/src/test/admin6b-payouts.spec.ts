@@ -1,9 +1,9 @@
 // apps/web-admin/src/test/admin6b-payouts.spec.ts (PC-56 ADMIN-6b)
 import {
-  approvalNoticeClass, approvalNoticeKey, bankCell, basisKey, balanceClass, balanceKey, cycleInFuture,
+  approvalNoticeClass, approvalNoticeKey, bankCell, basisKey, balanceTone, balanceKey, cycleInFuture,
   driftKey, executionSummary, failureKey, formatMinor, isCycleDate, laneKey, lineAgreementKey,
-  outcomeClass, outcomeKey, payableDiffers, payoutStatusClass, pdfClass, pdfKey, phaseClass, phaseKey,
-  preflightClass, preflightKey, preflightVerdict, shortHash, shortfallKey, showApprove, showReturn,
+  outcomeTone, outcomeKey, payableDiffers, payoutStatusTone, pdfTone, pdfKey, phaseTone, phaseKey,
+  preflightTone, preflightKey, preflightVerdict, shortHash, shortfallKey, showApprove, showReturn,
   sumMinor, tileText,
 } from '../features/payouts/payouts';
 
@@ -57,9 +57,9 @@ describe('phase rendering', () => {
   it('draws awaiting_checker as a WARNING, not a neutral note', () => {
     // On this screen a batch nobody has signed is money sitting still and farmers are waiting for it. Grey would make
     // the queue restful.
-    expect(phaseClass('awaiting_checker')).toContain('is-warn');
-    expect(phaseClass('executed')).toContain('is-ok');
-    expect(phaseClass('failed')).toContain('is-danger');
+    expect(phaseTone('awaiting_checker')).toBe('warning');
+    expect(phaseTone('executed')).toBe('success');
+    expect(phaseTone('failed')).toBe('danger');
   });
   it('keys every phase, including the unrecognised one', () => {
     for (const p of ['awaiting_checker', 'approved', 'returned', 'executing', 'executed', 'failed', 'unknown'] as const) {
@@ -144,10 +144,10 @@ describe('preflight rendering', () => {
   });
   it('draws NOT RUN and OVER LIMIT as danger, not as neutral', () => {
     // A grey badge over 214 unchecked payouts is exactly the reassurance this wave exists to withdraw.
-    expect(preflightClass('not_run')).toContain('is-danger');
-    expect(preflightClass('over_limit')).toContain('is-danger');
-    expect(preflightClass('pass')).toContain('is-ok');
-    expect(preflightClass('blocked')).toContain('is-danger');
+    expect(preflightTone('not_run')).toBe('danger');
+    expect(preflightTone('over_limit')).toBe('danger');
+    expect(preflightTone('pass')).toBe('success');
+    expect(preflightTone('blocked')).toBe('danger');
   });
   it('keys each verdict', () => {
     expect(preflightKey('pass')).toBe('po.pf.verdict.pass');
@@ -199,11 +199,11 @@ describe('payout line cells', () => {
     // not have. A wrong bank name beside somebody's account is worse than a code they can look up.
     expect(bankCell('4417', null)).toBe('XXXX-4417');
   });
-  it('classes each payout status', () => {
-    expect(payoutStatusClass('success')).toContain('is-ok');
-    expect(payoutStatusClass('failed')).toContain('is-danger');
-    expect(payoutStatusClass('reversed')).toContain('is-warn');
-    expect(payoutStatusClass('anything')).toBe('kv-badge');
+  it('tones each payout status', () => {
+    expect(payoutStatusTone('success')).toBe('success');
+    expect(payoutStatusTone('failed')).toBe('danger');
+    expect(payoutStatusTone('reversed')).toBe('warning');
+    expect(payoutStatusTone('anything')).toBe('neutral');
   });
 });
 
@@ -222,10 +222,10 @@ describe('run outcome rendering', () => {
   it('draws ABANDONED as seriously as FAILED', () => {
     // A cycle that stopped without saying so is worse than one that reported a failure: nobody was told, and the
     // statements tomorrow's payouts are built from are missing.
-    expect(outcomeClass('abandoned')).toContain('is-danger');
-    expect(outcomeClass('failed')).toContain('is-danger');
-    expect(outcomeClass('partial')).toContain('is-warn');
-    expect(outcomeClass('clean')).toContain('is-ok');
+    expect(outcomeTone('abandoned')).toBe('danger');
+    expect(outcomeTone('failed')).toBe('danger');
+    expect(outcomeTone('partial')).toBe('warning');
+    expect(outcomeTone('clean')).toBe('success');
   });
   it('keys every outcome', () => {
     for (const k of ['running', 'clean', 'partial', 'failed', 'abandoned', 'unknown'] as const) {
@@ -242,8 +242,8 @@ describe('run outcome rendering', () => {
 
 describe('the statement', () => {
   it('draws an unbalanced statement as danger', () => {
-    expect(balanceClass(true)).toContain('is-ok');
-    expect(balanceClass(false)).toContain('is-danger');
+    expect(balanceTone(true)).toBe('success');
+    expect(balanceTone(false)).toBe('danger');
     expect(balanceKey(false)).toBe('po.stmt.unbalanced');
   });
   it('reports a line disagreement SEPARATELY from the statement arithmetic', () => {
@@ -259,10 +259,10 @@ describe('the statement', () => {
   it('draws never_hashed as a WARNING and not an ok', () => {
     // W442 called the PDF "hash-anchored" and until 0114 there was no column to anchor it in, so this is the state
     // almost every existing statement is in.
-    expect(pdfClass('never_hashed')).toContain('is-warn');
-    expect(pdfClass('anchored')).toContain('is-ok');
-    expect(pdfClass('mismatch')).toContain('is-danger');
-    expect(pdfClass('not_generated')).toBe('kv-badge');
+    expect(pdfTone('never_hashed')).toBe('warning');
+    expect(pdfTone('anchored')).toBe('success');
+    expect(pdfTone('mismatch')).toBe('danger');
+    expect(pdfTone('not_generated')).toBe('neutral');
     expect(pdfKey('mismatch')).toBe('po.pdf.mismatch');
   });
 });

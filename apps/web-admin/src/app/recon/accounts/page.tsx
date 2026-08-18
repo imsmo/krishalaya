@@ -18,8 +18,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { verifyBalanceAction } from '../actions';
+import { Button, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  formatMinor, sumWarningKey, sumClass, claimClass, claimKey, chainCoverage, type AccountGroup,
+  formatMinor, sumWarningKey, sumTone, claimTone, claimKey, chainCoverage, type AccountGroup,
 } from '../../../features/ledger/ledger';
 
 export const dynamic = 'force-dynamic';
@@ -93,14 +94,14 @@ export default async function WalletAccountsPage({ searchParams }: {
                 return (
                   <tr key={`${g.accountCode}-${g.currencyCode}`}>
                     <td>{g.accountCode}<div className="kv-detail__muted">{g.currencyCode}</div></td>
-                    <td>{g.stripeCount}{g.missingStripes.length > 0 && <div className="kv-status kv-status--danger">{t.t('wa.gaps', { n: g.missingStripes.join(', ') })}</div>}</td>
+                    <td>{g.stripeCount}{g.missingStripes.length > 0 && <StatusPill tone="danger" label={t.t('wa.gaps', { n: g.missingStripes.join(', ') })} />}</td>
                     <td>
-                      <span className={sumClass(g.confidence)}>{g.totalText}</span>
+                      <StatusPill tone={sumTone(g.confidence)} label={g.totalText} />
                       {/* A Σ the platform is not sure about carries its reason. */}
                       {warn && <div className="kv-error">{t.t(`wa.sumWarn.${warn}`)}</div>}
                     </td>
                     <td>
-                      <span className={claimClass(g.chain?.claim)}>{t.t(`wa.chain.${claimKey(g.chain?.claim)}`)}</span>
+                      <StatusPill tone={claimTone(g.chain?.claim)} label={t.t(`wa.chain.${claimKey(g.chain?.claim)}`)} />
                       {/* 16 stripes with 1 verification is not "intact" — the claim covers a sixteenth of the money. */}
                       {cov.known && <div className="kv-detail__muted">{t.t('wa.coverage', { v: String(cov.verified), n: String(cov.total) })}</div>}
                     </td>
@@ -117,10 +118,10 @@ export default async function WalletAccountsPage({ searchParams }: {
 
       <h2>{t.t('wa.ownedHeading')}</h2>
       <nav className="kv-filters">
-        <Link href="/recon/accounts" className={!ownerKind && !frozenOnly ? 'kv-chip is-active' : 'kv-chip'}>{t.t('wa.filter.all')}</Link>
-        <Link href="/recon/accounts?ownerKind=user" className={ownerKind === 'user' ? 'kv-chip is-active' : 'kv-chip'}>{t.t('wa.filter.user')}</Link>
-        <Link href="/recon/accounts?ownerKind=tenant" className={ownerKind === 'tenant' ? 'kv-chip is-active' : 'kv-chip'}>{t.t('wa.filter.tenant')}</Link>
-        <Link href="/recon/accounts?frozenOnly=1" className={frozenOnly ? 'kv-chip is-active' : 'kv-chip'}>{t.t('wa.filter.frozen')}</Link>
+        <Chip as={Link} href="/recon/accounts" active={!ownerKind && !frozenOnly}>{t.t('wa.filter.all')}</Chip>
+        <Chip as={Link} href="/recon/accounts?ownerKind=user" active={ownerKind === 'user'}>{t.t('wa.filter.user')}</Chip>
+        <Chip as={Link} href="/recon/accounts?ownerKind=tenant" active={ownerKind === 'tenant'}>{t.t('wa.filter.tenant')}</Chip>
+        <Chip as={Link} href="/recon/accounts?frozenOnly=1" active={frozenOnly}>{t.t('wa.filter.frozen')}</Chip>
       </nav>
       {ownedNotice ? <p className="kv-error" role="alert">{ownedNotice}</p> : (
         <>
@@ -136,20 +137,20 @@ export default async function WalletAccountsPage({ searchParams }: {
                   <td>{a.accountCode}<div className="kv-detail__muted">{a.currencyCode}</div></td>
                   <td>{a.cachedBalanceText}{!a.hasChainHead && <div className="kv-detail__muted">{t.t('wa.neverWritten')}</div>}</td>
                   <td>{a.balanceVersion}</td>
-                  <td>{a.isFrozen ? <span className="kv-status kv-status--danger">{a.freezeReason ?? t.t('wa.frozen')}</span> : t.t('common.dash')}</td>
+                  <td>{a.isFrozen ? <StatusPill tone="danger" label={a.freezeReason ?? t.t('wa.frozen')} /> : t.t('common.dash')}</td>
                   <td>
                     {/* W059's "Verify balances vs ledger", per account. The same comparison the scheduled sweep makes —
                         the query that existed twice since 0006 and had never run. */}
                     <form action={verifyBalanceAction}>
                       <input type="hidden" name="accountId" value={a.id} />
-                      <button type="submit" className="kv-btn kv-btn--link">{t.t('wa.verifyBalance')}</button>
+                      <Button type="submit" variant="tertiary">{t.t('wa.verifyBalance')}</Button>
                     </form>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {owned.length === 0 && <p className="kv-empty">{t.t('wa.ownedEmpty')}</p>}
+          {owned.length === 0 && <EmptyState variant="empty" title={t.t('wa.ownedEmpty')} />}
           {next && (
             <p className="kv-pager">
               <Link href={`/recon/accounts?${new URLSearchParams({ ...(ownerKind ? { ownerKind } : {}), ...(frozenOnly ? { frozenOnly: '1' } : {}), cursor: next }).toString()}`}>

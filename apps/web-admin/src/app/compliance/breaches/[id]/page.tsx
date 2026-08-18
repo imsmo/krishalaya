@@ -13,20 +13,21 @@ import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { breachStatusKey, breachSeverityKey, canContainBreach, canNotifyBreach, canCloseBreach, type BreachRow } from '../../../../features/compliance/compliance';
 import {
-  NOTIFICATION_STEPS, stepState, stepClass, notifyOfferable, notifyBlockedKey, signOffOfferable,
-  clockClass, clockKey, reachShortfall,
+  NOTIFICATION_STEPS, stepState, stepTone, notifyOfferable, notifyBlockedKey, signOffOfferable,
+  clockTone, clockKey, reachShortfall,
   type ChecklistLine, type Notifiable, type NotifyClock,
 } from '../../../../features/compliance/breach-notification';
 import { adminUserId } from '../../../../lib/admin-auth';
 import { updateBreachAction, recordBreachStepAction, signOffBreachAction } from '../../actions';
 
+import { Button, Callout, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('compliance.breachDetailTitle'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { low: 'kv-status--muted', medium: 'kv-status--warn', high: 'kv-status--danger', critical: 'kv-status--danger' };
+const SEV_TONE: Record<string, StatusTone> = { low: 'neutral', medium: 'warning', high: 'danger', critical: 'danger' };
 const OK = new Set(['contain', 'notify', 'close', 'stepRecorded', 'signedOff']);
 const ERR = new Set([
   'action', 'note', 'notifiedAt', 'step', 'outcome', 'evidenceRef', 'reachedCount', 'looksLikePii',
@@ -81,7 +82,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
       {errKey && <p className="kv-error" role="alert">{t.t(`compliance.error.${errKey}`)}</p>}
 
       <dl className="kv-facts">
-        <div className="kv-facts__row"><dt>{t.t('compliance.severity')}</dt><dd><span className={`kv-status ${SEV_CLASS[sev]}`}>{t.t(`compliance.sev.${sev}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('compliance.severity')}</dt><dd><StatusPill tone={SEV_TONE[sev]} label={t.t(`compliance.sev.${sev}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('compliance.status')}</dt><dd>{t.t(`compliance.breachState.${st}`)}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('compliance.affectedTenant')}</dt><dd>{breach.affectedTenantId ?? t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('compliance.affectedCount')}</dt><dd>{breach.affectedCount.toLocaleString()}</dd></div>
@@ -101,7 +102,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
               <dt>{t.t('bn.notifyWindow')}</dt>
               {/* The clock runs from DETECTION and does NOT stop at containment — containing fast is a different
                   achievement, and stopping the clock there would let a contained-but-unreported breach show green. */}
-              <dd><span className={clockClass(nv.notifyClock)}>{t.t(`bn.clock.${clockKey(nv.notifyClock)}`)}</span></dd>
+              <dd><StatusPill tone={clockTone(nv.notifyClock)} label={t.t(`bn.clock.${clockKey(nv.notifyClock)}`)} /></dd>
             </div>
             {nv.containmentMinutes !== null && (
               <div className="kv-facts__row"><dt>{t.t('bn.contained')}</dt><dd>{t.t('bn.containedIn', { n: String(nv.containmentMinutes) })}</dd></div>
@@ -121,7 +122,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
           <ul className="kv-list">
             {nv.checklist.map((l) => (
               <li key={l.step}>
-                <span className={stepClass(l)}>{t.t(`bn.state.${stepState(l)}`)}</span> {t.t(`bn.step.${l.step}`)}
+                <StatusPill tone={stepTone(l)} label={t.t(`bn.state.${stepState(l)}`)} /> {t.t(`bn.step.${l.step}`)}
                 {l.evidenceRef && <> — <span className="kv-detail__muted">{l.evidenceRef}</span></>}
                 {typeof l.reachedCount === 'number' && <> · {t.t('bn.reached', { n: String(l.reachedCount) })}</>}
                 {l.channel && <> · {l.channel}</>}
@@ -155,7 +156,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
             <input id="channel" name="channel" className="kv-input" maxLength={40} />
             <label className="kv-field__label" htmlFor="stepNote">{t.t('compliance.note')}</label>
             <input id="stepNote" name="note" className="kv-input" maxLength={2000} />
-            <button type="submit" className="kv-btn">{t.t('bn.record')}</button>
+            <Button type="submit">{t.t('bn.record')}</Button>
           </form>
 
           <h3>{t.t('bn.signOffHeading')}</h3>
@@ -168,10 +169,10 @@ export default async function BreachDetailPage({ params, searchParams }: { param
               <label className="kv-field__label" htmlFor="dpoNote">{t.t('bn.dpoNote')}</label>
               <input id="dpoNote" name="note" className="kv-input" maxLength={2000} />
               <p className="kv-field__hint">{t.t('bn.dpoNoteOptional')}</p>
-              <button type="submit" className="kv-btn">{t.t('bn.signOff')}</button>
+              <Button type="submit">{t.t('bn.signOff')}</Button>
             </form>
           ) : (
-            <p className="kv-notice">{t.t(nv.signedOffBy ? 'bn.alreadySigned' : 'bn.signOffBlocked')}</p>
+            <Callout tone="warning">{t.t(nv.signedOffBy ? 'bn.alreadySigned' : 'bn.signOffBlocked')}</Callout>
           )}
         </>
       )}
@@ -184,7 +185,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
               <input type="hidden" name="id" value={breach.id} /><input type="hidden" name="action" value="contain" />
               <label className="kv-field__label">{t.t('compliance.note')}</label>
               <input name="note" className="kv-input" required minLength={3} maxLength={2000} />
-              <button type="submit" className="kv-btn">{t.t('compliance.contain')}</button>
+              <Button type="submit">{t.t('compliance.contain')}</Button>
             </form>
           )}
           {/* THE NOTIFY CONTROL IS ABSENT UNTIL THE CHECKLIST IS COMPLETE AND SIGNED.
@@ -192,7 +193,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
               that the Data Protection Board had been notified. A button that always 409s would teach an operator the
               checklist is paperwork — which is the attitude that let the timestamps stand in for a statutory act. */}
           {canNotifyBreach(st) && !notifyOK && (
-            <p className="kv-notice">{t.t(`bn.notifyBlocked.${blockedKey ?? 'unknown'}`)}</p>
+            <Callout tone="warning">{t.t(`bn.notifyBlocked.${blockedKey ?? 'unknown'}`)}</Callout>
           )}
           {canNotifyBreach(st) && notifyOK && (
             <form action={updateBreachAction} className="kv-card kv-action-card">
@@ -204,7 +205,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
               <input name="principalsNotifiedAt" className="kv-input" required placeholder={t.t('compliance.isoHint')} />
               <label className="kv-field__label">{t.t('compliance.note')}</label>
               <input name="note" className="kv-input" required minLength={3} maxLength={2000} />
-              <button type="submit" className="kv-btn">{t.t('compliance.notify')}</button>
+              <Button type="submit">{t.t('compliance.notify')}</Button>
             </form>
           )}
           {canCloseBreach(st) && (
@@ -212,7 +213,7 @@ export default async function BreachDetailPage({ params, searchParams }: { param
               <input type="hidden" name="id" value={breach.id} /><input type="hidden" name="action" value="close" />
               <label className="kv-field__label">{t.t('compliance.note')}</label>
               <input name="note" className="kv-input" required minLength={3} maxLength={2000} />
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('compliance.close')}</button>
+              <Button type="submit" variant="danger">{t.t('compliance.close')}</Button>
             </form>
           )}
         </div>

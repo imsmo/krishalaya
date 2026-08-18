@@ -1,4 +1,17 @@
 // apps/web-admin/src/features/cells/residency-migration.ts · W033/W034/W037/W038 view logic, PURE (PC-56 ADMIN-8b).
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): the `kv-badge`-returning helpers below
+// (attestationClass/outcomeClass/regulationClass/postureClass/jobClass/checkClass/planStatusClass/
+// provisioningClass/smokeClass) now return a `StatusTone` instead of a raw `kv-badge is-X` string —
+// disposition (c), same pattern as `ai-governance.ts`'s and `map-approval.ts`'s DEV-60 conversions. Call sites
+// render `<StatusPill tone={...} label={...} />`. DISCLOSED VISUAL CHANGE: web-admin's own `.kv-badge` CSS has no
+// `is-ok`/`is-warn`/`is-danger`/`is-info` rules (grep-verified, same dead-modifier finding as the two reference
+// files), so every one of these badges has been rendering UNIFORM GREY regardless of the tone this logic computes
+// — this swap makes them render their real canon colour for the first time. `kv-note`-returning helpers in this
+// file (emptyLogClass/freezeClass/gateClass) are OUT OF SCOPE — `kv-note` never matched the 98/29 population's own
+// grep and is a Callout-shaped population addressed under Part 2.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ------------------------------------------------------------------------------------------------ */
 /* W033 · THE ATTESTATION                                                                            */
@@ -11,12 +24,12 @@ export type AttestationKind = 'clean' | 'transfers_occurred' | 'no_evidence';
  *  Before this wave every window was in that state and W033 rendered "No residency violations logged" — a sentence a
  *  reader takes as assurance. An attestation from an empty log is an attestation from nothing, and drawing it grey would
  *  reproduce exactly the false comfort the missing table produced for the platform's whole life. */
-export function attestationClass(kind: string): string {
+export function attestationTone(kind: string): StatusTone {
   switch (kind) {
-    case 'clean': return 'kv-badge is-ok';
-    case 'transfers_occurred': return 'kv-badge is-warn';
-    case 'no_evidence': return 'kv-badge is-danger';
-    default: return 'kv-badge is-danger';
+    case 'clean': return 'success';
+    case 'transfers_occurred': return 'warning';
+    case 'no_evidence': return 'danger';
+    default: return 'danger';
   }
 }
 
@@ -56,21 +69,21 @@ export function refusalKey(refusedBy: string): string {
 }
 
 /** A PERMITTED transfer is the row that changes what the attestation says, so it is drawn apart from the refusals. */
-export function outcomeClass(outcome: string): string {
-  return outcome === 'allowed' ? 'kv-badge is-warn' : 'kv-badge is-ok';
+export function outcomeTone(outcome: string): StatusTone {
+  return outcome === 'allowed' ? 'warning' : 'success';
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* COUNTRY PROFILES                                                                                  */
 /* ------------------------------------------------------------------------------------------------ */
 
-export function regulationClass(status: string): string {
+export function regulationTone(status: string): StatusTone {
   switch (status) {
-    case 'ratified': return 'kv-badge is-ok';
+    case 'ratified': return 'success';
     // A DRAFT IS NOT A PROFILE, and grey would let it read as one. W033 shows BD as "DPA 2023 (draft profile)" with no
     // cells, which is the correct state precisely because a draft cannot anchor a residency lock.
-    case 'draft': return 'kv-badge is-warn';
-    default: return 'kv-badge is-danger';
+    case 'draft': return 'warning';
+    default: return 'danger';
   }
 }
 
@@ -89,12 +102,12 @@ export function postureKey(p: string): string {
   return known.includes(p) ? `rz.posture.${p}` : 'rz.posture.no_cells';
 }
 
-export function postureClass(p: string): string {
-  if (p === 'blocked') return 'kv-badge is-ok';
+export function postureTone(p: string): StatusTone {
+  if (p === 'blocked') return 'success';
   // PARTIAL IS DANGER: a country's boundary is as strong as its weakest cell, and one unlocked cell means the lock does
   // not hold for that country.
-  if (p === 'partial') return 'kv-badge is-danger';
-  return 'kv-badge';
+  if (p === 'partial') return 'danger';
+  return 'neutral';
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -103,15 +116,15 @@ export function postureClass(p: string): string {
 
 export type JobStatus = 'queued' | 'copying' | 'verifying' | 'cutover' | 'done' | 'rolled_back' | 'failed';
 
-export function jobClass(s: string): string {
+export function jobTone(s: string): StatusTone {
   switch (s) {
-    case 'done': return 'kv-badge is-ok';
-    case 'cutover': return 'kv-badge is-danger';   // the write freeze is live; the tenant is offline right now
-    case 'copying': case 'verifying': return 'kv-badge is-info';
-    case 'queued': return 'kv-badge is-warn';
-    case 'rolled_back': return 'kv-badge is-warn';  // the safety net worked — a warning, not a failure
-    case 'failed': return 'kv-badge is-danger';
-    default: return 'kv-badge is-danger';
+    case 'done': return 'success';
+    case 'cutover': return 'danger';   // the write freeze is live; the tenant is offline right now
+    case 'copying': case 'verifying': return 'info';
+    case 'queued': return 'warning';
+    case 'rolled_back': return 'warning';  // the safety net worked — a warning, not a failure
+    case 'failed': return 'danger';
+    default: return 'danger';
   }
 }
 
@@ -175,11 +188,11 @@ export function checkState(c: { ok: boolean; unknown?: boolean }): CheckState {
 /** **UNKNOWN IS DRAWN AS DANGER, NOT AS A WARNING.** A check that did not run is worse than one that failed: a failure is
  *  a known problem with a next step, and an unrun check on a migration preflight means somebody is about to freeze a
  *  farmer's tenant while one of the four guards was blind. */
-export function checkClass(state: CheckState): string {
+export function checkTone(state: CheckState): StatusTone {
   switch (state) {
-    case 'pass': return 'kv-badge is-ok';
-    case 'blocked': return 'kv-badge is-warn';
-    default: return 'kv-badge is-danger';
+    case 'pass': return 'success';
+    case 'blocked': return 'warning';
+    default: return 'danger';
   }
 }
 
@@ -194,13 +207,13 @@ export function showWaiver(check: string, state: CheckState): boolean {
 /* W037 · THE PLAN                                                                                   */
 /* ------------------------------------------------------------------------------------------------ */
 
-export function planStatusClass(s: string): string {
+export function planStatusTone(s: string): StatusTone {
   switch (s) {
-    case 'done': return 'kv-badge is-ok';
-    case 'planned': return 'kv-badge is-info';
-    case 'gated': return 'kv-badge is-warn';
-    case 'abandoned': return 'kv-badge';
-    default: return 'kv-badge';   // draft
+    case 'done': return 'success';
+    case 'planned': return 'info';
+    case 'gated': return 'warning';
+    case 'abandoned': return 'neutral';
+    default: return 'neutral';   // draft
   }
 }
 
@@ -224,13 +237,13 @@ export function triggerKey(spec: Record<string, unknown>): string {
 /* W038 · PROVISIONING                                                                               */
 /* ------------------------------------------------------------------------------------------------ */
 
-export function provisioningClass(s: string): string {
+export function provisioningTone(s: string): StatusTone {
   switch (s) {
-    case 'open': return 'kv-badge is-ok';
-    case 'ready': return 'kv-badge is-info';
-    case 'smoke': return 'kv-badge is-warn';
-    case 'abandoned': return 'kv-badge';
-    default: return 'kv-badge';
+    case 'open': return 'success';
+    case 'ready': return 'info';
+    case 'smoke': return 'warning';
+    case 'abandoned': return 'neutral';
+    default: return 'neutral';
   }
 }
 
@@ -255,12 +268,12 @@ export function canOpenCell(smokeOutcome: string | null, status: string): boolea
   return smokeOutcome === 'passed' && status === 'ready';
 }
 
-export function smokeClass(outcome: string | null): string {
-  if (outcome === 'passed') return 'kv-badge is-ok';
-  if (outcome === 'failed') return 'kv-badge is-danger';
+export function smokeTone(outcome: string | null): StatusTone {
+  if (outcome === 'passed') return 'success';
+  if (outcome === 'failed') return 'danger';
   // NOT RUN is a warning rather than neutral: a cell nobody has proved works is not a cell in an unknown state, it is a
   // cell that must not open.
-  return 'kv-badge is-warn';
+  return 'warning';
 }
 
 export function smokeKey(outcome: string | null): string {

@@ -16,8 +16,9 @@ import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
 import { defineSettingAction } from './actions';
+import { Button, Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  effectiveValue, overridesKey, provenanceClass, provenanceKey, riskClassName, riskKey, type SettingRow,
+  effectiveValue, overridesKey, provenanceTone, provenanceKey, riskTone, riskKey, type SettingRow,
 } from '../../features/settings/setting';
 
 export const dynamic = 'force-dynamic';
@@ -65,33 +66,29 @@ export default async function SettingsPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('st11.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`st11.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`st11.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`st11.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`st11.err.${searchParams.error}`)}</Callout> : null}
 
       {/* THE TWO RULES THAT GOVERN EVERY ROW BELOW. */}
-      <p className="kv-note">{t.t('st11.insertNotMigration')}</p>
-      <p className="kv-note is-warn">{t.t('st11.checkerRule')}</p>
+      <Callout tone="info">{t.t('st11.insertNotMigration')}</Callout>
+      <Callout tone="warning">{t.t('st11.checkerRule')}</Callout>
 
       <nav className="kv-filters" aria-label={t.t('st11.filterGroup')}>
-        <Link className={`kv-chip${!prefix && !riskClass ? ' is-active' : ''}`} href="/settings">{t.t('common.all')}</Link>
+        <Chip as={Link} href="/settings" active={!prefix && !riskClass}>{t.t('common.all')}</Chip>
         {GROUPS.map((g) => (
-          <Link key={g} className={`kv-chip${prefix === g ? ' is-active' : ''}`}
-            href={`/settings?prefix=${encodeURIComponent(g)}`}>{g}*</Link>
+          <Chip as={Link} key={g} href={`/settings?prefix=${encodeURIComponent(g)}`} active={prefix === g}>{g}*</Chip>
         ))}
-        <Link className={`kv-chip${riskClass === 'money_path' ? ' is-active' : ''}`} href="/settings?riskClass=money_path">
+        <Chip as={Link} href="/settings?riskClass=money_path" active={riskClass === 'money_path'}>
           {t.t('st11.risk.money_path')}
-        </Link>
-        <Link className={`kv-chip${riskClass === 'security' ? ' is-active' : ''}`} href="/settings?riskClass=security">
+        </Chip>
+        <Chip as={Link} href="/settings?riskClass=security" active={riskClass === 'security'}>
           {t.t('st11.risk.security')}
-        </Link>
+        </Chip>
       </nav>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('st11.empty.title')}</h2>
-          <p>{t.t('st11.empty.body')}</p>
-        </div>
+        <EmptyState title={t.t('st11.empty.title')} body={t.t('st11.empty.body')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('st11.caption')}</caption>
@@ -117,11 +114,11 @@ export default async function SettingsPage({ searchParams }: {
                   {show(effectiveValue(r))}
                   {/* WHERE THIS VALUE CAME FROM. Three states, because a set value that equals the shipped default is
                       still a decision somebody made, and flattening it would erase that a person looked at this key. */}
-                  <br /><span className={provenanceClass(r)}>{t.t(provenanceKey(r))}</span>
+                  <br /><StatusPill tone={provenanceTone(r)} label={t.t(provenanceKey(r))} />
                 </td>
                 <td>{show(r.defaultValue)}</td>
                 <td>{t.t(overridesKey(r), { n: String(r.overrideCount) })}</td>
-                <td><span className={riskClassName(r.riskClass)}>{t.t(riskKey(r.riskClass))}</span></td>
+                <td><StatusPill tone={riskTone(r.riskClass)} label={t.t(riskKey(r.riskClass))} /></td>
               </tr>
             ))}
           </tbody>
@@ -130,16 +127,16 @@ export default async function SettingsPage({ searchParams }: {
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={`/settings?${prefix ? `prefix=${encodeURIComponent(prefix)}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
+          <Button as={Link} href={`/settings?${prefix ? `prefix=${encodeURIComponent(prefix)}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
             {t.t('common.next')}
-          </Link>
+          </Button>
         </nav>
       ) : null}
 
       {/* DEFINE A NEW SETTING — the INSERT that replaces a migration. */}
       <section className="kv-panel" aria-labelledby="st11-define">
         <h2 id="st11-define" className="kv-panel__title">{t.t('st11.define.title')}</h2>
-        <p className="kv-note">{t.t('st11.define.note')}</p>
+        <Callout tone="info">{t.t('st11.define.note')}</Callout>
         <form action={defineSettingAction}>
           <div className="kv-field">
             <label className="kv-field__label" htmlFor="st11-key">{t.t('st11.col.key')}</label>
@@ -183,11 +180,11 @@ export default async function SettingsPage({ searchParams }: {
             <input className="kv-input" id="st11-reason" name="reason" required minLength={20} maxLength={2000} />
             <p className="kv-field__help">{t.t('st11.reasonHelp')}</p>
           </div>
-          <button className="kv-btn" type="submit">{t.t('st11.define.submit')}</button>
+          <Button type="submit">{t.t('st11.define.submit')}</Button>
         </form>
       </section>
 
-      {meta ? <p className="kv-note"><small>{meta.dryRunNote} ({meta.impactSimulationOwner})</small></p> : null}
+      {meta ? <Callout tone="info"><small>{meta.dryRunNote} ({meta.impactSimulationOwner})</small></Callout> : null}
     </main>
   );
 }

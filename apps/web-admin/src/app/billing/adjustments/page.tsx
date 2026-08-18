@@ -28,6 +28,9 @@ import {
 } from '../../../features/billing/money-controls';
 import { applyAdjustmentAction, decideAdjustmentAction, applyApprovedAdjustmentAction } from '../actions';
 
+import {
+  Button, Callout, EmptyState, StatusPill, type StatusTone,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -37,9 +40,9 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['requested', 'approved', 'returned', 'rejected', 'applied']);
 const ERR = new Set(['tenantId', 'direction', 'amountMinor', 'currency', 'reason', 'subscriptionId', 'invoiceId',
   'elevation', 'amount', 'notFound', 'generic', 'illegal', 'adj_decision', 'adj_note']);
-const STATUS_CLASS: Record<string, string> = {
-  awaiting_approval: 'kv-status--warn', approved: '', applied: 'kv-status--ok',
-  returned: 'kv-status--warn', rejected: 'kv-status--muted',
+const STATUS_TONE: Record<string, StatusTone> = {
+  awaiting_approval: 'warning', approved: 'neutral', applied: 'success',
+  returned: 'warning', rejected: 'neutral',
 };
 
 export default async function AdjustmentsPage({ searchParams }: {
@@ -78,7 +81,7 @@ export default async function AdjustmentsPage({ searchParams }: {
 
       {okKey && <p className="kv-success" role="status">{t.t(`adj.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`adj.error.${errKey}`)}</p>}
-      {waiting > 0 && <p className="kv-notice" role="note">{t.t('adj.waitingOnYou', { n: String(waiting) })}</p>}
+      {waiting > 0 && <Callout>{t.t('adj.waitingOnYou', { n: String(waiting) })}</Callout>}
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
@@ -93,7 +96,7 @@ export default async function AdjustmentsPage({ searchParams }: {
             ))}
           </nav>
 
-          {rows.length === 0 ? <p className="kv-empty">{t.t('billing.noAdjustments')}</p> : (
+          {rows.length === 0 ? <EmptyState title={t.t('billing.noAdjustments')} /> : (
             <ul className="kv-list" role="list">
               {rows.map((a) => {
                 const acts = adjustmentActions(a, viewer);
@@ -102,11 +105,10 @@ export default async function AdjustmentsPage({ searchParams }: {
                 return (
                   <li key={a.id} className="kv-card">
                     <p className="kv-card__title">
-                      <span className={a.direction === 'credit' ? 'kv-status kv-status--ok' : 'kv-status kv-status--warn'}>
-                        {t.t(`billing.direction.${String(a.direction)}`)}
-                      </span>
+                      <StatusPill tone={a.direction === 'credit' ? 'success' : 'warning'}
+                        label={t.t(`billing.direction.${String(a.direction)}`)} />
                       {' '}{formatMoneyMinor(String(a.amountMinor ?? '0'), String(a.currency ?? 'INR'))}
-                      {' '}<span className={`kv-status ${STATUS_CLASS[st] ?? ''}`}>{t.t(`adj.state.${st}`)}</span>
+                      {' '}<StatusPill tone={STATUS_TONE[st] ?? 'neutral'} label={t.t(`adj.state.${st}`)} />
                     </p>
                     <p className="kv-detail__muted">
                       {a.tenantId ? <Link href={`/tenants/${encodeURIComponent(a.tenantId)}`}>{a.tenantId.slice(0, 8)}</Link> : t.t('common.dash')}
@@ -121,18 +123,18 @@ export default async function AdjustmentsPage({ searchParams }: {
                     {/* The row's existence is no longer proof the money moved — so the page says which it is. */}
                     <p>
                       {moneyHasMoved(a)
-                        ? <span className="kv-status kv-status--ok">{t.t('adj.moneyMoved')}</span>
-                        : <span className="kv-status kv-status--muted">{t.t('adj.noMoneyYet')}</span>}
+                        ? <StatusPill tone="success" label={t.t('adj.moneyMoved')} />
+                        : <StatusPill tone="neutral" label={t.t('adj.noMoneyYet')} />}
                       {a.walletTxnId ? <> <code>{String(a.walletTxnId).slice(0, 8)}</code></> : null}
                     </p>
 
                     {acts.length === 0 ? (
-                      <p className="kv-notice" role="note">{t.t(`adj.blocked.${blocked}`)}</p>
+                      <Callout>{t.t(`adj.blocked.${blocked}`)}</Callout>
                     ) : acts.includes('apply') ? (
                       <form action={applyApprovedAdjustmentAction} className="kv-form">
                         <input type="hidden" name="id" value={String(a.id ?? '')} />
                         <p className="kv-field__hint">{t.t('adj.applyHint')}</p>
-                        <button type="submit" className="kv-btn">{t.t('adj.apply')}</button>
+                        <Button type="submit">{t.t('adj.apply')}</Button>
                       </form>
                     ) : (
                       <form action={decideAdjustmentAction} className="kv-form">
@@ -141,9 +143,9 @@ export default async function AdjustmentsPage({ searchParams }: {
                         <input id={`nt-${a.id}`} name="note" className="kv-input" maxLength={1000} />
                         <p className="kv-field__hint">{t.t('adj.noteHint')}</p>
                         <div className="kv-actions">
-                          <button type="submit" name="decision" value="approve" className="kv-btn">{t.t('adj.approve')}</button>
-                          <button type="submit" name="decision" value="return" className="kv-btn kv-btn--muted">{t.t('adj.return')}</button>
-                          <button type="submit" name="decision" value="reject" className="kv-btn kv-btn--danger">{t.t('adj.reject')}</button>
+                          <Button type="submit" name="decision" value="approve">{t.t('adj.approve')}</Button>
+                          <Button type="submit" name="decision" value="return" variant="secondary">{t.t('adj.return')}</Button>
+                          <Button type="submit" name="decision" value="reject" variant="danger">{t.t('adj.reject')}</Button>
                         </div>
                       </form>
                     )}
@@ -154,7 +156,7 @@ export default async function AdjustmentsPage({ searchParams }: {
           )}
           {nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={href({ status, tenantId: searchParams.tenantId, cursor: nextCursor })}>{t.t('common.nextPage')}</Link>
+              <Button as={Link} href={href({ status, tenantId: searchParams.tenantId, cursor: nextCursor })}>{t.t('common.nextPage')}</Button>
             </p>
           )}
         </>
@@ -177,7 +179,7 @@ export default async function AdjustmentsPage({ searchParams }: {
           <input id="currency" name="currency" className="kv-input" defaultValue="INR" />
           <label htmlFor="adjReason" className="kv-field__label">{t.t('billing.reason')}</label>
           <input id="adjReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('adj.requestSubmit')}</button>
+          <Button type="submit">{t.t('adj.requestSubmit')}</Button>
         </form>
       </details>
 

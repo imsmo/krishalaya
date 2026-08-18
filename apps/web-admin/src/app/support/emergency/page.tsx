@@ -11,8 +11,9 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
-import { categoryClass, stepClass } from '../../../features/support/emergency';
+import { categoryTone, stepTone } from '../../../features/support/emergency';
 
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -54,30 +55,30 @@ export default async function EmergencyDeskPage({ searchParams }: { searchParams
             <tr key={r.id}>
               <td>{r.age}</td>
               <td><Link href={`/support/emergency/${r.id}`}>{r.ticketNo}</Link></td>
-              <td><span className={categoryClass(r.categoryCode)}>{t.t(`em.cat.${r.categoryCode}`)}</span></td>
+              <td><StatusPill tone={categoryTone(r.categoryCode)} label={t.t(`em.cat.${r.categoryCode}`)} /></td>
               {/* channel is the ticket's DECLARED label — the b2 discipline holds here too */}
               <td>{r.channel}{r.channel !== 'app' ? t.t('hub.declaredMark') : ''}</td>
               <td>{r.tenantDistrict ?? t.t('common.dash')} <span className="kv-detail__muted">{t.t('em.districtNote')}</span></td>
               <td>{r.status} · {t.t('em.respondersN', { n: String(r.responders) })}</td>
               <td>
                 {r.latestStep
-                  ? <span className={stepClass(r.latestStep.status)}>{t.t(`em.step.${r.latestStep.code}` as never)}{r.latestStep.status === 'provider_pending' ? t.t('em.pendingMark') : ''}</span>
+                  ? <StatusPill tone={stepTone(r.latestStep.status)} label={`${t.t(`em.step.${r.latestStep.code}` as never)}${r.latestStep.status === 'provider_pending' ? t.t('em.pendingMark') : ''}`} />
                   : <span className="kv-detail__muted">{t.t('em.noSteps')}</span>}
               </td>
-              <td><Link href={`/support/emergency/${r.id}`} className="kv-btn kv-btn--link">{t.t('em.open')}</Link></td>
+              <td><Button as={Link} href={`/support/emergency/${r.id}`} variant="tertiary">{t.t('em.open')}</Button></td>
             </tr>
           ))}
         </tbody>
       </table>
-      {rows.length === 0 && !notice && <p className="kv-empty">{t.t('em.allQuiet')}</p>}
+      {rows.length === 0 && !notice && <EmptyState title={t.t('em.allQuiet')} />}
       {next && <p className="kv-pager"><Link href={`/support/emergency?cursor=${encodeURIComponent(next)}`}>{t.t('common.next')}</Link></p>}
 
       {/* W058's protocols panel — with the honesty each canon line needs. */}
       <h2>{t.t('em.protocolsHeading')}</h2>
       <ul className="kv-list">
-        <li><span className={categoryClass('women_safety')}>{t.t('em.cat.women_safety')}</span> {t.t('em.protocol.women_safety')}</li>
-        <li><span className={categoryClass('emergency_vet')}>{t.t('em.cat.emergency_vet')}</span> {t.t('em.protocol.emergency_vet')}</li>
-        <li><span className={categoryClass('safety')}>{t.t('em.cat.safety')}</span> {t.t('em.protocol.safety')}</li>
+        <li><StatusPill tone={categoryTone('women_safety')} label={t.t('em.cat.women_safety')} /> {t.t('em.protocol.women_safety')}</li>
+        <li><StatusPill tone={categoryTone('emergency_vet')} label={t.t('em.cat.emergency_vet')} /> {t.t('em.protocol.emergency_vet')}</li>
+        <li><StatusPill tone={categoryTone('safety')} label={t.t('em.cat.safety')} /> {t.t('em.protocol.safety')}</li>
       </ul>
       <p className="kv-error" role="note">{t.t('em.pagingHonesty')}</p>
       <p className="kv-detail__muted">{t.t('em.threadHonesty')}</p>

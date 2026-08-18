@@ -3,6 +3,12 @@
 // Mirrors the admin-api domain deliberately rather than importing across app boundaries — and every rule here is
 // asserted in `src/test/sweep-mandi-pulse.spec.ts` against the same fixtures the server spec uses, so the two cannot
 // drift the way ADMIN-11's flag preview drifted from its evaluator.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B): `severityClass` (the one `kv-badge`-returning helper below)
+// now returns `severityTone(): StatusTone` — disposition (c), domain logic stays, call site renders
+// `<StatusPill tone={...} label={...} />`.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /** How loud a held observation is. A 10× typo and a 25% one are both held and are not the same call. */
 export function severityKey(deviationBp: number | null): string {
@@ -11,9 +17,9 @@ export function severityKey(deviationBp: number | null): string {
   return deviationBp >= 5_000 ? 'mp11.sev.high' : 'mp11.sev.moderate';
 }
 
-export function severityClass(deviationBp: number | null): string {
-  if (deviationBp === null) return 'kv-badge is-warn';
-  return deviationBp >= 10_000 ? 'kv-badge is-danger' : 'kv-badge is-warn';
+export function severityTone(deviationBp: number | null): StatusTone {
+  if (deviationBp === null) return 'warning';
+  return deviationBp >= 10_000 ? 'danger' : 'warning';
 }
 
 /** Whether the decide controls are offered. ABSENT on a decided row, not disabled: deciding again would overwrite the

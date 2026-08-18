@@ -15,9 +15,10 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
-import { eligibilityLabel, eligibilityClass, rulesRecoverable, UNMASK_REASON_MIN, type ApplicationRow } from '../../../../features/schemes-registry/oversight';
+import { eligibilityLabel, eligibilityTone, rulesRecoverable, UNMASK_REASON_MIN, type ApplicationRow } from '../../../../features/schemes-registry/oversight';
 import { unmaskApplicantAction } from '../../actions';
 
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -74,20 +75,20 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
                 know when the platform cannot show them the rule the refusal was made under. */}
             {rulesRecoverable(a)
               ? <> — <Link href={`/schemes-registry/schemes/${encodeURIComponent(a.schemeId)}/versions`}>{t.t('sov.viewRules')}</Link></>
-              : <> <span className="kv-status kv-status--warn">{t.t('sov.rulesLost')}</span> <span className="kv-detail__muted">{t.t('sov.rulesLostWhy')}</span></>}
+              : <> <StatusPill tone="warning" label={t.t('sov.rulesLost')} /> <span className="kv-detail__muted">{t.t('sov.rulesLostWhy')}</span></>}
           </dd>
         </div>
-        <div className="kv-facts__row"><dt>{t.t('sov.aiCheck')}</dt><dd><span className={eligibilityClass(a.eligibility)}>{t.t(`sov.elig.${l.key}`)}{l.score ? ` · ${l.score}` : ''}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('sov.aiCheck')}</dt><dd><StatusPill tone={eligibilityTone(a.eligibility)} label={`${t.t(`sov.elig.${l.key}`)}${l.score ? ` · ${l.score}` : ''}`} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('sov.assisted')}</dt><dd>{a.assisted ? (a.assistedBy ?? t.t('sov.assistedYes')) : t.t('sov.assistedSelf')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('sov.govtRef')}</dt><dd>{a.govtAppRef ?? t.t('sov.awaitingAck')}</dd></div>
         {a.rejectionReasonCode && <div className="kv-facts__row"><dt>{t.t('sov.rejectionCode')}</dt><dd>{t.t(`sov.rc.${a.rejectionReasonCode}`)}</dd></div>}
         {a.status === 'rejected' && !a.rejectionReasonCode && (
-          <div className="kv-facts__row"><dt>{t.t('sov.rejectionCode')}</dt><dd><span className="kv-status kv-status--muted">{t.t('sov.rcUncoded')}</span></dd></div>
+          <div className="kv-facts__row"><dt>{t.t('sov.rejectionCode')}</dt><dd><StatusPill tone="neutral" label={t.t('sov.rcUncoded')} /></dd></div>
         )}
         {a.rejectionReason && <div className="kv-facts__row"><dt>{t.t('sov.rejectionReason')}</dt><dd>{a.rejectionReason}</dd></div>}
       </dl>
 
-      {a.formDataWithheld && <p className="kv-notice">{t.t('sov.formWithheld')}</p>}
+      {a.formDataWithheld && <Callout tone="warning">{t.t('sov.formWithheld')}</Callout>}
 
       <h2>{t.t('sov.unmaskHeading')}</h2>
       {/* THE CONTROL IS PRESENT (the viewer holds the permission — that is what got them here) but the REASON is
@@ -98,7 +99,7 @@ export default async function ApplicationDetailPage({ params, searchParams }: { 
         <label className="kv-field__label" htmlFor="unmaskReason">{t.t('sov.unmaskReason')}</label>
         <input id="unmaskReason" name="reason" className="kv-input" required minLength={UNMASK_REASON_MIN} maxLength={500} />
         <p className="kv-field__hint">{t.t('sov.unmaskReasonHint', { min: String(UNMASK_REASON_MIN) })}</p>
-        <button type="submit" className="kv-btn">{t.t('sov.unmask')}</button>
+        <Button type="submit">{t.t('sov.unmask')}</Button>
       </form>
 
       <h2>{t.t('sov.trailHeading')}</h2>

@@ -19,8 +19,9 @@ import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { claimCaseAction, decideCaseAction } from '../../actions';
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
-  ageMinutes, claimAction, claimKey, kindClass, kindKey, reviewerRealmKey,
+  ageMinutes, claimAction, claimKey, kindTone, kindKey, reviewerRealmKey,
 } from '../../../../features/ai-governance/ai-governance';
 
 export const dynamic = 'force-dynamic';
@@ -65,14 +66,14 @@ export default async function ReviewCasePage({ params, searchParams }: {
         <span>{params.id.slice(0, 8)}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`ai.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`ai.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`ai.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`ai.err.${searchParams.error}`)}</Callout> : null}
 
       {c ? (
         <>
           <header className="kv-page__head">
-            <h1>{params.id.slice(0, 8)} — <span className={kindClass(c.queueKind)}>{t.t(kindKey(c.queueKind))}</span></h1>
+            <h1>{params.id.slice(0, 8)} — <StatusPill tone={kindTone(c.queueKind)} label={t.t(kindKey(c.queueKind))} /></h1>
             <p className="kv-page__sub">
               {t.t(claimKey(c.claim.kind))} · {t.t('ai.col.priority')} {c.priority}
               {age !== null ? ` · ${t.t('ai.age.minutes', { m: String(age) })}` : ''}
@@ -91,7 +92,7 @@ export default async function ReviewCasePage({ params, searchParams }: {
                 <Link href={`/ai-models/decisions?overriddenOnly=false`}>{t.t('ai.case.openExplorer')}</Link>
               </p>
             ) : (
-              <p className="kv-note is-warn">{t.t('ai.case.noInference')}</p>
+              <Callout tone="warning">{t.t('ai.case.noInference')}</Callout>
             )}
           </section>
 
@@ -102,7 +103,7 @@ export default async function ReviewCasePage({ params, searchParams }: {
                 lookup would read `mandi_prices` through the subject, which is the same per-subject-type join `district`
                 needs (ADMIN-7-Q4) — and a cross-check panel that ran no checks would be a reassurance with nothing behind
                 it, which is the exact defect this plane keeps producing. */}
-            <p className="kv-note is-warn">{t.t('ai.case.crossChecksAbsent')}</p>
+            <Callout tone="warning">{t.t('ai.case.crossChecksAbsent')}</Callout>
           </section>
 
           {/* ---------------- THE DECISION ---------------- */}
@@ -116,7 +117,7 @@ export default async function ReviewCasePage({ params, searchParams }: {
                   {' · '}{t.t(reviewerRealmKey(c.reviewerUserId, c.reviewerAdminId))}
                 </p>
                 {c.decisionNote ? <p className="kv-pre">{c.decisionNote}</p> : null}
-                <p className="kv-note">{t.t('ai.case.notReopened')}</p>
+                <Callout>{t.t('ai.case.notReopened')}</Callout>
               </>
             ) : action === 'decide' ? (
               <form action={decideCaseAction}>
@@ -129,36 +130,36 @@ export default async function ReviewCasePage({ params, searchParams }: {
                 </div>
                 {/* TWO SUBMITS, ONE FORM, and the labels say what each does to the model rather than "OK" and "Cancel":
                     accepting means the human agreed with the AI, rejecting means they disagreed and the model was wrong. */}
-                <button className="kv-btn" type="submit" name="decision" value="accept">
+                <Button type="submit" name="decision" value="accept">
                   {t.t('ai.case.accept')}
-                </button>
-                <button className="kv-btn kv-btn--danger" type="submit" name="decision" value="reject">
+                </Button>
+                <Button type="submit" name="decision" value="reject" variant="danger">
                   {t.t('ai.case.reject')}
-                </button>
-                <p className="kv-note">{t.t('ai.case.rejectMeaning')}</p>
+                </Button>
+                <Callout>{t.t('ai.case.rejectMeaning')}</Callout>
               </form>
             ) : action === 'take' || action === 'takeover' ? (
               <form action={claimCaseAction}>
                 <input type="hidden" name="id" value={c.id} />
                 {/* A decision may only be made FROM a claim: `pending` → `accepted` in one step would mean nobody was ever
                     recorded as holding the case, which is the single-owner rule defeated by skipping a step. */}
-                <p className="kv-note">{t.t('ai.case.mustClaim')}</p>
+                <Callout>{t.t('ai.case.mustClaim')}</Callout>
                 {action === 'takeover' ? (
-                  <p className="kv-note is-warn">{t.t('ai.case.takeoverWarning', { who: c.claim.who?.slice(0, 8) ?? '—' })}</p>
+                  <Callout tone="warning">{t.t('ai.case.takeoverWarning', { who: c.claim.who?.slice(0, 8) ?? '—' })}</Callout>
                 ) : null}
-                <button className="kv-btn" type="submit">{t.t(`ai.action.${action}`)}</button>
+                <Button type="submit">{t.t(`ai.action.${action}`)}</Button>
               </form>
             ) : (
               // Held by somebody else, recently. The control is NOT drawn — cases are single-owner so two people cannot
               // reach conflicting decisions on the same farmer's listing.
-              <p className="kv-note is-warn" role="status">
+              <Callout tone="warning" live="polite">
                 {t.t('ai.case.heldByOther', { who: c.claim.who?.slice(0, 8) ?? '—' })}
-              </p>
+              </Callout>
             )}
           </section>
 
           {/* The honest limit of a platform decision, stated where the decision is made. */}
-          <p className="kv-note">{t.t('ai.case.flagCaveat')}</p>
+          <Callout>{t.t('ai.case.flagCaveat')}</Callout>
         </>
       ) : null}
     </main>

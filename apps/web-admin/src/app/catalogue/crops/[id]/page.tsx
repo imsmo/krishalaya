@@ -18,11 +18,20 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { upsertMappingAction, removeMappingAction } from '../../actions';
 import { syncStateOf, mandiClass, mandiKey, MIN_REASON, type ProductMappingRow } from '../../../../features/catalogue/crops';
 
+import {
+  Button, Callout, EmptyState, StatusPill, type StatusTone,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('crop.mapTitle'), robots: { index: false, follow: false } };
 }
+
+// mandiClass (features/catalogue/crops.ts) predates the StatusPill canon and still returns a full `kv-status--*`
+// class string; mapped here rather than editing that shared helper.
+const MANDI_TONE: Record<string, StatusTone> = {
+  'kv-status--ok': 'success', 'kv-status--warn': 'warning', 'kv-status--danger': 'danger', 'kv-status--muted': 'neutral',
+};
 
 interface MapView {
   items: ProductMappingRow[];
@@ -52,7 +61,7 @@ export default async function CropMappingPage(
       <p className="kv-backlink"><Link href="/catalogue/crops">{t.t('cat.back')}</Link></p>
       <h1>{t.t('crop.mapTitle')}</h1>
       {/* the correction, stated plainly */}
-      <p className="kv-notice" role="note">{view?.basis ?? t.t('crop.mapLead')}</p>
+      <Callout>{view?.basis ?? t.t('crop.mapLead')}</Callout>
 
       {okKey && <p className="kv-success" role="status">{t.t(`crop.ok.${okKey}`)}</p>}
       {errKey && (
@@ -65,13 +74,12 @@ export default async function CropMappingPage(
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : view?.noProductsNote ? (
         // NOT "unmapped" — there is nothing to map
-        <p className="kv-empty">{view.noProductsNote}</p>
+        <EmptyState title={view.noProductsNote} />
       ) : (
         <>
           <p className="kv-field__hint">
-            <span className={`kv-status ${mandiClass(view?.rollup.state)}`}>
-              {t.t(`crop.mandi.${mandiKey(view?.rollup.state)}`)}
-            </span>
+            <StatusPill tone={MANDI_TONE[mandiClass(view?.rollup.state)] ?? 'neutral'}
+              label={t.t(`crop.mandi.${mandiKey(view?.rollup.state)}`)} />
             {' '}{String(view?.rollup.mapped ?? 0)} / {String(view?.rollup.total ?? 0)}
           </p>
 
@@ -91,9 +99,8 @@ export default async function CropMappingPage(
                     <td>
                       {/* an unmapped product has NO sync state at all; inventing 'pending' would imply an attempt */}
                       {sync
-                        ? <span className={`kv-status ${sync === 'synced' ? 'kv-status--ok' : sync === 'pending' ? 'kv-status--warn' : 'kv-status--danger'}`}>
-                            {t.t(`crop.sync.${sync}`)}
-                          </span>
+                        ? <StatusPill tone={sync === 'synced' ? 'success' : sync === 'pending' ? 'warning' : 'danger'}
+                            label={t.t(`crop.sync.${sync}`)} />
                         : t.t('common.dash')}
                     </td>
                   </tr>
@@ -120,7 +127,7 @@ export default async function CropMappingPage(
               <input id="m-code" name="externalId" className="kv-input" required placeholder="AGM-1101" maxLength={40} />
               <label htmlFor="m-reason" className="kv-field__label">{t.t('eav.reason')}</label>
               <input id="m-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('crop.map')}</button>
+              <Button type="submit" variant="danger">{t.t('crop.map')}</Button>
             </form>
           </details>
 
@@ -139,7 +146,7 @@ export default async function CropMappingPage(
                 </select>
                 <label htmlFor="u-reason" className="kv-field__label">{t.t('eav.reason')}</label>
                 <input id="u-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-                <button type="submit" className="kv-btn kv-btn--muted">{t.t('crop.unmap')}</button>
+                <Button type="submit" variant="secondary">{t.t('crop.unmap')}</Button>
               </form>
             </details>
           )}

@@ -8,7 +8,7 @@
 // The rest of this file is about not letting a draft read as live, and not letting "no keys" read as 0%.
 import {
   REVIEW_DECISIONS, TRANSLATABLE_ENTITIES, MIN_REASON, MAX_TEXT,
-  isServable, isAwaitingReview, stateClass, stateKey, coverageClass, pctText, canReview, totalPending,
+  isServable, isAwaitingReview, stateTone, stateKey, coverageTone, pctText, canReview, totalPending,
   buildTranslation, buildReview, buildGrant, buildRun,
   TAXONOMY_REPORTS, reportNeedsLanguage, buildTaxonomyExport, taxonomyExportFileName,
   MAX_EXPORT_ROWS, DEFAULT_EXPORT_ROWS,
@@ -49,9 +49,9 @@ describe('THE SERVABLE RULE — the third copy, same four cases', () => {
 
   it('styles a DRAFT amber — not green, and not red either', () => {
     // it is not live and it is not an error; the distinction is the whole point of the screen
-    expect(stateClass({ isMachine: true, reviewedAt: null })).toBe('kv-status--warn');
-    expect(stateClass({ isMachine: true, reviewedAt: '2026-01-01' })).toBe('kv-status--ok');
-    expect(stateClass({ isMachine: false, reviewedAt: null })).toBe('kv-status--ok');
+    expect(stateTone({ isMachine: true, reviewedAt: null })).toBe('warning');
+    expect(stateTone({ isMachine: true, reviewedAt: '2026-01-01' })).toBe('success');
+    expect(stateTone({ isMachine: false, reviewedAt: null })).toBe('success');
   });
 
   it('names the three states distinctly', () => {
@@ -64,13 +64,13 @@ describe('THE SERVABLE RULE — the third copy, same four cases', () => {
 describe('coverage must not mislead', () => {
   it('styles NULL — no keys — as neutral, never as a failure', () => {
     // a red cell beside a kind nobody has created yet is a criticism of nothing, and it sits there for ever
-    expect(coverageClass(null)).toBe('kv-status--muted');
-    expect(coverageClass(0)).toBe('kv-status--danger');
-    expect(coverageClass(39)).toBe('kv-status--danger');
-    expect(coverageClass(40)).toBe('kv-status--warn');
-    expect(coverageClass(89)).toBe('kv-status--warn');
-    expect(coverageClass(90)).toBe('kv-status--ok');
-    expect(coverageClass(100)).toBe('kv-status--ok');
+    expect(coverageTone(null)).toBe('neutral');
+    expect(coverageTone(0)).toBe('danger');
+    expect(coverageTone(39)).toBe('danger');
+    expect(coverageTone(40)).toBe('warning');
+    expect(coverageTone(89)).toBe('warning');
+    expect(coverageTone(90)).toBe('success');
+    expect(coverageTone(100)).toBe('success');
   });
 
   it('renders NO percentage at all for a kind with no keys', () => {

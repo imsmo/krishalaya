@@ -13,14 +13,15 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { BREACH_STATUSES, BREACH_SEVERITIES, breachStatusKey, breachSeverityKey, type BreachRow } from '../../../features/compliance/compliance';
 import { openBreachAction } from '../actions';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('compliance.breachesTitle'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { low: 'kv-status--muted', medium: 'kv-status--warn', high: 'kv-status--danger', critical: 'kv-status--danger' };
-const ST_CLASS: Record<string, string> = { open: 'kv-status--danger', contained: 'kv-status--warn', notified: 'kv-status--warn', closed: 'kv-status--muted' };
+const SEV_TONE: Record<string, StatusTone> = { low: 'neutral', medium: 'warning', high: 'danger', critical: 'danger' };
+const ST_TONE: Record<string, StatusTone> = { open: 'danger', contained: 'warning', notified: 'warning', closed: 'neutral' };
 const ERR = new Set(['affectedTenantId', 'severity', 'title', 'description', 'affectedData', 'affectedCount', 'detectedAt', 'elevation', 'conflict', 'invalid', 'generic']);
 
 export default async function BreachesPage({ searchParams }: { searchParams: { cursor?: string; status?: string; error?: string } }) {
@@ -38,8 +39,8 @@ export default async function BreachesPage({ searchParams }: { searchParams: { c
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const cols: Column<BreachRow>[] = [
     { header: t.t('compliance.breachTitle'), cell: (r) => <Link href={`/compliance/breaches/${encodeURIComponent(r.id)}`}>{r.title}</Link> },
-    { header: t.t('compliance.severity'), cell: (r) => { const s = breachSeverityKey(r.severity); return <span className={`kv-status ${SEV_CLASS[s]}`}>{t.t(`compliance.sev.${s}`)}</span>; } },
-    { header: t.t('compliance.status'), cell: (r) => { const s = breachStatusKey(r.status); return <span className={`kv-status ${ST_CLASS[s]}`}>{t.t(`compliance.breachState.${s}`)}</span>; } },
+    { header: t.t('compliance.severity'), cell: (r) => { const s = breachSeverityKey(r.severity); return <StatusPill tone={SEV_TONE[s]} label={t.t(`compliance.sev.${s}`)} />; } },
+    { header: t.t('compliance.status'), cell: (r) => { const s = breachStatusKey(r.status); return <StatusPill tone={ST_TONE[s]} label={t.t(`compliance.breachState.${s}`)} />; } },
     { header: t.t('compliance.affectedCount'), cell: (r) => r.affectedCount.toLocaleString() },
     { header: t.t('compliance.detectedAt'), cell: (r) => r.detectedAt ?? t.t('common.dash') },
   ];
@@ -53,16 +54,16 @@ export default async function BreachesPage({ searchParams }: { searchParams: { c
       {errKey && <p className="kv-error" role="alert">{t.t(`compliance.error.${errKey}`)}</p>}
 
       <nav className="kv-filters" aria-label={t.t('compliance.filterStatus')}>
-        <Link href={filterHref()} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('compliance.filterAll')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('compliance.filterAll')}</Chip>
         {BREACH_STATUSES.map((s) => (
-          <Link key={s} href={filterHref(s)} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`compliance.breachState.${s}`)}</Link>
+          <Chip as={Link} key={s} href={filterHref(s)} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`compliance.breachState.${s}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('compliance.breachesEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/compliance/breaches?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/compliance/breaches?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -86,7 +87,7 @@ export default async function BreachesPage({ searchParams }: { searchParams: { c
           <input id="detectedAt" name="detectedAt" className="kv-input" required placeholder={t.t('compliance.isoHint')} />
           <label htmlFor="description" className="kv-field__label">{t.t('compliance.description')}</label>
           <input id="description" name="description" className="kv-input" required minLength={3} maxLength={2000} />
-          <button type="submit" className="kv-btn">{t.t('compliance.openBreachSubmit')}</button>
+          <Button type="submit">{t.t('compliance.openBreachSubmit')}</Button>
         </form>
       </details>
     </section>

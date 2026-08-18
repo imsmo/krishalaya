@@ -20,8 +20,9 @@ import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { approveTransitionAction, proposeTransitionAction, withdrawTransitionAction, runAuditAction } from '../../actions';
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
-  adviceClass, adviceKey, formatGap, formatRate, formatThreshold, gateClass, gateKey, gateStatusClass,
+  adviceClass, adviceKey, formatGap, formatRate, formatThreshold, gateTone, gateKey, gateStatusTone,
   gateStatusKey, legacyKey, nextStepKey, rollbackClass, rollbackKey, showApproveTransition, showWithdraw,
 } from '../../../../features/ai-governance/ai-governance';
 
@@ -76,9 +77,9 @@ export default async function RolloutPage({ params, searchParams }: {
         <span aria-hidden="true">/</span> <span>{t.t('ai.rollout.title')}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`ai.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`ai.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`ai.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`ai.err.${searchParams.error}`)}</Callout> : null}
 
       {r ? (
         <>
@@ -95,9 +96,8 @@ export default async function RolloutPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="ai-gate">
             <h2 id="ai-gate" className="kv-panel__title">{t.t('ai.gate.title')}</h2>
             <p>
-              <span className={gateClass(r.fairnessGate.open)}>
-                {t.t(gateKey(r.fairnessGate.open, r.fairnessGate.reason))}
-              </span>
+              <StatusPill tone={gateTone(r.fairnessGate.open)}
+                label={t.t(gateKey(r.fairnessGate.open, r.fairnessGate.reason))} />
               {r.fairnessGate.open && r.fairnessGate.maxGapPp !== undefined
                 ? <> {formatGap(r.fairnessGate.maxGapPp)} · {(r.fairnessGate.auditedAt ?? '').slice(0, 10)}</>
                 : null}
@@ -105,17 +105,17 @@ export default async function RolloutPage({ params, searchParams }: {
             {/* The refusal in words the operator can act on: run an audit, close a gap, gather more data, re-audit, or get
                 the DPO to sign off the slice definitions. Each reason has a different next step. */}
             {r.fairnessGate.refusal ? (
-              <p className="kv-note is-danger" role="alert">{r.fairnessGate.refusal}</p>
+              <Callout tone="danger" live="assertive">{r.fairnessGate.refusal}</Callout>
             ) : null}
             {/* What the OLD column holds, for a reader who remembers it existing. */}
-            <p className="kv-note">{t.t('ai.gate.legacyNote')} {t.t(legacyKey(r.model.legacyFairnessColumn.kind))}</p>
+            <Callout>{t.t('ai.gate.legacyNote')} {t.t(legacyKey(r.model.legacyFairnessColumn.kind))}</Callout>
             <form action={runAuditAction}>
               <input type="hidden" name="id" value={r.model.id} />
-              <button className="kv-btn" type="submit">{t.t('ai.audit.run')}</button>
+              <Button type="submit">{t.t('ai.audit.run')}</Button>
             </form>
-            <p className="kv-note">
+            <Callout>
               <Link href="/ai-models/fairness">{t.t('ai.gate.board')}</Link>
-            </p>
+            </Callout>
           </section>
 
           {/* ---------------- THE LADDER'S GATES ---------------- */}
@@ -140,9 +140,8 @@ export default async function RolloutPage({ params, searchParams }: {
                   <td>{t.t('ai.gate.shadowDuration')}</td>
                   <td>{r.gates.shadowDuration.value ?? r.gates.shadowDuration.have ?? '—'}</td>
                   <td>
-                    <span className={gateStatusClass(r.gates.shadowDuration.kind)}>
-                      {t.t(gateStatusKey(r.gates.shadowDuration.kind))}
-                    </span>
+                    <StatusPill tone={gateStatusTone(r.gates.shadowDuration.kind)}
+                      label={t.t(gateStatusKey(r.gates.shadowDuration.kind))} />
                   </td>
                 </tr>
                 <tr>
@@ -153,9 +152,8 @@ export default async function RolloutPage({ params, searchParams }: {
                       : formatRate(r.gates.overrideRate.value)}
                   </td>
                   <td>
-                    <span className={gateStatusClass(r.gates.overrideRate.kind)}>
-                      {t.t(gateStatusKey(r.gates.overrideRate.kind))}
-                    </span>
+                    <StatusPill tone={gateStatusTone(r.gates.overrideRate.kind)}
+                      label={t.t(gateStatusKey(r.gates.overrideRate.kind))} />
                   </td>
                 </tr>
                 {/* THE ROWS W088 ASKS FOR THAT NOTHING MEASURES. Shown rather than omitted, because omitting them would
@@ -165,7 +163,7 @@ export default async function RolloutPage({ params, searchParams }: {
                   <tr key={u.metric}>
                     <td>{u.metric}</td>
                     <td><small>{u.why}</small></td>
-                    <td><span className={gateStatusClass('unmeasured')}>{t.t(gateStatusKey('unmeasured'))}</span></td>
+                    <td><StatusPill tone={gateStatusTone('unmeasured')} label={t.t(gateStatusKey('unmeasured'))} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -186,7 +184,7 @@ export default async function RolloutPage({ params, searchParams }: {
             <p className={rollbackClass(r.rollback.enforced, r.rollback.signal.fires)} role={r.rollback.signal.fires ? 'alert' : 'status'}>
               {t.t(rollbackKey(r.rollback.enforced, r.rollback.signal.fires))}
             </p>
-            <p className="kv-note">{r.rollback.note}</p>
+            <Callout>{r.rollback.note}</Callout>
           </section>
 
           {/* ---------------- THE DECISION ---------------- */}
@@ -209,10 +207,10 @@ export default async function RolloutPage({ params, searchParams }: {
                   <form action={approveTransitionAction}>
                     <input type="hidden" name="id" value={r.model.id} />
                     <p>{t.t('ai.transition.confirm', { to: r.model.proposedStatus })}</p>
-                    <button className="kv-btn kv-btn--danger" type="submit">{t.t('ai.transition.approve')}</button>
+                    <Button type="submit" variant="danger">{t.t('ai.transition.approve')}</Button>
                   </form>
                 ) : (
-                  <p className="kv-note is-warn" role="status">{t.t('ai.transition.cannotApprove')}</p>
+                  <Callout tone="warning" live="polite">{t.t('ai.transition.cannotApprove')}</Callout>
                 )}
 
                 {/* Withdraw IS shown to the maker: withdrawing your own proposal is noticing your own mistake, and
@@ -220,7 +218,7 @@ export default async function RolloutPage({ params, searchParams }: {
                 {showWithdraw(r.model.proposedStatus) ? (
                   <form action={withdrawTransitionAction}>
                     <input type="hidden" name="id" value={r.model.id} />
-                    <button className="kv-btn" type="submit">{t.t('ai.transition.withdraw')}</button>
+                    <Button type="submit">{t.t('ai.transition.withdraw')}</Button>
                   </form>
                 ) : null}
               </>
@@ -252,7 +250,7 @@ export default async function RolloutPage({ params, searchParams }: {
                     aria-describedby="ai-reason-help" />
                   <p className="kv-field__help" id="ai-reason-help">{t.t('ai.transition.reasonHelp')}</p>
                 </div>
-                <button className="kv-btn" type="submit">{t.t('ai.transition.propose')}</button>
+                <Button type="submit">{t.t('ai.transition.propose')}</Button>
               </form>
             )}
           </section>

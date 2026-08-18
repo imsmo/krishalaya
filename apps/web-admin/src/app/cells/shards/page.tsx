@@ -12,11 +12,17 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { NODE_STATUSES, isNodeStatus, nodeStatusKey, nodeStatusTone, type ShardRow } from '../../../features/cells/cell';
 import { createShardAction } from '../actions';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('cells.shardsTitle'), robots: { index: false, follow: false } };
 }
+
+// DEV-60 static-literal sweep: nodeStatusTone (features/cells/cell.ts) still returns the OLD tone-suffix
+// vocabulary ('ok'|'warn'|'danger'|'muted'), not StatusTone — that helper is a features/** file, out of
+// scope for this page-only sweep, so the remap lives here at the call site instead.
+const NODE_TONE: Record<string, StatusTone> = { ok: 'success', warn: 'warning', danger: 'danger', muted: 'neutral' };
 
 const ERR = new Set(['cellId', 'shardIndex', 'weight', 'notes', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
@@ -37,10 +43,10 @@ export default async function ShardsPage({ searchParams }: { searchParams: { cur
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const cols: Column<ShardRow>[] = [
     { header: t.t('cells.shardIndex'), cell: (r) => <Link href={`/cells/shards/${encodeURIComponent(r.id)}`}>{r.shardIndex}</Link> },
-    { header: t.t('cells.status'), cell: (r) => <span className={`kv-status kv-status--${nodeStatusTone(r.status)}`}>{t.t(nodeStatusKey(r.status))}</span> },
+    { header: t.t('cells.status'), cell: (r) => <StatusPill tone={NODE_TONE[nodeStatusTone(r.status)]} label={t.t(nodeStatusKey(r.status))} /> },
     { header: t.t('cells.weight'), cell: (r) => String(r.weight) },
     { header: t.t('cells.placed'), cell: (r) => String(r.placedCount) },
-    { header: t.t('cells.dsn'), cell: (r) => r.hasDsn ? t.t('cells.dsnSet') : <span className="kv-status kv-status--warn">{t.t('cells.dsnMissing')}</span> },
+    { header: t.t('cells.dsn'), cell: (r) => r.hasDsn ? t.t('cells.dsnSet') : <StatusPill tone="warning" label={t.t('cells.dsnMissing')} /> },
   ];
   const filterHref = (s?: string) => `/cells/shards?${new URLSearchParams({ ...(cellId ? { cellId } : {}), ...(s ? { status: s } : {}) }).toString()}`;
 
@@ -49,10 +55,10 @@ export default async function ShardsPage({ searchParams }: { searchParams: { cur
       <h1>{t.t('cells.shardsTitle')}</h1>
       <p className="kv-muted">{t.t('cells.shardsLead')}</p>
       <nav className="kv-filters" aria-label={t.t('cells.nav')}>
-        <Link href="/cells" className="kv-chip">{t.t('cells.navCells')}</Link>
-        <Link href="/cells/shards" className="kv-chip is-active" aria-current="true">{t.t('cells.navShards')}</Link>
-        <Link href="/cells/placements" className="kv-chip">{t.t('cells.navPlacements')}</Link>
-        <Link href="/cells/residency" className="kv-chip">{t.t('cells.navResidency')}</Link>
+        <Chip as={Link} href="/cells">{t.t('cells.navCells')}</Chip>
+        <Chip as={Link} href="/cells/shards" aria-current="true" active>{t.t('cells.navShards')}</Chip>
+        <Chip as={Link} href="/cells/placements">{t.t('cells.navPlacements')}</Chip>
+        <Chip as={Link} href="/cells/residency">{t.t('cells.navResidency')}</Chip>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('cells.ok.shardCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cells.err.${errKey}`)}</p>}
@@ -61,19 +67,19 @@ export default async function ShardsPage({ searchParams }: { searchParams: { cur
         <label htmlFor="cellId" className="kv-field__label">{t.t('cells.cellId')}</label>
         <input id="cellId" name="cellId" className="kv-input kv-input--sm" defaultValue={cellId ?? ''} placeholder={t.t('cells.uuidHint')} />
         {status && <input type="hidden" name="status" value={status} />}
-        <button type="submit" className="kv-btn kv-btn--link">{t.t('common.filter')}</button>
+        <Button type="submit" variant="tertiary">{t.t('common.filter')}</Button>
       </form>
       <nav className="kv-filters" aria-label={t.t('cells.filterStatus')}>
-        <Link href={filterHref()} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('cells.filterAll')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('cells.filterAll')}</Chip>
         {NODE_STATUSES.map((s) => (
-          <Link key={s} href={filterHref(s)} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(nodeStatusKey(s))}</Link>
+          <Chip as={Link} key={s} href={filterHref(s)} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(nodeStatusKey(s))}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('cells.shardsEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/cells/shards?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}${cellId ? `&cellId=${cellId}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/cells/shards?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}${cellId ? `&cellId=${cellId}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -91,7 +97,7 @@ export default async function ShardsPage({ searchParams }: { searchParams: { cur
           <p className="kv-field__hint">{t.t('cells.dsnHint')}</p>
           <label htmlFor="shardReason" className="kv-field__label">{t.t('cells.reason')}</label>
           <input id="shardReason" name="reason" className="kv-input" required minLength={3} maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('cells.createShardSubmit')}</button>
+          <Button type="submit">{t.t('cells.createShardSubmit')}</Button>
         </form>
       </details>
     </section>

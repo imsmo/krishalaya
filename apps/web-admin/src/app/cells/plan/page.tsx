@@ -16,8 +16,11 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { addPlanStepAction } from '../actions';
-import { planStatusClass, planStatusKey, triggerKey } from '../../../features/cells/residency-migration';
+import { planStatusTone, planStatusKey, triggerKey } from '../../../features/cells/residency-migration';
 
+import {
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -58,25 +61,22 @@ export default async function ScalePlanPage({ searchParams }: { searchParams: { 
         <p className="kv-page__sub">{t.t('rz.plan.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`rz.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`rz.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`rz.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`rz.err.${searchParams.error}`)}</Callout> : null}
 
       {p ? (
         <>
           {/* **NO PROJECTION CHART, AND THE ABSENCE IS NAMED.** A line drawn from no growth model would be a plan
               somebody could act on. */}
-          <p className="kv-note is-warn">{t.t('rz.plan.noForecast', { delta: p.forecast.delta })}</p>
-          <p className="kv-note">
+          <Callout tone="warning">{t.t('rz.plan.noForecast', { delta: p.forecast.delta })}</Callout>
+          <Callout>
             {t.t('rz.plan.rateNote')}{' '}
             <Link href="/cells/capacity">{t.t('rz.plan.openCapacity')}</Link>
-          </p>
+          </Callout>
 
           {p.steps.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('rz.plan.empty.title')}</h2>
-              <p>{t.t('rz.plan.empty.body')}</p>
-            </div>
+            <EmptyState title={t.t('rz.plan.empty.title')} body={t.t('rz.plan.empty.body')} />
           ) : (
             <table className="kv-table">
               <caption className="kv-table__caption">{t.t('rz.plan.caption')}</caption>
@@ -103,7 +103,7 @@ export default async function ScalePlanPage({ searchParams }: { searchParams: { 
                         operator to stop reading the column. */}
                     <td>{t.t(triggerKey(s.triggerSpec), s.triggerSpec as Record<string, string>)}</td>
                     <td>
-                      <span className={planStatusClass(s.status)}>{t.t(planStatusKey(s.status))}</span>
+                      <StatusPill tone={planStatusTone(s.status)} label={t.t(planStatusKey(s.status))} />
                       {/* "gated" with no reason would be a status recording a decision nobody wrote down; the constraint
                           forbids it and the column shows it. */}
                       {s.gateReason ? <><br /><small>{s.gateReason}</small></> : null}
@@ -162,7 +162,7 @@ export default async function ScalePlanPage({ searchParams }: { searchParams: { 
                 <input className="kv-input" id="rz-gate" name="gateReason" maxLength={2000} />
                 <p className="kv-field__help">{t.t('rz.plan.gateHelp')}</p>
               </div>
-              <button className="kv-btn" type="submit">{t.t('rz.plan.addBtn')}</button>
+              <Button type="submit">{t.t('rz.plan.addBtn')}</Button>
             </form>
           </section>
         </>

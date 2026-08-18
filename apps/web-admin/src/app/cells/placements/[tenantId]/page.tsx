@@ -13,6 +13,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { residencyWarnKey, type PlacementRow } from '../../../../features/cells/cell';
 import { moveTenantAction, removePlacementAction } from '../../actions';
 
+import { Button } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -68,7 +69,7 @@ export default async function PlacementDetailPage({ params, searchParams }: { pa
           <label className="kv-field__label"><input type="checkbox" name="pinned" value="true" defaultChecked={placement.pinned} /> {t.t('cells.pinnedField')}</label>
           <label className="kv-field__label">{t.t('cells.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={500} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('cells.moveSubmit')}</button>
+          <Button type="submit" variant="danger">{t.t('cells.moveSubmit')}</Button>
         </form>
       </details>
 
@@ -78,7 +79,7 @@ export default async function PlacementDetailPage({ params, searchParams }: { pa
         <form action={removePlacementAction} className="kv-inline-form">
           <input type="hidden" name="tenantId" value={placement.tenantId} />
           <input name="reason" className="kv-input kv-input--sm" required minLength={3} maxLength={500} placeholder={t.t('cells.reason')} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('cells.removeSubmit')}</button>
+          <Button type="submit" variant="danger">{t.t('cells.removeSubmit')}</Button>
         </form>
       </details>
     </section>

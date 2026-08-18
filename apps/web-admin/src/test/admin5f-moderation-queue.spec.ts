@@ -3,8 +3,8 @@
 // held, and above ₹1,00,000 unless a second operator is looking.
 import {
   HOLD_SOURCES, REASON_MIN, SUBJECT_TYPES, PLATFORM_OUTCOMES, OUTCOME_MIN,
-  slaClass, slaKey, formatMinor, removeBlockedKey, valueDrift, orderClass, noticeClass, noticeKey,
-  buildOrder, priorityClass, reportSlaClass, handlerKey, subjectCountText, pageOrderCaveatVisible, buildDecide,
+  slaTone, slaKey, formatMinor, removeBlockedKey, valueDrift, orderTone, noticeTone, noticeKey,
+  buildOrder, priorityTone, reportSlaTone, handlerKey, subjectCountText, pageOrderCaveatVisible, buildDecide,
   type RemoveState,
 } from '../features/moderation/queue';
 
@@ -12,17 +12,15 @@ import {
 describe('ADMIN-5f console · the hold SLA', () => {
   it('UNMEASURED is a warning, never a pass', () => {
     // A hold with no clock cannot be shown to be inside its SLA, and the farmer under it loses money by the hour.
-    expect(slaClass({ kind: 'unmeasured' })).toContain('warn');
-    expect(slaClass({ kind: 'unmeasured' })).not.toContain('--ok');
+    expect(slaTone({ kind: 'unmeasured' })).toBe('warning');
     expect(slaKey(null)).toBe('unmeasured');
     expect(slaKey(undefined)).toBe('unmeasured');
   });
   it('breached is a failure and under-an-hour is a warning', () => {
-    expect(slaClass({ kind: 'breached', hoursOver: 1 })).toContain('danger');
-    expect(slaClass({ kind: 'page_lead', hoursLeft: 0.5 })).toContain('warn');
-    expect(slaClass({ kind: 'ok', hoursLeft: 3 })).toContain('ok');
-    expect(slaClass(null)).toContain('muted');
-    expect(slaClass(null)).not.toContain('--ok');
+    expect(slaTone({ kind: 'breached', hoursOver: 1 })).toBe('danger');
+    expect(slaTone({ kind: 'page_lead', hoursLeft: 0.5 })).toBe('warning');
+    expect(slaTone({ kind: 'ok', hoursLeft: 3 })).toBe('success');
+    expect(slaTone(null)).toBe('neutral');
   });
 });
 
@@ -87,20 +85,19 @@ describe('ADMIN-5f console · value at stake', () => {
 
 describe('ADMIN-5f console · colours say what the act does to the seller', () => {
   it('a REMOVE is a failure and a RELEASE is the success case', () => {
-    expect(orderClass('remove')).toContain('danger');
-    expect(orderClass('release')).toContain('ok');
-    expect(orderClass('hold')).toContain('warn');
-    expect(orderClass('unknown')).toContain('muted');
+    expect(orderTone('remove')).toBe('danger');
+    expect(orderTone('release')).toBe('success');
+    expect(orderTone('hold')).toBe('warning');
+    expect(orderTone('unknown')).toBe('neutral');
   });
   it('QUEUED is NOT delivered and is not styled as success', () => {
     // admin-api writes `queued` and nothing has been sent. A console showing that as done would tell an operator the
     // farmer knows why their listing was stopped.
-    expect(noticeClass('queued')).toContain('warn');
-    expect(noticeClass('queued')).not.toContain('--ok');
-    expect(noticeClass('delivered')).toContain('ok');
-    expect(noticeClass('failed')).toContain('danger');
-    expect(noticeClass('refused')).toContain('danger');
-    expect(noticeClass(null)).toContain('muted');
+    expect(noticeTone('queued')).toBe('warning');
+    expect(noticeTone('delivered')).toBe('success');
+    expect(noticeTone('failed')).toBe('danger');
+    expect(noticeTone('refused')).toBe('danger');
+    expect(noticeTone(null)).toBe('neutral');
     expect(noticeKey('queued')).toBe('queued');
     expect(noticeKey('sent')).toBe('unknown');
     expect(noticeKey(null)).toBe('unknown');
@@ -142,17 +139,16 @@ describe('ADMIN-5f console · the order form', () => {
 describe('ADMIN-5f console · W092 triage colours and cells', () => {
   it('a SAFETY-DESK row is a failure colour even when fresh', () => {
     // The colour marks what the row is about, not how late it is.
-    expect(priorityClass('safety_desk')).toContain('danger');
-    expect(priorityClass('sla_breached')).toContain('warn');
-    expect(priorityClass('normal')).toContain('muted');
-    expect(priorityClass(null)).toContain('muted');
+    expect(priorityTone('safety_desk')).toBe('danger');
+    expect(priorityTone('sla_breached')).toBe('warning');
+    expect(priorityTone('normal')).toBe('neutral');
+    expect(priorityTone(null)).toBe('neutral');
   });
   it('an UNMEASURED report age is a warning, not a pass', () => {
-    expect(reportSlaClass({ kind: 'unmeasured' })).toContain('warn');
-    expect(reportSlaClass({ kind: 'unmeasured' })).not.toContain('--ok');
-    expect(reportSlaClass({ kind: 'breached', overHours: 1 })).toContain('danger');
-    expect(reportSlaClass({ kind: 'ok', ageHours: 1 })).toContain('ok');
-    expect(reportSlaClass(null)).toContain('muted');
+    expect(reportSlaTone({ kind: 'unmeasured' })).toBe('warning');
+    expect(reportSlaTone({ kind: 'breached', overHours: 1 })).toBe('danger');
+    expect(reportSlaTone({ kind: 'ok', ageHours: 1 })).toBe('success');
+    expect(reportSlaTone(null)).toBe('neutral');
   });
   it('REPORTS ON SUBJECT is a dash when unknown, never 1', () => {
     // "This is the only report" is the reading that makes an operator dismiss something eighteen people flagged.

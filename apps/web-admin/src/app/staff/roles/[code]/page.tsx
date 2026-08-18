@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
+import { Callout } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,12 +46,12 @@ export default async function PermissionHoldersPage({ params }: { params: { code
         <p className="kv-page__sub">{t.t('st.holders.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {h ? (
         !h.known ? (
           // A typo, said as a typo.
-          <p className="kv-note is-danger" role="alert">{t.t('st.holders.unknown')}</p>
+          <Callout tone="danger" live="assertive">{t.t('st.holders.unknown')}</Callout>
         ) : (
           <>
             <section className="kv-panel" aria-labelledby="st-direct">
@@ -58,7 +59,7 @@ export default async function PermissionHoldersPage({ params }: { params: { code
               {h.direct.length === 0 ? (
                 // A gap, said as a gap: only a god-mode account can use this, so every use of it is a use of the most
                 // powerful credential on the platform.
-                <p className="kv-note is-warn">{t.t('st.holders.noneDirect')}</p>
+                <Callout tone="warning">{t.t('st.holders.noneDirect')}</Callout>
               ) : (
                 <ul className="kv-list">{h.direct.map((r) => <li key={r}>{r}</li>)}</ul>
               )}
@@ -66,7 +67,7 @@ export default async function PermissionHoldersPage({ params }: { params: { code
             <section className="kv-panel" aria-labelledby="st-god">
               <h2 id="st-god" className="kv-panel__title">{t.t('st.holders.godMode')}</h2>
               <ul className="kv-list">{h.godMode.map((r) => <li key={r}>{r}</li>)}</ul>
-              <p className="kv-note">{t.t('st.holders.godModeNote')}</p>
+              <Callout tone="info">{t.t('st.holders.godModeNote')}</Callout>
             </section>
           </>
         )

@@ -19,7 +19,12 @@ import {
 } from '../../../features/ai-models/model';
 import { promoteModelAction, tuneThresholdAction } from '../actions';
 
+import { Button, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
+
+// modelStatusTone (features/ai-models/model.ts) predates the StatusPill canon and still returns the old
+// kv-status--* token name ('ok' | 'warn' | 'muted'); mapped here rather than editing that shared helper.
+const MODEL_TONE: Record<'ok' | 'warn' | 'muted', StatusTone> = { ok: 'success', warn: 'warning', muted: 'neutral' };
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('aiModels.title'), robots: { index: false, follow: false } };
@@ -72,7 +77,7 @@ export default async function AiModelDetailPage({ params, searchParams }: { para
       <p className="kv-backlink"><Link href="/ai-models">{t.t('aiModels.back')}</Link></p>
       <h1>{m.code} <span className="kv-muted">v{m.version}</span></h1>
       <p>
-        <span className={`kv-status kv-status--${modelStatusTone(m.status)}`}>{t.t(modelStatusKey(m.status))}</span>
+        <StatusPill tone={MODEL_TONE[modelStatusTone(m.status)]} label={t.t(modelStatusKey(m.status))} />
         <span className="kv-muted"> · {t.t('aiModels.providerLabel')}: {m.provider ?? t.t('common.dash')} · {t.t('aiModels.colThreshold')}: {threshold}</span>
       </p>
       {okKey && <p className="kv-success" role="status">{t.t(`aiModels.ok.${okKey}`)}</p>}
@@ -100,7 +105,7 @@ export default async function AiModelDetailPage({ params, searchParams }: { para
             </select>
             <label className="kv-field__label">{t.t('aiModels.reason')}</label>
             <input name="reason" className="kv-input" required minLength={1} maxLength={500} />
-            <button type="submit" className="kv-btn">{t.t('aiModels.promoteSubmit')}</button>
+            <Button type="submit">{t.t('aiModels.promoteSubmit')}</Button>
           </form>
         </details>
       ) : <p className="kv-muted">{t.t('aiModels.terminal')}</p>}
@@ -114,7 +119,7 @@ export default async function AiModelDetailPage({ params, searchParams }: { para
           <input name="confidenceThreshold" className="kv-input" inputMode="decimal" defaultValue={formatThreshold4(m.confidenceThreshold) ?? ''} placeholder={t.t('aiModels.thresholdPlaceholder')} />
           <label className="kv-field__label">{t.t('aiModels.reason')}</label>
           <input name="reason" className="kv-input" required minLength={1} maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('aiModels.thresholdSubmit')}</button>
+          <Button type="submit">{t.t('aiModels.thresholdSubmit')}</Button>
         </form>
       </details>
 

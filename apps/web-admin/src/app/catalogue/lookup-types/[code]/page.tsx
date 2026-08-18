@@ -13,6 +13,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import type { LookupTypeRow, LookupValueRow } from '../../../../features/catalogue/catalogue';
 import { updateTypeAction, createValueAction } from '../../actions';
 
+import { Button, Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -51,7 +52,7 @@ export default async function LookupTypeDetailPage({ params, searchParams }: { p
     { header: t.t('cat.valueCode'), cell: (r) => <Link href={`/catalogue/lookup-values/${encodeURIComponent(r.id)}`}>{r.code}</Link> },
     { header: t.t('cat.name'), cell: (r) => r.defaultName },
     { header: t.t('cat.sortOrder'), cell: (r) => r.sortOrder.toLocaleString() },
-    { header: t.t('cat.active'), cell: (r) => <span className={`kv-status ${r.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{r.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')}</span> },
+    { header: t.t('cat.active'), cell: (r) => <StatusPill tone={r.isActive ? 'success' : 'neutral'} label={r.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')} /> },
   ];
   const filterHref = (a?: string) => `/catalogue/lookup-types/${encodeURIComponent(params.code)}${a ? `?active=${a}` : ''}`;
 
@@ -75,18 +76,18 @@ export default async function LookupTypeDetailPage({ params, searchParams }: { p
           <input name="defaultName" className="kv-input" required maxLength={100} defaultValue={type.defaultName} />
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('cat.save')}</button>
+          <Button type="submit">{t.t('cat.save')}</Button>
         </form>
       </details>
 
       <h2>{t.t('cat.valuesHeading')}</h2>
       <nav className="kv-filters" aria-label={t.t('cat.filterActive')}>
-        <Link href={filterHref()} className={`kv-chip${!active ? ' is-active' : ''}`} aria-current={!active ? 'true' : undefined}>{t.t('cat.filterAll')}</Link>
-        <Link href={filterHref('true')} className={`kv-chip${active === 'true' ? ' is-active' : ''}`} aria-current={active === 'true' ? 'true' : undefined}>{t.t('cat.activeYes')}</Link>
-        <Link href={filterHref('false')} className={`kv-chip${active === 'false' ? ' is-active' : ''}`} aria-current={active === 'false' ? 'true' : undefined}>{t.t('cat.activeNo')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!active ? 'true' : undefined} active={!active}>{t.t('cat.filterAll')}</Chip>
+        <Chip as={Link} href={filterHref('true')} aria-current={active === 'true' ? 'true' : undefined} active={active === 'true'}>{t.t('cat.activeYes')}</Chip>
+        <Chip as={Link} href={filterHref('false')} aria-current={active === 'false' ? 'true' : undefined} active={active === 'false'}>{t.t('cat.activeNo')}</Chip>
       </nav>
       <DataTable columns={cols} rows={values} empty={t.t('cat.valuesEmpty')} />
-      {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/catalogue/lookup-types/${encodeURIComponent(params.code)}?cursor=${encodeURIComponent(nextCursor)}${active ? `&active=${active}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+      {nextCursor && <p className="kv-pager"><Button as={Link} href={`/catalogue/lookup-types/${encodeURIComponent(params.code)}?cursor=${encodeURIComponent(nextCursor)}${active ? `&active=${active}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
 
       <details className="kv-card kv-limit-form">
         <summary className="kv-card__title">{t.t('cat.createValue')}</summary>
@@ -103,7 +104,7 @@ export default async function LookupTypeDetailPage({ params, searchParams }: { p
           <input name="meta" className="kv-input" placeholder={t.t('cat.metaHint')} />
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('cat.createValueSubmit')}</button>
+          <Button type="submit">{t.t('cat.createValueSubmit')}</Button>
         </form>
       </details>
     </section>

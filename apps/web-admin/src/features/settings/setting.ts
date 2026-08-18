@@ -4,6 +4,13 @@
 // before 0121 they were one column — so "48 because that is what we ship" and "48 because somebody chose it on 9 July"
 // were indistinguishable. A console that renders them alike loses the only information an operator wants when deciding
 // whether to change one.
+//
+// DEV-60 (UI Port Program batch 3, Part 1): `provenanceClass`/`riskClassName`/`tierClass` now return a `StatusTone`
+// instead of a raw `kv-badge is-X` string — disposition (c), same pattern as `ai-governance.ts`. Call sites render
+// `<StatusPill tone={...} label={...}/>`. `radiusClass` (`kv-note`-returning) is OUT OF SCOPE — `kv-note` never
+// matched the 98/29 population's own grep.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export type ValueType = 'string' | 'int' | 'decimal' | 'bool' | 'json';
 export type RiskClass = 'ordinary' | 'money_path' | 'security';
@@ -35,8 +42,8 @@ export function provenanceKey(r: Pick<SettingRow, 'platformValue' | 'defaultValu
   return same ? 'st11.prov.setSameAsShipped' : 'st11.prov.set';
 }
 
-export function provenanceClass(r: Pick<SettingRow, 'onShippedDefault'>): string {
-  return r.onShippedDefault ? 'kv-badge' : 'kv-badge is-info';
+export function provenanceTone(r: Pick<SettingRow, 'onShippedDefault'>): StatusTone {
+  return r.onShippedDefault ? 'neutral' : 'info';
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -48,12 +55,12 @@ export function riskKey(riskClass: string): string {
   return known.includes(riskClass) ? `st11.risk.${riskClass}` : 'st11.risk.other';
 }
 
-export function riskClassName(riskClass: string): string {
-  if (riskClass === 'money_path') return 'kv-badge is-danger';
-  if (riskClass === 'security') return 'kv-badge is-warn';
+export function riskTone(riskClass: string): StatusTone {
+  if (riskClass === 'money_path') return 'danger';
+  if (riskClass === 'security') return 'warning';
   // An unrecognised class is drawn as a WARNING rather than as ordinary: a class this console does not know is a class
   // whose rules it cannot describe, and treating it as harmless is the wrong default.
-  return riskClass === 'ordinary' ? 'kv-badge' : 'kv-badge is-warn';
+  return riskClass === 'ordinary' ? 'neutral' : 'warning';
 }
 
 /** W103's own column: "Tenant overrides · 312 tenants" versus "0 (locked)". A platform-scoped key shows the lock rather
@@ -115,10 +122,10 @@ export function tierKey(tier: string): string {
   return known.includes(tier) ? `st11.tier.${tier}` : 'st11.tier.other';
 }
 
-export function tierClass(tier: string): string {
-  if (tier === 'kill_switch') return 'kv-badge is-danger';
-  if (tier === 'module') return 'kv-badge is-warn';
-  return 'kv-badge';
+export function tierTone(tier: string): StatusTone {
+  if (tier === 'kill_switch') return 'danger';
+  if (tier === 'module') return 'warning';
+  return 'neutral';
 }
 
 /**

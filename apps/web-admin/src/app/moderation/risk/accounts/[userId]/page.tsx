@@ -20,9 +20,10 @@ import { adminGet, AdminApiError } from '../../../../../lib/admin-client';
 import { getTranslator } from '../../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../../features/nav/nav-model';
 import { changeBandAction } from '../../../actions';
+import { Button, StatusPill } from '@krishalaya/ui';
 import {
-  RISK_BANDS, bandClass, readingClass, equationRenderable, equationText, factorNoticeKey,
-  effectClass, advisoryBannerVisible, type BandReading, type FactorPanel, type BandEffect,
+  RISK_BANDS, bandTone, readingTone, equationRenderable, equationText, factorNoticeKey,
+  effectTone, advisoryBannerVisible, type BandReading, type FactorPanel, type BandEffect,
 } from '../../../../../features/trust/trust-safety';
 
 export const dynamic = 'force-dynamic';
@@ -81,11 +82,11 @@ export default async function RiskProfilePage({ params, searchParams }: { params
         <div className="kv-facts__row"><dt>{t.t('ts.risk.col.score')}</dt><dd>{p.score === null ? t.t('common.dash') : p.score}</dd></div>
         <div className="kv-facts__row">
           <dt>{t.t('ts.risk.col.band')}</dt>
-          <dd><span className={bandClass(p.band)}>{p.band ? t.t(`ts.band.${p.band}`) : t.t('common.unknown')}</span></dd>
+          <dd><StatusPill tone={bandTone(p.band)} label={p.band ? t.t(`ts.band.${p.band}`) : t.t('common.unknown')} /></dd>
         </div>
         <div className="kv-facts__row">
           <dt>{t.t('ts.risk.col.reading')}</dt>
-          <dd><span className={readingClass(p.reading)}>{t.t(`ts.reading.${p.reading?.kind ?? 'unknown'}`)}</span></dd>
+          <dd><StatusPill tone={readingTone(p.reading)} label={t.t(`ts.reading.${p.reading?.kind ?? 'unknown'}`)} /></dd>
         </div>
         <div className="kv-facts__row"><dt>{t.t('ts.risk.col.computed')}</dt><dd>{p.computedAt ?? t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('ts.profile.tenant')}</dt><dd>{p.tenantId ?? t.t('common.dash')}</dd></div>
@@ -129,7 +130,7 @@ export default async function RiskProfilePage({ params, searchParams }: { params
       <ul className="kv-list">
         {p.effects.map((e) => (
           <li key={e.key} >
-            <span className={effectClass(e)}>{e.enforced ? t.t('ts.profile.enforced') : t.t('ts.profile.notEnforced')}</span>{' '}
+            <StatusPill tone={effectTone(e)} label={e.enforced ? t.t('ts.profile.enforced') : t.t('ts.profile.notEnforced')} />{' '}
             {t.t(`ts.effect.${e.key}`)}
             {e.enforcedBy && <span className="kv-detail__muted"> — {e.enforcedBy}</span>}
           </li>
@@ -163,7 +164,7 @@ export default async function RiskProfilePage({ params, searchParams }: { params
         {/* The reason is SENT TO THE PERSON and is what an appeal is judged against — W089's second principle. */}
         <label className="kv-field__label">{t.t('ts.profile.reason')}<textarea className="kv-input" name="reason" required minLength={20} maxLength={1000} /></label>
         <p className="kv-detail__muted">{t.t('ts.profile.blockedNeedsChecker')}</p>
-        <button type="submit" className="kv-btn kv-btn--danger">{t.t('ts.profile.change')}</button>
+        <Button type="submit" variant="danger">{t.t('ts.profile.change')}</Button>
       </form>
       <p className="kv-detail__muted">{t.t('ts.profile.moneyNeverConfiscated')}</p>
     </section>

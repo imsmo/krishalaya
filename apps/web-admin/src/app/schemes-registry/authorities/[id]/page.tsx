@@ -12,8 +12,9 @@ import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { AUTHORITY_LEVELS, authorityLevelKey, type AuthorityRow, type SchemeChangeRow } from '../../../../features/schemes-registry/scheme';
 import { updateAuthorityAction, mapPortalAction, unmapPortalAction } from '../../actions';
-import { portalState, portalClass, PORTAL_PROVIDERS } from '../../../../features/schemes-registry/version';
+import { portalState, portalTone, PORTAL_PROVIDERS } from '../../../../features/schemes-registry/version';
 
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -71,7 +72,7 @@ export default async function AuthorityDetailPage({ params, searchParams }: { pa
         <div className="kv-facts__row">
           <dt>{t.t('sv.portal')}</dt>
           <dd>
-            <span className={portalClass(portalState(auth))}>{t.t(`sv.portalState.${portalState(auth)}`)}</span>
+            <StatusPill tone={portalTone(portalState(auth))} label={t.t(`sv.portalState.${portalState(auth)}`)} />
             {auth.portal?.providerCode ? ` · ${auth.portal.providerCode} · ${auth.portal.externalId ?? ''}` : ''}
             {auth.portal?.endpointLabel ? ` · ${auth.portal.endpointLabel}` : ''}
           </dd>
@@ -79,7 +80,7 @@ export default async function AuthorityDetailPage({ params, searchParams }: { pa
       </dl>
       {/* Said in words on the screen, not only in the badge: a mapping is a record of intent, never evidence that a
           filing has ever succeeded. Nothing in this platform has called any of these portals. */}
-      <p className="kv-notice">{t.t('sv.portalNeverSynced')}</p>
+      <Callout>{t.t('sv.portalNeverSynced')}</Callout>
 
       <details className="kv-card kv-limit-form">
         <summary className="kv-card__title">{t.t('sv.mapPortalHeading')}</summary>
@@ -97,7 +98,7 @@ export default async function AuthorityDetailPage({ params, searchParams }: { pa
           <p className="kv-field__hint">{t.t('sv.credentialsElsewhere')}</p>
           <label className="kv-field__label" htmlFor="portalReason">{t.t('sr.reason')}</label>
           <input id="portalReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sv.mapPortal')}</button>
+          <Button type="submit">{t.t('sv.mapPortal')}</Button>
         </form>
         {auth.portal?.providerCode && (
           <form action={unmapPortalAction} className="kv-form">
@@ -105,7 +106,7 @@ export default async function AuthorityDetailPage({ params, searchParams }: { pa
             <input type="hidden" name="providerCode" value={auth.portal.providerCode} />
             <label className="kv-field__label" htmlFor="unmapReason">{t.t('sr.reason')}</label>
             <input id="unmapReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn kv-btn--danger">{t.t('sv.unmapPortal')}</button>
+            <Button type="submit" variant="danger">{t.t('sv.unmapPortal')}</Button>
           </form>
         )}
       </details>
@@ -122,7 +123,7 @@ export default async function AuthorityDetailPage({ params, searchParams }: { pa
           <input name="regionId" className="kv-input" defaultValue={auth.regionId ?? ''} placeholder={t.t('sr.regionHint')} />
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sr.save')}</button>
+          <Button type="submit">{t.t('sr.save')}</Button>
         </form>
       </details>
 

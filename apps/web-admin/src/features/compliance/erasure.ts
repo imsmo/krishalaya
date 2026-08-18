@@ -4,6 +4,12 @@
 // This screen is read by a DPO deciding what happens to one named person's data, and by an auditor deciding whether we
 // did what we said. So the rule that governs every function here is: NEVER RENDER A REASSURING DEFAULT. An unmeasured
 // SLA is not a met one, an empty scope is not "nothing will be kept", and an unevidenced erasure is not a completed one.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): `slaClass`/`actionClass`/`evidenceClass` now return a
+// `StatusTone` instead of a raw `kv-status kv-status--X` string — disposition (c), same pattern as `ai-governance.ts`.
+// Call sites render `<StatusPill tone={...} label={...} />`.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ===================== the request ===================== */
 
@@ -37,13 +43,13 @@ export type SlaState =
  *  misleading number a compliance screen can show — it is an absent measurement wearing a clean record's clothes.
  *  Not a failure either, because nobody breached anything; the platform simply did not record the acknowledgement.
  */
-export function slaClass(s: SlaState | null | undefined): string {
-  if (!s) return 'kv-status kv-status--muted';
+export function slaTone(s: SlaState | null | undefined): StatusTone {
+  if (!s) return 'neutral';
   switch (s.kind) {
-    case 'met': return 'kv-status kv-status--ok';
-    case 'breached': return 'kv-status kv-status--danger';
-    case 'due': return s.hoursLeft <= 12 ? 'kv-status kv-status--danger' : s.hoursLeft <= 24 ? 'kv-status kv-status--warn' : 'kv-status kv-status--ok';
-    default: return 'kv-status kv-status--warn';
+    case 'met': return 'success';
+    case 'breached': return 'danger';
+    case 'due': return s.hoursLeft <= 12 ? 'danger' : s.hoursLeft <= 24 ? 'warning' : 'success';
+    default: return 'warning';
   }
 }
 export function slaKey(s: SlaState | null | undefined): 'met' | 'due' | 'breached' | 'unmeasured' {
@@ -95,12 +101,12 @@ export function scopeKey(s: ScopeResult | null | undefined): 'scope' | 'noPolicy
 /** `keep_forever` is NOT a failure colour. A farmer's ledger history being retained under RBI rules is the law working,
  *  not the platform refusing — and colouring five rows red on a page somebody reads while anxious about their data is a
  *  choice about how they feel, not just how it looks. `delete` is the reassuring one and gets the positive colour. */
-export function actionClass(a: RetentionAction): string {
+export function actionTone(a: RetentionAction): StatusTone {
   switch (a) {
-    case 'delete': return 'kv-status kv-status--ok';
-    case 'anonymise': return 'kv-status kv-status--ok';
-    case 'archive': return 'kv-status kv-status--warn';
-    default: return 'kv-status kv-status--muted';
+    case 'delete': return 'success';
+    case 'anonymise': return 'success';
+    case 'archive': return 'warning';
+    default: return 'neutral';
   }
 }
 
@@ -155,14 +161,14 @@ export function evidenceProgressPct(c: CompletionCheck | null | undefined): numb
 
 /** `blocked_by_law` is not a failure — it is the record stating we considered a class and the statute forbade deletion.
  *  Styling it red would tell an auditor we failed at something we did correctly. */
-export function evidenceClass(action: string): string {
+export function evidenceTone(action: string): StatusTone {
   switch (action) {
     case 'deleted':
-    case 'anonymised': return 'kv-status kv-status--ok';
-    case 'archived': return 'kv-status kv-status--warn';
-    case 'blocked_by_law': return 'kv-status kv-status--muted';
-    case 'retracted': return 'kv-status kv-status--danger';
-    default: return 'kv-status kv-status--muted';
+    case 'anonymised': return 'success';
+    case 'archived': return 'warning';
+    case 'blocked_by_law': return 'neutral';
+    case 'retracted': return 'danger';
+    default: return 'neutral';
   }
 }
 

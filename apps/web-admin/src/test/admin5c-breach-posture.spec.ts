@@ -2,10 +2,10 @@
 // Both screens are read by people with an incentive to check them, so the governing rule is stricter than elsewhere:
 // a figure whose source could not be read says so, and "all quiet" is only claimable when everything was looked at.
 import {
-  NOTIFICATION_STEPS, stepState, stepClass, notifyOfferable, notifyBlockedKey, signOffOfferable,
-  clockClass, clockKey, reachShortfall, buildRecordStep,
-  tileValue, retentionKey, retentionClass, attentionClass, allQuiet, unreadSources,
-  certificationHeld, certificationClass, digestState,
+  NOTIFICATION_STEPS, stepState, stepTone, notifyOfferable, notifyBlockedKey, signOffOfferable,
+  clockTone, clockKey, reachShortfall, buildRecordStep,
+  tileValue, retentionKey, retentionTone, attentionTone, allQuiet, unreadSources,
+  certificationHeld, certificationTone, digestState,
   type ChecklistLine, type Notifiable, type RetentionTile, type SourcesRead, type Certification,
 } from '../features/compliance/breach-notification';
 
@@ -50,11 +50,11 @@ describe('ADMIN-5c console · step states', () => {
   });
   it('not-applicable is NOT a failure colour; outstanding is a warning; RETRACTED is a failure', () => {
     // A withdrawn statutory claim is the one state here that needs explaining.
-    expect(stepClass(line({ outcome: 'not_applicable' }))).toContain('muted');
-    expect(stepClass(line({ outcome: 'not_applicable' }))).not.toContain('danger');
-    expect(stepClass(line({ outcome: null }))).toContain('warn');
-    expect(stepClass(line({ outcome: 'retracted' }))).toContain('danger');
-    expect(stepClass(line({ outcome: 'done' }))).toContain('ok');
+    expect(stepTone(line({ outcome: 'not_applicable' }))).toBe('neutral');
+    expect(stepTone(line({ outcome: 'not_applicable' }))).not.toBe('danger');
+    expect(stepTone(line({ outcome: null }))).toBe('warning');
+    expect(stepTone(line({ outcome: 'retracted' }))).toBe('danger');
+    expect(stepTone(line({ outcome: 'done' }))).toBe('success');
   });
 });
 
@@ -77,19 +77,19 @@ describe('ADMIN-5c console · the DPO sign-off is offered to somebody else', () 
 describe('ADMIN-5c console · the clock', () => {
   it('UNMEASURED is a warning, not a pass', () => {
     // A breach with no detection time cannot be shown to have been notified in time.
-    expect(clockClass({ kind: 'unmeasured' })).toContain('warn');
-    expect(clockClass({ kind: 'unmeasured' })).not.toContain('--ok');
+    expect(clockTone({ kind: 'unmeasured' })).toBe('warning');
+    expect(clockTone({ kind: 'unmeasured' })).not.toBe('success');
     expect(clockKey(undefined)).toBe('unmeasured');
   });
   it('under a day left on a statutory window is urgent, not merely noteworthy', () => {
-    expect(clockClass({ kind: 'due', hoursLeft: 20 })).toContain('danger');
-    expect(clockClass({ kind: 'due', hoursLeft: 40 })).toContain('warn');
-    expect(clockClass({ kind: 'met', hoursTaken: 4 })).toContain('ok');
-    expect(clockClass({ kind: 'breached', hoursOver: 3 })).toContain('danger');
+    expect(clockTone({ kind: 'due', hoursLeft: 20 })).toBe('danger');
+    expect(clockTone({ kind: 'due', hoursLeft: 40 })).toBe('warning');
+    expect(clockTone({ kind: 'met', hoursTaken: 4 })).toBe('success');
+    expect(clockTone({ kind: 'breached', hoursOver: 3 })).toBe('danger');
   });
   it('a missing clock is muted, never met', () => {
-    expect(clockClass(null)).toContain('muted');
-    expect(clockClass(null)).not.toContain('--ok');
+    expect(clockTone(null)).toBe('neutral');
+    expect(clockTone(null)).not.toBe('success');
   });
   it('the reach shortfall is UNKNOWN when either side is', () => {
     // A fabricated "0 unreached" converts "nobody counted" into "everybody was told".
@@ -148,18 +148,18 @@ describe('ADMIN-5c console · the posture page', () => {
   it('the retention tile is never a green tick over policies nothing can run', () => {
     const partial: RetentionTile = { kind: 'coverage', runnable: 7, unrunnable: 6, total: 13, unrunnableActions: ['anonymise', 'archive'], complete: false };
     expect(retentionKey(partial)).toBe('partial');
-    expect(retentionClass(partial)).toContain('warn');
-    expect(retentionClass(partial)).not.toContain('--ok');
+    expect(retentionTone(partial)).toBe('warning');
+    expect(retentionTone(partial)).not.toBe('success');
     const complete: RetentionTile = { kind: 'coverage', runnable: 7, unrunnable: 0, total: 7, unrunnableActions: [], complete: true };
-    expect(retentionClass(complete)).toContain('ok');
+    expect(retentionTone(complete)).toBe('success');
     expect(retentionKey({ kind: 'unavailable', reason: 'x' })).toBe('unavailable');
     expect(retentionKey({ kind: 'coverage', runnable: 0, unrunnable: 0, total: 0, unrunnableActions: [], complete: false })).toBe('none');
   });
   it('overdue and blocking are failures; due-soon is a warning', () => {
-    expect(attentionClass('overdue')).toContain('danger');
-    expect(attentionClass('blocking')).toContain('danger');
-    expect(attentionClass('due_soon')).toContain('warn');
-    expect(attentionClass('info')).toContain('muted');
+    expect(attentionTone('overdue')).toBe('danger');
+    expect(attentionTone('blocking')).toBe('danger');
+    expect(attentionTone('due_soon')).toBe('warning');
+    expect(attentionTone('info')).toBe('neutral');
   });
   it('ALL QUIET needs an empty list AND every source read', () => {
     expect(allQuiet([], READ)).toBe(true);
@@ -181,8 +181,8 @@ describe('ADMIN-5c console · the posture page', () => {
     expect(certificationHeld(notHeld)).toBe(false);
     expect(certificationHeld(undefined)).toBe(false);
     expect(certificationHeld({} as Certification)).toBe(false);
-    expect(certificationClass(held)).toContain('ok');
-    expect(certificationClass(notHeld)).toContain('muted');
+    expect(certificationTone(held)).toBe('success');
+    expect(certificationTone(notHeld)).toBe('neutral');
   });
 });
 

@@ -30,12 +30,13 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { dsrStatusKey, canStartDsr, canCompleteDsr, canRejectDsr, type DsrRow } from '../../../../features/compliance/compliance';
 import {
   REJECTION_GROUNDS, ERASURE_ACTIONS, groundIsFixableByPrincipal, isRejectionGround,
-  slaClass, slaKey, scopeKey, actionClass, rowsText, hasUnrunnableActions,
-  completeOfferable, evidenceProgressPct, evidenceClass,
+  slaTone, slaKey, scopeKey, actionTone, rowsText, hasUnrunnableActions,
+  completeOfferable, evidenceProgressPct, evidenceTone,
   type ScopeResult, type ScopeLine, type ErasureActionRow, type CompletionCheck, type SlaState,
 } from '../../../../features/compliance/erasure';
 import { updateDsrAction, rejectDsrAction, acknowledgeDsrAction, recordErasureActionAction } from '../../actions';
 
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -86,7 +87,7 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
 
   const scopeCols: Column<ScopeLine>[] = [
     { header: t.t('era.dataClass'), cell: (l) => l.dataClass },
-    { header: t.t('era.action'), cell: (l) => <span className={actionClass(l.action)}>{t.t(`era.act.${l.action}`)}</span> },
+    { header: t.t('era.action'), cell: (l) => <StatusPill tone={actionTone(l.action)} label={t.t(`era.act.${l.action}`)} /> },
     {
       header: t.t('era.records'),
       // NULL renders "not counted", never 0 — "0 records" beside kyc_documents is false for anybody who onboarded.
@@ -95,14 +96,14 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
     {
       header: t.t('era.legalBasis'),
       cell: (l) => (l.legalBasis
-        ? <>{l.legalBasis}{l.keptByLaw && <> <span className="kv-status kv-status--muted">{t.t('era.keptByLaw')}</span></>}</>
+        ? <>{l.legalBasis}{l.keptByLaw && <> <StatusPill tone="neutral" label={t.t('era.keptByLaw')} /></>}</>
         : <span className="kv-detail__muted">{t.t('era.noBasis')}</span>),
     },
   ];
 
   const evidenceCols: Column<ErasureActionRow>[] = [
     { header: t.t('era.dataClass'), cell: (a) => a.dataClass },
-    { header: t.t('era.recorded'), cell: (a) => <span className={evidenceClass(a.action)}>{t.t(`era.ev.${a.action}`)}</span> },
+    { header: t.t('era.recorded'), cell: (a) => <StatusPill tone={evidenceTone(a.action)} label={t.t(`era.ev.${a.action}`)} /> },
     { header: t.t('era.records'), cell: (a) => String(a.rowsAffected) },
     { header: t.t('era.by'), cell: (a) => a.executedBy },
     { header: t.t('era.when'), cell: (a) => a.executedAt ?? t.t('common.dash') },
@@ -111,7 +112,14 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
   return (
     <section>
       <p className="kv-backlink"><Link href="/compliance">{t.t('compliance.back')}</Link></p>
-      <h1>{t.t(`era.type.${dsr.requestType}`)} — <span className="kv-status">{t.t(`compliance.dsrState.${dsrStatusKey(dsr.status)}`)}</span></h1>
+      {/* DEV-61 Part 0: was a bare `<span className="kv-status">` — DEV-60 QA found this categorically left
+          uncoloured while a materially indistinguishable bare-status shape elsewhere (e.g. `tenants/[id]/
+          subscription/page.tsx`) was converted to `<StatusPill tone="neutral">`, two agents applying
+          different scope rules to the same pattern. Harmonised per the stated rule (see spec_dev61.md): a
+          bare status site with no tone-signal in its own markup always becomes a real `StatusPill` with
+          `tone="neutral"` for UI consistency (never left as unstyled text) — text-only exceptions are
+          reserved for genuine layout constraints (e.g. `cellClass`'s dense permission-matrix cell). */}
+      <h1>{t.t(`era.type.${dsr.requestType}`)} — <StatusPill tone="neutral" label={t.t(`compliance.dsrState.${dsrStatusKey(dsr.status)}`)} /></h1>
       {okKey && <p className="kv-success" role="status">{t.t(`era.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`era.error.${errKey}`)}</p>}
 
@@ -121,13 +129,13 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
         <div className="kv-facts__row">
           <dt>{t.t('era.ackSla')}</dt>
           <dd>
-            <span className={slaClass(dsr.acknowledgeSla)}>{t.t(`era.sla.${slaKey(dsr.acknowledgeSla)}`)}</span>
+            <StatusPill tone={slaTone(dsr.acknowledgeSla)} label={t.t(`era.sla.${slaKey(dsr.acknowledgeSla)}`)} />
             {dsr.acknowledgedAt ? ` · ${dsr.acknowledgedAt}` : ''}
           </dd>
         </div>
         <div className="kv-facts__row">
           <dt>{t.t('era.resolveSla')}</dt>
-          <dd><span className={slaClass(dsr.resolveSla)}>{t.t(`era.sla.${slaKey(dsr.resolveSla)}`)}</span></dd>
+          <dd><StatusPill tone={slaTone(dsr.resolveSla)} label={t.t(`era.sla.${slaKey(dsr.resolveSla)}`)} /></dd>
         </div>
         {dsr.coolingEndsAt && (
           <div className="kv-facts__row">
@@ -146,9 +154,10 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
             <dd>
               {t.t(`era.ground.${dsr.rejectionGround}`)}{' '}
               {/* Whether the farmer can fix it themselves changes what happens next for them, so the screen says so. */}
-              <span className={groundIsFixableByPrincipal(dsr.rejectionGround) ? 'kv-status kv-status--warn' : 'kv-status kv-status--muted'}>
-                {t.t(groundIsFixableByPrincipal(dsr.rejectionGround) ? 'era.groundFixable' : 'era.groundNotFixable')}
-              </span>
+              <StatusPill
+                tone={groundIsFixableByPrincipal(dsr.rejectionGround) ? 'warning' : 'neutral'}
+                label={t.t(groundIsFixableByPrincipal(dsr.rejectionGround) ? 'era.groundFixable' : 'era.groundNotFixable')}
+              />
             </dd>
           </div>
         )}
@@ -163,7 +172,7 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
           <p className="kv-field__hint">{t.t('era.ackHint')}</p>
           <label className="kv-field__label" htmlFor="ackNote">{t.t('era.ackNote')}</label>
           <input id="ackNote" name="note" className="kv-input" maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('era.acknowledge')}</button>
+          <Button type="submit">{t.t('era.acknowledge')}</Button>
         </form>
       )}
 
@@ -178,12 +187,12 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
             <>
               <p className="kv-muted">{t.t('era.scopeLead', { deletable: String(dsr.scope.deletableCount), kept: String(dsr.scope.keptByLawCount) })}</p>
               {/* The sentence W042 requires in plain language: legal-basis rows are excluded from deletion BY LAW. */}
-              <p className="kv-notice">{t.t('era.scopeLawNote')}</p>
+              <Callout tone="warning">{t.t('era.scopeLawNote')}</Callout>
               <DataTable columns={scopeCols} rows={dsr.scope.lines} empty={t.t('era.scopeEmpty')} />
               {/* Four of the seeded policies are `anonymise` and two are `archive`, and the retention worker implements
                   `delete` only — it says so in its own comment. A scope line promising anonymisation that nothing
                   performs is the same class of lie as a completed erasure that erased nothing. */}
-              {hasUnrunnableActions(dsr.scope) && <p className="kv-notice">{t.t('era.unrunnable', { actions: dsr.scope.unrunnable.join(', ') })}</p>}
+              {hasUnrunnableActions(dsr.scope) && <Callout tone="warning">{t.t('era.unrunnable', { actions: dsr.scope.unrunnable.join(', ') })}</Callout>}
               {dsr.scopeComputedAt && <p className="kv-detail__muted">{t.t('era.scopeComputedAt', { at: String(dsr.scopeComputedAt) })}</p>}
             </>
           )}
@@ -197,10 +206,10 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
           <DataTable columns={evidenceCols} rows={dsr.erasureActions} empty={t.t('era.evidenceEmpty')} />
 
           {dsr.completable && !dsr.completable.ok && dsr.completable.reason === 'missing_evidence' && (
-            <>
-              <p className="kv-notice">{t.t('era.missingHeading', { n: String(dsr.completable.missing.length), total: String(dsr.completable.classesInScope) })}</p>
+            <Callout tone="warning">
+              <p>{t.t('era.missingHeading', { n: String(dsr.completable.missing.length), total: String(dsr.completable.classesInScope) })}</p>
               <ul className="kv-list">{dsr.completable.missing.map((c) => <li key={c}>{c}</li>)}</ul>
-            </>
+            </Callout>
           )}
 
           <h3>{t.t('era.recordHeading')}</h3>
@@ -220,7 +229,7 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
             <p className="kv-field__hint">{t.t('era.rowsZeroOk')}</p>
             <label className="kv-field__label" htmlFor="recNote">{t.t('era.note')}</label>
             <input id="recNote" name="note" className="kv-input" maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('era.record')}</button>
+            <Button type="submit">{t.t('era.record')}</Button>
           </form>
         </>
       )}
@@ -235,7 +244,7 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
           <p className="kv-field__hint">{t.t(isErasure ? 'era.startErasureHint' : 'era.startHint')}</p>
           <label className="kv-field__label" htmlFor="startResolution">{t.t('compliance.resolution')}</label>
           <input id="startResolution" name="resolution" className="kv-input" required minLength={3} maxLength={2000} />
-          <button type="submit" className="kv-btn">{t.t(isErasure ? 'era.startErasure' : 'era.start')}</button>
+          <Button type="submit">{t.t(isErasure ? 'era.startErasure' : 'era.start')}</Button>
         </form>
       )}
 
@@ -249,11 +258,11 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
             <input id="completeResolution" name="resolution" className="kv-input" required minLength={3} maxLength={2000} />
             <label className="kv-field__label" htmlFor="exportMediaId">{t.t('compliance.exportMediaId')}</label>
             <input id="exportMediaId" name="exportMediaId" className="kv-input" />
-            <button type="submit" className="kv-btn">{t.t('era.complete')}</button>
+            <Button type="submit">{t.t('era.complete')}</Button>
           </form>
         ) : (
           /* THE CONTROL IS NOT HERE. A Complete button that always 409s teaches an operator the guard is noise. */
-          <p className="kv-notice">{t.t('era.completeBlocked')}</p>
+          <Callout tone="warning">{t.t('era.completeBlocked')}</Callout>
         )
       )}
 
@@ -269,7 +278,7 @@ export default async function DsrDetailPage({ params, searchParams }: { params: 
           </select>
           <label className="kv-field__label" htmlFor="rejectResolution">{t.t('era.groundDetail')}</label>
           <input id="rejectResolution" name="resolution" className="kv-input" required minLength={3} maxLength={2000} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('era.reject')}</button>
+          <Button type="submit" variant="danger">{t.t('era.reject')}</Button>
         </form>
       )}
     </section>

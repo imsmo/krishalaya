@@ -2,19 +2,28 @@
 //
 // Reflect, never grant. The one rule this file owns outright: a step's STATUS chip never upgrades — a
 // provider_pending row prints as "nothing was sent", whatever the step's name promises.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, founder pill ruling): `categoryClass`/`stepClass` now return a
+// `StatusTone` instead of a raw `kv-status` string, rendered via `<StatusPill tone={...} label={...}/>`.
+// DISCLOSED FINDING: `categoryClass`'s `women_safety` branch returned `'kv-status kv-status--err'` —
+// `.kv-status--err` has no rule anywhere in `globals.css` (only `--ok`/`--warn`/`--muted`/`--danger` exist), so the
+// most protected row on this console has been rendering with NO colour at all. Mapped to `'danger'` here — a real,
+// deliberate visual fix, not a silent rename.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export const EMERGENCY_CATEGORIES = ['women_safety', 'emergency_vet', 'safety'] as const;
 
 /** Category chips carry their weight: women_safety is the most protected row on the console. */
-export function categoryClass(code: string): string {
-  if (code === 'women_safety') return 'kv-status kv-status--err';
-  if (code === 'emergency_vet') return 'kv-status kv-status--warn';
-  return 'kv-status';
+export function categoryTone(code: string): StatusTone {
+  if (code === 'women_safety') return 'danger';
+  if (code === 'emergency_vet') return 'warning';
+  return 'neutral';
 }
 
 /** A step chip: recorded = a documented human act; provider_pending = the protocol says page, nothing can page. */
-export function stepClass(status: string): string {
-  return status === 'provider_pending' ? 'kv-status kv-status--warn' : 'kv-status kv-status--ok';
+export function stepTone(status: string): StatusTone {
+  return status === 'provider_pending' ? 'warning' : 'success';
 }
 
 /** Which steps need the who/what textarea (mirrors the domain: would_page steps compose their own truth). */

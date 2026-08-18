@@ -3,6 +3,15 @@
 // Reflect, never grant (Law 6): each gate here has a stricter twin in admin-api. What is DELIBERATELY ABSENT is any
 // phone handling — the hub joins people on users.id and receives identity pre-masked from the server (0133's
 // channel-identity decision); this file never sees, parses or formats a phone number.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, founder pill ruling): `slaClass` now returns a `StatusTone` instead of a
+// raw `kv-status` string, rendered via `<StatusPill tone={...} label={...}/>`.
+// DISCLOSED FINDING: the `breached` branch returned `'kv-status kv-status--err'` — `.kv-status--err` has no rule
+// anywhere in `globals.css` (only `--ok`/`--warn`/`--muted`/`--danger` exist), so a breached SLA has been rendering
+// with NO colour at all — the SAME dead-CSS bug already found and fixed in `support/emergency.ts`'s `categoryClass`.
+// Mapped to `'danger'` here — a real, deliberate visual fix, not a silent rename.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export type HubSla = { kind: 'breached'; overMinutes: number } | { kind: 'due'; inMinutes: number } | { kind: 'unset' };
 
@@ -14,10 +23,10 @@ export function slaText(sla: HubSla): { key: 'over' | 'due' | 'unset'; amount: s
   return { key: sla.kind === 'breached' ? 'over' : 'due', amount };
 }
 
-export function slaClass(sla: HubSla): string {
-  if (sla.kind === 'breached') return 'kv-status kv-status--err';
-  if (sla.kind === 'unset') return 'kv-status';
-  return sla.inMinutes < 60 ? 'kv-status kv-status--warn' : 'kv-status kv-status--ok';
+export function slaTone(sla: HubSla): StatusTone {
+  if (sla.kind === 'breached') return 'danger';
+  if (sla.kind === 'unset') return 'neutral';
+  return sla.inMinutes < 60 ? 'warning' : 'success';
 }
 
 /** A channel chip is only ever drawn WITH its standing. 'carried' = the platform actually transports these

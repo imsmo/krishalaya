@@ -20,12 +20,13 @@ import { adminGet, AdminApiError } from '../../../../../lib/admin-client';
 import { getTranslator } from '../../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../../features/nav/nav-model';
 import {
-  versionKind, versionClass, showsSignature, openDraft, publishBlockedReason,
+  versionKind, versionTone, showsSignature, openDraft, publishBlockedReason,
   reConsentNeeded, reConsentTotal, NOTICE_MIN_CHARS,
   type ConsentVersionRow, type ReConsentBacklog,
 } from '../../../../../features/compliance/consent';
 import { openConsentDraftAction, saveConsentNoticeAction, publishConsentVersionAction, discardConsentDraftAction } from '../../../actions';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -76,7 +77,7 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
       <p className="kv-backlink"><Link href="/compliance/consent/purposes">{t.t('cns.backPurposes')}</Link></p>
       <h1>{p.code} <span className="kv-muted">{p.currentVersion}</span></h1>
       <p className="kv-muted">{p.defaultName}</p>
-      {p.isMandatory && <p className="kv-notice">{t.t('cns.mandatoryNote')}</p>}
+      {p.isMandatory && <Callout tone="warning">{t.t('cns.mandatoryNote')}</Callout>}
       {okKey && <p className="kv-success" role="status">{t.t(`cns.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cns.error.${errKey}`)}</p>}
 
@@ -84,14 +85,14 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
           different actions — and the unresolvable ones cannot be prompted meaningfully at all, because nobody knows what
           those people agreed to. */}
       <h2>{t.t('cns.reConsentHeading')}</h2>
-      {backlogTotal === null ? <p className="kv-empty">{t.t('cns.reConsentUnknown')}</p> : (
+      {backlogTotal === null ? <EmptyState variant="empty" title={t.t('cns.reConsentUnknown')} /> : (
         <dl className="kv-facts">
           <div className="kv-facts__row"><dt>{t.t('cns.holdingCurrent')}</dt><dd>{String(p.reConsent.holdingCurrent)}</dd></div>
           <div className="kv-facts__row">
             <dt>{t.t('cns.holdingSuperseded')}</dt>
             <dd>
               {String(p.reConsent.holdingSuperseded)}{' '}
-              {reConsentNeeded(p.reConsent) && <span className="kv-status kv-status--warn">{t.t('cns.needsPrompt')}</span>}
+              {reConsentNeeded(p.reConsent) && <StatusPill tone="warning" label={t.t('cns.needsPrompt')} />}
             </dd>
           </div>
           <div className="kv-facts__row">
@@ -100,7 +101,7 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
           </div>
         </dl>
       )}
-      {!p.reConsentPrompt.available && <p className="kv-notice">{t.t('cns.noPromptMechanism')}</p>}
+      {!p.reConsentPrompt.available && <Callout tone="warning">{t.t('cns.noPromptMechanism')}</Callout>}
 
       <h2>{t.t('cns.versionsHeading')}</h2>
       <ul className="kv-timeline">
@@ -109,8 +110,8 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
           return (
             <li key={v.id} className="kv-timeline__item">
               <p className="kv-timeline__head">
-                {v.version} <span className={versionClass(kind)}>{t.t(`cns.vk.${kind}`)}</span>{' '}
-                {v.isMandatory && <span className="kv-status kv-status--warn">{t.t('cns.isMandatory')}</span>}
+                {v.version} <StatusPill tone={versionTone(kind)} label={t.t(`cns.vk.${kind}`)} />{' '}
+                {v.isMandatory && <StatusPill tone="warning" label={t.t('cns.isMandatory')} />}
               </p>
               <p>{v.changeReason}</p>
               <p className="kv-detail__muted">
@@ -136,12 +137,12 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
           );
         })}
       </ul>
-      {p.versions.length === 0 && <p className="kv-empty">{t.t('cns.noVersions')}</p>}
+      {p.versions.length === 0 && <EmptyState variant="empty" title={t.t('cns.noVersions')} />}
 
       {draft ? (
         <>
           <h2>{t.t('cns.draftHeading', { v: draft.version })}</h2>
-          <p className="kv-notice">{t.t('cns.draftNothingLive')}</p>
+          <Callout tone="warning">{t.t('cns.draftNothingLive')}</Callout>
 
           <h3>{t.t('cns.authorHeading')}</h3>
           {/* One language per call. Twelve languages is twelve deliberate acts — a bulk field is how eleven of them end
@@ -159,7 +160,7 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
             <label className="kv-field__label" htmlFor="noticeText">{t.t('cns.noticeText')}</label>
             <input id="noticeText" name="noticeText" className="kv-input" required minLength={NOTICE_MIN_CHARS} maxLength={4000} />
             <p className="kv-field__hint">{t.t('cns.noticeTextHint', { min: String(NOTICE_MIN_CHARS) })}</p>
-            <button type="submit" className="kv-btn">{t.t('cns.saveNotice')}</button>
+            <Button type="submit">{t.t('cns.saveNotice')}</Button>
           </form>
 
           <h3>{t.t('cns.publishHeading')}</h3>
@@ -171,11 +172,11 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
               <label className="kv-field__label" htmlFor="checkerNote">{t.t('cns.checkerNote')}</label>
               <input id="checkerNote" name="checkerNote" className="kv-input" maxLength={1000} />
               <p className="kv-field__hint">{t.t('cns.checkerNoteOptional')}</p>
-              <button type="submit" className="kv-btn">{t.t('cns.publish', { v: draft.version })}</button>
+              <Button type="submit">{t.t('cns.publish', { v: draft.version })}</Button>
             </form>
           ) : (
             /* THE CONTROL IS ABSENT, with the reason named. Each of the three reasons needs a different next action. */
-            <p className="kv-notice">{t.t(`cns.publishBlocked.${block}`)}</p>
+            <Callout tone="warning">{t.t(`cns.publishBlocked.${block}`)}</Callout>
           )}
 
           <form action={discardConsentDraftAction} className="kv-card kv-action-card">
@@ -184,7 +185,7 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
             <p className="kv-field__hint">{t.t('cns.discardHint')}</p>
             <label className="kv-field__label" htmlFor="discardReason">{t.t('cns.reason')}</label>
             <input id="discardReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn kv-btn--danger">{t.t('cns.discard')}</button>
+            <Button type="submit" variant="danger">{t.t('cns.discard')}</Button>
           </form>
         </>
       ) : (
@@ -201,7 +202,7 @@ export default async function ConsentPurposeDetailPage({ params, searchParams }:
             {/* Changing whether a purpose is compulsory is a VERSION-level decision: somebody who agreed while it was
                 mandatory did not give it freely, and flipping a live flag would silently re-describe their consent. */}
             <p className="kv-field__hint">{t.t('cns.mandatoryIsVersioned')}</p>
-            <button type="submit" className="kv-btn">{t.t('cns.openDraft')}</button>
+            <Button type="submit">{t.t('cns.openDraft')}</Button>
           </form>
         </>
       )}

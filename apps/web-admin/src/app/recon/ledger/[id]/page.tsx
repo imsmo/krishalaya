@@ -17,9 +17,10 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { verifyChainAction } from '../../actions';
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  balanceClass, balanceLabel, legDirection, legClass, shortHash, referenceText, txnTypeCell,
-  outcomeClass, verifyMessageKey, isIncident, type Leg, type TxnBalance, type VerifyResult,
+  balanceTone, balanceLabel, legDirection, legTone, shortHash, referenceText, txnTypeCell,
+  outcomeTone, verifyMessageKey, isIncident, type Leg, type TxnBalance, type VerifyResult,
 } from '../../../../features/ledger/ledger';
 
 export const dynamic = 'force-dynamic';
@@ -78,7 +79,7 @@ export default async function LedgerTxnPage({ params, searchParams }: {
 
       {/* The Σ, recomputed from the legs on every read. There is no `is_balanced` column and there should not be: a
           stored flag is a claim that can disagree with the rows this screen exists to show. */}
-      <p className={balanceClass(x.balance)}>{balanceLabel(x.balance)}</p>
+      <p><StatusPill tone={balanceTone(x.balance)} label={balanceLabel(x.balance)} /></p>
 
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('lg.col.type')}</dt><dd>{ty.known ? ty.text : t.t('lg.typeUnresolved')}</dd></div>
@@ -111,7 +112,7 @@ export default async function LedgerTxnPage({ params, searchParams }: {
                 </td>
                 {/* The raw minor units beside the formatted figure. On the money screens the unrounded integer is the
                     value of record and the pretty one is the courtesy. */}
-                <td><code className={legClass(d)}>{l.amountMinor}</code></td>
+                <td><code><StatusPill tone={legTone(d)} label={l.amountMinor} /></code></td>
                 <td>{l.amountText}</td>
                 <td>{l.balanceAfterText}</td>
                 <td>
@@ -123,7 +124,7 @@ export default async function LedgerTxnPage({ params, searchParams }: {
           })}
         </tbody>
       </table>
-      {x.legs.length === 0 && <p className="kv-empty">{t.t('lg.noLegs')}</p>}
+      {x.legs.length === 0 && <EmptyState variant="empty" title={t.t('lg.noLegs')} />}
 
       {/* W065 prints the arithmetic so a reader can check it by eye — which is the entire point of showing it rather
           than a tick. */}
@@ -144,7 +145,7 @@ export default async function LedgerTxnPage({ params, searchParams }: {
               </option>
             ))}
           </select>
-          <button type="submit" className="kv-btn">{t.t('lg.verify')}</button>
+          <Button type="submit">{t.t('lg.verify')}</Button>
         </form>
       )}
 
@@ -156,7 +157,7 @@ export default async function LedgerTxnPage({ params, searchParams }: {
           <dl className="kv-facts">
             <div className="kv-facts__row">
               <dt>{t.t('lg.outcome')}</dt>
-              <dd><span className={outcomeClass(verify.outcome)}>{t.t(`lg.outcome.${verify.outcome}`)}</span></dd>
+              <dd><StatusPill tone={outcomeTone(verify.outcome)} label={t.t(`lg.outcome.${verify.outcome}`)} /></dd>
             </div>
             <div className="kv-facts__row"><dt>{t.t('lg.entriesChecked')}</dt><dd>{verify.entriesChecked}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('lg.fromGenesis')}</dt><dd>{t.t(verify.fromGenesis ? 'common.yes' : 'common.no')}</dd></div>

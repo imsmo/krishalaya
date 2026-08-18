@@ -22,6 +22,7 @@ import {
 } from '../../../features/support/desk';
 import { createMacroAction, toggleMacroAction } from '../actions';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -70,8 +71,8 @@ export default async function MacrosPage({ searchParams }: {
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
-          {gaps > 0 && <p className="kv-notice" role="note">{t.t('mac.gapSummary', { n: String(gaps) })}</p>}
-          {rows.length === 0 ? <p className="kv-empty">{t.t('mac.none')}</p> : (
+          {gaps > 0 && <Callout>{t.t('mac.gapSummary', { n: String(gaps) })}</Callout>}
+          {rows.length === 0 ? <EmptyState title={t.t('mac.none')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('mac.shortcut')}</th>
@@ -92,9 +93,8 @@ export default async function MacrosPage({ searchParams }: {
                         {(m.languages ?? []).join(', ') || t.t('common.dash')}
                         {/* the gap, named on the row that has it */}
                         {missing.length > 0 && (
-                          <> <span className="kv-status kv-status--warn">
-                            {t.t('mac.missing', { langs: missing.map((l) => t.t(`mac.lang.${l}`)).join(', ') })}
-                          </span></>
+                          <> <StatusPill tone="warning"
+                            label={t.t('mac.missing', { langs: missing.map((l) => t.t(`mac.lang.${l}`)).join(', ') })} /></>
                         )}
                       </td>
                       <td>{String(m.uses30d ?? 0)}</td>
@@ -106,9 +106,7 @@ export default async function MacrosPage({ searchParams }: {
                             : `${bpsToPercent(m.csatAfterUseBps)}%`}
                       </td>
                       <td>
-                        <span className={`kv-status ${m.isActive ? '' : 'kv-status--muted'}`}>
-                          {t.t(m.isActive ? 'mac.active' : 'mac.archived')}
-                        </span>
+                        <StatusPill tone="neutral" label={t.t(m.isActive ? 'mac.active' : 'mac.archived')} />
                       </td>
                     </tr>
                   );
@@ -137,7 +135,7 @@ export default async function MacrosPage({ searchParams }: {
                 </select>
                 <label htmlFor="mac-reason" className="kv-field__label">{t.t('support.reason')}</label>
                 <input id="mac-reason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-                <button type="submit" className="kv-btn kv-btn--muted">{t.t('mac.applyState')}</button>
+                <Button type="submit" variant="secondary">{t.t('mac.applyState')}</Button>
               </form>
             </details>
           )}
@@ -165,7 +163,7 @@ export default async function MacrosPage({ searchParams }: {
           <p className="kv-field__hint">{t.t('mac.englishHint')}</p>
           <label htmlFor="mac-notes" className="kv-field__label">{t.t('mac.notes')}</label>
           <input id="mac-notes" name="notes" className="kv-input" maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('mac.create')}</button>
+          <Button type="submit">{t.t('mac.create')}</Button>
         </form>
       </details>
     </section>

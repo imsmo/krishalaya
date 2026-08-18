@@ -15,9 +15,10 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { holdAction, releaseAction, removeAction } from '../../actions';
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  HOLD_SOURCES, REASON_MIN, slaClass, slaKey, formatMinor, removeBlockedKey, valueDrift,
-  orderClass, noticeClass, noticeKey, type HoldSla, type RemoveState,
+  HOLD_SOURCES, REASON_MIN, slaTone, slaKey, formatMinor, removeBlockedKey, valueDrift,
+  orderTone, noticeTone, noticeKey, type HoldSla, type RemoveState,
 } from '../../../../features/moderation/queue';
 
 export const dynamic = 'force-dynamic';
@@ -92,7 +93,7 @@ export default async function ModerationCasePage({ params, searchParams }: { par
           <dt>{t.t('mq.col.value')}</dt>
           <dd>
             {formatMinor(c.valueAtStakeMinor)}
-            {c.removalNeedsChecker && <span className="kv-status kv-status--warn">{t.t('mq.needsChecker')}</span>}
+            {c.removalNeedsChecker && <StatusPill tone="warning" label={t.t('mq.needsChecker')} />}
           </dd>
         </div>
         {isHeld && (
@@ -100,7 +101,7 @@ export default async function ModerationCasePage({ params, searchParams }: { par
             <div className="kv-facts__row"><dt>{t.t('mq.heldAt')}</dt><dd>{c.heldAt}</dd></div>
             <div className="kv-facts__row">
               <dt>{t.t('mq.col.deadline')}</dt>
-              <dd>{c.holdSlaDueAt} <span className={slaClass(c.sla)}>{t.t(`mq.sla.${slaKey(c.sla)}`)}</span></dd>
+              <dd>{c.holdSlaDueAt} <StatusPill tone={slaTone(c.sla)} label={t.t(`mq.sla.${slaKey(c.sla)}`)} /></dd>
             </div>
             <div className="kv-facts__row"><dt>{t.t('mq.col.source')}</dt><dd>{c.holdSource ? t.t(`mq.source.${c.holdSource}`) : t.t('common.dash')}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('mq.holdReason')}</dt><dd>{c.holdReason ?? t.t('common.dash')}</dd></div>
@@ -122,7 +123,7 @@ export default async function ModerationCasePage({ params, searchParams }: { par
           {c.orders.map((o) => (
             <tr key={o.id}>
               <td>{o.createdAt}</td>
-              <td><span className={orderClass(o.action)}>{t.t(`mq.act.${o.action}`)}</span></td>
+              <td><StatusPill tone={orderTone(o.action)} label={t.t(`mq.act.${o.action}`)} /></td>
               <td>{o.reason}</td>
               <td>{formatMinor(o.valueAtStakeMinor)}</td>
               <td>
@@ -133,20 +134,20 @@ export default async function ModerationCasePage({ params, searchParams }: { par
           ))}
         </tbody>
       </table>
-      {c.orders.length === 0 && <p className="kv-empty">{t.t('mq.noOrders')}</p>}
+      {c.orders.length === 0 && <EmptyState variant="empty" title={t.t('mq.noOrders')} />}
 
       <h2>{t.t('mq.noticesHeading')}</h2>
       <p className="kv-muted">{t.t('mq.noticesLead')}</p>
       <ul className="kv-list">
         {c.notices.map((n) => (
           <li key={n.id}>
-            <span className={noticeClass(n.status)}>{t.t(`mq.notice.${noticeKey(n.status)}`)}</span>{' '}
+            <StatusPill tone={noticeTone(n.status)} label={t.t(`mq.notice.${noticeKey(n.status)}`)} />{' '}
             {t.t(`mq.recipient.${n.recipientKind}`)} · {n.languageCode}
             {n.detail && <span className="kv-detail__muted"> — {n.detail}</span>}
           </li>
         ))}
       </ul>
-      {c.notices.length === 0 && <p className="kv-empty">{t.t('mq.noNotices')}</p>}
+      {c.notices.length === 0 && <EmptyState variant="empty" title={t.t('mq.noNotices')} />}
 
       {/* ---------------- ACTIONS ---------------- */}
       {!isHeld ? (
@@ -168,7 +169,7 @@ export default async function ModerationCasePage({ params, searchParams }: { par
             <select id="lang" name="languageCode" className="kv-input" required defaultValue="en">
               {LANGS.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
-            <button type="submit" className="kv-btn">{t.t('mq.hold')}</button>
+            <Button type="submit">{t.t('mq.hold')}</Button>
           </form>
         </>
       ) : (
@@ -186,7 +187,7 @@ export default async function ModerationCasePage({ params, searchParams }: { par
             <input id="rrep" name="reporterUserId" className="kv-input" />
             {/* Release is the ordinary outcome and is drawn first: most holds are wrong by design, which is the whole
                 reason for holding rather than removing. */}
-            <button type="submit" className="kv-btn">{t.t('mq.release')}</button>
+            <Button type="submit">{t.t('mq.release')}</Button>
           </form>
 
           {blocked ? (
@@ -212,7 +213,7 @@ export default async function ModerationCasePage({ params, searchParams }: { par
                   <input id="xnote" name="checkerNote" className="kv-input" />
                 </>
               )}
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('mq.remove')}</button>
+              <Button type="submit" variant="danger">{t.t('mq.remove')}</Button>
             </form>
           )}
         </>

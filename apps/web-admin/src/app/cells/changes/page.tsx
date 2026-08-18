@@ -16,7 +16,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import {
-  actionClass, actionKey, diffText, entityKey, fieldIsCritical, orderDiff,
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  actionTone, actionKey, diffText, entityKey, orderDiff,
 } from '../../../features/cells/map-approval';
 
 export const dynamic = 'force-dynamic';
@@ -95,7 +98,7 @@ export default async function CellChangesPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('cm.changes.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {/* ---------------- WHAT THE MAP IS ABOUT TO DO ---------------- */}
       {proposals.length > 0 ? (
@@ -109,7 +112,7 @@ export default async function CellChangesPage({ searchParams }: {
                 <Link href={`/cells/proposals/${encodeURIComponent(p.id)}`}>
                   {t.t(entityKey(p.entityType))} {p.entityId.slice(0, 8)}
                 </Link>
-                {' · '}<span className={actionClass(p.action)}>{t.t(actionKey(p.action))}</span>
+                {' · '}<StatusPill tone={actionTone(p.action)} label={t.t(actionKey(p.action))} />
                 {/* The maker by id, not by name. admin-api has no `users` row to join to — realm-identity for the seventh
                     time — and inventing a display name would be inventing an identity. */}
                 {' · '}{t.t('cm.maker')} {p.proposedByAdminId.slice(0, 8)}
@@ -117,21 +120,20 @@ export default async function CellChangesPage({ searchParams }: {
               </li>
             ))}
           </ul>
-          <p className="kv-note">{t.t('cm.awaiting.note')}</p>
+          <Callout>{t.t('cm.awaiting.note')}</Callout>
         </section>
       ) : null}
 
       {/* ---------------- FILTERS ---------------- */}
       <form className="kv-filters" method="get" action="/cells/changes">
         <div className="kv-chips" role="group" aria-label={t.t('cm.filter.entity')}>
-          <Link className={`kv-chip${!entityType ? ' is-active' : ''}`} href={withFilters({ entityType: undefined, cursor: undefined })}>
+          <Chip as={Link} href={withFilters({ entityType: undefined, cursor: undefined })} active={!entityType}>
             {t.t('common.all')}
-          </Link>
+          </Chip>
           {ENTITIES.map((e) => (
-            <Link key={e} className={`kv-chip${entityType === e ? ' is-active' : ''}`}
-              href={(() => { const q = new URLSearchParams(); q.set('entityType', e); if (days) q.set('days', days); if (action) q.set('action', action); return `/cells/changes?${q.toString()}`; })()}>
+            <Chip as={Link} key={e} href={(() => { const q = new URLSearchParams(); q.set('entityType', e); if (days) q.set('days', days); if (action) q.set('action', action); return `/cells/changes?${q.toString()}`; })()} active={entityType === e}>
               {t.t(entityKey(e))}
-            </Link>
+            </Chip>
           ))}
         </div>
         <div className="kv-field">
@@ -139,23 +141,20 @@ export default async function CellChangesPage({ searchParams }: {
           <input className="kv-input" id="cm-days" name="days" type="number" min={1} max={meta?.window.maxDays ?? 90}
             defaultValue={days ?? String(meta?.window.days ?? 7)} />
         </div>
-        <button className="kv-btn" type="submit">{t.t('common.apply')}</button>
+        <Button type="submit">{t.t('common.apply')}</Button>
       </form>
 
       {meta?.window ? (
-        <p className="kv-note">
+        <Callout>
           {t.t('cm.changes.window', {
             days: String(meta.window.days), max: String(meta.window.maxDays),
           })}
-        </p>
+        </Callout>
       ) : null}
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('cm.changes.empty.title')}</h2>
-          {/* W035's own copy, and it is the honest reading: "A quiet map is a healthy map." */}
-          <p>{t.t('cm.changes.empty.body')}</p>
-        </div>
+        // W035's own copy, and it is the honest reading: "A quiet map is a healthy map."
+        <EmptyState title={t.t('cm.changes.empty.title')} body={t.t('cm.changes.empty.body')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('cm.changes.caption')}</caption>
@@ -177,13 +176,13 @@ export default async function CellChangesPage({ searchParams }: {
                   {t.t(entityKey(r.entityType))}
                   <br /><small>{r.entityId.slice(0, 12)}</small>
                 </td>
-                <td><span className={actionClass(r.action)}>{t.t(actionKey(r.action))}</span></td>
+                <td><StatusPill tone={actionTone(r.action)} label={t.t(actionKey(r.action))} /></td>
                 <td>
                   {/* W035 renders the change as a diff. Ordered so `status` and `isDefault` lead — a diff listing `notes`
                       above `status` would bury the field that decides whether a region accepts tenants. */}
                   {r.diff.length === 0 ? '—' : orderDiff(r.diff).map((d) => (
                     <div key={d.field}>
-                      <span className={fieldIsCritical(d.field) ? 'kv-badge is-warn' : 'kv-badge'}>{d.field}</span>{' '}
+                      <StatusPill tone="neutral" icon={false} label={d.field} />{' '}
                       <code>{diffText(d.from)}</code> → <code>{diffText(d.to)}</code>
                     </div>
                   ))}
@@ -200,7 +199,7 @@ export default async function CellChangesPage({ searchParams }: {
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Link>
+          <Button as={Link} href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Button>
         </nav>
       ) : null}
     </main>

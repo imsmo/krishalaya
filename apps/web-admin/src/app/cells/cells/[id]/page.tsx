@@ -14,11 +14,18 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { statusTargets, nodeStatusKey, nodeStatusTone, residencyWarnKey, isNodeStatus, type NodeStatus, type CellRow, type CellChangeRow } from '../../../../features/cells/cell';
 import { updateCellAction, setCellStatusAction, setCellDefaultAction, setResidencyLockAction } from '../../actions';
 
+import { Button, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('cells.cellDetailTitle'), robots: { index: false, follow: false } };
 }
+
+// nodeStatusTone (features/cells/cell.ts) predates the StatusPill canon and still returns the old kv-status--*
+// token name ('ok' | 'warn' | 'danger' | 'muted'); mapped here rather than editing that shared helper.
+const NODE_TONE: Record<'ok' | 'warn' | 'danger' | 'muted', StatusTone> = {
+  ok: 'success', warn: 'warning', danger: 'danger', muted: 'neutral',
+};
 
 const OK = new Set(['created', 'updated', 'status', 'madeDefault', 'unset', 'locked', 'unlocked']);
 const ERR = new Set(['name', 'notes', 'reason', 'capacity', 'status', 'illegal', 'noChange', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
@@ -62,8 +69,8 @@ export default async function CellDetailPage({ params, searchParams }: { params:
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('cells.name')}</dt><dd>{cell.displayName}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cells.country')}</dt><dd>{cell.countryCode}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('cells.status')}</dt><dd><span className={`kv-status kv-status--${nodeStatusTone(cell.status)}`}>{t.t(nodeStatusKey(cell.status))}</span></dd></div>
-        <div className="kv-facts__row"><dt>{t.t('cells.residency')}</dt><dd>{cell.residencyLocked ? t.t('cells.locked') : <span className="kv-status kv-status--warn">{t.t('cells.unlocked')}</span>}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('cells.status')}</dt><dd><StatusPill tone={NODE_TONE[nodeStatusTone(cell.status)]} label={t.t(nodeStatusKey(cell.status))} /></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('cells.residency')}</dt><dd>{cell.residencyLocked ? t.t('cells.locked') : <StatusPill tone="warning" label={t.t('cells.unlocked')} />}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cells.default')}</dt><dd>{cell.isDefault ? t.t('common.yes') : t.t('common.no')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cells.placed')}</dt><dd>{cell.placedCount}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cells.capacity')}</dt><dd>{cell.capacityTenants === null ? t.t('cells.unbounded') : cell.capacityTenants}</dd></div>
@@ -83,7 +90,7 @@ export default async function CellDetailPage({ params, searchParams }: { params:
           <p className="kv-field__hint">{t.t('cells.editCellHint')}</p>
           <label className="kv-field__label">{t.t('cells.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('cells.save')}</button>
+          <Button type="submit">{t.t('cells.save')}</Button>
         </form>
       </details>
 
@@ -97,7 +104,7 @@ export default async function CellDetailPage({ params, searchParams }: { params:
             <select name="status" className="kv-input" defaultValue={targets[0]}>{targets.map((s) => <option key={s} value={s}>{t.t(nodeStatusKey(s))}</option>)}</select>
             <label className="kv-field__label">{t.t('cells.reason')}</label>
             <input name="reason" className="kv-input" required minLength={3} maxLength={500} />
-            <button type="submit" className="kv-btn">{t.t('cells.applyStatus')}</button>
+            <Button type="submit">{t.t('cells.applyStatus')}</Button>
           </form>
         </details>
       ) : <p className="kv-muted">{t.t('cells.statusTerminal')}</p>}
@@ -111,7 +118,7 @@ export default async function CellDetailPage({ params, searchParams }: { params:
           <input type="hidden" name="id" value={cell.id} />
           <input type="hidden" name="residencyLocked" value={cell.residencyLocked ? 'false' : 'true'} />
           <input name="reason" className="kv-input kv-input--sm" required minLength={3} maxLength={500} placeholder={t.t('cells.reason')} />
-          <button type="submit" className="kv-btn kv-btn--danger">{cell.residencyLocked ? t.t('cells.unlock') : t.t('cells.lock')}</button>
+          <Button type="submit" variant="danger">{cell.residencyLocked ? t.t('cells.unlock') : t.t('cells.lock')}</Button>
         </form>
       </details>
 
@@ -121,7 +128,7 @@ export default async function CellDetailPage({ params, searchParams }: { params:
           <input type="hidden" name="id" value={cell.id} />
           <input type="hidden" name="isDefault" value={cell.isDefault ? 'false' : 'true'} />
           <input name="reason" className="kv-input kv-input--sm" required minLength={3} maxLength={500} placeholder={t.t('cells.reason')} />
-          <button type="submit" className="kv-btn">{cell.isDefault ? t.t('cells.unsetDefault') : t.t('cells.makeDefault')}</button>
+          <Button type="submit">{cell.isDefault ? t.t('cells.unsetDefault') : t.t('cells.makeDefault')}</Button>
         </form>
       </details>
 

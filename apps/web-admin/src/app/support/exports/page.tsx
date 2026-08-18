@@ -20,6 +20,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { getTranslator } from '../../../lib/i18n';
+import { Button, Callout } from '@krishalaya/ui';
 import {
   SUPPORT_REPORTS, carriesFreeText, acceptsScoreFilter, MAX_EXPORT_ROWS, DEFAULT_EXPORT_ROWS,
 } from '../../../features/support/export';
@@ -58,7 +59,7 @@ export default async function SupportExportsPage({ searchParams }: { searchParam
 
       {/* Said before anything is selected, because it applies to two of the five options and the consequence is
           irreversible once a file exists. */}
-      <p className="kv-notice" role="note">{t.t('sexp.verbatimWarn')}</p>
+      <Callout>{t.t('sexp.verbatimWarn')}</Callout>
 
       <form action="/support/exports/download" method="get" className="kv-form">
         <label htmlFor="report" className="kv-field__label">{t.t('sexp.report')}</label>
@@ -98,11 +99,11 @@ export default async function SupportExportsPage({ searchParams }: { searchParam
           defaultValue={DEFAULT_EXPORT_ROWS} />
         <p className="kv-field__hint">{t.t('sexp.limitNote')}</p>
 
-        <button type="submit" className="kv-btn">{t.t('sexp.download')}</button>
+        <Button type="submit">{t.t('sexp.download')}</Button>
       </form>
 
       {/* The refusal, named. A missing option reads as an oversight; a stated one reads as a decision. */}
-      <p className="kv-notice" role="note">{t.t('sexp.noCoaching')}</p>
+      <Callout>{t.t('sexp.noCoaching')}</Callout>
     </section>
   );
 }

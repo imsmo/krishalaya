@@ -13,17 +13,18 @@ import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { ticketStatusKey, severityKey, slaKey, canEscalate, higherSeverities, type TicketRow } from '../../../../features/support/ticket';
 import {
-  REPLY_LANGUAGES, MIN_BODY, deliveredCount, stuckRows, stateClass, stateKey, type ReplyRow,
+  REPLY_LANGUAGES, MIN_BODY, deliveredCount, stuckRows, stateTone, stateKey, type ReplyRow,
 } from '../../../../features/support/reply';
 import { escalateTicketAction, resolveTicketAction, replyToFarmerAction } from '../../actions';
 
+import { Button, Callout, EmptyState, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('support.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { P0: 'kv-status--danger', P1: 'kv-status--danger', P2: 'kv-status--warn', P3: 'kv-status--muted' };
+const SEV_TONE: Record<string, StatusTone> = { P0: 'danger', P1: 'danger', P2: 'warning', P3: 'neutral' };
 const OK = new Set(['escalated', 'resolved', 'queued']);
 const ERR = new Set(['severity', 'reassign', 'reason', 'outcome', 'invalid', 'illegal', 'elevation', 'notFound', 'generic']);
 // PC-56 ADMIN-2d: the reply form's own error namespace (prep_*), plus the server's verbatim 422
@@ -80,9 +81,9 @@ export default async function TicketDetailPage({ params, searchParams }: { param
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('support.subject')}</dt><dd>{ticket.subject ?? t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('support.tenant')}</dt><dd>{ticket.tenantId ?? t.t('common.dash')}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('support.severity')}</dt><dd><span className={`kv-status ${SEV_CLASS[sev]}`}>{t.t(`support.sev.${sev}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('support.severity')}</dt><dd><StatusPill tone={SEV_TONE[sev] ?? 'neutral'} label={t.t(`support.sev.${sev}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('support.status')}</dt><dd>{t.t(`support.state.${statusK}`)}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('support.sla')}</dt><dd><span className={`kv-status ${slaK === 'breached' ? 'kv-status--danger' : 'kv-status--ok'}`}>{t.t(`support.slaState.${slaK}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('support.sla')}</dt><dd><StatusPill tone={slaK === 'breached' ? 'danger' : 'success'} label={t.t(`support.slaState.${slaK}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('support.channel')}</dt><dd>{ticket.channel}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('support.assignee')}</dt><dd>{ticket.assigneeUserId ?? t.t('support.unassigned')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('support.firstResponseDue')}</dt><dd>{ticket.slaFirstResponseDue ?? t.t('common.dash')}</dd></div>
@@ -95,7 +96,7 @@ export default async function TicketDetailPage({ params, searchParams }: { param
       {repliesUnavailable ? (
         <p className="kv-error" role="alert">{t.t('notice.generic')}</p>
       ) : replies.length === 0 ? (
-        <p className="kv-empty">{t.t('prep.none')}</p>
+        <EmptyState title={t.t('prep.none')} />
       ) : (
         <>
           {/* what the farmer RECEIVED, not what was written — the operator would otherwise read the list as answers */}
@@ -118,7 +119,7 @@ export default async function TicketDetailPage({ params, searchParams }: { param
                 <tr key={r.id}>
                   <td>{r.queuedAt}</td>
                   <td>
-                    <span className={`kv-status ${stateClass(r.status)}`}>{t.t(`prep.state.${stateKey(r.status)}`)}</span>
+                    <StatusPill tone={stateTone(r.status)} label={t.t(`prep.state.${stateKey(r.status)}`)} />
                     {/* the server's own sentence about this row, so the console cannot invent a cheerier wording */}
                     {r.stateNote ? <> <span className="kv-detail__muted">{r.stateNote}</span></> : null}
                   </td>
@@ -137,9 +138,9 @@ export default async function TicketDetailPage({ params, searchParams }: { param
         <summary className="kv-card__title">{t.t('prep.title')}</summary>
         <p className="kv-field__hint">{t.t('prep.lead')}</p>
         {/* the tenant can read this. Said BEFORE the box, not after it. */}
-        <p className="kv-notice" role="note">{t.t('prep.visibleToTenant')}</p>
+        <Callout>{t.t('prep.visibleToTenant')}</Callout>
         {/* and pressing the button does not send */}
-        <p className="kv-notice" role="note">{t.t('prep.queuedWarn')}</p>
+        <Callout>{t.t('prep.queuedWarn')}</Callout>
         <form action={replyToFarmerAction} className="kv-form">
           <input type="hidden" name="id" value={ticket.id} />
           <label htmlFor="reply-language" className="kv-field__label">{t.t('prep.language')}</label>
@@ -151,7 +152,7 @@ export default async function TicketDetailPage({ params, searchParams }: { param
           <label htmlFor="reply-body" className="kv-field__label">{t.t('prep.body')}</label>
           <textarea id="reply-body" name="body" className="kv-input" rows={4} required minLength={MIN_BODY} maxLength={4000} />
           <p className="kv-field__hint">{t.t('prep.bodyHint')}</p>
-          <button type="submit" className="kv-btn">{t.t('prep.send')}</button>
+          <Button type="submit">{t.t('prep.send')}</Button>
         </form>
       </details>
 
@@ -169,7 +170,7 @@ export default async function TicketDetailPage({ params, searchParams }: { param
           <input id="reassignToUserId" name="reassignToUserId" className="kv-input" placeholder={t.t('support.reassignHint')} />
           <label htmlFor="escalateReason" className="kv-field__label">{t.t('support.reason')}</label>
           <input id="escalateReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('support.escalate')}</button>
+          <Button type="submit" variant="danger">{t.t('support.escalate')}</Button>
         </form>
       ) : <p className="kv-muted">{t.t('support.escalateClosed')}</p>}
 
@@ -182,10 +183,10 @@ export default async function TicketDetailPage({ params, searchParams }: { param
           <input type="hidden" name="id" value={ticket.id} />
           <p className="kv-field__hint">{t.t('support.resolveHint')}</p>
           {/* Said where an operator would otherwise assume the farmer has been answered. */}
-          <p className="kv-notice" role="note">{t.t('support.replyGap')}</p>
+          <Callout>{t.t('support.replyGap')}</Callout>
           <label htmlFor="outcome" className="kv-field__label">{t.t('support.outcome')}</label>
           <textarea id="outcome" name="outcome" className="kv-input" rows={3} required minLength={10} maxLength={2000} />
-          <button type="submit" className="kv-btn">{t.t('support.resolve')}</button>
+          <Button type="submit">{t.t('support.resolve')}</Button>
         </form>
       ) : <p className="kv-muted">{t.t('support.escalateClosed')}</p>}
     </section>

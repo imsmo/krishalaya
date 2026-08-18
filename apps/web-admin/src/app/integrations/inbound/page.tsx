@@ -10,8 +10,9 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
+import { Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  outcomeKey, payloadNoteKey, verdictClass, verdictKey, type InboundRow,
+  outcomeKey, payloadNoteKey, verdictTone, verdictKey, type InboundRow,
 } from '../../../features/integrations/api-oversight';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,7 @@ export default async function InboundPage({ searchParams }: { searchParams: { fa
         <h1>{t.t('ap11.inboundLog')}</h1>
         <p className="kv-page__sub">{t.t('ap11.inbound.sub')}</p>
       </header>
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {meta ? (
         <>
@@ -71,22 +72,19 @@ export default async function InboundPage({ searchParams }: { searchParams: { fa
           ) : null}
 
           {/* An audit log that starts today reads exactly like a clean one. */}
-          <p className="kv-note">{t.t(meta.beganWithRelease)}</p>
+          <Callout tone="info">{t.t(meta.beganWithRelease)}</Callout>
         </>
       ) : null}
 
       <nav className="kv-filters" aria-label={t.t('ap11.filterGroup')}>
-        <Link className={`kv-chip${!failuresOnly ? ' is-active' : ''}`} href="/integrations/inbound">{t.t('common.all')}</Link>
-        <Link className={`kv-chip${failuresOnly ? ' is-active' : ''}`} href="/integrations/inbound?failuresOnly=1">
+        <Chip as={Link} href="/integrations/inbound" active={!failuresOnly}>{t.t('common.all')}</Chip>
+        <Chip as={Link} href="/integrations/inbound?failuresOnly=1" active={failuresOnly}>
           {t.t('ap11.inbound.failuresOnly')}
-        </Link>
+        </Chip>
       </nav>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('ap11.inbound.emptyTitle')}</h2>
-          <p>{t.t('ap11.inbound.emptyBody')}</p>
-        </div>
+        <EmptyState variant="empty" title={t.t('ap11.inbound.emptyTitle')} body={t.t('ap11.inbound.emptyBody')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('ap11.inbound.caption')}</caption>
@@ -108,13 +106,13 @@ export default async function InboundPage({ searchParams }: { searchParams: { fa
                   <td>{r.createdAt.slice(0, 16).replace('T', ' ')}</td>
                   <td className="kv-mono">{r.providerCode}</td>
                   <td>{r.eventType ?? '—'}</td>
-                  <td><span className={verdictClass(r)}>{t.t(verdictKey(r))}</span></td>
+                  <td><StatusPill tone={verdictTone(r)} label={t.t(verdictKey(r))} /></td>
                   {/* A refused callback is `ignored`, never `failed`: the platform declined rather than tried and could
                       not. That is a defence working, and calling it a failure would put it in the wrong report. */}
                   <td>{t.t(outcomeKey(r.processingStatus))}</td>
                   <td>
                     {r.rawBytes === null ? '—' : t.t('ap11.bytes', { n: r.rawBytes.toLocaleString('en-IN') })}
-                    {note ? <><br /><small className="kv-badge is-warn">{t.t(note)}</small></> : null}
+                    {note ? <><br /><StatusPill tone="neutral" icon={false} label={t.t(note)} /></> : null}
                   </td>
                 </tr>
               );
@@ -123,7 +121,7 @@ export default async function InboundPage({ searchParams }: { searchParams: { fa
         </table>
       )}
 
-      <p className="kv-note"><small>{t.t('ap11.inbound.piiNote')}</small></p>
+      <Callout tone="info"><small>{t.t('ap11.inbound.piiNote')}</small></Callout>
     </main>
   );
 }

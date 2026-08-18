@@ -10,10 +10,10 @@
 //   * a locked quick link says whether a ROLE or a RESTRICTION locked it, because those are answered differently.
 import {
   QUICK_LINKS, canApproveReinstate, canRequestReinstate, canRevokeSession, cellClass, cellStateKey, censusLabelKey,
-  dormancyClass, dormancyKey, fido2ClaimKey, gateKey, keyListKey, keyListState, lockedByRestriction, matrixIsWritable,
-  pastLineIsNotSuspended, quickLinkUnlocked, reinstateAbsenceKey, restrictionClass, restrictionCodeLabel,
-  restrictionKey, restrictionState, revokeLabelKey, sessionClass, sessionKey, sessionState, statusClass, statusKey,
-  stepUpClass, stepUpOutcomeClass, stepUpStateKey, suspendKindKey,
+  dormancyTone, dormancyKey, fido2ClaimKey, gateKey, keyListKey, keyListState, lockedByRestriction, matrixIsWritable,
+  pastLineIsNotSuspended, quickLinkUnlocked, reinstateAbsenceKey, restrictionTone, restrictionCodeLabel,
+  restrictionKey, restrictionState, revokeLabelKey, sessionTone, sessionKey, sessionState, statusTone, statusKey,
+  stepUpClass, stepUpOutcomeTone, stepUpStateKey, suspendKindKey,
 } from '../features/staff/operators';
 import { en } from '../i18n/en';
 
@@ -37,12 +37,12 @@ describe('ADMIN-9 · dormancy is not suspension', () => {
   });
 
   it('escalates past-the-line above dormant, because only one of them blocks the next request', () => {
-    expect(dormancyClass({ kind: 'past_line', daysSinceSeen: 60 })).toContain('is-danger');
-    expect(dormancyClass({ kind: 'dormant', daysSinceSeen: 31, daysToSuspend: 14 })).toContain('is-warn');
-    expect(dormancyClass({ kind: 'active', daysSinceSeen: 1, daysToDormant: 29, daysToSuspend: 44 })).toContain('is-ok');
+    expect(dormancyTone({ kind: 'past_line', daysSinceSeen: 60 })).toBe('danger');
+    expect(dormancyTone({ kind: 'dormant', daysSinceSeen: 31, daysToSuspend: 14 })).toBe('warning');
+    expect(dormancyTone({ kind: 'active', daysSinceSeen: 1, daysToDormant: 29, daysToSuspend: 44 })).toBe('success');
     // An operator the realm has never seen is neither good news nor bad news.
-    expect(dormancyClass(null)).not.toContain('is-ok');
-    expect(dormancyClass(null)).not.toContain('is-danger');
+    expect(dormancyTone(null)).not.toBe('success');
+    expect(dormancyTone(null)).not.toBe('danger');
     expect(dormancyKey(null)).toBe('st.dormancy.unknown');
   });
 
@@ -54,9 +54,9 @@ describe('ADMIN-9 · dormancy is not suspension', () => {
   });
 
   it('draws a suspended operator as danger and an active one as ok', () => {
-    expect(statusClass('suspended')).toContain('is-danger');
-    expect(statusClass('active')).toContain('is-ok');
-    expect(statusClass('something_new')).toContain('is-warn');
+    expect(statusTone('suspended')).toBe('danger');
+    expect(statusTone('active')).toBe('success');
+    expect(statusTone('something_new')).toBe('warning');
     expect(dict[statusKey('something_new')]).toBeTruthy();
   });
 });
@@ -127,9 +127,9 @@ describe('ADMIN-9 · sessions — the first revocation this realm has had', () =
   });
 
   it('draws a revoked session as danger and this device as its own state', () => {
-    expect(sessionClass('revoked')).toContain('is-danger');
-    expect(sessionClass('current')).toContain('is-info');
-    expect(sessionClass('live')).toContain('is-ok');
+    expect(sessionTone('revoked')).toBe('danger');
+    expect(sessionTone('current')).toBe('info');
+    expect(sessionTone('live')).toBe('success');
     for (const s of ['current', 'live', 'revoked', 'expired'] as const) expect(dict[sessionKey(s)]).toBeTruthy();
   });
 
@@ -200,8 +200,8 @@ describe('ADMIN-9 · restrictions are deny-only', () => {
   it('reports an inert restriction as inert rather than in force', () => {
     expect(restrictionState(r({ inert: true }), NOW)).toBe('inert');
     expect(dict['st.restriction.inertWhy']).toMatch(/removes nothing/i);
-    expect(restrictionClass('inert')).not.toContain('is-warn');
-    expect(restrictionClass('in_force')).toContain('is-warn');
+    expect(restrictionTone('inert')).not.toBe('warning');
+    expect(restrictionTone('in_force')).toBe('warning');
   });
 
   it('renders the star as a sentence rather than as a character to be decoded', () => {
@@ -283,8 +283,8 @@ describe('ADMIN-9 · W438 · quick links are locked, never hidden', () => {
 
 describe('ADMIN-9 · step-up', () => {
   it('draws a refusal as danger — it is the half a security page exists for', () => {
-    expect(stepUpOutcomeClass('refused')).toContain('is-danger');
-    expect(stepUpOutcomeClass('verified')).toContain('is-ok');
+    expect(stepUpOutcomeTone('refused')).toBe('danger');
+    expect(stepUpOutcomeTone('verified')).toBe('success');
     expect(dict['st.stepUp.refused']).toBe('REFUSED');
   });
 

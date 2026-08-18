@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { formatMoneyMinor } from '@krishalaya/i18n';
+import { Button, StatusPill } from '@krishalaya/ui';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
@@ -51,7 +52,7 @@ export default async function ReconAccountPage({ params, searchParams }: { param
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('recon.acctOwner')}</dt><dd>{acct.ownerKind}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.acctBalance')}</dt><dd>{formatMoneyMinor(acct.balanceMinor, acct.currency)}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('recon.acctFrozen')}</dt><dd><span className={acct.isFrozen ? 'kv-status kv-status--danger' : 'kv-status kv-status--ok'}>{acct.isFrozen ? t.t('recon.frozenYes') : t.t('recon.frozenNo')}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('recon.acctFrozen')}</dt><dd><StatusPill tone={acct.isFrozen ? 'danger' : 'success'} label={acct.isFrozen ? t.t('recon.frozenYes') : t.t('recon.frozenNo')} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.acctFreezeReason')}</dt><dd>{acct.freezeReason || t.t('common.dash')}</dd></div>
       </dl>
 
@@ -62,7 +63,7 @@ export default async function ReconAccountPage({ params, searchParams }: { param
         <input type="hidden" name="action" value={acct.isFrozen ? 'unfreeze' : 'freeze'} />
         <label className="kv-field__label">{t.t('recon.reason')}</label>
         <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-        <button type="submit" className={`kv-btn${acct.isFrozen ? '' : ' kv-btn--danger'}`}>{acct.isFrozen ? t.t('recon.unfreeze') : t.t('recon.freeze')}</button>
+        <Button type="submit" variant={acct.isFrozen ? 'primary' : 'danger'}>{acct.isFrozen ? t.t('recon.unfreeze') : t.t('recon.freeze')}</Button>
       </form>
     </section>
   );

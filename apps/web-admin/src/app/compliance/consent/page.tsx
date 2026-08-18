@@ -19,8 +19,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { DataTable, Column } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
+import { Button, Callout, Chip, StatusPill } from '@krishalaya/ui';
 import {
-  CONSENT_CHANNELS, channelFilter, decisionKey, decisionClass, provenanceKey, provenanceClass,
+  CONSENT_CHANNELS, channelFilter, decisionKey, decisionTone, provenanceKey, provenanceTone,
   assistedShareText, type ConsentEventRow,
 } from '../../../features/compliance/consent';
 
@@ -71,11 +72,11 @@ export default async function ConsentRegistryPage({ searchParams }: { searchPara
         <>
           {r.version ?? t.t('common.dash')}{' '}
           {/* Can we produce the words this person agreed to? For most rows the answer is no, and saying so is the point. */}
-          <span className={provenanceClass(r.provenance)}>{t.t(`cns.prov.${provenanceKey(r.provenance)}`)}</span>
+          <StatusPill tone={provenanceTone(r.provenance)} label={t.t(`cns.prov.${provenanceKey(r.provenance)}`)} />
         </>
       ),
     },
-    { header: t.t('cns.decision'), cell: (r) => <span className={decisionClass(r.decision)}>{t.t(`cns.dec.${decisionKey(r.decision)}`)}</span> },
+    { header: t.t('cns.decision'), cell: (r) => <StatusPill tone={decisionTone(r.decision)} label={t.t(`cns.dec.${decisionKey(r.decision)}`)} /> },
     { header: t.t('cns.channel'), cell: (r) => t.t(`cns.ch.${CONSENT_CHANNELS.includes(r.channel as never) ? r.channel : 'unknown'}`) },
     // An ambassador is staff acting in role, not a data subject on this screen — the id is what an operator needs to find
     // their record, and masking it would remove the accountability the assisted channel exists to provide.
@@ -89,9 +90,9 @@ export default async function ConsentRegistryPage({ searchParams }: { searchPara
       <p className="kv-backlink"><Link href="/compliance">{t.t('compliance.back')}</Link></p>
       <h1>{t.t('cns.registryTitle')}</h1>
       <p className="kv-muted">{t.t('cns.registryLead')}</p>
-      <p className="kv-notice">{t.t('cns.maskNotice')}</p>
+      <Callout tone="warning">{t.t('cns.maskNotice')}</Callout>
       {/* The rule that decides how this table is read, stated before it. */}
-      <p className="kv-notice">{t.t('cns.withdrawnRule')}</p>
+      <Callout tone="warning">{t.t('cns.withdrawnRule')}</Callout>
 
       {tiles && (
         <div className="kv-stat-row">
@@ -114,14 +115,14 @@ export default async function ConsentRegistryPage({ searchParams }: { searchPara
       {!tiles && <p className="kv-detail__muted">{t.t('cns.tilesUnavailable')}</p>}
 
       <nav className="kv-filters" aria-label={t.t('cns.channelFilter')}>
-        <Link href={qp({ channel: undefined, cursor: undefined })} className={`kv-chip${!channel ? ' is-active' : ''}`} aria-current={!channel ? 'true' : undefined}>{t.t('cns.allChannels')}</Link>
+        <Chip as={Link} href={qp({ channel: undefined, cursor: undefined })} aria-current={!channel ? 'true' : undefined} active={!channel}>{t.t('cns.allChannels')}</Chip>
         {CONSENT_CHANNELS.map((c) => (
-          <Link key={c} href={qp({ channel: c, cursor: undefined })} className={`kv-chip${channel === c ? ' is-active' : ''}`} aria-current={channel === c ? 'true' : undefined}>{t.t(`cns.ch.${c}`)}</Link>
+          <Chip as={Link} key={c} href={qp({ channel: c, cursor: undefined })} aria-current={channel === c ? 'true' : undefined} active={channel === c}>{t.t(`cns.ch.${c}`)}</Chip>
         ))}
       </nav>
       <nav className="kv-filters" aria-label={t.t('cns.decisionFilter')}>
-        <Link href={qp({ withdrawn: undefined, cursor: undefined })} className={`kv-chip${!withdrawnOnly ? ' is-active' : ''}`}>{t.t('cns.allDecisions')}</Link>
-        <Link href={qp({ withdrawn: 'true', cursor: undefined })} className={`kv-chip${withdrawnOnly ? ' is-active' : ''}`}>{t.t('cns.notGrantedOnly')}</Link>
+        <Chip as={Link} href={qp({ withdrawn: undefined, cursor: undefined })} active={!withdrawnOnly}>{t.t('cns.allDecisions')}</Chip>
+        <Chip as={Link} href={qp({ withdrawn: 'true', cursor: undefined })} active={!!withdrawnOnly}>{t.t('cns.notGrantedOnly')}</Chip>
       </nav>
       {/* The filter is `granted = false`, which is refusals AND withdrawals — named accurately rather than as
           "withdrawn only", because the SQL cannot tell them apart without the prior-grant lookup each row carries. */}
@@ -132,12 +133,12 @@ export default async function ConsentRegistryPage({ searchParams }: { searchPara
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('cns.registryEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
       {/* An IVR consent's evidence is the recording, and there is nowhere to store its reference. */}
-      {ivrGap && !ivrGap.available && <p className="kv-notice">{t.t('cns.ivrGap')}</p>}
+      {ivrGap && !ivrGap.available && <Callout tone="warning">{t.t('cns.ivrGap')}</Callout>}
     </section>
   );
 }

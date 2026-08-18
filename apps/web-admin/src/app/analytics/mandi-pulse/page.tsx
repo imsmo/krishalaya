@@ -12,7 +12,8 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
-import { guardClass, lagCellKey, moveClass, moveKey, pctFromBp, rupees, type Pulse } from '../../../features/market/pulse';
+import { guardClass, lagCellKey, moveTone, moveKey, pctFromBp, rupees, type Pulse } from '../../../features/market/pulse';
+import { Callout, StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -44,7 +45,7 @@ export default async function MandiPulsePage() {
         <p className="kv-page__sub">{t.t('mp11.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {p && meta ? (
         <>
@@ -60,18 +61,18 @@ export default async function MandiPulsePage() {
           <p className={guardClass(meta.guardState)}>
             {t.t(meta.guardState, { held: String(p.heldToday), manual: String(p.manualSharePct) })}
           </p>
-          <p className="kv-note">
+          <Callout>
             <Link href="/analytics/mandi-pulse/quarantine">{t.t('mp11.openQueue', { n: String(p.heldOpen) })}</Link>
-          </p>
+          </Callout>
 
           {/* THE FIGURE WITH NO SOURCE UNTIL THIS RELEASE — absent with its reason, never a flattering zero. */}
-          <p className="kv-note">
+          <Callout>
             {t.t(lagCellKey(p.ingestLagP95Minutes, p.ingestLagSampleSize), {
               n: String(p.ingestLagP95Minutes ?? 0), samples: String(p.ingestLagSampleSize),
               stamped: String(p.stampedToday), owner: meta.ingestLagOwner,
             })}
-          </p>
-          <p className="kv-note"><small>{t.t(meta.stalenessBasis)}</small></p>
+          </Callout>
+          <Callout><small>{t.t(meta.stalenessBasis)}</small></Callout>
 
           <section className="kv-panel" aria-labelledby="mp11-mix">
             <h2 id="mp11-mix" className="kv-panel__title">{t.t('mp11.mix')}</h2>
@@ -84,13 +85,13 @@ export default async function MandiPulsePage() {
                 </li>
               ))}
             </ul>
-            {p.sourceMix.length === 0 ? <p className="kv-note">{t.t('mp11.mix.empty')}</p> : null}
+            {p.sourceMix.length === 0 ? <Callout>{t.t('mp11.mix.empty')}</Callout> : null}
           </section>
 
           <section className="kv-panel" aria-labelledby="mp11-movers">
             <h2 id="mp11-movers" className="kv-panel__title">{t.t('mp11.movers')}</h2>
             {p.movers.length === 0 ? (
-              <p className="kv-note">{t.t('mp11.movers.empty')}</p>
+              <Callout>{t.t('mp11.movers.empty')}</Callout>
             ) : (
               <table className="kv-table">
                 <caption className="kv-table__caption">{t.t('mp11.movers.caption')}</caption>
@@ -104,26 +105,29 @@ export default async function MandiPulsePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {p.movers.map((m, i) => (
-                    <tr key={`${m.productId}-${i}`}>
-                      <td>{m.productName ?? m.productId.slice(0, 8)}</td>
-                      <td>{m.regionName ?? '—'}</td>
-                      {/* Rendered from bigint paise. No client-side money math beyond a divide-by-100 for display. */}
-                      <td>{rupees(m.modalMinor)}</td>
-                      <td>
-                        <span className={moveClass(m.changeBp)}>
-                          {t.t(moveKey(m.changeBp), { pct: m.changeBp === null ? '—' : pctFromBp(m.changeBp) })}
-                        </span>
-                      </td>
-                      <td>{m.arrivalsQty ?? '—'}</td>
-                    </tr>
-                  ))}
+                  {p.movers.map((m, i) => {
+                    // SPECIAL CASE (disclosed, DEV-60): `changeBp === null` has no tone at all — `moveTone` returns
+                    // `null` rather than a fallback, and this cell renders plain text instead of a `<StatusPill>` for
+                    // that branch, matching the pre-DEV-60 behaviour of `moveClass` returning `''` (no badge).
+                    const moveLabel = t.t(moveKey(m.changeBp), { pct: m.changeBp === null ? '—' : pctFromBp(m.changeBp) });
+                    const tone = moveTone(m.changeBp);
+                    return (
+                      <tr key={`${m.productId}-${i}`}>
+                        <td>{m.productName ?? m.productId.slice(0, 8)}</td>
+                        <td>{m.regionName ?? '—'}</td>
+                        {/* Rendered from bigint paise. No client-side money math beyond a divide-by-100 for display. */}
+                        <td>{rupees(m.modalMinor)}</td>
+                        <td>{tone === null ? moveLabel : <StatusPill tone={tone} label={moveLabel} />}</td>
+                        <td>{m.arrivalsQty ?? '—'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
             {/* Movers read ACCEPTED observations only: a held price must not appear in a chart either, or an operator
                 would act on a number the platform has refused to send a farmer. */}
-            <p className="kv-note"><small>{t.t('mp11.movers.acceptedOnly')}</small></p>
+            <Callout><small>{t.t('mp11.movers.acceptedOnly')}</small></Callout>
           </section>
         </>
       ) : null}

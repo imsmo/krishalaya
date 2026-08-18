@@ -14,8 +14,9 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
+import { Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  formatRate, kindClass, kindKey, overrideRateClass, tileText, type Tile,
+  formatRate, kindTone, kindKey, overrideRateTone, tileText, type Tile,
 } from '../../../features/ai-governance/ai-governance';
 
 export const dynamic = 'force-dynamic';
@@ -64,7 +65,7 @@ export default async function AiOverviewPage() {
         <p className="kv-page__sub">{t.t('ai.overview.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {o ? (
         <>
@@ -76,7 +77,7 @@ export default async function AiOverviewPage() {
                 <dt>{t.t('ai.tile.inferences')}</dt>
                 <dd>{inf.value}</dd>
                 {/* THE UNKNOWN IS WORDS, NOT 0. */}
-                {inf.unknownKey ? <dd className="kv-note is-warn">{t.t(inf.unknownKey)}</dd> : null}
+                {inf.unknownKey ? <dd><Callout tone="warning">{t.t(inf.unknownKey)}</Callout></dd> : null}
               </div>
               <div>
                 <dt>{t.t('ai.tile.sentToReview')}</dt>
@@ -87,7 +88,7 @@ export default async function AiOverviewPage() {
                 <dt>{t.t('ai.tile.overrideRate')}</dt>
                 {/* A HIGH override rate is a WARNING and not a success. It is easy to read "humans are catching things" as
                     reassurance; what it means is that the model is wrong that often and every case cost somebody time. */}
-                <dd><span className={overrideRateClass(rate)}>{formatRate(rate)}</span></dd>
+                <dd><StatusPill tone={overrideRateTone(rate)} label={formatRate(rate)} /></dd>
               </div>
               <div>
                 <dt>{t.t('ai.tile.queue')}</dt>
@@ -105,14 +106,14 @@ export default async function AiOverviewPage() {
             </dl>
             {/* A fraud case waiting is a farmer's listing off the market. Read across the whole open queue, not a page. */}
             {o.queue.holdsListings > 0 ? (
-              <p className="kv-note is-warn" role="status">
+              <Callout tone="warning" live="polite">
                 {t.t('ai.queue.holdsListings', { n: String(o.queue.holdsListings) })}{' '}
                 <Link href="/ai-models/review">{t.t('ai.queue.open')}</Link>
-              </p>
+              </Callout>
             ) : null}
             <ul className="kv-stat-row">
               {Object.entries(o.queue.byKind).map(([k, n]) => (
-                <li key={k}><span className={kindClass(k)}>{t.t(kindKey(k))}</span> {n}</li>
+                <li key={k}><StatusPill tone={kindTone(k)} label={t.t(kindKey(k))} /> {n}</li>
               ))}
             </ul>
           </section>
@@ -137,9 +138,8 @@ export default async function AiOverviewPage() {
                   <td>{m.inferences24h.toLocaleString('en-IN')}</td>
                   <td>{m.belowThreshold.toLocaleString('en-IN')}</td>
                   <td>
-                    <span className={overrideRateClass(m.inferences24h > 0 ? m.overridden / m.inferences24h : null)}>
-                      {m.inferences24h > 0 ? formatRate(m.overridden / m.inferences24h) : '—'}
-                    </span>
+                    <StatusPill tone={overrideRateTone(m.inferences24h > 0 ? m.overridden / m.inferences24h : null)}
+                      label={m.inferences24h > 0 ? formatRate(m.overridden / m.inferences24h) : '—'} />
                   </td>
                 </tr>
               ))}
@@ -147,10 +147,7 @@ export default async function AiOverviewPage() {
           </table>
 
           {o.models.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('ai.overview.empty.title')}</h2>
-              <p>{t.t('ai.overview.empty.body')}</p>
-            </div>
+            <EmptyState title={t.t('ai.overview.empty.title')} body={t.t('ai.overview.empty.body')} />
           ) : null}
 
           {/* W088's alert strip, on the overview too — a transition awaiting a checker is a model waiting to serve or to
@@ -178,9 +175,9 @@ export default async function AiOverviewPage() {
             {/* THE THIRD ONE IS NOW TRUE. "Fairness audits per model version — district/gender skew checked before
                 production" had nothing behind it until 0115: no gate read the column, and the column's only writer was
                 never scheduled. The line stays, and the board says which models have actually been audited. */}
-            <p className="kv-note">
+            <Callout>
               <Link href="/ai-models/fairness">{t.t('ai.policy.seeBoard')}</Link>
-            </p>
+            </Callout>
           </section>
         </>
       ) : null}

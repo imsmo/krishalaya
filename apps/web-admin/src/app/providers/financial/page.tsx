@@ -11,6 +11,7 @@ import { DataTable, Column } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { categoryKey, providerHealthKey, type ProviderHealthRow } from '../../../features/providers/provider';
+import { StatusPill, type StatusTone } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('providers.financialTitle'), robots: { index: false, follow: false } };
 }
 
-const HEALTH_CLASS: Record<string, string> = { active: 'kv-status--ok', degraded: 'kv-status--danger', disabled: 'kv-status--muted' };
+const HEALTH_TONE: Record<string, StatusTone> = { active: 'success', degraded: 'danger', disabled: 'neutral' };
 
 export default async function FinancialPartnersPage() {
   requireAdmin();
@@ -34,7 +35,7 @@ export default async function FinancialPartnersPage() {
     { header: t.t('providers.code'), cell: (r) => <Link href={`/providers/${encodeURIComponent(r.code)}`}>{r.code}</Link> },
     { header: t.t('providers.name'), cell: (r) => r.defaultName },
     { header: t.t('providers.category'), cell: (r) => t.t(`providers.cat.${categoryKey(r.category)}`) },
-    { header: t.t('providers.health'), cell: (r) => { const k = providerHealthKey(r); return <span className={`kv-status ${HEALTH_CLASS[k]}`}>{t.t(`providers.healthState.${k}`)}</span>; } },
+    { header: t.t('providers.health'), cell: (r) => { const k = providerHealthKey(r); return <StatusPill tone={HEALTH_TONE[k]} label={t.t(`providers.healthState.${k}`)} />; } },
     { header: t.t('providers.configuredTenants'), cell: (r) => r.health.configuredTenants.toLocaleString() },
   ];
 

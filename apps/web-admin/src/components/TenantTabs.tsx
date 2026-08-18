@@ -3,6 +3,7 @@
 // where the route supports it. Tabs whose destination cannot be narrowed to one tenant are marked, because a
 // platform-wide flag screen sitting under a tenant's name would be read as that tenant's configuration.
 import Link from 'next/link';
+import { StatusPill } from '@krishalaya/ui';
 import { getTranslator } from '../lib/i18n';
 import { tenantTabs, unscopedTabs, type TenantTab } from '../features/tenants/tabs';
 
@@ -18,7 +19,7 @@ export function TenantTabs({ tenantId, active }: { tenantId: string; active: Ten
             className={`kv-tab${tab.key === active ? ' kv-tab--active' : ''}`}
             aria-current={tab.key === active ? 'page' : undefined}>
             {t.t(`tenantTabs.${tab.key}`)}
-            {!tab.scoped && <span className="kv-status kv-status--muted">{t.t('tenantTabs.platformWide')}</span>}
+            {!tab.scoped && <StatusPill tone="neutral" label={t.t('tenantTabs.platformWide')} />}
           </Link>
         ))}
       </nav>

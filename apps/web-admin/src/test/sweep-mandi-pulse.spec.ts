@@ -4,8 +4,8 @@
 // the data is clean, and an empty anomaly queue because nothing is checking. Before this wave the second was always the
 // answer — `MandiPriceService.ingest` fired farmer price alerts off a manually typed observation in the same
 // transaction that inserted it, while W107 promised "bad data never reaches a selling decision".
-import { guardClass, lagCellKey, moveClass, moveKey, pctFromBp, rupees } from '../features/market/pulse';
-import { canDecide, decidedNoticeKey, severityClass, severityKey } from '../features/market/quarantine';
+import { guardClass, lagCellKey, moveTone, moveKey, pctFromBp, rupees } from '../features/market/pulse';
+import { canDecide, decidedNoticeKey, severityTone, severityKey } from '../features/market/quarantine';
 import { en } from '../i18n/en';
 
 const dict = en as unknown as Record<string, string>;
@@ -30,10 +30,10 @@ describe('ADMIN-SWEEP · money is rendered, never computed', () => {
   // **NEITHER DIRECTION IS "GOOD".** A price rise is good for a seller and bad for a buyer, and this platform serves
   // both — so the mark is on MAGNITUDE rather than sentiment.
   it('marks magnitude rather than sentiment', () => {
-    expect(moveClass(1_200)).toContain('is-warn');
-    expect(moveClass(-1_200)).toContain('is-warn');
-    expect(moveClass(300)).not.toContain('is-warn');
-    expect(moveClass(null)).toBe('');
+    expect(moveTone(1_200)).toBe('warning');
+    expect(moveTone(-1_200)).toBe('warning');
+    expect(moveTone(300)).not.toBe('warning');
+    expect(moveTone(null)).toBeNull();
   });
 });
 
@@ -74,8 +74,8 @@ describe('ADMIN-SWEEP · the quarantine controls', () => {
     expect(severityKey(6_000)).toBe('mp11.sev.high');
     expect(severityKey(2_500)).toBe('mp11.sev.moderate');
     expect(severityKey(null)).toBe('mp11.sev.unknown');
-    expect(severityClass(90_000)).toContain('is-danger');
-    expect(severityClass(null)).toContain('is-warn');
+    expect(severityTone(90_000)).toBe('danger');
+    expect(severityTone(null)).toBe('warning');
   });
 
   it('withholds the decide controls on a decided row and says what happened', () => {

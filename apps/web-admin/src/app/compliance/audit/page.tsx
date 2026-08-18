@@ -10,8 +10,9 @@ import { DataTable, Column } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import type { AuditRow } from '../../../features/compliance/compliance';
-import { SAVED_VIEWS, isSavedView, viewChipClass, windowTooWide } from '../../../features/audit/audit-console';
+import { SAVED_VIEWS, isSavedView, isActiveView, windowTooWide } from '../../../features/audit/audit-console';
 
+import { Button, Chip } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -72,10 +73,10 @@ export default async function AuditExplorerPage({ searchParams }: { searchParams
       <nav className="kv-filters" aria-label={t.t('aud.views')}>
         {SAVED_VIEWS.map((v) => {
           const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, x]) => !!x) as [string, string][]), ...(v === 'all' ? {} : { view: v }) });
-          return <Link key={v} href={`/compliance/audit${qs.toString() ? `?${qs}` : ''}`} className={viewChipClass(view, v)}>{t.t(`aud.view.${v}`)}</Link>;
+          return <Chip key={v} as={Link} href={`/compliance/audit${qs.toString() ? `?${qs}` : ''}`} active={isActiveView(view, v)}>{t.t(`aud.view.${v}`)}</Chip>;
         })}
         {/* W040's drill, reachable from the explorer rather than only by typing a URL. */}
-        <Link href="/compliance/audit/entity" className="kv-chip">{t.t('aud.entityLink')}</Link>
+        <Chip as={Link} href="/compliance/audit/entity">{t.t('aud.entityLink')}</Chip>
       </nav>
       {tooWide && <p className="kv-error" role="alert">{t.t('aud.windowTooWide')}</p>}
       <p className="kv-detail__muted">{t.t('aud.immutableNote')}</p>
@@ -88,13 +89,13 @@ export default async function AuditExplorerPage({ searchParams }: { searchParams
         <input name="tenantId" className="kv-input kv-input--sm" defaultValue={f.tenantId ?? ''} placeholder={t.t('compliance.auditFTenant')} />
         <input name="from" className="kv-input kv-input--sm" defaultValue={f.from ?? ''} placeholder={t.t('compliance.auditFFrom')} />
         <input name="to" className="kv-input kv-input--sm" defaultValue={f.to ?? ''} placeholder={t.t('compliance.auditFTo')} />
-        <button type="submit" className="kv-btn">{t.t('compliance.auditApply')}</button>
+        <Button type="submit">{t.t('compliance.auditApply')}</Button>
       </form>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('compliance.auditEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={nextHref()}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={nextHref()}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

@@ -25,6 +25,9 @@ import { getTranslator } from '../../../lib/i18n';
 import { archiveSavedAction, runReportAction, saveReportAction } from '../actions';
 import { bucketKey, metricKey, replicaClass, replicaKey } from '../../../features/reports/dashboard';
 
+import {
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -77,24 +80,24 @@ export default async function ReportBuilderPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('rp.builder.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`rp.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`rp.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`rp.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`rp.err.${searchParams.error}`)}</Callout> : null}
 
       {v ? (
         <>
           {/* THE CAPS, AND WHICH SERVER ANSWERS. */}
-          <p className="kv-note">{t.t('rp.builder.caps', {
+          <Callout>{t.t('rp.builder.caps', {
             days: String(v.caps.maxRangeDays),
             rows: v.caps.maxRows.toLocaleString('en-IN'),
             seconds: String(Math.round(v.caps.statementTimeoutMs / 1000)),
-          })}</p>
+          })}</Callout>
           <p className={replicaClass(v.readsFromReplica)}>
             {t.t(replicaKey(v.readsFromReplica), { owner: v.replicaGapOwner })}
           </p>
           {/* The PII rule W111 states, kept because it is true: a whitelisted metric series is counts and money totals
               per bucket, and no person appears in one. */}
-          <p className="kv-note">{t.t('rp.builder.pii')}</p>
+          <Callout>{t.t('rp.builder.pii')}</Callout>
 
           {/* WHAT THE CANON OFFERS THAT THIS PLANE CANNOT SERVE. */}
           {v.datasetsUnavailable.length > 0 ? (
@@ -135,19 +138,16 @@ export default async function ReportBuilderPage({ searchParams }: {
                 <label className="kv-field__label" htmlFor="rp-to">{t.t('rp.builder.to')}</label>
                 <input className="kv-input" id="rp-to" name="to" type="date" defaultValue={today} required />
               </div>
-              <button className="kv-btn kv-btn--primary" type="submit">{t.t('rp.builder.run')}</button>
+              <Button type="submit">{t.t('rp.builder.run')}</Button>
             </form>
           </section>
 
           {/* SAVED DEFINITIONS — and the schedules that run them, which existed all along. */}
           <section className="kv-panel" aria-labelledby="rp-saved">
             <h2 id="rp-saved" className="kv-panel__title">{t.t('rp.saved.title')}</h2>
-            <p className="kv-note">{t.t('rp.saved.delta028', { note: v.delta028.note })}</p>
+            <Callout>{t.t('rp.saved.delta028', { note: v.delta028.note })}</Callout>
             {saved.length === 0 ? (
-              <div className="kv-empty">
-                <h3>{t.t('rp.saved.empty.title')}</h3>
-                <p>{t.t('rp.saved.empty.body')}</p>
-              </div>
+              <EmptyState title={t.t('rp.saved.empty.title')} body={t.t('rp.saved.empty.body')} />
             ) : (
               <table className="kv-table">
                 <caption className="kv-table__caption">{t.t('rp.saved.caption')}</caption>
@@ -169,15 +169,18 @@ export default async function ReportBuilderPage({ searchParams }: {
                       <td>{t.t('rp.saved.lastNDays', { n: String(s.windowDays) })}</td>
                       <td>
                         {s.schedules.length === 0 ? t.t('rp.saved.noSchedule') : s.schedules.map((sc) => (
-                          <span key={sc.id} className={sc.isActive ? 'kv-badge is-ok' : 'kv-badge'}>
-                            {sc.cadence}{sc.nextRunAt ? ` · ${sc.nextRunAt.slice(0, 10)}` : ''}
-                          </span>
+                          <StatusPill
+                            key={sc.id}
+                            tone="neutral"
+                            icon={false}
+                            label={`${sc.cadence}${sc.nextRunAt ? ` · ${sc.nextRunAt.slice(0, 10)}` : ''}`}
+                          />
                         ))}
                       </td>
                       <td>
                         <form action={archiveSavedAction} className="kv-inline-form">
                           <input type="hidden" name="slug" value={s.slug} />
-                          <button className="kv-btn kv-btn--link" type="submit">{t.t('rp.saved.archive')}</button>
+                          <Button type="submit" variant="tertiary">{t.t('rp.saved.archive')}</Button>
                         </form>
                       </td>
                     </tr>
@@ -208,7 +211,7 @@ export default async function ReportBuilderPage({ searchParams }: {
                 <input className="kv-input" id="rp-window" name="windowDays" type="number" min={1} max={366} defaultValue={30} />
                 <p className="kv-field__help">{t.t('rp.saved.windowHelp')}</p>
               </div>
-              <button className="kv-btn" type="submit">{t.t('rp.saved.save')}</button>
+              <Button type="submit">{t.t('rp.saved.save')}</Button>
             </form>
           </section>
         </>

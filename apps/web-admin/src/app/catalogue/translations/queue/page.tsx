@@ -20,7 +20,10 @@ import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { reviewTranslationAction } from '../../actions';
 import {
-  REVIEW_DECISIONS, canReview, stateClass, stateKey, MIN_REASON, MAX_TEXT,
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  REVIEW_DECISIONS, canReview, stateTone, stateKey, MIN_REASON, MAX_TEXT,
   type TranslationRow,
 } from '../../../../features/catalogue/translations';
 
@@ -83,17 +86,15 @@ export default async function ReviewQueuePage(
 
       {scopes.length > 0 && (
         <nav className="kv-filters" aria-label={t.t('tr.language')}>
-          <Link href={href({ languageCode: undefined, cursor: undefined })}
-            className={`kv-chip${!searchParams.languageCode ? ' is-active' : ''}`}>{t.t('attr.filterAllTypes')}</Link>
+          <Chip as={Link} href={href({ languageCode: undefined, cursor: undefined })} active={!searchParams.languageCode}>{t.t('attr.filterAllTypes')}</Chip>
           {scopes.map((l) => (
-            <Link key={l} href={href({ languageCode: l, cursor: undefined })}
-              className={`kv-chip${searchParams.languageCode === l ? ' is-active' : ''}`}>{l}</Link>
+            <Chip as={Link} key={l} href={href({ languageCode: l, cursor: undefined })} active={searchParams.languageCode === l}>{l}</Chip>
           ))}
         </nav>
       )}
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : rows.length === 0 ? (
-        <p className="kv-empty">{t.t('tr.queueEmpty')}</p>
+        <EmptyState title={t.t('tr.queueEmpty')} />
       ) : (
         <>
           <table className="kv-table">
@@ -114,7 +115,7 @@ export default async function ReviewQueuePage(
                   <td>{r.text}</td>
                   <td>{r.source ?? t.t('common.dash')}</td>
                   <td>
-                    <span className={`kv-status ${stateClass(r)}`}>{t.t(`tr.state.${stateKey(r)}`)}</span>
+                    <StatusPill tone={stateTone(r)} label={t.t(`tr.state.${stateKey(r)}`)} />
                   </td>
                   <td>{r.createdAt ?? t.t('common.dash')}</td>
                 </tr>
@@ -124,7 +125,7 @@ export default async function ReviewQueuePage(
 
           {view?.nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={href({ cursor: view.nextCursor })}>{t.t('common.nextPage')}</Link>
+              <Button as={Link} href={href({ cursor: view.nextCursor })}>{t.t('common.nextPage')}</Button>
             </p>
           )}
 
@@ -151,12 +152,12 @@ export default async function ReviewQueuePage(
                 <textarea id="q-text" name="text" className="kv-input" rows={2} maxLength={MAX_TEXT} />
                 <label htmlFor="q-note" className="kv-field__label">{t.t('tr.note')}</label>
                 <textarea id="q-note" name="note" className="kv-input" rows={2} maxLength={2000} minLength={MIN_REASON} />
-                <button type="submit" className="kv-btn">{t.t('tr.review')}</button>
+                <Button type="submit">{t.t('tr.review')}</Button>
               </form>
             </details>
           ) : rows.length > 0 && scopes.length > 0 ? (
             // no control at all, and the reason
-            <p className="kv-notice" role="note">{t.t('tr.notYourLanguage')}</p>
+            <Callout>{t.t('tr.notYourLanguage')}</Callout>
           ) : null}
         </>
       )}

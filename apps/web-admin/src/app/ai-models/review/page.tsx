@@ -18,7 +18,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import {
-  ageMinutes, claimAction, claimKey, kindClass, kindKey, reviewerRealmKey,
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  ageMinutes, claimAction, claimKey, kindTone, kindKey, reviewerRealmKey,
 } from '../../../features/ai-governance/ai-governance';
 
 export const dynamic = 'force-dynamic';
@@ -87,29 +90,28 @@ export default async function ReviewQueuePage({ searchParams }: {
         <p className="kv-page__sub">{t.t('ai.review.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`ai.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`ai.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`ai.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`ai.err.${searchParams.error}`)}</Callout> : null}
 
       {/* Counts across the WHOLE open queue, not this page — ADMIN-5f's rule, and here it matters because a fraud case
           waiting is somebody's produce not selling. */}
       {meta?.census && meta.census.holdsListings > 0 ? (
-        <p className="kv-note is-warn" role="status">
+        <Callout tone="warning" live="polite">
           {t.t('ai.queue.holdsListings', { n: String(meta.census.holdsListings) })}
-        </p>
+        </Callout>
       ) : null}
 
       <form className="kv-filters" method="get" action="/ai-models/review">
         <div className="kv-chips" role="group" aria-label={t.t('ai.filter.kind')}>
-          <Link className={`kv-chip${!queueKind ? ' is-active' : ''}`} href={withFilters({ queueKind: undefined })}>
+          <Chip as={Link} href={withFilters({ queueKind: undefined })} active={!queueKind}>
             {t.t('common.all')}
-          </Link>
+          </Chip>
           {KINDS.map((k) => (
-            <Link key={k} className={`kv-chip${queueKind === k ? ' is-active' : ''}`}
-              href={(() => { const q = new URLSearchParams(); q.set('queueKind', k); if (status) q.set('status', status); return `/ai-models/review?${q.toString()}`; })()}>
+            <Chip as={Link} key={k} href={(() => { const q = new URLSearchParams(); q.set('queueKind', k); if (status) q.set('status', status); return `/ai-models/review?${q.toString()}`; })()} active={queueKind === k}>
               {t.t(kindKey(k))}
               {meta?.census.byKind[k] ? ` (${meta.census.byKind[k]})` : ''}
-            </Link>
+            </Chip>
           ))}
         </div>
         <div className="kv-field">
@@ -119,16 +121,13 @@ export default async function ReviewQueuePage({ searchParams }: {
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <button className="kv-btn" type="submit">{t.t('common.apply')}</button>
+        <Button type="submit">{t.t('common.apply')}</Button>
       </form>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('ai.review.empty.title')}</h2>
-          {/* W082's own empty state, and it is the honest one here: no AI decision is waiting on a human, which means the
-              thresholds are doing their job. */}
-          <p>{t.t('ai.review.empty.body')}</p>
-        </div>
+        // W082's own empty state, and it is the honest one here: no AI decision is waiting on a human, which means the
+        // thresholds are doing their job.
+        <EmptyState title={t.t('ai.review.empty.title')} body={t.t('ai.review.empty.body')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('ai.review.caption')}</caption>
@@ -151,7 +150,7 @@ export default async function ReviewQueuePage({ searchParams }: {
                 <tr key={c.id}>
                   <td>{c.priority}</td>
                   <td><Link href={`/ai-models/review/${encodeURIComponent(c.id)}`}>{c.id.slice(0, 8)}</Link></td>
-                  <td><span className={kindClass(c.queueKind)}>{t.t(kindKey(c.queueKind))}</span></td>
+                  <td><StatusPill tone={kindTone(c.queueKind)} label={t.t(kindKey(c.queueKind))} /></td>
                   {/* Tenant by id: this realm has no tenant-name join on this path and inventing a display name would be
                       inventing an identity. */}
                   <td>{c.tenantId ? c.tenantId.slice(0, 8) : t.t('ai.tenant.platform')}</td>
@@ -178,11 +177,11 @@ export default async function ReviewQueuePage({ searchParams }: {
       )}
 
       {/* The triage caveat, stated: ordering applies within a page, and the census counts every open case. */}
-      {meta?.note ? <p className="kv-note">{t.t('ai.review.orderNote')}</p> : null}
+      {meta?.note ? <Callout>{t.t('ai.review.orderNote')}</Callout> : null}
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Link>
+          <Button as={Link} href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Button>
         </nav>
       ) : null}
     </main>

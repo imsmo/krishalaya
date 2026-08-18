@@ -11,13 +11,14 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { SEVERITIES, ticketStatusKey, severityKey, type TicketRow } from '../../../features/support/ticket';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('support.breachesTitle'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { P0: 'kv-status--danger', P1: 'kv-status--danger', P2: 'kv-status--warn', P3: 'kv-status--muted' };
+const SEV_TONE: Record<string, StatusTone> = { P0: 'danger', P1: 'danger', P2: 'warning', P3: 'neutral' };
 
 export default async function SlaBreachesPage({ searchParams }: { searchParams: { cursor?: string; severity?: string; tenantId?: string } }) {
   requireAdmin();
@@ -35,7 +36,7 @@ export default async function SlaBreachesPage({ searchParams }: { searchParams: 
   const cols: Column<TicketRow>[] = [
     { header: t.t('support.ticketNo'), cell: (r) => <Link href={`/support/tickets/${encodeURIComponent(r.id)}`}>{r.ticketNo}</Link> },
     { header: t.t('support.subject'), cell: (r) => r.subject ?? t.t('common.dash') },
-    { header: t.t('support.severity'), cell: (r) => { const s = severityKey(r.severity); return <span className={`kv-status ${SEV_CLASS[s]}`}>{t.t(`support.sev.${s}`)}</span>; } },
+    { header: t.t('support.severity'), cell: (r) => { const s = severityKey(r.severity); return <StatusPill tone={SEV_TONE[s] ?? 'neutral'} label={t.t(`support.sev.${s}`)} />; } },
     { header: t.t('support.status'), cell: (r) => t.t(`support.state.${ticketStatusKey(r.status)}`) },
     { header: t.t('support.breachKind'), cell: (r) => r.sla.firstResponseBreached && r.sla.resolutionBreached ? t.t('support.breachBoth') : r.sla.firstResponseBreached ? t.t('support.breachFirst') : r.sla.resolutionBreached ? t.t('support.breachResolution') : t.t('common.dash') },
   ];
@@ -55,16 +56,16 @@ export default async function SlaBreachesPage({ searchParams }: { searchParams: 
       <p className="kv-muted">{t.t('support.breachesLead')}</p>
 
       <nav className="kv-filters" aria-label={t.t('support.filterSeverity')}>
-        <Link href={qp({ severity: undefined, cursor: undefined })} className={`kv-chip${!severity ? ' is-active' : ''}`} aria-current={!severity ? 'true' : undefined}>{t.t('support.filterAll')}</Link>
+        <Chip as={Link} href={qp({ severity: undefined, cursor: undefined })} aria-current={!severity ? 'true' : undefined} active={!severity}>{t.t('support.filterAll')}</Chip>
         {SEVERITIES.map((s) => (
-          <Link key={s} href={qp({ severity: s, cursor: undefined })} className={`kv-chip${severity === s ? ' is-active' : ''}`} aria-current={severity === s ? 'true' : undefined}>{t.t(`support.sev.${s}`)}</Link>
+          <Chip as={Link} key={s} href={qp({ severity: s, cursor: undefined })} aria-current={severity === s ? 'true' : undefined} active={severity === s}>{t.t(`support.sev.${s}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('support.breachesEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

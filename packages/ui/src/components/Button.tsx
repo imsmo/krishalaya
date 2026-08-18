@@ -9,6 +9,36 @@
 // cannot double-submit — this is a real behavioral guarantee, not just a visual spinner.
 // Gate 10 (a11y): icon-only buttons (`iconOnly`) require an `aria-label` — enforced at the TYPE level below
 // (TS will not compile a `<Button iconOnly>` without one), not just documented.
+//
+// POLYMORPHIC `as` (DEV-59 addition, package-side per that batch's own rule: "if a needed variant is
+// missing, add it to the package rather than working around it in the app"): `web-admin`'s census turned
+// up ~56 real "next page"/inline-link controls styled with the app's own `kv-btn`/`kv-btn--link` classes
+// but rendered as `<Link>` (Next.js) or plain `<a>` — real navigation, not a `<button onClick>`. Canon's
+// `.kvw-btn` family has NO `<button>`-specific selector (verified against `web-components.css` 11-40: only
+// `[disabled]`/`.is-pending` class/attribute selectors, both element-agnostic), so it renders pixel-
+// identically on an `<a>` as on a `<button>`. `as` lets the caller supply its own element/component (e.g.
+// `as={Link}` + `href`) while this component still computes/owns the canon `variant`/`size` classes —
+// framework-agnostic on purpose (this file still imports nothing beyond `react`, per its own header
+// precedent). `type`/`disabled`/`aria-busy`/the pending-spinner behavior remain BUTTON-ONLY (an `<a>` has
+// no `disabled` attribute in HTML) — a caller using `as` for a plain navigation link should not pass
+// `pending`/`disabled`, and none of web-admin's real call sites do.
+//
+// THE DEFAULT-TYPE FOOTGUN, FIXED (DEV-60, UI Port Program batch 3, Part 3 — flagged by DEV-59 QA):
+// this component used to default `type` to `'button'`, diverging from a native `<button>`'s own implicit
+// `type="submit"` inside a `<form>`. DEV-59 QA found every one of the 225 real conversions already carried an
+// explicit `type` (223 submit + 2 button) — re-verified live at DEV-60: `grep -rn "<Button" apps/web-admin/src
+// apps/web-tenant/src apps/web-partner/src apps/web-storefront/src` finds every single call site across all
+// four apps already passes an explicit `type=` or `as=` — **zero existing call sites are affected by this
+// change, in any app.** DECISION: default flipped from `'button'` to `'submit'`, matching the native
+// `<button>` element exactly, rather than leaving `type` a required prop. Reasoning: (1) evidence — of the 225
+// real `<button>`→`<Button>` conversions this console has done so far, 223/225 (99%) wanted `submit`; (2) the
+// default only has any observable effect at all when a `<Button>` sits inside a `<form>` — outside a form,
+// `type="submit"` vs `type="button"` are behaviourally identical (there is nothing to submit), so this change
+// cannot introduce a new "stray submit" class of bug for the common non-form action button; (3) a required
+// prop would force every `as={Link}` navigation call site to pass a semantically meaningless `type` too (that
+// branch never reads `type`), a worse API than fixing the default. A future `<Button>` inside a `<form>` that
+// omits `type` now submits — matching what a bare `<button>` has always done — instead of silently doing
+// nothing, which is the safer failure mode for this console's overwhelmingly submit-shaped real usage.
 import * as React from 'react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'danger' | 'accent';
@@ -17,23 +47,28 @@ export type ButtonSize = 'md' | 'lg' | 'sm';
 interface BaseButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  /** Golden Law 9: while true, the button is disabled and shows the canon spinner (`.is-pending`). */
+  /** Golden Law 9: while true, the button is disabled and shows the canon spinner (`.is-pending`). Only
+   * meaningful when rendering a real `<button>` (the default) — see header comment. */
   pending?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  /** Polymorphic escape hatch (DEV-59) — render as this element/component instead of `<button>` (e.g.
+   * `as="a"` or `as={NextLink}`). Extra props (e.g. `href`) pass through via `...rest`. Defaults to
+   * `'button'` — every EXISTING call site is entirely unaffected. */
+  as?: React.ElementType;
 }
 
 /** Icon-only rendering REQUIRES an accessible name (gate 10) — enforced by this discriminated union. */
 export type ButtonProps =
-  | (BaseButtonProps & { iconOnly?: false; children: React.ReactNode })
-  | (BaseButtonProps & { iconOnly: true; 'aria-label': string; children: React.ReactNode });
+  | (BaseButtonProps & { iconOnly?: false; children: React.ReactNode; [extra: string]: unknown })
+  | (BaseButtonProps & { iconOnly: true; 'aria-label': string; children: React.ReactNode; [extra: string]: unknown });
 
 const sizeClass: Record<ButtonSize, string> = { md: '', lg: 'kvw-btn-lg', sm: 'kvw-btn-sm' };
 
 export function Button(props: ButtonProps): React.ReactElement {
   const {
     variant = 'primary', size = 'md', pending = false, iconOnly = false,
-    leftIcon, rightIcon, className, disabled, children, type = 'button', ...rest
+    leftIcon, rightIcon, className, disabled, children, type = 'submit', as, ...rest
   } = props;
 
   const classes = [
@@ -44,6 +79,17 @@ export function Button(props: ButtonProps): React.ReactElement {
     pending ? 'is-pending' : '',
     className || '',
   ].filter(Boolean).join(' ');
+
+  if (as && as !== 'button') {
+    const Comp = as;
+    return (
+      <Comp {...rest} className={classes} data-kv-component="button">
+        {leftIcon}
+        {children}
+        {rightIcon}
+      </Comp>
+    );
+  }
 
   return (
     <button

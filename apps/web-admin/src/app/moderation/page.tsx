@@ -18,10 +18,11 @@ import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
 import {
-  tileText, slaClass, attentionClass, allQuiet, unreadSources,
+  tileText, slaTone, attentionTone, allQuiet, unreadSources,
   type Tile, type SlaState, type AttentionItem, type SourcesRead,
 } from '../../features/trust/trust-safety';
 
+import { StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -85,11 +86,11 @@ export default async function ModerationOverviewPage() {
       <dl className="kv-facts">
         <div className="kv-facts__row">
           <dt>{t.t('ts.reportSla')}</dt>
-          <dd><span className={slaClass(o.sla.reports)}>{t.t(`ts.sla.${o.sla.reports?.kind ?? 'unmeasured'}`)}</span></dd>
+          <dd><StatusPill tone={slaTone(o.sla.reports)} label={t.t(`ts.sla.${o.sla.reports?.kind ?? 'unmeasured'}`)} /></dd>
         </div>
         <div className="kv-facts__row">
           <dt>{t.t('ts.appealSla')}</dt>
-          <dd><span className={slaClass(o.sla.appeals)}>{t.t(`ts.sla.${o.sla.appeals?.kind ?? 'unmeasured'}`)}</span></dd>
+          <dd><StatusPill tone={slaTone(o.sla.appeals)} label={t.t(`ts.sla.${o.sla.appeals?.kind ?? 'unmeasured'}`)} /></dd>
         </div>
       </dl>
 
@@ -107,7 +108,7 @@ export default async function ModerationOverviewPage() {
           <ul className="kv-list">
             {o.attention.map((a) => (
               <li key={a.id} >
-                <span className={attentionClass(a.severity)}>{t.t(`ts.sev.${a.severity}`)}</span>{' '}
+                <StatusPill tone={attentionTone(a.severity)} label={t.t(`ts.sev.${a.severity}`)} />{' '}
                 {t.t(a.messageKey, a.params ?? {})}
               </li>
             ))}

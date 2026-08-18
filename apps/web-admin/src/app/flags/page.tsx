@@ -12,13 +12,14 @@ import { adminNoticeKey } from '../../features/nav/nav-model';
 import { flagState, type FlagRow } from '../../features/flags/flag';
 import { createFlagAction } from './actions';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('flags.title'), robots: { index: false, follow: false } };
 }
 
-const STATE_CLASS: Record<string, string> = { on: 'kv-status--ok', off: 'kv-status--muted', locked: 'kv-status--danger' };
+const STATE_TONE: Record<string, StatusTone> = { on: 'success', off: 'neutral', locked: 'danger' };
 const ERR = new Set(['key', 'rolloutPct', 'reason', 'tenantIds', 'plans', 'countries', 'elevation', 'locked', 'notFound', 'generic']);
 
 export default async function FlagsPage({ searchParams }: { searchParams: { cursor?: string; prefix?: string; enabled?: string; error?: string } }) {
@@ -40,7 +41,7 @@ export default async function FlagsPage({ searchParams }: { searchParams: { curs
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const columns: Column<FlagRow>[] = [
     { header: t.t('flags.colKey'), cell: (r) => <Link href={`/flags/${encodeURIComponent(r.key)}`}>{r.key}</Link> },
-    { header: t.t('flags.colState'), cell: (r) => { const s = flagState(r); return <span className={`kv-status ${STATE_CLASS[s]}`}>{t.t(`flags.state.${s}`)}</span>; } },
+    { header: t.t('flags.colState'), cell: (r) => { const s = flagState(r); return <StatusPill tone={STATE_TONE[s]} label={t.t(`flags.state.${s}`)} />; } },
     { header: t.t('flags.colRollout'), cell: (r) => `${r.rolloutPct}%` },
   ];
 
@@ -51,9 +52,9 @@ export default async function FlagsPage({ searchParams }: { searchParams: { curs
       {errKey && <p className="kv-error" role="alert">{t.t(`flags.error.${errKey}`)}</p>}
 
       <nav className="kv-filters" aria-label={t.t('flags.filterLabel')}>
-        <Link href="/flags" className={`kv-chip${!enabled ? ' is-active' : ''}`} aria-current={!enabled ? 'true' : undefined}>{t.t('flags.filterAll')}</Link>
-        <Link href="/flags?enabled=true" className={`kv-chip${enabled === 'true' ? ' is-active' : ''}`} aria-current={enabled === 'true' ? 'true' : undefined}>{t.t('flags.filterOn')}</Link>
-        <Link href="/flags?enabled=false" className={`kv-chip${enabled === 'false' ? ' is-active' : ''}`} aria-current={enabled === 'false' ? 'true' : undefined}>{t.t('flags.filterOff')}</Link>
+        <Chip as={Link} href="/flags" aria-current={!enabled ? 'true' : undefined} active={!enabled}>{t.t('flags.filterAll')}</Chip>
+        <Chip as={Link} href="/flags?enabled=true" aria-current={enabled === 'true' ? 'true' : undefined} active={enabled === 'true'}>{t.t('flags.filterOn')}</Chip>
+        <Chip as={Link} href="/flags?enabled=false" aria-current={enabled === 'false' ? 'true' : undefined} active={enabled === 'false'}>{t.t('flags.filterOff')}</Chip>
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
@@ -61,7 +62,7 @@ export default async function FlagsPage({ searchParams }: { searchParams: { curs
           <DataTable columns={columns} rows={rows} empty={t.t('flags.empty')} />
           {nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={`/flags?cursor=${encodeURIComponent(nextCursor)}${enabled ? `&enabled=${enabled}` : ''}`}>{t.t('common.nextPage')}</Link>
+              <Button as={Link} href={`/flags?cursor=${encodeURIComponent(nextCursor)}${enabled ? `&enabled=${enabled}` : ''}`}>{t.t('common.nextPage')}</Button>
             </p>
           )}
         </>
@@ -79,7 +80,7 @@ export default async function FlagsPage({ searchParams }: { searchParams: { curs
           <input id="rolloutPct" name="rolloutPct" className="kv-input" inputMode="numeric" defaultValue="0" />
           <label htmlFor="createReason" className="kv-field__label">{t.t('flags.reason')}</label>
           <input id="createReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('flags.createSubmit')}</button>
+          <Button type="submit">{t.t('flags.createSubmit')}</Button>
         </form>
       </details>
     </section>

@@ -21,8 +21,11 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { applyProposalAction, rejectProposalAction, staleProposalAction } from '../../actions';
 import {
-  actionClass, actionKey, approvalNoticeClass, approvalNoticeKey, diffText, entityKey, fieldIsCritical,
-  orderDiff, proposalClass, proposalKey, showApply, showMarkStale, showReject, stalenessKey,
+  Button, Callout, StatusPill,
+} from '@krishalaya/ui';
+import {
+  actionTone, actionKey, approvalNoticeClass, approvalNoticeKey, diffText, entityKey,
+  orderDiff, proposalTone, proposalKey, showApply, showMarkStale, showReject, stalenessKey,
 } from '../../../../features/cells/map-approval';
 
 export const dynamic = 'force-dynamic';
@@ -71,17 +74,17 @@ export default async function ProposalPage({ params, searchParams }: {
         <span>{params.id.slice(0, 8)}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`cm.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`cm.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`cm.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`cm.err.${searchParams.error}`)}</Callout> : null}
 
       {d ? (
         <>
           <header className="kv-page__head">
             <h1>{t.t('cm.proposal.title')} — {t.t(entityKey(d.entityType))} {d.entityId.slice(0, 8)}</h1>
             <p className="kv-page__sub">
-              <span className={proposalClass(d.status)}>{t.t(proposalKey(d.status))}</span>{' '}
-              <span className={actionClass(d.action)}>{t.t(actionKey(d.action))}</span>
+              <StatusPill tone={proposalTone(d.status)} label={t.t(proposalKey(d.status))} />{' '}
+              <StatusPill tone={actionTone(d.action)} label={t.t(actionKey(d.action))} />
               {' · '}{t.t('cm.maker')} {d.proposedByAdminId.slice(0, 8)}
               {' · '}{d.proposedAt.slice(0, 16).replace('T', ' ')}
             </p>
@@ -91,7 +94,7 @@ export default async function ProposalPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="cm-diff">
             <h2 id="cm-diff" className="kv-panel__title">{t.t('cm.proposal.diff')}</h2>
             {d.diff.length === 0 ? (
-              <p className="kv-note is-warn">{t.t('cm.proposal.noDiff')}</p>
+              <Callout tone="warning">{t.t('cm.proposal.noDiff')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -107,7 +110,7 @@ export default async function ProposalPage({ params, searchParams }: {
                   {orderDiff(d.diff).map((line) => (
                     <tr key={line.field}>
                       <td>
-                        <span className={fieldIsCritical(line.field) ? 'kv-badge is-warn' : 'kv-badge'}>{line.field}</span>
+                        <StatusPill tone="neutral" icon={false} label={line.field} />
                       </td>
                       <td><code>{diffText(line.from)}</code></td>
                       <td><code>{diffText(line.to)}</code></td>
@@ -121,9 +124,9 @@ export default async function ProposalPage({ params, searchParams }: {
 
           {/* ---------------- STALENESS ---------------- */}
           {staleKey ? (
-            <p className="kv-note is-danger" role="alert">
+            <Callout tone="danger" live="assertive">
               {t.t(staleKey, { fields: (d.staleness.fields ?? []).join(', ') })}
-            </p>
+            </Callout>
           ) : null}
 
           {/* ---------------- THE DECISION ---------------- */}
@@ -142,7 +145,7 @@ export default async function ProposalPage({ params, searchParams }: {
               <form action={applyProposalAction}>
                 <input type="hidden" name="id" value={d.id} />
                 <p>{t.t('cm.proposal.confirm')}</p>
-                <button className="kv-btn kv-btn--danger" type="submit">{t.t('cm.proposal.apply')}</button>
+                <Button type="submit" variant="danger">{t.t('cm.proposal.apply')}</Button>
               </form>
             ) : null}
 
@@ -156,7 +159,7 @@ export default async function ProposalPage({ params, searchParams }: {
                     aria-describedby="cm-note-help" />
                   <p className="kv-field__help" id="cm-note-help">{t.t('cm.proposal.rejectHelp')}</p>
                 </div>
-                <button className="kv-btn" type="submit">{t.t('cm.proposal.reject')}</button>
+                <Button type="submit">{t.t('cm.proposal.reject')}</Button>
               </form>
             ) : null}
 
@@ -166,7 +169,7 @@ export default async function ProposalPage({ params, searchParams }: {
             {showMarkStale(kind) ? (
               <form action={staleProposalAction}>
                 <input type="hidden" name="id" value={d.id} />
-                <button className="kv-btn" type="submit">{t.t('cm.proposal.markStale')}</button>
+                <Button type="submit">{t.t('cm.proposal.markStale')}</Button>
               </form>
             ) : null}
           </section>
@@ -188,10 +191,10 @@ export default async function ProposalPage({ params, searchParams }: {
               {/* THE CHANGE ROW THIS SIGNATURE PRODUCED, by id. What makes "who authorised this routing change" answerable
                   from the trail rather than from an adjacent timestamp. */}
               {d.appliedChangeId ? (
-                <p className="kv-note">
+                <Callout>
                   {t.t('cm.proposal.appliedAs', { id: d.appliedChangeId.slice(0, 8) })}{' '}
                   <Link href="/cells/changes">{t.t('cm.proposal.openHistory')}</Link>
-                </p>
+                </Callout>
               ) : null}
             </section>
           ) : null}

@@ -10,8 +10,9 @@ import { requireAdmin, adminUserId } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
-import { statusClass, balanceClass, balanceText, approveBlockedKey, type BalanceView, type DraftStatus, type ApproveState } from '../../../features/audit/audit-console';
+import { statusTone, balanceTone, balanceText, approveBlockedKey, type BalanceView, type DraftStatus, type ApproveState } from '../../../features/audit/audit-console';
 
+import { Button, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -46,9 +47,9 @@ export default async function CorrectionQueuePage({ searchParams }: { searchPara
       {notice && <p className="kv-error" role="alert">{notice}</p>}
 
       <nav className="kv-filters">
-        <Link href="/recon/corrections" className={!status ? 'kv-chip is-active' : 'kv-chip'}>{t.t('cor.filter.all')}</Link>
+        <Chip as={Link} href="/recon/corrections" active={!status}>{t.t('cor.filter.all')}</Chip>
         {STATUSES.map((s) => (
-          <Link key={s} href={`/recon/corrections?status=${s}`} className={status === s ? 'kv-chip is-active' : 'kv-chip'}>{t.t(`cor.state.${s}`)}</Link>
+          <Chip as={Link} key={s} href={`/recon/corrections?status=${s}`} active={status === s}>{t.t(`cor.state.${s}`)}</Chip>
         ))}
       </nav>
 
@@ -67,15 +68,15 @@ export default async function CorrectionQueuePage({ searchParams }: { searchPara
                   {r.balance.grossText}
                   {/* Flagged in the QUEUE, not only on the detail page — a checker triaging a list should see which
                       one needs the founder told before they open it. */}
-                  {r.aboveFounderThreshold && <span className="kv-status kv-status--warn">{t.t('cor.aboveThreshold')}</span>}
+                  {r.aboveFounderThreshold && <StatusPill tone="warning" label={t.t('cor.aboveThreshold')} />}
                 </td>
-                <td><span className={balanceClass(r.balance)}>{balanceText(r.balance)}</span></td>
-                <td><span className={statusClass(r.status)}>{t.t(`cor.state.${r.status}`)}</span></td>
+                <td><StatusPill tone={balanceTone(r.balance)} label={balanceText(r.balance)} /></td>
+                <td><StatusPill tone={statusTone(r.status)} label={t.t(`cor.state.${r.status}`)} /></td>
                 <td>{r.makerId}</td>
                 <td>
                   {r.status === 'awaiting_checker' && (
                     blocked === null
-                      ? <Link href={`/recon/corrections/${r.id}`} className="kv-btn kv-btn--link">{t.t('cor.review')}</Link>
+                      ? <Button as={Link} href={`/recon/corrections/${r.id}`} variant="tertiary">{t.t('cor.review')}</Button>
                       : <span className="kv-detail__muted">{t.t(`cor.approveBlocked.${blocked}`)}</span>
                   )}
                 </td>
@@ -84,7 +85,7 @@ export default async function CorrectionQueuePage({ searchParams }: { searchPara
           })}
         </tbody>
       </table>
-      {rows.length === 0 && !notice && <p className="kv-empty">{t.t('cor.queueEmpty')}</p>}
+      {rows.length === 0 && !notice && <EmptyState variant="empty" title={t.t('cor.queueEmpty')} />}
       {next && <p className="kv-pager"><Link href={`/recon/corrections?${new URLSearchParams({ ...(status ? { status } : {}), cursor: next }).toString()}`}>{t.t('common.next')}</Link></p>}
     </section>
   );

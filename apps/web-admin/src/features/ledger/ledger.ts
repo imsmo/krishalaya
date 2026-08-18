@@ -1,6 +1,15 @@
 // apps/web-admin/src/features/ledger/ledger.ts · PURE helpers for W059/W064/W065 (PC-56 ADMIN-6).
 // No fetch, no React → unit-tested.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B — MONEY-ADJACENT, hand-audited): the 6 `kv-status`-returning
+// helpers below (balanceClass/legClass/outcomeClass/claimClass/sumClass/driftClass) now return a `StatusTone` per
+// the founder's pill-vs-text ruling (`spec_dev60.md` CONTINUATION block) — disposition (c), domain logic stays,
+// only the OUTPUT becomes a semantic token consumed by `<StatusPill tone={...} label={...} />`. Every conditional
+// gate and every tone assignment below is byte-equivalent to the class string it replaces (ok→success,
+// warn→warning, danger→danger, muted→neutral) — this is the ledger explorer and the zero-sum balance readout, so
+// no branch was reordered or reworded, only the return type changed.
 import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { StatusTone } from '@krishalaya/ui';
 //
 // W064 calls the ledger "the single source of money truth". Three things follow, and every helper here defends one:
 //   • A HASH CLAIM IS WORTH THE LAST TIME SOMEBODY CHECKED. "intact" with no date is what these screens printed for
@@ -100,9 +109,9 @@ export interface TxnBalance {
 /** The Σ readout. BALANCED is the only green state; an unbalanced transaction is a FAILURE and not a note in
  *  progress — an unbalanced ledger transaction means money was created or destroyed, which W006's alert calls
  *  page-immediately. */
-export function balanceClass(b: TxnBalance | null | undefined): string {
-  if (!b) return 'kv-status kv-status--muted';
-  return b.balanced ? 'kv-status kv-status--ok' : 'kv-status kv-status--danger';
+export function balanceTone(b: TxnBalance | null | undefined): StatusTone {
+  if (!b) return 'neutral';
+  return b.balanced ? 'success' : 'danger';
 }
 export function balanceLabel(b: TxnBalance | null | undefined): string {
   if (!b) return '—';
@@ -130,11 +139,11 @@ export function legDirection(amountMinor: string | null | undefined): 'credit' |
   if (/^-0+$/.test(s) || /^0+$/.test(s)) return 'unknown';   // a zero leg cannot exist; if one appears, say so
   return s.startsWith('-') ? 'debit' : 'credit';
 }
-export function legClass(d: ReturnType<typeof legDirection>): string {
-  if (d === 'credit') return 'kv-status kv-status--ok';
-  if (d === 'debit') return 'kv-status kv-status--warn';
+export function legTone(d: ReturnType<typeof legDirection>): StatusTone {
+  if (d === 'credit') return 'success';
+  if (d === 'debit') return 'warning';
   // A zero or unreadable leg is a data fault on the one table that must not have them.
-  return 'kv-status kv-status--danger';
+  return 'danger';
 }
 
 /* ===================== the chain ===================== */
@@ -151,11 +160,11 @@ export interface VerifyResult {
 
 /** BROKEN is a failure and INCOMPLETE is a warning — not the same thing, and the difference is what an operator does
  *  next. Broken means raise an incident; incomplete means widen the window and run it again. */
-export function outcomeClass(o: ChainOutcome | null | undefined): string {
-  if (o === 'intact') return 'kv-status kv-status--ok';
-  if (o === 'broken') return 'kv-status kv-status--danger';
-  if (o === 'incomplete') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--muted';
+export function outcomeTone(o: ChainOutcome | null | undefined): StatusTone {
+  if (o === 'intact') return 'success';
+  if (o === 'broken') return 'danger';
+  if (o === 'incomplete') return 'warning';
+  return 'neutral';
 }
 
 /** Which message the result gets. `broken` splits by KIND because "a row was edited" and "a row is missing" are
@@ -185,10 +194,10 @@ export type ChainClaim =
 
 /** W006's and W059's "hash chain intact" cell. NEVER is the honest default and was the true state of every account on
  *  the platform: the claim was printed with nothing behind it. */
-export function claimClass(c: ChainClaim | null | undefined): string {
-  if (!c || c.kind === 'never') return 'kv-status kv-status--warn';
-  if (c.kind === 'broken') return 'kv-status kv-status--danger';
-  return c.outcome === 'intact' ? 'kv-status kv-status--ok' : 'kv-status kv-status--warn';
+export function claimTone(c: ChainClaim | null | undefined): StatusTone {
+  if (!c || c.kind === 'never') return 'warning';
+  if (c.kind === 'broken') return 'danger';
+  return c.outcome === 'intact' ? 'success' : 'warning';
 }
 export function claimKey(c: ChainClaim | null | undefined): 'never' | 'broken' | 'intact' | 'incomplete' {
   if (!c || c.kind === 'never') return 'never';
@@ -217,8 +226,8 @@ export function sumWarningKey(c: Confidence | null | undefined): 'missingStripes
   if (!c || c.trustworthy) return null;
   return c.reason === 'missing_stripes' ? 'missingStripes' : 'fewerThanConfigured';
 }
-export function sumClass(c: Confidence | null | undefined): string {
-  return !c || c.trustworthy ? 'kv-status kv-status--ok' : 'kv-status kv-status--danger';
+export function sumTone(c: Confidence | null | undefined): StatusTone {
+  return !c || c.trustworthy ? 'success' : 'danger';
 }
 
 /** How much of an account_code's chain has been verified. A code with 16 stripes and 1 verification is not "intact" —
@@ -237,9 +246,9 @@ export interface BalanceCheck {
   cachedMinor: string; cachedText: string; ledgerMinor: string; ledgerText: string;
   deltaMinor: string; deltaText: string; matches: boolean; truthSource: string;
 }
-export function driftClass(b: BalanceCheck | null | undefined): string {
-  if (!b) return 'kv-status kv-status--muted';
-  return b.matches ? 'kv-status kv-status--ok' : 'kv-status kv-status--danger';
+export function driftTone(b: BalanceCheck | null | undefined): StatusTone {
+  if (!b) return 'neutral';
+  return b.matches ? 'success' : 'danger';
 }
 export function driftDirection(deltaMinor: string | null | undefined): 'over' | 'under' | 'none' | 'unknown' {
   if (typeof deltaMinor !== 'string' || !/^-?[0-9]{1,19}$/.test(deltaMinor.trim())) return 'unknown';

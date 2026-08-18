@@ -2,7 +2,19 @@
 //
 // The one rule this file owns outright: NULL IS NOT ZERO. A tile whose value is null prints "unknown" with its
 // basis — a farmer with no dairy membership must never read as a farmer earning ₹0 from dairy.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): `bandClass` now returns a `StatusTone` instead of a raw
+// `kv-status kv-status--X` string — disposition (c), same pattern as `ai-governance.ts`. Call site renders
+// `<StatusPill tone={...} label={...} />`. DISCLOSED FINDING: the pre-existing `restricted`/`blocked` branch
+// returned `kv-status kv-status--err`, and `.kv-status--err` has NO matching rule in globals.css (only
+// `--ok`/`--warn`/`--muted`/`--danger` exist) — so those two bands rendered with NO colour override at all
+// (default `.kv-status` font-weight, inherited text colour), never the intended emphasis. Mapped to `danger`
+// here, the tone the `--err` name always meant; this is a real, deliberate colour change for `restricted` and
+// `blocked` bands, not a silent behaviour patch. This file's own `bandClass` is unrelated to
+// `trust-safety.ts`'s identically-named export (a different band vocabulary, different file, out of this
+// slice's scope).
 import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { StatusTone } from '@krishalaya/ui';
 
 export interface MoneyTile { valueMinor: string | null; basis: string; n: number }
 
@@ -28,11 +40,11 @@ export function tileText(t: MoneyTile): { key: 'value' | 'unknown'; text: string
   return t.valueMinor === null ? { key: 'unknown', text: '' } : { key: 'value', text: formatMinor(t.valueMinor) };
 }
 
-export function bandClass(band: string | null): string {
-  if (band === 'trusted') return 'kv-status kv-status--ok';
-  if (band === 'restricted' || band === 'blocked') return 'kv-status kv-status--err';
-  if (band === 'caution') return 'kv-status kv-status--warn';
-  return 'kv-status';
+export function bandTone(band: string | null): StatusTone {
+  if (band === 'trusted') return 'success';
+  if (band === 'restricted' || band === 'blocked') return 'danger';
+  if (band === 'caution') return 'warning';
+  return 'neutral';
 }
 
 export function timelineIcon(kind: string): string {

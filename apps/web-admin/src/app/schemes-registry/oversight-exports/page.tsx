@@ -17,6 +17,7 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { getTranslator } from '../../../lib/i18n';
 import { OVERSIGHT_EXPORT_REPORTS, APPLICATION_STATES } from '../../../features/schemes-registry/oversight';
 
+import { Button, Callout } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -37,11 +38,11 @@ export default function OversightExportsPage({ searchParams }: { searchParams: {
       <p className="kv-muted">{t.t('soxp.lead')}</p>
       {errKey && <p className="kv-error" role="alert">{t.t(`soxp.error.${errKey === 'elevation' ? 'elevation' : errKey.replace('soxp_', '')}`)}</p>}
 
-      <p className="kv-notice">{t.t('soxp.receiptPromise')}</p>
+      <Callout>{t.t('soxp.receiptPromise')}</Callout>
       {/* Stated before the button, because somebody expecting full contact details needs to know before they build a
           process on this file. */}
-      <p className="kv-notice">{t.t('soxp.alwaysMasked')}</p>
-      <p className="kv-notice">{t.t('soxp.noBankFields')}</p>
+      <Callout>{t.t('soxp.alwaysMasked')}</Callout>
+      <Callout>{t.t('soxp.noBankFields')}</Callout>
 
       <form action="/schemes-registry/oversight-exports/download" method="get" className="kv-card kv-action-card">
         <label className="kv-field__label" htmlFor="report">{t.t('soxp.report')}</label>
@@ -64,7 +65,7 @@ export default function OversightExportsPage({ searchParams }: { searchParams: {
         <input id="limit" name="limit" className="kv-input kv-input--sm" inputMode="numeric" placeholder="5000" />
         <p className="kv-field__hint">{t.t('soxp.limitHint')}</p>
 
-        <button type="submit" className="kv-btn">{t.t('soxp.download')}</button>
+        <Button type="submit">{t.t('soxp.download')}</Button>
       </form>
 
       <h2>{t.t('soxp.whatsInHeading')}</h2>

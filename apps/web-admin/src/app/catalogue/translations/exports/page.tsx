@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
+import { Button, Callout } from '@krishalaya/ui';
 import {
   TAXONOMY_REPORTS, reportNeedsLanguage, MAX_EXPORT_ROWS, DEFAULT_EXPORT_ROWS, type LanguageRow,
 } from '../../../../features/catalogue/translations';
@@ -44,7 +45,7 @@ export default async function TaxonomyExportsPage({ searchParams }: { searchPara
       )}
 
       {/* both stated before the control */}
-      <p className="kv-notice" role="note">{t.t('texp.missingNote')}</p>
+      <Callout>{t.t('texp.missingNote')}</Callout>
       <p className="kv-field__hint">{t.t('texp.noPeople')}</p>
 
       <form action="/catalogue/translations/exports/download" method="get" className="kv-form">
@@ -67,7 +68,7 @@ export default async function TaxonomyExportsPage({ searchParams }: { searchPara
           defaultValue={DEFAULT_EXPORT_ROWS} />
         <p className="kv-field__hint">{t.t('texp.limitNote')}</p>
 
-        <button type="submit" className="kv-btn">{t.t('texp.download')}</button>
+        <Button type="submit">{t.t('texp.download')}</Button>
       </form>
     </section>
   );

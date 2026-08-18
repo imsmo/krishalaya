@@ -14,6 +14,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import type { LookupValueRow, CatalogueChangeRow } from '../../../../features/catalogue/catalogue';
 import { updateValueAction, setValueActiveAction } from '../../actions';
 
+import { Button, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -61,7 +62,7 @@ export default async function LookupValueDetailPage({ params, searchParams }: { 
         <div className="kv-facts__row"><dt>{t.t('cat.typeCode')}</dt><dd>{value.typeCode}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cat.name')}</dt><dd>{value.defaultName}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cat.sortOrder')}</dt><dd>{value.sortOrder.toLocaleString()}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('cat.active')}</dt><dd><span className={`kv-status ${value.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{value.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('cat.active')}</dt><dd><StatusPill tone={value.isActive ? 'success' : 'neutral'} label={value.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('cat.meta')}</dt><dd><pre className="kv-pre">{metaJson}</pre></dd></div>
       </dl>
 
@@ -77,7 +78,7 @@ export default async function LookupValueDetailPage({ params, searchParams }: { 
           <input name="meta" className="kv-input" defaultValue={metaJson} placeholder={t.t('cat.metaHint')} />
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('cat.save')}</button>
+          <Button type="submit">{t.t('cat.save')}</Button>
         </form>
         <form action={setValueActiveAction} className="kv-card kv-action-card">
           <input type="hidden" name="id" value={value.id} />
@@ -85,7 +86,7 @@ export default async function LookupValueDetailPage({ params, searchParams }: { 
           <p className="kv-field__hint">{value.isActive ? t.t('cat.deactivateHint') : t.t('cat.activateHint')}</p>
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className={`kv-btn${value.isActive ? ' kv-btn--danger' : ''}`}>{value.isActive ? t.t('cat.deactivate') : t.t('cat.activate')}</button>
+          <Button type="submit" variant={value.isActive ? 'danger' : 'primary'}>{value.isActive ? t.t('cat.deactivate') : t.t('cat.activate')}</Button>
         </form>
       </div>
 

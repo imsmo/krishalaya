@@ -8,6 +8,12 @@
 //
 // The composing rules (length, language) are checked here for shape only; admin-api's `domain/platform-reply.ts` owns
 // them and its 422 message is shown verbatim.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, founder pill ruling): `stateClass` now returns a `StatusTone` instead of a
+// raw `kv-status--*` string, rendered via `<StatusPill tone={...} label={...}/>`. Behaviour is unchanged: an
+// unrecognised status still maps to the same tone as `refused`/`failed` ('danger'), never to 'success'.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export const REPLY_STATUSES = ['queued', 'delivered', 'refused', 'failed'] as const;
 export type ReplyStatus = (typeof REPLY_STATUSES)[number];
@@ -44,14 +50,14 @@ export function deliveredCount(rows: readonly ReplyRow[]): number {
   return rows.filter((r) => reachedTheFarmer(r.status)).length;
 }
 
-/** The CSS status class for a delivery state. An unknown status is NOT styled as success. */
-export function stateClass(status: string): string {
+/** The status tone for a delivery state. An unknown status is NOT styled as success. */
+export function stateTone(status: string): StatusTone {
   switch (status) {
-    case 'delivered': return 'kv-status--ok';
-    case 'queued': return 'kv-status--warn';
+    case 'delivered': return 'success';
+    case 'queued': return 'warning';
     case 'refused':
-    case 'failed': return 'kv-status--danger';
-    default: return 'kv-status--danger';
+    case 'failed': return 'danger';
+    default: return 'danger';
   }
 }
 

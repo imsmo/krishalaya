@@ -17,26 +17,33 @@
 }
 /* DEV-19: senior-mode extension (engineering-owed Q48 console extension, see @krishalaya/ui's
    mechanisms/seniorMode.ts). Same disclosed residual as web-tenant: 2 literal-px font-size rules
-   (.kv-table th 14px / .kv-badge 12px) do not scale under this mechanism. */
+   (.kv-table th 14px / .kv-badge 12px) do not scale under this mechanism.
+   DEV-61: the `.kv-sidebar a`/`.kv-sidebar__link` targets were REMOVED here — the shell (sidebar/topbar) now
+   renders through `packages/ui`'s `AppShell`/`Sidebar`/`Topbar`, which carries its OWN senior-mode CSS
+   (`mechanisms/seniorMode.ts`'s `[data-senior="true"] { --web-control-h: 56px; ... }`, consumed by
+   `.kvw-topbar-iconbtn`'s `var(--web-control-h)`). `.kv-btn`/`.kv-input` remain here unchanged: 156 page
+   BODIES still render these as hand-written classes (the primitive-swap program, DEV-59/60/63/64, is
+   separate from and not yet complete alongside this shell-swap batch), so this remap is still load-bearing
+   for every page's own controls — deleting it would be a real regression, not a cleanup. */
 html[data-senior="true"] { font-size: 130%; }
-html[data-senior="true"] .kv-btn, html[data-senior="true"] .kv-input,
-html[data-senior="true"] .kv-sidebar a, html[data-senior="true"] .kv-sidebar__link { min-height: 56px; }
-/* DEV-19 / DELTA-001: pointer/hover density gating for this app's OWN 44px control floor (this app is not yet
-   on @krishalaya/ui's ported shell, so packages/ui's densityStyles never reaches it — this is the same rule
-   duplicated locally). This is an ops/B2B console realm, in scope per DELTA-001's own console framing. Rule
-   Zero preserved: the 44px rural-tap floor NEVER shrinks on coarse-pointer/no-hover (touch) input; only
-   fine-pointer + hover (mouse/trackpad) devices get the denser 36px control height. */
+html[data-senior="true"] .kv-btn, html[data-senior="true"] .kv-input { min-height: 56px; }
+/* DEV-19 / DELTA-001: pointer/hover density gating for this app's OWN 44px control floor. This is an ops/B2B
+   console realm, in scope per DELTA-001's own console framing. Rule Zero preserved: the 44px rural-tap floor
+   NEVER shrinks on coarse-pointer/no-hover (touch) input; only fine-pointer + hover (mouse/trackpad) devices
+   get the denser 36px control height.
+   DEV-61: `.kv-sidebar a`/`.kv-sidebar__link` REMOVED (same reasoning as the senior-mode block above —
+   `packages/ui`'s own `mechanisms/density.ts` now governs the shell via `--web-control-h`); `.kv-btn`/
+   `.kv-input` remain for the same still-hand-written-page-body reason. */
 @media (pointer: fine) and (hover: hover) {
-  .kv-btn, .kv-input, .kv-sidebar a, .kv-sidebar__link { min-height: 36px; }
+  .kv-btn, .kv-input { min-height: 36px; }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; font-family: var(--kv-font); color: var(--kv-neutral-900); background: var(--kv-neutral-50); }
 a { color: inherit; text-decoration: none; }
-.kv-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-.kv-sidebar { background: var(--kv-neutral-0); border-inline-end: 1px solid var(--kv-neutral-200); padding: var(--kv-space); }
-.kv-sidebar a { display: block; padding: 10px 12px; border-radius: var(--kv-radius); min-height: 44px; }
-.kv-sidebar a:hover { background: var(--kv-neutral-100); }
-.kv-brand { font-weight: 700; color: var(--kv-brand-700); margin-bottom: var(--kv-space); display: block; }
+/* DEV-61: `.kv-shell`/`.kv-sidebar`/`.kv-sidebar a`/`.kv-brand` DELETED here (were the hand-rolled shell this
+   batch replaced with `packages/ui`'s `AppShell`/`Sidebar` — grep-verified zero remaining references anywhere
+   in `src/` before deletion). `.kv-content` (base class, still combined with `.kv-content--bare` below on the
+   login/bare-chrome path — the ONE surface this batch's shell swap does not touch) is kept. */
 .kv-content { padding: 24px; max-width: 1100px; }
 .kv-table { width: 100%; border-collapse: collapse; }
 .kv-table th, .kv-table td { text-align: start; padding: 10px 12px; border-bottom: 1px solid var(--kv-neutral-100); }
@@ -52,15 +59,11 @@ a { color: inherit; text-decoration: none; }
 .kv-skip:focus { inset-inline-start: 8px; z-index: 10; }
 .kv-content--bare { margin: 0 auto; }
 .kv-muted { color: var(--kv-neutral-600); }
-.kv-godmode { color: var(--kv-brand-500); font-size: 12px; letter-spacing: 0.08em; }
-
-/* sidebar */
-.kv-sidebar { display: flex; flex-direction: column; }
-.kv-sidebar__nav { list-style: none; margin: 0; padding: 0; }
-.kv-sidebar__link { display: block; padding: 10px 12px; border-radius: var(--kv-radius); min-height: 44px; }
-.kv-sidebar__link:hover { background: var(--kv-neutral-100); }
-.kv-sidebar__soon { display: block; padding: 10px 12px; min-height: 44px; color: var(--kv-neutral-600); }
-.kv-sidebar__foot { margin-top: 24px; }
+/* DEV-61: `.kv-godmode` DELETED — the "GOD MODE" realm pill now renders through `Sidebar`'s own `realmLabel`
+   prop (`kvw-badge kvw-badge-warning`, packages/ui's own CSS), not a hand-written span. `.kv-sidebar*`
+   (`__nav`/`__link`/`__soon`/`__foot`) DELETED — same reason as the shell block above. `.kv-btn--muted` is
+   KEPT: it is still used directly by this app's own sign-out `<button>` (`Sidebar.tsx`), a real page-level
+   button style, not shell chrome. */
 .kv-btn--muted { background: var(--kv-neutral-600); }
 
 /* login */

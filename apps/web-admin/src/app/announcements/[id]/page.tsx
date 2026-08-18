@@ -15,13 +15,14 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { announcementStatusKey, canEdit, canSchedule, canPublish, canExpire, canArchive, SEVERITIES, PLACEMENTS, type AnnouncementRow, type ChangeRow } from '../../../features/announcements/announcement';
 import { updateAnnouncementAction, scheduleAnnouncementAction, publishAnnouncementAction, expireAnnouncementAction, archiveAnnouncementAction } from '../actions';
 
+import { Button, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ann.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { info: 'kv-status--muted', warning: 'kv-status--warn', critical: 'kv-status--danger' };
+const SEV_TONE: Record<string, StatusTone> = { info: 'neutral', warning: 'warning', critical: 'danger' };
 const OK = new Set(['created', 'updated', 'scheduled', 'published', 'expired', 'archived']);
 const ERR = new Set(['title', 'body', 'severity', 'placement', 'plans', 'countries', 'startsAt', 'endsAt', 'window', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
@@ -62,7 +63,7 @@ export default async function AnnouncementDetailPage({ params, searchParams }: {
 
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('ann.status')}</dt><dd>{t.t(`ann.state.${s}`)}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('ann.severity')}</dt><dd><span className={`kv-status ${SEV_CLASS[ann.severity] ?? ''}`}>{t.t(`ann.sev.${ann.severity}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('ann.severity')}</dt><dd><StatusPill tone={SEV_TONE[ann.severity] ?? 'neutral'} label={t.t(`ann.sev.${ann.severity}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('ann.placement')}</dt><dd>{t.t(`ann.place.${ann.placement}`)}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('ann.body')}</dt><dd>{ann.body}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('ann.plans')}</dt><dd>{audience.plans?.length ? audience.plans.join(', ') : t.t('ann.everyone')}</dd></div>
@@ -85,7 +86,7 @@ export default async function AnnouncementDetailPage({ params, searchParams }: {
             <input name="endsAt" className="kv-input" required placeholder={t.t('ann.isoHint')} />
             <label className="kv-field__label">{t.t('ann.reason')}</label>
             <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('ann.schedule')}</button>
+            <Button type="submit">{t.t('ann.schedule')}</Button>
           </form>
         )}
         {canPublish(s) && (
@@ -96,7 +97,7 @@ export default async function AnnouncementDetailPage({ params, searchParams }: {
             <input name="endsAt" className="kv-input" placeholder={t.t('ann.isoHint')} />
             <label className="kv-field__label">{t.t('ann.reason')}</label>
             <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('ann.publish')}</button>
+            <Button type="submit">{t.t('ann.publish')}</Button>
           </form>
         )}
         {canExpire(s) && (
@@ -104,7 +105,7 @@ export default async function AnnouncementDetailPage({ params, searchParams }: {
             <input type="hidden" name="id" value={ann.id} />
             <label className="kv-field__label">{t.t('ann.reason')}</label>
             <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('ann.expire')}</button>
+            <Button type="submit">{t.t('ann.expire')}</Button>
           </form>
         )}
         {canArchive(s) && (
@@ -112,7 +113,7 @@ export default async function AnnouncementDetailPage({ params, searchParams }: {
             <input type="hidden" name="id" value={ann.id} />
             <label className="kv-field__label">{t.t('ann.reason')}</label>
             <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn kv-btn--danger">{t.t('ann.archive')}</button>
+            <Button type="submit" variant="danger">{t.t('ann.archive')}</Button>
           </form>
         )}
       </div>
@@ -137,7 +138,7 @@ export default async function AnnouncementDetailPage({ params, searchParams }: {
             <input id="ecountries" name="countries" className="kv-input" defaultValue={(audience.countries ?? []).join(', ')} placeholder={t.t('ann.countriesHint')} />
             <label htmlFor="ereason" className="kv-field__label">{t.t('ann.reason')}</label>
             <input id="ereason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('ann.editSubmit')}</button>
+            <Button type="submit">{t.t('ann.editSubmit')}</Button>
           </form>
         </details>
       )}

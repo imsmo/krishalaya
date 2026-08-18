@@ -51,7 +51,7 @@ export interface FileUploadProps {
 export function FileUpload({ children, hint, icon, isDragOver, onDragOver, onDragLeave, onDrop, onActivate, label, className }: FileUploadProps): React.ReactElement {
   return (
     <div
-      className={['kvw-upload', isDragOver ? 'is-dragover' : '', className || ''].filter(Boolean).join(' ')}
+      className={['kvw-upload', 'is-activatable', isDragOver ? 'is-dragover' : '', className || ''].filter(Boolean).join(' ')}
       role="button"
       tabIndex={0}
       aria-label={label}
@@ -106,18 +106,38 @@ export function FileUploadItem({ thumbnail, name, meta, status, className }: Fil
 /** CSS fragment. `.kvw-upload`/`.kvw-upload-item`/`.thumb` ported verbatim from `web-components.css` lines
  * 106-116. `.kvw-upload-hint`/`.kvw-upload-item-body`/`-meta`/`-status` are engineering-addition layout
  * helpers (the canon's own demo achieves the same result with inline `style="font-size:var(--text-xs)"`/
- * `style="flex:1"` attributes — promoted to real classes here, same declarations, zero new value). */
+ * `style="flex:1"` attributes — promoted to real classes here, same declarations, zero new value).
+ *
+ * DEV-59 FIX (per DEV-58 QA's finding, `qa_dev58_audit.md` §1(c)#4-6): the base `.kvw-upload` rule was
+ * missing canon's `justify-content: center` and, more materially, `background: var(--color-earth-50)`
+ * (the dropzone rendered background-less at rest instead of canon's tinted box — a real, visible
+ * regression). The `.kvw-upload-item` rule was also missing canon's `border`/`border-radius`/`font-size`
+ * and had a different `padding` shorthand (`var(--space-2) 0` instead of canon's `var(--space-2)
+ * var(--space-3)`), so uploaded-file rows rendered as an unstyled/unbordered strip instead of canon's
+ * bordered "card" row — the single most visually significant of the 6 mismatches DEV-58 QA named. Both
+ * are now byte-identical to `web-components.css` 106-116. The component's own `cursor: pointer` (needed
+ * because this dropzone doubles as a `role="button"` click target, unlike canon's static demo) is kept
+ * but moved to its own `.kvw-upload.is-activatable` rule so it no longer prevents `.kvw-upload` itself
+ * from matching canon byte-for-byte — a disclosed engineering addition, not a silent divergence.
+ *
+ * `.kvw-upload-item .thumb`'s `flex: none` is a DELIBERATE, DISCLOSED departure from canon (DEV-58 QA
+ * judged it a harmless defensive addition — prevents the thumbnail being squeezed in a flex row — and
+ * explicitly recommended keeping it rather than reverting; kept here on purpose, so this one selector
+ * intentionally remains a byte-level MISMATCH in `verify-canon-fidelity.js`'s report, not an oversight). */
 export const fileUploadStyles = `
 .kvw-upload {
-  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
-  padding: var(--space-8) var(--space-4); text-align: center;
-  border: 2px dashed var(--border-default); border-radius: var(--radius-lg);
-  color: var(--color-ink-500); font-size: var(--text-sm); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2);
+  padding: var(--space-8); border: 2px dashed var(--border-default); border-radius: var(--radius-lg);
+  background: var(--color-earth-50); color: var(--color-ink-500); text-align: center; font-size: var(--text-sm);
 }
+.kvw-upload.is-activatable { cursor: pointer; }
 .kvw-upload.is-dragover { border-color: var(--color-primary-600); background: var(--color-primary-50); }
 .kvw-upload:focus-visible { outline: none; box-shadow: var(--web-focus-ring); }
 .kvw-upload-hint { font-size: var(--text-xs); color: var(--color-ink-400); }
-.kvw-upload-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; }
+.kvw-upload-item {
+  display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-size: var(--text-sm);
+}
 .kvw-upload-item .thumb { width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover; background: var(--color-earth-200); flex: none; }
 .kvw-upload-item-body { flex: 1; min-width: 0; }
 .kvw-upload-item-meta { font-size: var(--text-xs); color: var(--color-ink-400); }

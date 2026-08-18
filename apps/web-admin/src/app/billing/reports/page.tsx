@@ -26,6 +26,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { bpsToPercent } from '../../../features/reports/report';
+import { Button, Callout, EmptyState } from '@krishalaya/ui';
 import {
   EXPORT_REPORTS, needsPeriod, collectionRateBps, seriesTotal, seriesMax, barPct, retentionBps,
   overduePeriods, type MonthPoint, type CohortPoint, type RenewalDueRow,
@@ -94,7 +95,7 @@ export default async function BillingReportsPage({ searchParams }: {
           {/* ---- 1. BILLED PER MONTH (not MRR — see the header) ---- */}
           <h2>{t.t('rep.billedTitle')}</h2>
           <p className="kv-field__hint">{t.t('rep.billedHint')}</p>
-          {months.length === 0 ? <p className="kv-empty">{t.t('rep.noMonths')}</p> : (
+          {months.length === 0 ? <EmptyState title={t.t('rep.noMonths')} /> : (
             <>
               <table className="kv-table">
                 <thead><tr>
@@ -137,7 +138,7 @@ export default async function BillingReportsPage({ searchParams }: {
 
           {/* ---- 2. PLAN MIX ---- */}
           <h2>{t.t('rep.mixTitle')}</h2>
-          {(series?.planMix ?? []).length === 0 ? <p className="kv-empty">{t.t('rep.noMix')}</p> : (
+          {(series?.planMix ?? []).length === 0 ? <EmptyState title={t.t('rep.noMix')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('rep.plan')}</th>
@@ -160,7 +161,7 @@ export default async function BillingReportsPage({ searchParams }: {
           {/* ---- 3. COHORT RETENTION (tenants, not revenue) ---- */}
           <h2>{t.t('rep.cohortTitle')}</h2>
           <p className="kv-field__hint">{t.t('rep.cohortHint')}</p>
-          {(series?.cohortRetention ?? []).length === 0 ? <p className="kv-empty">{t.t('rep.noCohorts')}</p> : (
+          {(series?.cohortRetention ?? []).length === 0 ? <EmptyState title={t.t('rep.noCohorts')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('rep.cohort')}</th>
@@ -189,7 +190,7 @@ export default async function BillingReportsPage({ searchParams }: {
       {/* ---- The renewal run: what it WOULD bill, and what it has been doing ---- */}
       <h2>{t.t('rep.renewalTitle')}</h2>
       <p className="kv-field__hint">{t.t('rep.renewalHint')}</p>
-      {!renewal ? <p className="kv-empty">{t.t('rep.renewalUnavailable')}</p> : (
+      {!renewal ? <EmptyState title={t.t('rep.renewalUnavailable')} /> : (
         <>
           <dl className="kv-facts">
             <div className="kv-facts__row"><dt>{t.t('rep.renewalDue')}</dt><dd>{renewal.dueCount}</dd></div>
@@ -210,7 +211,7 @@ export default async function BillingReportsPage({ searchParams }: {
               {t.t('rep.renewalActivity')}: {renewal.recentActivity.map((a) => `${a.day} (${a.invoicesIssued})`).join(' · ')}
             </p>
           )}
-          <p className="kv-notice" role="note">{t.t('rep.renewalNoTrigger')}</p>
+          <Callout>{t.t('rep.renewalNoTrigger')}</Callout>
         </>
       )}
 
@@ -236,7 +237,7 @@ export default async function BillingReportsPage({ searchParams }: {
         <label htmlFor="exp-limit" className="kv-field__label">{t.t('rep.rowLimit')}</label>
         <input id="exp-limit" name="limit" className="kv-input" inputMode="numeric" defaultValue="1000" />
         <p className="kv-field__hint">{t.t('rep.limitHint')}</p>
-        <button type="submit" className="kv-btn">{t.t('rep.exportSubmit')}</button>
+        <Button type="submit">{t.t('rep.exportSubmit')}</Button>
       </form>
       <p className="kv-field__hint">{t.t('rep.receiptNote')}</p>
     </section>

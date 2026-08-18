@@ -17,6 +17,7 @@ import { diffAgainstPrevious, isRegressive, type VersionRow } from '../../../fea
 import { planStatusKey, canPublish, canArchive, canReactivate, type PlanDetail, type FeatureCatalogueItem, type PlanChange } from '../../../features/plans/plan';
 import { lifecycleAction, setPricingAction, versionPlanAction, setFeatureAction, removeFeatureAction, setLimitAction, removeLimitAction } from '../actions';
 
+import { Button, Callout, EmptyState } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -101,7 +102,7 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
                 <form action={removeFeatureAction} className="kv-inline-form">
                   <input type="hidden" name="id" value={plan!.id} /><input type="hidden" name="code" value={f.code} />
                   <input name="reason" className="kv-input kv-input--sm" required minLength={3} maxLength={1000} placeholder={t.t('plans.reason')} />
-                  <button type="submit" className="kv-btn--link">{t.t('plans.remove')}</button>
+                  <Button type="submit" variant="tertiary">{t.t('plans.remove')}</Button>
                 </form>
               </td>
             </tr>
@@ -121,7 +122,7 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
           <select id="isIncluded" name="isIncluded" className="kv-input" defaultValue="true"><option value="true">{t.t('plans.yes')}</option><option value="false">{t.t('plans.no')}</option></select>
           <label htmlFor="featReason" className="kv-field__label">{t.t('plans.reason')}</label>
           <input id="featReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('plans.setFeatureSubmit')}</button>
+          <Button type="submit">{t.t('plans.setFeatureSubmit')}</Button>
         </form>
       </details>
 
@@ -137,7 +138,7 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
                 <form action={removeLimitAction} className="kv-inline-form">
                   <input type="hidden" name="id" value={plan!.id} /><input type="hidden" name="code" value={code} />
                   <input name="reason" className="kv-input kv-input--sm" required minLength={3} maxLength={1000} placeholder={t.t('plans.reason')} />
-                  <button type="submit" className="kv-btn--link">{t.t('plans.remove')}</button>
+                  <Button type="submit" variant="tertiary">{t.t('plans.remove')}</Button>
                 </form>
               </td>
             </tr>
@@ -155,7 +156,7 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
           <input id="limitValue" name="limitValue" className="kv-input" required inputMode="numeric" placeholder="500 / -1" />
           <label htmlFor="limitReason" className="kv-field__label">{t.t('plans.reason')}</label>
           <input id="limitReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('plans.setLimitSubmit')}</button>
+          <Button type="submit">{t.t('plans.setLimitSubmit')}</Button>
         </form>
       </details>
 
@@ -169,7 +170,7 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
           <input name="annualPriceMinor" className="kv-input" required inputMode="numeric" defaultValue={plan.annualPriceMinor} />
           <label className="kv-field__label">{t.t('plans.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('plans.setPricing')}</button>
+          <Button type="submit">{t.t('plans.setPricing')}</Button>
         </form>
         <form action={versionPlanAction} className="kv-card kv-action-card">
           <input type="hidden" name="id" value={plan.id} />
@@ -180,7 +181,7 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
           <input name="annualPriceMinor" className="kv-input" required inputMode="numeric" defaultValue={plan.annualPriceMinor} />
           <label className="kv-field__label">{t.t('plans.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('plans.newVersion')}</button>
+          <Button type="submit">{t.t('plans.newVersion')}</Button>
         </form>
       </div>
 
@@ -199,10 +200,10 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
         );
         if (!diff.previous) {
           // "nothing to compare against" is NOT "nothing changed" — a first version must not read as a no-op
-          return <p className="kv-empty">{t.t('plans.diffNoPrevious')}</p>;
+          return <EmptyState variant="empty" title={t.t('plans.diffNoPrevious')} />;
         }
         if (diff.identical) {
-          return <p className="kv-notice" role="note">{t.t('plans.diffIdentical', { v: String(diff.previous.version) })}</p>;
+          return <Callout tone="warning">{t.t('plans.diffIdentical', { v: String(diff.previous.version) })}</Callout>;
         }
         return (
           <>
@@ -257,7 +258,7 @@ function ReasonForm({ id, action, verb, label, fn, danger }: { id: string; actio
       <input type="hidden" name="action" value={action} />
       <label className="kv-field__label">{label}</label>
       <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-      <button type="submit" className={`kv-btn${danger ? ' kv-btn--danger' : ''}`}>{verb}</button>
+      <Button type="submit" variant={danger ? 'danger' : 'primary'}>{verb}</Button>
     </form>
   );
 }

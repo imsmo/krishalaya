@@ -11,13 +11,14 @@ import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
 import { PROVIDER_CATEGORIES, isValidCategory, categoryKey, providerHealthKey, type ProviderRow } from '../../features/providers/provider';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('providers.title'), robots: { index: false, follow: false } };
 }
 
-const HEALTH_CLASS: Record<string, string> = { active: 'kv-status--ok', degraded: 'kv-status--danger', disabled: 'kv-status--muted' };
+const HEALTH_TONE: Record<string, StatusTone> = { active: 'success', degraded: 'danger', disabled: 'neutral' };
 
 export default async function ProvidersPage({ searchParams }: { searchParams: { cursor?: string; category?: string; active?: string } }) {
   requireAdmin();
@@ -36,7 +37,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams: { 
     { header: t.t('providers.code'), cell: (r) => <Link href={`/providers/${encodeURIComponent(r.code)}`}>{r.code}</Link> },
     { header: t.t('providers.name'), cell: (r) => r.defaultName },
     { header: t.t('providers.category'), cell: (r) => t.t(`providers.cat.${categoryKey(r.category)}`) },
-    { header: t.t('providers.health'), cell: (r) => { const k = providerHealthKey(r); return <span className={`kv-status ${HEALTH_CLASS[k]}`}>{t.t(`providers.healthState.${k}`)}</span>; } },
+    { header: t.t('providers.health'), cell: (r) => { const k = providerHealthKey(r); return <StatusPill tone={HEALTH_TONE[k]} label={t.t(`providers.healthState.${k}`)} />; } },
     { header: t.t('providers.configured'), cell: (r) => `${r.health.activeTenants.toLocaleString()} / ${r.health.configuredTenants.toLocaleString()}` },
   ];
 
@@ -53,26 +54,26 @@ export default async function ProvidersPage({ searchParams }: { searchParams: { 
       <h1>{t.t('providers.title')}</h1>
       <p className="kv-muted">{t.t('providers.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('providers.nav')}>
-        <Link href="/providers/health" className="kv-chip">{t.t('providers.healthNav')}</Link>
-        <Link href="/providers/financial" className="kv-chip">{t.t('providers.financialNav')}</Link>
+        <Chip as={Link} href="/providers/health">{t.t('providers.healthNav')}</Chip>
+        <Chip as={Link} href="/providers/financial">{t.t('providers.financialNav')}</Chip>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('providers.filterCategory')}>
-        <Link href={qp({ category: undefined, cursor: undefined })} className={`kv-chip${!category ? ' is-active' : ''}`} aria-current={!category ? 'true' : undefined}>{t.t('providers.filterAll')}</Link>
+        <Chip as={Link} href={qp({ category: undefined, cursor: undefined })} aria-current={!category ? 'true' : undefined} active={!category}>{t.t('providers.filterAll')}</Chip>
         {PROVIDER_CATEGORIES.map((c) => (
-          <Link key={c} href={qp({ category: c, cursor: undefined })} className={`kv-chip${category === c ? ' is-active' : ''}`} aria-current={category === c ? 'true' : undefined}>{t.t(`providers.cat.${c}`)}</Link>
+          <Chip as={Link} key={c} href={qp({ category: c, cursor: undefined })} aria-current={category === c ? 'true' : undefined} active={category === c}>{t.t(`providers.cat.${c}`)}</Chip>
         ))}
       </nav>
       <nav className="kv-filters" aria-label={t.t('providers.filterActive')}>
-        <Link href={qp({ active: undefined, cursor: undefined })} className={`kv-chip${!active ? ' is-active' : ''}`} aria-current={!active ? 'true' : undefined}>{t.t('providers.filterAll')}</Link>
-        <Link href={qp({ active: 'true', cursor: undefined })} className={`kv-chip${active === 'true' ? ' is-active' : ''}`} aria-current={active === 'true' ? 'true' : undefined}>{t.t('providers.filterEnabled')}</Link>
-        <Link href={qp({ active: 'false', cursor: undefined })} className={`kv-chip${active === 'false' ? ' is-active' : ''}`} aria-current={active === 'false' ? 'true' : undefined}>{t.t('providers.filterDisabled')}</Link>
+        <Chip as={Link} href={qp({ active: undefined, cursor: undefined })} aria-current={!active ? 'true' : undefined} active={!active}>{t.t('providers.filterAll')}</Chip>
+        <Chip as={Link} href={qp({ active: 'true', cursor: undefined })} aria-current={active === 'true' ? 'true' : undefined} active={active === 'true'}>{t.t('providers.filterEnabled')}</Chip>
+        <Chip as={Link} href={qp({ active: 'false', cursor: undefined })} aria-current={active === 'false' ? 'true' : undefined} active={active === 'false'}>{t.t('providers.filterDisabled')}</Chip>
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('providers.empty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

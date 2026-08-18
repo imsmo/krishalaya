@@ -10,6 +10,15 @@
 //     can only count operators it has seen.
 //   * `keyListState` must not render an empty FIDO2 key list as "no keys registered". The table exists and is unusable
 //     by these operators — an empty list would read as a fact about the operator instead of a fact about the schema.
+//
+// DEV-60 (UI Port Program batch 3, Part 1): `statusClass`/`dormancyClass`/`sessionClass`/`stepUpOutcomeClass`/
+// `restrictionClass` now return a `StatusTone` instead of a raw `kv-badge is-X` string — disposition (c), same
+// pattern as `ai-governance.ts`. Call sites render `<StatusPill tone={...} label={...}/>`. `cellClass` is disposition
+// (d) — its default branch returned `'kv-cell-empty'`, NOT a badge at all (a table-cell empty marker), so it is
+// split below into `cellTone()` (badge case) + `cellIsEmpty()` (the non-badge case), rather than mechanically
+// renamed. `stepUpClass` (`kv-note`-returning) is OUT OF SCOPE — `kv-note` never matched the 98/29 population's grep.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ------------------------------------------------------------------------------------------------ */
 /* STATUS                                                                                            */
@@ -19,10 +28,10 @@ export function statusKey(status: string): string {
   return status === 'active' ? 'st.status.active' : status === 'suspended' ? 'st.status.suspended' : 'st.status.unknown';
 }
 
-export function statusClass(status: string): string {
-  if (status === 'suspended') return 'kv-badge is-danger';
-  if (status === 'active') return 'kv-badge is-ok';
-  return 'kv-badge is-warn';
+export function statusTone(status: string): StatusTone {
+  if (status === 'suspended') return 'danger';
+  if (status === 'active') return 'success';
+  return 'warning';
 }
 
 /** A dismissal and a dormancy sweep are not the same event, and a console that rendered them alike would let the first
@@ -53,11 +62,11 @@ export function dormancyKey(d: Dormancy | null): string {
 
 /** `past_line` is DANGER, `dormant` is a warning: the first means the next request will be refused, and whoever is
  *  reading the roster is the only person who can pre-empt that. */
-export function dormancyClass(d: Dormancy | null): string {
-  if (!d) return 'kv-badge';
-  if (d.kind === 'past_line') return 'kv-badge is-danger';
-  if (d.kind === 'dormant') return 'kv-badge is-warn';
-  return 'kv-badge is-ok';
+export function dormancyTone(d: Dormancy | null): StatusTone {
+  if (!d) return 'neutral';
+  if (d.kind === 'past_line') return 'danger';
+  if (d.kind === 'dormant') return 'warning';
+  return 'success';
 }
 
 /** The one sentence that keeps this console honest about its own limits. */
@@ -116,12 +125,12 @@ export function sessionState(s: {
 
 export function sessionKey(state: SessionState): string { return `st.session.${state}`; }
 
-export function sessionClass(state: SessionState): string {
+export function sessionTone(state: SessionState): StatusTone {
   switch (state) {
-    case 'current': return 'kv-badge is-info';
-    case 'live': return 'kv-badge is-ok';
-    case 'revoked': return 'kv-badge is-danger';
-    default: return 'kv-badge';
+    case 'current': return 'info';
+    case 'live': return 'success';
+    case 'revoked': return 'danger';
+    default: return 'neutral';
   }
 }
 
@@ -140,8 +149,8 @@ export function revokeLabelKey(state: SessionState): string {
 /* STEP-UP                                                                                           */
 /* ------------------------------------------------------------------------------------------------ */
 
-export function stepUpOutcomeClass(outcome: string): string {
-  return outcome === 'verified' ? 'kv-badge is-ok' : 'kv-badge is-danger';
+export function stepUpOutcomeTone(outcome: string): StatusTone {
+  return outcome === 'verified' ? 'success' : 'danger';
 }
 
 export function gateKey(gate: string): string {
@@ -179,11 +188,11 @@ export function restrictionState(r: {
 
 export function restrictionKey(state: RestrictionState): string { return `st.restriction.${state}`; }
 
-export function restrictionClass(state: RestrictionState): string {
+export function restrictionTone(state: RestrictionState): StatusTone {
   switch (state) {
-    case 'in_force': return 'kv-badge is-warn';
-    case 'inert': return 'kv-badge';
-    default: return 'kv-badge is-muted';
+    case 'in_force': return 'warning';
+    case 'inert': return 'neutral';
+    default: return 'neutral';
   }
 }
 

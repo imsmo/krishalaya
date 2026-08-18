@@ -18,8 +18,9 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { approveWeightAction, proposeWeightAction, withdrawProposalAction } from '../../actions';
+import { Button, StatusPill } from '@krishalaya/ui';
 import {
-  approveBlockedKey, firedText, driftClass, dryRunState, type RuleRow, type DriftItem,
+  approveBlockedKey, firedText, driftTone, dryRunState, type RuleRow, type DriftItem,
 } from '../../../../features/trust/trust-safety';
 
 export const dynamic = 'force-dynamic';
@@ -87,7 +88,7 @@ export default async function RiskRulesPage({ searchParams }: { searchParams: { 
               {b.drift.map((d) => (
                 <tr key={`${d.kind}-${d.eventCode}`}>
                   <td>{d.eventCode}</td>
-                  <td><span className={driftClass(d.kind)}>{t.t(`ts.rules.drift.${d.kind}`)}</span></td>
+                  <td><StatusPill tone={driftTone(d.kind)} label={t.t(`ts.rules.drift.${d.kind}`)} /></td>
                   <td>{d.configured === null ? t.t('common.dash') : String(d.configured)}</td>
                   <td>{d.observed === null ? t.t('common.dash') : String(d.observed)}</td>
                 </tr>
@@ -143,8 +144,8 @@ export default async function RiskRulesPage({ searchParams }: { searchParams: { 
                   {!r.proposal ? t.t('common.dash') : (
                     <>
                       <div>{t.t('ts.rules.proposedTo', { from: String(r.weight), to: String(r.proposal.weight) })}</div>
-                      {dr === 'absent' && <div className="kv-status kv-status--danger">{t.t('ts.rules.dryRun.absent')}</div>}
-                      {dr === 'stale' && <div className="kv-status kv-status--warn">{t.t('ts.rules.dryRun.stale')}</div>}
+                      {dr === 'absent' && <StatusPill tone="danger" label={t.t('ts.rules.dryRun.absent')} />}
+                      {dr === 'stale' && <StatusPill tone="warning" label={t.t('ts.rules.dryRun.stale')} />}
                       {dr === 'fresh' && r.proposal.dryRun && (
                         <div className="kv-detail__muted">
                           {t.t('ts.rules.dryRun.figures', {
@@ -154,7 +155,7 @@ export default async function RiskRulesPage({ searchParams }: { searchParams: { 
                           })}
                         </div>
                       )}
-                      {r.proposal.checkedBy && <div className="kv-status kv-status--ok">{t.t('ts.rules.approvedBy', { who: r.proposal.checkedBy })}</div>}
+                      {r.proposal.checkedBy && <StatusPill tone="success" label={t.t('ts.rules.approvedBy', { who: r.proposal.checkedBy })} />}
 
                       {/* MAKER-CHECKER BY ABSENCE. The control is not drawn; the reason is named beside it. */}
                       {r.proposal.approveOfferable && blocked === null ? (
@@ -164,7 +165,7 @@ export default async function RiskRulesPage({ searchParams }: { searchParams: { 
                             {t.t('ts.rules.approveNote')}
                             <input className="kv-input" name="note" required minLength={1} maxLength={1000} />
                           </label>
-                          <button type="submit" className="kv-btn kv-btn--danger">{t.t('ts.rules.approve')}</button>
+                          <Button type="submit" variant="danger">{t.t('ts.rules.approve')}</Button>
                         </form>
                       ) : (
                         blocked && <div className="kv-detail__muted">{t.t(`ts.rules.approveBlocked.${blocked}`)}</div>
@@ -177,7 +178,7 @@ export default async function RiskRulesPage({ searchParams }: { searchParams: { 
                             {t.t('ts.rules.withdrawReason')}
                             <input className="kv-input" name="reason" required minLength={1} maxLength={1000} />
                           </label>
-                          <button type="submit" className="kv-btn">{t.t('ts.rules.withdraw')}</button>
+                          <Button type="submit">{t.t('ts.rules.withdraw')}</Button>
                         </form>
                       )}
                     </>
@@ -214,7 +215,7 @@ export default async function RiskRulesPage({ searchParams }: { searchParams: { 
           <label className="kv-field__label">{t.t('ts.rules.computedAt')}<input className="kv-input" name="computedAt" type="datetime-local" required /></label>
         </fieldset>
 
-        <button type="submit" className="kv-btn">{t.t('ts.rules.propose')}</button>
+        <Button type="submit">{t.t('ts.rules.propose')}</Button>
       </form>
       <p className="kv-detail__muted">{t.t('ts.rules.noThresholdEditor')}</p>
     </section>

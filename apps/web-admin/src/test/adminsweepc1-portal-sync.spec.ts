@@ -1,5 +1,5 @@
 // apps/web-admin/src/test/adminsweepc1-portal-sync.spec.ts · W077 console logic (PC-56 ADMIN-SWEEP-c1).
-import { ackLagText, truthClass } from '../features/schemes/portal-sync';
+import { ackLagText, truthTone } from '../features/schemes/portal-sync';
 import { en } from '../i18n/en';
 
 describe('ADMIN-SWEEP-c1 · portal sync console logic', () => {
@@ -8,9 +8,9 @@ describe('ADMIN-SWEEP-c1 · portal sync console logic', () => {
     expect(ackLagText({ kind: 'unmeasured', reason: 'r' })).toEqual({ key: 'unmeasured' });
   });
   it('there is no green truth chip — nothing has earned one', () => {
-    expect(truthClass('mapped_never_pulled')).toContain('warn');
-    expect(truthClass('mapped_never_pulled')).not.toContain('ok');
-    expect(truthClass('manual')).not.toContain('ok');
+    expect(truthTone('mapped_never_pulled')).toBe('warning');
+    expect(truthTone('mapped_never_pulled')).not.toBe('success');
+    expect(truthTone('manual')).not.toBe('success');
   });
   it('the honesty copy carries its load-bearing words', () => {
     const cat = en as Record<string, string>;

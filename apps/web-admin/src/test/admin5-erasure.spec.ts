@@ -2,8 +2,8 @@
 // The governing rule: NEVER RENDER A REASSURING DEFAULT. An unmeasured SLA is not a met one, an empty scope is not
 // "nothing will be kept", and an unevidenced erasure is not a completed one.
 import {
-  isRejectionGround, groundIsFixableByPrincipal, slaClass, slaKey, cleanRecordClaimable,
-  scopeKey, actionClass, rowsText, hasUnrunnableActions, completeOfferable, evidenceProgressPct, evidenceClass,
+  isRejectionGround, groundIsFixableByPrincipal, slaTone, slaKey, cleanRecordClaimable,
+  scopeKey, actionTone, rowsText, hasUnrunnableActions, completeOfferable, evidenceProgressPct, evidenceTone,
   buildReject, buildRecordAction, queueTypeFilter, queueStatusFilter,
   REJECTION_GROUNDS, type ScopeResult, type CompletionCheck, type SlaState,
 } from '../features/compliance/erasure';
@@ -22,21 +22,21 @@ describe('ADMIN-5 console · the SLA clocks', () => {
   it('UNMEASURED is a warning — not a pass and not a failure', () => {
     // Not a pass, because "0 breaches" over an unread clock is an absent measurement wearing a clean record's clothes.
     // Not a failure, because nobody breached anything.
-    expect(slaClass({ kind: 'unmeasured' })).toContain('warn');
-    expect(slaClass({ kind: 'unmeasured' })).not.toContain('--ok');
-    expect(slaClass({ kind: 'unmeasured' })).not.toContain('danger');
+    expect(slaTone({ kind: 'unmeasured' })).toBe('warning');
+    expect(slaTone({ kind: 'unmeasured' })).not.toBe('success');
+    expect(slaTone({ kind: 'unmeasured' })).not.toBe('danger');
   });
   it('met is positive, breached is a failure', () => {
-    expect(slaClass({ kind: 'met' })).toContain('ok');
-    expect(slaClass({ kind: 'breached', hoursOver: 3 })).toContain('danger');
+    expect(slaTone({ kind: 'met' })).toBe('success');
+    expect(slaTone({ kind: 'breached', hoursOver: 3 })).toBe('danger');
   });
   it('a deadline inside twelve hours is urgent', () => {
-    expect(slaClass({ kind: 'due', hoursLeft: 6 })).toContain('danger');
-    expect(slaClass({ kind: 'due', hoursLeft: 20 })).toContain('warn');
-    expect(slaClass({ kind: 'due', hoursLeft: 48 })).toContain('ok');
+    expect(slaTone({ kind: 'due', hoursLeft: 6 })).toBe('danger');
+    expect(slaTone({ kind: 'due', hoursLeft: 20 })).toBe('warning');
+    expect(slaTone({ kind: 'due', hoursLeft: 48 })).toBe('success');
   });
   it('a missing state is muted, never treated as met', () => {
-    expect(slaClass(null)).toContain('muted');
+    expect(slaTone(null)).toBe('neutral');
     expect(slaKey(undefined)).toBe('unmeasured');
     expect(slaKey({ kind: 'met' } as SlaState)).toBe('met');
   });
@@ -57,10 +57,10 @@ describe('ADMIN-5 console · the scope panel', () => {
     expect(scopeKey(null)).toBe('unknown');
   });
   it('keep_forever is NOT a failure colour — the law working is not the platform refusing', () => {
-    expect(actionClass('keep_forever')).toContain('muted');
-    expect(actionClass('keep_forever')).not.toContain('danger');
-    expect(actionClass('delete')).toContain('ok');
-    expect(actionClass('archive')).toContain('warn');
+    expect(actionTone('keep_forever')).toBe('neutral');
+    expect(actionTone('keep_forever')).not.toBe('danger');
+    expect(actionTone('delete')).toBe('success');
+    expect(actionTone('archive')).toBe('warning');
   });
   it('an uncounted class reports "not counted" rather than 0', () => {
     expect(rowsText(null)).toEqual({ known: false, n: 0 });
@@ -108,11 +108,11 @@ describe('ADMIN-5 console · the Complete control is ABSENT until the erasure is
     expect(evidenceProgressPct({ ok: true, classesEvidenced: 2 })).toBe(100);
   });
   it('blocked_by_law is NOT styled as a failure — it records something done correctly', () => {
-    expect(evidenceClass('blocked_by_law')).toContain('muted');
-    expect(evidenceClass('blocked_by_law')).not.toContain('danger');
-    expect(evidenceClass('deleted')).toContain('ok');
-    expect(evidenceClass('retracted')).toContain('danger');
-    expect(evidenceClass('something_new')).toContain('muted');
+    expect(evidenceTone('blocked_by_law')).toBe('neutral');
+    expect(evidenceTone('blocked_by_law')).not.toBe('danger');
+    expect(evidenceTone('deleted')).toBe('success');
+    expect(evidenceTone('retracted')).toBe('danger');
+    expect(evidenceTone('something_new')).toBe('neutral');
   });
 });
 

@@ -2,9 +2,9 @@
 // Two rules govern everything here: an unrecorded audit value is not an unchanged row, and money never becomes a
 // JavaScript number — not in a validator, not in a sum, not in a comparison.
 import {
-  SAVED_VIEWS, isSavedView, viewChipClass, diffStateKey, diffSign, diffLineClass, valueCell, MASK,
+  SAVED_VIEWS, isSavedView, isActiveView, diffStateKey, diffSign, diffLineTone, valueCell, MASK,
   retentionKey, windowTooWide, MAX_LIVE_WINDOW_DAYS,
-  statusClass, balanceClass, balanceText, stepOf, submitBlockedKey, approveBlockedKey,
+  statusTone, balanceTone, balanceText, stepOf, submitBlockedKey, approveBlockedKey,
   aboveFounderThreshold, FOUNDER_THRESHOLD_MINOR, buildLeg, sumLegs, formatMinorText,
   type DiffPanel, type BalanceView, type SubmitState, type ApproveState,
 } from '../features/audit/audit-console';
@@ -22,8 +22,8 @@ describe('ADMIN-5e console · W039 saved views and the window rule', () => {
     expect(isSavedView('money')).toBe(true);
     expect(isSavedView('payouts')).toBe(false);
     expect(isSavedView(null)).toBe(false);
-    expect(viewChipClass('money', 'money')).toContain('is-active');
-    expect(viewChipClass('all', 'money')).not.toContain('is-active');
+    expect(isActiveView('money', 'money')).toBe(true);
+    expect(isActiveView('all', 'money')).toBe(false);
   });
   it('REFUSES a window wider than the live limit before the query is sent', () => {
     expect(MAX_LIVE_WINDOW_DAYS).toBe(90);
@@ -73,9 +73,9 @@ describe('ADMIN-5e console · W040 diff states', () => {
     expect(diffSign('removed')).toBe('−');
     expect(diffSign('added')).toBe('+');
     expect(diffSign('changed')).toBe('±');
-    expect(diffLineClass('removed')).toContain('danger');
-    expect(diffLineClass('added')).toContain('ok');
-    expect(diffLineClass('changed')).toContain('warn');
+    expect(diffLineTone('removed')).toBe('danger');
+    expect(diffLineTone('added')).toBe('success');
+    expect(diffLineTone('changed')).toBe('warning');
   });
   it('a masked cell renders the MASK, never a blank', () => {
     // A blank looks like a value that was ABSENT rather than one withheld, and those carry opposite implications.
@@ -188,9 +188,9 @@ describe('ADMIN-5e console · the leg form', () => {
 
 describe('ADMIN-5e console · W068 states and gating', () => {
   it('the balance readout is a FAILURE colour when unbalanced, never a note in progress', () => {
-    expect(balanceClass(bal())).toContain('ok');
-    expect(balanceClass(bal({ balanced: false, sumMinor: '1245000', sumText: '₹12,450.00' }))).toContain('danger');
-    expect(balanceClass(null)).toContain('muted');
+    expect(balanceTone(bal())).toBe('success');
+    expect(balanceTone(bal({ balanced: false, sumMinor: '1245000', sumText: '₹12,450.00' }))).toBe('danger');
+    expect(balanceTone(null)).toBe('neutral');
     expect(balanceText(bal())).toBe('Σ = 0 ✓');
     expect(balanceText(bal({ balanced: false, sumText: '₹12,450.00' }))).toBe('Σ = ₹12,450.00 ≠ 0');
     expect(balanceText(null)).toBe('—');
@@ -205,12 +205,12 @@ describe('ADMIN-5e console · W068 states and gating', () => {
     expect(stepOf(null, true)).toBeNull();
   });
   it('statuses carry distinct colours and posted is the only green', () => {
-    expect(statusClass('posted')).toContain('ok');
-    expect(statusClass('awaiting_checker')).toContain('warn');
-    expect(statusClass('rejected')).toContain('danger');
-    expect(statusClass('withdrawn')).toContain('muted');
-    expect(statusClass('drafting')).toContain('muted');
-    expect(statusClass(null)).toContain('muted');
+    expect(statusTone('posted')).toBe('success');
+    expect(statusTone('awaiting_checker')).toBe('warning');
+    expect(statusTone('rejected')).toBe('danger');
+    expect(statusTone('withdrawn')).toBe('neutral');
+    expect(statusTone('drafting')).toBe('neutral');
+    expect(statusTone(null)).toBe('neutral');
   });
   it('SUBMIT is blocked with a distinct reason per next move', () => {
     expect(submitBlockedKey({ ok: false, reason: 'unbalanced', sumMinor: '1' } as SubmitState)).toBe('unbalanced');

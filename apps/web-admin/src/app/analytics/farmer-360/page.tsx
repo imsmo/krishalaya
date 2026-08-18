@@ -12,8 +12,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { exportProfileAction } from './actions';
-import { tileText, bandClass, timelineIcon, formatMinor, EXPORT_REASON_MIN, type MoneyTile } from '../../../features/analytics/farmer360';
+import { tileText, bandTone, timelineIcon, formatMinor, EXPORT_REASON_MIN, type MoneyTile } from '../../../features/analytics/farmer360';
 
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -39,7 +40,7 @@ function Tile({ t, labelKey }: { t: MoneyTile; labelKey: string }) {
     <div className="kv-facts__row">
       <dt>{tr.t(labelKey)}</dt>
       <dd>
-        {v.key === 'value' ? v.text : <span className="kv-status">{tr.t('f360.unknown')}</span>}
+        {v.key === 'value' ? v.text : <StatusPill tone="neutral" label={tr.t('f360.unknown')} />}
         <div className="kv-detail__muted">{t.basis}</div>
       </dd>
     </div>
@@ -80,7 +81,7 @@ export default async function Farmer360Page({ searchParams }: { searchParams: { 
         <label htmlFor="q" className="kv-field__label">{t.t('f360.searchLabel')}</label>
         <input id="q" name="q" className="kv-input" defaultValue={searchParams.q ?? ''} minLength={2} maxLength={120}
           placeholder={t.t('f360.searchPlaceholder')} />
-        <button type="submit" className="kv-btn">{t.t('f360.search')}</button>
+        <Button type="submit">{t.t('f360.search')}</Button>
       </form>
       {results.length > 0 && (
         <ul className="kv-list">
@@ -92,14 +93,14 @@ export default async function Farmer360Page({ searchParams }: { searchParams: { 
           ))}
         </ul>
       )}
-      {searchParams.q && results.length === 0 && !profile && !notice && <p className="kv-empty">{t.t('f360.noResults')}</p>}
-      {!searchParams.q && !searchParams.u && <p className="kv-empty">{t.t('f360.noSelection')}</p>}
+      {searchParams.q && results.length === 0 && !profile && !notice && <EmptyState title={t.t('f360.noResults')} />}
+      {!searchParams.q && !searchParams.u && <EmptyState title={t.t('f360.noSelection')} />}
 
       {profile && (
         <>
           <h2>
             {profile.identity.name ?? t.t('common.dash')}
-            {profile.risk && <span className={bandClass(profile.risk.band)}>{profile.risk.band} · {profile.risk.score}</span>}
+            {profile.risk && <StatusPill tone={bandTone(profile.risk.band)} label={`${profile.risk.band} · ${profile.risk.score}`} />}
           </h2>
           <p className="kv-muted">
             {profile.identity.phone ?? t.t('common.dash')} · {profile.identity.languageCode} · {profile.identity.tenants.join(' · ') || t.t('f360.noTenant')} · {t.t('f360.memberSince', { d: profile.identity.memberSince.slice(0, 10) })}
@@ -124,7 +125,7 @@ export default async function Farmer360Page({ searchParams }: { searchParams: { 
               </li>
             ))}
           </ul>
-          {profile.timeline.length === 0 && <p className="kv-empty">{t.t('f360.timelineEmpty')}</p>}
+          {profile.timeline.length === 0 && <EmptyState title={t.t('f360.timelineEmpty')} />}
 
           <h3>{t.t('f360.engagementHeading')}</h3>
           <p>
@@ -148,7 +149,7 @@ export default async function Farmer360Page({ searchParams }: { searchParams: { 
             <input type="hidden" name="userId" value={profile.identity.userId} />
             <label htmlFor="reason" className="kv-field__label">{t.t('f360.reasonLabel')}</label>
             <textarea id="reason" name="reason" className="kv-input" required minLength={EXPORT_REASON_MIN} maxLength={500} />
-            <button type="submit" className="kv-btn">{t.t('f360.export')}</button>
+            <Button type="submit">{t.t('f360.export')}</Button>
           </form>
           <p className="kv-detail__muted">{t.t('f360.deliveryTruth')}</p>
         </>

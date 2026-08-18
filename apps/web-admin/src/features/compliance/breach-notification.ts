@@ -5,6 +5,14 @@
 // summarises. Both are read by people with an incentive to check them, so the rule throughout is stricter than
 // elsewhere: a tile whose inputs could not be read says so, and "all quiet" is only claimable when everything was
 // actually looked at.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): `stepClass`/`clockClass`/`retentionClass`/`attentionClass`/
+// `certificationClass` now return a `StatusTone` instead of a raw `kv-status kv-status--X` string — disposition
+// (c), same pattern as `ai-governance.ts`. Call sites render `<StatusPill tone={...} label={...} />`. This file's
+// own `stepClass` and `attentionClass` are unrelated to the identically-named exports in `support/emergency.ts`
+// and `trust/trust-safety.ts` respectively — different files, different vocabularies, out of this slice's scope.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ===================== the checklist (W043) ===================== */
 
@@ -40,12 +48,12 @@ export function stepState(l: Pick<ChecklistLine, 'outcome'>): 'done' | 'notAppli
 /** `not_applicable` is NOT a failure colour — it is a decision somebody recorded with a reason. `outstanding` is a
  *  warning rather than a failure too: nobody has done anything wrong yet, they simply have work left. A RETRACTED claim
  *  IS a failure colour, because a withdrawn statutory claim is the one state on this screen that needs explaining. */
-export function stepClass(l: Pick<ChecklistLine, 'outcome'>): string {
+export function stepTone(l: Pick<ChecklistLine, 'outcome'>): StatusTone {
   switch (stepState(l)) {
-    case 'done': return 'kv-status kv-status--ok';
-    case 'notApplicable': return 'kv-status kv-status--muted';
-    case 'retracted': return 'kv-status kv-status--danger';
-    default: return 'kv-status kv-status--warn';
+    case 'done': return 'success';
+    case 'notApplicable': return 'neutral';
+    case 'retracted': return 'danger';
+    default: return 'warning';
   }
 }
 
@@ -91,14 +99,14 @@ export type NotifyClock =
 
 /** `unmeasured` is a WARNING, not a pass. A breach with no detection time cannot be shown to have been notified in
  *  time, and on a register a regulator reads that is the first thing they ask about. */
-export function clockClass(c: NotifyClock | null | undefined): string {
-  if (!c) return 'kv-status kv-status--muted';
+export function clockTone(c: NotifyClock | null | undefined): StatusTone {
+  if (!c) return 'neutral';
   switch (c.kind) {
-    case 'met': return 'kv-status kv-status--ok';
-    case 'breached': return 'kv-status kv-status--danger';
+    case 'met': return 'success';
+    case 'breached': return 'danger';
     // Under 24 hours left on a 72-hour statutory window is urgent, not merely noteworthy.
-    case 'due': return c.hoursLeft <= 24 ? 'kv-status kv-status--danger' : 'kv-status kv-status--warn';
-    default: return 'kv-status kv-status--warn';
+    case 'due': return c.hoursLeft <= 24 ? 'danger' : 'warning';
+    default: return 'warning';
   }
 }
 export function clockKey(c: NotifyClock | null | undefined): 'met' | 'due' | 'breached' | 'unmeasured' {
@@ -188,22 +196,22 @@ export function retentionKey(t: RetentionTile | null | undefined): 'complete' | 
   if (t.total <= 0) return 'none';
   return t.complete ? 'complete' : 'partial';
 }
-export function retentionClass(t: RetentionTile | null | undefined): string {
+export function retentionTone(t: RetentionTile | null | undefined): StatusTone {
   const k = retentionKey(t);
-  if (k === 'complete') return 'kv-status kv-status--ok';
-  if (k === 'unavailable') return 'kv-status kv-status--muted';
-  return 'kv-status kv-status--warn';
+  if (k === 'complete') return 'success';
+  if (k === 'unavailable') return 'neutral';
+  return 'warning';
 }
 
 export type AttentionSeverity = 'overdue' | 'blocking' | 'due_soon' | 'info';
 export interface AttentionItem { id: string; severity: AttentionSeverity; messageKey: string; params?: Record<string, string>; href?: string }
 
-export function attentionClass(s: AttentionSeverity): string {
+export function attentionTone(s: AttentionSeverity): StatusTone {
   switch (s) {
-    case 'overdue': return 'kv-status kv-status--danger';
-    case 'blocking': return 'kv-status kv-status--danger';
-    case 'due_soon': return 'kv-status kv-status--warn';
-    default: return 'kv-status kv-status--muted';
+    case 'overdue': return 'danger';
+    case 'blocking': return 'danger';
+    case 'due_soon': return 'warning';
+    default: return 'neutral';
   }
 }
 
@@ -239,8 +247,8 @@ export interface Certification { code: string; name: string; state: Certificatio
 export function certificationHeld(c: Pick<Certification, 'claimable'> | null | undefined): boolean {
   return c?.claimable === true;
 }
-export function certificationClass(c: Certification): string {
-  return certificationHeld(c) ? 'kv-status kv-status--ok' : 'kv-status kv-status--muted';
+export function certificationTone(c: Certification): StatusTone {
+  return certificationHeld(c) ? 'success' : 'neutral';
 }
 
 /* ===================== the export receipt (all surfaces) ===================== */

@@ -3,9 +3,9 @@
 // Σ over stripes says how much of the money it is confident about.
 import {
   formatMinor, shortHash, referenceText, txnTypeCell, magnitudeText, windowTooWide, MAX_LIVE_WINDOW_DAYS,
-  balanceClass, balanceLabel, legDirection, legClass,
-  outcomeClass, verifyMessageKey, isIncident, claimClass, claimKey,
-  sumWarningKey, sumClass, chainCoverage, driftClass, driftDirection,
+  balanceTone, balanceLabel, legDirection, legTone,
+  outcomeTone, verifyMessageKey, isIncident, claimTone, claimKey,
+  sumWarningKey, sumTone, chainCoverage, driftTone, driftDirection,
   type TxnBalance, type VerifyResult, type ChainClaim, type Confidence, type AccountGroup, type BalanceCheck,
 } from '../features/ledger/ledger';
 
@@ -70,9 +70,9 @@ describe('ADMIN-6 console · W065 the balance readout', () => {
   });
   it('BALANCED is the only green state; unbalanced is a FAILURE', () => {
     // An unbalanced ledger transaction means money was created or destroyed — W006's alert calls it page-immediately.
-    expect(balanceClass(bal())).toContain('ok');
-    expect(balanceClass(bal({ balanced: false, sumText: '₹1.00' }))).toContain('danger');
-    expect(balanceClass(null)).toContain('muted');
+    expect(balanceTone(bal())).toBe('success');
+    expect(balanceTone(bal({ balanced: false, sumText: '₹1.00' }))).toBe('danger');
+    expect(balanceTone(null)).toBe('neutral');
   });
   it('labels the three states distinctly', () => {
     expect(balanceLabel(bal())).toBe('Σ = 0 verified');
@@ -95,9 +95,9 @@ describe('ADMIN-6 console · W065 the balance readout', () => {
     expect(legDirection('000')).toBe('unknown');
     expect(legDirection('12.50')).toBe('unknown');
     expect(legDirection(null)).toBe('unknown');
-    expect(legClass('unknown')).toContain('danger');
-    expect(legClass('credit')).toContain('ok');
-    expect(legClass('debit')).toContain('warn');
+    expect(legTone('unknown')).toBe('danger');
+    expect(legTone('credit')).toBe('success');
+    expect(legTone('debit')).toBe('warning');
   });
   it('a signed zero is UNKNOWN, whichever way the guards are ordered', () => {
     // Kept for the BEHAVIOUR, not for the reason I first gave it. Two mutants survived on this function — the numeric
@@ -115,10 +115,10 @@ describe('ADMIN-6 console · W065 the balance readout', () => {
 describe('ADMIN-6 console · the chain verification result', () => {
   it('BROKEN is a failure and INCOMPLETE is a warning — different next moves', () => {
     // Broken means raise an incident; incomplete means widen the window and run it again.
-    expect(outcomeClass('broken')).toContain('danger');
-    expect(outcomeClass('incomplete')).toContain('warn');
-    expect(outcomeClass('intact')).toContain('ok');
-    expect(outcomeClass(null)).toContain('muted');
+    expect(outcomeTone('broken')).toBe('danger');
+    expect(outcomeTone('incomplete')).toBe('warning');
+    expect(outcomeTone('intact')).toBe('success');
+    expect(outcomeTone(null)).toBe('neutral');
   });
   it('splits BROKEN by kind — an edited row and a missing row are different investigations', () => {
     expect(verifyMessageKey(verified({ outcome: 'broken', kind: 'hash_mismatch' }))).toBe('hashMismatch');
@@ -153,17 +153,17 @@ describe('ADMIN-6 console · the chain verification result', () => {
 describe('ADMIN-6 console · the chain CLAIM W006 and W059 printed on faith', () => {
   it('NEVER VERIFIED is a WARNING, not muted — and was the true state of every account', () => {
     // Both screens printed "intact" while nothing on the platform read prev_hash. An unverified chain is not neutral.
-    expect(claimClass(null)).toContain('warn');
-    expect(claimClass({ kind: 'never' })).toContain('warn');
+    expect(claimTone(null)).toBe('warning');
+    expect(claimTone({ kind: 'never' })).toBe('warning');
     expect(claimKey(null)).toBe('never');
     expect(claimKey({ kind: 'never' })).toBe('never');
   });
   it('BROKEN is a failure; INTACT is the only green; INCOMPLETE stays a warning', () => {
     const broken: ChainClaim = { kind: 'broken', at: 'x', entryId: '7' };
-    expect(claimClass(broken)).toContain('danger');
+    expect(claimTone(broken)).toBe('danger');
     expect(claimKey(broken)).toBe('broken');
-    expect(claimClass({ kind: 'verified', outcome: 'intact', at: 'x', entriesChecked: 1 })).toContain('ok');
-    expect(claimClass({ kind: 'verified', outcome: 'incomplete', at: 'x', entriesChecked: 1 })).toContain('warn');
+    expect(claimTone({ kind: 'verified', outcome: 'intact', at: 'x', entriesChecked: 1 })).toBe('success');
+    expect(claimTone({ kind: 'verified', outcome: 'incomplete', at: 'x', entriesChecked: 1 })).toBe('warning');
     expect(claimKey({ kind: 'verified', outcome: 'incomplete', at: 'x', entriesChecked: 1 })).toBe('incomplete');
   });
   it('reports COVERAGE — 16 stripes with 1 verification is not "intact"', () => {
@@ -184,23 +184,23 @@ describe('ADMIN-6 console · Σ over stripes, with its confidence', () => {
   });
   it('a TRUSTWORTHY Σ carries no warning', () => {
     expect(sumWarningKey(group().confidence)).toBeNull();
-    expect(sumClass(group().confidence)).toContain('ok');
+    expect(sumTone(group().confidence)).toBe('success');
   });
   it('a HOLE in the stripe set is a failure with its own message', () => {
     // A missing stripe row means money landed somewhere the query did not look, and a confident total would
     // under-report the platform's money with nothing on screen admitting it.
     const c: Confidence = { trustworthy: false, reason: 'missing_stripes', missing: [7] };
     expect(sumWarningKey(c)).toBe('missingStripes');
-    expect(sumClass(c)).toContain('danger');
+    expect(sumTone(c)).toBe('danger');
   });
   it('FEWER stripes than configured is its own message, not the same one', () => {
     const c: Confidence = { trustworthy: false, reason: 'fewer_than_configured', found: 2, configured: 16 };
     expect(sumWarningKey(c)).toBe('fewerThanConfigured');
-    expect(sumClass(c)).toContain('danger');
+    expect(sumTone(c)).toBe('danger');
   });
   it('an absent confidence is treated as fine — the server always sends one', () => {
     expect(sumWarningKey(null)).toBeNull();
-    expect(sumClass(undefined)).toContain('ok');
+    expect(sumTone(undefined)).toBe('success');
   });
 });
 
@@ -211,9 +211,9 @@ describe('ADMIN-6 console · the balance drift check', () => {
     deltaMinor: '0', deltaText: '₹0.00', matches: true, truthSource: 'ledger_entries', ...over,
   });
   it('a match is green and a DRIFT is a failure', () => {
-    expect(driftClass(chk())).toContain('ok');
-    expect(driftClass(chk({ matches: false, deltaMinor: '100' }))).toContain('danger');
-    expect(driftClass(null)).toContain('muted');
+    expect(driftTone(chk())).toBe('success');
+    expect(driftTone(chk({ matches: false, deltaMinor: '100' }))).toBe('danger');
+    expect(driftTone(null)).toBe('neutral');
   });
   it('OVER means the holder was shown money they do not have', () => {
     // The direction is the whole message: over means somebody's app says they have more than the ledger does.

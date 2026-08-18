@@ -37,6 +37,7 @@ import {
 } from '../../../../features/billing/subscription-write';
 import { changePlanAction, addAddonAction, setCancelAtPeriodEndAction } from '../../actions';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -91,11 +92,11 @@ export default async function SubscriptionPage({ params, searchParams }: {
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : !sub ? (
         // A real tenant with no subscription is a legitimate state — an approved tenant awaiting its first plan.
-        <p className="kv-empty">{t.t('sub.none')}</p>
+        <EmptyState title={t.t('sub.none')} />
       ) : (
         <>
           <p className="kv-card__title">
-            <span className="kv-status">{t.t(`sub.state.${sub.status ?? 'unknown'}`)}</span>
+            <StatusPill tone="neutral" label={t.t(`sub.state.${sub.status ?? 'unknown'}`)} />
             {' '}{t.t(`sub.cycle.${sub.billingCycle === 'annual' ? 'annual' : 'monthly'}`)}
           </p>
 
@@ -139,11 +140,11 @@ export default async function SubscriptionPage({ params, searchParams }: {
           <section aria-labelledby="next-h">
             <h2 id="next-h">{t.t('sub.nextTitle')}</h2>
             {isTerminalSubscription(sub.status) ? (
-              <p className="kv-notice" role="note">{t.t('sub.terminalNote')}</p>
+              <Callout tone="warning">{t.t('sub.terminalNote')}</Callout>
             ) : (
               <>
                 <ul className="kv-chips" role="list">
-                  {possibleNext(sub.status).map((n) => <li key={n} className="kv-status kv-status--muted">{t.t(`sub.state.${n}`)}</li>)}
+                  {possibleNext(sub.status).map((n) => <li key={n}><StatusPill tone="neutral" label={t.t(`sub.state.${n}`)} /></li>)}
                 </ul>
                 <p className="kv-field__hint">{t.t('sub.nextHint')}</p>
               </>
@@ -153,7 +154,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
           {/* Add-ons: what is billing now, first; what has ended, still visible because it explains old invoices. */}
           <section aria-labelledby="addons-h">
             <h2 id="addons-h">{t.t('sub.addonsTitle')}</h2>
-            {addons.length === 0 ? <p className="kv-empty">{t.t('sub.noAddons')}</p> : (
+            {addons.length === 0 ? <EmptyState title={t.t('sub.noAddons')} /> : (
               <ul className="kv-list" role="list">
                 {addons.map((a) => {
                   const active = addonActive(a, nowIso);
@@ -161,9 +162,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
                     <li key={a.id ?? a.addonCode} className="kv-card">
                       <p className="kv-card__title">
                         {a.addonCode ?? t.t('common.dash')}
-                        {' '}<span className={`kv-status ${active ? 'kv-status--ok' : 'kv-status--muted'}`}>
-                          {t.t(active ? 'sub.addonActive' : 'sub.addonEnded')}
-                        </span>
+                        {' '}<StatusPill tone={active ? 'success' : 'neutral'} label={t.t(active ? 'sub.addonActive' : 'sub.addonEnded')} />
                       </p>
                       <p className="kv-detail__muted">
                         {t.t('sub.addonQty', { n: String(a.quantity ?? 1) })}
@@ -184,9 +183,9 @@ export default async function SubscriptionPage({ params, searchParams }: {
             <h2 id="hist-h">{t.t('sub.historyTitle')}</h2>
             <p className="kv-field__hint">{t.t('sub.historyHint')}</p>
             {unsettledCount(history) > 0 && (
-              <p className="kv-notice" role="note">{t.t('sub.unsettled', { n: String(unsettledCount(history)) })}</p>
+              <Callout tone="warning">{t.t('sub.unsettled', { n: String(unsettledCount(history)) })}</Callout>
             )}
-            {history.length === 0 ? <p className="kv-empty">{t.t('sub.noInvoices')}</p> : (
+            {history.length === 0 ? <EmptyState title={t.t('sub.noInvoices')} /> : (
               <ul className="kv-list" role="list">
                 {history.map((i) => {
                   const status = invoiceStatusKey(i.status);
@@ -194,7 +193,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
                     <li key={i.id ?? i.invoiceNo} className="kv-card">
                       <p className="kv-card__title">
                         <Link href={`/billing/invoices/${encodeURIComponent(String(i.id ?? ''))}`}>{i.invoiceNo ?? t.t('common.dash')}</Link>
-                        {' '}<span className="kv-status">{t.t(`billing.status.${status}`)}</span>
+                        {' '}<StatusPill tone="neutral" label={t.t(`billing.status.${status}`)} />
                       </p>
                       <p className="kv-detail__muted">
                         {formatMoneyMinor(String(i.totalMinor ?? '0'), i.currency ?? cur)}
@@ -212,7 +211,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
               A finished subscription shows no controls at all — it is re-sold, not edited — and the page says which
               of the two reasons applies rather than rendering a form the server would refuse. */}
           {!canChangeSubscription(sub.status) ? (
-            <p className="kv-notice" role="note">{t.t(`sub.blocked.${blocked}`)}</p>
+            <Callout tone="warning">{t.t(`sub.blocked.${blocked}`)}</Callout>
           ) : (
             <>
               <details className="kv-card kv-limit-form">
@@ -240,7 +239,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
                   <p className="kv-field__hint">{t.t('sub.immediateHint')}</p>
                   <label htmlFor="cpReason" className="kv-field__label">{t.t('billing.reason')}</label>
                   <input id="cpReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-                  <button type="submit" className="kv-btn">{t.t('sub.changePlanSubmit')}</button>
+                  <Button type="submit">{t.t('sub.changePlanSubmit')}</Button>
                 </form>
               </details>
 
@@ -263,7 +262,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
                   <p className="kv-field__hint">{t.t('sub.addonEndsHint')}</p>
                   <label htmlFor="adReason" className="kv-field__label">{t.t('billing.reason')}</label>
                   <input id="adReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-                  <button type="submit" className="kv-btn">{t.t('sub.addAddonSubmit')}</button>
+                  <Button type="submit">{t.t('sub.addAddonSubmit')}</Button>
                 </form>
               </details>
 
@@ -281,9 +280,9 @@ export default async function SubscriptionPage({ params, searchParams }: {
                   <input type="hidden" name="cancel" value={cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? 'false' : 'true'} />
                   <label htmlFor="ccReason" className="kv-field__label">{t.t('billing.reason')}</label>
                   <input id="ccReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-                  <button type="submit" className={`kv-btn${cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? '' : ' kv-btn--danger'}`}>
+                  <Button type="submit" variant={cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? 'primary' : 'danger'}>
                     {t.t(cancelToggleAction(sub.cancelAtPeriodEnd) === 'revoke' ? 'sub.revokeCancelSubmit' : 'sub.cancelSubmit')}
-                  </button>
+                  </Button>
                 </form>
               </details>
               <p className="kv-field__hint">{t.t('sub.noCancelNowNote')}</p>

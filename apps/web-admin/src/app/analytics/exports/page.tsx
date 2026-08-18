@@ -18,6 +18,7 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { exportReportAction } from '../actions';
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
   deliveryKey, metricKey, mismatchClass, mismatchKey, receiptComplete, truncatedKey, watermarkKey,
 } from '../../../features/reports/dashboard';
@@ -63,13 +64,13 @@ export default async function ExportsPage({ searchParams }: { searchParams: { ok
         <p className="kv-page__sub">{t.t('rp.exports.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`rp.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`rp.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`rp.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`rp.err.${searchParams.error}`)}</Callout> : null}
 
       {/* THE DELIVERY CONTRACT, first — it qualifies every row below. */}
-      <p className="kv-note">{t.t(deliveryKey(false))}</p>
-      {meta ? <p className="kv-note">{meta.fetchLogging}</p> : null}
+      <Callout>{t.t(deliveryKey(false))}</Callout>
+      {meta ? <Callout>{meta.fetchLogging}</Callout> : null}
       {meta ? (
         <p className={mismatchClass(meta.digestMismatches)}>
           {t.t(mismatchKey(meta.digestMismatches), { n: String(meta.digestMismatches) })}
@@ -97,17 +98,14 @@ export default async function ExportsPage({ searchParams }: { searchParams: { ok
           </div>
           <input type="hidden" name="bucket" value="day" />
           <p className="kv-field__help">{t.t('rp.exports.permission')}</p>
-          <button className="kv-btn" type="submit">{t.t('rp.exports.generate')}</button>
+          <Button type="submit">{t.t('rp.exports.generate')}</Button>
         </form>
       </section>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('rp.exports.empty.title')}</h2>
-          {/* Recording began with this release, so an empty list is the absence of a record rather than a clean history
-              — the same distinction the residency log and the step-up log had to make. */}
-          <p>{t.t('rp.exports.empty.body')}</p>
-        </div>
+        // Recording began with this release, so an empty list is the absence of a record rather than a clean history
+        // — the same distinction the residency log and the step-up log had to make.
+        <EmptyState title={t.t('rp.exports.empty.title')} body={t.t('rp.exports.empty.body')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('rp.exports.caption')}</caption>
@@ -142,9 +140,7 @@ export default async function ExportsPage({ searchParams }: { searchParams: { ok
                   <br /><small>{r.digestBasis}</small>
                 </td>
                 <td>
-                  <span className={r.watermarked ? 'kv-badge is-ok' : 'kv-badge is-warn'}>
-                    {t.t(watermarkKey(r.watermarked))}
-                  </span>
+                  <StatusPill tone="neutral" icon={false} label={t.t(watermarkKey(r.watermarked))} />
                 </td>
                 <td>{r.generatedAt.slice(0, 16).replace('T', ' ')}<br /><small>{r.generatedByAdminId.slice(0, 8)}</small></td>
               </tr>

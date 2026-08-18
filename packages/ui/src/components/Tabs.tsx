@@ -1,8 +1,18 @@
 // packages/ui/src/components/Tabs.tsx · DEV-17 (Phase D3, packages/ui port batch 3 —
-// navigation/layout primitives). Ports `.kvw-tabs`/`.kvw-tab`/`.count` verbatim from `web-components.css`
-// lines 242-253 (dark overrides 522-523), matching the real canon demo (`web-component-library.html`
+// navigation/layout primitives). Ports `.kvw-tabs`/`.count` verbatim, and `.kvw-tab` ADAPTED (not
+// verbatim — DEV-59 correction, see `qa_dev58_audit.md` §1(c)#3: this file's own comment previously
+// overclaimed "ported verbatim", which DEV-58 QA found inaccurate) from `web-components.css` lines
+// 242-253 (dark overrides 522-523), matching the real canon demo (`web-component-library.html`
 // lines 237-240: `role="tablist"` + `role="tab"` buttons with `aria-selected`, one carrying a `.count`
 // badge — plain `<button>` elements, canon ships zero keyboard-navigation JS on this static page).
+// Canon actually splits `.kvw-tab` (base, button-context) from `.kvw-tabs a.kvw-tab` (an anchor-only
+// variant adding `text-decoration:none; display:inline-flex; align-items:center`). This component
+// renders `<button role="tab">` exclusively (never `<a>`), so its base `.kvw-tab` rule below merges
+// in the anchor-variant's `display:inline-flex; align-items:center` plus an ADDED `font-family:
+// inherit` (a real, necessary cross-browser fix: `<button>` elements do not inherit font the way
+// `<a>` does by default, unlike canon's anchor-based demo, which never needed it) — a reasonable,
+// disclosed button-vs-anchor semantic adaptation, not a visual bug, but genuinely not byte-identical
+// to canon's own `.kvw-tab` rule.
 //
 // KEYBOARD BEHAVIOR (WAI-ARIA Tabs Pattern, automatic activation) — an a11y ENHANCEMENT over the canon's
 // own static markup (disclosed, not a silent deviation: the canon page has no interactivity at all, this
@@ -86,7 +96,11 @@ export function Tabs({ items, activeKey, onChange, ariaLabel, className }: TabsP
   );
 }
 
-/** CSS fragment ported verbatim from `web-components.css` lines 242-253, dark overrides 522-523. */
+/** CSS fragment. `.kvw-tabs`/`.count`/dark overrides ported verbatim from `web-components.css` lines
+ * 242-253, 522-523. `.kvw-tab` itself is an ADAPTED merge of canon's base rule + its `.kvw-tabs a.kvw-tab`
+ * anchor-variant declarations, plus an added `font-family: inherit` — see header comment for the full
+ * DEV-59-corrected rationale (this rule intentionally remains a byte-level MISMATCH in
+ * `verify-canon-fidelity.js`, not an oversight). */
 export const tabsStyles = `
 .kvw-tabs { display: flex; gap: var(--space-1); border-block-end: 1px solid var(--border-subtle); margin-block-end: var(--space-5); }
 .kvw-tab {

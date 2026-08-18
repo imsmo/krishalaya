@@ -18,11 +18,12 @@ import { getTranslator } from '../../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../../features/nav/nav-model';
 import type { SchemeRow } from '../../../../../features/schemes-registry/scheme';
 import {
-  VersionRow, Coverage, versionKind, versionClass, showsSignature, coverageNote,
+  VersionRow, Coverage, versionKind, versionTone, showsSignature, coverageNote,
   projectionDiverged, openDraft, publishBlockedReason, feeText,
 } from '../../../../../features/schemes-registry/version';
 import { dryRunRulesAction, saveDraftAction, discardDraftAction } from '../../../actions';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -95,11 +96,11 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
       {diverged && <p className="kv-error" role="alert">{t.t('sv.diverged', { live: String(liveVersion), published: String(current?.version ?? 0) })}</p>}
 
       {/* The honest coverage note. `unrecorded` is the case the canon's mock cannot show and every real scheme has. */}
-      {note === 'unrecorded' && <p className="kv-notice">{t.t('sv.coverage.unrecorded', { below: String(coverage.unrecordedBelow ?? 0) })}</p>}
-      {note === 'none' && <p className="kv-notice">{t.t('sv.coverage.none')}</p>}
+      {note === 'unrecorded' && <Callout>{t.t('sv.coverage.unrecorded', { below: String(coverage.unrecordedBelow ?? 0) })}</Callout>}
+      {note === 'none' && <Callout>{t.t('sv.coverage.none')}</Callout>}
 
       <h2>{t.t('sv.historyHeading')}</h2>
-      {rows.length === 0 && !versionsNotice && <p className="kv-empty">{t.t('sv.noVersions')}</p>}
+      {rows.length === 0 && !versionsNotice && <EmptyState title={t.t('sv.noVersions')} />}
       <ul className="kv-timeline">
         {rows.map((v) => {
           const kind = versionKind(v);
@@ -107,7 +108,7 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
             <li key={v.id} className="kv-timeline__item">
               <p className="kv-timeline__head">
                 <Link href={`/schemes-registry/schemes/${encodeURIComponent(id)}/versions/${encodeURIComponent(v.id)}`}>v{v.version}</Link>{' '}
-                <span className={versionClass(kind)}>{t.t(`sv.kind.${kind}`)}</span>
+                <StatusPill tone={versionTone(kind)} label={t.t(`sv.kind.${kind}`)} />
               </p>
               <p>{v.changeReason}</p>
               <p className="kv-detail__muted">
@@ -131,7 +132,7 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
           {/* MAKER-CHECKER BY ABSENCE. When the viewer drafted this change there is no Publish form here at all —
               only the line naming the rule. A disabled button teaches people to ask for a permission they hold. */}
           {block === 'sameActor'
-            ? <p className="kv-notice">{t.t('sv.publishBlocked.sameActor')}</p>
+            ? <Callout>{t.t('sv.publishBlocked.sameActor')}</Callout>
             : <p className="kv-muted">{t.t('sv.publishElsewhere')} <Link href={`/schemes-registry/schemes/${encodeURIComponent(id)}/versions/${encodeURIComponent(draft.id)}`}>{t.t('sv.openReview')}</Link></p>}
           <form action={discardDraftAction} className="kv-card kv-action-card">
             <input type="hidden" name="id" value={id} />
@@ -139,7 +140,7 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
             <p className="kv-field__hint">{t.t('sv.discardHint')}</p>
             <label className="kv-field__label" htmlFor="discardReason">{t.t('sr.reason')}</label>
             <input id="discardReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn kv-btn--danger">{t.t('sv.discard')}</button>
+            <Button type="submit" variant="danger">{t.t('sv.discard')}</Button>
           </form>
         </>
       )}
@@ -155,10 +156,10 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
       {sp.ok === 'dryRun' && (
         <div className="kv-card">
           <p>
-            {sp.pv !== '' && sp.pv !== undefined && <span className="kv-status">{t.t('dr.published', { n: String(sp.pv) })}</span>}{' '}
-            <span className="kv-status">{t.t('dr.draft', { n: String(sp.dv) })}</span>{' '}
-            <span className="kv-status kv-status--ok">{t.t('dr.gained', { n: String(sp.g) })}</span>{' '}
-            <span className={Number(sp.l) > 0 ? 'kv-status kv-status--err' : 'kv-status kv-status--ok'}>{t.t('dr.lost', { n: String(sp.l) })}</span>
+            {sp.pv !== '' && sp.pv !== undefined && <StatusPill tone="neutral" label={t.t('dr.published', { n: String(sp.pv) })} />}{' '}
+            <StatusPill tone="neutral" label={t.t('dr.draft', { n: String(sp.dv) })} />{' '}
+            <StatusPill tone="success" label={t.t('dr.gained', { n: String(sp.g) })} />{' '}
+            <StatusPill tone={Number(sp.l) > 0 ? 'danger' : 'success'} label={t.t('dr.lost', { n: String(sp.l) })} />
           </p>
           {sp.xo === '1'
             ? <p className="kv-success" role="status">{t.t('dr.expansionOnly')}</p>
@@ -173,12 +174,12 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
         <input type="hidden" name="id" value={id} />
         <label className="kv-field__label" htmlFor="dryRules">{t.t('dr.rulesLabel')}</label>
         <input id="dryRules" name="eligibilityRules" className="kv-input" defaultValue="" placeholder={t.t('dr.rulesHint')} />
-        <button type="submit" className="kv-btn kv-btn--secondary">{t.t('dr.run')}</button>
+        <Button type="submit">{t.t('dr.run')}</Button>
       </form>
       <p className="kv-detail__muted">{t.t('dr.vocabulary')}</p>
 
       <h2>{draft ? t.t('sv.editDraftHeading') : t.t('sv.openDraftHeading')}</h2>
-      <p className="kv-notice">{t.t('sv.draftNothingLive')}</p>
+      <Callout>{t.t('sv.draftNothingLive')}</Callout>
       <form action={saveDraftAction} className="kv-card kv-action-card">
         <input type="hidden" name="id" value={id} />
         <p className="kv-field__hint">{t.t('sv.blankMeansUnchanged')}</p>
@@ -211,7 +212,7 @@ export default async function SchemeVersionsPage({ params, searchParams }: { par
         <input id="processingFeeMinor" name="processingFeeMinor" className="kv-input" inputMode="numeric" placeholder={scheme.processingFeeMinor} />
         <label className="kv-field__label" htmlFor="draftReason">{t.t('sr.reason')}</label>
         <input id="draftReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-        <button type="submit" className="kv-btn">{draft ? t.t('sv.saveDraft') : t.t('sv.openDraft')}</button>
+        <Button type="submit">{draft ? t.t('sv.saveDraft') : t.t('sv.openDraft')}</Button>
       </form>
     </section>
   );

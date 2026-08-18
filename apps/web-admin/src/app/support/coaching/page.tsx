@@ -21,6 +21,7 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { createCoachingAction, settleCoachingAction } from '../actions';
+import { Button, Callout, EmptyState, StatusPill, type StatusTone } from '@krishalaya/ui';
 import {
   COACHING_KINDS, SETTLE_STATUSES, splitCoaching, overdueSettlement,
   MIN_RATIONALE, MIN_OUTCOME, type CoachingRow,
@@ -32,9 +33,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('coach.title'), robots: { index: false, follow: false } };
 }
 
-const STATE_CLASS: Record<string, string> = {
-  scheduled: 'kv-status--warn', held: 'kv-status--ok', missed: 'kv-status--danger',
-  cancelled: 'kv-status--muted', closed: 'kv-status--muted',
+const STATE_TONE: Record<string, StatusTone> = {
+  scheduled: 'warning', held: 'success', missed: 'danger',
+  cancelled: 'neutral', closed: 'neutral',
 };
 
 export default async function CoachingPage(
@@ -63,7 +64,7 @@ export default async function CoachingPage(
       <td>{c.agentUserId}</td>
       <td>{c.tenantSlug ?? c.tenantId}</td>
       <td>{t.t(`coach.kind.${c.kind}`)}</td>
-      <td><span className={`kv-status ${STATE_CLASS[c.status] ?? ''}`}>{t.t(`coach.state.${c.status}`)}</span></td>
+      <td><StatusPill tone={STATE_TONE[c.status] ?? 'neutral'} label={t.t(`coach.state.${c.status}`)} /></td>
       <td>{c.rationale}</td>
       <td>
         {/* the signal, shown as the thing it actually was rather than as an id */}
@@ -107,7 +108,7 @@ export default async function CoachingPage(
       <h1>{t.t('coach.title')}</h1>
       <p className="kv-muted">{t.t('coach.lead')}</p>
       {/* said before any record is shown, because it governs all of them */}
-      <p className="kv-notice" role="note">{t.t('coach.sensitiveNote')}</p>
+      <Callout>{t.t('coach.sensitiveNote')}</Callout>
 
       {okKey && <p className="kv-success" role="status">{t.t(`coach.ok.${okKey}`)}</p>}
       {errKey && (
@@ -124,13 +125,13 @@ export default async function CoachingPage(
           )}
 
           <h2>{t.t('coach.actionsTitle')}</h2>
-          {actions.length === 0 ? <p className="kv-empty">{t.t('coach.none')}</p> : (
+          {actions.length === 0 ? <EmptyState title={t.t('coach.none')} /> : (
             <table className="kv-table">{head}<tbody>{actions.map(row)}</tbody></table>
           )}
 
           {/* Its own section, deliberately. Half the point of this ledger. */}
           <h2>{t.t('coach.dismissalsTitle')}</h2>
-          {dismissals.length === 0 ? <p className="kv-empty">{t.t('coach.none')}</p> : (
+          {dismissals.length === 0 ? <EmptyState title={t.t('coach.none')} /> : (
             <table className="kv-table">{head}<tbody>{dismissals.map(row)}</tbody></table>
           )}
 
@@ -155,7 +156,7 @@ export default async function CoachingPage(
                 </select>
                 <label htmlFor="settle-outcome" className="kv-field__label">{t.t('coach.outcome')}</label>
                 <textarea id="settle-outcome" name="outcome" className="kv-input" rows={3} minLength={MIN_OUTCOME} maxLength={4000} />
-                <button type="submit" className="kv-btn">{t.t('coach.settle')}</button>
+                <Button type="submit">{t.t('coach.settle')}</Button>
               </form>
             </details>
           )}
@@ -181,7 +182,7 @@ export default async function CoachingPage(
               <p className="kv-field__hint">{t.t('coach.signalNoteHint')}</p>
               <label htmlFor="new-rationale" className="kv-field__label">{t.t('coach.rationale')}</label>
               <textarea id="new-rationale" name="rationale" className="kv-input" rows={3} required minLength={MIN_RATIONALE} maxLength={4000} />
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('coach.create')}</button>
+              <Button type="submit" variant="danger">{t.t('coach.create')}</Button>
             </form>
           </details>
         </>

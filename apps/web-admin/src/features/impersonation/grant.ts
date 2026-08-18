@@ -4,6 +4,13 @@
 // active is non-terminal), the deliberate safety bounds (READ-ONLY scope only, time-boxed ttl, ≥8-char
 // justification). The minted act-as TOKEN is a secret handled server-side only — it is NEVER modelled, returned,
 // or rendered here.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B): `actionOutcomeClass` (the one `kv-badge`-returning helper in
+// this file) now returns a `StatusTone` — disposition (c), same pattern as `ai-governance.ts`'s DEV-60 conversion.
+// Call site renders `<StatusPill tone={...} label={...} />`. `enforcementClass`/`sessionShapeClass` in this file
+// are `kv-note`-returning and OUT OF SCOPE — `kv-note` never matched the 98/29 population's own grep.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 // Mirrors admin-api grant.state.ts.
 export const GRANT_STATUSES = ['active', 'ended', 'expired', 'revoked'] as const;
@@ -127,10 +134,10 @@ export function actionOutcomeKey(outcome: string): string {
   return known.includes(outcome) ? `imp.outcome.${outcome}` : 'imp.outcome.other';
 }
 
-export function actionOutcomeClass(outcome: string): string {
-  if (outcome === 'refused_grant') return 'kv-badge is-danger';
-  if (outcome === 'refused_write') return 'kv-badge is-warn';
-  return 'kv-badge';
+export function actionOutcomeTone(outcome: string): StatusTone {
+  if (outcome === 'refused_grant') return 'danger';
+  if (outcome === 'refused_write') return 'warning';
+  return 'neutral';
 }
 
 /**

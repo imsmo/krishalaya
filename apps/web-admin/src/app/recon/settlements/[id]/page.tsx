@@ -16,8 +16,9 @@ import { notFound } from 'next/navigation';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
+import { Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  balanceClass, balanceKey, formatMinor, lineAgreementKey, pdfClass, pdfKey, shortHash,
+  balanceTone, balanceKey, formatMinor, lineAgreementKey, pdfTone, pdfKey, shortHash,
 } from '../../../../features/payouts/payouts';
 
 export const dynamic = 'force-dynamic';
@@ -69,7 +70,7 @@ export default async function SettlementStatementPage({ params }: { params: { id
         <span>{d?.statementNo ?? params.id.slice(0, 8)}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {d ? (
         <>
@@ -96,22 +97,22 @@ export default async function SettlementStatementPage({ params }: { params: { id
                 the same argument as W065's zero-sum equation on a ledger transaction. */}
             <p className="kv-pre">{d.equation}</p>
             <p>
-              <span className={balanceClass(d.balanced)}>{t.t(balanceKey(d.balanced))}</span>
+              <StatusPill tone={balanceTone(d.balanced)} label={t.t(balanceKey(d.balanced))} />
             </p>
             {d.balanceDetail ? (
-              <p className="kv-note is-danger" role="alert">
+              <Callout tone="danger" live="assertive">
                 {t.t('po.stmt.drift', {
                   stored: formatMinor(d.balanceDetail.storedNetMinor),
                   computed: formatMinor(d.balanceDetail.computedNetMinor),
                 })}
-              </p>
+              </Callout>
             ) : null}
           </section>
 
           {/* ---------------- W442 · THE PDF ANCHOR ---------------- */}
           <section className="kv-panel" aria-labelledby="po-pdf">
             <h2 id="po-pdf" className="kv-panel__title">{t.t('po.pdf.title')}</h2>
-            <p><span className={pdfClass(d.pdf.kind)}>{t.t(pdfKey(d.pdf.kind))}</span></p>
+            <p><StatusPill tone={pdfTone(d.pdf.kind)} label={t.t(pdfKey(d.pdf.kind))} /></p>
             {/* `never_hashed` IS THE STATE ALMOST EVERY EXISTING STATEMENT IS IN, and the screen says so rather than
                 printing "signed" over nothing. W442 called the PDF "hash-anchored to the zero-sum ledger" and until
                 0114 there was no column to anchor it in — so the mismatch state it documents could not be represented,
@@ -122,29 +123,26 @@ export default async function SettlementStatementPage({ params }: { params: { id
                 <div><dt>{t.t('po.pdf.at')}</dt><dd>{(d.pdf.at ?? '').slice(0, 16).replace('T', ' ')}</dd></div>
               </dl>
             ) : null}
-            {d.pdf.kind === 'never_hashed' ? <p className="kv-note is-warn">{t.t('po.pdf.neverHashedNote')}</p> : null}
+            {d.pdf.kind === 'never_hashed' ? <Callout tone="warning">{t.t('po.pdf.neverHashedNote')}</Callout> : null}
             {d.pdf.kind === 'mismatch' ? (
-              <p className="kv-note is-danger" role="alert">
+              <Callout tone="danger" live="assertive">
                 {t.t('po.pdf.mismatchNote', {
                   expected: shortHash(d.pdf.expected), actual: shortHash(d.pdf.actual),
                 })}
-              </p>
+              </Callout>
             ) : null}
             {/* NO DOWNLOAD BUTTON, and the absence is named. W442 describes "delivery via 15-min signed URL,
                 audit-logged per fetch"; admin-api has no media-presign route (media and S3 live in apps/api), which is
                 the ADMIN-1-Q2 gap still open. A button that 404s is worse than a line saying where the file is. */}
-            {d.pdf.kind !== 'not_generated' ? <p className="kv-note">{t.t('po.pdf.noDownload')}</p> : null}
+            {d.pdf.kind !== 'not_generated' ? <Callout tone="info">{t.t('po.pdf.noDownload')}</Callout> : null}
           </section>
 
           {/* ---------------- THE ORDER LINES ---------------- */}
-          {lineNote ? <p className="kv-note is-danger" role="alert">{t.t(lineNote)}</p> : null}
-          {d.linesTruncated ? <p className="kv-note is-warn">{t.t('po.stmt.linesTruncated')}</p> : null}
+          {lineNote ? <Callout tone="danger" live="assertive">{t.t(lineNote)}</Callout> : null}
+          {d.linesTruncated ? <Callout tone="warning">{t.t('po.stmt.linesTruncated')}</Callout> : null}
 
           {d.lines.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('po.stmt.noLines.title')}</h2>
-              <p>{t.t('po.stmt.noLines.body')}</p>
-            </div>
+            <EmptyState variant="empty" title={t.t('po.stmt.noLines.title')} body={t.t('po.stmt.noLines.body')} />
           ) : (
             <table className="kv-table">
               <caption className="kv-table__caption">{t.t('po.stmt.lines', { n: String(d.lineTotals.count) })}</caption>
@@ -186,12 +184,12 @@ export default async function SettlementStatementPage({ params }: { params: { id
               transaction per statement — so this links to the explorer scoped to the period rather than to a txn id
               this row does not have. Named rather than faked: a "View txn" button resolving to nothing would be the
               claim-with-nothing-behind-it pattern in its smallest form. */}
-          <p className="kv-note">
+          <Callout tone="info">
             {t.t('po.stmt.noTxnLink')}{' '}
             <Link href={`/recon/ledger?from=${encodeURIComponent(d.periodStart)}&to=${encodeURIComponent(d.periodEnd)}&txnType=settlement`}>
               {t.t('po.stmt.openLedger')}
             </Link>
-          </p>
+          </Callout>
         </>
       ) : null}
     </main>

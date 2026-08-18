@@ -14,8 +14,9 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
-import { ackLagText, truthClass, type AckLag } from '../../../features/schemes/portal-sync';
+import { ackLagText, truthTone, type AckLag } from '../../../features/schemes/portal-sync';
 
+import { Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -50,7 +51,7 @@ export default async function PortalSyncPage() {
         <>
           {/* The one sentence the whole page hangs on, asserted from the data rather than assumed. */}
           {d.neverSynced
-            ? <p className="kv-notice" role="note">{t.t('ps.neverSynced')}</p>
+            ? <Callout>{t.t('ps.neverSynced')}</Callout>
             : <p className="kv-error" role="alert">{t.t('ps.syncClaimAppeared')}</p>}
 
           <table className="kv-table">
@@ -72,13 +73,13 @@ export default async function PortalSyncPage() {
                     <td>{lag.key === 'measured'
                       ? t.t('ps.lagMeasured', { h: lag.hours, n: lag.over })
                       : <span className="kv-detail__muted">{t.t('ps.lagUnmeasured')}</span>}</td>
-                    <td><span className={truthClass(r.truth)}>{t.t(`ps.truth.${r.truth}` as never)}</span></td>
+                    <td><StatusPill tone={truthTone(r.truth)} label={t.t(`ps.truth.${r.truth}` as never)} /></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-          {d.portals.length === 0 && <p className="kv-empty">{t.t('ps.empty')}</p>}
+          {d.portals.length === 0 && <EmptyState title={t.t('ps.empty')} />}
           <p className="kv-detail__muted">{t.t('ps.manualFooter', { n: String(d.manualAuthorities) })}</p>
           <p className="kv-detail__muted">{t.t('ps.pendingBasis')}</p>
 

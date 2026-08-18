@@ -18,10 +18,11 @@ import { adminGet, AdminApiError } from '../../../../../../lib/admin-client';
 import { getTranslator } from '../../../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../../../features/nav/nav-model';
 import {
-  VersionRow, DiffEntry, versionKind, versionClass, showsSignature, orderedDiff, isAddition, feeChanged, feeText,
+  VersionRow, DiffEntry, versionKind, versionTone, showsSignature, orderedDiff, isAddition, feeChanged, feeText,
 } from '../../../../../../features/schemes-registry/version';
 import { publishVersionAction, discardDraftAction } from '../../../../actions';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -63,7 +64,7 @@ export default async function VersionReviewPage({ params, searchParams }: { para
   return (
     <section>
       <p className="kv-backlink"><Link href={`/schemes-registry/schemes/${encodeURIComponent(id)}/versions`}>{t.t('sv.backVersions')}</Link></p>
-      <h1>v{v.version} <span className={versionClass(kind)}>{t.t(`sv.kind.${kind}`)}</span></h1>
+      <h1>v{v.version} <StatusPill tone={versionTone(kind)} label={t.t(`sv.kind.${kind}`)} /></h1>
       {okKey && <p className="kv-success" role="status">{t.t(`sv.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`sv.error.${errKey}`)}</p>}
 
@@ -77,9 +78,9 @@ export default async function VersionReviewPage({ params, searchParams }: { para
       <h2>{t.t('sv.diffHeading', { against: v.comparedWith === null ? t.t('sv.nothing') : `v${v.comparedWith}` })}</h2>
       {/* A fee change gets its own line above the table. It is the field an approver is most likely to skim past and
           the only one that takes money out of a farmer's wallet. */}
-      {feeChanged(diff) && <p className="kv-notice">{t.t('sv.feeChanged')}</p>}
+      {feeChanged(diff) && <Callout>{t.t('sv.feeChanged')}</Callout>}
       {diff.length === 0
-        ? <p className="kv-empty">{t.t('sv.noDiff')}</p>
+        ? <EmptyState title={t.t('sv.noDiff')} />
         : (
           <table className="kv-table kv-diff">
             <thead><tr><th>{t.t('sv.field')}</th><th>{t.t('sv.from')}</th><th>{t.t('sv.to')}</th></tr></thead>
@@ -110,10 +111,10 @@ export default async function VersionReviewPage({ params, searchParams }: { para
               {/* OPTIONAL. A checker who agrees has nothing to add, and a mandatory note produces 'ok'. */}
               <input id="checkerNote" name="checkerNote" className="kv-input" maxLength={1000} />
               <p className="kv-field__hint">{t.t('sv.checkerNoteOptional')}</p>
-              <button type="submit" className="kv-btn">{t.t('sv.publish', { v: String(v.version) })}</button>
+              <Button type="submit">{t.t('sv.publish', { v: String(v.version) })}</Button>
             </form>
           ) : (
-            <p className="kv-notice">{t.t('sv.publishBlocked.sameActor')}</p>
+            <Callout>{t.t('sv.publishBlocked.sameActor')}</Callout>
           )}
 
           <form action={discardDraftAction} className="kv-card kv-action-card">
@@ -124,12 +125,12 @@ export default async function VersionReviewPage({ params, searchParams }: { para
             <p className="kv-field__hint">{t.t('sv.discardHint')}</p>
             <label className="kv-field__label" htmlFor="reviewDiscardReason">{t.t('sr.reason')}</label>
             <input id="reviewDiscardReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-            <button type="submit" className="kv-btn kv-btn--danger">{t.t('sv.discard')}</button>
+            <Button type="submit" variant="danger">{t.t('sv.discard')}</Button>
           </form>
         </>
       )}
 
-      {v.status !== 'draft' && <p className="kv-notice">{t.t('sv.immutable')}</p>}
+      {v.status !== 'draft' && <Callout>{t.t('sv.immutable')}</Callout>}
     </section>
   );
 }

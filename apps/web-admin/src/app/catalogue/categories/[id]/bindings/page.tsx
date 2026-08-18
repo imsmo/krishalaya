@@ -17,6 +17,9 @@ import { getTranslator } from '../../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../../features/nav/nav-model';
 import { bindAttributeAction, updateBindingAction, unbindAttributeAction } from '../../../actions';
 import {
+  Button, Callout, EmptyState, StatusPill, type StatusTone,
+} from '@krishalaya/ui';
+import {
   splitBindings, MIN_REASON, type BindingRow, type AttributeRow,
 } from '../../../../../features/catalogue/eav';
 
@@ -51,8 +54,8 @@ export default async function BindingsPage(
    *  not a variant of the first — a conditional binding is optional until its condition fires. */
   const requiredLabel = (b: BindingRow) =>
     b.condition ? t.t('bind.requiredConditional') : t.t(b.isRequired ? 'bind.requiredYes' : 'bind.requiredNo');
-  const requiredClass = (b: BindingRow) =>
-    b.condition ? 'kv-status--warn' : b.isRequired ? 'kv-status--ok' : 'kv-status--muted';
+  const requiredTone = (b: BindingRow): StatusTone =>
+    b.condition ? 'warning' : b.isRequired ? 'success' : 'neutral';
 
   const row = (b: BindingRow) => (
     <tr key={b.id}>
@@ -62,7 +65,7 @@ export default async function BindingsPage(
       </td>
       <td>{t.t(`attr.type.${b.dataType}`)}{b.unitCode ? ` · ${b.unitCode}` : ''}</td>
       <td>{b.source ?? (b.isLocal ? t.t('bind.local') : t.t('common.dash'))}</td>
-      <td><span className={`kv-status ${requiredClass(b)}`}>{requiredLabel(b)}</span></td>
+      <td><StatusPill tone={requiredTone(b)} label={requiredLabel(b)} /></td>
       <td>{b.showInFilters ? '✓' : t.t('common.dash')}</td>
       <td>{b.showOnCard ? '✓' : t.t('common.dash')}</td>
       <td>{b.condition ? <code>{JSON.stringify(b.condition)}</code> : t.t('common.dash')}</td>
@@ -100,7 +103,7 @@ export default async function BindingsPage(
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : rows.length === 0 ? (
         // a real statement: nothing bound AND nothing inherited means a listing here is asked for no attributes at all
-        <p className="kv-empty">{t.t('bind.none')}</p>
+        <EmptyState title={t.t('bind.none')} />
       ) : (
         <>
           <table className="kv-table">{head}<tbody>{local.map(row)}{inherited.map(row)}</tbody></table>
@@ -108,7 +111,7 @@ export default async function BindingsPage(
             {t.t('bind.footer', { local: String(view?.localCount ?? local.length), inherited: String(view?.inheritedCount ?? inherited.length) })}
           </p>
           {/* said once, not per row */}
-          {inherited.length > 0 && <p className="kv-notice" role="note">{view?.note ?? t.t('bind.inheritedHint')}</p>}
+          {inherited.length > 0 && <Callout>{view?.note ?? t.t('bind.inheritedHint')}</Callout>}
         </>
       )}
 
@@ -142,7 +145,7 @@ export default async function BindingsPage(
           <label htmlFor="b-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="b-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
           <p className="kv-field__hint">{t.t('eav.reasonHint')}</p>
-          <button type="submit" className="kv-btn">{t.t('bind.bind')}</button>
+          <Button type="submit">{t.t('bind.bind')}</Button>
         </form>
       </details>
 
@@ -176,14 +179,14 @@ export default async function BindingsPage(
               <input id="e-sort" name="sortOrder" type="number" min={0} max={32767} className="kv-input" />
               <label htmlFor="e-breason" className="kv-field__label">{t.t('eav.reason')}</label>
               <input id="e-breason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-              <button type="submit" className="kv-btn">{t.t('bind.save')}</button>
+              <Button type="submit">{t.t('bind.save')}</Button>
             </form>
           </details>
 
           <details className="kv-card kv-limit-form">
             <summary className="kv-card__title">{t.t('bind.unbindTitle')}</summary>
             {/* stated before the control: this is not a delete */}
-            <p className="kv-notice" role="note">{t.t('bind.unbindHint')}</p>
+            <Callout>{t.t('bind.unbindHint')}</Callout>
             <form action={unbindAttributeAction} className="kv-form">
               <input type="hidden" name="categoryId" value={params.id} />
               <label htmlFor="u-bind" className="kv-field__label">{t.t('bind.attribute')}</label>
@@ -193,7 +196,7 @@ export default async function BindingsPage(
               </select>
               <label htmlFor="u-breason" className="kv-field__label">{t.t('eav.reason')}</label>
               <input id="u-breason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('bind.unbind')}</button>
+              <Button type="submit" variant="danger">{t.t('bind.unbind')}</Button>
             </form>
           </details>
         </>

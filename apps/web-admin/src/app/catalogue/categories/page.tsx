@@ -12,6 +12,7 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { COMMERCE_KINDS, isCommerceKind, commerceKindKey, type CategoryRow } from '../../../features/catalogue/catalogue';
 import { createCategoryAction } from '../actions';
 
+import { Button, Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -40,7 +41,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: {
     { header: t.t('cat.name'), cell: (r) => r.defaultName },
     { header: t.t('cat.commerceKind'), cell: (r) => t.t(`cat.kind.${commerceKindKey(r.commerceKind)}`) },
     { header: t.t('cat.depth'), cell: (r) => r.depth.toLocaleString() },
-    { header: t.t('cat.active'), cell: (r) => <span className={`kv-status ${r.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>{r.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')}</span> },
+    { header: t.t('cat.active'), cell: (r) => <StatusPill tone={r.isActive ? 'success' : 'neutral'} label={r.isActive ? t.t('cat.activeYes') : t.t('cat.activeNo')} /> },
   ];
   const qp = (extra: Record<string, string | undefined>) => {
     const sp = new URLSearchParams();
@@ -61,30 +62,30 @@ export default async function CategoriesPage({ searchParams }: { searchParams: {
       {/* The catalogue section nav. It existed only on the lookup-types page, so the categories screen was a dead end —
           PC-56 ADMIN-3 adds it here alongside the two new lenses. */}
       <nav className="kv-filters" aria-label={t.t('cat.nav')}>
-        <Link href="/catalogue" className="kv-chip">{t.t('cat.navTypes')}</Link>
-        <Link href="/catalogue/categories" className="kv-chip is-active" aria-current="true">{t.t('cat.navCategories')}</Link>
-        <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
-        <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
-        <Link href="/catalogue/translations" className="kv-chip">{t.t('cat.navTranslations')}</Link>
-        <Link href="/catalogue/crops" className="kv-chip">{t.t('cat.navCrops')}</Link>
+        <Chip as={Link} href="/catalogue">{t.t('cat.navTypes')}</Chip>
+        <Chip as={Link} href="/catalogue/categories" aria-current="true" active>{t.t('cat.navCategories')}</Chip>
+        <Chip as={Link} href="/catalogue/attributes">{t.t('cat.navAttributes')}</Chip>
+        <Chip as={Link} href="/catalogue/units">{t.t('cat.navUnits')}</Chip>
+        <Chip as={Link} href="/catalogue/translations">{t.t('cat.navTranslations')}</Chip>
+        <Chip as={Link} href="/catalogue/crops">{t.t('cat.navCrops')}</Chip>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('cat.filterKind')}>
-        <Link href={qp({ commerceKind: undefined, cursor: undefined })} className={`kv-chip${!commerceKind ? ' is-active' : ''}`} aria-current={!commerceKind ? 'true' : undefined}>{t.t('cat.filterAll')}</Link>
+        <Chip as={Link} href={qp({ commerceKind: undefined, cursor: undefined })} aria-current={!commerceKind ? 'true' : undefined} active={!commerceKind}>{t.t('cat.filterAll')}</Chip>
         {COMMERCE_KINDS.map((k) => (
-          <Link key={k} href={qp({ commerceKind: k, cursor: undefined })} className={`kv-chip${commerceKind === k ? ' is-active' : ''}`} aria-current={commerceKind === k ? 'true' : undefined}>{t.t(`cat.kind.${k}`)}</Link>
+          <Chip as={Link} key={k} href={qp({ commerceKind: k, cursor: undefined })} aria-current={commerceKind === k ? 'true' : undefined} active={commerceKind === k}>{t.t(`cat.kind.${k}`)}</Chip>
         ))}
       </nav>
       <nav className="kv-filters" aria-label={t.t('cat.filterActive')}>
-        <Link href={qp({ active: undefined, cursor: undefined })} className={`kv-chip${!active ? ' is-active' : ''}`} aria-current={!active ? 'true' : undefined}>{t.t('cat.filterAll')}</Link>
-        <Link href={qp({ active: 'true', cursor: undefined })} className={`kv-chip${active === 'true' ? ' is-active' : ''}`} aria-current={active === 'true' ? 'true' : undefined}>{t.t('cat.activeYes')}</Link>
-        <Link href={qp({ active: 'false', cursor: undefined })} className={`kv-chip${active === 'false' ? ' is-active' : ''}`} aria-current={active === 'false' ? 'true' : undefined}>{t.t('cat.activeNo')}</Link>
+        <Chip as={Link} href={qp({ active: undefined, cursor: undefined })} aria-current={!active ? 'true' : undefined} active={!active}>{t.t('cat.filterAll')}</Chip>
+        <Chip as={Link} href={qp({ active: 'true', cursor: undefined })} aria-current={active === 'true' ? 'true' : undefined} active={active === 'true'}>{t.t('cat.activeYes')}</Chip>
+        <Chip as={Link} href={qp({ active: 'false', cursor: undefined })} aria-current={active === 'false' ? 'true' : undefined} active={active === 'false'}>{t.t('cat.activeNo')}</Chip>
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('cat.categoriesEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -110,7 +111,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: {
           <input name="sortOrder" className="kv-input" inputMode="numeric" defaultValue="100" />
           <label className="kv-field__label">{t.t('cat.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('cat.createCategorySubmit')}</button>
+          <Button type="submit">{t.t('cat.createCategorySubmit')}</Button>
         </form>
       </details>
     </section>

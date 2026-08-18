@@ -16,10 +16,11 @@ import { notFound } from 'next/navigation';
 import { requireAdmin, adminUserId } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
-  canApproveReinstate, canRequestReinstate, canRevokeSession, dormancyClass, dormancyKey, gateKey,
-  pastLineIsNotSuspended, reinstateAbsenceKey, restrictionClass, restrictionCodeLabel, restrictionKey,
-  restrictionState, revokeLabelKey, sessionClass, sessionKey, sessionState, statusClass, statusKey, stepUpOutcomeClass,
+  canApproveReinstate, canRequestReinstate, canRevokeSession, dormancyTone, dormancyKey, gateKey,
+  pastLineIsNotSuspended, reinstateAbsenceKey, restrictionTone, restrictionCodeLabel, restrictionKey,
+  restrictionState, revokeLabelKey, sessionTone, sessionKey, sessionState, statusTone, statusKey, stepUpOutcomeTone,
   suspendKindKey, type Dormancy,
 } from '../../../features/staff/operators';
 import {
@@ -90,19 +91,19 @@ export default async function OperatorPage({ params, searchParams }: {
         <span>{params.id.slice(0, 8)}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`st.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`st.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`st.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`st.err.${searchParams.error}`)}</Callout> : null}
 
       {o ? (
         <>
           <header className="kv-page__head">
             <h1>{t.t('st.operator.title')} {o.adminUserId.slice(0, 8)}</h1>
             <p className="kv-page__sub">
-              <span className={statusClass(o.status)}>{t.t(statusKey(o.status))}</span>{' '}
-              <span className={dormancyClass(o.dormancy)}>{t.t(dormancyKey(o.dormancy), {
+              <StatusPill tone={statusTone(o.status)} label={t.t(statusKey(o.status))} />{' '}
+              <StatusPill tone={dormancyTone(o.dormancy)} label={t.t(dormancyKey(o.dormancy), {
                 days: String(o.dormancy.daysSinceSeen), toSuspend: String(o.dormancy.daysToSuspend ?? 0),
-              })}</span>
+              })} />
               {isSelf ? <> · {t.t('st.operator.thisIsYou')}</> : null}
             </p>
           </header>
@@ -120,35 +121,35 @@ export default async function OperatorPage({ params, searchParams }: {
             </dl>
             {/* NO NAME, AND THE ABSENCE IS EXPLAINED — the admin token carries no name claim, so a display name here
                 would be invented. */}
-            <p className="kv-note">{t.t('st.operator.noName')}</p>
+            <Callout tone="info">{t.t('st.operator.noName')}</Callout>
             {pastLineIsNotSuspended(o.dormancy)
-              ? <p className="kv-note is-danger">{t.t('st.dormancy.notYetSuspended')}</p> : null}
+              ? <Callout tone="danger">{t.t('st.dormancy.notYetSuspended')}</Callout> : null}
           </section>
 
           {/* PERMISSIONS — both sets. */}
           <section className="kv-panel" aria-labelledby="st-perms">
             <h2 id="st-perms" className="kv-panel__title">{t.t('st.perms.title')}</h2>
-            {o.permissions.godMode ? <p className="kv-note is-warn">{t.t('st.perms.godMode')}</p> : null}
+            {o.permissions.godMode ? <Callout tone="warning">{t.t('st.perms.godMode')}</Callout> : null}
             <p>{t.t('st.perms.counts', {
               effective: String(o.permissions.effective.length),
               granted: String(o.permissions.grantedByRoles.length),
             })}</p>
             {o.permissions.removedByRestriction.length > 0 ? (
-              <p className="kv-note is-warn">
+              <Callout tone="warning">
                 {t.t('st.perms.removed', { list: o.permissions.removedByRestriction.join(', ') })}
-              </p>
+              </Callout>
             ) : null}
-            <p className="kv-note">
+            <Callout tone="info">
               {t.t('st.perms.source')}{' '}<Link href="/staff/roles">{t.t('st.nav.roles')}</Link>
-            </p>
+            </Callout>
           </section>
 
           {/* RESTRICTIONS — deny only, and the rationale quoted from the backend so there is one wording. */}
           <section className="kv-panel" aria-labelledby="st-restr">
             <h2 id="st-restr" className="kv-panel__title">{t.t('st.restriction.title')}</h2>
-            <p className="kv-note is-warn">{o.denyOnlyRationale}</p>
+            <Callout tone="warning">{o.denyOnlyRationale}</Callout>
             {o.restrictions.length === 0 ? (
-              <p className="kv-note">{t.t('st.restriction.none')}</p>
+              <Callout tone="info">{t.t('st.restriction.none')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -172,7 +173,7 @@ export default async function OperatorPage({ params, searchParams }: {
                           {r.expiresAt ? <><br /><small>{t.t('st.restriction.until', { at: r.expiresAt.slice(0, 10) })}</small></> : null}
                         </td>
                         <td>
-                          <span className={restrictionClass(state)}>{t.t(restrictionKey(state))}</span>
+                          <StatusPill tone={restrictionTone(state)} label={t.t(restrictionKey(state))} />
                           {/* A restriction that removes nothing is not protecting anything, and a reader told "in
                               force" would believe it is why something else is failing. */}
                           {state === 'inert' ? <><br /><small>{t.t('st.restriction.inertWhy')}</small></> : null}
@@ -184,7 +185,7 @@ export default async function OperatorPage({ params, searchParams }: {
                               <input type="hidden" name="restrictionId" value={r.id} />
                               <input className="kv-input kv-input--sm" name="reason" required minLength={10}
                                 placeholder={t.t('st.restriction.liftReason')} />
-                              <button className="kv-btn kv-btn--link" type="submit">{t.t('st.restriction.lift')}</button>
+                              <Button type="submit" variant="tertiary">{t.t('st.restriction.lift')}</Button>
                             </form>
                           ) : r.liftedAt ? <small>{t.t('st.restriction.liftedBy', { who: (r.liftedByAdminId ?? '').slice(0, 8), at: r.liftedAt.slice(0, 10) })}</small> : null}
                         </td>
@@ -212,16 +213,16 @@ export default async function OperatorPage({ params, searchParams }: {
                 <p className="kv-field__help">{t.t('st.restriction.expiryHelp')}</p>
               </div>
               <input type="hidden" name="adminUserId" value={o.adminUserId} />
-              <button className="kv-btn" type="submit">{t.t('st.restriction.add')}</button>
+              <Button type="submit">{t.t('st.restriction.add')}</Button>
             </form>
           </section>
 
           {/* SESSIONS */}
           <section className="kv-panel" aria-labelledby="st-sess">
             <h2 id="st-sess" className="kv-panel__title">{t.t('st.session.title')}</h2>
-            <p className="kv-note">{t.t('st.session.takesEffect', { when: o.revocationTakesEffect })}</p>
+            <Callout tone="info">{t.t('st.session.takesEffect', { when: o.revocationTakesEffect })}</Callout>
             {o.sessions.length === 0 ? (
-              <p className="kv-note">{t.t('st.session.none')}</p>
+              <Callout tone="info">{t.t('st.session.none')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -244,7 +245,7 @@ export default async function OperatorPage({ params, searchParams }: {
                           {s.tokenExpiresAt ? <><br /><small>{t.t('st.session.expires', { at: s.tokenExpiresAt.slice(11, 16) })}</small></> : null}
                         </td>
                         <td>
-                          <span className={sessionClass(state)}>{t.t(sessionKey(state))}</span>
+                          <StatusPill tone={sessionTone(state)} label={t.t(sessionKey(state))} />
                           {s.revokeReason ? <><br /><small>{s.revokeReason}</small></> : null}
                         </td>
                         <td>
@@ -254,7 +255,7 @@ export default async function OperatorPage({ params, searchParams }: {
                               <input type="hidden" name="sessionId" value={s.sessionId} />
                               <input className="kv-input kv-input--sm" name="reason" required minLength={5}
                                 placeholder={t.t('st.session.reasonHint')} />
-                              <button className="kv-btn kv-btn--danger" type="submit">{t.t(revokeLabelKey(state))}</button>
+                              <Button type="submit" variant="danger">{t.t(revokeLabelKey(state))}</Button>
                             </form>
                           ) : null}
                         </td>
@@ -272,15 +273,15 @@ export default async function OperatorPage({ params, searchParams }: {
 
             {o.status === 'active' ? (
               <form action={suspendOperatorAction}>
-                <p className="kv-note is-warn">{t.t('st.access.suspendWhat')}</p>
-                {isSelf ? <p className="kv-note">{t.t('st.access.suspendSelf')}</p> : null}
+                <Callout tone="warning">{t.t('st.access.suspendWhat')}</Callout>
+                {isSelf ? <Callout tone="info">{t.t('st.access.suspendSelf')}</Callout> : null}
                 <div className="kv-field">
                   <label className="kv-field__label" htmlFor="st-sreason">{t.t('st.col.reason')}</label>
                   <input className="kv-input" id="st-sreason" name="reason" required minLength={10} maxLength={2000}
                     placeholder={t.t('st.access.suspendReasonHint')} />
                 </div>
                 <input type="hidden" name="adminUserId" value={o.adminUserId} />
-                <button className="kv-btn kv-btn--danger" type="submit">{t.t('st.access.suspend')}</button>
+                <Button type="submit" variant="danger">{t.t('st.access.suspend')}</Button>
               </form>
             ) : (
               <>
@@ -292,8 +293,8 @@ export default async function OperatorPage({ params, searchParams }: {
                 </dl>
 
                 {/* **REINSTATEMENT: TWO PEOPLE, AND THE CONTROL IS ABSENT RATHER THAN DISABLED.** */}
-                <p className="kv-note is-warn">{t.t('st.reinstate.rule')}</p>
-                {absence ? <p className="kv-note">{t.t(absence)}</p> : null}
+                <Callout tone="warning">{t.t('st.reinstate.rule')}</Callout>
+                {absence ? <Callout tone="info">{t.t(absence)}</Callout> : null}
 
                 {showRequest ? (
                   <form action={requestReinstateAction}>
@@ -302,23 +303,23 @@ export default async function OperatorPage({ params, searchParams }: {
                       <input className="kv-input" id="st-rrreason" name="reason" required minLength={10} maxLength={2000} />
                     </div>
                     <input type="hidden" name="adminUserId" value={o.adminUserId} />
-                    <button className="kv-btn" type="submit">{t.t('st.reinstate.request')}</button>
+                    <Button type="submit">{t.t('st.reinstate.request')}</Button>
                   </form>
                 ) : null}
 
                 {suspension?.reinstateRequestedByAdminId ? (
-                  <p className="kv-note">
+                  <Callout tone="info">
                     {t.t('st.reinstate.requestedBy', {
                       who: suspension.reinstateRequestedByAdminId.slice(0, 8),
                       reason: suspension.reinstateReason ?? '',
                     })}
-                  </p>
+                  </Callout>
                 ) : null}
 
                 {showApprove ? (
                   <form action={reinstateOperatorAction}>
                     <input type="hidden" name="adminUserId" value={o.adminUserId} />
-                    <button className="kv-btn kv-btn--primary" type="submit">{t.t('st.reinstate.approve')}</button>
+                    <Button type="submit">{t.t('st.reinstate.approve')}</Button>
                   </form>
                 ) : null}
               </>
@@ -329,7 +330,7 @@ export default async function OperatorPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="st-stepup">
             <h2 id="st-stepup" className="kv-panel__title">{t.t('st.stepUp.title')}</h2>
             {o.stepUps.length === 0 ? (
-              <p className="kv-note">{t.t('st.stepUp.none')}</p>
+              <Callout tone="info">{t.t('st.stepUp.none')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -347,7 +348,7 @@ export default async function OperatorPage({ params, searchParams }: {
                       <td>{t.t(gateKey(e.gate))}</td>
                       <td>{e.actionRoute}</td>
                       <td>
-                        <span className={stepUpOutcomeClass(e.outcome)}>{t.t(`st.stepUp.${e.outcome}`)}</span>
+                        <StatusPill tone={stepUpOutcomeTone(e.outcome)} label={t.t(`st.stepUp.${e.outcome}`)} />
                         {e.detail ? <><br /><small>{e.detail}</small></> : null}
                       </td>
                     </tr>

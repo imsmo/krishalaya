@@ -5,6 +5,16 @@
 //   • a rate LIMIT (a column) and hourly USAGE (a Redis counter this realm cannot reach);
 //   • a delivery retrying and a delivery that will never arrive again (8 attempts, then silence);
 //   • a signature that failed and a secret WE never configured — our outage in a security error's clothes.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B): the 4 `kv-badge`-returning helpers below (keyStateClass/
+// verdictClass/circuitClass/fallbackClass) now return a `StatusTone` — disposition (c), domain logic stays, only
+// the OUTPUT becomes a semantic token. Call sites render `<StatusPill tone={...} label={...} />`. DISCLOSED VISUAL
+// CHANGE: `.kv-badge`'s `is-ok`/`is-warn`/`is-danger` modifiers have no matching CSS in this app (same dead-CSS
+// finding as `ai-governance.ts`'s DEV-60 conversion), so these badges have rendered uniform grey — this swap makes
+// them render real canon colour for the first time. `successClass`/`backlogClass` in this file are `kv-note`-
+// returning and OUT OF SCOPE — `kv-note` never matched the 98/29 population's own grep.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export type Registry = 'tenant' | 'partner';
 export type KeyState = 'active' | 'revoked' | 'dormant' | 'never_used';
@@ -57,12 +67,12 @@ export function keyStateKey(state: KeyState): string {
   return known.includes(state) ? `ap11.key.${state}` : 'ap11.key.unknown';
 }
 
-export function keyStateClass(state: KeyState): string {
-  if (state === 'revoked') return 'kv-badge';
-  if (state === 'dormant') return 'kv-badge is-warn';
+export function keyStateTone(state: KeyState): StatusTone {
+  if (state === 'revoked') return 'neutral';
+  if (state === 'dormant') return 'warning';
   // **A KEY NOBODY HAS EVER USED IS A WARNING, NOT A NEUTRAL FACT.** On a live registry it is an integration that never
   // shipped, and an unused credential is a credential nobody would notice being stolen.
-  return state === 'never_used' ? 'kv-badge is-warn' : 'kv-badge is-ok';
+  return state === 'never_used' ? 'warning' : 'success';
 }
 
 /** W106's own phrasing: "04 Apr (100d unused)". The number is the lever an operator pulls to decide on revocation. */
@@ -154,10 +164,10 @@ export function verdictKey(r: Pick<InboundRow, 'signatureOk' | 'signatureReason'
   return known.includes(r.signatureReason ?? '') ? `ap11.sig.${r.signatureReason}` : 'ap11.sig.failedUnknown';
 }
 
-export function verdictClass(r: Pick<InboundRow, 'signatureOk'>): string {
-  if (r.signatureOk === true) return 'kv-badge is-ok';
+export function verdictTone(r: Pick<InboundRow, 'signatureOk'>): StatusTone {
+  if (r.signatureOk === true) return 'success';
   // An undecided verdict is a receipt that was written and never settled: the process died mid-handling. A finding.
-  return r.signatureOk === null ? 'kv-badge is-warn' : 'kv-badge is-danger';
+  return r.signatureOk === null ? 'warning' : 'danger';
 }
 
 /** **A REFUSED CALLBACK IS `ignored`, NOT `failed`.** "Failed" says the platform tried and could not; what happened is
@@ -200,11 +210,11 @@ export function circuitKey(state: string): string {
   return known.includes(state) ? `ap11.circ.${state}` : 'ap11.circ.unknown';
 }
 
-export function circuitClass(state: string): string {
-  if (state === 'open') return 'kv-badge is-danger';
-  if (state === 'half_open') return 'kv-badge is-warn';
-  if (state === 'closed') return 'kv-badge is-ok';
-  return 'kv-badge is-warn';
+export function circuitTone(state: string): StatusTone {
+  if (state === 'open') return 'danger';
+  if (state === 'half_open') return 'warning';
+  if (state === 'closed') return 'success';
+  return 'warning';
 }
 
 /** **THE SENTENCE THAT KEEPS THIS COLUMN HONEST.** A breaker is per-process: with eight pods, one open breaker means an
@@ -224,10 +234,10 @@ export function fallbackKey(c: Pick<CircuitCard, 'fallbackStrategy' | 'isMoney' 
   return c.isMoney ? 'ap11.fb.forbidden' : 'ap11.fb.none';
 }
 
-export function fallbackClass(c: Pick<CircuitCard, 'fallbackStrategy' | 'isMoney' | 'fallbackActive'>): string {
-  if (c.fallbackActive) return 'kv-badge is-warn';
-  if (!c.fallbackStrategy && !c.isMoney) return 'kv-badge is-warn';
-  return 'kv-badge';
+export function fallbackTone(c: Pick<CircuitCard, 'fallbackStrategy' | 'isMoney' | 'fallbackActive'>): StatusTone {
+  if (c.fallbackActive) return 'warning';
+  if (!c.fallbackStrategy && !c.isMoney) return 'warning';
+  return 'neutral';
 }
 
 /** The two columns W007 draws that have no source anywhere on this platform. Rendered as absent, with the reason. */

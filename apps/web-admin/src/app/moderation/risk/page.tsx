@@ -15,8 +15,9 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
-import { RISK_BANDS, bandClass, readingClass, shareText, censusShortfall, type BandReading } from '../../../features/trust/trust-safety';
+import { RISK_BANDS, bandTone, readingTone, shareText, censusShortfall, type BandReading } from '../../../features/trust/trust-safety';
 
+import { Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -68,7 +69,7 @@ export default async function RiskOpsPage({ searchParams }: { searchParams: { ba
               const s = shareText(b!.shares?.[bd]);
               return (
                 <div key={bd} className="kv-card kv-stat">
-                  <div className="kv-stat__label"><span className={bandClass(bd)}>{t.t(`ts.band.${bd}`)}</span></div>
+                  <div className="kv-stat__label"><StatusPill tone={bandTone(bd)} label={t.t(`ts.band.${bd}`)} /></div>
                   <div className="kv-stat__value">{(b!.census[bd] ?? 0).toLocaleString()}</div>
                   {/* A share with no active-user denominator is a dash, never 0% — under "trusted" that would be the
                       most alarming false statement on the board. */}
@@ -98,9 +99,9 @@ export default async function RiskOpsPage({ searchParams }: { searchParams: { ba
 
       <h2>{t.t('ts.risk.accountsHeading')}</h2>
       <nav className="kv-filters">
-        <Link href="/moderation/risk" className={!band ? 'kv-chip is-active' : 'kv-chip'}>{t.t('ts.bl.tab.all')}</Link>
+        <Chip as={Link} href="/moderation/risk" active={!band}>{t.t('ts.bl.tab.all')}</Chip>
         {RISK_BANDS.map((bd) => (
-          <Link key={bd} href={`/moderation/risk?band=${bd}`} className={band === bd ? 'kv-chip is-active' : 'kv-chip'}>{t.t(`ts.band.${bd}`)}</Link>
+          <Chip as={Link} key={bd} href={`/moderation/risk?band=${bd}`} active={band === bd}>{t.t(`ts.band.${bd}`)}</Chip>
         ))}
       </nav>
       {accountsNotice ? <p className="kv-error" role="alert">{accountsNotice}</p> : (
@@ -118,8 +119,8 @@ export default async function RiskOpsPage({ searchParams }: { searchParams: { ba
                     <div className="kv-detail__muted">{a.phone ?? t.t('common.dash')}</div>
                   </td>
                   <td>{a.score === null ? t.t('common.dash') : a.score}</td>
-                  <td><span className={bandClass(a.band)}>{a.band ? t.t(`ts.band.${a.band}`) : t.t('common.unknown')}</span></td>
-                  <td><span className={readingClass(a.reading)}>{t.t(`ts.reading.${a.reading?.kind ?? 'unknown'}`)}</span></td>
+                  <td><StatusPill tone={bandTone(a.band)} label={a.band ? t.t(`ts.band.${a.band}`) : t.t('common.unknown')} /></td>
+                  <td><StatusPill tone={readingTone(a.reading)} label={t.t(`ts.reading.${a.reading?.kind ?? 'unknown'}`)} /></td>
                   <td>{a.computedAt ?? t.t('common.dash')}</td>
                 </tr>
               ))}

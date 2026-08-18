@@ -13,7 +13,12 @@ import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
 import { modelStatusKey, modelStatusTone, formatThreshold4, type ModelRow } from '../../features/ai-models/model';
 
+import { Button, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
+
+// modelStatusTone (features/ai-models/model.ts) predates the StatusPill canon and still returns the old
+// kv-status--* token name ('ok' | 'warn' | 'muted'); mapped here rather than editing that shared helper.
+const MODEL_TONE: Record<'ok' | 'warn' | 'muted', StatusTone> = { ok: 'success', warn: 'warning', muted: 'neutral' };
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('aiModels.title'), robots: { index: false, follow: false } };
@@ -38,7 +43,7 @@ export default async function AiModelsPage({ searchParams }: { searchParams: { c
     { header: t.t('aiModels.colCode'), cell: (r) => <Link href={`/ai-models/${r.id}`}>{r.code}</Link> },
     { header: t.t('aiModels.colVersion'), cell: (r) => r.version },
     { header: t.t('aiModels.colProvider'), cell: (r) => r.provider ?? t.t('common.dash') },
-    { header: t.t('aiModels.colStatus'), cell: (r) => <span className={`kv-status kv-status--${modelStatusTone(r.status)}`}>{t.t(modelStatusKey(r.status))}</span> },
+    { header: t.t('aiModels.colStatus'), cell: (r) => <StatusPill tone={MODEL_TONE[modelStatusTone(r.status)]} label={t.t(modelStatusKey(r.status))} /> },
     { header: t.t('aiModels.colThreshold'), cell: (r) => formatThreshold4(r.confidenceThreshold) ?? t.t('common.dash') },
   ];
 
@@ -51,7 +56,7 @@ export default async function AiModelsPage({ searchParams }: { searchParams: { c
           <DataTable columns={columns} rows={rows} empty={t.t('aiModels.empty')} />
           {nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={`/ai-models?cursor=${encodeURIComponent(nextCursor)}${searchParams.status ? `&status=${encodeURIComponent(searchParams.status)}` : ''}`}>{t.t('common.nextPage')}</Link>
+              <Button as={Link} href={`/ai-models?cursor=${encodeURIComponent(nextCursor)}${searchParams.status ? `&status=${encodeURIComponent(searchParams.status)}` : ''}`}>{t.t('common.nextPage')}</Button>
             </p>
           )}
         </>

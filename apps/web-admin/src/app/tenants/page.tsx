@@ -9,6 +9,7 @@ import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { DataTable, Column } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 import {
   TENANT_STATUSES, statusKey, parseQuery, parseRiskMin, directoryHref, hasActiveFilters, HIGH_RISK_MIN,
   type TenantListItem,
@@ -20,9 +21,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('tenants.title'), robots: { index: false, follow: false } };
 }
 
-const STATUS_CLASS: Record<string, string> = {
-  pending: 'kv-status--warn', trial: 'kv-status--ok', active: 'kv-status--ok', grace: 'kv-status--warn',
-  suspended: 'kv-status--danger', archived: 'kv-status--muted', terminated: 'kv-status--muted',
+const STATUS_TONE: Record<string, StatusTone> = {
+  pending: 'warning', trial: 'success', active: 'success', grace: 'warning',
+  suspended: 'danger', archived: 'neutral', terminated: 'neutral',
 };
 
 export default async function TenantsPage({ searchParams }: {
@@ -51,10 +52,10 @@ export default async function TenantsPage({ searchParams }: {
 
   const columns: Column<TenantListItem>[] = [
     { header: t.t('tenants.colSlug'), cell: (r) => <Link href={`/tenants/${r.id}`}>{r.slug}</Link> },
-    { header: t.t('tenants.colStatus'), cell: (r) => <span className={`kv-status ${STATUS_CLASS[r.status] ?? ''}`}>{t.t(`tenants.status.${statusKey(r.status)}`)}</span> },
+    { header: t.t('tenants.colStatus'), cell: (r) => <StatusPill tone={STATUS_TONE[r.status] ?? 'neutral'} label={t.t(`tenants.status.${statusKey(r.status)}`)} /> },
     // risk is shown as the integer the platform holds; ≥ the triage line is marked, never re-scored here
     { header: t.t('tenants.colRisk'), cell: (r) => (
-      <span className={r.riskScore >= HIGH_RISK_MIN ? 'kv-status kv-status--danger' : ''}>{String(r.riskScore)}</span>
+      r.riskScore >= HIGH_RISK_MIN ? <StatusPill tone="danger" label={String(r.riskScore)} /> : String(r.riskScore)
     ) },
     { header: t.t('tenants.colCreated'), cell: (r) => r.createdAt ?? t.t('common.dash') },
   ];
@@ -75,23 +76,23 @@ export default async function TenantsPage({ searchParams }: {
           defaultValue={riskMin === undefined ? '' : String(riskMin)} placeholder="0-100" />
         {/* the active status chip must survive a search, or searching would silently widen the list */}
         {status && <input type="hidden" name="status" value={status} />}
-        <button type="submit" className="kv-btn">{t.t('tenants.searchSubmit')}</button>
-        {hasActiveFilters(filters) && <Link href="/tenants" className="kv-btn kv-btn--muted">{t.t('tenants.clearFilters')}</Link>}
+        <Button type="submit">{t.t('tenants.searchSubmit')}</Button>
+        {hasActiveFilters(filters) && <Button as={Link} href="/tenants" variant="secondary">{t.t('tenants.clearFilters')}</Button>}
       </form>
 
       <nav className="kv-filters" aria-label={t.t('tenants.filterLabel')}>
-        <Link href={directoryHref({ q, riskMin })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('tenants.filterAll')}</Link>
+        <Chip as={Link} href={directoryHref({ q, riskMin })} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('tenants.filterAll')}</Chip>
         {TENANT_STATUSES.map((s) => (
-          <Link key={s} href={directoryHref({ status: s, q, riskMin })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`tenants.status.${s}`)}</Link>
+          <Chip as={Link} key={s} href={directoryHref({ status: s, q, riskMin })} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`tenants.status.${s}`)}</Chip>
         ))}
       </nav>
 
       {/* The canon's saved view. It is a LINK, not stored state: a bookmarkable URL is the honest version of a
           "saved view" until the platform actually stores per-operator views. */}
       <p className="kv-detail__muted">
-        <Link href={directoryHref({ status: 'trial', riskMin: HIGH_RISK_MIN })} className="kv-btn--link">
+        <Button as={Link} href={directoryHref({ status: 'trial', riskMin: HIGH_RISK_MIN })} variant="tertiary">
           {t.t('tenants.savedHighRiskTrials', { min: String(HIGH_RISK_MIN) })}
-        </Link>
+        </Button>
       </p>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
@@ -100,7 +101,7 @@ export default async function TenantsPage({ searchParams }: {
           {nextCursor && (
             <p className="kv-pager">
               {/* every active filter travels with the cursor (this used to carry only `status`) */}
-              <Link className="kv-btn" href={directoryHref({ status, q, riskMin, cursor: nextCursor })}>{t.t('common.nextPage')}</Link>
+              <Button as={Link} href={directoryHref({ status, q, riskMin, cursor: nextCursor })}>{t.t('common.nextPage')}</Button>
             </p>
           )}
         </>

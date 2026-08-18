@@ -17,9 +17,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import {
-  QUICK_LINKS, dormancyClass, dormancyKey, lockedByRestriction, quickLinkUnlocked, stepUpClass, stepUpStateKey,
+  QUICK_LINKS, dormancyTone, dormancyKey, lockedByRestriction, quickLinkUnlocked, stepUpClass, stepUpStateKey,
   type Dormancy,
 } from '../../../features/staff/operators';
+import { Callout, StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,11 +70,11 @@ export default async function MyWorkPage() {
         </p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {m ? (
         <>
-          {!m.registryEnabled ? <p className="kv-note is-danger" role="alert">{t.t('st.roster.registryOff')}</p> : null}
+          {!m.registryEnabled ? <Callout tone="danger" live="assertive">{t.t('st.roster.registryOff')}</Callout> : null}
 
           {/* SESSION & STEP-UP — two independent facts, rendered as two rows because a four-hour session with a re-auth
               twelve minutes ago is a different posture from one with none. */}
@@ -103,18 +104,16 @@ export default async function MyWorkPage() {
           {/* DORMANCY — my own, computed from the same policy row the guard reads. */}
           <section className="kv-panel" aria-labelledby="st-dorm">
             <h2 id="st-dorm" className="kv-panel__title">{t.t('st.me.dormancy')}</h2>
-            <p className={dormancyClass(m.dormancy)}>
-              {t.t(dormancyKey(m.dormancy), {
-                days: String(m.dormancy?.daysSinceSeen ?? 0),
-                toSuspend: String(m.dormancy?.daysToSuspend ?? 0),
-              })}
-            </p>
-            <p className="kv-note">
+            <p><StatusPill tone={dormancyTone(m.dormancy)} label={t.t(dormancyKey(m.dormancy), {
+              days: String(m.dormancy?.daysSinceSeen ?? 0),
+              toSuspend: String(m.dormancy?.daysToSuspend ?? 0),
+            })} /></p>
+            <Callout tone="info">
               {t.t('st.policy.lines', {
                 dormant: String(m.policy.dormantAfterDays), suspend: String(m.policy.suspendAfterDays),
               })}
               {!m.policyFromDatabase ? ` ${t.t('st.policy.fallback')}` : ''}
-            </p>
+            </Callout>
           </section>
 
           {/* RESTRICTIONS ON ME — shown to me, because being told which permission was removed and why is the
@@ -125,7 +124,9 @@ export default async function MyWorkPage() {
               <ul className="kv-list">
                 {m.restrictions.map((r) => (
                   <li key={r.permissionCode}>
-                    <span className="kv-badge is-warn">{r.permissionCode}</span> {r.reason}
+                    {/* [QA-FIX 2026-08-15] was hardcoded tone="neutral", discarding the original
+                        `kv-badge is-warn` modifier — an active restriction on my own account is a warning state. */}
+                    <StatusPill tone="warning" icon={false} label={r.permissionCode} /> {r.reason}
                     {r.expiresAt ? ` · ${t.t('st.restriction.until', { at: r.expiresAt.slice(0, 10) })}` : ''}
                   </li>
                 ))}
@@ -136,13 +137,13 @@ export default async function MyWorkPage() {
           {/* **THE DESK TILES, NAMED AS ABSENT.** */}
           <section className="kv-panel" aria-labelledby="st-desks">
             <h2 id="st-desks" className="kv-panel__title">{t.t('st.me.desks')}</h2>
-            <p className="kv-note is-warn">{t.t('st.me.desksAbsent')}</p>
+            <Callout tone="warning">{t.t('st.me.desksAbsent')}</Callout>
           </section>
 
           {/* QUICK LINKS — locked, never hidden. */}
           <section className="kv-panel" aria-labelledby="st-quick">
             <h2 id="st-quick" className="kv-panel__title">{t.t('st.me.quick')}</h2>
-            <p className="kv-note">{t.t('st.me.quickNote')}</p>
+            <Callout tone="info">{t.t('st.me.quickNote')}</Callout>
             <ul className="kv-list">
               {QUICK_LINKS.map((l) => {
                 const open = quickLinkUnlocked(l, m!.permissions.effective);
@@ -165,7 +166,7 @@ export default async function MyWorkPage() {
                 );
               })}
             </ul>
-            {m.permissions.godMode ? <p className="kv-note is-warn">{t.t('st.perms.godMode')}</p> : null}
+            {m.permissions.godMode ? <Callout tone="warning">{t.t('st.perms.godMode')}</Callout> : null}
           </section>
         </>
       ) : null}

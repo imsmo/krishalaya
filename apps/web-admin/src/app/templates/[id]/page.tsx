@@ -15,9 +15,10 @@ import { requireAdmin, adminUserId } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { approveVersionAction, authorVersionAction, rejectVersionAction, submitVersionAction } from '../actions';
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
-  approveWithheldKey, canApprove, canOverridePerTenant, channelKey, draftNoticeKey, lifecycleClass, lifecycleKey,
-  overridesKey, refBlocksApproval, securityNoticeKey, segmentClass, segmentKey, sendStateClass, sendStateKey,
+  approveWithheldKey, canApprove, canOverridePerTenant, channelKey, draftNoticeKey, lifecycleTone, lifecycleKey,
+  overridesKey, refBlocksApproval, securityNoticeKey, segmentClass, segmentKey, sendStateTone, sendStateKey,
   type Segments, type TemplateListRow, type VersionRow,
 } from '../../../features/templates/template';
 
@@ -65,25 +66,25 @@ export default async function TemplateDetailPage({ params, searchParams }: {
         <span className="kv-mono">{params.id.slice(0, 8)}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`tp11.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`tp11.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`tp11.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`tp11.err.${searchParams.error}`)}</Callout> : null}
 
       {s ? (
         <>
           <header className="kv-page__head">
             <h1 className="kv-mono">{s.eventCode} × {t.t(channelKey(s.channel))} × {s.languageCode}</h1>
             <p className="kv-page__sub">
-              <span className={sendStateClass(s)}>{t.t(sendStateKey(s))}</span>{' '}
-              <span className={lifecycleClass(s.lifecycle)}>{t.t(lifecycleKey(s.lifecycle))}</span>{' '}
+              <StatusPill tone={sendStateTone(s)} label={t.t(sendStateKey(s))} />{' '}
+              <StatusPill tone={lifecycleTone(s.lifecycle)} label={t.t(lifecycleKey(s.lifecycle))} />{' '}
               · {s.tenantName
                 ? t.t('tp11.overrideOf', { tenant: s.tenantName })
                 : t.t('tp11.platformDefault')}
               {' '}· {t.t('tp11.priority', { p: s.priority })}
               {' '}· {t.t(overridesKey(s), { n: String(s.overrideCount) })}
             </p>
-            {securityNotice ? <p className="kv-note is-warn">{t.t(securityNotice)}</p> : null}
-            {draftNotice ? <p className="kv-note is-info">{t.t(draftNotice, { serving: String(s.servingVersionNo ?? 0), draft: String(s.currentVersionNo) })}</p> : null}
+            {securityNotice ? <Callout tone="warning">{t.t(securityNotice)}</Callout> : null}
+            {draftNotice ? <Callout tone="info">{t.t(draftNotice, { serving: String(s.servingVersionNo ?? 0), draft: String(s.currentVersionNo) })}</Callout> : null}
           </header>
 
           <section className="kv-panel" aria-labelledby="tp11-body">
@@ -104,7 +105,7 @@ export default async function TemplateDetailPage({ params, searchParams }: {
               <>
                 <h3 className="kv-panel__subtitle">{t.t('tp11.dltMapping')}</h3>
                 <pre className="kv-pre kv-mono">{s.dltTemplate}</pre>
-                <p className="kv-note">{t.t('tp11.dltNote')}</p>
+                <Callout tone="info">{t.t('tp11.dltNote')}</Callout>
               </>
             ) : null}
           </section>
@@ -114,7 +115,7 @@ export default async function TemplateDetailPage({ params, searchParams }: {
             {s.variables.length === 0 ? (
               // **UNKNOWN IS NOT ZERO.** An empty Variables table reads as "this event has none"; what is true is that
               // nobody has declared them, and until they are declared nothing can catch a typo in this body.
-              <p className="kv-note is-warn">{t.t('tp11.vars.undeclared', { event: s.eventCode })}</p>
+              <Callout tone="warning">{t.t('tp11.vars.undeclared', { event: s.eventCode })}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -127,7 +128,8 @@ export default async function TemplateDetailPage({ params, searchParams }: {
                 <tbody>
                   {s.variables.map((v) => (
                     <tr key={v.name}>
-                      <td className="kv-mono">{`{{${v.name}}}`}{v.isRequired ? <> <span className="kv-badge is-warn">{t.t('tp11.required')}</span></> : null}</td>
+                      <td className="kv-mono">{`{{${v.name}}}`}{v.isRequired ? <> <StatusPill tone="warning" icon={false} label={t.t('tp11.required')} /></> : null}</td>
+                      {/* [QA-FIX 2026-08-15] was hardcoded tone="neutral", discarding the original `kv-badge is-warn` modifier. */}
                       <td>{v.sourceRef}</td>
                       <td className="kv-mono">{v.sampleValue}</td>
                     </tr>
@@ -139,7 +141,7 @@ export default async function TemplateDetailPage({ params, searchParams }: {
             <pre className="kv-pre">{s.preview}</pre>
             {/* A preview rendered from DECLARED samples. Previewing against a live row would put a farmer's real
                 one-time code on a god-mode console screen. */}
-            <p className="kv-note">{t.t('tp11.previewNote')}</p>
+            <Callout tone="info">{t.t('tp11.previewNote')}</Callout>
           </section>
 
           {/* THE THREE GUARD RAILS W102 PRINTS, with the truth of each stated. */}
@@ -155,7 +157,7 @@ export default async function TemplateDetailPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="tp11-versions">
             <h2 id="tp11-versions" className="kv-panel__title">{t.t('tp11.versions')}</h2>
             {s.versions.length === 0 ? (
-              <p className="kv-note is-warn">{t.t('tp11.noVersions')}</p>
+              <Callout tone="warning">{t.t('tp11.noVersions')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>
@@ -175,12 +177,14 @@ export default async function TemplateDetailPage({ params, searchParams }: {
                       <tr key={v.id}>
                         <td>
                           v{v.versionNo}
-                          {v.versionNo === s.servingVersionNo ? <><br /><span className="kv-badge is-ok">{t.t('tp11.isServing')}</span></> : null}
+                          {/* [QA-FIX 2026-08-15] was hardcoded tone="neutral", discarding the original
+                              `kv-badge is-ok` modifier — this marks the version actually serving live traffic. */}
+                          {v.versionNo === s.servingVersionNo ? <><br /><StatusPill tone="success" icon={false} label={t.t('tp11.isServing')} /></> : null}
                           {/* The digest of the words as authored — what a regulator response or an export receipt
                               quotes when the question is "is this the text you sent". */}
                           <br /><small className="kv-mono">{v.bodySha256.slice(0, 12)}…</small>
                         </td>
-                        <td><span className={lifecycleClass(v.lifecycle)}>{t.t(lifecycleKey(v.lifecycle))}</span></td>
+                        <td><StatusPill tone={lifecycleTone(v.lifecycle)} label={t.t(lifecycleKey(v.lifecycle))} /></td>
                         <td>{v.body.slice(0, 80)}{v.body.length > 80 ? '…' : ''}</td>
                         <td>
                           {v.authoredByAdminId ? v.authoredByAdminId.slice(0, 8) : t.t('tp11.noAuthorRecorded')}
@@ -196,12 +200,12 @@ export default async function TemplateDetailPage({ params, searchParams }: {
                               <input type="hidden" name="templateId" value={s.id} />
                               <input className="kv-input" name="reason" required minLength={20} maxLength={2000}
                                 aria-label={t.t('tp11.reason')} />
-                              <button className="kv-btn kv-btn--primary" type="submit">{t.t('tp11.approve')}</button>
+                              <Button type="submit">{t.t('tp11.approve')}</Button>
                             </form>
                           ) : (
-                            <p className="kv-note">
+                            <Callout tone="info">
                               {refBlocks ? t.t('tp11.approve.needsRef', { channel: s.channel }) : t.t(withheld ?? 'tp11.approve.notApprovable')}
-                            </p>
+                            </Callout>
                           )}
                           {v.lifecycle === 'draft' ? (
                             <form action={submitVersionAction}>
@@ -209,7 +213,7 @@ export default async function TemplateDetailPage({ params, searchParams }: {
                               <input type="hidden" name="templateId" value={s.id} />
                               <input className="kv-input" name="reason" required minLength={20} maxLength={2000}
                                 aria-label={t.t('tp11.reason')} />
-                              <button className="kv-btn" type="submit">{t.t('tp11.submit')}</button>
+                              <Button type="submit">{t.t('tp11.submit')}</Button>
                             </form>
                           ) : null}
                           {v.lifecycle === 'draft' || v.lifecycle === 'submitted' ? (
@@ -218,10 +222,10 @@ export default async function TemplateDetailPage({ params, searchParams }: {
                               <input type="hidden" name="templateId" value={s.id} />
                               <input className="kv-input" name="reason" required minLength={20} maxLength={2000}
                                 aria-label={t.t('tp11.rejectReason')} />
-                              <button className="kv-btn" type="submit">{t.t('tp11.reject')}</button>
+                              <Button type="submit">{t.t('tp11.reject')}</Button>
                             </form>
                           ) : null}
-                          {v.rejectionReason ? <p className="kv-note is-danger">{v.rejectionReason}</p> : null}
+                          {v.rejectionReason ? <Callout tone="danger">{v.rejectionReason}</Callout> : null}
                         </td>
                       </tr>
                     );
@@ -234,8 +238,8 @@ export default async function TemplateDetailPage({ params, searchParams }: {
           <section className="kv-panel" aria-labelledby="tp11-edit">
             <h2 id="tp11-edit" className="kv-panel__title">{t.t('tp11.newVersion')}</h2>
             {/* THE SENTENCE THAT MAKES A 2 A.M. EDIT SAFE. */}
-            <p className="kv-note is-info">{t.t('tp11.editIsSafe')}</p>
-            {s.providerRefRequired ? <p className="kv-note is-warn">{t.t('tp11.editStalesRef', { channel: s.channel })}</p> : null}
+            <Callout tone="info">{t.t('tp11.editIsSafe')}</Callout>
+            {s.providerRefRequired ? <Callout tone="warning">{t.t('tp11.editStalesRef', { channel: s.channel })}</Callout> : null}
             <form action={authorVersionAction}>
               <input type="hidden" name="templateId" value={s.id} />
               <input type="hidden" name="eventCode" value={s.eventCode} />
@@ -264,7 +268,7 @@ export default async function TemplateDetailPage({ params, searchParams }: {
                 <input className="kv-input" id="tp11-reason" name="reason" required minLength={20} maxLength={2000} />
                 <p className="kv-field__help">{t.t('tp11.reasonHelp')}</p>
               </div>
-              <button className="kv-btn" type="submit">{t.t('tp11.saveDraft')}</button>
+              <Button type="submit">{t.t('tp11.saveDraft')}</Button>
             </form>
           </section>
 
@@ -272,13 +276,13 @@ export default async function TemplateDetailPage({ params, searchParams }: {
             <section className="kv-panel" aria-labelledby="tp11-over">
               <h2 id="tp11-over" className="kv-panel__title">{t.t('tp11.overrides', { n: String(s.overrides.length) })}</h2>
               {s.overrides.length === 0 ? (
-                <p className="kv-note">{t.t('tp11.noOverrides')}</p>
+                <Callout tone="info">{t.t('tp11.noOverrides')}</Callout>
               ) : (
                 <ul className="kv-list">
                   {s.overrides.map((o) => (
                     <li key={o.id}>
                       <Link href={`/templates/${o.id}`}>{o.tenantName ?? o.tenantId?.slice(0, 8)}</Link>{' '}
-                      <span className={lifecycleClass(o.lifecycle)}>{t.t(lifecycleKey(o.lifecycle))}</span>
+                      <StatusPill tone={lifecycleTone(o.lifecycle)} label={t.t(lifecycleKey(o.lifecycle))} />
                     </li>
                   ))}
                 </ul>
@@ -286,7 +290,7 @@ export default async function TemplateDetailPage({ params, searchParams }: {
             </section>
           ) : null}
 
-          <p className="kv-note"><small>{t.t('tp11.submissionNote', { owner: s.providerSubmissionOwner })}</small></p>
+          <Callout tone="info"><small>{t.t('tp11.submissionNote', { owner: s.providerSubmissionOwner })}</small></Callout>
         </>
       ) : null}
     </main>

@@ -20,6 +20,7 @@ import { formatMoneyMinor } from '@krishalaya/i18n';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
+import { Callout, Chip, EmptyState } from '@krishalaya/ui';
 import {
   alertStackClass, alertStackKey, bpsToPercent, deltaClass, deltaKey, figureClass, figureKey, freshnessClass,
   freshnessKey, hasValue, isStreamBacked, revenueStateKey,
@@ -188,7 +189,7 @@ export default async function AdminDashboard() {
               </dl>
             ) : (
               // W001's restricted copy, made reachable: the screen works and the money is withheld, with the grant named.
-              <p className="kv-note is-warn">{t.t(revenueStateKey(false), { perm: meta?.revenueGate ?? 'metrics.revenue.read' })}</p>
+              <Callout tone="warning">{t.t(revenueStateKey(false), { perm: meta?.revenueGate ?? 'metrics.revenue.read' })}</Callout>
             )}
           </section>
 
@@ -199,7 +200,7 @@ export default async function AdminDashboard() {
               {t.t(alertStackKey(alerts?.items.length ?? 0, alerts?.unavailable.length ?? 0))}
             </p>
             {alerts?.items.map((a) => (
-              <p key={a.text} className="kv-note is-danger">{a.text} <Link href={a.href}>{t.t('common.open')}</Link></p>
+              <Callout key={a.text} tone="danger">{a.text} <Link href={a.href}>{t.t('common.open')}</Link></Callout>
             ))}
             {alerts?.unavailable.length ? (
               <ul className="kv-list">
@@ -219,7 +220,7 @@ export default async function AdminDashboard() {
               ))}
               <div><dt>{t.t('rp.lifecycle.total')}</dt><dd>{d.lifecycle.total.toLocaleString('en-IN')}</dd></div>
             </dl>
-            <p className="kv-note">{isStreamBacked() ? t.t('rp.lifecycle.live') : t.t('rp.lifecycle.pointInTime')}</p>
+            <Callout tone="info">{isStreamBacked() ? t.t('rp.lifecycle.live') : t.t('rp.lifecycle.pointInTime')}</Callout>
           </section>
 
           {/* THE 14-DAY TREND, with its buckets labelled — W001's chart has no x-axis at all, and a chart whose axis is
@@ -227,7 +228,7 @@ export default async function AdminDashboard() {
           <section className="kv-panel" aria-labelledby="rp-trend">
             <h2 id="rp-trend" className="kv-panel__title">{t.t('rp.trend.title', { days: String(d.trend.days) })}</h2>
             {d.trend.series.length === 0 ? (
-              <p className="kv-note">{t.t('rp.trend.empty')}</p>
+              <EmptyState variant="empty" title={t.t('rp.trend.empty')} />
             ) : (
               <table className="kv-table">
                 <caption className="kv-table__caption">{t.t('rp.trend.caption')}</caption>
@@ -242,11 +243,11 @@ export default async function AdminDashboard() {
           </section>
 
           <nav className="kv-filters" aria-label={t.t('rp.nav.label')}>
-            <Link href="/analytics/reports" className="kv-chip">{t.t('rp.nav.builder')}</Link>
-            <Link href="/analytics/exports" className="kv-chip">{t.t('rp.nav.exports')}</Link>
-            <Link href="/tenants" className="kv-chip">{t.t('rp.nav.tenants')}</Link>
-            <Link href="/recon" className="kv-chip">{t.t('rp.nav.recon')}</Link>
-            <Link href="/support" className="kv-chip">{t.t('rp.nav.support')}</Link>
+            <Chip as={Link} href="/analytics/reports">{t.t('rp.nav.builder')}</Chip>
+            <Chip as={Link} href="/analytics/exports">{t.t('rp.nav.exports')}</Chip>
+            <Chip as={Link} href="/tenants">{t.t('rp.nav.tenants')}</Chip>
+            <Chip as={Link} href="/recon">{t.t('rp.nav.recon')}</Chip>
+            <Chip as={Link} href="/support">{t.t('rp.nav.support')}</Chip>
           </nav>
         </>
       ) : null}

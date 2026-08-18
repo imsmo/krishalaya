@@ -20,6 +20,9 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { createCalendarAction, setCalendarActiveAction } from '../actions';
 import {
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
   SEASONS, formStages, timelineProblems, stageWidthPct, MAX_DAY, MIN_REASON,
   type CalendarRow,
 } from '../../../features/catalogue/crops';
@@ -65,8 +68,8 @@ export default async function CropCalendarsPage(
       <h1>{t.t('cal.title')}</h1>
       <p className="kv-muted">{t.t('cal.lead')}</p>
       {/* the two rules, as notices */}
-      <p className="kv-notice" role="note">{t.t('cal.sourceRule')}</p>
-      <p className="kv-notice" role="note">{t.t('cal.absentRule')}</p>
+      <Callout>{t.t('cal.sourceRule')}</Callout>
+      <Callout>{t.t('cal.absentRule')}</Callout>
 
       {okKey && <p className="kv-success" role="status">{t.t(`cal.ok.${okKey}`)}</p>}
       {errKey && (
@@ -76,16 +79,16 @@ export default async function CropCalendarsPage(
       )}
 
       <nav className="kv-filters" aria-label={t.t('cal.season')}>
-        <Link href={href({ season: undefined })} className={`kv-chip${!season ? ' is-active' : ''}`}>{t.t('attr.filterAllTypes')}</Link>
+        <Chip as={Link} href={href({ season: undefined })} active={!season}>{t.t('attr.filterAllTypes')}</Chip>
         {SEASONS.map((s) => (
-          <Link key={s} href={href({ season: s })} className={`kv-chip${season === s ? ' is-active' : ''}`}>
+          <Chip as={Link} key={s} href={href({ season: s })} active={season === s}>
             {t.t(`crop.season.${s}`)}
-          </Link>
+          </Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : rows.length === 0 ? (
-        <p className="kv-empty">{t.t('cal.none')}</p>
+        <EmptyState title={t.t('cal.none')} />
       ) : (
         rows.map((c) => {
           const problems = timelineProblems(c.stages);
@@ -95,9 +98,7 @@ export default async function CropCalendarsPage(
               <p className="kv-card__title">
                 {c.cropName} · {t.t(`crop.season.${c.season}`)}
                 {' · '}{c.regionName ?? t.t('cal.panIndia')}
-                {' '}<span className={`kv-status ${c.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>
-                  {t.t(c.isActive ? 'cat.active' : 'eav.inactive')}
-                </span>
+                {' '}<StatusPill tone={c.isActive ? 'success' : 'neutral'} label={t.t(c.isActive ? 'cat.active' : 'eav.inactive')} />
               </p>
               <dl className="kv-detail">
                 <dt>{t.t('cal.source')}</dt><dd>{c.source}</dd>
@@ -108,7 +109,7 @@ export default async function CropCalendarsPage(
                   {c.categoryCode
                     ? <code>{c.categoryCode}</code>
                     // said on the row: an unlinked calendar does not back its crop's season claim
-                    : <span className="kv-status kv-status--warn" title={t.t('cal.notLinkedHint')}>{t.t('cal.notLinked')}</span>}
+                    : <StatusPill tone="warning" label={t.t('cal.notLinked')} title={t.t('cal.notLinkedHint')} />}
                 </dd>
               </dl>
 
@@ -148,9 +149,9 @@ export default async function CropCalendarsPage(
                   <input type="hidden" name="isActive" value={c.isActive ? 'false' : 'true'} />
                   <label htmlFor={`ca-${c.id}`} className="kv-field__label">{t.t('eav.reason')}</label>
                   <input id={`ca-${c.id}`} name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-                  <button type="submit" className={`kv-btn ${c.isActive ? 'kv-btn--danger' : 'kv-btn--muted'}`}>
+                  <Button type="submit" variant={c.isActive ? 'danger' : 'secondary'}>
                     {t.t(c.isActive ? 'cal.deactivate' : 'cal.activate')}
-                  </button>
+                  </Button>
                 </form>
               </details>
             </div>
@@ -213,7 +214,7 @@ export default async function CropCalendarsPage(
 
           <label htmlFor="c-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="c-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('cal.create')}</button>
+          <Button type="submit" variant="danger">{t.t('cal.create')}</Button>
         </form>
       </details>
     </section>

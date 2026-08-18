@@ -14,6 +14,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { categoryKey, providerHealthKey, isDegraded, canEnable, canDisable, type ProviderDetail, type ProviderChange } from '../../../features/providers/provider';
 import { toggleProviderAction } from '../actions';
+import { Button, StatusPill, type StatusTone } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('providers.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const HEALTH_CLASS: Record<string, string> = { active: 'kv-status--ok', degraded: 'kv-status--danger', disabled: 'kv-status--muted' };
+const HEALTH_TONE: Record<string, StatusTone> = { active: 'success', degraded: 'danger', disabled: 'neutral' };
 const OK = new Set(['enable', 'disable']);
 const ERR = new Set(['action', 'reason', 'elevation', 'conflict', 'notFound', 'generic']);
 
@@ -64,7 +65,7 @@ export default async function ProviderDetailPage({ params, searchParams }: { par
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('providers.name')}</dt><dd>{provider.defaultName}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('providers.category')}</dt><dd>{t.t(`providers.cat.${categoryKey(provider.category)}`)}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('providers.health')}</dt><dd><span className={`kv-status ${HEALTH_CLASS[healthKey]}`}>{t.t(`providers.healthState.${healthKey}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('providers.health')}</dt><dd><StatusPill tone={HEALTH_TONE[healthKey]} label={t.t(`providers.healthState.${healthKey}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('providers.configuredTenants')}</dt><dd>{provider.health.configuredTenants.toLocaleString()}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('providers.activeTenants')}</dt><dd>{provider.health.activeTenants.toLocaleString()}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('providers.createdAt')}</dt><dd>{provider.createdAt ?? t.t('common.dash')}</dd></div>
@@ -90,7 +91,7 @@ function ToggleForm({ code, action, verb, label, danger }: { code: string; actio
       <input type="hidden" name="action" value={action} />
       <label className="kv-field__label">{label}</label>
       <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-      <button type="submit" className={`kv-btn${danger ? ' kv-btn--danger' : ''}`}>{verb}</button>
+      <Button type="submit" variant={danger ? 'danger' : 'primary'}>{verb}</Button>
     </form>
   );
 }

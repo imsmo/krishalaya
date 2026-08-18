@@ -10,6 +10,7 @@ import { adminNoticeKey } from '../../features/nav/nav-model';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { RevenueOverview } from '../../features/billing/billing';
 
+import { Chip } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -33,12 +34,12 @@ export default async function BillingPage() {
       <h1>{t.t('billing.title')}</h1>
       <p className="kv-muted">{t.t('billing.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('billing.nav')}>
-        <Link href="/billing/invoices" className="kv-chip">{t.t('billing.invoices')}</Link>
-        <Link href="/billing/adjustments" className="kv-chip">{t.t('billing.adjustments')}</Link>
-        <Link href="/billing/dunning" className="kv-chip">{t.t('billing.dunningQueue')}</Link>
-        <Link href="/billing/reports" className="kv-chip">{t.t('billing.reportsLink')}</Link>
-        <Link href="/billing/live" className="kv-chip">{t.t('billing.liveLink')}</Link>
-        <Link href="/billing/schedules" className="kv-chip">{t.t('billing.schedulesLink')}</Link>
+        <Chip as={Link} href="/billing/invoices">{t.t('billing.invoices')}</Chip>
+        <Chip as={Link} href="/billing/adjustments">{t.t('billing.adjustments')}</Chip>
+        <Chip as={Link} href="/billing/dunning">{t.t('billing.dunningQueue')}</Chip>
+        <Chip as={Link} href="/billing/reports">{t.t('billing.reportsLink')}</Chip>
+        <Chip as={Link} href="/billing/live">{t.t('billing.liveLink')}</Chip>
+        <Chip as={Link} href="/billing/schedules">{t.t('billing.schedulesLink')}</Chip>
       </nav>
 
       {notice || !data ? <p className="kv-error" role="alert">{notice ?? t.t('notice.unavailable')}</p> : (

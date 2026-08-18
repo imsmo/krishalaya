@@ -11,8 +11,9 @@ import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
-import { slaText, slaClass, channelChip, type HubSla } from '../../../../features/support/hub';
+import { slaText, slaTone, channelChip, type HubSla } from '../../../../features/support/hub';
 
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -67,19 +68,19 @@ export default async function HubPrincipalPage({ params }: { params: { userId: s
             const sla = x.sla ? slaText(x.sla) : null;
             return (
               <tr key={x.id}>
-                <td>{sla ? <span className={slaClass(x.sla!)}>{t.t(`hub.sla.${sla.key}`, { t: sla.amount })}</span> : x.status}</td>
+                <td>{sla ? <StatusPill tone={slaTone(x.sla!)} label={t.t(`hub.sla.${sla.key}`, { t: sla.amount })} /> : x.status}</td>
                 <td>{x.ticketNo}<div className="kv-detail__muted">{x.subject ?? t.t('common.dash')}</div></td>
                 <td><span className="kv-status">{chip.label}{chip.declared ? t.t('hub.declaredMark') : ''}</span></td>
                 <td>{x.tenantId}</td>
                 <td>{x.severity}</td>
                 <td>{x.mine ? t.t('hub.owner.you') : x.claimedByAdminId ? t.t('hub.owner.platform') : x.assigneeUserId ? t.t('hub.owner.tenantAgent') : t.t('hub.owner.nobody')}</td>
-                <td><Link href={`/support/tickets/${x.id}`} className="kv-btn kv-btn--link">{t.t('hub.openTicket')}</Link></td>
+                <td><Button as={Link} href={`/support/tickets/${x.id}`} variant="tertiary">{t.t('hub.openTicket')}</Button></td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      {d.tickets.length === 0 && <p className="kv-empty">{t.t('hub.threadEmpty')}</p>}
+      {d.tickets.length === 0 && <EmptyState title={t.t('hub.threadEmpty')} />}
       <p className="kv-detail__muted">{t.t('hub.identityDoctrine')}</p>
     </section>
   );

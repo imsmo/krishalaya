@@ -9,6 +9,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import type { ReconRunRow } from '../../../features/recon/recon';
 
+import { Button, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -30,7 +31,7 @@ export default async function ReconRunsPage({ searchParams }: { searchParams: { 
     { header: t.t('recon.runType'), cell: (r) => <Link href={`/recon/runs/${r.id}`}>{r.runType}</Link> },
     { header: t.t('recon.runStatus'), cell: (r) => r.status },
     { header: t.t('recon.checked'), cell: (r) => r.checkedCount.toLocaleString() },
-    { header: t.t('recon.mismatches'), cell: (r) => <span className={r.mismatchCount > 0 ? 'kv-status kv-status--danger' : ''}>{r.mismatchCount.toLocaleString()}</span> },
+    { header: t.t('recon.mismatches'), cell: (r) => r.mismatchCount > 0 ? <StatusPill tone="danger" label={r.mismatchCount.toLocaleString()} /> : r.mismatchCount.toLocaleString() },
     { header: t.t('recon.finishedAt'), cell: (r) => r.finishedAt ?? t.t('common.dash') },
   ];
 
@@ -41,7 +42,7 @@ export default async function ReconRunsPage({ searchParams }: { searchParams: { 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('recon.noRuns')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/recon/runs?cursor=${encodeURIComponent(nextCursor)}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/recon/runs?cursor=${encodeURIComponent(nextCursor)}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

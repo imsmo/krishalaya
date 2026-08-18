@@ -17,6 +17,7 @@ import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { csatSample, estimatedCount, withVerbatim, type CsatRow } from '../../../../features/support/review';
 
+import { Button, Callout, Chip, EmptyState, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -25,7 +26,7 @@ export function generateMetadata(): Metadata {
 
 interface QueueView { items: CsatRow[]; maxScore: number; nextCursor: string | null }
 
-const SCORE_CLASS = (n: number) => (n <= 2 ? 'kv-status--danger' : n === 3 ? 'kv-status--warn' : 'kv-status--ok');
+const scoreTone = (n: number): StatusTone => (n <= 2 ? 'danger' : n === 3 ? 'warning' : 'success');
 
 export default async function CsatQueuePage(
   { searchParams }: { searchParams: { cursor?: string; maxScore?: string } },
@@ -63,17 +64,15 @@ export default async function CsatQueuePage(
 
       <nav className="kv-filters" aria-label={t.t('rev.maxScore')}>
         {[1, 2, 3, 4, 5].map((n) => (
-          <Link key={n} href={href({ maxScore: String(n), cursor: undefined })}
-            className={`kv-chip${String(view?.maxScore ?? 3) === String(n) ? ' is-active' : ''}`}
-            aria-current={String(view?.maxScore ?? 3) === String(n) ? 'true' : undefined}>
+          <Chip as={Link} key={n} href={href({ maxScore: String(n), cursor: undefined })} aria-current={String(view?.maxScore ?? 3) === String(n) ? 'true' : undefined} active={String(view?.maxScore ?? 3) === String(n)}>
             ≤ {n}
-          </Link>
+          </Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : rows.length === 0 ? (
         // a positive statement, not a blank: every low score in scope has been dealt with one way or the other
-        <p className="kv-empty">{t.t('rev.queueEmpty')}</p>
+        <EmptyState title={t.t('rev.queueEmpty')} />
       ) : (
         <>
           {/* The honest summary. No average below the sample floor — a number on a screen gets quoted, footnotes do not. */}
@@ -83,7 +82,7 @@ export default async function CsatQueuePage(
               : t.t('rev.sampleAvg', { avg: String(sample.avg), n: String(sample.n) })}
             {' '}{t.t('rev.withComments', { n: String(commented) })}
           </p>
-          {estimated > 0 && <p className="kv-notice" role="note">{t.t('rev.estimatedNote', { n: String(estimated) })}</p>}
+          {estimated > 0 && <Callout>{t.t('rev.estimatedNote', { n: String(estimated) })}</Callout>}
 
           <table className="kv-table">
             <thead><tr>
@@ -100,10 +99,10 @@ export default async function CsatQueuePage(
                 const id = r.id ?? r.responseId ?? '';
                 return (
                   <tr key={id || r.ratedAt}>
-                    <td><span className={`kv-status ${SCORE_CLASS(r.score)}`}>{r.score}/5</span></td>
+                    <td><StatusPill tone={scoreTone(r.score)} label={`${r.score}/5`} /></td>
                     <td>
                       {r.ratedAt}
-                      {r.ratedAtIsEstimated && <> <span className="kv-status kv-status--warn">{t.t('rev.estimated')}</span></>}
+                      {r.ratedAtIsEstimated && <> <StatusPill tone="warning" label={t.t('rev.estimated')} /></>}
                     </td>
                     <td><Link href={`/support/tickets/${encodeURIComponent(r.ticketId)}`}>{r.ticketNo ?? r.ticketId.slice(0, 8)}</Link></td>
                     <td>{r.tenantSlug ?? r.tenantId ?? t.t('common.dash')}</td>
@@ -122,7 +121,7 @@ export default async function CsatQueuePage(
 
           {view?.nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={href({ cursor: view.nextCursor })}>{t.t('common.nextPage')}</Link>
+              <Button as={Link} href={href({ cursor: view.nextCursor })}>{t.t('common.nextPage')}</Button>
             </p>
           )}
         </>

@@ -20,6 +20,9 @@ import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { updateAttributeAction, setAttributeActiveAction, createOptionAction, setOptionActiveAction } from '../../actions';
 import {
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
   DATA_TYPES, isNumericType, unitIsMissing, validationSummary, MIN_REASON,
   type AttributeRow, type OptionRow, type UnitRow,
 } from '../../../../features/catalogue/eav';
@@ -74,7 +77,7 @@ export default async function AttributeEditorPage(
       <p className="kv-backlink"><Link href="/catalogue/attributes">{t.t('cat.back')}</Link></p>
       <h1><code>{a.code}</code></h1>
       <p className="kv-muted">{a.defaultName} · {t.t(`attr.type.${a.dataType}`)}</p>
-      <p className="kv-notice" role="note">{t.t('eav.law9')}</p>
+      <Callout>{t.t('eav.law9')}</Callout>
 
       {okKey && <p className="kv-success" role="status">{t.t(`${okNs}.ok.${okKey}`)}</p>}
       {errKey && errKey !== 'checker' && (
@@ -99,19 +102,17 @@ export default async function AttributeEditorPage(
         <dt>{t.t('attr.unit')}</dt>
         <dd>
           {a.unitCode ?? t.t('common.dash')}
-          {unitIsMissing(a) && <> <span className="kv-status kv-status--warn">{t.t('attr.unitMissing')}</span></>}
+          {unitIsMissing(a) && <> <StatusPill tone="warning" label={t.t('attr.unitMissing')} /></>}
         </dd>
         <dt>{t.t('attr.validation')}</dt><dd>{validationSummary(a.validation) ?? t.t('common.dash')}</dd>
         <dt>{t.t('attr.state')}</dt>
         <dd>
-          <span className={`kv-status ${a.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>
-            {t.t(a.isActive ? 'cat.active' : 'eav.inactive')}
-          </span>
+          <StatusPill tone={a.isActive ? 'success' : 'neutral'} label={t.t(a.isActive ? 'cat.active' : 'eav.inactive')} />
         </dd>
       </dl>
 
       {/* said once, above the form, when it applies */}
-      {view.checkerNote && <p className="kv-notice" role="note">{view.checkerNote}</p>}
+      {view.checkerNote && <Callout>{view.checkerNote}</Callout>}
 
       {/* ---------------- edit ---------------- */}
       <h2>{t.t('attr.save')}</h2>
@@ -163,18 +164,18 @@ export default async function AttributeEditorPage(
         <label htmlFor="e-reason" className="kv-field__label">{t.t('eav.reason')}</label>
         <input id="e-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
         <p className="kv-field__hint">{t.t('eav.reasonHint')}</p>
-        <button type="submit" className="kv-btn">{t.t('attr.save')}</button>
+        <Button type="submit">{t.t('attr.save')}</Button>
       </form>
 
       {/* ---------------- allowed values (W024's option set) ---------------- */}
       <h2>{t.t('attr.optionsTitle')}</h2>
       {!view.optionsApplicable ? (
         // stated, not blank: a decimal attribute has no option list and that is not a gap
-        <p className="kv-empty">{t.t('attr.optionsNotApplicable')}</p>
+        <EmptyState title={t.t('attr.optionsNotApplicable')} />
       ) : (
         <>
           <p className="kv-field__hint">{t.t('opt.scopeHint')}</p>
-          {view.options.length === 0 ? <p className="kv-empty">{t.t('attr.optionsNone')}</p> : (
+          {view.options.length === 0 ? <EmptyState title={t.t('attr.optionsNone')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('opt.sort')}</th>
@@ -195,9 +196,7 @@ export default async function AttributeEditorPage(
                         : t.t('opt.scopeGlobal')}
                     </td>
                     <td>
-                      <span className={`kv-status ${o.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>
-                        {t.t(o.isActive ? 'cat.active' : 'eav.inactive')}
-                      </span>
+                      <StatusPill tone={o.isActive ? 'success' : 'neutral'} label={t.t(o.isActive ? 'cat.active' : 'eav.inactive')} />
                     </td>
                   </tr>
                 ))}
@@ -220,7 +219,7 @@ export default async function AttributeEditorPage(
               <p className="kv-field__hint">{t.t('opt.categoryIdHint')}</p>
               <label htmlFor="o-reason" className="kv-field__label">{t.t('eav.reason')}</label>
               <input id="o-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-              <button type="submit" className="kv-btn">{t.t('opt.create')}</button>
+              <Button type="submit">{t.t('opt.create')}</Button>
             </form>
           </details>
 
@@ -244,7 +243,7 @@ export default async function AttributeEditorPage(
                 </select>
                 <label htmlFor="o-areason" className="kv-field__label">{t.t('eav.reason')}</label>
                 <input id="o-areason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-                <button type="submit" className="kv-btn kv-btn--muted">{t.t('opt.state')}</button>
+                <Button type="submit" variant="secondary">{t.t('opt.state')}</Button>
               </form>
             </details>
           )}
@@ -259,9 +258,9 @@ export default async function AttributeEditorPage(
           <input type="hidden" name="isActive" value={a.isActive ? 'false' : 'true'} />
           <label htmlFor="s-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="s-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-          <button type="submit" className={`kv-btn ${a.isActive ? 'kv-btn--danger' : ''}`}>
+          <Button type="submit" variant={a.isActive ? 'danger' : 'primary'}>
             {t.t(a.isActive ? 'attr.deactivate' : 'attr.activate')}
-          </button>
+          </Button>
         </form>
       </details>
 
@@ -269,7 +268,7 @@ export default async function AttributeEditorPage(
       <h2>{t.t('attr.historyTitle')}</h2>
       {view.history.length === 0 ? (
         // and this is now POSSIBLE to be non-empty: before migration 0102 an attribute change could not be audited at all
-        <p className="kv-empty">{t.t('attr.historyNone')}</p>
+        <EmptyState title={t.t('attr.historyNone')} />
       ) : (
         <table className="kv-table">
           <thead><tr>

@@ -6,16 +6,15 @@
 import { useEffect } from 'react';
 import { en } from '../i18n/en';
 
+import { Button, EmptyState } from '@krishalaya/ui';
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { /* hook for client telemetry; never logs PII/secrets/tokens */ }, [error]);
   return (
-    <section className="kv-empty-state" role="alert">
-      <h1>{en['common.errorTitle']}</h1>
-      <p>{en['common.errorBody']}</p>
+    <EmptyState variant="error" title={en['common.errorTitle']} titleAs="h1" body={en['common.errorBody']}>
       <div className="kv-actions">
-        <button type="button" className="kv-btn" onClick={() => reset()}>{en['common.retry']}</button>
-        <a className="kv-btn kv-btn--muted" href="/login">{en['common.reauth']}</a>
+        <Button type="button" onClick={() => reset()}>{en['common.retry']}</Button>
+        <Button as="a" href="/login" variant="secondary">{en['common.reauth']}</Button>
       </div>
-    </section>
+    </EmptyState>
   );
 }

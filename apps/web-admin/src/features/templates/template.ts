@@ -6,6 +6,12 @@
 //   • "the wording that is serving" and "the wording somebody is drafting" — one column, so an unapproved edit WAS the
 //     live copy the moment it was saved;
 //   • "no tenant has overridden this" and "no tenant MAY" — a zero next to security copy, where the answer is never.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, founder pill ruling): `sendStateClass`/`lifecycleClass`/`gapClass` now
+// return a `StatusTone` instead of a raw `kv-badge` string, rendered via `<StatusPill tone={...} label={...}/>`.
+// `segmentClass`/`securityOverrideClass` (`kv-note` family) are OUT OF SCOPE for this conversion.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export type Channel = 'push' | 'sms' | 'whatsapp' | 'email' | 'inapp' | 'ivr';
 export type Lifecycle = 'draft' | 'submitted' | 'approved' | 'rejected' | 'superseded';
@@ -47,12 +53,12 @@ export function sendStateKey(r: Pick<TemplateListRow, 'isActive' | 'lifecycle' |
   return 'tp11.state.notSending';
 }
 
-export function sendStateClass(r: Pick<TemplateListRow, 'isActive' | 'lifecycle' | 'sendable'>): string {
-  if (r.sendable) return 'kv-badge is-ok';
+export function sendStateTone(r: Pick<TemplateListRow, 'isActive' | 'lifecycle' | 'sendable'>): StatusTone {
+  if (r.sendable) return 'success';
   // **ACTIVE-BUT-UNAPPROVED IS DANGER, NOT NEUTRAL.** It is the state in which an operator believes wording is live and
   // the platform is sending something else, or nothing.
-  if (r.isActive && !r.sendable) return 'kv-badge is-danger';
-  return r.lifecycle === 'rejected' ? 'kv-badge is-danger' : 'kv-badge';
+  if (r.isActive && !r.sendable) return 'danger';
+  return r.lifecycle === 'rejected' ? 'danger' : 'neutral';
 }
 
 /** Whether the drafted version differs from the one serving — the sentence W102's header needs and could not say.
@@ -150,11 +156,11 @@ export function lifecycleKey(lifecycle: string | null): string {
 
 /** **AN UNVERSIONED ROW IS A FINDING, NOT A BLANK.** After 0122's backfill it means a row written by a path that
  *  predates this plane — a send whose words cannot be reconstructed. Drawn as a warning so it is not read as "new". */
-export function lifecycleClass(lifecycle: string | null): string {
-  if (lifecycle === null) return 'kv-badge is-warn';
-  if (lifecycle === 'approved') return 'kv-badge is-ok';
-  if (lifecycle === 'rejected') return 'kv-badge is-danger';
-  return 'kv-badge';
+export function lifecycleTone(lifecycle: string | null): StatusTone {
+  if (lifecycle === null) return 'warning';
+  if (lifecycle === 'approved') return 'success';
+  if (lifecycle === 'rejected') return 'danger';
+  return 'neutral';
 }
 
 export function channelKey(channel: string): string {
@@ -192,9 +198,9 @@ export function gapSeverityKey(severity: string): string {
   return known.includes(severity) ? `tp11.gap.${severity}` : 'tp11.gap.ordinary';
 }
 
-export function gapClass(severity: string): string {
-  if (severity === 'critical') return 'kv-badge is-danger';
-  return severity === 'important' ? 'kv-badge is-warn' : 'kv-badge';
+export function gapTone(severity: string): StatusTone {
+  if (severity === 'critical') return 'danger';
+  return severity === 'important' ? 'warning' : 'neutral';
 }
 
 /** The census tile for tenant rows on security copy. **ZERO IS THE ONLY ACCEPTABLE NUMBER AND IT IS PRINTED EITHER

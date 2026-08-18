@@ -12,6 +12,7 @@ import type { Metadata } from 'next';
 import { env } from '../../lib/env';
 import { getTranslator } from '../../lib/i18n';
 
+import { Button } from '@krishalaya/ui';
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('login.title'), robots: { index: false, follow: false } };
 }
@@ -24,7 +25,7 @@ export default function AdminLoginPage({ searchParams }: { searchParams: { error
       <p>{t.t('login.lead')}</p>
       {searchParams.error && <p className="kv-error" role="alert">{t.t('login.failed')}</p>}
       <p className="kv-login__cta">
-        <a className="kv-btn" href={`${env.publicAdminApiUrl}/auth/sso/start`}>{t.t('login.cta')}</a>
+        <Button as="a" href={`${env.publicAdminApiUrl}/auth/sso/start`}>{t.t('login.cta')}</Button>
       </p>
       <p className="kv-muted">{t.t('login.note')}</p>
       {env.devLoginEnabled && (
@@ -32,7 +33,7 @@ export default function AdminLoginPage({ searchParams }: { searchParams: { error
           <hr className="kv-login__divider" />
           <p className="kv-muted">{t.t('login.devDivider')}</p>
           <form className="kv-login__cta" method="post" action="/api/dev-login">
-            <button className="kv-btn kv-btn--secondary" type="submit">{t.t('login.devCta')}</button>
+            <Button type="submit">{t.t('login.devCta')}</Button>
           </form>
           <p className="kv-muted">{t.t('login.devNote')}</p>
         </>

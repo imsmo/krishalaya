@@ -9,13 +9,14 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { INVESTIGATION_STATUSES, investigationStatusKey, severityKey, type Investigation } from '../../../features/recon/recon';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('recon.invTitle'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { low: 'kv-status--muted', medium: '', high: 'kv-status--warn', critical: 'kv-status--danger' };
+const SEV_TONE: Record<string, StatusTone> = { low: 'neutral', medium: 'neutral', high: 'warning', critical: 'danger' };
 
 export default async function InvestigationsPage({ searchParams }: { searchParams: { cursor?: string; status?: string; ok?: string } }) {
   requireAdmin();
@@ -31,7 +32,7 @@ export default async function InvestigationsPage({ searchParams }: { searchParam
 
   const okKey = searchParams.ok === 'opened' ? 'opened' : null;
   const cols: Column<Investigation>[] = [
-    { header: t.t('recon.invSeverity'), cell: (i) => { const s = severityKey(i.severity); return <span className={`kv-status ${SEV_CLASS[s] ?? ''}`}>{t.t(`recon.severity.${s}`)}</span>; } },
+    { header: t.t('recon.invSeverity'), cell: (i) => { const s = severityKey(i.severity); return <StatusPill tone={SEV_TONE[s] ?? 'neutral'} label={t.t(`recon.severity.${s}`)} />; } },
     { header: t.t('recon.invStatus'), cell: (i) => t.t(`recon.invState.${investigationStatusKey(i.status)}`) },
     { header: t.t('recon.invSummary'), cell: (i) => <Link href={`/recon/investigations/${i.id}`}>{i.summary}</Link> },
   ];
@@ -44,16 +45,16 @@ export default async function InvestigationsPage({ searchParams }: { searchParam
       {okKey && <p className="kv-success" role="status">{t.t('recon.ok.opened')}</p>}
 
       <nav className="kv-filters" aria-label={t.t('recon.filterLabel')}>
-        <Link href={filterHref()} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('recon.filterAll')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('recon.filterAll')}</Chip>
         {INVESTIGATION_STATUSES.map((s) => (
-          <Link key={s} href={filterHref(s)} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`recon.invState.${s}`)}</Link>
+          <Chip as={Link} key={s} href={filterHref(s)} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`recon.invState.${s}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('recon.noInvestigations')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/recon/investigations?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/recon/investigations?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

@@ -25,6 +25,9 @@ import {
 } from '../../../../features/billing/money-controls';
 import { updateInvoiceAction, recordDunningAction, recordPaymentAction, reversePaymentAction } from '../../actions';
 
+import {
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -113,19 +116,19 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
             <div className="kv-facts__row"><dt>{t.t('pay.received')}</dt><dd>{formatMoneyMinor(String(money.paidMinor ?? '0'), inv.currency)}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('pay.outstanding')}</dt><dd>
               {isSettled(money)
-                ? <span className="kv-status kv-status--ok">{t.t('pay.settled')}</span>
+                ? <StatusPill tone="success" label={t.t('pay.settled')} />
                 : <strong>{formatMoneyMinor(String(money.outstandingMinor ?? '0'), inv.currency)}</strong>}
             </dd></div>
             {isOverpaid(money) && (
               <div className="kv-facts__row"><dt>{t.t('pay.overpaid')}</dt><dd>
-                <span className="kv-status kv-status--warn">{formatMoneyMinor(String(money.overpaidMinor), inv.currency)}</span>
+                <StatusPill tone="warning" label={formatMoneyMinor(String(money.overpaidMinor), inv.currency)} />
               </dd></div>
             )}
           </dl>
           {/* An overpayment is kept, never clamped — and it is said out loud, because the tenant will ask. */}
-          {isOverpaid(money) && <p className="kv-notice" role="note">{t.t('pay.overpaidNote')}</p>}
+          {isOverpaid(money) && <Callout>{t.t('pay.overpaidNote')}</Callout>}
 
-          {(money.payments ?? []).length === 0 ? <p className="kv-empty">{t.t('pay.none')}</p> : (
+          {(money.payments ?? []).length === 0 ? <EmptyState title={t.t('pay.none')} /> : (
             <ul className="kv-list" role="list">
               {(() => {
                 const rows = money.payments ?? [];
@@ -134,9 +137,8 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
                   <li key={pmt.id} className="kv-card">
                     <p className="kv-card__title">
                       {formatMoneyMinor(String(pmt.amountMinor ?? '0'), pmt.currency ?? inv.currency)}
-                      {' '}<span className={`kv-status ${isReversal(pmt) ? 'kv-status--danger' : 'kv-status--ok'}`}>
-                        {t.t(isReversal(pmt) ? 'pay.reversalLabel' : `pay.method.${String(pmt.method)}`)}
-                      </span>
+                      {' '}<StatusPill tone={isReversal(pmt) ? 'danger' : 'success'}
+                        label={t.t(isReversal(pmt) ? 'pay.reversalLabel' : `pay.method.${String(pmt.method)}`)} />
                     </p>
                     <p className="kv-detail__muted">
                       {t.t('pay.reference')}: <code>{pmt.reference}</code>
@@ -153,7 +155,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
                           <input type="hidden" name="paymentId" value={String(pmt.id ?? '')} />
                           <label htmlFor={`rv-${pmt.id}`} className="kv-field__label">{t.t('billing.reason')}</label>
                           <input id={`rv-${pmt.id}`} name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-                          <button type="submit" className="kv-btn kv-btn--danger">{t.t('pay.reverseSubmit')}</button>
+                          <Button type="submit" variant="danger">{t.t('pay.reverseSubmit')}</Button>
                         </form>
                       </details>
                     ) : (
@@ -190,11 +192,11 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
             <input id="pay-at" name="receivedAt" className="kv-input" required type="datetime-local" />
             <label htmlFor="pay-note" className="kv-field__label">{t.t('billing.note')}</label>
             <input id="pay-note" name="note" className="kv-input" maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('pay.recordSubmit')}</button>
+            <Button type="submit">{t.t('pay.recordSubmit')}</Button>
           </form>
         </details>
       ) : (
-        <p className="kv-notice" role="note">{t.t(`pay.blocked.${payableBlockedReason(inv.status)}`)}</p>
+        <Callout>{t.t(`pay.blocked.${payableBlockedReason(inv.status)}`)}</Callout>
       )}
 
       {/* WHAT WAS BILLED (PC-56 ADMIN-1, canon W013). The lines come from `saas_invoices.line_items` exactly as filed;
@@ -203,7 +205,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
           document — a line that could not be parsed is dropped server-side, so incompleteness is a real possibility
           and silence about it would be the actual error. */}
       <h2>{t.t('billing.linesTitle')}</h2>
-      {lines.length === 0 ? <p className="kv-empty">{t.t(`billing.lines.${recon === 'unknown' ? 'unknown' : 'none'}`)}</p> : (
+      {lines.length === 0 ? <EmptyState title={t.t(`billing.lines.${recon === 'unknown' ? 'unknown' : 'none'}`)} /> : (
         <>
           <table className="kv-table">
             <thead>
@@ -257,23 +259,22 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
             <p>
               {/* Plain <a>: a presigned S3 URL, not an app route. Downloading is audited server-side (who minted a
                   link for whose tax document), which is why the link comes from the API and is not built here. */}
-              <a className="kv-btn" href={String(pdfLink?.url)} download={pdfLink?.fileName ?? undefined}
-                target="_blank" rel="noopener noreferrer">
+              <Button as="a" href={String(pdfLink?.url)} download={pdfLink?.fileName ?? undefined} target="_blank" rel="noopener noreferrer">
                 {t.t('billing.pdfDownload')}
                 {humanBytes(pdfLink?.bytes) ? ` · ${humanBytes(pdfLink?.bytes)}` : ''}
-              </a>
+              </Button>
               <span className="kv-field__hint"> {t.t('billing.pdfExpiry', { n: String(pdfLink?.expiresInSec ?? 0) })}</span>
             </p>
           ) : (
             // storage unconfigured in this deploy, or the link could not be minted — said plainly, because "no
             // download button" must not be read as "no document"
-            <p className="kv-notice" role="note">{t.t('billing.pdfLinkUnavailable')}</p>
+            <Callout>{t.t('billing.pdfLinkUnavailable')}</Callout>
           )}
         </>
-      ) : <p className="kv-empty">{t.t('billing.pdf.not_generated')}</p>}
+      ) : <EmptyState title={t.t('billing.pdf.not_generated')} />}
 
       <h2>{t.t('billing.invActions')}</h2>
-      <p className="kv-muted kv-note">{t.t('billing.invActionsNote')}</p>
+      <Callout>{t.t('billing.invActionsNote')}</Callout>
       <div className="kv-action-cards">
         {canIssue(s) && <ReasonForm id={inv.id} action="issue" verb={t.t('billing.issue')} label={t.t('billing.reason')} />}
         {canMarkOverdue(s) && <ReasonForm id={inv.id} action="mark_overdue" verb={t.t('billing.markOverdue')} label={t.t('billing.reason')} />}
@@ -296,7 +297,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
             </select>
             <label htmlFor="dunNote" className="kv-field__label">{t.t('billing.note')}</label>
             <input id="dunNote" name="note" className="kv-input" maxLength={1000} />
-            <button type="submit" className="kv-btn">{t.t('billing.runDunningSubmit')}</button>
+            <Button type="submit">{t.t('billing.runDunningSubmit')}</Button>
           </form>
         </details>
       )}
@@ -314,7 +315,7 @@ function ReasonForm({ id, action, verb, label, danger }: { id: string; action: s
       <input type="hidden" name="action" value={action} />
       <label className="kv-field__label">{label}</label>
       <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-      <button type="submit" className={`kv-btn${danger ? ' kv-btn--danger' : ''}`}>{verb}</button>
+      <Button type="submit" variant={danger ? 'danger' : 'primary'}>{verb}</Button>
     </form>
   );
 }

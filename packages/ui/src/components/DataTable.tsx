@@ -213,7 +213,7 @@ export function DataTable<Row>(props: DataTableProps<Row>): React.ReactElement {
   return (
     <div className={['kvw-table-wrap', className || ''].filter(Boolean).join(' ')}>
       <table className="kvw-table">
-        <caption className="kv-sr-only">{caption}</caption>
+        <caption className="kvw-sr-only">{caption}</caption>
         <thead>
           <tr>
             {selection ? (
@@ -250,7 +250,7 @@ export function DataTable<Row>(props: DataTableProps<Row>): React.ReactElement {
                 </th>
               );
             })}
-            {rowActions ? <th scope="col"><span className="kv-sr-only">{rowActions.label}</span></th> : null}
+            {rowActions ? <th scope="col"><span className="kvw-sr-only">{rowActions.label}</span></th> : null}
           </tr>
         </thead>
         <tbody aria-busy={state === 'loading' || undefined}>
@@ -395,9 +395,12 @@ export function DataTable<Row>(props: DataTableProps<Row>): React.ReactElement {
 }
 
 /** CSS fragment. Table/toolbar/sort/selection/bulkbar/state/footer/pagesize selectors ported verbatim
- * from web-components.css lines 159-235; `.kv-sr-only` is a standard visually-hidden utility (not a canon
- * class — needed because the canon's own screens rely on visible section headings for table context,
- * which this reusable atom can't assume, same disclosed rationale as DEV-15). `.kvw-table-sort-btn` is a
+ * from web-components.css lines 159-235. `.kvw-sr-only` IS a canon class (`web-components.css:476`) —
+ * DEV-59 FIX: this file previously used a `kv-sr-only` prefix and its own comment claimed "not a canon
+ * class," which DEV-58 QA found false (canon has an identical utility under the correct `kvw-` prefix;
+ * `qa_dev58_audit.md` §1(b)). Renamed to the correct `kvw-` prefix and the CSS body's `clip: rect(...)`
+ * argument syntax aligned to canon's exact (space-, not comma-, separated) form so this rule is now a
+ * true byte-for-byte MATCH, not a mischaracterized CANON-MISSING entry. `.kvw-table-sort-btn` is a
  * DEV-16 a11y-enhancement class (see header comment) — resets all button chrome to render visually
  * identical to the canon's plain clickable `<th>`, zero new visual language introduced. */
 export const dataTableStyles = `
@@ -476,8 +479,8 @@ export const dataTableStyles = `
 .kvw-page-btn:hover { background: var(--color-earth-100); }
 .kvw-page-btn:focus-visible { outline: none; box-shadow: var(--web-focus-ring); }
 .kvw-page-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
-.kv-sr-only {
+.kvw-sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 `;

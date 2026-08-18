@@ -13,6 +13,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { channelKey } from '../../../features/templates/template';
 import { registerSenderAction } from '../actions';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('tp11.senders'), robots: { index: false, follow: false } };
@@ -44,18 +45,15 @@ export default async function SendersPage({ searchParams }: { searchParams: { ok
         <h1>{t.t('tp11.senders')}</h1>
         <p className="kv-page__sub">{t.t('tp11.senders.sub')}</p>
       </header>
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`tp11.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`tp11.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`tp11.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`tp11.err.${searchParams.error}`)}</Callout> : null}
 
       {/* THE HONESTY LINE, above the table rather than under it. */}
-      <p className="kv-note is-warn">{t.t('tp11.senders.unverified', { owner })}</p>
+      <Callout tone="warning">{t.t('tp11.senders.unverified', { owner })}</Callout>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('tp11.senders.empty')}</h2>
-          <p>{t.t('tp11.senders.emptyBody')}</p>
-        </div>
+        <EmptyState title={t.t('tp11.senders.empty')} body={t.t('tp11.senders.emptyBody')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('tp11.senders.caption')}</caption>
@@ -76,7 +74,7 @@ export default async function SendersPage({ searchParams }: { searchParams: { ok
                 <td className="kv-mono">{s.countryCode}</td>
                 <td className="kv-mono">{s.entityId ?? '—'}</td>
                 <td>
-                  <span className="kv-badge">{s.status}</span>
+                  <StatusPill tone="neutral" icon={false} label={s.status} />
                   {/* Verified BY A PROVIDER is a separate fact from the status an operator set, and it is the one a
                       reader assumes. It is printed as absent rather than left off the row. */}
                   <br /><small>{s.providerVerified ? t.t('tp11.senders.verified') : t.t('tp11.senders.notVerified')}</small>
@@ -115,7 +113,7 @@ export default async function SendersPage({ searchParams }: { searchParams: { ok
             <label className="kv-field__label" htmlFor="tp11-s-reason">{t.t('tp11.reason')}</label>
             <input className="kv-input" id="tp11-s-reason" name="reason" required minLength={20} maxLength={2000} />
           </div>
-          <button className="kv-btn" type="submit">{t.t('tp11.senders.submit')}</button>
+          <Button type="submit">{t.t('tp11.senders.submit')}</Button>
         </form>
       </section>
     </main>

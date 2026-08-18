@@ -10,6 +10,7 @@ import { DataTable, Column } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { ageParts, type TenantHealthRow } from '../../../features/support/ticket';
+import { StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +35,8 @@ export default async function TenantHealthPage() {
   const cols: Column<TenantHealthRow>[] = [
     { header: t.t('support.tenant'), cell: (r) => <Link href={`/support?tenantId=${encodeURIComponent(r.tenantId)}`}>{r.tenantId}</Link> },
     { header: t.t('support.openCount'), cell: (r) => r.openCount.toLocaleString() },
-    { header: t.t('support.breachedCount'), cell: (r) => <span className={r.breachedCount > 0 ? 'kv-status kv-status--danger' : ''}>{r.breachedCount.toLocaleString()}</span> },
-    { header: t.t('support.p0Open'), cell: (r) => <span className={r.p0Open > 0 ? 'kv-status kv-status--danger' : ''}>{r.p0Open.toLocaleString()}</span> },
+    { header: t.t('support.breachedCount'), cell: (r) => r.breachedCount > 0 ? <StatusPill tone="danger" label={r.breachedCount.toLocaleString()} /> : r.breachedCount.toLocaleString() },
+    { header: t.t('support.p0Open'), cell: (r) => r.p0Open > 0 ? <StatusPill tone="danger" label={r.p0Open.toLocaleString()} /> : r.p0Open.toLocaleString() },
     { header: t.t('support.oldestOpen'), cell: (r) => ageLabel(t, r.oldestOpenAgeSec) },
   ];
 

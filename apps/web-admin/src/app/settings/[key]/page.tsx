@@ -15,9 +15,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { revertSettingAction, setSettingValueAction } from '../actions';
+import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
-  canRevert, canSetDirectly, checkerNoticeKey, effectiveValue, overridesKey, provenanceClass, provenanceKey,
-  radiusClass, radiusKey, riskClassName, riskKey, type BlastRadius, type SettingRow,
+  canRevert, canSetDirectly, checkerNoticeKey, effectiveValue, overridesKey, provenanceTone, provenanceKey,
+  radiusClass, radiusKey, riskTone, riskKey, type BlastRadius, type SettingRow,
 } from '../../../features/settings/setting';
 
 export const dynamic = 'force-dynamic';
@@ -66,17 +67,17 @@ export default async function SettingDetailPage({ params, searchParams }: {
         <span className="kv-mono">{params.key}</span>
       </nav>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`st11.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`st11.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`st11.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`st11.err.${searchParams.error}`)}</Callout> : null}
 
       {s ? (
         <>
           <header className="kv-page__head">
             <h1 className="kv-mono">{s.key}</h1>
             <p className="kv-page__sub">
-              <span className={riskClassName(s.riskClass)}>{t.t(riskKey(s.riskClass))}</span>{' '}
-              <span className={provenanceClass(s)}>{t.t(provenanceKey(s))}</span>{' '}
+              <StatusPill tone={riskTone(s.riskClass)} label={t.t(riskKey(s.riskClass))} />{' '}
+              <StatusPill tone={provenanceTone(s)} label={t.t(provenanceKey(s))} />{' '}
               · {s.valueType} · {t.t(overridesKey(s), { n: String(s.overrideCount) })}
             </p>
             {s.description ? <p>{s.description}</p> : null}
@@ -101,7 +102,7 @@ export default async function SettingDetailPage({ params, searchParams }: {
                 </dd></div>
               ) : null}
             </dl>
-            {s.lockNote ? <p className="kv-note is-warn">{s.lockNote}</p> : null}
+            {s.lockNote ? <Callout tone="warning">{s.lockNote}</Callout> : null}
           </section>
 
           {/* THE DRY RUN — the affected count leads, because that is what the decision turns on and it is NOT the tenant
@@ -119,7 +120,7 @@ export default async function SettingDetailPage({ params, searchParams }: {
 
           <section className="kv-panel" aria-labelledby="st11-change">
             <h2 id="st11-change" className="kv-panel__title">{t.t('st11.change')}</h2>
-            {checkerNotice ? <p className="kv-note is-warn">{t.t(checkerNotice)}</p> : null}
+            {checkerNotice ? <Callout tone="warning">{t.t(checkerNotice)}</Callout> : null}
 
             <form action={setSettingValueAction}>
               <input type="hidden" name="key" value={s.key} />
@@ -151,7 +152,7 @@ export default async function SettingDetailPage({ params, searchParams }: {
                 <input className="kv-input" id="st11-reason2" name="reason" required minLength={20} maxLength={2000} />
                 <p className="kv-field__help">{t.t('st11.reasonHelp')}</p>
               </div>
-              <button className="kv-btn kv-btn--primary" type="submit">{t.t('st11.setValue')}</button>
+              <Button type="submit">{t.t('st11.setValue')}</Button>
             </form>
 
             {/* A REVERT IS ONLY OFFERED WHEN SOMETHING IS SET — otherwise it would be a button whose success message
@@ -169,17 +170,17 @@ export default async function SettingDetailPage({ params, searchParams }: {
                   <label className="kv-field__label" htmlFor="st11-rreason">{t.t('st11.revertReason')}</label>
                   <input className="kv-input" id="st11-rreason" name="reason" required minLength={20} maxLength={2000} />
                 </div>
-                <button className="kv-btn" type="submit">
+                <Button type="submit">
                   {t.t('st11.revert', { value: show(s.defaultValue) })}
-                </button>
+                </Button>
               </form>
-            ) : <p className="kv-note">{t.t('st11.alreadyShipped')}</p>}
+            ) : <Callout tone="info">{t.t('st11.alreadyShipped')}</Callout>}
           </section>
 
           <section className="kv-panel" aria-labelledby="st11-hist">
             <h2 id="st11-hist" className="kv-panel__title">{t.t('st11.history')}</h2>
             {s.history.length === 0 ? (
-              <p className="kv-note">{t.t('st11.noHistory')}</p>
+              <Callout tone="info">{t.t('st11.noHistory')}</Callout>
             ) : (
               <table className="kv-table">
                 <thead>

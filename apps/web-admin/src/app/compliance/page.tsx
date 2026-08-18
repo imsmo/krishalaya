@@ -15,13 +15,14 @@ import { getTranslator } from '../../lib/i18n';
 import { adminNoticeKey } from '../../features/nav/nav-model';
 import { DSR_STATUSES, DSR_REQUEST_TYPES, dsrStatusKey, type DsrRow } from '../../features/compliance/compliance';
 
+import { Button, Callout, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('compliance.dsrTitle'), robots: { index: false, follow: false } };
 }
 
-const DSR_CLASS: Record<string, string> = { open: 'kv-status--warn', in_progress: 'kv-status--warn', completed: 'kv-status--ok', rejected: 'kv-status--muted' };
+const DSR_TONE: Record<string, StatusTone> = { open: 'warning', in_progress: 'warning', completed: 'success', rejected: 'neutral' };
 
 export default async function ComplianceDsrPage({ searchParams }: { searchParams: { cursor?: string; status?: string; requestType?: string } }) {
   requireAdmin();
@@ -46,7 +47,7 @@ export default async function ComplianceDsrPage({ searchParams }: { searchParams
     { header: t.t('compliance.dsrId'), cell: (r) => <Link href={`/compliance/dsr/${encodeURIComponent(r.id)}`}>{r.id}</Link> },
     { header: t.t('compliance.requestType'), cell: (r) => t.t(`compliance.reqType.${r.requestType}`) },
     { header: t.t('compliance.subject'), cell: (r) => r.userId },
-    { header: t.t('compliance.status'), cell: (r) => { const s = dsrStatusKey(r.status); return <span className={`kv-status ${DSR_CLASS[s]}`}>{t.t(`compliance.dsrState.${s}`)}</span>; } },
+    { header: t.t('compliance.status'), cell: (r) => { const s = dsrStatusKey(r.status); return <StatusPill tone={DSR_TONE[s]} label={t.t(`compliance.dsrState.${s}`)} />; } },
   ];
 
   const qp = (extra: Record<string, string | undefined>) => {
@@ -64,9 +65,9 @@ export default async function ComplianceDsrPage({ searchParams }: { searchParams
           gets the console's uniform 403 notice on arrival rather than a hidden link — a hidden link makes somebody think
           the feature does not exist, while a 403 tells them what to ask for. */}
       <nav className="kv-filters" aria-label={t.t('cns.navLabel')}>
-        <Link href="/compliance/posture" className="kv-chip">{t.t('pos.navLink')}</Link>
-        <Link href="/compliance/consent" className="kv-chip">{t.t('cns.navConsent')}</Link>
-        <Link href="/compliance/consent/purposes" className="kv-chip">{t.t('cns.navPurposes')}</Link>
+        <Chip as={Link} href="/compliance/posture">{t.t('pos.navLink')}</Chip>
+        <Chip as={Link} href="/compliance/consent">{t.t('cns.navConsent')}</Chip>
+        <Chip as={Link} href="/compliance/consent/purposes">{t.t('cns.navPurposes')}</Chip>
       </nav>
       {/* THE 72-HOUR CLOCK IS READABLE FOR THE FIRST TIME. `acknowledged_at` did not exist before migration 0107, so
           W041's "SLA breaches YTD · 0 · clean record" was an UNMEASURED claim rather than a clean one — and an
@@ -96,36 +97,36 @@ export default async function ComplianceDsrPage({ searchParams }: { searchParams
           </div>
           {cleanRecordClaimable(sla.acknowledge)
             ? <p className="kv-detail__muted">{t.t('era.cleanRecord')}</p>
-            : <p className="kv-notice">{t.t('era.notCleanRecord')}</p>}
+            : <Callout tone="warning">{t.t('era.notCleanRecord')}</Callout>}
         </>
       )}
       {!sla && <p className="kv-detail__muted">{t.t('era.tilesUnavailable')}</p>}
       <p className="kv-muted">{t.t('compliance.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('compliance.nav')}>
-        <Link href="/compliance" className="kv-chip is-active" aria-current="true">{t.t('compliance.navDsr')}</Link>
-        <Link href="/compliance/exports" className="kv-chip">{t.t('compliance.navExports')}</Link>
-        <Link href="/compliance/breaches" className="kv-chip">{t.t('compliance.navBreaches')}</Link>
-        <Link href="/compliance/retention" className="kv-chip">{t.t('compliance.navRetention')}</Link>
-        <Link href="/compliance/audit" className="kv-chip">{t.t('compliance.navAudit')}</Link>
+        <Chip as={Link} href="/compliance" aria-current="true" active>{t.t('compliance.navDsr')}</Chip>
+        <Chip as={Link} href="/compliance/exports">{t.t('compliance.navExports')}</Chip>
+        <Chip as={Link} href="/compliance/breaches">{t.t('compliance.navBreaches')}</Chip>
+        <Chip as={Link} href="/compliance/retention">{t.t('compliance.navRetention')}</Chip>
+        <Chip as={Link} href="/compliance/audit">{t.t('compliance.navAudit')}</Chip>
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('compliance.filterStatus')}>
-        <Link href={qp({ status: undefined, cursor: undefined })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('compliance.filterAll')}</Link>
+        <Chip as={Link} href={qp({ status: undefined, cursor: undefined })} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('compliance.filterAll')}</Chip>
         {DSR_STATUSES.map((s) => (
-          <Link key={s} href={qp({ status: s, cursor: undefined })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`compliance.dsrState.${s}`)}</Link>
+          <Chip as={Link} key={s} href={qp({ status: s, cursor: undefined })} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`compliance.dsrState.${s}`)}</Chip>
         ))}
       </nav>
       <nav className="kv-filters" aria-label={t.t('compliance.filterType')}>
-        <Link href={qp({ requestType: undefined, cursor: undefined })} className={`kv-chip${!requestType ? ' is-active' : ''}`} aria-current={!requestType ? 'true' : undefined}>{t.t('compliance.filterAll')}</Link>
+        <Chip as={Link} href={qp({ requestType: undefined, cursor: undefined })} aria-current={!requestType ? 'true' : undefined} active={!requestType}>{t.t('compliance.filterAll')}</Chip>
         {DSR_REQUEST_TYPES.map((rt) => (
-          <Link key={rt} href={qp({ requestType: rt, cursor: undefined })} className={`kv-chip${requestType === rt ? ' is-active' : ''}`} aria-current={requestType === rt ? 'true' : undefined}>{t.t(`compliance.reqType.${rt}`)}</Link>
+          <Chip as={Link} key={rt} href={qp({ requestType: rt, cursor: undefined })} aria-current={requestType === rt ? 'true' : undefined} active={requestType === rt}>{t.t(`compliance.reqType.${rt}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('compliance.dsrEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

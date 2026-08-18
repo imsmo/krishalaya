@@ -4,6 +4,15 @@
 // SLA clock, and which sentence explains a refusal. The console REFLECTS the server's rules and grants nothing
 // (Law 6): every gate here has a stricter twin in admin-api, and these exist so an operator is told BEFORE the
 // round-trip — never instead of it.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B): the 2 `kv-status`-returning helpers below (slaClass/
+// effectClass) now return a `StatusTone` per the founder's pill-vs-text ruling (`spec_dev60.md` CONTINUATION
+// block) — disposition (c). DISCLOSED DEAD-CSS FIX: `slaClass`'s `kv-status--err` branch (breached SLA) has no
+// matching CSS rule anywhere in `globals.css` (only `--ok`/`--warn`/`--muted`/`--danger` exist) — this call site is
+// one of the 4 named in `spec_dev60.md`'s bonus finding. `--err` maps to `danger` here, a real visual fix: a
+// breached appeal SLA has rendered with NO colour at all until this swap.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export const DECISION_REASON_MIN = 20;   // admin-api's DECISION_REASON_MIN; 0132's CHECK is the database copy
 export const APPEAL_SLA_HOURS = 48;      // W097: "SLA 48h"
@@ -22,9 +31,10 @@ export function slaLabel(sla: AppealSla): { key: 'left' | 'over' | 'none'; hours
   return sla.kind === 'running' ? { key: 'left', hours: sla.hoursLeft } : { key: 'over', hours: sla.overHours };
 }
 
-export function slaClass(sla: AppealSla): string {
-  if (!sla) return 'kv-status';
-  return sla.kind === 'breached' ? 'kv-status kv-status--err' : sla.hoursLeft < 8 ? 'kv-status kv-status--warn' : 'kv-status kv-status--ok';
+export function slaTone(sla: AppealSla): StatusTone {
+  if (!sla) return 'neutral';
+  if (sla.kind === 'breached') return 'danger';
+  return sla.hoursLeft < 8 ? 'warning' : 'success';
 }
 
 /** Which sentence explains why THIS row offers no Decide control. Order matters: the strongest disqualification
@@ -68,10 +78,10 @@ export function buildDecide(v: { outcome: string; reason: string; languageCode: 
 export const OVERTURN_EFFECT_KEYS = ['restoreSubject', 'reverseRisk', 'notifyAppellant', 'coachReviewer'] as const;
 
 /** Effect-outcome → status class, for the success page's per-effect report. */
-export function effectClass(state: string): string {
-  if (state === 'done') return 'kv-status kv-status--ok';
-  if (state === 'nothing_to_do') return 'kv-status';
-  return 'kv-status kv-status--warn';   // subject_gone: true, and worth an operator's eye
+export function effectTone(state: string): StatusTone {
+  if (state === 'done') return 'success';
+  if (state === 'nothing_to_do') return 'neutral';
+  return 'warning';   // subject_gone: true, and worth an operator's eye
 }
 
 /* ------------------------------------------------------------------ cursor + misc */

@@ -12,14 +12,15 @@ import { adminNoticeKey } from '../../features/nav/nav-model';
 import { ANNOUNCEMENT_STATUSES, SEVERITIES, PLACEMENTS, announcementStatusKey, type AnnouncementRow } from '../../features/announcements/announcement';
 import { createAnnouncementAction } from './actions';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ann.title'), robots: { index: false, follow: false } };
 }
 
-const ST_CLASS: Record<string, string> = { draft: 'kv-status--muted', scheduled: 'kv-status--warn', published: 'kv-status--ok', expired: 'kv-status--muted', archived: 'kv-status--muted' };
-const SEV_CLASS: Record<string, string> = { info: 'kv-status--muted', warning: 'kv-status--warn', critical: 'kv-status--danger' };
+const ST_TONE: Record<string, StatusTone> = { draft: 'neutral', scheduled: 'warning', published: 'success', expired: 'neutral', archived: 'neutral' };
+const SEV_TONE: Record<string, StatusTone> = { info: 'neutral', warning: 'warning', critical: 'danger' };
 const ERR = new Set(['title', 'body', 'severity', 'placement', 'plans', 'countries', 'reason', 'elevation', 'conflict', 'invalid', 'generic']);
 
 export default async function AnnouncementsPage({ searchParams }: { searchParams: { cursor?: string; status?: string; severity?: string; ok?: string; error?: string } }) {
@@ -42,9 +43,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const cols: Column<AnnouncementRow>[] = [
     { header: t.t('ann.titleCol'), cell: (r) => <Link href={`/announcements/${encodeURIComponent(r.id)}`}>{r.title}</Link> },
-    { header: t.t('ann.severity'), cell: (r) => <span className={`kv-status ${SEV_CLASS[r.severity] ?? ''}`}>{t.t(`ann.sev.${r.severity}`)}</span> },
+    { header: t.t('ann.severity'), cell: (r) => <StatusPill tone={SEV_TONE[r.severity] ?? 'neutral'} label={t.t(`ann.sev.${r.severity}`)} /> },
     { header: t.t('ann.placement'), cell: (r) => t.t(`ann.place.${r.placement}`) },
-    { header: t.t('ann.status'), cell: (r) => { const s = announcementStatusKey(r.status); return <span className={`kv-status ${ST_CLASS[s]}`}>{t.t(`ann.state.${s}`)}</span>; } },
+    { header: t.t('ann.status'), cell: (r) => { const s = announcementStatusKey(r.status); return <StatusPill tone={ST_TONE[s] ?? 'neutral'} label={t.t(`ann.state.${s}`)} />; } },
     { header: t.t('ann.endsAt'), cell: (r) => r.endsAt ?? t.t('common.dash') },
   ];
   const qp = (extra: Record<string, string | undefined>) => {
@@ -67,7 +68,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
         <ul className="kv-card-grid">{active.map((a) => (
           <li key={a.id} className="kv-card">
             <Link href={`/announcements/${encodeURIComponent(a.id)}`} className="kv-card__title">{a.title}</Link>
-            <p><span className={`kv-status ${SEV_CLASS[a.severity] ?? ''}`}>{t.t(`ann.sev.${a.severity}`)}</span> · {t.t(`ann.place.${a.placement}`)}</p>
+            <p><StatusPill tone={SEV_TONE[a.severity] ?? 'neutral'} label={t.t(`ann.sev.${a.severity}`)} /> · {t.t(`ann.place.${a.placement}`)}</p>
             <p className="kv-muted">{t.t('ann.endsAt')}: {a.endsAt ?? t.t('common.dash')}</p>
           </li>
         ))}</ul>
@@ -75,22 +76,22 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
       <h2>{t.t('ann.allHeading')}</h2>
       <nav className="kv-filters" aria-label={t.t('ann.filterStatus')}>
-        <Link href={qp({ status: undefined, cursor: undefined })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('ann.filterAll')}</Link>
+        <Chip as={Link} href={qp({ status: undefined, cursor: undefined })} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('ann.filterAll')}</Chip>
         {ANNOUNCEMENT_STATUSES.map((s) => (
-          <Link key={s} href={qp({ status: s, cursor: undefined })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`ann.state.${s}`)}</Link>
+          <Chip as={Link} key={s} href={qp({ status: s, cursor: undefined })} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`ann.state.${s}`)}</Chip>
         ))}
       </nav>
       <nav className="kv-filters" aria-label={t.t('ann.filterSeverity')}>
-        <Link href={qp({ severity: undefined, cursor: undefined })} className={`kv-chip${!severity ? ' is-active' : ''}`} aria-current={!severity ? 'true' : undefined}>{t.t('ann.filterAll')}</Link>
+        <Chip as={Link} href={qp({ severity: undefined, cursor: undefined })} aria-current={!severity ? 'true' : undefined} active={!severity}>{t.t('ann.filterAll')}</Chip>
         {SEVERITIES.map((s) => (
-          <Link key={s} href={qp({ severity: s, cursor: undefined })} className={`kv-chip${severity === s ? ' is-active' : ''}`} aria-current={severity === s ? 'true' : undefined}>{t.t(`ann.sev.${s}`)}</Link>
+          <Chip as={Link} key={s} href={qp({ severity: s, cursor: undefined })} aria-current={severity === s ? 'true' : undefined} active={severity === s}>{t.t(`ann.sev.${s}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('ann.empty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -112,7 +113,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
           <input id="countries" name="countries" className="kv-input" placeholder={t.t('ann.countriesHint')} />
           <label htmlFor="createReason" className="kv-field__label">{t.t('ann.reason')}</label>
           <input id="createReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('ann.createSubmit')}</button>
+          <Button type="submit">{t.t('ann.createSubmit')}</Button>
         </form>
       </details>
     </section>

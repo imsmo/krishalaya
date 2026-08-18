@@ -2,6 +2,23 @@
 //
 // Every function maps a server field to a class name or an i18n KEY. No text lives here: web-admin is EN-only today and
 // will not always be, and a string returned from a formatter is a string no translator will ever find.
+//
+// DEV-60 (UI Port Program batch 3, Part 1 — the 98-function/29-file dynamic-class population DEV-59 QA scoped out):
+// the 7 `kv-badge`-returning helpers below (verdictClass/gapClass/gateClass/gateStatusClass/kindClass/
+// overrideRateClass/overriddenClass) now return a `StatusTone` (packages/ui's own vocabulary) instead of a raw
+// `kv-badge is-X` string — disposition (c): the domain logic (which tone a verdict/gap/rate deserves) is genuine
+// app-specific judgment and stays here; the OUTPUT is now a semantic token the `StatusPill` component understands,
+// never a hand-assembled class string. Call sites render `<StatusPill tone={...} label={...} />`. DISCLOSED VISUAL
+// CHANGE: `web-admin`'s own `.kv-badge` CSS has no `is-ok`/`is-warn`/`is-danger`/`is-info` rules (grep-verified,
+// same dead-modifier finding DEV-59 QA made for the static `kv-badge` literals it converted to `tone="neutral"`),
+// so every one of these badges has been rendering UNIFORM GREY regardless of the tone this logic computes — this
+// swap makes them render their REAL canon color (green/amber/red/blue) for the first time. Same class of fix as
+// DEV-58's FileUpload dropzone/Sidebar badge corrections: real, deliberate, disclosed — not silently patched.
+// `kv-note`-returning helpers in this file (unauditedClass/adviceClass/rollbackClass/capacityClass) are OUT OF
+// SCOPE here — `kv-note` never matched DEV-59 QA's own `kv-(badge|chip|btn|status)` grep that defined the 98/29
+// population; they are a Callout-shaped population, addressed (or disclosed) under Part 2.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ------------------------------------------------------------------------------------------------ */
 /* THE FAIRNESS VERDICT                                                                              */
@@ -13,14 +30,14 @@ export type Verdict = 'pass' | 'fail' | 'inconclusive';
  *
  *  An audit that could not establish fairness is not an audit that established it. Grey would let a reader skim past a
  *  model nobody has actually cleared — which is precisely how a fairness programme becomes a formality. */
-export function verdictClass(v: string): string {
+export function verdictTone(v: string): StatusTone {
   switch (v) {
-    case 'pass': return 'kv-badge is-ok';
-    case 'fail': return 'kv-badge is-danger';
-    case 'inconclusive': return 'kv-badge is-warn';
+    case 'pass': return 'success';
+    case 'fail': return 'danger';
+    case 'inconclusive': return 'warning';
     // A verdict this console does not recognise is DANGER, not neutral. `ck_afa_verdict` constrains the column, so this
     // is reachable only if the vocabulary grows — and on a fairness gate the safe direction is to draw attention.
-    default: return 'kv-badge is-danger';
+    default: return 'danger';
   }
 }
 
@@ -30,14 +47,14 @@ export function verdictKey(v: string): string {
 }
 
 /** The gap, rendered against the policy. Returns the class so a breach is visible at a glance in a table of numbers. */
-export function gapClass(gapPp: number, limitPp: number): string {
-  if (!Number.isFinite(gapPp)) return 'kv-badge is-danger';
+export function gapTone(gapPp: number, limitPp: number): StatusTone {
+  if (!Number.isFinite(gapPp)) return 'danger';
   // `>=` matching the server: the policy is written both ways in the canon and on a gate protecting farmers the tie goes
   // to the farmer. A console drawing 5.00pp as acceptable while the server refuses it would have an operator arguing
   // with a screen.
-  if (gapPp >= limitPp) return 'kv-badge is-danger';
-  if (gapPp >= limitPp * 0.8) return 'kv-badge is-warn';
-  return 'kv-badge is-ok';
+  if (gapPp >= limitPp) return 'danger';
+  if (gapPp >= limitPp * 0.8) return 'warning';
+  return 'success';
 }
 
 export function formatGap(gapPp: number | null | undefined): string {
@@ -52,8 +69,8 @@ export function formatGap(gapPp: number | null | undefined): string {
 export type GateReason = 'never_audited' | 'audit_failed' | 'audit_inconclusive' | 'audit_stale' | 'slices_unapproved';
 
 /** The gate's own badge. OPEN is the only green state and every closed reason is danger — there is no "nearly open". */
-export function gateClass(open: boolean): string {
-  return open ? 'kv-badge is-ok' : 'kv-badge is-danger';
+export function gateTone(open: boolean): StatusTone {
+  return open ? 'success' : 'danger';
 }
 
 export function gateKey(open: boolean, reason?: string | null): string {
@@ -109,13 +126,13 @@ export type GateStatusKind = 'pass' | 'fail' | 'insufficient' | 'unmeasured';
 
 /** INSUFFICIENT AND UNMEASURED ARE BOTH WARNINGS, NEVER OK. Each means the screen cannot vouch for the row, and a tick
  *  over a metric nothing measures is the defect this whole programme keeps finding. */
-export function gateStatusClass(kind: string): string {
+export function gateStatusTone(kind: string): StatusTone {
   switch (kind) {
-    case 'pass': return 'kv-badge is-ok';
-    case 'fail': return 'kv-badge is-danger';
-    case 'insufficient': return 'kv-badge is-warn';
-    case 'unmeasured': return 'kv-badge is-warn';
-    default: return 'kv-badge';
+    case 'pass': return 'success';
+    case 'fail': return 'danger';
+    case 'insufficient': return 'warning';
+    case 'unmeasured': return 'warning';
+    default: return 'neutral';
   }
 }
 
@@ -189,10 +206,10 @@ export function kindKey(k: string): string {
 
 /** A `fraud_flag` case is drawn as urgent regardless of its priority number, because the number is set by the producer
  *  and the consequence is not. */
-export function kindClass(k: string): string {
-  if (k === 'fraud_flag') return 'kv-badge is-danger';
-  if (k === 'low_confidence_grade') return 'kv-badge is-warn';
-  return 'kv-badge';
+export function kindTone(k: string): StatusTone {
+  if (k === 'fraud_flag') return 'danger';
+  if (k === 'low_confidence_grade') return 'warning';
+  return 'neutral';
 }
 
 /** Age in minutes, from a timestamp. Returns null for an unreadable date rather than 0 — "arrived this second" and "we
@@ -237,11 +254,11 @@ export function formatRate(r: number | null | undefined): string {
  *  A HIGH override rate is a WARNING and not a success. It is easy to read "humans are catching things" as reassurance;
  *  what it actually means is that the model is wrong that often and every one of those cases cost a person time. The
  *  thresholds match the rollout gate's ceiling so one screen cannot call acceptable what another refuses. */
-export function overrideRateClass(r: number | null | undefined): string {
-  if (r === null || r === undefined || !Number.isFinite(r)) return 'kv-badge';
-  if (r > 0.10) return 'kv-badge is-danger';
-  if (r > 0.075) return 'kv-badge is-warn';
-  return 'kv-badge is-ok';
+export function overrideRateTone(r: number | null | undefined): StatusTone {
+  if (r === null || r === undefined || !Number.isFinite(r)) return 'neutral';
+  if (r > 0.10) return 'danger';
+  if (r > 0.075) return 'warning';
+  return 'success';
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -283,10 +300,10 @@ export function outputSummary(output: unknown): string {
   return keys.length > 0 ? keys.slice(0, 3).join(', ') : '—';
 }
 
-export function overriddenClass(was: boolean): string {
+export function overriddenTone(was: boolean): StatusTone {
   // An override is a NOTE, not an error: it is the system working as designed. Drawing it red would make a healthy
   // human-in-the-loop look like a fault, and W085's whole argument is that overrides are the training signal.
-  return was ? 'kv-badge is-warn' : 'kv-badge';
+  return was ? 'warning' : 'neutral';
 }
 
 /* ------------------------------------------------------------------------------------------------ */

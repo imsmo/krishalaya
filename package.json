@@ -24,7 +24,9 @@
     "i18n:detect-strings:json": "node tools/scripts/i18n/detect-hardcoded-strings.js --json",
     "i18n:check-font-budget": "node tools/scripts/i18n/check-font-budget.js",
     "i18n:check-rtl-logical": "node tools/scripts/i18n/check-rtl-logical-properties.js",
-    "i18n:test-scripts": "node --test tools/scripts/i18n/__tests__/*.test.js"
+    "i18n:test-scripts": "node --test tools/scripts/i18n/__tests__/*.test.js",
+    "ui:adoption-report": "node tools/scripts/ui-adoption-report.js",
+    "ui:adoption-report:json": "node tools/scripts/ui-adoption-report.js --json"
   },
   "dependencies": {
     "pg": "^8.12.0"

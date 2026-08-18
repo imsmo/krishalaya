@@ -1,14 +1,16 @@
 // apps/web-admin/src/test/adminsweepb3-emergency.spec.ts · W058 console logic (PC-56 ADMIN-SWEEP-b3).
-import { categoryClass, stepClass, stepNeedsDetail, buildStep, STEP_DETAIL_MIN } from '../features/support/emergency';
+import { categoryTone, stepTone, stepNeedsDetail, buildStep, STEP_DETAIL_MIN } from '../features/support/emergency';
 import { en } from '../i18n/en';
 
 describe('ADMIN-SWEEP-b3 · emergency desk console logic', () => {
   it('women_safety carries the heaviest chip; a provider_pending step never prints as done', () => {
-    expect(categoryClass('women_safety')).toContain('err');
-    expect(categoryClass('emergency_vet')).toContain('warn');
-    expect(stepClass('recorded')).toContain('ok');
-    expect(stepClass('provider_pending')).toContain('warn');
-    expect(stepClass('provider_pending')).not.toContain('ok');
+    // women_safety maps to 'danger' — a real fix of a dead-CSS bug: the prior 'kv-status--err' literal had no rule
+    // anywhere in globals.css, so this row rendered with NO colour at all until this conversion.
+    expect(categoryTone('women_safety')).toBe('danger');
+    expect(categoryTone('emergency_vet')).toBe('warning');
+    expect(stepTone('recorded')).toBe('success');
+    expect(stepTone('provider_pending')).toBe('warning');
+    expect(stepTone('provider_pending')).not.toBe('success');
   });
   it('would_page steps take NO detail field — the truth is composed server-side, not typed', () => {
     expect(stepNeedsDetail('would_page')).toBe(false);

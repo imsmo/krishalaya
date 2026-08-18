@@ -12,8 +12,9 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { joinCaseAction, recordStepAction } from '../../actions';
-import { categoryClass, stepClass, stepNeedsDetail, STEP_DETAIL_MIN } from '../../../../features/support/emergency';
+import { categoryTone, stepTone, stepNeedsDetail, STEP_DETAIL_MIN } from '../../../../features/support/emergency';
 
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -57,7 +58,7 @@ export default async function SafetyCasePage({ params, searchParams }: { params:
   return (
     <section>
       <p className="kv-backlink"><Link href="/support/emergency">{t.t('em.backDesk')}</Link></p>
-      <h1>{c.ticketNo} <span className={categoryClass(c.categoryCode)}>{t.t(`em.cat.${c.categoryCode}`)}</span></h1>
+      <h1>{c.ticketNo} <StatusPill tone={categoryTone(c.categoryCode)} label={t.t(`em.cat.${c.categoryCode}`)} /></h1>
       {okKey && <p className="kv-success" role="status">{t.t(`em.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`em.error.${errKey}`)} {t.t('em.nothingChanged')}</p>}
 
@@ -83,11 +84,11 @@ export default async function SafetyCasePage({ params, searchParams }: { params:
       <ul className="kv-list">
         {c.responders.map((r) => <li key={r.adminId}>{r.adminId} · {r.joinedAt}</li>)}
       </ul>
-      {c.responders.length === 0 && <p className="kv-empty">{t.t('em.noResponders')}</p>}
+      {c.responders.length === 0 && <EmptyState title={t.t('em.noResponders')} />}
       {!c.joined && (
         <form action={joinCaseAction}>
           <input type="hidden" name="id" value={c.id} />
-          <button type="submit" className="kv-btn">{t.t('em.join')}</button>
+          <Button type="submit">{t.t('em.join')}</Button>
         </form>
       )}
 
@@ -96,12 +97,12 @@ export default async function SafetyCasePage({ params, searchParams }: { params:
       <ul className="kv-list">
         {c.steps.map((s) => (
           <li key={s.id}>
-            <span className={stepClass(s.status)}>{t.t(`em.step.${s.stepCode}` as never)}{s.status === 'provider_pending' ? t.t('em.pendingMark') : ''}</span>{' '}
+            <StatusPill tone={stepTone(s.status)} label={`${t.t(`em.step.${s.stepCode}` as never)}${s.status === 'provider_pending' ? t.t('em.pendingMark') : ''}`} />{' '}
             {s.detail} <span className="kv-detail__muted">— {s.actorAdminId} · {s.createdAt}</span>
           </li>
         ))}
       </ul>
-      {c.steps.length === 0 && <p className="kv-empty">{t.t('em.noSteps')}</p>}
+      {c.steps.length === 0 && <EmptyState title={t.t('em.noSteps')} />}
 
       {c.joined ? (
         <>
@@ -123,7 +124,7 @@ export default async function SafetyCasePage({ params, searchParams }: { params:
               {c.categoryCode === 'emergency_vet' && p.code === 'vet_contacted' && (
                 <input name="vetProfileId" className="kv-input" placeholder={t.t('em.vetIdPlaceholder')} />
               )}
-              <button type="submit" className="kv-btn kv-btn--secondary">{t.t('em.record')}</button>
+              <Button type="submit">{t.t('em.record')}</Button>
             </form>
           ))}
         </>
@@ -141,7 +142,7 @@ export default async function SafetyCasePage({ params, searchParams }: { params:
             <tbody>
               {c.vets.map((v) => (
                 <tr key={v.id}>
-                  <td>{v.fullName ?? t.t('common.dash')}{v.sameRegion && <span className="kv-status kv-status--ok">{t.t('em.vet.sameRegion')}</span>}</td>
+                  <td>{v.fullName ?? t.t('common.dash')}{v.sameRegion && <StatusPill tone="success" label={t.t('em.vet.sameRegion')} />}</td>
                   <td>{v.phone}</td>
                   <td>{v.region ?? t.t('common.dash')}</td>
                   <td>{v.serviceRadiusKm} km</td>
@@ -150,7 +151,7 @@ export default async function SafetyCasePage({ params, searchParams }: { params:
               ))}
             </tbody>
           </table>
-          {c.vets.length === 0 && <p className="kv-empty">{t.t('em.noVets')}</p>}
+          {c.vets.length === 0 && <EmptyState title={t.t('em.noVets')} />}
           <p className="kv-detail__muted">{t.t('em.vetsHonesty')}</p>
         </>
       )}

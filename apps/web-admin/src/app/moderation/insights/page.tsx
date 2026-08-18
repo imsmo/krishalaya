@@ -18,6 +18,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { tileText, tileValue, sampleNote, type Tile } from '../../../features/trust/trust-safety';
 
+import { Chip, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -43,7 +44,7 @@ function Stat({ label, tile, note, t }: { label: string; tile: Tile; note?: stri
       <div className="kv-stat__value">{tileText(tile)}</div>
       {/* The REASON, not a blank. A blank cell makes an un-measurable metric look like an oversight. */}
       {!v.known && tile && tile.kind === 'unavailable' && <div className="kv-detail__muted">{tile.reason}</div>}
-      {v.known && note && <div className="kv-status kv-status--warn">{t.t('ts.ins.lowSample', { n: note })}</div>}
+      {v.known && note && <StatusPill tone="warning" label={t.t('ts.ins.lowSample', { n: note })} />}
     </div>
   );
 }
@@ -76,9 +77,9 @@ export default async function TrustInsightsPage({ searchParams }: { searchParams
       <p className="kv-muted">{t.t('ts.ins.lead')}</p>
       <nav className="kv-filters">
         {[30, 90, 365].map((d) => (
-          <Link key={d} href={`/moderation/insights?days=${d}`} className={i!.windowDays === d ? 'kv-chip is-active' : 'kv-chip'}>
+          <Chip as={Link} key={d} href={`/moderation/insights?days=${d}`} active={i!.windowDays === d}>
             {t.t('ts.ins.days', { d: String(d) })}
-          </Link>
+          </Chip>
         ))}
       </nav>
 

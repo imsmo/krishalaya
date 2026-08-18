@@ -12,6 +12,7 @@ import { bpsToPercent, type OverviewReport, type GmvReport, type TenantGrowthRep
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { DataTable, Column } from '../../components/DataTable';
 
+import { Button } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -80,7 +81,7 @@ export default async function ReportsPage() {
 
       <h2>{t.t('reports.regulatorHeading')}</h2>
       <p className="kv-muted kv-note">{t.t('reports.regulatorNote')}</p>
-      <p className="kv-pager"><a className="kv-btn" href="/reports/regulator-export" download>{t.t('reports.regulatorDownload')}</a></p>
+      <p className="kv-pager"><Button as="a" href="/reports/regulator-export" download>{t.t('reports.regulatorDownload')}</Button></p>
     </section>
   );
 }

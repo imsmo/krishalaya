@@ -13,8 +13,9 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
+import { Button, Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  formatMinor, phaseClass, phaseKey, executionSummary, type Phase,
+  formatMinor, phaseTone, phaseKey, executionSummary, type Phase,
 } from '../../../features/payouts/payouts';
 
 export const dynamic = 'force-dynamic';
@@ -78,14 +79,14 @@ export default async function PayoutBatchesPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('po.batches.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {/* THE GATE'S OWN NUMBER. A gate that holds money silently is indistinguishable from a stalled queue — 0113's
           lesson, where the recon staleness alarm could never fire because its gauge was a hardcoded 0. */}
       {meta?.held && meta.held.count > 0 ? (
-        <p className="kv-note is-warn" role="status">
+        <Callout tone="warning" live="polite">
           {t.t('po.held', { count: String(meta.held.count), amount: formatMinor(meta.held.totalMinor) })}
-        </p>
+        </Callout>
       ) : null}
 
       {/* W066's alert strip, read across EVERY open batch rather than this page. */}
@@ -108,30 +109,26 @@ export default async function PayoutBatchesPage({ searchParams }: {
 
       <form className="kv-filters" method="get" action="/recon/payouts">
         <div className="kv-chips" role="group" aria-label={t.t('po.filter.status')}>
-          <Link className={`kv-chip${!status ? ' is-active' : ''}`} href={withFilters({ status: undefined })}>
+          <Chip as={Link} href={withFilters({ status: undefined })} active={!status}>
             {t.t('common.all')}
-          </Link>
+          </Chip>
           {STATUSES.map((s) => (
-            <Link key={s} className={`kv-chip${status === s ? ' is-active' : ''}`}
-              href={(() => { const q = new URLSearchParams(); q.set('status', s); if (batchType) q.set('batchType', batchType); return `/recon/payouts?${q.toString()}`; })()}>
+            <Chip as={Link} key={s} href={(() => { const q = new URLSearchParams(); q.set('status', s); if (batchType) q.set('batchType', batchType); return `/recon/payouts?${q.toString()}`; })()} active={status === s}>
               {t.t(phaseKey(s === 'open' ? 'awaiting_checker' : (s as Phase)))}
-            </Link>
+            </Chip>
           ))}
         </div>
         <div className="kv-field">
           <label className="kv-field__label" htmlFor="po-type">{t.t('po.filter.type')}</label>
           <input className="kv-input" id="po-type" name="batchType" defaultValue={batchType ?? ''} maxLength={40} />
         </div>
-        <button className="kv-btn" type="submit">{t.t('common.apply')}</button>
+        <Button type="submit">{t.t('common.apply')}</Button>
       </form>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('po.batches.empty.title')}</h2>
-          {/* THE EMPTY STATE NAMES THE DEFECT rather than describing a quiet day. Until the batch writer is scheduled
-              there will never be a row here, and an operator told "no batches this window" would wait for one. */}
-          <p>{t.t('po.batches.empty.body')}</p>
-        </div>
+        // THE EMPTY STATE NAMES THE DEFECT rather than describing a quiet day. Until the batch writer is scheduled
+        // there will never be a row here, and an operator told "no batches this window" would wait for one.
+        <EmptyState variant="empty" title={t.t('po.batches.empty.title')} body={t.t('po.batches.empty.body')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('po.batches.caption')}</caption>
@@ -158,7 +155,7 @@ export default async function PayoutBatchesPage({ searchParams }: {
                   {/* Labelled SETTLED, not "total". `total_minor` accumulates only as disbursements succeed, so it is 0
                       on every batch awaiting approval — a column headed "Total" would read as "nothing to approve". */}
                   <td>{formatMinor(b.settledMinor)}</td>
-                  <td><span className={phaseClass(b.phase)}>{t.t(phaseKey(b.phase))}</span></td>
+                  <td><StatusPill tone={phaseTone(b.phase)} label={t.t(phaseKey(b.phase))} /></td>
                   <td>{ex ? ex.at.slice(11, 16) : '—'}</td>
                 </tr>
               );
@@ -169,7 +166,7 @@ export default async function PayoutBatchesPage({ searchParams }: {
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Link>
+          <Button as={Link} href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Button>
         </nav>
       ) : null}
     </main>

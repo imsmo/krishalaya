@@ -22,8 +22,11 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { runCountCheckAction } from '../actions';
 import {
-  countCheckClass, countCheckKey, defaultNotActiveClass, dsnCellKey, dsnMissingIsUrgent, headroomClass,
-  headroomText, rateClass, rateText, shardTraffic, trafficClass, trafficKey, weeksToFullText, zeroWeightClass,
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  countCheckTone, countCheckKey, defaultNotActiveClass, dsnCellKey, dsnMissingIsUrgent, headroomTone,
+  headroomText, rateTone, rateText, shardTraffic, trafficTone, trafficKey, weeksToFullText, zeroWeightClass,
   type CountCheck, type Headroom, type Rate, type TimeToFull,
 } from '../../../features/cells/map-approval';
 
@@ -74,9 +77,9 @@ export default async function CapacityPage({ searchParams }: { searchParams: { o
         <p className="kv-page__sub">{t.t('cm.capacity.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`cm.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`cm.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`cm.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`cm.err.${searchParams.error}`)}</Callout> : null}
 
       {b ? (
         <>
@@ -101,22 +104,19 @@ export default async function CapacityPage({ searchParams }: { searchParams: { o
           <section className="kv-panel" aria-labelledby="cm-recon">
             <h2 id="cm-recon" className="kv-panel__title">{t.t('cm.recon.title')}</h2>
             {b.findings.nodesNeverCountChecked > 0 ? (
-              <p className="kv-note is-warn">
+              <Callout tone="warning">
                 {t.t('cm.recon.never', { n: String(b.findings.nodesNeverCountChecked) })}
-              </p>
+              </Callout>
             ) : null}
-            <p className="kv-note">{t.t('cm.recon.why')}</p>
+            <Callout>{t.t('cm.recon.why')}</Callout>
             <form action={runCountCheckAction}>
-              <button className="kv-btn" type="submit">{t.t('cm.recon.run')}</button>
+              <Button type="submit">{t.t('cm.recon.run')}</Button>
             </form>
           </section>
 
           {/* ---------------- THE CELLS ---------------- */}
           {b.cells.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('cm.capacity.empty.title')}</h2>
-              <p>{t.t('cm.capacity.empty.body')}</p>
-            </div>
+            <EmptyState title={t.t('cm.capacity.empty.title')} body={t.t('cm.capacity.empty.body')} />
           ) : (
             <table className="kv-table">
               <caption className="kv-table__caption">
@@ -150,12 +150,12 @@ export default async function CapacityPage({ searchParams }: { searchParams: { o
                         {' / '}{c.capacityTenants === null ? '—' : c.capacityTenants.toLocaleString('en-IN')}
                       </td>
                       <td>
-                        <span className={headroomClass(c.headroom, b!.planTriggerPercentUsed)}>{h.text}</span>
+                        <StatusPill tone={headroomTone(c.headroom, b!.planTriggerPercentUsed)} label={h.text} />
                         {h.unknownKey ? <><br /><small>{t.t(h.unknownKey)}</small></> : null}
                         {c.needsPlan ? <><br /><small>{t.t('cm.needsPlan', { pct: String(b!.planTriggerPercentUsed) })}</small></> : null}
                       </td>
                       <td>
-                        <span className={rateClass(c.rate)}>{r.text}</span>
+                        <StatusPill tone={rateTone(c.rate)} label={r.text} />
                         {r.unknownKey ? <><br /><small>{t.t(r.unknownKey)}</small></> : null}
                       </td>
                       <td>
@@ -165,7 +165,7 @@ export default async function CapacityPage({ searchParams }: { searchParams: { o
                       <td>
                         {/* NULL means NEVER CHECKED — the state of every node today — and it is a warning rather than
                             neutral, on the rule that an unverified figure says so rather than implying verification. */}
-                        <span className={countCheckClass(c.countCheck)}>{t.t(countCheckKey(c.countCheck))}</span>
+                        <StatusPill tone={countCheckTone(c.countCheck)} label={t.t(countCheckKey(c.countCheck))} />
                         {c.countCheck && c.countCheck.kind !== 'match' ? (
                           <><br /><small>{t.t('cm.count.detail', {
                             stored: String(c.countCheck.stored ?? '—'), derived: String(c.countCheck.derived ?? '—'),
@@ -205,7 +205,7 @@ export default async function CapacityPage({ searchParams }: { searchParams: { o
                       <tr key={s.id}>
                         <td><Link href={`/cells/shards/${encodeURIComponent(s.id)}`}>{s.shardIndex}</Link></td>
                         <td>
-                          <span className={trafficClass(traffic)}>{t.t(trafficKey(traffic))}</span>
+                          <StatusPill tone={trafficTone(traffic)} label={t.t(trafficKey(traffic))} />
                           {/* `draining_by_weight` is its own label rather than folded into the status badge, because the
                               two can disagree and the disagreement is the interesting case: somebody took the shard out
                               of rotation without committing to the lifecycle change. */}
@@ -225,7 +225,7 @@ export default async function CapacityPage({ searchParams }: { searchParams: { o
           ))}
 
           {/* W037's projection is deliberately absent — see the header, and the canon's own DELTA-013 banner. */}
-          <p className="kv-note">{t.t('cm.capacity.noProjection')}</p>
+          <Callout>{t.t('cm.capacity.noProjection')}</Callout>
         </>
       ) : null}
     </main>

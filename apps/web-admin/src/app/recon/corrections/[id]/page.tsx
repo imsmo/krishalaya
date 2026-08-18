@@ -19,8 +19,9 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { approveCorrectionAction, rejectCorrectionAction, submitCorrectionAction, withdrawCorrectionAction } from '../actions';
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  statusClass, balanceClass, balanceText, stepOf, submitBlockedKey, approveBlockedKey, aboveFounderThreshold,
+  statusTone, balanceTone, balanceText, stepOf, submitBlockedKey, approveBlockedKey, aboveFounderThreshold,
   type BalanceView, type LegView, type DraftStatus, type SubmitState, type ApproveState,
 } from '../../../../features/audit/audit-console';
 
@@ -81,7 +82,7 @@ export default async function CorrectionPage({ params, searchParams }: { params:
       {errKey && <p className="kv-error" role="alert">{t.t(`cor.error.${errKey}`)}</p>}
 
       <dl className="kv-facts">
-        <div className="kv-facts__row"><dt>{t.t('cor.status')}</dt><dd><span className={statusClass(d.status)}>{t.t(`cor.state.${d.status}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('cor.status')}</dt><dd><StatusPill tone={statusTone(d.status)} label={t.t(`cor.state.${d.status}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('cor.step')}</dt><dd>{step === null ? t.t('cor.stepDone') : t.t(`cor.step.${step}`)}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('cor.case')}</dt><dd><Link href={`/recon/investigations`}>{d.investigationId}</Link></dd></div>
         <div className="kv-facts__row"><dt>{t.t('cor.maker')}</dt><dd>{d.makerId}</dd></div>
@@ -107,8 +108,8 @@ export default async function CorrectionPage({ params, searchParams }: { params:
           ))}
         </tbody>
       </table>
-      {d.legs.length === 0 && <p className="kv-empty">{t.t('cor.noLegs')}</p>}
-      <p className={balanceClass(d.balance)}>{balanceText(d.balance)}</p>
+      {d.legs.length === 0 && <EmptyState variant="empty" title={t.t('cor.noLegs')} />}
+      <StatusPill tone={balanceTone(d.balance)} label={balanceText(d.balance)} />
       {!d.balance.balanced && d.legs.length > 0 && <p className="kv-error" role="alert">{t.t('cor.unbalanced', { sum: d.balance.sumText })}</p>}
       <p className="kv-detail__muted">{t.t('cor.size', { gross: d.balance.grossText })}</p>
 
@@ -128,7 +129,7 @@ export default async function CorrectionPage({ params, searchParams }: { params:
           ) : (
             <form action={submitCorrectionAction}>
               <input type="hidden" name="id" value={d.id} />
-              <button type="submit" className="kv-btn">{t.t('cor.submit')}</button>
+              <Button type="submit">{t.t('cor.submit')}</Button>
             </form>
           )}
         </>
@@ -138,7 +139,7 @@ export default async function CorrectionPage({ params, searchParams }: { params:
           <input type="hidden" name="id" value={d.id} />
           <label htmlFor="wnote" className="kv-field__label">{t.t('cor.withdrawReason')}</label>
           <input id="wnote" name="note" className="kv-input" required maxLength={2000} />
-          <button type="submit" className="kv-btn">{t.t('cor.withdraw')}</button>
+          <Button type="submit">{t.t('cor.withdraw')}</Button>
         </form>
       )}
 
@@ -165,14 +166,14 @@ export default async function CorrectionPage({ params, searchParams }: { params:
                   </label>
                 </>
               )}
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('cor.approve')}</button>
+              <Button type="submit" variant="danger">{t.t('cor.approve')}</Button>
             </form>
           )}
           <form action={rejectCorrectionAction} className="kv-form">
             <input type="hidden" name="id" value={d.id} />
             <label htmlFor="rnote" className="kv-field__label">{t.t('cor.rejectReason')}</label>
             <input id="rnote" name="note" className="kv-input" required maxLength={2000} />
-            <button type="submit" className="kv-btn">{t.t('cor.reject')}</button>
+            <Button type="submit">{t.t('cor.reject')}</Button>
           </form>
         </>
       )}

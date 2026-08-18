@@ -28,6 +28,7 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { publishSupportPolicyAction } from '../actions';
+import { Button, Callout, EmptyState, StatusPill, type StatusTone } from '@krishalaya/ui';
 import {
   SEVERITIES, ROUTING_STRATEGIES, AI_MODES, ESCALATION_CHANNELS,
   humanMinutes, deskHours, chainFor, formSteps, matrixIsCoherent,
@@ -41,9 +42,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('spol.title'), robots: { index: false, follow: false } };
 }
 
-const SEV_CLASS: Record<string, string> = { P0: 'kv-status--danger', P1: 'kv-status--danger', P2: 'kv-status--warn', P3: 'kv-status--muted' };
-const EV_CLASS: Record<string, string> = {
-  recorded: 'kv-status--ok', sent: 'kv-status--ok', provider_pending: 'kv-status--warn', failed: 'kv-status--danger',
+const SEV_TONE: Record<string, StatusTone> = { P0: 'danger', P1: 'danger', P2: 'warning', P3: 'neutral' };
+const EV_TONE: Record<string, StatusTone> = {
+  recorded: 'success', sent: 'success', provider_pending: 'warning', failed: 'danger',
 };
 
 /** The date input's default: tomorrow, because a policy effective yesterday is a policy nobody announced. */
@@ -116,7 +117,7 @@ export default async function SupportPolicyPage(
           </dl>
 
           {/* A promise of minutes that only holds in office hours is worth saying out loud. */}
-          {dark && <p className="kv-notice" role="note">{t.t('spol.nightGapWarn')}</p>}
+          {dark && <Callout>{t.t('spol.nightGapWarn')}</Callout>}
           {contradictions.length > 0 && (
             <p className="kv-error" role="alert">
               {t.t('spol.nightContradiction', { n: String(contradictions.length) })}
@@ -144,18 +145,16 @@ export default async function SupportPolicyPage(
                 const steps = chainFor(chain, r.severity);
                 return (
                   <tr key={r.severity}>
-                    <td><span className={`kv-status ${SEV_CLASS[r.severity] ?? ''}`}>{r.severity}</span></td>
+                    <td><StatusPill tone={SEV_TONE[r.severity] ?? 'neutral'} label={r.severity} /></td>
                     <td>{humanMinutes(r.firstResponseMinutes) ?? t.t('common.dash')}</td>
                     <td>{humanMinutes(r.resolutionMinutes) ?? t.t('common.dash')}</td>
                     <td>
                       {steps.length === 0
                         // the gap, named on the row that has it
-                        ? <span className="kv-status kv-status--danger">{t.t('spol.noChainFor', { sev: r.severity })}</span>
+                        ? <StatusPill tone="danger" label={t.t('spol.noChainFor', { sev: r.severity })} />
                         : steps.map((s, i) => (
-                          <span key={`${s.severity}-${s.afterMinutes}-${s.channel}-${i}`} className="kv-status">
-                            {s.afterMinutes === 0 ? t.t('spol.atBreach') : t.t('spol.afterMin', { n: String(s.afterMinutes) })}
-                            {' · '}{t.t(`spol.channel.${s.channel}`)}{' · '}{s.targetRole}
-                          </span>
+                          <StatusPill key={`${s.severity}-${s.afterMinutes}-${s.channel}-${i}`} tone="neutral"
+                            label={`${s.afterMinutes === 0 ? t.t('spol.atBreach') : t.t('spol.afterMin', { n: String(s.afterMinutes) })} · ${t.t(`spol.channel.${s.channel}`)} · ${s.targetRole}`} />
                         ))}
                     </td>
                   </tr>
@@ -168,7 +167,7 @@ export default async function SupportPolicyPage(
 
           {/* ---------------- what can actually be delivered ---------------- */}
           <h2>{t.t('spol.deliveryTitle')}</h2>
-          <p className="kv-notice" role="note">{bundle?.deliveryNote || t.t('spol.deliveryNote')}</p>
+          <Callout>{bundle?.deliveryNote || t.t('spol.deliveryNote')}</Callout>
 
           {/* ---------------- what the chain actually did ---------------- */}
           <h2>{t.t('spol.firedTitle')}</h2>
@@ -176,7 +175,7 @@ export default async function SupportPolicyPage(
           {undelivered.length > 0 && (
             <p className="kv-error" role="alert">{t.t('spol.undelivered', { n: String(undelivered.length) })}</p>
           )}
-          {events.length === 0 ? <p className="kv-empty">{t.t('spol.firedNone')}</p> : (
+          {events.length === 0 ? <EmptyState title={t.t('spol.firedNone')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('spol.ticket')}</th>
@@ -191,13 +190,13 @@ export default async function SupportPolicyPage(
                 {events.map((e) => (
                   <tr key={e.id}>
                     <td><Link href={`/support/tickets/${encodeURIComponent(e.ticketId)}`}>{e.ticketNo ?? e.ticketId.slice(0, 8)}</Link></td>
-                    <td><span className={`kv-status ${SEV_CLASS[e.severity] ?? ''}`}>{e.severity}</span></td>
+                    <td><StatusPill tone={SEV_TONE[e.severity] ?? 'neutral'} label={e.severity} /></td>
                     <td>{t.t(`spol.kind.${e.breachKind}`)}</td>
                     <td>{e.afterMinutes === 0 ? t.t('spol.atBreach') : t.t('spol.afterMin', { n: String(e.afterMinutes) })}</td>
                     <td>{t.t(`spol.channel.${e.channel}`)} · {e.targetRole}</td>
                     <td>{e.firedAt}</td>
                     <td>
-                      <span className={`kv-status ${EV_CLASS[e.status] ?? ''}`}>{t.t(`spol.ev.${e.status}`)}</span>
+                      <StatusPill tone={EV_TONE[e.status] ?? 'neutral'} label={t.t(`spol.ev.${e.status}`)} />
                       {/* why a step was not delivered, on the row itself */}
                       {e.detail ? <> <span className="kv-detail__muted">{e.detail}</span></> : null}
                     </td>
@@ -224,9 +223,7 @@ export default async function SupportPolicyPage(
                   <td>{v.name}</td>
                   <td>{v.effectiveFrom}</td>
                   <td>
-                    <span className={`kv-status ${v.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>
-                      {t.t(v.isActive ? 'spol.published' : 'spol.superseded')}
-                    </span>
+                    <StatusPill tone={v.isActive ? 'success' : 'neutral'} label={t.t(v.isActive ? 'spol.published' : 'spol.superseded')} />
                   </td>
                 </tr>
               ))}
@@ -301,7 +298,7 @@ export default async function SupportPolicyPage(
                   const cur = slas.find((r) => r.severity === s);
                   return (
                     <tr key={s}>
-                      <td><span className={`kv-status ${SEV_CLASS[s]}`}>{s}</span></td>
+                      <td><StatusPill tone={SEV_TONE[s] ?? 'neutral'} label={s} /></td>
                       <td><input aria-label={`${s} ${t.t('spol.frCol')}`} name={`fr_${s}`} type="number" min={1} max={43200}
                         className="kv-input" required defaultValue={cur?.firstResponseMinutes ?? ''} /></td>
                       <td><input aria-label={`${s} ${t.t('spol.resCol')}`} name={`res_${s}`} type="number" min={1} max={43200}
@@ -360,7 +357,7 @@ export default async function SupportPolicyPage(
             <label htmlFor="pol-notes" className="kv-field__label">{t.t('spol.notes')}</label>
             <input id="pol-notes" name="notes" className="kv-input" maxLength={2000} />
 
-            <button type="submit" className="kv-btn">{t.t('spol.publish')}</button>
+            <Button type="submit">{t.t('spol.publish')}</Button>
           </form>
         </details>
       )}

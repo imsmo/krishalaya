@@ -6,6 +6,12 @@
 // `isServable` is duplicated from admin-api's domain deliberately — see that file's own note. The SQL in apps/api
 // ENFORCES; admin-api's copy and this one LABEL. All three are asserted against the same four cases in their own specs,
 // so a change to any of them fails the others.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, Slice A): `stateClass`/`coverageClass` now return a `StatusTone` instead
+// of a raw `kv-status--X` string — disposition (c), same pattern as `ai-governance.ts`. Call sites render
+// `<StatusPill tone={...} label={...} />`.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export const REVIEW_DECISIONS = ['approve', 'approve_with_edit', 'reject'] as const;
 export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
@@ -53,9 +59,9 @@ export function isAwaitingReview(row: Pick<TranslationRow, 'isMachine' | 'review
 
 /** The status class for a row. A DRAFT is amber, not green — it is not an error and it is not live either, and the
  *  distinction is the whole point of the screen. */
-export function stateClass(row: Pick<TranslationRow, 'isMachine' | 'reviewedAt'>): string {
-  if (row.isMachine !== true) return 'kv-status--ok';
-  return row.reviewedAt ? 'kv-status--ok' : 'kv-status--warn';
+export function stateTone(row: Pick<TranslationRow, 'isMachine' | 'reviewedAt'>): StatusTone {
+  if (row.isMachine !== true) return 'success';
+  return row.reviewedAt ? 'success' : 'warning';
 }
 
 /** The i18n key for a row's state. */
@@ -68,11 +74,11 @@ export function stateKey(row: Pick<TranslationRow, 'isMachine' | 'reviewedAt'>):
  * A coverage cell's CSS class. `null` — no keys — is styled as NEUTRAL, never as a failure: a red cell next to a kind
  * nobody has created yet is a criticism of nothing, and it would sit there for ever.
  */
-export function coverageClass(pct: number | null): string {
-  if (pct === null) return 'kv-status--muted';
-  if (pct >= 90) return 'kv-status--ok';
-  if (pct >= 40) return 'kv-status--warn';
-  return 'kv-status--danger';
+export function coverageTone(pct: number | null): StatusTone {
+  if (pct === null) return 'neutral';
+  if (pct >= 90) return 'success';
+  if (pct >= 40) return 'warning';
+  return 'danger';
 }
 
 /** A percentage as text, or null when the question does not apply. NEVER "0%" for a kind with no keys. */

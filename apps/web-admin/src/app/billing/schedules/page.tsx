@@ -20,6 +20,9 @@ import { CADENCES, describeSchedule, scheduleHealth, wasDelivered, type Cadence,
 import { EXPORT_REPORTS } from '../../../features/billing/reporting';
 import { createScheduleAction, toggleScheduleAction } from '../actions';
 
+import {
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -62,13 +65,13 @@ export default async function SchedulesPage({ searchParams }: {
       <h1>{t.t('sch.title')}</h1>
       <p className="kv-field__hint">{t.t('sch.hint')}</p>
       {/* Said once, at the top: nothing is being emailed yet, and why. */}
-      <p className="kv-notice" role="note">{t.t('sch.noProviderNote')}</p>
+      <Callout>{t.t('sch.noProviderNote')}</Callout>
 
       {okKey && <p className="kv-success" role="status">{t.t(`sch.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`sch.error.${errKey}`)}</p>}
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : items.length === 0 ? (
-        <p className="kv-empty">{t.t('sch.none')}</p>
+        <EmptyState title={t.t('sch.none')} />
       ) : (
         <ul className="kv-list" role="list">
           {items.map((s) => {
@@ -77,12 +80,10 @@ export default async function SchedulesPage({ searchParams }: {
               <li key={s.id} className="kv-card">
                 <p className="kv-card__title">
                   {t.t(`rep.report.${s.report}`)}
-                  {' '}<span className={`kv-status ${s.isActive ? '' : 'kv-status--muted'}`}>
-                    {t.t(s.isActive ? 'sch.active' : 'sch.paused')}
-                  </span>
+                  {' '}<StatusPill tone="neutral" label={t.t(s.isActive ? 'sch.active' : 'sch.paused')} />
                   {/* health is only shown once this schedule's runs are loaded — otherwise every collapsed row would
                       claim "never run", which is a statement, not a placeholder */}
-                  {openId === s.id && <> <span className="kv-status kv-status--warn">{t.t(`sch.health.${health}`)}</span></>}
+                  {openId === s.id && <> <StatusPill tone="warning" label={t.t(`sch.health.${health}`)} /></>}
                 </p>
                 <p className="kv-detail__muted">
                   {describeSchedule(s.cadence as Cadence, s.hourIst, s.weekdayIso)}
@@ -95,14 +96,13 @@ export default async function SchedulesPage({ searchParams }: {
                 {s.notes && <p className="kv-detail__muted">{s.notes}</p>}
 
                 <p>
-                  <Link href={openId === s.id ? '/billing/schedules' : `/billing/schedules?open=${encodeURIComponent(s.id)}`}
-                    className="kv-btn--link">
+                  <Button as={Link} href={openId === s.id ? '/billing/schedules' : `/billing/schedules?open=${encodeURIComponent(s.id)}`} variant="tertiary">
                     {t.t(openId === s.id ? 'sch.hideRuns' : 'sch.showRuns')}
-                  </Link>
+                  </Button>
                 </p>
 
                 {openId === s.id && (
-                  openRuns.length === 0 ? <p className="kv-empty">{t.t('sch.noRuns')}</p> : (
+                  openRuns.length === 0 ? <EmptyState title={t.t('sch.noRuns')} /> : (
                     <table className="kv-table">
                       <thead><tr>
                         <th scope="col">{t.t('sch.ranAt')}</th>
@@ -114,9 +114,8 @@ export default async function SchedulesPage({ searchParams }: {
                           <tr key={`${r.ranAt}-${i}`}>
                             <td>{r.ranAt ? formatDate(r.ranAt) : t.t('common.dash')}</td>
                             <td>
-                              <span className={`kv-status ${wasDelivered(r.status) ? 'kv-status--ok' : r.status === 'failed' ? 'kv-status--danger' : 'kv-status--warn'}`}>
-                                {t.t(`sch.run.${String(r.status)}`)}
-                              </span>
+                              <StatusPill tone={wasDelivered(r.status) ? 'success' : r.status === 'failed' ? 'danger' : 'warning'}
+                                label={t.t(`sch.run.${String(r.status)}`)} />
                             </td>
                             <td>{r.detail ?? t.t('common.dash')}</td>
                           </tr>
@@ -131,9 +130,9 @@ export default async function SchedulesPage({ searchParams }: {
                   <input type="hidden" name="active" value={s.isActive ? 'false' : 'true'} />
                   <label htmlFor={`tr-${s.id}`} className="kv-field__label">{t.t('billing.reason')}</label>
                   <input id={`tr-${s.id}`} name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-                  <button type="submit" className={`kv-btn${s.isActive ? ' kv-btn--muted' : ''}`}>
+                  <Button type="submit" variant={s.isActive ? 'secondary' : 'primary'}>
                     {t.t(s.isActive ? 'sch.pause' : 'sch.resume')}
-                  </button>
+                  </Button>
                   {!s.isActive && <p className="kv-field__hint">{t.t('sch.resumeHint')}</p>}
                 </form>
               </li>
@@ -166,7 +165,7 @@ export default async function SchedulesPage({ searchParams }: {
           <p className="kv-field__hint">{t.t('sch.recipientsHint')}</p>
           <label htmlFor="sch-notes" className="kv-field__label">{t.t('sch.notes')}</label>
           <input id="sch-notes" name="notes" className="kv-input" maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('sch.create')}</button>
+          <Button type="submit">{t.t('sch.create')}</Button>
           <p className="kv-field__hint">{t.t('sch.firstRunHint')}</p>
         </form>
       </details>

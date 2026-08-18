@@ -1,22 +1,26 @@
 // apps/web-admin/src/test/admin7-ai-governance.spec.ts (PC-56 ADMIN-7)
+// DEV-60: verdictClass/gapClass/gateClass/gateStatusClass/kindClass/overrideRateClass/overriddenClass renamed to
+// their *Tone equivalents (return StatusTone, not a raw `kv-badge is-X` string) — see ai-governance.ts's own
+// DEV-60 header comment. Assertions below updated to match the new StatusTone vocabulary; the rest (kv-note
+// helpers, i18n keys, pure logic) are untouched, out of this batch's scope.
 import {
   adviceClass, adviceKey, ageMinutes, capacityClass, capacityKey, caveatKeys, claimAction, claimKey,
-  deltaKey, formatGap, formatRate, formatThreshold, gapClass, gateClass, gateKey, gateStatusClass,
-  gateStatusKey, kindClass, kindKey, legacyKey, nextStepKey, outputSummary, overriddenClass,
-  overrideRateClass, reviewerRealmKey, rollbackClass, rollbackKey, showApproveTransition, showWithdraw,
-  tileText, unauditedClass, unauditedKey, verdictClass, verdictKey, windowTooWide,
+  deltaKey, formatGap, formatRate, formatThreshold, gapTone, gateTone, gateKey, gateStatusTone,
+  gateStatusKey, kindTone, kindKey, legacyKey, nextStepKey, outputSummary, overriddenTone,
+  overrideRateTone, reviewerRealmKey, rollbackClass, rollbackKey, showApproveTransition, showWithdraw,
+  tileText, unauditedClass, unauditedKey, verdictTone, verdictKey, windowTooWide,
 } from '../features/ai-governance/ai-governance';
 
 describe('the verdict', () => {
   it('draws INCONCLUSIVE as a warning, never as neutral', () => {
     // The most consequential styling choice on this plane: an audit that could not establish fairness is not an audit
     // that established it, and grey would let a reader skim past a model nobody has actually cleared.
-    expect(verdictClass('inconclusive')).toContain('is-warn');
-    expect(verdictClass('pass')).toContain('is-ok');
-    expect(verdictClass('fail')).toContain('is-danger');
+    expect(verdictTone('inconclusive')).toBe('warning');
+    expect(verdictTone('pass')).toBe('success');
+    expect(verdictTone('fail')).toBe('danger');
   });
   it('draws an UNRECOGNISED verdict as danger, not neutral', () => {
-    expect(verdictClass('probably_fine')).toContain('is-danger');
+    expect(verdictTone('probably_fine')).toBe('danger');
     expect(verdictKey('probably_fine')).toBe('ai.verdict.unknown');
   });
 });
@@ -24,15 +28,15 @@ describe('the verdict', () => {
 describe('the gap against the policy', () => {
   it('marks a gap AT the limit as a breach, matching the server', () => {
     // A console drawing 5.00pp as acceptable while the server refuses it would have an operator arguing with a screen.
-    expect(gapClass(5, 5)).toContain('is-danger');
-    expect(gapClass(4.99, 5)).not.toContain('is-danger');
+    expect(gapTone(5, 5)).toBe('danger');
+    expect(gapTone(4.99, 5)).not.toBe('danger');
   });
   it('warns as a gap approaches the limit', () => {
-    expect(gapClass(4.2, 5)).toContain('is-warn');
-    expect(gapClass(1, 5)).toContain('is-ok');
+    expect(gapTone(4.2, 5)).toBe('warning');
+    expect(gapTone(1, 5)).toBe('success');
   });
   it('treats a non-finite gap as danger', () => {
-    expect(gapClass(NaN, 5)).toContain('is-danger');
+    expect(gapTone(NaN, 5)).toBe('danger');
   });
   it('renders an absent gap as a dash, never as 0.0pp', () => {
     // "0.0pp" is a claim of perfect parity; a dash is the absence of a measurement, and on a fairness board those must
@@ -44,8 +48,8 @@ describe('the gap against the policy', () => {
 
 describe('the gate badge', () => {
   it('has exactly one green state', () => {
-    expect(gateClass(true)).toContain('is-ok');
-    expect(gateClass(false)).toContain('is-danger');
+    expect(gateTone(true)).toBe('success');
+    expect(gateTone(false)).toBe('danger');
   });
   it('keys every closed reason, and falls back rather than showing a raw code', () => {
     expect(gateKey(true)).toBe('ai.gate.open');
@@ -89,10 +93,10 @@ describe('the unaudited census', () => {
 describe('the rollout gates', () => {
   it('draws INSUFFICIENT and UNMEASURED as warnings, never as ok', () => {
     // A tick over a metric nothing measures is the defect this whole programme keeps finding.
-    expect(gateStatusClass('insufficient')).toContain('is-warn');
-    expect(gateStatusClass('unmeasured')).toContain('is-warn');
-    expect(gateStatusClass('pass')).toContain('is-ok');
-    expect(gateStatusClass('fail')).toContain('is-danger');
+    expect(gateStatusTone('insufficient')).toBe('warning');
+    expect(gateStatusTone('unmeasured')).toBe('warning');
+    expect(gateStatusTone('pass')).toBe('success');
+    expect(gateStatusTone('fail')).toBe('danger');
   });
   it('keys each status and falls back', () => {
     expect(gateStatusKey('unmeasured')).toBe('ai.gateStatus.unmeasured');
@@ -131,9 +135,9 @@ describe('the auto-rollback panel', () => {
 describe('the queue', () => {
   it('draws a fraud flag as urgent regardless of its priority number', () => {
     // The number is set by the producer; the consequence — a farmer's listing off the market — is not.
-    expect(kindClass('fraud_flag')).toContain('is-danger');
-    expect(kindClass('low_confidence_grade')).toContain('is-warn');
-    expect(kindClass('dispute_triage')).toBe('kv-badge');
+    expect(kindTone('fraud_flag')).toBe('danger');
+    expect(kindTone('low_confidence_grade')).toBe('warning');
+    expect(kindTone('dispute_triage')).toBe('neutral');
     expect(kindKey('novel_kind')).toBe('ai.kind.other');
   });
   it('offers TAKE OVER as its own action, distinct from TAKE', () => {
@@ -186,10 +190,10 @@ describe('the overview tiles', () => {
     // It is easy to read "humans are catching things" as reassurance; what it means is that the model is wrong that often
     // and every case cost somebody time. The thresholds match the rollout gate's ceiling so one screen cannot call
     // acceptable what another refuses.
-    expect(overrideRateClass(0.15)).toContain('is-danger');
-    expect(overrideRateClass(0.08)).toContain('is-warn');
-    expect(overrideRateClass(0.03)).toContain('is-ok');
-    expect(overrideRateClass(null)).toBe('kv-badge');
+    expect(overrideRateTone(0.15)).toBe('danger');
+    expect(overrideRateTone(0.08)).toBe('warning');
+    expect(overrideRateTone(0.03)).toBe('success');
+    expect(overrideRateTone(null)).toBe('neutral');
   });
   it('formats a rate from the FRACTION the server sends', () => {
     expect(formatRate(0.048)).toBe('4.8%');
@@ -225,9 +229,9 @@ describe('the decision explorer', () => {
   it('draws an override as a NOTE rather than an error', () => {
     // An override is the system working as designed and is the training signal W085 is built on; red would make a healthy
     // human-in-the-loop look like a fault.
-    expect(overriddenClass(true)).toContain('is-warn');
-    expect(overriddenClass(true)).not.toContain('is-danger');
-    expect(overriddenClass(false)).toBe('kv-badge');
+    expect(overriddenTone(true)).toBe('warning');
+    expect(overriddenTone(true)).not.toBe('danger');
+    expect(overriddenTone(false)).toBe('neutral');
   });
 });
 

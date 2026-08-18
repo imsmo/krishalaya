@@ -14,8 +14,9 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { exportDemandAction } from './actions';
 import { formatMinor } from '../../../features/analytics/farmer360';
-import { heatBucket, projectCentroids, weekLabel, gapClass, EXPORT_REASON_MIN } from '../../../features/analytics/demand-map';
+import { heatBucket, projectCentroids, weekLabel, gapTone, EXPORT_REASON_MIN } from '../../../features/analytics/demand-map';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -81,16 +82,16 @@ export default async function DemandMapPage({ searchParams }: { searchParams: { 
         </div>
       )}
       {sp.ok === 'exported' && (
-        <p className="kv-notice" role="status">
+        <Callout live="polite">
           {t.t('dm.exported', { receipt: sp.receipt ?? '', suppressed: sp.suppressed ?? '0' })}
-        </p>
+        </Callout>
       )}
       {sp.error && ERR.has(sp.error) && <p className="kv-error" role="alert">{t.t(`dm.error.${sp.error}` as never)}</p>}
 
       {d && (
         <>
           <p>
-            <span className="kv-status kv-status--warn">{weekLabel(d.week.isoWeek, d.week.start, d.week.end)}</span>{' '}
+            <StatusPill tone="warning" label={weekLabel(d.week.isoWeek, d.week.start, d.week.end)} />{' '}
             <span className="kv-detail__muted">{t.t('dm.twoClocks')}</span>
           </p>
 
@@ -99,12 +100,12 @@ export default async function DemandMapPage({ searchParams }: { searchParams: { 
           <p className="kv-detail__muted">{d.floor.basis}</p>
 
           <h2>{t.t('dm.searchHeading')}</h2>
-          <p className="kv-notice" role="note">{t.t('dm.searchNotRecorded')}</p>
+          <Callout>{t.t('dm.searchNotRecorded')}</Callout>
           <p className="kv-detail__muted">{d.searchInterest.reason}</p>
 
           <h2>{t.t('dm.intensityHeading')}</h2>
           {d.intensity.length === 0 ? (
-            <p className="kv-empty">{t.t('dm.empty')}</p>
+            <EmptyState title={t.t('dm.empty')} />
           ) : (
             <>
               {withCentroid.length > 0 && (
@@ -146,7 +147,7 @@ export default async function DemandMapPage({ searchParams }: { searchParams: { 
           <h2>{t.t('dm.gapsHeading')}</h2>
           <p className="kv-muted">{t.t('dm.gapsLead')}</p>
           {d.gaps.length === 0 ? (
-            <p className="kv-empty">{t.t('dm.noGaps')}</p>
+            <EmptyState title={t.t('dm.noGaps')} />
           ) : (
             <>
               <table className="kv-table">
@@ -161,7 +162,7 @@ export default async function DemandMapPage({ searchParams }: { searchParams: { 
                       <td>{c.demandMinor === null ? '' : formatMinor(c.demandMinor)}{c.unvaluedN > 0 && <span className="kv-detail__muted"> {t.t('dm.plusUnvalued', { n: String(c.unvaluedN) })}</span>}</td>
                       <td>{c.buyersN}{c.belowFloor && <span className="kv-detail__muted"> · {t.t('dm.belowFloor', { k: String(d.floor.k) })}</span>}</td>
                       <td>{c.supplyMinor === null ? <span className="kv-detail__muted">{t.t('dm.noSupply')}</span> : formatMinor(c.supplyMinor)}</td>
-                      <td>{c.verdict.kind === 'gap' && <span className={gapClass(c.verdict.pct!)}>{c.verdict.pct}%</span>}</td>
+                      <td>{c.verdict.kind === 'gap' && <StatusPill tone={gapTone(c.verdict.pct!)} label={`${c.verdict.pct}%`} />}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -191,7 +192,7 @@ export default async function DemandMapPage({ searchParams }: { searchParams: { 
             <input type="hidden" name="week" value={d.week.isoWeek} />
             <label htmlFor="dm-reason">{t.t('dm.exportReason')}</label>
             <input id="dm-reason" name="reason" required minLength={EXPORT_REASON_MIN} placeholder={t.t('dm.exportReasonHint')} />
-            <button type="submit" className="kv-btn">{t.t('dm.exportSubmit')}</button>
+            <Button type="submit">{t.t('dm.exportSubmit')}</Button>
           </form>
 
           {/* The gaps behind this page, named — not faked. */}

@@ -13,8 +13,9 @@ import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { decideAppealAction } from '../../actions';
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  decideBlockedKey, neOriginalMark, slaLabel, slaClass,
+  decideBlockedKey, neOriginalMark, slaLabel, slaTone,
   DECISION_REASON_MIN, OVERTURN_EFFECT_KEYS, type AppealSla,
 } from '../../../../features/moderation/appeals';
 
@@ -90,14 +91,14 @@ export default async function AppealCasePage({ params, searchParams }: { params:
           <dt>{t.t('ap.col.assignedTo')}</dt>
           <dd>
             {c.assignedTo ?? t.t('ap.unassigned')}
-            {mark === 'ok' && <span className="kv-status kv-status--ok">{t.t('ap.neOriginal')}</span>}
+            {mark === 'ok' && <StatusPill tone="success" label={t.t('ap.neOriginal')} />}
             {mark === 'unknown' && <span className="kv-status">{t.t('ap.neUnknown')}</span>}
           </dd>
         </div>
         <div className="kv-facts__row">
           <dt>{t.t('ap.col.sla')}</dt>
           <dd>{c.status === 'pending'
-            ? <span className={slaClass(c.sla)}>{t.t(`ap.sla.${sla.key}`, { h: String(sla.hours) })}</span>
+            ? <StatusPill tone={slaTone(c.sla)} label={t.t(`ap.sla.${sla.key}`, { h: String(sla.hours) })} />
             : <>{t.t(`ap.tab.${c.status}` as never)} · {c.decidedAt}</>}</dd>
         </div>
         {c.decisionReason && (
@@ -123,12 +124,14 @@ export default async function AppealCasePage({ params, searchParams }: { params:
       <ul className="kv-list">
         {c.notices.map((n) => (
           <li key={n.id}>
-            <span className="kv-status">{t.t(`ap.notice.${n.status === 'delivered' ? 'delivered' : n.status === 'queued' ? 'queued' : 'failed'}`)}</span>{' '}
+            {/* DEV-61 Part 0: harmonised bare kv-status drift per spec_dev61.md's stated rule — was left
+                uncoloured; now a real StatusPill(tone="neutral"), matching the tenants/subscription precedent. */}
+            <StatusPill tone="neutral" label={t.t(`ap.notice.${n.status === 'delivered' ? 'delivered' : n.status === 'queued' ? 'queued' : 'failed'}`)} />{' '}
             {n.languageCode}{n.detail && <span className="kv-detail__muted"> — {n.detail}</span>}
           </li>
         ))}
       </ul>
-      {c.notices.length === 0 && <p className="kv-empty">{t.t('ap.noNotices')}</p>}
+      {c.notices.length === 0 && <EmptyState variant="empty" title={t.t('ap.noNotices')} />}
 
       {/* ---------------- THE DECISION (W1953: the confirm IS this form) ---------------- */}
       {c.status !== 'pending' ? (
@@ -160,7 +163,7 @@ export default async function AppealCasePage({ params, searchParams }: { params:
             <select id="lang" name="languageCode" className="kv-input" required defaultValue={c.appellantLanguage ?? ''}>
               {c.activeLanguages.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
-            <button type="submit" className="kv-btn">{t.t('ap.decide')}</button>
+            <Button type="submit">{t.t('ap.decide')}</Button>
           </form>
           <p className="kv-detail__muted">{t.t('ap.decideDoctrine')}</p>
         </>

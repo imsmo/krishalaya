@@ -21,7 +21,10 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { startProvisioningAction, recordSmokeAction } from '../actions';
 import {
-  canOpenCell, gateClass, provisioningClass, provisioningKey, smokeClass, smokeKey, stepKey,
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  canOpenCell, gateClass, provisioningTone, provisioningKey, smokeTone, smokeKey, stepKey,
   PROVISIONING_STEPS,
 } from '../../../features/cells/residency-migration';
 
@@ -68,14 +71,14 @@ export default async function ProvisioningPage({ searchParams }: { searchParams:
         <p className="kv-page__sub">{t.t('rz.prov.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`rz.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`rz.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`rz.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`rz.err.${searchParams.error}`)}</Callout> : null}
 
       {p ? (
         <>
           {/* **NO APPLY BUTTON, AND THE ABSENCE IS THE POINT.** */}
-          <p className="kv-note is-warn">{t.t('rz.prov.noApply')}</p>
+          <Callout tone="warning">{t.t('rz.prov.noApply')}</Callout>
 
           {/* ---------------- THE MARKET-ENTRY GATE ---------------- */}
           <section className="kv-panel" aria-labelledby="rz-gate">
@@ -88,15 +91,12 @@ export default async function ProvisioningPage({ searchParams }: { searchParams:
                 </li>
               ))}
             </ul>
-            <p className="kv-note">{t.t('rz.prov.gateNote')}</p>
+            <Callout>{t.t('rz.prov.gateNote')}</Callout>
           </section>
 
           {/* ---------------- THE RUNS ---------------- */}
           {p.runs.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('rz.prov.empty.title')}</h2>
-              <p>{t.t('rz.prov.empty.body')}</p>
-            </div>
+            <EmptyState title={t.t('rz.prov.empty.title')} body={t.t('rz.prov.empty.body')} />
           ) : (
             <table className="kv-table">
               <caption className="kv-table__caption">{t.t('rz.prov.caption')}</caption>
@@ -115,17 +115,15 @@ export default async function ProvisioningPage({ searchParams }: { searchParams:
                   <tr key={r.id}>
                     <td>{r.targetCode}</td>
                     <td>{r.countryCode}</td>
-                    <td><span className={provisioningClass(r.status)}>{t.t(provisioningKey(r.status))}</span></td>
+                    <td><StatusPill tone={provisioningTone(r.status)} label={t.t(provisioningKey(r.status))} /></td>
                     <td>
                       {/* The six steps in W038's order, so the checklist reads the same way every time. */}
                       {PROVISIONING_STEPS.map((s) => (
-                        <span key={s} className={r.steps[s] ? 'kv-badge is-ok' : 'kv-badge'}>
-                          {t.t(stepKey(s))}
-                        </span>
+                        <StatusPill key={s} tone="neutral" icon={false} label={t.t(stepKey(s))} />
                       ))}
                     </td>
                     <td>
-                      <span className={smokeClass(r.smokeOutcome)}>{t.t(smokeKey(r.smokeOutcome))}</span>
+                      <StatusPill tone={smokeTone(r.smokeOutcome)} label={t.t(smokeKey(r.smokeOutcome))} />
                       {/* A cell nobody has proved works is not a cell in an unknown state — it is a cell that must not
                           open, which is why "not run" is a warning rather than neutral. */}
                       {canOpenCell(r.smokeOutcome, r.status)
@@ -148,7 +146,7 @@ export default async function ProvisioningPage({ searchParams }: { searchParams:
             <h2 id="rz-start" className="kv-panel__title">{t.t('rz.prov.start')}</h2>
             {openable.length === 0 ? (
               // The honest empty state: no country's profile is ratified, so there is nowhere a cell may lawfully go.
-              <p className="kv-note is-warn">{t.t('rz.prov.noEligibleCountry')}</p>
+              <Callout tone="warning">{t.t('rz.prov.noEligibleCountry')}</Callout>
             ) : (
               <form action={startProvisioningAction}>
                 <div className="kv-field">
@@ -163,7 +161,7 @@ export default async function ProvisioningPage({ searchParams }: { searchParams:
                     {openable.map((c) => <option key={c.code} value={c.code}>{c.code} · {c.name}</option>)}
                   </select>
                 </div>
-                <button className="kv-btn" type="submit">{t.t('rz.prov.startBtn')}</button>
+                <Button type="submit">{t.t('rz.prov.startBtn')}</Button>
               </form>
             )}
           </section>
@@ -172,7 +170,7 @@ export default async function ProvisioningPage({ searchParams }: { searchParams:
           {p.runs.some((r) => r.status !== 'open' && r.status !== 'abandoned') ? (
             <section className="kv-panel" aria-labelledby="rz-smoke">
               <h2 id="rz-smoke" className="kv-panel__title">{t.t('rz.prov.smokeTitle')}</h2>
-              <p className="kv-note">{t.t('rz.prov.smokeWhat')}</p>
+              <Callout>{t.t('rz.prov.smokeWhat')}</Callout>
               <form action={recordSmokeAction}>
                 <div className="kv-field">
                   <label className="kv-field__label" htmlFor="rz-run">{t.t('rz.prov.run')}</label>
@@ -182,8 +180,8 @@ export default async function ProvisioningPage({ searchParams }: { searchParams:
                     ))}
                   </select>
                 </div>
-                <button className="kv-btn" type="submit" name="outcome" value="passed">{t.t('rz.prov.smokePassed')}</button>
-                <button className="kv-btn kv-btn--danger" type="submit" name="outcome" value="failed">{t.t('rz.prov.smokeFailed')}</button>
+                <Button type="submit" name="outcome" value="passed">{t.t('rz.prov.smokePassed')}</Button>
+                <Button type="submit" name="outcome" value="failed" variant="danger">{t.t('rz.prov.smokeFailed')}</Button>
               </form>
             </section>
           ) : null}

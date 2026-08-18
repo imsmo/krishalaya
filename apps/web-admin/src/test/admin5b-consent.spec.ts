@@ -2,9 +2,9 @@
 // The two claims most at risk on this screen: "this person consented to v2" when v2's words were never stored, and
 // "12/12 languages ✓" when the twelve is hardcoded and the notices are slogans.
 import {
-  CONSENT_CHANNELS, isConsentChannel, channelFilter, decisionKey, decisionClass, provenanceKey, provenanceClass,
-  assistedShareText, coverageState, coverageClass, coverageText, optInText,
-  versionKind, versionClass, showsSignature, openDraft, publishBlockedReason,
+  CONSENT_CHANNELS, isConsentChannel, channelFilter, decisionKey, decisionTone, provenanceKey, provenanceTone,
+  assistedShareText, coverageState, coverageTone, coverageText, optInText,
+  versionKind, versionTone, showsSignature, openDraft, publishBlockedReason,
   reConsentTotal, reConsentNeeded, buildSaveNotice, buildOpenDraft, NOTICE_MIN_CHARS,
   type ConsentVersionRow, type PurposeRow,
 } from '../features/compliance/consent';
@@ -36,32 +36,32 @@ describe('ADMIN-5b console · withdrawn is not refused', () => {
     expect(decisionKey('nonsense')).toBe('unknown');
   });
   it('a withdrawal is NOT a failure colour — somebody exercising a right is the system working', () => {
-    expect(decisionClass('withdrawn')).toContain('muted');
-    expect(decisionClass('withdrawn')).not.toContain('danger');
-    expect(decisionClass('refused')).toContain('muted');
-    expect(decisionClass('granted')).toContain('ok');
+    expect(decisionTone('withdrawn')).toBe('neutral');
+    expect(decisionTone('withdrawn')).not.toBe('danger');
+    expect(decisionTone('refused')).toBe('neutral');
+    expect(decisionTone('granted')).toBe('success');
   });
   it('an unrecognised decision is a warning, never quietly a grant', () => {
-    expect(decisionClass('something_new')).toContain('warn');
-    expect(decisionClass('something_new')).not.toContain('--ok');
+    expect(decisionTone('something_new')).toBe('warning');
+    expect(decisionTone('something_new')).not.toBe('success');
   });
 });
 
 describe('ADMIN-5b console · can we produce the words?', () => {
   it('RESOLVED is the only state that gets a positive colour', () => {
     expect(provenanceKey({ kind: 'resolved', versionId: 'x', version: 'v2' })).toBe('resolved');
-    expect(provenanceClass({ kind: 'resolved', versionId: 'x', version: 'v2' })).toContain('ok');
+    expect(provenanceTone({ kind: 'resolved', versionId: 'x', version: 'v2' })).toBe('success');
   });
   it('WORDS NEVER RECORDED is a warning — the weakest record the platform holds', () => {
     // Every consent captured before 0108. Rendering it as fine would claim evidence of informed consent that we do not
     // have; rendering it as a failure would blame somebody for a schema that had nowhere to keep the words.
     expect(provenanceKey({ kind: 'words_never_recorded', version: 'v2' })).toBe('wordsLost');
-    expect(provenanceClass({ kind: 'words_never_recorded', version: 'v2' })).toContain('warn');
-    expect(provenanceClass({ kind: 'words_never_recorded', version: 'v2' })).not.toContain('--ok');
+    expect(provenanceTone({ kind: 'words_never_recorded', version: 'v2' })).toBe('warning');
+    expect(provenanceTone({ kind: 'words_never_recorded', version: 'v2' })).not.toBe('success');
   });
   it('a MISSING provenance is not treated as resolved', () => {
     expect(provenanceKey(null)).toBe('unknown');
-    expect(provenanceClass(null)).not.toContain('--ok');
+    expect(provenanceTone(null)).not.toBe('success');
   });
 });
 
@@ -83,11 +83,11 @@ describe('ADMIN-5b console · the notice coverage cell', () => {
   it('a MANDATORY gap is a FAILURE; the same gap on an optional purpose is a warning', () => {
     // is_mandatory gates onboarding: a missing language means somebody is asked to agree, as a condition of entry, to
     // words they cannot read.
-    expect(coverageClass('partial', true)).toContain('danger');
-    expect(coverageClass('partial', false)).toContain('warn');
-    expect(coverageClass('never', true)).toContain('danger');
-    expect(coverageClass('complete', true)).toContain('ok');
-    expect(coverageClass('unknown', true)).toContain('muted');
+    expect(coverageTone('partial', true)).toBe('danger');
+    expect(coverageTone('partial', false)).toBe('warning');
+    expect(coverageTone('never', true)).toBe('danger');
+    expect(coverageTone('complete', true)).toBe('success');
+    expect(coverageTone('unknown', true)).toBe('neutral');
   });
   it('coverage text counts against the ACTIVE languages, and is a dash when there are none', () => {
     expect(coverageText(purpose({ noticeCount: 1, languageTotal: 3 }))).toBe('1/3');
@@ -120,9 +120,9 @@ describe('ADMIN-5b console · the version ladder', () => {
     expect(versionKind({ status: 'retired', isBackfilled: false })).toBe('unknown');
   });
   it('an unrecognised status is not styled as current', () => {
-    expect(versionClass('unknown')).not.toContain('--ok');
-    expect(versionClass('backfilled')).toContain('muted');
-    expect(versionClass('backfilled')).not.toContain('danger');
+    expect(versionTone('unknown')).not.toBe('success');
+    expect(versionTone('backfilled')).toBe('neutral');
+    expect(versionTone('backfilled')).not.toBe('danger');
   });
   it('only a signed version gets a signature line', () => {
     expect(showsSignature(version({ isSigned: false }))).toBe(false);

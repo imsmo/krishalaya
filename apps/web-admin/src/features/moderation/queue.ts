@@ -1,10 +1,15 @@
 // apps/web-admin/src/features/moderation/queue.ts · PURE helpers for W090/W091/W092 (PC-56 ADMIN-5f).
 // No fetch, no React → unit-tested.
 import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { StatusTone } from '@krishalaya/ui';
 //
 // W089's first principle is the design of this whole plane: **"Hold fast, remove slow — a held listing is reversible,
 // a wrong removal costs a farmer income."** Every control below is asymmetric in that direction. Hold is one click.
 // Remove is drawn only from a hold, and above ₹1,00,000 only for a second operator.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B): the 5 `kv-status`-returning helpers below (slaClass/orderClass/
+// noticeClass/priorityClass/reportSlaClass) now return a `StatusTone` per the founder's pill-vs-text ruling
+// (`spec_dev60.md` CONTINUATION block) — disposition (c), domain logic unchanged, only the output type changes.
 
 /* ===================== W090 / W091 · held listings ===================== */
 
@@ -18,12 +23,12 @@ export type HoldSla =
 
 /** UNMEASURED is a WARNING, never a pass: a hold with no clock cannot be shown to be inside its SLA, and the farmer
  *  under it is losing money by the hour. PAGE_LEAD is a warning and BREACHED is a failure. */
-export function slaClass(s: HoldSla | null | undefined): string {
-  if (!s) return 'kv-status kv-status--muted';
-  if (s.kind === 'breached') return 'kv-status kv-status--danger';
-  if (s.kind === 'page_lead') return 'kv-status kv-status--warn';
-  if (s.kind === 'unmeasured') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--ok';
+export function slaTone(s: HoldSla | null | undefined): StatusTone {
+  if (!s) return 'neutral';
+  if (s.kind === 'breached') return 'danger';
+  if (s.kind === 'page_lead') return 'warning';
+  if (s.kind === 'unmeasured') return 'warning';
+  return 'success';
 }
 export function slaKey(s: HoldSla | null | undefined): 'unmeasured' | 'ok' | 'page_lead' | 'breached' {
   return s ? s.kind : 'unmeasured';
@@ -75,11 +80,11 @@ export type OrderAction = 'hold' | 'release' | 'remove';
 
 /** A REMOVE is a failure colour because of what it does to the seller, not because of what it does to the queue.
  *  A RELEASE is the good outcome and is green: on this screen, letting a listing back is the success case. */
-export function orderClass(a: OrderAction | string | null | undefined): string {
-  if (a === 'remove') return 'kv-status kv-status--danger';
-  if (a === 'release') return 'kv-status kv-status--ok';
-  if (a === 'hold') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--muted';
+export function orderTone(a: OrderAction | string | null | undefined): StatusTone {
+  if (a === 'remove') return 'danger';
+  if (a === 'release') return 'success';
+  if (a === 'hold') return 'warning';
+  return 'neutral';
 }
 
 export type NoticeStatus = 'queued' | 'delivered' | 'refused' | 'failed';
@@ -87,11 +92,11 @@ export type NoticeStatus = 'queued' | 'delivered' | 'refused' | 'failed';
 /** The decision notice's state. QUEUED IS NOT DELIVERED and is not styled as success — admin-api writes `queued` and
  *  nothing has been sent until the apps/api executor settles it through the notification spine. A console that
  *  showed queued as done would tell an operator the farmer knows why their listing was stopped. */
-export function noticeClass(s: NoticeStatus | string | null | undefined): string {
-  if (s === 'delivered') return 'kv-status kv-status--ok';
-  if (s === 'failed' || s === 'refused') return 'kv-status kv-status--danger';
-  if (s === 'queued') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--muted';
+export function noticeTone(s: NoticeStatus | string | null | undefined): StatusTone {
+  if (s === 'delivered') return 'success';
+  if (s === 'failed' || s === 'refused') return 'danger';
+  if (s === 'queued') return 'warning';
+  return 'neutral';
 }
 export function noticeKey(s: NoticeStatus | string | null | undefined): 'queued' | 'delivered' | 'refused' | 'failed' | 'unknown' {
   return s === 'queued' || s === 'delivered' || s === 'refused' || s === 'failed' ? s : 'unknown';
@@ -139,16 +144,16 @@ export type ReportSla = { kind: 'unmeasured' } | { kind: 'ok'; ageHours: number 
 export type Handler = 'tenant' | 'platform' | 'neither' | 'open';
 
 /** Safety-desk rows are a failure colour even when fresh: the colour marks what the row is about, not how late it is. */
-export function priorityClass(p: Priority | null | undefined): string {
-  if (p === 'safety_desk') return 'kv-status kv-status--danger';
-  if (p === 'sla_breached') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--muted';
+export function priorityTone(p: Priority | null | undefined): StatusTone {
+  if (p === 'safety_desk') return 'danger';
+  if (p === 'sla_breached') return 'warning';
+  return 'neutral';
 }
-export function reportSlaClass(s: ReportSla | null | undefined): string {
-  if (!s) return 'kv-status kv-status--muted';
-  if (s.kind === 'breached') return 'kv-status kv-status--danger';
-  if (s.kind === 'unmeasured') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--ok';
+export function reportSlaTone(s: ReportSla | null | undefined): StatusTone {
+  if (!s) return 'neutral';
+  if (s.kind === 'breached') return 'danger';
+  if (s.kind === 'unmeasured') return 'warning';
+  return 'success';
 }
 
 /** WHO decided a report. `neither` is shown as a gap in the record rather than assumed to be the platform, because

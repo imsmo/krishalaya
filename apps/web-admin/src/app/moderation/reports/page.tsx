@@ -17,8 +17,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { decideReportAction } from '../actions';
+import { Button, Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  SUBJECT_TYPES, PLATFORM_OUTCOMES, OUTCOME_MIN, priorityClass, reportSlaClass, handlerKey,
+  SUBJECT_TYPES, PLATFORM_OUTCOMES, OUTCOME_MIN, priorityTone, reportSlaTone, handlerKey,
   subjectCountText, pageOrderCaveatVisible, type Priority, type ReportSla, type Handler,
 } from '../../../features/moderation/queue';
 
@@ -69,11 +70,11 @@ export default async function ReportQueuePage({ searchParams }: { searchParams: 
       )}
 
       <nav className="kv-filters">
-        <Link href="/moderation/reports" className={!subjectType ? 'kv-chip is-active' : 'kv-chip'}>{t.t('mq.filter.all')}</Link>
+        <Chip as={Link} href="/moderation/reports" active={!subjectType}>{t.t('mq.filter.all')}</Chip>
         {SUBJECT_TYPES.map((s) => (
-          <Link key={s} href={`/moderation/reports?subjectType=${s}`} className={subjectType === s ? 'kv-chip is-active' : 'kv-chip'}>
+          <Chip as={Link} key={s} href={`/moderation/reports?subjectType=${s}`} active={subjectType === s}>
             {t.t(`mq.subject.${s}`)}
-          </Link>
+          </Chip>
         ))}
       </nav>
 
@@ -86,7 +87,7 @@ export default async function ReportQueuePage({ searchParams }: { searchParams: 
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
-              <td>{r.createdAt}<div><span className={reportSlaClass(r.sla)}>{t.t(`mq.repSla.${r.sla?.kind ?? 'unmeasured'}`)}</span></div></td>
+              <td>{r.createdAt}<div><StatusPill tone={reportSlaTone(r.sla)} label={t.t(`mq.repSla.${r.sla?.kind ?? 'unmeasured'}`)} /></div></td>
               <td><code>{r.id}</code></td>
               <td>{t.t(`mq.subject.${r.subjectType}`)}<div className="kv-detail__muted">{r.subjectId}</div></td>
               <td>{r.reasonCode ?? t.t('mq.reasonUnresolved')}</td>
@@ -95,7 +96,7 @@ export default async function ReportQueuePage({ searchParams }: { searchParams: 
                   something eighteen people flagged. */}
               <td>{subjectCountText(r.reportsOnSubject)}</td>
               <td>
-                <span className={priorityClass(r.priority)}>{t.t(`mq.priority.${r.priority}`)}</span>
+                <StatusPill tone={priorityTone(r.priority)} label={t.t(`mq.priority.${r.priority}`)} />
                 {/* Message bodies need `moderation.messages` and this queue does not show them. The line says so
                     rather than leaving an operator wondering where the thread is. */}
                 {r.subjectType === 'message' && <div className="kv-detail__muted">{t.t('mq.messageBodyGated')}</div>}
@@ -122,7 +123,7 @@ export default async function ReportQueuePage({ searchParams }: { searchParams: 
                     <select id={`lg-${r.id}`} name="languageCode" className="kv-input" required defaultValue="en">
                       {LANGS.map((l) => <option key={l} value={l}>{l}</option>)}
                     </select>
-                    <button type="submit" className="kv-btn">{t.t('mq.recordDecision')}</button>
+                    <Button type="submit">{t.t('mq.recordDecision')}</Button>
                   </form>
                 </details>
                 {handlerKey(r.handler) === 'neither' && <div className="kv-error">{t.t('mq.handlerMissing')}</div>}
@@ -131,13 +132,13 @@ export default async function ReportQueuePage({ searchParams }: { searchParams: 
           ))}
         </tbody>
       </table>
-      {rows.length === 0 && !notice && <p className="kv-empty">{t.t('mq.repEmpty')}</p>}
+      {rows.length === 0 && !notice && <EmptyState variant="empty" title={t.t('mq.repEmpty')} />}
 
       {/* An honest limitation: the keyset is oldest-first for stability, so triage orders WITHIN a page. A
           safety-desk report on page 3 is not lifted to page 1, and the count above is read across the whole open set
           so the desk is told it exists even when this page does not show it. */}
       {pageOrderCaveatVisible(meta?.orderedWithinPageOnly, !!meta?.nextCursor) && (
-        <p className="kv-notice" role="note">{t.t('mq.pageOrderCaveat')}</p>
+        <Callout tone="warning">{t.t('mq.pageOrderCaveat')}</Callout>
       )}
       {meta?.nextCursor && (
         <p className="kv-pager">

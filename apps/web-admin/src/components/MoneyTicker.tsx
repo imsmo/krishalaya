@@ -19,6 +19,7 @@
 // shared formatter, never by string surgery.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatMoneyMinor } from '@krishalaya/i18n';
+import { Button, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
   streamState, mergeFeed, feedCursor, sessionTotals, STALE_AFTER_HEARTBEATS,
   type MoneyEvent, type StreamState,
@@ -80,6 +81,11 @@ export function MoneyTicker({ labels }: { labels: Labels }) {
   }, [pollMs]);
 
   const totals = sessionTotals(feed);
+  // NOT converted to StatusPill: this pill carries `role="status" aria-live="polite"` (the live-connection
+  // state must be announced to assistive tech the instant it changes — "live"→"stale" is exactly the kind of
+  // change a screen-reader user must not have to poll for). `StatusPill` (packages/ui) has no `live`/`role`
+  // prop — the same class of gap DEV-60 fixed on `Callout`, but not yet ported to `StatusPill`. Left as a raw
+  // `<span>` and named here rather than silently dropped; see spec_dev60.md's residue section.
   const stateClass = state === 'live' ? 'kv-status--ok' : state === 'stale' ? 'kv-status--danger' : 'kv-status--warn';
 
   return (
@@ -92,9 +98,9 @@ export function MoneyTicker({ labels }: { labels: Labels }) {
       {(state === 'stale' || state === 'closed') && (
         <p className="kv-error" role="alert">
           {labels.staleHint}{' '}
-          <button type="button" className="kv-btn kv-btn--sm" onClick={() => { lastFrameAt.current = null; setGeneration((g) => g + 1); }}>
+          <Button type="button" onClick={() => { lastFrameAt.current = null; setGeneration((g) => g + 1); }}>
             {labels.reconnect}
-          </button>
+          </Button>
         </p>
       )}
 
@@ -105,14 +111,15 @@ export function MoneyTicker({ labels }: { labels: Labels }) {
         </p>
       )}
 
-      {feed.length === 0 ? <p className="kv-empty">{labels.empty}</p> : (
+      {feed.length === 0 ? <EmptyState title={labels.empty} /> : (
         <ul className="kv-list" role="list">
           {feed.map((e) => (
             <li key={String(e.id)} className="kv-card">
               <p className="kv-card__title">
-                <span className={`kv-status ${e.kind === 'payment' ? 'kv-status--ok' : 'kv-status--muted'}`}>
-                  {e.kind === 'payment' ? labels.payment : labels.invoiceIssued}
-                </span>
+                <StatusPill
+                  tone={e.kind === 'payment' ? 'success' : 'neutral'}
+                  label={e.kind === 'payment' ? labels.payment : labels.invoiceIssued}
+                />
                 {' '}{formatMoneyMinor(String(e.amountMinor ?? '0'), String(e.currency ?? 'INR'))}
               </p>
               <p className="kv-detail__muted">

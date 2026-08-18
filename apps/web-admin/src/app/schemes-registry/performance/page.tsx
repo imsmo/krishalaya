@@ -20,6 +20,7 @@ import {
   minorText, rateView, durationKey, breakdownTrustworthy, orderedSlices, sliceWidthPct, hasUnattributed,
   type Rate, type Duration, type RejectionBreakdown, type BenefitTotal,
 } from '../../../features/schemes-registry/oversight';
+import { Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,12 +114,12 @@ export default async function SchemePerformancePage() {
       {/* Credits we observed but cannot attribute to a filing made here. Counted separately rather than claimed —
           the word "facilitated" has to survive somebody checking it. */}
       {hasUnattributed(r.benefits) && (
-        <p className="kv-notice">{t.t('sov.unattributed', { n: String(r.benefits.unattributedTransfers), amount: minorText(r.benefits.unattributedAmountMinor) })}</p>
+        <Callout>{t.t('sov.unattributed', { n: String(r.benefits.unattributedTransfers), amount: minorText(r.benefits.unattributedAmountMinor) })}</Callout>
       )}
       {r.computedLive && <p className="kv-detail__muted">{t.t('sov.computedLive')}</p>}
 
       <h2>{t.t('sov.topSchemesHeading')}</h2>
-      {r.topSchemes.length === 0 ? <p className="kv-empty">{t.t('sov.noBenefitData')}</p> : (
+      {r.topSchemes.length === 0 ? <EmptyState title={t.t('sov.noBenefitData')} /> : (
         <ul>
           {r.topSchemes.map((s) => (
             <li key={s.schemeCode}><strong>{s.schemeCode}</strong> — {minorText(s.amountMinor)} · {s.transfers} {t.t('sov.credits')}</li>
@@ -130,18 +131,22 @@ export default async function SchemePerformancePage() {
       {/* THE COVERAGE LINE COMES FIRST, ABOVE THE BREAKDOWN. It is what decides whether anything below can be
           believed, and putting it underneath would let a reader form a view before reaching it. */}
       {coverage.kind === 'unknown'
-        ? <p className="kv-notice">{t.t('sov.rejNoCoverage')}</p>
-        : <p className={trust ? 'kv-detail__muted' : 'kv-notice'}>
-            {t.t('sov.rejCoverage', { coded: String(r.rejections.coded), total: String(r.rejections.totalRejections), uncoded: String(r.rejections.uncoded) })}
-          </p>}
-      {!trust && r.rejections.coded > 0 && <p className="kv-notice">{t.t('sov.rejLowCoverage')}</p>}
+        ? <Callout>{t.t('sov.rejNoCoverage')}</Callout>
+        : trust
+          ? <p className="kv-detail__muted">
+              {t.t('sov.rejCoverage', { coded: String(r.rejections.coded), total: String(r.rejections.totalRejections), uncoded: String(r.rejections.uncoded) })}
+            </p>
+          : <Callout>
+              {t.t('sov.rejCoverage', { coded: String(r.rejections.coded), total: String(r.rejections.totalRejections), uncoded: String(r.rejections.uncoded) })}
+            </Callout>}
+      {!trust && r.rejections.coded > 0 && <Callout>{t.t('sov.rejLowCoverage')}</Callout>}
 
-      {r.rejections.slices.length === 0 ? <p className="kv-empty">{t.t('sov.noRejections')}</p> : (
+      {r.rejections.slices.length === 0 ? <EmptyState title={t.t('sov.noRejections')} /> : (
         <ul className="kv-list">
           {orderedSlices(r.rejections).map((s) => (
             <li key={s.code}>
               {t.t(`sov.rc.${s.code}`)}{' '}
-              {s.fixable && <span className="kv-status kv-status--warn">{t.t('sov.fixable')}</span>}{' '}
+              {s.fixable && <StatusPill tone="warning" label={t.t('sov.fixable')} />}{' '}
               {/* Percentages ONLY when coverage supports them; otherwise the count, which is always true. */}
               {trust && s.pctOfCoded !== null ? `${s.pctOfCoded}%` : t.t('sov.nApplications', { n: String(s.n) })}
               {/* A computed width is the one carve-out from this console's no-inline-styles rule — a per-row

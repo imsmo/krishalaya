@@ -1,7 +1,7 @@
 // PC-56 ADMIN-SWEEP-c3 · demand map console logic — real geometry, relative tone, the same floors as the server.
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { EXPORT_REASON_MIN, buildExport, gapClass, heatBucket, projectCentroids, weekLabel } from '../features/analytics/demand-map';
+import { EXPORT_REASON_MIN, buildExport, gapTone, heatBucket, projectCentroids, weekLabel } from '../features/analytics/demand-map';
 
 describe('ADMIN-SWEEP-c3 · heat buckets are relative and the boundaries are exact', () => {
   it('tones against the page maximum in bigint-safe permille', () => {
@@ -49,8 +49,8 @@ describe('ADMIN-SWEEP-c3 · the week label and the export gate', () => {
     expect(EXPORT_REASON_MIN).toBe(10);
   });
   it('gap tone escalates at 50% and there is deliberately no green', () => {
-    expect(gapClass(49)).toBe('kv-status kv-status--warn');
-    expect(gapClass(50)).toBe('kv-status kv-status--danger');
+    expect(gapTone(49)).toBe('warning');
+    expect(gapTone(50)).toBe('danger');
   });
 });
 

@@ -17,7 +17,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import {
-  cleanupKey, dataLocationKey, executorNoticeKey, jobClass, jobKey,
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  cleanupKey, dataLocationKey, executorNoticeKey, jobTone, jobKey,
 } from '../../../features/cells/residency-migration';
 
 export const dynamic = 'force-dynamic';
@@ -74,32 +77,28 @@ export default async function MigrationsPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('rz.jobs.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`rz.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`rz.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`rz.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`rz.err.${searchParams.error}`)}</Callout> : null}
 
       {/* **THE EXECUTOR NOTICE, ON EVERY LIST.** Without it a reader takes `queued` to mean "about to run". */}
       {executorNotice ? (
-        <p className="kv-note is-warn" role="status">
+        <Callout tone="warning" live="polite">
           {t.t(executorNotice, { owner: meta?.executor.owner ?? '' })}
-        </p>
+        </Callout>
       ) : null}
 
       <form className="kv-filters" method="get" action="/cells/migrations">
         <div className="kv-chips" role="group" aria-label={t.t('rz.filter.status')}>
-          <Link className={`kv-chip${!status ? ' is-active' : ''}`} href="/cells/migrations">{t.t('common.all')}</Link>
+          <Chip as={Link} href="/cells/migrations" active={!status}>{t.t('common.all')}</Chip>
           {STATUSES.map((s) => (
-            <Link key={s} className={`kv-chip${status === s ? ' is-active' : ''}`}
-              href={`/cells/migrations?status=${s}`}>{t.t(jobKey(s))}</Link>
+            <Chip as={Link} key={s} href={`/cells/migrations?status=${s}`} active={status === s}>{t.t(jobKey(s))}</Chip>
           ))}
         </div>
       </form>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('rz.jobs.empty.title')}</h2>
-          <p>{t.t('rz.jobs.empty.body')}</p>
-        </div>
+        <EmptyState title={t.t('rz.jobs.empty.title')} body={t.t('rz.jobs.empty.body')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('rz.jobs.caption')}</caption>
@@ -119,7 +118,7 @@ export default async function MigrationsPage({ searchParams }: {
               <tr key={j.id}>
                 <td><Link href={`/cells/migrations/${encodeURIComponent(j.id)}`}>{j.id.slice(0, 8)}</Link></td>
                 <td>{j.migratingTenantId.slice(0, 8)}</td>
-                <td><span className={jobClass(j.status)}>{t.t(jobKey(j.status))}</span></td>
+                <td><StatusPill tone={jobTone(j.status)} label={t.t(jobKey(j.status))} /></td>
                 {/* The most consequential cell on the page. */}
                 <td>{t.t(dataLocationKey(j.status))}</td>
                 <td>
@@ -142,13 +141,13 @@ export default async function MigrationsPage({ searchParams }: {
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={`/cells/migrations?${status ? `status=${status}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
+          <Button as={Link} href={`/cells/migrations?${status ? `status=${status}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
             {t.t('common.next')}
-          </Link>
+          </Button>
         </nav>
       ) : null}
 
-      <p className="kv-note">{t.t('rz.jobs.residencyNote')}</p>
+      <Callout>{t.t('rz.jobs.residencyNote')}</Callout>
     </main>
   );
 }

@@ -44,6 +44,14 @@ export interface SidebarNavItem {
   /** Renders `aria-current="page"` + the canon's active-item treatment (web-frame.css lines 77-86). */
   current?: boolean;
   badge?: SidebarNavBadge;
+  /** DEV-61: renders a non-navigating `<span aria-disabled="true">` instead of `<a href>` — for a nav entry
+   * whose route does not exist yet in the consuming app (a "coming soon" surface). Added because a real
+   * consumer (`web-admin`'s `features/nav/nav-model.ts`, the reachability source of truth for that console)
+   * models exactly this shape (`live: false` items) and this component had no way to express it other than
+   * rendering a real, broken `<a href>` — the "if a needed variant is missing from the package, ADD IT"
+   * doctrine already used for `EmptyState.children`/`StatusPill.title`/`Callout.live`. `current`/`badge` are
+   * ignored when `disabled` is true (a disabled item is never the active page and never carries a live count). */
+  disabled?: boolean;
 }
 
 export interface SidebarNavSection {
@@ -91,19 +99,28 @@ export function Sidebar({ brand, tenant, sections, footer, realm = 'default', re
           {sections.map((section) => (
             <React.Fragment key={section.key}>
               {section.title ? <li className="kvw-nav-section">{section.title}</li> : null}
-              {section.items.map((item) => (
-                <li className="kvw-nav-item" key={item.key}>
-                  <a href={item.href} aria-current={item.current ? 'page' : undefined}>
+              {section.items.map((item) => {
+                const content = (
+                  <>
                     {item.icon ? <span aria-hidden="true">{item.icon}</span> : null}
                     <span>{item.label}</span>
-                    {item.badge ? (
+                    {!item.disabled && item.badge ? (
                       <span className={['kvw-nav-badge', 'kvw-badge', `kvw-badge-${item.badge.tone ?? 'neutral'}`].join(' ')}>
                         {item.badge.label}
                       </span>
                     ) : null}
-                  </a>
-                </li>
-              ))}
+                  </>
+                );
+                return (
+                  <li className="kvw-nav-item" key={item.key}>
+                    {item.disabled ? (
+                      <span aria-disabled="true">{content}</span>
+                    ) : (
+                      <a href={item.href} aria-current={item.current ? 'page' : undefined}>{content}</a>
+                    )}
+                  </li>
+                );
+              })}
             </React.Fragment>
           ))}
         </ul>
@@ -163,6 +180,14 @@ export const sidebarStyles = `
 }
 .kvw-nav-item a:hover { background: var(--color-earth-100); color: var(--color-ink-700); }
 .kvw-nav-item a:focus-visible { outline: none; box-shadow: var(--web-focus-ring); }
+/* DEV-61: the disabled/"coming soon" nav-item variant -- same box shape as a real link item (so the list
+   doesn't visually jump), quieter colour, no hover affordance (it does not navigate), never focusable (a
+   span is not in the tab order, which is correct: a disabled item should not steal a keyboard stop for a no-op). */
+.kvw-nav-item span[aria-disabled="true"] {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 0 var(--space-3); min-height: 34px;
+  color: var(--color-ink-400); font-size: var(--text-sm); font-weight: 500;
+}
 .kvw-nav-item a[aria-current="page"],
 .kvw-nav-item a[aria-current="true"] {
   background: var(--color-primary-50); color: var(--color-primary-700); font-weight: 600;
@@ -181,11 +206,17 @@ export const sidebarStyles = `
 .web-shell.is-collapsed .kvw-nav-item a > span { display: none; }
 .web-shell.is-collapsed .kvw-nav-item a { justify-content: center; }
 .kvw-sidebar-foot { display: flex; align-items: center; gap: 6px; padding: var(--space-3) var(--space-4); border-block-start: 1px solid var(--border-subtle); margin-block-start: auto; }
-/* .kvw-badge* duplicated from web-components.css 122-134 — see header comment */
+/* .kvw-badge* duplicated from web-components.css 122-134 — see header comment. DEV-59: the base
+   .kvw-badge rule below was missing line-height/background/color (a genuine copy-paste-incompleteness
+   bug found at DEV-58 QA — real usages always pair a tone class so background/color were masked in
+   practice, but line-height:1.6 is never overridden by any tone class, so badges rendered with the
+   browser default line-height instead of canon's 1.6). Completed here to match web-components.css
+   122-127 byte-for-byte. */
 .kvw-badge {
   display: inline-flex; align-items: center; gap: var(--space-1);
   padding: 2px var(--space-2); border-radius: var(--radius-full);
-  font-size: var(--text-xs); font-weight: 600;
+  font-size: var(--text-xs); font-weight: 600; line-height: 1.6;
+  background: var(--color-earth-200); color: var(--color-ink-600);
 }
 .kvw-badge-warning { background: var(--color-warning-light); color: var(--color-warning-dark); }
 .kvw-badge-info { background: var(--color-info-light); color: var(--color-info-dark); }

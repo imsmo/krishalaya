@@ -12,6 +12,7 @@ import { adminNoticeKey } from '../../features/nav/nav-model';
 import type { LookupTypeRow } from '../../features/catalogue/catalogue';
 import { createTypeAction } from './actions';
 
+import { Button, Chip } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -44,13 +45,13 @@ export default async function CatalogueTypesPage({ searchParams }: { searchParam
       <h1>{t.t('cat.title')}</h1>
       <p className="kv-muted">{t.t('cat.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('cat.nav')}>
-        <Link href="/catalogue" className="kv-chip is-active" aria-current="true">{t.t('cat.navTypes')}</Link>
-        <Link href="/catalogue/categories" className="kv-chip">{t.t('cat.navCategories')}</Link>
+        <Chip as={Link} href="/catalogue" aria-current="true" active>{t.t('cat.navTypes')}</Chip>
+        <Chip as={Link} href="/catalogue/categories">{t.t('cat.navCategories')}</Chip>
         {/* PC-56 ADMIN-3 · the EAV definition plane */}
-        <Link href="/catalogue/attributes" className="kv-chip">{t.t('cat.navAttributes')}</Link>
-        <Link href="/catalogue/units" className="kv-chip">{t.t('cat.navUnits')}</Link>
-        <Link href="/catalogue/translations" className="kv-chip">{t.t('cat.navTranslations')}</Link>
-        <Link href="/catalogue/crops" className="kv-chip">{t.t('cat.navCrops')}</Link>
+        <Chip as={Link} href="/catalogue/attributes">{t.t('cat.navAttributes')}</Chip>
+        <Chip as={Link} href="/catalogue/units">{t.t('cat.navUnits')}</Chip>
+        <Chip as={Link} href="/catalogue/translations">{t.t('cat.navTranslations')}</Chip>
+        <Chip as={Link} href="/catalogue/crops">{t.t('cat.navCrops')}</Chip>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('cat.ok.typeCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cat.error.${errKey}`)}</p>}
@@ -58,7 +59,7 @@ export default async function CatalogueTypesPage({ searchParams }: { searchParam
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('cat.typesEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/catalogue?cursor=${encodeURIComponent(nextCursor)}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/catalogue?cursor=${encodeURIComponent(nextCursor)}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -74,7 +75,7 @@ export default async function CatalogueTypesPage({ searchParams }: { searchParam
           <select id="isTenantExtendable" name="isTenantExtendable" className="kv-input" defaultValue="false"><option value="false">{t.t('cat.no')}</option><option value="true">{t.t('cat.yes')}</option></select>
           <label htmlFor="typeReason" className="kv-field__label">{t.t('cat.reason')}</label>
           <input id="typeReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('cat.createTypeSubmit')}</button>
+          <Button type="submit">{t.t('cat.createTypeSubmit')}</Button>
         </form>
       </details>
     </section>

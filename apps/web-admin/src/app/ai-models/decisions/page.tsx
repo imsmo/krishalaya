@@ -19,7 +19,10 @@ import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import {
-  MAX_WINDOW_DAYS, formatRate, outputSummary, overriddenClass, windowTooWide,
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  MAX_WINDOW_DAYS, formatRate, outputSummary, overriddenTone, windowTooWide,
 } from '../../../features/ai-governance/ai-governance';
 
 export const dynamic = 'force-dynamic';
@@ -90,11 +93,11 @@ export default async function DecisionsPage({ searchParams }: {
       </header>
 
       {tooWide ? (
-        <p className="kv-note is-danger" role="alert">
+        <Callout tone="danger" live="assertive">
           {t.t('ai.decisions.tooWide', { max: String(MAX_WINDOW_DAYS) })}
-        </p>
+        </Callout>
       ) : null}
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       <form className="kv-filters" method="get" action="/ai-models/decisions">
         <div className="kv-field">
@@ -110,37 +113,34 @@ export default async function DecisionsPage({ searchParams }: {
           <input className="kv-input" id="ai-model" name="modelId" defaultValue={f.modelId ?? ''} />
         </div>
         <div className="kv-chips" role="group" aria-label={t.t('ai.filter.overridden')}>
-          <Link className={`kv-chip${!f.overriddenOnly ? ' is-active' : ''}`} href={withFilters({ overriddenOnly: undefined, cursor: undefined })}>
+          <Chip as={Link} href={withFilters({ overriddenOnly: undefined, cursor: undefined })} active={!f.overriddenOnly}>
             {t.t('common.all')}
-          </Link>
+          </Chip>
           {/* W084's "Overridden only" saved view, applied SERVER-SIDE. Filtering a keyset page after fetching it returns
               short pages and eventually an empty one that reads as "no matches" — the ADMIN-5e finding. */}
-          <Link className={`kv-chip${f.overriddenOnly ? ' is-active' : ''}`} href={withFilters({ overriddenOnly: 'true', cursor: undefined })}>
+          <Chip as={Link} href={withFilters({ overriddenOnly: 'true', cursor: undefined })} active={!!f.overriddenOnly}>
             {t.t('ai.filter.overriddenOnly')}
-          </Link>
+          </Chip>
         </div>
-        <button className="kv-btn" type="submit">{t.t('common.apply')}</button>
+        <Button type="submit">{t.t('common.apply')}</Button>
       </form>
 
       {meta?.window ? (
-        <p className="kv-note">
+        <Callout>
           {t.t('ai.decisions.window', {
             from: meta.window.from.slice(0, 16).replace('T', ' '),
             to: meta.window.to.slice(0, 16).replace('T', ' '),
             max: String(meta.window.maxDays),
           })}
-        </p>
+        </Callout>
       ) : null}
 
       {/* The withheld inputs, stated on the screen rather than only in a comment — so nobody adds the column later
           believing its absence was an oversight. */}
-      {meta?.inputsWithheld ? <p className="kv-note">{t.t('ai.decisions.inputsWithheld')}</p> : null}
+      {meta?.inputsWithheld ? <Callout>{t.t('ai.decisions.inputsWithheld')}</Callout> : null}
 
       {rows.length === 0 && !notice && !tooWide ? (
-        <div className="kv-empty">
-          <h2>{t.t('ai.decisions.empty.title')}</h2>
-          <p>{t.t('ai.decisions.empty.body')}</p>
-        </div>
+        <EmptyState title={t.t('ai.decisions.empty.title')} body={t.t('ai.decisions.empty.body')} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('ai.decisions.caption')}</caption>
@@ -169,9 +169,8 @@ export default async function DecisionsPage({ searchParams }: {
                   {/* An override is a NOTE, not an error — it is the system working as designed, and W085's argument is
                       that overrides are the training signal. Drawing it red would make a healthy human-in-the-loop look
                       like a fault. */}
-                  <span className={overriddenClass(r.wasOverridden)}>
-                    {r.wasOverridden ? t.t('ai.overridden.yes') : t.t('common.dash')}
-                  </span>
+                  <StatusPill tone={overriddenTone(r.wasOverridden)}
+                    label={r.wasOverridden ? t.t('ai.overridden.yes') : t.t('common.dash')} />
                   {r.overrideReason ? <><br /><small>{r.overrideReason}</small></> : null}
                 </td>
                 <td>{r.tenantId ? r.tenantId.slice(0, 8) : t.t('ai.tenant.platform')}</td>
@@ -184,11 +183,11 @@ export default async function DecisionsPage({ searchParams }: {
       {/* NO SIGNED EXPORT BUTTON. W084 offers "Export (signed)"; there is still no signing key on this platform, the same
           gap W018, W039 and W064 name — and a button producing an unsigned file labelled "signed" would be worse than its
           absence. ADMIN-5c's digest is not a signature and the console has said so since. */}
-      <p className="kv-note">{t.t('ai.decisions.noSignedExport')}</p>
+      <Callout>{t.t('ai.decisions.noSignedExport')}</Callout>
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Link>
+          <Button as={Link} href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Button>
         </nav>
       ) : null}
     </main>

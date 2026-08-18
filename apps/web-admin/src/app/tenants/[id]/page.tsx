@@ -16,6 +16,7 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { canApprove, canSuspend, canArchive, statusKey, type TenantScorecard } from '../../../features/tenants/tenant';
 import { approveTenantAction, suspendTenantAction, archiveTenantAction, overrideLimitAction } from '../actions';
 
+import { Button, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -63,14 +64,14 @@ export default async function TenantDetailPage({ params, searchParams }: { param
       {errKey && <p className="kv-error" role="alert">{t.t(`tenants.error.${errKey}`)}</p>}
 
       <dl className="kv-facts">
-        <div className="kv-facts__row"><dt>{t.t('tenants.colStatus')}</dt><dd><span className="kv-status">{t.t(`tenants.status.${s}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('tenants.colStatus')}</dt><dd><StatusPill tone="neutral" label={t.t(`tenants.status.${s}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('tenants.colRisk')}</dt><dd>{card.tenant.riskScore}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('tenants.subscription')}</dt><dd>
           {sub ? `${sub.planId} · ${sub.status} · ${formatMoneyMinor(sub.priceMinor, sub.currency)}` : t.t('common.dash')}
           {/* PC-56 ADMIN-1 · the full subscription view (state, add-ons, the invoices it produced). Offered even when
               the scorecard shows no subscription: "this tenant has none" is worth being able to confirm on its own
               page, and the route says so plainly rather than 404ing. */}
-          {' '}<Link href={`/tenants/${encodeURIComponent(params.id)}/subscription`} className="kv-btn--link">{t.t('tenants.viewSubscription')}</Link>
+          {' '}<Button as={Link} href={`/tenants/${encodeURIComponent(params.id)}/subscription`} variant="tertiary">{t.t('tenants.viewSubscription')}</Button>
         </dd></div>
         <div className="kv-facts__row"><dt>{t.t('tenants.liveListings')}</dt><dd>{card.liveListings.toLocaleString()}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('tenants.openDisputes')}</dt><dd>{card.openDisputes.toLocaleString()}</dd></div>
@@ -110,7 +111,7 @@ export default async function TenantDetailPage({ params, searchParams }: { param
           <input id="limitExpires" name="expiresAt" type="datetime-local" className="kv-input" />
           <label htmlFor="limitReason" className="kv-field__label">{t.t('tenants.reason')}</label>
           <input id="limitReason" name="reason" className="kv-input" required minLength={3} maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('tenants.saveLimit')}</button>
+          <Button type="submit">{t.t('tenants.saveLimit')}</Button>
         </form>
       </details>
     </section>
@@ -125,7 +126,7 @@ function LifecycleForm({ id, action, verb, reasonLabel, danger }: {
       <input type="hidden" name="id" value={id} />
       <label className="kv-field__label">{reasonLabel}</label>
       <input name="reason" className="kv-input" required minLength={3} maxLength={500} />
-      <button type="submit" className={`kv-btn${danger ? ' kv-btn--danger' : ''}`}>{verb}</button>
+      <Button type="submit" variant={danger ? 'danger' : 'primary'}>{verb}</Button>
     </form>
   );
 }

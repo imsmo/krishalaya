@@ -15,9 +15,10 @@ import Link from 'next/link';
 import { requireAdmin } from '../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../lib/admin-client';
 import { getTranslator } from '../../lib/i18n';
+import { Button, Callout, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  channelKey, lifecycleClass, lifecycleKey, overridesKey, securityOverrideClass, securityOverrideKey,
-  sendStateClass, sendStateKey, unversionedKey, type TemplateListRow,
+  channelKey, lifecycleTone, lifecycleKey, overridesKey, securityOverrideClass, securityOverrideKey,
+  sendStateTone, sendStateKey, unversionedKey, type TemplateListRow,
 } from '../../features/templates/template';
 
 export const dynamic = 'force-dynamic';
@@ -68,9 +69,9 @@ export default async function TemplatesPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('tp11.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`tp11.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`tp11.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`tp11.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`tp11.err.${searchParams.error}`)}</Callout> : null}
 
       {meta ? (
         <>
@@ -88,28 +89,26 @@ export default async function TemplatesPage({ searchParams }: {
           <p className={securityOverrideClass(meta.securityCopyOverrides)}>
             {t.t(securityOverrideKey(meta.securityCopyOverrides), { n: String(meta.securityCopyOverrides) })}
           </p>
-          <p className="kv-note">{t.t(unversionedKey(meta.unversioned), { n: String(meta.unversioned) })}</p>
+          <Callout tone="info">{t.t(unversionedKey(meta.unversioned), { n: String(meta.unversioned) })}</Callout>
         </>
       ) : null}
 
       <nav className="kv-filters" aria-label={t.t('tp11.filterGroup')}>
-        <Link className={`kv-chip${!channel && !lang ? ' is-active' : ''}`} href="/templates">{t.t('common.all')}</Link>
+        <Chip as={Link} href="/templates" active={!channel && !lang}>{t.t('common.all')}</Chip>
         {CHANNELS.map((c) => (
-          <Link key={c} className={`kv-chip${channel === c ? ' is-active' : ''}`} href={`/templates?channel=${c}`}>
+          <Chip as={Link} key={c} href={`/templates?channel=${c}`} active={channel === c}>
             {t.t(channelKey(c))}
-          </Link>
+          </Chip>
         ))}
-        <Link className="kv-chip" href="/templates/coverage">{t.t('tp11.gapsOnly')}</Link>
-        <Link className="kv-chip" href="/templates/senders">{t.t('tp11.senders')}</Link>
+        <Chip as={Link} href="/templates/coverage">{t.t('tp11.gapsOnly')}</Chip>
+        <Chip as={Link} href="/templates/senders">{t.t('tp11.senders')}</Chip>
       </nav>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('tp11.empty.title')}</h2>
-          {/* The canon's own empty state: "gaps view shows what is missing, not what exists". */}
-          <p>{t.t('tp11.empty.body')}</p>
-          <Link className="kv-btn" href="/templates/coverage">{t.t('tp11.gapsOnly')}</Link>
-        </div>
+        // The canon's own empty state: "gaps view shows what is missing, not what exists".
+        <EmptyState title={t.t('tp11.empty.title')} body={t.t('tp11.empty.body')}>
+          <Button as={Link} href="/templates/coverage">{t.t('tp11.gapsOnly')}</Button>
+        </EmptyState>
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('tp11.caption')}</caption>
@@ -130,21 +129,24 @@ export default async function TemplatesPage({ searchParams }: {
                 <td>
                   <Link href={`/templates/${r.id}`} className="kv-mono">{r.eventCode}</Link>
                   {r.tenantName ? <><br /><small>{t.t('tp11.overrideOf', { tenant: r.tenantName })}</small></> : null}
-                  {r.securityCopy ? <><br /><span className="kv-badge is-warn">{t.t('tp11.securityBadge')}</span></> : null}
+                  {/* [QA-FIX 2026-08-15] was hardcoded tone="neutral", discarding the original `kv-badge is-warn` modifier. */}
+                  {r.securityCopy ? <><br /><StatusPill tone="warning" icon={false} label={t.t('tp11.securityBadge')} /></> : null}
                 </td>
                 <td>{t.t(channelKey(r.channel))}</td>
                 <td className="kv-mono">{r.languageCode}</td>
                 {/* The SERVING wording, read from the immutable version — not from the row a save used to overwrite. */}
                 <td>{r.body.slice(0, 60)}{r.body.length > 60 ? '…' : ''}</td>
                 <td className="kv-mono">
+                  {/* [QA-FIX 2026-08-15] was hardcoded tone="neutral", discarding the original `kv-badge is-danger`
+                      modifier — a missing required provider template ref is a blocking-send condition. */}
                   {r.providerTemplateRef ?? (r.providerRefRequired
-                    ? <span className="kv-badge is-danger">{t.t('tp11.ref.missing')}</span>
+                    ? <StatusPill tone="danger" icon={false} label={t.t('tp11.ref.missing')} />
                     : <span>{t.t('tp11.ref.na')}</span>)}
                 </td>
                 <td>{t.t(overridesKey(r), { n: String(r.overrideCount) })}</td>
                 <td>
-                  <span className={sendStateClass(r)}>{t.t(sendStateKey(r))}</span>
-                  <br /><span className={lifecycleClass(r.lifecycle)}>{t.t(lifecycleKey(r.lifecycle))}</span>
+                  <StatusPill tone={sendStateTone(r)} label={t.t(sendStateKey(r))} />
+                  <br /><StatusPill tone={lifecycleTone(r.lifecycle)} label={t.t(lifecycleKey(r.lifecycle))} />
                 </td>
               </tr>
             ))}
@@ -154,13 +156,13 @@ export default async function TemplatesPage({ searchParams }: {
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={`/templates?${channel ? `channel=${channel}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
+          <Button as={Link} href={`/templates?${channel ? `channel=${channel}&` : ''}cursor=${encodeURIComponent(meta.nextCursor)}`}>
             {t.t('common.next')}
-          </Link>
+          </Button>
         </nav>
       ) : null}
 
-      {meta ? <p className="kv-note"><small>{t.t('tp11.submissionNote', { owner: meta.providerSubmissionOwner })}</small></p> : null}
+      {meta ? <Callout tone="info"><small>{t.t('tp11.submissionNote', { owner: meta.providerSubmissionOwner })}</small></Callout> : null}
     </main>
   );
 }

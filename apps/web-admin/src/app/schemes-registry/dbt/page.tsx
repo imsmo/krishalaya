@@ -19,8 +19,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { DataTable, Column } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
-import { minorText, instalmentLabel, bounceClass, seedingText, notificationKnown, type NotifyGap } from '../../../features/schemes-registry/oversight';
+import { minorText, instalmentLabel, bounceTone, seedingText, notificationKnown, type NotifyGap } from '../../../features/schemes-registry/oversight';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -93,8 +94,8 @@ export default async function DbtMonitorPage({ searchParams }: { searchParams: {
       <h1>{t.t('sov.dbtTitle')}</h1>
       <p className="kv-muted">{t.t('sov.dbtLead')}</p>
       {/* The doctrine, on screen, where a future reconciler will read it. */}
-      <p className="kv-notice">{t.t('sov.dbtDoctrine')}</p>
-      <p className="kv-notice">{t.t('sov.noBankFields')}</p>
+      <Callout>{t.t('sov.dbtDoctrine')}</Callout>
+      <Callout>{t.t('sov.noBankFields')}</Callout>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : m && (
         <>
@@ -112,7 +113,7 @@ export default async function DbtMonitorPage({ searchParams }: { searchParams: {
           {/* THE TILE THE CANON SHOWS AND THE PLATFORM CANNOT HONESTLY FILL. */}
           {!m.celebrationNotify.available && (
             <>
-              <p className="kv-notice">{t.t('sov.notifyNotBuilt')}</p>
+              <Callout>{t.t('sov.notifyNotBuilt')}</Callout>
               <ul className="kv-detail__muted">
                 {(m.celebrationNotify.missing ?? []).map((k) => <li key={k}>{t.t(`sov.notifyMissing.${k}`)}</li>)}
               </ul>
@@ -120,7 +121,7 @@ export default async function DbtMonitorPage({ searchParams }: { searchParams: {
           )}
 
           <h2>{t.t('sov.bySchemeHeading')}</h2>
-          {m.byScheme.length === 0 ? <p className="kv-empty">{t.t('sov.noTransfers')}</p> : (
+          {m.byScheme.length === 0 ? <EmptyState title={t.t('sov.noTransfers')} /> : (
             <ul>
               {m.byScheme.map((s) => (
                 <li key={s.schemeCode}>
@@ -132,11 +133,11 @@ export default async function DbtMonitorPage({ searchParams }: { searchParams: {
           )}
 
           <h2>{t.t('sov.bouncesHeading')}</h2>
-          {m.bouncesByReason.length === 0 ? <p className="kv-empty">{t.t('sov.allQuiet')}</p> : (
+          {m.bouncesByReason.length === 0 ? <EmptyState title={t.t('sov.allQuiet')} /> : (
             <ul>
               {m.bouncesByReason.map((b) => (
                 <li key={b.reasonCode}>
-                  <span className={bounceClass(b.open, b.total)}>{t.t(`sov.bounce.${b.reasonCode}`)}</span>{' '}
+                  <StatusPill tone={bounceTone(b.open, b.total)} label={t.t(`sov.bounce.${b.reasonCode}`)} />{' '}
                   {t.t('sov.bounceCounts', { open: String(b.open), total: String(b.total) })} · {minorText(b.amountMinor)}
                 </li>
               ))}
@@ -152,9 +153,9 @@ export default async function DbtMonitorPage({ searchParams }: { searchParams: {
           <DataTable columns={cols} rows={credits} empty={t.t('sov.noCredits')} />
           {nextCursor && (
             <p className="kv-pager">
-              <Link className="kv-btn" href={`/schemes-registry/dbt?${new URLSearchParams({ ...(days ? { days } : {}), ...(schemeId ? { schemeId } : {}), cursor: nextCursor }).toString()}`}>
+              <Button as={Link} href={`/schemes-registry/dbt?${new URLSearchParams({ ...(days ? { days } : {}), ...(schemeId ? { schemeId } : {}), cursor: nextCursor }).toString()}`}>
                 {t.t('common.nextPage')}
-              </Link>
+              </Button>
             </p>
           )}
         </>

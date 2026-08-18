@@ -4,7 +4,7 @@
 // what an unrecognised status renders as, what the count means, and which rows are called stuck.
 import {
   REPLY_STATUSES, REPLY_LANGUAGES, MIN_BODY, MAX_BODY,
-  reachedTheFarmer, stuckRows, deliveredCount, stateClass, stateKey, buildReply,
+  reachedTheFarmer, stuckRows, deliveredCount, stateTone, stateKey, buildReply,
   type ReplyRow,
 } from '../features/support/reply';
 
@@ -32,14 +32,14 @@ describe('an unrecognised status is NEVER treated as a success', () => {
     }
   });
 
-  it('stateClass styles an unknown status as a PROBLEM, not as ok', () => {
+  it('stateTone styles an unknown status as a PROBLEM, not as ok', () => {
     // the next value this enum gains must not arrive on screen in green
-    expect(stateClass('delivered')).toBe('kv-status--ok');
-    expect(stateClass('queued')).toBe('kv-status--warn');
-    expect(stateClass('refused')).toBe('kv-status--danger');
-    expect(stateClass('failed')).toBe('kv-status--danger');
-    expect(stateClass('sent')).toBe('kv-status--danger');
-    expect(stateClass('')).toBe('kv-status--danger');
+    expect(stateTone('delivered')).toBe('success');
+    expect(stateTone('queued')).toBe('warning');
+    expect(stateTone('refused')).toBe('danger');
+    expect(stateTone('failed')).toBe('danger');
+    expect(stateTone('sent')).toBe('danger');
+    expect(stateTone('')).toBe('danger');
   });
 
   it('stateKey falls back to a NON-success wording', () => {

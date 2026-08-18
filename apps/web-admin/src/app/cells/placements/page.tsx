@@ -13,6 +13,7 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { type PlacementRow } from '../../../features/cells/cell';
 import { placeTenantAction } from '../actions';
 
+import { Button, Chip } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -49,10 +50,10 @@ export default async function PlacementsPage({ searchParams }: { searchParams: {
       <h1>{t.t('cells.placementsTitle')}</h1>
       <p className="kv-muted">{t.t('cells.placementsLead')}</p>
       <nav className="kv-filters" aria-label={t.t('cells.nav')}>
-        <Link href="/cells" className="kv-chip">{t.t('cells.navCells')}</Link>
-        <Link href="/cells/shards" className="kv-chip">{t.t('cells.navShards')}</Link>
-        <Link href="/cells/placements" className="kv-chip is-active" aria-current="true">{t.t('cells.navPlacements')}</Link>
-        <Link href="/cells/residency" className="kv-chip">{t.t('cells.navResidency')}</Link>
+        <Chip as={Link} href="/cells">{t.t('cells.navCells')}</Chip>
+        <Chip as={Link} href="/cells/shards">{t.t('cells.navShards')}</Chip>
+        <Chip as={Link} href="/cells/placements" aria-current="true" active>{t.t('cells.navPlacements')}</Chip>
+        <Chip as={Link} href="/cells/residency">{t.t('cells.navResidency')}</Chip>
       </nav>
       {okRemoved && <p className="kv-success" role="status">{t.t('cells.ok.removed')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cells.err.${errKey}`)}</p>}
@@ -62,13 +63,13 @@ export default async function PlacementsPage({ searchParams }: { searchParams: {
         <input id="pCellId" name="cellId" className="kv-input kv-input--sm" defaultValue={cellId ?? ''} placeholder={t.t('cells.uuidHint')} />
         <label htmlFor="pShardId" className="kv-field__label">{t.t('cells.shardId')}</label>
         <input id="pShardId" name="shardId" className="kv-input kv-input--sm" defaultValue={shardId ?? ''} placeholder={t.t('cells.uuidHint')} />
-        <button type="submit" className="kv-btn kv-btn--link">{t.t('common.filter')}</button>
+        <Button type="submit" variant="tertiary">{t.t('common.filter')}</Button>
       </form>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('cells.placementsEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/cells/placements?cursor=${encodeURIComponent(nextCursor)}${cellId ? `&cellId=${cellId}` : ''}${shardId ? `&shardId=${shardId}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/cells/placements?cursor=${encodeURIComponent(nextCursor)}${cellId ? `&cellId=${cellId}` : ''}${shardId ? `&shardId=${shardId}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -85,7 +86,7 @@ export default async function PlacementsPage({ searchParams }: { searchParams: {
           <label className="kv-field__label"><input type="checkbox" name="pinned" value="true" /> {t.t('cells.pinnedField')}</label>
           <label htmlFor="placeReason" className="kv-field__label">{t.t('cells.reason')}</label>
           <input id="placeReason" name="reason" className="kv-input" required minLength={3} maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('cells.placeSubmit')}</button>
+          <Button type="submit">{t.t('cells.placeSubmit')}</Button>
         </form>
       </details>
     </section>

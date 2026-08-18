@@ -5,6 +5,14 @@
 // always the answer — `MandiPriceService.ingest` fired farmer price alerts off a manually-typed observation in the same
 // transaction that inserted it, with no anomaly check anywhere, while W107 promised "bad data never reaches a selling
 // decision."
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B): `moveClass` (the one `kv-badge`-returning helper below) now
+// returns `moveTone(): StatusTone | null` — disposition (c), SPECIAL CASE disclosed in `spec_dev60.md`: the old
+// function returned `''` (no badge at all) when `changeBp === null`, so the tone-returning version returns `null`
+// for that branch and the call site conditionally skips rendering `<StatusPill>` entirely rather than remapping an
+// empty string to a tone that doesn't exist. `guardClass` in this file is `kv-note`-returning and OUT OF SCOPE.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 export interface Pulse {
   pointsToday: number;
@@ -35,11 +43,11 @@ export function moveKey(changeBp: number | null): string {
   return changeBp > 0 ? 'mp11.move.up' : 'mp11.move.down';
 }
 
-export function moveClass(changeBp: number | null): string {
-  if (changeBp === null) return '';
+export function moveTone(changeBp: number | null): StatusTone | null {
+  if (changeBp === null) return null;
   // **NEITHER DIRECTION IS "GOOD".** A price rise is good for a seller and bad for a buyer, and this platform serves
   // both — so the colour marks MAGNITUDE (a >10% daily move is worth a look either way) rather than sentiment.
-  return Math.abs(changeBp) >= 1_000 ? 'kv-badge is-warn' : 'kv-badge';
+  return Math.abs(changeBp) >= 1_000 ? 'warning' : 'neutral';
 }
 
 export function pctFromBp(bp: number): string {

@@ -20,6 +20,7 @@ import { bpsToPercent } from '../../../features/reports/report';
 import {
   humanSeconds, csatIsIndicative, reopenRateBps, sortAgentsByLoad, CSAT_MIN_SAMPLE, type AgentRow,
 } from '../../../features/support/desk';
+import { EmptyState, StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,7 +69,7 @@ export default async function AgentInsightsPage({ searchParams }: { searchParams
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : agents.length === 0 ? (
-        <p className="kv-empty">{t.t('ins.none')}</p>
+        <EmptyState title={t.t('ins.none')} />
       ) : (
         <>
           <table className="kv-table">
@@ -98,7 +99,7 @@ export default async function AgentInsightsPage({ searchParams }: { searchParams
                             {bpsToPercent(a.csatAvgBps)}%
                             {' '}<span className="kv-detail__muted">({t.t('ins.ratings', { n: String(a.csatCount ?? 0) })})</span>
                             {/* the sample warning travels WITH the number, not in a footnote */}
-                            {!indicative && <> <span className="kv-status kv-status--warn">{t.t('ins.thinSample')}</span></>}
+                            {!indicative && <> <StatusPill tone="warning" label={t.t('ins.thinSample')} /></>}
                           </>
                         )}
                     </td>

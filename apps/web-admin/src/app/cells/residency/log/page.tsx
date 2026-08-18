@@ -20,8 +20,11 @@ import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { getTranslator } from '../../../../lib/i18n';
 import {
-  emptyLogClass, emptyLogKey, gateClass, outcomeClass, postureClass, postureKey,
-  refusalIsBoundary, refusalKey, regulationClass, regulationKey,
+  Button, Callout, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  emptyLogClass, emptyLogKey, gateClass, outcomeTone, postureTone, postureKey,
+  refusalIsBoundary, refusalKey, regulationTone, regulationKey,
 } from '../../../../features/cells/residency-migration';
 
 export const dynamic = 'force-dynamic';
@@ -91,7 +94,7 @@ export default async function ResidencyLogPage({ searchParams }: {
         <p className="kv-page__sub">{t.t('rz.log.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
 
       {/* ---------------- SINCE WHEN THE LOG CAN SPEAK ---------------- */}
       {meta ? (
@@ -121,7 +124,7 @@ export default async function ResidencyLogPage({ searchParams }: {
                 <tr key={c.code}>
                   <td>{c.code} · {c.name}</td>
                   <td>
-                    <span className={regulationClass(c.regulationStatus)}>{t.t(regulationKey(c.regulationStatus))}</span>
+                    <StatusPill tone={regulationTone(c.regulationStatus)} label={t.t(regulationKey(c.regulationStatus))} />
                     {c.regulationProfile ? <><br /><small>{c.regulationProfile}</small></> : null}
                     {/* W038's market-entry gate, surfaced here too: the reason a country has no cell is a residency fact
                         before it is an infrastructure one. */}
@@ -134,7 +137,7 @@ export default async function ResidencyLogPage({ searchParams }: {
                   <td>
                     {/* "The boundary holds" and "there is nothing here to protect" are different statements, and W033
                         renders both as "blocked". Only the second is true for a country with no cells. */}
-                    <span className={postureClass(c.crossBorder)}>{t.t(postureKey(c.crossBorder))}</span>
+                    <StatusPill tone={postureTone(c.crossBorder)} label={t.t(postureKey(c.crossBorder))} />
                   </td>
                 </tr>
               ))}
@@ -154,21 +157,18 @@ export default async function ResidencyLogPage({ searchParams }: {
           <label className="kv-field__label" htmlFor="rz-country">{t.t('rz.filter.country')}</label>
           <input className="kv-input" id="rz-country" name="country" maxLength={2} defaultValue={country ?? ''} />
         </div>
-        <button className="kv-btn" type="submit">{t.t('common.apply')}</button>
+        <Button type="submit">{t.t('common.apply')}</Button>
       </form>
 
-      <p className="kv-note">
+      <Callout>
         <Link href={`/cells/residency/attestation${days ? `?days=${days}` : ''}`}>{t.t('rz.log.openAttestation')}</Link>
-      </p>
+      </Callout>
 
       {/* ---------------- THE LOG ---------------- */}
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('rz.log.empty.title')}</h2>
-          {/* THE TWO EMPTY CASES ARE OPPOSITE FINDINGS and only `loggingSince` tells them apart. Inferring "nothing
-              happened" from "nothing is recorded" is exactly the mistake this wave exists to stop. */}
-          <p>{t.t(emptyLogKey(meta?.loggingSince ?? null))}</p>
-        </div>
+        // THE TWO EMPTY CASES ARE OPPOSITE FINDINGS and only `loggingSince` tells them apart. Inferring "nothing
+        // happened" from "nothing is recorded" is exactly the mistake this wave exists to stop.
+        <EmptyState title={t.t('rz.log.empty.title')} body={t.t(emptyLogKey(meta?.loggingSince ?? null))} />
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('rz.log.caption')}</caption>
@@ -196,7 +196,7 @@ export default async function ResidencyLogPage({ searchParams }: {
                       protection would be claiming credit for a typo, so the distinction is on the row. */}
                   {!refusalIsBoundary(r.refusedBy) ? <><br /><small>{t.t('rz.refused.notBoundary')}</small></> : null}
                 </td>
-                <td><span className={outcomeClass(r.outcome)}>{t.t(`rz.outcome.${r.outcome}`)}</span></td>
+                <td><StatusPill tone={outcomeTone(r.outcome)} label={t.t(`rz.outcome.${r.outcome}`)} /></td>
                 <td>{r.actorAdminId ? r.actorAdminId.slice(0, 8) : t.t('rz.actor.system')}</td>
               </tr>
             ))}
@@ -206,7 +206,7 @@ export default async function ResidencyLogPage({ searchParams }: {
 
       {meta?.nextCursor ? (
         <nav className="kv-pager" aria-label={t.t('common.pagination')}>
-          <Link className="kv-btn" href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Link>
+          <Button as={Link} href={withFilters({ cursor: meta.nextCursor })}>{t.t('common.next')}</Button>
         </nav>
       ) : null}
     </main>

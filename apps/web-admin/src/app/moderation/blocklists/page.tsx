@@ -16,8 +16,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { addBlockAction, countersignBlockAction, liftBlockAction } from '../actions';
+import { Button, Chip, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  IDENTIFIER_TYPES, blockStateClass, attemptsText, countersignOfferable, type BlockRow,
+  IDENTIFIER_TYPES, blockStateTone, attemptsText, countersignOfferable, type BlockRow,
 } from '../../../features/trust/trust-safety';
 
 export const dynamic = 'force-dynamic';
@@ -59,17 +60,17 @@ export default async function BlocklistsPage({ searchParams }: { searchParams: {
       {notice && <p className="kv-error" role="alert">{notice}</p>}
 
       <nav className="kv-filters">
-        <Link href="/moderation/blocklists" className={!type ? 'kv-chip is-active' : 'kv-chip'}>{t.t('ts.bl.tab.all')}</Link>
+        <Chip as={Link} href="/moderation/blocklists" active={!type}>{t.t('ts.bl.tab.all')}</Chip>
         {IDENTIFIER_TYPES.map((ty) => (
-          <Link key={ty} href={`/moderation/blocklists?type=${ty}`} className={type === ty ? 'kv-chip is-active' : 'kv-chip'}>
+          <Chip as={Link} key={ty} href={`/moderation/blocklists?type=${ty}`} active={type === ty}>
             {t.t(`ts.bl.type.${ty}`)} {meta?.counts?.[ty] ?? 0}
-          </Link>
+          </Chip>
         ))}
         {/* W096's fourth tab is user↔user chat blocks. A COUNT ONLY — who blocked whom is a private safety decision
             and the platform board has no business listing the pairs. */}
-        <span className="kv-chip">
+        <Chip>
           {t.t('ts.bl.tab.userBlocks')} {meta?.userBlockCount === null || meta?.userBlockCount === undefined ? t.t('common.dash') : meta.userBlockCount}
-        </span>
+        </Chip>
       </nav>
 
       <table className="kv-table">
@@ -91,8 +92,8 @@ export default async function BlocklistsPage({ searchParams }: { searchParams: {
                 <td>{r.originRef ?? t.t('common.dash')}</td>
                 <td>{r.reason}</td>
                 <td>
-                  {r.expiresAt ?? (r.reviewAt ? t.t('ts.bl.reviewOn', { d: r.reviewAt }) : <span className="kv-status kv-status--danger">{t.t('ts.bl.noExpiry')}</span>)}
-                  {r.reviewDue && <span className="kv-status kv-status--warn">{t.t('ts.bl.reviewDue')}</span>}
+                  {r.expiresAt ?? (r.reviewAt ? t.t('ts.bl.reviewOn', { d: r.reviewAt }) : <StatusPill tone="danger" label={t.t('ts.bl.noExpiry')} />)}
+                  {r.reviewDue && <StatusPill tone="warning" label={t.t('ts.bl.reviewDue')} />}
                 </td>
                 <td>
                   {at.known ? at.text : (
@@ -101,17 +102,17 @@ export default async function BlocklistsPage({ searchParams }: { searchParams: {
                     </span>
                   )}
                 </td>
-                <td><span className={blockStateClass(r.state)}>{t.t(`ts.bl.state.${r.state}`)}</span></td>
+                <td><StatusPill tone={blockStateTone(r.state)} label={t.t(`ts.bl.state.${r.state}`)} /></td>
                 <td>
                   {r.checkedBy
-                    ? <span className="kv-status kv-status--ok">{t.t('ts.bl.countersigned')}</span>
-                    : <span className="kv-status kv-status--warn">{t.t('ts.bl.awaitingCountersign')}</span>}
+                    ? <StatusPill tone="success" label={t.t('ts.bl.countersigned')} />
+                    : <StatusPill tone="warning" label={t.t('ts.bl.awaitingCountersign')} />}
                   {/* ABSENT, not disabled, when the viewer added it. */}
                   {canSign && (
                     <form action={countersignBlockAction}>
                       <input type="hidden" name="id" value={r.id} />
                       <label className="kv-field__label">{t.t('ts.bl.countersignNote')}<input className="kv-input" name="note" required maxLength={1000} /></label>
-                      <button type="submit" className="kv-btn">{t.t('ts.bl.countersign')}</button>
+                      <Button type="submit">{t.t('ts.bl.countersign')}</Button>
                     </form>
                   )}
                   {!canSign && !r.checkedBy && <div className="kv-detail__muted">{t.t('ts.bl.countersignYourOwn')}</div>}
@@ -119,7 +120,7 @@ export default async function BlocklistsPage({ searchParams }: { searchParams: {
                     <form action={liftBlockAction}>
                       <input type="hidden" name="id" value={r.id} />
                       <label className="kv-field__label">{t.t('ts.bl.liftReason')}<input className="kv-input" name="reason" required maxLength={300} /></label>
-                      <button type="submit" className="kv-btn">{t.t('ts.bl.lift')}</button>
+                      <Button type="submit">{t.t('ts.bl.lift')}</Button>
                     </form>
                   )}
                   {r.liftReason && <div className="kv-detail__muted">{t.t('ts.bl.liftedFor', { reason: r.liftReason })}</div>}
@@ -129,7 +130,7 @@ export default async function BlocklistsPage({ searchParams }: { searchParams: {
           })}
         </tbody>
       </table>
-      {rows.length === 0 && !notice && <p className="kv-empty">{t.t('ts.bl.empty')}</p>}
+      {rows.length === 0 && !notice && <EmptyState variant="empty" title={t.t('ts.bl.empty')} />}
       {meta?.nextCursor && <p className="kv-pager"><Link href={`/moderation/blocklists?${q({ cursor: meta.nextCursor })}`}>{t.t('common.next')}</Link></p>}
 
       <h2>{t.t('ts.bl.addHeading')}</h2>
@@ -151,7 +152,7 @@ export default async function BlocklistsPage({ searchParams }: { searchParams: {
         <label className="kv-field__label">{t.t('ts.bl.reviewAt')}<input className="kv-input" name="reviewAt" type="datetime-local" /></label>
         <p className="kv-detail__muted">{t.t('ts.bl.expiryRule')}</p>
         <label className="kv-field__label">{t.t('ts.bl.auditNote')}<textarea className="kv-input" name="auditNote" required minLength={12} maxLength={1000} /></label>
-        <button type="submit" className="kv-btn kv-btn--danger">{t.t('ts.bl.add')}</button>
+        <Button type="submit" variant="danger">{t.t('ts.bl.add')}</Button>
       </form>
       <p className="kv-detail__muted">{t.t('ts.bl.enforcementGap')}</p>
     </section>

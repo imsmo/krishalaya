@@ -11,6 +11,14 @@
 // RESTRICTION IT DOES NOT APPLY. Nothing on the platform reads a risk band — no guard, no gateway, no payout or
 // bidding path — so every band effect renders as advisory. An unenforced restriction displayed as enforced tells a
 // safety operator the problem is handled and takes away the attention that was actually protecting somebody.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, founder pill ruling): the 7 `kv-status`-returning helpers below
+// (blockStateClass/driftClass/bandClass/readingClass/effectClass/slaClass/attentionClass) now return a `StatusTone`
+// instead of a raw `kv-status kv-status--*` string, rendered via `<StatusPill tone={...} label={...}/>`. This file's
+// own `slaClass` is unrelated to the identically-named export in `support/hub.ts` (different shape, different
+// events) — both were renamed independently to `slaTone` in their own files.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ===================== blocklists (W096) ===================== */
 
@@ -33,13 +41,13 @@ export interface BlockRow {
 /** An UNBOUNDED block — neither expiry nor review — is a failure colour. W096's rule is that indefinite blocks
  *  without review are prohibited, so a row in that state is a standing violation, not a style of block.
  *  EXPIRED is muted rather than warned: it lapsed, which is the system working. */
-export function blockStateClass(s: BlockState | null | undefined): string {
+export function blockStateTone(s: BlockState | null | undefined): StatusTone {
   switch (s) {
-    case 'active': return 'kv-status kv-status--ok';
-    case 'expired': return 'kv-status kv-status--muted';
-    case 'lifted': return 'kv-status kv-status--muted';
-    case 'unbounded': return 'kv-status kv-status--danger';
-    default: return 'kv-status kv-status--muted';
+    case 'active': return 'success';
+    case 'expired': return 'neutral';
+    case 'lifted': return 'neutral';
+    case 'unbounded': return 'danger';
+    default: return 'neutral';
   }
 }
 
@@ -149,10 +157,10 @@ export interface DriftItem { eventCode: string; kind: DriftKind; configured: num
 
 /** A weight the platform does not use is a FAILURE, not a note: the table is being read as policy and it is not
  *  policy. A rule nothing emits is a warning. An unconfigured live event is informational — a gap rather than a lie. */
-export function driftClass(k: DriftKind): string {
-  if (k === 'weight_mismatch') return 'kv-status kv-status--danger';
-  if (k === 'no_producer') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--muted';
+export function driftTone(k: DriftKind): StatusTone {
+  if (k === 'weight_mismatch') return 'danger';
+  if (k === 'no_producer') return 'warning';
+  return 'neutral';
 }
 
 /** The dry-run panel's own state. A proposal whose dry run has gone stale must not keep displaying figures as though
@@ -213,26 +221,26 @@ export type BandReading =
 /** The band's colour. `blocked` and `restricted` are failure colours because of what they mean for the person, not
  *  because of what they mean for the platform — this screen is read by somebody deciding whether to take away
  *  another person's livelihood, and the strongest colour belongs on the strongest act. */
-export function bandClass(b: string | null | undefined): string {
+export function bandTone(b: string | null | undefined): StatusTone {
   switch (b) {
-    case 'trusted': return 'kv-status kv-status--ok';
-    case 'standard': return 'kv-status kv-status--ok';
-    case 'caution': return 'kv-status kv-status--warn';
-    case 'restricted': return 'kv-status kv-status--danger';
-    case 'blocked': return 'kv-status kv-status--danger';
-    default: return 'kv-status kv-status--muted';
+    case 'trusted': return 'success';
+    case 'standard': return 'success';
+    case 'caution': return 'warning';
+    case 'restricted': return 'danger';
+    case 'blocked': return 'danger';
+    default: return 'neutral';
   }
 }
 
 /** An INCONSISTENT row — the stored band is not what the platform's own ladder gives for the stored score — is a
  *  failure, because it means somebody's access is governed by a value nothing computed. LADDER DRIFT is a warning:
  *  the row is internally consistent, the specification simply disagrees with the code. */
-export function readingClass(r: BandReading | null | undefined): string {
-  if (!r) return 'kv-status kv-status--muted';
-  if (r.kind === 'inconsistent') return 'kv-status kv-status--danger';
-  if (r.kind === 'ladder_drift') return 'kv-status kv-status--warn';
-  if (r.kind === 'unknown') return 'kv-status kv-status--muted';
-  return 'kv-status kv-status--ok';
+export function readingTone(r: BandReading | null | undefined): StatusTone {
+  if (!r) return 'neutral';
+  if (r.kind === 'inconsistent') return 'danger';
+  if (r.kind === 'ladder_drift') return 'warning';
+  if (r.kind === 'unknown') return 'neutral';
+  return 'success';
 }
 
 export type FactorPanel =
@@ -267,8 +275,8 @@ export interface BandEffect { key: string; enforced: boolean; enforcedBy: string
 
 /** An UNENFORCED effect is muted and captioned. Drawing it as though it applies is the single most dangerous thing
  *  this console could do — see the header. */
-export function effectClass(e: BandEffect | null | undefined): string {
-  return e && e.enforced === true ? 'kv-status kv-status--ok' : 'kv-status kv-status--muted';
+export function effectTone(e: BandEffect | null | undefined): StatusTone {
+  return e && e.enforced === true ? 'success' : 'neutral';
 }
 /** Whether to show the "this ladder is advisory" banner. Computed from the effects rather than hardcoded, so the
  *  banner disappears by itself the day an enforcer ships — a hand-maintained note is one somebody forgets. */
@@ -334,23 +342,23 @@ export type SlaState =
   | { kind: 'due_soon'; ageHours: number } | { kind: 'breached'; overHours: number };
 
 /** UNMEASURED is a warning, never a pass: a queue whose oldest item has no age cannot be shown to be inside its SLA. */
-export function slaClass(s: SlaState | null | undefined): string {
-  if (!s) return 'kv-status kv-status--muted';
-  if (s.kind === 'breached') return 'kv-status kv-status--danger';
-  if (s.kind === 'due_soon') return 'kv-status kv-status--warn';
-  if (s.kind === 'unmeasured') return 'kv-status kv-status--warn';
-  return 'kv-status kv-status--ok';
+export function slaTone(s: SlaState | null | undefined): StatusTone {
+  if (!s) return 'neutral';
+  if (s.kind === 'breached') return 'danger';
+  if (s.kind === 'due_soon') return 'warning';
+  if (s.kind === 'unmeasured') return 'warning';
+  return 'success';
 }
 
 export type AttentionSeverity = 'overdue' | 'blocking' | 'due_soon' | 'info';
 export interface AttentionItem { id: string; severity: AttentionSeverity; messageKey: string; params?: Record<string, string> }
 
-export function attentionClass(s: AttentionSeverity): string {
+export function attentionTone(s: AttentionSeverity): StatusTone {
   switch (s) {
-    case 'overdue': return 'kv-status kv-status--danger';
-    case 'blocking': return 'kv-status kv-status--danger';
-    case 'due_soon': return 'kv-status kv-status--warn';
-    default: return 'kv-status kv-status--muted';
+    case 'overdue': return 'danger';
+    case 'blocking': return 'danger';
+    case 'due_soon': return 'warning';
+    default: return 'neutral';
   }
 }
 

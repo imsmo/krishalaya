@@ -1,9 +1,9 @@
 // PC-56 ADMIN-4b · the oversight console helpers. Pure, framework-free.
 // NOTHING here masks anything — the mask is server-side. These guard what the SCREEN is allowed to claim.
 import {
-  APPLICATION_STATES, isApplicationState, eligibilityLabel, eligibilityClass, chipCount, totalChip,
+  APPLICATION_STATES, isApplicationState, eligibilityLabel, eligibilityTone, chipCount, totalChip,
   rulesRecoverable, buildUnmask, UNMASK_REASON_MIN, minorText, notificationKnown, instalmentLabel,
-  bounceClass, seedingText, rateView, durationKey, breakdownTrustworthy, COVERAGE_FLOOR_PCT, orderedSlices,
+  bounceTone, seedingText, rateView, durationKey, breakdownTrustworthy, COVERAGE_FLOOR_PCT, orderedSlices,
   sliceWidthPct, hasUnattributed, buildOversightExport, isOversightExportReport,
   type EligibilityView, type StateCounts, type Rate, type RejectionBreakdown,
 } from '../features/schemes-registry/oversight';
@@ -16,20 +16,19 @@ const bd = (over: Partial<RejectionBreakdown> = {}): RejectionBreakdown => ({
 
 describe('ADMIN-4b console · the AI-check cell', () => {
   it('never_checked is MUTED, not red — nobody did anything wrong', () => {
-    expect(eligibilityClass({ kind: 'never_checked' })).toContain('muted');
-    expect(eligibilityClass({ kind: 'never_checked' })).not.toContain('danger');
+    expect(eligibilityTone({ kind: 'never_checked' })).toBe('neutral');
     expect(eligibilityLabel({ kind: 'never_checked' })).toEqual({ key: 'neverChecked', score: null });
   });
   it('a LOW score is a warning — that is the row the canon routes to an ambassador', () => {
-    expect(eligibilityClass({ kind: 'scored', eligible: true, score: 0.58 })).toContain('warn');
-    expect(eligibilityClass({ kind: 'scored', eligible: true, score: 0.96 })).toContain('ok');
+    expect(eligibilityTone({ kind: 'scored', eligible: true, score: 0.58 })).toBe('warning');
+    expect(eligibilityTone({ kind: 'scored', eligible: true, score: 0.96 })).toBe('success');
   });
   it('renders a score to two places and no score when there is none', () => {
     expect(eligibilityLabel({ kind: 'scored', eligible: true, score: 0.9 })).toEqual({ key: 'eligible', score: '0.90' });
     expect(eligibilityLabel({ kind: 'unscored', eligible: true }).score).toBeNull();
   });
   it('an unrecognised view is not styled as a pass', () => {
-    expect(eligibilityClass({ kind: 'weird' } as unknown as EligibilityView)).not.toContain('--ok');
+    expect(eligibilityTone({ kind: 'weird' } as unknown as EligibilityView)).not.toBe('success');
   });
 });
 
@@ -122,9 +121,9 @@ describe('ADMIN-4b console · DBT labels', () => {
     expect(instalmentLabel(112)).toBe('112th');
   });
   it('a bounce reason with open cases is a failure; a fully resolved one is not', () => {
-    expect(bounceClass(184, 200)).toContain('danger');
-    expect(bounceClass(0, 200)).toContain('ok');
-    expect(bounceClass(0, 0)).toContain('muted');
+    expect(bounceTone(184, 200)).toBe('danger');
+    expect(bounceTone(0, 200)).toBe('success');
+    expect(bounceTone(0, 0)).toBe('neutral');
   });
   it('a missing seeding-failure slice is UNKNOWN, not zero failures', () => {
     expect(seedingText(null).known).toBe(false);

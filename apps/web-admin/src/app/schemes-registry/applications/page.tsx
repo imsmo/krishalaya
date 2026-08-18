@@ -16,8 +16,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { DataTable, Column } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
+import { Button, Callout, Chip, StatusPill } from '@krishalaya/ui';
 import {
-  APPLICATION_STATES, isApplicationState, chipCount, totalChip, eligibilityLabel, eligibilityClass,
+  APPLICATION_STATES, isApplicationState, chipCount, totalChip, eligibilityLabel, eligibilityTone,
   rulesRecoverable, type ApplicationRow, type StateCounts, type Rate,
 } from '../../../features/schemes-registry/oversight';
 
@@ -76,7 +77,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
         <>
           {r.schemeCode} · v{r.schemeVersion}
           {/* ADMIN-4's pointer. Flagged when the rules this application was judged under are NOT retrievable. */}
-          {!rulesRecoverable(r) && <> <span className="kv-status kv-status--warn">{t.t('sov.rulesLost')}</span></>}
+          {!rulesRecoverable(r) && <> <StatusPill tone="warning" label={t.t('sov.rulesLost')} /></>}
         </>
       ),
     },
@@ -84,7 +85,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
       header: t.t('sov.aiCheck'),
       cell: (r) => {
         const l = eligibilityLabel(r.eligibility);
-        return <span className={eligibilityClass(r.eligibility)}>{t.t(`sov.elig.${l.key}`)}{l.score ? ` · ${l.score}` : ''}</span>;
+        return <StatusPill tone={eligibilityTone(r.eligibility)} label={`${t.t(`sov.elig.${l.key}`)}${l.score ? ` · ${l.score}` : ''}`} />;
       },
     },
     { header: t.t('sov.assisted'), cell: (r) => (r.assisted ? (r.assistedBy ?? t.t('sov.assistedYes')) : t.t('sov.assistedSelf')) },
@@ -106,24 +107,24 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
       <p className="kv-muted">{t.t('sov.appsLead')}</p>
       {/* Said before the table, not after: the names below are abbreviated on purpose, and abbreviation is not
           anonymisation. */}
-      <p className="kv-notice">{t.t('sov.maskNotice')}</p>
+      <Callout>{t.t('sov.maskNotice')}</Callout>
       {assistedShare && assistedShare.pct !== null && <p className="kv-detail__muted">{t.t('sov.assistedShare', { pct: String(assistedShare.pct), n: String(assistedShare.denominator) })}</p>}
       {!counts && <p className="kv-detail__muted">{t.t('sov.countsUnknown')}</p>}
 
       <nav className="kv-filters" aria-label={t.t('sov.stateFilter')}>
-        <Link href={qp({ status: undefined, cursor: undefined })} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>
+        <Chip as={Link} href={qp({ status: undefined, cursor: undefined })} aria-current={!status ? 'true' : undefined} active={!status}>
           {t.t('sov.stateAll')}{chip('all')}
-        </Link>
+        </Chip>
         {APPLICATION_STATES.map((s) => (
-          <Link key={s} href={qp({ status: s, cursor: undefined })} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>
+          <Chip as={Link} key={s} href={qp({ status: s, cursor: undefined })} aria-current={status === s ? 'true' : undefined} active={status === s}>
             {t.t(`sov.state.${s}`)}{chip(s)}
-          </Link>
+          </Chip>
         ))}
       </nav>
 
       <nav className="kv-filters" aria-label={t.t('sov.assistedFilter')}>
-        <Link href={qp({ assisted: undefined, cursor: undefined })} className={`kv-chip${!assistedOnly ? ' is-active' : ''}`}>{t.t('sov.anyChannel')}</Link>
-        <Link href={qp({ assisted: 'true', cursor: undefined })} className={`kv-chip${assistedOnly ? ' is-active' : ''}`}>{t.t('sov.assistedOnly')}</Link>
+        <Chip as={Link} href={qp({ assisted: undefined, cursor: undefined })} active={!assistedOnly}>{t.t('sov.anyChannel')}</Chip>
+        <Chip as={Link} href={qp({ assisted: 'true', cursor: undefined })} active={!!assistedOnly}>{t.t('sov.assistedOnly')}</Chip>
       </nav>
 
       <p className="kv-backlink"><Link href="/schemes-registry/oversight-exports">{t.t('sov.exportLink')}</Link></p>
@@ -131,7 +132,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('sov.appsEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={qp({ cursor: nextCursor })}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
     </section>

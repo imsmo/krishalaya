@@ -1,21 +1,21 @@
 // apps/web-admin/src/test/admin8-cell-map.spec.ts (PC-56 ADMIN-8)
 import {
-  actionClass, actionKey, approvalNoticeClass, approvalNoticeKey, countCheckClass, countCheckKey,
+  actionTone, actionKey, approvalNoticeClass, approvalNoticeKey, countCheckTone, countCheckKey,
   defaultNotActiveClass, diffText, dsnCellKey, dsnMissingIsUrgent, entityKey, fieldIsCritical,
-  headroomClass, headroomText, orderDiff, proposalClass, proposalKey, rateClass, rateText, shardTraffic,
-  showApply, showMarkStale, showReject, stalenessKey, trafficClass, trafficKey, weeksToFullText, zeroWeightClass,
+  headroomTone, headroomText, orderDiff, proposalTone, proposalKey, rateTone, rateText, shardTraffic,
+  showApply, showMarkStale, showReject, stalenessKey, trafficTone, trafficKey, weeksToFullText, zeroWeightClass,
 } from '../features/cells/map-approval';
 
 describe('the proposal badge', () => {
   it('draws OPEN as a warning, not neutral', () => {
     // An unsigned proposal is a routing change somebody is waiting on — and one of them could be "drain the default cell",
     // which stops a country's onboarding.
-    expect(proposalClass('open')).toContain('is-warn');
-    expect(proposalClass('applied')).toContain('is-ok');
-    expect(proposalClass('rejected')).toBe('kv-badge');
+    expect(proposalTone('open')).toBe('warning');
+    expect(proposalTone('applied')).toBe('success');
+    expect(proposalTone('rejected')).toBe('neutral');
   });
   it('draws STALE as DANGER, because somebody wrote a change against a world that moved', () => {
-    expect(proposalClass('stale')).toContain('is-danger');
+    expect(proposalTone('stale')).toBe('danger');
   });
   it('keys an unrecognised status rather than showing a raw code', () => {
     expect(proposalKey('quantum')).toBe('cm.status.unknown');
@@ -90,9 +90,9 @@ describe('the diff', () => {
 
 describe('the change log', () => {
   it('draws a MOVE as consequential — a tenant\'s live data relocating between stacks', () => {
-    expect(actionClass('moved')).toContain('is-warn');
-    expect(actionClass('status_changed')).toContain('is-info');
-    expect(actionClass('placed')).toBe('kv-badge');
+    expect(actionTone('moved')).toBe('warning');
+    expect(actionTone('status_changed')).toBe('info');
+    expect(actionTone('placed')).toBe('neutral');
   });
   it('keys every action and entity, with a fallback', () => {
     for (const a of ['created', 'updated', 'status_changed', 'placed', 'moved', 'removed']) {
@@ -106,14 +106,14 @@ describe('the change log', () => {
 
 describe('headroom', () => {
   it('escalates past the plan trigger and again near full', () => {
-    expect(headroomClass({ known: true, percent: 5, placed: 95, capacity: 100 }, 70)).toContain('is-danger');
-    expect(headroomClass({ known: true, percent: 25, placed: 75, capacity: 100 }, 70)).toContain('is-warn');
-    expect(headroomClass({ known: true, percent: 60, placed: 40, capacity: 100 }, 70)).toContain('is-ok');
+    expect(headroomTone({ known: true, percent: 5, placed: 95, capacity: 100 }, 70)).toBe('danger');
+    expect(headroomTone({ known: true, percent: 25, placed: 75, capacity: 100 }, 70)).toBe('warning');
+    expect(headroomTone({ known: true, percent: 60, placed: 40, capacity: 100 }, 70)).toBe('success');
   });
   it('does NOT draw UNCAPPED as plenty', () => {
     // An uncapped cell has no headroom to report and no guard protecting it, which is a different condition from a roomy
     // one — green would say the opposite of what it means.
-    expect(headroomClass({ known: false, reason: 'uncapped' }, 70)).toBe('kv-badge');
+    expect(headroomTone({ known: false, reason: 'uncapped' }, 70)).toBe('neutral');
     expect(headroomText({ known: false, reason: 'uncapped' }))
       .toEqual({ text: '—', unknownKey: 'cm.headroom.uncapped' });
   });
@@ -142,8 +142,8 @@ describe('the growth rate', () => {
   it('draws a SHRINKING cell as a note rather than as good news', () => {
     // Tenants leaving is a churn signal, and a capacity screen that painted it green would be the wrong screen to learn it
     // from.
-    expect(rateClass({ known: true, perWeek: -5, windowWeeks: 8, sample: 40 })).toContain('is-warn');
-    expect(rateClass({ known: true, perWeek: 5, windowWeeks: 8, sample: 40 })).toBe('kv-badge');
+    expect(rateTone({ known: true, perWeek: -5, windowWeeks: 8, sample: 40 })).toBe('warning');
+    expect(rateTone({ known: true, perWeek: 5, windowWeeks: 8, sample: 40 })).toBe('neutral');
   });
 });
 
@@ -171,13 +171,13 @@ describe('weeks to full', () => {
 describe('the count-check claim', () => {
   it('draws NEVER CHECKED as a warning — the state of every node today', () => {
     // The ADMIN-6 rule: an unverified figure says so rather than implying verification.
-    expect(countCheckClass(null)).toContain('is-warn');
+    expect(countCheckTone(null)).toBe('warning');
     expect(countCheckKey(null)).toBe('cm.count.never');
   });
   it('escalates a drift on a CAPPED node to danger', () => {
-    expect(countCheckClass({ kind: 'over', at: 'x', urgent: true })).toContain('is-danger');
-    expect(countCheckClass({ kind: 'over', at: 'x', urgent: false })).toContain('is-warn');
-    expect(countCheckClass({ kind: 'match', at: 'x', urgent: false })).toContain('is-ok');
+    expect(countCheckTone({ kind: 'over', at: 'x', urgent: true })).toBe('danger');
+    expect(countCheckTone({ kind: 'over', at: 'x', urgent: false })).toBe('warning');
+    expect(countCheckTone({ kind: 'match', at: 'x', urgent: false })).toBe('success');
   });
   it('keys OVER and UNDER separately, because they cost different things', () => {
     expect(countCheckKey({ kind: 'over', at: 'x', urgent: true })).toBe('cm.count.over');
@@ -231,9 +231,9 @@ describe('shardTraffic', () => {
   });
   it('draws UNKNOWN as danger on a routing table', () => {
     // A shard whose traffic state cannot be read is a shard nobody can say is safe to place onto.
-    expect(trafficClass('unknown')).toContain('is-danger');
-    expect(trafficClass('accepting')).toContain('is-ok');
-    expect(trafficClass('draining_by_weight')).toContain('is-warn');
+    expect(trafficTone('unknown')).toBe('danger');
+    expect(trafficTone('accepting')).toBe('success');
+    expect(trafficTone('draining_by_weight')).toBe('warning');
     expect(trafficKey('draining_by_weight')).toBe('cm.traffic.draining_by_weight');
   });
 });

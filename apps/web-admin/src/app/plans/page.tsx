@@ -12,13 +12,14 @@ import { formatMoneyMinor } from '@krishalaya/i18n';
 import { PLAN_STATUSES, planStatusKey, type PlanRow } from '../../features/plans/plan';
 import { createPlanAction } from './actions';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('plans.title'), robots: { index: false, follow: false } };
 }
 
-const STATUS_CLASS: Record<string, string> = { draft: 'kv-status--muted', active: 'kv-status--ok', archived: 'kv-status--muted' };
+const STATUS_TONE: Record<string, StatusTone> = { draft: 'neutral', active: 'success', archived: 'neutral' };
 const ERR = new Set(['code', 'defaultName', 'countryCode', 'currencyCode', 'price', 'reason', 'elevation', 'conflict', 'notFound', 'generic']);
 
 export default async function PlansPage({ searchParams }: { searchParams: { cursor?: string; status?: string; error?: string } }) {
@@ -36,7 +37,7 @@ export default async function PlansPage({ searchParams }: { searchParams: { curs
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const cols: Column<PlanRow>[] = [
     { header: t.t('plans.code'), cell: (r) => <Link href={`/plans/${r.id}`}>{r.code} v{r.version}</Link> },
-    { header: t.t('plans.status'), cell: (r) => { const s = planStatusKey(r.status); return <span className={`kv-status ${STATUS_CLASS[s]}`}>{t.t(`plans.state.${s}`)}</span>; } },
+    { header: t.t('plans.status'), cell: (r) => { const s = planStatusKey(r.status); return <StatusPill tone={STATUS_TONE[s]} label={t.t(`plans.state.${s}`)} />; } },
     { header: t.t('plans.monthly'), cell: (r) => formatMoneyMinor(r.monthlyPriceMinor, r.currency) },
     { header: t.t('plans.public'), cell: (r) => (r.isPublic ? t.t('plans.yes') : t.t('common.dash')) },
   ];
@@ -49,16 +50,16 @@ export default async function PlansPage({ searchParams }: { searchParams: { curs
       {errKey && <p className="kv-error" role="alert">{t.t(`plans.error.${errKey}`)}</p>}
 
       <nav className="kv-filters" aria-label={t.t('plans.filterLabel')}>
-        <Link href={filterHref()} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('plans.filterAll')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('plans.filterAll')}</Chip>
         {PLAN_STATUSES.map((s) => (
-          <Link key={s} href={filterHref(s)} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(`plans.state.${s}`)}</Link>
+          <Chip as={Link} key={s} href={filterHref(s)} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(`plans.state.${s}`)}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('plans.empty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/plans?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/plans?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -80,7 +81,7 @@ export default async function PlansPage({ searchParams }: { searchParams: { curs
           <input id="annualPriceMinor" name="annualPriceMinor" className="kv-input" required inputMode="numeric" placeholder="999000" />
           <label htmlFor="createReason" className="kv-field__label">{t.t('plans.reason')}</label>
           <input id="createReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('plans.createSubmit')}</button>
+          <Button type="submit">{t.t('plans.createSubmit')}</Button>
         </form>
       </details>
     </section>

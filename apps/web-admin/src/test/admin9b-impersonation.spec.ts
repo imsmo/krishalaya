@@ -9,7 +9,7 @@
 //   * an elapsed grant that still reads `active` says so, because that is what the missing expiry writer produced;
 //   * "used after end" outranks "write blocked", because a token used past its window is the worse finding.
 import {
-  actionOutcomeClass, actionOutcomeKey, enforcementClass, enforcementKey, isElapsedButActive, minutesLeft, noticeKey,
+  actionOutcomeTone, actionOutcomeKey, enforcementClass, enforcementKey, isElapsedButActive, minutesLeft, noticeKey,
   sessionShapeClass, sessionShapeKey, type ActionCounts, type EnforcementState,
 } from '../features/impersonation/grant';
 import { en } from '../i18n/en';
@@ -110,9 +110,9 @@ describe('ADMIN-9b · what the session actually did', () => {
   it('labels every action outcome, and an unrecognised one visibly', () => {
     for (const o of ['served', 'refused_write', 'refused_grant']) expect(dict[actionOutcomeKey(o)]).toBeTruthy();
     expect(actionOutcomeKey('something_new')).toBe('imp.outcome.other');
-    expect(actionOutcomeClass('refused_grant')).toContain('is-danger');
-    expect(actionOutcomeClass('refused_write')).toContain('is-warn');
-    expect(actionOutcomeClass('served')).not.toContain('is-danger');
+    expect(actionOutcomeTone('refused_grant')).toBe('danger');
+    expect(actionOutcomeTone('refused_write')).toBe('warning');
+    expect(actionOutcomeTone('served')).not.toBe('danger');
   });
 
   // The sentence that distinguishes this log from the one that existed before.

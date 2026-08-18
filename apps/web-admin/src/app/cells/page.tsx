@@ -12,6 +12,7 @@ import { adminNoticeKey } from '../../features/nav/nav-model';
 import { NODE_STATUSES, isNodeStatus, nodeStatusKey, nodeStatusTone, type CellRow } from '../../features/cells/cell';
 import { createCellAction } from './actions';
 
+import { Button, Chip, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -19,6 +20,10 @@ export function generateMetadata(): Metadata {
 }
 
 const ERR = new Set(['code', 'country', 'name', 'notes', 'reason', 'capacity', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
+// DEV-60 static-literal sweep: nodeStatusTone (features/cells/cell.ts) still returns the OLD tone-suffix
+// vocabulary ('ok'|'warn'|'danger'|'muted'), not StatusTone — that helper is a features/** file, out of
+// scope for this page-only sweep, so the remap lives here at the call site instead.
+const NODE_TONE: Record<string, StatusTone> = { ok: 'success', warn: 'warning', danger: 'danger', muted: 'neutral' };
 
 export default async function CellsPage({ searchParams }: { searchParams: { cursor?: string; countryCode?: string; status?: string; ok?: string; error?: string } }) {
   requireAdmin();
@@ -39,8 +44,8 @@ export default async function CellsPage({ searchParams }: { searchParams: { curs
     { header: t.t('cells.code'), cell: (r) => <Link href={`/cells/cells/${encodeURIComponent(r.id)}`}>{r.code}</Link> },
     { header: t.t('cells.name'), cell: (r) => r.displayName },
     { header: t.t('cells.country'), cell: (r) => r.countryCode },
-    { header: t.t('cells.status'), cell: (r) => <span className={`kv-status kv-status--${nodeStatusTone(r.status)}`}>{t.t(nodeStatusKey(r.status))}</span> },
-    { header: t.t('cells.residency'), cell: (r) => r.residencyLocked ? t.t('cells.locked') : <span className="kv-status kv-status--warn">{t.t('cells.unlocked')}</span> },
+    { header: t.t('cells.status'), cell: (r) => <StatusPill tone={NODE_TONE[nodeStatusTone(r.status)]} label={t.t(nodeStatusKey(r.status))} /> },
+    { header: t.t('cells.residency'), cell: (r) => r.residencyLocked ? t.t('cells.locked') : <StatusPill tone="warning" label={t.t('cells.unlocked')} /> },
     { header: t.t('cells.default'), cell: (r) => r.isDefault ? t.t('common.yes') : t.t('common.dash') },
     { header: t.t('cells.placed'), cell: (r) => String(r.placedCount) },
     { header: t.t('cells.capacity'), cell: (r) => r.capacityTenants === null ? t.t('cells.unbounded') : String(r.capacityTenants) },
@@ -52,18 +57,18 @@ export default async function CellsPage({ searchParams }: { searchParams: { curs
       <h1>{t.t('cells.title')}</h1>
       <p className="kv-muted">{t.t('cells.lead')}</p>
       <nav className="kv-filters" aria-label={t.t('cells.nav')}>
-        <Link href="/cells" className="kv-chip is-active" aria-current="true">{t.t('cells.navCells')}</Link>
-        <Link href="/cells/shards" className="kv-chip">{t.t('cells.navShards')}</Link>
-        <Link href="/cells/placements" className="kv-chip">{t.t('cells.navPlacements')}</Link>
-        <Link href="/cells/residency" className="kv-chip">{t.t('cells.navResidency')}</Link>
+        <Chip as={Link} href="/cells" aria-current="true" active>{t.t('cells.navCells')}</Chip>
+        <Chip as={Link} href="/cells/shards">{t.t('cells.navShards')}</Chip>
+        <Chip as={Link} href="/cells/placements">{t.t('cells.navPlacements')}</Chip>
+        <Chip as={Link} href="/cells/residency">{t.t('cells.navResidency')}</Chip>
         {/* PC-56 ADMIN-8/8b: these planes were built and were reachable only by typing the URL. A console screen nobody
             can navigate to is a screen that does not exist for the person who needs it. */}
-        <Link href="/cells/capacity" className="kv-chip">{t.t('cells.navCapacity')}</Link>
-        <Link href="/cells/changes" className="kv-chip">{t.t('cells.navChanges')}</Link>
-        <Link href="/cells/residency/log" className="kv-chip">{t.t('cells.navResidencyLog')}</Link>
-        <Link href="/cells/migrations" className="kv-chip">{t.t('cells.navMigrations')}</Link>
-        <Link href="/cells/plan" className="kv-chip">{t.t('cells.navPlan')}</Link>
-        <Link href="/cells/provisioning" className="kv-chip">{t.t('cells.navProvisioning')}</Link>
+        <Chip as={Link} href="/cells/capacity">{t.t('cells.navCapacity')}</Chip>
+        <Chip as={Link} href="/cells/changes">{t.t('cells.navChanges')}</Chip>
+        <Chip as={Link} href="/cells/residency/log">{t.t('cells.navResidencyLog')}</Chip>
+        <Chip as={Link} href="/cells/migrations">{t.t('cells.navMigrations')}</Chip>
+        <Chip as={Link} href="/cells/plan">{t.t('cells.navPlan')}</Chip>
+        <Chip as={Link} href="/cells/provisioning">{t.t('cells.navProvisioning')}</Chip>
       </nav>
       {okCreated && <p className="kv-success" role="status">{t.t('cells.ok.cellCreated')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`cells.err.${errKey}`)}</p>}
@@ -72,19 +77,19 @@ export default async function CellsPage({ searchParams }: { searchParams: { curs
         <label htmlFor="countryCode" className="kv-field__label">{t.t('cells.country')}</label>
         <input id="countryCode" name="countryCode" className="kv-input kv-input--sm" maxLength={2} defaultValue={countryCode ?? ''} placeholder={t.t('cells.countryHint')} />
         {status && <input type="hidden" name="status" value={status} />}
-        <button type="submit" className="kv-btn kv-btn--link">{t.t('common.filter')}</button>
+        <Button type="submit" variant="tertiary">{t.t('common.filter')}</Button>
       </form>
       <nav className="kv-filters" aria-label={t.t('cells.filterStatus')}>
-        <Link href={filterHref()} className={`kv-chip${!status ? ' is-active' : ''}`} aria-current={!status ? 'true' : undefined}>{t.t('cells.filterAll')}</Link>
+        <Chip as={Link} href={filterHref()} aria-current={!status ? 'true' : undefined} active={!status}>{t.t('cells.filterAll')}</Chip>
         {NODE_STATUSES.map((s) => (
-          <Link key={s} href={filterHref(s)} className={`kv-chip${status === s ? ' is-active' : ''}`} aria-current={status === s ? 'true' : undefined}>{t.t(nodeStatusKey(s))}</Link>
+          <Chip as={Link} key={s} href={filterHref(s)} aria-current={status === s ? 'true' : undefined} active={status === s}>{t.t(nodeStatusKey(s))}</Chip>
         ))}
       </nav>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : (
         <>
           <DataTable columns={cols} rows={rows} empty={t.t('cells.cellsEmpty')} />
-          {nextCursor && <p className="kv-pager"><Link className="kv-btn" href={`/cells?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}${countryCode ? `&countryCode=${countryCode}` : ''}`}>{t.t('common.nextPage')}</Link></p>}
+          {nextCursor && <p className="kv-pager"><Button as={Link} href={`/cells?cursor=${encodeURIComponent(nextCursor)}${status ? `&status=${status}` : ''}${countryCode ? `&countryCode=${countryCode}` : ''}`}>{t.t('common.nextPage')}</Button></p>}
         </>
       )}
 
@@ -106,7 +111,7 @@ export default async function CellsPage({ searchParams }: { searchParams: { curs
           <input id="cellNotes" name="notes" className="kv-input" maxLength={2000} />
           <label htmlFor="cellReason" className="kv-field__label">{t.t('cells.reason')}</label>
           <input id="cellReason" name="reason" className="kv-input" required minLength={3} maxLength={500} />
-          <button type="submit" className="kv-btn">{t.t('cells.createCellSubmit')}</button>
+          <Button type="submit">{t.t('cells.createCellSubmit')}</Button>
         </form>
       </details>
     </section>

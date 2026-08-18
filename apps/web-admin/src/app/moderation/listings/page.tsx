@@ -12,8 +12,9 @@ import { requireAdmin, adminUserId } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
-import { slaClass, slaKey, formatMinor, removeBlockedKey, valueDrift, type HoldSla, type RemoveState } from '../../../features/moderation/queue';
+import { slaTone, slaKey, formatMinor, removeBlockedKey, valueDrift, type HoldSla, type RemoveState } from '../../../features/moderation/queue';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -54,7 +55,7 @@ export default async function HeldListingsPage({ searchParams }: { searchParams:
       {breached > 0 && <p className="kv-error" role="alert">{t.t('mq.breached', { n: String(breached) })}</p>}
       {/* W090 says the queue pages the lead at 3h. Nothing on this platform can page anybody — 0098's ladder delivers
           in-app only — so this is an in-app attention line and it says which it is. */}
-      {paging > 0 && <p className="kv-notice" role="note">{t.t('mq.pageLead', { n: String(paging) })}</p>}
+      {paging > 0 && <Callout tone="warning">{t.t('mq.pageLead', { n: String(paging) })}</Callout>}
 
       <table className="kv-table">
         <thead><tr>
@@ -74,12 +75,12 @@ export default async function HeldListingsPage({ searchParams }: { searchParams:
                 <td>
                   {formatMinor(r.valueAtStakeMinor)}
                   {/* The listing was edited while held: the removal threshold was judged on the older figure. */}
-                  {drift.known && drift.drifted && <span className="kv-status kv-status--warn">{t.t('mq.valueDrift')}</span>}
-                  {r.removalNeedsChecker && <span className="kv-status kv-status--warn">{t.t('mq.needsChecker')}</span>}
+                  {drift.known && drift.drifted && <StatusPill tone="warning" label={t.t('mq.valueDrift')} />}
+                  {r.removalNeedsChecker && <StatusPill tone="warning" label={t.t('mq.needsChecker')} />}
                 </td>
-                <td><span className={slaClass(r.sla)}>{t.t(`mq.sla.${slaKey(r.sla)}`)}</span></td>
+                <td><StatusPill tone={slaTone(r.sla)} label={t.t(`mq.sla.${slaKey(r.sla)}`)} /></td>
                 <td>
-                  <Link href={`/moderation/listings/${r.id}`} className="kv-btn kv-btn--link">{t.t('mq.review')}</Link>
+                  <Button as={Link} href={`/moderation/listings/${r.id}`} variant="tertiary">{t.t('mq.review')}</Button>
                   {blocked === 'yourOwnHold' && <div className="kv-detail__muted">{t.t('mq.removeBlocked.yourOwnHold')}</div>}
                 </td>
               </tr>
@@ -87,7 +88,7 @@ export default async function HeldListingsPage({ searchParams }: { searchParams:
           })}
         </tbody>
       </table>
-      {rows.length === 0 && !notice && <p className="kv-empty">{t.t('mq.listEmpty')}</p>}
+      {rows.length === 0 && !notice && <EmptyState variant="empty" title={t.t('mq.listEmpty')} />}
       {next && <p className="kv-pager"><Link href={`/moderation/listings?cursor=${encodeURIComponent(next)}`}>{t.t('common.next')}</Link></p>}
       <p className="kv-detail__muted">{t.t('mq.holdDoctrine')}</p>
     </section>

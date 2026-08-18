@@ -5,7 +5,7 @@
 // server would issue, and a tick the platform has not verified must never be drawn.
 import {
   DECISION_REASON_MIN, APPEAL_SLA_HOURS, APPEAL_STATUSES,
-  slaLabel, slaClass, decideBlockedKey, neOriginalMark, buildDecide, statusTab, effectClass, OVERTURN_EFFECT_KEYS,
+  slaLabel, slaTone, decideBlockedKey, neOriginalMark, buildDecide, statusTab, effectTone, OVERTURN_EFFECT_KEYS,
 } from '../features/moderation/appeals';
 import { en } from '../i18n/en';
 
@@ -15,10 +15,10 @@ describe('ADMIN-SWEEP-b1 · SLA display', () => {
     expect(slaLabel({ kind: 'breached', overHours: 12 })).toEqual({ key: 'over', hours: 12 });
     expect(slaLabel(null)).toEqual({ key: 'none', hours: 0 });
   });
-  it('escalates the class as the clock runs down', () => {
-    expect(slaClass({ kind: 'running', hoursLeft: 28 })).toContain('ok');
-    expect(slaClass({ kind: 'running', hoursLeft: 7 })).toContain('warn');
-    expect(slaClass({ kind: 'breached', overHours: 1 })).toContain('err');
+  it('escalates the tone as the clock runs down', () => {
+    expect(slaTone({ kind: 'running', hoursLeft: 28 })).toBe('success');
+    expect(slaTone({ kind: 'running', hoursLeft: 7 })).toBe('warning');
+    expect(slaTone({ kind: 'breached', overHours: 1 })).toBe('danger');
   });
   it('the constant is the canon 48 — one number with the server, not a copy that drifts', () => {
     expect(APPEAL_SLA_HOURS).toBe(48);
@@ -92,10 +92,10 @@ describe('ADMIN-SWEEP-b1 · tabs, effects and catalogue coverage', () => {
     // and the doctrine line carries the half-contract warning that split this wave
     expect((en as Record<string, string>)['ap.effectsDoctrine']).toContain('ONE transaction');
   });
-  it('effectClass distinguishes done / nothing-to-do / subject-gone', () => {
-    expect(effectClass('done')).toContain('ok');
-    expect(effectClass('nothing_to_do')).not.toContain('warn');
-    expect(effectClass('subject_gone')).toContain('warn');
+  it('effectTone distinguishes done / nothing-to-do / subject-gone', () => {
+    expect(effectTone('done')).toBe('success');
+    expect(effectTone('nothing_to_do')).toBe('neutral');
+    expect(effectTone('subject_gone')).toBe('warning');
   });
   it('the trust overview no longer names appeals as not built', () => {
     expect((en as Record<string, string>)['ts.notBuilt']).not.toContain('are not built');

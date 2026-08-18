@@ -10,7 +10,10 @@ import { getTranslator } from '../../../../lib/i18n';
 import { decidePriceAction } from '../actions';
 import { rupees } from '../../../../features/market/pulse';
 import {
-  canDecide, decidedNoticeKey, severityClass, severityKey,
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
+  canDecide, decidedNoticeKey, severityTone, severityKey,
 } from '../../../../features/market/quarantine';
 
 export const dynamic = 'force-dynamic';
@@ -51,34 +54,32 @@ export default async function QuarantinePage({ searchParams }: {
         <p className="kv-page__sub">{t.t('mp11.q.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`mp11.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`mp11.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`mp11.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`mp11.err.${searchParams.error}`)}</Callout> : null}
 
       {meta ? (
         <>
           {/* WHAT RELEASING DOES AND DOES NOT DO, above the controls rather than under them. */}
-          <p className="kv-note is-warn">{t.t(meta.releaseNote)}</p>
-          <p className="kv-note"><small>{t.t('mp11.q.feedback', { owner: meta.feedbackOwner })}</small></p>
+          <Callout tone="warning">{t.t(meta.releaseNote)}</Callout>
+          <Callout><small>{t.t('mp11.q.feedback', { owner: meta.feedbackOwner })}</small></Callout>
         </>
       ) : null}
 
       <nav className="kv-filters" aria-label={t.t('mp11.q.filterGroup')}>
-        <Link className={`kv-chip${!includeDecided ? ' is-active' : ''}`} href="/analytics/mandi-pulse/quarantine">
+        <Chip as={Link} href="/analytics/mandi-pulse/quarantine" active={!includeDecided}>
           {t.t('mp11.q.heldOnly')}
-        </Link>
-        <Link className={`kv-chip${includeDecided ? ' is-active' : ''}`} href="/analytics/mandi-pulse/quarantine?all=1">
+        </Chip>
+        <Chip as={Link} href="/analytics/mandi-pulse/quarantine?all=1" active={includeDecided}>
           {t.t('mp11.q.withDecided')}
-        </Link>
+        </Chip>
       </nav>
 
       {rows.length === 0 && !notice ? (
-        <div className="kv-empty">
-          <h2>{t.t('mp11.q.emptyTitle')}</h2>
-          {/* An empty queue means two opposite things and the pulse's manual share tells them apart. */}
-          <p>{t.t(meta?.emptyMeaning ?? 'mp11.q.emptyMeaning')}</p>
-          <Link className="kv-btn" href="/analytics/mandi-pulse">{t.t('mp11.q.backToPulse')}</Link>
-        </div>
+        // An empty queue means two opposite things and the pulse's manual share tells them apart.
+        <EmptyState title={t.t('mp11.q.emptyTitle')} body={t.t(meta?.emptyMeaning ?? 'mp11.q.emptyMeaning')}>
+          <Button as={Link} href="/analytics/mandi-pulse">{t.t('mp11.q.backToPulse')}</Button>
+        </EmptyState>
       ) : (
         <table className="kv-table">
           <caption className="kv-table__caption">{t.t('mp11.q.caption')}</caption>
@@ -107,9 +108,8 @@ export default async function QuarantinePage({ searchParams }: {
                       yesterday's typo. */}
                   <td>{r.referenceModalMinor ? rupees(r.referenceModalMinor) : t.t('mp11.q.noReference')}</td>
                   <td>
-                    <span className={severityClass(r.deviationBp)}>
-                      {t.t(severityKey(r.deviationBp), { pct: r.deviationBp === null ? '—' : (r.deviationBp / 100).toFixed(0) })}
-                    </span>
+                    <StatusPill tone={severityTone(r.deviationBp)}
+                      label={t.t(severityKey(r.deviationBp), { pct: r.deviationBp === null ? '—' : (r.deviationBp / 100).toFixed(0) })} />
                   </td>
                   <td>
                     {canDecide(r.anomalyState) ? (
@@ -120,7 +120,7 @@ export default async function QuarantinePage({ searchParams }: {
                           <input type="hidden" name="decision" value="released" />
                           <input className="kv-input" name="note" required minLength={20} maxLength={300}
                             aria-label={t.t('mp11.q.note')} />
-                          <button className="kv-btn" type="submit">{t.t('mp11.q.release')}</button>
+                          <Button type="submit">{t.t('mp11.q.release')}</Button>
                         </form>
                         <form action={decidePriceAction}>
                           <input type="hidden" name="id" value={r.id} />
@@ -128,12 +128,12 @@ export default async function QuarantinePage({ searchParams }: {
                           <input type="hidden" name="decision" value="rejected" />
                           <input className="kv-input" name="note" required minLength={20} maxLength={300}
                             aria-label={t.t('mp11.q.note')} />
-                          <button className="kv-btn" type="submit">{t.t('mp11.q.reject')}</button>
+                          <Button type="submit">{t.t('mp11.q.reject')}</Button>
                         </form>
                         <p className="kv-field__help">{t.t('mp11.q.noteHelp')}</p>
                       </>
                     ) : (
-                      <p className="kv-note">{t.t(decided ?? 'mp11.decided.notHeld')}</p>
+                      <Callout>{t.t(decided ?? 'mp11.decided.notHeld')}</Callout>
                     )}
                   </td>
                 </tr>

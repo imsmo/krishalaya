@@ -13,19 +13,20 @@ import { DataTable, Column } from '../../../../components/DataTable';
 import { getTranslator } from '../../../../lib/i18n';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import {
-  grantStatusKey, canEndGrant, canRevokeGrant, actionOutcomeClass, actionOutcomeKey, enforcementClass, enforcementKey,
+  grantStatusKey, canEndGrant, canRevokeGrant, actionOutcomeTone, actionOutcomeKey, enforcementClass, enforcementKey,
   isElapsedButActive, minutesLeft, sessionShapeClass, sessionShapeKey,
   type ActionCounts, type EnforcementState, type GrantRow, type ActionRow,
 } from '../../../../features/impersonation/grant';
 import { endGrantAction, revokeGrantAction } from '../../actions';
 
+import { Button, Callout, StatusPill, type StatusTone } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('imp.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const ST_CLASS: Record<string, string> = { active: 'kv-status--danger', ended: 'kv-status--muted', expired: 'kv-status--muted', revoked: 'kv-status--warn' };
+const ST_TONE: Record<string, StatusTone> = { active: 'danger', ended: 'neutral', expired: 'neutral', revoked: 'warning' };
 const OK = new Set(['minted', 'ended', 'revoked']);
 const ERR = new Set(['reason', 'elevation', 'conflict', 'notFound', 'generic']);
 
@@ -73,7 +74,7 @@ export default async function GrantDetailPage({ params, searchParams }: { params
         const o = a.outcome ?? 'served';
         return (
           <>
-            <span className={actionOutcomeClass(o)}>{t.t(actionOutcomeKey(o))}</span>
+            <StatusPill tone={actionOutcomeTone(o)} label={t.t(actionOutcomeKey(o))} />
             {a.statusCode ? <> {a.statusCode}</> : null}
             {a.detail ? <><br /><small>{a.detail}</small></> : null}
           </>
@@ -92,9 +93,9 @@ export default async function GrantDetailPage({ params, searchParams }: { params
       {/* WHAT IS ENFORCED — first, because it qualifies everything below it. */}
       <p className={enforcementClass(grant.enforcement)}>{t.t(enforcementKey(grant.enforcement))}</p>
       {grant.enforcement ? (
-        <p className="kv-note">
+        <Callout tone="info">
           {t.t('imp.revocationTakesEffect', { when: grant.enforcement.revocationTakesEffect })}
-        </p>
+        </Callout>
       ) : null}
       {/* THE SESSION'S SHAPE IN ONE SENTENCE. */}
       <p className={sessionShapeClass(grant.actionCounts)}>
@@ -104,11 +105,11 @@ export default async function GrantDetailPage({ params, searchParams }: { params
           after: String(grant.actionCounts?.refusedGrant ?? 0),
         })}
       </p>
-      {elapsed ? <p className="kv-note is-warn">{t.t('imp.elapsedNotReconciled')}</p> : null}
-      {left !== null ? <p className="kv-note">{t.t('imp.minutesLeft', { n: String(left) })}</p> : null}
+      {elapsed ? <Callout tone="warning">{t.t('imp.elapsedNotReconciled')}</Callout> : null}
+      {left !== null ? <Callout tone="info">{t.t('imp.minutesLeft', { n: String(left) })}</Callout> : null}
 
       <dl className="kv-facts">
-        <div className="kv-facts__row"><dt>{t.t('imp.status')}</dt><dd><span className={`kv-status ${ST_CLASS[s]}`}>{t.t(`imp.state.${s}`)}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('imp.status')}</dt><dd><StatusPill tone={ST_TONE[s]} label={t.t(`imp.state.${s}`)} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('imp.operator')}</dt><dd>{grant.adminUserId}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('imp.targetTenant')}</dt><dd>{grant.targetTenantId}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('imp.targetUser')}</dt><dd>{grant.targetUserId}</dd></div>
@@ -130,7 +131,7 @@ export default async function GrantDetailPage({ params, searchParams }: { params
               <p className="kv-field__hint">{t.t('imp.endHint')}</p>
               <label className="kv-field__label">{t.t('imp.reason')}</label>
               <input name="reason" className="kv-input" required minLength={8} maxLength={1000} />
-              <button type="submit" className="kv-btn">{t.t('imp.end')}</button>
+              <Button type="submit">{t.t('imp.end')}</Button>
             </form>
           )}
           {canRevokeGrant(s) && (
@@ -139,7 +140,7 @@ export default async function GrantDetailPage({ params, searchParams }: { params
               <p className="kv-field__hint">{t.t('imp.revokeHint')}</p>
               <label className="kv-field__label">{t.t('imp.reason')}</label>
               <input name="reason" className="kv-input" required minLength={8} maxLength={1000} />
-              <button type="submit" className="kv-btn kv-btn--danger">{t.t('imp.revoke')}</button>
+              <Button type="submit" variant="danger">{t.t('imp.revoke')}</Button>
             </form>
           )}
         </div>
@@ -149,7 +150,7 @@ export default async function GrantDetailPage({ params, searchParams }: { params
       {/* The note this page could not honestly make before: the rows are written by the SERVER that served each
           request, not by the operator choosing to report themselves. */}
       <p className="kv-field__hint">{t.t('imp.actionsNote')}</p>
-      <p className="kv-note">{t.t('imp.actionsWrittenBy')}</p>
+      <Callout tone="info">{t.t('imp.actionsWrittenBy')}</Callout>
       <DataTable columns={actionCols} rows={actions} empty={t.t('imp.actionsEmpty')} />
     </section>
   );

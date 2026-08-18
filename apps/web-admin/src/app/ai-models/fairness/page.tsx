@@ -14,9 +14,10 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
+import { Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
-  caveatKeys, formatGap, gapClass, gateClass, gateKey, legacyKey, unauditedClass, unauditedKey,
-  verdictClass, verdictKey,
+  caveatKeys, formatGap, gapTone, gateTone, gateKey, legacyKey, unauditedClass, unauditedKey,
+  verdictTone, verdictKey,
 } from '../../../features/ai-governance/ai-governance';
 
 export const dynamic = 'force-dynamic';
@@ -68,9 +69,9 @@ export default async function FairnessBoardPage({ searchParams }: { searchParams
         <p className="kv-page__sub">{t.t('ai.fairness.sub')}</p>
       </header>
 
-      {notice ? <p className="kv-note is-danger" role="alert">{t.t(notice)}</p> : null}
-      {searchParams.ok ? <p className="kv-note is-ok" role="status">{t.t(`ai.ok.${searchParams.ok}`)}</p> : null}
-      {searchParams.error ? <p className="kv-note is-danger" role="alert">{t.t(`ai.err.${searchParams.error}`)}</p> : null}
+      {notice ? <Callout tone="danger" live="assertive">{t.t(notice)}</Callout> : null}
+      {searchParams.ok ? <Callout tone="success" live="polite">{t.t(`ai.ok.${searchParams.ok}`)}</Callout> : null}
+      {searchParams.error ? <Callout tone="danger" live="assertive">{t.t(`ai.err.${searchParams.error}`)}</Callout> : null}
 
       {b ? (
         <>
@@ -81,13 +82,13 @@ export default async function FairnessBoardPage({ searchParams }: { searchParams
             {/* THE PROXY AND ITS BIASES TRAVEL WITH EVERY GAP ON THIS SCREEN. The platform has no labelled eval set, so
                 the figure is a HUMAN-CORRECTION RATE — and its worst bias is that a group whose cases are reviewed less
                 often looks BETTER, not worse. A gap presented as accuracy would be the most misleading number here. */}
-            <p className="kv-note is-warn">{t.t('ai.policy.proxy')}</p>
+            <Callout tone="warning">{t.t('ai.policy.proxy')}</Callout>
             <ul>
               {caveatKeys(b.policy.proxyCaveats).map((k) => <li key={k}>{t.t(k)}</li>)}
             </ul>
-            <p className="kv-note">
+            <Callout>
               {t.t('ai.policy.measurable', { slices: b.policy.measurableSlices.join(', ') })}
-            </p>
+            </Callout>
             {/* The canon's slices this platform cannot yet measure, each with its reason — rather than three slices
                 labelled with the canon's names and computed from something else. */}
             <ul>
@@ -103,7 +104,7 @@ export default async function FairnessBoardPage({ searchParams }: { searchParams
               <h2 id="ai-unaudited" className="kv-panel__title">
                 {t.t('ai.unaudited.title', { n: String(b.unaudited.length) })}
               </h2>
-              <p className="kv-note is-danger">{t.t('ai.unaudited.why')}</p>
+              <Callout tone="danger">{t.t('ai.unaudited.why')}</Callout>
               <table className="kv-table">
                 <caption className="kv-table__caption">{t.t('ai.unaudited.caption')}</caption>
                 <thead>
@@ -133,13 +134,10 @@ export default async function FairnessBoardPage({ searchParams }: { searchParams
           ) : null}
 
           {/* ---------------- THE AUDITS ---------------- */}
+          {/* NOT "no audits scheduled" — no audit has EVER been run, because the writer was never wired. The empty
+              state names the defect rather than describing a backlog. */}
           {b.audited.length === 0 ? (
-            <div className="kv-empty">
-              <h2>{t.t('ai.fairness.empty.title')}</h2>
-              {/* NOT "no audits scheduled" — no audit has EVER been run, because the writer was never wired. The empty
-                  state names the defect rather than describing a backlog. */}
-              <p>{t.t('ai.fairness.empty.body')}</p>
-            </div>
+            <EmptyState title={t.t('ai.fairness.empty.title')} body={t.t('ai.fairness.empty.body')} />
           ) : (
             <table className="kv-table">
               <caption className="kv-table__caption">{t.t('ai.fairness.caption')}</caption>
@@ -168,14 +166,14 @@ export default async function FairnessBoardPage({ searchParams }: { searchParams
                     <td>
                       {Object.entries(a.slices).map(([name, s]) => (
                         <div key={name}>
-                          {name}: <span className={gapClass(s.maxGapPp, b!.policy.maxSliceGapPp)}>{formatGap(s.maxGapPp)}</span>
+                          {name}: <StatusPill tone={gapTone(s.maxGapPp, b!.policy.maxSliceGapPp)} label={formatGap(s.maxGapPp)} />
                           {s.worst ? <> · {t.t('ai.worstServed', { group: s.worst })}</> : null}
                         </div>
                       ))}
                     </td>
-                    <td><span className={gapClass(a.maxGapPp, b.policy.maxSliceGapPp)}>{formatGap(a.maxGapPp)}</span></td>
+                    <td><StatusPill tone={gapTone(a.maxGapPp, b.policy.maxSliceGapPp)} label={formatGap(a.maxGapPp)} /></td>
                     <td>
-                      <span className={verdictClass(a.verdict)}>{t.t(verdictKey(a.verdict))}</span>
+                      <StatusPill tone={verdictTone(a.verdict)} label={t.t(verdictKey(a.verdict))} />
                       {a.verdictNote ? <><br /><small>{a.verdictNote}</small></> : null}
                     </td>
                     {/* The DPO's sign-off on the SLICE DEFINITIONS is a separate act from the audit: measuring accuracy
@@ -183,7 +181,7 @@ export default async function FairnessBoardPage({ searchParams }: { searchParams
                         the gate stays shut on an otherwise passing audit. */}
                     <td>{a.slicesApproved ? t.t('common.yes') : t.t('ai.dpo.pending')}</td>
                     <td>
-                      <span className={gateClass(a.gateOpen)}>{t.t(gateKey(a.gateOpen, a.gateReason))}</span>
+                      <StatusPill tone={gateTone(a.gateOpen)} label={t.t(gateKey(a.gateOpen, a.gateReason))} />
                     </td>
                   </tr>
                 ))}
@@ -194,9 +192,9 @@ export default async function FairnessBoardPage({ searchParams }: { searchParams
           {/* ADMIN-7-Q8 made visible: platform-side rejections that have not reached the inference log, so a reader knows
               the override rate under-counts rather than discovering it later. */}
           {b.platformDecisionsAwaitingFlag > 0 ? (
-            <p className="kv-note is-warn">
+            <Callout tone="warning">
               {t.t('ai.awaitingFlag', { n: String(b.platformDecisionsAwaitingFlag) })}
-            </p>
+            </Callout>
           ) : null}
         </>
       ) : null}

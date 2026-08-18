@@ -17,6 +17,9 @@ import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { createAttributeAction } from '../actions';
 import {
+  Button, Callout, Chip, EmptyState, StatusPill,
+} from '@krishalaya/ui';
+import {
   DATA_TYPES, unitIsMissing, isUnfillable, validationSummary,
   MIN_REASON, type AttributeRow, type UnitRow,
 } from '../../../features/catalogue/eav';
@@ -65,7 +68,7 @@ export default async function AttributesPage(
       <h1>{t.t('attr.title')}</h1>
       <p className="kv-muted">{t.t('attr.lead')}</p>
       {/* the law, stated where it governs — not as small print */}
-      <p className="kv-notice" role="note">{t.t('eav.law9')}</p>
+      <Callout>{t.t('eav.law9')}</Callout>
 
       {okKey && <p className="kv-success" role="status">{t.t(`attr.ok.${okKey}`)}</p>}
       {errKey && (
@@ -75,24 +78,21 @@ export default async function AttributesPage(
       )}
 
       <nav className="kv-filters" aria-label={t.t('attr.filterAllTypes')}>
-        <Link href={href({ dataType: undefined })} className={`kv-chip${!dataType ? ' is-active' : ''}`}
-          aria-current={!dataType ? 'true' : undefined}>{t.t('attr.filterAllTypes')}</Link>
+        <Chip as={Link} href={href({ dataType: undefined })} aria-current={!dataType ? 'true' : undefined} active={!dataType}>{t.t('attr.filterAllTypes')}</Chip>
         {DATA_TYPES.map((d) => (
-          <Link key={d} href={href({ dataType: d })} className={`kv-chip${dataType === d ? ' is-active' : ''}`}
-            aria-current={dataType === d ? 'true' : undefined}>{t.t(`attr.type.${d}`)}</Link>
+          <Chip as={Link} key={d} href={href({ dataType: d })} aria-current={dataType === d ? 'true' : undefined} active={dataType === d}>{t.t(`attr.type.${d}`)}</Chip>
         ))}
-        <Link href={href({ withUnit: withUnit ? undefined : 'true' })} className={`kv-chip${withUnit ? ' is-active' : ''}`}
-          aria-current={withUnit ? 'true' : undefined}>{t.t('attr.filterWithUnit')}</Link>
+        <Chip as={Link} href={href({ withUnit: withUnit ? undefined : 'true' })} aria-current={withUnit ? 'true' : undefined} active={!!withUnit}>{t.t('attr.filterWithUnit')}</Chip>
       </nav>
 
       <form method="get" className="kv-inline-form">
         <label className="kv-field__label" htmlFor="attr-q">{t.t('attr.searchLabel')}</label>
         <input id="attr-q" name="q" className="kv-input kv-input--sm" defaultValue={searchParams.q ?? ''} />
-        <button type="submit" className="kv-btn kv-btn--muted">{t.t('eav.search')}</button>
+        <Button type="submit" variant="secondary">{t.t('eav.search')}</Button>
       </form>
 
       {notice ? <p className="kv-error" role="alert">{notice}</p> : rows.length === 0 ? (
-        <p className="kv-empty">{t.t('attr.none')}</p>
+        <EmptyState title={t.t('attr.none')} />
       ) : (
         <table className="kv-table">
           <thead><tr>
@@ -114,18 +114,16 @@ export default async function AttributesPage(
                 <td>
                   {a.unitCode ?? t.t('common.dash')}
                   {/* the canon's own warning badge */}
-                  {unitIsMissing(a) && <> <span className="kv-status kv-status--warn" title={t.t('attr.unitMissingHint')}>{t.t('attr.unitMissing')}</span></>}
+                  {unitIsMissing(a) && <> <StatusPill tone="warning" label={t.t('attr.unitMissing')} title={t.t('attr.unitMissingHint')} /></>}
                 </td>
                 <td>{validationSummary(a.validation) ?? t.t('common.dash')}</td>
                 <td>{Number(a.boundTo ?? 0) > 0 ? t.t('attr.boundToN', { n: String(a.boundTo) }) : t.t('common.dash')}</td>
                 <td>
                   {Number(a.optionCount ?? 0) > 0 ? String(a.optionCount) : t.t('common.dash')}
-                  {isUnfillable(a) && <> <span className="kv-status kv-status--warn" title={t.t('attr.unfillableHint')}>{t.t('attr.unfillable')}</span></>}
+                  {isUnfillable(a) && <> <StatusPill tone="warning" label={t.t('attr.unfillable')} title={t.t('attr.unfillableHint')} /></>}
                 </td>
                 <td>
-                  <span className={`kv-status ${a.isActive ? 'kv-status--ok' : 'kv-status--muted'}`}>
-                    {t.t(a.isActive ? 'cat.active' : 'eav.inactive')}
-                  </span>
+                  <StatusPill tone={a.isActive ? 'success' : 'neutral'} label={t.t(a.isActive ? 'cat.active' : 'eav.inactive')} />
                 </td>
               </tr>
             ))}
@@ -160,7 +158,7 @@ export default async function AttributesPage(
           <label htmlFor="a-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="a-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
           <p className="kv-field__hint">{t.t('eav.reasonHint')}</p>
-          <button type="submit" className="kv-btn">{t.t('attr.create')}</button>
+          <Button type="submit">{t.t('attr.create')}</Button>
         </form>
       </details>
 

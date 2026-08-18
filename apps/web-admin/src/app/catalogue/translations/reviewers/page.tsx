@@ -16,6 +16,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { grantReviewerAction, revokeReviewerAction } from '../../actions';
 import { MIN_REASON, type ReviewerRow, type LanguageRow } from '../../../../features/catalogue/translations';
 
+import { Button, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -75,9 +76,7 @@ export default async function ReviewersPage(
                 <td>{r.grantedAt}</td>
                 <td>
                   {/* a revoked grant is KEPT and visibly historical */}
-                  <span className={`kv-status ${r.revokedAt ? 'kv-status--muted' : 'kv-status--ok'}`}>
-                    {t.t(r.revokedAt ? 'tr.revoked' : 'tr.live')}
-                  </span>
+                  <StatusPill tone={r.revokedAt ? 'neutral' : 'success'} label={t.t(r.revokedAt ? 'tr.revoked' : 'tr.live')} />
                 </td>
               </tr>
             ))}
@@ -102,7 +101,7 @@ export default async function ReviewersPage(
           <input id="g-note" name="note" className="kv-input" maxLength={2000} />
           <label htmlFor="g-reason" className="kv-field__label">{t.t('eav.reason')}</label>
           <input id="g-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-          <button type="submit" className="kv-btn kv-btn--danger">{t.t('tr.grant')}</button>
+          <Button type="submit" variant="danger">{t.t('tr.grant')}</Button>
         </form>
       </details>
 
@@ -119,7 +118,7 @@ export default async function ReviewersPage(
             </select>
             <label htmlFor="rv-reason" className="kv-field__label">{t.t('eav.reason')}</label>
             <input id="rv-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />
-            <button type="submit" className="kv-btn kv-btn--muted">{t.t('tr.revoke')}</button>
+            <Button type="submit" variant="secondary">{t.t('tr.revoke')}</Button>
           </form>
         </details>
       )}

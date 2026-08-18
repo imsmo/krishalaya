@@ -4,6 +4,12 @@
 // NOTHING HERE MASKS ANYTHING. The mask is applied server-side in admin-api, and the raw name and phone never reach
 // this process — which is the point: a console-side mask is a mask that already travelled over the wire and through a
 // log line. What this module does is make sure the screen never overstates what the numbers mean.
+//
+// DEV-60 (UI Port Program batch 3, Part 1, slice B): the 2 `kv-status`-returning helpers below (eligibilityClass/
+// bounceClass) now return a `StatusTone` per the founder's pill-vs-text ruling (`spec_dev60.md` CONTINUATION
+// block) — disposition (c), domain logic stays.
+
+import type { StatusTone } from '@krishalaya/ui';
 
 /* ===================== W074 · the pipeline ===================== */
 
@@ -48,11 +54,11 @@ export function eligibilityLabel(v: EligibilityView): { key: string; score: stri
 /** `never_checked` is MUTED, not red. Nobody did anything wrong; the check simply never ran, and a wall of red against
  *  historical rows trains an operator to stop reading red. A LOW score IS a warning — that is the row the canon routes
  *  to an ambassador. */
-export function eligibilityClass(v: EligibilityView): string {
-  if (v.kind === 'never_checked') return 'kv-status kv-status--muted';
-  if (v.kind === 'unscored') return v.eligible ? 'kv-status kv-status--ok' : 'kv-status kv-status--muted';
-  if (!v.eligible) return 'kv-status kv-status--muted';
-  return v.score < 0.7 ? 'kv-status kv-status--warn' : 'kv-status kv-status--ok';
+export function eligibilityTone(v: EligibilityView): StatusTone {
+  if (v.kind === 'never_checked') return 'neutral';
+  if (v.kind === 'unscored') return v.eligible ? 'success' : 'neutral';
+  if (!v.eligible) return 'neutral';
+  return v.score < 0.7 ? 'warning' : 'success';
 }
 
 export type StateCounts = Partial<Record<ApplicationState, number>>;
@@ -126,9 +132,9 @@ export function instalmentLabel(n: number | null | undefined): string | null {
 }
 
 /** Bounce reason styling. `open` bounces are the actionable ones; a fully resolved reason is not a live problem. */
-export function bounceClass(open: number, total: number): string {
-  if (!Number.isFinite(total) || total <= 0) return 'kv-status kv-status--muted';
-  return open > 0 ? 'kv-status kv-status--danger' : 'kv-status kv-status--ok';
+export function bounceTone(open: number, total: number): StatusTone {
+  if (!Number.isFinite(total) || total <= 0) return 'neutral';
+  return open > 0 ? 'danger' : 'success';
 }
 
 /** The Aadhaar-seeding tile. NULL when the bounce aggregate reported no such reason at all — which is not the same as

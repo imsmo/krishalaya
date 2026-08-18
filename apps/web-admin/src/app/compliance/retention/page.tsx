@@ -12,6 +12,7 @@ import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { RETENTION_ACTIONS, type RetentionRow } from '../../../features/compliance/compliance';
 import { upsertRetentionAction } from '../actions';
 
+import { Button } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -69,7 +70,7 @@ export default async function RetentionPage({ searchParams }: { searchParams: { 
           <input id="legalBasis" name="legalBasis" className="kv-input" maxLength={200} />
           <label htmlFor="retReason" className="kv-field__label">{t.t('compliance.reason')}</label>
           <input id="retReason" name="reason" className="kv-input" required minLength={3} maxLength={2000} />
-          <button type="submit" className="kv-btn">{t.t('compliance.upsertRetentionSubmit')}</button>
+          <Button type="submit">{t.t('compliance.upsertRetentionSubmit')}</Button>
         </form>
       </details>
     </section>

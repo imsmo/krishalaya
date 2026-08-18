@@ -12,6 +12,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { SEVERITIES, type ReconRunDetail } from '../../../../features/recon/recon';
 import { openInvestigationAction } from '../../actions';
 
+import { Button, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -47,7 +48,7 @@ export default async function ReconRunDetailPage({ params, searchParams }: { par
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('recon.runStatus')}</dt><dd>{run.status}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.checked')}</dt><dd>{run.checkedCount.toLocaleString()}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('recon.mismatches')}</dt><dd><span className={mismatchCount > 0 ? 'kv-status kv-status--danger' : ''}>{mismatchCount.toLocaleString()}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('recon.mismatches')}</dt><dd>{mismatchCount > 0 ? <StatusPill tone="danger" label={mismatchCount.toLocaleString()} /> : mismatchCount.toLocaleString()}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.period')}</dt><dd>{(run.periodStart ?? t.t('common.dash'))} → {(run.periodEnd ?? t.t('common.dash'))}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.finishedAt')}</dt><dd>{run.finishedAt ?? t.t('common.dash')}</dd></div>
       </dl>
@@ -67,7 +68,7 @@ export default async function ReconRunDetailPage({ params, searchParams }: { par
           </select>
           <label htmlFor="summary" className="kv-field__label">{t.t('recon.summary')}</label>
           <input id="summary" name="summary" className="kv-input" required minLength={3} maxLength={1000} />
-          <button type="submit" className="kv-btn">{t.t('recon.openSubmit')}</button>
+          <Button type="submit">{t.t('recon.openSubmit')}</Button>
         </form>
       </details>
     </section>

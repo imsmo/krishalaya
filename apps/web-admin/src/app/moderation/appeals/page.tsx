@@ -14,8 +14,9 @@ import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { getTranslator } from '../../../lib/i18n';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { takeNextAppealAction } from '../actions';
-import { slaLabel, slaClass, neOriginalMark, statusTab, OVERTURN_EFFECT_KEYS, APPEAL_SLA_HOURS, type AppealSla } from '../../../features/moderation/appeals';
+import { slaLabel, slaTone, neOriginalMark, statusTab, OVERTURN_EFFECT_KEYS, APPEAL_SLA_HOURS, type AppealSla } from '../../../features/moderation/appeals';
 
+import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
@@ -60,12 +61,12 @@ export default async function AppealsQueuePage({ searchParams }: { searchParams:
       {errKey && <p className="kv-error" role="alert">{t.t(`ap.error.${errKey}`)}</p>}
       {/* The two honest empties "Take next" can land on — different mornings, different sentences. */}
       {emptyKey === 'queueClear' && <p className="kv-success" role="status">{t.t('ap.takeNext.queueClear')}</p>}
-      {emptyKey === 'onlyYourOwn' && <p className="kv-notice" role="note">{t.t('ap.takeNext.onlyYourOwn')}</p>}
+      {emptyKey === 'onlyYourOwn' && <Callout tone="warning">{t.t('ap.takeNext.onlyYourOwn')}</Callout>}
       {breached > 0 && <p className="kv-error" role="alert">{t.t('ap.breached', { n: String(breached) })}</p>}
 
       {/* W097's primary action. The server picks the appeal; see takeNextAppealAction. */}
       <form action={takeNextAppealAction}>
-        <button type="submit" className="kv-btn">{t.t('ap.takeNext')}</button>
+        <Button type="submit">{t.t('ap.takeNext')}</Button>
       </form>
 
       {/* pending | upheld | overturned — GET-links, cursor deliberately dropped on tab change. */}
@@ -90,7 +91,7 @@ export default async function AppealsQueuePage({ searchParams }: { searchParams:
             return (
               <tr key={r.id}>
                 <td>{status === 'pending'
-                  ? <span className={slaClass(r.sla)}>{t.t(`ap.sla.${sla.key}`, { h: String(sla.hours) })}</span>
+                  ? <StatusPill tone={slaTone(r.sla)} label={t.t(`ap.sla.${sla.key}`, { h: String(sla.hours) })} />
                   : (r.decidedAt ?? t.t('common.dash'))}</td>
                 <td><Link href={`/moderation/appeals/${r.id}`}>{r.id.slice(0, 8)}</Link></td>
                 <td>{t.t(`ap.action.${r.subjectAction}`)} · {r.subjectRef}</td>
@@ -99,10 +100,10 @@ export default async function AppealsQueuePage({ searchParams }: { searchParams:
                 <td>{r.originalReviewerId ?? t.t('ap.originUnresolved')}</td>
                 <td>
                   {r.assignedTo ?? t.t('ap.unassigned')}
-                  {mark === 'ok' && <span className="kv-status kv-status--ok">{t.t('ap.neOriginal')}</span>}
+                  {mark === 'ok' && <StatusPill tone="success" label={t.t('ap.neOriginal')} />}
                   {mark === 'unknown' && <span className="kv-status">{t.t('ap.neUnknown')}</span>}
                 </td>
-                <td><Link href={`/moderation/appeals/${r.id}`} className="kv-btn kv-btn--link">{t.t('ap.review')}</Link></td>
+                <td><Button as={Link} href={`/moderation/appeals/${r.id}`} variant="tertiary">{t.t('ap.review')}</Button></td>
               </tr>
             );
           })}
@@ -111,8 +112,12 @@ export default async function AppealsQueuePage({ searchParams }: { searchParams:
       {rows.length === 0 && !notice && (
         status === 'pending'
           // W097's own empty state, including its second sentence and the "View history" affordance.
-          ? <p className="kv-empty">{t.t('ap.emptyPending')} <Link href="/moderation/appeals?status=overturned">{t.t('ap.viewHistory')}</Link></p>
-          : <p className="kv-empty">{t.t('ap.emptyDecided')}</p>
+          ? (
+            <EmptyState variant="empty" title={t.t('ap.emptyPending')}>
+              <Link href="/moderation/appeals?status=overturned">{t.t('ap.viewHistory')}</Link>
+            </EmptyState>
+          )
+          : <EmptyState variant="empty" title={t.t('ap.emptyDecided')} />
       )}
       {next && <p className="kv-pager"><Link href={`/moderation/appeals?status=${status}&cursor=${encodeURIComponent(next)}`}>{t.t('common.next')}</Link></p>}
 

@@ -25,6 +25,7 @@ import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { formatDate } from '@krishalaya/i18n';
 import { bpsToPercent } from '../../../../features/reports/report';
 import { csatShares, isLowScore, LOW_SCORE_MAX, type CsatBucket } from '../../../../features/support/desk';
+import { Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,7 +95,7 @@ export default async function CsatPage({ searchParams }: { searchParams: { days?
               : t.t('csat.headline', { pct: bpsToPercent(view.averageBps), n: String(view.ratedCount) })}
           </p>
 
-          {shares.length === 0 ? <p className="kv-empty">{t.t('csat.noDistribution')}</p> : (
+          {shares.length === 0 ? <EmptyState title={t.t('csat.noDistribution')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('csat.score')}</th>
@@ -104,7 +105,7 @@ export default async function CsatPage({ searchParams }: { searchParams: { days?
               <tbody>
                 {shares.map((s) => (
                   <tr key={s.score}>
-                    <td>{s.score}{isLowScore(s.score) && <> <span className="kv-status kv-status--warn">{t.t('csat.low')}</span></>}</td>
+                    <td>{s.score}{isLowScore(s.score) && <> <StatusPill tone="warning" label={t.t('csat.low')} /></>}</td>
                     <td>{s.n}</td>
                     <td>
                       {bpsToPercent(s.shareBps)}%
@@ -117,7 +118,7 @@ export default async function CsatPage({ searchParams }: { searchParams: { days?
           )}
 
           <h2>{t.t(lowOnly ? 'csat.reviewQueue' : 'csat.allScores')}</h2>
-          {(view?.scores ?? []).length === 0 ? <p className="kv-empty">{t.t('csat.noScores')}</p> : (
+          {(view?.scores ?? []).length === 0 ? <EmptyState title={t.t('csat.noScores')} /> : (
             <table className="kv-table">
               <thead><tr>
                 <th scope="col">{t.t('csat.when')}</th>
@@ -135,10 +136,10 @@ export default async function CsatPage({ searchParams }: { searchParams: { days?
                     <td>
                       {formatDate(s.ratedAt)}
                       {/* marked on the row: a caveat at the foot of a page does not travel with a screenshot */}
-                      {s.ratedAtIsEstimated && <> <span className="kv-status kv-status--warn">{t.t('rev.estimated')}</span></>}
+                      {s.ratedAtIsEstimated && <> <StatusPill tone="warning" label={t.t('rev.estimated')} /></>}
                     </td>
                     <td>
-                      <span className={`kv-status ${isLowScore(s.score) ? 'kv-status--danger' : 'kv-status--ok'}`}>{s.score}</span>
+                      <StatusPill tone={isLowScore(s.score) ? 'danger' : 'success'} label={String(s.score)} />
                     </td>
                     <td><Link href={`/support/tickets/${encodeURIComponent(s.ticketId)}`}>{s.ticketNo}</Link></td>
                     <td>{s.tenantSlug ?? t.t('common.dash')}</td>
@@ -165,10 +166,10 @@ export default async function CsatPage({ searchParams }: { searchParams: { days?
           {/* NOT the old "this platform cannot store comments" warning — migration 0099 closed that. This says whether
               anybody in THIS WINDOW wrote something, which is a fact about the window. */}
           {view && view.verbatimsAvailable && (view.verbatimCount ?? 0) === 0 && (
-            <p className="kv-notice" role="note">{t.t('csat.noVerbatims')}</p>
+            <Callout>{t.t('csat.noVerbatims')}</Callout>
           )}
           {(view?.estimatedRatedAtCount ?? 0) > 0 && (
-            <p className="kv-notice" role="note">{t.t('rev.estimatedNote', { n: String(view?.estimatedRatedAtCount ?? 0) })}</p>
+            <Callout>{t.t('rev.estimatedNote', { n: String(view?.estimatedRatedAtCount ?? 0) })}</Callout>
           )}
           <p className="kv-field__hint">{t.t('csat.ratedAtNote')}</p>
 

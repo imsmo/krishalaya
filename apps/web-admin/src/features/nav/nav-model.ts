@@ -61,6 +61,31 @@ export function soonNav(items: readonly AdminNavItem[] = ADMIN_NAV): AdminNavIte
   return items.filter((i) => !i.live);
 }
 
+/**
+ * DEV-61 (shell adoption): which nav `href` (if any) is the "active" one for a given pathname — the SINGLE
+ * source of truth for `Sidebar`'s `aria-current="page"` highlight, kept here (pure, framework-free) so it is
+ * unit-tested exactly like the rest of this model, per this file's own charter. Not a "preserved" behavior —
+ * the pre-existing `Sidebar` had no active-item detection at all (grep-verified before this batch); this is a
+ * genuine new capability the shell swap adds (see `middleware.ts`/`layout.tsx` for how `pathname` reaches here).
+ *
+ * Exact match wins outright. Otherwise, the LONGEST `href` that is a real path-segment ancestor of `pathname`
+ * wins (`pathname.startsWith(href + '/')`) — this is what keeps a detail route like `/staff/me/permissions`
+ * (a sub-page under a nav item, not a nav item itself) highlighting `/staff/me`, not the broader `/staff`,
+ * because `/staff/me` is both a real nav item AND the longer (more specific) ancestor match. A plain
+ * `startsWith(href)` (no trailing slash) would be wrong: it would make `/staffing` match `/staff`.
+ */
+export function activeNavHref(pathname: string, items: readonly AdminNavItem[] = ADMIN_NAV): string | null {
+  if (!pathname) return null;
+  let best: string | null = null;
+  for (const item of items) {
+    if (pathname === item.href) return item.href; // exact match is unambiguous — return immediately
+    if (pathname.startsWith(`${item.href}/`) && (best === null || item.href.length > best.length)) {
+      best = item.href;
+    }
+  }
+  return best;
+}
+
 /** The notice key a page shows when an admin-api read/write fails, derived from the HTTP status. A 403 means
  *  owner-perm / hardware-key / step-up was not satisfied → prompt re-auth; 401 → session expired; 404 → not found
  *  (callers usually prefer notFound()); anything else → a generic transient notice (degrade, never die). */

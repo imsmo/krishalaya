@@ -1,9 +1,9 @@
 // PC-56 ADMIN-4 · the scheme-version console helpers. Pure, framework-free.
 // Every case is a claim about what the SCREEN must not say — the server owns the rules, and these guard the labels.
 import {
-  versionKind, versionClass, showsSignature, coverageNote, projectionDiverged, openDraft, publishBlockedReason,
-  feeText, feeChanged, orderedDiff, isAddition, portalState, portalClass, isPortalProvider, buildMapPortal,
-  closeClass, closeKey, apps30dText, buildSchemeExport, isSchemeExportReport, buildSaveDraft,
+  versionKind, versionTone, showsSignature, coverageNote, projectionDiverged, openDraft, publishBlockedReason,
+  feeText, feeChanged, orderedDiff, isAddition, portalState, portalTone, isPortalProvider, buildMapPortal,
+  closeTone, closeKey, apps30dText, buildSchemeExport, isSchemeExportReport, buildSaveDraft,
   type VersionRow, type DiffEntry, type CloseState,
 } from '../features/schemes-registry/version';
 
@@ -27,11 +27,11 @@ describe('ADMIN-4 console · version badges', () => {
   });
   it('an unrecognised status is NOT quietly treated as current', () => {
     expect(versionKind({ status: 'retired_somehow', isBackfilled: false })).toBe('unknown');
-    expect(versionClass('unknown')).not.toContain('kv-status--ok');
+    expect(versionTone('unknown')).not.toBe('success');
   });
-  it('backfilled is muted, NOT a failure colour — it is honesty, not somebody mistake', () => {
-    expect(versionClass('backfilled')).toContain('muted');
-    expect(versionClass('backfilled')).not.toContain('danger');
+  it('backfilled is neutral, NOT a failure colour — it is honesty, not somebody mistake', () => {
+    expect(versionTone('backfilled')).toBe('neutral');
+    expect(versionTone('backfilled')).not.toBe('danger');
   });
   it('no signature line for a backfilled row, because there is no publisher to name', () => {
     expect(showsSignature(v({ isSigned: false }))).toBe(false);
@@ -145,9 +145,9 @@ describe('ADMIN-4 console · DELTA-018, the word we will not print', () => {
     expect(portalState({ portalState: 'connected' })).toBe('manual');
   });
   it('manual is NOT styled as a failure — a district office with no API is the normal case', () => {
-    expect(portalClass('manual')).toContain('muted');
-    expect(portalClass('manual')).not.toContain('danger');
-    expect(portalClass('mapped')).toContain('ok');
+    expect(portalTone('manual')).toBe('neutral');
+    expect(portalTone('manual')).not.toBe('danger');
+    expect(portalTone('mapped')).toBe('success');
   });
   it('accepts only registered government portals', () => {
     expect(isPortalProvider('pfms')).toBe(true);
@@ -171,24 +171,24 @@ describe('ADMIN-4 console · DELTA-018, the word we will not print', () => {
 });
 
 describe('ADMIN-4 console · deadline styling', () => {
-  const s = (x: CloseState) => closeClass(x);
+  const s = (x: CloseState) => closeTone(x);
 
   it('always-open gets NO urgency styling — it is not a deadline', () => {
-    expect(s({ kind: 'no_window' })).toContain('muted');
-    expect(s({ kind: 'no_window' })).not.toContain('danger');
-    expect(s({ kind: 'no_window' })).not.toContain('warn');
+    expect(s({ kind: 'no_window' })).toBe('neutral');
+    expect(s({ kind: 'no_window' })).not.toBe('danger');
+    expect(s({ kind: 'no_window' })).not.toBe('warning');
   });
   it('closing today or within two days is urgent', () => {
-    expect(s({ kind: 'closes_today', onYear: 2026 })).toContain('danger');
-    expect(s({ kind: 'closes_in', days: 2, onYear: 2026 })).toContain('danger');
+    expect(s({ kind: 'closes_today', onYear: 2026 })).toBe('danger');
+    expect(s({ kind: 'closes_in', days: 2, onYear: 2026 })).toBe('danger');
   });
   it('inside the nudge ladder is a warning; beyond it is fine', () => {
-    expect(s({ kind: 'closes_in', days: 14, onYear: 2026 })).toContain('warn');
-    expect(s({ kind: 'closes_in', days: 15, onYear: 2026 })).toContain('ok');
+    expect(s({ kind: 'closes_in', days: 14, onYear: 2026 })).toBe('warning');
+    expect(s({ kind: 'closes_in', days: 15, onYear: 2026 })).toBe('success');
   });
   it('an unreadable or impossible window IS a failure — a stored date nobody can act on', () => {
-    expect(s({ kind: 'unparseable' })).toContain('danger');
-    expect(s({ kind: 'impossible_date', month: 2, day: 29, onYear: 2027 })).toContain('danger');
+    expect(s({ kind: 'unparseable' })).toBe('danger');
+    expect(s({ kind: 'impossible_date', month: 2, day: 29, onYear: 2027 })).toBe('danger');
   });
   it('an unrecognised state resolves to unparseable, never to a reassuring default', () => {
     expect(closeKey({ kind: 'something_else' } as unknown as CloseState)).toBe('unparseable');
