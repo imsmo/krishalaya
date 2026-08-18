@@ -22,6 +22,39 @@ export interface InboxQuery { status?: string; unreadOnly?: boolean; cursor?: { 
 export class NotificationRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
+  /**
+   * **DOES THIS RECIPIENT HAVE AN ADDRESS ON THIS CHANNEL AT ALL? (PC-56 TENANT-4d-5.)**
+   *
+   * `NotificationService.deliverPush` has asked the equivalent question since P0-10 — it resolves the user's own
+   * device tokens and records `no_device` when there are none — and NO OTHER external channel asked it. The
+   * gateway port's contract is "the external product resolves device tokens / contact" from a bare `userId`, so
+   * an email to a user whose `users.email` is NULL was dispatched to a notifier that had nothing to send it to,
+   * came back `accepted` (the notifier took the request), and was written into the delivery log as **`sent`**.
+   *
+   * That was harmless while nothing seeded an email template. TENANT-4d-1's W118 promises a tenant "a console +
+   * email notice" at 90% of a quota and 0149 seeds exactly that, on a phone-first platform where `users.email`
+   * is nullable and usually null — so without this check the platform would have recorded a clean email delivery
+   * to a farmer-cooperative admin who has no email address, and the delivery log (the thing a support agent and
+   * a regulator both read) would have said the notice went out. `no_address` is the same shape of truth as
+   * `no_device` and `no_template`: recorded, counted, not sent, and not a lie.
+   *
+   * Runs inside the delivery tx on the same connection as the insert (never the replica): a contact detail added
+   * seconds ago must not be invisible to the send that depends on it.
+   */
+  async contactableOn(tx: TxContext, userId: string, channel: NotifChannel): Promise<boolean> {
+    if (channel === 'inapp' || channel === 'push') return true;   // inapp needs no address; push has its own device check
+    const r = await tx.query<{ has_email: boolean; has_phone: boolean }>(
+      `SELECT (email IS NOT NULL AND btrim(email) <> '') AS has_email,
+              (phone IS NOT NULL AND btrim(phone) <> '') AS has_phone
+         FROM users WHERE id = $1 AND deleted_at IS NULL`, [userId]);
+    const row = r.rows[0];
+    if (!row) return false;   // no live user row → no address (fail closed; never dispatch to an id we cannot see)
+    // sms / whatsapp / ivr all ride the phone number. `users.phone` is NOT NULL UNIQUE on this platform, so this
+    // is true for every live user and the check is a no-op for them — deliberately: it is here so that a future
+    // channel cannot be added without answering the question, not to change today's SMS behaviour.
+    return channel === 'email' ? row.has_email : row.has_phone;
+  }
+
   /** Insert a delivery row in its FINAL resolved state (sent/failed/suppressed) — one write, no later update. */
   async insert(tx: TxContext, n: Notification): Promise<void> {
     const p = n.toProps();

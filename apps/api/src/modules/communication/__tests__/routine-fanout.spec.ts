@@ -49,7 +49,12 @@ function harness(opts: HarnessOpts) {
     send: jest.fn(async () => (opts.dispatchByChannel?.push === 'failed' ? { sent: 0, invalidTokens: [], failureReason: 'push_failed' } : { sent: 1, invalidTokens: [] })),
   };
   const devices = { activeTokensForUser: jest.fn(async () => [{ token: 'tok', platform: 'android' }]), deactivate: jest.fn(async () => 1) };
-  const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
+  const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }),
+    // PC-56 TENANT-4d-5: the fake gains the address check the real repository now performs. `true` here
+    // keeps every pre-existing assertion in this file about WHICH channels are attempted — the contactability
+    // question is a separate axis and is covered behaviourally in tenant4d5-billing-notices.spec.ts, including
+    // the case where it is false.
+    contactableOn: jest.fn(async () => true), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
   const flags = { isEnabled: jest.fn(async (key: string) => (key === ROUTINE_FANOUT_FLAG ? (opts.routineFlagOn ?? false) : false)) };
   const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, pushSender as any, devices as any, events as any, templates as any, prefs as any, quiet as any, notifications as any, flags as any);
   return { svc, tx, gateway, pushSender, notifications, inserted, metrics, flags };

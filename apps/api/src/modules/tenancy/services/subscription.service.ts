@@ -16,6 +16,7 @@ import { DomainEvent, BillingCycle } from '../domain/tenancy.events';
 import { SubscriptionNotFoundError, SubscriptionForbiddenError, PlanNotFoundError, PlanNotSubscribableError, AlreadySubscribedError } from '../domain/tenancy.errors';
 import { PlanRepository } from '../repositories/plan.repository';
 import { SubscriptionRepository } from '../repositories/subscription.repository';
+import { BillingNoticeService } from './billing-notice.service';
 import { graceUntil } from '../domain/billing-grace';
 import { SubscribeDto } from '../dto/create-subscription.dto';
 import { TenancyActor } from './plan.service';
@@ -30,6 +31,8 @@ export class SubscriptionService {
     private readonly audit: AuditWriter,
     private readonly plans: PlanRepository,
     private readonly repo: SubscriptionRepository,
+    /** PC-56 TENANT-4d-5 — see `flush`. */
+    private readonly notice: BillingNoticeService,
   ) {}
 
   async subscribe(tenantId: string, actor: TenancyActor, idemKey: string, dto: SubscribeDto) {
@@ -146,7 +149,17 @@ export class SubscriptionService {
     return { id: v.id, tenantId: v.tenantId, planId: v.planId, status: v.status, billingCycle: v.billingCycle, priceMinor: v.priceMinor.toString(),
       currencyCode: v.currencyCode, currentPeriodStart: v.currentPeriodStart, currentPeriodEnd: v.currentPeriodEnd, cancelAtPeriodEnd: v.cancelAtPeriodEnd, createdAt: v.createdAt };
   }
+  /** PC-56 TENANT-4d-5 · the subscription module's half of the same choke point. `subscription_grace_started`
+   *  and `subscription_renewed` are the two events 4d-4 created and left with no subscriber; every other event
+   *  flushed here (subscribed, plan_changed, cancelled, expired) is NOT on the notice allow-list and passes
+   *  through untouched, which is a decision `NOTIFIED_BILLING_EVENTS` records explicitly rather than by
+   *  omission. Expiry in particular: a tenant whose grace window lapsed was told when the window OPENED and
+   *  what would happen, and 4d-5 does not add a second message at the moment service stops — that surface is a
+   *  screen, not an SMS, and inventing one here would be this wave notifying beyond what any canon promises. */
   private async flush(tx: TxContext, tenantId: string, subscriptionId: string, events: DomainEvent[]) {
-    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'subscription', aggregateId: subscriptionId, eventType: e.type, payload: { v: 1, ...e.payload } });
+    for (const e of events) {
+      const payload = await this.notice.enrich(tx, tenantId, e.type, { v: 1, ...e.payload });
+      await this.outbox.write(tx, { tenantId, aggregateType: 'subscription', aggregateId: subscriptionId, eventType: e.type, payload });
+    }
   }
 }

@@ -3,7 +3,7 @@
 // (subtotal + tax) and validated, never floats. Status moves ONLY through the state machine (Law 5). No version
 // column → the service locks the row FOR UPDATE. Collection/void/adjustment are god-mode (admin-api billing-ops).
 import { InvoiceStatus, assertTransition } from './saas-invoice.state';
-import { acceptsPayment, statusFromPaid } from './saas-invoice-balance';
+import { acceptsPayment, outstandingMinor, statusFromPaid } from './saas-invoice-balance';
 import { InvalidSaasInvoiceError, SaasInvoiceNotPayableError } from './tenancy.errors';
 import { TenancyEventType, DomainEvent } from './tenancy.events';
 
@@ -101,7 +101,10 @@ export class SaasInvoice {
   issue(): void {
     assertTransition(this.p.status, 'issued');
     this.p.status = 'issued';
-    this.events.push({ type: TenancyEventType.SaasInvoiceIssued, payload: { invoiceId: this.p.id, tenantId: this.p.tenantId, invoiceNo: this.p.invoiceNo, totalMinor: this.p.totalMinor.toString(), dueDate: this.p.dueDate } });
+    // PC-56 TENANT-4d-5: `currencyCode` joins the payload. Without it a consumer holds a figure in minor units
+    // and no way to divide it — the notice plane cannot write "INR 7,954.00" from "795400" alone, and guessing
+    // ÷100 is the shape that blocks every zero-decimal and three-decimal currency the platform will ever bill.
+    this.events.push({ type: TenancyEventType.SaasInvoiceIssued, payload: { invoiceId: this.p.id, tenantId: this.p.tenantId, invoiceNo: this.p.invoiceNo, totalMinor: this.p.totalMinor.toString(), currencyCode: this.p.currencyCode, dueDate: this.p.dueDate } });
   }
 
   /**
@@ -143,6 +146,8 @@ export class SaasInvoice {
       invoiceId: this.p.id, tenantId: this.p.tenantId, subscriptionId: this.p.subscriptionId,
       periodTag: this.p.periodTag, status: to, statusFrom: from,
       paidMinor: paidMinor.toString(), totalMinor: this.p.totalMinor.toString(),
+      // PC-56 TENANT-4d-5: the currency and the invoice number, so a receipt can name what was settled.
+      currencyCode: this.p.currencyCode, invoiceNo: this.p.invoiceNo,
     } });
     return true;
   }
@@ -153,7 +158,21 @@ export class SaasInvoice {
     if (this.p.status !== 'issued' && this.p.status !== 'partially_paid') return false;
     assertTransition(this.p.status, 'overdue');
     this.p.status = 'overdue';
-    this.events.push({ type: TenancyEventType.SaasInvoiceOverdue, payload: { invoiceId: this.p.id, tenantId: this.p.tenantId, invoiceNo: this.p.invoiceNo } });
+    // **PC-56 TENANT-4d-5 · THE EVENT THAT CARRIED A VERDICT AND NO EVIDENCE.** This payload said an invoice was
+    // overdue and named neither how much was owed nor the date it had been due — so the only consumer this event
+    // could ever have had (a notice to the tenant) had nothing to put in the sentence, and a dunning console
+    // reading it would have had to re-fetch the invoice to learn anything actionable. Same shape 0146 defect 2
+    // found on `payments.payment_succeeded` and 0148 defect 2 found on `saas_invoice_paid`, one layer up again.
+    //
+    // `outstandingMinor` and not `totalMinor` is the point of it: 0146 made part-payment reachable, so an invoice
+    // can go overdue owing a remainder, and a notice quoting the full amount would overstate the debt of exactly
+    // the tenant who has already paid some of it.
+    this.events.push({ type: TenancyEventType.SaasInvoiceOverdue, payload: {
+      invoiceId: this.p.id, tenantId: this.p.tenantId, invoiceNo: this.p.invoiceNo,
+      currencyCode: this.p.currencyCode, dueDate: this.p.dueDate,
+      totalMinor: this.p.totalMinor.toString(), paidMinor: this.p.paidMinor.toString(),
+      outstandingMinor: outstandingMinor(this.p.totalMinor, this.p.paidMinor).toString(),
+    } });
     return true;
   }
 }

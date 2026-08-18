@@ -23,6 +23,7 @@ import { DomainEvent } from '../domain/tenancy.events';
 import { SaasInvoiceNotFoundError, TenantForbiddenError } from '../domain/tenancy.errors';
 import { isPastDue, outstandingMinor, overpaidMinor, payVerdict } from '../domain/saas-invoice-balance';
 import { SaasInvoiceRepository } from '../repositories/saas-invoice.repository';
+import { BillingNoticeService } from './billing-notice.service';
 import { QuerySaasInvoiceDto } from '../dto/query-saas-invoice.dto';
 import { TenantActor } from '../policies/tenancy.policies';
 
@@ -51,6 +52,9 @@ export class SaasInvoiceService {
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly audit: AuditWriter,
     private readonly repo: SaasInvoiceRepository,
+    /** PC-56 TENANT-4d-5 · the only collaborator that can turn a billing event into a NOTIFIABLE one. See
+     *  `flush` below for why it sits there and nowhere else. */
+    private readonly notice: BillingNoticeService,
   ) {}
 
   /**
@@ -223,8 +227,21 @@ export class SaasInvoiceService {
       createdAt: p.createdAt ?? null,
     };
   }
+  /**
+   * **THE ONE CHOKE POINT (PC-56 TENANT-4d-5).** Every SaaS-invoice event this module emits — issued, paid,
+   * overdue — passes through exactly this line, from three different call sites, so the recipient resolution
+   * is written once. The alternative was enriching at each `pullEvents()` call site, which is three copies of
+   * one rule today and four the next time somebody adds an event; `member-suspension.sql.ts`'s header is the
+   * standing argument in this repository against that shape, and this is the same argument about payloads.
+   *
+   * Enrichment is per EVENT rather than per flush because the allow-list is per event type: a flush carrying
+   * both a notifiable and a non-notifiable event must attach recipients to the first and not the second.
+   */
   private async flush(tx: TxContext, tenantId: string, aggregateId: string, events: DomainEvent[]) {
-    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'saas_invoice', aggregateId, eventType: e.type, payload: { v: 1, ...e.payload } });
+    for (const e of events) {
+      const payload = await this.notice.enrich(tx, tenantId, e.type, { v: 1, ...e.payload });
+      await this.outbox.write(tx, { tenantId, aggregateType: 'saas_invoice', aggregateId, eventType: e.type, payload });
+    }
   }
 }
 

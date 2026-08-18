@@ -11,6 +11,7 @@
 // `findDueToExpire` matched every live subscription within a month of creation and would have expired a tenant
 // who paid on time exactly as fast as one who never paid. The middle rule above is the one that was missing.
 import { SubscriptionStatus } from './subscription.state';
+import { retryAndNotifyVerdict } from './billing-notice';
 
 /** W120's number, and the fallback for a malformed setting. NEVER 0 — see graceDaysFrom. */
 export const DEFAULT_GRACE_DAYS = 7;
@@ -133,16 +134,20 @@ export function sweepAction(i: SweepInput): SweepAction {
  * rather than hardcoded to "missing" (TENANT-4d-2) — so the screen tells the truth in both states and cannot
  * go stale the way a constant does.
  *
- * `retryAndNotify` stays a gap on purpose in this wave, and the reason is not laziness:
- *   • there is no autopay MANDATE for a subscription anywhere in the payments module, so there is no
- *     instrument to retry against — "we retry" has no subject, and inventing one would be the fake surface
- *     this programme refuses;
- *   • the five tenancy billing events are in no notification map row and have no catalog code or templates,
- *     so nothing has ever notified a tenant about its billing. That is TENANT-4d-5.
+ * `retryAndNotify` covers TWO mechanisms in one canon sentence — "while we retry and notify you" — and
+ * TENANT-4d-2 gave it the single verdict `no_notification` because neither half existed. **PC-56 TENANT-4d-5
+ * BUILDS THE NOTIFY HALF AND NOT THE RETRY HALF, SO THE SENTENCE SPLITS RATHER THAN FLIPPING**, and the
+ * constant becomes derived — the same lesson 4d-4 learned when `gracePeriod` stopped being hardcoded:
+ *   • there is still no autopay MANDATE for a subscription anywhere in the payments module, so there is no
+ *     instrument to retry against. "We retry" has no subject and this wave does not give it one;
+ *   • the notify half is now real: seven tenancy events have map rows, catalog codes and templates in three
+ *     languages, and `BillingNoticeService` puts a recipient in each payload. So `no_notification` would now be
+ *     the false statement — it would tell a tenant we will not contact them immediately after we did.
+ * `notify_only` is the third verdict and the true one: we will tell you, and you pay it yourself.
  */
-export type MechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state' | 'no_notification';
+export type MechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state' | 'no_notification' | 'notify_only';
 
-export interface MechanismInputs { graceEnabled: boolean; cadenceEnabled: boolean }
+export interface MechanismInputs { graceEnabled: boolean; cadenceEnabled: boolean; notificationsEnabled: boolean }
 
 export function mechanismLines(i: MechanismInputs): {
   autopay: MechanismVerdict; nextDebit: MechanismVerdict; gracePeriod: MechanismVerdict; retryAndNotify: MechanismVerdict;
@@ -156,7 +161,7 @@ export function mechanismLines(i: MechanismInputs): {
     // The one W120 promise this wave makes true. Both switches are required: a state nothing sweeps never
     // opens a window, and a sweep with no state to enter is the old kill switch.
     gracePeriod: i.graceEnabled && i.cadenceEnabled ? 'exists' : i.graceEnabled ? 'not_scheduled' : 'no_grace_state',
-    retryAndNotify: 'no_notification',
+    retryAndNotify: retryAndNotifyVerdict({ notificationsEnabled: i.notificationsEnabled }),
   };
 }
 

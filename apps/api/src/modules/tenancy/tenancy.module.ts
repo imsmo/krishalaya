@@ -57,6 +57,13 @@ import { SaasInvoicePaymentHandler } from './events/handlers/payment-succeeded.h
 import { SaasInvoicePaidHandler } from './events/handlers/saas-invoice-paid.handler';
 import { SaasBillingCycleJob } from './jobs/saas-billing-cycle.job';
 import { SaasBillingCycleCadenceJob } from './jobs/saas-billing-cycle.cadence-job';
+// PC-56 TENANT-4d-5 · the notice plane: the enrichment service, its recipient reader, and the two producers
+// 0148 named and refused to schedule until this plane existed.
+import { BillingNoticeService } from './services/billing-notice.service';
+import { BillingRecipientsRepository } from './repositories/billing-recipients.repository';
+import { TrialExpiryJob } from './jobs/trial-expiry.job';
+import { UsageLimitAlertsJob } from './jobs/usage-limit-alerts.job';
+import { TrialExpiryCadenceJob, UsageLimitAlertsCadenceJob } from './jobs/tenant-notices.cadence-job';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { FlagsService } from '../../core/feature-flags/flags.service';
 import { AppConfig } from '../../core/config/app-config';
@@ -86,6 +93,32 @@ import { AppConfig } from '../../core/config/app-config';
     // PC-56 TENANT-4d-4: the paid event finally has a subscriber (it rolls the billing period), and the
     // billing cycle finally has a clock.
     SaasInvoicePaidHandler,
+    // PC-56 TENANT-4d-5: the seven billing events finally have a recipient, so the notification spine finally
+    // has something to fan out. Plain providers — `BillingNoticeService` is injected into both event-emitting
+    // services and into both producer jobs, which is the point of it being one class.
+    BillingNoticeService, BillingRecipientsRepository,
+    {
+      provide: TrialExpiryJob,
+      useFactory: (subs: SubscriptionRepository, notice: BillingNoticeService) => new TrialExpiryJob(subs, notice),
+      inject: [SubscriptionRepository, BillingNoticeService],
+    },
+    {
+      provide: UsageLimitAlertsJob,
+      useFactory: (notice: BillingNoticeService) => new UsageLimitAlertsJob(notice),
+      inject: [BillingNoticeService],
+    },
+    {
+      provide: TrialExpiryCadenceJob,
+      useFactory: (config: AppConfig, job: TrialExpiryJob) =>
+        new TrialExpiryCadenceJob(config.jobs.tenantNotices.intervalMs, job, config.jobs.tenantNotices.batchSize, config.jobs.tenantNotices.trialNoticeDays),
+      inject: [AppConfig, TrialExpiryJob],
+    },
+    {
+      provide: UsageLimitAlertsCadenceJob,
+      useFactory: (config: AppConfig, job: UsageLimitAlertsJob) =>
+        new UsageLimitAlertsCadenceJob(config.jobs.tenantNotices.intervalMs, job, config.jobs.tenantNotices.usageBatchSize),
+      inject: [AppConfig, UsageLimitAlertsJob],
+    },
     {
       provide: SaasBillingCycleJob,
       useFactory: (subs: SubscriptionRepository, invoices: SaasInvoiceRepository, subscriptions: SubscriptionService,
@@ -113,6 +146,8 @@ export class TenancyModule implements OnModuleInit {
     private readonly saasInvoicePaid: SaasInvoicePaidHandler,
     private readonly saasBillingCycleCadenceJob: SaasBillingCycleCadenceJob,
     private readonly saasInvoicePayment: SaasInvoicePaymentHandler,
+    private readonly trialExpiryCadenceJob: TrialExpiryCadenceJob,
+    private readonly usageLimitAlertsCadenceJob: UsageLimitAlertsCadenceJob,
   ) {}
   // payments.payment_succeeded (referenceType='saas_invoice') → mark the SaaS invoice paid
   onModuleInit(): void {
@@ -123,5 +158,14 @@ export class TenancyModule implements OnModuleInit {
     // …and the clock, on the api-side cadence host S4 built (per-job env gate, independent of the
     // runner-wide JOBS_ENABLED kill switch — the same convention payments and identity use).
     if (this.config.jobs.saasBillingCycle.enabled) this.jobRegistry.register(this.saasBillingCycleCadenceJob);
+    // PC-56 TENANT-4d-5 · the two producers 0148 named. Registering them is also what makes them TYPECHECKED:
+    // `apps/api/tsconfig.json` includes only main/app.module/core/shared/listings plus whatever those
+    // transitively import, so an unregistered job class is invisible to `tsc` — which is how
+    // `usage-limit-alerts.job.ts` shipped referencing an identifier it never imported. Wiring it is the fix and
+    // the detector at once.
+    if (this.config.jobs.tenantNotices.enabled) {
+      this.jobRegistry.register(this.trialExpiryCadenceJob);
+      this.jobRegistry.register(this.usageLimitAlertsCadenceJob);
+    }
   }
 }

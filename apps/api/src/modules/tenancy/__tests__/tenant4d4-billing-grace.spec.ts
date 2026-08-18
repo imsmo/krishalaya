@@ -205,20 +205,40 @@ describe('TENANT-4d-4 · the entity: the writer `past_due` never had, and the ro
 /* ---------------------------------------------------------------------------------------------------------- */
 describe('TENANT-4d-4 · what W120 may now claim', () => {
   it('the grace period reads as REAL only when BOTH switches are on', () => {
-    expect(mechanismLines({ graceEnabled: true, cadenceEnabled: true }).gracePeriod).toBe('exists');
+    const g = (graceEnabled: boolean, cadenceEnabled: boolean) => mechanismLines({ graceEnabled, cadenceEnabled, notificationsEnabled: false }).gracePeriod;
+    expect(g(true, true)).toBe('exists');
     // A state nothing sweeps never opens a window; a sweep with no state to enter is the old kill switch.
-    expect(mechanismLines({ graceEnabled: true, cadenceEnabled: false }).gracePeriod).toBe('not_scheduled');
-    expect(mechanismLines({ graceEnabled: false, cadenceEnabled: true }).gracePeriod).toBe('no_grace_state');
-    expect(mechanismLines({ graceEnabled: false, cadenceEnabled: false }).gracePeriod).toBe('no_grace_state');
+    expect(g(true, false)).toBe('not_scheduled');
+    expect(g(false, true)).toBe('no_grace_state');
+    expect(g(false, false)).toBe('no_grace_state');
+    // …and the grace verdict is INDEPENDENT of the notice flag TENANT-4d-5 added. Asserted because the two
+    // switches arrive in one object and a plausible-looking `&&` across all three would silently make the grace
+    // window read as missing on any deployment that has notices off — which is every deployment by default.
+    expect(mechanismLines({ graceEnabled: true, cadenceEnabled: true, notificationsEnabled: true }).gracePeriod).toBe('exists');
   });
 
-  it('and "we retry and notify you" STAYS a gap — neither half of it exists', () => {
-    const on = mechanismLines({ graceEnabled: true, cadenceEnabled: true });
-    // No autopay mandate for a subscription anywhere in the payments module → nothing to retry against.
+  /**
+   * **THIS TEST DID ITS JOB, AND IS INVERTED RATHER THAN WEAKENED (PC-56 TENANT-4d-5).**
+   *
+   * 4d-4 wrote it as a planted assertion — "'we retry and notify you' STAYS a gap — neither half of it exists"
+   * — with the explicit expectation that a later wave building the notify half would make it fail, exactly as
+   * 4d-2's two planted tests failed in 4d-4. It failed. 4d-5 seeds seven catalog events with templates in three
+   * languages and puts a recipient in every billing payload, so `no_notification` became the FALSE statement.
+   *
+   * The correct response to a planted test firing is to pin the new truth, which is narrower than "it works":
+   * the notify half exists, the RETRY half still does not, and the verdict must therefore be a third value
+   * rather than `exists`. Flipping to `exists` would have claimed a retry loop with no instrument.
+   */
+  it('and "we retry and notify you" is now HALF true — and says which half', () => {
+    const on = mechanismLines({ graceEnabled: true, cadenceEnabled: true, notificationsEnabled: true });
+    // Still no autopay mandate for a subscription anywhere in the payments module → nothing to retry against.
     expect(on.autopay).toBe('no_saas_mandate');
     expect(on.nextDebit).toBe('no_saas_mandate');
-    // The five tenancy billing events are in no notification map row. TENANT-4d-5.
-    expect(on.retryAndNotify).toBe('no_notification');
+    // NOT 'exists': that would assert the retry loop. 'notify_only' is the true statement.
+    expect(on.retryAndNotify).toBe('notify_only');
+    expect(on.retryAndNotify).not.toBe('exists');
+    // And with notices off — the default on every deployment — the original verdict is still the right one.
+    expect(mechanismLines({ graceEnabled: true, cadenceEnabled: true, notificationsEnabled: false }).retryAndNotify).toBe('no_notification');
   });
 
   it('the advice is to PAY, never to wait for a retry we do not perform', () => {
@@ -311,8 +331,28 @@ describe('TENANT-4d-4 · the paid handler, behaviourally', () => {
   it('rolls the period for a FULLY paid subscription invoice', async () => {
     const { SaasInvoicePaidHandler } = await import('../events/handlers/saas-invoice-paid.handler');
     const { rolled, svc } = build();
-    await new SaasInvoicePaidHandler(svc as never).handle(ev({ status: 'paid', subscriptionId: 's1', invoiceId: 'i1' }) as never, {} as never);
+    // PC-56 TENANT-4d-5 added `periodTag` to the guard, so the fixture now carries one. THIS TEST'S ORIGINAL
+    // FIXTURE HAD NONE, which is precisely how the defect stayed invisible: the payload field 4d-4 added "so a
+    // consumer can tell a renewal invoice from an upgrade proration" was never in the test data either.
+    await new SaasInvoicePaidHandler(svc as never).handle(ev({ status: 'paid', subscriptionId: 's1', invoiceId: 'i1', periodTag: '202607' }) as never, {} as never);
     expect(rolled).toEqual([{ tenantId: 't1', id: 's1' }]);
+  });
+
+  /**
+   * **PC-56 TENANT-4d-5 · A MID-CYCLE UPGRADE BOUGHT A FREE MONTH.** `PlanChangeService` raises a proration
+   * invoice against the subscription with `periodic: false`, so its `period_tag` is null by construction. Paying
+   * one fired this handler with a subscription id and `status: 'paid'` — the two things it checked — and rolled
+   * the billing period. Every tenant who upgraded off a paid plan got their period extended for the price of the
+   * proration difference. 4d-4 put `periodTag` in the payload for exactly this distinction and then never read
+   * it, so the evidence travelled and the decision ignored it.
+   */
+  it('does NOTHING for a proration invoice — an upgrade charge is not a renewal', async () => {
+    const { SaasInvoicePaidHandler } = await import('../events/handlers/saas-invoice-paid.handler');
+    const { rolled, svc } = build();
+    await new SaasInvoicePaidHandler(svc as never).handle(ev({ status: 'paid', subscriptionId: 's1', periodTag: null }) as never, {} as never);
+    await new SaasInvoicePaidHandler(svc as never).handle(ev({ status: 'paid', subscriptionId: 's1' }) as never, {} as never);
+    await new SaasInvoicePaidHandler(svc as never).handle(ev({ status: 'paid', subscriptionId: 's1', periodTag: '' }) as never, {} as never);
+    expect(rolled).toEqual([]);
   });
 
   it('does NOTHING for a partial payment — a first instalment must not buy a whole new period', async () => {

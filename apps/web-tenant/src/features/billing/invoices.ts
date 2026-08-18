@@ -78,7 +78,7 @@ export function gstinKey(source: 'snapshot' | 'not_on_invoice'): string {
 /* THE FOUR MECHANISM SENTENCES — the wave's honesty surface                                               */
 /* ------------------------------------------------------------------------------------------------------- */
 
-export type MechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state' | 'no_notification';
+export type MechanismVerdict = 'exists' | 'no_saas_mandate' | 'not_scheduled' | 'no_grace_state' | 'no_notification' | 'notify_only';
 
 export const MECHANISM_ORDER = ['autopay', 'nextDebit', 'gracePeriod', 'retryAndNotify'] as const;
 export type MechanismKey = (typeof MECHANISM_ORDER)[number];
@@ -102,6 +102,13 @@ export function gapReasonKey(v: MechanismVerdict): string | null {
   if (v === 'exists') return null;
   if (v === 'no_saas_mandate') return 'bill.gap.noMandate';
   if (v === 'not_scheduled') return 'bill.gap.notScheduled';
+  // PC-56 TENANT-4d-5: W120 says "while we retry and notify you" — ONE sentence over TWO mechanisms. The notify
+  // half is now real (seven events, catalog rows, templates in three languages, a recipient in every payload)
+  // and the retry half still has no instrument, because no autopay mandate exists for a SaaS subscription. So
+  // this is the reason line for the half-true case, and it says which half: we will tell you, and you pay it.
+  // Collapsing it back into `noMandate` would drop the promise the platform now keeps; leaving it as
+  // `noNotification` would deny a message the tenant is about to receive.
+  if (v === 'notify_only') return 'bill.gap.notifyOnly';
   // PC-56 TENANT-4d-4: "we notify you" is its own gap now that the grace period is real. Collapsing it into
   // "no grace" would tell a tenant in an ACTIVE grace window that there is no grace period.
   if (v === 'no_notification') return 'bill.gap.noNotification';

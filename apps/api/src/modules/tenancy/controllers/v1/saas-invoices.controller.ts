@@ -22,6 +22,7 @@ import { SaasInvoiceService } from '../../services/saas-invoice.service';
 import { BillingConsoleReadModel } from '../../read-models/billing-console.read-model';
 import { QuerySaasInvoiceSchema, QuerySaasInvoiceDto } from '../../dto/query-saas-invoice.dto';
 import { statusesForTab } from '../../domain/saas-invoice-balance';
+import { BILLING_NOTIFICATIONS_FLAG } from '../../services/billing-notice.service';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -45,11 +46,14 @@ export class SaasInvoicesController {
     const selfPay = await this.flags.isEnabled('saas_invoice_self_pay', { tenantId: ctx.tenantId }).catch(() => false);
     // PC-56 TENANT-4d-4: W120's footnote is rendered from what is actually switched on, so the screen cannot
     // keep telling a tenant there is no grace period after a founder enables one (or the reverse).
-    const [graceEnabled, cadenceEnabled] = await Promise.all([
+    const [graceEnabled, cadenceEnabled, notificationsEnabled] = await Promise.all([
       this.flags.isEnabled('saas_billing_grace', { tenantId: ctx.tenantId }).catch(() => false),
       this.flags.isEnabled('saas_billing_cadence', { tenantId: ctx.tenantId }).catch(() => false),
+      // PC-56 TENANT-4d-5 · the same flag the emitter checks, read here so W120's fourth sentence describes the
+      // notice plane as it is for THIS tenant rather than as it is for the platform.
+      this.flags.isEnabled(BILLING_NOTIFICATIONS_FLAG, { tenantId: ctx.tenantId }).catch(() => false),
     ]);
-    return { data: await this.console.view(ctx.tenantId, new Date(), selfPay, { graceEnabled, cadenceEnabled }) };
+    return { data: await this.console.view(ctx.tenantId, new Date(), selfPay, { graceEnabled, cadenceEnabled, notificationsEnabled }) };
   }
 
   /** The keyset page behind each tab. Keyset only — a tenant with ten years of monthly invoices pages in

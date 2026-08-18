@@ -3364,4 +3364,5 @@ export const hi: Messages = {
   'bill.grace.payNow': 'Sab chalu rakhne ke liye upar ka baki invoice chuka dein. Is beech aapke members par koi asar nahin.',
   'bill.grace.contact': 'Aapka platform sampark bhugtan ke nirdesh bhejega. Is beech aapke members par koi asar nahin.',
   'bill.gap.noNotification': 'Abhi banaya nahin gaya — hum iske baare mein email ya message nahin bhejenge, isliye kripya yah panna dekhte rahein.',
+  'bill.gap.notifyOnly': 'Invoice dey hone par, baki rehne par, ya seva grace period mein jaane par hum yahan billing sambhalne walon ko message bhejenge. Koi automatic charge dobara nahin liya jaata, isliye bhugtan aapke haath mein hai.',
 };

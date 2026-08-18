@@ -293,6 +293,16 @@ export class AppConfig {
         intervalMs: this.env.SAAS_BILLING_CYCLE_JOB_INTERVAL_MS,
         batchSize: this.env.SAAS_BILLING_CYCLE_JOB_BATCH_SIZE,
       },
+      // PC-56 TENANT-4d-5: the trial-ending and usage-limit notice producers. 0148 named both as deliberately
+      // unwired because their notification went nowhere; the notice plane exists now, and an unscheduled
+      // producer behind a seeded catalog row + templates would be the same defect from the other end.
+      tenantNotices: {
+        enabled: this.env.TENANT_NOTICES_JOB_ENABLED !== 'false',
+        intervalMs: this.env.TENANT_NOTICES_JOB_INTERVAL_MS,
+        batchSize: this.env.TENANT_NOTICES_JOB_BATCH_SIZE,
+        usageBatchSize: this.env.TENANT_NOTICES_USAGE_BATCH_SIZE,
+        trialNoticeDays: this.env.TENANT_NOTICES_TRIAL_DAYS,
+      },
     };
   }
   get razorpay(){ return { keyId: this.env.RAZORPAY_KEY_ID, webhookSecret: this.env.RAZORPAY_WEBHOOK_SECRET }; }

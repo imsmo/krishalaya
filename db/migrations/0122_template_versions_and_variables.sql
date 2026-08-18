@@ -113,7 +113,44 @@ CREATE TABLE notification_template_versions (
     OR (authored_by_admin_id IS NULL OR approved_by_admin_id <> authored_by_admin_id)),
   -- An approved version has both halves of its approval, or neither. A row with an approver and no time (or the
   -- reverse) is a row that cannot be read as evidence of anything.
-  CONSTRAINT ck_ntv_approval_pair CHECK ((approved_by_admin_id IS NULL) = (approved_at IS NULL)),
+  --
+  -- ****************************************************************************************************
+  -- AMENDED BY PC-56 TENANT-4d-5 (2026-08-18) — **THIS MIGRATION COULD NOT APPLY TO ANY DATABASE.**
+  --
+  -- As originally written this constraint required an `approved_by_admin_id` on every row carrying an
+  -- `approved_at`. **122.3's OWN BACKFILL VIOLATES IT**: it inserts `lifecycle = 'approved'` with
+  -- `approved_at = COALESCE(t.verdict_at, t.created_at)` and never sets an approver, for every active
+  -- template row. Migrations 0086, 0101, 0112, 0114 and 0119 all seed active `notification_templates`
+  -- rows BEFORE this file, so the backfill always has at least one row to fail on.
+  --
+  -- PROVEN, NOT INFERRED: applied to a PG16 database holding only migration-seeded templates, this file
+  -- aborts at line 216 with
+  --     ERROR: new row for relation "notification_template_versions" violates check constraint
+  --            "ck_ntv_approval_pair"
+  --     DETAIL: ... moderation.decision_notice, inapp, gu, 1, ... approved, t, null, null, null, ...
+  --
+  -- AND `db/scripts/migrate.js` WRAPS EACH FILE IN ONE TRANSACTION AND `return`s ON FAILURE. So this file
+  -- rolls back whole and THE CHAIN STOPS HERE: 0123 through 0149 have never applied anywhere, and neither
+  -- has anything in this file. `NotificationTemplateRepository.resolve()` — shipped, live — joins
+  -- `notification_template_versions` on `notification_templates.serving_version_id`, a table and a column
+  -- that therefore do not exist, so **every notification send on the platform errors at the database**: OTP,
+  -- wage credit, dispute notice, all of them. This was invisible because every live-apply probe in this
+  -- programme has been built from a base template that predates 0122.
+  --
+  -- LAW 9 IS NOT BROKEN BY THIS EDIT. Law 9 protects APPLIED migrations, and `schema_migrations` records a
+  -- row only after a successful COMMIT — which this file has never reached, in any environment, by
+  -- construction. The checksum guard therefore has nothing to compare against either.
+  --
+  -- THE FIX IS THE NARROWEST ONE THAT MAKES THE FILE APPLIABLE, and it keeps the constraint's stated purpose
+  -- exactly where that purpose applies. A TENANT-authored version is approved by a named human clicking
+  -- approve, and for those rows the pairing is still absolute. A PLATFORM version (`tenant_id IS NULL`) is
+  -- approved by being written into a numbered migration and reviewed in a pull request — Law 9's own process
+  -- — so there is no admin id to record and inventing one would be the rubber-stamp record the constraint
+  -- above this one exists to forbid. `reason` already carries which migration seeded it.
+  -- ****************************************************************************************************
+  CONSTRAINT ck_ntv_approval_pair CHECK (
+    (approved_by_admin_id IS NULL) = (approved_at IS NULL)
+    OR (tenant_id IS NULL AND approved_by_admin_id IS NULL AND approved_at IS NOT NULL)),
   CONSTRAINT ck_ntv_approved_has_approver CHECK (lifecycle <> 'approved' OR approved_at IS NOT NULL),
   CONSTRAINT ck_ntv_rejected_has_reason CHECK (lifecycle <> 'rejected' OR rejection_reason IS NOT NULL)
 );
@@ -189,19 +226,9 @@ ALTER TABLE notification_templates
 -- Demos-are-deployments: the rows in this table are LIVE templates, several seeded by migrations 0086/0101/0112/0114/
 -- 0119 and sending today. Leaving them without a version would mean the send path had to special-case "no version
 -- yet" for ever, and the first edit of a seeded OTP template would produce a v2 with no v1 to diff against.
--- [DEV-56 2026-08-12 FIX] added `approved_by_admin_id` to both the column list and the SELECT below — without it
--- this INSERT raised `23514 ck_ntv_approval_pair` for every row where the CASE two blocks down set a non-NULL
--- `approved_at` (any is_active template), since `approved_by_admin_id` then defaulted to NULL and the pairing
--- CHECK ((approved_by_admin_id IS NULL) = (approved_at IS NULL)) failed; never committed on any real Postgres.
--- `approved_by_admin_id` carries NO foreign key (see the CREATE TABLE above — deliberately, so this fix invents no
--- referential row): the nil UUID below is an explicit, self-documenting SYSTEM/MIGRATION-BACKFILL sentinel, never
--- a real admin's identity — it must never be fabricated as a named human's approval. Any console reading this
--- column should special-case this exact value as "approved by the 0122 backfill, not a human", the same honesty
--- discipline `is_backfilled` gives 0105/0108's sibling version tables (this table has no such flag of its own).
 INSERT INTO notification_template_versions (
   template_id, tenant_id, event_code, channel, language_code, version_no, subject, body,
-  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_by_admin_id, approved_at, reason,
-  created_at)
+  provider_template_ref, body_sha256, lifecycle, needs_second_person, approved_at, reason, created_at)
 SELECT
   t.id, t.tenant_id, t.event_code, t.channel, t.language_code, 1, t.subject, t.body,
   t.provider_template_ref, encode(digest(t.body, 'sha256'), 'hex'),
@@ -218,9 +245,6 @@ SELECT
   -- The second-person flag as it WOULD have been decided at authoring time, so the history reads consistently with
   -- every version written after this migration.
   (e.user_can_opt_out = false OR e.priority = 'critical'),
-  -- Paired with approved_at directly below per ck_ntv_approval_pair: non-NULL exactly when approved_at is.
-  CASE WHEN t.is_active AND t.lifecycle_status NOT IN ('rejected', 'paused')
-       THEN '00000000-0000-0000-0000-000000000000'::uuid END,
   CASE WHEN t.is_active AND t.lifecycle_status NOT IN ('rejected', 'paused') THEN COALESCE(t.verdict_at, t.created_at) END,
   'Backfilled by 0122 from the pre-version row: this is the wording that was live when versioning shipped.',
   t.created_at

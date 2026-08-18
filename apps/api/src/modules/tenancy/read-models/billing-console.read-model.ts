@@ -64,7 +64,12 @@ const PAID_LIMIT = 500;
 export class BillingConsoleReadModel {
   constructor(private readonly invoices: SaasInvoiceRepository, private readonly subs: SubscriptionRepository) {}
 
-  async view(tenantId: string, now: Date, selfPayEnabled: boolean, flags: { graceEnabled: boolean; cadenceEnabled: boolean } = { graceEnabled: false, cadenceEnabled: false }): Promise<BillingConsoleView> {
+  async view(tenantId: string, now: Date, selfPayEnabled: boolean,
+    // PC-56 TENANT-4d-5 adds `notificationsEnabled`. NO DEFAULT FOR THE OBJECT'S MEMBERS and the whole object
+    // still defaults to every switch OFF: a caller that forgets a flag must produce the CONSERVATIVE screen (the
+    // one that says a mechanism is missing), never the reassuring one. 4d-3 made the same choice for tax formats
+    // and gave the reason — a default that fails OPEN on a promise the platform has not kept is the defect.
+    flags: { graceEnabled: boolean; cadenceEnabled: boolean; notificationsEnabled: boolean } = { graceEnabled: false, cadenceEnabled: false, notificationsEnabled: false }): Promise<BillingConsoleView> {
     const year = now.getUTCFullYear();
     const [openRows, paidRows, tabRaw, sub] = await Promise.all([
       this.invoices.openInvoices(tenantId, OPEN_LIMIT),

@@ -27,7 +27,12 @@ function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationP
   const quiet = { getForUser: jest.fn(async () => null) };
   const pushSender = { providerCode: 'fake', send: jest.fn(async () => ({ sent: 1, invalidTokens: [] })) };
   const devices = { activeTokensForUser: jest.fn(async () => [{ token: 'tok', platform: 'android' }]), deactivate: jest.fn(async () => 1) };
-  const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
+  const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }),
+    // PC-56 TENANT-4d-5: the fake gains the address check the real repository now performs. `true` here
+    // keeps every pre-existing assertion in this file about WHICH channels are attempted — the contactability
+    // question is a separate axis and is covered behaviourally in tenant4d5-billing-notices.spec.ts, including
+    // the case where it is false.
+    contactableOn: jest.fn(async () => true), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
   // DEV-07/Q24: default OFF (Golden Law 8) unless a test opts in — preserves every pre-existing assertion in
   // this file untouched (they exercise the pre-DEV-07 multi-channel behavior, exactly as before this batch).
   const flags = { isEnabled: jest.fn(async () => opts.routineFlagOn ?? false) };

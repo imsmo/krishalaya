@@ -3364,4 +3364,5 @@ export const gu: Messages = {
   'bill.grace.payNow': 'Badhu chālu rākhvā mate upar nu bāki invoice chukvo. Ā daramyān tamārā members par koi asar nathi.',
   'bill.grace.contact': 'Tamāro platform samparka chukavanī nī sūchanā mokalshe. Ā daramyān tamārā members par koi asar nathi.',
   'bill.gap.noNotification': 'Hāl banāvāyu nathi — ame ā vishe email ke message nahi mokalīe, tethi kripā karī ā pānu joyā karo.',
+  'bill.gap.notifyOnly': 'Invoice chukavvānu hoy, bāki rahe, athvā sevā grace period mā jāy tyāre ame ā jagā e billing sanbhālnārā ne message mokalīshu. Koi automatic charge fari levāto nathi, tethi chukavanī tamārā hāth mā che.',
 };

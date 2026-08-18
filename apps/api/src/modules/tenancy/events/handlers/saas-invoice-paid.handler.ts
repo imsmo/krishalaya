@@ -36,6 +36,15 @@ export class SaasInvoicePaidHandler implements OutboxHandler {
     // An invoice with no subscription is a one-off (an upgrade proration is billed against the subscription,
     // but a manual charge need not be). Nothing to roll, and not an error.
     if (!subscriptionId) return;
+    // **AND ONLY A PERIODIC INVOICE RENEWS A PERIOD (PC-56 TENANT-4d-5).** 4d-4 put `periodTag` in this payload
+    // for the stated reason that "a consumer can tell a renewal invoice from an upgrade proration without
+    // re-reading the row" — and then never read it, so the evidence travelled and the decision ignored it (the
+    // dead-payload-field half of the same defect family this programme keeps finding). A proration invoice
+    // carries `periodTag: null` by construction (`periodic: false`, see PlanChangeService), and paying one is a
+    // tenant settling an upgrade charge, not buying another period. `Subscription.rollPeriod` now also refuses
+    // an open period, so this is belt AND braces — deliberately, because the two guards fail differently: this
+    // one is about WHAT was paid, that one is about WHEN.
+    if (typeof p.periodTag !== 'string' || !p.periodTag) return;
     const rolled = await this.subscriptions.rollPeriod(tx, tenantId, subscriptionId, new Date());
     if (rolled) this.log.log(`subscription ${subscriptionId} period rolled after invoice ${String(p.invoiceId)} was paid`);
   }

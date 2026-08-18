@@ -238,7 +238,7 @@ describe('TENANT-4d-2 · the four sentences W120 states about the MECHANISM', ()
    *  cannot keep telling a tenant there is no grace period after a founder enables one. With both flags OFF —
    *  the shipped state — the answers are exactly what 4d-2 asserted. */
   it('WITH THE FLAGS OFF, NOT ONE OF THEM HAS A SUBJECT, and the code says so', () => {
-    const m = mechanismLines({ graceEnabled: false, cadenceEnabled: false });
+    const m = mechanismLines({ graceEnabled: false, cadenceEnabled: false, notificationsEnabled: false });
     expect(m.autopay).toBe('no_saas_mandate');        // the autopay plane has no notion of a subscription
     expect(m.nextDebit).toBe('no_saas_mandate');      // a scheduled INVOICE is not a scheduled debit
     expect(m.gracePeriod).toBe('no_grace_state');
@@ -433,6 +433,10 @@ describe('TENANT-4d-2 · applyPayment refuses a receipt it cannot record honestl
       { inc: () => undefined, observe: () => undefined } as never,
       { write: async () => undefined } as never,
       repo as never,
+      // PC-56 TENANT-4d-5: the notice enricher. A no-op here on purpose — these tests are about the payment
+      // ARITHMETIC, and the notice plane has its own behavioural suite. Returning the payload unchanged is also
+      // exactly what the real service does for a tenant with billing notices switched off, which is the default.
+      { enrich: async (_tx: unknown, _t: string, _e: string, payload: unknown) => payload } as never,
     );
     return { svc, calls };
   };
@@ -460,6 +464,7 @@ describe('TENANT-4d-2 · applyPayment refuses a receipt it cannot record honestl
       { run: async (_t: string, fn: (tx: unknown) => unknown) => fn({}) } as never,
       { write: async () => undefined } as never, { inc: () => undefined } as never, { write: async () => undefined } as never,
       { getForUpdate: async () => null } as never,
+      { enrich: async (_tx: unknown, _t: string, _e: string, payload: unknown) => payload } as never,
     );
     await expect(svc2.applyPayment({} as never, 't1', 'nope', receipt() as never)).resolves.toBe(false);
     expect(calls).toEqual([]);

@@ -3366,4 +3366,7 @@ export const en: Messages = {
   'bill.grace.payNow': 'Pay the open invoice above to keep everything running. Your members are not affected in the meantime.',
   'bill.grace.contact': 'Your platform contact will send you payment instructions. Your members are not affected in the meantime.',
   'bill.gap.noNotification': 'Not built yet — we will not email or message you about this, so please check this page.',
+  // PC-56 TENANT-4d-5 · the half-true sentence. It states what we WILL do and what we will not, in that order,
+  // because the tenant's next action depends on the second half.
+  'bill.gap.notifyOnly': 'We will message the people here who manage billing when an invoice is due, overdue, or when service enters a grace period. There is no automatic charge to retry, so payment stays with you.',
 };

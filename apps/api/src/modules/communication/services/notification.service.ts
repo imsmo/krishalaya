@@ -123,6 +123,12 @@ export class NotificationService {
     } else if (!template) {
       n.markFailed('no_template');   // can't send an empty external message — record + skip (fail-closed)
       this.metrics.inc('comm.no_template', { event: a.event, channel: a.channel });
+    } else if (!(await this.notifications.contactableOn(tx, a.userId, a.channel))) {
+      // PC-56 TENANT-4d-5 · the recipient has no address on this channel. Recorded, never dispatched: the
+      // gateway resolves contact details from a bare user id and would have returned 'accepted' for a request
+      // it could not deliver, writing `sent` into the log. See `contactableOn` for the full argument.
+      n.markFailed('no_address');
+      this.metrics.inc('comm.no_address', { event: a.event, channel: a.channel });
     } else if (a.channel === 'push') {
       // FIRST-PARTY push (P0-10): resolve the recipient's own registered device tokens (push_devices) and
       // send via the resilient PUSH_SENDER. Dead tokens (DeviceNotRegistered) are deactivated in-tx (hygiene).

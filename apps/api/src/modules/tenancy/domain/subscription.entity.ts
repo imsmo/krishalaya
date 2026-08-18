@@ -104,10 +104,26 @@ export class Subscription {
    */
   rollPeriod(now: Date = new Date()): boolean {
     if (this.props.status !== 'active' && this.props.status !== 'past_due') return false;
+    // **THE GUARD PC-56 TENANT-4d-4 CLAIMED AND DID NOT WRITE (fixed in TENANT-4d-5).** Its own header said "a
+    // re-delivered paid event finds the period already rolled and `rollPeriod` returns false", and so did
+    // `SubscriptionService.rollPeriod`'s and `SaasInvoicePaidHandler`'s. Nothing in the method implemented it:
+    // after a roll the status is `active` and the period end is in the FUTURE, which the old code read as
+    // "paid early" and rolled again from `now`. The outbox relay is explicitly at-least-once ("handlers MUST be
+    // idempotent") and quarantines an event whose handler set throws, so a re-delivery was not hypothetical —
+    // and 4d-5 puts a SECOND handler (the notification fanout) on this same event inside the same transaction,
+    // which is exactly what turns a rare re-delivery into a routine one. Each replay granted the tenant another
+    // full billing period for nothing.
+    //
+    // AND IT REFUSES A PERIOD THAT IS STILL OPEN, which is the same bug wearing different clothes.
+    // `PlanChangeService` raises a mid-cycle proration invoice against the subscription; paying it fired this
+    // method with the period still running and rolled it — a tenant who UPGRADED got a free month. The renewal
+    // invoice is only ever raised after a period has ended (see SaasBillingCycleJob phase 1), so requiring the
+    // period to have ended costs the legitimate path nothing and closes both.
+    if (this.props.currentPeriodEnd.getTime() > now.getTime()) return false;
     // The new period starts where the old one ENDED, not at `now`: billing a tenant from the day their
     // payment cleared would silently shorten every period by however long they took to pay, and a tenant
     // who paid four days late would lose four days of every subsequent period, compounding for ever.
-    const from = this.props.currentPeriodEnd.getTime() > now.getTime() ? now : this.props.currentPeriodEnd;
+    const from = this.props.currentPeriodEnd;
     this.props.currentPeriodStart = from;
     this.props.currentPeriodEnd = nextPeriodEnd(from, this.props.billingCycle);
     this.props.graceUntil = null;

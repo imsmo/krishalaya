@@ -186,6 +186,17 @@ export const EnvSchema = z.object({
   SAAS_BILLING_CYCLE_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
   SAAS_BILLING_CYCLE_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000),
   SAAS_BILLING_CYCLE_JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(200),
+  // PC-56 TENANT-4d-5 · the two tenancy notice producers (trial ending, usage-limit alert). ONE gate for both:
+  // they are one decision — whether this deployment sends tenants proactive billing notices at all — and two
+  // env vars would let an operator half-enable a promise W118 and W120 make together.
+  TENANT_NOTICES_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
+  TENANT_NOTICES_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000),
+  TENANT_NOTICES_JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(200),
+  // The usage scan is per (tenant, metric) rather than per tenant, so its natural batch is an order of
+  // magnitude larger than the trial scan's — the same figure the job has always defaulted to.
+  TENANT_NOTICES_USAGE_BATCH_SIZE: z.coerce.number().int().min(1).max(20_000).default(2000),
+  // W118's own number: the nudge lands this many days before a trial ends.
+  TENANT_NOTICES_TRIAL_DAYS: z.coerce.number().int().min(1).max(30).default(3),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
