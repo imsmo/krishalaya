@@ -180,6 +180,79 @@ export interface OrgLedgerExport {
   window: OrgLedgerWindow;
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// PC-56 TENANT-4b · W145/W146 — the ORGANISATION's outbound payout queue and the maker-checker gate over a run.
+// Distinct from `PayoutsResource` above, which is the caller's OWN withdrawal. Every method is tenant-scoped
+// server-side; the batch reads used to take no tenant at all (see the migration header for what that leaked).
+// ---------------------------------------------------------------------------------------------------------------
+export class PayoutConsoleResource {
+  constructor(private readonly http: HttpClient) {}
+  /** W145: the queue with its five tabs, the counts, and any status the tabs do not cover. */
+  async queue(opts: { tab?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PayoutQueuePage> {
+    return (await this.http.request<PayoutQueuePage>('GET', 'payouts/console', { query: { tab: opts.tab, cursor: opts.cursor, limit: opts.limit ?? 50 }, signal })).data;
+  }
+  async batches(opts: { status?: string; batchType?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PayoutBatchRow[]> {
+    return (await this.http.request<PayoutBatchRow[]>('GET', 'payouts/batches', { query: { status: opts.status, batchType: opts.batchType, cursor: opts.cursor, limit: opts.limit ?? 20 }, signal })).data;
+  }
+  /** W146: the batch, its items, its pre-flight evidence, and whether THIS viewer may sign it. */
+  async review(batchId: string, signal?: AbortSignal): Promise<PayoutBatchReview> {
+    return (await this.http.request<PayoutBatchReview>('GET', `payouts/batches/${encodeURIComponent(batchId)}/review`, { signal })).data;
+  }
+  /** The maker step (`payout.prepare`). `executeAt` is an ISO instant WITH an offset — never a local time. */
+  async prepare(input: { batchType: string; executeAt: string; maxPriority?: number | null }, idempotencyKey: string): Promise<PayoutBatchPrepared> {
+    return (await this.http.request<PayoutBatchPrepared>('POST', 'payouts/batches', { body: input, idempotencyKey })).data;
+  }
+  /** The checker step (`payout.approve`). A rejection needs a reason of at least 20 characters. */
+  async decide(batchId: string, input: { decision: 'approved' | 'rejected'; note?: string }): Promise<{ batchId: string; status: string; releasedClaims: number }> {
+    return (await this.http.request<{ batchId: string; status: string; releasedClaims: number }>('POST', `payouts/batches/${encodeURIComponent(batchId)}/decision`, { body: input })).data;
+  }
+  /** W145's Retry: requeues a failed payout with the domain's backoff, or refuses BY NAME. */
+  async retry(payoutId: string): Promise<{ payoutId: string; plan: PayoutRetryPlan }> {
+    return (await this.http.request<{ payoutId: string; plan: PayoutRetryPlan }>('POST', `payouts/${encodeURIComponent(payoutId)}/retry`, { body: {} })).data;
+  }
+}
+
+export type PayoutRetryPlan =
+  | { kind: 'retry_at'; at: string; attempt: number }
+  | { kind: 'needs_human'; reason: 'account_must_be_fixed' }
+  | { kind: 'exhausted'; attempts: number };
+
+export interface PayoutQueueRow {
+  id: string; payeeName: string | null; payeePhone: string | null; purposeCode: string;
+  referenceType: string | null; referenceId: string | null; amountMinor: string; currencyCode: string;
+  status: string; tab: string | null; lane: 'wage_priority' | 'standard' | 'wage_not_promoted';
+  bankLast4: string | null; bankVerified: boolean; failureBucket: string | null;
+  retry: PayoutRetryPlan | null; batchId: string | null; createdAt: string;
+}
+export interface PayoutQueuePage {
+  items: PayoutQueueRow[]; nextCursor: string | null; counts: Record<string, number>;
+  tabs: string[]; unmappedCount: number;
+}
+export interface PayoutBatchRow {
+  id: string; tenantId: string | null; batchType: string; totalMinor: string; count: number;
+  status: string; executedAt: string | null; createdAt: string;
+}
+export type PayoutPreflightCheck = 'payee_kyc' | 'items_sum' | 'funds_available' | 'no_frozen_payee' | 'risk_desk';
+export interface PayoutPreflightLine { check: PayoutPreflightCheck; state: 'pass' | 'fail' | 'unverifiable'; detail?: string }
+export interface PayoutPreflight { lines: PayoutPreflightLine[]; passed: boolean; blocking: PayoutPreflightCheck[] }
+export interface PayoutBatchReview {
+  batch: {
+    id: string; batchType: string; status: string; itemsTotalMinor: string; settledTotalMinor: string; count: number;
+    preparedBy: string | null; preparedAt: string | null; decidedBy: string | null; decidedAt: string | null;
+    decisionNote: string | null; cutOffAt: string | null; executeAt: string | null; checkerThresholdMinor: string | null;
+  };
+  window: 'open_for_approval' | 'locked' | 'due';
+  needsChecker: boolean;
+  viewerIsMaker: boolean;
+  preflight: PayoutPreflight;
+  signedPreflight: unknown;
+  items: PayoutQueueRow[];
+}
+export interface PayoutBatchPrepared {
+  batchId: string; claimed: number; itemsTotalMinor: string; cutOffAt: string; executeAt: string;
+  checkerThresholdMinor: string; needsChecker: boolean;
+}
+
 export class PaymentsResource {
   /** GST trade-invoice sub-resource: `client.payments.invoices.getByOrder(...) / .downloadUrl(...)`. */
   readonly invoices: InvoicesResource;

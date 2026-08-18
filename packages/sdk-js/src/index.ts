@@ -63,6 +63,9 @@ export { ChargesResource } from './resources/payments';
 // PC-56 TENANT-4a: W143/W144 — the ORGANISATION's wallet (the tenant's own three accounts), distinct from the
 // caller's personal wallet on `client.wallet`.
 export { OrgWalletResource } from './resources/payments';
+// PC-56 TENANT-4b: W145/W146 — the organisation's payout queue and the batch approval gate.
+export { PayoutConsoleResource } from './resources/payments';
+export type { PayoutQueueRow, PayoutQueuePage, PayoutBatchRow, PayoutBatchReview, PayoutBatchPrepared, PayoutPreflight, PayoutPreflightLine, PayoutPreflightCheck, PayoutRetryPlan } from './resources/payments';
 export type { OrgWalletOverview, OrgAccountRow, OrgBalanceVerdict, OrgMovementRow, OrgLedgerRow, OrgLedgerWindow, OrgHealthLine, OrgLedgerExport, OrgTenantAccountCode } from './resources/payments';
 
 export * from './resources/fintech';

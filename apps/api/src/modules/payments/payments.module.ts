@@ -62,6 +62,9 @@ import { ChargeConsoleReadModel } from './read-models/charge-console.read-model'
 import { OrgWalletController } from './controllers/v1/org-wallet.controller';
 import { OrgWalletReadModel } from './read-models/org-wallet.read-model';
 import { OrgWalletExportService } from './services/org-wallet-export.service';
+// PC-56 TENANT-4b: W145/W146 — the payout queue and the maker-checker gate over a run.
+import { PayoutApprovalService } from './services/payout-approval.service';
+import { PayoutConsoleReadModel } from './read-models/payout-console.read-model';
 import { DisputesModule } from '../disputes/disputes.module';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
 import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
@@ -116,6 +119,8 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     ChargeConsoleReadModel,
     OrgWalletReadModel,
     OrgWalletExportService,
+    PayoutApprovalService,
+    PayoutConsoleReadModel,
     BookingClockedOutHandler,
     RazorpayPayoutWebhookHandler,
     PaymentsPublisher,

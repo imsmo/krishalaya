@@ -11,7 +11,10 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { PayoutBatchService } from '../../services/payout-batch.service';
 import { PayoutService } from '../../services/payout.service';
+import { PayoutApprovalService } from '../../services/payout-approval.service';
+import { PayoutConsoleReadModel } from '../../read-models/payout-console.read-model';
 import { CreatePayoutSchema, CreatePayoutDto } from '../../dto/create-payout.dto';
+import { PreparePayoutBatchSchema, PreparePayoutBatchDto, DecidePayoutBatchSchema, DecidePayoutBatchDto } from '../../dto/payout-approval.dto';
 import { canModeratePayment } from '../../policies/payments.policies';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -20,7 +23,12 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('online_payments')
 export class PayoutsController {
-  constructor(private readonly payouts: PayoutService, private readonly batches: PayoutBatchService) {}
+  constructor(
+    private readonly payouts: PayoutService,
+    private readonly batches: PayoutBatchService,
+    private readonly approvals: PayoutApprovalService,
+    private readonly console: PayoutConsoleReadModel,
+  ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModeratePayment(ctx) }; }
 
   @Post()
@@ -35,17 +43,52 @@ export class PayoutsController {
     return this.payouts.list(ctx.tenantId, ctx.userId, { cursor: decodeCursor(cursor), limit: lim }, ctx.lang).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
-  // --- PC-54 W54-6 payout-batch read-models (finance oversight; the RUN stays a job concern) ---
+  /* --- W145: THE ORGANISATION's outbound queue (PC-56 TENANT-4b). Distinct from GET / above, which is the
+     caller's OWN withdrawal history — that difference is the defect this wave fixed on the screen. --- */
+  @Get('console') @RequirePermissions('payout.approve')
+  consoleQueue(@CurrentContext() ctx: RequestContext, @Query('tab') tab?: string, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
+    const lim = Math.min(Math.max(Number(limit) || 50, 1), 100);
+    return this.console.queue(ctx.tenantId, { tab, cursor: decodeCursor(cursor), limit: lim }).then((data) => ({ data }));
+  }
+
+  // --- payout-batch reads. TENANT-SCOPED SINCE TENANT-4b: both used to take no tenant at all. ---
   @Get('batches') @RequirePermissions('payout.approve')
-  listBatches(@Query('status') status?: string, @Query('batchType') batchType?: string, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
+  listBatches(@CurrentContext() ctx: RequestContext, @Query('status') status?: string, @Query('batchType') batchType?: string, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
     const lim = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    return this.batches.list({ status: status as never, batchType, cursor, limit: lim }).then((data) => ({ data }));
+    return this.batches.list({ tenantId: ctx.tenantId, status: status as never, batchType, cursor, limit: lim }).then((data) => ({ data }));
   }
   @Get('batches/:id') @RequirePermissions('payout.approve')
-  async getBatch(@Param('id') id: string) {
-    const data = await this.batches.getById(id);
+  async getBatch(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    const data = await this.batches.getById(ctx.tenantId, id);
     if (!data) throw new BadRequestError('batch not found');
     return { data };
+  }
+
+  /** W146 whole: the batch, its contents, its pre-flight evidence and what stands between it and 18:00. */
+  @Get('batches/:id/review') @RequirePermissions('payout.approve')
+  review(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.console.batchReview(ctx.tenantId, ctx.userId, id).then((data) => ({ data }));
+  }
+
+  /** W146's maker step. Needs `payout.prepare` (0143) — preparing a run is not approving one. */
+  @Post('batches') @RequirePermissions('payout.prepare')
+  prepare(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(PreparePayoutBatchSchema) dto: PreparePayoutBatchDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.approvals.prepare(ctx.tenantId, ctx.userId, { batchType: dto.batchType, executeAt: new Date(dto.executeAt), maxPriority: dto.maxPriority ?? null })
+      .then((data) => ({ data }));
+  }
+
+  /** W146's checker step: "Approve — execute at 18:00" / "Reject with reason (maker notified)". */
+  @Post('batches/:id/decision') @RequirePermissions('payout.approve')
+  decide(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(DecidePayoutBatchSchema) dto: DecidePayoutBatchDto) {
+    return this.approvals.decide(ctx.tenantId, ctx.userId, id, { decision: dto.decision, note: dto.note }).then((data) => ({ data }));
+  }
+
+  /** W145's "Retry" on a failed row (W2443–W2445's chain). Requeues with the domain's backoff, and refuses
+   *  by name where the destination itself is the problem. */
+  @Post(':id/retry') @RequirePermissions('payout.approve')
+  retry(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.approvals.retryPayout(ctx.tenantId, ctx.userId, id).then((data) => ({ data }));
   }
 
   @Get(':id')

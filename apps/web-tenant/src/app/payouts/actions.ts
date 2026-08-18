@@ -1,54 +1,81 @@
 'use server';
-// apps/web-tenant/src/app/payouts/actions.ts · the tenant's money-OUT mutations. The only place the authed
-// tenantClient() writes for the payouts path. Two Server Actions:
-//   - requestPayoutAction: payouts.request({ amountMinor, bankAccountId }, Idempotency-Key) — a withdrawal from
-//     the wallet to a tokenised destination. The Idempotency-Key (Law 3) means a double-submit can't double-pay.
-//     Money is parsed float-free (Law 2). The API enforces balance + destination ownership server-side.
-//   - addBankAccountAction: bankAccounts.add({ vaultRef, … }, Idempotency-Key). vaultRef is the GATEWAY-tokenised
-//     fund-account id; raw account numbers / VPAs are tokenised at the gateway out-of-band and never touch us.
-// 'use server' modules export ONLY async functions — validation/types live in features/payouts/form.ts.
+// apps/web-tenant/src/app/payouts/actions.ts · W146's prepare/approve/reject and W145's retry
+// (PC-56 TENANT-4b). The personal withdrawal actions moved to /payouts/my/actions.ts unchanged.
+//
+// Every refusal is translated BY NAME: a payout run that fails with "something went wrong" gets pressed
+// again against the same 42 farmers. Preparing a batch carries an Idempotency-Key (Law 3) — a double-clicked
+// button must not produce two batches over one queue, and 0143's unique index is the second guard.
 import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { buildPayoutRequest, buildBankAccount } from '../../features/payouts/form';
+import { tenantClient } from '../../lib/api-client';
+import { isAllowedExecuteAt, isNoteLongEnough } from '../../features/payouts/org-console';
 import { SdkError } from '@krishalaya/sdk-js';
 
-function back(qs: string): never { redirect(`/payouts?${qs}`); }
+const codeOf = (e: unknown) => (e instanceof SdkError ? String((e as { code?: string }).code ?? '') : '');
 
-export async function requestPayoutAction(formData: FormData): Promise<void> {
+/** W146's maker step. The browser gives a LOCAL datetime; this converts it to an instant with an offset, so
+ *  the server never has to guess a timezone (Rule Zero: this platform ships to five countries by Y7). */
+export async function prepareBatchAction(form: FormData): Promise<void> {
   await requireSession('/payouts');
-  const built = buildPayoutRequest({ amountMajor: String(formData.get('amountMajor') ?? ''), bankAccountId: String(formData.get('bankAccountId') ?? '') });
-  if (!built.ok) back(`error=${built.error}`);
-  try {
-    await tenantClient().payouts.request(built.value, randomUUID());
-  } catch (e) {
-    const code = e instanceof SdkError ? (e.code || 'PAYOUT_FAILED') : 'PAYOUT_FAILED';
-    back(`error=${encodeURIComponent(code === 'PAYOUT_FAILED' ? 'payout' : code)}`);
+  const batchType = String(form.get('batchType') ?? '').trim();
+  const local = String(form.get('executeAt') ?? '').trim();
+
+  if (!batchType || !isAllowedExecuteAt(local, new Date())) {
+    redirect('/payouts?error=PAYOUT_BATCH_WINDOW_TOO_SOON');
   }
-  revalidatePath('/payouts');
-  back('ok=requested');
+  try {
+    const res = await tenantClient().payoutConsole.prepare(
+      { batchType, executeAt: new Date(local).toISOString() },
+      randomUUID(),
+    );
+    revalidatePath('/payouts');
+    redirect(`/payouts/batches/${res.batchId}?ok=prepared`);
+  } catch (e) {
+    const code = codeOf(e);
+    if (!code) throw e;
+    redirect(`/payouts?error=${encodeURIComponent(code)}`);
+  }
 }
 
-export async function addBankAccountAction(formData: FormData): Promise<void> {
+/** W146's checker step. The note floor is checked here as well as by the API and 0143's CHECK — three
+ *  layers, because a rejection with no reason is a decision nobody can audit. */
+export async function decideBatchAction(form: FormData): Promise<void> {
   await requireSession('/payouts');
-  const built = buildBankAccount({
-    accountKind: String(formData.get('accountKind') ?? ''),
-    vaultRef: String(formData.get('vaultRef') ?? ''),
-    upiId: String(formData.get('upiId') ?? ''),
-    accountLast4: String(formData.get('accountLast4') ?? ''),
-    ifsc: String(formData.get('ifsc') ?? ''),
-    holderName: String(formData.get('holderName') ?? ''),
-    isPrimary: String(formData.get('isPrimary') ?? ''),
-  });
-  if (!built.ok) back(`error=bank_${built.error}`);
-  try {
-    await tenantClient().bankAccounts.add(built.value, randomUUID());
-  } catch (e) {
-    const code = e instanceof SdkError ? (e.code || 'BANK_FAILED') : 'BANK_FAILED';
-    back(`error=${encodeURIComponent(code === 'BANK_FAILED' ? 'bank_failed' : code)}`);
+  const batchId = String(form.get('batchId') ?? '');
+  const decision = String(form.get('decision') ?? '') === 'rejected' ? 'rejected' : 'approved';
+  const note = String(form.get('note') ?? '');
+
+  if (decision === 'rejected' && !isNoteLongEnough(note)) {
+    redirect(`/payouts/batches/${batchId}?error=PAYOUT_BATCH_NOTE_TOO_SHORT`);
   }
-  revalidatePath('/payouts');
-  back('ok=bank_added');
+  try {
+    await tenantClient().payoutConsole.decide(batchId, { decision, note: note.trim() || undefined });
+    revalidatePath('/payouts');
+    revalidatePath(`/payouts/batches/${batchId}`);
+    redirect(`/payouts/batches/${batchId}?ok=${decision === 'approved' ? 'approved' : 'rejected'}`);
+  } catch (e) {
+    const code = codeOf(e);
+    if (!code) throw e;
+    redirect(`/payouts/batches/${batchId}?error=${encodeURIComponent(code)}`);
+  }
+}
+
+/** W145's Retry (W2443–W2445's confirm/success/failure chain). The BACKOFF is the server's; this only asks.
+ *  A refusal is named — "the destination account must be fixed" is actionable, "failed" is not. */
+export async function retryPayoutAction(form: FormData): Promise<void> {
+  await requireSession('/payouts');
+  const payoutId = String(form.get('payoutId') ?? '');
+  const tab = String(form.get('tab') ?? '');
+  const back = tab ? `/payouts?tab=${encodeURIComponent(tab)}` : '/payouts';
+  try {
+    await tenantClient().payoutConsole.retry(payoutId);
+    revalidatePath('/payouts');
+    redirect(`${back}${back.includes('?') ? '&' : '?'}ok=retryQueued`);
+  } catch (e) {
+    const code = codeOf(e);
+    if (!code) throw e;
+    redirect(`${back}${back.includes('?') ? '&' : '?'}error=${encodeURIComponent(code)}`);
+  }
 }
