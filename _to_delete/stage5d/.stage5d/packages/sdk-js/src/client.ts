@@ -1,0 +1,219 @@
+// @krishalaya/sdk-js · the client facade. Compose once per request context (SSR: a fresh client with the
+// request's token; browser: one client reading the in-memory token). Resource clients hang off it.
+import { SdkConfig, resolveConfig } from './config';
+import { HttpClient, HttpMethod, RequestOptions, Envelope } from './http';
+import { ListingsResource } from './resources/listings';
+import { CatalogueResource } from './resources/catalogue';
+import { LookupsResource } from './resources/lookups';
+import { TraceabilityResource } from './resources/traceability';
+import { AuthResource } from './resources/auth';
+import { MediaResource } from './resources/media';
+import { PaymentsResource, PayoutsResource, WalletResource, OrgWalletResource, PayoutConsoleResource, SettlementsResource, AutopayResource } from './resources/payments';
+import { KycResource, BankAccountsResource, AddressesResource } from './resources/identity';
+import { TenancyResource, ConsoleHomeResource } from './resources/tenancy';
+import { DairyResource } from './resources/dairy';
+import { GroupLotsResource } from './resources/group-lots';
+import { AuditResource } from './resources/audit';
+import { AiReviewResource } from './resources/ai-review';
+import { SearchResource } from './resources/search';
+import { TenantConfigResource } from './resources/tenant-config';
+import { IntegrationsResource } from './resources/integrations';
+import { WebhooksResource } from './resources/webhooks';
+import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
+import { NotificationsResource } from './resources/notifications';
+import { OrdersResource } from './resources/orders';
+import { ShipmentsResource, FleetResource, RoutesResource, FreightResource, LogisticsDeskResource } from './resources/logistics';
+import { ReviewsResource } from './resources/reviews';
+import { CartResource, CheckoutResource } from './resources/commerce';
+import { BuyerResource } from './resources/buyer';
+import { OffersResource } from './resources/offers';
+import { ConversationsResource, MaskedCallsResource } from './resources/messaging';
+import { AuctionsResource } from './resources/auctions';
+import { LabourResource } from './resources/labour';
+import { AmbassadorsResource } from './resources/ambassadors';
+import { CoursesResource, EnrollmentsResource, ResourcesResource, LiveStudioResource } from './resources/education';
+import { MembershipsResource } from './resources/memberships';
+import { PromotionsResource } from './resources/promotions';
+import { RequirementsResource } from './resources/requirements';
+import { WarehousingResource } from './resources/warehousing';
+import { LivestockResource } from './resources/livestock';
+import { ReturnsResource } from './resources/returns';
+import { FintechResource, InsuranceAuthoringResource } from './resources/fintech';
+import { PartnerApiResource } from './resources/partner-api';
+import { EquipmentResource } from './resources/equipment';
+import { MarketResource, WeatherResource } from './resources/market';
+import { AssistantResource } from './resources/assistant';
+import { SchemesResource } from './resources/schemes';
+import { SupportResource } from './resources/support';
+import { ParcelsResource } from './resources/parcels';
+import { PrivacyResource } from './resources/privacy';
+import { OnboardingResource } from './resources/onboarding';
+import { MembersResource } from './resources/members';
+import { BulkImportsResource } from './resources/bulk-imports';
+
+export class KrishalayaClient {
+  private readonly http: HttpClient;
+  readonly listings: ListingsResource;
+  readonly catalogue: CatalogueResource;
+  readonly lookups: LookupsResource;
+  readonly traceability: TraceabilityResource;
+  readonly auth: AuthResource;
+  readonly media: MediaResource;
+  readonly payments: PaymentsResource;
+  readonly payouts: PayoutsResource;
+  readonly wallet: WalletResource;
+  /** PC-56 TENANT-4a: the ORGANISATION's wallet (W143/W144) — the tenant's own book, not the caller's. */
+  readonly orgWallet: OrgWalletResource;
+  /** PC-56 TENANT-4b: the ORGANISATION's payout queue + batch approval (W145/W146). */
+  readonly payoutConsole: PayoutConsoleResource;
+  /** PC-56 TENANT-4c: settlement cycles + statements (W147/W148). */
+  readonly settlements: SettlementsResource;
+  readonly autopay: AutopayResource;
+  readonly kyc: KycResource;
+  readonly bankAccounts: BankAccountsResource;
+  readonly notifications: NotificationsResource;
+  readonly orders: OrdersResource;
+  readonly shipments: ShipmentsResource;
+  /** PC-56 TENANT-5b · W229's fleet register (vehicles + carriers). */
+  readonly fleet: FleetResource;
+  /** PC-56 TENANT-5b · W231's recurring runs. */
+  readonly routes: RoutesResource;
+  /** PC-56 TENANT-5c · W241/W242's freight desk — tables 0070 built and no code had ever touched. */
+  readonly freight: FreightResource;
+  /** PC-56 TENANT-5d · W225's overview + W244's insights (reads only; every figure is a verdict). */
+  readonly logisticsDesk: LogisticsDeskResource;
+  readonly reviews: ReviewsResource;
+  readonly addresses: AddressesResource;
+  readonly cart: CartResource;
+  readonly buyer: BuyerResource;
+  readonly checkout: CheckoutResource;
+  readonly offers: OffersResource;
+  readonly conversations: ConversationsResource;
+  readonly maskedCalls: MaskedCallsResource;
+  readonly auctions: AuctionsResource;
+  readonly labour: LabourResource;
+  readonly ambassadors: AmbassadorsResource;
+  readonly courses: CoursesResource;
+  readonly enrollments: EnrollmentsResource;
+  readonly liveStudio: LiveStudioResource;
+  readonly memberships: MembershipsResource;
+  readonly promotions: PromotionsResource;
+  readonly requirements: RequirementsResource;
+  readonly warehousing: WarehousingResource;
+  readonly livestock: LivestockResource;
+  readonly returns: ReturnsResource;
+  readonly fintech: FintechResource;
+  /** PC-55 A10 — the partner (bank/NBFC/insurer) machine-to-machine realm; API-key authenticated, read-only. */
+  readonly partnerApi: PartnerApiResource;
+  readonly insuranceAuthoring: InsuranceAuthoringResource;
+  readonly equipment: EquipmentResource;
+  readonly tenancy: TenancyResource;
+  readonly dairy: DairyResource;
+  readonly groupLots: GroupLotsResource;
+  readonly audit: AuditResource;
+  readonly aiReview: AiReviewResource;
+  readonly search: SearchResource;
+  readonly tenantConfig: TenantConfigResource;
+  readonly integrations: IntegrationsResource;
+  readonly webhooks: WebhooksResource;
+  readonly rbac: RbacResource;
+  readonly disputes: DisputesResource;
+  /** PC-56 TENANT-3b: the refund maker-checker plane (propose → decide → applied by the refund itself). */
+  readonly refundApprovals: RefundApprovalsResource;
+  readonly users: UsersResource;
+  /** PC-56 TENANT-1b · the PEOPLE roster (W153) + member detail (W154). Not `memberships`, which is the paid-tier manager. */
+  readonly members: MembersResource;
+  /** PC-56 TENANT-1b-4 · bulk imports with W156's validate-first triage. */
+  readonly bulkImports: BulkImportsResource;
+  /** PC-56 TENANT-1c · W117's dashboard + W116's go-live checklist. */
+  readonly consoleHome: ConsoleHomeResource;
+  readonly market: MarketResource;
+  readonly weather: WeatherResource;
+  readonly resources: ResourcesResource;
+  readonly assistant: AssistantResource;
+  readonly schemes: SchemesResource;
+  readonly support: SupportResource;
+  readonly parcels: ParcelsResource;
+  readonly privacy: PrivacyResource;
+  readonly onboarding: OnboardingResource;
+
+  constructor(config: SdkConfig) {
+    this.http = new HttpClient(resolveConfig(config));
+    this.listings = new ListingsResource(this.http);
+    this.catalogue = new CatalogueResource(this.http);
+    this.lookups = new LookupsResource(this.http);
+    this.traceability = new TraceabilityResource(this.http);
+    this.auth = new AuthResource(this.http);
+    this.media = new MediaResource(this.http);
+    this.payments = new PaymentsResource(this.http);
+    this.payouts = new PayoutsResource(this.http);
+    this.wallet = new WalletResource(this.http);
+    this.orgWallet = new OrgWalletResource(this.http);
+    this.payoutConsole = new PayoutConsoleResource(this.http);
+    this.settlements = new SettlementsResource(this.http);
+    this.autopay = new AutopayResource(this.http);
+    this.kyc = new KycResource(this.http);
+    this.bankAccounts = new BankAccountsResource(this.http);
+    this.notifications = new NotificationsResource(this.http);
+    this.orders = new OrdersResource(this.http);
+    this.shipments = new ShipmentsResource(this.http);
+    this.fleet = new FleetResource(this.http);
+    this.routes = new RoutesResource(this.http);
+    this.freight = new FreightResource(this.http);
+    this.logisticsDesk = new LogisticsDeskResource(this.http);
+    this.reviews = new ReviewsResource(this.http);
+    this.addresses = new AddressesResource(this.http);
+    this.cart = new CartResource(this.http);
+    this.buyer = new BuyerResource(this.http);
+    this.checkout = new CheckoutResource(this.http);
+    this.offers = new OffersResource(this.http);
+    this.conversations = new ConversationsResource(this.http);
+    this.maskedCalls = new MaskedCallsResource(this.http);
+    this.auctions = new AuctionsResource(this.http);
+    this.labour = new LabourResource(this.http);
+    this.ambassadors = new AmbassadorsResource(this.http);
+    this.courses = new CoursesResource(this.http);
+    this.enrollments = new EnrollmentsResource(this.http);
+    this.liveStudio = new LiveStudioResource(this.http);
+    this.memberships = new MembershipsResource(this.http);
+    this.promotions = new PromotionsResource(this.http);
+    this.requirements = new RequirementsResource(this.http);
+    this.warehousing = new WarehousingResource(this.http);
+    this.livestock = new LivestockResource(this.http);
+    this.returns = new ReturnsResource(this.http);
+    this.fintech = new FintechResource(this.http);
+    this.partnerApi = new PartnerApiResource(this.http);
+    this.insuranceAuthoring = new InsuranceAuthoringResource(this.http);
+    this.equipment = new EquipmentResource(this.http);
+    this.tenancy = new TenancyResource(this.http);
+    this.dairy = new DairyResource(this.http);
+    this.groupLots = new GroupLotsResource(this.http);
+    this.audit = new AuditResource(this.http);
+    this.aiReview = new AiReviewResource(this.http);
+    this.search = new SearchResource(this.http);
+    this.tenantConfig = new TenantConfigResource(this.http);
+    this.integrations = new IntegrationsResource(this.http);
+    this.webhooks = new WebhooksResource(this.http);
+    this.rbac = new RbacResource(this.http);
+    this.disputes = new DisputesResource(this.http);
+    this.refundApprovals = new RefundApprovalsResource(this.http);
+    this.users = new UsersResource(this.http);
+    this.members = new MembersResource(this.http);
+    this.bulkImports = new BulkImportsResource(this.http);
+    this.consoleHome = new ConsoleHomeResource(this.http);
+    this.market = new MarketResource(this.http);
+    this.weather = new WeatherResource(this.http);
+    this.resources = new ResourcesResource(this.http);
+    this.assistant = new AssistantResource(this.http);
+    this.schemes = new SchemesResource(this.http);
+    this.support = new SupportResource(this.http);
+    this.parcels = new ParcelsResource(this.http);
+    this.privacy = new PrivacyResource(this.http);
+    this.onboarding = new OnboardingResource(this.http);
+  }
+  /** Escape hatch for endpoints without a dedicated resource method yet. Same envelope + resilience. */
+  request<T>(method: HttpMethod, path: string, opts?: RequestOptions): Promise<Envelope<T>> {
+    return this.http.request<T>(method, path, opts);
+  }
+}
+export function createClient(config: SdkConfig): KrishalayaClient { return new KrishalayaClient(config); }
