@@ -17,8 +17,9 @@ import { AppConfig } from '../../../core/config/app-config';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Shipment } from '../domain/shipment.entity';
 import { DomainEvent, ShipmentEventType } from '../domain/logistics.events';
-import { ShipmentNotFoundError, ShipmentForbiddenError, ShipmentExistsError } from '../domain/logistics.errors';
+import { ShipmentNotFoundError, ShipmentForbiddenError, ShipmentExistsError, InvalidShipmentError } from '../domain/logistics.errors';
 import { ShipmentRepository } from '../repositories/shipment.repository';
+import { LogisticsDeskRepository } from '../repositories/logistics-desk.repository';
 import { CreateShipmentDto } from '../dto/create-shipment.dto';
 import { AssignShipmentDto, SchedulePickupDto, DeliverShipmentDto, FailShipmentDto } from '../dto/update-shipment.dto';
 import { OrderService } from '../../orders/services/order.service';
@@ -53,6 +54,9 @@ export class ShipmentService {
      *  blueprint forbids reaching into ANOTHER module's repositories — the money gate goes through
      *  `OrderService` for exactly that reason). */
     private readonly vehicleRepo: VehicleRepository,
+    /** PC-56 TENANT-5d · the failure-reason vocabulary, read on the WRITE path so an operator's coded reason cannot
+     *  be a word nobody defined. Same module, same reasoning as `vehicleRepo` above. */
+    private readonly desk: LogisticsDeskRepository,
   ) {}
 
   private hashOtp(code: string): string { return createHmac('sha256', this.config.auth.hashPepper).update(code).digest('hex'); }
@@ -158,7 +162,16 @@ export class ShipmentService {
    * deciding a driver's afternoon. The console shows the outcome and the operator books the slot.
    */
   async markFailed(t: string, a: ShipmentActor, id: string, dto: FailShipmentDto, ip: string | null) {
-    const out = await this.mutate(t, a, id, 'failed', { audit: true }, (s) => s.markFailed(dto.reason), ip);
+    // PC-56 TENANT-5d · the coded class, validated against the tenant-extendable `shipment_failure_reason`
+    // vocabulary (Law 6) rather than a hardcoded enum. An unknown code is REFUSED rather than stored: a typo that
+    // reaches this column becomes a permanent slice of W244's chart and a policy decision resting on a word nobody
+    // defined. A code-less failure is still accepted — the attempt must be recorded even by a rider app that has not
+    // been updated — and the desk reports those as `unclassified` instead of guessing a bucket.
+    if (dto.reasonCode && !(await this.desk.isFailureReason(t, dto.reasonCode))) {
+      this.metrics.inc('logistics.failure_reason_unknown', { code: dto.reasonCode });
+      throw new InvalidShipmentError(`unknown failure reason code: ${dto.reasonCode}`);
+    }
+    const out = await this.mutate(t, a, id, 'failed', { audit: true }, (s) => s.markFailed(dto.reason, dto.reasonCode ?? null), ip);
     // `deliveryAttempts` on the response is the count AFTER this failure, and `failureOutcome` takes the
     // count BEFORE it — hence the −1. Written out rather than inlined because an off-by-one here is the
     // difference between a farmer's goods going back and a second free run.

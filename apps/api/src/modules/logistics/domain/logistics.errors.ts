@@ -90,6 +90,24 @@ export class VehicleUnfitError extends AppError {
   }
 }
 
+/**
+ * PC-56 TENANT-5d, found by a LIVE run: the update matched no row.
+ *
+ * `ShipmentRepository.update` must include `created_at` in its predicate (it is the partition key), and PostgreSQL
+ * keeps microseconds where JS keeps milliseconds — so a shipment row created by SQL `now()` rather than by the app
+ * cannot be matched, and before this error the method returned void and the event row was written anyway. A shipment
+ * whose events say "failed" while the row says "out for delivery" is worse than a refused transition, so this fails
+ * closed and the whole transaction rolls back. The lock predicate itself is a founder decision (TENANT-5a raised the
+ * same one for `orders`), and this error is what makes its absence visible instead of silent.
+ */
+export class ShipmentUpdateLostError extends AppError {
+  constructor(id: string) {
+    super('SHIPMENT_UPDATE_LOST',
+      'The shipment could not be updated: no row matched. This shipment row was very likely created outside the application (its created_at cannot be matched to the millisecond).',
+      409, { id });
+  }
+}
+
 /* ---- freight money (PC-56 TENANT-5c) — the plane 0070 built tables for and nothing ever coded ---- */
 
 /**

@@ -339,10 +339,13 @@ describe('TENANT-5b · W225\'s sub-nav, all seven entries', () => {
     // The canon's seven, in the canon's order — plus the ONE entry PC-56 TENANT-5c added: W241 (Freight invoices)
     // has no inbound link anywhere in the 1,955 screens (only its own chain's breadcrumbs), so the wave that built
     // the desk also gave it a way in. Every canon entry is still here, in place; nothing was hidden.
-    expect(LOGISTICS_NAV.filter((i) => i.key !== 'freight').map((i) => i.key))
+    // TENANT-5d closed `overview` (W225) and added `insights` (W244, which the canon links from nowhere), so the
+    // canon's seven are still all here in order and two of this wave's four unbuilt entries have since been built.
+    expect(LOGISTICS_NAV.filter((i) => !['freight', 'insights'].includes(i.key)).map((i) => i.key))
       .toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'zones', 'coldChain']);
-    expect(LOGISTICS_NAV.filter((i) => i.built).map((i) => i.key)).toEqual(['shipments', 'vehicles', 'routes', 'freight']);
-    expect(unbuiltCount()).toBe(4);
+    expect(LOGISTICS_NAV.filter((i) => i.built).map((i) => i.key))
+      .toEqual(['overview', 'shipments', 'vehicles', 'routes', 'freight', 'insights']);
+    expect(unbuiltCount()).toBe(3);
     // Shipped as unbuilt rather than hidden: an FPO who was shown the canon cannot otherwise tell "not built" from
     // "hidden from me by a permission".
     for (const i of LOGISTICS_NAV) expect(i.built === (i.href !== null)).toBe(true);

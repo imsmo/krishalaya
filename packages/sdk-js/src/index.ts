@@ -125,4 +125,8 @@ export type {
   FreightSourceKind, FreightReconStatus, FreightLineVerdict, FreightDisputeReason, FreightExpected,
   FreightPayment, FreightInvoiceRow, FreightCycleCount, FreightDeskPage, FreightLine, FreightInvoiceDetail,
   FreightReconDetail,
+  // PC-56 TENANT-5d · the logistics desk
+  LogisticsOverview, LogisticsInsights, LogisticsAttention, LogisticsMechanism, LogisticsRate, LogisticsTransit,
+  LogisticsOnTime, LogisticsTransitLoss, LogisticsCostPerUnit, LogisticsFailureBreakdown, LogisticsHistory,
+  LogisticsLane,
 } from './types';

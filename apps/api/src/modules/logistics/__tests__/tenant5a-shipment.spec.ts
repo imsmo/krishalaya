@@ -452,8 +452,13 @@ describe('TENANT-5a · the gate, run rather than read', () => {
     // assign a vehicle, so the fake answers "no such vehicle" — and the gate is flag-gated OFF here anyway,
     // which is what makes this wave's own tests still describe 5a's behaviour rather than 5b's.
     const vehicleRepo = { fitnessOf: jest.fn(async () => null) };
+    // PC-56 TENANT-5d added the failure-reason vocabulary read on the WRITE path. These tests fail shipments with a
+    // free-text reason and no code (the pre-5d call shape), so the fake answers "no such code" — which is never
+    // consulted unless a code is supplied, and that is exactly what the 5d suite proves.
+    const deskRepo = { isFailureReason: jest.fn(async () => false) };
     const svc = new ShipmentService(uow as never, orders as never, flags as never, outbox as never, idem as never,
-      metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never, vehicleRepo as never);
+      metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never, vehicleRepo as never,
+      deskRepo as never);
     return { svc, s, repo, outbox, audit, metrics, orders, flags };
   }
   const boss = { userId: 'ops-1', canManage: true };

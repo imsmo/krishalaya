@@ -22,7 +22,7 @@ import { WebhooksResource } from './resources/webhooks';
 import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { OrdersResource } from './resources/orders';
-import { ShipmentsResource, FleetResource, RoutesResource, FreightResource } from './resources/logistics';
+import { ShipmentsResource, FleetResource, RoutesResource, FreightResource, LogisticsDeskResource } from './resources/logistics';
 import { ReviewsResource } from './resources/reviews';
 import { CartResource, CheckoutResource } from './resources/commerce';
 import { BuyerResource } from './resources/buyer';
@@ -80,6 +80,8 @@ export class KrishalayaClient {
   readonly routes: RoutesResource;
   /** PC-56 TENANT-5c · W241/W242's freight desk — tables 0070 built and no code had ever touched. */
   readonly freight: FreightResource;
+  /** PC-56 TENANT-5d · W225's overview + W244's insights (reads only; every figure is a verdict). */
+  readonly logisticsDesk: LogisticsDeskResource;
   readonly reviews: ReviewsResource;
   readonly addresses: AddressesResource;
   readonly cart: CartResource;
@@ -158,6 +160,7 @@ export class KrishalayaClient {
     this.fleet = new FleetResource(this.http);
     this.routes = new RoutesResource(this.http);
     this.freight = new FreightResource(this.http);
+    this.logisticsDesk = new LogisticsDeskResource(this.http);
     this.reviews = new ReviewsResource(this.http);
     this.addresses = new AddressesResource(this.http);
     this.cart = new CartResource(this.http);

@@ -1041,3 +1041,92 @@ export interface FreightReconDetail {
   duplicates: Array<{ awbNo: string; otherInvoiceId: string; otherInvoiceNo: string; billedMinor: string; periodStart: string }>;
   lines: Array<FreightLine & { verdict: FreightLineVerdict }>;
 }
+
+/* ---- PC-56 TENANT-5d · the logistics desk (W225 overview, W244 insights) ---------------------------------- */
+
+/** W225's "On-time delivery (30d)". Refused: nothing on this platform promises a delivery time, so the ratio has no
+ *  denominator. The missing inputs travel with the refusal. */
+export type LogisticsOnTime = { kind: 'not_promised'; missing: string[] };
+
+/** A rate the platform CAN measure, in integer basis points — or the honest "nothing was delivered in this window",
+ *  which is not the same as 0%. */
+export type LogisticsRate = { kind: 'measured'; bps: number; of: number } | { kind: 'no_deliveries' };
+
+export type LogisticsTransit =
+  | { kind: 'measured'; medianHours: number; of: number; missingPickupStamp: number }
+  | { kind: 'not_measurable'; missingPickupStamp: number };
+
+/** W225's "Transit loss (90d) ₹84,200" and "Transit is 45% of our wastage". Nothing measures loss or wastage on this
+ *  platform; the nearest signal is a buyer dispute reasoned "damaged in transit", which is a claims figure in another
+ *  module's plane. */
+export type LogisticsTransitLoss = { kind: 'not_recorded'; missing: string[]; nearest: 'buyer_disputes_damaged' };
+
+/** W244's "Cost per qtl-km ₹2.14". Three missing inputs: no distance (dead column since 0007), no consignment
+ *  weight, and nothing writes the shipment charge. */
+export type LogisticsCostPerUnit = { kind: 'not_computable'; missing: string[] };
+
+/** W225's philosophy ticks, resolved against what is actually switched on for this tenant. */
+export type LogisticsMechanism = {
+  key: 'otp_both_ends' | 'weighbridge' | 'village_run';
+  state: 'on' | 'off' | 'partial' | 'absent';
+  detail?: string;
+};
+
+/** W225's "Needs you today". A cold-chain row with a breach outranks every clock. */
+export type LogisticsAttention =
+  | { kind: 'pickup_no_driver'; shipmentId: string; orderId: string; at: string; hasVehicle: boolean }
+  | { kind: 'pickup_due'; shipmentId: string; orderId: string; at: string }
+  | { kind: 'cold_chain_live'; shipmentId: string; orderId: string; lastTempC: string | null; lastAt: string | null; breaches: number }
+  | { kind: 'village_run'; routeId: string; routeName: string; dayKey: string | null; daysAway: number | null; consolidation: 'not_tracked' };
+
+export interface LogisticsOverview {
+  activeShipments: number;
+  pickupsToday: number;
+  byStatus: Record<string, number>;
+  attention: LogisticsAttention[];
+  onTime: LogisticsOnTime;
+  firstAttempt: LogisticsRate;
+  transit: LogisticsTransit;
+  transitLoss: LogisticsTransitLoss;
+  coldChain: { breaches7d: number; liveReeferShipments: number };
+  mechanisms: LogisticsMechanism[];
+  nextRun: { routeId: string; routeName: string; runWeekday: number | null; daysAway: number | null; villages: number } | null;
+  windowDays: number;
+}
+
+/** W244's chart. `unclassified` is every attempt recorded before the reason had a column at all (0154) — reported
+ *  beside the slices and never folded into them. */
+export interface LogisticsFailureBreakdown {
+  total: number;
+  slices: Array<{ code: string; events: number; shareBps: number }>;
+  unclassified: number;
+  mostlyUnclassified: boolean;
+}
+
+export type LogisticsHistory =
+  | { kind: 'no_data' }
+  | { kind: 'not_enough_history'; days: number; needDays: number }
+  | { kind: 'ready'; days: number };
+
+export interface LogisticsLane {
+  fromRegionId: string; toRegionId: string; fromName: string | null; toName: string | null;
+  shipments: number; shareBps: number; candidate: boolean;
+}
+
+export interface LogisticsInsights {
+  window: number;
+  windowFrom: string;
+  windowTo: string;
+  history: LogisticsHistory;
+  firstAttempt: LogisticsRate;
+  transit: LogisticsTransit;
+  failures: LogisticsFailureBreakdown;
+  reasonNames: Array<{ code: string; name: string }>;
+  callAhead: boolean;
+  /** Share is of SHIPMENTS, not of qtl-km: there is no distance and no weight on this platform, and a share of the
+   *  wrong denominator printed with the right unit is how a truck gets committed to a daily run. */
+  lanes: { lanes: LogisticsLane[]; totalShipments: number; basis: 'shipments' };
+  costPerQtlKm: LogisticsCostPerUnit;
+  transitLoss: LogisticsTransitLoss;
+  freightRecovered: Array<{ currencyCode: string; recoveredMinor: string }>;
+}

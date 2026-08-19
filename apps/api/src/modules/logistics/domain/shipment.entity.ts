@@ -131,9 +131,16 @@ export class Shipment {
    * `failureOutcome()` in domain/shipment-readiness.ts and the booking is the caller's; this records the
    * fact, and the event carries the attempt number so a consumer does not have to re-read the row.
    */
-  markFailed(reason: string): void {
+  /**
+   * A delivery attempt failed. The attempt is COUNTED (5a) and, since PC-56 TENANT-5d, the REASON is carried into
+   * the event row rather than only into an outbox payload — see `pendingEventAnnotation`.
+   */
+  markFailed(reason: string, reasonCode: string | null = null): void {
     this.props.deliveryAttempts += 1;
-    this.to('failed', ShipmentEventType.Failed, { reason, attemptNo: this.props.deliveryAttempts });
+    this.to('failed', ShipmentEventType.Failed, { reason, reasonCode, attemptNo: this.props.deliveryAttempts });
+    // Set AFTER `to()`, which clears any previous annotation: one hop, one annotation, and a second transition in the
+    // same unit of work cannot inherit the first one's words.
+    this.hop = { note: reason.trim().slice(0, 2000) || null, reasonCode };
   }
   markReturned(): void { this.to('returned', ShipmentEventType.Returned, {}); }
   cancel(): void { this.to('cancelled', ShipmentEventType.Cancelled, {}); }
@@ -153,9 +160,22 @@ export class Shipment {
     const a = Buffer.from(stored); const b = Buffer.from(submitted);
     return a.length === b.length && timingSafeEqual(a, b);
   }
+  /**
+   * What the NEXT `shipment_events` row for this aggregate should carry beyond its status.
+   *
+   * **`ShipmentRepository.update` hardcoded `note = NULL` on every status hop since 0007** — the only writer of a
+   * state change threw away everything the caller said about it, which is why the reason a delivery failed existed
+   * in no column of this database and W244's chart had nothing to group. The annotation travels with the hop rather
+   * than being passed alongside it, so a future transition that wants to say something cannot forget to.
+   */
+  pendingEventAnnotation(): { note: string | null; reasonCode: string | null } { return { ...this.hop }; }
+
+  private hop: { note: string | null; reasonCode: string | null } = { note: null, reasonCode: null };
+
   private to(status: ShipmentStatus, evt: string, payload: Record<string, unknown>): void {
     assertTransition(this.props.status, status);
     this.props.status = status;
+    this.hop = { note: null, reasonCode: null };
     this.events.push({ type: evt, payload: { shipmentId: this.props.id, orderId: this.props.orderId, ...payload } });
   }
 }

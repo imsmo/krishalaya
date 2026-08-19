@@ -7,6 +7,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { ShipmentUpdateLostError } from '../domain/logistics.errors';
 import { Shipment } from '../domain/shipment.entity';
 import { ShipmentStatus } from '../domain/shipment.state';
 
@@ -63,10 +64,26 @@ export class ShipmentRepository {
     return (r.rowCount ?? 0) > 0;
   }
 
-  /** No version column → unconditional update within the FOR UPDATE-locked tx; appends a tracking event. */
+  /**
+   * Persist a mutated shipment inside its FOR UPDATE-locked transaction, and append the tracking event for the hop.
+   *
+   * **(PC-56 TENANT-5d, FOUND LIVE) THIS STATEMENT COULD MATCH ZERO ROWS AND SAY NOTHING.** The predicate carries
+   * `created_at=$3` — it is the partition key, so it must be there — and PostgreSQL keeps MICROSECONDS while JS reads
+   * milliseconds. A shipment row created by SQL `now()` (a fixture, a backfill, an importer, a data fix) therefore has
+   * a `created_at` the app can never match, the UPDATE affects nothing, and this method returned `void`: nobody could
+   * tell. Worse, the event row below was written REGARDLESS, so `shipment_events` recorded a failed delivery attempt
+   * while `shipments` still said `out_for_delivery` with zero attempts — the database contradicting its own history.
+   *
+   * TENANT-5a named exactly this shape one plane over (`OrderRepository.update` matching zero rows on microsecond
+   * `created_at`, with `ShipmentDeliveredHandler` ignoring the false it returned) and escalated the lock predicate as
+   * a founder decision, because widening it touches every write. This wave does not widen it either — but it refuses
+   * to let the silent half stand: a zero-row update now THROWS, which rolls the transaction back, writes no event, and
+   * emits no outbox row. Fail closed (Law 12): a write that moves twelve quintals of produce may fail loudly, and may
+   * not vanish.
+   */
   async update(tx: TxContext, s: Shipment, fromStatus: ShipmentStatus): Promise<void> {
     const p = s.toProps();
-    await tx.query(
+    const res = await tx.query(
       // **`pickup_otp_hash` WAS NOT IN THIS UPDATE (PC-56 TENANT-5a).** The column has existed since 0007 and
       // this statement wrote every other mutable field, so even if something HAD issued a pickup code the
       // very next update would have silently dropped it — a second reason the two-way possession proof could
@@ -79,13 +96,20 @@ export class ShipmentRepository {
       [p.id, p.tenantId, p.createdAt, p.partnerId, p.vehicleId, p.riderUserId, p.status, p.awbNo,
        p.scheduledPickupAt, p.scheduledWindowMins, p.pickedUpAt, p.deliveredAt, p.deliveryOtpHash, p.podMediaId,
        p.pickupOtpHash, p.deliveryAttempts]);
-    if (fromStatus !== p.status) await this.recordEvent(tx, p.tenantId, p.id, p.status, null);
+    // `rowCount` is null for statements the driver cannot count; only a definite ZERO is treated as a lost update.
+    if (res.rowCount === 0) throw new ShipmentUpdateLostError(p.id);
+    if (fromStatus !== p.status) {
+      // PC-56 TENANT-5d: the hop's own annotation, instead of the NULL this line passed since 0007. That NULL is why
+      // the reason a delivery failed was recorded nowhere in this database.
+      const ann = s.pendingEventAnnotation();
+      await this.recordEvent(tx, p.tenantId, p.id, p.status, ann.note, ann.reasonCode);
+    }
   }
 
-  async recordEvent(tx: TxContext, tenantId: string, shipmentId: string, status: ShipmentStatus, note: string | null): Promise<void> {
+  async recordEvent(tx: TxContext, tenantId: string, shipmentId: string, status: ShipmentStatus, note: string | null, reasonCode: string | null = null): Promise<void> {
     await tx.query(
-      `INSERT INTO shipment_events (id, shipment_id, tenant_id, status, note) VALUES (uuid_generate_v7(),$1,$2,$3,$4)`,
-      [shipmentId, tenantId, status, note]);
+      `INSERT INTO shipment_events (id, shipment_id, tenant_id, status, note, reason_code) VALUES (uuid_generate_v7(),$1,$2,$3,$4,$5)`,
+      [shipmentId, tenantId, status, note, reasonCode]);
   }
 
   /** Append a rider LOCATION ping (lat/lng) at the shipment's CURRENT status — a tracking point, not a

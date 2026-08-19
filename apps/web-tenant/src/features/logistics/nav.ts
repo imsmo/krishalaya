@@ -13,7 +13,16 @@
 
 export interface LogisticsNavItem { key: string; href: string | null; built: boolean }
 
-// PC-56 TENANT-5c ADDS AN EIGHTH ENTRY THE CANON'S SUB-NAV DOES NOT HAVE, and the reason is a finding:
+// PC-56 TENANT-5d closes the FIRST entry (Overview = W225, which 5b shipped as unbuilt because there was no read
+// model behind it) and adds a NINTH the canon's sub-nav does not have, for the same reason as the eighth:
+//
+// **W244 (Logistics insights) IS REFERENCED BY ZERO FILES IN THE CANON.** Not by an operational screen, not by a
+// breadcrumb, not even by its own chain states — `grep -rl W244-tenant-logistics-insights` over all 1,955 screens
+// returns nothing, while W225 is referenced by 589. So the screen the canon describes as "the numbers that decide
+// next quarter's routes and rates" cannot be reached from anywhere in the design at all. Same defect as W241's in
+// 5c, one degree worse.
+//
+// PC-56 TENANT-5c ADDED AN EIGHTH ENTRY THE CANON'S SUB-NAV DOES NOT HAVE, and the reason is a finding:
 //
 // **W241 (Freight invoices) HAS NO INBOUND LINK ANYWHERE IN THE CANON.** Its own chain screens (W2612–W2618) carry
 // it in their breadcrumb, and that is all: no operational screen links to it. For contrast, W229 (Vehicles) is
@@ -25,12 +34,13 @@ export interface LogisticsNavItem { key: string; href: string | null; built: boo
 // a sibling of the other logistics desks rather than left unreachable. This is the ONE place the console's nav
 // departs from the canon's seven entries, and it departs by adding a way in, never by hiding one.
 export const LOGISTICS_NAV: readonly LogisticsNavItem[] = [
-  { key: 'overview',  href: null,                  built: false },
+  { key: 'overview',  href: '/logistics/overview', built: true },
   { key: 'shipments', href: '/logistics',          built: true },
   { key: 'carriers',  href: null,                  built: false },
   { key: 'vehicles',  href: '/logistics/vehicles', built: true },
   { key: 'routes',    href: '/logistics/routes',   built: true },
   { key: 'freight',   href: '/logistics/freight',  built: true },
+  { key: 'insights',  href: '/logistics/insights', built: true },
   { key: 'zones',     href: null,                  built: false },
   { key: 'coldChain', href: null,                  built: false },
 ];

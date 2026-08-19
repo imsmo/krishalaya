@@ -46,6 +46,10 @@ import { FreightController } from './controllers/v1/freight.controller';
 import { FreightInvoiceService } from './services/freight-invoice.service';
 import { FreightInvoiceRepository } from './repositories/freight-invoice.repository';
 import { FreightDeskReadModel } from './read-models/freight-desk.read-model';
+// PC-56 TENANT-5d · W225's overview and W244's insights.
+import { LogisticsDeskController } from './controllers/v1/logistics-desk.controller';
+import { LogisticsDeskReadModel } from './read-models/logistics-desk.read-model';
+import { LogisticsDeskRepository } from './repositories/logistics-desk.repository';
 import { RouteBoardReadModel } from './read-models/route-board.read-model';
 import { RcExpiryParkingJob } from './jobs/rc-expiry-parking.job';
 import { RcExpiryParkingCadenceJob } from './jobs/rc-expiry-parking.cadence-job';
@@ -59,7 +63,7 @@ import { METRICS, Metrics } from '../../core/observability/metrics';
   // so a shipment cannot be assigned, scheduled or picked up for an order nobody has paid for. The module
   // blueprint's rule holds: another module's PUBLIC SERVICE, never its repositories.
   imports: [OrdersModule],
-  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController, FreightController],
+  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController, FreightController, LogisticsDeskController],
   providers: [
     ShipmentService, ShipmentRepository, OrderConfirmedHandler,
     LogisticsPartnerService, VehicleService, PickupSlotService,
@@ -68,6 +72,7 @@ import { METRICS, Metrics } from '../../core/observability/metrics';
     DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository, OpsAlertService, OpsAlertRepository, RiderPayoutService, RiderPayoutRepository,
     FleetRegisterReadModel, RouteBoardReadModel,
     FreightInvoiceService, FreightInvoiceRepository, FreightDeskReadModel,
+    LogisticsDeskRepository, LogisticsDeskReadModel,
     { provide: RcExpiryParkingJob,
       useFactory: (vehicles: VehicleRepository, flags: FlagsService, metrics: Metrics) => new RcExpiryParkingJob(vehicles, flags, metrics),
       inject: [VehicleRepository, FlagsService, METRICS] },

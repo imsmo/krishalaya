@@ -119,3 +119,31 @@ ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
 INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
  ('doc_type',NULL,'rc','Vehicle registration certificate','{"subject":"vehicle"}',5)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+
+-- logistics · WHY A DELIVERY FAILED (PC-56 TENANT-5d). W244 draws five bars over 90 days of failed attempts —
+-- gate closed · reschedule · address · vehicle · weather — and starts a call-ahead policy pilot on what they say.
+-- The reason a delivery failed was written to NO COLUMN of this database (the API took it, the domain put it in an
+-- outbox payload, and the only writer of a status hop recorded `note = NULL`), so there was nothing to group and
+-- no vocabulary to group it by. 0154 adds `shipment_events.reason_code`; this is the vocabulary it resolves against.
+--
+-- TENANT-EXTENDABLE on purpose (`is_tenant_extendable = true` above): the five classes the canon draws are the ones
+-- a Gujarat FPO's riders hit, and a tenant in the hills will need "road closed" and one on an island will need
+-- "ferry missed". A platform-wide enum would make every such tenant file their real reason under `other` and lose
+-- the very signal this chart exists to produce.
+--
+-- `other` is seeded deliberately, and it is NOT the same thing as an unrecorded reason: `other` means an operator
+-- looked at the list and none of it fit (with their own words in `note`), while a NULL `reason_code` means nobody
+-- was ever asked. The desk reports those two separately — as `other` and as `unclassified` — because collapsing
+-- them would hide how much of a tenant's history predates the column.
+INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
+ ('shipment_failure_reason','Failed-delivery reason',true)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+ ('shipment_failure_reason',NULL,'gate_closed','Gate closed / nobody at the drop point','{"actionable":"call_ahead"}',1),
+ ('shipment_failure_reason',NULL,'reschedule_requested','Buyer asked to reschedule','{"actionable":"slot_booking"}',2),
+ ('shipment_failure_reason',NULL,'address_problem','Address wrong, incomplete or unreachable','{"actionable":"address_fix"}',3),
+ ('shipment_failure_reason',NULL,'vehicle_problem','Vehicle breakdown or no vehicle available','{"actionable":"fleet"}',4),
+ ('shipment_failure_reason',NULL,'weather','Weather or road conditions','{"actionable":"none"}',5),
+ ('shipment_failure_reason',NULL,'other','Something else (see the note)','{"actionable":"read_note"}',6)
+ON CONFLICT (type_code,tenant_id,code) DO NOTHING;

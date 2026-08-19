@@ -10,6 +10,7 @@ import {
   LogisticsPartnerRow, RouteBoardPage, RouteBoardRow, RouteCorridor, RouteCounts,
   FreightCycleCount, FreightDeskPage, FreightInvoiceDetail, FreightInvoiceRow, FreightReconDetail,
   FreightReconStatus, FreightSourceKind,
+  LogisticsInsights, LogisticsOverview,
 } from '../types';
 
 export interface RiderPayoutStatement {
@@ -329,5 +330,28 @@ export class FreightResource {
   async close(id: string, idempotencyKey: string): Promise<FreightInvoiceDetail> {
     const r = await this.http.request<FreightInvoiceDetail>('POST', `logistics/freight-invoices/${encodeURIComponent(id)}/close`, { body: {}, idempotencyKey });
     return r.data as FreightInvoiceDetail;
+  }
+}
+
+/**
+ * PC-56 TENANT-5d · W225's overview and W244's insights.
+ *
+ * Both are pure reads and both return VERDICTS rather than bare numbers: the figures this platform can measure carry
+ * their basis and their coverage, and the ones it cannot carry the inputs they are missing by name.
+ */
+export class LogisticsDeskResource {
+  constructor(private readonly http: HttpClient) {}
+
+  /** W225: what is moving, what needs a person today, and which of the canon's three promises are switched on. */
+  async overview(signal?: AbortSignal): Promise<LogisticsOverview> {
+    const r = await this.http.request<LogisticsOverview>('GET', 'logistics/desk/overview', { signal });
+    return r.data as LogisticsOverview;
+  }
+
+  /** W244: first-attempt rate, failed-delivery reasons by coded class, busiest lanes, freight recovered. The window
+   *  is a closed set (30/90/180) because every query behind it prunes partitions with that bound. */
+  async insights(params: { window?: 30 | 90 | 180 } = {}, signal?: AbortSignal): Promise<LogisticsInsights> {
+    const r = await this.http.request<LogisticsInsights>('GET', 'logistics/desk/insights', { query: { ...params }, signal });
+    return r.data as LogisticsInsights;
   }
 }

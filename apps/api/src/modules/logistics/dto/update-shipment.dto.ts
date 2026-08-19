@@ -26,7 +26,22 @@ export const DeliverShipmentSchema = z.object({
 }).strict();
 export type DeliverShipmentDto = z.infer<typeof DeliverShipmentSchema>;
 
-export const FailShipmentSchema = z.object({ reason: z.string().min(1).max(500) }).strict();
+// PC-56 TENANT-5d · a failed attempt now carries a CODED class beside the operator's words.
+//
+// The words alone were the whole record before this wave — and they were not even that: the reason went into a
+// domain-event payload and the status hop was written with `note = NULL`, so W244's five-bar "Failed-delivery
+// reasons (90d)" chart had no source in the database at all. The code is what a chart can be grouped by and a
+// call-ahead policy can rest on; the sentence is what tells the next person WHICH gate was closed.
+//
+// Validated against the `shipment_failure_reason` vocabulary at runtime rather than as a hardcoded enum (Law 6):
+// the vocabulary is tenant-extendable, because a tenant in the hills needs "road closed" and one on an island needs
+// "ferry missed", and an enum would make both file their real reason under `other` and lose the signal. Optional, so
+// a rider app that has not been updated still records the failure and the attempt still counts — the desk reports
+// those as `unclassified` rather than guessing a bucket for them.
+export const FailShipmentSchema = z.object({
+  reason: z.string().min(1).max(500),
+  reasonCode: z.string().min(2).max(40).regex(/^[a-z][a-z0-9_]*$/).optional(),
+}).strict();
 export type FailShipmentDto = z.infer<typeof FailShipmentSchema>;
 
 // rider location ping: append a lat/lng tracking point (no status change). Coordinates are validated

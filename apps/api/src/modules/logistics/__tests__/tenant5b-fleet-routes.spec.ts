@@ -466,7 +466,9 @@ describe('TENANT-5b · the gate, and the job, run rather than read', () => {
         : opts.vehicle)),
     };
     const svc = new ShipmentService(uow as never, orders as never, flags as never, outbox as never, idem as never,
-      metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never, vehicleRepo as never);
+      metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never, vehicleRepo as never,
+      // PC-56 TENANT-5d · the failure-reason vocabulary read; unused by the fitness gate these tests drive.
+      { isFailureReason: jest.fn(async () => false) } as never);
     return { svc, s, repo, metrics, flags, vehicleRepo };
   }
   const boss = { userId: 'ops-1', canManage: true };

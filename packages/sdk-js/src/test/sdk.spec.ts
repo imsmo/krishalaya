@@ -366,6 +366,52 @@ describe('HttpClient via resources', () => {
     expect(recon.expected.kind).toBe('unpriced');
   });
 
+  it('logisticsDesk.overview GETs the desk and keeps every verdict intact (TENANT-5d)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: {
+      activeShipments: 24, pickupsToday: 2, byStatus: { in_transit: 20, assigned: 4 },
+      attention: [{ kind: 'cold_chain_live', shipmentId: 's1', orderId: 'o1', lastTempC: '4.2', lastAt: 'x', breaches: 0 }],
+      onTime: { kind: 'not_promised', missing: ['shipment_promised_delivery_at'] },
+      firstAttempt: { kind: 'measured', bps: 9510, of: 118 },
+      transit: { kind: 'measured', medianHours: 6.5, of: 45, missingPickupStamp: 5 },
+      transitLoss: { kind: 'not_recorded', missing: ['shipment_loss_record'], nearest: 'buyer_disputes_damaged' },
+      coldChain: { breaches7d: 0, liveReeferShipments: 1 },
+      mechanisms: [{ key: 'weighbridge', state: 'absent' }],
+      nextRun: { routeId: 'rt', routeName: 'Saturday Run', runWeekday: 6, daysAway: 5, villages: 32 },
+      windowDays: 30,
+    } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const ov = await c.logisticsDesk.overview();
+    expect(calls[0].url).toBe('https://api.test/v1/logistics/desk/overview');
+    // The refusals must survive the wire: a client that flattened them to nulls would let a screen print a zero.
+    expect(ov.onTime.kind).toBe('not_promised');
+    expect(ov.transitLoss.nearest).toBe('buyer_disputes_damaged');
+    expect(ov.mechanisms[0]).toEqual({ key: 'weighbridge', state: 'absent' });
+    expect(ov.firstAttempt).toEqual({ kind: 'measured', bps: 9510, of: 118 });
+  });
+
+  it('logisticsDesk.insights sends the window and returns the coded failure breakdown (TENANT-5d)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: {
+      window: 30, windowFrom: '2026-07-20', windowTo: '2026-08-19',
+      history: { kind: 'ready', days: 200 },
+      firstAttempt: { kind: 'no_deliveries' },
+      transit: { kind: 'not_measurable', missingPickupStamp: 0 },
+      failures: { total: 118, slices: [{ code: 'gate_closed', events: 40, shareBps: 8000 }], unclassified: 68, mostlyUnclassified: true },
+      reasonNames: [{ code: 'gate_closed', name: 'Gate closed' }],
+      callAhead: false,
+      lanes: { lanes: [], totalShipments: 0, basis: 'shipments' },
+      costPerQtlKm: { kind: 'not_computable', missing: ['shipment_distance_km', 'consignment_weight', 'shipment_charge_minor'] },
+      transitLoss: { kind: 'not_recorded', missing: [], nearest: 'buyer_disputes_damaged' },
+      freightRecovered: [],
+    } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const ins = await c.logisticsDesk.insights({ window: 30 });
+    expect(calls[0].url).toBe('https://api.test/v1/logistics/desk/insights?window=30');
+    expect(ins.failures.unclassified).toBe(68);
+    expect(ins.failures.mostlyUnclassified).toBe(true);
+    expect(ins.costPerQtlKm.missing).toHaveLength(3);
+    expect(ins.lanes.basis).toBe('shipments');
+  });
+
   it('listings.extend POSTs :id/extend with an idempotency key + days body, returns the new expiresAt', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'l1', expiresAt: '2026-08-09T00:00:00Z' } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

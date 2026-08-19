@@ -501,12 +501,14 @@ describe('TENANT-5c · navigation, the chain and the refusals', () => {
   it('adds the freight desk to the sub-nav, because the canon gives it no way in', () => {
     // W241 is referenced only by its own chain screens' breadcrumbs; no operational screen in 1,955 links to it,
     // while W229 (Vehicles) is linked from six. A screen with no route in is a table with no writer, in UI form.
+    // TENANT-5d added `insights` after `freight`, for the same reason and with the same finding (W244 is linked from
+    // nowhere in the canon at all), and closed `overview`.
     const keys = LOGISTICS_NAV.map((i) => i.key);
-    expect(keys).toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'freight', 'zones', 'coldChain']);
+    expect(keys).toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'freight', 'insights', 'zones', 'coldChain']);
     expect(LOGISTICS_NAV.find((i) => i.key === 'freight')).toEqual({ key: 'freight', href: '/logistics/freight', built: true });
     expect(hasKey('logistics.nav.freight')).toBe(true);
-    // and the count of unbuilt sections is unchanged — this wave added a way in, not a promise
-    expect(unbuiltCount()).toBe(4);
+    // this wave added a way in, not a promise; the count later fell to three when 5d built the overview
+    expect(unbuiltCount()).toBe(3);
   });
 
   it('lights the freight tab on the desk and on the recon detail, and not `/logistics`', () => {
