@@ -22,7 +22,7 @@ import { WebhooksResource } from './resources/webhooks';
 import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { OrdersResource } from './resources/orders';
-import { ShipmentsResource } from './resources/logistics';
+import { ShipmentsResource, FleetResource, RoutesResource } from './resources/logistics';
 import { ReviewsResource } from './resources/reviews';
 import { CartResource, CheckoutResource } from './resources/commerce';
 import { BuyerResource } from './resources/buyer';
@@ -74,6 +74,10 @@ export class KrishalayaClient {
   readonly notifications: NotificationsResource;
   readonly orders: OrdersResource;
   readonly shipments: ShipmentsResource;
+  /** PC-56 TENANT-5b · W229's fleet register (vehicles + carriers). */
+  readonly fleet: FleetResource;
+  /** PC-56 TENANT-5b · W231's recurring runs. */
+  readonly routes: RoutesResource;
   readonly reviews: ReviewsResource;
   readonly addresses: AddressesResource;
   readonly cart: CartResource;
@@ -149,6 +153,8 @@ export class KrishalayaClient {
     this.notifications = new NotificationsResource(this.http);
     this.orders = new OrdersResource(this.http);
     this.shipments = new ShipmentsResource(this.http);
+    this.fleet = new FleetResource(this.http);
+    this.routes = new RoutesResource(this.http);
     this.reviews = new ReviewsResource(this.http);
     this.addresses = new AddressesResource(this.http);
     this.cart = new CartResource(this.http);

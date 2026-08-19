@@ -189,6 +189,11 @@ export const EnvSchema = z.object({
   // PC-56 TENANT-4d-5 · the two tenancy notice producers (trial ending, usage-limit alert). ONE gate for both:
   // they are one decision — whether this deployment sends tenants proactive billing notices at all — and two
   // env vars would let an operator half-enable a promise W118 and W120 make together.
+  // PC-56 TENANT-5b · the RC-parking clock behind W229's "an expired RC parks the vehicle automatically", and
+  // the cold-chain alert cadence that was CONSTRUCTED in LogisticsModule and never registered with the runner.
+  LOGISTICS_FLEET_JOBS_ENABLED: z.enum(['true', 'false']).default('true'),
+  LOGISTICS_RC_PARKING_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000),
+  LOGISTICS_RC_PARKING_BATCH_SIZE: z.coerce.number().int().min(1).max(5_000).default(500),
   TENANT_NOTICES_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
   TENANT_NOTICES_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000),
   TENANT_NOTICES_JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(200),

@@ -293,6 +293,16 @@ export class AppConfig {
         intervalMs: this.env.SAAS_BILLING_CYCLE_JOB_INTERVAL_MS,
         batchSize: this.env.SAAS_BILLING_CYCLE_JOB_BATCH_SIZE,
       },
+      // PC-56 TENANT-5b: the fleet's two clocks. DAILY for RC parking — an RC expires on a DATE, so a
+      // per-minute sweep would run 1,440 times to do nothing 1,439 of them. Both are also the fix for a
+      // defect this wave found: `OpsAlertsCadenceJob` was constructed by a factory in LogisticsModule and
+      // NEVER registered with SCHEDULED_JOB_REGISTRY, so the cold-chain breach alerting its own comment
+      // describes as "fast enough that a breach is seen while the cargo can still be saved" never ran at all.
+      logisticsFleet: {
+        enabled: this.env.LOGISTICS_FLEET_JOBS_ENABLED !== 'false',
+        rcParkingIntervalMs: this.env.LOGISTICS_RC_PARKING_INTERVAL_MS,
+        rcParkingBatchSize: this.env.LOGISTICS_RC_PARKING_BATCH_SIZE,
+      },
       // PC-56 TENANT-4d-5: the trial-ending and usage-limit notice producers. 0148 named both as deliberately
       // unwired because their notification went nowhere; the notice plane exists now, and an unscheduled
       // producer behind a seeded catalog row + templates would be the same defect from the other end.

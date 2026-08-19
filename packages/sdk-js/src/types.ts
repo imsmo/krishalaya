@@ -854,3 +854,94 @@ export interface ShipmentEventPage {
   precisionDp: number;
   nextCursor: string | null;
 }
+
+// --- the fleet register and the route board (PC-56 TENANT-5b) ---
+// W229 and W231 had no client at all: `/v1/logistics/vehicles` and `/v1/logistics/routes` have existed since the
+// logistics module was built and this SDK carried no method for either.
+
+/** What a vehicle's registration certificate says. `3pl_held` is W229's own word for a partner's document, which
+ *  a tenant cannot see and must not be shown as "missing". `absent` is a vehicle with no RC on file — every
+ *  vehicle registered before TENANT-5b, because no form ever asked for one. */
+export type RcCell =
+  | { kind: 'valid'; validUntil: string | null }
+  | { kind: 'expiring'; validUntil: string; daysLeft: number }
+  | { kind: 'expired'; validUntil: string; daysOver: number }
+  | { kind: 'unverified' }
+  | { kind: 'rejected' }
+  | { kind: 'absent' }
+  | { kind: '3pl_held' };
+
+/** What the vehicle is doing today. There is no "free 15:30": no shift model, no drop-duration estimate and no
+ *  working-hours record exist, so the time a vehicle becomes free is not derivable and is not returned. */
+export type VehicleToday =
+  | { kind: 'carrying'; onRoad: number; reefer: { tempC: number; isBreach: boolean } | null }
+  | { kind: 'done_today'; deliveredToday: number }
+  | { kind: 'loads_next'; routeName: string; weekday: number }
+  | { kind: 'idle' };
+
+export interface FleetVehicleRow {
+  id: string;
+  scope: 'tenant' | 'platform';
+  /** Part-masked (`GJ-03-TR-88••`). The full plate is never serialised by this read. */
+  regNoMasked: string;
+  partnerName: string | null;
+  /** Lookup CODE (`tempo`, `reefer_7mt`) for the console to translate — never a seeded English label. */
+  typeCode: string | null;
+  capacityKg: number | null;
+  isRefrigerated: boolean;
+  isActive: boolean;
+  rc: RcCell;
+  /** Why the assignment gate would refuse this vehicle right now, from the same function `assign` calls. */
+  unfit: 'vehicle_unknown' | 'vehicle_parked' | 'rc_invalid' | 'rc_absent' | 'not_refrigerated' | null;
+  parkedByRc: boolean;
+  today: VehicleToday;
+}
+export interface FleetSplit { own: number; partnered: number; total: number }
+/** Which of W229's mechanisms are actually switched on, so a screen can say "this RC is expired and nothing is
+ *  parking it" instead of implying the automatic parking is running. */
+export interface FleetMechanisms { fitnessGate: boolean; rcParking: boolean; requireRc: boolean }
+export interface FleetRegisterPage { items: FleetVehicleRow[]; nextCursor: string | null; split: FleetSplit; mechanisms: FleetMechanisms }
+export interface FleetVehicle {
+  id: string; scope: string; partnerId: string; regNo: string; vehicleTypeId: string | null;
+  capacityKg: number | null; isRefrigerated: boolean; rcDocId: string | null; isActive: boolean; createdAt: string | null;
+}
+export interface LogisticsPartnerRow {
+  id: string; scope?: string; partnerKind: string; defaultName: string; supportsColdChain: boolean; isActive: boolean;
+}
+
+export type RouteStatusDto = 'proposed' | 'active' | 'inactive';
+/** Parcels per run: MEASURED for an approved route (its own history) or ESTIMATED for a proposal (ad-hoc traffic
+ *  through its villages). W231 prints "est." on exactly that row and the word carries the difference. */
+export type RouteParcels =
+  | { kind: 'measured'; perRun: number; runs: number }
+  | { kind: 'estimated'; perRun: number; runs: number }
+  | { kind: 'no_history' };
+/** One side is real. `routeCost: 'not_recorded'` is not a placeholder — a planned run's cost is a quote for a
+ *  truck for a morning and this platform records no such thing, so W231's "₹28/parcel" is not computed. */
+export type RouteEconomics =
+  | { kind: 'ad_hoc_only'; adHocPerParcelMinor: string; parcels: number; currencyCode: string; routeCost: 'not_recorded' }
+  | { kind: 'no_baseline'; routeCost: 'not_recorded' };
+export type RouteApproval =
+  | { kind: 'ready' } | { kind: 'needs_vehicle' } | { kind: 'needs_consolidation' }
+  | { kind: 'needs_villages' } | { kind: 'already_active' } | { kind: 'not_proposed'; status: RouteStatusDto };
+export interface RouteBoardRow {
+  id: string; name: string; status: RouteStatusDto;
+  /** i18n key ('route.day.sat') — a weekday is a word in three launch languages. */
+  dayKey: string | null;
+  onDemand: boolean;
+  villages: { names: string[]; total: number; more: number };
+  consolidation: { userId: string; name: string | null; tierCode: string | null } | null;
+  vehicle: { id: string; regNoMasked: string } | null;
+  parcels: RouteParcels;
+  economics: RouteEconomics;
+  approval: RouteApproval;
+  approvedAt: string | null;
+}
+export interface RouteCounts { active: number; proposed: number; inactive: number; total: number }
+export interface RouteBoardPage { items: RouteBoardRow[]; nextCursor: string | null; counts: RouteCounts; windowDays: number }
+export interface RouteCorridor { regionId: string; villageName: string | null; dayKey: string | null; parcels: number; spentMinor: string }
+export interface DeliveryRouteDto {
+  id: string; defaultName: string; runWeekday: number | null; villageRegionIds: string[];
+  vehicleId: string | null; consolidationUserId: string | null;
+  status: RouteStatusDto; isActive: boolean; approvedBy: string | null; approvedAt: string | null; createdAt: string | null;
+}

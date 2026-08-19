@@ -26,8 +26,12 @@ import { failureOutcome, isMoneyGated, nextMilestone, pickupOtpRequired, possess
 import { OrderNotReadyForTransportError } from '../domain/logistics.errors';
 import { EventFilter, TrailPoint, etaVerdict, isGpsGap, lastKnownPoint, milestoneProgress, precisionFor, resolveWindow, roundCoord } from '../domain/shipment-event-explorer';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { FLEET_FITNESS_FLAG, REQUIRE_RC_FLAG, rcVerdict, vehicleFitness } from '../domain/fleet-fitness';
+import { VehicleUnfitError } from '../domain/logistics.errors';
+import { VehicleRepository } from '../repositories/vehicle.repository';
 
 export interface ShipmentActor { userId: string; canManage: boolean; }
+
 
 @Injectable()
 export class ShipmentService {
@@ -45,6 +49,10 @@ export class ShipmentService {
     private readonly audit: AuditWriter,
     private readonly config: AppConfig,
     private readonly repo: ShipmentRepository,
+    /** PC-56 TENANT-5b · the fitness gate's own read. Same module, so the repository is fair game (the module
+     *  blueprint forbids reaching into ANOTHER module's repositories — the money gate goes through
+     *  `OrderService` for exactly that reason). */
+    private readonly vehicleRepo: VehicleRepository,
   ) {}
 
   private hashOtp(code: string): string { return createHmac('sha256', this.config.auth.hashPepper).update(code).digest('hex'); }
@@ -68,8 +76,46 @@ export class ShipmentService {
       }));
   }
 
-  assign(t: string, a: ShipmentActor, id: string, dto: AssignShipmentDto, ip: string | null) {
-    return this.mutate(t, a, id, 'assign', { manager: true }, (s) => s.assign(dto), ip);
+  /**
+   * **PC-56 TENANT-5b · AND THE VEHICLE MUST BE ABLE TO TAKE IT.**
+   *
+   * `assign` accepted `vehicleId` as a bare uuid from a `.strict()` DTO and wrote it onto the shipment. It never
+   * checked that the vehicle exists, that it belongs to this tenant, that it is active, or — the one that spoils
+   * a consignment — that a `requires_cold_chain` shipment is going onto a refrigerated vehicle.
+   * `shipments.requires_cold_chain` and `vehicles.is_refrigerated` have both existed since 0007 and had never
+   * been read together.
+   *
+   * Checked INSIDE the transaction (a vehicle parked a millisecond later must not still be dispatched) and
+   * refused BY NAME, so W229's own sentences reach the operator: "parked", "RC expired", "not refrigerated".
+   */
+  async assign(t: string, a: ShipmentActor, id: string, dto: AssignShipmentDto, ip: string | null) {
+    const fitnessOn = dto.vehicleId
+      ? await this.flags.isEnabled(FLEET_FITNESS_FLAG, { tenantId: t }).catch(() => false)
+      : false;
+    const requireRc = fitnessOn
+      ? await this.flags.isEnabled(REQUIRE_RC_FLAG, { tenantId: t }).catch(() => false)
+      : false;
+    return this.mutate(t, a, id, 'assign', {
+      manager: true,
+      precheck: fitnessOn && dto.vehicleId
+        ? async (tx, s) => {
+            const v = await this.vehicleRepo.fitnessOf(tx, t, dto.vehicleId!);
+            const verdict = vehicleFitness({
+              vehicle: v ? { id: v.id, isActive: v.isActive, isRefrigerated: v.isRefrigerated, capacityKg: v.capacityKg } : null,
+              rc: rcVerdict(v ? { status: v.rcStatus, validUntil: v.rcValidUntil } : null, new Date()),
+              requiresColdChain: s.requiresColdChain,
+              requireRcOnFile: requireRc,
+              rcHeldByPartner: v?.scope === 'platform',
+            });
+            if (verdict.kind !== 'fit') {
+              this.metrics.inc('logistics.vehicle_unfit', { reason: verdict.kind });
+              throw new VehicleUnfitError(
+                verdict.kind === 'rc_invalid' ? 'rc_invalid' : verdict.kind,
+                verdict.kind === 'rc_invalid' ? { rc: verdict.rc, validUntil: verdict.validUntil } : {});
+            }
+          }
+        : undefined,
+    }, (s) => s.assign(dto), ip);
   }
   /**
    * Schedule the collection — and issue the PICKUP OTP, which nothing on this platform has ever done
@@ -253,7 +299,7 @@ export class ShipmentService {
     };
   }
 
-  private async mutate(tenantId: string, actor: ShipmentActor, id: string, action: string, opts: { manager?: boolean; audit?: boolean; emit?: (tx: TxContext, s: Shipment) => Promise<void> }, apply: (s: Shipment) => void, ip: string | null) {
+  private async mutate(tenantId: string, actor: ShipmentActor, id: string, action: string, opts: { manager?: boolean; audit?: boolean; emit?: (tx: TxContext, s: Shipment) => Promise<void>; precheck?: (tx: TxContext, s: Shipment) => Promise<void> }, apply: (s: Shipment) => void, ip: string | null) {
     return timed(this.metrics, `logistics.${action}`, { tenant: tenantId }, () =>
       this.uow.run(tenantId, async (tx) => {
         const s = await this.repo.getForUpdate(tx, tenantId, id);
@@ -271,6 +317,9 @@ export class ShipmentService {
             throw new OrderNotReadyForTransportError(v.kind, 'orderStatus' in v ? v.orderStatus : null);
           }
         }
+        // PC-56 TENANT-5b · a per-action precheck, INSIDE the transaction and BEFORE the transition, for the
+        // facts only that action cares about (today: whether the vehicle being assigned can take this load).
+        if (opts.precheck) await opts.precheck(tx, s);
         const from = s.status;
         apply(s);
         await this.repo.update(tx, s, from);

@@ -27,6 +27,10 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { TABS, driverGapKey, listHref, milestoneKey, statusesForTab, tabOf } from '../../features/logistics/shipments';
+// PC-56 TENANT-5b · W225's sub-nav ("Overview · Shipments · Carriers · Vehicles · Routes · Zones · Cold chain"),
+// which the canon prints on every logistics screen. Two of its entries now exist; the four with no screen are
+// shown as unbuilt rather than hidden, so "not built" cannot be mistaken for "hidden from me by a permission".
+import { LOGISTICS_NAV, navLabelKey } from '../../features/logistics/nav';
 import type { Shipment } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +67,16 @@ export default async function LogisticsPage({ searchParams }: { searchParams: { 
     <section>
       <h1>{t.t('logistics.title')}</h1>
       <p className="kv-field__hint">{t.t('logistics.hint')}</p>
+
+      <nav className="kv-tabs" aria-label={t.t('logistics.nav.label')}>
+        {LOGISTICS_NAV.map((i) => (i.href ? (
+          <Link key={i.key} href={i.href} className={i.key === 'shipments' ? 'kv-tab kv-tab--on' : 'kv-tab'} aria-current={i.key === 'shipments' ? 'page' : undefined}>
+            {t.t(navLabelKey(i))}
+          </Link>
+        ) : (
+          <span key={i.key} className="kv-tab kv-tab--muted" aria-disabled="true">{t.t(navLabelKey(i))}</span>
+        )))}
+      </nav>
 
       <nav className="kv-tabs" aria-label={t.t('ship.tabsLabel')}>
         {TABS.map((x) => (

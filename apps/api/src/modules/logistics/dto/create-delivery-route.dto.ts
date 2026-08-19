@@ -21,3 +21,17 @@ export const UpdateDeliveryRouteSchema = z.object({
   consolidationUserId: z.string().uuid().nullable().optional(),
 }).strict().refine((d) => Object.keys(d).length > 0, { message: 'at least one field is required' });
 export type UpdateDeliveryRouteDto = z.infer<typeof UpdateDeliveryRouteSchema>;
+
+/**
+ * PC-56 TENANT-5b · W231's [Approve route] may CARRY the commitments it is approving.
+ *
+ * The canon's proposal row shows `unassigned` in the vehicle column, and the restricted state says approval
+ * "commits a vehicle + ambassador weekly" — so the two facts are chosen AT approval, not typed a week earlier.
+ * Accepting them here keeps that in ONE transaction: a console that PATCHed the route and then POSTed the
+ * approval could leave a route carrying a committed vehicle and no approval if the second call failed.
+ */
+export const ApproveDeliveryRouteSchema = z.object({
+  vehicleId: z.string().uuid().optional(),
+  consolidationUserId: z.string().uuid().optional(),
+}).strict();
+export type ApproveDeliveryRouteDto = z.infer<typeof ApproveDeliveryRouteSchema>;

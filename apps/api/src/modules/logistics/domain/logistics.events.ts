@@ -22,12 +22,18 @@ export const FleetEventType = {
   PartnerRegistered:  'logistics.partner_registered',
   VehicleRegistered:  'logistics.vehicle_registered',
   PickupSlotCreated:  'logistics.pickup_slot_created',
+  // PC-56 TENANT-5b · W229: "an expired RC parks the vehicle automatically". Emitted per vehicle by the
+  // RC-parking job, carrying WHICH document state parked it and until when it was valid — the evidence, not
+  // just the verdict, so a consumer can tell an FPO what to renew.
+  VehicleParkedRcInvalid: 'logistics.vehicle_parked_rc_invalid',
 } as const;
 
 // zones / routes / cold-chain (serviceability + Village Run + reefer telemetry)
 export const ZoneRouteEventType = {
   DeliveryZoneCreated:  'logistics.delivery_zone_created',
   DeliveryRouteCreated: 'logistics.delivery_route_created',
+  // PC-56 TENANT-5b · the approval W231 draws a button for and the platform could not represent.
+  DeliveryRouteApproved: 'logistics.delivery_route_approved',
   ColdChainBreach:      'logistics.cold_chain_breach',     // emitted by the breach-alert worker job
   VillageRunDue:        'logistics.village_run_due',        // emitted by the village-run consolidation job
 } as const;

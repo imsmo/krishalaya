@@ -31,6 +31,7 @@ import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { ShipmentDeliveredHandler } from '../../orders/events/handlers/shipment-delivered.handler';
 import { ShipmentRepository } from '../repositories/shipment.repository';
+import { VehicleRepository } from '../repositories/vehicle.repository';
 import { ShipmentService } from '../services/shipment.service';
 import { OrderConfirmedHandler } from '../events/handlers/order-confirmed.handler';
 import { InvalidDeliveryOtpError } from '../domain/logistics.errors';
@@ -84,7 +85,7 @@ run('logistics slice (integration, real Postgres + RLS + outbox relay)', () => {
     const orderRepo = new OrderRepository(replica as any);
     const orders = new OrderService(uow, outbox, metrics, audit, orderRepo);
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    shipments = new ShipmentService(uow, orders, flags, outbox, idem, metrics, audit, config, shipRepo);
+    shipments = new ShipmentService(uow, orders, flags, outbox, idem, metrics, audit, config, shipRepo, new VehicleRepository(replica as any));
 
     const registry = new OutboxHandlerRegistry();
     registry.register(new OrderConfirmedHandler(shipRepo, outbox, metrics));                       // orders.order_confirmed → shipment

@@ -17,8 +17,9 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { ShipmentPermissions, canManageLogistics } from '../../policies/logistics.policies';
 import { DeliveryRouteService } from '../../services/delivery-route.service';
 import { ColdChainService } from '../../services/cold-chain.service';
-import { CreateDeliveryRouteSchema, CreateDeliveryRouteDto, UpdateDeliveryRouteSchema, UpdateDeliveryRouteDto } from '../../dto/create-delivery-route.dto';
-import { QueryDeliveryRouteSchema, QueryDeliveryRouteDto } from '../../dto/query-delivery-route.dto';
+import { ApproveDeliveryRouteSchema, ApproveDeliveryRouteDto, CreateDeliveryRouteSchema, CreateDeliveryRouteDto, UpdateDeliveryRouteSchema, UpdateDeliveryRouteDto } from '../../dto/create-delivery-route.dto';
+import { QueryDeliveryRouteSchema, QueryDeliveryRouteDto, QueryRouteBoardSchema, QueryRouteBoardDto } from '../../dto/query-delivery-route.dto';
+import { RouteBoardReadModel } from '../../read-models/route-board.read-model';
 import { ZoneSetActiveSchema, ZoneSetActiveDto } from '../../dto/create-delivery-zone.dto';
 import { RecordColdChainSchema, RecordColdChainDto, QueryColdChainSchema, QueryColdChainDto } from '../../dto/cold-chain.dto';
 
@@ -30,8 +31,29 @@ const reqKey = (k: string) => { if (!k) throw new BadRequestError('Idempotency-K
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('logistics')
 export class RoutesController {
-  constructor(private readonly routes: DeliveryRouteService) {}
+  constructor(private readonly routes: DeliveryRouteService, private readonly board: RouteBoardReadModel) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageLogistics(ctx) }; }
+
+  /**
+   * **W231's board (PC-56 TENANT-5b)** — routes with resolved village names, the consolidation point's name and
+   * tier, measured parcels per run, and the economics with the route side named as unrecorded.
+   *
+   * Declared before `:id` so the literal path wins. `logistics.manage`: the board carries a named person's
+   * weekly commitment and the FPO's own delivery spend.
+   */
+  @Get('board') @RequirePermissions(ShipmentPermissions.Manage)
+  routeBoard(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryRouteBoardSchema) q: QueryRouteBoardDto) {
+    return this.board.board(ctx.tenantId, { ...q, cursor: decodeCursor(q.cursor) })
+      .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor, counts: res.counts, windowDays: res.windowDays } }));
+  }
+
+  /** W231's empty state offers a "Suggest routes" tool that does not exist. This is its honest ingredient: the
+   *  corridors the tenant's parcels already travel. It creates nothing — a grouping query must not commit a
+   *  vehicle and a named ambassador's day. */
+  @Get('corridors') @RequirePermissions(ShipmentPermissions.Manage)
+  corridors(@CurrentContext() ctx: RequestContext) {
+    return this.board.corridors(ctx.tenantId).then((res) => ({ data: res.items, meta: { verdict: res.verdict } }));
+  }
 
   @Post() @RequirePermissions(ShipmentPermissions.Manage)
   create(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateDeliveryRouteSchema) dto: CreateDeliveryRouteDto) {
@@ -50,6 +72,19 @@ export class RoutesController {
   @Post(':id/active') @RequirePermissions(ShipmentPermissions.Manage)
   setActive(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(ZoneSetActiveSchema) dto: ZoneSetActiveDto) {
     return this.routes.setActive(ctx.tenantId, this.actor(ctx), id, dto.isActive, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /**
+   * **W231's [Approve route] (PC-56 TENANT-5b).** Idempotency-Key required — approving twice must not write two
+   * approvals, and a double-tapped button on a village network is the normal case.
+   *
+   * The refusals come back by name (`ROUTE_NOT_APPROVABLE` + `reason`) so the console can print which commitment
+   * is missing rather than "incomplete".
+   */
+  @Post(':id/approve') @RequirePermissions(ShipmentPermissions.Manage)
+  approve(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @Param('id') id: string,
+          @ZodBody(ApproveDeliveryRouteSchema) dto: ApproveDeliveryRouteDto) {
+    return this.routes.approve(ctx.tenantId, this.actor(ctx), reqKey(key), id, dto, ipOf(r)).then((data) => ({ data }));
   }
 }
 

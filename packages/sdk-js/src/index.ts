@@ -114,3 +114,9 @@ export type { BillingConsoleView, SaasInvoiceRow, SaasInvoiceDetail, SaasPayQuot
 // PC-56 TENANT-5a · the shipment trail — the first tenant-side read of `shipment_events`, a table with two
 // writers and no reader in its own module since 0007.
 export type { ShipmentTrail, ShipmentTrailPoint, ShipmentProgress, ShipmentEventFilter, ShipmentEventRow, ShipmentEventPage } from './types';
+// PC-56 TENANT-5b · W229's fleet register and W231's route board.
+export type {
+  RcCell, VehicleToday, FleetVehicleRow, FleetSplit, FleetMechanisms, FleetRegisterPage, FleetVehicle,
+  LogisticsPartnerRow, RouteStatusDto, RouteParcels, RouteEconomics, RouteApproval, RouteBoardRow, RouteCounts,
+  RouteBoardPage, RouteCorridor, DeliveryRouteDto,
+} from './types';

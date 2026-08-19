@@ -50,6 +50,10 @@ export class Shipment {
   get orderId() { return this.props.orderId; }
   get riderUserId() { return this.props.riderUserId; }
   get requiresOtp() { return this.props.deliveryOtpHash != null; }
+  /** PC-56 TENANT-5b · what the LOAD needs, which the fitness gate compares against what the vehicle IS.
+   *  `requires_cold_chain` has been on this table since 0007 and had never been read against
+   *  `vehicles.is_refrigerated`, so a ghee run could be loaded onto an open tempo. */
+  get requiresColdChain() { return this.props.requiresColdChain; }
   toProps(): Readonly<ShipmentProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
 

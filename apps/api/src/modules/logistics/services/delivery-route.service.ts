@@ -12,7 +12,7 @@ import { DeliveryRoute } from '../domain/delivery-route.entity';
 import { DomainEvent } from '../domain/logistics.events';
 import { DeliveryRouteNotFoundError, ShipmentForbiddenError } from '../domain/logistics.errors';
 import { DeliveryRouteRepository } from '../repositories/delivery-route.repository';
-import { CreateDeliveryRouteDto, UpdateDeliveryRouteDto } from '../dto/create-delivery-route.dto';
+import { ApproveDeliveryRouteDto, CreateDeliveryRouteDto, UpdateDeliveryRouteDto } from '../dto/create-delivery-route.dto';
 import { QueryDeliveryRouteDto } from '../dto/query-delivery-route.dto';
 import { FleetActor, encodeFleetCursor } from './logistics-partner.service';
 
@@ -73,6 +73,47 @@ export class DeliveryRouteService {
       }, { userId: actor.userId }));
   }
 
+  /**
+   * **W231's [Approve route] — the button the platform could not represent (PC-56 TENANT-5b).**
+   *
+   * The canon's restricted state says what it costs: "Route approval needs logistics lead (it commits a vehicle
+   * + ambassador weekly)". So: `logistics.manage` (already required for every write here), the entity's own
+   * `approvalVerdict` refusing by name when a commitment is missing, `approved_by` + `approved_at` recorded as
+   * the evidence, an audit row, and ONE outbox event carrying what was committed rather than just the verdict.
+   *
+   * Idempotency-Key required, like `create`: approving twice must not write two approvals, and a double-tapped
+   * button on a village network is the normal case rather than the edge one.
+   */
+  async approve(tenantId: string, actor: FleetActor, idemKey: string, id: string, commit: ApproveDeliveryRouteDto, ip: string | null) {
+    this.assertManager(actor);
+    return this.idem.remember(idemKey, actor.userId, 'logistics.route_approve', () =>
+      timed(this.metrics, 'logistics.route_approve', { tenant: tenantId }, () =>
+        this.uow.run(tenantId, async (tx) => {
+          const route = await this.repo.getForUpdate(tx, tenantId, id);
+          if (!route) throw new DeliveryRouteNotFoundError(id);
+          const from = route.status;
+          // The commitments may arrive WITH the approval (W231's proposal row shows `unassigned`): applied in the
+          // same transaction, so a route can never end up carrying a committed vehicle with no approval.
+          if (commit.vehicleId !== undefined || commit.consolidationUserId !== undefined) {
+            try {
+              route.update({ vehicleId: commit.vehicleId ?? undefined, consolidationUserId: commit.consolidationUserId ?? undefined });
+            } catch (e) {
+              // "Nothing changed" is not an error on this path: the operator re-picked the vehicle the route
+              // already carried, and the approval itself is still the act.
+              if ((e as { code?: string })?.code !== 'FLEET_ALREADY_IN_STATE') throw e;
+            }
+          }
+          route.approve(actor.userId);
+          await this.repo.update(tx, route);
+          const p = route.toProps();
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'logistics.delivery_route_approved',
+            entityType: 'delivery_route', entityId: id, oldValue: { status: from },
+            newValue: { status: p.status, vehicleId: p.vehicleId, consolidationUserId: p.consolidationUserId, villages: p.villageRegionIds.length }, ip });
+          await this.flush(tx, tenantId, id, route.pullEvents());
+          return this.serialize(p);
+        }, { userId: actor.userId })));
+  }
+
   async getById(tenantId: string, id: string) {
     const route = await this.repo.getById(tenantId, id);
     if (!route) throw new DeliveryRouteNotFoundError(id);
@@ -88,7 +129,13 @@ export class DeliveryRouteService {
   }
 
   private serialize(p: ReturnType<DeliveryRoute['toProps']>) {
-    return { id: p.id, defaultName: p.defaultName, runWeekday: p.runWeekday, villageRegionIds: p.villageRegionIds, vehicleId: p.vehicleId, consolidationUserId: p.consolidationUserId, isActive: p.isActive, createdAt: p.createdAt ?? null };
+    return { id: p.id, defaultName: p.defaultName, runWeekday: p.runWeekday, villageRegionIds: p.villageRegionIds,
+      vehicleId: p.vehicleId, consolidationUserId: p.consolidationUserId,
+      // PC-56 TENANT-5b. `status` is the fact; `isActive` is kept on the wire as the DERIVED convenience it now
+      // is in the database too, so an existing consumer reading `isActive` is not broken by the state machine.
+      status: p.status, isActive: p.status === 'active',
+      approvedBy: p.approvedBy, approvedAt: p.approvedAt ?? null,
+      createdAt: p.createdAt ?? null };
   }
   private async flush(tx: TxContext, tenantId: string, aggregateId: string, events: DomainEvent[]) {
     for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'delivery_route', aggregateId, eventType: e.type, payload: { v: 1, ...e.payload } });

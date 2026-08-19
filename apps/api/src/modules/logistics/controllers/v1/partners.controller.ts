@@ -18,7 +18,8 @@ import { PickupSlotService } from '../../services/pickup-slot.service';
 import { CreateLogisticsPartnerSchema, CreateLogisticsPartnerDto, UpdateLogisticsPartnerSchema, UpdateLogisticsPartnerDto, SetActiveSchema, SetActiveDto } from '../../dto/create-logistics-partner.dto';
 import { QueryLogisticsPartnerSchema, QueryLogisticsPartnerDto } from '../../dto/query-logistics-partner.dto';
 import { CreateVehicleSchema, CreateVehicleDto, UpdateVehicleSchema, UpdateVehicleDto } from '../../dto/create-vehicle.dto';
-import { QueryVehicleSchema, QueryVehicleDto } from '../../dto/query-vehicle.dto';
+import { QueryVehicleSchema, QueryVehicleDto, QueryFleetRegisterSchema, QueryFleetRegisterDto } from '../../dto/query-vehicle.dto';
+import { FleetRegisterReadModel } from '../../read-models/fleet-register.read-model';
 import { CreatePickupSlotSchema, CreatePickupSlotDto, UpdatePickupSlotSchema, UpdatePickupSlotDto, QueryPickupSlotSchema, QueryPickupSlotDto } from '../../dto/create-pickup-slot.dto';
 
 const ipOf = (r: Request) => r.ip || null;
@@ -56,8 +57,23 @@ export class PartnersController {
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('logistics')
 export class VehiclesController {
-  constructor(private readonly vehicles: VehicleService) {}
+  constructor(private readonly vehicles: VehicleService, private readonly register: FleetRegisterReadModel) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageLogistics(ctx) }; }
+
+  /**
+   * **W229's fleet register (PC-56 TENANT-5b)** — the read that joins a vehicle to its RC for the first time,
+   * masks the plate, and says what each vehicle is doing today.
+   *
+   * `logistics.manage` on a READ, unlike `GET /` above: W229's restricted state is explicit — "Vehicle
+   * management needs logistics lead; RC docs follow KYC document rules" — and this row carries document status,
+   * expiry dates and a live temperature. Declared BEFORE `:id` so the literal path is not swallowed by the
+   * parameter route.
+   */
+  @Get('register') @RequirePermissions(ShipmentPermissions.Manage)
+  fleetRegister(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryFleetRegisterSchema) q: QueryFleetRegisterDto) {
+    return this.register.register(ctx.tenantId, { ...q, cursor: decodeCursor(q.cursor) })
+      .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor, split: res.split, mechanisms: res.mechanisms } }));
+  }
 
   @Post() @RequirePermissions(ShipmentPermissions.Manage)
   create(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateVehicleSchema) dto: CreateVehicleDto) {

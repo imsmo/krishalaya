@@ -4,7 +4,11 @@
 // itself. `deliver` carries an Idempotency-Key (Law 3) so a retried delivery can't double-fire. Delivery is gated
 // to the assigned rider / logistics manager server-side.
 import { HttpClient } from '../http';
-import { Shipment, Page, ShipmentTrail, ShipmentEventFilter, ShipmentEventPage } from '../types';
+import {
+  Shipment, Page, ShipmentTrail, ShipmentEventFilter, ShipmentEventPage,
+  DeliveryRouteDto, FleetMechanisms, FleetRegisterPage, FleetSplit, FleetVehicle, FleetVehicleRow,
+  LogisticsPartnerRow, RouteBoardPage, RouteBoardRow, RouteCorridor, RouteCounts,
+} from '../types';
 
 export interface RiderPayoutStatement {
   riderUserId: string;
@@ -167,5 +171,99 @@ export class ShipmentsResource {
   /** An operator reading a specific rider's statement (Manage-gated server-side). */
   async riderPayoutStatement(riderUserId: string, params: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<RiderPayoutStatement> {
     return (await this.http.request<RiderPayoutStatement>('GET', `shipments/riders/${encodeURIComponent(riderUserId)}/payout-statement`, { query: { from: params.from, to: params.to }, signal })).data;
+  }
+}
+
+/**
+ * The FLEET REGISTER and the ROUTE BOARD (PC-56 TENANT-5b).
+ *
+ * **`POST/GET/PATCH /v1/logistics/vehicles` and `/v1/logistics/routes` have existed since the logistics module
+ * was built and this SDK had NO METHOD FOR ANY OF THEM** — so W229 (the fleet register) and W231 (recurring
+ * runs) could not be built at all, and the only console that ever reached those endpoints is the 3PL partner
+ * app, through the untyped `request()` escape hatch. Same shape of gap TENANT-5a found on assign /
+ * schedule-pickup / cancel, and TENANT-4d-3 on the tenant profile before that: an endpoint with no client.
+ *
+ * Both resources are typed against the api's own read models rather than the raw tables, because what W229 and
+ * W231 need is the JUDGEMENT (is this vehicle fit, is this route approvable) and not the columns.
+ */
+export class FleetResource {
+  constructor(private readonly http: HttpClient) {}
+
+  /** W229's register: RC status per vehicle, masked plate, what it is doing today, and which mechanisms are on. */
+  async register(params: { activeOnly?: boolean; partnerId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<FleetRegisterPage> {
+    const r = await this.http.request<FleetVehicleRow[]>('GET', 'logistics/vehicles/register', { query: { ...params }, signal });
+    const meta = (r.meta ?? {}) as { nextCursor?: string | null; split?: FleetSplit; mechanisms?: FleetMechanisms };
+    return {
+      items: r.data ?? [],
+      nextCursor: meta.nextCursor ?? null,
+      split: meta.split ?? { own: 0, partnered: 0, total: 0 },
+      mechanisms: meta.mechanisms ?? { fitnessGate: false, rcParking: false, requireRc: false },
+    };
+  }
+
+  /** Register a vehicle (W229's [Register vehicle] → W2421/W2422/W2423's confirm/success/failure chain). */
+  async createVehicle(input: { partnerId: string; regNo: string; vehicleTypeId?: string; capacityKg?: number; isRefrigerated?: boolean; rcDocId?: string }, idempotencyKey: string): Promise<FleetVehicle> {
+    const r = await this.http.request<FleetVehicle>('POST', 'logistics/vehicles', { body: input, idempotencyKey });
+    return r.data as FleetVehicle;
+  }
+
+  /** Park or un-park a vehicle. The same verb W229's "an expired RC parks the vehicle automatically" uses when
+   *  the job does it — one mechanism, whether a person or the clock pulls it. */
+  async setVehicleActive(id: string, isActive: boolean): Promise<FleetVehicle> {
+    const r = await this.http.request<FleetVehicle>('POST', `logistics/vehicles/${encodeURIComponent(id)}/active`, { body: { isActive } });
+    return r.data as FleetVehicle;
+  }
+
+  async listPartners(params: { activeOnly?: boolean; limit?: number } = {}, signal?: AbortSignal): Promise<LogisticsPartnerRow[]> {
+    const r = await this.http.request<LogisticsPartnerRow[]>('GET', 'logistics/partners', { query: { ...params }, signal });
+    return r.data ?? [];
+  }
+}
+
+export class RoutesResource {
+  constructor(private readonly http: HttpClient) {}
+
+  /** W231's board: villages by NAME, the consolidation point and their tier, measured parcels per run, and the
+   *  economics with the route side named as unrecorded. */
+  async board(params: { status?: 'proposed' | 'active' | 'inactive'; runWeekday?: number; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<RouteBoardPage> {
+    const r = await this.http.request<RouteBoardRow[]>('GET', 'logistics/routes/board', { query: { ...params }, signal });
+    const meta = (r.meta ?? {}) as { nextCursor?: string | null; counts?: RouteCounts; windowDays?: number };
+    return {
+      items: r.data ?? [],
+      nextCursor: meta.nextCursor ?? null,
+      counts: meta.counts ?? { active: 0, proposed: 0, inactive: 0, total: 0 },
+      windowDays: meta.windowDays ?? 0,
+    };
+  }
+
+  /** The corridors an FPO's parcels already travel — W231's "Suggest routes" honestly: a reading aid a person
+   *  turns into a proposal, never a route this platform decided to create. */
+  async corridors(signal?: AbortSignal): Promise<{ items: RouteCorridor[]; verdict: { kind: 'corridors_only'; windowDays: number } }> {
+    const r = await this.http.request<RouteCorridor[]>('GET', 'logistics/routes/corridors', { signal });
+    const meta = (r.meta ?? {}) as { verdict?: { kind: 'corridors_only'; windowDays: number } };
+    return { items: r.data ?? [], verdict: meta.verdict ?? { kind: 'corridors_only', windowDays: 0 } };
+  }
+
+  /** Create a PROPOSAL (a new route is not a run until it is approved). */
+  async create(input: { defaultName: string; runWeekday?: number | null; villageRegionIds: string[]; vehicleId?: string; consolidationUserId?: string }, idempotencyKey: string): Promise<DeliveryRouteDto> {
+    const r = await this.http.request<DeliveryRouteDto>('POST', 'logistics/routes', { body: input, idempotencyKey });
+    return r.data as DeliveryRouteDto;
+  }
+
+  async update(id: string, patch: { defaultName?: string; runWeekday?: number | null; villageRegionIds?: string[]; vehicleId?: string | null; consolidationUserId?: string | null }): Promise<DeliveryRouteDto> {
+    const r = await this.http.request<DeliveryRouteDto>('PATCH', `logistics/routes/${encodeURIComponent(id)}`, { body: patch });
+    return r.data as DeliveryRouteDto;
+  }
+
+  /** W231's [Approve route] — commits the vehicle and the consolidation point weekly, and records who did. */
+  async approve(id: string, commit: { vehicleId?: string; consolidationUserId?: string } = {}, idempotencyKey?: string): Promise<DeliveryRouteDto> {
+    const r = await this.http.request<DeliveryRouteDto>('POST', `logistics/routes/${encodeURIComponent(id)}/approve`, { body: commit, idempotencyKey });
+    return r.data as DeliveryRouteDto;
+  }
+
+  /** Suspend a run, or restart one that was approved before. */
+  async setActive(id: string, isActive: boolean): Promise<DeliveryRouteDto> {
+    const r = await this.http.request<DeliveryRouteDto>('POST', `logistics/routes/${encodeURIComponent(id)}/active`, { body: { isActive } });
+    return r.data as DeliveryRouteDto;
   }
 }

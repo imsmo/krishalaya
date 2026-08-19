@@ -86,3 +86,36 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('report_reason',NULL,'harassment','Harassment or abuse','{}',5),('report_reason',NULL,'prohibited','Prohibited / illegal item','{}',6),
  ('report_reason',NULL,'misinformation','Misinformation','{}',7),('report_reason',NULL,'other','Other','{}',99)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+
+-- logistics fleet: the vehicle_type vocabulary (PC-56 TENANT-5b). The TYPE was declared in this file's first
+-- statement from the beginning and NOT ONE VALUE was ever inserted — so `vehicles.vehicle_type_id` (0007, whose
+-- own comment names exactly this list) could never be set to anything, every vehicle on the platform carried a
+-- NULL type, and W229's "type from the lookup (bike, tempo, truck, reefer_7mt, tractor_trolley)" had no source
+-- to read and no options to offer on its register form. A vocabulary with a type and no values.
+--
+-- `meta.refrigerated` records which types ARE reefers, so a register form can default `is_refrigerated`
+-- honestly instead of leaving an operator to tick a box that contradicts the type they just chose. It is a
+-- default, not a constraint: a retrofitted insulated tempo is real, and `is_refrigerated` stays the column the
+-- cold-chain gate reads.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+ ('vehicle_type',NULL,'bike','Bike','{"refrigerated":false,"typicalCapacityKg":30}',1),
+ ('vehicle_type',NULL,'tempo','Tempo','{"refrigerated":false,"typicalCapacityKg":1500}',2),
+ ('vehicle_type',NULL,'truck','Truck','{"refrigerated":false,"typicalCapacityKg":7000}',3),
+ ('vehicle_type',NULL,'reefer_7mt','Reefer (7 MT)','{"refrigerated":true,"typicalCapacityKg":7000}',4),
+ ('vehicle_type',NULL,'tractor_trolley','Tractor + trolley','{"refrigerated":false,"typicalCapacityKg":3000}',5)
+ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+
+-- logistics fleet · the RC as a DOCUMENT TYPE (PC-56 TENANT-5b). `vehicles.rc_doc_id` (0007) points at a
+-- `kyc_documents` row, and `kyc_documents.doc_type_id` points at this vocabulary — which held four values
+-- (aadhaar, pan, land_record, gst_cert) while 0003's own comment names the type as
+-- "aadhaar|pan|land_record|license_form20|organic_cert|vet_degree|dl|rc…". So a registration certificate could not
+-- be CLASSIFIED as one: even if an FPO had uploaded an RC, there was no doc type to file it under, and W229's RC
+-- column had nothing to read at the far end of its own foreign key.
+--
+-- Only `rc` is added here, by the wave that owns the fleet register. The other four 0003 promised — `dl` (a
+-- rider's driving licence), `license_form20` (agri-input retail), `organic_cert` (organic listings) and
+-- `vet_degree` (livestock services) — are still missing and belong to the waves that own those planes; naming them
+-- here is the record, and adding values nobody reads would be its own defect.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+ ('doc_type',NULL,'rc','Vehicle registration certificate','{"subject":"vehicle"}',5)
+ON CONFLICT (type_code,tenant_id,code) DO NOTHING;

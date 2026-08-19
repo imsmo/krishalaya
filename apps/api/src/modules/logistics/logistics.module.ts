@@ -39,6 +39,15 @@ import { DeliveryZoneRepository } from './repositories/delivery-zone.repository'
 import { DeliveryRouteRepository } from './repositories/delivery-route.repository';
 import { ColdChainLogRepository } from './repositories/cold-chain-log.repository';
 import { OrderConfirmedHandler } from './events/handlers/order-confirmed.handler';
+// PC-56 TENANT-5b · W229's register + W231's board, and the clock W229's own sentence needs.
+import { FleetRegisterReadModel } from './read-models/fleet-register.read-model';
+import { RouteBoardReadModel } from './read-models/route-board.read-model';
+import { RcExpiryParkingJob } from './jobs/rc-expiry-parking.job';
+import { RcExpiryParkingCadenceJob } from './jobs/rc-expiry-parking.cadence-job';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { AppConfig } from '../../core/config/app-config';
+import { FlagsService } from '../../core/feature-flags/flags.service';
+import { METRICS, Metrics } from '../../core/observability/metrics';
 
 @Module({
   // PC-56 TENANT-5a · the money gate needs the ORDERS module's public service (OrderService.transportStatus)
@@ -52,18 +61,45 @@ import { OrderConfirmedHandler } from './events/handlers/order-confirmed.handler
     LogisticsPartnerRepository, VehicleRepository, PickupSlotRepository,
     DeliveryZoneService, DeliveryRouteService, ColdChainService,
     DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository, OpsAlertService, OpsAlertRepository, RiderPayoutService, RiderPayoutRepository,
+    FleetRegisterReadModel, RouteBoardReadModel,
+    { provide: RcExpiryParkingJob,
+      useFactory: (vehicles: VehicleRepository, flags: FlagsService, metrics: Metrics) => new RcExpiryParkingJob(vehicles, flags, metrics),
+      inject: [VehicleRepository, FlagsService, METRICS] },
+    { provide: RcExpiryParkingCadenceJob,
+      useFactory: (config: AppConfig, job: RcExpiryParkingJob) =>
+        new RcExpiryParkingCadenceJob(config.jobs.logisticsFleet.rcParkingIntervalMs, job, config.jobs.logisticsFleet.rcParkingBatchSize),
+      inject: [AppConfig, RcExpiryParkingJob] },
     { provide: OpsAlertsCadenceJob,
       // Every 10 minutes: fast enough that a cold-chain breach is seen while the cargo can still be saved,
       // and safe to repeat because the 0086 dedupe key makes a re-fire inside the cooldown a DB no-op.
       useFactory: (svc: OpsAlertService) => new OpsAlertsCadenceJob(10 * 60_000, svc),
       inject: [OpsAlertService] }],
-  exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService],
+  exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService, FleetRegisterReadModel, RouteBoardReadModel],
 })
 export class LogisticsModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobRegistry: ScheduledJobRegistry,
+    private readonly config: AppConfig,
     private readonly orderConfirmed: OrderConfirmedHandler,
+    private readonly opsAlerts: OpsAlertsCadenceJob,
+    private readonly rcParking: RcExpiryParkingCadenceJob,
   ) {}
-  // auto-create a shipment when an order is confirmed (orders.order_confirmed → pending shipment)
-  onModuleInit(): void { this.registry.register(this.orderConfirmed); }
+  onModuleInit(): void {
+    // auto-create a shipment when an order is confirmed (orders.order_confirmed → pending shipment)
+    this.registry.register(this.orderConfirmed);
+    if (this.config.jobs.logisticsFleet.enabled) {
+      // **PC-56 TENANT-5b · `OpsAlertsCadenceJob` WAS CONSTRUCTED HERE AND NEVER REGISTERED.** The factory
+      // above it has always built the object — with a comment reading "Every 10 minutes: fast enough that a
+      // cold-chain breach is seen while the cargo can still be saved" — and `SCHEDULED_JOB_REGISTRY` was not
+      // imported by this module at all, so nothing ever called `run()`. Seven other modules register their
+      // cadence jobs; this one built its only one and dropped it. Cold-chain breach alerting has therefore
+      // never fired on a clock since it was written, which is the mechanism behind W229's reefer row and
+      // W225's cold-chain tab.
+      this.jobRegistry.register(this.opsAlerts);
+      // …and W229's own sentence: "an expired RC parks the vehicle automatically". Gated per tenant by
+      // `logistics_rc_parking` INSIDE the job, so this registration only gives it a clock.
+      this.jobRegistry.register(this.rcParking);
+    }
+  }
 }

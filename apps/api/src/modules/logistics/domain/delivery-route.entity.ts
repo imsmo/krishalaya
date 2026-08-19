@@ -1,8 +1,9 @@
 // modules/logistics/domain/delivery-route.entity.ts · the Saturday Village Run (0007 delivery_routes, PRD §16.5):
 // a tenant's recurring consolidation route to a cluster of village regions, optionally on a fixed weekday, served
 // by a vehicle and dropped at a consolidation point (often an ambassador). Pure TS. Tenant-scoped. No money.
-import { InvalidDeliveryRouteError, FleetAlreadyInStateError } from './logistics.errors';
+import { InvalidDeliveryRouteError, FleetAlreadyInStateError, RouteNotApprovableError } from './logistics.errors';
 import type { DomainEvent } from './logistics.events';
+import { ApprovalVerdict, RouteStatus, approvalVerdict, canTransitionRoute } from './route-plan';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // eslint-disable-next-line no-control-regex
@@ -11,7 +12,17 @@ const MAX_REGIONS = 2000;
 
 export interface DeliveryRouteProps {
   id: string; tenantId: string; defaultName: string; runWeekday: number | null; villageRegionIds: string[];
-  vehicleId: string | null; consolidationUserId: string | null; isActive: boolean; createdAt?: Date | null;
+  vehicleId: string | null; consolidationUserId: string | null;
+  /**
+   * PC-56 TENANT-5b · the ONE lifecycle (0152). Replaces the `isActive` boolean this entity carried, which
+   * `create` set to TRUE — so W231's `(proposed)` row could not exist and every route was live the instant it
+   * was typed, with the Village-Run job ready to notify a named ambassador about a run nobody had approved.
+   * `is_active` is now a GENERATED column in the database, derived from this, so the two cannot disagree.
+   */
+  status: RouteStatus;
+  /** The evidence of the commitment. Both or neither — 0152's `ck_delivery_routes_approval_pair`. */
+  approvedBy: string | null; approvedAt: Date | null;
+  createdAt?: Date | null;
 }
 export type DeliveryRoutePatch = { defaultName?: string; runWeekday?: number | null; villageRegionIds?: string[]; vehicleId?: string | null; consolidationUserId?: string | null };
 
@@ -39,10 +50,16 @@ export class DeliveryRoute {
   private readonly events: DomainEvent[] = [];
   private constructor(private p: DeliveryRouteProps) {}
 
-  static create(input: Omit<DeliveryRouteProps, 'isActive' | 'villageRegionIds'> & { villageRegionIds: string[] }): DeliveryRoute {
+  /**
+   * A new route is a PROPOSAL, not a run. W231 draws exactly this row — "(proposed)", `unassigned` vehicle,
+   * "— est. 12" parcels — and puts an [Approve route] button beside it, because approving "commits a vehicle +
+   * ambassador weekly". Creating it live (the pre-wave behaviour) skipped the one decision the screen exists
+   * to make.
+   */
+  static create(input: Omit<DeliveryRouteProps, 'status' | 'approvedBy' | 'approvedAt' | 'villageRegionIds'> & { villageRegionIds: string[] }): DeliveryRoute {
     const r = new DeliveryRoute({
       ...input, defaultName: assertName(input.defaultName), runWeekday: assertWeekday(input.runWeekday),
-      villageRegionIds: assertRegionIds(input.villageRegionIds), isActive: true,
+      villageRegionIds: assertRegionIds(input.villageRegionIds), status: 'proposed', approvedBy: null, approvedAt: null,
     });
     r.events.push({ type: 'logistics.delivery_route_created', payload: { routeId: r.p.id, tenantId: input.tenantId, runWeekday: r.p.runWeekday } });
     return r;
@@ -50,7 +67,9 @@ export class DeliveryRoute {
   static rehydrate(p: DeliveryRouteProps): DeliveryRoute { return new DeliveryRoute(p); }
 
   get id() { return this.p.id; }
-  get isActive() { return this.p.isActive; }
+  /** DERIVED, never stored on the entity either: one fact, one place. */
+  get isActive() { return this.p.status === 'active'; }
+  get status() { return this.p.status; }
   get runWeekday() { return this.p.runWeekday; }
   toProps(): Readonly<DeliveryRouteProps> { return Object.freeze({ ...this.p, villageRegionIds: [...this.p.villageRegionIds] }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
@@ -66,9 +85,46 @@ export class DeliveryRoute {
     return { old, new: next };
   }
 
-  setActive(to: boolean): { action: 'activated' | 'deactivated'; old: { isActive: boolean }; new: { isActive: boolean } } {
-    if (this.p.isActive === to) throw new FleetAlreadyInStateError('delivery_route');
-    const from = this.p.isActive; this.p.isActive = to;
-    return { action: to ? 'activated' : 'deactivated', old: { isActive: from }, new: { isActive: to } };
+  /**
+   * Approve the proposal: commit the vehicle and the consolidation point, weekly, and RECORD WHO DID IT.
+   *
+   * The verdict is returned rather than guessed at by the caller, and every refusal names the ONE missing
+   * commitment — a console that says "incomplete" makes an operator open five fields to find out which.
+   */
+  approve(actorUserId: string, now: Date = new Date()): { verdict: ApprovalVerdict } {
+    const v = approvalVerdict({ status: this.p.status, vehicleId: this.p.vehicleId, consolidationUserId: this.p.consolidationUserId, villageRegionIds: this.p.villageRegionIds });
+    if (v.kind !== 'ready') throw new RouteNotApprovableError(v.kind);
+    this.p.status = 'active';
+    this.p.approvedBy = actorUserId;
+    this.p.approvedAt = now;
+    this.events.push({ type: 'logistics.delivery_route_approved', payload: {
+      routeId: this.p.id, tenantId: this.p.tenantId, runWeekday: this.p.runWeekday,
+      // The EVIDENCE travels with the verdict: a consumer that is told a run was approved and not what was
+      // committed cannot tell an ambassador which Thursday is theirs.
+      vehicleId: this.p.vehicleId, consolidationUserId: this.p.consolidationUserId,
+      villages: this.p.villageRegionIds.length, approvedBy: actorUserId,
+    } });
+    return { verdict: v };
+  }
+
+  /**
+   * The compatibility surface the existing `POST :id/active` route drives, expressed against the state machine.
+   *
+   * `true` on a route that was NEVER APPROVED is refused rather than quietly activated: otherwise a dropped
+   * proposal could be switched live through the back door and the approval — the decision that commits a
+   * vehicle and a person — would have been skipped while `approved_by` stayed null.
+   */
+  setActive(to: boolean): { action: 'activated' | 'deactivated'; old: { status: RouteStatus }; new: { status: RouteStatus } } {
+    const from = this.p.status;
+    const next: RouteStatus = to ? 'active' : 'inactive';
+    if (from === next) throw new FleetAlreadyInStateError('delivery_route');
+    // ONE guard, not two. A proposal has no `approved_at` and nothing ever transitions a route back INTO
+    // `proposed`, so "never approved" already covers "still a proposal" — mutation testing proved the extra
+    // `from === 'proposed'` check unreachable, and a second mechanism over one fact is on this programme's own
+    // defect list even when both mechanisms agree.
+    if (to && this.p.approvedAt === null) throw new RouteNotApprovableError('needs_approval');
+    if (!canTransitionRoute(from, next)) throw new RouteNotApprovableError('not_proposed');
+    this.p.status = next;
+    return { action: to ? 'activated' : 'deactivated', old: { status: from }, new: { status: next } };
   }
 }

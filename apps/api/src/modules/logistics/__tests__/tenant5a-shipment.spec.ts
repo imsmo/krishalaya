@@ -448,8 +448,12 @@ describe('TENANT-5a · the gate, run rather than read', () => {
       trailFor: jest.fn(async () => opts.trail ?? []),
       explore: jest.fn(async (t: string, q: unknown) => { void t; void q; return [] as Array<{ id: string; at: Date; shipmentId: string; status: string; lat: number | null; lng: number | null; note: string | null }>; }),
     };
+    // PC-56 TENANT-5b added the fleet-fitness read (the vehicle a dispatcher is assigning). These tests do not
+    // assign a vehicle, so the fake answers "no such vehicle" — and the gate is flag-gated OFF here anyway,
+    // which is what makes this wave's own tests still describe 5a's behaviour rather than 5b's.
+    const vehicleRepo = { fitnessOf: jest.fn(async () => null) };
     const svc = new ShipmentService(uow as never, orders as never, flags as never, outbox as never, idem as never,
-      metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never);
+      metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never, vehicleRepo as never);
     return { svc, s, repo, outbox, audit, metrics, orders, flags };
   }
   const boss = { userId: 'ops-1', canManage: true };

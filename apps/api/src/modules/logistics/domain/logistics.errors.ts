@@ -52,3 +52,40 @@ export class OrderNotReadyForTransportError extends AppError {
       409, { reason, orderStatus });
   }
 }
+
+/**
+ * PC-56 TENANT-5b · W231's [Approve route] refused, BY NAME.
+ *
+ * "Route approval needs logistics lead (it commits a vehicle + ambassador weekly)" — so the refusals are about
+ * what is not yet committed, and each names one thing. `needs_approval` is the back-door case: switching a
+ * never-approved route live through `POST :id/active` would skip the decision entirely.
+ */
+export class RouteNotApprovableError extends AppError {
+  constructor(reason: 'needs_villages' | 'needs_vehicle' | 'needs_consolidation' | 'already_active' | 'not_proposed' | 'needs_approval') {
+    super('ROUTE_NOT_APPROVABLE',
+      reason === 'needs_vehicle' ? 'This route has no vehicle — approving it would commit a weekly run with nothing to carry it'
+      : reason === 'needs_consolidation' ? 'This route has no consolidation point — approving it commits a named person\'s day, so there must be one'
+      : reason === 'needs_villages' ? 'This route serves no villages'
+      : reason === 'already_active' ? 'This route is already approved and running'
+      : reason === 'needs_approval' ? 'This route has never been approved — approve it rather than switching it active'
+      : 'Only a proposed route can be approved',
+      409, { reason });
+  }
+}
+
+/**
+ * PC-56 TENANT-5b · the vehicle may not take this load. Carries the verdict so W226/W227 can print the reason
+ * an operator can act on: a parked vehicle needs unparking, an expired RC needs an RTO appointment, and a
+ * cold-chain consignment needs a different vehicle entirely.
+ */
+export class VehicleUnfitError extends AppError {
+  constructor(reason: 'vehicle_unknown' | 'vehicle_parked' | 'rc_invalid' | 'rc_absent' | 'not_refrigerated', detail: Record<string, unknown> = {}) {
+    super('SHIPMENT_VEHICLE_UNFIT',
+      reason === 'vehicle_unknown' ? 'That vehicle does not exist for this tenant'
+      : reason === 'vehicle_parked' ? 'That vehicle is parked (deactivated) and cannot be assigned'
+      : reason === 'rc_invalid' ? 'That vehicle\'s registration certificate is expired or rejected — safety is not a preference'
+      : reason === 'rc_absent' ? 'That vehicle has no registration certificate on file and this tenant requires one'
+      : 'This shipment requires cold chain and that vehicle is not refrigerated',
+      409, { reason, ...detail });
+  }
+}
