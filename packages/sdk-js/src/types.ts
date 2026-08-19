@@ -945,3 +945,99 @@ export interface DeliveryRouteDto {
   vehicleId: string | null; consolidationUserId: string | null;
   status: RouteStatusDto; isActive: boolean; approvedBy: string | null; approvedAt: string | null; createdAt: string | null;
 }
+
+// --- the freight desk (PC-56 TENANT-5c) ---
+// `freight_invoices` + `freight_invoice_lines` were created by 0070 and no application code ever touched them:
+// no entity, no repository, no service, no controller, no client. These are the plane's first types.
+
+export type FreightSourceKind = 'carrier_invoice' | 'own_fleet_cost_note';
+export type FreightReconStatus = 'pending' | 'exact_match' | 'variance_open' | 'disputed_lines' | 'reconciled' | 'booked_ops';
+
+/** What one billed line turned out to be. `unmatched` is the row the canon does not draw: **we were billed for a
+ *  consignment we have no record of shipping.** `unpriced` is the normal case today, because nothing on the platform
+ *  writes `shipments.charge_minor`. */
+export type FreightLineVerdict =
+  | { kind: 'match'; expectedMinor: string }
+  | { kind: 'over'; expectedMinor: string; varianceMinor: string }
+  | { kind: 'under'; expectedMinor: string; varianceMinor: string }
+  | { kind: 'unmatched' }
+  | { kind: 'unpriced' };
+
+/** The coded dispute classes. `not_evidenced` is where W242's distance-slab and weight-surcharge reasons land:
+ *  there is no carrier rate card on this platform and `shipments` has no weight column, so those two cannot be
+ *  evidenced and the operator writes the reason. */
+export type FreightDisputeReason = 'extra_attempt_billed' | 'cancelled_in_transit' | 'not_shipped' | 'unpriced_line' | 'not_evidenced';
+
+/** The expected side of W241's comparison, and how much of the invoice it actually covers. */
+export type FreightExpected =
+  | { kind: 'priced'; totalMinor: string; lines: number }
+  | { kind: 'partly_priced'; totalMinor: string; pricedLines: number; unpricedLines: number }
+  | { kind: 'unpriced'; unpricedLines: number };
+
+/**
+ * Whether anything can be paid.
+ *
+ * `ready_no_rail` is the honest end state today: W241 says carrier invoices "pay from the tenant wallet through the
+ * normal rails", and those rails cannot carry a carrier — `payouts.bank_account_id` is NOT NULL and a
+ * `logistics_partners` row can own no bank account, `payout_purpose` has no freight value, and
+ * `PayoutService.requestPayout` is a member-withdrawal path gated on the calling user's own KYC. `needsChecker` is
+ * `null` when the maker-checker threshold was not read (it belongs to the payments plane) — which is different from
+ * "no checker needed".
+ */
+export type FreightPayment =
+  | { kind: 'cost_note_booked' }
+  | { kind: 'held_recon_open'; cleanMinor: string; disputedMinor: string }
+  | { kind: 'ready_no_rail'; cleanMinor: string; needsChecker: boolean | null; missing: string[] }
+  | { kind: 'nothing_clean'; disputedMinor: string };
+
+export interface FreightInvoiceRow {
+  id: string; invoiceNo: string; carrierId: string; carrierName: string | null; carrierKind: string | null;
+  sourceKind: FreightSourceKind; periodStart: string; periodEnd: string; shipmentCount: number;
+  billedMinor: string; expectedMinor: string; varianceMinor: string;
+  varianceDirection: 'over' | 'under' | 'level';
+  /** Basis points, computed from the rows. The canon's own prose and table disagree about this number ("+₹2,320" vs
+   *  "+₹2,360 … 2.5%"), which is what a hand-typed percentage does. */
+  varianceBps: number | null;
+  currencyCode: string; reconStatus: FreightReconStatus; disputedLines: number;
+  paymentHold: boolean; receivedAt: string; reconciledAt: string | null;
+  /** False for an own-fleet cost note: W241 prints "Expected —" there, because a diesel receipt has no expected side. */
+  expectedApplies: boolean;
+}
+export interface FreightCycleCount { from: string; to: string; total: number; byStatus: Record<string, number> }
+export interface FreightDeskPage {
+  items: FreightInvoiceRow[]; nextCursor: string | null; cycle: FreightCycleCount | null;
+  /** W241's "last quarter recon recovered ₹11,840", summed from resolved lines' own evidence — one figure per
+   *  currency, because a carrier can bill a tenant in something other than rupees and one total for many currencies
+   *  is a lie no format function can fix. */
+  recovered: Array<{ currencyCode: string; recoveredMinor: string }>;
+}
+export interface FreightLine {
+  id: string; lineNo: number; awbNo: string | null; shipmentId: string | null;
+  billedMinor: string; expectedMinor: string | null; billedAttempts: number | null;
+  disputeStatus: 'none' | 'disputed' | 'resolved';
+  disputeReasonCode: FreightDisputeReason | null; disputeReason: string | null;
+  evidence: Record<string, unknown> | null; resolvedAt: string | null;
+}
+export interface FreightInvoiceDetail {
+  id: string; carrierId: string; invoiceNo: string; sourceKind: FreightSourceKind;
+  periodStart: string; periodEnd: string; shipmentCount: number;
+  billedMinor: string; expectedMinor: string; varianceMinor: string; currencyCode: string;
+  reconStatus: FreightReconStatus; invoiceMediaId: string | null;
+  receivedAt: string; reconciledAt: string | null; paymentHold: boolean;
+  /** Always null: 0070 created the column for a payout that cannot exist for a carrier. */
+  payoutId: string | null;
+  lines: FreightLine[];
+}
+export interface FreightReconDetail {
+  invoice: FreightInvoiceRow;
+  expected: FreightExpected;
+  payment: FreightPayment;
+  /** W242's dispute pack. `clockKept: false` — the canon promises a 7-day response window and this platform keeps no
+   *  such clock: no deadline column, no carrier SLA, no chaser job. */
+  pack: { kind: 'pack_ready'; lines: number; claimedMinor: string; windowDays: number; clockKept: false } | null;
+  cleanMinor: string; disputedMinor: string;
+  /** The same AWB on another of this tenant's invoices: a real shipment, billed correctly, billed twice. Neither
+   *  W241 nor W242 draws this, and no per-invoice check can see it. */
+  duplicates: Array<{ awbNo: string; otherInvoiceId: string; otherInvoiceNo: string; billedMinor: string; periodStart: string }>;
+  lines: Array<FreightLine & { verdict: FreightLineVerdict }>;
+}

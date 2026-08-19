@@ -41,6 +41,11 @@ import { ColdChainLogRepository } from './repositories/cold-chain-log.repository
 import { OrderConfirmedHandler } from './events/handlers/order-confirmed.handler';
 // PC-56 TENANT-5b · W229's register + W231's board, and the clock W229's own sentence needs.
 import { FleetRegisterReadModel } from './read-models/fleet-register.read-model';
+// PC-56 TENANT-5c · the freight desk: two tables 0070 created and no application code had ever touched.
+import { FreightController } from './controllers/v1/freight.controller';
+import { FreightInvoiceService } from './services/freight-invoice.service';
+import { FreightInvoiceRepository } from './repositories/freight-invoice.repository';
+import { FreightDeskReadModel } from './read-models/freight-desk.read-model';
 import { RouteBoardReadModel } from './read-models/route-board.read-model';
 import { RcExpiryParkingJob } from './jobs/rc-expiry-parking.job';
 import { RcExpiryParkingCadenceJob } from './jobs/rc-expiry-parking.cadence-job';
@@ -54,7 +59,7 @@ import { METRICS, Metrics } from '../../core/observability/metrics';
   // so a shipment cannot be assigned, scheduled or picked up for an order nobody has paid for. The module
   // blueprint's rule holds: another module's PUBLIC SERVICE, never its repositories.
   imports: [OrdersModule],
-  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController],
+  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController, FreightController],
   providers: [
     ShipmentService, ShipmentRepository, OrderConfirmedHandler,
     LogisticsPartnerService, VehicleService, PickupSlotService,
@@ -62,6 +67,7 @@ import { METRICS, Metrics } from '../../core/observability/metrics';
     DeliveryZoneService, DeliveryRouteService, ColdChainService,
     DeliveryZoneRepository, DeliveryRouteRepository, ColdChainLogRepository, CodRemittanceService, CodRemittanceRepository, OpsAlertService, OpsAlertRepository, RiderPayoutService, RiderPayoutRepository,
     FleetRegisterReadModel, RouteBoardReadModel,
+    FreightInvoiceService, FreightInvoiceRepository, FreightDeskReadModel,
     { provide: RcExpiryParkingJob,
       useFactory: (vehicles: VehicleRepository, flags: FlagsService, metrics: Metrics) => new RcExpiryParkingJob(vehicles, flags, metrics),
       inject: [VehicleRepository, FlagsService, METRICS] },
@@ -74,7 +80,7 @@ import { METRICS, Metrics } from '../../core/observability/metrics';
       // and safe to repeat because the 0086 dedupe key makes a re-fire inside the cooldown a DB no-op.
       useFactory: (svc: OpsAlertService) => new OpsAlertsCadenceJob(10 * 60_000, svc),
       inject: [OpsAlertService] }],
-  exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService, FleetRegisterReadModel, RouteBoardReadModel],
+  exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService, FleetRegisterReadModel, RouteBoardReadModel, FreightInvoiceService],
 })
 export class LogisticsModule implements OnModuleInit {
   constructor(

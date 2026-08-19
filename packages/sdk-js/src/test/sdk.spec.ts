@@ -316,9 +316,54 @@ describe('HttpClient via resources', () => {
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
     const page = await c.support.myTickets();
     expect(calls[0].url).toBe('https://api.test/v1/support/tickets?box=mine&limit=50');
+    expect(page.items.map((t) => t.id)).toEqual(['tk1']);
     const rated = await c.support.submitCsat('tk1', 5);
     expect(calls[1].url).toBe('https://api.test/v1/support/tickets/tk1/csat');
     expect(rated.csatScore).toBe(5);
+  });
+
+  it('freight.list maps the desk meta — cursor, cycle count and the PER-CURRENCY recovery (TENANT-5c)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: {
+      data: [{ id: 'f1', invoiceNo: 'DLV-1', carrierId: 'c1', carrierName: 'Delhivery', carrierKind: '3pl',
+               sourceKind: 'carrier_invoice', periodStart: '2026-06-01', periodEnd: '2026-06-30', shipmentCount: 86,
+               billedMinor: '9644000', expectedMinor: '9412000', varianceMinor: '232000', varianceDirection: 'over',
+               varianceBps: 240, currencyCode: 'INR', reconStatus: 'variance_open', disputedLines: 4,
+               paymentHold: true, receivedAt: '2026-07-12T00:00:00Z', reconciledAt: null, expectedApplies: true }],
+      meta: { nextCursor: null, cycle: { from: '2026-06-01', to: '2026-06-30', total: 3, byStatus: { pending: 1 } },
+              recovered: [{ currencyCode: 'INR', recoveredMinor: '1184000' }] } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.freight.list({ reconStatus: 'variance_open', cycleFrom: '2026-06-01', cycleTo: '2026-06-30' });
+    expect(calls[0].url).toContain('logistics/freight-invoices?');
+    expect(calls[0].url).toContain('reconStatus=variance_open');
+    expect(page.items[0].varianceBps).toBe(240);
+    expect(page.cycle?.total).toBe(3);
+    // One figure per currency: a single total would add paise to cents the first time a carrier bills in USD.
+    expect(page.recovered).toEqual([{ currencyCode: 'INR', recoveredMinor: '1184000' }]);
+  });
+
+  it('freight.list defaults the recovery to an empty list, never to a zero (TENANT-5c)', async () => {
+    const { fn } = fakeFetch(() => ({ body: { data: [] } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.freight.list();
+    expect(page.recovered).toEqual([]);
+    expect(page.cycle).toBeNull();
+  });
+
+  it('freight.record carries the Idempotency-Key and the lines; recon GETs the verdicts (TENANT-5c)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => (n === 1
+      ? ({ body: { data: { id: 'f1', lines: [{ id: 'l1' }] } } })
+      : ({ body: { data: { invoice: { id: 'f1' }, expected: { kind: 'unpriced', unpricedLines: 2 },
+            payment: { kind: 'ready_no_rail', cleanMinor: '0', needsChecker: null, missing: ['carrier_payee_bank_account'] },
+            pack: null, cleanMinor: '0', disputedMinor: '0', duplicates: [], lines: [] } } })));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.freight.record({ carrierId: 'c1', invoiceNo: 'DLV-1', periodStart: '2026-06-01', periodEnd: '2026-06-30',
+      billedMinor: '9644000', lines: [{ awbNo: 'AWB1', billedMinor: '9644000' }] }, 'idem-fr-1');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-fr-1');
+    const recon = await c.freight.recon('f1');
+    expect(calls[1].url).toBe('https://api.test/v1/logistics/freight-invoices/f1/recon');
+    expect(recon.payment.kind).toBe('ready_no_rail');
+    expect(recon.expected.kind).toBe('unpriced');
   });
 
   it('listings.extend POSTs :id/extend with an idempotency key + days body, returns the new expiresAt', async () => {

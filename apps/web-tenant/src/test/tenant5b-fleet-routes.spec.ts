@@ -336,8 +336,12 @@ describe('TENANT-5b · the new-route form (W2402–W2405)', () => {
 
 describe('TENANT-5b · W225\'s sub-nav, all seven entries', () => {
   it('lists every section the canon prints and marks the four with no screen', () => {
-    expect(LOGISTICS_NAV.map((i) => i.key)).toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'zones', 'coldChain']);
-    expect(LOGISTICS_NAV.filter((i) => i.built).map((i) => i.key)).toEqual(['shipments', 'vehicles', 'routes']);
+    // The canon's seven, in the canon's order — plus the ONE entry PC-56 TENANT-5c added: W241 (Freight invoices)
+    // has no inbound link anywhere in the 1,955 screens (only its own chain's breadcrumbs), so the wave that built
+    // the desk also gave it a way in. Every canon entry is still here, in place; nothing was hidden.
+    expect(LOGISTICS_NAV.filter((i) => i.key !== 'freight').map((i) => i.key))
+      .toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'zones', 'coldChain']);
+    expect(LOGISTICS_NAV.filter((i) => i.built).map((i) => i.key)).toEqual(['shipments', 'vehicles', 'routes', 'freight']);
     expect(unbuiltCount()).toBe(4);
     // Shipped as unbuilt rather than hidden: an FPO who was shown the canon cannot otherwise tell "not built" from
     // "hidden from me by a permission".

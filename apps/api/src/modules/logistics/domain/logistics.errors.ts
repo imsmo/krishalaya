@@ -89,3 +89,33 @@ export class VehicleUnfitError extends AppError {
       409, { reason, ...detail });
   }
 }
+
+/* ---- freight money (PC-56 TENANT-5c) — the plane 0070 built tables for and nothing ever coded ---- */
+
+/**
+ * These two carry their OWN codes rather than the generic `NOT_FOUND` the rest of this file's not-found errors use
+ * (the convention exists — see `contract-farming`/`dairy`), and the reason is a console requirement W241 and W242
+ * both declare: *"Flagged off — Freight Invoices disabled … Nothing is broken — it is not enabled."*
+ *
+ * `FeatureFlagGuard` throws a bare 404 on purpose, so that a disabled module is invisible (Law 10). With a generic
+ * code, a freight screen could not tell "this tenant does not have the freight desk switched on" from "that invoice
+ * was deleted" — and W241/W242's five declared states include BOTH. A distinct code is the only thing that lets the
+ * console print the right one instead of guessing.
+ */
+export class FreightInvoiceNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Freight invoice not found', { id }); (this as any).code = 'FREIGHT_INVOICE_NOT_FOUND'; }
+}
+export class FreightLineNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Freight invoice line not found', { id }); (this as any).code = 'FREIGHT_LINE_NOT_FOUND'; }
+}
+export class InvalidFreightInvoiceError extends DomainError { constructor(message: string) { super('FREIGHT_INVOICE_INVALID', message, 422); } }
+/** UNIQUE(tenant_id, invoice_no) — the same carrier bill uploaded twice. Typed so the console can say "you already
+ *  have that invoice" instead of a bare 409, which on a monthly upload is the most likely mistake there is. */
+export class DuplicateFreightInvoiceError extends AppError {
+  constructor(invoiceNo: string) { super('FREIGHT_INVOICE_EXISTS', `Invoice ${invoiceNo} has already been recorded for this carrier cycle`, 409, { invoiceNo }); }
+}
+/** The recon is finished (or was never open): re-running it would rewrite a decision somebody already took, and
+ *  W242's settlement path depends on "reconciled" meaning somebody closed it. */
+export class FreightReconClosedError extends AppError {
+  constructor(status: string) { super('FREIGHT_RECON_CLOSED', `This invoice's recon is ${status} — it cannot be changed`, 409, { status }); }
+}

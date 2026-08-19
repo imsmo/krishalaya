@@ -120,3 +120,9 @@ export type {
   LogisticsPartnerRow, RouteStatusDto, RouteParcels, RouteEconomics, RouteApproval, RouteBoardRow, RouteCounts,
   RouteBoardPage, RouteCorridor, DeliveryRouteDto,
 } from './types';
+// PC-56 TENANT-5c · the freight desk.
+export type {
+  FreightSourceKind, FreightReconStatus, FreightLineVerdict, FreightDisputeReason, FreightExpected,
+  FreightPayment, FreightInvoiceRow, FreightCycleCount, FreightDeskPage, FreightLine, FreightInvoiceDetail,
+  FreightReconDetail,
+} from './types';

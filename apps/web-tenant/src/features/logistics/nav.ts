@@ -13,12 +13,24 @@
 
 export interface LogisticsNavItem { key: string; href: string | null; built: boolean }
 
+// PC-56 TENANT-5c ADDS AN EIGHTH ENTRY THE CANON'S SUB-NAV DOES NOT HAVE, and the reason is a finding:
+//
+// **W241 (Freight invoices) HAS NO INBOUND LINK ANYWHERE IN THE CANON.** Its own chain screens (W2612–W2618) carry
+// it in their breadcrumb, and that is all: no operational screen links to it. For contrast, W229 (Vehicles) is
+// linked from W225, W226, W228, W231, W233 and W234. So the freight desk — the one screen in this module that is
+// about money leaving the tenant's wallet — is reachable in the canon only by typing its URL.
+//
+// A screen with no route in is the same defect class as a table with no writer: it exists and nothing reaches it.
+// The desk's breadcrumb ("Operations · Logistics · Freight invoices") says where it belongs, so it is added here as
+// a sibling of the other logistics desks rather than left unreachable. This is the ONE place the console's nav
+// departs from the canon's seven entries, and it departs by adding a way in, never by hiding one.
 export const LOGISTICS_NAV: readonly LogisticsNavItem[] = [
   { key: 'overview',  href: null,                  built: false },
   { key: 'shipments', href: '/logistics',          built: true },
   { key: 'carriers',  href: null,                  built: false },
   { key: 'vehicles',  href: '/logistics/vehicles', built: true },
   { key: 'routes',    href: '/logistics/routes',   built: true },
+  { key: 'freight',   href: '/logistics/freight',  built: true },
   { key: 'zones',     href: null,                  built: false },
   { key: 'coldChain', href: null,                  built: false },
 ];

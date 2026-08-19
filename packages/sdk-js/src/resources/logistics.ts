@@ -8,6 +8,8 @@ import {
   Shipment, Page, ShipmentTrail, ShipmentEventFilter, ShipmentEventPage,
   DeliveryRouteDto, FleetMechanisms, FleetRegisterPage, FleetSplit, FleetVehicle, FleetVehicleRow,
   LogisticsPartnerRow, RouteBoardPage, RouteBoardRow, RouteCorridor, RouteCounts,
+  FreightCycleCount, FreightDeskPage, FreightInvoiceDetail, FreightInvoiceRow, FreightReconDetail,
+  FreightReconStatus, FreightSourceKind,
 } from '../types';
 
 export interface RiderPayoutStatement {
@@ -265,5 +267,67 @@ export class RoutesResource {
   async setActive(id: string, isActive: boolean): Promise<DeliveryRouteDto> {
     const r = await this.http.request<DeliveryRouteDto>('POST', `logistics/routes/${encodeURIComponent(id)}/active`, { body: { isActive } });
     return r.data as DeliveryRouteDto;
+  }
+}
+
+/**
+ * **THE FREIGHT DESK (PC-56 TENANT-5c).**
+ *
+ * `freight_invoices` and `freight_invoice_lines` were created by migration 0070 — header + lines, a GENERATED
+ * variance on both, a six-value recon vocabulary, tenant RLS, four indexes — and **no application code has ever
+ * touched them.** No entity, no repository, no service, no controller, and no method here. W241 (the carrier-invoice
+ * list) and W242 (line-by-line reconciliation) were drawings over an RLS policy protecting an empty table.
+ *
+ * Nothing in this resource moves money: there is no payout rail that can carry a carrier payee, and the desk says so
+ * rather than pretending. See the `payment` verdict on the recon detail.
+ */
+export class FreightResource {
+  constructor(private readonly http: HttpClient) {}
+
+  /** W241's list. `cycleFrom`/`cycleTo` add the footer's cycle count ("3 of 3 invoices (Jun cycle)"). */
+  async list(params: { reconStatus?: FreightReconStatus; carrierId?: string; sourceKind?: FreightSourceKind; cycleFrom?: string; cycleTo?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<FreightDeskPage> {
+    const r = await this.http.request<FreightInvoiceRow[]>('GET', 'logistics/freight-invoices', { query: { ...params }, signal });
+    const meta = (r.meta ?? {}) as { nextCursor?: string | null; cycle?: FreightCycleCount | null; recovered?: Array<{ currencyCode: string; recoveredMinor: string }> };
+    return { items: r.data ?? [], nextCursor: meta.nextCursor ?? null, cycle: meta.cycle ?? null, recovered: meta.recovered ?? [] };
+  }
+
+  /** W241's [Upload carrier invoice] — the header plus its lines, which is what makes a line-by-line recon possible.
+   *  A carrier invoice needs at least one line; an own-fleet cost note may carry none. */
+  async record(input: {
+    carrierId: string; invoiceNo: string; sourceKind?: FreightSourceKind; periodStart: string; periodEnd: string;
+    billedMinor: string; currencyCode?: string; invoiceMediaId?: string;
+    lines?: Array<{ awbNo?: string; shipmentId?: string; billedMinor: string; billedAttempts?: number }>;
+  }, idempotencyKey: string): Promise<FreightInvoiceDetail> {
+    const r = await this.http.request<FreightInvoiceDetail>('POST', 'logistics/freight-invoices', { body: input, idempotencyKey });
+    return r.data as FreightInvoiceDetail;
+  }
+
+  /** W242's screen: the lines, their verdicts, what is clean, what is disputed, and what could be paid. */
+  async recon(id: string, signal?: AbortSignal): Promise<FreightReconDetail> {
+    const r = await this.http.request<FreightReconDetail>('GET', `logistics/freight-invoices/${encodeURIComponent(id)}/recon`, { signal });
+    return r.data as FreightReconDetail;
+  }
+
+  /** Run (or re-run) the match against our own shipments. */
+  async reconcile(id: string, idempotencyKey: string): Promise<FreightInvoiceDetail> {
+    const r = await this.http.request<FreightInvoiceDetail>('POST', `logistics/freight-invoices/${encodeURIComponent(id)}/reconcile`, { body: {}, idempotencyKey });
+    return r.data as FreightInvoiceDetail;
+  }
+
+  async disputeLine(id: string, lineId: string, reason: string): Promise<FreightInvoiceDetail> {
+    const r = await this.http.request<FreightInvoiceDetail>('POST', `logistics/freight-invoices/${encodeURIComponent(id)}/lines/${encodeURIComponent(lineId)}/dispute`, { body: { reason } });
+    return r.data as FreightInvoiceDetail;
+  }
+
+  /** `agreed` carries the amount that will actually be paid; `withdrawn` accepts what was billed. */
+  async resolveLine(id: string, lineId: string, input: { outcome: 'agreed' | 'withdrawn'; agreedMinor?: string }, idempotencyKey: string): Promise<FreightInvoiceDetail> {
+    const r = await this.http.request<FreightInvoiceDetail>('POST', `logistics/freight-invoices/${encodeURIComponent(id)}/lines/${encodeURIComponent(lineId)}/resolve`, { body: input, idempotencyKey });
+    return r.data as FreightInvoiceDetail;
+  }
+
+  /** Close the recon (or book an own-fleet cost note to ops). Releases W241's payment hold; pays nothing. */
+  async close(id: string, idempotencyKey: string): Promise<FreightInvoiceDetail> {
+    const r = await this.http.request<FreightInvoiceDetail>('POST', `logistics/freight-invoices/${encodeURIComponent(id)}/close`, { body: {}, idempotencyKey });
+    return r.data as FreightInvoiceDetail;
   }
 }
