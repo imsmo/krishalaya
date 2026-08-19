@@ -1130,3 +1130,80 @@ export interface LogisticsInsights {
   transitLoss: LogisticsTransitLoss;
   freightRecovered: Array<{ currencyCode: string; recoveredMinor: string }>;
 }
+
+/* ---- PC-56 TENANT-6a · W167's counter board ---------------------------------------------------------------- */
+
+/** W167 says "evening starts 17:00". No shift clock exists on this platform — no column, no setting, no per-centre
+ *  schedule — and those are the hours a farmer walks to the centre for. */
+export type DairyShiftClock = { kind: 'not_recorded'; missing: string[] };
+
+/** The accrual window, DERIVED from the members' own `payment_cycle` preference (which nothing read before
+ *  TENANT-6a), not a cycle the platform has committed to. */
+export interface DairyCycleWindow {
+  from: string; to: string;
+  cycle: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+  basis: 'derived_from_membership_preference';
+}
+
+/** The close is derivable; the payday is not — nothing records when a dairy cycle pays, and 312 families plan a week
+ *  around that date. */
+export type DairyPayday = { kind: 'not_recorded'; closesOn: string; missing: string[] };
+
+/** A tick on W167's Analyzer column means "this centre has an analyzer on file" — never "this reading came out of
+ *  it": `milk_collections.device_payload`, the column built for that evidence, is dead. */
+export type DairyAnalyzer =
+  | { kind: 'on_file'; model: string; serial: string | null; perPourEvidence: false }
+  | { kind: 'none_on_file' };
+
+/** W167's BMC-temp column. `bmc_units` has had no application code since 0007 and no reading has ever been written
+ *  for one, so `no_unit`/`no_readings` is the honest answer today. */
+export type DairyBmcTemp =
+  | { kind: 'reading'; tempC: string; recordedAt: string; targetC: string | null; overTarget: boolean }
+  | { kind: 'no_unit' }
+  | { kind: 'no_readings'; unitId: string; targetC: string | null };
+
+export type DairyCoverage =
+  | { kind: 'measured'; poured: number; enrolled: number; shareBps: number }
+  | { kind: 'no_memberships' };
+
+/** The flag COUNT is real per pour; the retained sample, the re-test, the decision and the member's notification are
+ *  recorded nowhere — hence `workflow: 'not_built'`. */
+export interface DairyFlagSummary { total: number; water: number; other: number; kinds: string[]; workflow: 'not_built' }
+
+/** What the window's pours are worth before deductions — and whether a rate card that priced them carries bonus
+ *  slabs the pricing engine ignores (it always does: `bonus_rules` is read by nothing). */
+export interface DairyAccrual {
+  kind: 'accrued';
+  amountMinor: string;
+  currencyCode: string;
+  window: DairyCycleWindow;
+  bonusRulesIgnored: boolean;
+  membersWithPours: number;
+  /** How many bills EXIST for the window. Usually zero: the cycle-close job is instantiated nowhere. */
+  billsExisting: number;
+}
+
+export interface DairyCounterCentre {
+  mccId: string; code: string; name: string;
+  litres: string; pours: number; pourers: number; membershipsEnrolled: number;
+  fatPct: string | null; snfPct: string | null;
+  amountMinor: string; flags: number;
+  analyzer: DairyAnalyzer;
+  bmc: DairyBmcTemp;
+}
+
+export interface DairyCounterBoard {
+  day: string;
+  shift: DairyShift;
+  shiftClock: DairyShiftClock;
+  centres: DairyCounterCentre[];
+  totals: { litres: string; pours: number; pourers: number; amountMinor: string; flags: number; fatPct: string | null; snfPct: string | null };
+  coverage: DairyCoverage;
+  flagSummary: DairyFlagSummary;
+  accrual: DairyAccrual;
+  window: DairyCycleWindow;
+  payday: DairyPayday;
+  cycleMix: Array<{ paymentCycle: string; members: number }>;
+  /** The one promise on W167 that IS enforced end to end: UNIQUE(membership_id, collected_on, shift). */
+  pourUniqueness: 'unique_membership_day_shift';
+}

@@ -16,7 +16,7 @@ import { userMain, TenantAccount } from '../../../core/wallet/account-codes';
 import { AccountRef } from '../../../core/wallet/account-codes';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { MilkBill, BillDeduction } from '../domain/milk-bill.entity';
-import { DomainEvent, DairyEventType } from '../domain/dairy.events';
+import { DomainEvent } from '../domain/dairy.events';
 import { MilkBillRepository } from '../repositories/milk-bill.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';

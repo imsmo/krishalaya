@@ -857,6 +857,30 @@ describe('HttpClient via resources', () => {
     expect(paid.status).toBe('paid');
   });
 
+  it('dairy: counterBoard is a GET with the day/shift/cycle in the QUERY, and omits what was not asked (PC-56 TENANT-6a)', async () => {
+    const board = {
+      day: '2026-07-13', shift: 'morning', shiftClock: { kind: 'not_recorded', missing: ['mcc_shift_open_at'] },
+      centres: [], totals: { litres: '0.0', pours: 0, pourers: 0, amountMinor: '0', flags: 0, fatPct: null, snfPct: null },
+      coverage: { kind: 'no_memberships' }, flagSummary: { total: 0, water: 0, other: 0, kinds: [], workflow: 'not_built' },
+      accrual: { kind: 'accrued', amountMinor: '0', currencyCode: 'INR', window: { from: '2026-07-01', to: '2026-07-15', cycle: 'fortnightly', basis: 'derived_from_membership_preference' }, bonusRulesIgnored: false, membersWithPours: 0, billsExisting: 0 },
+      window: { from: '2026-07-01', to: '2026-07-15', cycle: 'fortnightly', basis: 'derived_from_membership_preference' },
+      payday: { kind: 'not_recorded', closesOn: '2026-07-15', missing: ['dairy_cycle_calendar'] },
+      cycleMix: [], pourUniqueness: 'unique_membership_day_shift',
+    };
+    const { fn, calls } = fakeFetch(() => ({ body: { data: board } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    // Everything omitted: the server resolves the day from its own calendar and the cycle from the membership mix.
+    const b = await c.dairy.counterBoard();
+    expect(calls[0].url).toBe('https://api.test/v1/dairy/counter/board');
+    expect(calls[0].init.method).toBe('GET');
+    expect(b.payday.kind).toBe('not_recorded');
+    expect(b.pourUniqueness).toBe('unique_membership_day_shift');
+
+    await c.dairy.counterBoard({ day: '2026-07-13', shift: 'evening', cycle: 'monthly' });
+    expect(calls[1].url).toBe('https://api.test/v1/dairy/counter/board?day=2026-07-13&shift=evening&cycle=monthly');
+  });
+
   it('labour employer flow: createBooking (idem) → assign → start → complete → pay; bookingAssignments uses box=booking (P1-12)', async () => {
     const { fn, calls } = fakeFetch((_c, n) =>
       n === 1 ? { body: { data: { id: 'b1', bookingNo: 'LB-1', status: 'open' } } }

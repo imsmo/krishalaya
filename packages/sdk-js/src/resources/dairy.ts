@@ -8,6 +8,7 @@ import {
   Page, DairyMcc, DairyMembership, DairyRateCard, DairyCollection, MilkBill,
   CreateMccInput, EnrolMemberInput, CreateRateCardInput, RecordCollectionInput, GenerateBillInput,
   DairyAnimalType, MilkBillStatus,
+  DairyCounterBoard, DairyShift,
 } from '../types';
 
 export class DairyResource {
@@ -102,6 +103,19 @@ export class DairyResource {
     return this.http.request<{ id: string; status: string }>('POST', `dairy/d2c/subscriptions/${encodeURIComponent(id)}/${action}`, { body }).then((r) => r.data);
   }
   /** The honest day sheet (canon 238): per-shift slips/weight/amount aggregated from ledgered rows. */
+  /**
+   * PC-56 TENANT-6a · W167's counter board: every centre's litres, pourers against the roll, litre-weighted fat/SNF,
+   * the analyzer on file, the cooler's latest reading, the flags, and the cycle-to-date accrual.
+   *
+   * The first read of a DAY's collections this SDK has ever had — `listCollections` requires a membershipId, so a
+   * centre's own shift could not be listed at all. Omit `day` for the DATABASE's today, and `cycle` to accrue over the
+   * window the tenant's most common membership preference implies.
+   */
+  async counterBoard(params: { day?: string; shift?: DairyShift; cycle?: 'daily' | 'weekly' | 'fortnightly' | 'monthly' } = {}, signal?: AbortSignal): Promise<DairyCounterBoard> {
+    const r = await this.http.request<DairyCounterBoard>('GET', 'dairy/counter/board', { query: { ...params }, signal });
+    return r.data as DairyCounterBoard;
+  }
+
   async mccDaySummary(mccId: string, date?: string, signal?: AbortSignal): Promise<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>> {
     return (await this.http.request<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>>('GET', `dairy/d2c/mccs/${encodeURIComponent(mccId)}/day-summary`, { query: { date }, signal })).data;
   }

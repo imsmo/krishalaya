@@ -22,7 +22,7 @@ import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { LedgerRepository } from '../../../core/wallet/ledger.repository';
 import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
-import { userMain, platform, PlatformAccount, TenantAccount } from '../../../core/wallet/account-codes';
+import { platform, PlatformAccount, TenantAccount } from '../../../core/wallet/account-codes';
 
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';

@@ -1,13 +1,13 @@
 // modules/dairy/services/milk-rate-card.service.ts · cooperative-admin milk pricing (rate cards).
 // One ACID tx per write (UoW), outbox in-tx (Law 4), idempotent create (Law 3), authz THROWS (Law 6).
 import { Inject, Injectable } from '@nestjs/common';
-import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { MilkRateCard } from '../domain/milk-rate-card.entity';
-import { PricingModel, AnimalType, DomainEvent, DairyEventType } from '../domain/dairy.events';
+import { PricingModel, AnimalType, DairyEventType } from '../domain/dairy.events';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { CreateRateCardDto } from '../dto/create-milk-rate-card.dto';
 import { RateCardNotFoundError, DairyForbiddenError } from '../domain/dairy.errors';

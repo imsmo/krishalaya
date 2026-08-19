@@ -33,11 +33,15 @@ import { DairyMembershipRepository } from './repositories/dairy-membership.repos
 import { MilkRateCardRepository } from './repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from './repositories/milk-collection.repository';
 import { MilkBillRepository } from './repositories/milk-bill.repository';
+// PC-56 TENANT-6a · W167's counter board (the first read of a DAY's collections this platform has ever had).
+import { DairyCounterController } from './controllers/v1/dairy-counter.controller';
+import { DairyCounterReadModel } from './read-models/dairy-counter.read-model';
+import { DairyCounterRepository } from './repositories/dairy-counter.repository';
 
 // The cycle-close worker job (jobs/milk-bill-cycle-close.job.ts) is instantiated by apps/worker with a
 // privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other batch jobs.
 @Module({
-  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController],
+  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -45,7 +49,10 @@ import { MilkBillRepository } from './repositories/milk-bill.repository';
       // Every 30 minutes: frequent enough that a new subscription gets today's drop quickly, cheap because
       // the DB's unique index makes every re-run a no-op (0085).
       useFactory: (uow: UnitOfWork, repo: D2cRepository) => new D2cDeliveryRunsCadenceJob(30 * 60_000, uow, repo),
-      inject: [UNIT_OF_WORK, D2cRepository] }],
+      inject: [UNIT_OF_WORK, D2cRepository] },
+    // PC-56 TENANT-6a
+    DairyCounterRepository, DairyCounterReadModel,
+  ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService],
 })
 export class DairyModule implements OnModuleInit {

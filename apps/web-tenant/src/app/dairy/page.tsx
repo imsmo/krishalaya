@@ -1,222 +1,243 @@
-// apps/web-tenant/src/app/dairy/page.tsx · the dairy cooperative MCC-operator console (P1-12). Server-first,
-// requireSession-gated, behind the `dairy` flag (NEXT_PUBLIC_FEATURE_DAIRY + the API's own flag). Five sections —
-// MCCs, rate cards, members, counter collection-entry, and the per-cycle milk-bill settlement workflow
-// (generate → preview → approve → pay) — each loads independently and degrades on its own (Law 12). Every write is
-// a Server Action → the audited, RBAC-gated API, which is authoritative for money + pricing (Law 2/11). Money via
-// formatMoneyMinor; all copy via i18n; noindex.
+// apps/web-tenant/src/app/dairy/page.tsx · W167 (Dairy — collections) — the counter board (PC-56 TENANT-6a).
+// Server-first, requireSession-gated, noindex. A pure read: the day and the shift ride in the URL, so a dairy
+// secretary can bookmark "yesterday evening" and the Back button works.
+//
+// **THE TENANT CONSOLE HAD NO DAIRY SCREEN AT ALL** — six canon screens, zero pages — while the dairy module has had a
+// careful WRITE path since 0007: pours priced by the active rate card in bigint, unique per (member, day, shift),
+// idempotent, outboxed. What did not exist was any way to READ a day: `MilkCollectionRepository.listFor` and the SDK's
+// `listCollections` both require a `membershipId`, so a centre's own morning could not be listed, let alone three
+// centres side by side, which is the whole of W167.
+//
+// WHAT THIS PAGE SAYS THAT W167 CANNOT:
+//   • **"evening starts 17:00" is not recorded.** No shift clock exists — no column, no setting, no per-centre
+//     schedule — and those are the hours a farmer walks to the centre for;
+//   • **"pays Fri 17 Jul" is not recorded either.** The window's CLOSE is derivable; nothing on this platform records
+//     when a dairy cycle pays, and the canon ties the day to a logistics run no dairy row references. 312 families
+//     plan a week around that date, so it is named, not guessed;
+//   • **the cycle is DERIVED**, from each member's own `payment_cycle` preference — a column that, before this wave,
+//     nothing on the platform read. Fortnightly gives the canon's own "01–15";
+//   • **the BMC temp column has no source.** `bmc_units` has had no application code since 0007 and no cold-chain
+//     reading has ever been written for one, so each centre reports `no unit` / `no readings` instead of a blank cell
+//     that would read as "cold enough to not mention" (TENANT-6d builds the monitor);
+//   • **the Analyzer tick is about the CENTRE, not the pour.** `milk_collections.device_payload` — the column built to
+//     hold the analyzer's own reading — is dead, and fat/SNF arrive as plain decimal strings. W168 hangs an
+//     adulteration flag and a member's money on that reading, so the distinction is printed;
+//   • **the premium band pays nothing.** `milk_rate_cards.bonus_rules` is read by NOTHING (the pricing engine's own
+//     header calls the slabs "DEFERRED"), so the accrued total excludes the bonus W168 promises the farmer — and says
+//     so wherever the total appears;
+//   • and **"312 milk_bills building" are not building**: nothing generates bills on a clock, so the board prints
+//     members-who-poured beside bills-that-exist and lets the gap speak.
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { env } from '../../lib/env';
-import { formatMoneyMinor } from '@krishalaya/i18n';
-import { ANIMAL_TYPES, PRICING_MODELS, PAYMENT_CYCLES, MILK_SHIFTS, nextBillActions } from '../../features/dairy/calc';
+import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { SdkError } from '@krishalaya/sdk-js';
+import type { DairyCounterBoard } from '@krishalaya/sdk-js';
 import {
-  createMccAction, setMccActiveAction, enrolMemberAction, createRateCardAction,
-  recordCollectionAction, generateBillAction, previewBillAction, approveBillAction, payBillAction,
-} from './actions';
-import type { DairyMcc, DairyMembership, DairyRateCard, MilkBill } from '@krishalaya/sdk-js';
+  SHIFTS, accrualKey, analyzerKey, analyzerText, analyzerVerified, billsGapKey, bmcKey, bmcText, bmcTone,
+  boardHref, bonusIgnoredKey, centreCoverageText, centreQuietKey, coverageKey, coverageShareText, dairyState,
+  dairyStateKey, flagKindKey, flagWorkflowKey, flagsKey, paydayKey, qualityText, retryChainKey, shiftClockKey,
+  shiftKey, shiftOf, totalsFoot, uniquenessKey, windowBasisKey, windowKey,
+} from '../../features/dairy/counter';
+import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../features/dairy/nav';
 
 export const dynamic = 'force-dynamic';
+
 export function generateMetadata(): Metadata {
-  return { title: getTranslator().t('dairy.title'), robots: { index: false, follow: false } };
+  return { title: getTranslator().t('dairy.counter.title'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['mcc', 'mcc.on', 'mcc.off', 'member', 'ratecard', 'collection', 'bill', 'bill.previewed', 'bill.approved', 'bill.paid']);
+const TONE: Record<'ok' | 'bad' | 'muted', string> = {
+  ok: 'kv-badge', bad: 'kv-badge kv-badge--danger', muted: 'kv-badge kv-badge--muted',
+};
 
-export default async function DairyPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
-  if (!env.featureDairy) notFound();
+export default async function DairyCounterPage({ searchParams }: { searchParams: { shift?: string; day?: string } }) {
   await requireSession('/dairy');
   const t = getTranslator();
   const lang = getLang();
+  const shift = shiftOf(searchParams.shift);
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.day ?? '') ? searchParams.day : undefined;
 
-  let mccs: DairyMcc[] = []; let cards: DairyRateCard[] = []; let members: DairyMembership[] = []; let bills: MilkBill[] = [];
-  let mccsFailed = false; let cardsFailed = false; let membersFailed = false; let billsFailed = false;
-  const [mRes, cRes, meRes, bRes] = await Promise.allSettled([
-    tenantClient().dairy.listMccs({ activeOnly: false, limit: 100 }),
-    tenantClient().dairy.listRateCards({ activeOnly: false }),
-    tenantClient().dairy.listMemberships({ box: 'all', limit: 100 }),
-    tenantClient().dairy.listBills({ box: 'all', limit: 100 }),
-  ]);
-  if (mRes.status === 'fulfilled') mccs = mRes.value.items; else mccsFailed = true;
-  if (cRes.status === 'fulfilled') cards = cRes.value; else cardsFailed = true;
-  if (meRes.status === 'fulfilled') members = meRes.value.items; else membersFailed = true;
-  if (bRes.status === 'fulfilled') bills = bRes.value.items; else billsFailed = true;
+  let board: DairyCounterBoard | null = null;
+  let state = 'ok' as ReturnType<typeof dairyState>;
+  try {
+    board = await tenantClient().dairy.counterBoard({ shift, day });
+  } catch (e) {
+    const err = e instanceof SdkError ? e : null;
+    state = dairyState(err?.code ?? 'generic', err?.status);
+  }
 
-  const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
-  const errorKey = searchParams.error || null;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => formatMoneyMinor(m, board?.accrual.currencyCode ?? 'INR', lang);
+  const foot = board ? totalsFoot(board.centres, board.totals.litres) : null;
 
   return (
     <section>
-      <h1>{t.t('dairy.title')}</h1>
-      <p className="kv-muted">{t.t('dairy.subtitle')}</p>
-      {okKey && <p className="kv-success" role="status">{t.t(`dairy.ok.${okKey}`)}</p>}
-      {errorKey && <p className="kv-error" role="alert">{t.t('dairy.error')}: {errorKey}</p>}
+      <h1>{t.t('dairy.counter.title')}</h1>
+      <p className="kv-field__hint">{t.t('dairy.counter.lead')}</p>
 
-      {/* ---- MCCs ---- */}
-      <h2 className="kv-section-title">{t.t('dairy.mcc.title')}</h2>
-      {mccsFailed ? <p className="kv-error" role="alert">{t.t('dairy.loadError')}</p> : (
-        <DataTable
-          rows={mccs}
-          empty={t.t('dairy.mcc.empty')}
-          columns={[
-            { header: t.t('dairy.mcc.code'), cell: (m) => m.code },
-            { header: t.t('dairy.mcc.name'), cell: (m) => m.defaultName },
-            { header: t.t('dairy.status'), cell: (m) => m.isActive ? t.t('dairy.active') : t.t('dairy.inactive') },
-            { header: '', cell: (m) => (
-              <form action={setMccActiveAction}>
-                <input type="hidden" name="id" value={m.id} />
-                <input type="hidden" name="isActive" value={m.isActive ? 'false' : 'true'} />
-                <button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">{m.isActive ? t.t('dairy.disable') : t.t('dairy.enable')}</button>
-              </form>
-            ) },
-          ]}
-        />
-      )}
-      <details className="kv-disclosure">
-        <summary>{t.t('dairy.mcc.add')}</summary>
-        <form action={createMccAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('dairy.mcc.code')}<input className="kv-input" name="code" required maxLength={40} /></label>
-          <label className="kv-label">{t.t('dairy.mcc.name')}<input className="kv-input" name="defaultName" required maxLength={150} /></label>
-          <label className="kv-label">{t.t('dairy.mcc.capacity')}<input className="kv-input" name="capacityLitresShift" inputMode="decimal" placeholder="2000" /></label>
-          <button type="submit" className="kv-btn">{t.t('dairy.mcc.create')}</button>
-        </form>
-      </details>
+      <nav className="kv-tabs" aria-label={t.t('dairy.nav.label')}>
+        {DAIRY_NAV.map((i) => (i.href ? (
+          <Link key={i.key} href={i.href} className={i.key === 'collections' ? 'kv-tab kv-tab--on' : 'kv-tab'} aria-current={i.key === 'collections' ? 'page' : undefined}>
+            {t.t(dairyNavLabelKey(i))}
+          </Link>
+        ) : (
+          <span key={i.key} className="kv-tab kv-tab--muted" aria-disabled="true">{t.t(dairyNavLabelKey(i))}</span>
+        )))}
+      </nav>
+      <p className="kv-field__hint">{t.t('dairy.nav.unbuilt')} {formatNumber(dairyUnbuiltCount(), lang)}</p>
 
-      {/* ---- rate cards ---- */}
-      <h2 className="kv-section-title">{t.t('dairy.rate.title')}</h2>
-      <p className="kv-muted kv-fine">{t.t('dairy.rate.help')}</p>
-      {cardsFailed ? <p className="kv-error" role="alert">{t.t('dairy.loadError')}</p> : (
-        <DataTable
-          rows={cards}
-          empty={t.t('dairy.rate.empty')}
-          columns={[
-            { header: t.t('dairy.rate.name'), cell: (c) => c.defaultName },
-            { header: t.t('dairy.rate.animal'), cell: (c) => t.t(`dairy.animal.${c.animalType}`) },
-            { header: t.t('dairy.rate.model'), cell: (c) => t.t(`dairy.model.${c.pricingModel}`) },
-            { header: t.t('dairy.rate.fat'), cell: (c) => c.ratePerKgFatMinor ? money(c.ratePerKgFatMinor) : t.t('common.dash') },
-            { header: t.t('dairy.rate.snf'), cell: (c) => c.ratePerKgSnfMinor ? money(c.ratePerKgSnfMinor) : t.t('common.dash') },
-            { header: t.t('dairy.rate.from'), cell: (c) => c.effectiveFrom },
-            { header: t.t('dairy.status'), cell: (c) => c.isActive ? t.t('dairy.active') : t.t('dairy.inactive') },
-          ]}
-        />
-      )}
-      <details className="kv-disclosure">
-        <summary>{t.t('dairy.rate.add')}</summary>
-        <form action={createRateCardAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('dairy.rate.name')}<input className="kv-input" name="defaultName" maxLength={120} /></label>
-          <label className="kv-label">{t.t('dairy.rate.animal')}
-            <select className="kv-input" name="animalType" defaultValue="cow">{ANIMAL_TYPES.map((a) => <option key={a} value={a}>{t.t(`dairy.animal.${a}`)}</option>)}</select>
-          </label>
-          <label className="kv-label">{t.t('dairy.rate.model')}
-            <select className="kv-input" name="pricingModel" defaultValue="two_axis">{PRICING_MODELS.map((p) => <option key={p} value={p}>{t.t(`dairy.model.${p}`)}</option>)}</select>
-          </label>
-          <label className="kv-label">{t.t('dairy.rate.fat')} ({t.t('dairy.minor')})<input className="kv-input" name="ratePerKgFatMinor" inputMode="numeric" pattern="[0-9]*" /></label>
-          <label className="kv-label">{t.t('dairy.rate.snf')} ({t.t('dairy.minor')})<input className="kv-input" name="ratePerKgSnfMinor" inputMode="numeric" pattern="[0-9]*" /></label>
-          <label className="kv-label">{t.t('dairy.rate.base')} ({t.t('dairy.minor')})<input className="kv-input" name="baseRatePerLitreMinor" inputMode="numeric" pattern="[0-9]*" /></label>
-          <label className="kv-label">{t.t('dairy.rate.from')}<input className="kv-input" name="effectiveFrom" type="date" required /></label>
-          <button type="submit" className="kv-btn">{t.t('dairy.rate.create')}</button>
-        </form>
-      </details>
+      {state !== 'ok' || !board ? (
+        <div className={state === 'flaggedOff' ? 'kv-card kv-card--notice' : 'kv-error'} role={state === 'flaggedOff' ? 'status' : 'alert'}>
+          <p>{t.t(dairyStateKey(state))}</p>
+          {state === 'error' && (
+            <>
+              {/* W167's own error copy: the counters keep working. */}
+              <p className="kv-field__hint">{t.t('dairy.counter.buffersOffline')}</p>
+              <p><Link href={boardHref(shift, day)} className="kv-btn--link">{t.t('dairy.retry')}</Link></p>
+            </>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* ---- the shift switch, and the hours nobody recorded ---- */}
+          <nav className="kv-filters" aria-label={t.t('dairy.shift.label')}>
+            {SHIFTS.map((s) => (
+              <Link key={s} href={boardHref(s, day)} className={s === shift ? 'kv-chip is-active' : 'kv-chip'} aria-current={s === shift ? 'true' : undefined}>
+                {t.t(shiftKey(s))}
+              </Link>
+            ))}
+          </nav>
+          <p className="kv-field__hint">
+            {formatDate(board.day, lang)} · {t.t(shiftKey(board.shift))}
+            {' · '}{t.t(shiftClockKey(board.shiftClock))}
+          </p>
 
-      {/* ---- members ---- */}
-      <h2 className="kv-section-title">{t.t('dairy.member.title')}</h2>
-      {membersFailed ? <p className="kv-error" role="alert">{t.t('dairy.loadError')}</p> : (
-        <DataTable
-          rows={members}
-          empty={t.t('dairy.member.empty')}
-          columns={[
-            { header: t.t('dairy.member.code'), cell: (m) => m.memberCode },
-            { header: t.t('dairy.member.cycle'), cell: (m) => t.t(`dairy.cycle.${m.paymentCycle}`) },
-            { header: t.t('dairy.member.animal'), cell: (m) => m.defaultAnimalType ? t.t(`dairy.animal.${m.defaultAnimalType}`) : t.t('common.dash') },
-            { header: t.t('dairy.status'), cell: (m) => m.isActive ? t.t('dairy.active') : t.t('dairy.inactive') },
-          ]}
-        />
-      )}
-      <details className="kv-disclosure">
-        <summary>{t.t('dairy.member.add')}</summary>
-        <form action={enrolMemberAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('dairy.member.farmer')}<input className="kv-input" name="farmerUserId" required placeholder="user UUID" /></label>
-          <label className="kv-label">{t.t('dairy.mcc.title')}
-            <select className="kv-input" name="mccId" required defaultValue="">
-              <option value="" disabled>{t.t('dairy.member.pickMcc')}</option>
-              {mccs.filter((m) => m.isActive).map((m) => <option key={m.id} value={m.id}>{m.defaultName}</option>)}
-            </select>
-          </label>
-          <label className="kv-label">{t.t('dairy.member.code')}<input className="kv-input" name="memberCode" required maxLength={40} /></label>
-          <label className="kv-label">{t.t('dairy.member.cycle')}
-            <select className="kv-input" name="paymentCycle" defaultValue="weekly">{PAYMENT_CYCLES.map((c) => <option key={c} value={c}>{t.t(`dairy.cycle.${c}`)}</option>)}</select>
-          </label>
-          <button type="submit" className="kv-btn">{t.t('dairy.member.enrol')}</button>
-        </form>
-      </details>
-
-      {/* ---- counter collection entry ---- */}
-      <h2 className="kv-section-title">{t.t('dairy.collect.title')}</h2>
-      <p className="kv-muted kv-fine">{t.t('dairy.collect.help')}</p>
-      {members.length === 0 ? <p className="kv-muted">{t.t('dairy.collect.needMember')}</p> : (
-        <form action={recordCollectionAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('dairy.member.title')}
-            <select className="kv-input" name="membershipId" required defaultValue="">
-              <option value="" disabled>{t.t('dairy.collect.pickMember')}</option>
-              {members.map((m) => <option key={m.id} value={m.id}>{m.memberCode}</option>)}
-            </select>
-          </label>
-          <label className="kv-label">{t.t('dairy.collect.shift')}
-            <select className="kv-input" name="shift" defaultValue="morning">{MILK_SHIFTS.map((s) => <option key={s} value={s}>{t.t(`dairy.shift.${s}`)}</option>)}</select>
-          </label>
-          <label className="kv-label">{t.t('dairy.collect.date')}<input className="kv-input" name="collectedOn" type="date" required /></label>
-          <label className="kv-label">{t.t('dairy.collect.weight')}<input className="kv-input" name="weightKg" inputMode="decimal" required placeholder="12.5" /></label>
-          <label className="kv-label">{t.t('dairy.collect.fat')}<input className="kv-input" name="fatPct" inputMode="decimal" required placeholder="4.2" /></label>
-          <label className="kv-label">{t.t('dairy.collect.snf')}<input className="kv-input" name="snfPct" inputMode="decimal" required placeholder="8.5" /></label>
-          <label className="kv-check"><input type="checkbox" name="waterFlag" /> {t.t('dairy.collect.water')}</label>
-          <button type="submit" className="kv-btn">{t.t('dairy.collect.record')}</button>
-        </form>
-      )}
-
-      {/* ---- milk bills (settlement) ---- */}
-      <h2 className="kv-section-title">{t.t('dairy.bill.title')}</h2>
-      <p className="kv-muted kv-fine">{t.t('dairy.bill.help')}</p>
-      {billsFailed ? <p className="kv-error" role="alert">{t.t('dairy.loadError')}</p> : (
-        <DataTable
-          rows={bills}
-          empty={t.t('dairy.bill.empty')}
-          columns={[
-            { header: t.t('dairy.bill.period'), cell: (b) => `${b.periodStart} → ${b.periodEnd}` },
-            { header: t.t('dairy.bill.litres'), cell: (b) => b.totalLitres },
-            { header: t.t('dairy.bill.gross'), cell: (b) => money(b.grossMinor) },
-            { header: t.t('dairy.bill.net'), cell: (b) => money(b.netMinor) },
-            { header: t.t('dairy.status'), cell: (b) => <span className="kv-badge">{t.t(`dairy.billStatus.${b.status}`)}</span> },
-            { header: '', cell: (b) => (
-              <span className="kv-actions">
-                {nextBillActions(b.status).map((a) => (
-                  <form key={a} action={a === 'preview' ? previewBillAction : a === 'approve' ? approveBillAction : payBillAction}>
-                    <input type="hidden" name="id" value={b.id} />
-                    <button type="submit" className="kv-btn kv-btn--sm">{t.t(`dairy.bill.${a}`)}</button>
-                  </form>
-                ))}
+          {/* ---- the tiles ---- */}
+          <div className="kv-stats">
+            <div className="kv-stat">
+              <span className="kv-stat__label">{t.t('dairy.tile.litres')}</span>
+              <strong className="kv-stat__value">{board.totals.litres} {t.t('dairy.litres')}</strong>
+              <span className="kv-field__hint">
+                {t.t(coverageKey(board.coverage))}{' '}
+                {board.coverage.kind === 'measured' && (
+                  <>{formatNumber(board.coverage.poured, lang)} / {formatNumber(board.coverage.enrolled, lang)} ({coverageShareText(board.coverage)})</>
+                )}
               </span>
-            ) },
-          ]}
-        />
+            </div>
+
+            <div className="kv-stat">
+              <span className="kv-stat__label">{t.t('dairy.tile.quality')}</span>
+              <strong className="kv-stat__value">{qualityText(board.totals.fatPct, board.totals.snfPct) ?? t.t('common.dash')}</strong>
+              <span className="kv-field__hint">{t.t('dairy.tile.qualityBasis')}</span>
+            </div>
+
+            <div className="kv-stat">
+              <span className="kv-stat__label">{t.t('dairy.tile.accrued')}</span>
+              <strong className="kv-stat__value">{money(board.accrual.amountMinor)}</strong>
+              <span className="kv-field__hint">
+                {t.t(windowKey(board.window))} {board.window.from} – {board.window.to}
+                {' · '}{t.t(windowBasisKey(board.window))}
+              </span>
+              <span className="kv-field__hint">{t.t(accrualKey(board.accrual))}</span>
+              {bonusIgnoredKey(board.accrual) && (
+                <span className="kv-field__hint">{t.t(bonusIgnoredKey(board.accrual)!)}</span>
+              )}
+              {billsGapKey(board.accrual) && (
+                <span className="kv-field__hint">
+                  {t.t(billsGapKey(board.accrual)!)}{' '}
+                  {formatNumber(board.accrual.membersWithPours, lang)} / {formatNumber(board.accrual.billsExisting, lang)}
+                </span>
+              )}
+              <span className="kv-field__hint">{t.t(paydayKey(board.payday))} {board.payday.closesOn}</span>
+            </div>
+
+            <div className="kv-stat">
+              <span className="kv-stat__label">{t.t('dairy.tile.flags')}</span>
+              <strong className="kv-stat__value">{formatNumber(board.flagSummary.total, lang)}</strong>
+              <span className="kv-field__hint">
+                {t.t(flagsKey(board.flagSummary))}
+                {board.flagSummary.kinds.length > 0 && <> · {board.flagSummary.kinds.map((k) => t.t(flagKindKey(k))).join(', ')}</>}
+              </span>
+              {flagWorkflowKey(board.flagSummary) && (
+                <span className="kv-field__hint">{t.t(flagWorkflowKey(board.flagSummary)!)}</span>
+              )}
+            </div>
+          </div>
+
+          {/* ---- the centre table ---- */}
+          <DataTable
+            rows={board.centres}
+            empty={t.t('dairy.centre.none')}
+            columns={[
+              {
+                header: t.t('dairy.col.centre'),
+                cell: (c) => (
+                  <>
+                    <strong>{c.code}</strong><br />
+                    <span className="kv-field__hint">{c.name}</span>
+                  </>
+                ),
+              },
+              {
+                header: t.t('dairy.col.litres'),
+                cell: (c) => (
+                  <>
+                    {c.litres}
+                    {centreQuietKey(c) && <> <span className="kv-badge kv-badge--muted">{t.t(centreQuietKey(c)!)}</span></>}
+                  </>
+                ),
+              },
+              {
+                header: t.t('dairy.col.pourers'),
+                cell: (c) => centreCoverageText(c) ?? formatNumber(c.pourers, lang),
+              },
+              { header: t.t('dairy.col.quality'), cell: (c) => qualityText(c.fatPct, c.snfPct) ?? t.t('common.dash') },
+              {
+                header: t.t('dairy.col.bmc'),
+                cell: (c) => (
+                  <>
+                    {bmcText(c.bmc) && <><strong>{bmcText(c.bmc)}</strong>{' '}</>}
+                    <span className={TONE[bmcTone(c.bmc)]}>{t.t(bmcKey(c.bmc))}</span>
+                  </>
+                ),
+              },
+              {
+                header: t.t('dairy.col.analyzer'),
+                cell: (c) => (
+                  <>
+                    {analyzerText(c.analyzer) ?? t.t('common.dash')}
+                    {/* Never a tick: the platform cannot say this reading came from that device. */}
+                    {!analyzerVerified(c.analyzer) && <><br /><span className="kv-field__hint">{t.t(analyzerKey(c.analyzer))}</span></>}
+                  </>
+                ),
+              },
+              { header: t.t('dairy.col.value'), cell: (c) => money(c.amountMinor) },
+            ]}
+          />
+
+          {/* ---- W167's own foot-of-table check, recomputed rather than asserted ---- */}
+          {foot && board.centres.length > 0 && (
+            <p className="kv-field__hint">
+              {formatNumber(foot.centres, lang)} {t.t('dairy.centresWord')} · {foot.litres} {t.t('dairy.litres')}
+              {' · '}{t.t(foot.foots ? 'dairy.totals.foots' : 'dairy.totals.mismatch')}
+            </p>
+          )}
+
+          {/* ---- the promise that IS kept, and the cycle mix the window does not fit ---- */}
+          <p className="kv-field__hint">{t.t(uniquenessKey())}</p>
+          {board.cycleMix.length > 1 && (
+            <p className="kv-field__hint">
+              {t.t('dairy.window.mix')}{' '}
+              {board.cycleMix.map((m) => `${t.t(`dairy.cycleName.${m.paymentCycle}`)} ${formatNumber(m.members, lang)}`).join(' · ')}
+            </p>
+          )}
+          {/* W2559–W2561: the dairy mutate chain hosts "Retry", and a retry of a read is a page load. */}
+          <p className="kv-field__hint">{t.t(retryChainKey())}</p>
+        </>
       )}
-      <details className="kv-disclosure">
-        <summary>{t.t('dairy.bill.add')}</summary>
-        <form action={generateBillAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('dairy.member.title')}
-            <select className="kv-input" name="membershipId" required defaultValue="">
-              <option value="" disabled>{t.t('dairy.collect.pickMember')}</option>
-              {members.map((m) => <option key={m.id} value={m.id}>{m.memberCode}</option>)}
-            </select>
-          </label>
-          <label className="kv-label">{t.t('dairy.bill.from')}<input className="kv-input" name="periodStart" type="date" required /></label>
-          <label className="kv-label">{t.t('dairy.bill.to')}<input className="kv-input" name="periodEnd" type="date" required /></label>
-          <button type="submit" className="kv-btn">{t.t('dairy.bill.generate')}</button>
-        </form>
-      </details>
     </section>
   );
 }
