@@ -6,9 +6,12 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { CropSeason } from '../domain/crop-season.entity';
 import { CropSeasonName } from '../domain/land-soil-weather.events';
 import { CropStatus } from '../domain/crop-season.state';
+import { pgDateOrNull } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
+// `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 const COLS = `id, tenant_id, parcel_id, product_id, season, year, sown_on, expected_harvest, expected_yield, actual_yield, status, created_at`;
-const d = (v: any): string | null => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
+const d = pgDateOrNull;
 const toMilli = (v: any): bigint | null => (v == null ? null : BigInt(Math.round(Number(v) * 1000)));
 const milliToNum = (m: bigint | null) => (m == null ? null : (Number(m) / 1000).toFixed(3));
 function toDomain(r: any): CropSeason {

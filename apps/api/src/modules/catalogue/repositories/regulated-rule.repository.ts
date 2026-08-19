@@ -5,11 +5,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { RegulatedRule, RuleType } from '../domain/regulated-rule.entity';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 const COLS = `id, product_id, category_id, rule_type, region_id, payload, effective_from, effective_to`;
 const toDomain = (r: any): RegulatedRule => new RegulatedRule({
   id: r.id, productId: r.product_id ?? null, categoryId: r.category_id ?? null, ruleType: r.rule_type as RuleType,
-  regionId: r.region_id ?? null, payload: r.payload ?? {}, effectiveFrom: String(r.effective_from).slice(0, 10), effectiveTo: r.effective_to ? String(r.effective_to).slice(0, 10) : null,
+  regionId: r.region_id ?? null, payload: r.payload ?? {}, effectiveFrom: pgDate(r.effective_from), effectiveTo: r.effective_to ? pgDate(r.effective_to) : null,
 });
 const MAX = 200;
 

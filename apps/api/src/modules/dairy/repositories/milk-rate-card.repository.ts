@@ -3,16 +3,19 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { MilkRateCard } from '../domain/milk-rate-card.entity';
+import { MilkRateCard, parseBonusSlabs } from '../domain/milk-rate-card.entity';
 import { PricingModel, AnimalType } from '../domain/dairy.events';
 
-const COLS = `id, tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor, base_rate_per_litre_minor, effective_from, effective_to, is_active, created_at`;
+const COLS = `id, tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor, base_rate_per_litre_minor, bonus_rules, effective_from, effective_to, is_active, created_at`;
+// [PC-56 TENANT-6b-1] `bonus_rules` joins the column list. It was absent — which is the most literal form the defect
+// could take: the premium band W168 advertises could not have been applied because the engine never read the column.
 const d = (v: any): string | null => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
 const big = (v: any): bigint | null => (v == null ? null : BigInt(v));
 function toDomain(r: any): MilkRateCard {
   return MilkRateCard.rehydrate({ id: r.id, tenantId: r.tenant_id, defaultName: r.default_name, animalType: r.animal_type as AnimalType,
     pricingModel: r.pricing_model as PricingModel, ratePerKgFatMinor: big(r.rate_per_kg_fat_minor), ratePerKgSnfMinor: big(r.rate_per_kg_snf_minor),
-    baseRatePerLitreMinor: big(r.base_rate_per_litre_minor), effectiveFrom: d(r.effective_from)!, effectiveTo: d(r.effective_to), isActive: r.is_active, createdAt: r.created_at });
+    baseRatePerLitreMinor: big(r.base_rate_per_litre_minor), bonusSlabs: parseBonusSlabs(r.bonus_rules),
+    effectiveFrom: d(r.effective_from)!, effectiveTo: d(r.effective_to), isActive: r.is_active, createdAt: r.created_at });
 }
 
 @Injectable()
@@ -21,10 +24,10 @@ export class MilkRateCardRepository {
   async insert(tx: TxContext, c: MilkRateCard): Promise<void> {
     const p = c.toProps();
     await tx.query(
-      `INSERT INTO milk_rate_cards (id, tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor, base_rate_per_litre_minor, effective_from, effective_to, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      `INSERT INTO milk_rate_cards (id, tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor, base_rate_per_litre_minor, bonus_rules, effective_from, effective_to, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12)`,
       [p.id, p.tenantId, p.defaultName, p.animalType, p.pricingModel, p.ratePerKgFatMinor?.toString() ?? null, p.ratePerKgSnfMinor?.toString() ?? null,
-       p.baseRatePerLitreMinor?.toString() ?? null, p.effectiveFrom, p.effectiveTo, p.isActive]);
+       p.baseRatePerLitreMinor?.toString() ?? null, JSON.stringify(p.bonusSlabs), p.effectiveFrom, p.effectiveTo, p.isActive]);
   }
   async getById(tenantId: string, id: string, tx?: TxContext): Promise<MilkRateCard | null> {
     const sql = `SELECT ${COLS} FROM milk_rate_cards WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`;

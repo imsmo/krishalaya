@@ -5,9 +5,12 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Loan } from '../domain/loan.entity';
 import { LoanStatus } from '../domain/loan.state';
+import { pgDateOrNull } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
+// `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 const COLS = `id, application_id, tenant_id, borrower_user_id, partner_id, principal_minor, interest_apr_bps, disbursed_at, maturity_date, status, outstanding_minor, next_due_date, created_at`;
-const d = (v: any): string | null => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
+const d = pgDateOrNull;
 function toDomain(r: any): Loan {
   return Loan.rehydrate({ id: r.id, applicationId: r.application_id, tenantId: r.tenant_id, borrowerUserId: r.borrower_user_id, partnerId: r.partner_id,
     principalMinor: BigInt(r.principal_minor), interestAprBps: r.interest_apr_bps, disbursedAt: d(r.disbursed_at)!, maturityDate: d(r.maturity_date), status: r.status as LoanStatus, outstandingMinor: BigInt(r.outstanding_minor), nextDueDate: d(r.next_due_date), createdAt: r.created_at });

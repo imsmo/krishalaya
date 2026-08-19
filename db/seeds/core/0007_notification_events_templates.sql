@@ -89,3 +89,38 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('wage.paid',       'amount',         'wage_payments.amount_minor + currency',           '₹1,250',            true),
  ('scheme.approved', 'scheme_name',    'schemes.default_name',                            'PM-KISAN',          true)
 ON CONFLICT (event_code, name) DO NOTHING;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- PC-56 TENANT-6b-1 · W168's promise: "member notified in Gujarati"
+-- ---------------------------------------------------------------------------------------------------------------
+-- The quality desk's footer reads *"Flag decisions are recorded · pour-level hold, never wallet freeze · member
+-- notified in Gujarati"*. Nothing told the member anything: there was no review, no decision and no message, and the
+-- flagged pour was paid in the next bill regardless. Two events, and the wording matters as much as the plumbing —
+-- W168's own protocol says *"gentle first-time conversation (rain-water in cans is the usual truth)"*, so the message
+-- states the fact and names the re-test, and does NOT accuse anybody of adulteration.
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
+ ('dairy.quality_flag_opened',  'Milk sample under review', 'important', '["sms","push"]', false, false),
+ ('dairy.quality_flag_decided', 'Milk sample review closed', 'important', '["sms","push"]', false, false)
+ON CONFLICT (code) DO NOTHING;
+
+-- `user_can_opt_out = false` on both, deliberately: this is a message about money the cooperative is holding back from
+-- this member. A farmer who muted dairy notifications must still be told that a pour is not being paid for.
+
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('dairy.quality_flag_opened','sms','gu',NULL,NULL,'{{mcc}} માં {{shift}} નું તમારું દૂધ તપાસ માટે રાખ્યું છે. સીલબંધ નમૂનો તમારી હાજરીમાં ફરી તપાસાશે. આ પુરાવણી સુધી આ એક પોરનું જ પેમેન્ટ રોકાયું છે — બાકીના પોર સામાન્ય રીતે ચૂકવાશે. Krishalaya','DLT_DAIRY_FLAG_GU',true),
+ ('dairy.quality_flag_opened','sms','hi',NULL,NULL,'{{mcc}} par {{shift}} ka aapka doodh jaanch ke liye rakha gaya hai. Sealed sample aapki maujoodgi me dobara jaancha jayega. Sirf is ek pour ka payment ruka hai — baaki pour normal chukaye jayenge. Krishalaya','DLT_DAIRY_FLAG_HI',true),
+ ('dairy.quality_flag_opened','sms','en',NULL,NULL,'Your {{shift}} milk at {{mcc}} is held for a quality check. The sealed sample will be re-tested with you present. Only this pour''s payment is held — your other pours pay normally. Krishalaya','DLT_DAIRY_FLAG_EN',true),
+ ('dairy.quality_flag_opened','push','en',NULL,'Milk sample under review','Your {{shift}} pour at {{mcc}} is held pending a re-test with you present. Your other pours are unaffected.',NULL,true),
+ ('dairy.quality_flag_opened','inapp','en',NULL,'Milk sample under review','Your {{shift}} pour at {{mcc}} is held pending a re-test with you present. Your other pours are unaffected.',NULL,true),
+ ('dairy.quality_flag_decided','sms','gu',NULL,NULL,'તમારા દૂધની તપાસ પૂરી થઈ: {{outcome}}. પ્રશ્ન હોય તો તમારા MCC સેક્રેટરીને મળો. Krishalaya','DLT_DAIRY_FLAG_DONE_GU',true),
+ ('dairy.quality_flag_decided','sms','hi',NULL,NULL,'Aapke doodh ki jaanch poori hui: {{outcome}}. Sawaal ho to apne MCC secretary se milein. Krishalaya','DLT_DAIRY_FLAG_DONE_HI',true),
+ ('dairy.quality_flag_decided','sms','en',NULL,NULL,'Your milk sample review is closed: {{outcome}}. Speak to your MCC secretary if you have questions. Krishalaya','DLT_DAIRY_FLAG_DONE_EN',true),
+ ('dairy.quality_flag_decided','push','en',NULL,'Milk sample review closed','Your milk sample review is closed: {{outcome}}.',NULL,true),
+ ('dairy.quality_flag_decided','inapp','en',NULL,'Milk sample review closed','Your milk sample review is closed: {{outcome}}.',NULL,true)
+ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('dairy.quality_flag_opened',  'mcc',     'mcc_centres.default_name',                'Anand 02', true),
+ ('dairy.quality_flag_opened',  'shift',   'milk_collections.shift (localized)',      'morning',  true),
+ ('dairy.quality_flag_decided', 'outcome', 'milk_quality_reviews.status (localized)', 'cleared',  true)
+ON CONFLICT (event_code, name) DO NOTHING;

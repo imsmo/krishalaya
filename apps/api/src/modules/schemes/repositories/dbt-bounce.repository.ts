@@ -4,6 +4,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 export interface TransferRow { id: string; createdAt: string; applicationId: string | null; schemeId: string; userId: string; amountMinor: string; pfmsRef: string | null }
 export interface BounceRow {
@@ -14,7 +19,7 @@ export interface BounceRow {
 const toBounce = (x: any): BounceRow => ({
   id: x.id, transferId: x.transfer_id, applicationId: x.application_id, schemeId: x.scheme_id, userId: x.user_id,
   amountMinor: String(x.amount_minor), reasonCode: x.reason_code, reasonNote: x.reason_note,
-  bouncedOn: String(x.bounced_on).slice(0, 10), bankRef: x.bank_ref, resolution: x.resolution,
+  bouncedOn: pgDate(x.bounced_on), bankRef: x.bank_ref, resolution: x.resolution,
   resolvedAt: x.resolved_at ? new Date(x.resolved_at).toISOString() : null,
   recreditTransferId: x.recredit_transfer_id, resolutionNote: x.resolution_note,
   createdAt: new Date(x.created_at).toISOString(),

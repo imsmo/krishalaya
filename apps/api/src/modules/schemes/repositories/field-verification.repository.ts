@@ -4,6 +4,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 export interface FieldVisit {
   id: string; applicationId: string; officerId: string; status: string; scheduledFor: string | null;
@@ -14,7 +19,7 @@ export interface FieldVisit {
 const COLS = `id, application_id, officer_id, status, scheduled_for, geotag, measured_values, walk_trace, farmer_otp_signoff, dispute_reason, submitted_at, version`;
 const toVisit = (r: any): FieldVisit => ({
   id: r.id, applicationId: r.application_id, officerId: r.officer_id, status: r.status,
-  scheduledFor: r.scheduled_for ? String(r.scheduled_for).slice(0, 10) : null,
+  scheduledFor: r.scheduled_for ? pgDate(r.scheduled_for) : null,
   geotag: (r.geotag ?? []).map((g: any) => ({ mediaId: g.media_id ?? g.mediaId, lat: g.lat, lng: g.lng, capturedAt: g.captured_at ?? g.capturedAt })),
   measuredValues: r.measured_values ?? {}, walkTrace: r.walk_trace,
   farmerOtpSignoff: r.farmer_otp_signoff, disputeReason: r.dispute_reason,

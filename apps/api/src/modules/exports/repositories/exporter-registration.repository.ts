@@ -5,9 +5,12 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { ExporterRegistration } from '../domain/exporter-registration.entity';
 import { ExportAuthority } from '../domain/exports.events';
+import { pgDateOrNull } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
+// `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 const COLS = `id, tenant_id, exporter_user_id, authority, reg_no, iec_code, valid_until, doc_id, created_at`;
-const d = (v: any): string | null => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
+const d = pgDateOrNull;
 function toDomain(r: any): ExporterRegistration {
   return ExporterRegistration.rehydrate({ id: r.id, tenantId: r.tenant_id, exporterUserId: r.exporter_user_id, authority: r.authority as ExportAuthority, regNo: r.reg_no, iecCode: r.iec_code, validUntil: d(r.valid_until), docId: r.doc_id, createdAt: r.created_at });
 }

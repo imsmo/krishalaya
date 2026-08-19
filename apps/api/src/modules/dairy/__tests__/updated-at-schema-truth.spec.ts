@@ -93,11 +93,14 @@ describe('updated_at schema truth — every `UPDATE t SET … updated_at` target
       path.join(API_SRC, 'modules', 'dairy', 'repositories', 'milk-collection.repository.ts'),
       'utf8',
     );
-    // Assert on the SQL template literal itself (comments around it may
-    // legitimately discuss updated_at — the query must not).
-    const sqlMatch = repo.match(/UPDATE milk_collections SET[^`]*/);
-    expect(sqlMatch).not.toBeNull();
-    expect(sqlMatch![0]).toContain('SET milk_bill_id=$4 WHERE');
-    expect(sqlMatch![0]).not.toContain('updated_at');
+    // Assert on the SQL template literals themselves (comments around them may legitimately discuss updated_at — the
+    // queries must not). [PC-56 TENANT-6b-1] Checks EVERY `UPDATE milk_collections` in the file rather than the first
+    // one: the hold-state write this wave added is a second such statement, and a regression anchor that only ever
+    // looked at whichever came first would have stopped guarding the one it was written for.
+    const statements = repo.match(/UPDATE milk_collections SET[^`]*/g) ?? [];
+    expect(statements.length).toBeGreaterThanOrEqual(2);
+    for (const sql of statements) expect(sql).not.toContain('updated_at');
+    expect(statements.some((sql) => sql.includes('SET milk_bill_id=$4 WHERE'))).toBe(true);
+    expect(statements.some((sql) => sql.includes('SET hold_state=$5 WHERE'))).toBe(true);
   });
 });

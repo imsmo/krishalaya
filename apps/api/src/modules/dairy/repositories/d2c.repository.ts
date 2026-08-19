@@ -4,13 +4,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 export interface D2cPlan { id: string; sellerUserId: string | null; productId: string; defaultName: string; frequency: string; qtyPerDelivery: string; unitCode: string; pricePerDeliveryMinor: string; deliveryWindow: string | null; isActive: boolean }
 export interface D2cSubscription { id: string; planId: string; customerUserId: string; addressId: string; status: string; startsOn: string; pausedUntil: string | null; billingMode: string }
 export interface ShiftSummaryRow { shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }
 
 const toPlan = (r: any): D2cPlan => ({ id: r.id, sellerUserId: r.seller_user_id, productId: r.product_id, defaultName: r.default_name, frequency: r.frequency, qtyPerDelivery: String(r.qty_per_delivery), unitCode: r.unit_code, pricePerDeliveryMinor: String(r.price_per_delivery_minor), deliveryWindow: r.delivery_window, isActive: r.is_active });
-const toSub = (r: any): D2cSubscription => ({ id: r.id, planId: r.plan_id, customerUserId: r.customer_user_id, addressId: r.address_id, status: r.status, startsOn: String(r.starts_on).slice(0, 10), pausedUntil: r.paused_until ? String(r.paused_until).slice(0, 10) : null, billingMode: r.billing_mode });
+const toSub = (r: any): D2cSubscription => ({ id: r.id, planId: r.plan_id, customerUserId: r.customer_user_id, addressId: r.address_id, status: r.status, startsOn: pgDate(r.starts_on), pausedUntil: r.paused_until ? pgDate(r.paused_until) : null, billingMode: r.billing_mode });
 
 @Injectable()
 export class D2cRepository {
@@ -65,7 +70,7 @@ export class D2cRepository {
          FROM d2c_subscriptions s JOIN subscription_plans_d2c p ON p.id = s.plan_id
         WHERE s.tenant_id=$1 AND s.status='active' AND s.deleted_at IS NULL AND p.is_active = true AND p.deleted_at IS NULL
         LIMIT 5000`, [tenantId]);
-    return r.rows.map((x: any) => ({ id: x.id, frequency: x.frequency, startsOn: String(x.starts_on).slice(0, 10), status: x.status, pausedUntil: x.paused_until ? String(x.paused_until).slice(0, 10) : null }));
+    return r.rows.map((x: any) => ({ id: x.id, frequency: x.frequency, startsOn: pgDate(x.starts_on), status: x.status, pausedUntil: x.paused_until ? pgDate(x.paused_until) : null }));
   }
 
   /** Materialise one drop. ON CONFLICT DO NOTHING against the (subscription, due_on) unique index makes the
@@ -115,7 +120,7 @@ export class D2cRepository {
         WHERE d.tenant_id=$1 AND d.due_on >= $2::date AND d.due_on <= $3::date${scope}${st}
         ORDER BY d.due_on DESC, d.id DESC LIMIT ${lim}`, params);
     return r.rows.map((x: any) => ({
-      id: x.id, subscriptionId: x.subscription_id, dueOn: String(x.due_on).slice(0, 10), status: x.status,
+      id: x.id, subscriptionId: x.subscription_id, dueOn: pgDate(x.due_on), status: x.status,
       deliveredAt: x.delivered_at ? new Date(x.delivered_at).toISOString() : null, qty: x.qty,
       qualityMeta: x.quality_meta, planName: x.plan_name, pricePerDeliveryMinor: x.price_per_delivery_minor,
       unitCode: x.unit_code, customerUserId: x.customer_user_id, addressId: x.address_id,

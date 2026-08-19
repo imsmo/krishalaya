@@ -25,6 +25,11 @@ import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
 import { AppConfig } from '../../../core/config/app-config';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { PartnerOwnershipKind } from '../domain/partner-webhook.rules';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 export interface PartnerKeyRow {
   id: string; partnerId: string; name: string; keyHash: string;
@@ -112,10 +117,10 @@ export class PartnerApiRepository {
       .map((x: any) => ({
         id: x.id, tenantId: x.tenant_id, borrowerUserId: x.borrower_user_id,
         principalMinor: x.principal_minor, interestAprBps: Number(x.interest_apr_bps),
-        disbursedAt: x.disbursed_at ? String(x.disbursed_at).slice(0, 10) : null,
-        maturityDate: x.maturity_date ? String(x.maturity_date).slice(0, 10) : null,
+        disbursedAt: x.disbursed_at ? pgDate(x.disbursed_at) : null,
+        maturityDate: x.maturity_date ? pgDate(x.maturity_date) : null,
         status: x.status, outstandingMinor: x.outstanding_minor,
-        nextDueDate: x.next_due_date ? String(x.next_due_date).slice(0, 10) : null,
+        nextDueDate: x.next_due_date ? pgDate(x.next_due_date) : null,
       }));
   }
 
@@ -132,7 +137,7 @@ export class PartnerApiRepository {
       return r.rows;
     });
     return rows.slice(0, limit).map((x: any) => ({
-      id: x.id, loanId: x.loan_id, dueDate: String(x.due_date).slice(0, 10),
+      id: x.id, loanId: x.loan_id, dueDate: pgDate(x.due_date),
       amountDueMinor: x.amount_due_minor, amountPaidMinor: x.amount_paid_minor,
       paidAt: x.paid_at ? new Date(x.paid_at).toISOString() : null, channel: x.channel ?? null,
     }));
@@ -161,7 +166,7 @@ export class PartnerApiRepository {
         id: x.id, tenantId: x.tenant_id, holderUserId: x.holder_user_id, productId: x.product_id,
         policyNo: x.policy_no ?? null, subjectType: x.subject_type, subjectId: x.subject_id ?? null,
         status: x.status, sumInsuredMinor: x.sum_insured_minor, premiumMinor: x.premium_minor,
-        validFrom: String(x.valid_from).slice(0, 10), validUntil: String(x.valid_until).slice(0, 10),
+        validFrom: pgDate(x.valid_from), validUntil: pgDate(x.valid_until),
       }));
   }
 

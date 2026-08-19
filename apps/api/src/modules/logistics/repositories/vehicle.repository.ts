@@ -6,6 +6,11 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext, SqlExecutor } from '../../../core/database/unit-of-work';
 import { Vehicle } from '../domain/vehicle.entity';
 import { DuplicateVehicleRegError } from '../domain/logistics.errors';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 const COLS = `id, tenant_id, partner_id, reg_no, vehicle_type_id, capacity_kg, is_refrigerated, rc_doc_id, is_active, created_at`;
 const num = (v: any) => (v == null ? null : Number(v));
@@ -106,7 +111,7 @@ export class VehicleRepository {
       regNo: x.reg_no, typeCode: x.type_code ?? null, capacityKg: num(x.capacity_kg),
       isRefrigerated: x.is_refrigerated, isActive: x.is_active, rcDocId: x.rc_doc_id ?? null,
       rcStatus: x.rc_status ?? null,
-      rcValidUntil: x.rc_valid_until ? String(x.rc_valid_until).slice(0, 10) : null,
+      rcValidUntil: x.rc_valid_until ? pgDate(x.rc_valid_until) : null,
       createdAt: x.created_at ?? null,
     }));
   }
@@ -183,7 +188,7 @@ export class VehicleRepository {
     const x: any = r.rows[0];
     if (!x) return null;
     return { id: x.id, scope: x.tenant_id == null ? 'platform' : 'tenant', isActive: x.is_active, isRefrigerated: x.is_refrigerated,
-      capacityKg: num(x.capacity_kg), rcStatus: x.rc_status ?? null, rcValidUntil: x.rc_valid_until ? String(x.rc_valid_until).slice(0, 10) : null };
+      capacityKg: num(x.capacity_kg), rcStatus: x.rc_status ?? null, rcValidUntil: x.rc_valid_until ? pgDate(x.rc_valid_until) : null };
   }
 
   /**
@@ -205,7 +210,7 @@ export class VehicleRepository {
                 OR d.status = 'rejected' )
         ORDER BY v.id LIMIT $1`, [limit]);
     return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id ?? null, regNo: x.reg_no, rcStatus: x.rc_status,
-      rcValidUntil: x.valid_until ? String(x.valid_until).slice(0, 10) : null }));
+      rcValidUntil: x.valid_until ? pgDate(x.valid_until) : null }));
   }
 
   /** Park one vehicle (the job's write). Conditional on it still being active, so two racing ticks park it

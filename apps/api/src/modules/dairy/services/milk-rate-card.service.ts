@@ -32,7 +32,13 @@ export class MilkRateCardService {
         this.uow.run(tenantId, async (tx) => {
           const card = MilkRateCard.create({ id: uuidv7(), tenantId, defaultName: dto.defaultName, animalType: dto.animalType as AnimalType,
             pricingModel: dto.pricingModel as PricingModel, ratePerKgFatMinor: big(dto.ratePerKgFatMinor), ratePerKgSnfMinor: big(dto.ratePerKgSnfMinor),
-            baseRatePerLitreMinor: big(dto.baseRatePerLitreMinor), effectiveFrom: dto.effectiveFrom, effectiveTo: dto.effectiveTo ?? null });
+            baseRatePerLitreMinor: big(dto.baseRatePerLitreMinor),
+            // [PC-56 TENANT-6b-1 LIVE FINDING] This line was missing. The DTO accepted `bonusSlabs`, the entity priced
+            // them, the repository persisted them — and the service in between dropped the caller's answer on the
+            // floor, so every card came back with `bonus_rules = []` and W168's premium band still paid nothing. The
+            // same defect shape TENANT-5d found on a delivery failure reason: a write that discards what it was told.
+            bonusSlabs: dto.bonusSlabs,
+            effectiveFrom: dto.effectiveFrom, effectiveTo: dto.effectiveTo ?? null });
           await this.repo.insert(tx, card);
           await this.outbox.write(tx, { tenantId, aggregateType: 'milk_rate_card', aggregateId: card.id, eventType: DairyEventType.RateCardCreated, payload: { v: 1, rateCardId: card.id, animalType: dto.animalType } });
           return card.toJSON();

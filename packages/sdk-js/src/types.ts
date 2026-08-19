@@ -691,7 +691,81 @@ export interface DairyRateCard {
 export interface DairyCollection {
   id: string; membershipId: string; mccId: string; shift: DairyShift; collectedOn: string;
   amountMinor: string; rateCardId: string; waterFlag: boolean; milkBillId: string | null; createdAt?: string | null;
+  /* --- PC-56 TENANT-6b-1 · W168's quality desk ------------------------------------------------------------- */
+  /** The analyzer's density reading — W168's own evidence for a water flag ("density 1.024 (low)"). The column
+   *  existed from 0009 and was DEAD: nothing wrote it and the record DTO would not accept it. */
+  density?: string | null;
+  adulterationFlags?: string[];
+  /** Whether this pour's payment is held. W168: *"Rate card holds this pour's payment only; the member's other pours
+   *  pay normally."* Before TENANT-6b-1 a flagged pour was billed and PAID at full price. Only `none` and `released`
+   *  are billable. */
+  holdState?: DairyHoldState;
+  /** The part of `amountMinor` that came from the rate card's premium slabs, and whether the slabs were APPLIED at all
+   *  — two different facts (a pour priced under the bonus regime that cleared no slab is `applied` with zero). */
+  bonusMinor?: string;
+  bonusApplied?: boolean;
+  /** Present on the response that RECORDED the pour, when the pour was flagged: the review opened in the same
+   *  transaction as the hold. */
+  review?: DairyQualityReview | null;
 }
+
+/** PC-56 TENANT-6b-1. See `domain/milk-quality.state.ts`. `none` means never flagged — including pours recorded before
+ *  that wave, which 0156 deliberately did NOT back-fill: they were already paid. */
+export type DairyHoldState = 'none' | 'held' | 'released' | 'rejected';
+
+/** PC-56 TENANT-6b-1. W168's three-step protocol: `open` → `retested` → `cleared` | `rejected`. A decision may skip the
+ *  re-test (an operator who flagged the wrong pour must be able to say so), and the skipped step stays VISIBLE:
+ *  `retestAt` is null and the desk shows the decision as taken without re-testing the sealed sample. */
+export type DairyReviewStatus = 'open' | 'retested' | 'cleared' | 'rejected';
+
+/**
+ * The record of what happened after an adulteration flag — which did not exist before PC-56 TENANT-6b-1. W168 promised
+ * *"Flag decisions are recorded · pour-level hold, never wallet freeze · member notified in Gujarati"* while the flag
+ * was two columns on a pour and the pour was paid in the next bill regardless.
+ */
+export interface DairyQualityReview {
+  id: string;
+  collectionId: string;
+  collectedOn: string;
+  membershipId: string;
+  mccId: string;
+  shift: DairyShift;
+  status: DairyReviewStatus;
+  /** What the review's status means for the pour's money — one function decides both, so they cannot drift. */
+  holdState: DairyHoldState;
+  waterFlag: boolean;
+  reasons: string[];
+  /** The pour's own readings at the moment it was flagged, copied rather than joined: what the operator saw is what a
+   *  committee reviews, and the pour's arrays can be corrected later. */
+  densityAtFlag: string | null;
+  fatPctAtFlag: string | null;
+  snfPctAtFlag: string | null;
+  amountWithheldMinor: string;
+  currencyCode: string;
+  /** *"Sample retained & sealed"* is a claim about a PHYSICAL act this platform cannot witness — somebody's assertion,
+   *  with their name on it, never a fact the system established. */
+  sampleSealed: boolean;
+  openedAt: string | null;
+  openedBy: string | null;
+  retestAt: string | null;
+  retestBy: string | null;
+  /** W168: *"re-tests sealed sample WITH MEMBER PRESENT"*. Never defaulted — a platform that assumes the member was
+   *  there turns a safeguard into a formality. */
+  memberPresent: boolean | null;
+  outcomeNote: string | null;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  /** W168: *"Repeat pattern (3+ in 90d) → dairy committee review"*. The count is real; the COMMITTEE is a governance
+   *  body this platform does not model, so this says a review is OWED, never that one happened. */
+  priorReviews90d: number;
+  committeeReviewRequired: boolean;
+}
+
+/** A premium slab on a rate card — W168's *"fat ≥ 6.5 → +₹0.50/L"*. Integers only: `minCentiPct` is the threshold ×100
+ *  (6.5% → 650) and `bonusMinorPerLitre` is minor units per litre (₹0.50 → 50), because a decimal here would put a
+ *  float on the pricing path. `milk_rate_cards.bonus_rules` held tenant data from 0007 and was read by NOTHING until
+ *  PC-56 TENANT-6b-1, so the premium band W168 advertises to 184 of 312 pourers had never been paid. */
+export interface DairyBonusSlab { metric: 'fat' | 'snf'; minCentiPct: number; bonusMinorPerLitre: number }
 /** A per-cycle milk settlement bill. All money bigint minor strings; totalLitres is a 3-dp string. */
 export interface MilkBill {
   id: string; membershipId: string; periodStart: string; periodEnd: string; totalLitres: string;
@@ -700,8 +774,8 @@ export interface MilkBill {
 }
 export interface CreateMccInput { code: string; defaultName: string; regionId?: string; lat?: string; lng?: string; operatorUserId?: string; capacityLitresShift?: string; analyzerModel?: string; analyzerSerial?: string; }
 export interface EnrolMemberInput { farmerUserId: string; mccId: string; memberCode: string; paymentCycle?: DairyPaymentCycle; defaultAnimalType?: DairyAnimalType; }
-export interface CreateRateCardInput { defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel; ratePerKgFatMinor?: string; ratePerKgSnfMinor?: string; baseRatePerLitreMinor?: string; effectiveFrom: string; effectiveTo?: string; }
-export interface RecordCollectionInput { membershipId: string; shift: DairyShift; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; waterFlag?: boolean; adulterationFlags?: string[]; }
+export interface CreateRateCardInput { defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel; ratePerKgFatMinor?: string; ratePerKgSnfMinor?: string; baseRatePerLitreMinor?: string; bonusSlabs?: DairyBonusSlab[]; effectiveFrom: string; effectiveTo?: string; }
+export interface RecordCollectionInput { membershipId: string; shift: DairyShift; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; density?: string; waterFlag?: boolean; adulterationFlags?: string[]; }
 export interface GenerateBillInput { membershipId: string; periodStart: string; periodEnd: string; deductions?: Array<{ type: string; amountMinor: string }>; }
 // --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
 /** A mandi (market yard). lat/lng for map/nearest; no PII. */

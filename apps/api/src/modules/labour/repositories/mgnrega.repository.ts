@@ -5,6 +5,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 export interface JobCard { id: string; userId: string; jobCardNo: string; regionId: string | null; daysUsedFy: number; lastSyncedAt: string | null }
 const COLS = `c.id, c.user_id, c.job_card_no, c.region_id, c.days_used_fy, c.last_synced_at`;
@@ -78,8 +83,8 @@ export class MgnregaRepository {
     return r.rows.map((x: any) => ({
       id: x.id, workCode: x.work_code, workName: x.work_name, workCategory: x.work_category, regionId: x.region_id,
       siteNote: x.site_note, sanctionedDays: x.sanctioned_days, sanctionedAmountMinor: x.sanctioned_amount_minor,
-      status: x.status, startsOn: x.starts_on ? String(x.starts_on).slice(0, 10) : null,
-      endsOn: x.ends_on ? String(x.ends_on).slice(0, 10) : null,
+      status: x.status, startsOn: x.starts_on ? pgDate(x.starts_on) : null,
+      endsOn: x.ends_on ? pgDate(x.ends_on) : null,
       observedPersonDays: x.observed_person_days, workers: x.workers,
     }));
   }
@@ -102,7 +107,7 @@ export class MgnregaRepository {
       `SELECT attended, day_fraction, attended_on, work_id, wage_minor::text AS wage_minor, source
          FROM mgnrega_musters WHERE tenant_id=$1 AND job_card_id=$2 AND deleted_at IS NULL
         ORDER BY attended_on DESC LIMIT 500`, [tenantId, jobCardId]);
-    return r.rows.map((x: any) => ({ attended: x.attended, dayFraction: Number(x.day_fraction), attendedOn: String(x.attended_on).slice(0, 10), workId: x.work_id, wageMinor: x.wage_minor, source: x.source }));
+    return r.rows.map((x: any) => ({ attended: x.attended, dayFraction: Number(x.day_fraction), attendedOn: pgDate(x.attended_on), workId: x.work_id, wageMinor: x.wage_minor, source: x.source }));
   }
   async cardById(tenantId: string, id: string): Promise<{ id: string; userId: string; jobCardNo: string; daysUsedFy: number; lastSyncedAt: string | null } | null> {
     const r = await this.replica.forTenant(tenantId).query(
@@ -143,7 +148,7 @@ export class MgnregaRepository {
       `SELECT id, status, job_card_id, demanded_on FROM mgnrega_work_demands
         WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
     const x = r.rows[0];
-    return x ? { id: x.id, status: x.status, jobCardId: x.job_card_id, demandedOn: String(x.demanded_on).slice(0, 10) } : null;
+    return x ? { id: x.id, status: x.status, jobCardId: x.job_card_id, demandedOn: pgDate(x.demanded_on) } : null;
   }
 
   /** Allot a REAL work (the CHECK constraint in 0091 refuses 'allotted' without both the work and the date, so an
@@ -178,9 +183,9 @@ export class MgnregaRepository {
       [tenantId, q.status ?? null, q.regionId ?? null, q.jobCardId ?? null, q.limit]);
     return r.rows.map((x: any) => ({
       id: x.id, jobCardId: x.job_card_id, jobCardNo: x.job_card_no, regionId: x.region_id,
-      demandedOn: String(x.demanded_on).slice(0, 10), daysRequested: Number(x.days_requested), applicants: Number(x.applicants),
+      demandedOn: pgDate(x.demanded_on), daysRequested: Number(x.days_requested), applicants: Number(x.applicants),
       status: x.status, allottedWorkId: x.allotted_work_id, allottedWorkCode: x.allotted_work_code ?? null,
-      allottedOn: x.allotted_on ? String(x.allotted_on).slice(0, 10) : null, closedReason: x.closed_reason ?? null,
+      allottedOn: x.allotted_on ? pgDate(x.allotted_on) : null, closedReason: x.closed_reason ?? null,
       note: x.note ?? null, recordedBy: x.recorded_by,
     }));
   }

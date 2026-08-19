@@ -3,6 +3,7 @@
 // amount is priced by the rate card (bigint minor units, float-free). PARTITIONED by collected_on (Law 8).
 import { MilkShift, DomainEvent, DairyEventType } from './dairy.events';
 import { InvalidCollectionError } from './dairy.errors';
+import { HoldState, assertHoldTransition } from './milk-quality.state';
 
 export interface MilkCollectionProps {
   id: string;
@@ -14,10 +15,18 @@ export interface MilkCollectionProps {
   weightMilliKg: bigint;        // kg ×1000 (scaled integer; no float)
   fatCentiPct: bigint;          // % ×100
   snfCentiPct: bigint;          // % ×100
+  /** [PC-56 TENANT-6b-1] The analyzer's density — W168's own evidence for a water flag. Dead column until this wave. */
+  density: string | null;
   waterFlag: boolean;
   adulterationFlags: string[];
   rateCardId: string;
   amountMinor: bigint;
+  /** [PC-56 TENANT-6b-1] Whether this pour's payment is held. See domain/milk-quality.state.ts. */
+  holdState: HoldState;
+  /** Whether the premium slabs were applied when this pour was priced — recorded WITH the pour, so what a member was
+   *  paid stays reconstructible after the flag is switched, the card is superseded, or both. */
+  bonusApplied: boolean;
+  bonusMinor: bigint;
   enteredBy: string | null;
   milkBillId: string | null;
   createdAt?: Date;
@@ -27,12 +36,19 @@ export class MilkCollection {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: MilkCollectionProps) {}
 
-  static record(input: Omit<MilkCollectionProps, 'milkBillId'>): MilkCollection {
+  static record(input: Omit<MilkCollectionProps, 'milkBillId' | 'holdState'>): MilkCollection {
     if (input.weightMilliKg <= 0n) throw new InvalidCollectionError('weight must be greater than zero');
     if (input.fatCentiPct < 0n || input.fatCentiPct > 10000n) throw new InvalidCollectionError('fat % out of range');
     if (input.snfCentiPct < 0n || input.snfCentiPct > 10000n) throw new InvalidCollectionError('snf % out of range');
     if (input.amountMinor < 0n) throw new InvalidCollectionError('amount cannot be negative');
-    const c = new MilkCollection({ ...input, milkBillId: null });
+    if (input.bonusMinor < 0n) throw new InvalidCollectionError('bonus cannot be negative');
+    if (input.bonusMinor > input.amountMinor) throw new InvalidCollectionError('bonus cannot exceed the priced amount');
+    // [PC-56 TENANT-6b-1] THE FLAG DECIDES THE HOLD, HERE, ONCE. W168: "Rate card holds this pour's payment only."
+    // Before this wave a flagged pour was billed and paid at full price, so the hold is derived from the flags at the
+    // moment of recording rather than left to a caller to remember — a caller that forgets is a farmer paid for water,
+    // or a farmer's clean milk withheld.
+    const flagged = input.waterFlag || input.adulterationFlags.some((f) => !!f);
+    const c = new MilkCollection({ ...input, holdState: flagged ? 'held' : 'none', milkBillId: null });
     c.events.push({ type: DairyEventType.CollectionRecorded, payload: { collectionId: c.props.id, membershipId: c.props.membershipId, mccId: c.props.mccId,
       shift: c.props.shift, collectedOn: c.props.collectedOn, amountMinor: c.props.amountMinor.toString() } });
     return c;
@@ -42,6 +58,15 @@ export class MilkCollection {
   get id() { return this.props.id; }
   get tenantId() { return this.props.tenantId; }
   get amountMinor() { return this.props.amountMinor; }
+  get holdState() { return this.props.holdState; }
+  get membershipId() { return this.props.membershipId; }
+  get isFlagged() { return this.props.holdState !== 'none'; }
+
+  /** Move the hold, through the state machine — never by assignment. */
+  moveHold(to: HoldState): void {
+    assertHoldTransition(this.props.holdState, to);
+    this.props = { ...this.props, holdState: to };
+  }
   get weightMilliKg() { return this.props.weightMilliKg; }
   get collectedOn() { return this.props.collectedOn; }
   toProps(): Readonly<MilkCollectionProps> { return Object.freeze({ ...this.props }); }

@@ -43,6 +43,15 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // without the notice being queued. `userId` is the IMPERSONATED user, and it is in the payload rather than assumed:
   // ADMIN-6b's finding was a map row pointing at a payload with no recipient, which looks fixed and changes nothing.
   { outboxType: 'impersonation.session_started', eventCode: 'impersonation.session_started', recipientKeys: ['userId'] },
+  // PC-56 TENANT-6b-1 · **W168 PROMISES THE MEMBER IS TOLD, IN GUJARATI, AND NOTHING TOLD THEM ANYTHING.** The quality
+  // desk's footer reads "Flag decisions are recorded · pour-level hold, never wallet freeze · member notified in
+  // Gujarati" — and before this wave the flag was two columns on a pour: no review, no decision, no message, and the
+  // pour was paid in the next bill anyway. Now a farmer whose morning pour is held learns it from their own phone in
+  // their own language, and learns the outcome when it is decided. `userId` is the FARMER's, put into the payload by
+  // `MilkQualityReview.open`/`decide` rather than assumed — ADMIN-6b's finding was a map row pointing at a payload with
+  // no recipient, which looks like a fix and sends nothing.
+  { outboxType: 'dairy.quality_flag_opened',    eventCode: 'dairy.quality_flag_opened',  recipientKeys: ['userId'] },
+  { outboxType: 'dairy.quality_flag_decided',   eventCode: 'dairy.quality_flag_decided', recipientKeys: ['userId'] },
   // PC-56 TENANT-1b-4 · W156: "the invite SMS says who added them and why, in their language, with a decline path". The
   // applier emits the FACT (a member was imported) and this row decides who hears about it — which is why the applier
   // needs no dependency on the communication module, and why an import in a module that does not import CommunicationModule

@@ -8,6 +8,9 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { Subscription } from '../domain/subscription.entity';
 import { SubscriptionStatus } from '../domain/subscription.state';
 import { BillingCycle } from '../domain/tenancy.events';
+import { pgDateOrNull } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
+// `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 const COLS = `id, tenant_id, plan_id, status, billing_cycle, price_minor, currency_code, discount_pct, current_period_start, current_period_end, cancel_at_period_end, cancelled_at, grace_until, grace_started_at, created_at`;
 function toDomain(r: any): Subscription {
@@ -17,7 +20,7 @@ function toDomain(r: any): Subscription {
     cancelAtPeriodEnd: r.cancel_at_period_end, cancelledAt: r.cancelled_at, createdAt: r.created_at,
     // PC-56 TENANT-4d-4 · the grace window (0148). `grace_until` is a DATE and is carried as YYYY-MM-DD so
     // whole-day arithmetic never passes through a timezone.
-    graceUntil: r.grace_until ? (r.grace_until instanceof Date ? r.grace_until.toISOString().slice(0, 10) : String(r.grace_until)) : null,
+    graceUntil: pgDateOrNull(r.grace_until),
     graceStartedAt: r.grace_started_at ?? null,
   });
 }

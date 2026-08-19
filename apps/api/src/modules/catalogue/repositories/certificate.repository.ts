@@ -7,12 +7,17 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Certificate, CertSubjectType } from '../domain/certificate.entity';
 import { CertificateStatus } from '../domain/certificate.state';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 const COLS = `id, tenant_id, owner_user_id, cert_type_id, cert_no, issuing_body, subject_type, subject_id, media_id, valid_from, valid_until, status, blockchain_anchor, verified_by, created_at`;
 const toDomain = (r: any): Certificate => Certificate.rehydrate({
   id: r.id, tenantId: r.tenant_id, ownerUserId: r.owner_user_id ?? null, certTypeId: r.cert_type_id, certNo: r.cert_no ?? null,
   issuingBody: r.issuing_body ?? null, subjectType: r.subject_type as CertSubjectType, subjectId: r.subject_id ?? null, mediaId: r.media_id ?? null,
-  validFrom: r.valid_from ? String(r.valid_from).slice(0, 10) : null, validUntil: r.valid_until ? String(r.valid_until).slice(0, 10) : null,
+  validFrom: r.valid_from ? pgDate(r.valid_from) : null, validUntil: r.valid_until ? pgDate(r.valid_until) : null,
   status: r.status as CertificateStatus, blockchainAnchor: r.blockchain_anchor ?? null, verifiedBy: r.verified_by ?? null, createdAt: r.created_at ?? null,
 });
 

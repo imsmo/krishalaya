@@ -16,6 +16,10 @@ import { DairyMembershipRepository } from '../repositories/dairy-membership.repo
 import { RecordCollectionDto } from '../dto/create-milk-collection.dto';
 import { MembershipNotFoundError, NoActiveRateCardError, DuplicateCollectionError, DairyForbiddenError } from '../domain/dairy.errors';
 import { DairyActor } from './mcc-centre.service';
+import { MilkQualityReview } from '../domain/milk-quality-review.entity';
+import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { BONUS_SLABS_FLAG } from '../domain/milk-quality.flags';
 
 /** Parse a validated decimal string into a scaled integer (e.g. "12.345",3 → 12345n) — NO float. */
 function parseScaled(s: string, decimals: number): bigint {
@@ -34,6 +38,8 @@ export class MilkCollectionService {
     private readonly repo: MilkCollectionRepository,
     private readonly rateCards: MilkRateCardRepository,
     private readonly memberships: DairyMembershipRepository,
+    private readonly reviews: MilkQualityReviewRepository,
+    private readonly flags: FlagsService,
   ) {}
 
   async record(tenantId: string, actor: DairyActor, idemKey: string, dto: RecordCollectionDto) {
@@ -49,15 +55,41 @@ export class MilkCollectionService {
           const weightMilliKg = parseScaled(dto.weightKg, 3);
           const fatCentiPct = parseScaled(dto.fatPct, 2);
           const snfCentiPct = parseScaled(dto.snfPct, 2);
-          const amountMinor = card.priceMinor(weightMilliKg, fatCentiPct, snfCentiPct);
+          // [PC-56 TENANT-6b-1] THE PREMIUM BAND. `bonus_rules` has been read by nothing since 0007, so W168's
+          // "fat >= 6.5 -> +Rs 0.50/L" has never been paid to anybody. Applying it CHANGES WHAT A COOPERATIVE PAYS, so
+          // it is a flag decision — and the answer is recorded WITH the pour (`bonusApplied`), because "what was this
+          // member paid, and why" must survive the flag being switched and the card being superseded.
+          const applyBonus = card.hasBonusSlabs && await this.flags.isEnabled(BONUS_SLABS_FLAG, { tenantId, userId: actor.userId });
+          const amountMinor = card.priceMinor(weightMilliKg, fatCentiPct, snfCentiPct, applyBonus);
+          const bonusMinor = applyBonus ? card.bonusMinor(weightMilliKg, fatCentiPct, snfCentiPct) : 0n;
           const collection = MilkCollection.record({
             id: uuidv7(), tenantId, mccId: membership.toProps().mccId, membershipId: membership.id, shift: dto.shift as MilkShift,
-            collectedOn: dto.collectedOn, weightMilliKg, fatCentiPct, snfCentiPct, waterFlag: dto.waterFlag, adulterationFlags: dto.adulterationFlags,
-            rateCardId: card.id, amountMinor, enteredBy: actor.userId,
+            collectedOn: dto.collectedOn, weightMilliKg, fatCentiPct, snfCentiPct, density: dto.density ?? null,
+            waterFlag: dto.waterFlag, adulterationFlags: dto.adulterationFlags,
+            rateCardId: card.id, amountMinor, bonusMinor, bonusApplied: applyBonus, enteredBy: actor.userId,
           });
           try { await this.repo.insert(tx, collection); } catch (e: any) { if (e?.code === '23505') throw new DuplicateCollectionError(); throw e; }
+
+          // [PC-56 TENANT-6b-1] A FLAGGED POUR IS HELD, AND THE HOLD HAS A RECORD — in this same transaction, because a
+          // held pour with no review is money withheld for a reason nobody wrote down, and a review with no hold is
+          // W168's promise broken in the other direction. Before this wave the flagged pour was simply paid.
+          let review: MilkQualityReview | null = null;
+          if (collection.isFlagged) {
+            const prior = await this.reviews.priorReviews90d(tx, tenantId, membership.id);
+            review = MilkQualityReview.open({
+              id: uuidv7(), tenantId, collectionId: collection.id, collectedOn: dto.collectedOn,
+              membershipId: membership.id, mccId: membership.toProps().mccId, shift: dto.shift as MilkShift,
+              waterFlag: dto.waterFlag, reasons: dto.adulterationFlags,
+              densityAtFlag: dto.density ?? null, fatPctAtFlag: dto.fatPct, snfPctAtFlag: dto.snfPct,
+              amountWithheldMinor: amountMinor, currencyCode: 'INR',
+              openedBy: actor.userId, priorReviews90d: prior,
+            }, membership.farmerUserId);
+            await this.reviews.insert(tx, review);
+          }
+
           await this.flush(tx, tenantId, collection.id, collection.pullEvents());
-          return this.serialize(collection);
+          if (review) await this.flush(tx, tenantId, review.id, review.pullEvents(), 'milk_quality_review');
+          return { ...this.serialize(collection), review: review?.toJSON() ?? null };
         }, { userId: actor.userId })));
   }
 
@@ -76,9 +108,13 @@ export class MilkCollectionService {
     const v = c.toProps();
     return { id: v.id, membershipId: v.membershipId, mccId: v.mccId, shift: v.shift, collectedOn: v.collectedOn,
       weightKg: (Number(v.weightMilliKg) / 1000).toFixed(3), fatPct: (Number(v.fatCentiPct) / 100).toFixed(2), snfPct: (Number(v.snfCentiPct) / 100).toFixed(2),
-      amountMinor: v.amountMinor.toString(), rateCardId: v.rateCardId, waterFlag: v.waterFlag, milkBillId: v.milkBillId, createdAt: v.createdAt };
+      amountMinor: v.amountMinor.toString(), rateCardId: v.rateCardId, waterFlag: v.waterFlag, milkBillId: v.milkBillId, createdAt: v.createdAt,
+      // [PC-56 TENANT-6b-1] The counter slip's own arithmetic: W168 promises the farmer sees it line by line, and a
+      // premium that arrives inside one total is a premium nobody can check against the card on the wall.
+      density: v.density, adulterationFlags: v.adulterationFlags,
+      bonusMinor: v.bonusMinor.toString(), bonusApplied: v.bonusApplied, holdState: v.holdState };
   }
-  private async flush(tx: TxContext, tenantId: string, id: string, events: DomainEvent[]) {
-    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'milk_collection', aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
+  private async flush(tx: TxContext, tenantId: string, id: string, events: DomainEvent[], aggregateType = 'milk_collection') {
+    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType, aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
   }
 }

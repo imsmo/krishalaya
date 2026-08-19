@@ -5,6 +5,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 @Injectable()
 export class ServicingRepository {
@@ -25,7 +30,7 @@ export class ServicingRepository {
       `SELECT id, borrower_user_id, partner_id, outstanding_minor::text, next_due_date, (CURRENT_DATE - next_due_date)::int AS dpd, status
          FROM loans WHERE tenant_id=$1 AND status IN ('active','overdue') AND next_due_date < CURRENT_DATE AND deleted_at IS NULL
         ORDER BY next_due_date ASC LIMIT $2`, [tenantId, limit]);
-    return r.rows.map((x: any) => ({ loanId: x.id, borrowerUserId: x.borrower_user_id, partnerId: x.partner_id, outstandingMinor: x.outstanding_minor, nextDueDate: String(x.next_due_date).slice(0, 10), dpd: x.dpd, status: x.status }));
+    return r.rows.map((x: any) => ({ loanId: x.id, borrowerUserId: x.borrower_user_id, partnerId: x.partner_id, outstandingMinor: x.outstanding_minor, nextDueDate: pgDate(x.next_due_date), dpd: x.dpd, status: x.status }));
   }
 
   /** KCC entry: running balance read FOR UPDATE via the loan row (serialises concurrent entries). */
@@ -44,7 +49,7 @@ export class ServicingRepository {
       `SELECT entry_kind, amount_minor::text, balance_after_minor::text, entry_date, narrative, purpose_check_status, repayment_channel
          FROM kcc_drawl_ledger WHERE tenant_id=$1 AND loan_id=$2 AND created_at >= now() - interval '3 years'
         ORDER BY created_at DESC, id DESC LIMIT 200`, [tenantId, loanId]);
-    return r.rows.map((x: any) => ({ entryKind: x.entry_kind, amountMinor: x.amount_minor, balanceAfterMinor: x.balance_after_minor, entryDate: String(x.entry_date).slice(0, 10), narrative: x.narrative, purposeCheckStatus: x.purpose_check_status, repaymentChannel: x.repayment_channel }));
+    return r.rows.map((x: any) => ({ entryKind: x.entry_kind, amountMinor: x.amount_minor, balanceAfterMinor: x.balance_after_minor, entryDate: pgDate(x.entry_date), narrative: x.narrative, purposeCheckStatus: x.purpose_check_status, repaymentChannel: x.repayment_channel }));
   }
 
   async lockLoan(tx: TxContext, tenantId: string, loanId: string): Promise<{ id: string; status: string; outstandingMinor: bigint } | null> {

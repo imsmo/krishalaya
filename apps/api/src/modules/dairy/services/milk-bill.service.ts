@@ -21,7 +21,7 @@ import { MilkBillRepository } from '../repositories/milk-bill.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { GenerateBillDto } from '../dto/create-milk-bill.dto';
-import { MembershipNotFoundError, BillNotFoundError, EmptyBillError, BillNotPayableError, DairyForbiddenError } from '../domain/dairy.errors';
+import { MembershipNotFoundError, BillNotFoundError, EmptyBillError, AllPoursHeldError, BillNotPayableError, DairyForbiddenError } from '../domain/dairy.errors';
 import { DairyActor } from './mcc-centre.service';
 
 const tenantMain = (tenantId: string): AccountRef => ({ kind: 'tenant', tenantId, accountCode: TenantAccount.Main, currencyCode: 'INR' });
@@ -48,6 +48,10 @@ export class MilkBillService {
         this.uow.run(tenantId, async (tx) => {
           if (!(await this.memberships.getById(tenantId, dto.membershipId, tx))) throw new MembershipNotFoundError(dto.membershipId);
           const agg = await this.collections.aggregateUnbilledForUpdate(tx, tenantId, dto.membershipId, dto.periodStart, dto.periodEnd);
+          // [PC-56 TENANT-6b-1] A bill that comes back empty because every pour is under a quality hold is a
+          // DIFFERENT fact from a member who did not pour, and W168's whole promise ("holds this pour's payment only")
+          // depends on somebody being able to tell them apart.
+          if (agg.count === 0 && agg.heldCount > 0) throw new AllPoursHeldError(agg.heldCount, agg.heldMinor.toString());
           if (agg.count === 0) throw new EmptyBillError();
           const deductions: BillDeduction[] = dto.deductions.map((d) => ({ type: d.type, amountMinor: BigInt(d.amountMinor) }));
           const bill = MilkBill.generate({ id: uuidv7(), tenantId, membershipId: dto.membershipId, periodStart: dto.periodStart, periodEnd: dto.periodEnd,

@@ -37,11 +37,16 @@ import { MilkBillRepository } from './repositories/milk-bill.repository';
 import { DairyCounterController } from './controllers/v1/dairy-counter.controller';
 import { DairyCounterReadModel } from './read-models/dairy-counter.read-model';
 import { DairyCounterRepository } from './repositories/dairy-counter.repository';
+// PC-56 TENANT-6b-1 · W168's flag protocol: the pour-level HOLD, its review record, and the premium band the pricing
+// engine now reads. NOT gated by the quality-desk flag — the hold is a money path, not a screen.
+import { QualityReviewsController } from './controllers/v1/quality-reviews.controller';
+import { MilkQualityService } from './services/milk-quality.service';
+import { MilkQualityReviewRepository } from './repositories/milk-quality-review.repository';
 
 // The cycle-close worker job (jobs/milk-bill-cycle-close.job.ts) is instantiated by apps/worker with a
 // privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other batch jobs.
 @Module({
-  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController],
+  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -52,8 +57,10 @@ import { DairyCounterRepository } from './repositories/dairy-counter.repository'
       inject: [UNIT_OF_WORK, D2cRepository] },
     // PC-56 TENANT-6a
     DairyCounterRepository, DairyCounterReadModel,
+    // PC-56 TENANT-6b-1
+    MilkQualityService, MilkQualityReviewRepository,
   ],
-  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService],
+  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService],
 })
 export class DairyModule implements OnModuleInit {
   constructor(

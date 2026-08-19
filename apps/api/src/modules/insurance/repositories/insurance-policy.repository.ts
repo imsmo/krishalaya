@@ -9,6 +9,9 @@ import { InsurancePolicy } from '../domain/insurance-policy.entity';
 import { PolicyStatus } from '../domain/insurance-policy.state';
 import { SubjectType } from '../domain/insurance.events';
 import { InsurancePolicyNotFoundError } from '../domain/insurance.errors';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
+// `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 const COLS = `id, tenant_id, holder_user_id, product_id, policy_no, subject_type, subject_id,
   sum_insured_minor, premium_minor, premium_payment_id, status, valid_from, valid_until,
@@ -20,8 +23,8 @@ function toDomain(r: any): InsurancePolicy {
     policyNo: r.policy_no, subjectType: r.subject_type as SubjectType, subjectId: r.subject_id,
     sumInsuredMinor: BigInt(r.sum_insured_minor), premiumMinor: BigInt(r.premium_minor),
     premiumPaymentId: r.premium_payment_id, status: r.status as PolicyStatus,
-    validFrom: r.valid_from instanceof Date ? r.valid_from.toISOString().slice(0, 10) : r.valid_from,
-    validUntil: r.valid_until instanceof Date ? r.valid_until.toISOString().slice(0, 10) : r.valid_until,
+    validFrom: pgDate(r.valid_from),
+    validUntil: pgDate(r.valid_until),
     parametricTriggers: r.parametric_triggers, createdAt: r.created_at,
   });
 }

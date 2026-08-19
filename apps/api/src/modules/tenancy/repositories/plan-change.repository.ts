@@ -7,6 +7,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { ChangeDirection, ProrationLines } from '../domain/proration';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 /** Role codes that count against `max_staff` — the desks that operate a console. Mirrors TENANT-1c's go-live list. */
 export const STAFF_ROLE_CODES = ['tenant_admin', 'tenant_staff', 'fpo_coordinator', 'support_agent', 'auditor'];
@@ -39,7 +44,7 @@ export interface PlanChangeRow {
 
 const toRow = (r: any): PlanChangeRow => ({
   id: r.id, subscriptionId: r.subscription_id, fromPlanId: r.from_plan_id, toPlanId: r.to_plan_id,
-  direction: r.direction, effectiveDate: String(r.effective_date).slice(0, 10),
+  direction: r.direction, effectiveDate: pgDate(r.effective_date),
   appliedAt: r.applied_at ? new Date(r.applied_at).toISOString() : null,
   daysInPeriod: Number(r.days_in_period), daysRemaining: Number(r.days_remaining),
   newPlanChargeMinor: String(r.new_plan_charge_minor), unusedCreditMinor: String(r.unused_credit_minor),
@@ -160,7 +165,7 @@ export class PlanChangeRepository {
     if (!x) return null;
     return {
       planId: x.pending_plan_id, planName: x.default_name ?? '', priceMinor: String(x.price),
-      effectiveDate: String(x.pending_effective_date).slice(0, 10), reason: x.pending_reason ?? null,
+      effectiveDate: pgDate(x.pending_effective_date), reason: x.pending_reason ?? null,
     };
   }
 
@@ -190,7 +195,7 @@ export class PlanChangeRepository {
         LIMIT $2`, [today, limit]);
     return r.rows.map((x: any) => ({
       tenantId: x.tenant_id, subscriptionId: x.id, pendingPlanId: x.pending_plan_id,
-      pendingPriceMinor: String(x.price), effectiveDate: String(x.pending_effective_date).slice(0, 10),
+      pendingPriceMinor: String(x.price), effectiveDate: pgDate(x.pending_effective_date),
     }));
   }
 

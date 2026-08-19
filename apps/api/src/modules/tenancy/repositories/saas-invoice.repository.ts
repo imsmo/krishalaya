@@ -17,6 +17,9 @@ import { TxContext, SqlExecutor } from '../../../core/database/unit-of-work';
 import { SaasInvoice, SaasInvoiceLine } from '../domain/saas-invoice.entity';
 import { InvoiceStatus } from '../domain/saas-invoice.state';
 import { InvalidSaasInvoiceError } from '../domain/tenancy.errors';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
+// `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 /** `doc_number_series.period` is varchar(10) in 0001 §0.8. Mirrored here so a caller is refused by name rather
  *  than by a plpgsql truncation error that rolls back their whole transaction. */
@@ -26,7 +29,7 @@ const COLS = `id, tenant_id, subscription_id, invoice_no, status, currency_code,
               paid_minor, due_date, paid_at, line_items, dunning_attempts, period_tag, tax_bp, bill_to_gstin,
               bill_to_legal_name, created_at`;
 const big = (v: any) => BigInt(v);
-const ymd = (d: any) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d));
+const ymd = pgDate;
 const intOrNull = (v: any) => (v === null || v === undefined ? null : Number(v));
 
 function toLines(raw: any): SaasInvoiceLine[] {

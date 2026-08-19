@@ -9,6 +9,8 @@ import {
   CreateMccInput, EnrolMemberInput, CreateRateCardInput, RecordCollectionInput, GenerateBillInput,
   DairyAnimalType, MilkBillStatus,
   DairyCounterBoard, DairyShift,
+  // PC-56 TENANT-6b-1 · W168's flag protocol
+  DairyQualityReview, DairyReviewStatus,
 } from '../types';
 
 export class DairyResource {
@@ -59,6 +61,34 @@ export class DairyResource {
   }
   async recordCollection(input: RecordCollectionInput, idempotencyKey: string): Promise<DairyCollection> {
     return (await this.http.request<DairyCollection>('POST', 'dairy/collections', { idempotencyKey, body: input })).data;
+  }
+
+  /* ---- PC-56 TENANT-6b-1 · W168's flag protocol -----------------------------------------------------------------
+   * Deliberately NOT behind the quality-desk flag: the hold on a flagged pour is a money path, and a farmer's withheld
+   * pour must not stay withheld because nobody switched a screen on. Before this wave none of it existed — the flag was
+   * two columns on a pour and the pour was billed and PAID at full price anyway.
+   * ------------------------------------------------------------------------------------------------------------- */
+
+  /** The desk's queue and history. `status: 'open_any'` is open PLUS re-tested: the pours whose money is held NOW. */
+  async listQualityReviews(params: { status?: DairyReviewStatus | 'open_any'; membershipId?: string; from?: string; to?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DairyQualityReview>> {
+    const r = await this.http.request<DairyQualityReview[]>('GET', 'dairy/quality-reviews', { query: { ...params, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+
+  async getQualityReview(id: string, signal?: AbortSignal): Promise<DairyQualityReview> {
+    return (await this.http.request<DairyQualityReview>('GET', `dairy/quality-reviews/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
+  /** W168 step 1. `memberPresent` is REQUIRED, not optional: "with member present" is the dignity half of the promise,
+   *  and a default either way would put words in somebody's mouth. */
+  async retestQualityReview(id: string, input: { memberPresent: boolean; sampleSealed?: boolean; note?: string | null }, idempotencyKey: string): Promise<DairyQualityReview> {
+    return (await this.http.request<DairyQualityReview>('POST', `dairy/quality-reviews/${encodeURIComponent(id)}/retest`, { idempotencyKey, body: input })).data;
+  }
+
+  /** W168 step 2 — and the pour's money moves with it, in the same transaction: `cleared` releases the hold, `rejected`
+   *  means the cooperative did not buy that milk. A decision cannot be taken twice; a reversal is a new dispute. */
+  async decideQualityReview(id: string, input: { outcome: 'cleared' | 'rejected'; note?: string | null }, idempotencyKey: string): Promise<DairyQualityReview> {
+    return (await this.http.request<DairyQualityReview>('POST', `dairy/quality-reviews/${encodeURIComponent(id)}/decide`, { idempotencyKey, body: input })).data;
   }
 
   // ---- milk bills (settlement; pay is the money route) ----

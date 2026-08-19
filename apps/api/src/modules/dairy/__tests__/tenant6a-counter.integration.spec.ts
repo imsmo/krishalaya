@@ -26,6 +26,9 @@ import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
+import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
@@ -78,7 +81,11 @@ run('PC-56 TENANT-6a · W167 counter board (integration, real Postgres)', () => 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo);
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo);
+    // PC-56 TENANT-6b-1: the record path now opens a quality review for a flagged pour and asks the flag service
+    // whether the rate card's premium slabs apply — both real here, against the real database.
+    const reviewRepo = new MilkQualityReviewRepository(replica as any);
+    const flags = new FlagsService(pools, new InMemoryCacheService());
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
 
     repo = new DairyCounterRepository(replica as any);
     board = new DairyCounterReadModel(repo, metrics);

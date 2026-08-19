@@ -34,9 +34,18 @@ import { SaasInvoiceService } from '../services/saas-invoice.service';
 import { BillingTaxRate } from '../read-models/billing-tax-rate';
 import { taxOn } from '../domain/proration';
 import { DEFAULT_GRACE_DAYS, graceDaysFrom, sweepAction } from '../domain/billing-grace';
+import { pgDate } from '../../../core/database/pg-date';
 
-const ymd = (d: Date) => d.toISOString().slice(0, 10);
-const periodTagOf = (d: Date) => `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+// [PC-56 TENANT-6b-1] TWO DIFFERENT QUESTIONS, WHICH ONE HELPER USED TO ANSWER BOTH — and that conflation IS the
+// defect. `subscriptions.current_period_end` is a **`date`** column: node-pg hands it back as LOCAL midnight, so
+// `toISOString().slice(0,10)` wrote the invoice's `due_date` a DAY EARLY on any box ahead of UTC, and `getUTCMonth()`
+// put the period TAG in the WRONG MONTH for a period ending on the 1st — and that tag is half of 0146's unique
+// `(subscription, period)` key, so August's renewal could collide with July's. A calendar day is read through
+// `core/database/pg-date`. The overdue cutoff below is a different thing: `now` is a real INSTANT, and its UTC day is
+// a deliberate platform-wide boundary for a cross-tenant sweep, so it keeps its own explicitly-named helper.
+/** The UTC calendar day of an INSTANT — used only for the cross-tenant overdue cutoff. */
+const utcDayOf = (d: Date) => d.toISOString().slice(0, 10);
+const periodTagOf = (d: Date) => { const ymd = pgDate(d); return ymd.slice(0, 4) + ymd.slice(5, 7); };
 
 export interface BillingCycleResult {
   raised: number; overdue: number; graced: number; expired: number; waited: number; failed: number;
@@ -99,7 +108,7 @@ export class SaasBillingCycleJob {
           const res = await this.invoiceService.raiseRenewal({
             tenantId: d.tenantId, subscriptionId: d.id, currencyCode: d.currency,
             taxMinor: taxOn(d.priceMinor, rate.bp), taxBp: rate.bp,
-            dueDate: ymd(d.periodEnd), periodTag: periodTagOf(d.periodEnd),
+            dueDate: pgDate(d.periodEnd), periodTag: periodTagOf(d.periodEnd),
             lineItems: [{ desc: 'Subscription renewal', qty: 1, unitMinor: d.priceMinor, totalMinor: d.priceMinor }],
           });
           if (res.raised) out.raised++;
@@ -133,7 +142,7 @@ export class SaasBillingCycleJob {
     // inside the loop above would re-scan the platform's owing invoices for every due subscription. It runs
     // AFTER the loop so an invoice raised this tick with a due date already in the past (a period that ended
     // days ago) is marked overdue in the same tick rather than the next one.
-    for (const inv of await this.overdueFor(pool, ymd(now), limit)) {
+    for (const inv of await this.overdueFor(pool, utcDayOf(now), limit)) {
       try {
         if (await this.invoiceService.markOverdue(inv.tenantId, inv.id)) out.overdue++;
       } catch (err) {

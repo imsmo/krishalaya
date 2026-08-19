@@ -4,10 +4,15 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import type { RiderTerms, RiderShipment } from '../domain/rider-payout.rules';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 const toTerms = (x: any): RiderTerms => ({
   id: x.id, riderUserId: x.rider_user_id, termsName: x.terms_name,
-  effectiveFrom: String(x.effective_from).slice(0, 10), perDropMinor: String(x.per_drop_minor),
+  effectiveFrom: pgDate(x.effective_from), perDropMinor: String(x.per_drop_minor),
   pctOfChargeBps: x.pct_of_charge_bps, codHandlingMinor: String(x.cod_handling_minor),
   failedAttemptMinor: String(x.failed_attempt_minor), currencyCode: x.currency_code,
 });

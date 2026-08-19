@@ -39,7 +39,10 @@ describe('MilkRateCard — float-free pricing engine', () => {
 
 describe('MilkCollection invariants', () => {
   const base = { id: 'c1', tenantId: 't1', mccId: 'm1', membershipId: 'mem1', shift: 'morning' as const, collectedOn: '2026-06-15',
-    weightMilliKg: 10000n, fatCentiPct: 450n, snfCentiPct: 850n, waterFlag: false, adulterationFlags: [], rateCardId: 'rc1', amountMinor: 48000n, enteredBy: 'op1' };
+    weightMilliKg: 10000n, fatCentiPct: 450n, snfCentiPct: 850n, density: null, waterFlag: false, adulterationFlags: [], rateCardId: 'rc1',
+    // PC-56 TENANT-6b-1: a pour now carries what the premium slabs paid it (zero here) and whether they were applied
+    // at all — see domain/milk-rate-card.entity.ts for why those are two different facts.
+    amountMinor: 48000n, bonusMinor: 0n, bonusApplied: false, enteredBy: 'op1' };
   it('records + emits collection_recorded; amount is bigint minor units', () => {
     const c = MilkCollection.record(base);
     expect(typeof c.amountMinor).toBe('bigint'); expect(c.amountMinor).toBe(48000n);

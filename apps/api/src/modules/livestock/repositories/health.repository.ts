@@ -4,6 +4,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 export interface HealthEvent {
   id: string; animalId: string; eventTypeId: string; eventTypeCode?: string; vetBookingId: string | null;
@@ -35,7 +40,7 @@ export class HealthRepository {
     return r.rows.map((x: any) => ({
       id: x.id, animalId: x.animal_id, eventTypeId: x.event_type_id, eventTypeCode: x.event_type_code ?? undefined,
       vetBookingId: x.vet_booking_id, batchNo: x.batch_no, diagnosis: x.diagnosis, outcome: x.outcome,
-      nextDueDate: x.next_due_date ? String(x.next_due_date).slice(0, 10) : null, recordedBy: x.recorded_by,
+      nextDueDate: x.next_due_date ? pgDate(x.next_due_date) : null, recordedBy: x.recorded_by,
       createdAt: new Date(x.created_at).toISOString(),
     }));
   }

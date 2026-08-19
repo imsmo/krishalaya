@@ -5,10 +5,13 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Animal, AnimalProps } from '../domain/animal.entity';
 import { AnimalStatus } from '../domain/animal.state';
+import { pgDateOrNull } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
+// `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 const COLS = `id, tenant_id, owner_user_id, species_id, breed_id, pashu_aadhaar, name, sex, dob_estimated, parity,
   lactation_stage, current_yield_lpd, pregnancy_status, body_condition_score, status, acquired_via, created_at`;
-const d = (v: any): string | null => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
+const d = pgDateOrNull;
 function toDomain(r: any): Animal {
   return Animal.rehydrate({
     id: r.id, tenantId: r.tenant_id, ownerUserId: r.owner_user_id, speciesId: r.species_id, breedId: r.breed_id,

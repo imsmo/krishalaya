@@ -4,6 +4,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 export interface AlertRule {
   id: string; kind: string; ruleName: string; threshold: Record<string, unknown>; recipientUserIds: string[];
@@ -98,7 +103,7 @@ export class OpsAlertRepository {
           AND (l.log_type='breakdown' OR s.on_date IS NULL OR s.on_date < CURRENT_DATE - 365)
         LIMIT 200`, [tenantId]);
     return r.rows
-      .map((x: any) => ({ assetId: x.asset_id, alert: x.alert as string, lastServiceOn: x.last_service_on ? String(x.last_service_on).slice(0, 10) : null }))
+      .map((x: any) => ({ assetId: x.asset_id, alert: x.alert as string, lastServiceOn: x.last_service_on ? pgDate(x.last_service_on) : null }))
       .filter((x) => which === 'any' || x.alert === which);
   }
 

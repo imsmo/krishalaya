@@ -881,6 +881,63 @@ describe('HttpClient via resources', () => {
     expect(calls[1].url).toBe('https://api.test/v1/dairy/counter/board?day=2026-07-13&shift=evening&cycle=monthly');
   });
 
+  it('dairy: the quality-review protocol hits the right paths and REQUIRES an idempotency key (PC-56 TENANT-6b-1)', async () => {
+    const rev = {
+      id: 'qr1', collectionId: 'c1', collectedOn: '2026-07-13', membershipId: 'mem1', mccId: 'm1', shift: 'morning',
+      status: 'open', holdState: 'held', waterFlag: true, reasons: [], densityAtFlag: '1.024', fatPctAtFlag: '6.20',
+      snfPctAtFlag: '8.40', amountWithheldMinor: '57100', currencyCode: 'INR', sampleSealed: false,
+      openedAt: '2026-07-13T04:00:00.000Z', openedBy: 'op1', retestAt: null, retestBy: null, memberPresent: null,
+      outcomeNote: null, decidedAt: null, decidedBy: null, priorReviews90d: 0, committeeReviewRequired: false,
+    };
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [rev], meta: { nextCursor: null } } }
+      : n === 2 ? { body: { data: rev } }
+      : n === 3 ? { body: { data: { ...rev, status: 'retested', memberPresent: true } } }
+      : { body: { data: { ...rev, status: 'cleared', holdState: 'released' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    // The working queue: open PLUS re-tested — the pours whose money is held right now.
+    const page = await c.dairy.listQualityReviews({ status: 'open_any' });
+    expect(calls[0].url).toBe('https://api.test/v1/dairy/quality-reviews?status=open_any&limit=50');
+    expect(page.items[0].holdState).toBe('held');
+    expect(page.items[0].amountWithheldMinor).toBe('57100');
+
+    await c.dairy.getQualityReview('qr1');
+    expect(calls[1].url).toBe('https://api.test/v1/dairy/quality-reviews/qr1');
+
+    const retested = await c.dairy.retestQualityReview('qr1', { memberPresent: true, sampleSealed: true }, 'idem-r1');
+    expect(calls[2].url).toBe('https://api.test/v1/dairy/quality-reviews/qr1/retest');
+    expect(calls[2].init.method).toBe('POST');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-r1');
+    expect(JSON.parse(String(calls[2].init.body)).memberPresent).toBe(true);
+    expect(retested.status).toBe('retested');
+
+    const decided = await c.dairy.decideQualityReview('qr1', { outcome: 'cleared', note: 'rain water' }, 'idem-d1');
+    expect(calls[3].url).toBe('https://api.test/v1/dairy/quality-reviews/qr1/decide');
+    expect((calls[3].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-d1');
+    expect(decided.holdState).toBe('released');
+  });
+
+  it('dairy: a rate card carries its premium slabs, and a recorded pour carries its density (PC-56 TENANT-6b-1)', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: { id: 'rc1', bonusSlabs: [{ metric: 'fat', minCentiPct: 650, bonusMinorPerLitre: 50 }] } } }
+      : { body: { data: { id: 'col1', amountMinor: '57084', bonusMinor: '355', bonusApplied: true, holdState: 'none', density: '1.028' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+
+    await c.dairy.createRateCard({ defaultName: 'Buffalo v4', animalType: 'buffalo', pricingModel: 'two_axis',
+      ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-07-01',
+      bonusSlabs: [{ metric: 'fat', minCentiPct: 650, bonusMinorPerLitre: 50 }] }, 'idem-rc');
+    // The slabs must reach the wire: the API service was DROPPING them, found by a live test, so the SDK pins it too.
+    expect(JSON.parse(String(calls[0].init.body)).bonusSlabs).toEqual([{ metric: 'fat', minCentiPct: 650, bonusMinorPerLitre: 50 }]);
+
+    const col = await c.dairy.recordCollection({ membershipId: 'mem1', shift: 'morning', collectedOn: '2026-07-13',
+      weightKg: '7.100', fatPct: '6.80', snfPct: '9.10', density: '1.028' }, 'idem-c');
+    expect(JSON.parse(String(calls[1].init.body)).density).toBe('1.028');
+    expect(col.bonusMinor).toBe('355');            // W168's "+ bonus ≈ ₹571" broken out, line by line
+    expect(col.bonusApplied).toBe(true);
+    expect(col.holdState).toBe('none');
+  });
+
   it('labour employer flow: createBooking (idem) → assign → start → complete → pay; bookingAssignments uses box=booking (P1-12)', async () => {
     const { fn, calls } = fakeFetch((_c, n) =>
       n === 1 ? { body: { data: { id: 'b1', bookingNo: 'LB-1', status: 'open' } } }

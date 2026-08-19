@@ -28,9 +28,16 @@ import { BillingTaxRate } from '../read-models/billing-tax-rate';
 // must never round a paisa differently on the same rate, and the only way to promise that is one call site's
 // worth of arithmetic shared by both.
 import { taxOn } from '../domain/proration';
+import { pgDate } from '../../../core/database/pg-date';
 
-const ymd = (d: Date) => d.toISOString().slice(0, 10);
-const periodTag = (d: Date) => `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+// [PC-56 TENANT-6b-1] TWO DIFFERENT QUESTIONS, WHICH ONE HELPER USED TO ANSWER BOTH — and that conflation IS the
+// defect. `subscriptions.current_period_end` is a **`date`** column: node-pg hands it back as LOCAL midnight, so
+// `toISOString().slice(0,10)` wrote the invoice's `due_date` a DAY EARLY on any box ahead of UTC, and `getUTCMonth()`
+// put the period TAG in the WRONG MONTH for a period ending on the 1st — and that tag is half of 0146's unique
+// `(subscription, period)` key, so August's renewal could collide with July's. A calendar day is read through
+// `core/database/pg-date`. The overdue cutoff below is a different thing: `now` is a real INSTANT, and its UTC day is
+// a deliberate platform-wide boundary for a cross-tenant sweep, so it keeps its own explicitly-named helper.
+const periodTag = (d: Date) => { const ymd = pgDate(d); return ymd.slice(0, 4) + ymd.slice(5, 7); };
 
 export class RenewalInvoicesJob {
   constructor(
@@ -62,7 +69,7 @@ export class RenewalInvoicesJob {
         const res = await this.invoices.raiseRenewal({
           tenantId: d.tenantId, subscriptionId: d.subscriptionId, currencyCode: d.currency,
           taxMinor: taxOn(d.priceMinor, rate.bp), taxBp: rate.bp,
-          dueDate: ymd(d.periodEnd), periodTag: periodTag(d.periodEnd),
+          dueDate: pgDate(d.periodEnd), periodTag: periodTag(d.periodEnd),
           lineItems: [{ desc: 'Subscription renewal', qty: 1, unitMinor: d.priceMinor, totalMinor: d.priceMinor }],
         });
         if (res.raised) raised++; else skipped++;

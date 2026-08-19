@@ -3,6 +3,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { ProductBatch } from '../domain/product-batch.entity';
+import { pgDate } from '../../../core/database/pg-date';
+// [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
+// `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
+// (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
+// `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
 const COLS = `id, tenant_id, product_id, seller_user_id, batch_no, mfg_date, expiry_date, mrp_minor, currency_code, qty_received, qty_remaining, unit_code, is_recalled, recall_reason`;
 const toDomain = (r: any): ProductBatch => ProductBatch.rehydrate({ id: r.id, tenantId: r.tenant_id, productId: r.product_id, sellerUserId: r.seller_user_id, batchNo: r.batch_no, mfgDate: r.mfg_date, expiryDate: r.expiry_date, mrpMinor: r.mrp_minor != null ? BigInt(r.mrp_minor) : null, currencyCode: r.currency_code, qtyReceived: Number(r.qty_received), qtyRemaining: Number(r.qty_remaining), unitCode: r.unit_code, isRecalled: r.is_recalled, recallReason: r.recall_reason });
@@ -36,7 +41,7 @@ export class ProductBatchRepository {
           AND expiry_date IS NOT NULL AND expiry_date <= ($1::date + ($2 || ' days')::interval)
         ORDER BY expiry_date ASC LIMIT $3 FOR UPDATE SKIP LOCKED`,
       [asOf.toISOString().slice(0, 10), withinDays, limit]);
-    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, productId: x.product_id, expiryDate: String(x.expiry_date).slice(0, 10) }));
+    return r.rows.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, productId: x.product_id, expiryDate: pgDate(x.expiry_date) }));
   }
 
   async list(tenantId: string, opts: { productId?: string; includeExpired: boolean; limit: number }): Promise<ProductBatch[]> {
