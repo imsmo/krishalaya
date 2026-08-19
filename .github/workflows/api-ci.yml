@@ -31,7 +31,7 @@ jobs:
       DATABASE_URL: postgres://kv_app:kv_app_pw@localhost:5432/krishi_test
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: "20" }
       - name: Install
         run: npm install --no-audit --no-fund
