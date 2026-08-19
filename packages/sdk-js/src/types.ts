@@ -828,3 +828,29 @@ export interface OrderMoneyBox {
   snapshot: { present: boolean; reason: 'recorded' | 'placed_before_snapshot' | 'no_charges_applied' };
   buyerPaidMinor: string; sellerGrossMinor: string; currencyCode: string;
 }
+
+// --- the shipment trail (PC-56 TENANT-5a) — the first tenant-side read of `shipment_events` ---
+/** One point on a shipment's journey. `gapBefore` marks a segment the map must draw DOTTED: breadcrumbs
+ *  arrive every 90s, so a longer silence is a signal gap and never a teleport (W235). */
+export interface ShipmentTrailPoint { at: string; status: string; lat: number | null; lng: number | null; note: string | null; gapBefore: boolean }
+/** Progress along the MILESTONES, not along a distance: the platform stores hops and breadcrumbs, never a
+ *  planned route, so "72% of route · 38 km remaining" is not derivable and is not claimed. */
+export interface ShipmentProgress { step: number; of: number }
+export interface ShipmentTrail {
+  shipment: Shipment;
+  points: ShipmentTrailPoint[];
+  lastKnown: { at: string; lat: number | null; lng: number | null; status: string; note: string | null } | null;
+  progress: ShipmentProgress | null;
+  /** Always `no_eta_source`. Nothing on this platform computes an ETA and the view shows last-seen instead. */
+  eta: { kind: 'no_eta_source' };
+}
+export type ShipmentEventFilter = 'all' | 'failed' | 'at_hub' | 'door_open' | 'gps_gap';
+export interface ShipmentEventRow { id: string; at: string; shipmentId: string; status: string; lat: number | null; lng: number | null; note: string | null }
+export interface ShipmentEventPage {
+  items: ShipmentEventRow[];
+  /** The window the query actually ran over. `clamped` says the request reached past the 90-day hot horizon
+   *  and was trimmed — reported rather than applied silently, or an empty stretch reads as "nothing happened". */
+  window: { from: string; to: string; clamped: boolean };
+  precisionDp: number;
+  nextCursor: string | null;
+}

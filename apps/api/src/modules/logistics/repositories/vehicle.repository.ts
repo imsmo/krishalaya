@@ -4,7 +4,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { Vehicle, VehicleProps } from '../domain/vehicle.entity';
+import { Vehicle } from '../domain/vehicle.entity';
 import { DuplicateVehicleRegError } from '../domain/logistics.errors';
 
 const COLS = `id, tenant_id, partner_id, reg_no, vehicle_type_id, capacity_kg, is_refrigerated, rc_doc_id, is_active, created_at`;

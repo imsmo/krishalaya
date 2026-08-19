@@ -5,7 +5,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { LogisticsPartner, LogisticsPartnerProps } from '../domain/logistics-partner.entity';
+import { LogisticsPartner } from '../domain/logistics-partner.entity';
 
 const COLS = `id, tenant_id, partner_kind, provider_code, default_name, rider_user_id, supports_cold_chain, is_active, created_at`;
 

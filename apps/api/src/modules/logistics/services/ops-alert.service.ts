@@ -6,7 +6,7 @@
 // The fired-log row is written in the SAME tx as the outbox event, so "we paged someone" and "we recorded that
 // we paged someone" can never disagree.
 import { Inject, Injectable } from '@nestjs/common';
-import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../../shared/errors/app-error';

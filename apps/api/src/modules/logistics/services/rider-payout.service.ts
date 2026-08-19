@@ -8,7 +8,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
-import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../../shared/errors/app-error';
+import { BadRequestError, ConflictError, ForbiddenError } from '../../../shared/errors/app-error';
 import { RiderPayoutRepository } from '../repositories/rider-payout.repository';
 import { buildStatement, termsForDate } from '../domain/rider-payout.rules';
 

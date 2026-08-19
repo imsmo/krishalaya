@@ -4,7 +4,7 @@
 import { canTransition, isTerminal, isPrePickup, IllegalShipmentTransitionError, SHIPMENT_STATUSES, ShipmentStatus } from '../domain/shipment.state';
 import { Shipment } from '../domain/shipment.entity';
 import { ShipmentEventType } from '../domain/logistics.events';
-import { InvalidDeliveryOtpError, DeliveryOtpNotIssuedError, InvalidShipmentError } from '../domain/logistics.errors';
+import { InvalidDeliveryOtpError, InvalidShipmentError } from '../domain/logistics.errors';
 
 const mk = () => Shipment.create({ id: 's1', tenantId: 't1', orderId: 'o1' });
 const HASH_A = 'a'.repeat(64);   // stand-in OTP hashes (service computes the real HMAC)

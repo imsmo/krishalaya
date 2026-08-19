@@ -111,3 +111,6 @@ export { SaasBillingResource, SAAS_INVOICE_TABS } from './resources/tenancy';
 export { TenantProfileResource, TAX_FIELD_CODES } from './resources/tenancy';
 export type { TaxIdentityForm, TaxIdentityField, TaxFieldCode, TaxFieldError, TaxFieldErrorReason, ChecksumVerdict, TenantProfilePatch, ProfilePreview, ProfileDiffRow } from './resources/tenancy';
 export type { BillingConsoleView, SaasInvoiceRow, SaasInvoiceDetail, SaasPayQuote, SaasInvoiceTab, BillingMechanismVerdict } from './resources/tenancy';
+// PC-56 TENANT-5a · the shipment trail — the first tenant-side read of `shipment_events`, a table with two
+// writers and no reader in its own module since 0007.
+export type { ShipmentTrail, ShipmentTrailPoint, ShipmentProgress, ShipmentEventFilter, ShipmentEventRow, ShipmentEventPage } from './types';

@@ -13,7 +13,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { ShipmentService } from '../../services/shipment.service';
 import { CreateShipmentSchema, CreateShipmentDto } from '../../dto/create-shipment.dto';
-import { AssignShipmentSchema, AssignShipmentDto, SchedulePickupSchema, SchedulePickupDto, DeliverShipmentSchema, DeliverShipmentDto, FailShipmentSchema, FailShipmentDto, ShipmentLocationSchema, ShipmentLocationDto } from '../../dto/update-shipment.dto';
+import { AssignShipmentSchema, AssignShipmentDto, SchedulePickupSchema, SchedulePickupDto, DeliverShipmentSchema, DeliverShipmentDto, FailShipmentSchema, FailShipmentDto, ShipmentLocationSchema, ShipmentLocationDto, PickupOtpSchema, PickupOtpDto, QueryShipmentEventsSchema, QueryShipmentEventsDto } from '../../dto/update-shipment.dto';
 import { QueryShipmentsSchema, QueryShipmentsDto } from '../../dto/query-shipment.dto';
 import { CodRemittanceService } from '../../services/cod-remittance.service';
 import { RiderPayoutService } from '../../services/rider-payout.service';
@@ -45,6 +45,17 @@ const CreateRemittanceSchema = z.object({
 const DepositSchema = z.object({ depositRef: z.string().trim().min(2).max(120), depositMethod: z.enum(['bank_branch', 'cash_office', 'upi', 'other']) }).strict();
 const ReconcileSchema = z.object({ note: z.string().trim().max(1000).optional() }).strict();
 const CancelSchema = z.object({ reason: z.string().trim().min(3).max(500) }).strict();
+
+/** Keyset cursor for the event explorer: base64 "<iso timestamp>|<event id>", the same shape every other
+ *  list in this programme uses. Malformed input yields undefined — page 1 — rather than a 400: a stale
+ *  bookmark should show the operator the newest events, not an error. */
+function decodeEventCursor(raw: string | undefined): { c: string; id: string } | undefined {
+  if (!raw) return undefined;
+  try {
+    const [c, id] = Buffer.from(raw, 'base64').toString('utf8').split('|');
+    return c && id ? { c, id } : undefined;
+  } catch { return undefined; }
+}
 
 @Controller({ path: 'shipments', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -127,6 +138,24 @@ export class ShipmentsController {
     return this.shipments.codOutstanding(ctx.tenantId, this.actor(ctx)).then((data) => ({ data }));
   }
 
+  /* ---- the trail (PC-56 TENANT-5a) --------------------------------------------------------------------
+   * `shipment_events` has been written by every hop and every GPS ping since 0007 and read by nothing in
+   * this module. These two endpoints are W235's tracking view and W236's event explorer.
+   * Flag-gated separately from `logistics` itself: OFF leaves both screens saying the trail is not enabled
+   * rather than showing an empty one, which is a different sentence from "nothing has happened". */
+  @Get('events') @FeatureFlag('logistics_event_explorer') @RequirePermissions(ShipmentPermissions.Manage)
+  events(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryShipmentEventsSchema) q: QueryShipmentEventsDto) {
+    return this.shipments.events(ctx.tenantId, this.actor(ctx), {
+      from: q.from, to: q.to, filter: q.filter ?? 'all', shipmentId: q.shipmentId,
+      cursor: decodeEventCursor(q.cursor), limit: q.limit,
+    }).then((data) => ({ data }));
+  }
+
+  @Get(':id/trail') @FeatureFlag('logistics_event_explorer')
+  trail(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.shipments.trail(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.shipments.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
@@ -138,8 +167,14 @@ export class ShipmentsController {
   schedule(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(SchedulePickupSchema) dto: SchedulePickupDto) {
     return this.shipments.schedulePickup(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
   }
+  /** PC-56 TENANT-5a · the seller's pickup OTP rides in the body exactly as the buyer's delivery OTP does.
+   *  Optional: a shipment scheduled before this wave, or collected from the tenant's own premises, carries
+   *  no issued code and is picked up without one — `possessionProof` then reports what it can actually
+   *  prove rather than claiming both ends. */
   @Post(':id/picked-up')
-  pickedUp(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.shipments.markPickedUp(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }
+  pickedUp(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(PickupOtpSchema) dto: PickupOtpDto) {
+    return this.shipments.markPickedUp(ctx.tenantId, this.actor(ctx), id, dto.otp ?? null, ipOf(r)).then((data) => ({ data }));
+  }
   @Post(':id/in-transit')
   inTransit(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.shipments.markInTransit(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }
   @Post(':id/at-hub')

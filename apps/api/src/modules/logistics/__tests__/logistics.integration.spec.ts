@@ -26,6 +26,9 @@ import { OutboxDispatcher, OutboxHandlerRegistry } from '../../../core/outbox/ou
 import { uuidv7 } from '../../../core/database/uuid.util';
 
 import { OrderRepository } from '../../orders/repositories/order.repository';
+import { OrderService } from '../../orders/services/order.service';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { ShipmentDeliveredHandler } from '../../orders/events/handlers/shipment-delivered.handler';
 import { ShipmentRepository } from '../repositories/shipment.repository';
 import { ShipmentService } from '../services/shipment.service';
@@ -73,7 +76,15 @@ run('logistics slice (integration, real Postgres + RLS + outbox relay)', () => {
     const metrics = new PromMetrics();
     const audit = new AuditWriter(pools);
     const shipRepo = new ShipmentRepository(replica as any);
-    shipments = new ShipmentService(uow, outbox, idem, metrics, audit, config, shipRepo);
+    // PC-56 TENANT-5a. The money gate reads the ORDER through the orders module's public service (never its
+    // repositories — module blueprint), and the pickup-OTP feature is flag-gated per tenant. Both are wired
+    // REAL here, against the same Postgres: the gate this wave added is only worth anything if it holds on a
+    // live order row, and `logistics_pickup_otp` is seeded OFF by 0151, so an unseeded/off flag reproduces
+    // the pre-wave behaviour exactly.
+    const orderRepo = new OrderRepository(replica as any);
+    const orders = new OrderService(uow, outbox, metrics, audit, orderRepo);
+    const flags = new FlagsService(pools, new InMemoryCacheService());
+    shipments = new ShipmentService(uow, orders, flags, outbox, idem, metrics, audit, config, shipRepo);
 
     const registry = new OutboxHandlerRegistry();
     registry.register(new OrderConfirmedHandler(shipRepo, outbox, metrics));                       // orders.order_confirmed → shipment
@@ -106,7 +117,7 @@ run('logistics slice (integration, real Postgres + RLS + outbox relay)', () => {
 
   it('assign → pickup → out_for_delivery issues a hashed OTP (raw code only in the SMS-relay event)', async () => {
     await shipments.assign(tenantA, manager(), shipmentId, { riderUserId: rider }, null);
-    await shipments.markPickedUp(tenantA, { userId: rider, canManage: false }, shipmentId, null);
+    await shipments.markPickedUp(tenantA, { userId: rider, canManage: false }, shipmentId, null, null);
     await shipments.markOutForDelivery(tenantA, { userId: rider, canManage: false }, shipmentId, null);
 
     const ship = await admin.query(`SELECT status, delivery_otp_hash FROM shipments WHERE id=$1`, [shipmentId]);

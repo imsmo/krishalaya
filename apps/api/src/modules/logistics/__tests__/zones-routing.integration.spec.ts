@@ -5,7 +5,7 @@
 // the weekday and is idempotent per date; (4) ROW-LEVEL SECURITY: tenant B cannot see tenant A's zone.
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
+import { makeTenant } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';

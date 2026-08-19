@@ -92,6 +92,37 @@ export class OrderRepository {
   }
 
   /** Visible to buyer or seller only (no cross-party / cross-tenant peeking). */
+  /**
+   * The order's status ALONE, read inside the caller's transaction (PC-56 TENANT-5a).
+   *
+   * Deliberately not `getVisible`: that read filters by who is looking, which is the right question for a
+   * screen and the wrong one for a GATE. Logistics asks "may goods move for this order", not "may this user
+   * see this order" — and a shipment write must not depend on whether the dispatcher happens to be a party
+   * to the sale. One column, tenant-scoped, no policy.
+   *
+   * IN THE TRANSACTION on purpose: a check on the replica leaves a window in which an order is cancelled
+   * between the read and the driver being committed.
+   *
+   * **AND PRUNED (Law 8).** `orders` is partitioned by `created_at`; a point lookup on `id` alone touches
+   * every partition. `uuid_v7_time($1)` recovers the row's creation instant from its own v7 id, exactly as
+   * `getForUpdate`/`getVisible` do — the gate runs on the write path of every assignment and collection, so
+   * it is the last query on this table that may be allowed to scan.
+   *
+   * There is NO soft delete on `orders` — this query carried an `AND deleted_at IS NULL` clause for a column
+   * that does not exist, and the live integration run is what found it (`error: column "deleted_at" does not
+   * exist`). It would have thrown on every money-gated action, and — because the gate fails closed — frozen
+   * every assignment, pickup and collection on the platform the moment it shipped. The unit test that
+   * "proved" the clause asserted the SQL's TEXT, which is this programme's own recorded defect class one
+   * layer up: source-text assertions do not hold behaviour, and they cannot know whether a column exists.
+   * An order's closure is a STATUS here (`cancelled` / `refunded`), which is what `DEAD_ORDER_STATUSES`
+   * already reads.
+   */
+  async statusOf(tx: TxContext, tenantId: string, orderId: string): Promise<OrderStatus | null> {
+    const r = await tx.query<{ status: OrderStatus }>(
+      `SELECT status FROM orders WHERE id=$1 AND tenant_id=$2 AND ${PRUNE}`, [orderId, tenantId]);
+    return r.rows[0]?.status ?? null;
+  }
+
   async getVisible(tenantId: string, id: string, viewerUserId: string, canModerate: boolean): Promise<Order | null> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT ${COLS} FROM orders WHERE id=$1 AND tenant_id=$2 AND ${PRUNE}

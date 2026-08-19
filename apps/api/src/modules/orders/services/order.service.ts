@@ -63,6 +63,26 @@ export class OrderService {
     return { ...this.serialize(p), items };
   }
 
+  /**
+   * **THE GATE W226 PRINTS AS A RULE AND NOTHING ENFORCED (PC-56 TENANT-5a).**
+   *
+   * W226, in the copy under its own table: *"A shipment for a `payment_pending` order stays `pending` —
+   * wheels never turn before money clears (the cumin row shows exactly this)."* `ShipmentService` never read
+   * the order — not on create, not on assign, not on schedule-pickup, not on pickup — so a shipment against
+   * an unpaid order could be assigned a driver, collected from a farmer's gate and delivered, and every step
+   * would have succeeded.
+   *
+   * This is the ORDERS module's answer to that question, because the order's payment state is the orders
+   * module's fact. Logistics calls this public method inside its own transaction (module blueprint: another
+   * module's PUBLIC SERVICE, never its repositories) and applies the verdict; the vocabulary of the verdict
+   * lives in `logistics/domain/shipment-readiness.ts` so the console can render the reason.
+   *
+   * Returns null when the order cannot be seen at all — the caller must refuse rather than assume.
+   */
+  async transportStatus(tx: TxContext, tenantId: string, orderId: string): Promise<string | null> {
+    return this.repo.statusOf(tx, tenantId, orderId);
+  }
+
   private serialize(p: ReturnType<Order['toProps']>) {
     return { id: p.id, orderNo: p.orderNo, status: p.status, source: p.source, buyerUserId: p.buyerUserId, sellerUserId: p.sellerUserId,
       currencyCode: p.currencyCode, subtotalMinor: p.subtotalMinor.toString(), deliveryFeeMinor: p.deliveryFeeMinor.toString(),

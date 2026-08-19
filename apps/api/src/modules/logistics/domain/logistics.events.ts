@@ -8,6 +8,9 @@ export const ShipmentEventType = {
   AtHub:           'logistics.shipment_at_hub',
   OutForDelivery:  'logistics.shipment_out_for_delivery',
   DeliveryOtpIssued: 'logistics.delivery_otp_issued',   // carries the OTP for the (deferred) SMS relay — internal only
+  // PC-56 TENANT-5a · the pickup half of the two-way possession proof. Same shape and same warning as the
+  // delivery one: carries the raw code for the SMS relay and must never leave the internal outbox.
+  PickupOtpIssued: 'logistics.pickup_otp_issued',
   Delivered:       'logistics.shipment_delivered',      // → orders marks the order delivered (downstream)
   Failed:          'logistics.shipment_failed',
   Returned:        'logistics.shipment_returned',

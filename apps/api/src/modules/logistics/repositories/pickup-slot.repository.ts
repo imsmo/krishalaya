@@ -4,7 +4,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { PickupSlot, PickupSlotProps } from '../domain/pickup-slot.entity';
+import { PickupSlot } from '../domain/pickup-slot.entity';
 
 const COLS = `id, tenant_id, seller_user_id, weekday, to_char(start_time,'HH24:MI') AS start_time, to_char(end_time,'HH24:MI') AS end_time, is_active, created_at`;
 

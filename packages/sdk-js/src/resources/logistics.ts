@@ -4,7 +4,7 @@
 // itself. `deliver` carries an Idempotency-Key (Law 3) so a retried delivery can't double-fire. Delivery is gated
 // to the assigned rider / logistics manager server-side.
 import { HttpClient } from '../http';
-import { Shipment, Page } from '../types';
+import { Shipment, Page, ShipmentTrail, ShipmentEventFilter, ShipmentEventPage } from '../types';
 
 export interface RiderPayoutStatement {
   riderUserId: string;
@@ -40,9 +40,41 @@ export class ShipmentsResource {
     return (await this.http.request<{ ok: boolean }>('POST', `shipments/${encodeURIComponent(id)}/location`, { body: loc })).data;
   }
 
+  /* ---- the dispatcher's three actions (PC-56 TENANT-5a) -------------------------------------------------
+   * `POST :id/assign`, `:id/schedule-pickup` and `:id/cancel` have existed on the API since the module was
+   * built and had NO SDK METHOD, so no screen could reach them — which is why W227's console is a page of
+   * buttons that lead nowhere. Same shape of gap TENANT-4d-3 found on the tenant profile plane. */
+
+  /** Assign a 3PL partner, a vehicle and/or a rider. Refused while the order is unpaid (the money gate). */
+  async assign(id: string, input: { partnerId?: string; vehicleId?: string; riderUserId?: string; awbNo?: string }, idempotencyKey?: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/assign`, { idempotencyKey, body: input })).data;
+  }
+  /** Book the collection. Issues the SELLER's pickup OTP (behind `logistics_pickup_otp`) unless the goods
+   *  are collected from the tenant's own premises, where there is nobody to hand over. */
+  async schedulePickup(id: string, input: { scheduledPickupAt: string; windowMins?: number; fromOwnPremises?: boolean }, idempotencyKey?: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/schedule-pickup`, { idempotencyKey, body: input })).data;
+  }
+  /** Cancel the transport. W227 is explicit that this never cancels the SALE — the order stays confirmed. */
+  async cancel(id: string, idempotencyKey?: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/cancel`, { idempotencyKey, body: {} })).data;
+  }
+
+  /** One shipment's journey (W227's plan, W235's tracking). Coordinates are rounded server-side by role. */
+  async trail(id: string, signal?: AbortSignal): Promise<ShipmentTrail> {
+    return (await this.http.request<ShipmentTrail>('GET', `shipments/${encodeURIComponent(id)}/trail`, { signal })).data;
+  }
+  /** W236's event explorer: every hop of every shipment in a date-bounded window, filtered, keyset-paged. */
+  async events(params: { from?: string; to?: string; filter?: ShipmentEventFilter; shipmentId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<ShipmentEventPage> {
+    return (await this.http.request<ShipmentEventPage>('GET', 'shipments/events', {
+      query: { from: params.from, to: params.to, filter: params.filter, shipmentId: params.shipmentId, cursor: params.cursor, limit: params.limit ?? 25 }, signal,
+    })).data;
+  }
+
   // --- rider lifecycle (PC-50 W10-5; the server verifies the caller IS the assigned rider) ---
-  async markPickedUp(id: string): Promise<Shipment> {
-    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/picked-up`, { body: {} })).data;
+  /** Possession passes to the carrier. `otp` is the SELLER's handover code where one was issued — the
+   *  pickup half of "possession changes hands with proof, both directions" (PC-56 TENANT-5a). */
+  async markPickedUp(id: string, otp?: string): Promise<Shipment> {
+    return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/picked-up`, { body: otp ? { otp } : {} })).data;
   }
   async markInTransit(id: string): Promise<Shipment> {
     return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/in-transit`, { body: {} })).data;

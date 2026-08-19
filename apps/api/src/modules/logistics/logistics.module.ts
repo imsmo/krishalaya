@@ -14,13 +14,13 @@ import { RiderPayoutRepository } from './repositories/rider-payout.repository';
 import { OpsAlertService } from './services/ops-alert.service';
 import { OpsAlertRepository } from './repositories/ops-alert.repository';
 import { OpsAlertsCadenceJob } from './jobs/ops-alerts.cadence-job';
-import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { CodRemittanceService } from './services/cod-remittance.service';
 import { CodRemittanceRepository } from './repositories/cod-remittance.repository';
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { ShipmentsController } from './controllers/v1/shipments.controller';
+import { OrdersModule } from '../orders/orders.module';
 import { PartnersController, VehiclesController, PickupSlotsController } from './controllers/v1/partners.controller';
 import { ZonesController } from './controllers/v1/zones.controller';
 import { RoutesController, ColdChainController } from './controllers/v1/routes.controller';
@@ -41,6 +41,10 @@ import { ColdChainLogRepository } from './repositories/cold-chain-log.repository
 import { OrderConfirmedHandler } from './events/handlers/order-confirmed.handler';
 
 @Module({
+  // PC-56 TENANT-5a · the money gate needs the ORDERS module's public service (OrderService.transportStatus)
+  // so a shipment cannot be assigned, scheduled or picked up for an order nobody has paid for. The module
+  // blueprint's rule holds: another module's PUBLIC SERVICE, never its repositories.
+  imports: [OrdersModule],
   controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController],
   providers: [
     ShipmentService, ShipmentRepository, OrderConfirmedHandler,
