@@ -42,11 +42,15 @@ import { DairyCounterRepository } from './repositories/dairy-counter.repository'
 import { QualityReviewsController } from './controllers/v1/quality-reviews.controller';
 import { MilkQualityService } from './services/milk-quality.service';
 import { MilkQualityReviewRepository } from './repositories/milk-quality-review.repository';
+// PC-56 TENANT-6b-2 · W168's desk itself — a pure read over 6b-1's writes.
+import { DairyQualityController } from './controllers/v1/dairy-quality.controller';
+import { DairyQualityReadModel } from './read-models/dairy-quality.read-model';
+import { DairyQualityRepository } from './repositories/dairy-quality.repository';
 
 // The cycle-close worker job (jobs/milk-bill-cycle-close.job.ts) is instantiated by apps/worker with a
 // privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other batch jobs.
 @Module({
-  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController],
+  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -59,6 +63,8 @@ import { MilkQualityReviewRepository } from './repositories/milk-quality-review.
     DairyCounterRepository, DairyCounterReadModel,
     // PC-56 TENANT-6b-1
     MilkQualityService, MilkQualityReviewRepository,
+    // PC-56 TENANT-6b-2
+    DairyQualityRepository, DairyQualityReadModel,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService],
 })

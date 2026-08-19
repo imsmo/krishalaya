@@ -35,6 +35,9 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   DairyCounterBoard, DairyCounterCentre, DairyCycleWindow, DairyPayday, DairyAnalyzer, DairyBmcTemp,
   // PC-56 TENANT-6b-1 · the pour-level hold, its review record, and the premium slabs the engine finally reads
   DairyHoldState, DairyReviewStatus, DairyQualityReview, DairyBonusSlab,
+  // PC-56 TENANT-6b-2 · W168's desk
+  DairyQualityDesk, DairyQualityFlagRow, DairyPremiumBand, DairyRateCardsInForce, DairyRateCardSummary,
+  DairyStabilityVerdict, DairyWorkedExample, DairyFlagProtocol,
   DairyCoverage, DairyFlagSummary, DairyAccrual, DairyShiftClock,
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,
   CreateMccInput, EnrolMemberInput, CreateRateCardInput, RecordCollectionInput, GenerateBillInput,

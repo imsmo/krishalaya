@@ -234,6 +234,13 @@ export default async function DairyCounterPage({ searchParams }: { searchParams:
               {board.cycleMix.map((m) => `${t.t(`dairy.cycleName.${m.paymentCycle}`)} ${formatNumber(m.members, lang)}`).join(' · ')}
             </p>
           )}
+          {/* PC-56 TENANT-6b-2: the flags tile's natural next step. W167 draws no link to the quality desk and the
+              canon links it from nowhere at all, so the count doubles as the way in. */}
+          {board.flagSummary.total > 0 && (
+            <p className="kv-field__hint">
+              <Link href="/dairy/quality" className="kv-btn--link">{t.t('dairy.quality.reviewOnDesk')}</Link>
+            </p>
+          )}
           {/* W2559–W2561: the dairy mutate chain hosts "Retry", and a retry of a read is a page load. */}
           <p className="kv-field__hint">{t.t(retryChainKey())}</p>
         </>

@@ -761,6 +761,110 @@ export interface DairyQualityReview {
   committeeReviewRequired: boolean;
 }
 
+/* ---- PC-56 TENANT-6b-2 · W168's quality desk (a pure read over 6b-1's writes) ------------------------------- */
+
+/** W168's *"stable ±0.1 across 13 days"* — a claim the canon states as fact, so it is measured and reported with the
+ *  number of days it saw. Under two days there is no spread to report and the desk refuses rather than printing a
+ *  reassuring 0.0. */
+export type DairyStabilityVerdict =
+  | { kind: 'measured'; days: number; fatSpreadCentiPct: string; snfSpreadCentiPct: string; withinTolerance: boolean; toleranceCentiPct: number }
+  | { kind: 'insufficient_days'; days: number; needed: number };
+
+/**
+ * W168's *"Premium band pourers 184 / 312 · fat ≥ 6.5 earns the bonus slab"*.
+ *
+ * `basis` is the whole point. `earned` means these members were actually PAID a premium (counted from money that
+ * moved). `would_qualify` means `dairy_bonus_slabs` is OFF, nobody was paid anything, and these are the members whose
+ * best pour would have cleared the card's lowest fat slab — a forecast, and the desk says "would" out loud.
+ */
+export type DairyPremiumBand =
+  | { kind: 'measured'; basis: 'earned' | 'would_qualify'; qualifying: number; pourers: number; shareBps: number; slabs: DairyBonusSlab[] }
+  | { kind: 'no_slabs' }
+  | { kind: 'no_pours'; slabs: DairyBonusSlab[] };
+
+export interface DairyRateCardSummary {
+  id: string; defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel;
+  ratePerKgFatMinor: string | null; ratePerKgSnfMinor: string | null; baseRatePerLitreMinor: string | null;
+  slabs: DairyBonusSlab[]; effectiveFrom: string; effectiveTo: string | null;
+}
+
+/**
+ * Every rate card IN FORCE, and the two claims W168 makes that the software does not support.
+ *
+ * `ambiguous` — nothing on this platform closes a superseded card's `effective_to` (the rate-card service is
+ * CREATE-ONLY: no deactivate, no supersede), so two cards for one animal type can be in force at once and the pricing
+ * path silently takes whichever starts later. `effectiveId` is the one it would take.
+ * `supersedeRecorded: false` — history is kept (the old row persists; every pour records the card that priced it) but
+ * nothing ARCHIVES anything: no act, no column, nobody's name against it.
+ * `checkerRequired: false` — one `dairy.manage` holder can change what every member is paid, alone, in one call, while
+ * W168 promises "owner + checker". The platform has the pattern (payout approval); the rate card does not use it.
+ */
+export interface DairyRateCardsInForce {
+  byAnimal: Array<{ animalType: DairyAnimalType; cards: DairyRateCardSummary[]; effectiveId: string | null; ambiguous: boolean }>;
+  ambiguousAnimalTypes: DairyAnimalType[];
+  supersedeRecorded: false;
+  checkerRequired: false;
+}
+
+/** The line-by-line arithmetic W168 promises the farmer, computed from the tenant's OWN card and (where one exists) a
+ *  real pour from the cycle. `bonusApplied` travels with it so an example cannot imply a premium nobody is paying. */
+export interface DairyWorkedExample {
+  cardId: string; litres: string; fatPct: string; snfPct: string;
+  fatKg: string; snfKg: string;
+  fatMinor: string; snfMinor: string; baseMinor: string;
+  bonusMinor: string; bonusApplied: boolean; slabsEarned: DairyBonusSlab[];
+  totalMinor: string;
+  /** False when the cycle held no pour on this card and the example is illustrative — said out loud, not passed off. */
+  fromRealPour: boolean;
+}
+
+/** Which of W168's three protocol steps this platform can actually witness. `not_modelled` is not a failure state — a
+ *  dairy committee is a governance body with no representation here, and the platform risk desk is admin-api (Law 11). */
+export interface DairyFlagProtocol {
+  retest: 'recorded' | 'not_modelled';
+  decision: 'recorded' | 'not_modelled';
+  committee: 'recorded' | 'not_modelled';
+  pourLevelHold: true;
+  walletUntouched: true;
+}
+
+/** A flagged pour on the desk. The member code is MASKED here and never sent whole — W168 masks it, on a screen about
+ *  somebody's honesty, and the API is the right place to enforce that. */
+export interface DairyQualityFlagRow {
+  reviewId: string; collectionId: string; collectedOn: string; shift: DairyShift;
+  mccCode: string | null; memberCodeMasked: string | null;
+  status: DairyReviewStatus; holdState: DairyHoldState;
+  waterFlag: boolean; reasons: string[];
+  densityAtFlag: string | null; fatPctAtFlag: string | null; snfPctAtFlag: string | null;
+  litres: string | null; amountWithheldMinor: string;
+  sampleSealed: boolean; memberPresent: boolean | null;
+  retestAt: string | null; decidedAt: string | null;
+  priorReviews90d: number; committeeReviewRequired: boolean;
+}
+
+export interface DairyQualityDesk {
+  window: DairyCycleWindow;
+  currencyCode: string;
+  cycle: { fatPct: string | null; snfPct: string | null; litres: string; days: number; stability: DairyStabilityVerdict };
+  animalMix: Array<{ animalType: string; pours: number }>;
+  flags: {
+    total: number; byStatus: Record<string, number>; byReason: Record<string, number>;
+    withheldMinor: string;
+    /** W168 claims "all resolved or in review" — checked, not printed. False while any review is still untouched. */
+    allResolvedOrInReview: boolean;
+    openCount: number;
+  };
+  premiumBand: DairyPremiumBand;
+  slabsApplied: boolean;
+  rateCards: DairyRateCardsInForce;
+  example: DairyWorkedExample | null;
+  openFlags: DairyQualityFlagRow[];
+  protocol: DairyFlagProtocol;
+  /** W168's subtitle: *"quarantine the pour, never the person"*. True as of TENANT-6b-1, and true by construction —
+   *  the hold lives on the pour, so the member's other pours bill and pay normally and no wallet is touched. */
+  quarantineScope: 'pour';
+}
+
 /** A premium slab on a rate card — W168's *"fat ≥ 6.5 → +₹0.50/L"*. Integers only: `minCentiPct` is the threshold ×100
  *  (6.5% → 650) and `bonusMinorPerLitre` is minor units per litre (₹0.50 → 50), because a decimal here would put a
  *  float on the pricing path. `milk_rate_cards.bonus_rules` held tenant data from 0007 and was read by NOTHING until

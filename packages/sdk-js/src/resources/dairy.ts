@@ -11,6 +11,8 @@ import {
   DairyCounterBoard, DairyShift,
   // PC-56 TENANT-6b-1 · W168's flag protocol
   DairyQualityReview, DairyReviewStatus,
+  // PC-56 TENANT-6b-2 · W168's desk
+  DairyQualityDesk, DairyPaymentCycle,
 } from '../types';
 
 export class DairyResource {
@@ -68,6 +70,17 @@ export class DairyResource {
    * pour must not stay withheld because nobody switched a screen on. Before this wave none of it existed — the flag was
    * two columns on a pour and the pour was billed and PAID at full price anyway.
    * ------------------------------------------------------------------------------------------------------------- */
+
+  /**
+   * PC-56 TENANT-6b-2 · W168's quality desk for one cycle: the litre-weighted fat/SNF averages and the *"stable ±0.1"*
+   * claim measured rather than asserted, the flags with what is still held, the premium band and whether it is actually
+   * being PAID, every rate card in force (plural, deliberately — nothing supersedes one), and the line-by-line
+   * arithmetic a farmer is promised. Omit `day` for the DATABASE's today and `cycle` for the window the members' own
+   * preference implies — the same defaults the counter board takes, through the same function.
+   */
+  async qualityDesk(params: { day?: string; cycle?: DairyPaymentCycle } = {}, signal?: AbortSignal): Promise<DairyQualityDesk> {
+    return (await this.http.request<DairyQualityDesk>('GET', 'dairy/quality', { query: { ...params }, signal })).data;
+  }
 
   /** The desk's queue and history. `status: 'open_any'` is open PLUS re-tested: the pours whose money is held NOW. */
   async listQualityReviews(params: { status?: DairyReviewStatus | 'open_any'; membershipId?: string; from?: string; to?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DairyQualityReview>> {

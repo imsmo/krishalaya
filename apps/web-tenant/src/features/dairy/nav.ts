@@ -16,7 +16,11 @@ export interface DairyNavItem { key: string; href: string | null; built: boolean
 
 export const DAIRY_NAV: readonly DairyNavItem[] = [
   { key: 'collections', href: '/dairy',  built: true },
-  { key: 'quality',     href: null,      built: false },
+  // PC-56 TENANT-6b-2 · W168. **The canon links this screen from NOWHERE** — `grep -rl W168-tenant-dairy-quality`
+  // across all 1,955 screens returns zero hits, while W167 is in every dairy breadcrumb. Third instance of that
+  // defect (W241 was 5c's, W244 was 5d's), and the sub-nav is the fix: an operator who lands on the counter board can
+  // reach the quality desk without knowing the URL.
+  { key: 'quality',     href: '/dairy/quality', built: true },
   { key: 'cycles',      href: null,      built: false },
   { key: 'bmc',         href: null,      built: false },
   { key: 'centres',     href: null,      built: false },
