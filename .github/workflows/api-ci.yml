@@ -30,7 +30,7 @@ jobs:
       DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/krishi_test
       DATABASE_URL: postgres://kv_app:kv_app_pw@localhost:5432/krishi_test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - name: Install
