@@ -188,3 +188,6 @@ desktop.ini
 *.swo
 *~
 *.sublime-workspace
+
+# temp
+_to_delete/
