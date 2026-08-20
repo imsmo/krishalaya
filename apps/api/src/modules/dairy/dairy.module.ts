@@ -45,6 +45,9 @@ import { MilkQualityReviewRepository } from './repositories/milk-quality-review.
 // PC-56 TENANT-6b-2 · W168's desk itself — a pure read over 6b-1's writes.
 import { DairyQualityController } from './controllers/v1/dairy-quality.controller';
 import { DairyQualityReadModel } from './read-models/dairy-quality.read-model';
+// PC-56 TENANT-6c-6 · W169's own console: the register, its tiles, and every act's refusal.
+import { DairyCycleConsoleReadModel } from './read-models/dairy-cycle-console.read-model';
+import { DairyCycleConsoleRepository } from './repositories/dairy-cycle-console.repository';
 import { DairyQualityRepository } from './repositories/dairy-quality.repository';
 // PC-56 TENANT-6c-1 · W169's cycle: the noun this platform did not have, and the cadence job that fills it.
 import { DairyCycleCloseCadenceJob } from './jobs/dairy-cycle-close.cadence-job';
@@ -124,6 +127,8 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
     DairyDeductionTypeRepository,
     // PC-56 TENANT-6c-5
     DairyDeductionInstructionRepository, DairyDeductionInstructionService, DairyDeductionAssemblerService,
+    // PC-56 TENANT-6c-6
+    DairyCycleConsoleRepository, DairyCycleConsoleReadModel,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
     // PC-56 TENANT-6c-4

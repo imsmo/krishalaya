@@ -40,21 +40,26 @@ export function shiftClockVerdict(): ShiftClockVerdict {
 /**
  * W167: *"Cycle 01–15 Jul closes Wed 15, pays Fri 17 Jul."* W169 is a whole screen about those cycles.
  *
- * **No cycle exists as a record on this platform.** `dairy_memberships.payment_cycle` stores each member's
- * preference (daily | weekly | fortnightly | monthly) and **nothing reads it** — `grep` finds only the repository
- * round-tripping the column. `milk_bills.period_start/period_end` are whatever a caller passed in, and
- * `MilkBillCycleCloseJob` — the only thing that would generate bills on a clock — **is instantiated nowhere** (its
- * own header says "instantiated by apps/worker"; apps/worker does not). So bills have never been generated on a
- * schedule, and no calendar says which fortnight is running.
+ * **[PC-56 TENANT-6c-6] WHAT THIS HEADER SAID IS NO LONGER TRUE, AND THE FIX IS TO SAY SO RATHER THAN TO DELETE IT.**
+ * TENANT-6a wrote *"no cycle exists as a record on this platform"* — accurate then: `dairy_memberships.payment_cycle`
+ * was round-tripped and read by nothing, `milk_bills.period_start/period_end` were whatever a caller passed in, and
+ * `MilkBillCycleCloseJob` was instantiated nowhere. TENANT-6c-1 made the cycle a ROW (`dairy_bill_cycles`, 0157) with a
+ * close instant in the cooperative's own timezone and a payday from its own setting, and registered a cadence that
+ * actually runs.
+ *
+ * This function stays, and stays the WINDOW RULE for the whole platform: `windowsToEnsure` — the cadence that creates
+ * those rows — is built on it, so the window a board derives and the window a cycle records are the same window by
+ * construction rather than by luck. That is why there is one rule here and not two mechanisms over one fact. What a
+ * board must not do is imply a cycle's STATE from the derived window; W169's console reads the row.
  *
  * The window is therefore DERIVED here, from the member's own stored preference and the calendar, as a pure rule:
  *   • fortnightly → 01–15 and 16–end-of-month (the canon's own "01–15 Jul");
  *   • monthly     → the calendar month;
  *   • weekly      → Monday–Sunday containing the day (W171: "pays every Friday" — that is a PAYDAY, not a window);
  *   • daily       → the day itself.
- * Deriving it is honest — the inputs are real and the rule is stated — but it is NOT the same as a cycle the
- * platform has committed to, so the desk labels the window `derived` and TENANT-6c owns making it a record with a
- * close and a payday.
+ * The window is still labelled `derived` on the boards that compute it, because that is what it is — a rule applied
+ * to a date, not a row that was read. Where the row exists (the cadence has run), the counter board's payday tile now
+ * names it, and W169's console works the cycle itself.
  */
 export interface CycleWindow { from: string; to: string; cycle: PaymentCycle; basis: 'derived_from_membership_preference' }
 
@@ -97,14 +102,27 @@ export function cycleWindow(day: string, cycle: PaymentCycle): CycleWindow {
  * W167 also promises a CLOSE ("closes Wed 15") and a PAYDAY ("pays Fri 17 Jul", W169: "with ambassador weekly run —
  * one bank trip").
  *
- * The close is the window's own last day, which is derivable. **The payday is not**: nothing on this platform records
- * when a dairy cycle pays, and W169's payday is tied to a logistics run ("one bank trip") that no dairy row
- * references. Refused, with what it would need named — a promised payday nobody keeps is the single worst thing this
- * desk could print, because 312 families plan a week around it.
+ * **[PC-56 TENANT-6c-6] THIS FUNCTION USED TO REFUSE UNCONDITIONALLY, AND IT WAS WRONG FOR FIVE WAVES.** TENANT-6a
+ * wrote *"nothing on this platform records when a dairy cycle pays"*, which was true in front of it — and TENANT-6c-1
+ * then gave the cycle a row with a `payday` resolved from the cooperative's own setting. The counter board went on
+ * telling every operator the platform could not say when they would be paid while `dairy_bill_cycles.payday` had said
+ * so since migration 0157. A screen that keeps refusing after the thing was built is the same defect as a screen that
+ * claims something that was never built — the direction of the lie is different, the lie is not.
+ *
+ * So it takes the RECORDED cycle now, and refuses only when there is genuinely no row for the window (a cooperative
+ * whose cadence has never run). What stays refused either way is the canon's *"one bank trip"*: there is no payout
+ * BATCH over a cycle anywhere on this platform, so a payday is a DATE the cooperative has set and not a promise that
+ * the money leaves in one run. 312 families plan a week around that date; the distinction is printed, not smoothed.
  */
-export type PaydayVerdict = { kind: 'not_recorded'; closesOn: string; missing: readonly string[] };
-export function paydayVerdict(w: CycleWindow): PaydayVerdict {
-  return { kind: 'not_recorded', closesOn: w.to, missing: ['dairy_cycle_calendar', 'cycle_payday_rule'] };
+export type PaydayVerdict =
+  | { kind: 'not_recorded'; closesOn: string; missing: readonly string[] }
+  | { kind: 'recorded'; closesOn: string; payday: string; cycleId: string; cycleStatus: string; batchBuilt: false };
+export function paydayVerdict(w: CycleWindow, cycle: { id: string; payday: string; status: string } | null = null): PaydayVerdict {
+  if (cycle) return { kind: 'recorded', closesOn: w.to, payday: cycle.payday, cycleId: cycle.id, cycleStatus: cycle.status, batchBuilt: false };
+  // The cycle row is what records a payday, and `ensureCycles` creates it from the members' own `payment_cycle`. No row
+  // for a window the board is showing means the cadence has not run for this tenant — which is a different sentence
+  // from "this platform cannot record a payday", and the flag is what an operator should be sent to look at.
+  return { kind: 'not_recorded', closesOn: w.to, missing: ['dairy_cycle_row_for_window', 'dairy_cycle_close_flag'] };
 }
 
 /* --------------------------------------------------------------------------------------------------------- */

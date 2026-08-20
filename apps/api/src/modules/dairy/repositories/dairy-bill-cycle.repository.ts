@@ -2,7 +2,7 @@
 // tenant_id in EVERY query (Law 1) + RLS. No version column → state moves lock FOR UPDATE. Reads on the replica.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
-import { TxContext } from '../../../core/database/unit-of-work';
+import { SqlExecutor, TxContext } from '../../../core/database/unit-of-work';
 import { pgDate } from '../../../core/database/pg-date';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { DairyBillCycle } from '../domain/dairy-bill-cycle.entity';
@@ -104,7 +104,9 @@ export class DairyBillCycleRepository {
     return got;
   }
 
-  async findByWindow(tx: TxContext, tenantId: string, w: CycleWindow): Promise<DairyBillCycle | null> {
+  /** [PC-56 TENANT-6c-6] `SqlExecutor`, so the counter board can name the cycle for a window it is already showing
+   *  (no lock is taken here — `getForUpdate` is the one that locks). */
+  async findByWindow(tx: SqlExecutor, tenantId: string, w: CycleWindow): Promise<DairyBillCycle | null> {
     const r = await tx.query(
       `SELECT ${COLS} FROM dairy_bill_cycles
         WHERE tenant_id=$1 AND payment_cycle=$2 AND period_start=$3::date AND period_end=$4::date AND deleted_at IS NULL`,
@@ -115,6 +117,19 @@ export class DairyBillCycleRepository {
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<DairyBillCycle | null> {
     const r = await tx.query(
       `SELECT ${COLS} FROM dairy_bill_cycles WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+
+  /**
+   * One cycle, WITHOUT a lock — W169's console opens a fortnight by id and decides nothing about it.
+   *
+   * [PC-56 TENANT-6c-6] `getForUpdate` was the only way to read a cycle by id, so before this the console would have
+   * had to take a row lock on 312 families' cycle to draw a table. A read that decides nothing must not queue behind
+   * the cadence that closes it.
+   */
+  async byId(x: SqlExecutor, tenantId: string, id: string): Promise<DairyBillCycle | null> {
+    const r = await x.query(
+      `SELECT ${COLS} FROM dairy_bill_cycles WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
 
@@ -209,8 +224,15 @@ export class DairyBillCycleRepository {
     return Number(raw);
   }
 
-  /** The database's own calendar day — the same discipline TENANT-6a set for the counter board. */
-  async today(tx: TxContext): Promise<string> {
+  /**
+   * The database's own calendar day — the same discipline TENANT-6a set for the counter board.
+   *
+   * [PC-56 TENANT-6c-6] Takes a `SqlExecutor` rather than a `TxContext`: W169's console needs today's date to say
+   * *"accrued to 13 Jul"*, and opening a write transaction to read `current_date` would make every draw of a read-only
+   * register take a connection from the pool that writes money. Every existing caller passes a `TxContext`, which IS
+   * a `SqlExecutor`, so this widens the door without moving anybody through it.
+   */
+  async today(tx: SqlExecutor): Promise<string> {
     const r = await tx.query(`SELECT current_date::text AS d`);
     return String((r.rows[0] as any)?.d ?? '');
   }

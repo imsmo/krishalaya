@@ -37,6 +37,8 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   DairyHoldState, DairyReviewStatus, DairyQualityReview, DairyBonusSlab,
   // PC-56 TENANT-6b-2 · W168's desk
   DairyQualityDesk, DairyQualityFlagRow, DairyPremiumBand, DairyRateCardsInForce, DairyRateCardSummary,
+  // PC-56 TENANT-6c-6 · W169's cycles and the console that reaches them
+  DairyBillCycle, DairyCycleConsole, DairyCycleBillRow, DairyCycleAct, DairyCycleActRefusal, DairyCycleActCaution,
   DairyStabilityVerdict, DairyWorkedExample, DairyFlagProtocol,
   DairyCoverage, DairyFlagSummary, DairyAccrual, DairyShiftClock,
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,

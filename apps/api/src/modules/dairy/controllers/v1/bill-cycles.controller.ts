@@ -3,6 +3,12 @@
 // The cycle itself arrived with TENANT-6c-1 and had no surface: the cadence job created and closed rows and nothing
 // could read them. This adds the read, and W169's header act.
 //
+// [PC-56 TENANT-6c-6] AND W169's CONSOLE IS NOW HERE — the register itself, which nothing could draw: the cycle
+// routes below have existed since 6c-2 and the SDK had no method for any of them, so five waves of acts were reachable
+// only by hand. `@Get('console')` is declared BEFORE `@Get(':id')` on purpose: Nest matches routes in declaration
+// order, so the parameterised route would otherwise swallow `/console` and answer 404 for the id "console". The suite
+// asserts that order, because it is invisible in a diff.
+//
 // [PC-56 TENANT-6c-3] APPROVE IS NOW HERE, with the second signature. W169: *"Preview/approve needs dairy-desk +
 // `settlement.close` + checker — this is 312 families' milk money."* Both routes carry BOTH keys (the earlier version of
 // this file shipped preview behind `dairy.manage` alone), and the approver must not be whoever previewed the cycle —
@@ -16,14 +22,32 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { DairyBillCycleService } from '../../services/dairy-bill-cycle.service';
+import { DairyCycleConsoleReadModel } from '../../read-models/dairy-cycle-console.read-model';
+import { CycleConsoleSchema, CycleConsoleDto, decodeGrossCursor } from '../../dto/query-cycle-console.dto';
+import { ZodQuery } from '../../../../core/http/zod.pipe';
 import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
 @Controller({ path: 'dairy/bill-cycles', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('dairy')
 export class BillCyclesController {
-  constructor(private readonly cycles: DairyBillCycleService) {}
+  constructor(private readonly cycles: DairyBillCycleService, private readonly console_: DairyCycleConsoleReadModel) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+
+  /**
+   * W169 ITSELF: one cycle's register, its four tiles, and every act's refusal resolved server-side.
+   *
+   * Behind `dairy.manage` like the other reads on this controller, and NOT behind the preview or approve flags — an
+   * operator whose cooperative has the acts switched off must still be able to see what its fortnight looks like, and
+   * the acts come back refused with `FLAG_OFF` so the screen can say which switch is down. DECLARED FIRST: see the
+   * header — `@Get(':id')` below would otherwise match `/console`.
+   */
+  @Get('console') @RequirePermissions(DairyPermissions.Manage)
+  consoleView(@CurrentContext() ctx: RequestContext, @ZodQuery(CycleConsoleSchema) q: CycleConsoleDto) {
+    return this.console_.view(ctx.tenantId, this.actor(ctx), {
+      cycleId: q.cycleId, cursor: decodeGrossCursor(q.cursor), limit: q.limit, direction: q.direction,
+    }).then((data) => ({ data }));
+  }
 
   /** This tenant's cycles, newest window first — with each one's bill counts MEASURED from its bills. */
   @Get() @RequirePermissions(DairyPermissions.Manage)

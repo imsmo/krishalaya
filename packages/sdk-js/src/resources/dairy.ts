@@ -13,6 +13,8 @@ import {
   DairyQualityReview, DairyReviewStatus,
   // PC-56 TENANT-6b-2 · W168's desk
   DairyQualityDesk, DairyPaymentCycle,
+  // PC-56 TENANT-6c-6 · W169's cycles, and the console that finally reaches them
+  DairyBillCycle, DairyCycleConsole,
 } from '../types';
 
 export class DairyResource {
@@ -124,6 +126,58 @@ export class DairyResource {
   /** Pay the NET amount to the farmer's wallet (server-side double-entry; Law 2/3). Idempotent. */
   async payBill(id: string, idempotencyKey: string): Promise<MilkBill> {
     return (await this.http.request<MilkBill>('POST', `dairy/milk-bills/${encodeURIComponent(id)}/pay`, { idempotencyKey })).data;
+  }
+
+  // ---- payout CYCLES (PC-56 TENANT-6c-6 · W169) ----
+  //
+  // **THE ROUTES HAVE EXISTED SINCE TENANT-6c-2 AND THIS RESOURCE HAD NO METHOD FOR ANY OF THEM.** Five waves built
+  // the cycle record, the preview, the second signature, the deduction's destination and the standing instruction, and
+  // not one of those acts could be reached from a client — a cooperative's fortnight was closable only by curl. That is
+  // the defect W169's wave exists to close, and it is the reason these four methods matter more than they look.
+
+  /** This tenant's cycles, newest window first, with each one's bill counts and deduction totals MEASURED. */
+  async listBillCycles(params: { limit?: number } = {}, signal?: AbortSignal): Promise<DairyBillCycle[]> {
+    return (await this.http.request<DairyBillCycle[]>('GET', 'dairy/bill-cycles', { query: { limit: params.limit }, signal })).data;
+  }
+
+  async getBillCycle(id: string, signal?: AbortSignal): Promise<DairyBillCycle> {
+    return (await this.http.request<DairyBillCycle>('GET', `dairy/bill-cycles/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
+  /**
+   * W169 itself: one cycle's register, its four tiles, and every act's refusal reason resolved server-side.
+   *
+   * Omit `cycleId` for the fortnight that is RUNNING — an operator opening "Payout cycles" should not need a uuid.
+   * `cursor` is keyset on `(gross, id)`, because the register is sorted by who is owed the most and a 13-page fortnight
+   * changes underneath an OFFSET.
+   */
+  async dairyCycleConsole(params: { cycleId?: string; cursor?: string; limit?: number; direction?: 'desc' | 'asc' } = {}, signal?: AbortSignal): Promise<DairyCycleConsole> {
+    return (await this.http.request<DairyCycleConsole>('GET', 'dairy/bill-cycles/console', {
+      query: { cycleId: params.cycleId, cursor: params.cursor, limit: params.limit, direction: params.direction }, signal,
+    })).data;
+  }
+
+  /**
+   * W169's header button: *"Preview cycle 01–15 Jul (Wed close)"* — one press, 312 members told in their own language,
+   * 312 dispute clocks started.
+   *
+   * Needs `dairy.manage` AND `settlement.close`, is behind `dairy_cycle_preview` (default OFF), and REQUIRES an
+   * idempotency key: the pass is bounded and resumable, so a retry on a 2G connection replays rather than re-sends,
+   * and pressing it again is how a partial pass is finished. The response says what it did and what is LEFT.
+   */
+  async previewBillCycle(id: string, idempotencyKey: string): Promise<{ previewed: number; failed: number; remaining: number }> {
+    return (await this.http.request<{ previewed: number; failed: number; remaining: number }>('POST', `dairy/bill-cycles/${encodeURIComponent(id)}/preview`, { idempotencyKey })).data;
+  }
+
+  /**
+   * W169's second act: *"approved Thu evening (maker-checker)"*.
+   *
+   * Two keys and a DIFFERENT human — the approver may not be whoever previewed it (enforced on the aggregate and by a
+   * database constraint), so a client should read `acts.approve` from the console before drawing the button.
+   * `skippedDisputed` is the count the canon's *"disputed pauses one bill, never the cycle"* is about.
+   */
+  async approveBillCycle(id: string, idempotencyKey: string): Promise<{ approved: number; failed: number; remaining: number; skippedDisputed: number }> {
+    return (await this.http.request<{ approved: number; failed: number; remaining: number; skippedDisputed: number }>('POST', `dairy/bill-cycles/${encodeURIComponent(id)}/approve`, { idempotencyKey })).data;
   }
 
   // --- PC-54 W54-5: D2C milk subscriptions + the MCC day sheet ---

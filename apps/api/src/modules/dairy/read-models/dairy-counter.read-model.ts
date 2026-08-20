@@ -7,6 +7,8 @@
 // basis or with the inputs it is missing by name.
 import { Inject, Injectable } from '@nestjs/common';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
+import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
+import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repository';
 import { DairyCounterRepository } from '../repositories/dairy-counter.repository';
 import {
   AccrualVerdict, AnalyzerVerdict, BmcTempVerdict, BoardTotals, CentreShiftRow, CoverageVerdict, CycleWindow,
@@ -40,7 +42,7 @@ export interface CounterBoard {
   coverage: CoverageVerdict;
   flagSummary: FlagSummary;
   accrual: AccrualVerdict;
-  /** The window the accrual covers, and the payday the platform cannot promise. */
+  /** The window the accrual covers, and the payday — RECORDED since 0157 (TENANT-6c-6 stopped this refusing). */
   window: CycleWindow;
   payday: PaydayVerdict;
   /** How many members the derived window actually fits — a fortnightly window over a tenant whose members are mostly
@@ -54,6 +56,10 @@ export interface CounterBoard {
 export class DairyCounterReadModel {
   constructor(
     private readonly repo: DairyCounterRepository,
+    // [PC-56 TENANT-6c-6] The cycle RECORD, so this board stops telling operators the platform cannot say when they
+    // are paid. 0157 records the payday; W169's console is where the cycle is worked, and this tile now names it.
+    private readonly cycles: DairyBillCycleRepository,
+    @Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider,
     @Inject(METRICS) private readonly metrics: Metrics,
   ) {}
 
@@ -70,13 +76,15 @@ export class DairyCounterReadModel {
       const cycle: PaymentCycle = opts.cycle ?? ((mix[0]?.paymentCycle as PaymentCycle | undefined) ?? 'fortnightly');
       const window = cycleWindow(day, cycle);
 
-      const [rows, bmc, flags, accrual, bills, currency] = await Promise.all([
+      const [rows, bmc, flags, accrual, bills, currency, cycleRow] = await Promise.all([
         this.repo.centreShiftRows(tenantId, day, opts.shift),
         this.repo.bmcForCentres(tenantId),
         this.repo.flagsForDay(tenantId, day, opts.shift),
         this.repo.accrual(tenantId, window.from, window.to),
         this.repo.billsInWindow(tenantId, window.from, window.to),
         this.repo.currencyCode(tenantId),
+        // The cycle row for exactly this window, if the cadence has made one. No lock: this board decides nothing.
+        this.cycles.findByWindow(this.replica.forTenant(tenantId), tenantId, window),
       ]);
 
       const bmcByMcc = new Map(bmc.map((b) => [b.mccId, b]));
@@ -110,7 +118,10 @@ export class DairyCounterReadModel {
           membersWithPours: accrual.membersWithPours, billsExisting: bills,
         }),
         window,
-        payday: paydayVerdict(window),
+        payday: paydayVerdict(window, cycleRow === null ? null : (() => {
+          const p = cycleRow.toProps();
+          return { id: p.id, payday: p.payday, status: p.status };
+        })()),
         cycleMix: mix,
         pourUniqueness: 'unique_membership_day_shift',
       };

@@ -29,6 +29,7 @@ import { DairyActor } from './mcc-centre.service';
 import { DairyBillCycle } from '../domain/dairy-bill-cycle.entity';
 import { windowsToEnsure } from '../domain/dairy-cycle';
 import { DairyEventType, DomainEvent } from '../domain/dairy.events';
+import { DEDUCTION_ASSEMBLY_FLAG } from './dairy-deduction-assembler.service';
 import { MilkBillDeductionRepository } from '../repositories/milk-bill-deduction.repository';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 
@@ -302,7 +303,7 @@ export class DairyBillCycleService {
    */
   async generateFor(tenantId: string, cycle: DairyBillCycle, limit = 500): Promise<{ generated: number; skipped: number; stranded: number; failed: number; deductedMinor: string }> {
     const props = cycle.toProps();
-    const assembleDeductions = await this.flags.isEnabled('dairy_deduction_assembly', { tenantId });
+    const assembleDeductions = await this.flags.isEnabled(DEDUCTION_ASSEMBLY_FLAG, { tenantId });
     const members = await this.uow.run(tenantId, (tx) =>
       this.collections.membershipsToBillForCycle(tx, tenantId, props.paymentCycle, props.periodStart, props.periodEnd, limit),
       { userId: 'system' });

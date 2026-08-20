@@ -128,7 +128,20 @@ export function windowKey(w: DairyCycleWindow): string { return `dairy.window.${
 export function windowBasisKey(w: DairyCycleWindow): string { void w; return 'dairy.window.derived'; }
 
 /** "closes Wed 15, pays Fri 17 Jul" — the close is the window's last day; the payday is refused by name. */
-export function paydayKey(_p: DairyPayday): string { void _p; return 'dairy.payday.notRecorded'; }
+/**
+ * [PC-56 TENANT-6c-6] THIS RETURNED `notRecorded` UNCONDITIONALLY, AND HAD BEEN WRONG FOR FIVE WAVES.
+ *
+ * TENANT-6a wrote it when nothing on this platform recorded a dairy payday — true then. TENANT-6c-1 gave the cycle a
+ * row with a `payday` from the cooperative's own setting (0157), and this board went on telling every operator the
+ * platform could not say when they would be paid. A screen that keeps refusing after the thing was built is the same
+ * defect as one that claims something that was never built.
+ *
+ * `notRecorded` now means what it says: no cycle row exists for this window, so the scheduled run has not reached this
+ * tenant. Either way the canon's *"one bank trip"* stays unclaimed — see W169, which is where the cycle is worked.
+ */
+export function paydayKey(p: DairyPayday): string {
+  return p.kind === 'recorded' ? 'dairy.payday.recorded' : 'dairy.payday.notRecorded';
+}
 
 /** W167's flag tile. The count and its kinds are real; everything the canon promises AFTER the flag — the retained
  *  sample, the re-test, the decision, the member's notification in Gujarati — is not recorded anywhere. */

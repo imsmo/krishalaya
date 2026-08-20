@@ -3,7 +3,7 @@
 // is the revocation, and it fails closed.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
-import { TxContext } from '../../../core/database/unit-of-work';
+import { SqlExecutor, TxContext } from '../../../core/database/unit-of-work';
 import { DairyDeductionInstruction, DeductionChannel } from '../domain/dairy-deduction-instruction.entity';
 import { DeductionInstructionNotFoundError } from '../domain/dairy.errors';
 
@@ -94,7 +94,9 @@ export class DairyDeductionInstructionRepository {
    * reason — a missing setting means the seed did not run, and inventing 100 would let software take a whole
    * fortnight's milk without asking anybody.
    */
-  async assemblyPct(tx: TxContext, tenantId: string): Promise<{ assemblyPct: number; consentPct: number }> {
+  /** [PC-56 TENANT-6c-6] `SqlExecutor`, so W169's console prints the SAME two numbers the money path reads without
+   *  opening a transaction for two settings. One reader of these settings, still. */
+  async assemblyPct(tx: SqlExecutor, tenantId: string): Promise<{ assemblyPct: number; consentPct: number }> {
     const r = await tx.query(
       `SELECT d.key, (COALESCE(ts.value, d.default_value) #>> '{}')::int AS pct
          FROM setting_definitions d

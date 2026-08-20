@@ -21,7 +21,10 @@ export const DAIRY_NAV: readonly DairyNavItem[] = [
   // defect (W241 was 5c's, W244 was 5d's), and the sub-nav is the fix: an operator who lands on the counter board can
   // reach the quality desk without knowing the URL.
   { key: 'quality',     href: '/dairy/quality', built: true },
-  { key: 'cycles',      href: null,      built: false },
+  // PC-56 TENANT-6c-6 · W169. The five waves before this one built the cycle record and every act on it, and the SDK
+  // had no method for any of them — so the fortnight 312 families are paid from was reachable only by curl. This is
+  // the caller, and the entry the sub-nav has carried as `not built` since TENANT-6a.
+  { key: 'cycles',      href: '/dairy/cycles', built: true },
   { key: 'bmc',         href: null,      built: false },
   { key: 'centres',     href: null,      built: false },
   { key: 'insights',    href: null,      built: false },

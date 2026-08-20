@@ -20,6 +20,15 @@ import { DairyDeductionTypeRepository } from '../repositories/dairy-deduction-ty
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { assemblyCapMinor, DeductionCandidate, DeductionPlan, planDeductions } from '../domain/deduction-plan';
 
+/**
+ * The flag the CYCLE's generation pass asks about (0161, default OFF).
+ *
+ * [PC-56 TENANT-6c-6] A constant, because it now has two readers — the cadence that assembles and W169's console that
+ * must tell an operator WHY a fortnight's deductions are all zero. A flag key spelled two ways reads OFF for ever and
+ * says nothing about it, which is the quietest possible way to switch a feature off in one place only.
+ */
+export const DEDUCTION_ASSEMBLY_FLAG = 'dairy_deduction_assembly';
+
 @Injectable()
 export class DairyDeductionAssemblerService {
   private readonly log = new Logger(DairyDeductionAssemblerService.name);

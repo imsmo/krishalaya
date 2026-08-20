@@ -33,6 +33,7 @@ import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
 import { MilkCollectionService } from '../services/milk-collection.service';
+import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repository';
 import { DairyCounterRepository } from '../repositories/dairy-counter.repository';
 import { DairyCounterReadModel } from '../read-models/dairy-counter.read-model';
 
@@ -88,7 +89,8 @@ run('PC-56 TENANT-6a · W167 counter board (integration, real Postgres)', () => 
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
 
     repo = new DairyCounterRepository(replica as any);
-    board = new DairyCounterReadModel(repo, metrics);
+    // [PC-56 TENANT-6c-6] The payday tile now names the recorded cycle when one exists (0157).
+    board = new DairyCounterReadModel(repo, new DairyBillCycleRepository(replica as any), replica as any, metrics);
     inspect = new Pool({ connectionString: APP_URL });
 
     today = await repo.today(tenantA);

@@ -1346,7 +1346,19 @@ export interface DairyCycleWindow {
 
 /** The close is derivable; the payday is not — nothing records when a dairy cycle pays, and 312 families plan a week
  *  around that date. */
-export type DairyPayday = { kind: 'not_recorded'; closesOn: string; missing: string[] };
+/**
+ * W167's payday tile.
+ *
+ * [PC-56 TENANT-6c-6] This used to be a single `not_recorded` shape, and it was WRONG for five waves: TENANT-6c-1 gave
+ * the cycle a `payday` (0157, from the cooperative's own setting) while the counter board went on saying the platform
+ * could not tell an operator when they would be paid. `not_recorded` now means only what it says — there is no cycle
+ * ROW for this window, so the cadence has not run. `batchBuilt: false` is the part that is still refused everywhere:
+ * a payday is a DATE the cooperative set, not the canon's *"one bank trip"*, because no payout batch over a cycle
+ * exists on this platform.
+ */
+export type DairyPayday =
+  | { kind: 'not_recorded'; closesOn: string; missing: string[] }
+  | { kind: 'recorded'; closesOn: string; payday: string; cycleId: string; cycleStatus: string; batchBuilt: false };
 
 /** A tick on W167's Analyzer column means "this centre has an analyzer on file" — never "this reading came out of
  *  it": `milk_collections.device_payload`, the column built for that evidence, is dead. */
@@ -1405,4 +1417,112 @@ export interface DairyCounterBoard {
   cycleMix: Array<{ paymentCycle: string; members: number }>;
   /** The one promise on W167 that IS enforced end to end: UNIQUE(membership_id, collected_on, shift). */
   pourUniqueness: 'unique_membership_day_shift';
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-6c-6 · W169 — dairy payout cycles                                                               */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+/** One cycle as the list route projects it: the row plus counts MEASURED from its bills and lines. */
+export interface DairyBillCycle {
+  id: string;
+  paymentCycle: DairyPaymentCycle;
+  periodStart: string;
+  periodEnd: string;
+  closesAt: string;
+  /** RECORDED since 0157 — the cooperative's own setting, not a guess and not the canon's Friday. */
+  payday: string;
+  status: 'open' | 'closed' | 'previewed' | 'approved';
+  closedAt: string | null;
+  billsGeneratedAt: string | null;
+  billsGenerated: number | null;
+  billsSkipped: number | null;
+  billsFailed: number | null;
+  previewedAt: string | null;
+  previewedBy: string | null;
+  billsPreviewed: number | null;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  billsApproved: number | null;
+  createdAt: string;
+  /** Bills by status, counted — never stored beside the cycle where the two could drift. */
+  bills: Record<string, number>;
+  /** TENANT-6c-5's tile: the fortnight's withholdings, by type. */
+  deductions: { totalMinor: string; byType: Record<string, string> };
+}
+
+/** Why an act cannot be pressed. Resolved on the server so no button on W169 is answered with a 403. */
+export type DairyCycleActRefusal =
+  | 'FLAG_OFF'              // the feature switch is down for this tenant — nobody can
+  | 'NO_MANAGE'             // this operator lacks `dairy.manage`
+  | 'NO_SETTLEMENT_CLOSE'   // ...or the second key, `settlement.close`
+  | 'WRONG_STAGE'           // not yet: the cycle is still accruing, or already past this act
+  | 'NOTHING_LEFT'          // no bill is waiting for this act
+  | 'MAKER_IS_CHECKER';     // not you: you previewed this cycle, so somebody else signs it
+
+/** Allowed, but say this first. */
+export type DairyCycleActCaution =
+  | 'BILLS_NOT_BUILT'   // the cadence has not billed this cycle — previewing records a preview nobody received
+  | 'DISPUTES_OPEN';    // members are objecting; those bills are skipped, not blocked
+
+export interface DairyCycleAct { can: boolean; refusal: DairyCycleActRefusal | null; caution: DairyCycleActCaution | null }
+
+export interface DairyCycleBillRow {
+  billId: string;
+  membershipId: string;
+  /** As RECORDED. Abbreviating a surname is a Latin-script rule that mangles Gujarati and Hindi names. */
+  memberName: string | null;
+  /** `AND2-••02` — the counter identifier, masked the way W168 masks it. */
+  memberCodeMasked: string;
+  mccCode: string | null;
+  litres: string;
+  litresPerDay: string | null;
+  avg30d: string | null;
+  /** The days that average is OVER. A family that poured on four days has a four-day average, not a 30th of a month. */
+  avg30dDays: number;
+  grossMinor: string;
+  deductionsMinor: string;
+  netMinor: string;
+  deductions: Array<{ typeCode: string | null; typeName: string | null; amountMinor: string; lines: number; applied: number; unsupportedReason: string | null }>;
+  status: MilkBillStatus;
+  disputeWindowEnds: string | null;
+  openDisputes: number;
+  /** Above this tenant's consent line with no fresh consent on file — this bill will REFUSE to pay until asked. */
+  needsFreshConsent: boolean;
+  /** BELOW the line, and the member objected anyway: the payment proceeds (6c-4's ruling) and the objection is shown
+   *  rather than buried. The member's remedy here is the dispute route, and the desk can see there is one to answer. */
+  memberRefusedBelowLine: boolean;
+}
+
+/** W169 composed: the register, its four tiles, and the acts. */
+export interface DairyCycleConsole {
+  currencyCode: string;
+  /** The DATABASE's today, so *"accrued to 13 Jul"* is not a browser clock. */
+  today: string;
+  cycle: {
+    id: string; paymentCycle: string; periodStart: string; periodEnd: string; closesAt: string; payday: string;
+    status: string;
+    /** `closed_unbilled` is the distinction the status column cannot make: shut, but not billed YET. */
+    stage: 'accruing' | 'closed_unbilled' | 'billed' | 'previewed' | 'approved';
+    previewedAt: string | null; previewedBy: string | null;
+    approvedAt: string | null; approvedBy: string | null;
+    billsGeneratedAt: string | null;
+    billCounts: Record<string, number>; billsTotal: number;
+  };
+  cycles: Array<{ id: string; paymentCycle: string; periodStart: string; periodEnd: string; status: string; payday: string; billsTotal: number }>;
+  /** W169's first tile. Measured from PRICED POURS — the only figure an open cycle has, because a bill is built when
+   *  the window shuts and the canon's 312 mid-cycle drafts do not exist here. */
+  accrual: { amountMinor: string; membersWithPours: number; days: number; billsExisting: number; bonusRulesIgnored: boolean };
+  deductions: { totalMinor: string; byTypeCode: Record<string, string>; needingConsent: number; assemblyOn: boolean };
+  payday: { payday: string; batchBuilt: false; paid: number; awaitingPayment: number };
+  lastCycle: { id: string; periodStart: string; periodEnd: string; disputes: { total: number; open: number; resolvedBeforePayday: number; bills: number; allResolvedBeforePayday: boolean } } | null;
+  totals: { bills: number; grossMinor: string; deductionsMinor: string; netMinor: string; litres: string };
+  page: { rows: DairyCycleBillRow[]; nextCursor: string | null; totals: { grossMinor: string; deductionsMinor: string; netMinor: string; litres: string; rows: number } };
+  /** The tenant's own two numbers — never the canon's 25%. `automaticPct` is the lower, and is what software may take. */
+  consent: { consentPct: number; assemblyPct: number; automaticPct: number };
+  acts: { preview: DairyCycleAct; approve: DairyCycleAct };
+  /** Whether the cadence that closes cycles and builds bills is on for this tenant at all. */
+  cadenceOn: boolean;
+  openDisputes: number;
 }

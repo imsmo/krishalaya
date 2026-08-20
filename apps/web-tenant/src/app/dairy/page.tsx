@@ -151,7 +151,14 @@ export default async function DairyCounterPage({ searchParams }: { searchParams:
                   {formatNumber(board.accrual.membersWithPours, lang)} / {formatNumber(board.accrual.billsExisting, lang)}
                 </span>
               )}
-              <span className="kv-field__hint">{t.t(paydayKey(board.payday))} {board.payday.closesOn}</span>
+              {/* [PC-56 TENANT-6c-6] The payday IS recorded now (0157). When the cycle row exists this names the date
+                  and links the register; when it does not, the refusal says why — the scheduled run has not run. */}
+              <span className="kv-field__hint">
+                {t.t(paydayKey(board.payday))}{' '}
+                {board.payday.kind === 'recorded'
+                  ? <Link href={`/dairy/cycles?cycle=${board.payday.cycleId}`} className="kv-btn--link">{board.payday.payday}</Link>
+                  : board.payday.closesOn}
+              </span>
             </div>
 
             <div className="kv-stat">

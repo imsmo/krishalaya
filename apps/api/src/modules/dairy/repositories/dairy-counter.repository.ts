@@ -126,9 +126,15 @@ export class DairyCounterRepository {
   /**
    * How many milk bills actually EXIST for the window.
    *
-   * W167 prints "312 milk_bills building". Nothing builds them on a clock: `MilkBillCycleCloseJob` is instantiated
-   * nowhere on this platform, so the honest number is usually zero and the desk shows it beside the count of members
-   * who poured — the gap between the two IS the finding.
+   * W167 prints "312 milk_bills building".
+   *
+   * [PC-56 TENANT-6c-6] THIS COMMENT WAS STALE. It said *"nothing builds them on a clock: `MilkBillCycleCloseJob` is
+   * instantiated nowhere"* — true when TENANT-6a wrote it, false since TENANT-6c-1 replaced that dead class with
+   * `DairyCycleCloseCadenceJob` and REGISTERED it. What remains true is the shape of the number: a bill is built when
+   * the window SHUTS, so mid-cycle this count is legitimately zero while 312 members are pouring, and the desk shows
+   * it beside the count of members who poured. The gap is no longer a finding — it is the cycle's own design (0157:
+   * a money record that changes under the member is worse than one that arrives on the Thursday), and W169's console
+   * is where the same two numbers are read with the cycle's stage beside them.
    */
   async billsInWindow(tenantId: string, from: string, to: string): Promise<number> {
     const r = await this.replica.forTenant(tenantId).query(

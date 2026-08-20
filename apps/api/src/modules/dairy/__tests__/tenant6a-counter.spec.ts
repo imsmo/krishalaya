@@ -80,19 +80,30 @@ describe('PC-56 TENANT-6a · the cycle window, derived because nothing defines o
     expect(cycleWindow('2026-07-13', 'monthly')).toMatchObject({ from: '2026-07-01', to: '2026-07-31' });
   });
 
-  it('labels the window DERIVED, because deriving one is not the same as the platform keeping one', () => {
-    // `dairy_memberships.payment_cycle` was read by nothing before this wave; there is no cycle record anywhere.
+  it('labels the window DERIVED, because deriving one is not the same as reading a row', () => {
+    // [PC-56 TENANT-6c-6] `dairy_memberships.payment_cycle` was read by nothing when 6a wrote this. The cycle is a ROW
+    // now (0157) — and it is created from THIS function, so the derived window and the recorded one are the same
+    // window by construction. The label stays `derived` because that is still what the boards computed.
     for (const c of ['daily', 'weekly', 'fortnightly', 'monthly'] as const) {
       expect(cycleWindow('2026-07-13', c).basis).toBe('derived_from_membership_preference');
     }
   });
 
-  it('refuses the payday and states the close, which IS derivable', () => {
+  it('names the RECORDED payday, and refuses only when no cycle row exists for the window', () => {
     const w = cycleWindow('2026-07-13', 'fortnightly');
-    expect(paydayVerdict(w)).toEqual({
-      kind: 'not_recorded', closesOn: '2026-07-15', missing: ['dairy_cycle_calendar', 'cycle_payday_rule'],
+    // [PC-56 TENANT-6c-6] This assertion used to demand an unconditional refusal, which is how the counter board came
+    // to tell every operator for five waves that the platform could not say when they would be paid. 0157 says when.
+    expect(paydayVerdict(w, { id: 'c1', payday: '2026-07-17', status: 'closed' })).toEqual({
+      kind: 'recorded', closesOn: '2026-07-15', payday: '2026-07-17', cycleId: 'c1', cycleStatus: 'closed', batchBuilt: false,
     });
+    // No row for the window ⇒ the cadence has not run for this tenant. A different sentence, and an actionable one.
+    expect(paydayVerdict(w)).toEqual({
+      kind: 'not_recorded', closesOn: '2026-07-15', missing: ['dairy_cycle_row_for_window', 'dairy_cycle_close_flag'],
+    });
+    // What stays refused either way: the canon's "one bank trip". No payout batch over a cycle exists anywhere.
+    expect(paydayVerdict(w, { id: 'c1', payday: '2026-07-17', status: 'closed' })).toMatchObject({ batchBuilt: false });
   });
+
 });
 
 /* ----------------------------------------------------------------------------------------------------------- */
@@ -402,6 +413,7 @@ describe('PC-56 TENANT-6a · the SQL that did not exist', () => {
 /* ----------------------------------------------------------------------------------------------------------- */
 describe('PC-56 TENANT-6a · the read model composes W167', () => {
   function harness(o: {
+    cycleRow?: { id: string; payday: string; status: string };
     rows?: unknown[]; bmc?: unknown[]; flags?: unknown[];
     accrual?: { amountMinor: bigint; membersWithPours: number; cardsWithBonusRules: number };
     bills?: number; mix?: Array<{ paymentCycle: string; members: number }>; today?: string; currency?: string;
@@ -417,8 +429,22 @@ describe('PC-56 TENANT-6a · the read model composes W167', () => {
       currencyCode: jest.fn(async () => o.currency ?? 'INR'),
     };
     const metrics = { inc: jest.fn(), observe: jest.fn() };
-    return { rm: new DairyCounterReadModel(repo as never, metrics as never), repo };
+    // [PC-56 TENANT-6c-6] The board now reads the CYCLE ROW for the window it is showing, because the payday tile
+    // stopped refusing unconditionally: 0157 records a payday and this desk told operators otherwise for five waves.
+    // `o.cycleRow === undefined` keeps the old behaviour (no row for the window ⇒ still refused).
+    const cycles = { findByWindow: jest.fn(async () => (o.cycleRow ? { toProps: () => o.cycleRow } : null)) };
+    const replica = { forTenant: () => ({ query: jest.fn(async () => ({ rows: [], rowCount: 0 })) }) };
+    return { rm: new DairyCounterReadModel(repo as never, cycles as never, replica as never, metrics as never), repo, cycles };
   }
+
+  it('the board reads the cycle row for the window it is showing, and names its payday', async () => {
+    const h = harness({ cycleRow: { id: 'c1', payday: '2026-07-17', status: 'closed' } });
+    const board = await h.rm.board('t1', { shift: 'morning' });
+    expect(h.cycles.findByWindow).toHaveBeenCalled();
+    expect(board.payday).toMatchObject({ kind: 'recorded', payday: '2026-07-17', cycleId: 'c1' });
+    const none = await harness().rm.board('t1', { shift: 'morning' });
+    expect(none.payday.kind).toBe('not_recorded');
+  });
 
   it('resolves the day from the DATABASE when none was asked for', async () => {
     // A counter stamping `current_date` and a desk reading a JS date must not disagree about which day a pour is in.
