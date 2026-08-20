@@ -34,6 +34,22 @@ const run = ADMIN_URL ? describe : describe.skip;
 
 const MONEY_TABLES = ['wallet_accounts', 'ledger_entries', 'ledger_transactions', 'reconciliation_runs'];
 
+/**
+ * [PC-56 TENANT-6c-1] THE EXACT COLUMNS THE APP ROLE MAY UPDATE ON EACH MONEY-BEARING PARTITIONED TABLE — one list,
+ * used by both the 0078 and the 0080 guard below, because two copies of this fact would let one of them go stale.
+ *
+ * IT WENT STALE. Both assertions were written as `toEqual([col])` with a single hardcoded column, and TENANT-6b-1's
+ * migration 0156 legitimately added `GRANT UPDATE (hold_state) ON milk_collections TO kv_app` — the pour-level quality
+ * hold, argued at length in that migration's header. The grant is correct; the guard was not, and this whole suite has
+ * not been run since. That is the failure mode a "permanent P0 regression" test exists to prevent, so the list is now
+ * explicit and each entry carries the wave that argued it: adding a column here should be an act a reviewer notices.
+ */
+const NARROW_APP_UPDATE_COLUMNS: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  ambassador_earnings: ['payout_id'],                    // 0080 (DEV-54): the commission payout stamp
+  milk_collections: ['hold_state', 'milk_bill_id'],      // 0080 (DEV-54) + 0156 (PC-56 TENANT-6b-1): the quality hold
+});
+const narrowCols = (table: string): string[] => [...(NARROW_APP_UPDATE_COLUMNS[table] ?? [])].sort();
+
 run('ledger/wallet privilege boundary — permanent P0 regression (migration 0077, DEV-35)', () => {
   let admin: Pool;
 
@@ -312,7 +328,9 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
             `SELECT column_name FROM information_schema.column_privileges WHERE table_schema='public' AND table_name=$1 AND grantee='kv_app' AND privilege_type='UPDATE'`,
             [table],
           );
-          expect(appColGrant.rows.map((r: any) => r.column_name)).toEqual([col]); // DEV-54: the real writer
+          // Sorted on both sides: information_schema does not promise an order, and a guard that depends on one is a
+          // guard that fails for a reason nobody can act on.
+          expect(appColGrant.rows.map((r: any) => r.column_name).sort()).toEqual(narrowCols(table));
         }
       });
     });
@@ -681,7 +699,7 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
            WHERE table_schema='public' AND table_name=$1 AND grantee='kv_app' AND privilege_type='UPDATE'`,
           [table],
         );
-        expect(appCol.rows.map((r: any) => r.column_name)).toEqual([col]);
+        expect(appCol.rows.map((r: any) => r.column_name).sort()).toEqual(narrowCols(table));
         const appSelect = await admin54.query(
           `SELECT 1 FROM information_schema.role_table_grants
            WHERE table_schema='public' AND table_name=$1 AND grantee='kv_app' AND privilege_type='SELECT'`,

@@ -46,14 +46,30 @@ import { MilkQualityReviewRepository } from './repositories/milk-quality-review.
 import { DairyQualityController } from './controllers/v1/dairy-quality.controller';
 import { DairyQualityReadModel } from './read-models/dairy-quality.read-model';
 import { DairyQualityRepository } from './repositories/dairy-quality.repository';
+// PC-56 TENANT-6c-1 · W169's cycle: the noun this platform did not have, and the cadence job that fills it.
+import { DairyCycleCloseCadenceJob } from './jobs/dairy-cycle-close.cadence-job';
+import { DairyBillCycleService } from './services/dairy-bill-cycle.service';
+import { DairyBillCycleRepository } from './repositories/dairy-bill-cycle.repository';
+import { FlagsService } from '../../core/feature-flags/flags.service';
 
-// The cycle-close worker job (jobs/milk-bill-cycle-close.job.ts) is instantiated by apps/worker with a
-// privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other batch jobs.
+// [PC-56 TENANT-6c-1] What used to stand here said the cycle-close job "is instantiated by apps/worker with a
+// privileged kv_relay Pool". APPS/WORKER INSTANTIATED NOTHING OF THE KIND, and could not have: its JOBS registry is
+// pg-native by contract (WORKER-RUNTIME.md, "Deferred: domain-handler jobs") and generating a milk bill needs this
+// module's unit of work, outbox and idempotency. The comment was the only thing keeping the job's absence invisible.
+// It now runs through core/jobs/jobs.runner.ts, registered below beside the D2C cadence job — the pattern this file
+// already used for the one job it did wire.
 @Module({
   controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
+    // PC-56 TENANT-6c-1
+    DairyBillCycleRepository, DairyBillCycleService,
+    { provide: DairyCycleCloseCadenceJob,
+      // Hourly. A cycle shuts at local midnight and W169 promises members see their bill "Thu morning", so an hour of
+      // lag is invisible to the people waiting and the sweep stays proportional to the number of dairy tenants.
+      useFactory: (cycles: DairyBillCycleService, flags: FlagsService) => new DairyCycleCloseCadenceJob(60 * 60_000, cycles, flags),
+      inject: [DairyBillCycleService, FlagsService] },
     { provide: D2cDeliveryRunsCadenceJob,
       // Every 30 minutes: frequent enough that a new subscription gets today's drop quickly, cheap because
       // the DB's unique index makes every re-run a no-op (0085).
@@ -66,12 +82,17 @@ import { DairyQualityRepository } from './repositories/dairy-quality.repository'
     // PC-56 TENANT-6b-2
     DairyQualityRepository, DairyQualityReadModel,
   ],
-  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService],
+  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService],
 })
 export class DairyModule implements OnModuleInit {
   constructor(
     @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
     private readonly deliveryRuns: D2cDeliveryRunsCadenceJob,
+    private readonly cycleClose: DairyCycleCloseCadenceJob,
   ) {}
-  onModuleInit(): void { this.jobs.register(this.deliveryRuns); }
+  onModuleInit(): void {
+    this.jobs.register(this.deliveryRuns);
+    // PC-56 TENANT-6c-1: the registration whose absence made "312 bills in draft" mean zero bills, on every tenant.
+    this.jobs.register(this.cycleClose);
+  }
 }

@@ -50,11 +50,20 @@ describe('milk_collections isolation + partition pruning', () => {
     const [sql] = exec.query.mock.calls[0];
     expect(sql).toMatch(/collected_on >= \$3::date AND collected_on <= \$4::date/); expect(sql).not.toMatch(/OFFSET/i);
   });
-  it('findMembershipsToBill is bounded (LIMIT) for the cross-tenant cycle job', async () => {
+  it('membershipsToBillForCycle is tenant-scoped, cycle-scoped AND bounded', async () => {
+    // [PC-56 TENANT-6c-1] The predecessor `findMembershipsToBill` was bounded and NOTHING ELSE: no tenant predicate
+    // and no payment-cycle predicate, so the (never-registered) cycle job would have swept every tenant's unbilled
+    // pours into one caller-chosen window and billed a monthly member on a fortnightly boundary. All three bounds are
+    // asserted here because the LIMIT was the only one that ever existed.
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
-    await new MilkCollectionRepository(fakeReplica().provider).findMembershipsToBill(tx as any, '2026-06-01', '2026-06-07', 500);
-    const [sql] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/milk_bill_id IS NULL/); expect(sql).toMatch(/LIMIT \$3/);
+    await new MilkCollectionRepository(fakeReplica().provider)
+      .membershipsToBillForCycle(tx as any, 'tA', 'fortnightly', '2026-07-01', '2026-07-15', 500);
+    const [sql, params] = tx.query.mock.calls[0];
+    expect(sql).toMatch(/c\.tenant_id=\$1/);
+    expect(sql).toMatch(/m\.payment_cycle=\$4/);
+    expect(sql).toMatch(/milk_bill_id IS NULL/);
+    expect(sql).toMatch(/LIMIT \$5/);
+    expect(params).toEqual(['tA', '2026-07-01', '2026-07-15', 'fortnightly', 500]);
   });
 });
 

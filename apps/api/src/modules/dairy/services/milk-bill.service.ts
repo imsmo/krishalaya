@@ -21,7 +21,7 @@ import { MilkBillRepository } from '../repositories/milk-bill.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { GenerateBillDto } from '../dto/create-milk-bill.dto';
-import { MembershipNotFoundError, BillNotFoundError, EmptyBillError, AllPoursHeldError, BillNotPayableError, DairyForbiddenError } from '../domain/dairy.errors';
+import { MembershipNotFoundError, BillNotFoundError, EmptyBillError, AllPoursHeldError, BillNotPayableError, DairyForbiddenError, DeductionHasNoDestinationError } from '../domain/dairy.errors';
 import { DairyActor } from './mcc-centre.service';
 
 const tenantMain = (tenantId: string): AccountRef => ({ kind: 'tenant', tenantId, accountCode: TenantAccount.Main, currencyCode: 'INR' });
@@ -40,8 +40,14 @@ export class MilkBillService {
     private readonly memberships: DairyMembershipRepository,
   ) {}
 
-  /** Generate a draft bill from a membership's unbilled collections in [periodStart, periodEnd]. */
-  async generate(tenantId: string, actor: DairyActor, idemKey: string, dto: GenerateBillDto) {
+  /**
+   * Generate a draft bill from a membership's unbilled collections in [periodStart, periodEnd].
+   *
+   * `cycleId` is passed by the CYCLE path (TENANT-6c-1) and is deliberately not a DTO field: a caller who could name
+   * a cycle id independently of the period could file a fortnight's bill under a different fortnight's cycle, and
+   * nothing downstream would ever notice. The cycle service reads both from the same row.
+   */
+  async generate(tenantId: string, actor: DairyActor, idemKey: string, dto: GenerateBillDto, cycleId: string | null = null) {
     if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
     return this.idem.remember(idemKey, actor.userId, 'dairy.bill.generate', () =>
       timed(this.metrics, 'dairy.bill.generate', { tenant: tenantId }, () =>
@@ -54,7 +60,7 @@ export class MilkBillService {
           if (agg.count === 0 && agg.heldCount > 0) throw new AllPoursHeldError(agg.heldCount, agg.heldMinor.toString());
           if (agg.count === 0) throw new EmptyBillError();
           const deductions: BillDeduction[] = dto.deductions.map((d) => ({ type: d.type, amountMinor: BigInt(d.amountMinor) }));
-          const bill = MilkBill.generate({ id: uuidv7(), tenantId, membershipId: dto.membershipId, periodStart: dto.periodStart, periodEnd: dto.periodEnd,
+          const bill = MilkBill.generate({ id: uuidv7(), tenantId, membershipId: dto.membershipId, cycleId, periodStart: dto.periodStart, periodEnd: dto.periodEnd,
             totalLitresMilli: agg.totalWeightMilliKg, grossMinor: agg.grossMinor, deductions });
           try { await this.bills.insert(tx, bill); } catch (e: any) { if (e?.code === '23505') throw new BillNotPayableError('a bill already exists for this period'); throw e; }
           await this.collections.attachToBill(tx, tenantId, agg.ids, bill.id);
@@ -75,6 +81,20 @@ export class MilkBillService {
           const bill = await this.bills.getForUpdate(tx, tenantId, id);
           if (!bill) throw new BillNotFoundError(id);
           if (bill.status !== 'approved') throw new BillNotPayableError(bill.status);
+          // [PC-56 TENANT-6c-1] A DEDUCTION WITH NO DESTINATION IS NOT PAID — IT IS KEPT.
+          //
+          // Below, exactly one movement is posted: the NET, cooperative → farmer. The deducted amount is never paid to
+          // the member and never posted anywhere else, so a `loan_emi` line takes Rs 300 out of a family's milk money
+          // and reduces no loan by anything — the farmer pays that instalment twice, and the difference sits in the
+          // cooperative's wallet with no ledger row to reconcile it by. `deductions.type` is a free-typed 40-character
+          // string (Law 6) with no reference to the loan, advance or policy it names, so there is nothing here to post
+          // TO even if a second leg were added.
+          //
+          // So it fails CLOSED, the ruling COLLECTION_STAMP_LOST made for the same shape. Law 2 forbids inventing a
+          // ledger destination; paying the gross would hand back money the cooperative is genuinely owed; and paying
+          // the net silently is the defect. A refusal an operator can read is the only honest third option, and it is
+          // removed the moment the destination exists (TENANT-6c-2 builds it, with W169's >25% consent gate).
+          if (bill.deductionsMinor > 0n) throw new DeductionHasNoDestinationError(bill.id, bill.deductionsMinor.toString(), bill.deductionTypes);
           const membership = await this.memberships.getById(tenantId, bill.membershipId, tx);
           if (!membership) throw new MembershipNotFoundError(bill.membershipId);
           const net = bill.netMinor;

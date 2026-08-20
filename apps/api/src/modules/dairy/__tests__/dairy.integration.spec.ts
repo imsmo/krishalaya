@@ -3,7 +3,7 @@
 //   1. a cooperative creates an MCC, a two-axis rate card, and enrols a farmer member;
 //   2. two collections are recorded (priced float-free by the rate card → amount_minor) into the
 //      PARTITIONED milk_collections table (partitions auto-created by migration 0014);
-//   3. a milk bill is GENERATED over the period (aggregates the collections, nets a deduction), previewed,
+//   3. a milk bill is GENERATED over the period (aggregates the collections), previewed,
 //      approved, and PAID: the wallet moves tenant 'main' → farmer userMain (zero-sum, txnType milk_payment);
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's milk bill.
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
@@ -114,18 +114,24 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     await expect(collections.record(tenantA, actor, `idem-${randomUUID()}`, { membershipId, shift: 'morning', collectedOn: today, weightKg: '5.000', fatPct: '4.00', snfPct: '8.00', waterFlag: false, adulterationFlags: [] } as any)).rejects.toThrow();
   });
 
-  it('generates → approves → PAYS the bill: tenant → farmer wallet (zero-sum), net after deduction', async () => {
-    const bill = await bills.generate(tenantA, actor, `idem-${randomUUID()}`, { membershipId, periodStart: today, periodEnd: today, deductions: [{ type: 'feed_credit', amountMinor: '8000' }] } as any);
+  // [PC-56 TENANT-6c-1] This case used to net off `{ type: 'feed_credit', amountMinor: '8000' }` and assert that
+  // 76,400 moved — pinning as correct a member being docked Rs 80 that `pay()` posts to NO account: the deducted
+  // amount is not paid to the member and not paid to anything else, and `deductions.type` is a free-typed string with
+  // no reference to the feed credit it names. `pay()` now REFUSES a bill carrying deductions (fail closed, the
+  // COLLECTION_STAMP_LOST ruling), proven live in tenant6c1-cycle.integration.spec.ts. What this case proves is what
+  // it always should have: the wallet movement itself is zero-sum, and the NET is what moves.
+  it('generates → approves → PAYS the bill: tenant → farmer wallet (zero-sum)', async () => {
+    const bill = await bills.generate(tenantA, actor, `idem-${randomUUID()}`, { membershipId, periodStart: today, periodEnd: today, deductions: [] } as any);
     billId = bill.id;
-    expect(bill.grossMinor).toBe('84400'); expect(bill.netMinor).toBe('76400');   // 48000+36400 − 8000
+    expect(bill.grossMinor).toBe('84400'); expect(bill.netMinor).toBe('84400');   // 48000+36400, nothing deducted
     await bills.preview(tenantA, actor, billId);
     await bills.approve(tenantA, actor, billId);
     const tBefore = await balTenant(tenantA); const fBefore = await balUser(farmer);
     const paid = await bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null);
     expect(paid.status).toBe('paid');
     const tAfter = await balTenant(tenantA); const fAfter = await balUser(farmer);
-    expect(tBefore - tAfter).toBe(76400n);          // cooperative debited NET
-    expect(fAfter - fBefore).toBe(76400n);          // farmer credited NET
+    expect(tBefore - tAfter).toBe(84400n);          // cooperative debited NET
+    expect(fAfter - fBefore).toBe(84400n);          // farmer credited NET
     expect((tAfter - tBefore) + (fAfter - fBefore)).toBe(0n);   // ZERO-SUM
   });
 

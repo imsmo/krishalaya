@@ -52,3 +52,37 @@ export class CollectionStampLostError extends AppError {
     super('COLLECTION_STAMP_LOST', 'Bill-attach matched no collection row — refusing to leave a paid pour unbilled', 409, { collectionId, collectedOn });
   }
 }
+
+export class BillCycleNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Dairy bill cycle not found'); (this as any).code = 'DAIRY_CYCLE_NOT_FOUND'; (this as any).details = { id }; }
+}
+
+/** [PC-56 TENANT-6c-1] A cycle asked to close before its window shut, or to build bills before it closed. */
+export class CycleNotClosableError extends DomainError {
+  constructor(id: string, why: string, closesAt: string | null) {
+    super('DAIRY_CYCLE_NOT_CLOSABLE', `Dairy bill cycle cannot close: ${why}`, 409, { id, why, closesAt });
+  }
+}
+
+/**
+ * [PC-56 TENANT-6c-1] A bill carrying deductions was asked to be PAID, and this platform has nowhere to send them.
+ *
+ * `milk_bills.deductions` is `[{type, amount_minor}]` with `type` a free-typed 40-character string — no vocabulary
+ * table, no seed, and no reference to the loan, input advance or insurance policy it is supposedly repaying (Law 6).
+ * `pay()` posts ONE ledger movement: the NET, cooperative → farmer. The deducted amount is never paid to the member
+ * and never posted anywhere else, so a `loan_emi` line takes Rs 300 out of a family's milk money and reduces no loan
+ * by anything — the farmer pays that instalment twice, and the cooperative's wallet quietly keeps the difference with
+ * no ledger row to find it by.
+ *
+ * So the money path FAILS CLOSED, exactly as `COLLECTION_STAMP_LOST` does for a lost bill-attach: a bill with
+ * deductions cannot be paid until the destination exists (TENANT-6c-2). A refusal an operator can read beats a
+ * silent transfer nobody can reconcile, and there is no third option that is honest — Law 2 forbids inventing a
+ * ledger leg here, and paying the gross would hand back money the cooperative is owed.
+ */
+export class DeductionHasNoDestinationError extends DomainError {
+  constructor(billId: string, deductionsMinor: string, types: string[]) {
+    super('DEDUCTION_HAS_NO_DESTINATION',
+      'This bill carries deductions and no account to post them to — refusing to keep a member\'s money without a ledger entry',
+      409, { billId, deductionsMinor, types });
+  }
+}

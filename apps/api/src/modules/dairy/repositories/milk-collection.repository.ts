@@ -108,14 +108,30 @@ export class MilkCollectionRepository {
       if (res.rowCount === 0) throw new CollectionStampLostError(ref.id, ref.collectedOn);
     }
   }
-  /** Worker job (cross-tenant; kv_relay): distinct memberships with UNBILLED collections in [from,to].
-   *  Bounded + partition-pruned by collected_on. Drives the per-cycle bill generation. */
-  async findMembershipsToBill(tx: TxContext, from: string, to: string, limit: number): Promise<Array<{ tenantId: string; membershipId: string }>> {
+  /**
+   * The cadence job's claim: memberships ON THIS PAYMENT CYCLE with UNBILLED collections in [from,to].
+   *
+   * [PC-56 TENANT-6c-1] REPLACES `findMembershipsToBill`, which took no tenant and no cycle. That query returned every
+   * unbilled pour on the platform inside a window the caller chose, so the orphaned `MilkBillCycleCloseJob` would have
+   * billed a MONTHLY member against a fortnightly boundary — paying them for the first half of their month and
+   * silently rolling the rest — and would have done it across every tenant in one loop. It was never registered, so
+   * the defect never fired; it is removed rather than left as a foothold.
+   *
+   * NO `is_active` FILTER, DELIBERATELY. A member the cooperative deactivated on the 10th still poured milk on the
+   * 1st through the 9th, and that milk is owed. Filtering on the flag here is exactly how a leaving member's last
+   * fortnight becomes money that never gets paid and never gets noticed.
+   *
+   * Bounded (LIMIT) and partition-pruned on `collected_on` (Law 8), tenant_id in the predicate (Law 1).
+   */
+  async membershipsToBillForCycle(tx: TxContext, tenantId: string, cycle: string, from: string, to: string, limit: number): Promise<string[]> {
     const r = await tx.query(
-      `SELECT DISTINCT tenant_id, membership_id FROM milk_collections
-        WHERE collected_on >= $1::date AND collected_on <= $2::date AND milk_bill_id IS NULL
-        ORDER BY tenant_id, membership_id LIMIT $3`, [from, to, limit]);
-    return r.rows.map((row: any) => ({ tenantId: row.tenant_id, membershipId: row.membership_id }));
+      `SELECT DISTINCT c.membership_id
+         FROM milk_collections c
+         JOIN dairy_memberships m ON m.id = c.membership_id AND m.tenant_id = c.tenant_id
+        WHERE c.tenant_id=$1 AND c.collected_on >= $2::date AND c.collected_on <= $3::date
+          AND c.milk_bill_id IS NULL AND m.payment_cycle=$4 AND m.deleted_at IS NULL
+        ORDER BY c.membership_id LIMIT $5`, [tenantId, from, to, cycle, limit]);
+    return (r.rows as any[]).map((row) => String(row.membership_id));
   }
 
   async listFor(tenantId: string, q: { membershipId: string; from: string; to: string; cursor?: { c: string; id: string }; limit: number }): Promise<MilkCollection[]> {

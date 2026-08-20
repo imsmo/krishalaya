@@ -96,7 +96,6 @@ describe('core/pg-date · the date PostgreSQL actually holds', () => {
  */
 const REMAINING_DISPLAY_ONLY = [
   'modules/contract-farming/repositories/contract-milestone.repository.ts',   // due_on → toJSON only
-  'modules/dairy/repositories/milk-bill.repository.ts',                       // period_start/end → toJSON only
   'modules/dairy/repositories/milk-rate-card.repository.ts',                  // effective_from/to; in-force test is in SQL
   'modules/equipment/repositories/equipment-rate.repository.ts',              // effective_from/to; resolution is in SQL
   'modules/exports/repositories/compliance-requirement.repository.ts',        // effective_from/to; window filtered in SQL
@@ -182,7 +181,11 @@ describe('core/pg-date · the sweep (this list may shrink, never grow)', () => {
 
   it('states the size of the debt it is carrying, so nobody mistakes the list for zero', () => {
     // 15 display-only `toISOString` sites remain; the 37-call-site `String(date)` family is closed.
-    expect(REMAINING_DISPLAY_ONLY.length).toBe(15);
+    // [PC-56 TENANT-6c-1] 15 → 14. `modules/dairy/repositories/milk-bill.repository.ts` came off the list: 0157 gives
+    // a bill a `cycle_id`, so its (period_start, period_end) stopped being a label and became the window a cycle's
+    // close instant is compared against and its bills are grouped by. The list can only ever SHRINK — a wave that
+    // needs to add a site to it is a wave that reintroduced the defect.
+    expect(REMAINING_DISPLAY_ONLY.length).toBe(14);
     expect(REMAINING_STRINGIFIED.length).toBe(0);
   });
 });

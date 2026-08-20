@@ -14,6 +14,14 @@ export const DairyEventType = {
   // at a payload with no recipient, which looks like a fix and sends nothing.
   QualityFlagOpened: 'dairy.quality_flag_opened',
   QualityFlagDecided:'dairy.quality_flag_decided',
+  // PC-56 TENANT-6c-1 · the cycle's own facts. Two, not three: a cycle row APPEARING is bookkeeping nothing outside
+  // the module can act on, so it publishes nothing (an event with no possible subscriber is a defect this programme
+  // has now found four times). A cycle SHUTTING and its bills being BUILT are facts a cooperative's own systems
+  // legitimately want — they ride the generic outbox → webhook path like every other dairy event. Neither carries a
+  // member userId, because neither is news for a member: what a member must be told is the PREVIEW of their own bill,
+  // and that act does not exist yet (TENANT-6c-2 builds it, with the notification row).
+  CycleClosed:       'dairy.cycle_closed',
+  CycleBillsGenerated: 'dairy.cycle_bills_generated',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 
