@@ -16,24 +16,47 @@ import { CycleWindow, cycleWindow } from './dairy-counter';
 /**
  * The states this programme's code can actually reach, and no more.
  *
- * TENANT-6c-1 shipped `open|closed`. TENANT-6c-2 adds `previewed` — the act W169's header button performs
- * (*"Preview cycle 01–15 Jul (Wed close)"*), which is also the act that starts every member's dispute window.
+ * TENANT-6c-1 shipped `open|closed`. TENANT-6c-2 added `previewed` — W169's header button, which is also the act that
+ * starts every member's dispute window. TENANT-6c-3 adds `approved`: the SECOND SIGNATURE.
  *
- * `approved` and `paid` are still ABSENT, deliberately. Approving needs `settlement.close` and a second human
- * (TENANT-6c-3) and paying needs a batch that does not exist (`milk_bills.payout_id` has never been written), so both
- * would be states nothing can move a cycle out of. The database's CHECK constraint tracks this list exactly: a status
- * vocabulary wider than the code is how a board ends up showing a state an operator cannot act on.
+ * `paid` is still ABSENT, deliberately. Paying needs a batch that does not exist — `milk_bills.payout_id` has never
+ * been written, so W169's *"one bank trip"* has nothing behind it — and a bill still cannot be paid at all while it
+ * carries a deduction (0157's `DEDUCTION_HAS_NO_DESTINATION`). A cycle-level `paid` today would be a state nothing
+ * could move a cycle into. The database's CHECK tracks this list exactly: a status vocabulary wider than the code is
+ * how a board ends up showing a state an operator cannot act on.
  */
-export const CYCLE_STATUSES = ['open', 'closed', 'previewed'] as const;
+export const CYCLE_STATUSES = ['open', 'closed', 'previewed', 'approved'] as const;
 export type CycleStatus = (typeof CYCLE_STATUSES)[number];
 
 const TRANSITIONS: Readonly<Record<CycleStatus, readonly CycleStatus[]>> = Object.freeze({
   open: ['closed'],
   closed: ['previewed'],
-  // Terminal FOR NOW, and terminal HONESTLY: `approved` arrives with the second signature (TENANT-6c-3). A cycle sits
-  // here while its members read their bills, which is exactly what W169's timeline describes happening on Thursday.
-  previewed: [],
+  // A cycle sits in `previewed` while its members read their bills — W169's Thursday morning — and moves on when a
+  // SECOND human signs for it on Thursday evening.
+  previewed: ['approved'],
+  // Terminal for now, and terminal honestly: `paid` needs a payout batch this platform does not have.
+  approved: [],
 });
+
+/**
+ * [PC-56 TENANT-6c-3] Why an approval is refused, as a code an operator can be shown.
+ *
+ * Kept as a discriminated result rather than thrown from three places, mirroring `payments/domain/settlement-cycle.ts`'s
+ * `approveRefusal` — the closest precedent on this platform, and the one whose ruling this borrows: no threshold, every
+ * cycle gets two humans.
+ */
+export type CycleApprovalRefusal =
+  | 'DAIRY_CYCLE_NOT_PREVIEWED'
+  | 'DAIRY_CYCLE_CHECKER_IS_PREVIEWER';
+
+export function cycleApprovalRefusal(c: { status: CycleStatus; previewedBy: string | null }, actorUserId: string): CycleApprovalRefusal | null {
+  if (c.status !== 'previewed') return 'DAIRY_CYCLE_NOT_PREVIEWED';
+  // Unconditional, and NOT threshold-based. 0144: "a cycle close is not an amount — it is a decision that turns a
+  // fortnight of trade into documents a member will hold and a bank manager will read. Every one of them gets two
+  // humans." A milk cycle is 312 families' fortnight.
+  if (c.previewedBy !== null && c.previewedBy === actorUserId) return 'DAIRY_CYCLE_CHECKER_IS_PREVIEWER';
+  return null;
+}
 
 export class IllegalCycleTransitionError extends DomainError {
   constructor(from: string, to: string) {

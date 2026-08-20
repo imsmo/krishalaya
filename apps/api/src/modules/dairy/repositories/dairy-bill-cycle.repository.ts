@@ -13,7 +13,8 @@ import { CycleWindow } from '../domain/dairy-counter';
 
 const COLS = `id, tenant_id, payment_cycle, period_start, period_end, closes_at, payday, status, closed_at,
               bills_generated_at, bills_generated, bills_skipped, bills_failed,
-              previewed_at, previewed_by, bills_previewed, created_at`;
+              previewed_at, previewed_by, bills_previewed,
+              approved_at, approved_by, bills_approved, created_at`;
 
 const PAYDAY_OFFSET_KEY = 'dairy.cycle_payday_offset_days';
 const DISPUTE_WINDOW_KEY = 'dairy.dispute_window_hours';
@@ -42,6 +43,9 @@ function toDomain(r: any): DairyBillCycle {
     previewedAt: r.previewed_at == null ? null : (r.previewed_at instanceof Date ? r.previewed_at : new Date(String(r.previewed_at))),
     previewedBy: r.previewed_by ?? null,
     billsPreviewed: num(r.bills_previewed),
+    approvedAt: r.approved_at == null ? null : (r.approved_at instanceof Date ? r.approved_at : new Date(String(r.approved_at))),
+    approvedBy: r.approved_by ?? null,
+    billsApproved: num(r.bills_approved),
     createdAt: r.created_at,
   });
 }
@@ -152,10 +156,12 @@ export class DairyBillCycleRepository {
     const res = await tx.query(
       `UPDATE dairy_bill_cycles
           SET status=$3, closed_at=$4, bills_generated_at=$5, bills_generated=$6, bills_skipped=$7, bills_failed=$8,
-              previewed_at=$9, previewed_by=$10, bills_previewed=$11
+              previewed_at=$9, previewed_by=$10, bills_previewed=$11,
+              approved_at=$12, approved_by=$13, bills_approved=$14
         WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
       [p.id, p.tenantId, p.status, p.closedAt, p.billsGeneratedAt, p.billsGenerated, p.billsSkipped, p.billsFailed,
-       p.previewedAt, p.previewedBy, p.billsPreviewed]);
+       p.previewedAt, p.previewedBy, p.billsPreviewed,
+       p.approvedAt, p.approvedBy, p.billsApproved]);
     if (res.rowCount === 0) throw new BillCycleNotFoundError(p.id);
   }
 

@@ -102,7 +102,15 @@ export class MilkBillService {
     }, { userId: actor.userId });
   }
 
-  async approve(tenantId: string, actor: DairyActor, id: string) { return this.transition(tenantId, actor, id, (b) => b.approve()); }
+  /**
+   * Approve ONE bill. W169: *"Preview/approve needs dairy-desk + `settlement.close` + checker."* The CHECKER rule lives
+   * on the CYCLE (a per-bill checker would mean 312 signatures, which is not what the canon's button is), so this route
+   * carries the two keys and the cycle-level act carries the second human.
+   */
+  async approve(tenantId: string, actor: DairyActor, id: string) {
+    if (!actor.canCloseSettlement) throw new DairyForbiddenError('requires settlement.close — approving a bill takes the second key, not just the dairy desk');
+    return this.transition(tenantId, actor, id, (b) => b.approve());
+  }
 
   /**
    * [PC-56 TENANT-6c-2] VOID a bill and RELEASE ITS POURS, so a correct one can be built.

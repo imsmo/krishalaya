@@ -16,7 +16,7 @@ import { SetMccActiveSchema, SetMccActiveDto } from '../../dto/update-mcc-centre
 import { QueryMccSchema, QueryMccDto } from '../../dto/query-mcc-centre.dto';
 import { CreateMembershipSchema, CreateMembershipDto } from '../../dto/create-dairy-membership.dto';
 import { QueryMembershipsSchema, QueryMembershipsDto } from '../../dto/query-dairy-membership.dto';
-import { DairyPermissions, canManageDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -26,7 +26,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('dairy')
 export class MccController {
   constructor(private readonly mccs: MccCentreService, private readonly memberships: DairyMembershipService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   @Post() @RequirePermissions(DairyPermissions.Manage)
   create(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateMccSchema) dto: CreateMccDto) {

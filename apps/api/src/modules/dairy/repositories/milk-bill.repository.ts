@@ -92,6 +92,21 @@ export class MilkBillRepository {
     if (res.rowCount === 0) throw new BillNotFoundError(p.id);
   }
 
+  /**
+   * [PC-56 TENANT-6c-3] The approval pass's claim: this cycle's PREVIEWED bills, bounded and oldest first.
+   *
+   * `disputed` bills are excluded by the predicate, which is W169's *"disputed pauses one bill, never the cycle"* made
+   * literal: the cycle approves, and a member's open objection keeps their own bill out of it. Re-callable for the same
+   * reason `draftsForCycle` is — an approved bill is no longer `previewed`.
+   */
+  async previewedForCycle(tx: TxContext, tenantId: string, cycleId: string, limit: number): Promise<MilkBill[]> {
+    const r = await tx.query(
+      `SELECT ${COLS} FROM milk_bills
+        WHERE tenant_id=$1 AND cycle_id=$2 AND status='previewed' AND deleted_at IS NULL
+        ORDER BY created_at, id LIMIT $3`, [tenantId, cycleId, limit]);
+    return r.rows.map(toDomain);
+  }
+
   /** The preview pass's claim: this cycle's DRAFT bills, bounded and oldest first. Re-callable — a bill that has
    *  already been previewed is no longer `draft`, so a second pass simply finds fewer. */
   async draftsForCycle(tx: TxContext, tenantId: string, cycleId: string, limit: number): Promise<MilkBill[]> {

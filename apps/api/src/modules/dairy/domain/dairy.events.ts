@@ -26,6 +26,10 @@ export const DairyEventType = {
   // existed as a type and was emitted by a transition nothing called with a recipient in the payload; it now carries
   // the farmer's userId and the figures the SMS interpolates, which is what turns a map row into a message.
   CyclePreviewed:    'dairy.cycle_previewed',
+  // PC-56 TENANT-6c-3 · the second signature. No member-facing notification: the member was told at PREVIEW what they
+  // are owed, and "two of our staff have now agreed with each other" is not news for them. The event carries both
+  // humans so a cooperative's own systems (and an auditor) can see who signed.
+  CycleApproved:     'dairy.cycle_approved',
   BillDisputeResolved: 'dairy.bill_dispute_resolved',
   BillVoided:        'dairy.bill_voided',
 } as const;

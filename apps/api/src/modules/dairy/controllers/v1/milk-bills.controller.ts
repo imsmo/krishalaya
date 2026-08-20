@@ -15,7 +15,7 @@ import { MilkBillDisputeService } from '../../services/milk-bill-dispute.service
 import { RaiseDisputeSchema, RaiseDisputeDto, VoidBillSchema, VoidBillDto } from '../../dto/milk-bill-dispute.dto';
 import { GenerateBillSchema, GenerateBillDto } from '../../dto/create-milk-bill.dto';
 import { QueryBillsSchema, QueryBillsDto } from '../../dto/query-milk-bill.dto';
-import { DairyPermissions, canManageDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -25,7 +25,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('dairy')
 export class MilkBillsController {
   constructor(private readonly bills: MilkBillService, private readonly disputes: MilkBillDisputeService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   @Post('generate') @RequirePermissions(DairyPermissions.Manage)
   generate(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(GenerateBillSchema) dto: GenerateBillDto) {
@@ -41,7 +41,7 @@ export class MilkBillsController {
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.bills.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Post(':id/preview') @RequirePermissions(DairyPermissions.Manage)
   preview(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.bills.preview(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
-  @Post(':id/approve') @RequirePermissions(DairyPermissions.Manage)
+  @Post(':id/approve') @RequirePermissions(DairyPermissions.Manage, DairyPermissions.SettlementClose)
   approve(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.bills.approve(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   /**
    * [PC-56 TENANT-6c-2] **THE MEMBER'S OWN ROUTE — AND THE ONLY DAIRY ROUTE WITH NO PERMISSION ON IT.**

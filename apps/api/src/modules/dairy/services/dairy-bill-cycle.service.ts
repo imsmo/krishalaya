@@ -74,6 +74,9 @@ export class DairyBillCycleService {
    */
   async previewCycle(tenantId: string, actor: DairyActor, cycleId: string, limit = 500, now = new Date()): Promise<{ previewed: number; failed: number; remaining: number }> {
     if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    // [PC-56 TENANT-6c-3] W169 names `settlement.close` on PREVIEW as well as approve, and 6c-2 shipped this act behind
+    // `dairy.manage` alone. Telling 312 families what they are about to be paid is the act that fixes the figures.
+    if (!actor.canCloseSettlement) throw new DairyForbiddenError('requires settlement.close — previewing a cycle takes the second key, not just the dairy desk');
     return timed(this.metrics, 'dairy.cycle_preview', { tenant: tenantId }, async () => {
       // 1. The cycle-level decision, recorded once. Re-pressing the button on an already-previewed cycle is NOT an
       //    error — it is how a partial pass is finished — so the transition is skipped rather than refused.
@@ -123,6 +126,72 @@ export class DairyBillCycleService {
    */
   async previewCycleIdempotent(tenantId: string, actor: DairyActor, cycleId: string, idemKey: string) {
     return this.idem.remember(idemKey, actor.userId, 'dairy.cycle.preview', () => this.previewCycle(tenantId, actor, cycleId));
+  }
+
+  /**
+   * [PC-56 TENANT-6c-3] THE SECOND SIGNATURE, over a whole cycle. W169: *"approved Thu evening (maker-checker)"*.
+   *
+   * Requires BOTH keys — `dairy.manage` (the desk) and `settlement.close` (0144's, granted to `tenant_admin`) — and the
+   * approver must not be whoever previewed it. That last rule lives on the aggregate AND in a database constraint, and
+   * it is unconditional: 0144's ruling was *"a cycle close is not an amount… Every one of them gets two humans"*, and a
+   * milk cycle is a fortnight of 312 families' income.
+   *
+   * NOT gated on the dispute windows being shut. W169 approves on Thursday evening while the windows run to Friday
+   * morning, and that is the right order: approval is the cooperative agreeing its own figures; it is the PAYMENT that
+   * waits for the member (6c-2 put that guard on `markPaid`). `disputed` bills are simply not claimed by the pass —
+   * *"disputed pauses one bill, never the cycle."*
+   */
+  async approveCycle(tenantId: string, actor: DairyActor, cycleId: string, limit = 500, now = new Date()): Promise<{ approved: number; failed: number; remaining: number; skippedDisputed: number }> {
+    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    if (!actor.canCloseSettlement) throw new DairyForbiddenError('requires settlement.close — approving a cycle takes the second key, not just the dairy desk');
+    return timed(this.metrics, 'dairy.cycle_approve', { tenant: tenantId }, async () => {
+      // 1. The cycle-level decision. A re-press on an already-approved cycle finishes the per-bill pass rather than
+      //    refusing, the same shape as the preview — but the CHECKER rule is evaluated on the first press only, because
+      //    that is where the signature is recorded.
+      const before = await this.uow.run(tenantId, async (tx) => {
+        const cycle = await this.cycles.getForUpdate(tx, tenantId, cycleId);
+        if (!cycle) throw new BillCycleNotFoundError(cycleId);
+        if (cycle.status === 'previewed') {
+          cycle.approve(now, actor.userId);
+          await this.cycles.updateState(tx, cycle);
+          await this.flush(tx, tenantId, cycle);
+        }
+        return cycle;
+      }, { userId: actor.userId });
+
+      // 2. The per-bill pass: one transaction each, bounded, resumable.
+      const pending = await this.uow.run(tenantId, (tx) => this.billRepo.previewedForCycle(tx, tenantId, cycleId, limit), { userId: actor.userId });
+      let approved = 0, failed = 0;
+      for (const bill of pending) {
+        try {
+          await this.bills.approve(tenantId, actor, bill.id);
+          approved += 1;
+        } catch (e) {
+          failed += 1;
+          this.log.error(`dairy cycle approve failed for bill ${bill.id} (tenant ${tenantId}, cycle ${cycleId}): ${(e as Error).message}`);
+        }
+      }
+
+      // 3. Measured from the bills, not from the loop. `remaining` is what still awaits a signature; `skippedDisputed`
+      //    is the number W169's tile is about — bills held out because a member objected, which an operator must see
+      //    rather than infer from a total that does not add up.
+      const counts = await this.billRepo.statusCountsForCycle(tenantId, cycleId);
+      const remaining = Number(counts.previewed ?? 0);
+      const skippedDisputed = Number(counts.disputed ?? 0);
+      await this.uow.run(tenantId, async (tx) => {
+        const fresh = await this.cycles.getForUpdate(tx, tenantId, cycleId);
+        if (!fresh) return;
+        fresh.recordApprovalPass((before.toProps().billsApproved ?? 0) + approved);
+        await this.cycles.updateState(tx, fresh);
+      }, { userId: actor.userId });
+
+      return { approved, failed, remaining, skippedDisputed };
+    });
+  }
+
+  /** The route's entry point, wrapped in the platform's idempotency record (Law 3). */
+  async approveCycleIdempotent(tenantId: string, actor: DairyActor, cycleId: string, idemKey: string) {
+    return this.idem.remember(idemKey, actor.userId, 'dairy.cycle.approve', () => this.approveCycle(tenantId, actor, cycleId));
   }
 
   /** W169's list: this tenant's cycles with each one's bill counts MEASURED from its bills, not stored beside them. */

@@ -10,7 +10,7 @@
 // RECORDED and ANSWERED, and the void that makes an upheld objection actionable at all.
 import { MilkBill } from '../domain/milk-bill.entity';
 import { MilkBillDispute, DisputeReasonTooShortError, DisputeAlreadyResolvedError, REASON_FLOOR } from '../domain/milk-bill-dispute.entity';
-import { BILL_STATUSES, IllegalBillTransitionError, canTransition, isTerminal } from '../domain/milk-bill.state';
+import { BILL_STATUSES, canTransition, isTerminal } from '../domain/milk-bill.state';
 import { CYCLE_STATUSES } from '../domain/dairy-cycle';
 import { DairyBillCycle } from '../domain/dairy-bill-cycle.entity';
 import { MilkBillDisputeRepository } from '../repositories/milk-bill-dispute.repository';
@@ -399,9 +399,11 @@ describe('MilkBillService — the window comes from the DATABASE', () => {
 
   it('refuses to pay inside the window, through the service, with no wallet call', async () => {
     const approved = approvedBill();
+    // ONE harness, and that matters: this test used to build two and assert on the FIRST one's `bills.update` while
+    // paying through the SECOND one's service — a mock that was never exercised cannot have been called, so the
+    // assertion held no matter what `pay` did. Found by the lint pass that flagged the unused `svc`.
     const { svc, bills } = harness({ bill: approved });
-    const h = harness({ bill: approved });
-    await expect(h.svc.pay('tA', { userId: 'op1', canManage: true }, 'b1', 'idem', null, INSIDE))
+    await expect(svc.pay('tA', { userId: 'op1', canManage: true }, 'b1', 'idem', null, INSIDE))
       .rejects.toBeInstanceOf(DisputeWindowOpenError);
     expect(bills.update).not.toHaveBeenCalled();
   });
@@ -517,6 +519,7 @@ describe('previewCycle — one act, 312 bills, resumable', () => {
     closedAt: new Date('2026-07-15T18:30:00.000Z'),
     billsGeneratedAt: new Date(), billsGenerated: 3, billsSkipped: 0, billsFailed: 0,
     previewedAt: null, previewedBy: null, billsPreviewed: null,
+    approvedAt: null, approvedBy: null, billsApproved: null,
   });
 
   function harness(over: { cycle?: DairyBillCycle; drafts?: string[]; preview?: jest.Mock; counts?: Record<string, number> } = {}) {
@@ -541,7 +544,7 @@ describe('previewCycle — one act, 312 bills, resumable', () => {
 
   it('moves the CYCLE first, then each bill in its own transaction', async () => {
     const { svc, cycles, bills, c } = harness();
-    const out = await svc.previewCycle('tA', { userId: 'op1', canManage: true }, 'cyc1');
+    const out = await svc.previewCycle('tA', { userId: 'op1', canManage: true, canCloseSettlement: true }, 'cyc1');
     expect(c.status).toBe('previewed');
     expect(c.previewedBy).toBe('op1');
     expect(cycles.updateState).toHaveBeenCalled();
@@ -553,7 +556,7 @@ describe('previewCycle — one act, 312 bills, resumable', () => {
 
   it('publishes the cycle-level fact once, and leaves the member-facing events to the bills', async () => {
     const { svc, outbox } = harness();
-    await svc.previewCycle('tA', { userId: 'op1', canManage: true }, 'cyc1');
+    await svc.previewCycle('tA', { userId: 'op1', canManage: true, canCloseSettlement: true }, 'cyc1');
     const types = outbox.write.mock.calls.map((c: any[]) => c[1].eventType);
     expect(types).toEqual(['dairy.cycle_previewed']);
   });
@@ -562,7 +565,7 @@ describe('previewCycle — one act, 312 bills, resumable', () => {
     const already = closedCycle();
     already.preview(PREVIEW_AT, 'op1'); already.pullEvents();
     const { svc, bills, outbox } = harness({ cycle: already, drafts: ['b3'] });
-    const out = await svc.previewCycle('tA', { userId: 'op2', canManage: true }, 'cyc1');
+    const out = await svc.previewCycle('tA', { userId: 'op2', canManage: true, canCloseSettlement: true }, 'cyc1');
     expect(out.previewed).toBe(1);
     expect(bills.preview).toHaveBeenCalledTimes(1);
     // No second cycle-level event: the decision was made once, by op1.
@@ -575,7 +578,7 @@ describe('previewCycle — one act, 312 bills, resumable', () => {
       return { id };
     });
     const { svc } = harness({ drafts: ['b1', 'b2', 'b3'], preview, counts: { draft: 1, previewed: 2 } });
-    const out = await svc.previewCycle('tA', { userId: 'op1', canManage: true }, 'cyc1');
+    const out = await svc.previewCycle('tA', { userId: 'op1', canManage: true, canCloseSettlement: true }, 'cyc1');
     expect(out).toMatchObject({ previewed: 2, failed: 1 });
   });
 
@@ -585,14 +588,18 @@ describe('previewCycle — one act, 312 bills, resumable', () => {
     // the database says one is still `draft` — which is what a bill generated between the claim and the count looks
     // like. The loop would answer 0 and send the operator away believing the cycle was done.
     const { svc } = harness({ drafts: ['b1', 'b2', 'b3'], counts: { draft: 1, previewed: 3 } });
-    const out = await svc.previewCycle('tA', { userId: 'op1', canManage: true }, 'cyc1');
+    const out = await svc.previewCycle('tA', { userId: 'op1', canManage: true, canCloseSettlement: true }, 'cyc1');
     expect(out).toMatchObject({ previewed: 3, failed: 0, remaining: 1 });
   });
 
-  it('refuses without dairy.manage, and is idempotency-wrapped at the route', async () => {
+  it('refuses without EITHER key, and is idempotency-wrapped at the route', async () => {
     const { svc, idem } = harness();
-    await expect(svc.previewCycle('tA', { userId: 'x', canManage: false }, 'cyc1')).rejects.toMatchObject({ code: 'DAIRY_FORBIDDEN' });
-    await svc.previewCycleIdempotent('tA', { userId: 'op1', canManage: true }, 'cyc1', 'idem-k');
+    await expect(svc.previewCycle('tA', { userId: 'x', canManage: false, canCloseSettlement: true }, 'cyc1')).rejects.toMatchObject({ code: 'DAIRY_FORBIDDEN' });
+    // [PC-56 TENANT-6c-3] W169 names `settlement.close` on PREVIEW as well as approve, and 6c-2 shipped this act behind
+    // `dairy.manage` alone. An actor with no flag set is refused, because absent means false on a key that fixes the
+    // figures 312 families are about to be paid.
+    await expect(svc.previewCycle('tA', { userId: 'x', canManage: true }, 'cyc1')).rejects.toMatchObject({ code: 'DAIRY_FORBIDDEN' });
+    await svc.previewCycleIdempotent('tA', { userId: 'op1', canManage: true, canCloseSettlement: true }, 'cyc1', 'idem-k');
     expect(idem.remember).toHaveBeenCalledWith('idem-k', 'op1', 'dairy.cycle.preview', expect.any(Function));
   });
 });
@@ -638,11 +645,11 @@ describe('the notification spine', () => {
 
 /* ----------------------------------------------------------------------------------------------------------- */
 describe('what is deliberately NOT here', () => {
-  it('the cycle still cannot be APPROVED — that needs settlement.close and a second human', () => {
-    expect([...CYCLE_STATUSES]).not.toContain('approved');
-    // W169: "Preview/approve needs dairy-desk + settlement.close + checker — this is 312 families' milk money." This
-    // platform has `dairy.manage` and no checker on this path, so shipping an approve route with one permission would
-    // build exactly the surface the canon warns about. TENANT-6c-3.
+  it('the cycle still cannot be PAID — that needs a payout batch nothing writes', () => {
+    // 6c-2's version of this test said `approved` was absent; TENANT-6c-3 built it. What remains absent is `paid`:
+    // `milk_bills.payout_id` has never been written, so W169's "one bank trip" has nothing behind it, and a bill
+    // carrying a deduction cannot be paid at all (0157). A cycle-level `paid` would be a state nothing could reach.
+    expect([...CYCLE_STATUSES]).not.toContain('paid');
   });
 
   it('a bill still has no way to be AMENDED — void and rebuild is the whole vocabulary', () => {

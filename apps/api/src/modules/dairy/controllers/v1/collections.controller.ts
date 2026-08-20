@@ -11,7 +11,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { MilkCollectionService } from '../../services/milk-collection.service';
 import { RecordCollectionSchema, RecordCollectionDto } from '../../dto/create-milk-collection.dto';
 import { QueryCollectionsSchema, QueryCollectionsDto } from '../../dto/query-milk-collection.dto';
-import { DairyPermissions, canManageDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -20,7 +20,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('dairy')
 export class CollectionsController {
   constructor(private readonly collections: MilkCollectionService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   @Post() @RequirePermissions(DairyPermissions.Manage)
   record(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(RecordCollectionSchema) dto: RecordCollectionDto) {

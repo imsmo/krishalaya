@@ -75,7 +75,10 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
   const farmerA = randomUUID();
   const farmerB = randomUUID();
   const farmerMonthly = randomUUID();
-  const actor = { userId: operator, canManage: true };
+  // [PC-56 TENANT-6c-3] `canCloseSettlement` is 0144's `settlement.close`, which W169 names on both the preview and
+  // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
+  // spec is where the refusals live.
+  const actor = { userId: operator, canManage: true, canCloseSettlement: true };
   let mccId = ''; let memA = ''; let memB = ''; let memMonthly = '';
   let today = '';
 
@@ -468,12 +471,13 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
     });
 
     it('the status vocabulary is exactly what the code can reach', async () => {
-      // 6c-1 asserted `previewed` was refused. TENANT-6c-2 BUILT the preview act, so `previewed` is now legitimate and
-      // this assertion moves to the states that still have no implementation: `approved` needs `settlement.close` and a
-      // second human, `paid` needs a batch nothing writes. A cycle must not be able to sit in either.
+      // 6c-1 asserted `previewed` was refused; TENANT-6c-2 built the preview and the assertion moved to `approved` and
+      // `paid`. TENANT-6c-3 built the second signature, so `approved` is legitimate too and only `paid` is left: it
+      // needs a payout batch nothing writes, and a bill carrying a deduction cannot be paid at all (0157). Each wave
+      // moves this assertion to its own edge rather than deleting it, which is what keeps the vocabulary honest.
       const w = { from: '2026-02-01', to: '2026-02-15', cycle: 'fortnightly' as const, basis: 'derived_from_membership_preference' as const };
       const c = await uow.run(tenantIST, (tx) => cycleRepo.ensure(tx, tenantIST, w), { userId: 'system' });
-      for (const status of ['approved', 'paid']) {
+      for (const status of ['paid']) {
         // `closed_at` is set in the same statement so the STATUS check is the one that fires — otherwise the close-stamp
         // invariant (open ⇔ no close stamp) refuses first and the assertion would pass for the wrong reason.
         await expect(admin.query(`UPDATE dairy_bill_cycles SET status=$2, closed_at=now() WHERE id=$1`, [c.id, status]))

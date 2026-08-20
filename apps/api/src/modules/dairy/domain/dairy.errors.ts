@@ -95,6 +95,23 @@ export class BillCycleNotFoundError extends NotFoundError {
   constructor(id: string) { super('Dairy bill cycle not found'); (this as any).code = 'DAIRY_CYCLE_NOT_FOUND'; (this as any).details = { id }; }
 }
 
+/**
+ * [PC-56 TENANT-6c-3] An approval refused — either the cycle was never previewed, or the checker IS the previewer.
+ *
+ * The second case carries the previewer's id so the console can say *"previewed by Rameshbhai — somebody else must
+ * approve"* rather than "forbidden", which is the difference between a control a cooperative can work with and one
+ * that looks like a bug.
+ */
+export class CycleApprovalRefusedError extends DomainError {
+  constructor(id: string, reason: 'DAIRY_CYCLE_NOT_PREVIEWED' | 'DAIRY_CYCLE_CHECKER_IS_PREVIEWER', previewedBy: string | null) {
+    super(reason,
+      reason === 'DAIRY_CYCLE_CHECKER_IS_PREVIEWER'
+        ? 'The person who previewed this cycle cannot also approve it — 312 families\' milk money needs two humans'
+        : 'This cycle has not been shown to its members yet, so there is nothing to approve',
+      409, { id, reason, previewedBy });
+  }
+}
+
 /** [PC-56 TENANT-6c-1] A cycle asked to close before its window shut, or to build bills before it closed. */
 export class CycleNotClosableError extends DomainError {
   constructor(id: string, why: string, closesAt: string | null) {

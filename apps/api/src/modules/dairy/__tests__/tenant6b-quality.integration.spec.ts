@@ -72,7 +72,10 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
   // A SECOND member, on a card that carries a bonus slab, so the premium band and the hold can be proven without
   // either test disturbing the other's money.
   const farmer2 = randomUUID();
-  const actor = { userId: operator, canManage: true };
+  // [PC-56 TENANT-6c-3] `canCloseSettlement` is 0144's `settlement.close`, which W169 names on both the preview and
+  // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
+  // spec is where the refusals live.
+  const actor = { userId: operator, canManage: true, canCloseSettlement: true };
   let mccId = ''; let membershipId = ''; let membership2 = '';
   let day = '';
 

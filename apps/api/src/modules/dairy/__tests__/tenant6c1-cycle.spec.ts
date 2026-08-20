@@ -40,8 +40,9 @@ function cycle(over: Partial<Parameters<typeof DairyBillCycle.rehydrate>[0]> = {
     periodStart: '2026-07-01', periodEnd: '2026-07-15',
     closesAt: CLOSES, payday: '2026-07-17', status: 'open', closedAt: null,
     billsGeneratedAt: null, billsGenerated: null, billsSkipped: null, billsFailed: null,
-    // [PC-56 TENANT-6c-2] the preview act's own stamps
-    previewedAt: null, previewedBy: null, billsPreviewed: null, ...over,
+    // [PC-56 TENANT-6c-2] the preview act's own stamps; [6c-3] the second signature's
+    previewedAt: null, previewedBy: null, billsPreviewed: null,
+    approvedAt: null, approvedBy: null, billsApproved: null, ...over,
   });
 }
 
@@ -102,12 +103,13 @@ describe('the cycle calendar — ONE mechanism, shared with the counter board', 
 /* ----------------------------------------------------------------------------------------------------------- */
 describe('the cycle state machine (Law 5)', () => {
   it('admits ONLY the states this programme can reach', () => {
-    // 6c-1 shipped `open|closed` and this assertion read `['open','closed']`. TENANT-6c-2 added `previewed` BECAUSE THE
-    // ACT ARRIVED — W169's header button — and that is the only reason a status is ever added here. `approved` and
-    // `paid` are still absent: approving needs `settlement.close` and a second human (6c-3), paying needs a batch that
-    // does not exist (`payout_id` has never been written), so both would be states nothing can move a cycle out of.
-    // The database CHECK tracks this list exactly.
-    expect([...CYCLE_STATUSES]).toEqual(['open', 'closed', 'previewed']);
+    // 6c-1 shipped `open|closed`; 6c-2 added `previewed` (W169's header button); 6c-3 adds `approved` (the second
+    // signature). A status is only ever added here BECAUSE THE ACT ARRIVED. `paid` is still absent: it needs a payout
+    // batch this platform does not have (`payout_id` has never been written) and a bill carrying a deduction still
+    // cannot be paid at all, so it would be a state nothing could move a cycle into. The database CHECK tracks this
+    // list exactly.
+    expect([...CYCLE_STATUSES]).toEqual(['open', 'closed', 'previewed', 'approved']);
+    expect([...CYCLE_STATUSES]).not.toContain('paid');
   });
   it('open → closed → previewed, and previewed is where a cycle waits for its members', () => {
     expect(canTransition('open', 'closed')).toBe(true);
@@ -444,7 +446,7 @@ describe('DairyBillCycleService — what a generation run says happened', () => 
 /* ----------------------------------------------------------------------------------------------------------- */
 describe('DairyCycleCloseCadenceJob — the registration whose absence made "312 bills" mean zero', () => {
   function jobHarness(opts: { tenants?: string[]; enabled?: (t: string) => boolean; tick?: jest.Mock } = {}) {
-    const pool = { query: jest.fn(async (_sql: string) => ({ rows: (opts.tenants ?? ['t1']).map((id) => ({ id })), rowCount: 1 })) };
+    const pool = { query: jest.fn(async (sql: string) => ({ sql, rows: (opts.tenants ?? ['t1']).map((id) => ({ id })), rowCount: 1 })) };
     const tick = opts.tick ?? jest.fn(async () => ({ ensured: 2, closed: 1, cyclesBilled: 1, generated: 3, skipped: 0, stranded: 0, failed: 0 }));
     const flags = { isEnabled: jest.fn(async (_k: string, ctx: any) => (opts.enabled ? opts.enabled(ctx.tenantId) : true)) };
     const job = new DairyCycleCloseCadenceJob(60 * 60_000, { tickForTenant: tick } as never, flags as never);

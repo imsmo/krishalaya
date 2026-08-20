@@ -3,9 +3,9 @@
 // One fortnight (or day/week/month) of one cooperative's milk: its window, the instant it shuts, the day it pays, and
 // what happened when its bills were built. It moves NO money — a cycle closing produces DRAFT bills, and every act
 // after that (preview, approve, pay) stays a human decision.
-import { CycleStatus, assertTransition } from './dairy-cycle';
+import { CycleStatus, assertTransition, cycleApprovalRefusal } from './dairy-cycle';
 import { DairyEventType, DomainEvent, PaymentCycle } from './dairy.events';
-import { CycleNotClosableError } from './dairy.errors';
+import { CycleApprovalRefusedError, CycleNotClosableError } from './dairy.errors';
 
 export interface DairyBillCycleProps {
   id: string;
@@ -27,6 +27,10 @@ export interface DairyBillCycleProps {
   previewedBy: string | null;
   /** How many bills the bounded, resumable preview pass has moved. Makes "is it done?" answerable. */
   billsPreviewed: number | null;
+  /** [PC-56 TENANT-6c-3] The second signature, and how far its own pass got. */
+  approvedAt: Date | null;
+  approvedBy: string | null;
+  billsApproved: number | null;
   createdAt?: Date;
 }
 
@@ -44,6 +48,8 @@ export class DairyBillCycle {
   get payday() { return this.props.payday; }
   get previewedAt() { return this.props.previewedAt; }
   get previewedBy() { return this.props.previewedBy; }
+  get approvedAt() { return this.props.approvedAt; }
+  get approvedBy() { return this.props.approvedBy; }
   get closesAt() { return this.props.closesAt; }
   get status() { return this.props.status; }
   /**
@@ -84,6 +90,39 @@ export class DairyBillCycle {
       },
     });
   }
+
+  /**
+   * [PC-56 TENANT-6c-3] THE SECOND SIGNATURE. W169: *"approved Thu evening (maker-checker)"*, and *"Preview/approve
+   * needs dairy-desk + `settlement.close` + checker — this is 312 families' milk money."*
+   *
+   * The checker must not be the previewer, unconditionally and with no threshold — 0144's ruling for a settlement cycle
+   * close, borrowed here because a milk cycle is a fortnight of 312 families' income. The rule is ALSO a database
+   * constraint (`ck_dairy_bill_cycle_maker_ne_checker`): this refusal is what an operator reads, and the constraint is
+   * what makes the rule true of the row whatever wrote it.
+   *
+   * Deliberately NOT gated on the dispute windows being shut. W169's timeline approves on Thursday evening while the
+   * windows run to Friday morning, and that ordering is right: approval is the cooperative agreeing its own figures,
+   * and it is the PAYMENT that waits for the member (TENANT-6c-2 put that guard on `markPaid`).
+   */
+  approve(at: Date, byUserId: string): void {
+    const refusal = cycleApprovalRefusal({ status: this.props.status, previewedBy: this.props.previewedBy }, byUserId);
+    if (refusal) throw new CycleApprovalRefusedError(this.props.id, refusal, this.props.previewedBy);
+    assertTransition(this.props.status, 'approved');
+    this.props.status = 'approved';
+    this.props.approvedAt = at;
+    this.props.approvedBy = byUserId;
+    this.events.push({
+      type: DairyEventType.CycleApproved,
+      payload: {
+        cycleId: this.props.id, paymentCycle: this.props.paymentCycle,
+        periodStart: this.props.periodStart, periodEnd: this.props.periodEnd, payday: this.props.payday,
+        previewedBy: this.props.previewedBy, approvedBy: byUserId,
+      },
+    });
+  }
+
+  /** How far the (re-callable) approval pass got. */
+  recordApprovalPass(count: number): void { this.props.billsApproved = count; }
 
   /** How many of this cycle's bills the (re-callable) preview pass has moved so far. Emits nothing: the member-facing
    *  event is per BILL, because it is a different member each time. */
@@ -145,6 +184,7 @@ export class DairyBillCycle {
       billsGeneratedAt: v.billsGeneratedAt, billsGenerated: v.billsGenerated,
       billsSkipped: v.billsSkipped, billsFailed: v.billsFailed,
       previewedAt: v.previewedAt, previewedBy: v.previewedBy, billsPreviewed: v.billsPreviewed,
+      approvedAt: v.approvedAt, approvedBy: v.approvedBy, billsApproved: v.billsApproved,
       createdAt: v.createdAt,
     };
   }

@@ -16,7 +16,7 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { MilkBillDisputeService } from '../../services/milk-bill-dispute.service';
 import { ResolveDisputeSchema, ResolveDisputeDto } from '../../dto/milk-bill-dispute.dto';
-import { DairyPermissions, canManageDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 
@@ -25,7 +25,7 @@ const ipOf = (r: Request) => r.ip || null;
 @FeatureFlag('dairy')
 export class BillDisputesController {
   constructor(private readonly disputes: MilkBillDisputeService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   /** What is waiting on the cooperative, oldest first — a dispute is a family waiting for money. */
   @Get() @RequirePermissions(DairyPermissions.Manage)

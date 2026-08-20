@@ -100,7 +100,14 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pashupalak','dairy_farmer') AND p.code IN ('animal.manage','vet.book'))
    OR (r.code='vet' AND p.code IN ('vet.manage','animal.manage'))
    OR (r.code='tenant_admin' AND p.code IN ('vet.manage'))
-   OR (r.code IN ('dairy_farmer','tenant_admin') AND p.code IN ('dairy.manage'))
+   -- [PC-56 TENANT-6c-3] `dairy_farmer` REMOVED from this grant. `dairy.manage` is the cooperative/MCC OPERATOR's verb
+   -- — create MCCs and rate cards, enrol members, record collections, generate/approve/PAY milk bills — and granting it
+   -- to a farmer role let any member set what every other member is paid and pay a bill out of the cooperative's
+   -- wallet. Every sibling vertical in this file has two verbs (loan.borrow / loan.manage, insurance.enrol /
+   -- insurance.manage, contract.grow / contract.manage); dairy has only the manage verb, which is why farmers were
+   -- given it. Nothing a member does needs it: every member-facing dairy route authorises by OWNERSHIP and carries no
+   -- permission at all. Migration 0159 removes it from installs that already ran this seed.
+   OR (r.code IN ('tenant_admin') AND p.code IN ('dairy.manage'))
    OR (r.code='equipment_owner' AND p.code IN ('equipment.manage','equipment.rent'))
    OR (r.code IN ('farmer','pashupalak','vyapari','customer') AND p.code IN ('equipment.rent'))
    OR (r.code='tenant_admin' AND p.code IN ('warehouse.manage'))

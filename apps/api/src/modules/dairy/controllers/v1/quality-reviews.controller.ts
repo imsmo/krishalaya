@@ -23,7 +23,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { MilkQualityService } from '../../services/milk-quality.service';
 import { MilkQualityReviewRepository } from '../../repositories/milk-quality-review.repository';
 import { RetestReviewSchema, RetestReviewDto, DecideReviewSchema, DecideReviewDto, QueryReviewsSchema, QueryReviewsDto } from '../../dto/quality-review.dto';
-import { DairyPermissions, canManageDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 import { ReviewStatus } from '../../domain/milk-quality.state';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [at, id] = Buffer.from(c, 'base64').toString().split('|'); return at && id ? { at, id } : undefined; };
@@ -37,7 +37,7 @@ export class QualityReviewsController {
     private readonly quality: MilkQualityService,
     private readonly reviews: MilkQualityReviewRepository,
   ) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   /** The desk's working queue and history. `status=open_any` is the queue that matters: pours whose money is held now. */
   @Get() @RequirePermissions(DairyPermissions.Manage)

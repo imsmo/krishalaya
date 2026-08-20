@@ -10,14 +10,14 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { MilkRateCardService } from '../../services/milk-rate-card.service';
 import { CreateRateCardSchema, CreateRateCardDto } from '../../dto/create-milk-rate-card.dto';
 import { QueryRateCardsSchema, QueryRateCardsDto } from '../../dto/query-milk-rate-card.dto';
-import { DairyPermissions, canManageDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
 @Controller({ path: 'dairy/rate-cards', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('dairy')
 export class RateCardsController {
   constructor(private readonly cards: MilkRateCardService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   @Post() @RequirePermissions(DairyPermissions.Manage)
   create(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreateRateCardSchema) dto: CreateRateCardDto) {

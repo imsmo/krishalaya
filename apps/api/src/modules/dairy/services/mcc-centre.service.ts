@@ -13,7 +13,16 @@ import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { CreateMccDto } from '../dto/create-mcc-centre.dto';
 import { MccNotFoundError, MccCodeExistsError, DairyForbiddenError } from '../domain/dairy.errors';
 
-export interface DairyActor { userId: string; canManage: boolean; }
+export interface DairyActor {
+  userId: string;
+  canManage: boolean;
+  /**
+   * [PC-56 TENANT-6c-3] Holds `settlement.close` — the SECOND key W169 names on preview and approve. Optional so that
+   * every existing construction site still compiles, and absent therefore means FALSE: a caller that does not set it
+   * cannot approve a cycle. Fail-closed is the only safe default for a key that guards 312 families' milk money.
+   */
+  canCloseSettlement?: boolean;
+}
 
 @Injectable()
 export class MccCentreService {

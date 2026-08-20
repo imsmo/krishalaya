@@ -7,7 +7,7 @@ import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
-import { DairyPermissions, canManageDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 import { D2cService } from '../../services/d2c.service';
 import { z } from 'zod';
 
@@ -32,7 +32,7 @@ const PauseSchema = z.object({ pausedUntil: dateStr }).strict();
 @FeatureFlag('dairy')
 export class D2cController {
   constructor(private readonly svc: D2cService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   @Post('plans') @RequirePermissions(DairyPermissions.Manage)
   createPlan(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreatePlanSchema) dto: z.infer<typeof CreatePlanSchema>) {

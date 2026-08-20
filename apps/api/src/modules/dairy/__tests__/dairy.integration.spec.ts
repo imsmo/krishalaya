@@ -52,7 +52,10 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
   const operator = randomUUID();
   const farmer = randomUUID();
   let mccId = ''; let membershipId = ''; let billId = '';
-  const actor = { userId: operator, canManage: true };
+  // [PC-56 TENANT-6c-3] `canCloseSettlement` is 0144's `settlement.close`, which W169 names on both the preview and
+  // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
+  // spec is where the refusals live.
+  const actor = { userId: operator, canManage: true, canCloseSettlement: true };
   const today = new Date().toISOString().slice(0, 10);
 
   const balUser = async (u: string) => BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [u])).rows[0]?.b ?? '0');

@@ -67,7 +67,10 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
   const checker = randomUUID();
   const farmerA = randomUUID();
   const outsider = randomUUID();
-  const actor = { userId: operator, canManage: true };
+  // [PC-56 TENANT-6c-3] `canCloseSettlement` is 0144's `settlement.close`, which W169 names on both the preview and
+  // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
+  // spec is where the refusals live.
+  const actor = { userId: operator, canManage: true, canCloseSettlement: true };
   let mccId = ''; let memA = ''; let cycleId = ''; let billId = '';
   let win = { from: '', to: '', cycle: 'fortnightly' as const, basis: 'derived_from_membership_preference' as const };
 
@@ -452,7 +455,12 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
     });
 
     it('a cycle cannot be set to a status this programme cannot reach', async () => {
-      await expect(admin.query(`UPDATE dairy_bill_cycles SET status='approved' WHERE id=$1`, [cycleId]))
+      // [PC-56 TENANT-6c-3] This assertion named `approved` when it was written, because 6c-2 deliberately stopped at
+      // `previewed` — there was no checker and no `settlement.close` check, so a cycle the software called "approved"
+      // would have been one person's press. 0159 built the second signature and the vocabulary moved, so the same
+      // property is now asserted at the wave's NEW edge: `paid` is still unreachable, because the deduction has no
+      // destination and the payout batch behind "one bank trip" does not exist.
+      await expect(admin.query(`UPDATE dairy_bill_cycles SET status='paid' WHERE id=$1`, [cycleId]))
         .rejects.toThrow(/ck_dairy_bill_cycle_status/);
     });
 
