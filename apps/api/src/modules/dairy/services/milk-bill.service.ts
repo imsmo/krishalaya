@@ -32,10 +32,21 @@ import { MilkBillDeductionConsentRepository } from '../repositories/milk-bill-de
 import { DairyDeductionTypeRepository } from '../repositories/dairy-deduction-type.repository';
 import { DairyMemberCreditRepository } from '../repositories/dairy-member-credit.repository';
 import { MilkBillDeductionService } from './milk-bill-deduction.service';
+import { DairyDeductionAssemblerService } from './dairy-deduction-assembler.service';
 import { MilkBillDeduction } from '../domain/milk-bill-deduction.entity';
 import { consentMatchesBill, deductionConsentRequired } from '../domain/dairy-deduction';
 
 const tenantMain = (tenantId: string): AccountRef => ({ kind: 'tenant', tenantId, accountCode: TenantAccount.Main, currencyCode: 'INR' });
+
+/**
+ * [PC-56 TENANT-6c-5] Is this actor id a real user, or the cadence's `'system'` sentinel?
+ *
+ * The platform passes `{ userId: 'system' }` for work nobody asked for personally (the cycle job, the D2C run), and
+ * every `uuid REFERENCES users(id)` column it reaches refuses it. That is correct of the column and correct of the
+ * sentinel; what is not correct is discovering it at 2 a.m. on a partitioned money table.
+ */
+const isUuid = (v: string | undefined): v is string =>
+  typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 @Injectable()
 export class MilkBillService {
@@ -63,6 +74,8 @@ export class MilkBillService {
     private readonly consents: MilkBillDeductionConsentRepository,
     private readonly deductions: MilkBillDeductionService,
     private readonly flags: FlagsService,
+    // [PC-56 TENANT-6c-5] The standing instruction, applied: what the CYCLE deducts when nobody typed a line.
+    private readonly assembler: DairyDeductionAssemblerService,
   ) {}
 
   /**
@@ -149,7 +162,14 @@ export class MilkBillService {
    * a cycle id independently of the period could file a fortnight's bill under a different fortnight's cycle, and
    * nothing downstream would ever notice. The cycle service reads both from the same row.
    */
-  async generate(tenantId: string, actor: DairyActor, idemKey: string, dto: GenerateBillDto, cycleId: string | null = null) {
+  /**
+   * [PC-56 TENANT-6c-5] `assembleDeductions` is how the CYCLE builds a bill's lines from the member's standing
+   * instructions. It is an option on this method rather than a second code path for one reason: the gross is only
+   * known after the pours are aggregated (below), and 6c-1 refused to aggregate twice. So the assembler is asked for
+   * a PLAN here, with the gross in hand, and its lines go through exactly the same validation and insert a
+   * hand-entered line takes — one place a `milk_bill_deductions` row is born, one place its source is checked.
+   */
+  async generate(tenantId: string, actor: DairyActor, idemKey: string, dto: GenerateBillDto, cycleId: string | null = null, assembleDeductions = false) {
     if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
     return this.idem.remember(idemKey, actor.userId, 'dairy.bill.generate', () =>
       timed(this.metrics, 'dairy.bill.generate', { tenant: tenantId }, () =>
@@ -170,7 +190,15 @@ export class MilkBillService {
           // holding the answer — rather than at payment, when the operator has gone home and 312 bills are queued.
           const lines: MilkBillDeduction[] = [];
           const billId = uuidv7();
-          for (const d of dto.deductions) {
+          // [PC-56 TENANT-6c-5] The cycle's lines: the member's arrangements, capped, oldest debt first. Assembled
+          // ONLY when asked (the cadence asks, behind `dairy_deduction_assembly`) and only when the caller passed
+          // none of its own — a hand-entered set and an assembled set are two different people's decisions about the
+          // same fortnight, and silently merging them would double a family's recovery.
+          const assembled = assembleDeductions && dto.deductions.length === 0
+            ? (await this.assembler.assemble(tx, tenantId, dto.membershipId, agg.grossMinor)).lines
+              .map((l) => ({ type: l.typeCode, amountMinor: l.amountMinor.toString(), sourceId: l.sourceId }))
+            : [];
+          for (const d of [...dto.deductions, ...assembled]) {
             const type = await this.deductionTypes.byCode(tx, d.type);
             if (!type) throw new DeductionSourceInvalidError('milk_deduction', d.type, `'${d.type}' is not a milk deduction type this platform has`);
             // A GAP-BACKEND type (`insurance`, `share`) is refused at CREATION, not at payment. 0157's refusal came
@@ -185,7 +213,17 @@ export class MilkBillService {
             await this.assertSourceRecoverable(tx, tenantId, dto.membershipId, type.sourceType!, sourceId, BigInt(d.amountMinor));
             lines.push(MilkBillDeduction.create({
               id: uuidv7(), tenantId, billId, membershipId: dto.membershipId, typeId: type.id, typeCode: type.code,
-              amountMinor: BigInt(d.amountMinor), sourceType: type.sourceType!, sourceId, createdBy: actor.userId,
+              amountMinor: BigInt(d.amountMinor), sourceType: type.sourceType!, sourceId,
+              // [PC-56 TENANT-6c-5] **NULL WHEN NOBODY TYPED IT.** `created_by` is `uuid REFERENCES users(id)` and the
+              // cadence's actor is the sentinel string `'system'` (`{ userId: 'system' }`, the cycle service's own
+              // caller), so writing it here made every assembled line fail with `invalid input syntax for type uuid:
+              // "system"` — which is to say the cycle could not create a deduction at all, the one thing this wave
+              // exists to do. Found by the live spec; the unit tests mocked the insert and never saw it.
+              //
+              // A NULL is not a shrug: on this table it MEANS "assembled by the cycle from a standing instruction",
+              // and a line with a `created_by` means a human typed it. That distinction is worth having, so it is
+              // recorded here and in 0161's comment rather than papered over with a fake user id.
+              createdBy: isUuid(actor.userId) ? actor.userId : null,
             }));
           }
           const deductions: BillDeduction[] = lines.map((l) => {

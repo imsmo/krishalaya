@@ -329,7 +329,9 @@ describe('THE COMPOSITION — the member is paid the GROSS', () => {
       wallet as never, audit as never, bills as never, { attachToBill: jest.fn() } as never,
       { getById: jest.fn(async () => membership) } as never, { disputeWindowHours: jest.fn(async () => 24) } as never,
       deductionLines as never, { byCode: jest.fn(), byIds: jest.fn() } as never, { getForUpdate: jest.fn() } as never,
-      consents as never, deductions as never, { isEnabled: jest.fn(async () => opts.recovery !== false) } as never);
+      consents as never, deductions as never, { isEnabled: jest.fn(async () => opts.recovery !== false) } as never,
+      // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
     return { svc, wallet, deductions, audit, b };
   }
 
@@ -530,7 +532,9 @@ describe('GENERATION — the operator\'s typo is caught while they are still the
       { getById: jest.fn(async () => membership) } as never, { disputeWindowHours: jest.fn(async () => 24) } as never,
       deductionLines as never, types as never, credits as never,
       { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null) } as never,
-      { applyAll: jest.fn(async () => []) } as never, { isEnabled: jest.fn(async () => true) } as never);
+      { applyAll: jest.fn(async () => []) } as never, { isEnabled: jest.fn(async () => true) } as never,
+      // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
     return { svc, deductionLines, bills };
   }
   const dto = (over: Partial<{ type: string; amountMinor: string; sourceId: string }> = {}) => ({
@@ -608,7 +612,9 @@ describe('THE ASK is published at PREVIEW, with a recipient', () => {
       { getById: jest.fn(async () => membership) } as never, { disputeWindowHours: jest.fn(async () => 24) } as never,
       { linesForBill: jest.fn(async () => lines) } as never, { byCode: jest.fn() } as never, { getForUpdate: jest.fn() } as never,
       { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null) } as never,
-      { applyAll: jest.fn(async () => []) } as never, { isEnabled: jest.fn(async () => true) } as never);
+      { applyAll: jest.fn(async () => []) } as never, { isEnabled: jest.fn(async () => true) } as never,
+      // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
     return { svc, outbox };
   }
 

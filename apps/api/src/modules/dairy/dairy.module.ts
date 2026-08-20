@@ -71,6 +71,13 @@ import { MilkBillDeductionRepository } from './repositories/milk-bill-deduction.
 import { MilkBillDeductionConsentService } from './services/milk-bill-deduction-consent.service';
 import { MilkBillDeductionConsentRepository } from './repositories/milk-bill-deduction-consent.repository';
 import { DairyDeductionTypeRepository } from './repositories/dairy-deduction-type.repository';
+// PC-56 TENANT-6c-5 · the STANDING INSTRUCTION W169 contrasts fresh consent against, and the cycle pass that acts on
+// it. 6c-4 left this named: the cadence passed `deductions: []`, so the canon's "₹1,84,300 this cycle" was zero on
+// the automatic path.
+import { DeductionInstructionsController } from './controllers/v1/deduction-instructions.controller';
+import { DairyDeductionInstructionService } from './services/dairy-deduction-instruction.service';
+import { DairyDeductionInstructionRepository } from './repositories/dairy-deduction-instruction.repository';
+import { DairyDeductionAssemblerService } from './services/dairy-deduction-assembler.service';
 
 // [PC-56 TENANT-6c-1] What used to stand here said the cycle-close job "is instantiated by apps/worker with a
 // privileged kv_relay Pool". APPS/WORKER INSTANTIATED NOTHING OF THE KIND, and could not have: its JOBS registry is
@@ -84,7 +91,9 @@ import { DairyDeductionTypeRepository } from './repositories/dairy-deduction-typ
     // PC-56 TENANT-6c-2
     BillCyclesController, BillDisputesController,
     // PC-56 TENANT-6c-4
-    MemberCreditsController],
+    MemberCreditsController,
+    // PC-56 TENANT-6c-5
+    DeductionInstructionsController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -113,10 +122,14 @@ import { DairyDeductionTypeRepository } from './repositories/dairy-deduction-typ
     MilkBillDeductionRepository, MilkBillDeductionService,
     MilkBillDeductionConsentRepository, MilkBillDeductionConsentService,
     DairyDeductionTypeRepository,
+    // PC-56 TENANT-6c-5
+    DairyDeductionInstructionRepository, DairyDeductionInstructionService, DairyDeductionAssemblerService,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
     // PC-56 TENANT-6c-4
-    DairyMemberCreditService, MilkBillDeductionConsentService],
+    DairyMemberCreditService, MilkBillDeductionConsentService,
+    // PC-56 TENANT-6c-5
+    DairyDeductionInstructionService],
 })
 export class DairyModule implements OnModuleInit {
   constructor(

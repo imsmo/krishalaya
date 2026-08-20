@@ -308,7 +308,10 @@ describe('DairyBillCycleService — what a generation run says happened', () => 
     const billRepo = { draftsForCycle: jest.fn(async () => []), statusCountsForCycle: jest.fn(async () => ({})), billAttemptsByMembership: jest.fn(async () => new Map()) };
     const memberships = { getById: jest.fn(async () => ({ farmerUserId: 'farmer1' })) };
     const svc = new DairyBillCycleService(uow as never, outbox as never, metrics as never, idem as never,
-      cycles as never, collections as never, bills as never, billRepo as never, memberships as never);
+      cycles as never, collections as never, bills as never, billRepo as never, memberships as never,
+      // [PC-56 TENANT-6c-5] W169's deduction tile, and the flag that gates assembly.
+      { cycleTotals: jest.fn(async () => ({ totalMinor: 0n, byType: {} })) } as never,
+      { isEnabled: jest.fn(async () => false) } as never);
     return { svc, cycles, collections, bills, outbox, uow, billRepo, idem };
   }
 
@@ -363,7 +366,10 @@ describe('DairyBillCycleService — what a generation run says happened', () => 
     const out = await svc.buildBills('tA');
     expect(out).toMatchObject({ cyclesBilled: 1, generated: 2, skipped: 0, failed: 0 });
     const [, actor, idemKey, dto, cycleId] = generate.mock.calls[0] as any[];
-    expect(actor).toEqual({ userId: 'system', canManage: true });
+    // [PC-56 TENANT-6c-5] `canCloseSettlement: false`, stated rather than omitted. The cadence generates DRAFT bills,
+    // which moves no money; the second key belongs to the acts that do (6c-3's preview/approve, and payment). An
+    // omitted field reads as false anyway, but a system actor that says so cannot be widened by accident.
+    expect(actor).toEqual({ userId: 'system', canManage: true, canCloseSettlement: false });
     expect(idemKey).toBe('dairycycle:cyc1:mem1:0');  // cycle + member + ATTEMPT: a re-run replays, a rebuild does not
     expect(dto).toEqual({ membershipId: 'mem1', periodStart: '2026-07-01', periodEnd: '2026-07-15', deductions: [] });
     expect(cycleId).toBe('cyc1');

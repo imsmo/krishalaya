@@ -70,6 +70,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // instructions."* THE ONLY WAY A MEMBER LEARNS THEIR BILL IS WAITING ON THEM. A consent gate with no notification is
   // a bill that silently never pays, and the member would be told nothing while their money sat still.
   { outboxType: 'dairy.bill_deduction_consent_required', eventCode: 'dairy.bill_deduction_consent_required', recipientKeys: ['userId'] },
+  // [PC-56 TENANT-6c-5] W169's *"not just standing instructions"* — the arrangement itself. A member must be told when
+  // a routine deduction from their milk cheque STARTS and when it ENDS; an arrangement recorded silently is
+  // indistinguishable from software helping itself, and the revocation notice is what makes "you can stop this" real.
+  { outboxType: 'dairy.deduction_instruction_authorised', eventCode: 'dairy.deduction_instruction_authorised', recipientKeys: ['userId'] },
+  { outboxType: 'dairy.deduction_instruction_revoked',    eventCode: 'dairy.deduction_instruction_revoked',    recipientKeys: ['userId'] },
   // PC-56 TENANT-1b-4 · W156: "the invite SMS says who added them and why, in their language, with a decline path". The
   // applier emits the FACT (a member was imported) and this row decides who hears about it — which is why the applier
   // needs no dependency on the communication module, and why an import in a module that does not import CommunicationModule

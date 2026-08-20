@@ -121,6 +121,27 @@ export class LoanService {
     return { loanId: input.loanId, repaymentId: rep.id, outstandingMinor: loan.outstandingMinor.toString(), walletTxnId: txn.txnId };
   }
 
+  /**
+   * [PC-56 TENANT-6c-5] THE LOANS A MILK BILL MAY RECOVER AGAINST, for one borrower, oldest debt first.
+   *
+   * The reader for `loan_products.repayment_style = 'milk_bill_deduction'` — a style that has existed since this
+   * module was written, that 0011's own comment on `loan_repayments.channel` names, and that **nothing has ever
+   * selected on**. TENANT-6c-4 built the repayment mechanism and named this gap; this closes it, so a loan sold to a
+   * farmer against her milk cheque is actually recovered from it instead of waiting for somebody to type a line.
+   *
+   * A READ, in the caller's transaction, returning this module's own aggregates — the dairy assembler decides nothing
+   * about a loan, it asks which loans are eligible and how much is outstanding. No permission check, for the reason
+   * `applyMilkBillDeduction` gives: this is a settlement the borrower already agreed to, and the authorisation lives
+   * where the decision was made (the standing instruction, plus 6c-3's two keys and checker on the cycle).
+   */
+  async milkDeductibleLoans(tx: TxContext, tenantId: string, borrowerUserId: string, limit = 50) {
+    const loans = await this.loans.listMilkDeductible(tx, tenantId, borrowerUserId, limit);
+    return loans.map((l) => {
+      const p = l.toProps();
+      return { id: p.id, outstandingMinor: p.outstandingMinor, disbursedAt: p.disbursedAt, status: p.status };
+    });
+  }
+
   async getById(tenantId: string, actor: FintechActor, id: string) {
     const l = await this.loans.getById(tenantId, id);
     if (!l) throw new LoanNotFoundError(id);

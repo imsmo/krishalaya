@@ -873,14 +873,35 @@ export interface DairyBonusSlab { metric: 'fat' | 'snf'; minCentiPct: number; bo
 /** A per-cycle milk settlement bill. All money bigint minor strings; totalLitres is a 3-dp string. */
 export interface MilkBill {
   id: string; membershipId: string; periodStart: string; periodEnd: string; totalLitres: string;
-  grossMinor: string; deductions: Array<{ type: string; amountMinor: string }>; deductionsMinor: string;
+  grossMinor: string;
+  /**
+   * [PC-56 TENANT-6c-4] The deduction LINES — present only when the server loaded them (a single bill), ABSENT on a
+   * list. `[]` and "not loaded" are different facts and the difference is a member's money, so the field is optional
+   * rather than defaulting to empty: `deductionsMinor` is always there and is the total.
+   *
+   * Each line now names the row it PAYS. Until 6c-4 a deduction was `{type, amountMinor}` where `type` was any
+   * 40-character string referencing nothing, so a `loan_emi` line reduced no loan and "which loan did this pay?" had
+   * no answer. `type` is a `milk_deduction` vocabulary code; `sourceType`/`sourceId` are the receivable it settles.
+   */
+  deductions?: Array<{ id: string; type: string; amountMinor: string; sourceType: string; sourceId: string; status: 'pending' | 'applied' }>;
+  deductionsMinor: string;
   netMinor: string; status: MilkBillStatus; disputeWindowEnds: string | null; payoutId: string | null; createdAt?: string | null;
 }
+/** [PC-56 TENANT-6c-4] Feed / mineral mix / medicine sold to a dairy member on credit, recovered from a milk bill. */
+export interface DairyMemberCredit {
+  id: string; membershipId: string; mccId: string | null; description: string;
+  valueMinor: string; recoveredMinor: string; outstandingMinor: string;
+  issuedOn: string; issuedBy: string; status: 'outstanding' | 'recovered'; createdAt?: string | null;
+}
+export interface IssueMemberCreditInput { membershipId: string; mccId?: string; description: string; valueMinor: string; issuedOn?: string; }
+/** [PC-56 TENANT-6c-4] W169: "Deductions above 25% of gross need the member's fresh consent, not just standing instructions." */
+export interface RecordDeductionConsentInput { granted: boolean; channel: 'app' | 'web' | 'ambassador_assisted' | 'ivr'; assistedBy?: string; note?: string; }
 export interface CreateMccInput { code: string; defaultName: string; regionId?: string; lat?: string; lng?: string; operatorUserId?: string; capacityLitresShift?: string; analyzerModel?: string; analyzerSerial?: string; }
 export interface EnrolMemberInput { farmerUserId: string; mccId: string; memberCode: string; paymentCycle?: DairyPaymentCycle; defaultAnimalType?: DairyAnimalType; }
 export interface CreateRateCardInput { defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel; ratePerKgFatMinor?: string; ratePerKgSnfMinor?: string; baseRatePerLitreMinor?: string; bonusSlabs?: DairyBonusSlab[]; effectiveFrom: string; effectiveTo?: string; }
 export interface RecordCollectionInput { membershipId: string; shift: DairyShift; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; density?: string; waterFlag?: boolean; adulterationFlags?: string[]; }
-export interface GenerateBillInput { membershipId: string; periodStart: string; periodEnd: string; deductions?: Array<{ type: string; amountMinor: string }>; }
+/** A deduction line must name the row it pays (`sourceId`) — see `MilkBill.deductions`. */
+export interface GenerateBillInput { membershipId: string; periodStart: string; periodEnd: string; deductions?: Array<{ type: string; amountMinor: string; sourceId: string }>; }
 // --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
 /** A mandi (market yard). lat/lng for map/nearest; no PII. */
 export interface Mandi { id: string; defaultName: string; regionId: string | null; mandiCode: string | null; lat: number | null; lng: number | null; isActive: boolean; }

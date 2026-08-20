@@ -371,7 +371,9 @@ describe('MilkBillService — the window comes from the DATABASE', () => {
       { getForUpdate: jest.fn(async () => null) } as never,
       { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null), insert: jest.fn() } as never,
       { applyAll: jest.fn(async () => []) } as never,
-      { isEnabled: jest.fn(async () => true) } as never);
+      { isEnabled: jest.fn(async () => true) } as never,
+      // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
     return { svc, bills, collections, cycles, outbox, audit, b };
   }
 
@@ -545,7 +547,10 @@ describe('previewCycle — one act, 312 bills, resumable', () => {
     };
     const memberships = { getById: jest.fn() };
     const svc = new DairyBillCycleService(uow as never, outbox as never, metrics as never, idem as never,
-      cycles as never, collections as never, bills as never, billRepo as never, memberships as never);
+      cycles as never, collections as never, bills as never, billRepo as never, memberships as never,
+      // [PC-56 TENANT-6c-5] W169's deduction tile, and the flag that gates assembly.
+      { cycleTotals: jest.fn(async () => ({ totalMinor: 0n, byType: {} })) } as never,
+      { isEnabled: jest.fn(async () => false) } as never);
     return { svc, cycles, bills, billRepo, outbox, idem, c };
   }
 

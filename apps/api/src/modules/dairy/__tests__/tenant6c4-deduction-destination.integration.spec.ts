@@ -62,6 +62,8 @@ import { MilkRateCardService } from '../services/milk-rate-card.service';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { MilkBillService } from '../services/milk-bill.service';
 import { MilkBillDeductionService } from '../services/milk-bill-deduction.service';
+import { DairyDeductionAssemblerService } from '../services/dairy-deduction-assembler.service';
+import { DairyDeductionInstructionRepository } from '../repositories/dairy-deduction-instruction.repository';
 import { MilkBillDeductionConsentService } from '../services/milk-bill-deduction-consent.service';
 import { DairyMemberCreditService } from '../services/dairy-member-credit.service';
 
@@ -142,6 +144,9 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
     const consentRepo = new MilkBillDeductionConsentRepository(replica as never);
     templates = new NotificationTemplateRepository(replica as never);
     loansSvc = new LoanService(uow, outbox, idem, metrics, audit, wallet, new LoanRepository(replica as never), new LoanRepaymentRepository(replica as never));
+    const instructionRepo = new DairyDeductionInstructionRepository(replica as never);
+    const assembler = new DairyDeductionAssemblerService(instructionRepo, creditRepo, typeRepo, memRepo,
+      new LoanService(uow, outbox, idem, metrics, audit, wallet, new LoanRepository(replica as never), new LoanRepaymentRepository(replica as never)));
     const applier = new MilkBillDeductionService(wallet, outbox, lineRepo, creditRepo, typeRepo, loansSvc);
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo);
@@ -149,7 +154,10 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
-      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags);
+      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
+      // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the
+      // wiring of a fake.
+      assembler);
     credits = new DairyMemberCreditService(uow, outbox, idem, metrics, audit, creditRepo, memRepo, lineRepo);
     consents = new MilkBillDeductionConsentService(uow, outbox, idem, metrics, audit, consentRepo, billRepo, lineRepo, memRepo);
     void disputeRepo;

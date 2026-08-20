@@ -28,7 +28,9 @@ import { BillCycleNotFoundError, DairyForbiddenError } from '../domain/dairy.err
 import { DairyActor } from './mcc-centre.service';
 import { DairyBillCycle } from '../domain/dairy-bill-cycle.entity';
 import { windowsToEnsure } from '../domain/dairy-cycle';
-import { DomainEvent } from '../domain/dairy.events';
+import { DairyEventType, DomainEvent } from '../domain/dairy.events';
+import { MilkBillDeductionRepository } from '../repositories/milk-bill-deduction.repository';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 
 /** Error codes that mean "nothing to bill here", not "something went wrong". */
 const SKIP_CODES = new Set([
@@ -57,6 +59,9 @@ export class DairyBillCycleService {
     // [PC-56 TENANT-6c-2] The preview pass reads the cycle's own DRAFT bills and writes each one's window.
     private readonly billRepo: MilkBillRepository,
     private readonly memberships: DairyMembershipRepository,
+    // [PC-56 TENANT-6c-5] W169's deduction tile, and the flag that decides whether this pass writes any lines at all.
+    private readonly deductionLines: MilkBillDeductionRepository,
+    private readonly flags: FlagsService,
   ) {}
 
   /**
@@ -198,14 +203,21 @@ export class DairyBillCycleService {
   async list(tenantId: string, actor: DairyActor, limit: number) {
     if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
     const rows = await this.cycles.listFor(tenantId, { limit });
-    return Promise.all(rows.map(async (c) => ({ ...c.toJSON(), bills: await this.billRepo.statusCountsForCycle(tenantId, c.id) })));
+    // [PC-56 TENANT-6c-5] W169's tile beside the bill counts: *"Deductions this cycle ₹1,84,300 — feed credit + loan
+    // EMI + insurance"*. MEASURED from the lines and broken down by type, because the canon's subtitle names the
+    // types and a single total cannot answer "what for?".
+    return Promise.all(rows.map(async (c) => ({
+      ...c.toJSON(),
+      bills: await this.billRepo.statusCountsForCycle(tenantId, c.id),
+      deductions: await this.deductionTotals(tenantId, c.id),
+    })));
   }
 
   async getById(tenantId: string, actor: DairyActor, cycleId: string) {
     if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
     const c = await this.uow.run(tenantId, (tx) => this.cycles.getForUpdate(tx, tenantId, cycleId), { userId: actor.userId });
     if (!c) throw new BillCycleNotFoundError(cycleId);
-    return { ...c.toJSON(), bills: await this.billRepo.statusCountsForCycle(tenantId, cycleId) };
+    return { ...c.toJSON(), bills: await this.billRepo.statusCountsForCycle(tenantId, cycleId), deductions: await this.deductionTotals(tenantId, cycleId) };
   }
 
   /**
@@ -268,15 +280,16 @@ export class DairyBillCycleService {
   }
 
   /** Build the draft bills for every closed cycle that still needs them. */
-  async buildBills(tenantId: string, limit = 500): Promise<{ cyclesBilled: number; generated: number; skipped: number; stranded: number; failed: number }> {
+  async buildBills(tenantId: string, limit = 500): Promise<{ cyclesBilled: number; generated: number; skipped: number; stranded: number; failed: number; deductedMinor: string }> {
     const pending = await this.uow.run(tenantId, (tx) => this.cycles.needingBills(tx, tenantId, 20), { userId: 'system' });
-    let cyclesBilled = 0, generated = 0, skipped = 0, stranded = 0, failed = 0;
+    let cyclesBilled = 0, generated = 0, skipped = 0, stranded = 0, failed = 0, deducted = 0n;
     for (const cycle of pending) {
       const counts = await this.generateFor(tenantId, cycle, limit);
       generated += counts.generated; skipped += counts.skipped; stranded += counts.stranded; failed += counts.failed;
+      deducted += BigInt(counts.deductedMinor);
       cyclesBilled += 1;
     }
-    return { cyclesBilled, generated, skipped, stranded, failed };
+    return { cyclesBilled, generated, skipped, stranded, failed, deductedMinor: deducted.toString() };
   }
 
   /**
@@ -287,8 +300,9 @@ export class DairyBillCycleService {
    * rule TENANT-6b-1 wrote lives in one place, and a cadence job with its own version of it is how a held pour ends
    * up paid on a Tuesday and withheld on a Wednesday.
    */
-  async generateFor(tenantId: string, cycle: DairyBillCycle, limit = 500): Promise<{ generated: number; skipped: number; stranded: number; failed: number }> {
+  async generateFor(tenantId: string, cycle: DairyBillCycle, limit = 500): Promise<{ generated: number; skipped: number; stranded: number; failed: number; deductedMinor: string }> {
     const props = cycle.toProps();
+    const assembleDeductions = await this.flags.isEnabled('dairy_deduction_assembly', { tenantId });
     const members = await this.uow.run(tenantId, (tx) =>
       this.collections.membershipsToBillForCycle(tx, tenantId, props.paymentCycle, props.periodStart, props.periodEnd, limit),
       { userId: 'system' });
@@ -304,14 +318,19 @@ export class DairyBillCycleService {
     const failedIds = new Set<string>();
     for (const membershipId of members) {
       try {
-        await this.bills.generate(tenantId, { userId: 'system', canManage: true },
+        await this.bills.generate(tenantId, { userId: 'system', canManage: true, canCloseSettlement: false },
           // Keyed on the CYCLE (not the window strings, so a cycle deleted and recreated for the same window is a
           // different run) AND on the ATTEMPT — the number of bills this member has already had for this window. A plain
           // retry presents the same key and replays, which is Law 3; a rebuild after a void presents a new one, which is
           // what makes a void a correction rather than a deletion.
           `dairycycle:${props.id}:${membershipId}:${attempts.get(membershipId) ?? 0}`,
           { membershipId, periodStart: props.periodStart, periodEnd: props.periodEnd, deductions: [] },
-          props.id);
+          props.id,
+          // [PC-56 TENANT-6c-5] THE LINE THAT USED TO BE `deductions: []` AND NOTHING ELSE. The cycle now assembles a
+          // bill's deductions from the member's standing instructions — behind `dairy_deduction_assembly`, resolved
+          // ONCE per cycle above rather than per member, because 312 identical flag lookups an hour is the shape
+          // Law 12 exists to prevent.
+          assembleDeductions);
         generated += 1;
       } catch (e: any) {
         if (SKIP_CODES.has(String(e?.code))) skipped += 1;
@@ -357,7 +376,26 @@ export class DairyBillCycleService {
       await this.flush(tx, tenantId, fresh);
     }, { userId: 'system' });
 
-    return { generated, skipped, stranded, failed };
+    // [PC-56 TENANT-6c-5] W169's header tile — *"Deductions this cycle ₹1,84,300"* — MEASURED from the lines that now
+    // exist, and reported by the pass that created them. Zero when assembly is off, which is the truth rather than a
+    // gap: this figure was zero on the automatic path for the whole of TENANT-6c-4.
+    const totals = await this.deductionLines.cycleTotals(tenantId, props.id);
+    if (totals.totalMinor > 0n) {
+      await this.uow.run(tenantId, async (tx) => {
+        await this.outbox.write(tx, {
+          tenantId, aggregateType: 'dairy_bill_cycle', aggregateId: props.id, eventType: DairyEventType.CycleDeductionsAssembled,
+          payload: { v: 1, cycleId: props.id, periodStart: props.periodStart, periodEnd: props.periodEnd,
+            totalMinor: totals.totalMinor.toString(), byType: totals.byType },
+        });
+      }, { userId: 'system' });
+    }
+    return { generated, skipped, stranded, failed, deductedMinor: totals.totalMinor.toString() };
+  }
+
+  /** W169's deduction tile for one cycle: the total and the per-type breakdown, both measured from the lines. */
+  private async deductionTotals(tenantId: string, cycleId: string): Promise<{ totalMinor: string; byType: Record<string, string> }> {
+    const t = await this.deductionLines.cycleTotals(tenantId, cycleId);
+    return { totalMinor: t.totalMinor.toString(), byType: t.byType };
   }
 
   private async flush(tx: TxContext, tenantId: string, cycle: DairyBillCycle): Promise<void> {

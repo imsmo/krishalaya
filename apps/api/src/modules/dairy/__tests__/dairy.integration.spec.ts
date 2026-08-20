@@ -43,6 +43,8 @@ import { MilkBillDeductionConsentRepository } from '../repositories/milk-bill-de
 import { DairyMemberCreditRepository } from '../repositories/dairy-member-credit.repository';
 import { DairyDeductionTypeRepository } from '../repositories/dairy-deduction-type.repository';
 import { MilkBillDeductionService } from '../services/milk-bill-deduction.service';
+import { DairyDeductionAssemblerService } from '../services/dairy-deduction-assembler.service';
+import { DairyDeductionInstructionRepository } from '../repositories/dairy-deduction-instruction.repository';
 import { LoanService } from '../../fintech/services/loan.service';
 import { LoanRepository } from '../../fintech/repositories/loan.repository';
 import { LoanRepaymentRepository } from '../../fintech/repositories/loan-repayment.repository';
@@ -105,12 +107,18 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
     const creditRepo = new DairyMemberCreditRepository(replica as never);
     const consentRepo = new MilkBillDeductionConsentRepository(replica as never);
+    const instructionRepo = new DairyDeductionInstructionRepository(replica as never);
+    const assembler = new DairyDeductionAssemblerService(instructionRepo, creditRepo, typeRepo, memRepo,
+      new LoanService(uow, outbox, idem, metrics, audit, wallet, new LoanRepository(replica as never), new LoanRepaymentRepository(replica as never)));
     const applier = new MilkBillDeductionService(wallet, outbox, lineRepo, creditRepo, typeRepo,
       new LoanService(uow, outbox, idem, metrics, audit, wallet, new LoanRepository(replica as never), new LoanRepaymentRepository(replica as never)));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, new DairyBillCycleRepository(replica as never),
       // [PC-56 TENANT-6c-4] the deduction's destination: the lines, the vocabulary, the credits, the consent, the
       // applier that posts each line to what it pays, and the recovery kill-switch.
-      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags);
+      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
+      // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the
+      // wiring of a fake.
+      assembler);
 
     await fundTenant(tenantA, 10_000_000n);
     inspect = new Pool({ connectionString: APP_URL });

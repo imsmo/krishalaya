@@ -46,6 +46,14 @@ export const DairyEventType = {
   BillDeductionApplied: 'dairy.bill_deduction_applied',
   BillDeductionConsentRequired: 'dairy.bill_deduction_consent_required',
   BillDeductionConsentRecorded: 'dairy.bill_deduction_consent_recorded',
+  // PC-56 TENANT-6c-5 · the standing instruction W169 contrasts fresh consent against. Both carry the MEMBER's userId:
+  // an arrangement about a family's future milk money is the kind of thing they must hear about when it starts and
+  // when it ends, and an arrangement recorded silently is indistinguishable from software helping itself.
+  DeductionInstructionAuthorised: 'dairy.deduction_instruction_authorised',
+  DeductionInstructionRevoked: 'dairy.deduction_instruction_revoked',
+  // The cycle's own assembly pass. No member userId: what a member is told is their BILL (the preview), not that a
+  // batch job ran — and a per-member notice here would double every preview message.
+  CycleDeductionsAssembled: 'dairy.cycle_deductions_assembled',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

@@ -217,6 +217,54 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
 ON CONFLICT (event_code, name) DO NOTHING;
 
 -- ---------------------------------------------------------------------------------------------------------------
+-- PC-56 TENANT-6c-5 · THE ARRANGEMENT ITSELF — starting, and ending
+-- ---------------------------------------------------------------------------------------------------------------
+-- W169: *"Deductions above 25% of gross need the member's fresh consent, **not just standing instructions**."*
+--
+-- 6c-4 seeded the ASK (a bill above the threshold needs an answer). These two are the other half of the sentence: a
+-- routine deduction beginning, and one ending. Both matter for the same reason the ask does — an arrangement recorded
+-- silently is indistinguishable from software helping itself, and a member who cannot see that they stopped it has no
+-- evidence that stopping it worked.
+--
+-- `important` rather than `critical`: unlike the consent ask, no money is waiting on a reply. `user_can_opt_out =
+-- false` all the same — a farmer who muted dairy notifications must still be told when a standing claim on their milk
+-- cheque begins.
+--
+-- The copy names the INSTALMENT when there is one, because "we will deduct your feed credit" and "we will deduct Rs
+-- 200 a fortnight" are different promises, and the second is the one a family can plan around.
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
+ ('dairy.deduction_instruction_authorised', 'Milk bill deduction arranged', 'important', '["sms","push","inapp"]', false, false),
+ ('dairy.deduction_instruction_revoked',    'Milk bill deduction stopped',  'important', '["sms","push","inapp"]', false, false)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('dairy.deduction_instruction_authorised','sms','gu',NULL,NULL,'તમારા દૂધ બિલમાંથી {{what}} કપાત શરૂ થઈ ({{how_much}}). તમે ક્યારેય પણ બંધ કરાવી શકો છો — એપ પર અથવા તમારા કેન્દ્રને કહો. Krishalaya','DLT_DAIRY_INSTRUCTION_ON_GU',true),
+ ('dairy.deduction_instruction_authorised','sms','hi',NULL,NULL,'Aapke doodh bill se {{what}} katauti shuru hui ({{how_much}}). Aap jab chahein band kara sakte hain — app par ya apne kendra ko kahein. Krishalaya','DLT_DAIRY_INSTRUCTION_ON_HI',true),
+ ('dairy.deduction_instruction_authorised','sms','en',NULL,NULL,'Recovery of {{what}} from your milk bill has started ({{how_much}}). You can stop it whenever you like — in the app or by telling your centre. Krishalaya','DLT_DAIRY_INSTRUCTION_ON_EN',true),
+ ('dairy.deduction_instruction_authorised','push','en',NULL,'Milk bill deduction arranged','{{what}} will now be recovered from your milk bill ({{how_much}}). You can stop it any time.',NULL,true),
+ ('dairy.deduction_instruction_authorised','push','hi',NULL,'Katauti ki vyavastha hui','{{what}} ab aapke doodh bill se kategi ({{how_much}}). Jab chahein band kara sakte hain.',NULL,true),
+ ('dairy.deduction_instruction_authorised','push','gu',NULL,'કપાતની વ્યવસ્થા થઈ','{{what}} હવે તમારા દૂધ બિલમાંથી કપાશે ({{how_much}}). જ્યારે ઇચ્છો બંધ કરાવી શકો.',NULL,true),
+ ('dairy.deduction_instruction_authorised','inapp','en',NULL,'Milk bill deduction arranged','{{what}} will now be recovered from your milk bill, {{how_much}}. Nothing is deducted beyond what the cooperative may take without asking you again, and every bill shows the lines before it is paid. You can stop this arrangement at any time.',NULL,true),
+ ('dairy.deduction_instruction_authorised','inapp','hi',NULL,'Katauti ki vyavastha hui','{{what}} ab aapke doodh bill se kategi, {{how_much}}. Samiti aapse phir se poochhe bina jitna le sakti hai usse zyada nahi katega, aur har bill bhugtan se pehle saari katautiyan dikhata hai. Yah vyavastha aap jab chahein band kara sakte hain.',NULL,true),
+ ('dairy.deduction_instruction_authorised','inapp','gu',NULL,'કપાતની વ્યવસ્થા થઈ','{{what}} હવે તમારા દૂધ બિલમાંથી કપાશે, {{how_much}}. સમિતિ તમને ફરી પૂછ્યા વગર જેટલું લઈ શકે તેથી વધુ કપાશે નહીં, અને દરેક બિલ પેમેન્ટ પહેલાં બધી કપાત દર્શાવે છે. આ વ્યવસ્થા તમે જ્યારે ઇચ્છો બંધ કરાવી શકો છો.',NULL,true),
+ ('dairy.deduction_instruction_revoked','sms','gu',NULL,NULL,'તમારા દૂધ બિલમાંથી {{what}} ની કપાત બંધ થઈ. બાકી રકમ હજુ બાકી છે — તમારા કેન્દ્ર સાથે વાત કરો. Krishalaya','DLT_DAIRY_INSTRUCTION_OFF_GU',true),
+ ('dairy.deduction_instruction_revoked','sms','hi',NULL,NULL,'Aapke doodh bill se {{what}} ki katauti band ho gayi. Bakaya rakam abhi baki hai — apne kendra se baat karein. Krishalaya','DLT_DAIRY_INSTRUCTION_OFF_HI',true),
+ ('dairy.deduction_instruction_revoked','sms','en',NULL,NULL,'Recovery of {{what}} from your milk bill has stopped. The balance is still owed — please speak to your centre. Krishalaya','DLT_DAIRY_INSTRUCTION_OFF_EN',true),
+ ('dairy.deduction_instruction_revoked','push','en',NULL,'Milk bill deduction stopped','{{what}} will no longer be recovered from your milk bill. The balance is still owed.',NULL,true),
+ ('dairy.deduction_instruction_revoked','push','hi',NULL,'Katauti band hui','{{what}} ab aapke doodh bill se nahi kategi. Bakaya rakam abhi baki hai.',NULL,true),
+ ('dairy.deduction_instruction_revoked','push','gu',NULL,'કપાત બંધ થઈ','{{what}} હવે તમારા દૂધ બિલમાંથી કપાશે નહીં. બાકી રકમ હજુ બાકી છે.',NULL,true),
+ ('dairy.deduction_instruction_revoked','inapp','en',NULL,'Milk bill deduction stopped','{{what}} will no longer be recovered from your milk bill. This stops the deduction, not the debt: the balance is still owed and your centre will discuss how to settle it.',NULL,true),
+ ('dairy.deduction_instruction_revoked','inapp','hi',NULL,'Katauti band hui','{{what}} ab aapke doodh bill se nahi kategi. Isse katauti rukti hai, karz nahi: bakaya rakam abhi baki hai aur aapka kendra iske bhugtan par baat karega.',NULL,true),
+ ('dairy.deduction_instruction_revoked','inapp','gu',NULL,'કપાત બંધ થઈ','{{what}} હવે તમારા દૂધ બિલમાંથી કપાશે નહીં. આનાથી કપાત બંધ થાય છે, દેવું નહીં: બાકી રકમ હજુ બાકી છે અને તમારું કેન્દ્ર તેની ચુકવણી વિશે વાત કરશે.',NULL,true)
+ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('dairy.deduction_instruction_authorised', 'what',     'lookup_values(milk_deduction).default_name + source', 'Feed / input credit', true),
+ ('dairy.deduction_instruction_authorised', 'how_much', 'dairy_deduction_instructions.max_per_cycle_minor',    'Rs 200 per cycle',    true),
+ ('dairy.deduction_instruction_revoked',    'what',     'lookup_values(milk_deduction).default_name + source', 'Feed / input credit', true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
+-- ---------------------------------------------------------------------------------------------------------------
 -- PC-56 TENANT-6c-2 · **A PLACEHOLDER DLT ID IS NOT A REGISTRATION** (and TENANT-6b-1 shipped four that said it was)
 -- ---------------------------------------------------------------------------------------------------------------
 -- 0101 made this ruling and wrote the argument out: in India a transactional SMS template must be registered with the

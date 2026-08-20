@@ -301,7 +301,9 @@ describe('PC-56 TENANT-6b-1 · a bill that has nothing to bill says WHY', () => 
       { getForUpdate: jest.fn(async () => null) } as never,
       { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null), insert: jest.fn() } as never,
       { applyAll: jest.fn(async () => []) } as never,
-      { isEnabled: jest.fn(async () => true) } as never);
+      { isEnabled: jest.fn(async () => true) } as never,
+      // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
     return { svc, collections };
   }
 

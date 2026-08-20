@@ -228,3 +228,12 @@ export class MemberCreditNotFoundError extends DomainError {
 export class BillDeductionNotFoundError extends DomainError {
   constructor(id: string) { super('MILK_BILL_DEDUCTION_NOT_FOUND', 'Bill deduction line not found', 404, { id }); }
 }
+
+/** [PC-56 TENANT-6c-5] A standing instruction this platform cannot honour as described. */
+export class DeductionInstructionInvalidError extends DomainError {
+  constructor(why: string) { super('DAIRY_DEDUCTION_INSTRUCTION_INVALID', `Standing instruction refused: ${why}`, 422, { why }); }
+}
+/** [PC-56 TENANT-6c-5] Not this member's arrangement, or no such arrangement — 404-shaped, so ids are not probeable. */
+export class DeductionInstructionNotFoundError extends DomainError {
+  constructor(id: string) { super('DAIRY_DEDUCTION_INSTRUCTION_NOT_FOUND', 'Standing instruction not found', 404, { id }); }
+}

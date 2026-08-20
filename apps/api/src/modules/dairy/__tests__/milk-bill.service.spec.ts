@@ -31,7 +31,9 @@ function harness(bill: MilkBill, opts: { recoveryEnabled?: boolean; consent?: un
       { linesForBill: jest.fn(async () => []), insert: jest.fn(), listForUpdate: jest.fn(async () => []), markApplied: jest.fn() } as never,
       { byCode: jest.fn(async () => null), byIds: jest.fn(async () => new Map()) } as never,
       { getForUpdate: jest.fn(async () => null) } as never,
-      consents as never, deductions as never, flags as never);
+      consents as never, deductions as never, flags as never,
+      // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
   return { svc, wallet, bills, cycles, deductions, consents, flags };
 }
 // [PC-56 TENANT-6c-4] A line names the ROW IT PAYS. The old shape — `{type, amountMinor}` in a jsonb array — is the
