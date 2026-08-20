@@ -53,6 +53,44 @@ export class CollectionStampLostError extends AppError {
   }
 }
 
+/** [PC-56 TENANT-6c-2] The member's 24h window is still open, so the money must not move yet (W169). */
+export class DisputeWindowOpenError extends DomainError {
+  constructor(billId: string, windowEndsAt: string) {
+    super('DISPUTE_WINDOW_OPEN',
+      'This member still has time to check their bill — the payment waits until their window closes',
+      409, { billId, windowEndsAt });
+  }
+}
+
+/** [PC-56 TENANT-6c-2] A dispute raised outside the window the member was given. */
+export class DisputeWindowClosedError extends DomainError {
+  constructor(billId: string, windowEndsAt: string | null) {
+    super('DISPUTE_WINDOW_CLOSED',
+      windowEndsAt === null
+        ? 'This bill has not been shown to its member yet, so there is nothing to dispute'
+        : 'The window for raising a query on this bill has closed',
+      409, { billId, windowEndsAt });
+  }
+}
+
+/** [PC-56 TENANT-6c-2] A voided bill is a member's fortnight leaving the record; it does not happen without a reason. */
+export class BillVoidReasonRequiredError extends DomainError {
+  constructor(billId: string) {
+    super('BILL_VOID_REASON_REQUIRED', 'Voiding a milk bill requires a reason of at least 10 characters', 422, { billId });
+  }
+}
+
+/** [PC-56 TENANT-6c-2] Two open disputes on one bill would let two resolutions disagree about one payment. */
+export class DisputeAlreadyOpenError extends DomainError {
+  constructor(billId: string) {
+    super('DISPUTE_ALREADY_OPEN', 'There is already an open query on this bill', 409, { billId });
+  }
+}
+
+export class DisputeNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Milk bill query not found'); (this as any).code = 'DISPUTE_NOT_FOUND'; (this as any).details = { id }; }
+}
+
 export class BillCycleNotFoundError extends NotFoundError {
   constructor(id: string) { super('Dairy bill cycle not found'); (this as any).code = 'DAIRY_CYCLE_NOT_FOUND'; (this as any).details = { id }; }
 }

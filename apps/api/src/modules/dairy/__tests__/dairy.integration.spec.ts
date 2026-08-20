@@ -32,6 +32,7 @@ import { MilkQualityReviewRepository } from '../repositories/milk-quality-review
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { MilkBillRepository } from '../repositories/milk-bill.repository';
+import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repository';
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
@@ -88,7 +89,8 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
-    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo);
+    // [PC-56 TENANT-6c-2] The bill service reads the tenant's dispute-window length before it can preview a bill.
+    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, new DairyBillCycleRepository(replica as never));
 
     await fundTenant(tenantA, 10_000_000n);
     inspect = new Pool({ connectionString: APP_URL });
@@ -124,10 +126,14 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     const bill = await bills.generate(tenantA, actor, `idem-${randomUUID()}`, { membershipId, periodStart: today, periodEnd: today, deductions: [] } as any);
     billId = bill.id;
     expect(bill.grossMinor).toBe('84400'); expect(bill.netMinor).toBe('84400');   // 48000+36400, nothing deducted
+    // [PC-56 TENANT-6c-2] W169 gives the member 24 hours between seeing the bill and the money moving, and `pay()` now
+    // ENFORCES it. Paying at a moment past the window is what the cooperative actually does on payday; paying "now"
+    // would be asserting that the promise is not kept.
+    const AFTER_WINDOW = new Date(Date.now() + 25 * 3_600_000);
     await bills.preview(tenantA, actor, billId);
     await bills.approve(tenantA, actor, billId);
     const tBefore = await balTenant(tenantA); const fBefore = await balUser(farmer);
-    const paid = await bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null);
+    const paid = await bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null, AFTER_WINDOW);
     expect(paid.status).toBe('paid');
     const tAfter = await balTenant(tenantA); const fAfter = await balUser(farmer);
     expect(tBefore - tAfter).toBe(84400n);          // cooperative debited NET
@@ -136,7 +142,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
   });
 
   it('double-pay is refused (bill already paid)', async () => {
-    await expect(bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null)).rejects.toThrow();
+    await expect(bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null, new Date(Date.now() + 25 * 3_600_000))).rejects.toThrow();
   });
 
   it('RLS: tenant B cannot see tenant A\'s milk bill', async () => {

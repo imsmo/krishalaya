@@ -109,6 +109,26 @@ export class MilkCollectionRepository {
     }
   }
   /**
+   * [PC-56 TENANT-6c-2] RELEASE a voided bill's pours back to unbilled, so a correct bill can be built.
+   *
+   * The counterpart of `attachToBill`, and it FAILS CLOSED for the same reason: a void that soft-deleted the bill but
+   * left its collections stamped with `milk_bill_id` would strand a fortnight of a family's milk behind a bill that no
+   * longer exists — 6c-1's stranded-pour finding, with the evidence deleted. Returns how many pours were released so
+   * the caller can record it; zero means the bill settled nothing, which for a live bill is impossible and therefore
+   * worth refusing.
+   *
+   * Uses the column grant 0080 left in place (`UPDATE (milk_bill_id)`), and carries no `collected_on` bound because a
+   * bill's pours are found BY the bill: the index on `milk_bill_id` is what prunes here.
+   */
+  async detachFromBill(tx: TxContext, tenantId: string, billId: string): Promise<number> {
+    const res = await tx.query(
+      `UPDATE milk_collections SET milk_bill_id = NULL WHERE tenant_id=$1 AND milk_bill_id=$2`, [tenantId, billId]);
+    const n = res.rowCount ?? 0;
+    if (n === 0) throw new CollectionStampLostError(billId, 'detach');
+    return n;
+  }
+
+  /**
    * The cadence job's claim: memberships ON THIS PAYMENT CYCLE with UNBILLED collections in [from,to].
    *
    * [PC-56 TENANT-6c-1] REPLACES `findMembershipsToBill`, which took no tenant and no cycle. That query returned every

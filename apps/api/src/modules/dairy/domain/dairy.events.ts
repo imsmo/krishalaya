@@ -22,6 +22,12 @@ export const DairyEventType = {
   // and that act does not exist yet (TENANT-6c-2 builds it, with the notification row).
   CycleClosed:       'dairy.cycle_closed',
   CycleBillsGenerated: 'dairy.cycle_bills_generated',
+  // PC-56 TENANT-6c-2 · the cycle-level act, and the two MEMBER-facing facts it produces. `BillPreviewed` already
+  // existed as a type and was emitted by a transition nothing called with a recipient in the payload; it now carries
+  // the farmer's userId and the figures the SMS interpolates, which is what turns a map row into a message.
+  CyclePreviewed:    'dairy.cycle_previewed',
+  BillDisputeResolved: 'dairy.bill_dispute_resolved',
+  BillVoided:        'dairy.bill_voided',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

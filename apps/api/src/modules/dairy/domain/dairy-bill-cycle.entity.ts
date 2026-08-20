@@ -22,6 +22,11 @@ export interface DairyBillCycleProps {
   billsGenerated: number | null;
   billsSkipped: number | null;
   billsFailed: number | null;
+  /** [PC-56 TENANT-6c-2] W169's header act: who showed this cycle's bills to their members, and when. */
+  previewedAt: Date | null;
+  previewedBy: string | null;
+  /** How many bills the bounded, resumable preview pass has moved. Makes "is it done?" answerable. */
+  billsPreviewed: number | null;
   createdAt?: Date;
 }
 
@@ -37,13 +42,54 @@ export class DairyBillCycle {
   get periodStart() { return this.props.periodStart; }
   get periodEnd() { return this.props.periodEnd; }
   get payday() { return this.props.payday; }
+  get previewedAt() { return this.props.previewedAt; }
+  get previewedBy() { return this.props.previewedBy; }
   get closesAt() { return this.props.closesAt; }
   get status() { return this.props.status; }
-  /** A closed cycle whose bills were never built, or whose last run left failures behind, still has work. */
+  /**
+   * A cycle that HAS SHUT and whose bills were never built, or whose last run left failures behind, still has work.
+   *
+   * [PC-56 TENANT-6c-2] Keyed on `closedAt`, NOT on `status === 'closed'`. The first version said the latter, which was
+   * indistinguishable while `closed` was the only state past `open` — and became a bug the moment `previewed` existed:
+   * a bill VOIDED after its cycle was previewed released its pours and would then never have been rebuilt, because
+   * neither this getter nor the claim query would look at that cycle again. Found by a live test, and it is the SECOND
+   * instance of the same shape in this wave (0158's header records the first, a CHECK constraint phrased the same way).
+   * The database always had it right: `ck_dairy_bill_cycle_generate_after_close` tests `closed_at IS NOT NULL`.
+   */
   get needsBills(): boolean {
-    return this.props.status === 'closed' && (this.props.billsGeneratedAt === null || (this.props.billsFailed ?? 0) > 0);
+    return this.props.closedAt !== null && (this.props.billsGeneratedAt === null || (this.props.billsFailed ?? 0) > 0);
   }
   toProps(): Readonly<DairyBillCycleProps> { return Object.freeze({ ...this.props }); }
+
+  /**
+   * [PC-56 TENANT-6c-2] W169's header button: *"Preview cycle 01–15 Jul (Wed close)"*.
+   *
+   * The act is on the CYCLE, not on 312 bills, because that is what the canon's button is — and because the alternative
+   * (312 separate decisions) is how a cooperative ends up having previewed 280 of them and not knowing which 32 are
+   * missing. The per-bill work it drives is bounded and resumable; `recordPreviewPass` is how far it got.
+   *
+   * Only a CLOSED cycle can be previewed. Showing a member a bill for a fortnight that is still collecting milk is
+   * showing them a number that will change — which is the opposite of what a preview is for.
+   */
+  preview(at: Date, byUserId: string): void {
+    assertTransition(this.props.status, 'previewed');
+    this.props.status = 'previewed';
+    this.props.previewedAt = at;
+    this.props.previewedBy = byUserId;
+    this.events.push({
+      type: DairyEventType.CyclePreviewed,
+      payload: {
+        cycleId: this.props.id, paymentCycle: this.props.paymentCycle,
+        periodStart: this.props.periodStart, periodEnd: this.props.periodEnd, payday: this.props.payday,
+      },
+    });
+  }
+
+  /** How many of this cycle's bills the (re-callable) preview pass has moved so far. Emits nothing: the member-facing
+   *  event is per BILL, because it is a different member each time. */
+  recordPreviewPass(count: number): void {
+    this.props.billsPreviewed = count;
+  }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
 
   /**
@@ -71,13 +117,15 @@ export class DairyBillCycle {
   }
 
   /**
-   * Record what a generation run did. Only on a CLOSED cycle — the constraint is also in the database
+   * Record what a generation run did. Only on a cycle that has SHUT — the constraint is also in the database
    * (`ck_dairy_bill_cycle_generate_after_close`), because "bills exist for a cycle that never shut" is the kind of
    * state a later reader would have to guess about.
    */
   recordGeneration(at: Date, counts: { generated: number; skipped: number; failed: number }): void {
-    if (this.props.status !== 'closed') {
-      throw new CycleNotClosableError(this.props.id, `cannot generate bills for a cycle in status '${this.props.status}'`, null);
+    // `closedAt`, not `status === 'closed'` — see `needsBills` above. A previewed cycle whose member had a bill voided
+    // MUST be able to build a replacement, and that is the whole point of a void.
+    if (this.props.closedAt === null) {
+      throw new CycleNotClosableError(this.props.id, `cannot generate bills for a cycle that has not shut (status '${this.props.status}')`, null);
     }
     this.props.billsGeneratedAt = at;
     this.props.billsGenerated = counts.generated;
@@ -95,7 +143,9 @@ export class DairyBillCycle {
       id: v.id, paymentCycle: v.paymentCycle, periodStart: v.periodStart, periodEnd: v.periodEnd,
       closesAt: v.closesAt, payday: v.payday, status: v.status, closedAt: v.closedAt,
       billsGeneratedAt: v.billsGeneratedAt, billsGenerated: v.billsGenerated,
-      billsSkipped: v.billsSkipped, billsFailed: v.billsFailed, createdAt: v.createdAt,
+      billsSkipped: v.billsSkipped, billsFailed: v.billsFailed,
+      previewedAt: v.previewedAt, previewedBy: v.previewedBy, billsPreviewed: v.billsPreviewed,
+      createdAt: v.createdAt,
     };
   }
 }

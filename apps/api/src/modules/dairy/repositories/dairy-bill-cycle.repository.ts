@@ -12,9 +12,11 @@ import { PaymentCycle } from '../domain/dairy.events';
 import { CycleWindow } from '../domain/dairy-counter';
 
 const COLS = `id, tenant_id, payment_cycle, period_start, period_end, closes_at, payday, status, closed_at,
-              bills_generated_at, bills_generated, bills_skipped, bills_failed, created_at`;
+              bills_generated_at, bills_generated, bills_skipped, bills_failed,
+              previewed_at, previewed_by, bills_previewed, created_at`;
 
 const PAYDAY_OFFSET_KEY = 'dairy.cycle_payday_offset_days';
+const DISPUTE_WINDOW_KEY = 'dairy.dispute_window_hours';
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 
@@ -37,6 +39,9 @@ function toDomain(r: any): DairyBillCycle {
     billsGenerated: num(r.bills_generated),
     billsSkipped: num(r.bills_skipped),
     billsFailed: num(r.bills_failed),
+    previewedAt: r.previewed_at == null ? null : (r.previewed_at instanceof Date ? r.previewed_at : new Date(String(r.previewed_at))),
+    previewedBy: r.previewed_by ?? null,
+    billsPreviewed: num(r.bills_previewed),
     createdAt: r.created_at,
   });
 }
@@ -118,11 +123,17 @@ export class DairyBillCycleRepository {
     return r.rows.map(toDomain);
   }
 
-  /** Closed cycles whose bills have never been built, or whose last run left failures behind. */
+  /**
+   * Cycles that have SHUT and whose bills have never been built, or whose last run left failures behind.
+   *
+   * [PC-56 TENANT-6c-2] `closed_at IS NOT NULL`, not `status='closed'`. The first version said the latter and stopped
+   * seeing a cycle the moment it was previewed — so a bill VOIDED after preview released its pours and was never
+   * rebuilt. The status a cycle happens to be sitting in is not the same fact as "has this window shut".
+   */
   async needingBills(tx: TxContext, tenantId: string, limit: number): Promise<DairyBillCycle[]> {
     const r = await tx.query(
       `SELECT ${COLS} FROM dairy_bill_cycles
-        WHERE tenant_id=$1 AND status='closed' AND deleted_at IS NULL
+        WHERE tenant_id=$1 AND closed_at IS NOT NULL AND deleted_at IS NULL
           AND (bills_generated_at IS NULL OR coalesce(bills_failed, 0) > 0)
         ORDER BY period_start LIMIT $2`, [tenantId, limit]);
     return r.rows.map(toDomain);
@@ -140,9 +151,11 @@ export class DairyBillCycleRepository {
     const p = c.toProps();
     const res = await tx.query(
       `UPDATE dairy_bill_cycles
-          SET status=$3, closed_at=$4, bills_generated_at=$5, bills_generated=$6, bills_skipped=$7, bills_failed=$8
+          SET status=$3, closed_at=$4, bills_generated_at=$5, bills_generated=$6, bills_skipped=$7, bills_failed=$8,
+              previewed_at=$9, previewed_by=$10, bills_previewed=$11
         WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
-      [p.id, p.tenantId, p.status, p.closedAt, p.billsGeneratedAt, p.billsGenerated, p.billsSkipped, p.billsFailed]);
+      [p.id, p.tenantId, p.status, p.closedAt, p.billsGeneratedAt, p.billsGenerated, p.billsSkipped, p.billsFailed,
+       p.previewedAt, p.previewedBy, p.billsPreviewed]);
     if (res.rowCount === 0) throw new BillCycleNotFoundError(p.id);
   }
 
@@ -166,6 +179,28 @@ export class DairyBillCycleRepository {
         WHERE tenant_id=$1 AND is_active = true AND deleted_at IS NULL
         ORDER BY payment_cycle`, [tenantId]);
     return (r.rows as any[]).map((x) => String(x.payment_cycle) as PaymentCycle);
+  }
+
+  /**
+   * [PC-56 TENANT-6c-2] The tenant's dispute-window length, in hours, with the DEFAULT read from the database (Law 6).
+   *
+   * Same shape as 0157's payday offset and for the same reason: W169 says 24 hours, but a cooperative whose members
+   * walk in once a week may need three days and one paying daily may need six. A literal 24 in the service would be
+   * precisely the string Law 6 exists to stop. `#>> '{}'` extracts the scalar whether the stored jsonb is `24` or `"24"`.
+   */
+  async disputeWindowHours(tx: TxContext, tenantId: string): Promise<number> {
+    const r = await tx.query(
+      `SELECT (COALESCE(ts.value, d.default_value) #>> '{}')::int AS hours
+         FROM setting_definitions d
+         LEFT JOIN tenant_settings ts ON ts.key = d.key AND ts.tenant_id = $1
+        WHERE d.key = $2`, [tenantId, DISPUTE_WINDOW_KEY]);
+    const raw = (r.rows[0] as { hours?: number } | undefined)?.hours;
+    // A missing setting DEFINITION means the seed did not run. Refusing beats inventing a window length that decides
+    // when 312 families' money moves — and beats defaulting to 0, which would remove the member's check silently.
+    if (raw == null || !Number.isFinite(Number(raw)) || Number(raw) < 0) {
+      throw new BillCycleNotFoundError(`${tenantId}:setting:${DISPUTE_WINDOW_KEY}`);
+    }
+    return Number(raw);
   }
 
   /** The database's own calendar day — the same discipline TENANT-6a set for the counter board. */

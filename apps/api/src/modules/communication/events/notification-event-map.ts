@@ -52,6 +52,20 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // no recipient, which looks like a fix and sends nothing.
   { outboxType: 'dairy.quality_flag_opened',    eventCode: 'dairy.quality_flag_opened',  recipientKeys: ['userId'] },
   { outboxType: 'dairy.quality_flag_decided',   eventCode: 'dairy.quality_flag_decided', recipientKeys: ['userId'] },
+  // PC-56 TENANT-6c-2 · **W169'S SUBTITLE IS A PROMISE AND NOTHING KEPT IT.** *"Preview goes to every member in
+  // Gujarati BEFORE money moves — surprises are for birthdays, not milk money."* No dairy BILL event was in this map at
+  // all, so a member learned what they were being paid when the money landed, or not at all. `BillPreviewed` existed as
+  // an event type since the module was built and was emitted by a transition that carried no recipient — the shape
+  // ADMIN-6b named: a map row over a payload with no user id looks like a fix and sends nothing. `MilkBill.preview` now
+  // puts the FARMER's userId and the figures the SMS interpolates into the payload.
+  //
+  // AND THE ROW ALONE STILL WOULD NOT HAVE SENT ANYTHING. Every template in
+  // `db/seeds/core/0007_notification_events_templates.sql` had no `serving_version_id`, so 0122's send-time gate
+  // resolved it to NULL and recorded `no_template` silently — 42 templates, including all ten of 6b-1's dairy quality
+  // rows. Fixed in that seed file in the same wave; checked before writing this row rather than discovered when the
+  // first cycle preview texted nobody.
+  { outboxType: 'dairy.bill_previewed',         eventCode: 'dairy.bill_previewed',        recipientKeys: ['userId'] },
+  { outboxType: 'dairy.bill_dispute_resolved',  eventCode: 'dairy.bill_dispute_resolved', recipientKeys: ['userId'] },
   // PC-56 TENANT-1b-4 · W156: "the invite SMS says who added them and why, in their language, with a decline path". The
   // applier emits the FACT (a member was imported) and this row decides who hears about it — which is why the applier
   // needs no dependency on the communication module, and why an import in a module that does not import CommunicationModule

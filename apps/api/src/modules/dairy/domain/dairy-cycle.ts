@@ -14,20 +14,25 @@ import { PaymentCycle } from './dairy.events';
 import { CycleWindow, cycleWindow } from './dairy-counter';
 
 /**
- * The states this wave's code can actually reach, and no more.
+ * The states this programme's code can actually reach, and no more.
  *
- * W169's timeline names four more acts — `previewed`, `approved`, `paid`, and a per-bill `disputed` that "pauses one
- * bill, never the cycle". None of them has an implementation: nothing sets a dispute window, `MilkBill.dispute()` is
- * called by no service, and preview/approve take only `dairy.manage` with no checker and no `settlement.close`. They
- * arrive with the acts that produce them (TENANT-6c-2), and the database's CHECK constraint admits only these two
- * until then — a status vocabulary wider than the code is how a board ends up showing a state nothing can leave.
+ * TENANT-6c-1 shipped `open|closed`. TENANT-6c-2 adds `previewed` — the act W169's header button performs
+ * (*"Preview cycle 01–15 Jul (Wed close)"*), which is also the act that starts every member's dispute window.
+ *
+ * `approved` and `paid` are still ABSENT, deliberately. Approving needs `settlement.close` and a second human
+ * (TENANT-6c-3) and paying needs a batch that does not exist (`milk_bills.payout_id` has never been written), so both
+ * would be states nothing can move a cycle out of. The database's CHECK constraint tracks this list exactly: a status
+ * vocabulary wider than the code is how a board ends up showing a state an operator cannot act on.
  */
-export const CYCLE_STATUSES = ['open', 'closed'] as const;
+export const CYCLE_STATUSES = ['open', 'closed', 'previewed'] as const;
 export type CycleStatus = (typeof CYCLE_STATUSES)[number];
 
 const TRANSITIONS: Readonly<Record<CycleStatus, readonly CycleStatus[]>> = Object.freeze({
   open: ['closed'],
-  closed: [],
+  closed: ['previewed'],
+  // Terminal FOR NOW, and terminal HONESTLY: `approved` arrives with the second signature (TENANT-6c-3). A cycle sits
+  // here while its members read their bills, which is exactly what W169's timeline describes happening on Thursday.
+  previewed: [],
 });
 
 export class IllegalCycleTransitionError extends DomainError {

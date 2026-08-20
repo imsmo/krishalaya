@@ -51,6 +51,11 @@ import { DairyCycleCloseCadenceJob } from './jobs/dairy-cycle-close.cadence-job'
 import { DairyBillCycleService } from './services/dairy-bill-cycle.service';
 import { DairyBillCycleRepository } from './repositories/dairy-bill-cycle.repository';
 import { FlagsService } from '../../core/feature-flags/flags.service';
+// PC-56 TENANT-6c-2 · W169's preview act, the member's dispute and the void that makes an upheld one actionable.
+import { BillCyclesController } from './controllers/v1/bill-cycles.controller';
+import { BillDisputesController } from './controllers/v1/bill-disputes.controller';
+import { MilkBillDisputeService } from './services/milk-bill-dispute.service';
+import { MilkBillDisputeRepository } from './repositories/milk-bill-dispute.repository';
 
 // [PC-56 TENANT-6c-1] What used to stand here said the cycle-close job "is instantiated by apps/worker with a
 // privileged kv_relay Pool". APPS/WORKER INSTANTIATED NOTHING OF THE KIND, and could not have: its JOBS registry is
@@ -59,7 +64,9 @@ import { FlagsService } from '../../core/feature-flags/flags.service';
 // It now runs through core/jobs/jobs.runner.ts, registered below beside the D2C cadence job — the pattern this file
 // already used for the one job it did wire.
 @Module({
-  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController],
+  controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController,
+    // PC-56 TENANT-6c-2
+    BillCyclesController, BillDisputesController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -81,8 +88,10 @@ import { FlagsService } from '../../core/feature-flags/flags.service';
     MilkQualityService, MilkQualityReviewRepository,
     // PC-56 TENANT-6b-2
     DairyQualityRepository, DairyQualityReadModel,
+    // PC-56 TENANT-6c-2
+    MilkBillDisputeRepository, MilkBillDisputeService,
   ],
-  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService],
+  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService],
 })
 export class DairyModule implements OnModuleInit {
   constructor(

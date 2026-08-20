@@ -4,7 +4,7 @@
 // happens in the service via the wallet boundary (Law 2) when the bill is paid. No version → lock FOR UPDATE.
 import { BillStatus, assertTransition } from './milk-bill.state';
 import { DomainEvent, DairyEventType } from './dairy.events';
-import { BillNotPayableError } from './dairy.errors';
+import { BillNotPayableError, BillVoidReasonRequiredError, DisputeWindowClosedError, DisputeWindowOpenError } from './dairy.errors';
 
 export interface BillDeduction { type: string; amountMinor: bigint; }
 export interface MilkBillProps {
@@ -20,6 +20,11 @@ export interface MilkBillProps {
   netMinor: bigint;
   status: BillStatus;
   disputeWindowEnds: Date | null;
+  /** [PC-56 TENANT-6c-2] When this bill was shown to its member — the instant the window started. */
+  previewedAt: Date | null;
+  voidedAt: Date | null;
+  voidedBy: string | null;
+  voidReason: string | null;
   payoutId: string | null;
   createdAt?: Date;
 }
@@ -37,7 +42,8 @@ export class MilkBill {
     if (netMinor < 0n) throw new BillNotPayableError('deductions exceed gross');
     const b = new MilkBill({ id: input.id, tenantId: input.tenantId, membershipId: input.membershipId, cycleId: input.cycleId ?? null, periodStart: input.periodStart,
       periodEnd: input.periodEnd, totalLitresMilli: input.totalLitresMilli, grossMinor: input.grossMinor, deductions, deductionsMinor,
-      netMinor, status: 'draft', disputeWindowEnds: input.disputeWindowEnds ?? null, payoutId: null });
+      netMinor, status: 'draft', disputeWindowEnds: input.disputeWindowEnds ?? null,
+      previewedAt: null, voidedAt: null, voidedBy: null, voidReason: null, payoutId: null });
     b.events.push({ type: DairyEventType.BillGenerated, payload: { billId: b.props.id, membershipId: b.props.membershipId, netMinor: netMinor.toString() } });
     return b;
   }
@@ -51,6 +57,23 @@ export class MilkBill {
   get cycleId() { return this.props.cycleId; }
   get deductionsMinor() { return this.props.deductionsMinor; }
   get deductionTypes(): string[] { return this.props.deductions.map((x) => x.type); }
+  get membershipIdRef() { return this.props.membershipId; }
+  get periodStart() { return this.props.periodStart; }
+  get periodEnd() { return this.props.periodEnd; }
+  get disputeWindowEnds() { return this.props.disputeWindowEnds; }
+
+  /**
+   * [PC-56 TENANT-6c-2] Is the member's own window still open?
+   *
+   * A bill with NO window has never been previewed, and its window is therefore not "closed" — it never opened. That
+   * distinction is why this returns false for null rather than treating a missing window as an expired one: the guard
+   * that consults it (`pay`) has its own separate refusal for a bill that was never shown to anybody.
+   */
+  isDisputeWindowOpen(now: Date): boolean {
+    const ends = this.props.disputeWindowEnds;
+    return ends !== null && now.getTime() < ends.getTime();
+  }
+  get wasPreviewed(): boolean { return this.props.previewedAt !== null; }
   toProps(): Readonly<MilkBillProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
 
@@ -60,15 +83,82 @@ export class MilkBill {
     this.props.status = to;
     this.events.push({ type: eventType, payload: { billId: this.props.id, from, to, ...extra } });
   }
-  preview(): void { this.transition('previewed', DairyEventType.BillPreviewed); }
-  dispute(reason?: string): void { this.transition('disputed', DairyEventType.BillDisputed, reason ? { reason } : {}); }
+  /**
+   * Show the bill to its member and START THEIR CLOCK.
+   *
+   * The window is a parameter rather than computed here: its length is a tenant setting (`dairy.dispute_window_hours`,
+   * 0158) read once per pass, and its end is an INSTANT the database stores — deriving "now + 24h" inside the aggregate
+   * would put a clock in the domain and make the whole thing untestable without freezing time.
+   *
+   * The event carries the member's `userId` and the figures the SMS interpolates, for the reason ADMIN-6b established
+   * four waves ago: a notification-map row pointing at a payload with no recipient looks like a fix and sends nothing.
+   */
+  preview(at: Date, disputeWindowEnds: Date, farmerUserId: string): void {
+    this.props.disputeWindowEnds = disputeWindowEnds;
+    this.props.previewedAt = at;
+    this.transition('previewed', DairyEventType.BillPreviewed, {
+      userId: farmerUserId,
+      membershipId: this.props.membershipId,
+      period: `${this.props.periodStart}..${this.props.periodEnd}`,
+      netMinor: this.props.netMinor.toString(),
+      deductionsMinor: this.props.deductionsMinor.toString(),
+      totalLitresMilli: this.props.totalLitresMilli.toString(),
+      windowEndsAt: disputeWindowEnds.toISOString(),
+    });
+  }
+
+  /**
+   * The MEMBER objects. Only inside their own window: a dispute raised after the money has moved is a different act
+   * (a refund) with different consequences, and pretending otherwise would let a bill flip back out of `paid`.
+   */
+  dispute(now: Date, reason?: string): void {
+    if (!this.isDisputeWindowOpen(now)) throw new DisputeWindowClosedError(this.props.id, this.props.disputeWindowEnds?.toISOString() ?? null);
+    this.transition('disputed', DairyEventType.BillDisputed, reason ? { reason } : {});
+  }
+
+  /**
+   * The cooperative answered and the bill STANDS. Back to `previewed` with a FRESH window, because the member is being
+   * shown the same figures again and being told why — and a resolution that left the old window expired would answer
+   * the objection and simultaneously remove the member's ability to make another.
+   */
+  resolveToPreviewed(at: Date, disputeWindowEnds: Date, farmerUserId: string, outcome: string): void {
+    this.props.disputeWindowEnds = disputeWindowEnds;
+    this.props.previewedAt = at;
+    this.transition('previewed', DairyEventType.BillDisputeResolved, {
+      userId: farmerUserId,
+      membershipId: this.props.membershipId,
+      period: `${this.props.periodStart}..${this.props.periodEnd}`,
+      outcome,
+      windowEndsAt: disputeWindowEnds.toISOString(),
+    });
+  }
+
+  /**
+   * The bill was WRONG. Void it so the pours can be released and a correct one built.
+   *
+   * The reason is required by the domain, not just by the database, because a voided bill is a member's fortnight
+   * disappearing from the record and "why" is the only thing that makes that reconstructable a year later.
+   */
+  void(at: Date, byUserId: string, reason: string): void {
+    if ((reason ?? '').trim().length < 10) throw new BillVoidReasonRequiredError(this.props.id);
+    if (this.props.status === 'paid') throw new BillNotPayableError('a paid bill cannot be voided');
+    this.props.voidedAt = at;
+    this.props.voidedBy = byUserId;
+    this.props.voidReason = reason.trim();
+    this.transition('voided', DairyEventType.BillVoided, { reason: reason.trim() });
+  }
   approve(): void { this.transition('approved', DairyEventType.BillApproved); }
   /** Mark paid + stamp the settlement txn (wallet payout posted by the service in the same tx). */
-  markPaid(): void {
+  markPaid(now: Date): void {
     if (this.props.status !== 'approved') throw new BillNotPayableError(this.props.status);
+    // [PC-56 TENANT-6c-2] W169 promises the member 24 hours between seeing the bill and the money moving. Before this
+    // wave `pay()` checked the status and nothing else, so the window — had anything written it — would have been
+    // decoration. The guard lives HERE, on the aggregate, because it is the promise itself and not a route's opinion.
+    if (this.isDisputeWindowOpen(now)) throw new DisputeWindowOpenError(this.props.id, this.props.disputeWindowEnds!.toISOString());
     this.transition('paid', DairyEventType.BillPaid, { netMinor: this.props.netMinor.toString() });
   }
   toJSON() { const v = this.props; return { id: v.id, membershipId: v.membershipId, cycleId: v.cycleId, periodStart: v.periodStart, periodEnd: v.periodEnd,
+    previewedAt: v.previewedAt, voidedAt: v.voidedAt, voidReason: v.voidReason,
     totalLitres: (Number(v.totalLitresMilli) / 1000).toFixed(3), grossMinor: v.grossMinor.toString(),
     deductions: v.deductions.map((d) => ({ type: d.type, amountMinor: d.amountMinor.toString() })), deductionsMinor: v.deductionsMinor.toString(),
     netMinor: v.netMinor.toString(), status: v.status, disputeWindowEnds: v.disputeWindowEnds, payoutId: v.payoutId, createdAt: v.createdAt }; }

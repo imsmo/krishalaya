@@ -116,8 +116,8 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
-    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo);
-    cycles = new DairyBillCycleService(uow, outbox, metrics, cycleRepo, collRepo, bills);
+    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo);
+    cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo);
 
     await fundTenant(tenantIST, 100_000_000n);
 
@@ -338,11 +338,13 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
       } as never);
       const fresh = (await uow.run(tenantIST, (tx) => cycleRepo.getForUpdate(tx, tenantIST, closedCycleId), { userId: 'system' }))!;
       const out = await cycles.generateFor(tenantIST, fresh);
-      // NOTE THE `generated: 1`. THAT IS THE FINDING. The idempotency key is per (cycle, membership), so this second
-      // pass REPLAYED the first bill's stored response and reported a bill it did not create — no UNIQUE violation, no
-      // error code, nothing to catch. A stranded-pour check written around `BILL_NOT_PAYABLE` would have reported this
-      // run as a clean success. Measuring from the claim query instead is what makes the stranded pour visible.
-      expect(out).toMatchObject({ generated: 1, skipped: 0, stranded: 1, failed: 0 });
+      // WHEN THIS WAS WRITTEN IT READ `generated: 1`, AND THAT WAS THE FINDING: the idempotency key was per (cycle,
+      // membership), so a second pass REPLAYED the first bill's stored response and reported a bill it had not created —
+      // no UNIQUE violation, no error code, nothing for an error-code check to catch. TENANT-6c-2 had to make the key
+      // carry the ATTEMPT (so a rebuild after a VOID is not swallowed as a replay), and a side effect is that this case
+      // now surfaces honestly as a SKIP. The stranded count is what makes it visible either way, which is the point:
+      // measuring from the claim query survived a change that would have broken any error-code check.
+      expect(out).toMatchObject({ generated: 0, skipped: 1, stranded: 1, failed: 0 });
       const orphan = await admin.query(
         `SELECT count(*)::int c FROM milk_collections WHERE tenant_id=$1 AND membership_id=$2 AND milk_bill_id IS NULL`, [tenantIST, memA]);
       expect(orphan.rows[0].c).toBe(1);              // still unbilled, still owed, and now visible
@@ -352,8 +354,8 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
       const pending = await uow.run(tenantIST, (tx) => cycleRepo.needingBills(tx, tenantIST, 20), { userId: 'system' });
       expect(pending.map((c) => c.id)).not.toContain(closedCycleId);
       const c = await uow.run(tenantIST, (tx) => cycleRepo.getForUpdate(tx, tenantIST, closedCycleId), { userId: 'system' });
-      expect(c!.toProps().billsGenerated).toBe(1);    // the LAST run's counts — the replaying pass above
-      expect(c!.toProps().billsSkipped).toBe(0);
+      expect(c!.toProps().billsGenerated).toBe(0);    // the LAST run's counts — the stranded pass above
+      expect(c!.toProps().billsSkipped).toBe(1);
       expect(c!.needsBills).toBe(false);
     });
 
@@ -386,7 +388,8 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
       await bills.preview(tenantIST, actor, bill.id);
       await bills.approve(tenantIST, actor, bill.id);
       const before = await balUser(farmerA);
-      const paid = await bills.pay(tenantIST, actor, bill.id, `idem-${randomUUID()}`, null);
+      // [PC-56 TENANT-6c-2] previewing now starts the member's 24h window and `pay()` waits for it.
+      const paid = await bills.pay(tenantIST, actor, bill.id, `idem-${randomUUID()}`, null, new Date(Date.now() + 25 * 3_600_000));
       expect(paid.status).toBe('paid');
       expect(await balUser(farmerA) - before).toBe(BigInt(bill.net_minor));
     });
@@ -404,7 +407,7 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
       await bills.approve(tenantIST, actor, withDeduction.id);
 
       const before = await balUser(farmerB);
-      await expect(bills.pay(tenantIST, actor, withDeduction.id, `idem-${randomUUID()}`, null))
+      await expect(bills.pay(tenantIST, actor, withDeduction.id, `idem-${randomUUID()}`, null, new Date(Date.now() + 25 * 3_600_000)))
         .rejects.toMatchObject({ code: 'DEDUCTION_HAS_NO_DESTINATION' });
       expect(await balUser(farmerB)).toBe(before);    // not a rupee moved
       const still = await admin.query(`SELECT status FROM milk_bills WHERE id=$1`, [withDeduction.id]);
@@ -465,12 +468,17 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
     });
 
     it('the status vocabulary is exactly what the code can reach', async () => {
-      // 'previewed' / 'approved' / 'paid' are W169's words and have no implementation yet. The CHECK refuses them, so
-      // a cycle cannot sit in a state nothing can move it out of.
+      // 6c-1 asserted `previewed` was refused. TENANT-6c-2 BUILT the preview act, so `previewed` is now legitimate and
+      // this assertion moves to the states that still have no implementation: `approved` needs `settlement.close` and a
+      // second human, `paid` needs a batch nothing writes. A cycle must not be able to sit in either.
       const w = { from: '2026-02-01', to: '2026-02-15', cycle: 'fortnightly' as const, basis: 'derived_from_membership_preference' as const };
       const c = await uow.run(tenantIST, (tx) => cycleRepo.ensure(tx, tenantIST, w), { userId: 'system' });
-      await expect(admin.query(`UPDATE dairy_bill_cycles SET status='previewed' WHERE id=$1`, [c.id]))
-        .rejects.toThrow(/ck_dairy_bill_cycle_status/);
+      for (const status of ['approved', 'paid']) {
+        // `closed_at` is set in the same statement so the STATUS check is the one that fires — otherwise the close-stamp
+        // invariant (open ⇔ no close stamp) refuses first and the assertion would pass for the wrong reason.
+        await expect(admin.query(`UPDATE dairy_bill_cycles SET status=$2, closed_at=now() WHERE id=$1`, [c.id, status]))
+          .rejects.toThrow(/ck_dairy_bill_cycle_status/);
+      }
     });
 
     it('a closed cycle must carry its instant, and bills cannot precede the close', async () => {

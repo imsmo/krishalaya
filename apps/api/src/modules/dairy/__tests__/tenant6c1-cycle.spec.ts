@@ -39,7 +39,9 @@ function cycle(over: Partial<Parameters<typeof DairyBillCycle.rehydrate>[0]> = {
     id: 'cyc1', tenantId: 'tA', paymentCycle: 'fortnightly',
     periodStart: '2026-07-01', periodEnd: '2026-07-15',
     closesAt: CLOSES, payday: '2026-07-17', status: 'open', closedAt: null,
-    billsGeneratedAt: null, billsGenerated: null, billsSkipped: null, billsFailed: null, ...over,
+    billsGeneratedAt: null, billsGenerated: null, billsSkipped: null, billsFailed: null,
+    // [PC-56 TENANT-6c-2] the preview act's own stamps
+    previewedAt: null, previewedBy: null, billsPreviewed: null, ...over,
   });
 }
 
@@ -99,18 +101,24 @@ describe('the cycle calendar — ONE mechanism, shared with the counter board', 
 
 /* ----------------------------------------------------------------------------------------------------------- */
 describe('the cycle state machine (Law 5)', () => {
-  it('admits ONLY the states this wave can reach', () => {
-    // W169 names `previewed`, `approved`, `paid` and a per-bill `disputed` too. None has an implementation — nothing
-    // sets a dispute window, MilkBill.dispute() is called by no service, and preview/approve take only dairy.manage
-    // with no checker. They arrive with the acts that produce them (TENANT-6c-2), and the database CHECK matches this
-    // list: a status vocabulary wider than the code is how a board shows a state nothing can leave.
-    expect([...CYCLE_STATUSES]).toEqual(['open', 'closed']);
+  it('admits ONLY the states this programme can reach', () => {
+    // 6c-1 shipped `open|closed` and this assertion read `['open','closed']`. TENANT-6c-2 added `previewed` BECAUSE THE
+    // ACT ARRIVED — W169's header button — and that is the only reason a status is ever added here. `approved` and
+    // `paid` are still absent: approving needs `settlement.close` and a second human (6c-3), paying needs a batch that
+    // does not exist (`payout_id` has never been written), so both would be states nothing can move a cycle out of.
+    // The database CHECK tracks this list exactly.
+    expect([...CYCLE_STATUSES]).toEqual(['open', 'closed', 'previewed']);
   });
-  it('open → closed, and closed is terminal', () => {
+  it('open → closed → previewed, and previewed is where a cycle waits for its members', () => {
     expect(canTransition('open', 'closed')).toBe(true);
+    expect(canTransition('closed', 'previewed')).toBe(true);
     expect(canTransition('closed', 'closed')).toBe(false);
     expect(canTransition('closed', 'open')).toBe(false);
+    // Not reachable in one step: a cycle still collecting milk cannot show a member a bill for half a fortnight.
+    expect(canTransition('open', 'previewed')).toBe(false);
+    expect(canTransition('previewed', 'closed')).toBe(false);
     expect(() => assertTransition('closed', 'open')).toThrow(IllegalCycleTransitionError);
+    expect(() => assertTransition('open', 'previewed')).toThrow(IllegalCycleTransitionError);
   });
 });
 
@@ -233,7 +241,11 @@ describe('DairyBillCycleRepository — the SQL that resolves a cooperative\'s ow
 
     await repo.needingBills(tx as never, 'tA', 20);
     const sql = tx.query.mock.calls[1][0];
-    expect(sql).toMatch(/status='closed'/);
+    // [PC-56 TENANT-6c-2] This read `status='closed'` when `closed` was the only state past `open`, and became a bug the
+    // moment `previewed` existed: a bill VOIDED after preview released its pours and would never have been rebuilt,
+    // because this query stopped looking at that cycle. Phrased against the PROPERTY the status stood for.
+    expect(sql).toMatch(/closed_at IS NOT NULL/);
+    expect(sql).not.toMatch(/status='closed'/);
     expect(sql).toMatch(/bills_generated_at IS NULL OR coalesce\(bills_failed, 0\) > 0/);
     expect(sql).toMatch(/LIMIT \$2/);
   });
@@ -286,8 +298,16 @@ describe('DairyBillCycleService — what a generation run says happened', () => 
     let asked = 0;
     const collections = { membershipsToBillForCycle: jest.fn(async () => (asked++ === 0 ? (opts.members ?? []) : (opts.remaining ?? []))) };
     const bills = { generate: opts.generate ?? jest.fn(async () => ({ id: 'b1' })) };
-    const svc = new DairyBillCycleService(uow as never, outbox as never, metrics as never, cycles as never, collections as never, bills as never);
-    return { svc, cycles, collections, bills, outbox, uow };
+    // [PC-56 TENANT-6c-2] the ctor grew: an idempotency service for the route-level preview, and the bill repository +
+    // membership repository the preview pass needs.
+    const idem = { remember: jest.fn(async (_k: string, _u: string, _e: string, fn: any) => fn()) };
+    // [PC-56 TENANT-6c-2] the generation pass now reads how many bills each member has ALREADY had for this window, so
+    // the idempotency key identifies the attempt rather than the pair (a rebuild after a void must not replay).
+    const billRepo = { draftsForCycle: jest.fn(async () => []), statusCountsForCycle: jest.fn(async () => ({})), billAttemptsByMembership: jest.fn(async () => new Map()) };
+    const memberships = { getById: jest.fn(async () => ({ farmerUserId: 'farmer1' })) };
+    const svc = new DairyBillCycleService(uow as never, outbox as never, metrics as never, idem as never,
+      cycles as never, collections as never, bills as never, billRepo as never, memberships as never);
+    return { svc, cycles, collections, bills, outbox, uow, billRepo, idem };
   }
 
   it('ensures the ended AND the running window, for every cadence the members use', async () => {
@@ -342,7 +362,7 @@ describe('DairyBillCycleService — what a generation run says happened', () => 
     expect(out).toMatchObject({ cyclesBilled: 1, generated: 2, skipped: 0, failed: 0 });
     const [, actor, idemKey, dto, cycleId] = generate.mock.calls[0] as any[];
     expect(actor).toEqual({ userId: 'system', canManage: true });
-    expect(idemKey).toBe('dairycycle:cyc1:mem1');    // keyed on the CYCLE, so a re-run replays
+    expect(idemKey).toBe('dairycycle:cyc1:mem1:0');  // cycle + member + ATTEMPT: a re-run replays, a rebuild does not
     expect(dto).toEqual({ membershipId: 'mem1', periodStart: '2026-07-01', periodEnd: '2026-07-15', deductions: [] });
     expect(cycleId).toBe('cyc1');
     // No deductions are invented by the job: `deductions.type` has no destination to post to (see
@@ -382,7 +402,7 @@ describe('DairyBillCycleService — what a generation run says happened', () => 
 
   it('an EMPTY_BILL or a held pour is NOT stranded — nothing is owed', async () => {
     const generate = jest.fn(async (_t: string, _a: unknown, key: string) => {
-      const code = key.endsWith('mem1') ? 'EMPTY_BILL' : 'ALL_POURS_HELD';
+      const code = key.includes(':mem1') ? 'EMPTY_BILL' : 'ALL_POURS_HELD';
       throw Object.assign(new Error(code), { code });
     });
     const { svc } = harness({ members: ['mem1', 'mem2'], generate, needing: [cycle({ status: 'closed', closedAt: CLOSES })] });
@@ -391,7 +411,7 @@ describe('DairyBillCycleService — what a generation run says happened', () => 
 
   it('one member failing does NOT stop the rest — per-member isolation', async () => {
     const generate = jest.fn(async (_t: string, _a: unknown, key: string) => {
-      if (key.endsWith('mem2')) throw Object.assign(new Error('boom'), { code: 'WHATEVER' });
+      if (key.includes(':mem2:')) throw Object.assign(new Error('boom'), { code: 'WHATEVER' });
       return { id: 'b' };
     });
     const { svc } = harness({ members: ['mem1', 'mem2', 'mem3'], generate, needing: [cycle({ status: 'closed', closedAt: CLOSES })] });

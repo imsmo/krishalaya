@@ -59,6 +59,19 @@ run('communication spine (integration, real Postgres + RLS + seeded catalog)', (
     notifications = new NotificationService(uow, outbox, metrics, gateway, pushSender, pushDevices, events, templates, prefs, quiet, notifRepo, flags);
     prefsSvc = new PreferenceService(uow, outbox, events, prefs, quiet);
     inspect = new Pool({ connectionString: APP_URL });
+
+    // [PC-56 TENANT-6c-2] THIS SPEC HAS BEEN FAILING SINCE FIRST-PARTY PUSH SHIPPED, AND NOBODY RAN IT.
+    // `NotificationService.deliverPush` (P0-10) resolves the recipient's OWN registered tokens from `push_devices` and
+    // records `no_device` when there are none — deliberately, because a gateway that accepts a request it cannot deliver
+    // writes `sent` into the log for a message nobody got. This spec's recipient had no device, so its "push sent"
+    // assertion could not hold. A device is registered here so the test proves what its name claims.
+    //
+    // (Its OTHER cause was fixed in the same wave: `order.confirmed`'s push and in-app templates were seeded by
+    // db/seeds/core/0007 and therefore had no `serving_version_id`, so 0122's send-time gate resolved them to NULL and
+    // the channel failed as `no_template`. Two independent reasons for one red test, which is why it stayed red.)
+    await admin.query(
+      `INSERT INTO push_devices (user_id, platform, token, is_active) VALUES ($1,'android',$2,true)
+       ON CONFLICT (token) DO NOTHING`, [user, `tok-${randomUUID()}`]);
   }, 30000);
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
@@ -128,6 +141,19 @@ run('messaging spine (integration, real Postgres + RLS + masked calls)', () => {
     messages = new MessageService(uow, outbox, idem, metrics, mRepo, cRepo);
     calls = new MaskedCallService(uow, outbox, idem, metrics, new NoopMaskingGateway(config), kRepo);
     inspect = new Pool({ connectionString: APP_URL });
+
+    // [PC-56 TENANT-6c-2] THIS SPEC HAS BEEN FAILING SINCE FIRST-PARTY PUSH SHIPPED, AND NOBODY RAN IT.
+    // `NotificationService.deliverPush` (P0-10) resolves the recipient's OWN registered tokens from `push_devices` and
+    // records `no_device` when there are none — deliberately, because a gateway that accepts a request it cannot deliver
+    // writes `sent` into the log for a message nobody got. This spec's recipient had no device, so its "push sent"
+    // assertion could not hold. A device is registered here so the test proves what its name claims.
+    //
+    // (Its OTHER cause was fixed in the same wave: `order.confirmed`'s push and in-app templates were seeded by
+    // db/seeds/core/0007 and therefore had no `serving_version_id`, so 0122's send-time gate resolved them to NULL and
+    // the channel failed as `no_template`. Two independent reasons for one red test, which is why it stayed red.)
+    await admin.query(
+      `INSERT INTO push_devices (user_id, platform, token, is_active) VALUES ($1,'android',$2,true)
+       ON CONFLICT (token) DO NOTHING`, [user, `tok-${randomUUID()}`]);
   }, 30000);
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 

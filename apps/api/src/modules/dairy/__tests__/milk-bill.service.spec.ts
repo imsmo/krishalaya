@@ -20,20 +20,27 @@ function harness(bill: MilkBill) {
   const bills = { getForUpdate: jest.fn(async () => bill), update: jest.fn(), getById: jest.fn(), listFor: jest.fn(), insert: jest.fn() };
   const collections = { aggregateUnbilledForUpdate: jest.fn(), attachToBill: jest.fn() };
   const memberships = { getById: jest.fn(async () => membership), listFor: jest.fn() };
-  const svc = new MilkBillService(uow as any, outbox as any, idem as any, metrics as any, wallet as any, audit as any, bills as any, collections as any, memberships as any);
-  return { svc, wallet, bills };
+  // [PC-56 TENANT-6c-2] The bill service now reads the tenant's dispute-window length before it can preview a bill,
+  // so the cycle repository (this module's home for tenant settings) is a real dependency rather than a convenience.
+  const cycles = { disputeWindowHours: jest.fn(async () => 24) };
+  const svc = new MilkBillService(uow as any, outbox as any, idem as any, metrics as any, wallet as any, audit as any, bills as any, collections as any, memberships as any, cycles as any);
+  return { svc, wallet, bills, cycles };
 }
 /** An approved bill with NO deductions — the only kind this platform can honestly pay (see below). */
 const approvedBill = (deductions: { type: string; amountMinor: bigint }[] = []) => {
   const b = MilkBill.generate({ id: 'b1', tenantId: 't1', membershipId: 'mem1', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 70000n, grossMinor: 40000n, deductions });
-  b.preview(); b.approve(); b.pullEvents(); return b;
+  b.preview(NOW, WINDOW, 'farmer1'); b.approve(); b.pullEvents(); return b;
 };
 const actor = { userId: 'op1', canManage: true };
+/** The window opens when the bill is previewed and the payment waits for it to shut (W169, TENANT-6c-2). */
+const NOW = new Date('2026-07-16T04:00:00.000Z');
+const WINDOW = new Date('2026-07-17T04:00:00.000Z');
+const AFTER_WINDOW = new Date('2026-07-17T04:00:01.000Z');
 
 describe('MilkBillService.pay — the money path', () => {
   it('posts a ZERO-SUM tenant→farmer milk_payment for the NET, then marks paid', async () => {
     const { svc, wallet, bills } = harness(approvedBill());
-    const out = await svc.pay('t1', actor, 'b1', 'idem-pay', null);
+    const out = await svc.pay('t1', actor, 'b1', 'idem-pay', null, AFTER_WINDOW);
     expect(out.status).toBe('paid');
     expect(wallet.post).toHaveBeenCalledTimes(1);
     const arg: any = (wallet.post.mock.calls as any[])[0][1];
@@ -58,13 +65,13 @@ describe('MilkBillService.pay — the money path', () => {
   // for what it now is: a refusal.
   it('REFUSES a bill carrying deductions — there is nowhere to post them — and moves NO money', async () => {
     const { svc, wallet, bills } = harness(approvedBill([{ type: 'loan_emi', amountMinor: 8000n }]));
-    await expect(svc.pay('t1', actor, 'b1', 'idem-pay', null)).rejects.toBeInstanceOf(DeductionHasNoDestinationError);
+    await expect(svc.pay('t1', actor, 'b1', 'idem-pay', null, AFTER_WINDOW)).rejects.toBeInstanceOf(DeductionHasNoDestinationError);
     expect(wallet.post).not.toHaveBeenCalled();
     expect(bills.update).not.toHaveBeenCalled();          // and it is NOT marked paid
   });
   it('names the deduction types it refused, so an operator can see what is stuck', async () => {
     const { svc } = harness(approvedBill([{ type: 'loan_emi', amountMinor: 8000n }, { type: 'feed_credit', amountMinor: 2000n }]));
-    await expect(svc.pay('t1', actor, 'b1', 'idem-pay', null)).rejects.toMatchObject({
+    await expect(svc.pay('t1', actor, 'b1', 'idem-pay', null, AFTER_WINDOW)).rejects.toMatchObject({
       code: 'DEDUCTION_HAS_NO_DESTINATION',
       details: { billId: 'b1', deductionsMinor: '10000', types: ['loan_emi', 'feed_credit'] },
     });
@@ -72,7 +79,7 @@ describe('MilkBillService.pay — the money path', () => {
   it('refuses to pay a non-approved bill and moves NO money', async () => {
     const draft = MilkBill.generate({ id: 'b1', tenantId: 't1', membershipId: 'mem1', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n });
     const { svc, wallet } = harness(draft);
-    await expect(svc.pay('t1', actor, 'b1', 'idem-pay', null)).rejects.toBeInstanceOf(BillNotPayableError);
+    await expect(svc.pay('t1', actor, 'b1', 'idem-pay', null, AFTER_WINDOW)).rejects.toBeInstanceOf(BillNotPayableError);
     expect(wallet.post).not.toHaveBeenCalled();
   });
 });

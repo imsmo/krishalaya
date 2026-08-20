@@ -35,6 +35,7 @@ import { MilkQualityReviewRepository } from '../repositories/milk-quality-review
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { MilkBillRepository } from '../repositories/milk-bill.repository';
+import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repository';
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
@@ -109,7 +110,8 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
-    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo);
+    // [PC-56 TENANT-6c-2] The bill service reads the tenant's dispute-window length before it can preview a bill.
+    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, new DairyBillCycleRepository(replica as never));
     freshCollections = () => new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
       new FlagsService(pools, new InMemoryCacheService()));
     quality = new MilkQualityService(uow, outbox, idem, metrics, audit, reviewRepo, collRepo);
@@ -176,7 +178,8 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
     await bills.preview(tenantA, actor, bill.id);
     await bills.approve(tenantA, actor, bill.id);
     const tBefore = await balTenant(tenantA); const fBefore = await balUser(farmer);
-    await bills.pay(tenantA, actor, bill.id, `idem-${randomUUID()}`, null);
+    // [PC-56 TENANT-6c-2] the member's 24h window is now enforced at the payment, so payday is past it.
+    await bills.pay(tenantA, actor, bill.id, `idem-${randomUUID()}`, null, new Date(Date.now() + 25 * 3_600_000));
     expect(tBefore - (await balTenant(tenantA))).toBe(BigInt(bill.netMinor));
     expect((await balUser(farmer)) - fBefore).toBe(BigInt(bill.netMinor));
 

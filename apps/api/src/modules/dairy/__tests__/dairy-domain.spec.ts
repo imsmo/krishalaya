@@ -3,6 +3,11 @@
 // computation, and collection/rate-card invariants. No infra — UoW/outbox/wallet are the integration spec.
 import { MilkRateCard } from '../domain/milk-rate-card.entity';
 import { MilkCollection } from '../domain/milk-collection.entity';
+// [PC-56 TENANT-6c-2] Previewing a bill now STARTS the member's 24h window and paying it waits for that window to
+// shut, so these fixtures carry the two instants that were previously implicit.
+const NOW = new Date('2026-07-16T04:00:00.000Z');
+const WINDOW = new Date('2026-07-17T04:00:00.000Z');
+const AFTER_WINDOW = new Date('2026-07-17T04:00:01.000Z');
 import { MilkBill } from '../domain/milk-bill.entity';
 import { canTransition, isTerminal, BILL_STATUSES, BillStatus, IllegalBillTransitionError } from '../domain/milk-bill.state';
 import { InvalidRateCardError, InvalidCollectionError, BillNotPayableError } from '../domain/dairy.errors';
@@ -69,13 +74,13 @@ describe('milk-bill.state machine + net computation', () => {
       totalLitresMilli: 70000n, grossMinor: 48000n, deductions: [{ type: 'feed_credit', amountMinor: 5000n }, { type: 'loan_emi', amountMinor: 3000n }] });
     expect(b.toProps().deductionsMinor).toBe(8000n); expect(b.netMinor).toBe(40000n);
     b.pullEvents();
-    b.preview(); b.approve(); b.markPaid();
+    b.preview(NOW, WINDOW, 'farmer1'); b.approve(); b.markPaid(AFTER_WINDOW);
     expect(b.status).toBe('paid');
     expect(b.pullEvents().map((e) => e.type)).toEqual([DairyEventType.BillPreviewed, DairyEventType.BillApproved, DairyEventType.BillPaid]);
   });
   it('rejects deductions exceeding gross, and pay before approval', () => {
     expect(() => MilkBill.generate({ id: 'b', tenantId: 't', membershipId: 'm', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n, deductions: [{ type: 'x', amountMinor: 2000n }] })).toThrow(BillNotPayableError);
     const b = MilkBill.generate({ id: 'b', tenantId: 't', membershipId: 'm', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n });
-    expect(() => b.markPaid()).toThrow(BillNotPayableError);
+    expect(() => b.markPaid(AFTER_WINDOW)).toThrow(BillNotPayableError);
   });
 });
