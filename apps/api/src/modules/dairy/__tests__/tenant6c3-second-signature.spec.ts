@@ -374,7 +374,14 @@ describe('the ordering W169 actually describes', () => {
       metrics as never, { post: jest.fn() } as never, { write: jest.fn() } as never, bills as never,
       { detachFromBill: jest.fn(), attachToBill: jest.fn() } as never,
       { getById: jest.fn(async () => ({ id: 'mem1', farmerUserId: 'farmer1' })) } as never,
-      { disputeWindowHours: jest.fn(async () => 24) } as never);
+      { disputeWindowHours: jest.fn(async () => 24) } as never,
+      // [PC-56 TENANT-6c-4] the deduction's destination: lines, vocabulary, credits, consent, applier, flags.
+      { linesForBill: jest.fn(async () => []), insert: jest.fn(), listForUpdate: jest.fn(async () => []), markApplied: jest.fn() } as never,
+      { byCode: jest.fn(async () => null), byIds: jest.fn(async () => new Map()) } as never,
+      { getForUpdate: jest.fn(async () => null) } as never,
+      { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null), insert: jest.fn() } as never,
+      { applyAll: jest.fn(async () => []) } as never,
+      { isEnabled: jest.fn(async () => true) } as never);
     return { svc, b };
   }
 
@@ -397,17 +404,22 @@ describe('the ordering W169 actually describes', () => {
 
 /* ----------------------------------------------------------------------------------------------------------- */
 describe('what is deliberately NOT here', () => {
-  it('a bill carrying a DEDUCTION still cannot be paid, so the >25% consent rule has nothing to gate', () => {
-    // W169: "Deductions above 25% of gross need the member's fresh consent, not just standing instructions." 0157 made
-    // `pay()` refuse ANY deducted bill because `deductions.type` has no destination — so a consent gate today would be
-    // a gate in front of a wall. Both are TENANT-6c-4, together, because they are one story.
+  it('the deduction was deliberately NOT here — TENANT-6c-4 built it', () => {
+    // What this test said when 6c-3 shipped: *"a bill carrying a DEDUCTION still cannot be paid, so the >25% consent
+    // rule has nothing to gate"*. That was true and it was the reason this wave stopped where it did — 0157 made
+    // `pay()` refuse ANY deducted bill, so a consent gate would have been a gate in front of a wall.
+    //
+    // 0160 built the wall's other side: the vocabulary is a table, every line names the row it pays, the feed credit
+    // and the loan both have destinations, and the member's fresh consent is a record. So the assertion moves to what
+    // is still absent rather than being deleted — the same discipline the cycle-status test follows.
     const b = MilkBill.generate({
       id: 'b1', tenantId: 'tA', membershipId: 'mem1', periodStart: '2026-07-01', periodEnd: '2026-07-15',
-      totalLitresMilli: 1n, grossMinor: 100_000n, deductions: [{ type: 'loan_emi', amountMinor: 30_000n }],
+      totalLitresMilli: 1n, grossMinor: 100_000n,
+      deductions: [{ id: 'ded1', type: 'loan_emi', amountMinor: 30_000n, sourceType: 'loan', sourceId: 'loan1', status: 'pending' }],
     });
     expect(b.deductionsMinor).toBe(30_000n);
-    // 30% of gross — above W169's threshold, and unpayable for a reason that has nothing to do with consent yet.
-    expect((b.deductionsMinor * 100n) / 100_000n).toBe(30n);
+    // A line now points at a loan, which is what makes the 30% consent gate mean something.
+    expect(b.deductionLines[0]).toMatchObject({ sourceType: 'loan', sourceId: 'loan1' });
   });
 
   it('there is still no payout BATCH behind "one bank trip"', () => {

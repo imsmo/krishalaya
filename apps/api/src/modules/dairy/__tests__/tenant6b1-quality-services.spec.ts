@@ -294,7 +294,14 @@ describe('PC-56 TENANT-6b-1 · a bill that has nothing to bill says WHY', () => 
     const memberships = { getById: jest.fn(async () => membership()) };
     const svc = new MilkBillService(uow as never, { write: jest.fn() } as never, idem as never, metrics as never,
       { post: jest.fn() } as never, { write: jest.fn() } as never, { insert: jest.fn() } as never,
-      collections as never, memberships as never, { disputeWindowHours: jest.fn(async () => 24) } as never);
+      collections as never, memberships as never, { disputeWindowHours: jest.fn(async () => 24) } as never,
+      // [PC-56 TENANT-6c-4] the deduction's destination: lines, vocabulary, credits, consent, applier, flags.
+      { linesForBill: jest.fn(async () => []), insert: jest.fn(), listForUpdate: jest.fn(async () => []), markApplied: jest.fn() } as never,
+      { byCode: jest.fn(async () => null), byIds: jest.fn(async () => new Map()) } as never,
+      { getForUpdate: jest.fn(async () => null) } as never,
+      { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null), insert: jest.fn() } as never,
+      { applyAll: jest.fn(async () => []) } as never,
+      { isEnabled: jest.fn(async () => true) } as never);
     return { svc, collections };
   }
 

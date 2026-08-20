@@ -48,8 +48,20 @@ module.exports = async function integrationGlobalSetup() {
       // constraint lookup_values_type_code_fkey" at 0057). This is the first time any sandbox has had a real
       // Postgres to actually execute this globalSetup, so the defect was never observable before now. Fix: seed
       // core/0005 only touches lookup_types/lookup_values, both created by migration 0001 — run it right after
-      // 0001, well before 0057. Seed 0005 is idempotent (ON CONFLICT DO NOTHING throughout) so step 4 below
-      // re-applying it later in the normal seed order is harmless, not a double-seed bug.
+      // 0001, well before 0057.
+      //
+      // [PC-56 TENANT-6c-4 CORRECTION] This comment used to end: *"Seed 0005 is idempotent (ON CONFLICT DO NOTHING
+      // throughout) so step 4 below re-applying it later in the normal seed order is harmless, not a double-seed
+      // bug."* **THAT IS FALSE, AND IT IS WHY NOBODY LOOKED.** `lookup_values` has `UNIQUE (type_code, tenant_id,
+      // code)` and a PLATFORM row has `tenant_id IS NULL`; Postgres treats NULLs as DISTINCT in a unique index unless
+      // it is declared `NULLS NOT DISTINCT`, which 0001's is not. So `ON CONFLICT` cannot fire for platform values,
+      // this file's deliberate double-apply DUPLICATES every one of them, and a freshly built test database carries
+      // 139 duplicated codes out of 311 — `ledger_txn_type` (FK'd by every ledger transaction), `payment_purpose`,
+      // `payout_purpose`, `dispute_reason` and `boost_tier` (whose price lives in `meta`) among them. The double
+      // apply is still needed for the FK-order reason above; what was wrong was the claim that it costs nothing.
+      // De-duplicating the existing rows means repointing FKs on the ledger, so it is ESCALATED rather than swept
+      // (see migration 0160's header). Migration 0160 gives its own vocabulary a partial unique index so the
+      // deduction types at least cannot be duplicated.
       if (f.startsWith('0001_')) {
         await admin.query(fs.readFileSync(path.join(SEEDS_DIR, 'core', '0005_lookup_vocabularies.sql'), 'utf8'));
       }

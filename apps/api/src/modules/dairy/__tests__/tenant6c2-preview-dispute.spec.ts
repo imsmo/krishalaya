@@ -364,7 +364,14 @@ describe('MilkBillService — the window comes from the DATABASE', () => {
     const memberships = { getById: jest.fn(async () => ({ id: 'mem1', farmerUserId: 'farmer1' })) };
     const cycles = { disputeWindowHours: jest.fn(async () => over.hours ?? 24) };
     const svc = new MilkBillService(uow as never, outbox as never, idem as never, metrics as never, wallet as never,
-      audit as never, bills as never, collections as never, memberships as never, cycles as never);
+      audit as never, bills as never, collections as never, memberships as never, cycles as never,
+      // [PC-56 TENANT-6c-4] the deduction's destination: lines, vocabulary, credits, consent, applier, flags.
+      { linesForBill: jest.fn(async () => []), insert: jest.fn(), listForUpdate: jest.fn(async () => []), markApplied: jest.fn() } as never,
+      { byCode: jest.fn(async () => null), byIds: jest.fn(async () => new Map()) } as never,
+      { getForUpdate: jest.fn(async () => null) } as never,
+      { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null), insert: jest.fn() } as never,
+      { applyAll: jest.fn(async () => []) } as never,
+      { isEnabled: jest.fn(async () => true) } as never);
     return { svc, bills, collections, cycles, outbox, audit, b };
   }
 

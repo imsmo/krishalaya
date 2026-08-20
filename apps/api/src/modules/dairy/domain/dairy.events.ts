@@ -32,6 +32,20 @@ export const DairyEventType = {
   CycleApproved:     'dairy.cycle_approved',
   BillDisputeResolved: 'dairy.bill_dispute_resolved',
   BillVoided:        'dairy.bill_voided',
+  // PC-56 TENANT-6c-4 · the deduction's destination.
+  //
+  // `MemberCreditIssued` and `MemberCreditRecovered` are the receivable's own two facts — a cooperative's accounting
+  // system legitimately wants both, and the second is how a member's feed debt is seen to fall.
+  // `BillDeductionApplied` is per LINE, because W169's promise is "each line itemised" and one bill can pay a feed
+  // credit AND a loan in the same movement.
+  // `BillDeductionConsentRequired` is the one that carries a member userId: it is the ONLY way a member learns that
+  // their bill is waiting on them. A consent gate with no notification is a bill that silently never pays — the same
+  // shape as a window nothing wrote (TENANT-6c-2), one layer up.
+  MemberCreditIssued:  'dairy.member_credit_issued',
+  MemberCreditRecovered: 'dairy.member_credit_recovered',
+  BillDeductionApplied: 'dairy.bill_deduction_applied',
+  BillDeductionConsentRequired: 'dairy.bill_deduction_consent_required',
+  BillDeductionConsentRecorded: 'dairy.bill_deduction_consent_recorded',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

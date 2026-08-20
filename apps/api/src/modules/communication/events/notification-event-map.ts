@@ -66,6 +66,10 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // first cycle preview texted nobody.
   { outboxType: 'dairy.bill_previewed',         eventCode: 'dairy.bill_previewed',        recipientKeys: ['userId'] },
   { outboxType: 'dairy.bill_dispute_resolved',  eventCode: 'dairy.bill_dispute_resolved', recipientKeys: ['userId'] },
+  // [PC-56 TENANT-6c-4] W169: *"Deductions above 25% of gross need the member's fresh consent, not just standing
+  // instructions."* THE ONLY WAY A MEMBER LEARNS THEIR BILL IS WAITING ON THEM. A consent gate with no notification is
+  // a bill that silently never pays, and the member would be told nothing while their money sat still.
+  { outboxType: 'dairy.bill_deduction_consent_required', eventCode: 'dairy.bill_deduction_consent_required', recipientKeys: ['userId'] },
   // PC-56 TENANT-1b-4 · W156: "the invite SMS says who added them and why, in their language, with a decline path". The
   // applier emits the FACT (a member was imported) and this row decides who hears about it — which is why the applier
   // needs no dependency on the communication module, and why an import in a module that does not import CommunicationModule

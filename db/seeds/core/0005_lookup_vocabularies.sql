@@ -147,3 +147,41 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('shipment_failure_reason',NULL,'weather','Weather or road conditions','{"actionable":"none"}',5),
  ('shipment_failure_reason',NULL,'other','Something else (see the note)','{"actionable":"read_note"}',6)
 ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- PC-56 TENANT-6c-4 · MILK BILL DEDUCTION TYPES — W169's "each line itemised"
+-- ---------------------------------------------------------------------------------------------------------------
+-- Before this, the vocabulary a cooperative's withholdings move by lived in a COMMENT: 0009_livestock_dairy.sql, on
+-- `milk_bills.deductions`, reads `-- [{type:'feed_credit'|'loan_emi'|'insurance'|'share', amount_minor}]` while the
+-- column accepted any 40-character string the caller sent. Law 6 exactly inverted.
+--
+-- `is_tenant_extendable = false`, and that is the Rule-Zero call: a tenant-invented deduction type would be a line
+-- whose money has nowhere to go — a family's milk cheque short by an amount with no receivable to pay. A cooperative
+-- chooses which of these it uses; it cannot invent a new kind of withholding.
+--
+-- `meta.destination` names the mechanism that moves the money, and `meta.unsupported_reason` is the refusal an
+-- operator READS when there isn't one — in the data, beside the vocabulary, rather than in a string in a service.
+--
+-- ALSO INSERTED BY MIGRATION 0160, identically and idempotently: that migration backfills a FK against these rows,
+-- and TENANT-6c-2 established that seeds run AFTER migrations. The seed states the desired vocabulary for a fresh
+-- install; the migration is what a database that already exists gets. Neither is allowed to diverge from the other.
+-- **`ON CONFLICT (type_code,tenant_id,code)` CANNOT FIRE FOR A PLATFORM ROW.** `tenant_id IS NULL` and Postgres
+-- treats NULLs as DISTINCT in a unique index unless it is declared `NULLS NOT DISTINCT`, which 0001's is not. So every
+-- `ON CONFLICT DO NOTHING` above this line is decoration for platform values, this file is NOT idempotent, and a
+-- freshly built database carries 139 duplicated codes out of 311 — including `ledger_txn_type`, `payment_purpose` and
+-- `boost_tier` (whose price lives in `meta`). Named in migration 0160's header and ESCALATED: de-duplicating them
+-- means repointing FKs on the ledger, which needs a CODEOWNERS review and a founder ruling, not a dairy wave.
+-- This block uses `WHERE NOT EXISTS` so at least the vocabulary a milk bill's deduction FKs cannot be duplicated.
+INSERT INTO lookup_types (code,default_name,is_tenant_extendable)
+SELECT 'milk_deduction','Milk bill deduction type',false
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_types WHERE code='milk_deduction');
+
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('milk_deduction','feed_credit','Feed / input credit','{"destination":"member_credit","source_type":"dairy_member_credit"}',1),
+ ('milk_deduction','loan_emi','Loan instalment','{"destination":"loan","source_type":"loan"}',2),
+ ('milk_deduction','insurance','Insurance premium','{"destination":"none","unsupported_reason":"A premium is collected through the payments module as a gateway intent (insurance_policy) and activated by payments.payment_succeeded. There is no wallet-settled premium path, so a milk-bill deduction has nothing to pay into. Belongs to the insurance module."}',3),
+ ('milk_deduction','share','Cooperative share allotment','{"destination":"none","unsupported_reason":"The registry wave already ruled on this: the deduction, the consent record and the share certificate are one money movement, and coop_share_registers has no allotment act. Offering the deduction alone would take a family''s money for a certificate that never arrives."}',4)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);

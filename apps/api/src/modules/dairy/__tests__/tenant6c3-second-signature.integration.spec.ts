@@ -50,6 +50,14 @@ import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { MilkBillService } from '../services/milk-bill.service';
+import { MilkBillDeductionRepository } from '../repositories/milk-bill-deduction.repository';
+import { MilkBillDeductionConsentRepository } from '../repositories/milk-bill-deduction-consent.repository';
+import { DairyMemberCreditRepository } from '../repositories/dairy-member-credit.repository';
+import { DairyDeductionTypeRepository } from '../repositories/dairy-deduction-type.repository';
+import { MilkBillDeductionService } from '../services/milk-bill-deduction.service';
+import { LoanService } from '../../fintech/services/loan.service';
+import { LoanRepository } from '../../fintech/repositories/loan.repository';
+import { LoanRepaymentRepository } from '../../fintech/repositories/loan-repayment.repository';
 import { MilkBillDisputeService } from '../services/milk-bill-dispute.service';
 import { DairyBillCycleService } from '../services/dairy-bill-cycle.service';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
@@ -116,7 +124,16 @@ run('PC-56 TENANT-6c-3 · the second signature (integration, real Postgres)', ()
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
-    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo);
+    const lineRepo = new MilkBillDeductionRepository(replica as never);
+    const typeRepo = new DairyDeductionTypeRepository(replica as never);
+    const creditRepo = new DairyMemberCreditRepository(replica as never);
+    const consentRepo = new MilkBillDeductionConsentRepository(replica as never);
+    const applier = new MilkBillDeductionService(wallet, outbox, lineRepo, creditRepo, typeRepo,
+      new LoanService(uow, outbox, idem, metrics, audit, wallet, new LoanRepository(replica as never), new LoanRepaymentRepository(replica as never)));
+    bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
+      // [PC-56 TENANT-6c-4] the deduction's destination: the lines, the vocabulary, the credits, the consent, the
+      // applier that posts each line to what it pays, and the recovery kill-switch.
+      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags);
     cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo);
     disputes = new MilkBillDisputeService(uow, outbox, idem, metrics, audit, disputeRepo, billRepo, memRepo, cycleRepo, bills);
 

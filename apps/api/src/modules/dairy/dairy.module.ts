@@ -56,6 +56,21 @@ import { BillCyclesController } from './controllers/v1/bill-cycles.controller';
 import { BillDisputesController } from './controllers/v1/bill-disputes.controller';
 import { MilkBillDisputeService } from './services/milk-bill-dispute.service';
 import { MilkBillDisputeRepository } from './repositories/milk-bill-dispute.repository';
+// PC-56 TENANT-6c-4 · the deduction's DESTINATION: the vocabulary, the line, the feed credit it pays, the member's
+// fresh consent above 25%, and the applier that posts each line in the payment's own transaction.
+//
+// `FintechModule` is imported for ONE public service method — `LoanService.applyMilkBillDeduction` — because
+// `REPAYMENT_STYLES` has included `milk_bill_deduction` since the fintech module was written and nothing implemented
+// it. A repository is never crossed: the loan's invariants stay with the module that owns them (CLAUDE.md).
+import { FintechModule } from '../fintech/fintech.module';
+import { MemberCreditsController } from './controllers/v1/member-credits.controller';
+import { DairyMemberCreditService } from './services/dairy-member-credit.service';
+import { DairyMemberCreditRepository } from './repositories/dairy-member-credit.repository';
+import { MilkBillDeductionService } from './services/milk-bill-deduction.service';
+import { MilkBillDeductionRepository } from './repositories/milk-bill-deduction.repository';
+import { MilkBillDeductionConsentService } from './services/milk-bill-deduction-consent.service';
+import { MilkBillDeductionConsentRepository } from './repositories/milk-bill-deduction-consent.repository';
+import { DairyDeductionTypeRepository } from './repositories/dairy-deduction-type.repository';
 
 // [PC-56 TENANT-6c-1] What used to stand here said the cycle-close job "is instantiated by apps/worker with a
 // privileged kv_relay Pool". APPS/WORKER INSTANTIATED NOTHING OF THE KIND, and could not have: its JOBS registry is
@@ -64,9 +79,12 @@ import { MilkBillDisputeRepository } from './repositories/milk-bill-dispute.repo
 // It now runs through core/jobs/jobs.runner.ts, registered below beside the D2C cadence job — the pattern this file
 // already used for the one job it did wire.
 @Module({
+  imports: [FintechModule],
   controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController,
     // PC-56 TENANT-6c-2
-    BillCyclesController, BillDisputesController],
+    BillCyclesController, BillDisputesController,
+    // PC-56 TENANT-6c-4
+    MemberCreditsController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -90,8 +108,15 @@ import { MilkBillDisputeRepository } from './repositories/milk-bill-dispute.repo
     DairyQualityRepository, DairyQualityReadModel,
     // PC-56 TENANT-6c-2
     MilkBillDisputeRepository, MilkBillDisputeService,
+    // PC-56 TENANT-6c-4
+    DairyMemberCreditRepository, DairyMemberCreditService,
+    MilkBillDeductionRepository, MilkBillDeductionService,
+    MilkBillDeductionConsentRepository, MilkBillDeductionConsentService,
+    DairyDeductionTypeRepository,
   ],
-  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService],
+  exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
+    // PC-56 TENANT-6c-4
+    DairyMemberCreditService, MilkBillDeductionConsentService],
 })
 export class DairyModule implements OnModuleInit {
   constructor(

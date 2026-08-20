@@ -17,6 +17,11 @@ const twoAxis = (over: any = {}) => MilkRateCard.create({ id: 'rc1', tenantId: '
   pricingModel: 'two_axis', ratePerKgFatMinor: 50000n, ratePerKgSnfMinor: 30000n, baseRatePerLitreMinor: null,
   effectiveFrom: '2026-01-01', effectiveTo: null, ...over });
 
+// [PC-56 TENANT-6c-4] A deduction line now names the ROW IT PAYS. `{type, amountMinor}` was the old jsonb shape: a
+// free-typed label and an amount, referencing nothing, which is the defect that wave closed.
+const line = (type: string, amountMinor: bigint, sourceType: string) =>
+  ({ id: `ded-${type}`, type, amountMinor, sourceType, sourceId: `src-${type}`, status: 'pending' as const });
+
 describe('MilkRateCard — float-free pricing engine', () => {
   it('two_axis: 10kg @ 4.50% fat (₹500/kg) + 8.50% snf (₹300/kg) = ₹480.00 EXACT', () => {
     // 0.45kg fat × 50000 = 22500 ; 0.85kg snf × 30000 = 25500 ; total 48000
@@ -71,7 +76,7 @@ describe('milk-bill.state machine + net computation', () => {
   });
   it('net = gross − deductions; lifecycle emits the right events', () => {
     const b = MilkBill.generate({ id: 'b1', tenantId: 't1', membershipId: 'mem1', periodStart: '2026-06-01', periodEnd: '2026-06-07',
-      totalLitresMilli: 70000n, grossMinor: 48000n, deductions: [{ type: 'feed_credit', amountMinor: 5000n }, { type: 'loan_emi', amountMinor: 3000n }] });
+      totalLitresMilli: 70000n, grossMinor: 48000n, deductions: [line('feed_credit', 5000n, 'dairy_member_credit'), line('loan_emi', 3000n, 'loan')] });
     expect(b.toProps().deductionsMinor).toBe(8000n); expect(b.netMinor).toBe(40000n);
     b.pullEvents();
     b.preview(NOW, WINDOW, 'farmer1'); b.approve(); b.markPaid(AFTER_WINDOW);
@@ -79,7 +84,7 @@ describe('milk-bill.state machine + net computation', () => {
     expect(b.pullEvents().map((e) => e.type)).toEqual([DairyEventType.BillPreviewed, DairyEventType.BillApproved, DairyEventType.BillPaid]);
   });
   it('rejects deductions exceeding gross, and pay before approval', () => {
-    expect(() => MilkBill.generate({ id: 'b', tenantId: 't', membershipId: 'm', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n, deductions: [{ type: 'x', amountMinor: 2000n }] })).toThrow(BillNotPayableError);
+    expect(() => MilkBill.generate({ id: 'b', tenantId: 't', membershipId: 'm', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n, deductions: [line('feed_credit', 2000n, 'dairy_member_credit')] })).toThrow(BillNotPayableError);
     const b = MilkBill.generate({ id: 'b', tenantId: 't', membershipId: 'm', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n });
     expect(() => b.markPaid(AFTER_WINDOW)).toThrow(BillNotPayableError);
   });

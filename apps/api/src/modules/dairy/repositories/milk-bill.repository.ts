@@ -10,15 +10,18 @@ import { MilkBill, BillDeduction } from '../domain/milk-bill.entity';
 import { BillStatus } from '../domain/milk-bill.state';
 import { BillNotFoundError } from '../domain/dairy.errors';
 
-const COLS = `id, tenant_id, membership_id, cycle_id, period_start, period_end, total_litres, gross_minor, deductions, deductions_minor, net_minor, status,
+// [PC-56 TENANT-6c-4] `deductions` (the jsonb blob) is GONE — 0160 backfilled it into `milk_bill_deductions` rows and
+// dropped the column. A bill's lines are loaded explicitly, by the callers that need them, through
+// `MilkBillDeductionRepository`; a bill read without them carries `null` and refuses to answer for them, because `[]`
+// and "not loaded" are different facts and the difference is a member's money.
+const COLS = `id, tenant_id, membership_id, cycle_id, period_start, period_end, total_litres, gross_minor, deductions_minor, net_minor, status,
               dispute_window_ends, previewed_at, voided_at, voided_by, void_reason, payout_id, created_at`;
 
 /** Litres are stored as `numeric(12,3)` (0157 widened them to match `milk_collections.weight_kg`) and read as a
  *  scaled integer. Never `Number(x) * 1000` — see `core/database/pg-numeric.ts`. */
 const LITRE_SCALE = 3;
 
-function toDomain(r: any): MilkBill {
-  const deductions: BillDeduction[] = (r.deductions ?? []).map((x: any) => ({ type: x.type, amountMinor: BigInt(x.amount_minor ?? x.amountMinor ?? '0') }));
+function toDomain(r: any, deductions: BillDeduction[] | null = null): MilkBill {
   return MilkBill.rehydrate({ id: r.id, tenantId: r.tenant_id, membershipId: r.membership_id, cycleId: r.cycle_id ?? null,
     // [PC-56 TENANT-6c-1] `period_start`/`period_end` are `date` columns and were read through `toISOString().slice(0,10)`
     // — a day early in every timezone ahead of UTC, i.e. in the launch market. This repository sat on TENANT-6b-1's
@@ -30,7 +33,6 @@ function toDomain(r: any): MilkBill {
     previewedAt: r.previewed_at ?? null, voidedAt: r.voided_at ?? null, voidedBy: r.voided_by ?? null, voidReason: r.void_reason ?? null,
     payoutId: r.payout_id, createdAt: r.created_at });
 }
-const serializeDeductions = (ds: BillDeduction[]) => JSON.stringify(ds.map((x) => ({ type: x.type, amount_minor: x.amountMinor.toString() })));
 
 @Injectable()
 export class MilkBillRepository {
@@ -39,18 +41,25 @@ export class MilkBillRepository {
   async insert(tx: TxContext, b: MilkBill): Promise<void> {
     const p = b.toProps();
     await tx.query(
-      `INSERT INTO milk_bills (id, tenant_id, membership_id, cycle_id, period_start, period_end, total_litres, gross_minor, deductions, deductions_minor, net_minor, status, dispute_window_ends)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13)`,
+      `INSERT INTO milk_bills (id, tenant_id, membership_id, cycle_id, period_start, period_end, total_litres, gross_minor, deductions_minor, net_minor, status, dispute_window_ends)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [p.id, p.tenantId, p.membershipId, p.cycleId, p.periodStart, p.periodEnd, numericFromScaled(p.totalLitresMilli, LITRE_SCALE), p.grossMinor.toString(),
-       serializeDeductions(p.deductions), p.deductionsMinor.toString(), p.netMinor.toString(), p.status, p.disputeWindowEnds]);
+       p.deductionsMinor.toString(), p.netMinor.toString(), p.status, p.disputeWindowEnds]);
   }
-  async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<MilkBill | null> {
+  /**
+   * Lock a bill.
+   *
+   * `deductions` is the LINES, passed in by the caller that loaded them (the pay path always does) and left `null`
+   * otherwise. Loading them here would put a second query on every transition — approve, dispute, void — that has no
+   * use for them, and defaulting them to `[]` is the silent zero this wave refuses.
+   */
+  async getForUpdate(tx: TxContext, tenantId: string, id: string, deductions: BillDeduction[] | null = null): Promise<MilkBill | null> {
     const r = await tx.query(`SELECT ${COLS} FROM milk_bills WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
-    return r.rows[0] ? toDomain(r.rows[0]) : null;
+    return r.rows[0] ? toDomain(r.rows[0], deductions) : null;
   }
-  async getById(tenantId: string, id: string): Promise<MilkBill | null> {
+  async getById(tenantId: string, id: string, deductions: BillDeduction[] | null = null): Promise<MilkBill | null> {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM milk_bills WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [id, tenantId]);
-    return r.rows[0] ? toDomain(r.rows[0]) : null;
+    return r.rows[0] ? toDomain(r.rows[0], deductions) : null;
   }
   /**
    * Persist a bill's state.
@@ -104,7 +113,7 @@ export class MilkBillRepository {
       `SELECT ${COLS} FROM milk_bills
         WHERE tenant_id=$1 AND cycle_id=$2 AND status='previewed' AND deleted_at IS NULL
         ORDER BY created_at, id LIMIT $3`, [tenantId, cycleId, limit]);
-    return r.rows.map(toDomain);
+    return r.rows.map((row) => toDomain(row));
   }
 
   /** The preview pass's claim: this cycle's DRAFT bills, bounded and oldest first. Re-callable — a bill that has
@@ -114,7 +123,7 @@ export class MilkBillRepository {
       `SELECT ${COLS} FROM milk_bills
         WHERE tenant_id=$1 AND cycle_id=$2 AND status='draft' AND deleted_at IS NULL
         ORDER BY created_at, id LIMIT $3`, [tenantId, cycleId, limit]);
-    return r.rows.map(toDomain);
+    return r.rows.map((row) => toDomain(row));
   }
 
   /**
@@ -164,6 +173,6 @@ export class MilkBillRepository {
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM milk_bills WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
-    return r.rows.map(toDomain);
+    return r.rows.map((row) => toDomain(row));
   }
 }

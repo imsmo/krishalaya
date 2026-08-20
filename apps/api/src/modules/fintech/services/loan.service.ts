@@ -59,6 +59,68 @@ export class LoanService {
         }, { userId: actor.userId })));
   }
 
+  /**
+   * [PC-56 TENANT-6c-4] REPAY A LOAN OUT OF A MILK BILL, inside the dairy payment's own transaction.
+   *
+   * THE PROMISE THIS KEEPS WAS MADE TWICE, IN THIS MODULE, AND NOTHING IMPLEMENTED IT:
+   *   * `fintech/domain/fintech.events.ts`: `REPAYMENT_STYLES = ['emi','bullet','harvest_aligned','milk_bill_deduction']`
+   *   * `0011_fintech_schemes.sql`, on `loan_repayments.channel`: `-- upi|milk_bill_deduction|harvest_settlement|cash_partner`
+   * So a loan could be sold to a dairy farmer on the understanding that it comes out of her milk cheque, and the dairy
+   * module had never heard of it. W169's *"−₹1,240 loan EMI + insurance"* line was the other half of the same gap.
+   *
+   * WHY THIS SHAPE. It takes the CALLER'S transaction (`tx`) rather than opening its own, exactly as
+   * `MilkBillService.voidLoaded` does and for the same reason TENANT-6c-2 learned the hard way: the dairy payment has
+   * already locked the bill and posted the gross, and a self-transacting call would ask a second connection for a lock
+   * the first one holds and wait on itself. It is a public method on this module's SERVICE, never a repository handed
+   * across a module boundary (CLAUDE.md: *"No module imports another module's repositories — only its public service
+   * or events"*), so the loan's own invariants — status, ownership, over-repayment, the closing transition — are
+   * enforced by the module that owns them and cannot be reimplemented differently by the dairy side.
+   *
+   * NO PERMISSION CHECK, and that is deliberate rather than an omission: this is not a person acting on a loan, it is
+   * a settlement the cooperative and the borrower both already agreed to, and the authorisation lives where the
+   * decision was made — `dairy.manage` + `settlement.close` + the checker on the cycle (TENANT-6c-3), plus the
+   * member's own fresh consent above the threshold (W169's 25% rule). What IS checked here is that the loan belongs
+   * to this tenant AND to the member being paid: a deduction line naming somebody else's loan would take one family's
+   * milk money to pay another family's debt, which is the worst thing this file could be made to do.
+   *
+   * THERE IS NO EMI SCHEDULE ON THIS PLATFORM (`loan-repayment.entity.ts` says so: *"a pre-generated EMI schedule is
+   * deferred"*), so this cannot verify that `amountMinor` IS the instalment due. It verifies what it can — the amount
+   * is positive, the loan is servicing, and it does not exceed the outstanding — and the caller's own consent gate is
+   * what stands between a member and an amount they did not agree to. The schedule is named, not faked.
+   */
+  async applyMilkBillDeduction(tx: TxContext, tenantId: string, input: {
+    loanId: string; borrowerUserId: string; amountMinor: bigint; billId: string; deductionId: string; initiatedBy: string;
+  }): Promise<{ loanId: string; repaymentId: string; outstandingMinor: string; walletTxnId: string }> {
+    const loan = await this.loans.getForUpdate(tx, tenantId, input.loanId);
+    if (!loan) throw new LoanNotFoundError(input.loanId);
+    // 404, not 403: a loan id that is not this member's must not be confirmable by probing the error.
+    if (loan.borrowerUserId !== input.borrowerUserId) throw new LoanNotFoundError(input.loanId);
+    const now = new Date();
+    loan.repay(input.amountMinor, now);          // throws OverRepayment / not-servicing; closes the loan at zero
+    await this.loans.update(tx, loan);
+    const rep = LoanRepayment.record({
+      id: uuidv7(), loanId: input.loanId, tenantId, dueDate: now.toISOString().slice(0, 10),
+      amountDueMinor: input.amountMinor, amountPaidMinor: input.amountMinor, paidAt: now,
+      // The channel `0011` named and nothing ever wrote.
+      channel: 'milk_bill_deduction',
+    });
+    await this.repayments.insert(tx, rep);
+    const txn = await this.wallet.post(tx, {
+      tenantId, txnType: 'loan_repayment',
+      // Keyed on the DEDUCTION LINE, not on the loan or the bill: one bill can carry a line for each of a member's
+      // loans, and a rebuilt bill (TENANT-6c-2's void) presents new lines for the same loan. The line is the attempt.
+      idempotencyKey: `milkdeduct:${input.deductionId}`,
+      referenceType: 'loan', referenceId: input.loanId, initiatedBy: input.initiatedBy,
+      legs: [{ account: userMain(loan.borrowerUserId), amountMinor: -input.amountMinor }, { account: tenantMain(tenantId), amountMinor: input.amountMinor }],
+    });
+    await this.audit.write(tx, { tenantId, actorUserId: input.initiatedBy, action: 'fintech.loan.repaid_from_milk_bill',
+      entityType: 'loan', entityId: input.loanId,
+      newValue: { amountMinor: input.amountMinor.toString(), outstandingMinor: loan.outstandingMinor.toString(), billId: input.billId, deductionId: input.deductionId },
+      ip: null });
+    await this.flush(tx, tenantId, input.loanId, loan.pullEvents());
+    return { loanId: input.loanId, repaymentId: rep.id, outstandingMinor: loan.outstandingMinor.toString(), walletTxnId: txn.txnId };
+  }
+
   async getById(tenantId: string, actor: FintechActor, id: string) {
     const l = await this.loans.getById(tenantId, id);
     if (!l) throw new LoanNotFoundError(id);

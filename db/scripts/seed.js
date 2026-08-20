@@ -30,6 +30,23 @@ const ORDER = [
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',
+  // [PC-56 TENANT-6c-4] A SEED FILE THIS LIST HAS NEVER MENTIONED, AND THEREFORE NOTHING HAS EVER APPLIED.
+  //
+  // `rules/0208_fintech_products.sql` — the platform's seeded NBFC partner and its Kharif crop-loan product, with the
+  // fixed id `22222222-0000-7000-8000-000000000101` — shares the number 0208 with the schemes starter set, and only
+  // the schemes file was listed. So that product has never existed in any database, and
+  // `modules/fintech/__tests__/fintech.integration.spec.ts` (which asks for it by that id, in its own header: *"the
+  // seeded crop-loan product (0208)"*) has been RED since it was written. A seed file nothing applies is the same
+  // defect class as a table with no writer, which this programme has now found five times. This runner does fail
+  // loudly on a MISSING file — it is a file that was never LISTED that stayed invisible, and the integration
+  // harness's `if (!fs.existsSync(full)) continue` is what kept it quiet there too.
+  'rules/0208_fintech_products.sql',
+  // NOT ADDED, AND NAMED INSTEAD: `rules/0209_scheme_catalogue.sql` is a SECOND seed for the `schemes` table and a
+  // corrected rewrite of 0208_schemes_starter_set — it inserts the same `pm_kisan` code (so adding it alongside the
+  // listed file fails on `schemes_code_key`), and, more seriously, the LISTED file stores a **`tenant_type` lookup id
+  // in `schemes.category_id`** while 0209 uses the `scheme_category` one it should be. Wiring the correction means
+  // deciding what happens to rows that already exist — an UPDATE and a migration in the schemes module, not an
+  // INSERT in a dairy wave. ESCALATED with the lookup-duplication finding (migration 0160's header).
   'catalogue/0101_category_tree.sql','catalogue/0102_attributes_options.sql','catalogue/0103_launch_crops_30.sql',
   'catalogue/0104_attribute_templates.sql','catalogue/0105_search_synonyms.sql',
 ];

@@ -141,3 +141,90 @@ export class DeductionHasNoDestinationError extends DomainError {
       409, { billId, deductionsMinor, types });
   }
 }
+
+/**
+ * [PC-56 TENANT-6c-4] A deduction line names a TYPE whose money this platform cannot move.
+ *
+ * Replaces the blanket refusal above for every type that now HAS a destination. The reason is not composed here — it
+ * is read from `lookup_values.meta.unsupported_reason`, the same row the vocabulary comes from, so an operator is told
+ * why `insurance` cannot be recovered (its premium is a gateway intent, not a wallet movement) or why `share` cannot
+ * (the registry wave's ruling: the deduction, the consent and the certificate are one movement, and the allotment act
+ * does not exist) rather than being told "unsupported".
+ */
+export class DeductionTypeUnsupportedError extends DomainError {
+  constructor(billId: string, typeCode: string, reason: string) {
+    super('DEDUCTION_TYPE_UNSUPPORTED', `Deduction type '${typeCode}' has no destination: ${reason}`, 409, { billId, typeCode, reason });
+  }
+}
+
+/** [PC-56 TENANT-6c-4] A line points at a source row that does not exist, belongs to somebody else, or is settled. */
+export class DeductionSourceInvalidError extends DomainError {
+  constructor(sourceType: string, sourceId: string, why: string) {
+    super('DEDUCTION_SOURCE_INVALID', `Deduction source ${sourceType} is not recoverable: ${why}`, 409, { sourceType, sourceId, why });
+  }
+}
+
+/**
+ * [PC-56 TENANT-6c-4] W169: *"Deductions above 25% of gross need the member's fresh consent, not just standing
+ * instructions."* The threshold is crossed and there is no matching consent, so the payment refuses.
+ *
+ * `stale` distinguishes the two cases an operator must not confuse: the member has never been asked, versus the
+ * member consented to FIGURES THAT HAVE SINCE CHANGED (a bill voided and rebuilt after a dispute is a different bill
+ * with the same period). The second one needs a fresh ask, not a chase.
+ */
+export class DeductionConsentRequiredError extends DomainError {
+  constructor(billId: string, grossMinor: string, deductionsMinor: string, thresholdPct: number, stale: boolean) {
+    super('DEDUCTION_CONSENT_REQUIRED',
+      stale
+        ? 'This member consented to different figures — the bill has changed since, so their consent must be asked again'
+        : 'Deductions are above the consent threshold and this member has not agreed to them',
+      409, { billId, grossMinor, deductionsMinor, thresholdPct, stale });
+  }
+}
+
+/** [PC-56 TENANT-6c-4] The member REFUSED. Not an error state to retry — a decision the cooperative must answer. */
+export class DeductionConsentRefusedError extends DomainError {
+  constructor(billId: string, recordedAt: string) {
+    super('DEDUCTION_CONSENT_REFUSED',
+      'This member has refused these deductions — the bill must be corrected or the deduction dropped, not retried',
+      409, { billId, recordedAt });
+  }
+}
+
+/** [PC-56 TENANT-6c-4] The recovery kill-switch (`dairy_deduction_recovery`) is off for this tenant. */
+export class DeductionRecoveryDisabledError extends DomainError {
+  constructor(billId: string) {
+    super('DEDUCTION_RECOVERY_DISABLED',
+      'Deduction recovery is switched off for this tenant, so a bill carrying deductions cannot be paid',
+      409, { billId });
+  }
+}
+
+/**
+ * [PC-56 TENANT-6c-4] A bill was asked about its deduction LINES and they were never loaded.
+ *
+ * An empty array and "not loaded" are different facts, and the difference is a member's money: list reads deliberately
+ * do not join the lines (312 rows × N lines on a partitioned money table), so a bill from `listFor` carries `null`
+ * rather than `[]`. Any code that needs the lines gets this refusal instead of a silent zero — the same ruling
+ * TENANT-6c-1 made about measuring a fact rather than inferring it from an absence.
+ */
+export class DeductionLinesNotLoadedError extends DomainError {
+  constructor(billId: string) {
+    super('DEDUCTION_LINES_NOT_LOADED', 'This bill was read without its deduction lines', 500, { billId });
+  }
+}
+
+/** [PC-56 TENANT-6c-4] A member credit was asked to record a recovery it cannot support. */
+export class MemberCreditNotRecoverableError extends DomainError {
+  constructor(id: string, why: string) {
+    super('DAIRY_MEMBER_CREDIT_NOT_RECOVERABLE', `Member credit cannot be recovered: ${why}`, 409, { id, why });
+  }
+}
+
+/** [PC-56 TENANT-6c-4] Zero-row UPDATE on the credit or the line — the fail-closed shape 5d/6b-1/6c-2 all closed. */
+export class MemberCreditNotFoundError extends DomainError {
+  constructor(id: string) { super('DAIRY_MEMBER_CREDIT_NOT_FOUND', 'Member credit not found', 404, { id }); }
+}
+export class BillDeductionNotFoundError extends DomainError {
+  constructor(id: string) { super('MILK_BILL_DEDUCTION_NOT_FOUND', 'Bill deduction line not found', 404, { id }); }
+}

@@ -12,6 +12,8 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { MilkBillService } from '../../services/milk-bill.service';
 import { MilkBillDisputeService } from '../../services/milk-bill-dispute.service';
+import { MilkBillDeductionConsentService } from '../../services/milk-bill-deduction-consent.service';
+import { RecordDeductionConsentSchema, RecordDeductionConsentDto } from '../../dto/deduction-consent.dto';
 import { RaiseDisputeSchema, RaiseDisputeDto, VoidBillSchema, VoidBillDto } from '../../dto/milk-bill-dispute.dto';
 import { GenerateBillSchema, GenerateBillDto } from '../../dto/create-milk-bill.dto';
 import { QueryBillsSchema, QueryBillsDto } from '../../dto/query-milk-bill.dto';
@@ -24,7 +26,8 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('dairy')
 export class MilkBillsController {
-  constructor(private readonly bills: MilkBillService, private readonly disputes: MilkBillDisputeService) {}
+  constructor(private readonly bills: MilkBillService, private readonly disputes: MilkBillDisputeService,
+              private readonly consents: MilkBillDeductionConsentService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   @Post('generate') @RequirePermissions(DairyPermissions.Manage)
@@ -56,6 +59,35 @@ export class MilkBillsController {
                @Headers('idempotency-key') key: string, @ZodBody(RaiseDisputeSchema) dto: RaiseDisputeDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.disputes.raise(ctx.tenantId, ctx.userId, id, dto.reason, key, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /**
+   * [PC-56 TENANT-6c-4] W169: *"Deductions above 25% of gross need the member's fresh consent, not just standing
+   * instructions."* THE MEMBER'S OWN ANSWER.
+   *
+   * The second dairy route on this platform with NO `@RequirePermissions`, for the reason the first one has none:
+   * requiring `dairy.manage` to consent to a withholding would mean the only people who can agree to it are the people
+   * doing it. Ownership-checked, 404 not 403.
+   *
+   * NOT behind a flag. A member's ability to agree or refuse must not depend on whether a console feature is switched
+   * on — 0156's ruling for the pour-level hold, and the same reason 6c-2 left the dispute outside its flag.
+   */
+  @Post(':id/deduction-consent')
+  recordConsent(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string,
+                @Headers('idempotency-key') key: string, @ZodBody(RecordDeductionConsentSchema) dto: RecordDeductionConsentDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.consents.record(ctx.tenantId, ctx.userId, id, dto, key, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /**
+   * What is being taken from this bill, whether it needs the member's consent, and what they have said so far.
+   *
+   * The member's own read, same ownership check: a consent request with nothing to read is a form, and W169's promise
+   * is that the member SEES every deduction.
+   */
+  @Get(':id/deduction-consent')
+  consentStatus(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.consents.statusFor(ctx.tenantId, ctx.userId, id).then((data) => ({ data }));
   }
 
   /** One bill's dispute history — the member's own, or staff's. */

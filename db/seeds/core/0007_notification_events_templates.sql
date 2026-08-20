@@ -179,6 +179,44 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
 ON CONFLICT (event_code, name) DO NOTHING;
 
 -- ---------------------------------------------------------------------------------------------------------------
+-- PC-56 TENANT-6c-4 · THE ONE NOTICE THAT NEEDS AN ANSWER
+-- ---------------------------------------------------------------------------------------------------------------
+-- W169: *"Deductions above 25% of gross need the member's fresh consent, not just standing instructions."*
+--
+-- Every other dairy notice in this file TELLS a member something. This one ASKS, and the difference matters: without
+-- it the consent gate is a bill that silently never pays while the member is told nothing — the same shape as
+-- TENANT-6c-2's window that nothing wrote, one layer up. `user_can_opt_out = false`, because a farmer who muted dairy
+-- notifications must still be asked before a fifth of their fortnight is withheld, and `critical` rather than
+-- `important` because it is the only dairy message whose absence stops the money entirely.
+--
+-- The copy names the FIGURES and the LINES, not a percentage: "Rs 2,400 of Rs 9,000 - feed credit Rs 500, loan
+-- Rs 1,900" is a sentence a member can check against their own memory of the fortnight, and "your deductions exceed
+-- 25%" is not.
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
+ ('dairy.bill_deduction_consent_required', 'Milk bill deductions need your agreement', 'critical', '["sms","push","inapp"]', false, false)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('dairy.bill_deduction_consent_required','sms','gu',NULL,NULL,'{{period}} ના તમારા દૂધ બિલમાં {{gross}} માંથી {{deductions}} કપાત છે ({{lines}}). તમારી સંમતિ વગર પેમેન્ટ થશે નહીં — એપ પર હા કે ના જણાવો અથવા તમારા કેન્દ્રને કહો. Krishalaya','DLT_DAIRY_CONSENT_GU',true),
+ ('dairy.bill_deduction_consent_required','sms','hi',NULL,NULL,'{{period}} ke aapke doodh bill mein {{gross}} me se {{deductions}} katauti hai ({{lines}}). Aapki sehmati ke bina bhugtan nahi hoga — app par haan ya na batayein ya apne kendra ko kahein. Krishalaya','DLT_DAIRY_CONSENT_HI',true),
+ ('dairy.bill_deduction_consent_required','sms','en',NULL,NULL,'Your {{period}} milk bill has {{deductions}} of deductions out of {{gross}} ({{lines}}). No payment goes out without your agreement — say yes or no in the app, or tell your centre. Krishalaya','DLT_DAIRY_CONSENT_EN',true),
+ ('dairy.bill_deduction_consent_required','push','en',NULL,'Your agreement is needed','{{deductions}} of {{gross}} is being deducted from your {{period}} bill. Nothing is paid until you answer.',NULL,true),
+ ('dairy.bill_deduction_consent_required','push','hi',NULL,'Aapki sehmati chahiye','{{period}} bill se {{gross}} me se {{deductions}} kat rahi hai. Aapke jawab tak bhugtan nahi hoga.',NULL,true),
+ ('dairy.bill_deduction_consent_required','push','gu',NULL,'તમારી સંમતિ જોઈએ','{{period}} બિલમાંથી {{gross}} માંથી {{deductions}} કપાત થાય છે. તમારા જવાબ સુધી પેમેન્ટ નહીં થાય.',NULL,true),
+ ('dairy.bill_deduction_consent_required','inapp','en',NULL,'Your agreement is needed','Your {{period}} bill is {{gross}} and {{deductions}} of it is being deducted: {{lines}}. That is more than {{threshold_pct}}% of the bill, so it cannot be paid until you agree. You can say no — the cooperative will then correct the bill or drop the deduction, and nothing moves meanwhile.',NULL,true),
+ ('dairy.bill_deduction_consent_required','inapp','hi',NULL,'Aapki sehmati chahiye','{{period}} ka bill {{gross}} hai aur usme se {{deductions}} kat rahi hai: {{lines}}. Yah bill ke {{threshold_pct}}% se zyada hai, is liye aapki sehmati ke bina bhugtan nahi hoga. Aap na bhi keh sakte hain — tab samiti bill theek karegi ya katauti hatayegi, aur tab tak kuch nahi hilega.',NULL,true),
+ ('dairy.bill_deduction_consent_required','inapp','gu',NULL,'તમારી સંમતિ જોઈએ','{{period}} નું બિલ {{gross}} છે અને તેમાંથી {{deductions}} કપાત થાય છે: {{lines}}. આ બિલના {{threshold_pct}}% થી વધુ છે, તેથી તમારી સંમતિ વગર પેમેન્ટ થશે નહીં. તમે ના પણ કહી શકો — તો સમિતિ બિલ સુધારશે અથવા કપાત હટાવશે, અને ત્યાં સુધી કંઈ હલશે નહીં.',NULL,true)
+ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('dairy.bill_deduction_consent_required', 'period',        'milk_bills.period_start..period_end',        '01-15 Jul', true),
+ ('dairy.bill_deduction_consent_required', 'gross',         'milk_bills.gross_minor + currency',           'Rs 9,414',  true),
+ ('dairy.bill_deduction_consent_required', 'deductions',    'milk_bills.deductions_minor + currency',      'Rs 2,400',  true),
+ ('dairy.bill_deduction_consent_required', 'lines',         'milk_bill_deductions rows (type + amount)',   'feed credit Rs 500, loan Rs 1,900', true),
+ ('dairy.bill_deduction_consent_required', 'threshold_pct', 'setting dairy.deduction_consent_pct',          '25',        true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
+-- ---------------------------------------------------------------------------------------------------------------
 -- PC-56 TENANT-6c-2 · **A PLACEHOLDER DLT ID IS NOT A REGISTRATION** (and TENANT-6b-1 shipped four that said it was)
 -- ---------------------------------------------------------------------------------------------------------------
 -- 0101 made this ruling and wrote the argument out: in India a transactional SMS template must be registered with the
