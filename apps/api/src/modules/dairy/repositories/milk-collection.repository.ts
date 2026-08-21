@@ -33,6 +33,29 @@ const centiToPct = (c: bigint) => (Number(c) / 100).toFixed(2);
 export class MilkCollectionRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
+  /**
+   * [PC-56 TENANT-6d-3] The last day this membership poured AT A GIVEN CENTRE — the slip a move may not contradict.
+   *
+   * Index-served and partition-pruned by `idx_milkcoll_member (membership_id, collected_on DESC)`. No lower date bound
+   * on purpose: the question is *"when did they last stand at this counter"*, and a member who poured once in March
+   * and then stopped still poured in March. The service turns this into `earliestEffectiveFrom`.
+   */
+  async lastPourDayAt(tx: TxContext, tenantId: string, membershipId: string, mccId: string): Promise<string | null> {
+    const r = await tx.query(
+      `SELECT max(collected_on)::text AS d FROM milk_collections
+        WHERE tenant_id=$1 AND membership_id=$2 AND mcc_id=$3`, [tenantId, membershipId, mccId]);
+    const d = (r.rows[0] as any)?.d;
+    return d == null ? null : String(d);
+  }
+
+  /** Pours at a centre with no bill yet — the caution a move carries, counted rather than guessed. */
+  async unbilledPoursAt(tx: TxContext, tenantId: string, membershipId: string, mccId: string): Promise<number> {
+    const r = await tx.query(
+      `SELECT count(*)::int AS n FROM milk_collections
+        WHERE tenant_id=$1 AND membership_id=$2 AND mcc_id=$3 AND milk_bill_id IS NULL`, [tenantId, membershipId, mccId]);
+    return Number((r.rows[0] as any)?.n ?? 0);
+  }
+
   /** Insert; relies on UNIQUE(membership_id, collected_on, shift). Throws on duplicate (23505). */
   async insert(tx: TxContext, c: MilkCollection): Promise<void> {
     const p = c.toProps();

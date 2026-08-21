@@ -36,7 +36,7 @@ import { SdkError } from '@krishalaya/sdk-js';
 import type { DairyQualityDesk } from '@krishalaya/sdk-js';
 import {
   RATE_CARDS_HREF, animalTypeKey, cardAmbiguityKey, cardCheckerKey, cardEffectiveKey, cardSupersedeKey,
-  committeeKey, densityKey, emptyKey, exampleBasisKey, exampleLines, exampleWithheldBonusKey, flagTitleParts,
+  committeeKey, densityKey, emptyKey, exampleBasisKey, exampleLines, exampleWithheldBonusKey, flagCodeIsCurrentKey, flagTitleParts,
   flagsClaimKey, flagsTone, holdKey, holdTone, memberLabel, memberPresentKey, nextActKey, premiumBandKey,
   premiumBandPairText, premiumBandShareText, pricingModelKey, protocolStepKey, protocolStepTone, qualityState,
   qualityStateKey, reasonKey, reasonOrder, reviewFlagsCountText, sealedKey, slabText, slabsNotAppliedKey,
@@ -195,6 +195,8 @@ export default async function DairyQualityPage({ searchParams }: { searchParams:
                     <>
                       <strong>{flagTitleParts(f).mcc ?? t.t('common.dash')}</strong>{' '}
                       <span className="kv-field__hint">{t.t(flagTitleParts(f).shiftKey)} · {formatDate(f.collectedOn, lang)}</span>
+                      {/* [TENANT-6d-3] The card is resolved as of the pour; this says so when it could not be. */}
+                      {flagCodeIsCurrentKey(f) && <span className="kv-field__hint"> · {t.t(flagCodeIsCurrentKey(f)!)}</span>}
                       <br />
                       {/* W168 masks the member on a screen about somebody's honesty. The API never sends the whole code. */}
                       {memberLabel(f).text

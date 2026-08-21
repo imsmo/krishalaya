@@ -395,7 +395,8 @@ describe('PC-56 TENANT-6d-2 · the read-model does not trust its caller', () => 
   it('refuses without `dairy.manage` before it reads anything', async () => {
     const console_ = { board: jest.fn(), tanks: jest.fn(), membershipTotal: jest.fn(), preferenceCounts: jest.fn(), cyclesByPreference: jest.fn() };
     const rm = new DairyCentresReadModel({ forTenant: jest.fn() } as never, console_ as never, { thresholds: jest.fn() } as never,
-      { isEnabled: jest.fn() } as never, { inc: jest.fn(), observe: jest.fn() } as never);
+      // [TENANT-6d-3] The board now also reports whether the move is switched on and how many memberships have used it.
+      { movedCount: jest.fn() } as never, { isEnabled: jest.fn() } as never, { inc: jest.fn(), observe: jest.fn() } as never);
     // TENANT-6c-6 shipped a console that took `canManage` from its caller on trust. A read-model is reachable from
     // anything.
     await expect(rm.view('t1', { userId: 'x', canManage: false } as never)).rejects.toBeInstanceOf(DairyForbiddenError);
@@ -573,8 +574,10 @@ describe('PC-56 TENANT-6d-2 · the board the read-model composes', () => {
     };
     const replica = { forTenant: () => ({ query: jest.fn().mockResolvedValue({ rows: [{ n: NOW }] }) }) };
     const units = { thresholds: jest.fn().mockResolvedValue({ divertDeci: 75, condemnDeci: 80, silenceMinutes: 15 }) };
-    return new DairyCentresReadModel(replica as never, repo as never, units as never, { isEnabled: jest.fn() } as never,
-      { inc: jest.fn(), observe: jest.fn() } as never);
+    // [TENANT-6d-3] The move's flag and its usage count. `false` here keeps these tests about the board itself.
+    const routes = { movedCount: jest.fn().mockResolvedValue(0) };
+    return new DairyCentresReadModel(replica as never, repo as never, units as never, routes as never,
+      { isEnabled: jest.fn().mockResolvedValue(false) } as never, { inc: jest.fn(), observe: jest.fn() } as never);
   }
   const desk = { userId: 'desk', canManage: true } as never;
 
@@ -611,10 +614,15 @@ describe('PC-56 TENANT-6d-2 · the board the read-model composes', () => {
     expect(v.tanksNeedingAttention).toBe(1);
   });
 
-  it('counts the centres with no hours recorded, and never claims the transfer is built', async () => {
+  // [UPDATED BY PC-56 TENANT-6d-3] `transferBuilt` is TRUE from that wave, and `transferEnabled` is the tenant's own
+  // switch — one says the platform can move a membership, the other says this cooperative may. A board that offered
+  // the form while the flag was off would send an operator into a 404.
+  it('counts the centres with no hours recorded, and separates CAN from MAY on the move', async () => {
     const v = await rm().view('t1', desk);
     expect(v.hoursUnrecorded).toBe(1);
-    expect(v.gaps.transferBuilt).toBe(false);
+    expect(v.gaps.transferBuilt).toBe(true);
+    expect(v.transferEnabled).toBe(false);
+    expect(v.moved).toBe(0);
   });
 });
 

@@ -20,6 +20,8 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { BillCycleNotFoundError, DairyForbiddenError } from '../domain/dairy.errors';
+// PC-56 TENANT-6d-3: a bill's centres come from its own pours now, not from where the member happens to be today.
+import { billCentres, billSpansCentres } from '../domain/dairy-membership-move';
 import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repository';
 import { MilkBillRepository } from '../repositories/milk-bill.repository';
 import { MilkBillDeductionRepository } from '../repositories/milk-bill-deduction.repository';
@@ -47,7 +49,22 @@ export interface CycleConsoleRow {
   memberName: string | null;
   /** MASKED, the way W168 masks it and W169 draws it (`AND2-••02`) — the code is the counter identifier. */
   memberCodeMasked: string;
-  mccCode: string | null;
+  /**
+   * [PC-56 TENANT-6d-3] True when the masked code above is the membership's CURRENT card rather than the one it
+   * carried when this fortnight closed — i.e. the route history does not reach that far back. The screen says so
+   * instead of presenting today's card as the historical one.
+   */
+  memberCodeIsCurrent: boolean;
+  /**
+   * [PC-56 TENANT-6d-3] Where this bill's milk was poured, biggest first.
+   *
+   * This was `mccCode`, a single value read from the membership's CURRENT route — so the day a membership could move,
+   * every closed fortnight would have re-attributed itself. It is a LIST because a fortnight in which the member
+   * moved was poured at two centres, and empty when the bill has no collections behind it at all.
+   */
+  pouredCentres: Array<{ mccId: string; code: string; pours: number }>;
+  /** Did this fortnight's milk come from more than one centre? W171's move, seen from the register. */
+  spansCentres: boolean;
   litres: string;
   /** *"13.6 L/day this cycle"* — over the days this bill covers, null when the period is unusable. */
   litresPerDay: string | null;
@@ -272,7 +289,9 @@ export class DairyCycleConsoleReadModel {
       membershipId: r.membershipId,
       memberName: r.memberName,
       memberCodeMasked: maskMemberCode(r.memberCode),
-      mccCode: r.mccCode,
+      memberCodeIsCurrent: r.memberCodeIsCurrent,
+      pouredCentres: billCentres(r.pouredCentres),
+      spansCentres: billSpansCentres(billCentres(r.pouredCentres)),
       litres: r.totalLitres,
       litresPerDay: v.litresPerDayMilli === null ? null : litresFromMilli(v.litresPerDayMilli),
       avg30d: v.avg30dMilli === null ? null : litresFromMilli(v.avg30dMilli),

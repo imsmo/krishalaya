@@ -22,6 +22,9 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { maskPhone } from '../../../shared/utils/phone';
 import { BmcUnitRepository } from '../repositories/bmc-unit.repository';
 import { MccConsoleRepository } from '../repositories/mcc-console.repository';
+// PC-56 TENANT-6d-3: the board reports whether the move is switched on, and how many memberships have used it.
+import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
+import { MEMBERSHIP_TRANSFER_FLAG } from '../services/dairy-membership-move.service';
 import { DairyForbiddenError } from '../domain/dairy.errors';
 import { cOfDeci } from '../domain/bmc';
 import {
@@ -77,12 +80,21 @@ export interface CentresView {
   /**
    * WHAT THIS BOARD STILL CANNOT DO, named rather than omitted.
    *
-   * `transferBuilt` is W171's other sentence — *"the membership moves centres without losing history"*. It is false
-   * here, deliberately: the move is TENANT-6d-3, because doing it safely requires fixing a read that already exists
-   * (TENANT-6c-6's register prints a bill's centre from the membership's CURRENT `mcc_id`, so the first transfer would
-   * silently re-attribute every closed fortnight). A screen offering the move today would be offering the defect.
+   * [PC-56 TENANT-6d-3] `transferBuilt` is now TRUE. W171's other sentence — *"the membership moves centres without
+   * losing history"* — shipped with the three reads that would have started lying repaired: the cycle register reads a
+   * bill's centres from its own pours, the quality desk resolves the card as of the pour, and the counter board counts
+   * its roll from the route history as of the board's day.
    */
-  gaps: { transferBuilt: false; shiftWindowHistory: false; reliefOperator: false };
+  gaps: { transferBuilt: true; shiftWindowHistory: false; reliefOperator: false };
+  /**
+   * Is the move switched on for THIS cooperative (Law 10)?
+   *
+   * Separate from `transferBuilt`: one says the platform can do it, the other says this tenant may. A board that
+   * offered the form while the flag was off would send an operator into a 404.
+   */
+  transferEnabled: boolean;
+  /** How many memberships have ever moved — W171's sentence, counted. */
+  moved: number;
 }
 
 @Injectable()
@@ -91,6 +103,7 @@ export class DairyCentresReadModel {
     @Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider,
     private readonly console: MccConsoleRepository,
     private readonly units: BmcUnitRepository,
+    private readonly routes: DairyMembershipRouteRepository,
     private readonly flags: FlagsService,
     @Inject(METRICS) private readonly metrics: Metrics,
   ) {}
@@ -101,7 +114,7 @@ export class DairyCentresReadModel {
       const x = this.replica.forTenant(tenantId);
       const limit = Math.min(Math.max(q.limit ?? 100, 1), 200);
 
-      const [nowRow, rows, tanks, total, counts, cycles, thresholds] = await Promise.all([
+      const [nowRow, rows, tanks, total, counts, cycles, thresholds, transferEnabled, moved] = await Promise.all([
         x.query(`SELECT now() AS n`),
         this.console.board(x, tenantId, q.includeInactive === true, limit),
         this.console.tanks(x, tenantId),
@@ -112,6 +125,8 @@ export class DairyCentresReadModel {
         // monitor judges it by — two screens disagreeing about whether a sensor is silent is two screens disagreeing
         // about whether anybody should walk to the tank.
         this.units.thresholds(x, tenantId),
+        this.flags.isEnabled(MEMBERSHIP_TRANSFER_FLAG, { tenantId }),
+        this.routes.movedCount(x, tenantId),
       ]);
       const now = (nowRow.rows[0] as { n: Date }).n;
 
@@ -169,7 +184,9 @@ export class DairyCentresReadModel {
           nobody: centres.filter((c) => c.custody.state === 'nobody').length,
           disagrees: centres.filter((c) => c.custody.state === 'disagrees').length,
         },
-        gaps: { transferBuilt: false, shiftWindowHistory: false, reliefOperator: false },
+        gaps: { transferBuilt: true, shiftWindowHistory: false, reliefOperator: false },
+        transferEnabled,
+        moved,
       };
     });
   }

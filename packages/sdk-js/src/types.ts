@@ -835,6 +835,13 @@ export interface DairyFlagProtocol {
 export interface DairyQualityFlagRow {
   reviewId: string; collectionId: string; collectedOn: string; shift: DairyShift;
   mccCode: string | null; memberCodeMasked: string | null;
+  /**
+   * [PC-56 TENANT-6d-3] True when the masked code is the membership's CURRENT card rather than the one carried on the
+   * day of the pour. The centre was always right (a review carries its own `mcc_id`); the CARD used to be read as of
+   * today, so a flag from June would print the card handed over in August — and the point of a masked identifier on
+   * this panel is matching it to the slip in an operator's hand.
+   */
+  memberCodeIsCurrent: boolean;
   status: DairyReviewStatus; holdState: DairyHoldState;
   waterFlag: boolean; reasons: string[];
   densityAtFlag: string | null; fatPctAtFlag: string | null; snfPctAtFlag: string | null;
@@ -1501,7 +1508,18 @@ export interface DairyCycleBillRow {
   memberName: string | null;
   /** `AND2-••02` — the counter identifier, masked the way W168 masks it. */
   memberCodeMasked: string;
-  mccCode: string | null;
+  /** [PC-56 TENANT-6d-3] True when the code above is today's card, not the one carried when this fortnight closed. */
+  memberCodeIsCurrent: boolean;
+  /**
+   * [PC-56 TENANT-6d-3] Where this bill's milk was poured, biggest first.
+   *
+   * Replaces a single `mccCode` read from the membership's CURRENT route: the day a membership could move, every
+   * closed fortnight would have re-attributed itself, and a fortnight in which the member DID move was poured at two
+   * centres, so no single value would have been right. Empty for a bill with no collections behind it.
+   */
+  pouredCentres: Array<{ mccId: string; code: string; pours: number }>;
+  /** Did this fortnight's milk come from more than one centre? W171's move, seen from the register. */
+  spansCentres: boolean;
   litres: string;
   litresPerDay: string | null;
   avg30d: string | null;
@@ -1724,8 +1742,15 @@ export interface DairyCentresConsole {
   tanksNeedingAttention: number;
   hoursUnrecorded: number;
   custodyGaps: { unrecorded: number; nobody: number; disagrees: number };
-  /** Named, not hidden: the membership transfer is TENANT-6d-3, and why is on the read-model. */
-  gaps: { transferBuilt: false; shiftWindowHistory: false; reliefOperator: false };
+  /**
+   * [PC-56 TENANT-6d-3] `transferBuilt` is TRUE now: W171's move shipped together with the three reads that would
+   * otherwise have started lying (the register's centre, the quality desk's card, the counter's roll).
+   */
+  gaps: { transferBuilt: true; shiftWindowHistory: false; reliefOperator: false };
+  /** Is the move switched on for THIS cooperative? `transferBuilt` says the platform can; this says the tenant may. */
+  transferEnabled: boolean;
+  /** How many memberships have ever moved. */
+  moved: number;
 }
 
 /** One row of a centre's custody register. */
@@ -1742,3 +1767,53 @@ export interface DairyCentreCustodyRow {
 
 export interface AssignMccOperatorInput { operatorUserId: string; reason?: string }
 export interface SetMccShiftWindowInput { shift: 'morning' | 'evening'; opens?: string; closes?: string }
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-6d-3 · W171 — the move, and the route history that keeps it honest                              */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+/**
+ * One period a membership spent at one centre under one card.
+ *
+ * Inclusive whole days in the cooperative's own calendar (0164), because a pour is dated and a card is handed over at a
+ * counter in the morning. `validTo: null` is the current route.
+ */
+export interface DairyMembershipRoute {
+  id: string;
+  membershipId: string;
+  mccId: string;
+  memberCode: string;
+  validFrom: string;
+  validTo: string | null;
+  movedBy: string | null;
+  reason: string | null;
+}
+
+export type DairyMoveRefusal =
+  | 'FLAG_OFF' | 'NO_MANAGE' | 'MEMBERSHIP_INACTIVE' | 'SAME_CENTRE' | 'CENTRE_INACTIVE'
+  | 'CODE_TAKEN' | 'CODE_HELD_AT_DESTINATION' | 'BEFORE_LAST_POUR' | 'BEFORE_ROUTE_START' | 'NO_CURRENT_ROUTE';
+
+export type DairyMoveCaution = 'SPLITS_OPEN_CYCLE' | 'UNBILLED_POURS_AT_OLD_CENTRE' | 'DEBT_FOLLOWS_MEMBER';
+
+/**
+ * Can this membership move, and from when.
+ *
+ * `earliestFrom` is populated on every verdict, including an allowed one: *"not today, she poured here this morning —
+ * from tomorrow"* is the only useful form of this answer at a counter.
+ */
+export interface DairyMoveVerdict {
+  can: boolean;
+  refusal: DairyMoveRefusal | null;
+  caution: DairyMoveCaution | null;
+  earliestFrom: string | null;
+  current: { mccId: string; memberCode: string; validFrom: string; validTo: string | null } | null;
+}
+
+export interface MoveMembershipInput {
+  toMccId: string;
+  /** REQUIRED. This platform does not number a cooperative's cards (Law 6). */
+  newMemberCode: string;
+  effectiveFrom?: string;
+  reason?: string;
+}

@@ -405,7 +405,28 @@ describe('PC-56 TENANT-6a · the SQL that did not exist', () => {
     // the centre list: a closed or deleted MCC is not a row on today's board
     expect(sql).toContain('m.deleted_at IS NULL AND m.is_active = true');
     // the roll: a deleted membership must not make turnout look worse than it was
-    expect(sql).toMatch(/FROM dairy_memberships\s+WHERE tenant_id=\$1 AND is_active = true AND deleted_at IS NULL/);
+    expect(sql).toContain('m.is_active = true AND m.deleted_at IS NULL');
+    expect(sql).toContain('r.deleted_at IS NULL');
+  });
+
+  /**
+   * [PC-56 TENANT-6d-3] THE ROLL IS AS OF THIS BOARD'S DAY.
+   *
+   * It counted `dairy_memberships GROUP BY mcc_id` — the CURRENT routing — for a board whose day is a parameter, so
+   * last Tuesday's *"104 pourers against a roll of 108"* was measured against this morning's roll. Once a membership
+   * can move (TENANT-6d-3) that is not merely imprecise: the denominator lands at the wrong centre.
+   */
+  it('counts the roll from the ROUTE HISTORY, bounded by the board\'s own day', async () => {
+    const { repo, sqlOf } = capturing();
+    await repo.centreShiftRows('t1', '2026-07-13', 'morning');
+    const sql = sqlOf('WITH pours')!.sql;
+    expect(sql).toContain('FROM dairy_membership_routes r');
+    // Inclusive at both ends, matching 0164's exclusion constraint and `dairy_route_asof` — a half-open convention
+    // here would leave one day a year counted at two centres.
+    expect(sql).toContain('r.valid_from <= $2::date AND (r.valid_to IS NULL OR r.valid_to >= $2::date)');
+    expect(sql).toContain('GROUP BY r.mcc_id');
+    // …and it must not have gone back to the current-routing shortcut.
+    expect(sql).not.toMatch(/FROM dairy_memberships\s+WHERE tenant_id=\$1 AND is_active = true/);
   });
 
   it('reads the tenant\'s currency from its country rather than hardcoding one', async () => {

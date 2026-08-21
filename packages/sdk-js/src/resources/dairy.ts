@@ -18,6 +18,7 @@ import {
   // PC-56 TENANT-6d-1 · W170's tank
   DairyBmcUnit, DairyBmcMonitor, DairyBmcReading,
   DairyCentresConsole, DairyCentreCustodyRow, AssignMccOperatorInput, SetMccShiftWindowInput,
+  DairyMembershipRoute, DairyMoveVerdict, DairyMoveCaution, MoveMembershipInput,
 } from '../types';
 
 export class DairyResource {
@@ -79,6 +80,34 @@ export class DairyResource {
   }
   async enrolMember(input: EnrolMemberInput, idempotencyKey: string): Promise<DairyMembership> {
     return (await this.http.request<DairyMembership>('POST', 'dairy/mccs/memberships', { idempotencyKey, body: input })).data;
+  }
+
+  /**
+   * W171: *"Moving house? The membership moves centres without losing history."* — PC-56 TENANT-6d-3.
+   *
+   * Idempotency-keyed: a retried move would otherwise close the route period it had just opened and open a third,
+   * leaving a one-day phantom in the history this whole wave exists to keep trustworthy.
+   */
+  async moveMembership(membershipId: string, input: MoveMembershipInput, idempotencyKey: string): Promise<DairyMembership & { effectiveFrom: string; caution: DairyMoveCaution | null }> {
+    return (await this.http.request<DairyMembership & { effectiveFrom: string; caution: DairyMoveCaution | null }>(
+      'POST', `dairy/mccs/memberships/${encodeURIComponent(membershipId)}/move`, { idempotencyKey, body: input })).data;
+  }
+
+  /** Can it move, and from when — without moving it. A POST because the question carries a body; it writes nothing. */
+  async previewMembershipMove(membershipId: string, input: MoveMembershipInput): Promise<DairyMoveVerdict> {
+    return (await this.http.request<DairyMoveVerdict>(
+      'POST', `dairy/mccs/memberships/${encodeURIComponent(membershipId)}/move/preview`, { body: input })).data;
+  }
+
+  /**
+   * Everywhere a membership has poured, oldest first.
+   *
+   * NOT behind the transfer flag: the route history exists from migration 0164 whether or not anybody may move a
+   * membership, and a member reading their own record must not depend on a staff-action switch.
+   */
+  async membershipRoute(membershipId: string, params: { limit?: number } = {}, signal?: AbortSignal): Promise<DairyMembershipRoute[]> {
+    return (await this.http.request<DairyMembershipRoute[]>(
+      'GET', `dairy/mccs/memberships/${encodeURIComponent(membershipId)}/route`, { query: { limit: params.limit }, signal })).data;
   }
 
   // ---- rate cards ----

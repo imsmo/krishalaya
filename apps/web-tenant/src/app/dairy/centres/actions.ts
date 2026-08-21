@@ -16,6 +16,8 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
 import { SdkError } from '@krishalaya/sdk-js';
+// [TENANT-6d-3] The two shape rules the move needs live in the view-model, where a test can call them.
+import { isCalendarDay, isMemberCode } from '../../../features/dairy/centres';
 
 const PATH = '/dairy/centres';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -91,4 +93,33 @@ export async function setShiftWindowAction(formData: FormData): Promise<void> {
   try { await tenantClient().dairy.setMccShiftWindow(id, { shift, opens, closes }); } catch (e) { fail(e); }
   revalidatePath(PATH);
   redirect(`${PATH}?ok=${opens === undefined ? 'hoursCleared' : 'hours'}`);
+}
+
+/**
+ * W171: *"Moving house? The membership moves centres without losing history."* — PC-56 TENANT-6d-3.
+ *
+ * Idempotency-keyed, because a retried move would close the route period it had just opened and open a third, leaving
+ * a one-day phantom in the very history this wave exists to keep trustworthy.
+ *
+ * The API decides everything: whether the card is free, whether the date contradicts a slip the member is holding,
+ * whether the destination is taking milk. This action validates only what a form can (shape), so the refusal an
+ * operator sees is the one function both the button and the act consult.
+ */
+export async function moveMembershipAction(formData: FormData): Promise<void> {
+  await requireSession(PATH);
+  const membershipId = String(formData.get('membershipId') ?? '').trim();
+  const toMccId = String(formData.get('toMccId') ?? '').trim();
+  const newMemberCode = String(formData.get('newMemberCode') ?? '').trim();
+  const effectiveFrom = opt(formData.get('effectiveFrom'));
+  if (!UUID.test(membershipId)) redirect(`${PATH}?error=membership`);
+  if (!UUID.test(toMccId)) redirect(`${PATH}?error=centre`);
+  if (!isMemberCode(newMemberCode)) redirect(`${PATH}?error=memberCode`);
+  if (effectiveFrom !== undefined && !isCalendarDay(effectiveFrom)) redirect(`${PATH}?error=day`);
+  try {
+    await tenantClient().dairy.moveMembership(membershipId, {
+      toMccId, newMemberCode, effectiveFrom, reason: opt(formData.get('reason')),
+    }, randomUUID());
+  } catch (e) { fail(e); }
+  revalidatePath(PATH);
+  redirect(`${PATH}?ok=moved`);
 }

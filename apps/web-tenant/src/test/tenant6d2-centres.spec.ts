@@ -6,9 +6,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   CENTRES_HREF, centresHref, centresState, centresStateKey, custodyIsNamed, custodyKey, custodyTone,
-  hoursHistoryGapKey, hoursKey, hoursText, preferenceLabelKey, preferenceStateKey, preferenceTone,
-  reconciliationKey, reconciliationTone, reliefOperatorGapKey, shareText, statusKey, tankKey, tankTempIsCurrent,
-  tankTone, transferGapKey,
+  hoursHistoryGapKey, hoursKey, hoursText, moveDisabledKey, moveHeadingKey, movePickerGapKey, preferenceLabelKey,
+  preferenceStateKey, preferenceTone, reconciliationKey, reconciliationTone, reliefOperatorGapKey, shareText,
+  statusKey, tankKey, tankTempIsCurrent, tankTone,
 } from '../features/dairy/centres';
 import { DAIRY_NAV, currentDairyNavKey, dairyUnbuiltCount } from '../features/dairy/nav';
 import type { DairyCentreRow } from '@krishalaya/sdk-js';
@@ -188,13 +188,17 @@ describe('TENANT-6d-2 · the preference mix', () => {
 
 /* =========================================================================================================== */
 describe('TENANT-6d-2 · what the board says it cannot do', () => {
-  it('names the membership transfer as NOT BUILT rather than offering the button', () => {
-    // TENANT-6c-6's register prints a bill's centre from the membership's CURRENT route, so the first transfer would
-    // silently re-attribute every closed fortnight. Shipping the move without that fix would CREATE the defect.
-    expect(hasKey(transferGapKey())).toBe(true);
+  // [UPDATED BY PC-56 TENANT-6d-3] The transfer left this list when it was BUILT — together with the three reads it
+  // would otherwise have broken. What remains named are the two gaps this board still has.
+  it('still names the gaps it has, and no longer names the transfer as one', () => {
     expect(hasKey(hoursHistoryGapKey())).toBe(true);
     expect(hasKey(reliefOperatorGapKey())).toBe(true);
     expect(hasKey('dairy.centres.gap.heading')).toBe(true);
+    // The move's own copy, including the off-for-this-tenant case: a form that answered 404 would be worse than a
+    // sentence saying it is not switched on.
+    expect(hasKey(moveHeadingKey())).toBe(true);
+    expect(hasKey(moveDisabledKey())).toBe(true);
+    expect(hasKey(movePickerGapKey())).toBe(true);
   });
 
   it('has copy for every act, every add-form field and every outcome', () => {

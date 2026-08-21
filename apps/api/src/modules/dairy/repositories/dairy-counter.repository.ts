@@ -50,10 +50,22 @@ export class DairyCounterRepository {
           WHERE c.tenant_id=$1 AND c.collected_on = $2::date AND c.shift = $3
           GROUP BY c.mcc_id
        ), roll AS (
-         SELECT mcc_id, count(*)::int AS memberships
-           FROM dairy_memberships
-          WHERE tenant_id=$1 AND is_active = true AND deleted_at IS NULL
-          GROUP BY mcc_id
+         -- [PC-56 TENANT-6d-3] THE ROLL AS OF THIS BOARD'S DAY, not as of today.
+         --
+         -- This counted dairy_memberships GROUP BY mcc_id — the CURRENT routing — for a board whose day is a
+         -- parameter, so last Tuesday's "104 pourers against a roll of 108" was measured against this morning's roll.
+         -- Merely imprecise while no membership could move; wrong at the wrong centre once one can.
+         --
+         -- ONE RESIDUAL, NAMED: is_active is still the membership's current flag, because no history of it exists,
+         -- so a member who left in July is absent from June's roll. Narrower than the routing error, and fixing it
+         -- means versioning membership activity, which is not this wave.
+         SELECT r.mcc_id, count(*)::int AS memberships
+           FROM dairy_membership_routes r
+           JOIN dairy_memberships m ON m.id = r.membership_id AND m.tenant_id = r.tenant_id
+                                   AND m.is_active = true AND m.deleted_at IS NULL
+          WHERE r.tenant_id=$1 AND r.deleted_at IS NULL
+            AND r.valid_from <= $2::date AND (r.valid_to IS NULL OR r.valid_to >= $2::date)
+          GROUP BY r.mcc_id
        )
        SELECT m.id AS mcc_id, m.code, m.default_name, m.analyzer_model, m.analyzer_serial,
               -- [TENANT-6d-2] The hours for THE SHIFT BEING SHOWN, from the centre (0163). Selected by the shift

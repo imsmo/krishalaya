@@ -365,7 +365,11 @@ describe('PC-56 TENANT-6c-6 · W169 the cycle console', () => {
         bills: jest.fn(async () => ({
           rows: [{
             id: 'b1', membershipId: 'm1', memberUserId: 'u9', memberName: 'Savita Ben M.', memberCode: 'AND3-0019',
-            mccCode: 'MCC-AND-03', totalLitres: '148.200', grossMinor: '786000', deductionsMinor: '124000',
+            // [PC-56 TENANT-6d-3] `mccCode` (the membership's CURRENT centre) became `pouredCentres` — counted from
+            // the bill's own pours, because a fortnight in which the member moved was poured at two centres and the
+            // single value would have re-attributed every closed cycle the day a move became possible.
+            pouredCentres: [{ mccId: 'c3', code: 'MCC-AND-03', pours: 28 }], memberCodeIsCurrent: false,
+            totalLitres: '148.200', grossMinor: '786000', deductionsMinor: '124000',
             netMinor: '662000', status: 'draft', disputeWindowEnds: null, previewedAt: null, openDisputes: 0,
             byTypeId: [{ typeId: 'type-loan', amountMinor: '100000', lines: 1, applied: 0 }, { typeId: 'type-unknown', amountMinor: '24000', lines: 2, applied: 1 }],
             consentGranted: null, consentMatchesFigures: false,
@@ -455,7 +459,8 @@ describe('PC-56 TENANT-6c-6 · W169 the cycle console', () => {
       console_: {
         bills: jest.fn(async () => ({
           rows: [{
-            id: 'b9', membershipId: 'm1', memberUserId: 'u9', memberName: 'X', memberCode: 'AND6-0009', mccCode: null,
+            id: 'b9', membershipId: 'm1', memberUserId: 'u9', memberName: 'X', memberCode: 'AND6-0009',
+            pouredCentres: [], memberCodeIsCurrent: false,
             totalLitres: '10.000', grossMinor: '100000', deductionsMinor: '90000', netMinor: '10000', status: 'draft',
             disputeWindowEnds: null, previewedAt: null, openDisputes: 0, byTypeId: [], createdAt: new Date('2026-07-15T00:00:00Z'),
             consentGranted: null, consentMatchesFigures: false, ...over,

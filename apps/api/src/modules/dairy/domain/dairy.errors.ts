@@ -282,3 +282,17 @@ export class MccOperatorNotInTenantError extends DomainError {
 export class MccCentreInvalidError extends DomainError {
   constructor(reason: string) { super('MCC_CENTRE_INVALID', reason, 422, { reason }); }
 }
+
+/**
+ * [PC-56 TENANT-6d-3 · W171] A move this platform will not make, with the reason and the earliest date it could.
+ *
+ * 422 rather than 409: everything that refuses a move is something the caller can change — a different destination, a
+ * different card, a later effective date. The one exception is a membership with no route at all, which is a gap in
+ * the record rather than a bad request, and is reported the same way because the operator's next step is identical
+ * (tell somebody; do not move this member).
+ */
+export class MembershipMoveRefusedError extends DomainError {
+  constructor(refusal: string, detail: Record<string, unknown> = {}) {
+    super('MEMBERSHIP_MOVE_REFUSED', `This membership cannot be moved: ${refusal}`, 422, { refusal, ...detail });
+  }
+}

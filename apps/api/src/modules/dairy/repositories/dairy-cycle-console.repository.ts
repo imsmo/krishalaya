@@ -23,7 +23,18 @@ export interface CycleBillRow {
   memberUserId: string | null;
   memberName: string | null;
   memberCode: string;
-  mccCode: string | null;
+  /**
+   * [TENANT-6d-3] True when the route history does not reach this bill's `period_end`, so the code shown is the
+   * membership's CURRENT one rather than the one that was on the card. A back-dated pour, or a membership created
+   * after the window — either way the screen must not present it as historical fact.
+   */
+  memberCodeIsCurrent: boolean;
+  /**
+   * [TENANT-6d-3] The centre(s) this bill's milk was poured at, biggest first — replacing a single `mccCode` read from
+   * the membership's CURRENT route. Empty for a bill built from no collections, which is a real thing (a correction)
+   * and not a centre worth borrowing.
+   */
+  pouredCentres: Array<{ mccId: string; code: string; pours: number }>;
   totalLitres: string;
   grossMinor: string;
   deductionsMinor: string;
@@ -73,7 +84,16 @@ export class DairyCycleConsoleRepository {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT b.id, b.membership_id, b.total_litres, b.gross_minor, b.deductions_minor, b.net_minor, b.status,
               b.dispute_window_ends, b.previewed_at, b.created_at,
-              m.member_code, m.farmer_user_id, mc.code AS mcc_code, u.full_name AS member_name,
+              -- [PC-56 TENANT-6d-3] THE CARD AS OF THE DAY THE FORTNIGHT CLOSED, and the centres the milk was
+              -- actually poured at. This used to be m.member_code and the membership's CURRENT centre — harmless
+              -- while nothing could move a membership, and a silent re-attribution of every closed fortnight the
+              -- moment one could. asof.member_code falls back to the membership's own only when the route history
+              -- does not reach that far back (a back-dated pour), which is a gap in the record rather than a licence
+              -- to print today's card.
+              coalesce(asof.member_code, m.member_code) AS member_code,
+              (asof.member_code IS NULL) AS member_code_is_current,
+              m.farmer_user_id, u.full_name AS member_name,
+              poured.centres AS poured_centres,
               latest.granted AS consent_granted,
               (latest.gross_minor = b.gross_minor AND latest.deductions_minor = b.deductions_minor) AS consent_matches,
               (SELECT count(*) FROM milk_bill_disputes d
@@ -90,7 +110,23 @@ export class DairyCycleConsoleRepository {
                         GROUP BY dd.type_id) t) AS by_type
          FROM milk_bills b
          JOIN dairy_memberships m ON m.id = b.membership_id AND m.tenant_id = b.tenant_id AND m.deleted_at IS NULL
-         LEFT JOIN mcc_centres mc ON mc.id = m.mcc_id AND mc.tenant_id = m.tenant_id
+         -- The card the member carried when this fortnight SHUT (0164's function, one boundary rule for every reader).
+         LEFT JOIN LATERAL dairy_route_asof(b.tenant_id, b.membership_id, b.period_end) asof ON true
+         -- THE CENTRES THE MILK CAME FROM, counted from the bill's own pours. A bill spanning a move belongs to TWO
+         -- centres, so this is a LIST and not a column: milk_bills has never had an mcc_id, and stamping one would
+         -- have been wrong exactly when it mattered. Bounded by the membership and the bill's own window so
+         -- idx_milkcoll_member (membership_id, collected_on DESC) serves it and only the window's daily partitions
+         -- are touched (Law 8) — the milk_bill_id equality then makes it exactly this bill's milk.
+         LEFT JOIN LATERAL (
+           SELECT jsonb_agg(jsonb_build_object('mccId', t.mcc_id, 'code', t.code, 'pours', t.pours)
+                            ORDER BY t.pours DESC, t.code) AS centres
+             FROM (SELECT c.mcc_id, cc.code, count(*)::int AS pours
+                     FROM milk_collections c
+                     JOIN mcc_centres cc ON cc.id = c.mcc_id AND cc.tenant_id = c.tenant_id
+                    WHERE c.tenant_id = b.tenant_id AND c.membership_id = b.membership_id
+                      AND c.collected_on >= b.period_start AND c.collected_on <= b.period_end
+                      AND c.milk_bill_id = b.id
+                    GROUP BY c.mcc_id, cc.code) t) poured ON true
          LEFT JOIN users u ON u.id = m.farmer_user_id AND u.deleted_at IS NULL
          -- The LATEST consent row, exactly as MilkBillService.assertConsented reads it (recorded_at DESC, id DESC).
          -- NOT an EXISTS(granted): a member who granted and then changed their mind is a BLOCKED bill, and the
@@ -115,7 +151,10 @@ export class DairyCycleConsoleRepository {
       // the identifier a shoulder-surfer could actually use at a counter.
       memberName: x.member_name ?? null,
       memberCode: String(x.member_code),
-      mccCode: x.mcc_code ?? null,
+      memberCodeIsCurrent: x.member_code_is_current === true,
+      pouredCentres: Array.isArray(x.poured_centres)
+        ? (x.poured_centres as Array<{ mccId: string; code: string; pours: number }>)
+        : [],
       totalLitres: String(x.total_litres),
       grossMinor: String(x.gross_minor),
       deductionsMinor: String(x.deductions_minor),

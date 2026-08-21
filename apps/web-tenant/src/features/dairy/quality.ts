@@ -192,6 +192,18 @@ export function flagTitleParts(f: DairyQualityFlagRow): { mcc: string | null; sh
   return { mcc: f.mccCode, shiftKey: `dairy.shift.${f.shift}` };
 }
 
+/**
+ * [PC-56 TENANT-6d-3] The masked card on this row is TODAY's, not the one carried on the day of the pour.
+ *
+ * The centre was always right — a review carries its own `mcc_id` (0156) — but the code was read as the membership's
+ * current one, so a flag from June printed the card handed over in August. It is resolved as of the pour now; this key
+ * covers the remaining case where the route history does not reach that day, because an identifier an operator cannot
+ * match to the slip in their hand must say so rather than look authoritative.
+ */
+export function flagCodeIsCurrentKey(f: Pick<DairyQualityFlagRow, 'memberCodeIsCurrent'>): string | null {
+  return f.memberCodeIsCurrent ? 'dairy.quality.flag.codeIsCurrent' : null;
+}
+
 /** W168 prints the member as *"AND2-••87"*. The API masks it; this asserts the console never has the whole thing to
  *  leak, and gives a name to the absence when a membership has been removed. */
 export function memberLabel(f: DairyQualityFlagRow): { text: string | null; key: string | null } {

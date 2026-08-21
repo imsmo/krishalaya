@@ -32,6 +32,12 @@ export interface QualityFlagRow {
   shift: string;
   mccCode: string | null;
   memberCodeMasked: string | null;
+  /**
+   * [PC-56 TENANT-6d-3] True when the masked code above is the membership's CURRENT card rather than the one carried on
+   * the day of the pour — the route history does not reach that far back. A flag whose identifier cannot be matched to
+   * the slip in an operator's hand is worse than one that admits it.
+   */
+  memberCodeIsCurrent: boolean;
   status: ReviewStatus;
   holdState: string;
   waterFlag: boolean;
@@ -139,11 +145,16 @@ export class DairyQualityReadModel {
 
       const openFlags = await Promise.all(openReviews.map(async (r) => {
         const j = r.toJSON();
-        const ctx = await this.repo.reviewContext(tenantId, j.membershipId, j.mccId);
+        // [PC-56 TENANT-6d-3] AS OF THE DAY OF THE POUR. A flag from June must print the card the member carried in
+        // June — the whole use of a masked identifier on this panel is matching it to the slip in somebody's hand.
+        const ctx = await this.repo.reviewContext(tenantId, j.membershipId, j.mccId, j.collectedOn);
         return {
           reviewId: j.id, collectionId: j.collectionId, collectedOn: j.collectedOn, shift: j.shift,
           mccCode: ctx.mccCode,
           memberCodeMasked: ctx.memberCode ? maskMemberCode(ctx.memberCode) : null,
+          // The route history does not reach that day (a back-dated pour), so the code above is today's card and the
+          // screen says so rather than presenting it as what was carried.
+          memberCodeIsCurrent: ctx.codeIsCurrent,
           status: j.status as ReviewStatus, holdState: j.holdState,
           waterFlag: j.waterFlag, reasons: j.reasons,
           densityAtFlag: j.densityAtFlag, fatPctAtFlag: j.fatPctAtFlag, snfPctAtFlag: j.snfPctAtFlag,

@@ -26,7 +26,9 @@ const STAGES = ['accruing', 'closed_unbilled', 'billed', 'previewed', 'approved'
 const BILL_STATUSES = ['draft', 'previewed', 'disputed', 'approved', 'paid', 'voided'] as const;
 
 const row = (o: Partial<DairyCycleBillRow> = {}): DairyCycleBillRow => ({
-  billId: 'b1', membershipId: 'm1', memberName: 'Savita Ben M.', memberCodeMasked: 'AND3••19', mccCode: 'MCC-AND-03',
+  billId: 'b1', membershipId: 'm1', memberName: 'Savita Ben M.', memberCodeMasked: 'AND3••19',
+  // [TENANT-6d-3] `mccCode` (the membership's CURRENT centre) became the centres the milk was POURED at.
+  pouredCentres: [{ mccId: 'c3', code: 'MCC-AND-03', pours: 28 }], spansCentres: false, memberCodeIsCurrent: false,
   litres: '148.200', litresPerDay: '9.880', avg30d: '14.200', avg30dDays: 4,
   grossMinor: '786000', deductionsMinor: '124000', netMinor: '662000',
   deductions: [{ typeCode: 'loan_emi', typeName: 'Loan instalment', amountMinor: '124000', lines: 1, applied: 1, unsupportedReason: null }],

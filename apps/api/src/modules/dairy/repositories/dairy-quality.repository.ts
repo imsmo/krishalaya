@@ -137,14 +137,32 @@ export class DairyQualityRepository {
     return (r.rows as any[]).map((x) => ({ paymentCycle: String(x.payment_cycle), members: Number(x.n ?? 0) }));
   }
 
-  /** The member code behind an open review, for the masked identifier W168 prints — plus the centre's code, because the
-   *  panel's own title is "Open flag — today, MCC-AND-02, morning". */
-  async reviewContext(tenantId: string, membershipId: string, mccId: string): Promise<{ memberCode: string | null; mccCode: string | null }> {
+  /**
+   * The member code behind a review, for the masked identifier W168 prints — plus the centre's code, because the
+   * panel's own title is *"Open flag — today, MCC-AND-02, morning"*.
+   *
+   * [PC-56 TENANT-6d-3] THE CODE IS RESOLVED AS OF THE DAY OF THE POUR. It was read from `dairy_memberships` as the
+   * membership's CURRENT card, which was fine while nothing could move a membership and wrong the moment one could: a
+   * flag from June would print the card the member was handed in August, and the whole point of a masked identifier on
+   * a quality panel is that an operator can match it to the slip in their hand. The CENTRE was already right — a
+   * review carries its own `mcc_id` (0156).
+   *
+   * The fallback to the membership's current code is deliberate and reported: `codeIsCurrent` tells the screen that
+   * the route history does not reach that day, which happens for a back-dated pour and must not be presented as the
+   * card that was actually carried.
+   */
+  async reviewContext(tenantId: string, membershipId: string, mccId: string, on: string): Promise<{ memberCode: string | null; mccCode: string | null; codeIsCurrent: boolean }> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT (SELECT member_code FROM dairy_memberships WHERE id=$2 AND tenant_id=$1) AS member_code,
+      `SELECT (SELECT member_code FROM dairy_route_asof($1, $2, $4::date)) AS asof_code,
+              (SELECT member_code FROM dairy_memberships WHERE id=$2 AND tenant_id=$1) AS member_code,
               (SELECT code FROM mcc_centres WHERE id=$3 AND tenant_id=$1) AS mcc_code`,
-      [tenantId, membershipId, mccId]);
+      [tenantId, membershipId, mccId, on]);
     const x = (r.rows[0] ?? {}) as any;
-    return { memberCode: x.member_code ?? null, mccCode: x.mcc_code ?? null };
+    const asof = x.asof_code == null ? null : String(x.asof_code);
+    return {
+      memberCode: asof ?? (x.member_code ?? null),
+      mccCode: x.mcc_code ?? null,
+      codeIsCurrent: asof === null,
+    };
   }
 }

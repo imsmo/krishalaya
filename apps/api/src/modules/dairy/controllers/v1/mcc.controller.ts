@@ -22,6 +22,11 @@ import {
   QueryMccCustodySchema, QueryMccCustodyDto,
 } from '../../dto/mcc-console.dto';
 import { DairyCentresReadModel, CENTRES_CONSOLE_FLAG } from '../../read-models/dairy-centres.read-model';
+import { DairyMembershipMoveService, MEMBERSHIP_TRANSFER_FLAG } from '../../services/dairy-membership-move.service';
+import {
+  MoveMembershipSchema, MoveMembershipDto, PreviewMoveSchema, PreviewMoveDto,
+  QueryRouteTrailSchema, QueryRouteTrailDto,
+} from '../../dto/membership-move.dto';
 import { MilkShift } from '../../domain/mcc-console';
 import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
@@ -36,6 +41,7 @@ export class MccController {
     private readonly mccs: MccCentreService,
     private readonly memberships: DairyMembershipService,
     private readonly centres: DairyCentresReadModel,
+    private readonly moves: DairyMembershipMoveService,
   ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
@@ -111,6 +117,43 @@ export class MccController {
   listMemberships(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryMembershipsSchema) q: QueryMembershipsDto) {
     return this.memberships.list(ctx.tenantId, this.actor(ctx), { box: q.box, mccId: q.mccId, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
+  /**
+   * W171: *"Moving house? The membership moves centres without losing history."*
+   *
+   * BOTH LITERAL ROUTES ARE DECLARED BEFORE `memberships/:id`, for the trap this programme has now hit four times:
+   * Nest matches in declaration order, and `memberships/:id` would answer the trail with *"membership 'route' not
+   * found"*. Asserted by reflection in the spec, not by hoping.
+   */
+  @Post('memberships/:id/move') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(MEMBERSHIP_TRANSFER_FLAG)
+  moveMembership(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string,
+                 @Headers('idempotency-key') key: string, @ZodBody(MoveMembershipSchema) dto: MoveMembershipDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.moves.move(ctx.tenantId, this.actor(ctx), key, id, dto, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /**
+   * Can it move, and from when — without moving it.
+   *
+   * A POST because it carries a body (the destination, the card and the date are all part of the question), and
+   * because a GET whose answer depends on a proposed card would be a cache key nobody wants. It writes nothing.
+   */
+  @Post('memberships/:id/move/preview') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(MEMBERSHIP_TRANSFER_FLAG)
+  previewMove(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(PreviewMoveSchema) dto: PreviewMoveDto) {
+    return this.moves.preview(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  }
+
+  /**
+   * Everywhere a membership has poured, oldest first.
+   *
+   * NOT behind the transfer flag: a route history exists from migration 0164 whether or not anybody may move a
+   * membership, and hiding a member's own record behind the flag that governs a staff action would make the flag a
+   * data-visibility switch. Authorised by OWNERSHIP — a member may read their own trail.
+   */
+  @Get('memberships/:id/route')
+  routeTrail(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodQuery(QueryRouteTrailSchema) q: QueryRouteTrailDto) {
+    return this.moves.trail(ctx.tenantId, this.actor(ctx), id, q.limit).then((data) => ({ data }));
+  }
+
   @Get('memberships/:id')
   getMembership(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.memberships.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 }

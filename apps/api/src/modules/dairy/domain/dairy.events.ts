@@ -74,6 +74,11 @@ export const DairyEventType = {
   // The hours changed. Emitted because a farmer-facing app, an SMS reminder and a printed noticeboard all derive from
   // these two times, and every one of them is wrong the moment they change with nothing announced.
   MccShiftWindowsSet: 'dairy.mcc_shift_windows_set',
+  // PC-56 TENANT-6d-3 · W171's other sentence. It carries BOTH centres and BOTH cards, and the effective DAY — because
+  // every subscriber that cares (a card printer, an SMS telling the member their new collection point, a cooperative's
+  // own ledger) needs to know what changed and from when, and an event naming only the destination cannot be
+  // reconciled against the slip a member is holding. The member's userId rides along: this IS news for them.
+  MembershipMoved: 'dairy.membership_moved',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

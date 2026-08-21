@@ -59,6 +59,9 @@ import { BmcUnitRepository } from './repositories/bmc-unit.repository';
 import { MccConsoleRepository } from './repositories/mcc-console.repository';
 import { MccOperatorAssignmentRepository } from './repositories/mcc-operator-assignment.repository';
 import { DairyCentresReadModel } from './read-models/dairy-centres.read-model';
+// PC-56 TENANT-6d-3 · W171's move, and the route history that keeps it honest.
+import { DairyMembershipRouteRepository } from './repositories/dairy-membership-route.repository';
+import { DairyMembershipMoveService } from './services/dairy-membership-move.service';
 import { BmcUnitService } from './services/bmc-unit.service';
 import { BmcReadingService } from './services/bmc-reading.service';
 import { DairyBmcReadModel } from './read-models/dairy-bmc.read-model';
@@ -149,6 +152,7 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
     // PC-56 TENANT-6d-1
     BmcUnitRepository, BmcUnitService, BmcReadingService, DairyBmcReadModel,
     MccConsoleRepository, MccOperatorAssignmentRepository, DairyCentresReadModel,
+    DairyMembershipRouteRepository, DairyMembershipMoveService,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
     // PC-56 TENANT-6c-4

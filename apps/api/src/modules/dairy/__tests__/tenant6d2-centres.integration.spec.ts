@@ -39,6 +39,7 @@ import { ColdChainService } from '../../logistics/services/cold-chain.service';
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { MccConsoleRepository } from '../repositories/mcc-console.repository';
 import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
+import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { BmcUnitRepository } from '../repositories/bmc-unit.repository';
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
@@ -98,10 +99,12 @@ run('PC-56 TENANT-6d-2 · W171 the centres (integration, real Postgres)', () => 
     const coldChain = new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never));
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, custody);
-    memberships = new DairyMembershipService(uow, outbox, idem, metrics, new DairyMembershipRepository(replica as never), mccRepo);
+    memberships = new DairyMembershipService(uow, outbox, idem, metrics, new DairyMembershipRepository(replica as never), mccRepo, new DairyMembershipRouteRepository(replica as never));
     units = new BmcUnitService(uow, outbox, idem, metrics, audit, unitRepo, mccRepo);
     readings = new BmcReadingService(uow, metrics, unitRepo, coldChain);
-    rm = new DairyCentresReadModel(replica as never, new MccConsoleRepository(replica as never), unitRepo, flags, metrics);
+    rm = new DairyCentresReadModel(replica as never, new MccConsoleRepository(replica as never), unitRepo,
+      // [TENANT-6d-3] The board reports the move's flag and how many memberships have used it.
+      new DairyMembershipRouteRepository(replica as never), flags, metrics);
   }, 180000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
@@ -362,10 +365,18 @@ run('PC-56 TENANT-6d-2 · W171 the centres (integration, real Postgres)', () => 
       expect(v.honoured).toEqual({ all: false, pending: ['daily'] });
     });
 
-    it('counts the centres that have recorded no hours, and never names the transfer as built', async () => {
+    it('counts the centres that have recorded no hours, and separates CAN from MAY on the move', async () => {
       const v = await rm.view(tenantA, actor as never);
       expect(v.hoursUnrecorded).toBeGreaterThanOrEqual(2);   // the two centres added bare in this run
-      expect(v.gaps).toEqual({ transferBuilt: false, shiftWindowHistory: false, reliefOperator: false });
+      // THE BOARD REPORTS THE FLAG IT READS, rather than a constant — and asserted against the flag row itself,
+      // because another suite in this run legitimately switches the move on (the 6c-6 lesson: a spec that pins a
+      // global flag's value breaks the moment a later wave needs it flipped).
+      const flagRow = await admin.query(`SELECT is_enabled FROM feature_flags WHERE key='dairy_membership_transfer'`);
+      expect(v.transferEnabled).toBe(flagRow.rows[0].is_enabled === true);
+      // [UPDATED BY PC-56 TENANT-6d-3] The transfer is BUILT from that wave — with the three reads it would otherwise
+      // have broken repaired in the same commit. `transferEnabled` is this cooperative's own switch, and it is off
+      // here because 0164 ships the flag off (Law 10).
+      expect(v.gaps).toEqual({ transferBuilt: true, shiftWindowHistory: false, reliefOperator: false });
     });
 
     it('shows one tenant nothing of another', async () => {

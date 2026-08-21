@@ -10,6 +10,7 @@ import { DairyMembership } from '../domain/dairy-membership.entity';
 import { PaymentCycle, AnimalType, DomainEvent } from '../domain/dairy.events';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
+import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { CreateMembershipDto } from '../dto/create-dairy-membership.dto';
 import { MccNotFoundError, MemberCodeExistsError, MembershipNotFoundError, DairyForbiddenError } from '../domain/dairy.errors';
 import { DairyActor } from './mcc-centre.service';
@@ -23,7 +24,15 @@ export class DairyMembershipService {
     @Inject(METRICS) private readonly metrics: Metrics,
     private readonly repo: DairyMembershipRepository,
     private readonly mccs: MccCentreRepository,
+    // [TENANT-6d-3] The route history. Enrolment is where a membership's first period begins.
+    private readonly routes: DairyMembershipRouteRepository,
   ) {}
+
+  /** The DATABASE's today. A card is handed over on a day in the cooperative's calendar, not on the API's clock. */
+  private async today(tx: TxContext): Promise<string> {
+    const r = await tx.query(`SELECT current_date::text AS d`);
+    return String((r.rows[0] as { d: string }).d);
+  }
 
   async create(tenantId: string, actor: DairyActor, idemKey: string, dto: CreateMembershipDto) {
     if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
@@ -34,6 +43,23 @@ export class DairyMembershipService {
           const m = DairyMembership.create({ id: uuidv7(), tenantId, farmerUserId: dto.farmerUserId, mccId: dto.mccId, memberCode: dto.memberCode,
             paymentCycle: dto.paymentCycle as PaymentCycle, defaultAnimalType: (dto.defaultAnimalType as AnimalType) ?? null });
           try { await this.repo.insert(tx, m); } catch (e: any) { if (e?.code === '23505') throw new MemberCodeExistsError(); throw e; }
+
+          // [PC-56 TENANT-6d-3 · LIVE FINDING] **ENROLMENT OPENS THE FIRST ROUTE PERIOD.**
+          //
+          // Migration 0164 backfilled a route for every membership that existed when it ran, and the move writes the
+          // ones after that — and NOTHING wrote the first route of a membership enrolled afterwards. Every membership
+          // created from this deployment onwards would have had no route at all, so every as-of read (the register's
+          // card, the quality desk's card, the counter board's roll) would have found nothing and fallen back to
+          // today's values or to zero. The gap was invisible in the migration and obvious the first time a live test
+          // enrolled somebody: a history table is only a history if the thing that CREATES the record writes to it.
+          //
+          // `valid_from` is the DATABASE's today, in the cooperative's own calendar — the day the card was handed over.
+          const today = await this.today(tx);
+          await this.routes.open(tx, {
+            tenantId, membershipId: m.id, mccId: dto.mccId, memberCode: dto.memberCode,
+            validFrom: today, movedBy: actor.userId, reason: 'enrolled at this centre',
+          });
+
           await this.flush(tx, tenantId, m.id, m.pullEvents());
           return m.toJSON();
         }, { userId: actor.userId })));

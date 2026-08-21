@@ -206,3 +206,34 @@ export function nextHref(cycleId: string, view: Pick<DairyCycleConsole, 'page'>,
 /** The other end of the register: the smallest bills, where a missing pour hides. Not a sort menu — one flip. */
 export function flipDirection(direction: string): 'desc' | 'asc' { return direction === 'asc' ? 'desc' : 'asc'; }
 export function directionKey(direction: string): string { return direction === 'asc' ? 'dairy.cycles.sort.asc' : 'dairy.cycles.sort.desc'; }
+
+/* --------------------------------------------------------------------------------------------------------- */
+/* WHERE THE MILK CAME FROM — PC-56 TENANT-6d-3                                                              */
+/* --------------------------------------------------------------------------------------------------------- */
+
+/**
+ * The centre(s) a bill's milk was poured at, as one line.
+ *
+ * This row used to print a single `mccCode` read from the membership's CURRENT route, so a member moving village would
+ * have silently re-attributed every fortnight that had already closed. It is now counted from the bill's own pours —
+ * and a fortnight in which the member moved names BOTH villages with the pours at each, because that is what happened.
+ */
+export function pouredCentresText(r: Pick<DairyCycleBillRow, 'pouredCentres'>): string | null {
+  if (r.pouredCentres.length === 0) return null;
+  if (r.pouredCentres.length === 1) return r.pouredCentres[0].code;
+  return r.pouredCentres.map((c) => `${c.code} (${c.pours})`).join(' · ');
+}
+
+/** A bill whose milk came from more than one centre — the member moved mid-fortnight, and the register says so. */
+export function spansCentresKey(): string { return 'dairy.cycles.col.spansCentres'; }
+
+/** No centre at all: a bill with no collections behind it (a correction). Never borrow one from the membership. */
+export function noCentreKey(): string { return 'dairy.cycles.col.noCentre'; }
+
+/**
+ * The card shown beside a closed fortnight is TODAY's, not the one that was carried.
+ *
+ * Happens when the route history does not reach that far back — a back-dated pour, or a membership enrolled after the
+ * window. The screen says so rather than presenting it as historical fact.
+ */
+export function codeIsCurrentKey(): string { return 'dairy.cycles.col.codeIsCurrent'; }

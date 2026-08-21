@@ -45,6 +45,8 @@ import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 // PC-56 TENANT-6d-2: the custody register the centre service writes in the same transaction as the column.
 import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
+// PC-56 TENANT-6d-3: enrolment opens a membership's first route period, in the same transaction.
+import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
@@ -162,7 +164,7 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
     const assembler = new DairyDeductionAssemblerService(instructionRepo, creditRepo, typeRepo, memRepo, loans);
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
-    memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
+    memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
@@ -254,7 +256,11 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
       expect(top.memberName).toBe('Savita Ben M.');
       expect(top.memberCodeMasked).toBe('AND6••01');     // masked, W168's rule reused
       expect(top.memberCodeMasked).not.toContain('0001');
-      expect(top.mccCode).toBe('MCC-AND-06');
+      // [PC-56 TENANT-6d-3] `mccCode` — the membership's CURRENT centre — became the centres the milk was POURED at,
+      // counted from the bill's own collections. This spec's bills are built from real pours at MCC-AND-06, so the
+      // answer is the same one; the difference is that it now survives the member moving village.
+      expect(top.pouredCentres.map((c) => c.code)).toEqual(['MCC-AND-06']);
+      expect(top.spansCentres).toBe(false);
       // A member with no name on file is still on the register, on their code.
       const nameless = v.page.rows.find((r) => r.memberCodeMasked === 'AND6••03')!;
       expect(nameless.memberName).toBeNull();

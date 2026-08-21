@@ -29,6 +29,9 @@ const FAT_SLAB = { metric: 'fat' as const, minCentiPct: 650, bonusMinorPerLitre:
 const flag = (o: Partial<DairyQualityFlagRow> = {}): DairyQualityFlagRow => ({
   reviewId: 'qr1', collectionId: 'c1', collectedOn: '2026-07-13', shift: 'morning',
   mccCode: 'MCC-AND-02', memberCodeMasked: 'AND2••87',
+  // [TENANT-6d-3] The card is resolved AS OF the pour now. `false` = the route history reached that day, so the code
+  // above is the one that was on the card — which is the whole point of a masked identifier on this panel.
+  memberCodeIsCurrent: false,
   status: 'open', holdState: 'held', waterFlag: true, reasons: [],
   densityAtFlag: '1.024', fatPctAtFlag: '6.20', snfPctAtFlag: '8.40',
   litres: null, amountWithheldMinor: '31000', sampleSealed: false, memberPresent: null,

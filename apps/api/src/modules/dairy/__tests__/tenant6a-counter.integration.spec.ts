@@ -26,6 +26,8 @@ import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 // PC-56 TENANT-6d-2: the custody register the centre service writes in the same transaction as the column.
 import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
+// PC-56 TENANT-6d-3: enrolment opens a membership's first route period, in the same transaction.
+import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
@@ -82,7 +84,7 @@ run('PC-56 TENANT-6a · W167 counter board (integration, real Postgres)', () => 
     const cardRepo = new MilkRateCardRepository(replica as any);
     const collRepo = new MilkCollectionRepository(replica as any);
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
-    memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
+    memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     // PC-56 TENANT-6b-1: the record path now opens a quality review for a flagged pour and asks the flag service
     // whether the rate card's premium slabs apply — both real here, against the real database.

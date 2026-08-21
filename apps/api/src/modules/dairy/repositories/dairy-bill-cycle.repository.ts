@@ -232,6 +232,23 @@ export class DairyBillCycleRepository {
    * register take a connection from the pool that writes money. Every existing caller passes a `TxContext`, which IS
    * a `SqlExecutor`, so this widens the door without moving anybody through it.
    */
+  /**
+   * [PC-56 TENANT-6d-3] An OPEN cycle of this cadence covering a given day.
+   *
+   * The caution behind a mid-fortnight move: a member who changes village on the 9th has one bill for a window poured
+   * at two centres. That is CORRECT — the bill belongs to the membership and the pours carry their own centres — but a
+   * secretary should be told before the card is re-issued, because the register for that fortnight will name two
+   * villages and somebody will ask why.
+   */
+  async findCoveringDay(x: SqlExecutor, tenantId: string, cycle: PaymentCycle, day: string): Promise<DairyBillCycle | null> {
+    const r = await x.query(
+      `SELECT ${COLS} FROM dairy_bill_cycles
+        WHERE tenant_id=$1 AND payment_cycle=$2 AND status='open' AND deleted_at IS NULL
+          AND period_start <= $3::date AND period_end >= $3::date
+        ORDER BY period_start DESC LIMIT 1`, [tenantId, cycle, day]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+
   async today(tx: SqlExecutor): Promise<string> {
     const r = await tx.query(`SELECT current_date::text AS d`);
     return String((r.rows[0] as any)?.d ?? '');

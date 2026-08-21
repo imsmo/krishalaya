@@ -37,6 +37,8 @@ import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 // PC-56 TENANT-6d-2: the custody register the centre service writes in the same transaction as the column.
 import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
+// PC-56 TENANT-6d-3: enrolment opens a membership's first route period, in the same transaction.
+import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
@@ -118,7 +120,7 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
     const flags = new FlagsService(pools, new InMemoryCacheService());
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
-    memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
+    memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
     const lineRepo = new MilkBillDeductionRepository(replica as never);

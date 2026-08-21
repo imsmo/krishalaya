@@ -11,7 +11,9 @@
 //     somewhere this board is not showing;
 //   • **hours are the centre's or they are unknown.** TENANT-6a refused to print W167's *"evening starts 17:00"*
 //     because nothing recorded it. Something does now — for the centres that have recorded it, and only those.
-import type { DairyCentreRow, DairyCentresConsole, DairyPreferenceRow, DairyShiftWindow } from '@krishalaya/sdk-js';
+import type {
+  DairyCentreRow, DairyCentresConsole, DairyMoveCaution, DairyMoveRefusal, DairyPreferenceRow, DairyShiftWindow,
+} from '@krishalaya/sdk-js';
 
 export const CENTRES_HREF = '/dairy/centres';
 export function centresHref(o: { includeInactive?: boolean } = {}): string {
@@ -156,15 +158,65 @@ export function shareText(bp: number | null): string | null {
 /* WHAT THE BOARD STILL CANNOT DO                                                                            */
 /* --------------------------------------------------------------------------------------------------------- */
 
+/* --------------------------------------------------------------------------------------------------------- */
+/* THE MOVE — PC-56 TENANT-6d-3                                                                              */
+/* --------------------------------------------------------------------------------------------------------- */
+
 /**
  * W171's other sentence: *"Moving house? The membership moves centres without losing history — the member_code
  * changes, the person's record never resets."*
  *
- * NOT BUILT, and the board says so rather than offering a button. The reason is worth the key: TENANT-6c-6's bill
- * register prints a bill's centre from the membership's CURRENT `mcc_id`, so the first transfer would silently
- * re-attribute every fortnight that has already closed. The move is TENANT-6d-3, with that read fixed first.
+ * BUILT, and it shipped in a later wave than the board on purpose: TENANT-6c-6's register printed a bill's centre from
+ * the membership's CURRENT route, so the first transfer would have silently re-attributed every closed fortnight. The
+ * move and the repair of that read are one commit.
  */
-export function transferGapKey(): string { return 'dairy.centres.gap.transfer'; }
+export function moveHeadingKey(): string { return 'dairy.centres.move.heading'; }
+
+/** Off for this cooperative (Law 10). The board says so rather than offering a form that answers 404. */
+export function moveDisabledKey(): string { return 'dairy.centres.move.disabled'; }
+
+/**
+ * Should the board draw the move form at all?
+ *
+ * The rule lives HERE and not in the page, so it is testable: a form drawn while the tenant's flag is off sends an
+ * operator into a 404, and a rule that only exists inside JSX is a rule no test can reach.
+ */
+export function showMoveForm(v: Pick<DairyCentresConsole, 'transferEnabled'>): boolean {
+  return v.transferEnabled === true;
+}
+
+/**
+ * A calendar day, `YYYY-MM-DD` — the shape a route period is measured in.
+ *
+ * The server re-validates and the database has the final say; this exists so a half-typed date never leaves the
+ * browser, and so the rule is a function a test can call rather than a regex buried in a server action.
+ */
+export function isCalendarDay(s: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
+/** A card must be SOMETHING. This platform does not number a cooperative's cards, so it cannot fill a blank one in. */
+export function isMemberCode(s: string): boolean {
+  const t = s.trim();
+  return t.length > 0 && t.length <= 40;
+}
+
+/** Exactly one reason a move is refused, from the API's own verdict — the same function the act uses. */
+export function moveRefusalKey(r: DairyMoveRefusal): string { return `dairy.centres.move.refusal.${r}`; }
+
+/** Allowed, with something an operator should know before the card is re-issued. */
+export function moveCautionKey(c: DairyMoveCaution): string { return `dairy.centres.move.caution.${c}`; }
+
+/**
+ * *"Not today — she poured here this morning. From tomorrow."*
+ *
+ * The earliest legal date accompanies every verdict, including an allowed one, because a refusal without the fix sends
+ * an operator away to guess.
+ */
+export function moveEarliestKey(): string { return 'dairy.centres.move.earliest'; }
+
+/** A membership must be named by id here. A picker belongs with a member roster, which is not this screen. */
+export function movePickerGapKey(): string { return 'dairy.centres.move.pickerGap'; }
 
 /** No history of hours: *"what time did this centre open in June"* is unanswerable, and the screen admits it. */
 export function hoursHistoryGapKey(): string { return 'dairy.centres.gap.hoursHistory'; }

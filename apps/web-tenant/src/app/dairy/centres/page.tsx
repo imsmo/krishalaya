@@ -32,10 +32,12 @@ import {
   CENTRES_HREF, centresHref, centresState, centresStateKey, custodyIsNamed, custodyKey, custodyTone,
   hoursHistoryGapKey, hoursKey, hoursText, preferenceLabelKey, preferenceStateKey, preferenceTone,
   reconciliationKey, reconciliationTone, reliefOperatorGapKey, shareText, statusKey, tankKey, tankTempIsCurrent,
-  tankTone, transferGapKey,
+  tankTone,
+  // PC-56 TENANT-6d-3 · W171's move, built with the three reads it would otherwise have broken.
+  moveDisabledKey, moveHeadingKey, movePickerGapKey, showMoveForm,
 } from '../../../features/dairy/centres';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
-import { assignOperatorAction, createCentreAction, releaseOperatorAction, setShiftWindowAction } from './actions';
+import { assignOperatorAction, createCentreAction, moveMembershipAction, releaseOperatorAction, setShiftWindowAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -265,10 +267,38 @@ export default async function DairyCentresPage({ searchParams }: {
           <h2>{t.t('dairy.centres.add.heading')}</h2>
           <AddCentreForm t={t} />
 
+          {/* ---- the move: W171's other sentence, built in TENANT-6d-3 ---- */}
+          <h2>{t.t(moveHeadingKey())}</h2>
+          {showMoveForm(view) ? (
+            <form action={moveMembershipAction} className="kv-card">
+              <label className="kv-field"><span>{t.t('dairy.centres.move.membershipId')}</span><input name="membershipId" required /></label>
+              <label className="kv-field">
+                <span>{t.t('dairy.centres.move.toCentre')}</span>
+                <select name="toMccId" required defaultValue="">
+                  <option value="" disabled>{t.t('dairy.centres.move.choose')}</option>
+                  {view.centres.filter((c) => c.isActive).map((c) => (
+                    <option key={c.id} value={c.id}>{c.code} · {c.name}</option>
+                  ))}
+                </select>
+              </label>
+              {/* THE CARD CHANGES, and this platform does not number a cooperative's cards. */}
+              <label className="kv-field"><span>{t.t('dairy.centres.move.newCode')}</span><input name="newMemberCode" required maxLength={40} /></label>
+              <label className="kv-field"><span>{t.t('dairy.centres.move.effectiveFrom')}</span><input name="effectiveFrom" type="date" /></label>
+              <label className="kv-field"><span>{t.t('dairy.centres.acts.reason')}</span><input name="reason" maxLength={300} /></label>
+              <button type="submit" className="kv-btn">{t.t('dairy.centres.move.submit')}</button>
+              <p className="kv-field__hint">{t.t('dairy.centres.move.datesNote')}</p>
+              <p className="kv-field__hint">{t.t(movePickerGapKey())}</p>
+            </form>
+          ) : (
+            <p className="kv-field__hint">{t.t(moveDisabledKey())}</p>
+          )}
+          {view.moved > 0 && (
+            <p className="kv-field__hint">{formatNumber(view.moved, lang)} {t.t('dairy.centres.move.movedCount')}</p>
+          )}
+
           {/* ---- what this board still cannot do ---- */}
           <h2>{t.t('dairy.centres.gap.heading')}</h2>
           <ul>
-            <li className="kv-field__hint">{t.t(transferGapKey())}</li>
             <li className="kv-field__hint">{t.t(hoursHistoryGapKey())}</li>
             <li className="kv-field__hint">{t.t(reliefOperatorGapKey())}</li>
           </ul>

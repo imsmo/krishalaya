@@ -53,6 +53,17 @@ export class DairyDeductionInstructionRepository {
     return r.rows.map(toDomain);
   }
 
+  /**
+   * [PC-56 TENANT-6d-3] How many live arrangements this membership carries — the caution that a debt follows the
+   * person across villages, which is correct and worth saying out loud before somebody assumes a move clears it.
+   */
+  async countActiveFor(tx: TxContext, tenantId: string, membershipId: string): Promise<number> {
+    const r = await tx.query(
+      `SELECT count(*)::int AS n FROM dairy_deduction_instructions
+        WHERE tenant_id=$1 AND membership_id=$2 AND is_active AND deleted_at IS NULL`, [tenantId, membershipId]);
+    return Number((r.rows[0] as any)?.n ?? 0);
+  }
+
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<DairyDeductionInstruction | null> {
     const r = await tx.query(
       `SELECT ${COLS} ${FROM} WHERE i.id=$1 AND i.tenant_id=$2 AND i.deleted_at IS NULL FOR UPDATE OF i`, [id, tenantId]);

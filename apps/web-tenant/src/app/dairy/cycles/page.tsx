@@ -36,6 +36,8 @@ import {
   actCautionKey, actRefusalKey, actTone, billStatusKey, billStatusTone, bonusIgnoredKey, consentParts, cycleHref,
   cyclesState, cyclesStateKey, deductionParts, deductionsNoteKey, disputesKey, flipDirection, directionKey,
   memberLabel, nextHref, paceParts, pagingText, paydayNoteKey, registerNoteKey, rowWarningKey, stageKey, stageTone,
+  // PC-56 TENANT-6d-3: where the milk actually came from, and when the card on screen is today's rather than then's.
+  codeIsCurrentKey, noCentreKey, pouredCentresText, spansCentresKey,
 } from '../../../features/dairy/cycles';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
 import { approveCycleAction, previewCycleAction } from './actions';
@@ -269,7 +271,13 @@ export default async function DairyCyclesPage({ searchParams }: {
                       ? <strong>{memberLabel(r).name}</strong>
                       : <span className="kv-field__hint">{t.t('dairy.cycles.col.noName')}</span>}
                     {' '}<span className="kv-mono">{memberLabel(r).code}</span>
-                    {r.mccCode && <span className="kv-field__hint"> · {r.mccCode}</span>}
+                    {/* [TENANT-6d-3] The centres the milk was POURED at, not the one the member is routed to today. */}
+                    {pouredCentresText(r)
+                      ? <span className="kv-field__hint"> · {pouredCentresText(r)}
+                          {r.spansCentres && <> · {t.t(spansCentresKey())}</>}
+                        </span>
+                      : <span className="kv-field__hint"> · {t.t(noCentreKey())}</span>}
+                    {r.memberCodeIsCurrent && <span className="kv-field__hint"> · {t.t(codeIsCurrentKey())}</span>}
                     {(paceParts(r).perDay || paceParts(r).avg) && (
                       <>
                         <br />
