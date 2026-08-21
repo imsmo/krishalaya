@@ -2,7 +2,7 @@
 // (Law 1) + RLS. No version column → mutations lock FOR UPDATE. Reads on replica; keyset lists.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
-import { TxContext } from '../../../core/database/unit-of-work';
+import { SqlExecutor, TxContext } from '../../../core/database/unit-of-work';
 import { MccCentre } from '../domain/mcc-centre.entity';
 import { hhmm } from '../domain/mcc-console';
 
@@ -87,6 +87,18 @@ export class MccCentreRepository {
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM mcc_centres WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
+  }
+
+  /**
+   * [PC-56 TENANT-6d-4] Is this code already a centre's, in this tenant?
+   *
+   * The review step's own question. `UNIQUE (tenant_id, code)` is the guard and `MccCodeExistsError` is the refusal;
+   * this exists so the answer appears on the review screen rather than as a 409 after somebody confirms.
+   */
+  async codeExists(x: SqlExecutor, tenantId: string, code: string): Promise<boolean> {
+    const r = await x.query(
+      `SELECT 1 FROM mcc_centres WHERE tenant_id=$1 AND code=$2 AND deleted_at IS NULL LIMIT 1`, [tenantId, code]);
+    return r.rows.length > 0;
   }
 
   /**

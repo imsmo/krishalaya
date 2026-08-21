@@ -19,6 +19,7 @@ import {
   DairyBmcUnit, DairyBmcMonitor, DairyBmcReading,
   DairyCentresConsole, DairyCentreCustodyRow, AssignMccOperatorInput, SetMccShiftWindowInput,
   DairyMembershipRoute, DairyMoveVerdict, DairyMoveCaution, MoveMembershipInput,
+  DairyReview, DairyMccReviewInput, DairyBmcReviewInput,
 } from '../types';
 
 export class DairyResource {
@@ -31,6 +32,14 @@ export class DairyResource {
   }
   async getMcc(id: string, signal?: AbortSignal): Promise<DairyMcc> {
     return (await this.http.request<DairyMcc>('GET', `dairy/mccs/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /**
+   * W2556's review step for *"Add centre"* — PC-56 TENANT-6d-4.
+   *
+   * No idempotency key: it writes nothing, and a question asked twice is the same question.
+   */
+  async previewMcc(input: DairyMccReviewInput): Promise<DairyReview> {
+    return (await this.http.request<DairyReview>('POST', 'dairy/mccs/preview', { body: input })).data;
   }
   async createMcc(input: CreateMccInput, idempotencyKey: string): Promise<DairyMcc> {
     return (await this.http.request<DairyMcc>('POST', 'dairy/mccs', { idempotencyKey, body: input })).data;
@@ -263,6 +272,11 @@ export class DairyResource {
   }
 
   /** Register a cooler under an MCC. Temperatures are one-decimal STRINGS: `4.5` as a double is not `4.5`. */
+  /** W2518's review step for *"Add BMC"* — what will be written, and every reason it would be refused. */
+  async previewBmcUnit(input: DairyBmcReviewInput): Promise<DairyReview> {
+    return (await this.http.request<DairyReview>('POST', 'dairy/bmc/preview', { body: input })).data;
+  }
+
   async registerBmcUnit(input: {
     mccId: string; capacityLitres: string; targetTempC?: string; minTempC?: string; toleranceC?: string;
     iotDeviceRef?: string; model?: string; serialNo?: string;

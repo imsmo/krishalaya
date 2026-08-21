@@ -10,6 +10,9 @@
 import type { DairyBmcMonitor, DairyBmcTile } from '@krishalaya/sdk-js';
 
 export const BMC_HREF = '/dairy/bmc';
+/** *"Add BMC"* — W2517–W2520's chain, built in TENANT-6d-4. Declared here so the monitor and its tests cannot disagree
+ *  about where the register lives. */
+export const BMC_NEW_HREF = '/dairy/bmc/new';
 export function bmcHref(unitId?: string | null, hours?: number | null): string {
   const q = new URLSearchParams();
   if (unitId) q.set('unit', unitId);

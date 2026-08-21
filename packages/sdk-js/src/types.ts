@@ -1817,3 +1817,60 @@ export interface MoveMembershipInput {
   effectiveFrom?: string;
   reason?: string;
 }
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-6d-4 · W2517–W2520 + W2555–W2558 — the shared form chain's review step                          */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+/**
+ * One line of the read-only review: what was typed, and what will actually be STORED.
+ *
+ * `stored` is the value normalised by the same functions the writer uses — `"4"` becomes `"4.0"`, `"2000"` becomes
+ * `"2000.00"`. That column is the difference between a review step and an echo of a form.
+ */
+export interface DairyReviewField {
+  name: string;
+  entered: string | null;
+  stored: string | null;
+  /** True when the platform will store something other than what was typed. */
+  normalised: boolean;
+}
+
+/** A reason the write would be refused, against the field to blame — or `null` for a permission or a flag. */
+export interface DairyReviewRefusal { field: string | null; code: string }
+
+/**
+ * What the act WILL write, and every reason it would be refused.
+ *
+ * The refusals are the act's own, computed from the same facts by the same function, so a review that reports `ready`
+ * cannot be followed by a failure screen. `diff` is null for a create — W2518 says *"the diff against current values
+ * **where applicable**"*, and an empty before/after table implies a comparison nobody made.
+ */
+/**
+ * What a review is ASKED — the form's raw entries, every one an optional string.
+ *
+ * Not `CreateMccInput`. A review whose input schema were the create's would answer a mistyped id with a validator's
+ * 400 instead of a reason written to be read, and several of its refusals could never be reached at all. The review
+ * takes what the operator typed, however wrong, and answers with what would be stored and why not.
+ */
+export interface DairyMccReviewInput {
+  code?: string; defaultName?: string; regionId?: string; lat?: string; lng?: string;
+  operatorUserId?: string; operatorReason?: string; capacityLitresShift?: string;
+  analyzerModel?: string; analyzerSerial?: string;
+  morningOpensAt?: string; morningClosesAt?: string; eveningOpensAt?: string; eveningClosesAt?: string;
+}
+
+export interface DairyBmcReviewInput {
+  mccId?: string; capacityLitres?: string; minTempC?: string; targetTempC?: string; toleranceC?: string;
+  iotDeviceRef?: string; model?: string; serialNo?: string;
+}
+
+export interface DairyReview {
+  ready: boolean;
+  fields: DairyReviewField[];
+  refusals: DairyReviewRefusal[];
+  diff: Array<{ field: string; before: string | null; after: string | null }> | null;
+  /** What the act is audited as, so the success screen can link to that entity's own trail. */
+  entityType: string;
+}

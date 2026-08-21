@@ -205,11 +205,14 @@ describe('TENANT-6d-2 · what the board says it cannot do', () => {
     for (const k of ['heading', 'operatorUserId', 'reason', 'assign', 'release', 'shift', 'opens', 'closes', 'setHours', 'clearHint']) {
       expect(hasKey(`dairy.centres.acts.${k}`)).toBe(true);
     }
-    for (const k of ['heading', 'code', 'name', 'capacity', 'analyzerModel', 'analyzerSerial', 'operator', 'operatorOptional', 'submit']) {
-      expect(hasKey(`dairy.centres.add.${k}`)).toBe(true);
+    // TENANT-6d-4 replaced this board's inline create with W2555-W2558's chain, so the add-form's own field copy is
+    // GONE rather than unused: `heading` and `submit` are all the board still says, and the fields are `form.centre.*`.
+    for (const k of ['heading', 'submit']) expect(hasKey(`dairy.centres.add.${k}`)).toBe(true);
+    for (const k of ['code', 'name', 'capacity', 'operator', 'operatorOptional']) {
+      expect(hasKey(`dairy.centres.add.${k}`)).toBe(false);
     }
     // Every `?ok=` the actions can redirect with must have copy, or a successful handover shows a raw key.
-    for (const k of ['created', 'assigned', 'released', 'hours', 'hoursCleared']) expect(hasKey(`dairy.centres.ok.${k}`)).toBe(true);
+    for (const k of ['assigned', 'released', 'hours', 'hoursCleared']) expect(hasKey(`dairy.centres.ok.${k}`)).toBe(true);
     expect(hasKey('dairy.centres.error.act')).toBe(true);
     for (const k of ['title', 'lead']) expect(hasKey(`dairy.centres.${k}`)).toBe(true);
     for (const k of ['centres', 'memberships', 'tanksWarm', 'asOf', 'memberCodeNote']) expect(hasKey(`dairy.centres.header.${k}`)).toBe(true);

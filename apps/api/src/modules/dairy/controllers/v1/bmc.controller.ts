@@ -33,6 +33,7 @@ import {
   StateCompressorSchema, StateCompressorDto,
 } from '../../dto/bmc.dto';
 import { CompressorState } from '../../domain/bmc-unit.entity';
+import { PreviewBmcDto, PreviewBmcSchema } from '../../dto/dairy-form-preview.dto';
 
 @Controller({ path: 'dairy/bmc', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -69,6 +70,23 @@ export class BmcController {
   @Get(':id') @RequirePermissions(DairyPermissions.Manage)
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.units.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
+  /**
+   * [PC-56 TENANT-6d-4 · W2518] The REVIEW step for *"Add BMC"*.
+   *
+   * Declared before every other POST so no parameterised route can swallow it, and it writes nothing: it answers what
+   * `register` would write and every reason `register` would refuse, from the same facts and by the same function. A
+   * review that says *"ready"* and is followed by W2520 is the defect this route exists to prevent.
+   *
+   * ITS BODY SCHEMA IS THE LENIENT ONE, on purpose: `RegisterBmcSchema` would answer a mistyped centre id with a
+   * validator's 400 instead of *"no centre of this cooperative has that id"*, and its tolerance regex forbids a minus
+   * sign, so `TOLERANCE_NEGATIVE` could never be reached. The review reports what the create schema would refuse
+   * (`writerIssues`) rather than being replaced by it.
+   */
+  @Post('preview') @RequirePermissions(DairyPermissions.Manage)
+  previewRegister(@CurrentContext() ctx: RequestContext, @ZodBody(PreviewBmcSchema) dto: PreviewBmcDto) {
+    return this.units.previewRegister(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
   }
 
   /** The act W170's *"No BMC units → Add BMC"* points at (chain screens W2517–W2520). */

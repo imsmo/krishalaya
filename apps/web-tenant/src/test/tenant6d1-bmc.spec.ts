@@ -176,7 +176,7 @@ describe('TENANT-6d-1 · W170 the BMC monitor', () => {
     expect(bmcState('BOOM', 500)).toBe('error');
     for (const s of ['ok', 'flaggedOff', 'restricted', 'error'] as const) expect(hasKey(bmcStateKey(s))).toBe(true);
     for (const k of ['dairy.bmc.title', 'dairy.bmc.lead', 'dairy.bmc.buffersLocally', 'dairy.bmc.empty.noUnits',
-      'dairy.bmc.empty.registerHint', 'dairy.bmc.empty.addVia', 'dairy.bmc.header.aboveBand', 'dairy.bmc.header.allInRange',
+      'dairy.bmc.empty.registerHint', 'form.bmc.add', 'dairy.bmc.header.aboveBand', 'dairy.bmc.header.allInRange',
       'dairy.bmc.header.asOf', 'dairy.bmc.tile.lastSeen', 'dairy.bmc.tile.minutesAgo', 'dairy.bmc.tile.gapAfter',
       'dairy.bmc.tile.band', 'dairy.bmc.tile.target', 'dairy.bmc.tile.capacity', 'dairy.bmc.tile.full',
       'dairy.bmc.tile.readings24h', 'dairy.bmc.tile.breaches24h', 'dairy.bmc.tile.open', 'dairy.bmc.chart.heading',

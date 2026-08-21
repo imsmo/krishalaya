@@ -12,7 +12,10 @@ import { DomainEvent } from '../domain/dairy.events';
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { MilkShift, ShiftWindow } from '../domain/mcc-console';
-import { CreateMccDto } from '../dto/create-mcc-centre.dto';
+// PC-56 TENANT-6d-4: the review step's decision, shared with the act so the two can never disagree.
+import { ReviewResult, reviewCentre } from '../domain/dairy-form-review';
+import { CreateMccDto, CreateMccSchema } from '../dto/create-mcc-centre.dto';
+import { PreviewMccDto, looksLikeId, submittedValues, writerIssuesOf } from '../dto/dairy-form-preview.dto';
 import { MccNotFoundError, MccCodeExistsError, DairyForbiddenError, MccOperatorNotInTenantError, MccCentreInvalidError } from '../domain/dairy.errors';
 
 export interface DairyActor {
@@ -58,6 +61,14 @@ export class MccCentreService {
           if (operatorUserId && !(await this.repo.userHoldsRoleInTenant(tx, tenantId, operatorUserId))) {
             throw new MccOperatorNotInTenantError(operatorUserId);
           }
+          // A REASON NEEDS A HANDOVER TO BE ABOUT — found by TENANT-6d-4's live run, which asked the review and the act
+          // the same question and got different answers. `CreateMccSchema` refines this away at the HTTP edge, but a
+          // rule that lives only in a DTO is a rule the next caller walks straight past: a job, another service, a
+          // fixture. And the failure is SILENT, because the reason is only ever written onto a custody row — so a
+          // reason with nobody to be about is simply discarded, and somebody's explanation of a handover disappears.
+          if (!operatorUserId && (dto.operatorReason ?? '').trim().length > 0) {
+            throw new MccCentreInvalidError('a custody reason needs an operator to be about');
+          }
           const mcc = MccCentre.create({ id: uuidv7(), tenantId, code: dto.code, defaultName: dto.defaultName, regionId: dto.regionId ?? null,
             lat: dto.lat ?? null, lng: dto.lng ?? null, operatorUserId,
             capacityLitresShift: dto.capacityLitresShift ?? null, analyzerModel: dto.analyzerModel ?? null, analyzerSerial: dto.analyzerSerial ?? null,
@@ -72,6 +83,37 @@ export class MccCentreService {
           await this.flush(tx, tenantId, mcc.id, mcc.pullEvents());
           return mcc.toJSON();
         }, { userId: actor.userId })));
+  }
+
+  /**
+   * [PC-56 TENANT-6d-4 · W2556] What creating this centre WILL write, and every reason it would be refused.
+   *
+   * Computed from the same facts `create` reads, by the same review function, so a review that says *"ready"* cannot be
+   * followed by a failure screen. It writes nothing — and it deliberately does NOT take an idempotency key, because a
+   * question asked twice is the same question.
+   *
+   * The permission is checked here as well as inside `create`: a review is a read of what a write would do, and a
+   * caller who may not write must not be told whether a code is free.
+   */
+  async previewCreate(tenantId: string, actor: DairyActor, dto: PreviewMccDto): Promise<ReviewResult> {
+    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    // Trimmed, blanks dropped — the same body `createCentreFromChainAction` will send, so the create schema is asked
+    // about the values that would actually reach it.
+    const body = submittedValues(dto);
+    return this.uow.run(tenantId, async (tx) => {
+      const code = body.code ?? '';
+      const operator = body.operatorUserId ?? '';
+      return reviewCentre({
+        canManage: actor.canManage,
+        entered: dto as never,
+        codeExists: code.length > 0 ? await this.repo.codeExists(tx, tenantId, code) : false,
+        // ONLY LOOKED UP WHEN IT COULD BE A USER ID. A typo'd operator is a `uuid` the database would refuse with
+        // `22P02`, and a review that answered a typo with a 500 would send the operator to a blank error page instead
+        // of naming the field. A non-uuid holds no role here, which is exactly what the refusal says.
+        operatorInTenant: operator.length === 0 ? null : looksLikeId(operator) ? await this.repo.userHoldsRoleInTenant(tx, tenantId, operator) : false,
+        writerIssues: writerIssuesOf(CreateMccSchema, body),
+      });
+    }, { userId: actor.userId });
   }
 
   async setActive(tenantId: string, actor: DairyActor, id: string, isActive: boolean, ip: string | null) {

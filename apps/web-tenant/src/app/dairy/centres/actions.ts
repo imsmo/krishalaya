@@ -28,26 +28,10 @@ function fail(e: unknown): never {
   redirect(`${PATH}?error=${encodeURIComponent(e instanceof SdkError ? (e.code || 'save') : 'save')}`);
 }
 
-/** W171's *"Add centre"*. The operator is OPTIONAL — omitting it means nobody holds the centre yet, honestly. */
-export async function createCentreAction(formData: FormData): Promise<void> {
-  await requireSession(PATH);
-  const code = String(formData.get('code') ?? '').trim();
-  const defaultName = String(formData.get('defaultName') ?? '').trim();
-  if (!code || !defaultName) redirect(`${PATH}?error=required`);
-  const operatorUserId = opt(formData.get('operatorUserId'));
-  if (operatorUserId !== undefined && !UUID.test(operatorUserId)) redirect(`${PATH}?error=operator`);
-  const capacityLitresShift = opt(formData.get('capacityLitresShift'));
-  if (capacityLitresShift !== undefined && !/^\d{1,8}(\.\d{1,2})?$/.test(capacityLitresShift)) redirect(`${PATH}?error=capacity`);
-  try {
-    await tenantClient().dairy.createMcc({
-      code, defaultName, operatorUserId, capacityLitresShift,
-      analyzerModel: opt(formData.get('analyzerModel')), analyzerSerial: opt(formData.get('analyzerSerial')),
-    }, randomUUID());
-  } catch (e) { fail(e); }
-  revalidatePath(PATH);
-  redirect(`${PATH}?ok=created`);
-}
-
+// W171's *"Add centre"* used to live here as `createCentreAction`. It is GONE, not deprecated: TENANT-6d-4 built
+// W2555–W2558's chain at `/dairy/centres/new`, whose own action runs the same write behind a review the API computes.
+// Two entry points to one write, with the maker-checker step on only one of them, is a defect with a schedule: the
+// unreviewed path is the one somebody uses in a hurry.
 /** Custody changes hands. */
 export async function assignOperatorAction(formData: FormData): Promise<void> {
   await requireSession(PATH);

@@ -35,9 +35,11 @@ import {
   tankTone,
   // PC-56 TENANT-6d-3 · W171's move, built with the three reads it would otherwise have broken.
   moveDisabledKey, moveHeadingKey, movePickerGapKey, showMoveForm,
+  // PC-56 TENANT-6d-4 · W2555–W2558's chain, which replaced this board's inline create.
+  CENTRE_NEW_HREF,
 } from '../../../features/dairy/centres';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
-import { assignOperatorAction, createCentreAction, moveMembershipAction, releaseOperatorAction, setShiftWindowAction } from './actions';
+import { assignOperatorAction, moveMembershipAction, releaseOperatorAction, setShiftWindowAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,7 +104,7 @@ export default async function DairyCentresPage({ searchParams }: {
         <div className="kv-card kv-card--notice" role="status">
           <p>{t.t('dairy.centres.empty.none')}</p>
           <p className="kv-field__hint">{t.t('dairy.centres.empty.hint')}</p>
-          <AddCentreForm t={t} />
+          <AddCentreLink t={t} />
         </div>
       ) : (
         <>
@@ -265,7 +267,7 @@ export default async function DairyCentresPage({ searchParams }: {
 
           {/* ---- add a centre ---- */}
           <h2>{t.t('dairy.centres.add.heading')}</h2>
-          <AddCentreForm t={t} />
+          <AddCentreLink t={t} />
 
           {/* ---- the move: W171's other sentence, built in TENANT-6d-3 ---- */}
           <h2>{t.t(moveHeadingKey())}</h2>
@@ -312,21 +314,13 @@ export default async function DairyCentresPage({ searchParams }: {
  * W171's *"Add centre"*, and its empty state's *"the dairy module activates with your first MCC — analyzer + BMC +
  * operator"*.
  *
- * THE OPERATOR FIELD IS OPTIONAL AND SAYS SO. The API used to default it to the caller; a form that made it required
- * would push a cooperative into naming a custodian before they have chosen one, and the honest state — nobody holds it
- * yet — is one the board can show.
+ * A LINK, NOT A FORM. TENANT-6d-2 shipped this as an inline submit-and-hope form; W2555–W2558 describe a four-screen
+ * chain over the same act, and TENANT-6d-4 built it. Leaving the inline form beside the link would leave two paths to
+ * one write with the maker-checker step on only one of them — and the one without it decides who is answerable for a
+ * village's milk. So the board points at the chain and the form is gone.
  */
-function AddCentreForm({ t }: { t: ReturnType<typeof getTranslator> }) {
+function AddCentreLink({ t }: { t: ReturnType<typeof getTranslator> }) {
   return (
-    <form action={createCentreAction} className="kv-card">
-      <label className="kv-field"><span>{t.t('dairy.centres.add.code')}</span><input name="code" required maxLength={40} /></label>
-      <label className="kv-field"><span>{t.t('dairy.centres.add.name')}</span><input name="defaultName" required maxLength={150} /></label>
-      <label className="kv-field"><span>{t.t('dairy.centres.add.capacity')}</span><input name="capacityLitresShift" inputMode="decimal" pattern="\d{1,8}(\.\d{1,2})?" /></label>
-      <label className="kv-field"><span>{t.t('dairy.centres.add.analyzerModel')}</span><input name="analyzerModel" maxLength={100} /></label>
-      <label className="kv-field"><span>{t.t('dairy.centres.add.analyzerSerial')}</span><input name="analyzerSerial" maxLength={100} /></label>
-      <label className="kv-field"><span>{t.t('dairy.centres.add.operator')}</span><input name="operatorUserId" /></label>
-      <p className="kv-field__hint">{t.t('dairy.centres.add.operatorOptional')}</p>
-      <button type="submit" className="kv-btn">{t.t('dairy.centres.add.submit')}</button>
-    </form>
+    <p><Link href={CENTRE_NEW_HREF} className="kv-btn">{t.t('dairy.centres.add.submit')}</Link></p>
   );
 }

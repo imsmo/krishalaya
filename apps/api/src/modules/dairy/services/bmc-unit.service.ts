@@ -19,6 +19,10 @@ import { BmcUnit, CompressorState } from '../domain/bmc-unit.entity';
 import { DomainEvent } from '../domain/dairy.events';
 import { BmcUnitInvalidError, BmcUnitNotFoundError, DairyForbiddenError, MccNotFoundError } from '../domain/dairy.errors';
 import { deciOfC } from '../domain/bmc';
+// PC-56 TENANT-6d-4: the review step's decision, shared with the act so the two can never disagree.
+import { ReviewResult, reviewBmc } from '../domain/dairy-form-review';
+import { RegisterBmcSchema } from '../dto/bmc.dto';
+import { PreviewBmcDto, looksLikeId, submittedValues, writerIssuesOf } from '../dto/dairy-form-preview.dto';
 import { DairyActor } from './mcc-centre.service';
 
 @Injectable()
@@ -44,6 +48,36 @@ export class BmcUnitService {
    * centre by id. The sensor reference is optional: a cooler read by a thermometer and a notebook is a real cooler, and
    * refusing to record it would push the cooperative back to the notebook for everything.
    */
+  /**
+   * [PC-56 TENANT-6d-4 · W2518] What registering this cooler WILL write, and every reason it would be refused.
+   *
+   * The band's DEFAULTS are part of the answer: `register` applies 0.0 / 4.0 / 0.5 when the ends are omitted — W170's
+   * own numbers — and a review that left them blank would hide three decisions the operator is about to make on behalf
+   * of every family pouring into that tank. The top of the band is computed and shown, because that is the number a
+   * breach is judged against and nobody types it.
+   *
+   * Writes nothing, takes no idempotency key: a question asked twice is the same question.
+   */
+  async previewRegister(tenantId: string, actor: DairyActor, dto: PreviewBmcDto): Promise<ReviewResult> {
+    this.assertDesk(actor);
+    const body = submittedValues(dto);
+    return this.uow.run(tenantId, async (tx) => {
+      // ONLY LOOKED UP WHEN IT COULD BE A CENTRE ID: `mcc_centres.id` is a uuid, and asking the database about
+      // `MCC-AND-03` is a `22P02` — a 500 on the one screen whose job is to explain what is wrong with the entry.
+      const id = body.mccId ?? '';
+      const mcc = looksLikeId(id) ? await this.mccs.getById(tenantId, id, tx) : null;
+      const ref = body.iotDeviceRef ?? '';
+      const p = mcc?.toProps();
+      return reviewBmc({
+        canManage: actor.canManage,
+        entered: dto as never,
+        mcc: p ? { code: p.code, name: p.defaultName, isActive: p.isActive } : null,
+        deviceRefTaken: ref.length > 0 ? (await this.units.byDeviceRef(tx, tenantId, ref)) !== null : false,
+        writerIssues: writerIssuesOf(RegisterBmcSchema, body),
+      });
+    }, { userId: actor.userId });
+  }
+
   async register(tenantId: string, actor: DairyActor, idemKey: string, dto: {
     mccId: string; capacityLitres: string; targetTempC?: string; minTempC?: string; toleranceC?: string;
     iotDeviceRef?: string | null; model?: string | null; serialNo?: string | null;

@@ -35,6 +35,8 @@ import {
   alertingKey, alertingTone, bmcHref, bmcState, bmcStateKey, chartPath, compressorKey, compressorTone, fillText,
   litresLostKey, playbookNoteKey, playbookStepKey, readingSourceKey, silenceGapKey, tempIsCurrent, tileHeadlineKey,
   tileTone, timeInRangeText,
+  // PC-56 TENANT-6d-4 · W2517–W2520's chain, which is now the only way to register a cooler.
+  BMC_NEW_HREF,
 } from '../../../features/dairy/bmc';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
 import { recordBmcReadingAction, reportBmcLevelAction, setBmcBandAction, stateBmcCompressorAction } from './actions';
@@ -104,7 +106,7 @@ export default async function DairyBmcPage({ searchParams }: {
         <div className="kv-card kv-card--notice" role="status">
           <p>{t.t('dairy.bmc.empty.noUnits')}</p>
           <p className="kv-field__hint">{t.t('dairy.bmc.empty.registerHint')}</p>
-          <p><Link href="/dairy/console" className="kv-btn--link">{t.t('dairy.bmc.empty.addVia')}</Link></p>
+          <p><Link href={BMC_NEW_HREF} className="kv-btn">{t.t('form.bmc.add')}</Link></p>
         </div>
       ) : (
         <>
@@ -257,6 +259,10 @@ export default async function DairyBmcPage({ searchParams }: {
             {' · '}{t.t('dairy.bmc.thresholds.condemn')} {view.thresholds.condemnC}°C
             {' · '}{t.t('dairy.bmc.thresholds.silence')} {formatNumber(view.thresholds.silenceMinutes, lang)}
           </p>
+
+          {/* ---- another cooler ---- W2517's *"Add BMC"*, reachable from a populated monitor and not only from the
+               empty state: a cooperative adds its second tank long after its first. ---- */}
+          <p><Link href={BMC_NEW_HREF} className="kv-btn">{t.t('form.bmc.add')}</Link></p>
         </>
       )}
     </section>

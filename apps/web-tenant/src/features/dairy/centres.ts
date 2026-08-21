@@ -16,6 +16,9 @@ import type {
 } from '@krishalaya/sdk-js';
 
 export const CENTRES_HREF = '/dairy/centres';
+/** *"Add centre"* — W2555–W2558's chain, built in TENANT-6d-4. The board no longer carries an inline create: two paths
+ *  to one write, one of them without the maker-checker step, is the drift that wave exists to remove. */
+export const CENTRE_NEW_HREF = '/dairy/centres/new';
 export function centresHref(o: { includeInactive?: boolean } = {}): string {
   return o.includeInactive ? `${CENTRES_HREF}?includeInactive=1` : CENTRES_HREF;
 }

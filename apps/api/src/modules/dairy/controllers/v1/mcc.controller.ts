@@ -29,6 +29,7 @@ import {
 } from '../../dto/membership-move.dto';
 import { MilkShift } from '../../domain/mcc-console';
 import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { PreviewMccDto, PreviewMccSchema } from '../../dto/dairy-form-preview.dto';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -61,6 +62,22 @@ export class MccController {
   @Get('console') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(CENTRES_CONSOLE_FLAG)
   console(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryMccConsoleSchema) q: QueryMccConsoleDto) {
     return this.centres.view(ctx.tenantId, this.actor(ctx), { includeInactive: q.includeInactive, limit: q.limit }).then((data) => ({ data }));
+  }
+
+  /**
+   * [PC-56 TENANT-6d-4 · W2556] The REVIEW step for *"Add centre"*.
+   *
+   * Same contract as the BMC one: it writes nothing, and its refusals are exactly `create`'s, computed from the same
+   * facts by the same function. Declared before `@Post(':id/…')` for the route-order reason this programme has now
+   * documented four times.
+   *
+   * ITS BODY SCHEMA IS THE LENIENT ONE, on purpose: `CreateMccSchema` refuses a reason without an operator, so
+   * `REASON_WITHOUT_OPERATOR` — a refusal written to be READ — could never be reached through this route while the
+   * create schema guarded it. What that schema would refuse is reported as `writerIssues` instead.
+   */
+  @Post('preview') @RequirePermissions(DairyPermissions.Manage)
+  previewCreate(@CurrentContext() ctx: RequestContext, @ZodBody(PreviewMccSchema) dto: PreviewMccDto) {
+    return this.mccs.previewCreate(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
   }
 
   @Get()

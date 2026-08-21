@@ -47,6 +47,8 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   AssignMccOperatorInput, SetMccShiftWindowInput,
   // PC-56 TENANT-6d-3 · W171's move and the route history behind it.
   DairyMembershipRoute, DairyMoveRefusal, DairyMoveCaution, DairyMoveVerdict, MoveMembershipInput,
+  // PC-56 TENANT-6d-4 · the shared form chain's review step.
+  DairyReview, DairyReviewField, DairyReviewRefusal, DairyMccReviewInput, DairyBmcReviewInput,
   DairyStabilityVerdict, DairyWorkedExample, DairyFlagProtocol,
   DairyCoverage, DairyFlagSummary, DairyAccrual, DairyShiftClock,
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,
