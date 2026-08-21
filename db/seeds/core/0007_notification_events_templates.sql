@@ -125,7 +125,13 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
  ('dairy.quality_flag_decided','inapp','en',NULL,'Milk sample review closed','Your milk sample review is closed: {{outcome}}.',NULL,true),
  ('dairy.quality_flag_decided','inapp','hi',NULL,'Doodh sample ki jaanch poori','Aapke doodh ki jaanch poori hui: {{outcome}}.',NULL,true),
  ('dairy.quality_flag_decided','inapp','gu',NULL,'દૂધ નમૂનાની તપાસ પૂરી','તમારા દૂધની તપાસ પૂરી થઈ: {{outcome}}.',NULL,true)
-ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+-- [PC-56 TENANT-6d-1] `ON CONFLICT` WITH NO TARGET, and that is the fix rather than a shortcut: the unique key is
+-- (event_code, channel, language_code, tenant_id) and every row here has tenant_id NULL, so the four-column
+-- inference matched NOTHING and a re-run of this file DUPLICATED every platform template (proven: 176 rows became
+-- 277, 98 groups doubled). TENANT-6c-4 found the same NULL-key trap costing 139 duplicated lookup values.
+-- Migration 0162 de-duplicates and adds a partial unique index for platform rows; an untargeted DO NOTHING is
+-- what stays idempotent against BOTH indexes.
+ON CONFLICT DO NOTHING;
 
 INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
  ('dairy.quality_flag_opened',  'mcc',     'mcc_centres.default_name',                'Anand 02', true),
@@ -165,7 +171,13 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
  ('dairy.bill_dispute_resolved','inapp','en',NULL,'Milk bill query answered','Your query on the {{period}} bill is closed: {{outcome}}. {{note}}',NULL,true),
  ('dairy.bill_dispute_resolved','inapp','hi',NULL,'Doodh bill ki shikayat ka jawab','{{period}} ke bill par aapki shikayat poori hui: {{outcome}}. {{note}}',NULL,true),
  ('dairy.bill_dispute_resolved','inapp','gu',NULL,'દૂધ બિલની ફરિયાદનો જવાબ','{{period}} ના બિલ પર તમારી ફરિયાદ પૂરી થઈ: {{outcome}}. {{note}}',NULL,true)
-ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+-- [PC-56 TENANT-6d-1] `ON CONFLICT` WITH NO TARGET, and that is the fix rather than a shortcut: the unique key is
+-- (event_code, channel, language_code, tenant_id) and every row here has tenant_id NULL, so the four-column
+-- inference matched NOTHING and a re-run of this file DUPLICATED every platform template (proven: 176 rows became
+-- 277, 98 groups doubled). TENANT-6c-4 found the same NULL-key trap costing 139 duplicated lookup values.
+-- Migration 0162 de-duplicates and adds a partial unique index for platform rows; an untargeted DO NOTHING is
+-- what stays idempotent against BOTH indexes.
+ON CONFLICT DO NOTHING;
 
 INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
  ('dairy.bill_previewed',        'period',      'milk_bills.period_start..period_end', '01-15 Jul',  true),
@@ -206,7 +218,13 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
  ('dairy.bill_deduction_consent_required','inapp','en',NULL,'Your agreement is needed','Your {{period}} bill is {{gross}} and {{deductions}} of it is being deducted: {{lines}}. That is more than {{threshold_pct}}% of the bill, so it cannot be paid until you agree. You can say no — the cooperative will then correct the bill or drop the deduction, and nothing moves meanwhile.',NULL,true),
  ('dairy.bill_deduction_consent_required','inapp','hi',NULL,'Aapki sehmati chahiye','{{period}} ka bill {{gross}} hai aur usme se {{deductions}} kat rahi hai: {{lines}}. Yah bill ke {{threshold_pct}}% se zyada hai, is liye aapki sehmati ke bina bhugtan nahi hoga. Aap na bhi keh sakte hain — tab samiti bill theek karegi ya katauti hatayegi, aur tab tak kuch nahi hilega.',NULL,true),
  ('dairy.bill_deduction_consent_required','inapp','gu',NULL,'તમારી સંમતિ જોઈએ','{{period}} નું બિલ {{gross}} છે અને તેમાંથી {{deductions}} કપાત થાય છે: {{lines}}. આ બિલના {{threshold_pct}}% થી વધુ છે, તેથી તમારી સંમતિ વગર પેમેન્ટ થશે નહીં. તમે ના પણ કહી શકો — તો સમિતિ બિલ સુધારશે અથવા કપાત હટાવશે, અને ત્યાં સુધી કંઈ હલશે નહીં.',NULL,true)
-ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+-- [PC-56 TENANT-6d-1] `ON CONFLICT` WITH NO TARGET, and that is the fix rather than a shortcut: the unique key is
+-- (event_code, channel, language_code, tenant_id) and every row here has tenant_id NULL, so the four-column
+-- inference matched NOTHING and a re-run of this file DUPLICATED every platform template (proven: 176 rows became
+-- 277, 98 groups doubled). TENANT-6c-4 found the same NULL-key trap costing 139 duplicated lookup values.
+-- Migration 0162 de-duplicates and adds a partial unique index for platform rows; an untargeted DO NOTHING is
+-- what stays idempotent against BOTH indexes.
+ON CONFLICT DO NOTHING;
 
 INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
  ('dairy.bill_deduction_consent_required', 'period',        'milk_bills.period_start..period_end',        '01-15 Jul', true),
@@ -256,7 +274,13 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
  ('dairy.deduction_instruction_revoked','inapp','en',NULL,'Milk bill deduction stopped','{{what}} will no longer be recovered from your milk bill. This stops the deduction, not the debt: the balance is still owed and your centre will discuss how to settle it.',NULL,true),
  ('dairy.deduction_instruction_revoked','inapp','hi',NULL,'Katauti band hui','{{what}} ab aapke doodh bill se nahi kategi. Isse katauti rukti hai, karz nahi: bakaya rakam abhi baki hai aur aapka kendra iske bhugtan par baat karega.',NULL,true),
  ('dairy.deduction_instruction_revoked','inapp','gu',NULL,'કપાત બંધ થઈ','{{what}} હવે તમારા દૂધ બિલમાંથી કપાશે નહીં. આનાથી કપાત બંધ થાય છે, દેવું નહીં: બાકી રકમ હજુ બાકી છે અને તમારું કેન્દ્ર તેની ચુકવણી વિશે વાત કરશે.',NULL,true)
-ON CONFLICT (event_code, channel, language_code, tenant_id) DO NOTHING;
+-- [PC-56 TENANT-6d-1] `ON CONFLICT` WITH NO TARGET, and that is the fix rather than a shortcut: the unique key is
+-- (event_code, channel, language_code, tenant_id) and every row here has tenant_id NULL, so the four-column
+-- inference matched NOTHING and a re-run of this file DUPLICATED every platform template (proven: 176 rows became
+-- 277, 98 groups doubled). TENANT-6c-4 found the same NULL-key trap costing 139 duplicated lookup values.
+-- Migration 0162 de-duplicates and adds a partial unique index for platform rows; an untargeted DO NOTHING is
+-- what stays idempotent against BOTH indexes.
+ON CONFLICT DO NOTHING;
 
 INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
  ('dairy.deduction_instruction_authorised', 'what',     'lookup_values(milk_deduction).default_name + source', 'Feed / input credit', true),
@@ -285,6 +309,42 @@ ON CONFLICT (event_code, name) DO NOTHING;
 UPDATE notification_templates SET is_active = false
  WHERE channel = 'sms' AND tenant_id IS NULL
    AND provider_template_ref LIKE 'DLT_DAIRY_%';
+
+-- ==================================================================================================================
+-- PC-56 TENANT-6d-1 · **THE SMS LEG OF EVERY OPS ALERT HAS FAILED SINCE PC-55, AND THAT IS THE CHANNEL A VILLAGE
+-- OPERATOR HAS.**
+-- ==================================================================================================================
+-- Following W170's promise - *"alerts fire to the operator's phone before the dairy loses a rupee"* - down to the
+-- phone found this. Migration 0086 catalogued `ops.alert_fired` correctly and seeded its templates for `push` and
+-- `inapp` in all three languages. Its `default_channels` are `["push","sms"]`.
+--
+-- **There has never been an SMS template.** `NotificationService.deliver` resolves a template per channel and, finding
+-- none, calls `n.markFailed('no_template')` and increments `comm.no_template` - fail-closed, recorded, unsent. So every
+-- cold-chain breach, silent sensor and overdue machine since A6 has produced a push (to whoever has the app) and a
+-- FAILED SMS row. A dairy centre operator in Keshod has a feature phone; SMS was the channel that mattered, and it was
+-- the one that could not render.
+--
+-- Seeded here rather than by editing 0086 (Law 9: never edit an applied migration), and idempotent by an untargeted
+-- ON CONFLICT for the reason the block below this one explains.
+--
+-- What is NOT changed here, and is named instead: `user_can_opt_out = true` on this event, set by 0086. An operator who
+-- muted notifications is not told their tank is warming. Flipping it is a change to every ops alert on the platform -
+-- fleet, warehouse and dairy - and belongs to whoever owns that spine, not to a dairy wave.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('ops.alert_fired','sms','gu',NULL,NULL,'{{title}}: {{body}}',NULL,true),
+ ('ops.alert_fired','sms','hi',NULL,NULL,'{{title}}: {{body}}',NULL,true),
+ ('ops.alert_fired','sms','en',NULL,NULL,'{{title}}: {{body}}',NULL,true)
+-- The body is deliberately GENERIC and driven by the rule that fired it: `ops_alert_rules` covers cold-chain breaches,
+-- silent sensors and overdue machines, and `OpsAlertService` already composes the sentence (`hit.body`) from the
+-- evidence it actually read. A template that re-worded it per kind would be a second copy of that logic, drifting.
+ON CONFLICT DO NOTHING;
+
+
+-- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
+-- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
+-- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to
+-- NULL and the send is recorded as `no_template`). 6c-2's own live guard caught it: the fix for a fix must not be the
+-- same bug. Anything added to this file after this point is silently dead.
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- PC-56 TENANT-6c-2 · **EVERY TEMPLATE IN THIS FILE RESOLVED TO NOTHING UNTIL THIS BLOCK EXISTED**

@@ -237,3 +237,28 @@ export class DeductionInstructionInvalidError extends DomainError {
 export class DeductionInstructionNotFoundError extends DomainError {
   constructor(id: string) { super('DAIRY_DEDUCTION_INSTRUCTION_NOT_FOUND', 'Standing instruction not found', 404, { id }); }
 }
+
+/* --------------------------------------------------------------------------------------------------------------- */
+/* PC-56 TENANT-6d-1 · W170 — the tank                                                                             */
+/* --------------------------------------------------------------------------------------------------------------- */
+
+/** A cooler whose band, level or state does not make sense. 422: the caller can fix it. */
+export class BmcUnitInvalidError extends DomainError {
+  constructor(reason: string) { super('BMC_UNIT_INVALID', reason, 422, { reason }); }
+}
+
+/** No such cooler for this tenant. A 404 rather than a 403, for the reason every other read here gives. */
+export class BmcUnitNotFoundError extends NotFoundError {
+  constructor(id: string) { super('BMC unit not found', { id }); (this as any).code = 'BMC_UNIT_NOT_FOUND'; }
+}
+
+/**
+ * A reading arrived for a cooler this platform cannot judge.
+ *
+ * Deliberately NOT "store it anyway": a temperature with no band is a number, and `cold_chain_logs.is_breach` would
+ * have to be guessed. The sensor's owner gets told, which is how a mis-registered device gets fixed instead of
+ * quietly filling a table.
+ */
+export class BmcReadingRefusedError extends DomainError {
+  constructor(reason: string, detail: Record<string, unknown> = {}) { super('BMC_READING_REFUSED', reason, 422, { reason, ...detail }); }
+}

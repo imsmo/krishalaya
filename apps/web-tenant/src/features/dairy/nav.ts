@@ -25,7 +25,9 @@ export const DAIRY_NAV: readonly DairyNavItem[] = [
   // had no method for any of them — so the fortnight 312 families are paid from was reachable only by curl. This is
   // the caller, and the entry the sub-nav has carried as `not built` since TENANT-6a.
   { key: 'cycles',      href: '/dairy/cycles', built: true },
-  { key: 'bmc',         href: null,      built: false },
+  // PC-56 TENANT-6d-1 · W170. `bmc_units` had been in the schema since 0009 with no code at all, so this entry could
+  // not have pointed anywhere: the counter board's `no unit` was the truth. It points at a monitor now.
+  { key: 'bmc',         href: '/dairy/bmc', built: true },
   { key: 'centres',     href: null,      built: false },
   { key: 'insights',    href: null,      built: false },
   // The pre-canon operator console (P1-12), moved to /dairy/console by this wave rather than deleted: it is the only

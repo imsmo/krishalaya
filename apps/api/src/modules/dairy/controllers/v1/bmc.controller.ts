@@ -1,0 +1,114 @@
+// modules/dairy/controllers/v1/bmc.controller.ts · PC-56 TENANT-6d-1 · W170's routes.
+//
+// `bmc_units` has been in the schema since 0009 with **no route of any kind**. These are the first: the monitor, the
+// register, the four acts on a cooler, and the reading stream.
+//
+// TWO THINGS ABOUT THE PERMISSIONS, both deliberate:
+//   • every route is `dairy.manage` — the cooperative's own desk. The platform's fleet permission (`logistics.manage`)
+//     guards logistics' own cold-chain route, and requiring it here would mean nobody at the dairy could switch on the
+//     monitoring of their own tank;
+//   • the READING route is `dairy.manage` too, not public. A device posts with the cooperative's credentials, which is
+//     how every other write on this platform works; an unauthenticated telemetry endpoint is a way to write somebody
+//     else's temperature history, and W170's whole value is that the numbers on it are trustworthy.
+//
+// `@Get('monitor')` IS DECLARED BEFORE `@Get(':id')` — Nest matches in declaration order, and the parameterised route
+// would otherwise answer the screen with "BMC unit 'monitor' not found". The same trap TENANT-6c-6 documented on the
+// cycle console, asserted the same way.
+import { Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../../../../core/auth/auth.guard';
+import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
+import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
+import { RequestContext } from '../../../../core/tenancy-context/request-context';
+import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
+import { BadRequestError } from '../../../../shared/errors/app-error';
+import { BmcUnitService } from '../../services/bmc-unit.service';
+import { BmcReadingService } from '../../services/bmc-reading.service';
+import { DairyBmcReadModel, BMC_MONITOR_FLAG } from '../../read-models/dairy-bmc.read-model';
+import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import {
+  QueryBmcMonitorSchema, QueryBmcMonitorDto, QueryBmcUnitsSchema, QueryBmcUnitsDto,
+  RegisterBmcSchema, RegisterBmcDto, ReportBmcLevelSchema, ReportBmcLevelDto,
+  RecordBmcReadingSchema, RecordBmcReadingDto, SetBmcBandSchema, SetBmcBandDto,
+  StateCompressorSchema, StateCompressorDto,
+} from '../../dto/bmc.dto';
+import { CompressorState } from '../../domain/bmc-unit.entity';
+
+@Controller({ path: 'dairy/bmc', version: '1' })
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag(BMC_MONITOR_FLAG)
+export class BmcController {
+  constructor(
+    private readonly units: BmcUnitService,
+    private readonly readings: BmcReadingService,
+    private readonly monitor: DairyBmcReadModel,
+  ) {}
+
+  /**
+   * No act on a cooler needs `settlement.close` — a tank's band moves no money — but the key is carried anyway, because
+   * TENANT-6c-3's rule is that **every** dairy controller resolves the whole actor rather than the subset it happens to
+   * read today. A controller that omits a key is one route away from gating on a decorator that the service never sees.
+   */
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+
+  /** W170 itself. DECLARED FIRST — see the header. */
+  @Get('monitor') @RequirePermissions(DairyPermissions.Manage)
+  view(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryBmcMonitorSchema) q: QueryBmcMonitorDto) {
+    return this.monitor.view(ctx.tenantId, this.actor(ctx), { unitId: q.unitId, hours: q.hours }).then((data) => ({ data }));
+  }
+
+  @Get() @RequirePermissions(DairyPermissions.Manage)
+  list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryBmcUnitsSchema) q: QueryBmcUnitsDto) {
+    return this.units.list(ctx.tenantId, this.actor(ctx), { mccId: q.mccId, includeRetired: q.includeRetired }).then((data) => ({ data }));
+  }
+
+  @Get(':id') @RequirePermissions(DairyPermissions.Manage)
+  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.units.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
+  /** The act W170's *"No BMC units → Add BMC"* points at (chain screens W2517–W2520). */
+  @Post() @RequirePermissions(DairyPermissions.Manage)
+  register(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(RegisterBmcSchema) dto: RegisterBmcDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.units.register(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
+  }
+
+  /** What "cold enough" means for this tank. A policy change, audited before and after. */
+  @Post(':id/band') @RequirePermissions(DairyPermissions.Manage)
+  band(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(SetBmcBandSchema) dto: SetBmcBandDto) {
+    return this.units.setBand(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  }
+
+  /** *"41% full"*. */
+  @Post(':id/level') @RequirePermissions(DairyPermissions.Manage)
+  level(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(ReportBmcLevelSchema) dto: ReportBmcLevelDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.units.reportLevel(ctx.tenantId, this.actor(ctx), id, key, dto).then((data) => ({ data }));
+  }
+
+  /** Somebody's word about the machine — never inferred from the milk being cold. */
+  @Post(':id/compressor') @RequirePermissions(DairyPermissions.Manage)
+  compressor(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(StateCompressorSchema) dto: StateCompressorDto) {
+    return this.units.stateCompressor(ctx.tenantId, this.actor(ctx), id, { state: dto.state as CompressorState }).then((data) => ({ data }));
+  }
+
+  /** The cooler is gone (chain screens W2521–W2523: the confirm, the success, the failure). */
+  @Post(':id/retire') @RequirePermissions(DairyPermissions.Manage)
+  retire(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.units.retire(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
+  /**
+   * THE STREAM. The first door a `bmc_unit` temperature has ever had.
+   *
+   * No Idempotency-Key: a temperature series is append-only by nature and two readings a second apart are two facts,
+   * not a retry — `cold_chain_logs` has no natural key to collapse them onto, and inventing one (device + minute) would
+   * silently drop a genuine second reading during exactly the minute a tank is warming fastest. The band is read from
+   * the tank, so a caller cannot declare its own definition of a breach.
+   */
+  @Post('readings') @RequirePermissions(DairyPermissions.Manage)
+  record(@CurrentContext() ctx: RequestContext, @ZodBody(RecordBmcReadingSchema) dto: RecordBmcReadingDto) {
+    return this.readings.record(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
+  }
+}

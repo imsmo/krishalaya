@@ -237,10 +237,10 @@ describe('TENANT-6a · the dairy sub-nav', () => {
     // [UPDATED BY PC-56 TENANT-6b-2, THEN 6c-6] `quality` joined the built set when W168 landed (the canon links that
     // screen from nowhere at all, so the sub-nav is its only way in), and `cycles` when W169 landed. This assertion
     // tracks the set as 6d and 6e land theirs, and its whole job is to fail when a section is silently unbuilt again.
-    expect(DAIRY_NAV.filter((i) => canon.includes(i.key) && i.built).map((i) => i.key)).toEqual(['collections', 'quality', 'cycles']);
+    expect(DAIRY_NAV.filter((i) => canon.includes(i.key) && i.built).map((i) => i.key)).toEqual(['collections', 'quality', 'cycles', 'bmc']);
     // [PC-56 TENANT-6c-6] Three now: W169 landed, so `cycles` has an href. This number is the point of the tile —
     // "five of these do nothing yet" must count DOWN as waves land, or it becomes decoration.
-    expect(dairyUnbuiltCount()).toBe(3);
+    expect(dairyUnbuiltCount()).toBe(2);
     expect(hasKey('dairy.nav.unbuilt')).toBe(true);
     expect(hasKey('dairy.nav.label')).toBe(true);
   });

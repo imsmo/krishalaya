@@ -15,6 +15,8 @@ import {
   DairyQualityDesk, DairyPaymentCycle,
   // PC-56 TENANT-6c-6 · W169's cycles, and the console that finally reaches them
   DairyBillCycle, DairyCycleConsole,
+  // PC-56 TENANT-6d-1 · W170's tank
+  DairyBmcUnit, DairyBmcMonitor, DairyBmcReading,
 } from '../types';
 
 export class DairyResource {
@@ -178,6 +180,61 @@ export class DairyResource {
    */
   async approveBillCycle(id: string, idempotencyKey: string): Promise<{ approved: number; failed: number; remaining: number; skippedDisputed: number }> {
     return (await this.http.request<{ approved: number; failed: number; remaining: number; skippedDisputed: number }>('POST', `dairy/bill-cycles/${encodeURIComponent(id)}/approve`, { idempotencyKey })).data;
+  }
+
+  // ---- THE TANK (PC-56 TENANT-6d-1 · W170) ----
+  //
+  // `bmc_units` has been in the schema since migration 0009 with **no repository, no service and no route** — a
+  // cooperative could not record the tank its members' milk sits in for six hours, and no cold-chain reading has ever
+  // been written for a `bmc_unit` subject. These are that surface.
+
+  /** W170: every live cooler with its latest reading, one tank's recent chart, the playbook, and who would be phoned. */
+  async bmcMonitor(params: { unitId?: string; hours?: number } = {}, signal?: AbortSignal): Promise<DairyBmcMonitor> {
+    return (await this.http.request<DairyBmcMonitor>('GET', 'dairy/bmc/monitor', { query: { unitId: params.unitId, hours: params.hours }, signal })).data;
+  }
+
+  async listBmcUnits(params: { mccId?: string; includeRetired?: boolean } = {}, signal?: AbortSignal): Promise<DairyBmcUnit[]> {
+    return (await this.http.request<DairyBmcUnit[]>('GET', 'dairy/bmc', { query: { mccId: params.mccId, includeRetired: params.includeRetired }, signal })).data;
+  }
+
+  async getBmcUnit(id: string, signal?: AbortSignal): Promise<DairyBmcUnit> {
+    return (await this.http.request<DairyBmcUnit>('GET', `dairy/bmc/${encodeURIComponent(id)}`, { signal })).data;
+  }
+
+  /** Register a cooler under an MCC. Temperatures are one-decimal STRINGS: `4.5` as a double is not `4.5`. */
+  async registerBmcUnit(input: {
+    mccId: string; capacityLitres: string; targetTempC?: string; minTempC?: string; toleranceC?: string;
+    iotDeviceRef?: string; model?: string; serialNo?: string;
+  }, idempotencyKey: string): Promise<DairyBmcUnit> {
+    return (await this.http.request<DairyBmcUnit>('POST', 'dairy/bmc', { idempotencyKey, body: input })).data;
+  }
+
+  /** What "cold enough" means for this tank — a standing decision, audited before and after. */
+  async setBmcBand(id: string, input: { minTempC: string; targetTempC: string; toleranceC: string }): Promise<DairyBmcUnit> {
+    return (await this.http.request<DairyBmcUnit>('POST', `dairy/bmc/${encodeURIComponent(id)}/band`, { body: input })).data;
+  }
+
+  async reportBmcLevel(id: string, input: { volumeLitres: string; at?: string }, idempotencyKey: string): Promise<DairyBmcUnit> {
+    return (await this.http.request<DairyBmcUnit>('POST', `dairy/bmc/${encodeURIComponent(id)}/level`, { idempotencyKey, body: input })).data;
+  }
+
+  /** An operator's statement about the machine. Nothing on this platform senses a compressor. */
+  async stateBmcCompressor(id: string, input: { state: 'healthy' | 'attention' | 'unknown' }): Promise<DairyBmcUnit> {
+    return (await this.http.request<DairyBmcUnit>('POST', `dairy/bmc/${encodeURIComponent(id)}/compressor`, { body: input })).data;
+  }
+
+  async retireBmcUnit(id: string): Promise<DairyBmcUnit> {
+    return (await this.http.request<DairyBmcUnit>('POST', `dairy/bmc/${encodeURIComponent(id)}/retire`, {})).data;
+  }
+
+  /**
+   * One temperature reading, judged against the TANK's band (never a band the caller supplies).
+   *
+   * Exactly one of `deviceRef` or `unitId`: a payload carrying both is a gateway that is not sure which tank it is
+   * talking about. No idempotency key — two readings a second apart are two facts, not a retry.
+   */
+  async recordBmcReading(input: { deviceRef?: string; unitId?: string; tempC: string; humidityPct?: string; recordedAt?: string }): Promise<DairyBmcReading> {
+    return (await this.http.request<DairyBmcReading>('POST', 'dairy/bmc/readings', { body: input })).data;
   }
 
   // --- PC-54 W54-5: D2C milk subscriptions + the MCC day sheet ---

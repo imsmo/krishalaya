@@ -1526,3 +1526,102 @@ export interface DairyCycleConsole {
   cadenceOn: boolean;
   openDisputes: number;
 }
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-6d-1 · W170 — the BMC monitor                                                                   */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+/** A bulk milk cooler. Temperatures are one-decimal strings, volumes two-decimal strings — never doubles. */
+export interface DairyBmcUnit {
+  id: string;
+  mccId: string;
+  /** Deci-degrees on the wire only where the API already speaks them; the monitor sends formatted strings. */
+  minDeci: number;
+  targetDeci: number;
+  toleranceDeci: number;
+  capacityCenti: string;
+  volumeCenti: string | null;
+  volumeAt: string | null;
+  volumeBy: string | null;
+  iotDeviceRef: string | null;
+  model: string | null;
+  serialNo: string | null;
+  /** An OPERATOR's statement, never inferred from the milk being cold. */
+  compressorState: 'healthy' | 'attention' | 'unknown';
+  compressorStateAt: string | null;
+  compressorStateBy: string | null;
+  isActive: boolean;
+  retiredAt: string | null;
+  createdAt?: string;
+}
+
+export interface DairyBmcReading {
+  id: string;
+  unitId: string;
+  tempC: string;
+  isBreach: boolean;
+  /** `in_range` | `above_band` | `below_min` — freezing is a fault too, not a cooler doing well. */
+  verdict: 'in_range' | 'above_band' | 'below_min';
+  recordedAt: string;
+  band: { minC: string; maxC: string };
+}
+
+export interface DairyBmcTile {
+  unitId: string;
+  mccId: string;
+  mccCode: string;
+  mccName: string;
+  operatorUserId: string | null;
+  tempC: string | null;
+  verdict: 'in_range' | 'above_band' | 'below_min' | null;
+  /** A sensor that stopped reporting is NOT a cold tank: `stale` carries the age that makes it a gap. */
+  telemetry: { state: 'live' | 'stale' | 'never'; ageMinutes: number | null; silenceMinutes: number };
+  band: { minC: string; targetC: string; maxC: string };
+  capacityLitres: string;
+  volumeLitres: string | null;
+  fillPct: number | null;
+  volumeAt: string | null;
+  compressor: { state: 'healthy' | 'attention' | 'unknown'; at: string | null };
+  deviceRef: string | null;
+  model: string | null;
+  serialNo: string | null;
+  readings24h: number;
+  breaches24h: number;
+}
+
+export type DairyBmcPlaybookStep = 'operator_confirm' | 'divert_next_shift' | 'test_before_pooling';
+
+export interface DairyBmcMonitor {
+  now: string;
+  units: DairyBmcTile[];
+  aboveBand: number;
+  focus: {
+    unitId: string;
+    hours: number;
+    points: Array<{ atMinutesAgo: number; at: string; tempC: string; isBreach: boolean }>;
+    /** Every step says `built: false` — a diversion is an act on memberships and a union pickup is a phone call. */
+    playbook: Array<{ step: DairyBmcPlaybookStep; due: boolean; atDeci: number | null; built: false }>;
+  } | null;
+  /** The TENANT's thresholds (0162 settings), not the canon's 7.5 and 8.0. */
+  thresholds: { divertC: string; condemnC: string; silenceMinutes: number };
+  quarter: {
+    days: number; readings: number; breaches: number; units: number;
+    /** Basis points, or null when there are no readings — never a 100% claimed from nothing. */
+    timeInRangeBp: number | null;
+    /** W170's *"0 L milk lost"* is not measurable on this platform, and this says so with what it would need. */
+    litresLost: { kind: 'not_measurable'; needs: string[] };
+  };
+  alerting: {
+    breachRules: number;
+    silentRules: number;
+    recipients: number;
+    /** `device_silent` measures WHOLE HOURS, so W170's 15-minute call cannot be expressed by any rule. */
+    silenceExpressible: boolean;
+    /** Is the ops alert catalogued at all (migration 0086)? */
+    eventCatalogued: boolean;
+    /** Can its SMS leg render? No SMS template existed from PC-55 until TENANT-6d-1 seeded three — and SMS is the
+     *  channel a village operator actually has, so every alert produced a push and a failed text. */
+    smsDeliverable: boolean;
+  };
+}

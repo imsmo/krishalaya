@@ -51,6 +51,14 @@ export const DairyEventType = {
   // when it ends, and an arrangement recorded silently is indistinguishable from software helping itself.
   DeductionInstructionAuthorised: 'dairy.deduction_instruction_authorised',
   DeductionInstructionRevoked: 'dairy.deduction_instruction_revoked',
+  // PC-56 TENANT-6d-1 · W170. The cooler becomes a thing with a history: registered, its band changed, its compressor
+  // spoken about, retired. NOT one event per temperature reading — a tank reports every few minutes and the outbox is
+  // not a telemetry bus (`cold_chain_logs` is append-only for exactly that reason, and breach ALERTING is the ops-alert
+  // rule's job).
+  BmcRegistered: 'dairy.bmc_registered',
+  BmcBandChanged: 'dairy.bmc_band_changed',
+  BmcCompressorStated: 'dairy.bmc_compressor_stated',
+  BmcRetired: 'dairy.bmc_retired',
   // The cycle's own assembly pass. No member userId: what a member is told is their BILL (the preview), not that a
   // batch job ran — and a per-member notice here would double every preview message.
   CycleDeductionsAssembled: 'dairy.cycle_deductions_assembled',

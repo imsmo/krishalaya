@@ -48,6 +48,17 @@ import { DairyQualityReadModel } from './read-models/dairy-quality.read-model';
 // PC-56 TENANT-6c-6 · W169's own console: the register, its tiles, and every act's refusal.
 import { DairyCycleConsoleReadModel } from './read-models/dairy-cycle-console.read-model';
 import { DairyCycleConsoleRepository } from './repositories/dairy-cycle-console.repository';
+// PC-56 TENANT-6d-1 · W170 · the tank. `bmc_units` has been in the schema since 0009 with no code at all; these are
+// its first repository, service, reading path, read-model and routes. `LogisticsModule` is imported for ONE public
+// service — `ColdChainService.appendForOwner` — because `cold_chain_logs` is logistics' table and there is exactly one
+// writer of it (CLAUDE.md's module rule), and for `OpsAlertRepository`'s rule list, which is how the monitor can say
+// WHO would be phoned about a warm tank.
+import { LogisticsModule } from '../logistics/logistics.module';
+import { BmcUnitRepository } from './repositories/bmc-unit.repository';
+import { BmcUnitService } from './services/bmc-unit.service';
+import { BmcReadingService } from './services/bmc-reading.service';
+import { DairyBmcReadModel } from './read-models/dairy-bmc.read-model';
+import { BmcController } from './controllers/v1/bmc.controller';
 import { DairyQualityRepository } from './repositories/dairy-quality.repository';
 // PC-56 TENANT-6c-1 · W169's cycle: the noun this platform did not have, and the cadence job that fills it.
 import { DairyCycleCloseCadenceJob } from './jobs/dairy-cycle-close.cadence-job';
@@ -89,14 +100,16 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
 // It now runs through core/jobs/jobs.runner.ts, registered below beside the D2C cadence job — the pattern this file
 // already used for the one job it did wire.
 @Module({
-  imports: [FintechModule],
+  imports: [FintechModule, LogisticsModule],
   controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController,
     // PC-56 TENANT-6c-2
     BillCyclesController, BillDisputesController,
     // PC-56 TENANT-6c-4
     MemberCreditsController,
     // PC-56 TENANT-6c-5
-    DeductionInstructionsController],
+    DeductionInstructionsController,
+    // PC-56 TENANT-6d-1 · W170
+    BmcController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -129,6 +142,8 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
     DairyDeductionInstructionRepository, DairyDeductionInstructionService, DairyDeductionAssemblerService,
     // PC-56 TENANT-6c-6
     DairyCycleConsoleRepository, DairyCycleConsoleReadModel,
+    // PC-56 TENANT-6d-1
+    BmcUnitRepository, BmcUnitService, BmcReadingService, DairyBmcReadModel,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
     // PC-56 TENANT-6c-4

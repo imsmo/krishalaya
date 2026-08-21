@@ -5,7 +5,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
-import { ColdChainLog } from '../domain/cold-chain-log.entity';
+import { ColdChainLog, ColdChainSubject } from '../domain/cold-chain-log.entity';
 import { ShipmentForbiddenError } from '../domain/logistics.errors';
 import { ColdChainLogRepository } from '../repositories/cold-chain-log.repository';
 import { RecordColdChainDto, QueryColdChainDto } from '../dto/cold-chain.dto';
@@ -35,6 +35,43 @@ export class ColdChainService {
         const p = log.toProps();
         return { id, subjectType: p.subjectType, subjectId: p.subjectId, tempC: p.tempC, isBreach: p.isBreach, recordedAt: p.recordedAt };
       }, { userId: actor.userId }));
+  }
+
+  /**
+   * APPEND A READING ON BEHALF OF THE MODULE THAT OWNS THE SUBJECT (PC-56 TENANT-6d-1).
+   *
+   * `record()` above is the LOGISTICS route's door: it demands `logistics.manage` and takes the allowed band from the
+   * caller's DTO. Neither is right for a dairy's bulk milk cooler:
+   *
+   *   • a dairy secretary is not a fleet manager, and requiring `logistics.manage` to write the temperature of your own
+   *     cooperative's tank is a permission granted to the wrong role — this programme's own defect list;
+   *   • a band supplied by whoever is writing means an IoT stream can declare its own definition of "cold enough" and
+   *     never breach. A cooler's band belongs to the cooler (`bmc_units`, 0162), and only the module that owns that
+   *     row can read it.
+   *
+   * So the seam is: LOGISTICS owns `cold_chain_logs` and the breach arithmetic (one writer, one `is_breach` rule), and
+   * the SUBJECT's module owns who may write about it and what its band is. The caller has authorised this write before
+   * it gets here — `DairyBmcReadingService` checks `dairy.manage` and resolves the band from the unit — which is why
+   * this method takes no actor to check and says so out loud rather than looking like an oversight.
+   *
+   * Not a public route. Reachable only through a module that imports `LogisticsModule` and calls this service, which is
+   * exactly what CLAUDE.md's module rule allows (public service, never another module's repository).
+   */
+  async appendForOwner(tenantId: string, input: {
+    subjectType: ColdChainSubject; subjectId: string; tempC: number; humidityPct?: number | null;
+    deviceRef?: string | null; recordedAt: Date; allowedMinC: number; allowedMaxC: number; byUserId?: string | null;
+  }) {
+    return timed(this.metrics, 'logistics.cold_chain_append_for_owner', { tenant: tenantId, subject: input.subjectType }, () =>
+      this.uow.run(tenantId, async (tx) => {
+        const log = ColdChainLog.record({
+          tenantId, subjectType: input.subjectType, subjectId: input.subjectId, tempC: input.tempC,
+          humidityPct: input.humidityPct ?? null, deviceRef: input.deviceRef ?? null, recordedAt: input.recordedAt,
+          allowedMinC: input.allowedMinC, allowedMaxC: input.allowedMaxC,
+        });
+        const id = await this.repo.insert(tx, log);
+        const p = log.toProps();
+        return { id, subjectType: p.subjectType, subjectId: p.subjectId, tempC: p.tempC, isBreach: p.isBreach, recordedAt: p.recordedAt };
+      }, { userId: input.byUserId ?? undefined }));
   }
 
   async listForSubject(tenantId: string, q: Omit<QueryColdChainDto, 'cursor'> & { cursor?: { c: string; id: string } }) {
