@@ -14,7 +14,10 @@ import { MilkCollectionRepository } from '../repositories/milk-collection.reposi
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { RecordCollectionDto } from '../dto/create-milk-collection.dto';
-import { MembershipNotFoundError, NoActiveRateCardError, DuplicateCollectionError, DairyForbiddenError } from '../domain/dairy.errors';
+import { MembershipNotFoundError, NoActiveRateCardError, DuplicateCollectionError, DairyForbiddenError, PourNotAtThisCentreError } from '../domain/dairy.errors';
+import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
+import { pourPlace } from '../domain/dairy-diversion';
 import { DairyActor } from './mcc-centre.service';
 import { MilkQualityReview } from '../domain/milk-quality-review.entity';
 import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
@@ -40,6 +43,9 @@ export class MilkCollectionService {
     private readonly memberships: DairyMembershipRepository,
     private readonly reviews: MilkQualityReviewRepository,
     private readonly flags: FlagsService,
+    // [PC-56 TENANT-6d-6] The route AS OF the pour's day, and the diversion that may permit another village.
+    private readonly routes: DairyMembershipRouteRepository,
+    private readonly diversions: DairyDiversionRepository,
   ) {}
 
   async record(tenantId: string, actor: DairyActor, idemKey: string, dto: RecordCollectionDto) {
@@ -49,6 +55,45 @@ export class MilkCollectionService {
         this.uow.run(tenantId, async (tx) => {
           const membership = await this.memberships.getById(tenantId, dto.membershipId, tx);
           if (!membership) throw new MembershipNotFoundError(dto.membershipId);
+          // ------------------------------------------------------------------------------------------------------
+          // [PC-56 TENANT-6d-6] WHERE THIS POUR HAPPENED — measured, not inferred.
+          //
+          // This line used to be `mccId: membership.toProps().mccId`, and TENANT-6d-3's own header described that as
+          // *"stamped at the counter from the membership's route AT THAT MOMENT. A pour knows where it happened."* It
+          // was true, and true only because no pour could happen anywhere else. TWO THINGS FALSIFIED IT:
+          //
+          //   1. **THE DIVERSION** (W170's playbook step 2). Divert Vanthali's evening shift to Bhesan and all 87
+          //      pours were stamped VANTHALI — an empty evening at the centre that did the work, milk at the centre
+          //      that never saw it, quality flags naming the wrong village, and TENANT-6d-3's careful repair (a bill's
+          //      centre comes from its own pours) attributing the fortnight to the wrong place.
+          //   2. **THE BACKDATED ENTRY**, which the diversion did not cause. `collectedOn` is a PARAMETER while the
+          //      route read was the CURRENT one, so a pour entered on Monday for Saturday — after the member moved on
+          //      Sunday — carried the NEW centre. 6d-3 repaired three READS to answer as-of and left this WRITE
+          //      reading today.
+          //
+          // So the route is resolved AS OF THE POUR'S OWN DAY, the counter may NAME a centre, and `pourPlace` decides
+          // whether the platform believes it. A named centre that is neither the member's route nor a live diversion's
+          // destination is REFUSED: an operator must not be able to record a member's milk at another village
+          // quietly, and a cooperative must be able to answer *"who allowed this?"* with a name and a reason.
+          const route = await this.routes.asOf(tx, tenantId, membership.id, dto.collectedOn);
+          const routeMccId = route?.mccId ?? null;
+          // A pour that PREDATES the route history: a cooperative onboarding onto this platform enrols its members
+          // today and then enters last fortnight's pours. The earliest recorded route answers — still from the HISTORY
+          // rather than from `dairy_memberships.mcc_id`, which a move rewrites — and `pourPlace` names it
+          // `before_record` so the inference is visible rather than silent. Found by the live suite, which refused half
+          // of this platform's own fixtures the first time this rule shipped.
+          const earliest = routeMccId === null ? await this.routes.earliest(tx, tenantId, membership.id) : null;
+          const diversion = routeMccId === null || !dto.mccId || dto.mccId === routeMccId
+            ? null
+            : await this.diversions.liveFor(tx, tenantId, routeMccId, dto.collectedOn, dto.shift as MilkShift);
+          const place = pourPlace({
+            routeMccId, enteredMccId: dto.mccId ?? null,
+            diversion: diversion ? { id: diversion.id, toMccId: diversion.toMccId } : null,
+            earliestRouteMccId: earliest?.mccId ?? null,
+          });
+          if (place.mccId === null) {
+            throw new PourNotAtThisCentreError(membership.id, dto.mccId ?? routeMccId ?? '', routeMccId);
+          }
           const animalType = membership.defaultAnimalType ?? 'mixed';
           const card = await this.rateCards.resolveActive(tenantId, animalType, dto.collectedOn, tx);
           if (!card) throw new NoActiveRateCardError(animalType);
@@ -63,7 +108,8 @@ export class MilkCollectionService {
           const amountMinor = card.priceMinor(weightMilliKg, fatCentiPct, snfCentiPct, applyBonus);
           const bonusMinor = applyBonus ? card.bonusMinor(weightMilliKg, fatCentiPct, snfCentiPct) : 0n;
           const collection = MilkCollection.record({
-            id: uuidv7(), tenantId, mccId: membership.toProps().mccId, membershipId: membership.id, shift: dto.shift as MilkShift,
+            id: uuidv7(), tenantId, mccId: place.mccId, diversionId: place.diversionId,
+            membershipId: membership.id, shift: dto.shift as MilkShift,
             collectedOn: dto.collectedOn, weightMilliKg, fatCentiPct, snfCentiPct, density: dto.density ?? null,
             waterFlag: dto.waterFlag, adulterationFlags: dto.adulterationFlags,
             rateCardId: card.id, amountMinor, bonusMinor, bonusApplied: applyBonus, enteredBy: actor.userId,
@@ -78,7 +124,9 @@ export class MilkCollectionService {
             const prior = await this.reviews.priorReviews90d(tx, tenantId, membership.id);
             review = MilkQualityReview.open({
               id: uuidv7(), tenantId, collectionId: collection.id, collectedOn: dto.collectedOn,
-              membershipId: membership.id, mccId: membership.toProps().mccId, shift: dto.shift as MilkShift,
+              // THE SAME CENTRE THE POUR CARRIES. A review stamped with the membership's routing while its pour was
+              // taken at another village would send a committee to the wrong counter to find the sample.
+              membershipId: membership.id, mccId: place.mccId, shift: dto.shift as MilkShift,
               waterFlag: dto.waterFlag, reasons: dto.adulterationFlags,
               densityAtFlag: dto.density ?? null, fatPctAtFlag: dto.fatPct, snfPctAtFlag: dto.snfPct,
               amountWithheldMinor: amountMinor, currencyCode: 'INR',

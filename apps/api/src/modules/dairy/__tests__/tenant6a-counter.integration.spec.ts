@@ -40,6 +40,7 @@ import { MilkCollectionService } from '../services/milk-collection.service';
 import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repository';
 import { DairyCounterRepository } from '../repositories/dairy-counter.repository';
 import { DairyCounterReadModel } from '../read-models/dairy-counter.read-model';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -90,11 +91,12 @@ run('PC-56 TENANT-6a · W167 counter board (integration, real Postgres)', () => 
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
 
     repo = new DairyCounterRepository(replica as any);
     // [PC-56 TENANT-6c-6] The payday tile now names the recorded cycle when one exists (0157).
-    board = new DairyCounterReadModel(repo, new DairyBillCycleRepository(replica as any), replica as any, metrics);
+    // [PC-56 TENANT-6d-6] The board reports both sides of a live diversion for the day and shift it is showing.
+    board = new DairyCounterReadModel(repo, new DairyBillCycleRepository(replica as any), new DairyDiversionRepository(replica as any), replica as any, metrics);
     inspect = new Pool({ connectionString: APP_URL });
 
     today = await repo.today(tenantA);

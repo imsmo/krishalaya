@@ -56,6 +56,7 @@ import { LoanService } from '../../fintech/services/loan.service';
 import { LoanRepository } from '../../fintech/repositories/loan.repository';
 import { LoanRepaymentRepository } from '../../fintech/repositories/loan-repayment.repository';
 import { MilkQualityService } from '../services/milk-quality.service';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -126,7 +127,7 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     // [PC-56 TENANT-6c-2] The bill service reads the tenant's dispute-window length before it can preview a bill.
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
@@ -145,7 +146,7 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
       // wiring of a fake.
       assembler);
     freshCollections = () => new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
-      new FlagsService(pools, new InMemoryCacheService()));
+      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     quality = new MilkQualityService(uow, outbox, idem, metrics, audit, reviewRepo, collRepo);
 
     await fundTenant(tenantA, 100_000_000n);

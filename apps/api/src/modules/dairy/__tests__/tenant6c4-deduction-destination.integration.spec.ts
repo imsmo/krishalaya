@@ -70,6 +70,7 @@ import { DairyDeductionAssemblerService } from '../services/dairy-deduction-asse
 import { DairyDeductionInstructionRepository } from '../repositories/dairy-deduction-instruction.repository';
 import { MilkBillDeductionConsentService } from '../services/milk-bill-deduction-consent.service';
 import { DairyMemberCreditService } from '../services/dairy-member-credit.service';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -156,7 +157,7 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
       // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the

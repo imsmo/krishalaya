@@ -22,6 +22,8 @@ import {
   DairyReview, DairyMccReviewInput, DairyBmcReviewInput,
   // PC-56 TENANT-6d-5 · W170's call
   DairyBmcCallPreview, DairyBmcCallResult,
+  // PC-56 TENANT-6d-6 · W170's playbook step 2
+  DairyDiversion, DairyDiversionPreview, DairyDiversionRow,
 } from '../types';
 
 export class DairyResource {
@@ -306,6 +308,39 @@ export class DairyResource {
    */
   async callBmcOperator(unitId: string, input: { reason: string }, idempotencyKey: string): Promise<DairyBmcCallResult> {
     return (await this.http.request<DairyBmcCallResult>('POST', `dairy/bmc/${encodeURIComponent(unitId)}/call`, { idempotencyKey, body: input })).data;
+  }
+
+  /* ---- W170's playbook step 2: the diversion (PC-56 TENANT-6d-6) ---- */
+
+  /**
+   * The confirm step. Writes nothing, takes no idempotency key, and answers the ONE number a dairy lead is really
+   * deciding about: how many members are routed to the sending centre that day.
+   */
+  async previewDiversion(input: {
+    fromMccId: string; toMccId: string; divertedOn?: string; shift: DairyShift; reason?: string;
+  }): Promise<DairyDiversionPreview> {
+    return (await this.http.request<DairyDiversionPreview>('POST', 'dairy/diversions/preview', { body: input })).data;
+  }
+
+  /** An OPERATOR asks. It moves no milk until a dairy lead signs it. */
+  async requestDiversion(input: {
+    fromMccId: string; toMccId: string; divertedOn?: string; shift: DairyShift; reason: string;
+  }, idempotencyKey: string): Promise<DairyDiversion> {
+    return (await this.http.request<DairyDiversion>('POST', 'dairy/diversions', { idempotencyKey, body: input })).data;
+  }
+
+  /** The DAIRY LEAD signs it — a different person, with `dairy.override` rather than `dairy.manage`. */
+  async approveDiversion(id: string, idempotencyKey: string): Promise<DairyDiversion> {
+    return (await this.http.request<DairyDiversion>('POST', `dairy/diversions/${encodeURIComponent(id)}/approve`, { idempotencyKey })).data;
+  }
+
+  /** Called off — legal only while no milk has been recorded under it. */
+  async cancelDiversion(id: string, input: { reason: string }, idempotencyKey: string): Promise<DairyDiversion> {
+    return (await this.http.request<DairyDiversion>('POST', `dairy/diversions/${encodeURIComponent(id)}/cancel`, { idempotencyKey, body: input })).data;
+  }
+
+  async listDiversions(params: { from?: string; to?: string; limit?: number } = {}, signal?: AbortSignal): Promise<DairyDiversionRow[]> {
+    return (await this.http.request<DairyDiversionRow[]>('GET', 'dairy/diversions', { query: { ...params, limit: params.limit ?? 50 }, signal })).data;
   }
 
   /** What "cold enough" means for this tank — a standing decision, audited before and after. */

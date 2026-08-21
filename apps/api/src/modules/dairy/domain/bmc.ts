@@ -91,14 +91,24 @@ export type PlaybookStep = (typeof PLAYBOOK_STEPS)[number];
 
 export interface PlaybookThresholds { divertDeci: number; condemnDeci: number }
 
+/** Which playbook steps this COOPERATIVE can actually perform — one flag today, and room for the next. */
+export interface PlaybookCapabilities { divert: boolean }
+
 export interface PlaybookItem {
   step: PlaybookStep;
   /** True when the tank's temperature has reached this step's threshold. */
   due: boolean;
   /** The threshold this step turns on, so the screen prints the tenant's number and not the canon's. */
   atDeci: number | null;
-  /** What this platform can actually DO about it — every one of these is a human act with no surface yet. */
-  built: false;
+  /**
+   * What this platform can actually DO about it.
+   *
+   * TENANT-6d-1 typed this as the literal `false`, honestly: all three steps were human acts with no surface. **Step 2
+   * is built now** (TENANT-6d-6: a diversion is a recorded act with two signatures), so the field is a boolean and each
+   * step answers for itself — per COOPERATIVE, because the act is behind a flag and a screen must not offer a button
+   * whose route answers not-found.
+   */
+  built: boolean;
 }
 
 /**
@@ -109,14 +119,20 @@ export interface PlaybookItem {
  * move the milk after they were supposed to have tested it. Nothing here performs anything — the diversion is an act
  * on memberships (TENANT-6d-2) and the union pickup is a phone call — so every item says so.
  */
-export function playbook(tempDeci: number | null, t: PlaybookThresholds): PlaybookItem[] {
+export function playbook(tempDeci: number | null, t: PlaybookThresholds, can: PlaybookCapabilities = { divert: false }): PlaybookItem[] {
   if (t.condemnDeci < t.divertDeci) {
     throw new Error(`bmc playbook thresholds are inverted (divert ${t.divertDeci}, test-before-pooling ${t.condemnDeci}) — a cooperative would be told to move milk after testing it`);
   }
   const at = (x: number) => tempDeci !== null && tempDeci >= x;
   return [
+    // Step 1 is somebody standing at the tank saying the generator has fuel. Nothing on this platform witnesses that,
+    // and TENANT-6d-1's ruling holds: the compressor's state is already a human's word, recorded where it belongs.
     { step: 'operator_confirm', due: tempDeci !== null, atDeci: null, built: false },
-    { step: 'divert_next_shift', due: at(t.divertDeci), atDeci: t.divertDeci, built: false },
+    // Step 2 — *"divert evening shift to Bhesan"* — IS BUILT (TENANT-6d-6), for a cooperative that has the act
+    // switched on. The pours then land at the centre that took them instead of the one the members belong to.
+    { step: 'divert_next_shift', due: at(t.divertDeci), atDeci: t.divertDeci, built: can.divert },
+    // Step 3 — *"dairy-union pickup advanced; batch tested before pooling"* — has no entity on this platform: no
+    // union, no pickup, no batch test. Still false, still said out loud on the screen.
     { step: 'test_before_pooling', due: at(t.condemnDeci), atDeci: t.condemnDeci, built: false },
   ];
 }

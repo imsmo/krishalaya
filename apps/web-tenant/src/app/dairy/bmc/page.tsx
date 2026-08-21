@@ -41,6 +41,8 @@ import {
   callHref, callOfferKey, quietHoursKey,
 } from '../../../features/dairy/bmc';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
+// PC-56 TENANT-6d-6 · the playbook's second step, finally an act.
+import { divertHref, unionPickupGapKey } from '../../../features/dairy/diversion';
 import { recordBmcReadingAction, reportBmcLevelAction, setBmcBandAction, stateBmcCompressorAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -187,10 +189,20 @@ export default async function DairyBmcPage({ searchParams }: {
                     </span>{' '}
                     {t.t(playbookStepKey(p.step))}
                     {p.atDeci !== null && <span className="kv-field__hint"> · {t.t('dairy.bmc.playbook.at')} {(p.atDeci / 10).toFixed(1)}°C</span>}
+                    {/* [TENANT-6d-6] STEP 2 IS BUILT NOW — for a cooperative that has the override switched on. The
+                        link is offered on the step itself rather than in a button bar, because the playbook is where an
+                        operator is reading when the decision arrives, and it carries the focus tank's own centre. */}
+                    {p.step === 'divert_next_shift' && p.built && focusTile && (
+                      <> {' · '}<Link href={divertHref(focusTile.mccId)} className="kv-btn--link">{t.t('dairy.bmc.playbook.divertAct')}</Link></>
+                    )}
+                    {p.step === 'test_before_pooling' && !p.built && (
+                      <span className="kv-field__hint"> · {t.t(unionPickupGapKey())}</span>
+                    )}
                   </li>
                 ))}
               </ul>
               <p className="kv-field__hint">{t.t(playbookNoteKey())}</p>
+              {!view.diversionEnabled && <p className="kv-field__hint">{t.t('dairy.bmc.playbook.divertNotEnabled')}</p>}
 
               {/* ---- the acts, on the focus tank ---- */}
               <div className="kv-card">

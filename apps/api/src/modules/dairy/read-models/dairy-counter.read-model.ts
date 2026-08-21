@@ -17,6 +17,8 @@ import {
   paydayVerdict, pctText, shiftClockVerdict,
 } from '../domain/dairy-counter';
 import { PaymentCycle } from '../domain/dairy.events';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
+import { MilkShift } from '../domain/dairy.events';
 
 /** Law 10, OFF: with the flag off, W167 does not exist — which is the pre-wave state, since there was no dairy screen
  *  in this console at all. */
@@ -32,6 +34,14 @@ export interface CounterCentreRow {
   shiftWindow: { opens: string; closes: string } | null;
   analyzer: AnalyzerVerdict;
   bmc: BmcTempVerdict;
+  /**
+   * [TENANT-6d-6] The two figures a live diversion makes disagree ON PURPOSE — pours this centre RECEIVED from another
+   * centre's roll, and members routed here whose milk was taken elsewhere. Declared HERE and not only in the SDK: the
+   * board was already returning them and this interface did not say so, which is how a read model quietly loses a
+   * field the next time somebody edits its shape.
+   */
+  divertedIn: number;
+  divertedOut: number;
 }
 
 export interface CounterBoard {
@@ -61,6 +71,8 @@ export class DairyCounterReadModel {
     // [PC-56 TENANT-6c-6] The cycle RECORD, so this board stops telling operators the platform cannot say when they
     // are paid. 0157 records the payday; W169's console is where the cycle is worked, and this tile now names it.
     private readonly cycles: DairyBillCycleRepository,
+    // [PC-56 TENANT-6d-6] W170's playbook step 2, as it shows up on this board.
+    private readonly diversions: DairyDiversionRepository,
     @Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider,
     @Inject(METRICS) private readonly metrics: Metrics,
   ) {}
@@ -78,7 +90,7 @@ export class DairyCounterReadModel {
       const cycle: PaymentCycle = opts.cycle ?? ((mix[0]?.paymentCycle as PaymentCycle | undefined) ?? 'fortnightly');
       const window = cycleWindow(day, cycle);
 
-      const [rows, bmc, flags, accrual, bills, currency, cycleRow] = await Promise.all([
+      const [rows, bmc, flags, accrual, bills, currency, cycleRow, diverted] = await Promise.all([
         this.repo.centreShiftRows(tenantId, day, opts.shift),
         this.repo.bmcForCentres(tenantId),
         this.repo.flagsForDay(tenantId, day, opts.shift),
@@ -87,6 +99,9 @@ export class DairyCounterReadModel {
         this.repo.currencyCode(tenantId),
         // The cycle row for exactly this window, if the cadence has made one. No lock: this board decides nothing.
         this.cycles.findByWindow(this.replica.forTenant(tenantId), tenantId, window),
+        // [TENANT-6d-6] BOTH SIDES OF A DIVERSION for this day and shift. Without it a diverted evening looks exactly
+        // like a broken counter: a roll with no pours at one centre, and pours from nobody's roll at the other.
+        this.diversions.sidesFor(tenantId, day, opts.shift as MilkShift),
       ]);
 
       const bmcByMcc = new Map(bmc.map((b) => [b.mccId, b]));
@@ -108,6 +123,9 @@ export class DairyCounterReadModel {
           shiftWindow: r.shiftWindow,
           analyzer: analyzerVerdict({ model: r.analyzerModel, serial: r.analyzerSerial }),
           bmc: bmcTempVerdict(bmcByMcc.get(r.mccId) ?? { unitId: null, targetC: null, tempC: null, recordedAt: null }),
+          // The two figures a diversion makes disagree ON PURPOSE — named, so the board explains itself.
+          divertedIn: diverted.get(r.mccId)?.divertedIn ?? 0,
+          divertedOut: diverted.get(r.mccId)?.divertedOut ?? 0,
         })),
         totals: {
           litres: litresText(totals.weightMilliKg),

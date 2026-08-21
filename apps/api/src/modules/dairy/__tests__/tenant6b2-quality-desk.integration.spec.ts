@@ -38,6 +38,7 @@ import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { DairyQualityReadModel } from '../read-models/dairy-quality.read-model';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -93,9 +94,9 @@ run('PC-56 TENANT-6b-2 · W168 quality desk (integration, real Postgres)', () =>
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
-      new FlagsService(pools, new InMemoryCacheService()));
+      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     freshCollections = () => new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
-      new FlagsService(pools, new InMemoryCacheService()));
+      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     // A fresh flag cache per desk, for the same reason TENANT-6b-1's suite needs one: the flag service caches for 30s by
     // design ("fast kill-switch propagation"), so a desk built once cannot see the flag flip mid-suite.
     makeDesk = () => new DairyQualityReadModel(qrepo, reviewRepo, new FlagsService(pools, new InMemoryCacheService()), metrics);

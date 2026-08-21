@@ -101,6 +101,9 @@ import { DairyDeductionInstructionRepository } from './repositories/dairy-deduct
 import { DairyDeductionAssemblerService } from './services/dairy-deduction-assembler.service';
 import { CommunicationModule } from '../communication/communication.module';
 import { BmcCallService } from './services/bmc-call.service';
+import { DiversionsController } from './controllers/v1/diversions.controller';
+import { DairyDiversionService } from './services/dairy-diversion.service';
+import { DairyDiversionRepository } from './repositories/dairy-diversion.repository';
 
 // [PC-56 TENANT-6c-1] What used to stand here said the cycle-close job "is instantiated by apps/worker with a
 // privileged kv_relay Pool". APPS/WORKER INSTANTIATED NOTHING OF THE KIND, and could not have: its JOBS registry is
@@ -121,7 +124,9 @@ import { BmcCallService } from './services/bmc-call.service';
     // PC-56 TENANT-6c-5
     DeductionInstructionsController,
     // PC-56 TENANT-6d-1 · W170
-    BmcController],
+    BmcController,
+    // PC-56 TENANT-6d-6 · W170's playbook step 2
+    DiversionsController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -155,7 +160,7 @@ import { BmcCallService } from './services/bmc-call.service';
     // PC-56 TENANT-6c-6
     DairyCycleConsoleRepository, DairyCycleConsoleReadModel,
     // PC-56 TENANT-6d-1
-    BmcUnitRepository, BmcUnitService, BmcReadingService, BmcCallService, DairyBmcReadModel,
+    BmcUnitRepository, BmcUnitService, BmcReadingService, BmcCallService, DairyBmcReadModel, DairyDiversionRepository, DairyDiversionService,
     MccConsoleRepository, MccOperatorAssignmentRepository, DairyCentresReadModel,
     DairyMembershipRouteRepository, DairyMembershipMoveService,
   ],

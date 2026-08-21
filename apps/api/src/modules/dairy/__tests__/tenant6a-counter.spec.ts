@@ -482,7 +482,13 @@ describe('PC-56 TENANT-6a · the read model composes W167', () => {
     // `o.cycleRow === undefined` keeps the old behaviour (no row for the window ⇒ still refused).
     const cycles = { findByWindow: jest.fn(async () => (o.cycleRow ? { toProps: () => o.cycleRow } : null)) };
     const replica = { forTenant: () => ({ query: jest.fn(async () => ({ rows: [], rowCount: 0 })) }) };
-    return { rm: new DairyCounterReadModel(repo as never, cycles as never, replica as never, metrics as never), repo, cycles };
+    // [PC-56 TENANT-6d-6] Both sides of a diversion for the day and shift being shown — empty here, because this
+    // harness is about the board's own arithmetic and a cooperative with no diversions is the ordinary case.
+    const diversions = { sidesFor: jest.fn(async () => new Map()) };
+    return {
+      rm: new DairyCounterReadModel(repo as never, cycles as never, diversions as never, replica as never, metrics as never),
+      repo, cycles, diversions,
+    };
   }
 
   it('the board reads the cycle row for the window it is showing, and names its payday', async () => {

@@ -16,6 +16,16 @@ export const RecordCollectionSchema = z.object({
    * the operator read off the Lactoscan had nowhere to go and the flag stood on nothing a committee could review.
    */
   density: z.string().regex(/^\d(\.\d{1,3})?$/, 'density, e.g. 1.026').optional(),
+  /**
+   * [PC-56 TENANT-6d-6] WHERE THE MILK WAS ACTUALLY TAKEN.
+   *
+   * Optional, and omitting it means *"where this member is routed for that day"* — which is what every counter has
+   * always meant and what almost every row will always be. Naming a DIFFERENT centre is the diverted case (W170's
+   * playbook step 2), and the service accepts it only when a live approved diversion sends that member's route to that
+   * centre for that shift. Before this field the pour's centre was inferred from the membership's CURRENT routing, so a
+   * diverted evening and a backdated entry both recorded the wrong village.
+   */
+  mccId: z.string().uuid().optional(),
   waterFlag: z.boolean().default(false),
   adulterationFlags: z.array(z.string().max(40)).max(10).default([]),
 }).strict();

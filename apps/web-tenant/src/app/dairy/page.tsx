@@ -43,6 +43,8 @@ import {
   shiftKey, shiftOf, totalsFoot, uniquenessKey, windowBasisKey, windowKey,
 } from '../../features/dairy/counter';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../features/dairy/nav';
+// PC-56 TENANT-6d-6 · the two figures a diversion makes disagree on purpose.
+import { diversionNoteKey } from '../../features/dairy/diversion';
 
 export const dynamic = 'force-dynamic';
 
@@ -202,7 +204,17 @@ export default async function DairyCounterPage({ searchParams }: { searchParams:
               },
               {
                 header: t.t('dairy.col.pourers'),
-                cell: (c) => centreCoverageText(c) ?? formatNumber(c.pourers, lang),
+                cell: (c) => (
+                  <>
+                    {centreCoverageText(c) ?? formatNumber(c.pourers, lang)}
+                    {/* [TENANT-6d-6] A live diversion makes this column and the roll disagree ON PURPOSE. Without this
+                        badge an honest diverted evening reads exactly like a broken counter — pours from nobody's roll
+                        at one centre, a roll with no pours at the other. */}
+                    {diversionNoteKey(c) && (
+                      <> <span className="kv-badge kv-badge--warn">{t.t(diversionNoteKey(c)!)}</span></>
+                    )}
+                  </>
+                ),
               },
               { header: t.t('dairy.col.quality'), cell: (c) => qualityText(c.fatPct, c.snfPct) ?? t.t('common.dash') },
               {

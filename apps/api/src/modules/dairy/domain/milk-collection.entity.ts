@@ -9,6 +9,14 @@ export interface MilkCollectionProps {
   id: string;
   tenantId: string;
   mccId: string;
+  /**
+   * [PC-56 TENANT-6d-6] The AUTHORITY for a pour taken away from the member's own route — W170's playbook step 2.
+   *
+   * Null on every ordinary row, which is almost all of them. Non-null means this member's milk was recorded at another
+   * village, and this is the signed decision that allowed it: 0166's trigger refuses a row whose diversion does not
+   * cover its own day, shift and centre, so the column cannot become decoration.
+   */
+  diversionId: string | null;
   membershipId: string;
   shift: MilkShift;
   collectedOn: string;          // ISO date (partition key)
@@ -36,7 +44,13 @@ export class MilkCollection {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: MilkCollectionProps) {}
 
-  static record(input: Omit<MilkCollectionProps, 'milkBillId' | 'holdState'>): MilkCollection {
+  /**
+   * `diversionId` is OPTIONAL on the way in and null by default (TENANT-6d-6): an ordinary pour is every pour a
+   * cooperative has ever recorded, and forcing every caller to write `diversionId: null` is noise that will eventually
+   * be got wrong in the one place it matters. It is REQUIRED on the props, so a row read back always answers the
+   * question *"was this pour taken away from the member's own centre?"* with yes or no rather than with undefined.
+   */
+  static record(input: Omit<MilkCollectionProps, 'milkBillId' | 'holdState' | 'diversionId'> & { diversionId?: string | null }): MilkCollection {
     if (input.weightMilliKg <= 0n) throw new InvalidCollectionError('weight must be greater than zero');
     if (input.fatCentiPct < 0n || input.fatCentiPct > 10000n) throw new InvalidCollectionError('fat % out of range');
     if (input.snfCentiPct < 0n || input.snfCentiPct > 10000n) throw new InvalidCollectionError('snf % out of range');
@@ -48,8 +62,10 @@ export class MilkCollection {
     // moment of recording rather than left to a caller to remember — a caller that forgets is a farmer paid for water,
     // or a farmer's clean milk withheld.
     const flagged = input.waterFlag || input.adulterationFlags.some((f) => !!f);
-    const c = new MilkCollection({ ...input, holdState: flagged ? 'held' : 'none', milkBillId: null });
+    const c = new MilkCollection({ diversionId: null, ...input, holdState: flagged ? 'held' : 'none', milkBillId: null });
     c.events.push({ type: DairyEventType.CollectionRecorded, payload: { collectionId: c.props.id, membershipId: c.props.membershipId, mccId: c.props.mccId,
+      // The event carries the authority too, so a consumer never has to ask why this pour names another village.
+      diversionId: c.props.diversionId,
       shift: c.props.shift, collectedOn: c.props.collectedOn, amountMinor: c.props.amountMinor.toString() } });
     return c;
   }

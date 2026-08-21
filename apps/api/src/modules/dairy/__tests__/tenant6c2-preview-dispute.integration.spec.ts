@@ -63,6 +63,7 @@ import { LoanRepaymentRepository } from '../../fintech/repositories/loan-repayme
 import { MilkBillDisputeService } from '../services/milk-bill-dispute.service';
 import { DairyBillCycleService } from '../services/dairy-bill-cycle.service';
 import { previousCycleWindow } from '../domain/dairy-cycle';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -122,7 +123,7 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
     const creditRepo = new DairyMemberCreditRepository(replica as never);

@@ -57,7 +57,13 @@ describe('THE GRANT A FARMER SHOULD NEVER HAVE HAD', () => {
     // documents it as the OPERATOR's verb with "Members READ their own data (no perm)". The comment and the grant
     // contradicted each other and the grant won: a member could set what every member is paid, and pay a bill.
     expect(seed()).not.toMatch(/'dairy_farmer'[^)]*\)\s*AND p\.code IN \('dairy\.manage'\)/);
-    expect(seed()).toMatch(/OR \(r\.code IN \('tenant_admin'\) AND p\.code IN \('dairy\.manage'\)\)/);
+    // `tenant_admin` still holds it — and now holds dairy's SECOND verb beside it (TENANT-6d-6's `dairy.override`,
+    // the dairy lead's, for W170's *"playbook overrides are operator + dairy lead together"*). This spec's own
+    // observation was that every sibling vertical has two verbs while dairy had one; the assertion moves with it
+    // rather than being widened to match whatever the file now says.
+    expect(seed()).toMatch(/OR \(r\.code IN \('tenant_admin'\) AND p\.code IN \('dairy\.manage','dairy\.override'\)\)/);
+    // And the second verb is granted to NOBODY ELSE by default: a cooperative decides who may move a village's milk.
+    expect(seed()).not.toMatch(/'dairy_farmer'[^)]*\)\s*AND p\.code IN \([^)]*'dairy\.override'/);
   });
 
   it('and a migration removes it from installs that already ran the seed', () => {

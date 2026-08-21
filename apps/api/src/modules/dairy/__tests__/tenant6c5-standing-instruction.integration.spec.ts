@@ -66,6 +66,7 @@ import { DairyDeductionAssemblerService } from '../services/dairy-deduction-asse
 import { DairyDeductionInstructionService } from '../services/dairy-deduction-instruction.service';
 import { DairyBillCycleService } from '../services/dairy-bill-cycle.service';
 import { previousCycleWindow } from '../domain/dairy-cycle';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -161,7 +162,7 @@ run('PC-56 TENANT-6c-5 · the standing instruction (integration, real Postgres)'
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags, assembler);
     cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo, lineRepo, flags);

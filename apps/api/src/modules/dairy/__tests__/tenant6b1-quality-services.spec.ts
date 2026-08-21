@@ -43,7 +43,7 @@ const cardWith = (slabs: Array<{ metric: 'fat' | 'snf'; minCentiPct: number; bon
 
 const POUR = { membershipId: 'mem1', shift: 'morning', collectedOn: DAY, weightKg: '7.100', fatPct: '6.80', snfPct: '9.10', waterFlag: false, adulterationFlags: [] as string[] };
 
-function recordHarness(o: { slabs?: Array<{ metric: 'fat' | 'snf'; minCentiPct: number; bonusMinorPerLitre: number }>; flagOn?: boolean; priors?: number; farmerUserId?: string | null } = {}) {
+function recordHarness(o: { slabs?: Array<{ metric: 'fat' | 'snf'; minCentiPct: number; bonusMinorPerLitre: number }>; flagOn?: boolean; priors?: number; farmerUserId?: string | null; routeMccId?: string | null; diversion?: { id: string; toMccId: string } | null } = {}) {
   const inserted: Array<Record<string, unknown>> = [];
   const reviewsInserted: MilkQualityReview[] = [];
   const outbox: Array<{ aggregateType: string; eventType: string; payload: Record<string, unknown> }> = [];
@@ -59,9 +59,16 @@ function recordHarness(o: { slabs?: Array<{ metric: 'fat' | 'snf'; minCentiPct: 
   const flags = { isEnabled: jest.fn(async (key: string) => { flagAsked.push(key); return o.flagOn === true; }) };
   const outboxWriter = { write: jest.fn(async (_tx: unknown, e: { aggregateType: string; eventType: string; payload: Record<string, unknown> }) => { outbox.push(e); }) };
 
+  // [PC-56 TENANT-6d-6] The pour's centre is MEASURED now, not inferred from the membership's current routing: the
+  // route is resolved AS OF the pour's own day and a named centre needs a live diversion. These two stubs are the
+  // route history and the diversion register — a harness with no route makes every pour unattributable, which is the
+  // honest new behaviour and exactly what the 6d-6 spec asserts.
+  const routes = { asOf: jest.fn(async () => (o.routeMccId === null ? null : { mccId: o.routeMccId ?? 'mcc-1' })) };
+  const diversions = { liveFor: jest.fn(async () => o.diversion ?? null) };
   const svc = new MilkCollectionService(uow as never, outboxWriter as never, idem as never, metrics as never,
-    repo as never, rateCards as never, memberships as never, reviews as never, flags as never);
-  return { svc, inserted, reviewsInserted, outbox, flagAsked, flags, reviews, repo };
+    repo as never, rateCards as never, memberships as never, reviews as never, flags as never,
+    routes as never, diversions as never);
+  return { svc, inserted, reviewsInserted, outbox, flagAsked, flags, reviews, repo, routes, diversions };
 }
 
 /* --------------------------------------------------------------------------------------------------------- */

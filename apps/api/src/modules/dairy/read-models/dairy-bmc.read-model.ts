@@ -26,6 +26,7 @@ import { CompressorState } from '../domain/bmc-unit.entity';
 import { DairyActor } from '../services/mcc-centre.service';
 import { ALERT_EVALUATION_MINUTES, silentMinutesOf } from '../../logistics/domain/ops-alert.rules';
 import { BMC_CALL_FLAG } from '../domain/bmc-call.flags';
+import { DIVERSION_FLAG } from '../domain/dairy-diversion.flags';
 
 export const BMC_MONITOR_FLAG = 'dairy_bmc_monitor';
 
@@ -130,6 +131,9 @@ export interface BmcMonitorView {
   /** Whether *"Call MCC-AND-03 operator"* is switched on for this cooperative (`dairy_bmc_call`, default OFF). The
    *  monitor offers the button or says the act is not enabled — it never draws a button that 404s. */
   callEnabled: boolean;
+  /** Whether the playbook's *"divert evening shift"* is switched on (`dairy_shift_diversion`, default OFF). The
+   *  playbook's own `built` flag carries it too; this is the screen's shorthand for offering the act. */
+  diversionEnabled: boolean;
 }
 
 @Injectable()
@@ -148,7 +152,7 @@ export class DairyBmcReadModel {
       const x = this.replica.forTenant(tenantId);
       const hours = Math.min(Math.max(q.hours ?? 6, 1), 168);
 
-      const [nowRow, rows, thresholds, quarter, rules, delivery, callEnabled] = await Promise.all([
+      const [nowRow, rows, thresholds, quarter, rules, delivery, callEnabled, diversionEnabled] = await Promise.all([
         x.query(`SELECT now() AS n`),
         this.units.monitor(tenantId, 24),
         this.units.thresholds(x, tenantId),
@@ -158,6 +162,7 @@ export class DairyBmcReadModel {
         // Read rather than assumed: the monitor must not draw a button whose route answers not-found (TENANT-6d-2's
         // ruling on the flag guard — a 404 from a flag is indistinguishable from a broken screen).
         this.flags.isEnabled(BMC_CALL_FLAG, { tenantId }),
+        this.flags.isEnabled(DIVERSION_FLAG, { tenantId }),
       ]);
       const now = (nowRow.rows[0] as { n: Date }).n;
 
@@ -197,7 +202,11 @@ export class DairyBmcReadModel {
             atMinutesAgo: Math.max(Math.floor((now.getTime() - s.at.getTime()) / 60_000), 0),
             at: s.at.toISOString(), tempC: cOfDeci(s.tempDeci), isBreach: s.isBreach,
           })),
-          playbook: playbook(focusRow.lastTempDeci, { divertDeci: thresholds.divertDeci, condemnDeci: thresholds.condemnDeci }),
+          // [TENANT-6d-6] The playbook's second step is BUILT for a cooperative that has the override switched on, and
+          // says so per tenant rather than as a constant — a screen must not offer a button whose route 404s.
+          playbook: playbook(focusRow.lastTempDeci,
+            { divertDeci: thresholds.divertDeci, condemnDeci: thresholds.condemnDeci },
+            { divert: diversionEnabled }),
         };
       }
 
@@ -235,6 +244,7 @@ export class DairyBmcReadModel {
           criticalCatalogued: delivery.criticalCatalogued, criticalVoiceDeliverable: delivery.criticalIvr,
         },
         callEnabled,
+        diversionEnabled,
       };
     });
   }

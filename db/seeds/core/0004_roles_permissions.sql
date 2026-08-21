@@ -57,6 +57,12 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('catalogue.configure','Enable/disable categories for the tenant','M02'),
  ('animal.manage','Manage own animals (livestock registry)','M15'),('vet.book','Book a veterinarian','M15'),('vet.manage','Manage vet profile + services','M15'),
  ('dairy.manage','Manage dairy MCC + collections + milk bills','M16'),
+ -- [PC-56 TENANT-6d-6] DAIRY'S SECOND VERB. W170: "playbook overrides are operator + dairy lead together" - a
+ -- diversion sends 87 families to another village for a shift, and one person's word is not enough. TENANT-6c-3
+ -- observed in this very file that every sibling vertical has two verbs while dairy had only `manage`, which is why
+ -- farmers had once been given it. This is the checker's verb, and it is deliberately NOT `settlement.close`: that is
+ -- a money permission a cooperative may have given to a treasurer who has no business moving a village's milk.
+ ('dairy.override','Approve dairy playbook overrides (divert a shift)','M16'),
  ('equipment.manage','Manage equipment assets + rates + rental fulfilment','M20'),('equipment.rent','Rent equipment (request/confirm bookings)','M20'),
  ('warehouse.manage','Manage warehouses + storage + assays + eNWR','M21'),('warehouse.store','Deposit produce in a warehouse','M21'),
  ('contract.manage','Manage farming contracts + advances + settlement','M22'),('contract.grow','Participate as a contract grower','M22'),
@@ -107,7 +113,7 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- insurance.manage, contract.grow / contract.manage); dairy has only the manage verb, which is why farmers were
    -- given it. Nothing a member does needs it: every member-facing dairy route authorises by OWNERSHIP and carries no
    -- permission at all. Migration 0159 removes it from installs that already ran this seed.
-   OR (r.code IN ('tenant_admin') AND p.code IN ('dairy.manage'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('dairy.manage','dairy.override'))
    OR (r.code='equipment_owner' AND p.code IN ('equipment.manage','equipment.rent'))
    OR (r.code IN ('farmer','pashupalak','vyapari','customer') AND p.code IN ('equipment.rent'))
    OR (r.code='tenant_admin' AND p.code IN ('warehouse.manage'))

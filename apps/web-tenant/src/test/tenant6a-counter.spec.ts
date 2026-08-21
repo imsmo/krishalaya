@@ -23,6 +23,8 @@ const hasKey = (k: string) => LOCALES.every((l) => dict(l).includes(`'${k}':`));
 const centre = (o: Partial<DairyCounterCentre> = {}): DairyCounterCentre => ({
   mccId: 'm1', code: 'MCC-VNT', name: 'Vanthali', litres: '812.4', pours: 104, pourers: 104,
   membershipsEnrolled: 118, fatPct: '6.4', snfPct: '8.9', amountMinor: '4881200', flags: 1,
+  // [TENANT-6d-6] No diversion is the ordinary evening, and the badge stays off — the 6d-6 spec covers the two sides.
+  divertedIn: 0, divertedOut: 0,
   // [TENANT-6d-2] The centre's own hours for the shift shown (0163). Null here is the pre-6d-2 world, which is still
   // the honest default for a cooperative that has recorded none.
   shiftWindow: null,

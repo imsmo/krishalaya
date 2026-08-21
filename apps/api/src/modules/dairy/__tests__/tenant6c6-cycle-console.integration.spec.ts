@@ -47,6 +47,7 @@ import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-as
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 // PC-56 TENANT-6d-3: enrolment opens a membership's first route period, in the same transaction.
 import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
@@ -166,7 +167,8 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags,
+      new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags, assembler);
     cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo, lineRepo, flags);

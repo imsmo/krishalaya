@@ -56,6 +56,8 @@ const view = (o: Partial<DairyBmcMonitor> = {}): DairyBmcMonitor => ({
     criticalCatalogued: true, criticalVoiceDeliverable: true,
   },
   callEnabled: true,
+  // [TENANT-6d-6] The playbook's second step is an act now, for a cooperative that has it switched on.
+  diversionEnabled: true,
   ...o,
 });
 

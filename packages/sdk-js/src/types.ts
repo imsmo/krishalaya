@@ -1434,6 +1434,15 @@ export interface DairyCounterCentre {
   shiftWindow: DairyShiftWindow | null;
   analyzer: DairyAnalyzer;
   bmc: DairyBmcTemp;
+  /**
+   * [TENANT-6d-6] The two figures a live diversion makes disagree ON PURPOSE.
+   *
+   * `divertedIn` — pours this centre RECEIVED from another centre's roll. `divertedOut` — members routed here whose
+   * milk was taken elsewhere. Before W170's playbook step 2 was buildable, a roll with no pours (or pours from nobody's
+   * roll) could only mean something was wrong, so the board must now name which it is.
+   */
+  divertedIn: number;
+  divertedOut: number;
 }
 
 export interface DairyCounterBoard {
@@ -1644,8 +1653,12 @@ export interface DairyBmcMonitor {
     unitId: string;
     hours: number;
     points: Array<{ atMinutesAgo: number; at: string; tempC: string; isBreach: boolean }>;
-    /** Every step says `built: false` — a diversion is an act on memberships and a union pickup is a phone call. */
-    playbook: Array<{ step: DairyBmcPlaybookStep; due: boolean; atDeci: number | null; built: false }>;
+    /**
+     * TENANT-6d-1 shipped every step as `built: false` — a diversion was an act on memberships with no record and a
+     * union pickup is a phone call to an entity this platform does not model. **TENANT-6d-6 built step 2**, so `built`
+     * is a boolean and answers PER COOPERATIVE (the act is behind `dairy_shift_diversion`). Step 3 is still false.
+     */
+    playbook: Array<{ step: DairyBmcPlaybookStep; due: boolean; atDeci: number | null; built: boolean }>;
   } | null;
   /** The TENANT's thresholds (0162 settings), not the canon's 7.5 and 8.0. */
   thresholds: { divertC: string; condemnC: string; silenceMinutes: number };
@@ -1688,6 +1701,9 @@ export interface DairyBmcMonitor {
   };
   /** Is *"Call MCC-AND-03 operator"* switched on for this cooperative (`dairy_bmc_call`, default OFF)? */
   callEnabled: boolean;
+  /** Is the playbook's *"divert evening shift"* switched on (`dairy_shift_diversion`, default OFF)? The playbook's own
+   *  `built` flag carries it per step; this is the screen's shorthand for saying why the step is not offered. */
+  diversionEnabled: boolean;
 }
 
 /* ------------------------------------------------------------------------------------------------------------ */
@@ -1722,6 +1738,60 @@ export interface DairyBmcCallPreview {
   refusals: DairyBmcCallRefusal[];
   /** The reason as it will be recorded — trimmed, so the screen shows what the audit row will hold. */
   reason: string | null;
+}
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-6d-6 · W170's playbook step 2 — the diversion                                                    */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+export const DAIRY_DIVERSION_REFUSALS = [
+  'NO_MANAGE', 'NO_OVERRIDE', 'SAME_CENTRE', 'FROM_NOT_FOUND', 'TO_NOT_FOUND', 'TO_INACTIVE',
+  'IN_THE_PAST', 'TOO_FAR_AHEAD', 'ALREADY_DIVERTED', 'REASON_REQUIRED', 'REASON_TOO_LONG',
+  'MAKER_IS_CHECKER', 'NOT_FOUND', 'ALREADY_APPROVED', 'ALREADY_CANCELLED', 'POURS_ALREADY_IN',
+] as const;
+export type DairyDiversionRefusal = (typeof DAIRY_DIVERSION_REFUSALS)[number];
+
+export type DairyDiversionState = 'requested' | 'live' | 'cancelled';
+
+export interface DairyDiversion {
+  id: string;
+  fromMccId: string;
+  toMccId: string;
+  /** `YYYY-MM-DD` — the day whose shift is diverted, in the cooperative's own calendar. */
+  divertedOn: string;
+  shift: DairyShift;
+  reason: string;
+  requestedBy: string;
+  requestedAt: string;
+  /** Null until a dairy lead signs it. An unsigned diversion is a request, and a request moves no milk. */
+  approvedBy: string | null;
+  approvedAt: string | null;
+  cancelledBy: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  state: DairyDiversionState;
+  /** Members routed to the SENDING centre on that day — W170's *"87 pourers"*, counted from the route history as of
+   *  the diverted day rather than from today's routing. */
+  affectedMembers?: number;
+  /** Always false in TENANT-6d-6: the notice (*"Gujarati voice"*) is TENANT-6d-7. The screens say so out loud. */
+  membersNotified: false;
+}
+
+/** The confirm step's answer: the object, the size of the decision, and every reason it would be refused. */
+export interface DairyDiversionPreview {
+  allowed: boolean;
+  refusals: DairyDiversionRefusal[];
+  divertedOn: string;
+  affectedMembers: number;
+  fromCode: string | null;
+  fromName: string | null;
+  toCode: string | null;
+  toName: string | null;
+  membersNotified: false;
+}
+
+export interface DairyDiversionRow extends DairyDiversion {
+  fromCode: string; fromName: string; toCode: string; toName: string;
 }
 
 export interface DairyBmcCallResult {

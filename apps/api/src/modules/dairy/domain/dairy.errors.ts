@@ -309,3 +309,29 @@ export class BmcCallRefusedError extends DomainError {
     super('BMC_CALL_REFUSED', `this call cannot be placed: ${refusals.join(', ')}`, 422, { refusals });
   }
 }
+
+/**
+ * [PC-56 TENANT-6d-6 · W170] A diversion this platform will not record, with every reason at once.
+ */
+export class DiversionRefusedError extends DomainError {
+  constructor(refusals: readonly string[]) {
+    super('DAIRY_DIVERSION_REFUSED', `this diversion cannot be recorded: ${refusals.join(', ')}`, 422, { refusals });
+  }
+}
+
+/**
+ * [PC-56 TENANT-6d-6] A pour recorded at a centre the member is not routed to, with no live diversion permitting it.
+ *
+ * 409 rather than 422: the entry is well formed and the platform's STATE is what refuses it — there is no authority for
+ * this member's milk to be taken at this village tonight. The message names the centre the counter asked for and the
+ * one the member belongs to, because an operator at a counter needs to know which of the two is wrong.
+ */
+export class PourNotAtThisCentreError extends DomainError {
+  constructor(membershipId: string, enteredMccId: string, routeMccId: string | null) {
+    super('POUR_NOT_AT_THIS_CENTRE',
+      routeMccId === null
+        ? `membership ${membershipId} has no recorded route for that day, so a pour cannot be attributed to a centre`
+        : `membership ${membershipId} is routed to centre ${routeMccId} that day, and no live diversion sends that shift to ${enteredMccId}`,
+      409, { membershipId, enteredMccId, routeMccId });
+  }
+}

@@ -12,7 +12,7 @@ import { CollectionStampLostError } from '../domain/dairy.errors';
 // [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
 // `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
-const COLS = `id, tenant_id, mcc_id, membership_id, shift, collected_on, weight_kg, fat_pct, snf_pct, density, water_flag, adulteration_flags, rate_card_id, amount_minor, bonus_minor, bonus_applied, hold_state, entered_by, milk_bill_id, created_at`;
+const COLS = `id, tenant_id, mcc_id, membership_id, shift, collected_on, weight_kg, fat_pct, snf_pct, density, water_flag, adulteration_flags, rate_card_id, amount_minor, bonus_minor, bonus_applied, hold_state, entered_by, milk_bill_id, diversion_id, created_at`;
 // scaled-integer <-> decimal helpers (no float): kg×1000, pct×100
 const toMilli = (v: any): bigint => BigInt(Math.round(Number(v) * 1000));
 const toCenti = (v: any): bigint => BigInt(Math.round(Number(v) * 100));
@@ -23,7 +23,9 @@ function toDomain(r: any): MilkCollection {
     density: r.density == null ? null : String(r.density), waterFlag: r.water_flag,
     adulterationFlags: r.adulteration_flags ?? [], rateCardId: r.rate_card_id, amountMinor: BigInt(r.amount_minor),
     bonusMinor: BigInt(r.bonus_minor ?? 0), bonusApplied: r.bonus_applied === true, holdState: (r.hold_state ?? 'none') as HoldState,
-    enteredBy: r.entered_by, milkBillId: r.milk_bill_id, createdAt: r.created_at });
+    enteredBy: r.entered_by, milkBillId: r.milk_bill_id,
+    // [PC-56 TENANT-6d-6] Null on an ordinary pour; the signed diversion on one taken at another village.
+    diversionId: r.diversion_id ?? null, createdAt: r.created_at });
 }
 // scaled integer → numeric string for the DB columns (weight 3dp, pct 2dp)
 const milliToKg = (m: bigint) => (Number(m) / 1000).toFixed(3);
@@ -60,11 +62,13 @@ export class MilkCollectionRepository {
   async insert(tx: TxContext, c: MilkCollection): Promise<void> {
     const p = c.toProps();
     await tx.query(
-      `INSERT INTO milk_collections (id, tenant_id, mcc_id, membership_id, shift, collected_on, weight_kg, fat_pct, snf_pct, density, water_flag, adulteration_flags, rate_card_id, amount_minor, bonus_minor, bonus_applied, hold_state, entered_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18)`,
+      `INSERT INTO milk_collections (id, tenant_id, mcc_id, membership_id, shift, collected_on, weight_kg, fat_pct, snf_pct, density, water_flag, adulteration_flags, rate_card_id, amount_minor, bonus_minor, bonus_applied, hold_state, entered_by, diversion_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18,$19)`,
       [p.id, p.tenantId, p.mccId, p.membershipId, p.shift, p.collectedOn, milliToKg(p.weightMilliKg), centiToPct(p.fatCentiPct), centiToPct(p.snfCentiPct),
        p.density, p.waterFlag, JSON.stringify(p.adulterationFlags), p.rateCardId, p.amountMinor.toString(),
-       p.bonusMinor.toString(), p.bonusApplied, p.holdState, p.enteredBy]);
+       p.bonusMinor.toString(), p.bonusApplied, p.holdState, p.enteredBy,
+       // [PC-56 TENANT-6d-6] Null for an ordinary pour; the signed diversion for one taken at another village.
+       p.diversionId]);
   }
   /**
    * Aggregate a membership's BILLABLE unbilled collections in [from,to] (partition-pruned). Locks them for billing.

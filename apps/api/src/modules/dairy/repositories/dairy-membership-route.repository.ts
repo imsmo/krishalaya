@@ -74,6 +74,23 @@ export class DairyMembershipRouteRepository {
   }
 
   /** Everywhere this membership has poured, oldest first. Bounded: a register, not a feed. */
+  /**
+   * The FIRST centre this membership's history records — PC-56 TENANT-6d-6.
+   *
+   * Used only when a pour predates the route history: a cooperative onboarding onto this platform enrols its members
+   * today and enters last fortnight's pours, so `asOf` answers null for every one of those days. The earliest route is
+   * what the cooperative means, and it is still read from the HISTORY rather than from `dairy_memberships.mcc_id`,
+   * which a move rewrites.
+   */
+  async earliest(x: SqlExecutor, tenantId: string, membershipId: string): Promise<{ mccId: string; validFrom: string } | null> {
+    const r = await x.query(
+      `SELECT mcc_id, valid_from::text AS valid_from FROM dairy_membership_routes
+        WHERE tenant_id=$1 AND membership_id=$2 AND deleted_at IS NULL
+        ORDER BY valid_from, id LIMIT 1`, [tenantId, membershipId]);
+    const v = r.rows[0] as any;
+    return v ? { mccId: v.mcc_id, validFrom: String(v.valid_from) } : null;
+  }
+
   async trail(x: SqlExecutor, tenantId: string, membershipId: string, limit: number): Promise<RouteRow[]> {
     const r = await x.query(
       `SELECT ${COLS} FROM dairy_membership_routes

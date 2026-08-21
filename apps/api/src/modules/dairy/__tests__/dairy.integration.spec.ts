@@ -52,6 +52,7 @@ import { DairyDeductionInstructionRepository } from '../repositories/dairy-deduc
 import { LoanService } from '../../fintech/services/loan.service';
 import { LoanRepository } from '../../fintech/repositories/loan.repository';
 import { LoanRepaymentRepository } from '../../fintech/repositories/loan-repayment.repository';
+import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -105,7 +106,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
     // [PC-56 TENANT-6c-2] The bill service reads the tenant's dispute-window length before it can preview a bill.
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
