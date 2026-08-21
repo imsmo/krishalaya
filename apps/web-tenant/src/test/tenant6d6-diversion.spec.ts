@@ -16,7 +16,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
-  DIVERSIONS_HREF, DIVERT_HREF, divertHref, diversionNoteKey, diversionNoticeGapKey, diversionRowText,
+  DIVERSIONS_HREF, DIVERT_HREF, divertHref, diversionNoteKey, diversionNoticePromiseKey, diversionRowText,
   diversionShiftKey, diversionStateKey, diversionStateTone, unionPickupGapKey,
 } from '../features/dairy/diversion';
 import { mutateRefusalKey, mutateStep, reasonState } from '../features/mutate/chain';
@@ -72,12 +72,21 @@ describe('TENANT-6d-6 · the promises the screens refuse to make', () => {
   it('says the members are NOT told, on the confirm step AND the success step', () => {
     // The most dangerous missing feature in this wave: a cooperative that thinks the platform phoned 87 families will
     // not phone them, and those families carry their milk to a locked door.
-    expect(diversionNoticeGapKey()).toBe('dairy.diversion.noticeNotSent');
-    expect(hasKey(diversionNoticeGapKey())).toBe(true);
+    // [PC-56 TENANT-6d-8] The gap became a promise: with the notice switched on the platform tells them, and with it
+    // off this cooperative does — and the confirm step says WHICH, because a cooperative that believes the platform
+    // phoned 87 families will not phone them itself.
+    expect(diversionNoticePromiseKey(true)).toBe('dairy.diversion.notice.willBeTold');
+    expect(diversionNoticePromiseKey(false)).toBe('dairy.diversion.notice.tellThemYourself');
+    expect(hasKey(diversionNoticePromiseKey(true))).toBe(true);
+    expect(hasKey(diversionNoticePromiseKey(false))).toBe(true);
     const page = src('app/dairy/bmc/divert/page.tsx');
-    expect(page.split('diversionNoticeGapKey()').length - 1).toBeGreaterThanOrEqual(2);
-    // And the copy names the canon's own promise, so a reader knows what is missing rather than that something is.
-    expect(dict('en')).toMatch(/voice notice in Gujarati/);
+    expect(page).toContain('diversionNoticePromiseKey(preview.noticeEnabled)');
+    // The REQUEST's success screen says nobody has been told yet — a request announces nothing.
+    expect(page).toContain("dairy.diversion.notice.not_signed");
+    // And the copy names WHO does the telling and BY WHAT — voice first, in the member's own language, which is the
+    // canon's own promise now kept rather than named as missing.
+    expect(dict('en')).toMatch(/voice first/);
+    expect(dict('en')).toMatch(/in their own language/);
   });
 
   it('says a diversion is NOT a transfer', () => {

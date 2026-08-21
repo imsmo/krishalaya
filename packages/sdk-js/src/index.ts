@@ -54,7 +54,8 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   DairyBmcCallObject, DairyBmcCallPreview, DairyBmcCallRefusal, DairyBmcCallResult,
   // PC-56 TENANT-6d-6 · the diversion. Types only; the refusal LIST stays in the API's domain and the web spec reads
   // it from there — a second copy agrees exactly once.
-  DairyDiversion, DairyDiversionPreview, DairyDiversionRefusal, DairyDiversionRow, DairyDiversionState,
+  DairyDiversion, DairyDiversionNotice, DairyDiversionPreview, DairyDiversionRefusal, DairyDiversionRow,
+  DairyDiversionState, DairyNoticeState,
   DairyStabilityVerdict, DairyWorkedExample, DairyFlagProtocol,
   DairyCoverage, DairyFlagSummary, DairyAccrual, DairyShiftClock,
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,

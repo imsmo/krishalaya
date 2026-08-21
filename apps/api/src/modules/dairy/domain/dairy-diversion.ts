@@ -243,16 +243,83 @@ export function diversionNoteKey(s: DiversionSides): string | null {
   return null;
 }
 
+/* --------------------------------------------------------------------------------------------------------- */
+/* [PC-56 TENANT-6d-8] THE NOTICE — W170'S *"route notice to 87 pourers, Gujarati voice"*                     */
+/* --------------------------------------------------------------------------------------------------------- */
+
 /**
- * How many members are affected — W170's *"route notice to 87 pourers"*.
+ * WHAT THIS PLATFORM MAY HONESTLY SAY ABOUT TELLING THE MEMBERS.
  *
- * Counted from the route history AS OF THE DIVERTED DAY, not from today's routing: a member who moved last week is not
- * on tonight's list, and a member who moved TO this centre is. TENANT-6d-3's whole argument, applied to a count nobody
- * has made before.
+ * `queued` is the strongest claim any of these can be, and it is deliberate: the outbox row is written in the same
+ * transaction as the signature (Law 4), and everything after that — a phone that is off, a voice leg the telephony
+ * product refuses, a member with no push device — is delivery, which lives in `notifications` and is answered by the
+ * delivery report. A state called `sent` would have been this wave lying in the same shape TENANT-6d-7 spent a wave
+ * removing.
  *
- * NOT SENT. This wave counts them and the confirm screen says they are not told; the notice is TENANT-6d-7.
+ *   • `not_enabled`     — the act is on, the NOTICE flag is off. The screen says so rather than showing a count that
+ *                         reached nobody; a cooperative without a telephony contract tells its members by loudspeaker,
+ *                         which is what they did before this platform existed.
+ *   • `nobody_to_tell`  — no member was routed to that centre on that day. A real state, and not an error: a centre
+ *                         with no roll can still be diverted (its BMC is warm and its milk comes from a tanker).
+ *   • `not_signed`      — a REQUEST tells nobody. Nothing has been authorised, so there is nothing to announce, and
+ *                         announcing it would move 87 families on one person's word.
+ *   • `queued`          — handed over, for this many members, at this instant.
+ *   • `retracted`       — queued, and then a retraction was queued too. The screen must not show a diversion as
+ *                         announced when the announcement has been taken back.
  */
-export function noticeGapKey(): string { return 'dairy.diversion.noticeNotSent'; }
+export const NOTICE_STATES = ['not_enabled', 'not_signed', 'nobody_to_tell', 'queued', 'retracted'] as const;
+export type NoticeState = (typeof NOTICE_STATES)[number];
+
+export interface NoticeStateInput {
+  /** `dairy_shift_diversion_notice` for this tenant (0167). */
+  enabled: boolean;
+  signed: boolean;
+  /** Members routed to the sending centre AS OF the diverted day. */
+  recipients: number;
+  queuedAt: string | null;
+  retractionQueuedAt: string | null;
+}
+
+/**
+ * The order of these branches is the wave's judgement, not a formality.
+ *
+ * A row that HAS a receipt reports what happened, whatever the flag says NOW — a cooperative that switched the notice
+ * off this morning did not un-tell last night's 87 families, and a screen that claimed otherwise would be rewriting
+ * history to match a toggle.
+ */
+export function noticeState(i: NoticeStateInput): NoticeState {
+  if (i.retractionQueuedAt !== null) return 'retracted';
+  if (i.queuedAt !== null) return 'queued';
+  if (!i.signed) return 'not_signed';
+  if (!i.enabled) return 'not_enabled';
+  return 'nobody_to_tell';                      // signed, enabled, and no receipt ⇒ there was nobody on that roll
+}
+
+/** What the screen prints. One key per state, so a Gujarati desk reads this in Gujarati (Law 7). */
+export function noticeStateKey(s: NoticeState): string { return `dairy.diversion.notice.${s}`; }
+
+/**
+ * THE NOTICE IS SENT IN CHUNKS, AND THE CHUNK SIZE IS A DECISION.
+ *
+ * One outbox event per 500 members rather than one event carrying every id. Three reasons, in order of how much they
+ * matter: the fan-out runs inside the RELAY's per-event transaction, so a 2,000-member centre in one event is one
+ * transaction doing 2,000 people's preference, quiet-hours and delivery writes and holding a connection while it does
+ * (TENANT-6d-7 made the reads set-based; the WRITES are irreducibly one per person per channel); a 2,000-uuid payload
+ * is a 74 KB jsonb row in a table the relay scans; and a failure in the middle of one giant event re-delivers the
+ * whole village, where a failure in one chunk re-delivers one chunk. Idempotency is unchanged either way — the
+ * notification id derives from the relay event id, so a re-delivery of any chunk re-derives the same rows.
+ *
+ * 500 is chosen, not measured: it is small enough that a chunk's transaction is ordinary work and large enough that
+ * W170's own 87 pourers are a single event. If a union's centre ever makes this hurt, the number is here.
+ */
+export const NOTICE_CHUNK = 500;
+
+export function chunkRecipients(ids: readonly string[], size = NOTICE_CHUNK): string[][] {
+  if (size < 1) throw new Error('dairy notice: chunk size must be at least one recipient');
+  const out: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) out.push([...ids.slice(i, i + size)]);
+  return out;
+}
 
 /** W170's playbook step 3 — no union, no pickup, no batch test on this platform. Still true, still said. */
 export function unionPickupGapKey(): string { return 'dairy.bmc.playbook.unionPickupUnbuilt'; }

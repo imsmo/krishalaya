@@ -23,7 +23,7 @@ import {
   // PC-56 TENANT-6d-5 · W170's call
   DairyBmcCallPreview, DairyBmcCallResult,
   // PC-56 TENANT-6d-6 · W170's playbook step 2
-  DairyDiversion, DairyDiversionPreview, DairyDiversionRow,
+  DairyDiversion, DairyDiversionNotice, DairyDiversionPreview, DairyDiversionRow,
 } from '../types';
 
 export class DairyResource {
@@ -341,6 +341,16 @@ export class DairyResource {
 
   async listDiversions(params: { from?: string; to?: string; limit?: number } = {}, signal?: AbortSignal): Promise<DairyDiversionRow[]> {
     return (await this.http.request<DairyDiversionRow[]>('GET', 'dairy/diversions', { query: { ...params, limit: params.limit ?? 50 }, signal })).data;
+  }
+
+  /**
+   * [PC-56 TENANT-6d-8] **DID THE 87 FAMILIES GET THE MESSAGE?** The delivery log's own account of one diversion's
+   * notice — queued for how many, reached how many people, on which channels, in which languages, and how many rows
+   * had no address or no template. `delivery` is null when nothing was announced, which is a different fact from
+   * zeroes and reads differently on a screen.
+   */
+  async diversionNotice(id: string, signal?: AbortSignal): Promise<DairyDiversionNotice> {
+    return (await this.http.request<DairyDiversionNotice>('GET', `dairy/diversions/${encodeURIComponent(id)}/notice`, { signal })).data;
   }
 
   /** What "cold enough" means for this tank — a standing decision, audited before and after. */

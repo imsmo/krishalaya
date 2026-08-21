@@ -26,7 +26,7 @@ import { NotificationTemplateRepository } from '../repositories/notification-tem
 import { NotificationTemplate } from '../domain/notification-template.entity';
 import { NotificationPreferenceRepository } from '../repositories/notification-preference.repository';
 import { QuietHoursRepository } from '../repositories/quiet-hours.repository';
-import { NotificationRepository, RecipientProfile, addressableOn } from '../repositories/notification.repository';
+import { DeliveryReport, NotificationRepository, RecipientProfile, addressableOn } from '../repositories/notification.repository';
 import { NotificationNotFoundError, CommForbiddenError } from '../domain/communication.errors';
 
 export interface FanoutInput { tenantId: string | null; eventCode: string; recipients: string[]; payload: Record<string, unknown>; dedupeKey: string; languageCode?: string; }
@@ -221,6 +221,23 @@ export class NotificationService {
       await this.flush(tx, tenantId, n.id, n.pullEvents());
       return n.toJSON();
     }, { userId });
+  }
+
+  /**
+   * **THE MODULE'S PUBLIC ANSWER TO *"DID THEY GET IT?"* (PC-56 TENANT-6d-8.)**
+   *
+   * Another module asks THIS service — never the repository (CLAUDE.md's rule) — for the delivery log's account of one
+   * thing it announced. The window is REQUIRED and comes from the caller's own receipt, because `notifications` is
+   * partitioned by `created_at` and an unbounded read of it is the shape Law 8 forbids; the caller knows the instant it
+   * queued the notice, so the caller supplies the bound.
+   *
+   * Read on the REPLICA: a delivery report is a screen, and a screen tolerates replica lag (Law 12's `@ReadOnly`
+   * reasoning). What it must not do is claim more than the log says — see `DeliveryReport.people` versus `.rows`.
+   */
+  async deliveryReportFor(tenantId: string, i: {
+    eventCodes: readonly string[]; from: Date; to: Date; payloadKey: string; payloadValue: string;
+  }, x?: TxContext): Promise<DeliveryReport> {
+    return this.notifications.deliveryReport(tenantId, i, x);
   }
 
   /** Delivery-status webhook from the external notifier (provider_msg_ref → delivered). Idempotent. */

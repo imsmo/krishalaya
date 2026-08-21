@@ -194,3 +194,27 @@ export function deductionInstructionVars(i: { what: LangMap; maxPerCycle: Money 
   const uncapped: LangMap = { en: 'no per-cycle limit', hi: 'per-cycle limit nahin', gu: 'પ્રતિ ચક્ર મર્યાદા નથી' };
   return { what: i.what, how_much: i.maxPerCycle === null ? uncapped : { en: money(i.maxPerCycle) } };
 }
+
+/* --------------------------------------------------------------------------------------------------------- */
+/* [PC-56 TENANT-6d-8] W170'S ROUTE NOTICE                                                                    */
+/* --------------------------------------------------------------------------------------------------------- */
+
+/**
+ * *"route notice to 87 pourers, Gujarati voice"* — the four variables that sentence needs, and no fifth.
+ *
+ * BOTH CENTRES BY NAME. A member does not know their centre's UUID and should not have to recognise its code: the
+ * notice names the village they walk to. The DAY is printed even when it is today, because a diversion may be signed a
+ * week ahead (`MAX_DAYS_AHEAD`) and *"tonight"* read the next morning is worse than a date; digits, because a month
+ * name is a word this platform holds in no language. The SHIFT is a per-language map, so the Gujarati body says
+ * *સાંજ* — which is the entire reason TENANT-6d-7 had to come first.
+ *
+ * NO OPTIONAL VARIABLE. The centre's own shift window (0163) would have been a nice fifth — *"17:00–19:30"* — and it
+ * is deliberately left out: most centres have recorded none, so the token would render as a hole in the sentence for
+ * most cooperatives, which is the defect 6d-7 spent a wave removing. A window that most tenants do not have is not a
+ * sentence this platform can promise.
+ */
+export function diversionNoticeVars(i: {
+  fromName: string; toName: string; day: string; shift: MilkShift; labels: DairyNoticeLabels;
+}): { from: string; to: string; day: string; shift: LangMap } {
+  return { from: i.fromName, to: i.toName, day: dayText(i.day), shift: i.labels.shift[i.shift] };
+}

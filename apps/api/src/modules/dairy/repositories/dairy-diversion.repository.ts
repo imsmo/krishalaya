@@ -11,9 +11,15 @@ import { SqlExecutor, TxContext } from '../../../core/database/unit-of-work';
 import { MilkShift } from '../domain/dairy.events';
 import { pgDate } from '../../../core/database/pg-date';
 
+// [PC-56 TENANT-6d-8] The last four are the RECEIPT for the member notice (0167), read on every row because the screen
+// must be able to say whether 87 families were told — and a diversion read without them would show a blank where the
+// answer to a cooperative's first question belongs. **The comment is out here rather than inside the template literal
+// on purpose:** a `--` comment inside an interpolated column list turns the rest of that LINE into a comment, and this
+// programme has already lost a session to a SQL comment hiding inside a template string.
 const COLS = `id, tenant_id, from_mcc_id, to_mcc_id, diverted_on, shift, reason,
               requested_by, requested_at, approved_by, approved_at,
-              cancelled_by, cancelled_at, cancel_reason, created_at`;
+              cancelled_by, cancelled_at, cancel_reason, created_at,
+              notice_queued_at, notice_recipients, retraction_queued_at, retraction_recipients`;
 
 export interface DiversionRow {
   id: string;
@@ -31,6 +37,15 @@ export interface DiversionRow {
   cancelledBy: string | null;
   cancelledAt: string | null;
   cancelReason: string | null;
+  /**
+   * [PC-56 TENANT-6d-8] When the member notice was HANDED TO THE OUTBOX, and for how many members — the *"87
+   * pourers"* of W170's own sentence, as resolved on the day it was signed. Never a delivery claim: per-person
+   * delivery is in `notifications` and is answered by the delivery report.
+   */
+  noticeQueuedAt: string | null;
+  noticeRecipients: number | null;
+  retractionQueuedAt: string | null;
+  retractionRecipients: number | null;
 }
 
 function toRow(r: any): DiversionRow {
@@ -47,6 +62,10 @@ function toRow(r: any): DiversionRow {
     cancelledBy: r.cancelled_by ?? null,
     cancelledAt: r.cancelled_at ? new Date(r.cancelled_at).toISOString() : null,
     cancelReason: r.cancel_reason ?? null,
+    noticeQueuedAt: r.notice_queued_at ? new Date(r.notice_queued_at).toISOString() : null,
+    noticeRecipients: r.notice_recipients === null || r.notice_recipients === undefined ? null : Number(r.notice_recipients),
+    retractionQueuedAt: r.retraction_queued_at ? new Date(r.retraction_queued_at).toISOString() : null,
+    retractionRecipients: r.retraction_recipients === null || r.retraction_recipients === undefined ? null : Number(r.retraction_recipients),
   };
 }
 
@@ -145,6 +164,61 @@ export class DairyDiversionRepository {
           AND r.valid_from <= $3::date AND (r.valid_to IS NULL OR r.valid_to >= $3::date)`,
       [tenantId, fromMccId, on]);
     return Number((r.rows[0] as { n: number } | undefined)?.n ?? 0);
+  }
+
+  /**
+   * **WHO IS TOLD — W170's *"route notice to 87 pourers"*, by name and not by count.**
+   *
+   * The same join `affectedMembers` counts, returning the FARMER user ids instead of a number, because a notice needs
+   * people and a confirm screen needs a figure and deriving one from the other twice is how they come to disagree.
+   *
+   * AS OF THE DIVERTED DAY, from the route HISTORY: a member who moved away last week is not on tonight's list and a
+   * member who moved TO this centre is (TENANT-6d-3's argument, and 6d-6 applied it to the count). `m.is_active` is
+   * checked because a suspended membership is not a family walking to a locked door, and DISTINCT because a member
+   * whose route history has two touching rows for one centre is one person.
+   *
+   * ORDERED BY id so the chunks a village is split into (`chunkRecipients`) are stable across a relay re-delivery —
+   * the notification id derives from the relay event, so stability here is not required for idempotency, but an
+   * unstable order would make two runs of the same notice impossible to compare in the delivery log.
+   */
+  async affectedMemberUserIds(x: SqlExecutor, tenantId: string, fromMccId: string, on: string): Promise<string[]> {
+    const r = await x.query<{ farmer_user_id: string }>(
+      `SELECT DISTINCT m.farmer_user_id
+         FROM dairy_membership_routes r
+         JOIN dairy_memberships m ON m.id = r.membership_id AND m.tenant_id = r.tenant_id
+                                 AND m.deleted_at IS NULL AND m.is_active = true
+        WHERE r.tenant_id=$1 AND r.mcc_id=$2 AND r.deleted_at IS NULL
+          AND r.valid_from <= $3::date AND (r.valid_to IS NULL OR r.valid_to >= $3::date)
+        ORDER BY m.farmer_user_id`,
+      [tenantId, fromMccId, on]);
+    return r.rows.map((row) => String(row.farmer_user_id));
+  }
+
+  /**
+   * THE RECEIPT, WRITTEN ONCE, IN THE SAME TRANSACTION AS THE SIGNATURE. Fail-closed like every other writer on this
+   * table: a zero-row update means the row moved under us, and a receipt for a diversion that is no longer live would
+   * tell a cooperative their members were warned about something that is not happening.
+   *
+   * `notice_queued_at IS NULL` in the predicate makes it write-once: a second attempt (a retry after the outbox write
+   * succeeded) does not overwrite the first instant, and the count it would have written is the same count anyway.
+   */
+  async noticeQueued(tx: TxContext, tenantId: string, id: string, at: Date, recipients: number): Promise<void> {
+    const r = await tx.query(
+      `UPDATE dairy_shift_diversions
+          SET notice_queued_at=$3, notice_recipients=$4, updated_at=now()
+        WHERE tenant_id=$1 AND id=$2 AND notice_queued_at IS NULL AND deleted_at IS NULL`,
+      [tenantId, id, at, recipients]);
+    if (r.rowCount === 0) throw new Error(`dairy diversion ${id}: notice receipt not written — already queued or gone`);
+  }
+
+  /** The same, for the retraction. `retraction_queued_at IS NULL` keeps it write-once for the same reason. */
+  async retractionQueued(tx: TxContext, tenantId: string, id: string, at: Date, recipients: number): Promise<void> {
+    const r = await tx.query(
+      `UPDATE dairy_shift_diversions
+          SET retraction_queued_at=$3, retraction_recipients=$4, updated_at=now()
+        WHERE tenant_id=$1 AND id=$2 AND retraction_queued_at IS NULL AND deleted_at IS NULL`,
+      [tenantId, id, at, recipients]);
+    if (r.rowCount === 0) throw new Error(`dairy diversion ${id}: retraction receipt not written — already queued or gone`);
   }
 
   /** Pours already recorded at a centre for one shift of one day — what makes a diversion too late to sign. */

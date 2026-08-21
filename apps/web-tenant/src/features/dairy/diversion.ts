@@ -6,7 +6,7 @@
 //     signature"* rather than *"diverted"* until somebody with `dairy.override` has signed;
 //   • a diversion is not a transfer. The member's route, card and history are untouched — they belong to Vanthali and
 //     will pour there tomorrow morning — and a screen that blurred the two would be describing TENANT-6d-3's act.
-import type { DairyDiversion, DairyDiversionRow, DairyShift } from '@krishalaya/sdk-js';
+import type { DairyDiversion, DairyDiversionRow, DairyNoticeState, DairyShift } from '@krishalaya/sdk-js';
 
 export const DIVERT_HREF = '/dairy/bmc/divert';
 export const DIVERSIONS_HREF = '/dairy/diversions';
@@ -30,13 +30,47 @@ export function diversionStateTone(d: Pick<DairyDiversion, 'state'>): 'ok' | 'wa
 }
 
 /**
- * W170's *"route notice to 87 pourers, Gujarati voice"* — COUNTED here, NOT SENT.
+ * W170's *"route notice to 87 pourers, Gujarati voice"* — **SENT, since TENANT-6d-8.**
  *
- * Printed on the confirm step and again on the success step. A cooperative that believes the platform phoned 87
- * families will not phone them itself, and that is a worse failure than the missing feature: the members turn up at a
- * locked centre. TENANT-6d-7 sends the notice.
+ * 6d-6 printed *"not told"* here and it was true; the notice exists now, so the screen prints WHICH of five things
+ * happened. The vocabulary is deliberately about the past — there is no `sent` in it, because the platform hands the
+ * notice to the outbox inside the signing transaction and delivery is what the report answers.
  */
-export function diversionNoticeGapKey(): string { return 'dairy.diversion.noticeNotSent'; }
+export function diversionNoticeStateKey(state: DairyNoticeState): string { return `dairy.diversion.notice.${state}`; }
+
+/** `queued`/`retracted` is something happening; `not_enabled` is a cooperative doing it themselves; the rest is neither. */
+export function diversionNoticeTone(state: DairyNoticeState): 'ok' | 'warn' | 'muted' {
+  if (state === 'queued') return 'ok';
+  if (state === 'not_enabled' || state === 'retracted') return 'warn';
+  return 'muted';
+}
+
+/**
+ * WHAT THE CONFIRM STEP PROMISES, before the second signature.
+ *
+ * Two sentences and not one, because the difference matters to whoever is about to sign: with the notice enabled the
+ * platform will phone and text these families in their own language; without it, THIS COOPERATIVE tells them the way it
+ * always has. A cooperative that believes the platform phoned 87 families will not phone them itself, and that failure
+ * ends with members at a locked centre — the same argument 6d-6 made for printing the gap.
+ */
+export function diversionNoticePromiseKey(noticeEnabled: boolean): string {
+  return noticeEnabled ? 'dairy.diversion.notice.willBeTold' : 'dairy.diversion.notice.tellThemYourself';
+}
+
+/**
+ * THE DELIVERY REPORT, IN ONE SENTENCE A DAIRY DESK CAN ACT ON.
+ *
+ * `people` and not `rows`: one member reached on push and in the app is ONE family told, and counting rows would
+ * report 87 as 261. The gap between queued and reached is the number that sends somebody walking round three houses,
+ * so it is the number the key is chosen by — a report that only ever said *"87 queued"* would never do that.
+ */
+export function diversionDeliveryKey(n: { queuedFor: number | null; people: number } | null): string | null {
+  if (n === null || n.queuedFor === null) return null;
+  if (n.queuedFor === 0) return 'dairy.diversion.notice.nobodyToTell';
+  if (n.people >= n.queuedFor) return 'dairy.diversion.notice.allReached';
+  if (n.people === 0) return 'dairy.diversion.notice.noneReached';
+  return 'dairy.diversion.notice.someReached';
+}
 
 /**
  * The two figures a live diversion makes disagree ON PURPOSE, on TENANT-6a's counter board.

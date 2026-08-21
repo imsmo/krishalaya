@@ -79,6 +79,16 @@ export const DairyEventType = {
   // own ledger) needs to know what changed and from when, and an event naming only the destination cannot be
   // reconciled against the slip a member is holding. The member's userId rides along: this IS news for them.
   MembershipMoved: 'dairy.membership_moved',
+  // PC-56 TENANT-6d-8 · W170's *"route notice to 87 pourers, Gujarati voice"*. THE MEMBER'S OWN NEWS, and the only two
+  // dairy events whose recipients are a LIST rather than one person: a diversion is one decision about eighty-seven
+  // families. Catalogued by 0166 (the diversion) and 0167 (the retraction), both `critical` and unmutable, with the
+  // voice channel first — the people who need this most are the ones without a smartphone.
+  //
+  // The RETRACTION is a separate code rather than a field, because the copy is different in kind ("go to Bhesan
+  // tonight" versus "stay at Vanthali after all") and because a cooperative reading its own notification history must
+  // be able to count the diversions it called off. 6d-6's argument for its own event code, applied again.
+  ShiftDiverted: 'dairy.shift_diverted',
+  ShiftDiversionCancelled: 'dairy.shift_diversion_cancelled',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

@@ -62,6 +62,18 @@ export class DiversionsController {
     return this.diversions.list(ctx.tenantId, this.actor(ctx), q).then((data) => ({ data }));
   }
 
+  /**
+   * **DID THE FAMILIES GET THE MESSAGE?** (PC-56 TENANT-6d-8.)
+   *
+   * Declared before the parameterised POSTs and after `preview`, and it is a GET on a sub-path of `:id` — there is no
+   * `@Get(':id')` on this controller, so nothing can swallow it, and the route-order trap this programme has now
+   * documented seven times does not apply. Read-only, no idempotency key: asking twice is the same question.
+   */
+  @Get(':id/notice') @RequirePermissions(DairyPermissions.Manage)
+  notice(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.diversions.noticeReport(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+
   /** An OPERATOR asks. It moves no milk until somebody else signs it. */
   @Post() @RequirePermissions(DairyPermissions.Manage)
   request(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string,

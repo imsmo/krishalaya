@@ -27,7 +27,8 @@ import { MilkBillDispute } from '../domain/milk-bill-dispute.entity';
 import { DairyDeductionInstruction } from '../domain/dairy-deduction-instruction.entity';
 import {
   DairyNoticeLabels, NoticeVars, billConsentVars, billDisputeResolvedVars, billPreviewedVars, dayRangeText, dayText,
-  deductionInstructionVars, linesText, litresText, momentText, qualityDecidedVars, qualityOpenedVars,
+  deductionInstructionVars, diversionNoticeVars, linesText, litresText, momentText, qualityDecidedVars,
+  qualityOpenedVars,
 } from '../domain/dairy-notice-vars';
 
 const SEED = path.join(__dirname, '../../../../../../db/seeds/core/0007_notification_events_templates.sql');
@@ -38,6 +39,10 @@ const seed = () => fs.readFileSync(SEED, 'utf8');
 const DAIRY_EVENTS = [
   'dairy.quality_flag_opened', 'dairy.quality_flag_decided', 'dairy.bill_previewed', 'dairy.bill_dispute_resolved',
   'dairy.bill_deduction_consent_required', 'dairy.deduction_instruction_authorised', 'dairy.deduction_instruction_revoked',
+  // [PC-56 TENANT-6d-8] W170's route notice and its retraction — the first copy in this file written AFTER the guard
+  // existed, and therefore the first that was never broken. Added here rather than in a spec of its own so that the
+  // notice is held to the same four rules as the notices this guard was built to repair.
+  'dairy.shift_diverted', 'dairy.shift_diversion_cancelled',
 ] as const;
 
 interface SeededTemplate { event: string; channel: string; lang: string; subject: string | null; body: string; tokens: string[]; }
@@ -130,6 +135,12 @@ const PAYLOADS: Record<string, NoticeVars> = {
   'dairy.deduction_instruction_authorised': deductionInstructionVars({
     what: { en: 'feed credit', hi: 'chara udhaar', gu: 'ચારા ઉધાર' }, maxPerCycle: M(20_000n),
   }),
+  'dairy.shift_diverted': diversionNoticeVars({
+    fromName: 'Vanthali', toName: 'Bhesan', day: '2026-08-21', shift: 'evening', labels: LABELS,
+  }),
+  'dairy.shift_diversion_cancelled': diversionNoticeVars({
+    fromName: 'Vanthali', toName: 'Bhesan', day: '2026-08-21', shift: 'evening', labels: LABELS,
+  }),
   'dairy.deduction_instruction_revoked': deductionInstructionVars({
     what: { en: 'feed credit', hi: 'chara udhaar', gu: 'ચારા ઉધાર' }, maxPerCycle: null,
   }),
@@ -145,9 +156,9 @@ describe('PC-56 TENANT-6d-7 · every seeded dairy template renders against the p
   const templates = seededTemplates().filter((t) => (DAIRY_EVENTS as readonly string[]).includes(t.event));
 
   it('found the seeded copy at all — a parse that quietly matched nothing would prove nothing', () => {
-    // 7 events × 3 languages × (sms + push + inapp at least). The floor is deliberately loose: this asserts the file
+    // 9 events × 3 languages × (sms + push + inapp at least). The floor is deliberately loose: this asserts the file
     // was FOUND and parsed, not how much copy a future wave adds.
-    expect(templates.length).toBeGreaterThanOrEqual(45);
+    expect(templates.length).toBeGreaterThanOrEqual(69);
     for (const ev of DAIRY_EVENTS) {
       const langs = new Set(templates.filter((t) => t.event === ev).map((t) => t.lang));
       expect([...langs].sort()).toEqual(['en', 'gu', 'hi']);   // i18n ×3, per the definition of done

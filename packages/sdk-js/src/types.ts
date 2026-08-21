@@ -1773,8 +1773,48 @@ export interface DairyDiversion {
   /** Members routed to the SENDING centre on that day — W170's *"87 pourers"*, counted from the route history as of
    *  the diverted day rather than from today's routing. */
   affectedMembers?: number;
-  /** Always false in TENANT-6d-6: the notice (*"Gujarati voice"*) is TENANT-6d-7. The screens say so out loud. */
-  membersNotified: false;
+  /**
+   * [PC-56 TENANT-6d-8] WHAT THIS PLATFORM MAY HONESTLY SAY ABOUT TELLING THEM. 6d-6 had `membersNotified: false` here
+   * and every screen printed *"not told"*; the notice exists now, so this says which of five things happened —
+   * `queued` being the strongest, because delivery is per person per channel and lives in the delivery report.
+   */
+  notice: DairyNoticeState;
+  /** When the notice was handed to the outbox, and for how many members. Null until a dairy lead signs it. */
+  noticeQueuedAt?: string | null;
+  noticeRecipients?: number | null;
+  /** The retraction, if the diversion was called off after its notice went out. */
+  retractionQueuedAt?: string | null;
+  retractionRecipients?: number | null;
+}
+
+/**
+ * [PC-56 TENANT-6d-8] `not_enabled` · `not_signed` · `nobody_to_tell` · `queued` · `retracted`.
+ *
+ * There is no `sent`, deliberately: the platform hands the notice to the outbox inside the signing transaction and
+ * everything after that — a phone that is off, a voice leg the provider refused — is delivery, which the notice report
+ * answers from the delivery log.
+ */
+export type DairyNoticeState = 'not_enabled' | 'not_signed' | 'nobody_to_tell' | 'queued' | 'retracted';
+
+/** The delivery log's account of one diversion's notice. `delivery` is null when nothing was announced. */
+export interface DairyDiversionNotice {
+  diversionId: string;
+  state: DairyNoticeState;
+  /** How many members the notice was queued FOR — the receipt, not a delivery claim. */
+  queuedFor: number | null;
+  queuedAt: string | null;
+  retractionQueuedFor?: number | null;
+  retractionQueuedAt?: string | null;
+  delivery: {
+    /** Delivery attempts (one per person per channel). */
+    rows: number;
+    /** PEOPLE at least one channel reached — what a cooperative means by *"how many were told"*. */
+    people: number;
+    byStatus: Record<string, number>;
+    byChannel: Record<string, number>;
+    byLanguage: Record<string, number>;
+    byEvent: Record<string, number>;
+  } | null;
 }
 
 /** The confirm step's answer: the object, the size of the decision, and every reason it would be refused. */
@@ -1787,7 +1827,12 @@ export interface DairyDiversionPreview {
   fromName: string | null;
   toCode: string | null;
   toName: string | null;
-  membersNotified: false;
+  /**
+   * [PC-56 TENANT-6d-8] WILL THESE MEMBERS BE TOLD, IF THIS IS SIGNED? A boolean and not a state, because a preview
+   * asks what WILL happen while every `DairyNoticeState` records what DID — and squeezing one into the other is how a
+   * screen ends up printing *"nobody to tell"* about eighty-seven families.
+   */
+  noticeEnabled: boolean;
 }
 
 export interface DairyDiversionRow extends DairyDiversion {

@@ -24,13 +24,29 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempoten
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
-import { MilkShift } from '../domain/dairy.events';
+import { DairyEventType, MilkShift } from '../domain/dairy.events';
 import { DairyDiversionRepository, DiversionRow } from '../repositories/dairy-diversion.repository';
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { DiversionRefusedError } from '../domain/dairy.errors';
 import {
-  DiversionRefusal, approveVerdict, cancelVerdict, diversionState, requestVerdict,
+  DiversionRefusal, NoticeState, approveVerdict, cancelVerdict, chunkRecipients, diversionState, noticeState,
+  requestVerdict,
 } from '../domain/dairy-diversion';
+import { NOTICE_FLAG } from '../domain/dairy-diversion.flags';
+import { diversionNoticeVars } from '../domain/dairy-notice-vars';
+import { DairyNoticeVarsService } from './dairy-notice-vars.service';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { NotificationService } from '../../communication/services/notification.service';
+
+/**
+ * HOW LONG AFTER QUEUEING A NOTICE'S DELIVERY ROWS MAY APPEAR.
+ *
+ * Two days, and the number is a decision about the relay rather than about the milk: an outbox row is normally fanned
+ * out within seconds, but a relay that was down over a night has to catch up, and a report whose window closed an hour
+ * after the signature would show a village as unreached because the platform, not the members, was late. Two days is
+ * also inside one `notifications` partition for any sane partition size, which is what keeps this read bounded.
+ */
+export const NOTICE_REPORT_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
 import { DairyActor } from './mcc-centre.service';
 
 /** The actor for this act — dairy's TWO verbs, because W170's override needs both hands. */
@@ -43,8 +59,15 @@ export interface DiversionView extends DiversionRow {
   state: 'requested' | 'live' | 'cancelled';
   /** Members routed to the sending centre on that day — the *"87 pourers"* of W170's own sentence. */
   affectedMembers: number;
-  /** NOT SENT by this act, and the screens say so. TENANT-6d-7 owns the notice. */
-  membersNotified: false;
+  /**
+   * [PC-56 TENANT-6d-8] WHAT THIS PLATFORM MAY HONESTLY SAY ABOUT TELLING THEM.
+   *
+   * 6d-6 had `membersNotified: false as const` here and every screen printed *"not told"*, which was true and is no
+   * longer. `queued` is the strongest claim this field can carry: the outbox row is written in the same transaction as
+   * the signature, and delivery — a phone that is off, a voice leg the provider refused — is `notifications`' business
+   * and the delivery report's answer.
+   */
+  notice: NoticeState;
 }
 
 @Injectable()
@@ -57,7 +80,60 @@ export class DairyDiversionService {
     private readonly audit: AuditWriter,
     private readonly repo: DairyDiversionRepository,
     private readonly centres: MccCentreRepository,
+    // [PC-56 TENANT-6d-8] The notice: its own flag (Law 10 — a cooperative with no telephony contract still diverts
+    // shifts and still tells its members by loudspeaker), and the words, in each member's own language.
+    private readonly flags: FlagsService,
+    private readonly noticeVars: DairyNoticeVarsService,
+    // Communication's PUBLIC service, for the delivery report — the same seam TENANT-6d-5 used to place a masked call.
+    private readonly notifications: NotificationService,
   ) {}
+
+  /**
+   * **THE NOTICE, W170's own sentence: *"route notice to 87 pourers, Gujarati voice"*.**
+   *
+   * Called from `approve` (the diversion) and from `cancel` (its retraction), inside the act's OWN transaction, so a
+   * signature that commits cannot leave the announcement uncommitted and an announcement cannot exist for a signature
+   * that rolled back — Law 4, and the reason this is one function rather than a job that reads the table later.
+   *
+   * IT DOES NOT SEND. It writes outbox events; the relay fans them out through the notification spine, which since
+   * TENANT-6d-7 resolves each recipient's own language. What this returns is the RECEIPT: how many members the notice
+   * was queued for, or null when the flag is off.
+   *
+   * CHUNKED at `NOTICE_CHUNK`, because the fan-out of one event runs in one relay transaction and a district union's
+   * centre is not W170's 87 families (see `chunkRecipients` for the whole argument).
+   */
+  private async queueNotice(tx: TxContext, tenantId: string, row: DiversionRow, kind: 'diverted' | 'retracted'): Promise<number | null> {
+    const enabled = await this.flags.isEnabled(NOTICE_FLAG, { tenantId });
+    if (!enabled) { this.metrics.inc('dairy.diversion.notice_disabled', { tenant: tenantId }); return null; }
+
+    const recipients = await this.repo.affectedMemberUserIds(tx, tenantId, row.fromMccId, row.divertedOn);
+    const [from, to] = await Promise.all([
+      this.centres.getById(tenantId, row.fromMccId, tx).catch(() => null),
+      this.centres.getById(tenantId, row.toMccId, tx).catch(() => null),
+    ]);
+    const vars = diversionNoticeVars({
+      // NAMES, never ids: a member does not know their centre's UUID and should not have to recognise its code.
+      fromName: from?.toProps().defaultName ?? '', toName: to?.toProps().defaultName ?? '',
+      day: row.divertedOn, shift: row.shift, labels: await this.noticeVars.labels(tx),
+    });
+    const eventType = kind === 'diverted' ? DairyEventType.ShiftDiverted : DairyEventType.ShiftDiversionCancelled;
+    for (const chunk of chunkRecipients(recipients)) {
+      await this.outbox.write(tx, {
+        tenantId, aggregateType: 'dairy_shift_diversion', aggregateId: row.id, eventType,
+        payload: {
+          v: 1, diversionId: row.id, fromMccId: row.fromMccId, toMccId: row.toMccId,
+          divertedOn: row.divertedOn, shiftCode: row.shift,
+          // The spine's own recipient key (`NOTIFICATION_EVENT_MAP`), and the copy's four variables beside it. A map
+          // row over a payload with no recipient sends nothing — ADMIN-6b's finding, and 6d-7 found the dairy module
+          // repeating it on `dairy.quality_flag_decided`.
+          recipientUserIds: chunk,
+          ...vars,
+        },
+      });
+    }
+    this.metrics.inc('dairy.diversion.notice_queued', { tenant: tenantId, kind, chunks: String(chunkRecipients(recipients).length) });
+    return recipients.length;
+  }
 
   /** Today in the cooperative's own calendar. The DATABASE's day, never the process clock (TENANT-6c-1's ruling). */
   private async today(tx: TxContext): Promise<string> {
@@ -78,7 +154,16 @@ export class DairyDiversionService {
   }): Promise<{
     allowed: boolean; refusals: DiversionRefusal[]; affectedMembers: number; divertedOn: string;
     fromCode: string | null; fromName: string | null; toCode: string | null; toName: string | null;
-    membersNotified: false;
+    /**
+     * [PC-56 TENANT-6d-8] WILL THESE MEMBERS BE TOLD, IF THIS IS SIGNED?
+     *
+     * A BOOLEAN and not a `NoticeState`, on purpose. Every state in that vocabulary is a fact about what HAPPENED
+     * (`queued`, `retracted`, `not_signed`); a preview is asking a hypothetical, and squeezing "what will happen" into
+     * an enum of "what did happen" is how a screen ends up printing *"nobody to tell"* about eighty-seven families.
+     * The screen composes its sentence from this and `affectedMembers` — which is also why a dairy lead sees, BEFORE
+     * the second signature, whether those families will hear it from the platform or from a loudspeaker.
+     */
+    noticeEnabled: boolean;
   }> {
     return this.uow.run(tenantId, async (tx) => {
       const today = await this.today(tx);
@@ -103,7 +188,7 @@ export class DairyDiversionService {
         affectedMembers: fromProps ? await this.repo.affectedMembers(tx, tenantId, fromProps.id, on) : 0,
         fromCode: fromProps?.code ?? null, fromName: fromProps?.defaultName ?? null,
         toCode: toProps?.code ?? null, toName: toProps?.defaultName ?? null,
-        membersNotified: false,
+        noticeEnabled: await this.flags.isEnabled(NOTICE_FLAG, { tenantId }),
       };
     }, { userId: actor.userId });
   }
@@ -150,7 +235,12 @@ export class DairyDiversionService {
             eventType: 'dairy.diversion_requested',
             payload: { v: 1, diversionId: row.id, fromMccId: row.fromMccId, toMccId: row.toMccId, divertedOn: on, shift: row.shift, affectedMembers: affected },
           });
-          return { ...row, state: diversionState(row), affectedMembers: affected, membersNotified: false as const };
+          // A REQUEST TELLS NOBODY. Nothing has been authorised yet, and announcing it would move 87 families on one
+          // person's word — the whole reason this act has two signatures.
+          return {
+            ...row, state: diversionState(row), affectedMembers: affected,
+            notice: noticeState({ enabled: true, signed: false, recipients: affected, queuedAt: null, retractionQueuedAt: null }),
+          };
         }, { userId: actor.userId })));
   }
 
@@ -190,8 +280,21 @@ export class DairyDiversionService {
               shift: r.shift, requestedBy: r.requestedBy, approvedBy: actor.userId, affectedMembers: affected,
             },
           });
-          const signed: DiversionRow = { ...r, approvedBy: actor.userId, approvedAt: at.toISOString() };
-          return { ...signed, state: diversionState(signed), affectedMembers: affected, membersNotified: false as const };
+          // THE MEMBERS ARE TOLD HERE, in this transaction. W170's own sentence, and the last mile of 6d-6.
+          const queuedFor = await this.queueNotice(tx, tenantId, r, 'diverted');
+          if (queuedFor !== null) await this.repo.noticeQueued(tx, tenantId, id, at, queuedFor);
+          const signed: DiversionRow = {
+            ...r, approvedBy: actor.userId, approvedAt: at.toISOString(),
+            noticeQueuedAt: queuedFor === null ? r.noticeQueuedAt : at.toISOString(),
+            noticeRecipients: queuedFor === null ? r.noticeRecipients : queuedFor,
+          };
+          return {
+            ...signed, state: diversionState(signed), affectedMembers: affected,
+            notice: noticeState({
+              enabled: queuedFor !== null, signed: true, recipients: affected,
+              queuedAt: signed.noticeQueuedAt, retractionQueuedAt: signed.retractionQueuedAt,
+            }),
+          };
         }, { userId: actor.userId })));
   }
 
@@ -218,19 +321,89 @@ export class DairyDiversionService {
             eventType: 'dairy.diversion_cancelled',
             payload: { v: 1, diversionId: id, fromMccId: r.fromMccId, toMccId: r.toMccId, divertedOn: r.divertedOn, shift: r.shift, cancelledBy: actor.userId },
           });
-          const done: DiversionRow = { ...r, cancelledBy: actor.userId, cancelledAt: at.toISOString(), cancelReason: reason.trim() };
+          // **THE RETRACTION, AND ONLY IF THE FIRST NOTICE WENT OUT.** Telling 87 families to carry their evening milk
+          // to Bhesan and then not telling them it is back at Vanthali is the same promise broken twice: the first
+          // message caused the walk and the silence causes the wasted one. A cancelled REQUEST announced nothing, so
+          // there is nothing to take back — and 0167 puts that rule in a CHECK as well as here.
+          const retractedFor = r.noticeQueuedAt === null ? null : await this.queueNotice(tx, tenantId, r, 'retracted');
+          if (retractedFor !== null) await this.repo.retractionQueued(tx, tenantId, id, at, retractedFor);
+          const done: DiversionRow = {
+            ...r, cancelledBy: actor.userId, cancelledAt: at.toISOString(), cancelReason: reason.trim(),
+            retractionQueuedAt: retractedFor === null ? r.retractionQueuedAt : at.toISOString(),
+            retractionRecipients: retractedFor === null ? r.retractionRecipients : retractedFor,
+          };
+          const affectedNow = await this.repo.affectedMembers(tx, tenantId, r.fromMccId, r.divertedOn);
           return {
-            ...done, state: diversionState(done),
-            affectedMembers: await this.repo.affectedMembers(tx, tenantId, r.fromMccId, r.divertedOn),
-            membersNotified: false as const,
+            ...done, state: diversionState(done), affectedMembers: affectedNow,
+            notice: noticeState({
+              enabled: true, signed: r.approvedAt !== null, recipients: affectedNow,
+              queuedAt: done.noticeQueuedAt, retractionQueuedAt: done.retractionQueuedAt,
+            }),
           };
         }, { userId: actor.userId })));
+  }
+
+  /**
+   * **DID THE FAMILIES GET THE MESSAGE? (W170's own first question, once a diversion is announced.)**
+   *
+   * The diversion's own receipt (`notice_queued_at`) is the WINDOW this read is bounded by, which is the whole reason
+   * the receipt is a column rather than something re-derived: `notifications` is partitioned by `created_at`, and a
+   * report that did not know when the notice went out would have to scan the table (Law 8). From the receipt it is an
+   * index range over a handful of rows — see `idx_notif_event_created` (0167).
+   *
+   * THROUGH COMMUNICATION'S PUBLIC SERVICE, never its repository (CLAUDE.md's module rule; the same seam TENANT-6d-5
+   * used for the masked call).
+   *
+   * AND IT REPORTS WHAT THE LOG SAYS, NOT WHAT THE ACT INTENDED. `queuedFor` is how many members were handed over;
+   * `people` is how many at least one channel reached. A cooperative reading *"87 queued · 84 reached · 3 with no
+   * address"* knows to walk round to three houses, which is the entire point of showing it.
+   */
+  async noticeReport(tenantId: string, actor: DiversionActor, id: string) {
+    if (!actor.canManage) this.refuse(['NO_MANAGE']);
+    const row = await this.uow.run(tenantId, (tx) => this.repo.byId(tx, tenantId, id), { userId: actor.userId });
+    if (row === null) this.refuse(['NOT_FOUND']);
+    const r = row as DiversionRow;
+    const state = noticeState({
+      enabled: await this.flags.isEnabled(NOTICE_FLAG, { tenantId }),
+      signed: r.approvedAt !== null, recipients: r.noticeRecipients ?? 0,
+      queuedAt: r.noticeQueuedAt, retractionQueuedAt: r.retractionQueuedAt,
+    });
+    if (r.noticeQueuedAt === null) {
+      // NOTHING WAS ANNOUNCED, so there is nothing to report and the screen is told why rather than shown zeroes.
+      // Zeroes and "never sent" look identical on a screen and mean opposite things to whoever reads it.
+      return { diversionId: id, state, queuedFor: null, queuedAt: null, delivery: null };
+    }
+    const from = new Date(r.noticeQueuedAt);
+    const to = new Date(from.getTime() + NOTICE_REPORT_WINDOW_MS);
+    const delivery = await this.notifications.deliveryReportFor(tenantId, {
+      eventCodes: [DairyEventType.ShiftDiverted, DairyEventType.ShiftDiversionCancelled],
+      from: new Date(from.getTime() - 60_000),   // one minute of slack: the outbox row and its fan-out are not the same instant
+      to, payloadKey: 'diversionId', payloadValue: id,
+    });
+    return {
+      diversionId: id, state,
+      queuedFor: r.noticeRecipients, queuedAt: r.noticeQueuedAt,
+      retractionQueuedFor: r.retractionRecipients, retractionQueuedAt: r.retractionQueuedAt,
+      delivery,
+    };
   }
 
   /** The register. Read-only, and it names both villages rather than two ids. */
   async list(tenantId: string, actor: DiversionActor, q: { from?: string; to?: string; limit: number }) {
     if (!actor.canManage) this.refuse(['NO_MANAGE']);
-    const rows = await this.repo.list(tenantId, q);
-    return rows.map((r) => ({ ...r, state: diversionState(r), membersNotified: false as const }));
+    const [rows, enabled] = await Promise.all([
+      this.repo.list(tenantId, q),
+      this.flags.isEnabled(NOTICE_FLAG, { tenantId }),
+    ]);
+    // THE REGISTER READS THE RECEIPT, not the flag: a cooperative that switched the notice off this morning did not
+    // un-tell last night's 87 families, and a register that claimed otherwise would be rewriting history to match a
+    // toggle. The flag only decides what an UNANNOUNCED signed diversion says about itself.
+    return rows.map((r) => ({
+      ...r, state: diversionState(r),
+      notice: noticeState({
+        enabled, signed: r.approvedAt !== null, recipients: r.noticeRecipients ?? 0,
+        queuedAt: r.noticeQueuedAt, retractionQueuedAt: r.retractionQueuedAt,
+      }),
+    }));
   }
 }

@@ -375,6 +375,76 @@ ON CONFLICT DO NOTHING;
 -- alert that gets muted, and muting is how the critical one stops being heard too. The voice channel belongs to the
 -- event that earned it.
 
+-- ==================================================================================================================
+-- PC-56 TENANT-6d-8 · **THE NOTICE** — W170's *"route notice to 87 pourers, Gujarati voice"*
+-- ==================================================================================================================
+-- 0166 catalogued `dairy.shift_diverted` and said in its own text that it does not tell the members. 0167 catalogues
+-- the RETRACTION (`dairy.shift_diversion_cancelled`) and adds the in-app leg to both. This is the copy, and it is the
+-- first copy in this file written AFTER TENANT-6d-7 — so it can rely on two things no earlier notice could:
+--
+--   • the member reads it IN THEIR OWN LANGUAGE (`users.language_code`, read per recipient since 6d-7);
+--   • `{{shift}}` is a PER-LANGUAGE VALUE, so the Gujarati body says *સાંજ* and not *evening*.
+--
+-- FOUR VARIABLES, ALL REQUIRED, ALL DECLARED BELOW: the member's own centre, the centre the milk is going to, the day
+-- in digits, and the shift as a word. No optional token appears in any body — an optional variable is a sentence that
+-- sometimes has a hole in it, which is the defect 6d-7 spent a whole wave removing.
+--
+-- THE DAY IS PRINTED EVEN WHEN IT IS TODAY. A diversion may be signed for up to a week ahead (6d-6's MAX_DAYS_AHEAD),
+-- and *"tonight"* in a message read the next morning is worse than a date. Digits, because a month name is a word this
+-- platform holds in no language (see domain/dairy-notice-vars.ts).
+--
+-- THE IVR BODY IS NOT THE SMS BODY. A voice call is heard once, by somebody who may be milking; it says the
+-- instruction, then says it again. The SMS is read and re-read, so it is compact and ends with the cooperative's name
+-- (the DLT convention every other transactional row in this file follows). `provider_template_ref` is NULL rather than
+-- a `DLT_*` placeholder: 0101's ruling and 6c-2's finding — a placeholder is not a registration, and a row that
+-- claims one would have the platform believing it had texted a farmer while the aggregator silently rejected the send.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ -- ---- THE DIVERSION: tonight's milk goes to another village -----------------------------------------------------
+ ('dairy.shift_diverted','ivr','gu',NULL,NULL,'ધ્યાન આપો. {{day}} ના {{shift}} નું દૂધ {{from}} કેન્દ્ર પર લેવામાં આવશે નહીં. તમારું દૂધ {{to}} કેન્દ્ર પર આપો. ફરીથી — {{day}} ના {{shift}} નું દૂધ {{to}} કેન્દ્ર પર આપો.',NULL,true),
+ ('dairy.shift_diverted','ivr','hi',NULL,NULL,'Dhyan dein. {{day}} ke {{shift}} ka doodh {{from}} par nahin liya jayega. Aapka doodh {{to}} par dein. Dobara — {{day}} ke {{shift}} ka doodh {{to}} par dein.',NULL,true),
+ ('dairy.shift_diverted','ivr','en',NULL,NULL,'Please note. The {{shift}} collection on {{day}} will not be taken at {{from}}. Bring your milk to {{to}}. Again — on {{day}}, bring the {{shift}} milk to {{to}}.',NULL,true),
+ ('dairy.shift_diverted','sms','gu',NULL,NULL,'{{day}} ના {{shift}} નું દૂધ {{from}} ને બદલે {{to}} કેન્દ્ર પર આપો. બાકી બધું એ જ રહેશે. Krishalaya',NULL,true),
+ ('dairy.shift_diverted','sms','hi',NULL,NULL,'{{day}} ke {{shift}} ka doodh {{from}} ki jagah {{to}} par dein. Baaki sab wahi rahega. Krishalaya',NULL,true),
+ ('dairy.shift_diverted','sms','en',NULL,NULL,'On {{day}}, bring the {{shift}} milk to {{to}} instead of {{from}}. Everything else stays the same. Krishalaya',NULL,true),
+ ('dairy.shift_diverted','push','gu',NULL,'દૂધ {{to}} કેન્દ્ર પર આપો','{{day}} ના {{shift}} નું દૂધ {{from}} ને બદલે {{to}} કેન્દ્ર પર લેવાશે.',NULL,true),
+ ('dairy.shift_diverted','push','hi',NULL,'Doodh {{to}} par dein','{{day}} ke {{shift}} ka doodh {{from}} ki jagah {{to}} par liya jayega.',NULL,true),
+ ('dairy.shift_diverted','push','en',NULL,'Bring your milk to {{to}}','The {{shift}} collection on {{day}} moves from {{from}} to {{to}}.',NULL,true),
+ ('dairy.shift_diverted','inapp','gu',NULL,'દૂધ {{to}} કેન્દ્ર પર આપો','{{day}} ના {{shift}} નું દૂધ {{from}} ને બદલે {{to}} કેન્દ્ર પર લેવાશે. તમારું સભ્યપદ અને તમારું કેન્દ્ર બદલાયું નથી.',NULL,true),
+ ('dairy.shift_diverted','inapp','hi',NULL,'Doodh {{to}} par dein','{{day}} ke {{shift}} ka doodh {{from}} ki jagah {{to}} par liya jayega. Aapki membership aur aapka kendra nahin badla hai.',NULL,true),
+ ('dairy.shift_diverted','inapp','en',NULL,'Bring your milk to {{to}}','The {{shift}} collection on {{day}} moves from {{from}} to {{to}}. Your membership and your own centre have not changed.',NULL,true),
+
+ -- ---- THE RETRACTION: it is back at your own centre after all ---------------------------------------------------
+ -- *"Your membership has not changed"* is in the body on purpose, in both events. A message telling a family to pour
+ -- somewhere else is the single most alarming thing this platform can send a member — a diversion is NOT a transfer
+ -- (0166's own words) and the sentence that says so belongs in the notice, not only in the schema.
+ ('dairy.shift_diversion_cancelled','ivr','gu',NULL,NULL,'ધ્યાન આપો. {{day}} ના {{shift}} નું દૂધ {{to}} કેન્દ્ર પર લઈ જવાનું નથી. તમારું દૂધ {{from}} કેન્દ્ર પર જ આપો. ફરીથી — {{day}} ના {{shift}} નું દૂધ {{from}} કેન્દ્ર પર જ આપો.',NULL,true),
+ ('dairy.shift_diversion_cancelled','ivr','hi',NULL,NULL,'Dhyan dein. {{day}} ke {{shift}} ka doodh {{to}} par le jaane ki zaroorat nahin hai. Aapka doodh {{from}} par hi dein. Dobara — {{day}} ke {{shift}} ka doodh {{from}} par hi dein.',NULL,true),
+ ('dairy.shift_diversion_cancelled','ivr','en',NULL,NULL,'Please note. The {{shift}} collection on {{day}} is NOT moving to {{to}}. Bring your milk to {{from}} as usual. Again — on {{day}}, bring the {{shift}} milk to {{from}}.',NULL,true),
+ ('dairy.shift_diversion_cancelled','sms','gu',NULL,NULL,'બદલાવ રદ. {{day}} ના {{shift}} નું દૂધ {{from}} કેન્દ્ર પર જ આપો — {{to}} પર જવાની જરૂર નથી. Krishalaya',NULL,true),
+ ('dairy.shift_diversion_cancelled','sms','hi',NULL,NULL,'Badlav radd. {{day}} ke {{shift}} ka doodh {{from}} par hi dein — {{to}} jaane ki zaroorat nahin. Krishalaya',NULL,true),
+ ('dairy.shift_diversion_cancelled','sms','en',NULL,NULL,'Change cancelled. On {{day}}, bring the {{shift}} milk to {{from}} as usual — no need to go to {{to}}. Krishalaya',NULL,true),
+ ('dairy.shift_diversion_cancelled','push','gu',NULL,'{{from}} કેન્દ્ર પર જ આપો','{{day}} ના {{shift}} નું દૂધ {{to}} પર લઈ જવાનું નથી.',NULL,true),
+ ('dairy.shift_diversion_cancelled','push','hi',NULL,'{{from}} par hi dein','{{day}} ke {{shift}} ka doodh {{to}} par le jaane ki zaroorat nahin.',NULL,true),
+ ('dairy.shift_diversion_cancelled','push','en',NULL,'Bring your milk to {{from}}','The {{shift}} collection on {{day}} is not moving to {{to}} after all.',NULL,true),
+ ('dairy.shift_diversion_cancelled','inapp','gu',NULL,'{{from}} કેન્દ્ર પર જ આપો','{{day}} ના {{shift}} નું દૂધ {{to}} પર લઈ જવાનું નથી. તમારું સભ્યપદ અને તમારું કેન્દ્ર બદલાયું નથી.',NULL,true),
+ ('dairy.shift_diversion_cancelled','inapp','hi',NULL,'{{from}} par hi dein','{{day}} ke {{shift}} ka doodh {{to}} par le jaane ki zaroorat nahin. Aapki membership aur aapka kendra nahin badla hai.',NULL,true),
+ ('dairy.shift_diversion_cancelled','inapp','en',NULL,'Bring your milk to {{from}}','The {{shift}} collection on {{day}} is not moving to {{to}} after all. Your membership and your own centre have not changed.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+-- THE DECLARED CONTRACT, which since TENANT-6d-7 is CHECKED: `tenant6d7-notice-words.spec.ts` renders every one of the
+-- bodies above against the variables the emitter really produces and fails on a blank, a JSON dump, an English enum in
+-- vernacular copy, or a required declaration no body uses. Four variables, four uses, no optional tokens.
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('dairy.shift_diverted',           'from',  'mcc_centres.default_name (the member''s own centre)', 'Vanthali', true),
+ ('dairy.shift_diverted',           'to',    'mcc_centres.default_name (the centre taking the shift)', 'Bhesan', true),
+ ('dairy.shift_diverted',           'day',   'dairy_shift_diversions.diverted_on (digits, DD/MM)',  '21/08',    true),
+ ('dairy.shift_diverted',           'shift', 'dairy_shift_diversions.shift (localized)',            'evening',  true),
+ ('dairy.shift_diversion_cancelled','from',  'mcc_centres.default_name (the member''s own centre)', 'Vanthali', true),
+ ('dairy.shift_diversion_cancelled','to',    'mcc_centres.default_name (the centre that was to take it)', 'Bhesan', true),
+ ('dairy.shift_diversion_cancelled','day',   'dairy_shift_diversions.diverted_on (digits, DD/MM)',  '21/08',    true),
+ ('dairy.shift_diversion_cancelled','shift', 'dairy_shift_diversions.shift (localized)',            'evening',  true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

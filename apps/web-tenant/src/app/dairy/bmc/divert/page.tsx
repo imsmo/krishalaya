@@ -31,7 +31,7 @@ import {
 } from '../../../../features/mutate/chain';
 import { BMC_HREF } from '../../../../features/dairy/bmc';
 import { CENTRES_HREF } from '../../../../features/dairy/centres';
-import { diversionNoticeGapKey, diversionShiftKey } from '../../../../features/dairy/diversion';
+import { diversionNoticePromiseKey, diversionShiftKey } from '../../../../features/dairy/diversion';
 import { requestDiversionAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -119,7 +119,10 @@ export default async function DivertShiftPage({ searchParams }: { searchParams: 
                   <strong>{formatNumber(preview.affectedMembers, lang)}</strong>{' '}
                   {t.t('mutate.diversion.affected')}
                 </p>
-                <p className="kv-field__hint">{t.t(diversionNoticeGapKey())}</p>
+                {/* [PC-56 TENANT-6d-8] WHO TELLS THEM. With the notice switched on the platform phones and texts these
+                    families in their own language when the second signature lands; without it, this cooperative tells
+                    them the way it always has — and saying which is what stops 87 people arriving at a locked centre. */}
+                <p className="kv-field__hint">{t.t(diversionNoticePromiseKey(preview.noticeEnabled))}</p>
                 <p className="kv-field__hint">{t.t('mutate.diversion.notATransfer')}</p>
                 <p className="kv-field__hint">{t.t('mutate.diversion.needsSecondSignature')}</p>
               </div>
@@ -148,7 +151,9 @@ export default async function DivertShiftPage({ searchParams }: { searchParams: 
               87 families to a village nobody has authorised yet. */}
           <p>{t.t('mutate.diversion.requested')}</p>
           <p className="kv-field__hint">{t.t('mutate.diversion.needsSecondSignature')}</p>
-          <p className="kv-field__hint">{t.t(diversionNoticeGapKey())}</p>
+          {/* A REQUEST ANNOUNCES NOTHING, and the success screen of a request must not imply otherwise: the notice goes
+              out when the dairy lead signs, which is the sentence below. */}
+          <p className="kv-field__hint">{t.t('dairy.diversion.notice.not_signed')}</p>
           <p className="kv-field__hint">{t.t('mutate.auditNote')}</p>
           {canLinkAudit('dairy_shift_diversion', createdId) && (
             <p><Link href={auditHref('dairy_shift_diversion', createdId as string)} className="kv-btn--link">{t.t('mutate.viewAudit')}</Link></p>

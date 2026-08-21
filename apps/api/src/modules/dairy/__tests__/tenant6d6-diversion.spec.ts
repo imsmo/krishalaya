@@ -24,7 +24,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   DIVERSION_REFUSALS, MAX_DAYS_AHEAD, MAX_REASON, MIN_REASON, approveVerdict, assertDay, cancelVerdict,
-  daysBetween, diversionNoteKey, diversionState, isLive, noticeGapKey, pourPlace, requestVerdict, unionPickupGapKey,
+  daysBetween, diversionNoteKey, diversionState, isLive, pourPlace, requestVerdict, unionPickupGapKey,
 } from '../domain/dairy-diversion';
 import { DIVERSION_FLAG } from '../domain/dairy-diversion.flags';
 import { playbook } from '../domain/bmc';
@@ -325,9 +325,17 @@ describe('PC-56 TENANT-6d-6 · the service, and what it will not claim', () => {
     const outbox = { write: jest.fn() };
     const uow = { run: jest.fn(async (_t: string, fn: (tx: unknown) => unknown) => fn({ query: jest.fn(async () => ({ rows: [{ d: dbToday }] })) })) };
     const idem = { remember: jest.fn(async (_k: string, _u: string, _s: string, fn: () => unknown) => fn()) };
+    // [PC-56 TENANT-6d-8] The notice's flag and its words. OFF here, because this suite is about the DIVERSION: with
+    // the notice enabled every act would also queue an announcement, and 6d-6's assertions about what is written are
+    // clearer when only the diversion writes. `tenant6d8-notice.spec.ts` is where the flag is ON.
+    const flags = { isEnabled: jest.fn(async () => false) };
     const svc = new DairyDiversionService(uow as never, outbox as never, idem as never,
-      { inc: jest.fn(), observe: jest.fn() } as never, audit as never, repo as never, centres as never);
-    return { svc, repo, audit, outbox };
+      { inc: jest.fn(), observe: jest.fn() } as never, audit as never, repo as never, centres as never,
+      flags as never, fakeNoticeVars(),
+      // [PC-56 TENANT-6d-8] Communication's public service, for the delivery report. Never reached in this suite (the
+      // notice flag is off), and present so the collaborator list is the real one.
+      { deliveryReportFor: jest.fn() } as never);
+    return { svc, repo, audit, outbox, flags };
   };
   const operator = { userId: 'operator', canManage: true, canOverride: false };
   const lead = { userId: 'lead', canManage: true, canOverride: true };
@@ -368,7 +376,10 @@ describe('PC-56 TENANT-6d-6 · the service, and what it will not claim', () => {
     expect(p.allowed).toBe(false);
     expect(p.refusals).toEqual(['REASON_REQUIRED']);
     expect(p.affectedMembers).toBe(87);
-    expect(p.membersNotified).toBe(false);
+    // [PC-56 TENANT-6d-8] With the notice flag OFF this cooperative announces the diversion itself, and the confirm
+    // screen says so rather than implying the platform will. A BOOLEAN here and a `NoticeState` on the row: a preview
+    // asks what WILL happen, a row records what DID.
+    expect(p.noticeEnabled).toBe(false);
     expect(p.fromCode).toBe('MCC-VNT');
     expect(p.toName).toBe('Bhesan');
   });
@@ -388,7 +399,9 @@ describe('PC-56 TENANT-6d-6 · the service, and what it will not claim', () => {
     }, '10.0.0.1');
     expect(r.state).toBe('requested');
     expect(r.affectedMembers).toBe(87);
-    expect(r.membersNotified).toBe(false);
+    // A REQUEST tells nobody, whatever the flag says: nothing has been authorised, and announcing it would move 87
+    // families on one person's word.
+    expect(r.notice).toBe('not_signed');
     const [, entry] = h.audit.write.mock.calls[0] as unknown as [unknown, Record<string, unknown>];
     expect(entry.action).toBe('dairy.diversion.requested');
     expect(entry.entityType).toBe('dairy_shift_diversion');
@@ -475,10 +488,11 @@ describe('PC-56 TENANT-6d-6 · the playbook, the board, and the notice', () => {
     expect(diversionNoteKey({ divertedIn: 0, divertedOut: 0 })).toBeNull();
   });
 
-  it('names the notice and the union pickup as NOT BUILT', () => {
-    // W170 promises *"route notice to 87 pourers, Gujarati voice"*. This wave counts them; TENANT-6d-7 sends it. And
-    // step 3 has no union, no pickup and no batch test on this platform.
-    expect(noticeGapKey()).toBe('dairy.diversion.noticeNotSent');
+  it('names the union pickup as NOT BUILT — and the notice is no longer among the gaps', () => {
+    // W170 promises *"route notice to 87 pourers, Gujarati voice"*. 6d-6 counted them and named the notice as a gap
+    // (`noticeGapKey`); **TENANT-6d-8 sends it**, so that key is gone and the screen prints a notice STATE instead
+    // (`dairy.diversion.notice.*`, see tenant6d8-notice.spec.ts). Step 3 still has no union, no pickup and no batch
+    // test on this platform, and still says so.
     expect(unionPickupGapKey()).toBe('dairy.bmc.playbook.unionPickupUnbuilt');
   });
 

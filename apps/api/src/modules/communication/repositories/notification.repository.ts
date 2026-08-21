@@ -5,7 +5,7 @@
 // delivery columns (status/sent_at/read_at/provider_msg_ref/cost_minor/batched_into) — migration 0014.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
-import { TxContext } from '../../../core/database/unit-of-work';
+import { SqlExecutor, TxContext } from '../../../core/database/unit-of-work';
 import { Notification } from '../domain/notification.entity';
 import { NotifChannel } from '../domain/communication.events';
 import { NotifStatus } from '../domain/notification.state';
@@ -17,6 +17,22 @@ function toDomain(r: any): Notification {
     costMinor: r.cost_minor, batchedInto: r.batched_into, createdAt: r.created_at, sentAt: r.sent_at, readAt: r.read_at });
 }
 export interface InboxQuery { status?: string; unreadOnly?: boolean; cursor?: { c: string; id: string }; limit: number; }
+
+/**
+ * [PC-56 TENANT-6d-8] What the delivery log can say about one announced thing.
+ *
+ * `rows` counts delivery attempts (one per person per channel); `people` counts the humans at least one channel
+ * reached. A screen that showed `rows` where a cooperative asked *"how many were told?"* would report 87 families as
+ * 261 — the same class of overstatement this programme keeps finding.
+ */
+export interface DeliveryReport {
+  rows: number;
+  people: number;
+  byStatus: Record<string, number>;
+  byChannel: Record<string, number>;
+  byLanguage: Record<string, number>;
+  byEvent: Record<string, number>;
+}
 
 /**
  * What the platform knows about ONE recipient before it tries to reach them: the language they chose and whether
@@ -100,6 +116,69 @@ export class NotificationRepository {
       out.set(row.id, { languageCode: row.language_code, hasEmail: row.has_email, hasPhone: row.has_phone });
     }
     return out;
+  }
+
+  /**
+   * **DID THE MESSAGE ARRIVE? (PC-56 TENANT-6d-8.)**
+   *
+   * The delivery log's own answer for ONE thing that was announced: how many rows were written, on which channels, in
+   * which languages, and in what state. W170's *"route notice to 87 pourers"* is the first screen on this platform
+   * that has to say *"87 told, 3 unreachable"* rather than *"queued"* — and this is the read behind it.
+   *
+   * **BOUNDED THREE WAYS, because `notifications` is the platform's highest-volume table (RANGE partitioned by
+   * `created_at`, 0012):** the event codes, a `created_at` window taken from the notice's OWN receipt
+   * (`dairy_shift_diversions.notice_queued_at`), and the payload key that identifies the thing announced. With
+   * `idx_notif_event_created` (0167) that is an index range inside ONE partition over a handful of rows. Without the
+   * window it would be a filtered scan of every notification the platform has ever sent, which is what Law 8 exists to
+   * forbid — so the window is a REQUIRED argument rather than an optional filter.
+   *
+   * The payload match is `->>` on a jsonb key, evaluated over those few rows only. It is not indexed and deliberately
+   * so: an index per announced-thing-id would be an index per module.
+   */
+  async deliveryReport(tenantId: string, i: {
+    eventCodes: readonly string[]; from: Date; to: Date; payloadKey: string; payloadValue: string;
+  }, x?: SqlExecutor): Promise<DeliveryReport> {
+    // The REPLICA by default (a report is a screen and tolerates lag, Law 12), the caller's executor when it has one —
+    // a live spec asserting what a fan-out just wrote must read it on the same connection that wrote it.
+    const run = x ?? this.replica.forTenant(tenantId);
+    const r = await run.query<{ event_code: string; channel: string; language_code: string | null; status: string; n: number }>(
+      `SELECT event_code, channel, language_code, status, count(*)::int AS n
+         FROM notifications
+        WHERE tenant_id = $1 AND event_code = ANY($2::text[])
+          AND created_at >= $3 AND created_at < $4
+          AND payload->>$5 = $6
+        GROUP BY event_code, channel, language_code, status`,
+      [tenantId, [...i.eventCodes], i.from, i.to, i.payloadKey, i.payloadValue]);
+
+    const report: DeliveryReport = { rows: 0, people: 0, byStatus: {}, byChannel: {}, byLanguage: {}, byEvent: {} };
+    const bump = (m: Record<string, number>, k: string, n: number) => { m[k] = (m[k] ?? 0) + n; };
+    for (const row of r.rows) {
+      const n = Number(row.n);
+      report.rows += n;
+      bump(report.byStatus, row.status, n);
+      bump(report.byChannel, row.channel, n);
+      bump(report.byLanguage, row.language_code ?? 'unknown', n);
+      bump(report.byEvent, row.event_code, n);
+    }
+    // PEOPLE, not rows — the number a cooperative means by *"how many were told"*. One member reached on push and in
+    // the app is ONE person told, and counting rows would have reported 87 families as 261.
+    //
+    // **AND NOT COUNTING THE IN-APP INBOX.** An `inapp` row is marked `sent` the moment it is written (it IS the inbox
+    // item, there is nothing to dispatch), so counting it would make every live user "reached" and the number would
+    // answer nothing: a member without a smartphone never sees it. `people` is therefore who was reached on a channel
+    // that LEFT this platform — a call, a text, a push — which is the number that decides whether somebody walks round
+    // to three houses. The in-app rows are still reported, by channel, beside it.
+    const p = await run.query<{ n: number }>(
+      `SELECT count(DISTINCT user_id)::int AS n
+         FROM notifications
+        WHERE tenant_id = $1 AND event_code = ANY($2::text[])
+          AND created_at >= $3 AND created_at < $4
+          AND payload->>$5 = $6
+          AND channel <> 'inapp'
+          AND status IN ('sent', 'delivered', 'read')`,
+      [tenantId, [...i.eventCodes], i.from, i.to, i.payloadKey, i.payloadValue]);
+    report.people = Number(p.rows[0]?.n ?? 0);
+    return report;
   }
 
   /** Insert a delivery row in its FINAL resolved state (sent/failed/suppressed) — one write, no later update. */

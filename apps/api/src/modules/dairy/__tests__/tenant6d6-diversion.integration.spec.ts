@@ -35,6 +35,15 @@ import { AuditWriter } from '../../../core/audit/audit.writer';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 
+import { NoopNotificationGateway } from '../../communication/gateway/noop.gateway';
+import { NoopPushSender } from '../../communication/gateway/noop-push.sender';
+import { PushDeviceRepository } from '../../communication/repositories/push-device.repository';
+import { NotificationEventRepository } from '../../communication/repositories/notification-event.repository';
+import { NotificationTemplateRepository } from '../../communication/repositories/notification-template.repository';
+import { NotificationPreferenceRepository } from '../../communication/repositories/notification-preference.repository';
+import { QuietHoursRepository } from '../../communication/repositories/quiet-hours.repository';
+import { NotificationRepository } from '../../communication/repositories/notification.repository';
+import { NotificationService } from '../../communication/services/notification.service';
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
@@ -98,12 +107,21 @@ run('PC-56 TENANT-6d-6 · the diversion (integration, real Postgres)', () => {
     const mccRepo = new MccCentreRepository(replica as never);
     const routeRepo = new DairyMembershipRouteRepository(replica as never);
     divRepo = new DairyDiversionRepository(replica as never);
+    const notifications = new NotificationService(
+      uow, outbox, metrics, new NoopNotificationGateway(config), new NoopPushSender(false),
+      new PushDeviceRepository(replica as never), new NotificationEventRepository(replica as never),
+      new NotificationTemplateRepository(replica as never), new NotificationPreferenceRepository(replica as never),
+      new QuietHoursRepository(replica as never), new NotificationRepository(replica as never), flags);
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, new DairyMembershipRepository(replica as never), mccRepo, routeRepo);
     pours = new MilkCollectionService(uow, outbox, idem, metrics, new MilkCollectionRepository(replica as never),
       new MilkRateCardRepository(replica as never), new DairyMembershipRepository(replica as never),
       new MilkQualityReviewRepository(replica as never), flags, routeRepo, divRepo, realNoticeVars(replica as never));
-    diversions = new DairyDiversionService(uow, outbox, idem, metrics, audit, divRepo, mccRepo);
+    // [PC-56 TENANT-6d-8] The notice's flag and its words, and communication's public service for the delivery report.
+    // The REAL collaborators, because this is a live suite — and the notice flag is unseeded here, so it reads OFF and
+    // 6d-6's assertions about what this act writes are unchanged (`tenant6d8-notice.integration.spec.ts` switches it on).
+    diversions = new DairyDiversionService(uow, outbox, idem, metrics, audit, divRepo, mccRepo, flags,
+      realNoticeVars(replica as never) as never, notifications);
 
     const v: any = await mccs.create(tenantA, opActor as never, `idem-${randomUUID()}`, { code: 'MCC-D6-VNT', defaultName: 'Vanthali' } as never, null);
     vanthali = v.id;
@@ -156,7 +174,9 @@ run('PC-56 TENANT-6d-6 · the diversion (integration, real Postgres)', () => {
       expect(req.state).toBe('requested');
       // W170's *"87 pourers"* — one member in this fixture, counted from the ROUTE HISTORY as of that day.
       expect(req.affectedMembers).toBe(1);
-      expect(req.membersNotified).toBe(false);
+      // [PC-56 TENANT-6d-8] A REQUEST announces nothing — one person does not move a village. (6d-6 asserted
+      // `membersNotified === false` here, which was true of every state; the field is a notice STATE now.)
+      expect(req.notice).toBe('not_signed');
 
       const signed: any = await diversions.approve(tenantA, leadActor as never, `idem-${randomUUID()}`, req.id, null);
       expect(signed.state).toBe('live');
@@ -398,12 +418,14 @@ run('PC-56 TENANT-6d-6 · the diversion (integration, real Postgres)', () => {
       expect(e.rows).toHaveLength(1);
       expect(e.rows[0].priority).toBe('critical');
       expect(e.rows[0].user_can_opt_out).toBe(false);
-      expect(e.rows[0].default_channels).toEqual(['ivr', 'sms', 'push']);
-      // AND ITS COPY IS NOT SEEDED YET — the notice is TENANT-6d-7, and this asserts the honest half-built state rather
-      // than letting a future wave discover it.
+      // [PC-56 TENANT-6d-8] 0167 added the IN-APP leg — the only channel that leaves a member something to re-read
+      // standing at the counter — and the voice channel is still FIRST, which is the canon's own word.
+      expect(e.rows[0].default_channels).toEqual(['ivr', 'sms', 'push', 'inapp']);
+      // AND ITS COPY EXISTS NOW: 6d-6 asserted zero templates and named the notice as TENANT-6d-7's work; 6d-7 repaired
+      // the machinery and 6d-8 seeded the copy — twelve rows, four channels x three languages.
       const t = await admin.query(
         `SELECT count(*)::int n FROM notification_templates WHERE event_code='dairy.shift_diverted'`);
-      expect(t.rows[0].n).toBe(0);
+      expect(t.rows[0].n).toBe(12);
     });
   });
 });

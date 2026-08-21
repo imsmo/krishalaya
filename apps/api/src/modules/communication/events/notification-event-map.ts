@@ -119,4 +119,21 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'tenancy.subscription_renewed',  eventCode: 'saas.subscription_renewed', recipientKeys: ['recipientUserIds'] },
   { outboxType: 'tenancy.trial_ending',          eventCode: 'saas.trial_ending',     recipientKeys: ['recipientUserIds'] },
   { outboxType: 'tenancy.usage_limit_alert',     eventCode: 'saas.usage_limit_alert', recipientKeys: ['recipientUserIds'] },
+  // ---- PC-56 TENANT-6d-8 · W170's ROUTE NOTICE ------------------------------------------------------------------
+  // *"If ≥ 7.5°C by 16:00 → divert evening shift to Bhesan (route notice to 87 pourers, Gujarati voice)"*.
+  //
+  // THE FIRST DAIRY EVENTS IN THIS MAP WHOSE RECIPIENTS ARE A LIST. Every other dairy row above notifies ONE person
+  // about their own milk, their own bill, their own arrangement. A diversion is one decision about eighty-seven
+  // families, so `DairyDiversionService.queueNotice` resolves them from the route history AS OF THE DIVERTED DAY (not
+  // today's membership rows — a member who moved away last week is not on tonight's list) and emits the ids in the
+  // payload, CHUNKED, because the fan-out of one event runs inside one relay transaction.
+  //
+  // AND THE RETRACTION IS ITS OWN CODE. A signed diversion can be called off while no milk has been taken under it,
+  // and until 6d-8 that was a silent state change: 87 families had been told to walk to Bhesan and nobody told them to
+  // stay. Catalogued `critical` and unmutable exactly like the diversion, voice channel first.
+  //
+  // Both were only worth wiring AFTER TENANT-6d-7: before it, `fanout` resolved one language for the whole batch and
+  // every one of these notices would have gone out in English while the canon says *"Gujarati voice"*.
+  { outboxType: 'dairy.shift_diverted',           eventCode: 'dairy.shift_diverted',           recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'dairy.shift_diversion_cancelled', eventCode: 'dairy.shift_diversion_cancelled', recipientKeys: ['recipientUserIds'] },
 ];
