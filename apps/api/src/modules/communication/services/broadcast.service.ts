@@ -3,7 +3,7 @@
 // event (communication.broadcast_requested) — the actual per-recipient fan-out happens ASYNC in the handler via
 // the notification spine (no synchronous blast; Law 4/8). Idempotent on the caller's key (Law 3). No money.
 import { Inject, Injectable } from '@nestjs/common';
-import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';

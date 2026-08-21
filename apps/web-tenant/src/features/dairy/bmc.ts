@@ -13,6 +13,12 @@ export const BMC_HREF = '/dairy/bmc';
 /** *"Add BMC"* — W2517–W2520's chain, built in TENANT-6d-4. Declared here so the monitor and its tests cannot disagree
  *  about where the register lives. */
 export const BMC_NEW_HREF = '/dairy/bmc/new';
+/** *"Call MCC-AND-03 operator"* — W2521–W2523's chain, built in TENANT-6d-5. The unit travels in the query string
+ *  because the chain's confirm step must be re-openable after a phone rings, exactly like the form chain's review. */
+export const BMC_CALL_HREF = '/dairy/bmc/call';
+export function callHref(unitId: string): string {
+  return `${BMC_CALL_HREF}?step=confirm&unitId=${encodeURIComponent(unitId)}`;
+}
 export function bmcHref(unitId?: string | null, hours?: number | null): string {
   const q = new URLSearchParams();
   if (unitId) q.set('unit', unitId);
@@ -147,10 +153,55 @@ export function alertingTone(a: DairyBmcMonitor['alerting']): 'ok' | 'warn' | 'b
   return 'ok';
 }
 
-/** The 15-minute promise `ops_alert_rules` cannot express — printed when the tenant's threshold is under an hour. */
+/**
+ * WHAT ACTUALLY HAPPENS AFTER FIFTEEN MINUTES OF SILENCE — PC-56 TENANT-6d-5.
+ *
+ * TENANT-6d-1 printed one sentence here: *the threshold cannot be expressed*, because `device_silent` held whole hours
+ * and W170's fifteen minutes was unreachable by any rule. That is fixed, and the honest replacement is not a cheerful
+ * tick — it is the three things that can still be true and were previously hidden behind the one that was not:
+ *
+ *   • **no rule watches silence at all.** The screen calls a reading a gap after fifteen minutes and NOBODY is paged,
+ *     because paging is a rule a cooperative writes and this platform will not invent one for them (0165 §165.7).
+ *   • **the rule's threshold is not the screen's.** Both numbers are legitimate — a gap shown sooner than a phone call
+ *     is a reasonable choice — but a cooperative reading *"operator called automatically after 15 min"* off a screen
+ *     whose rule says twelve hours is a cooperative that believes something untrue.
+ *   • **the threshold is tighter than the evaluator's cadence.** A two-minute rule is checked when the evaluator next
+ *     runs, so the call is late by up to that cadence. Said out loud rather than implied by a number.
+ *
+ * Returns null only when a rule exists, matches the screen's own gap, and is no tighter than the cadence — which is the
+ * only state in which the canon's sentence is true as written.
+ */
 export function silenceGapKey(a: DairyBmcMonitor['alerting'], thresholds: DairyBmcMonitor['thresholds']): string | null {
-  if (a.silenceExpressible) return null;
-  return thresholds.silenceMinutes < 60 ? 'dairy.bmc.alerting.silenceTooShort' : 'dairy.bmc.alerting.silenceNotWhole';
+  if (a.silenceRuleMinutes === null) return 'dairy.bmc.alerting.noSilenceRule';
+  if (!a.silenceMatchesGap) return 'dairy.bmc.alerting.silenceRuleDiffers';
+  if (a.silenceRuleMinutes < a.evaluationMinutes) return 'dairy.bmc.alerting.silenceUnderCadence';
+  void thresholds;
+  return null;
+}
+
+/**
+ * CAN THE ALERT WAKE SOMEBODY — the finding TENANT-6d-5 opened with.
+ *
+ * A recipient's quiet hours suppress push, SMS and voice unless the CATALOGUE event is `critical`, and every ops alert
+ * was catalogued `important`. Two things have to be true for a warm tank at 2am to reach a phone: the critical event has
+ * to be catalogued (0165), and its voice leg has to have copy (the seed) — the same two-part question TENANT-6d-1 asked
+ * about SMS, for the same reason: a channel with no template is recorded as sent-nowhere.
+ */
+export function quietHoursKey(a: DairyBmcMonitor['alerting']): string | null {
+  if (!a.criticalCatalogued) return 'dairy.bmc.alerting.criticalNotCatalogued';
+  if (!a.criticalVoiceDeliverable) return 'dairy.bmc.alerting.criticalNoVoice';
+  return null;
+}
+
+/**
+ * The *"Call MCC-AND-03 operator"* link, or the reason there is not one.
+ *
+ * Never a button that 404s: the monitor reads the flag (TENANT-6d-2's ruling — a route hidden by a flag answers
+ * not-found, which is indistinguishable from a broken screen), and a tank whose centre nobody holds says so on the
+ * confirm step rather than here, because that is a fact about custody and this is a fact about the module.
+ */
+export function callOfferKey(m: Pick<DairyBmcMonitor, 'callEnabled'>): string | null {
+  return m.callEnabled ? null : 'dairy.bmc.call.notEnabled';
 }
 
 /* --------------------------------------------------------------------------------------------------------- */

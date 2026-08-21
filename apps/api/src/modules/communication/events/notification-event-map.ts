@@ -27,6 +27,15 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'memberships.payment_confirmed', eventCode: 'payment.success',     recipientKeys: ['userId'] },
   // PC-55 A6 · ops alerting rides the SAME spine as everything else — no private channel for urgency.
   { outboxType: 'ops.alert_fired',              eventCode: 'ops.alert_fired',      recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-6d-5 · **EVERY CRITICAL OPS ALERT WAS SILENT DURING SOMEBODY'S QUIET HOURS.** `resolveChannels()`
+  // suppresses push, sms, whatsapp and ivr inside a recipient's quiet window unless the CATALOGUE event is `critical`,
+  // and `ops.alert_fired` is catalogued `important` — one constant for every alert this platform raises. Severity lives
+  // on the fired alert, so `severityFor()` was correctly calling a tank breaching five times or a sensor silent for two
+  // days CRITICAL, and every one of those was held until morning while W170 promised *"alerts fire to the operator's
+  // phone before the dairy loses a rupee"*. `OpsAlertService` now emits this type for a critical verdict and
+  // `ops.alert_critical` is catalogued `critical` with `user_can_opt_out = false` (0165). Same recipients, same spine,
+  // same rules — the difference is that this one is allowed to wake somebody, and a maintenance reminder still is not.
+  { outboxType: 'ops.alert_fired_critical',     eventCode: 'ops.alert_critical',   recipientKeys: ['recipientUserIds'] },
   // PC-56 ADMIN-6b · **`payout.credited` WAS SEEDED IN 0068 AND NOTHING HAS EVER EMITTED IT.** W063 says "Farmer SMS
   // queued — celebratory Gujarati message sends on payout success"; W067's confirm dialog promises "farmers get the
   // celebratory SMS on success". `PayoutService.execute` writes `payments.payout_succeeded` — a DIFFERENT code, absent

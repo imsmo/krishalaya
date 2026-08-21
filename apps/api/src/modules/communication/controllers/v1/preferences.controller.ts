@@ -1,6 +1,6 @@
 // modules/communication/controllers/v1/preferences.controller.ts · the caller's notification preferences + quiet
 // hours (own userId only). Disabling a mandatory event throws (service, Law 6). `communication` flag.
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';

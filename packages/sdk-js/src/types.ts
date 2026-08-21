@@ -1660,14 +1660,76 @@ export interface DairyBmcMonitor {
     breachRules: number;
     silentRules: number;
     recipients: number;
-    /** `device_silent` measures WHOLE HOURS, so W170's 15-minute call cannot be expressed by any rule. */
-    silenceExpressible: boolean;
+    /**
+     * The tightest active `device_silent` threshold IN MINUTES, or null when no rule watches silence.
+     *
+     * TENANT-6d-1 reported `silenceExpressible: false` here, because the threshold could only be whole hours and
+     * W170's fifteen minutes was unreachable by any rule. TENANT-6d-5 made it minutes, so the question changed from
+     * *"can this be said"* to *"what does this cooperative actually watch for"*.
+     */
+    silenceRuleMinutes: number | null;
+    /** Whether that threshold is the same number the screen uses for a gap. Null when no rule exists. Not forced
+     *  equal — but two numbers for one promise is worth saying out loud. */
+    silenceMatchesGap: boolean | null;
+    /** How often the evaluator runs, so a two-minute threshold is not printed as a two-minute guarantee. */
+    evaluationMinutes: number;
     /** Is the ops alert catalogued at all (migration 0086)? */
     eventCatalogued: boolean;
     /** Can its SMS leg render? No SMS template existed from PC-55 until TENANT-6d-1 seeded three — and SMS is the
      *  channel a village operator actually has, so every alert produced a push and a failed text. */
     smsDeliverable: boolean;
+    /** Is `ops.alert_critical` catalogued (0165)? Until it was, every CRITICAL ops alert was suppressed on push, SMS
+     *  and voice inside a recipient's quiet hours, because quiet-hours bypass is decided by the catalogue event's
+     *  priority and `ops.alert_fired` is catalogued `important`. */
+    criticalCatalogued: boolean;
+    /** Can the critical alert's VOICE leg render — an active `ivr` template with a serving version? W170's *"operator
+     *  alerted (SMS + call)"* is about this leg. */
+    criticalVoiceDeliverable: boolean;
   };
+  /** Is *"Call MCC-AND-03 operator"* switched on for this cooperative (`dairy_bmc_call`, default OFF)? */
+  callEnabled: boolean;
+}
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-6d-5 · W170's call, W2521–W2523's shared MUTATE chain                                            */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+export const DAIRY_BMC_CALL_REFUSALS = [
+  'NO_MANAGE', 'UNIT_NOT_FOUND', 'UNIT_RETIRED', 'NOBODY_HOLDS_CENTRE', 'CALLING_YOURSELF',
+  'REASON_REQUIRED', 'REASON_TOO_LONG',
+] as const;
+export type DairyBmcCallRefusal = (typeof DAIRY_BMC_CALL_REFUSALS)[number];
+
+/** W2521's *"the object"* — what the confirm step reviews. A PERSON and a tank; never a phone number. */
+export interface DairyBmcCallObject {
+  unitId: string;
+  mccCode: string;
+  mccName: string;
+  tempC: string | null;
+  /** False when the reading is older than the tenant's silence threshold — often the very reason for the call. */
+  tempIsCurrent: boolean;
+  gapMinutes: number | null;
+  operatorName: string | null;
+  /** Custody is recorded but the holder's name cannot be verified against this cooperative's roles. The call can still
+   *  be placed (the provider bridges by id); a name nothing stands behind is not printed. */
+  operatorUnnamed: boolean;
+  heldSince: string | null;
+}
+
+export interface DairyBmcCallPreview {
+  object: DairyBmcCallObject;
+  allowed: boolean;
+  refusals: DairyBmcCallRefusal[];
+  /** The reason as it will be recorded — trimmed, so the screen shows what the audit row will hold. */
+  reason: string | null;
+}
+
+export interface DairyBmcCallResult {
+  maskedCallId: string;
+  unitId: string;
+  calleeUserId: string;
+  reason: string;
+  placedAt: string;
 }
 
 

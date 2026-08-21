@@ -37,6 +37,8 @@ import {
   tileTone, timeInRangeText,
   // PC-56 TENANT-6d-4 · W2517–W2520's chain, which is now the only way to register a cooler.
   BMC_NEW_HREF,
+  // PC-56 TENANT-6d-5 · W170's call, and the two alerting truths behind its automatic twin.
+  callHref, callOfferKey, quietHoursKey,
 } from '../../../features/dairy/bmc';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
 import { recordBmcReadingAction, reportBmcLevelAction, setBmcBandAction, stateBmcCompressorAction } from './actions';
@@ -148,6 +150,12 @@ export default async function DairyBmcPage({ searchParams }: {
                 </span>
                 <span className="kv-field__hint">
                   <Link href={bmcHref(u.unitId, hours)} className="kv-btn--link">{t.t('dairy.bmc.tile.open')}</Link>
+                  {/* W170's *"Call MCC-AND-03 operator"* — per TANK, because the canon's button names the warm one and
+                      an operator looking at three tiles should not have to navigate to reach the right centre. Offered
+                      only when the act is switched on: a link to a route a flag hides is a 404 that reads as a bug. */}
+                  {view.callEnabled && (
+                    <> {' · '}<Link href={callHref(u.unitId)} className="kv-btn--link">{t.t('dairy.bmc.tile.call')}</Link></>
+                  )}
                 </span>
               </div>
             ))}
@@ -254,6 +262,18 @@ export default async function DairyBmcPage({ searchParams }: {
           {silenceGapKey(view.alerting, view.thresholds) && (
             <p className="kv-badge kv-badge--warn">{t.t(silenceGapKey(view.alerting, view.thresholds)!)}</p>
           )}
+          {/* TENANT-6d-5: whether a CRITICAL alert may wake anybody at all. Quiet hours suppress every phone channel
+              unless the catalogued event is critical, which is the finding this wave opened with. */}
+          {quietHoursKey(view.alerting) && (
+            <p className="kv-badge kv-badge--warn">{t.t(quietHoursKey(view.alerting)!)}</p>
+          )}
+          {view.alerting.silenceRuleMinutes !== null && (
+            <p className="kv-field__hint">
+              {t.t('dairy.bmc.alerting.silenceRuleAt')} {formatNumber(view.alerting.silenceRuleMinutes, lang)}
+              {' · '}{t.t('dairy.bmc.alerting.checkedEvery')} {formatNumber(view.alerting.evaluationMinutes, lang)}
+            </p>
+          )}
+          {callOfferKey(view) && <p className="kv-field__hint">{t.t(callOfferKey(view)!)}</p>}
           <p className="kv-field__hint">
             {t.t('dairy.bmc.thresholds.divert')} {view.thresholds.divertC}°C
             {' · '}{t.t('dairy.bmc.thresholds.condemn')} {view.thresholds.condemnC}°C

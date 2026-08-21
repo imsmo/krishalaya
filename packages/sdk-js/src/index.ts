@@ -49,6 +49,9 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   DairyMembershipRoute, DairyMoveRefusal, DairyMoveCaution, DairyMoveVerdict, MoveMembershipInput,
   // PC-56 TENANT-6d-4 · the shared form chain's review step.
   DairyReview, DairyReviewField, DairyReviewRefusal, DairyMccReviewInput, DairyBmcReviewInput,
+  // PC-56 TENANT-6d-5 · W170's call and W2521–W2523's mutate chain. TYPES only: the refusal LIST stays in the API's
+  // own domain, and the web spec reads it from there — a second copy would agree exactly once.
+  DairyBmcCallObject, DairyBmcCallPreview, DairyBmcCallRefusal, DairyBmcCallResult,
   DairyStabilityVerdict, DairyWorkedExample, DairyFlagProtocol,
   DairyCoverage, DairyFlagSummary, DairyAccrual, DairyShiftClock,
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,

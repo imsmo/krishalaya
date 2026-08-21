@@ -160,6 +160,59 @@ export class BmcUnitRepository {
    * Bounded by `limit` and by the window, and ORDERED so a chart cannot draw its own line backwards. Partition pruning
    * comes free: `recorded_at` is the partition key (Law 8).
    */
+  /**
+   * EVERYTHING THE CALL NEEDS, IN ONE QUERY — PC-56 TENANT-6d-5.
+   *
+   * The cooler, its centre, its latest reading, and WHO HOLDS CUSTODY of that centre right now, with the holder's name
+   * resolved through the same tenancy-checked join TENANT-6d-2 put on the centres board: `users` is platform-wide
+   * (0003), so a name is only printed for somebody who holds an active role in THIS cooperative. A holder this
+   * platform cannot verify comes back with a null name and the call is still placeable — the provider bridges by id,
+   * and a name nothing stands behind is not shown.
+   *
+   * NO `FOR UPDATE`. Reading who holds a centre must not block a handover being recorded at that centre; and a call is
+   * not a state change on the custody row.
+   */
+  async callContext(x: SqlExecutor, tenantId: string, unitId: string): Promise<{
+    unit: BmcUnit; mccCode: string; mccName: string;
+    lastTempDeci: number | null; lastAt: Date | null;
+    custody: { operatorUserId: string; operatorName: string | null; assignedAt: Date } | null;
+  } | null> {
+    const r = await x.query(
+      `SELECT ${B_COLS},
+              m.code AS mcc_code, m.default_name AS mcc_name,
+              l.temp_c AS last_temp_c, l.recorded_at AS last_at,
+              c.operator_user_id, c.assigned_at, c.operator_name
+         FROM bmc_units b
+         JOIN mcc_centres m ON m.id = b.mcc_id AND m.tenant_id = b.tenant_id AND m.deleted_at IS NULL
+         LEFT JOIN LATERAL (
+           SELECT cl.temp_c, cl.recorded_at FROM cold_chain_logs cl
+            WHERE cl.tenant_id = b.tenant_id AND cl.subject_type = 'bmc_unit' AND cl.subject_id = b.id
+            ORDER BY cl.recorded_at DESC LIMIT 1) l ON true
+         LEFT JOIN LATERAL (
+           SELECT a.operator_user_id, a.assigned_at,
+                  (SELECT u.full_name FROM users u
+                    WHERE u.id = a.operator_user_id AND u.deleted_at IS NULL
+                      AND EXISTS (SELECT 1 FROM user_tenant_roles utr
+                                   WHERE utr.user_id = u.id AND utr.tenant_id = b.tenant_id
+                                     AND utr.is_active = true AND utr.deleted_at IS NULL)) AS operator_name
+             FROM mcc_operator_assignments a
+            WHERE a.tenant_id = b.tenant_id AND a.mcc_id = b.mcc_id
+              AND a.ended_at IS NULL AND a.deleted_at IS NULL
+            LIMIT 1) c ON true
+        WHERE b.tenant_id = $1 AND b.id = $2 AND b.deleted_at IS NULL`, [tenantId, unitId]);
+    const row: any = r.rows[0];
+    if (!row) return null;
+    return {
+      unit: toDomain(row), mccCode: String(row.mcc_code), mccName: String(row.mcc_name),
+      lastTempDeci: row.last_temp_c === null || row.last_temp_c === undefined
+        ? null : Number(scaledFromNumeric(row.last_temp_c, TEMP_SCALE)),
+      lastAt: row.last_at ?? null,
+      custody: row.operator_user_id
+        ? { operatorUserId: String(row.operator_user_id), operatorName: row.operator_name ?? null, assignedAt: row.assigned_at }
+        : null,
+    };
+  }
+
   async series(tenantId: string, unitId: string, hours: number, limit: number): Promise<Array<{ tempDeci: number; at: Date; isBreach: boolean }>> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT temp_c, recorded_at, is_breach FROM cold_chain_logs

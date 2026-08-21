@@ -57,6 +57,7 @@ import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/sc
 import { AppConfig } from '../../core/config/app-config';
 import { FlagsService } from '../../core/feature-flags/flags.service';
 import { METRICS, Metrics } from '../../core/observability/metrics';
+import { ALERT_EVALUATION_INTERVAL_MS } from './domain/ops-alert.rules';
 
 @Module({
   // PC-56 TENANT-5a · the money gate needs the ORDERS module's public service (OrderService.transportStatus)
@@ -83,7 +84,9 @@ import { METRICS, Metrics } from '../../core/observability/metrics';
     { provide: OpsAlertsCadenceJob,
       // Every 10 minutes: fast enough that a cold-chain breach is seen while the cargo can still be saved,
       // and safe to repeat because the 0086 dedupe key makes a re-fire inside the cooldown a DB no-op.
-      useFactory: (svc: OpsAlertService) => new OpsAlertsCadenceJob(10 * 60_000, svc),
+      // ONE cadence number, shared with the screens that describe it (TENANT-6d-5): a monitor that says "checked every
+      // 10 minutes" from its own literal would keep saying it after this factory changed.
+      useFactory: (svc: OpsAlertService) => new OpsAlertsCadenceJob(ALERT_EVALUATION_INTERVAL_MS, svc),
       inject: [OpsAlertService] }],
   exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService, FleetRegisterReadModel, RouteBoardReadModel, FreightInvoiceService],
 })

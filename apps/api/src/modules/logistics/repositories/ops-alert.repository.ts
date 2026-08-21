@@ -74,16 +74,27 @@ export class OpsAlertRepository {
       [tenantId, String(windowHours), subjectType ?? null]);
     return r.rows.map((x: any) => ({ deviceRef: x.device_ref, subjectType: x.subject_type, subjectId: x.subject_id, breaches: x.breaches, lastTempC: x.last_temp_c, lastAt: new Date(x.last_at).toISOString() }));
   }
-  async silentDevices(tenantId: string, silentHours: number): Promise<Array<{ deviceRef: string; lastSeen: string; silentHours: number }>> {
+  /**
+   * Sensors that have gone quiet, measured in MINUTES.
+   *
+   * PC-56 TENANT-6d-5. This query used to floor the gap to whole hours, which is why W170's *"operator called
+   * automatically after 15 min silence"* could never fire: a fifteen-minute gap was `silent_hours = 0`, below every
+   * legal threshold, and the alert body would have read *"has not reported for ~0h"* even if it had.
+   *
+   * The 30-day window is unchanged — a sensor nobody has heard from in a month is a decommissioning question, not an
+   * alert — and it is deliberately WIDER than the maximum threshold (43,200 minutes = 30 days) rather than derived
+   * from it, so the two numbers cannot silently converge into a rule that can never match.
+   */
+  async silentDevices(tenantId: string, silentMinutes: number): Promise<Array<{ deviceRef: string; lastSeen: string; silentMinutes: number }>> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT device_ref, MAX(recorded_at) AS last_seen,
-              FLOOR(EXTRACT(EPOCH FROM (now() - MAX(recorded_at))) / 3600)::int AS silent_hours
+              FLOOR(EXTRACT(EPOCH FROM (now() - MAX(recorded_at))) / 60)::int AS silent_minutes
          FROM cold_chain_logs
         WHERE tenant_id=$1 AND device_ref IS NOT NULL AND recorded_at >= now() - interval '30 days'
         GROUP BY device_ref
-       HAVING MAX(recorded_at) < now() - ($2 || ' hours')::interval
-        ORDER BY last_seen ASC LIMIT 200`, [tenantId, String(silentHours)]);
-    return r.rows.map((x: any) => ({ deviceRef: x.device_ref, lastSeen: new Date(x.last_seen).toISOString(), silentHours: x.silent_hours }));
+       HAVING MAX(recorded_at) < now() - ($2 || ' minutes')::interval
+        ORDER BY last_seen ASC LIMIT 200`, [tenantId, String(silentMinutes)]);
+    return r.rows.map((x: any) => ({ deviceRef: x.device_ref, lastSeen: new Date(x.last_seen).toISOString(), silentMinutes: x.silent_minutes }));
   }
   async maintenanceAlerts(tenantId: string, which: string): Promise<Array<{ assetId: string; alert: string; lastServiceOn: string | null }>> {
     const r = await this.replica.forTenant(tenantId).query(

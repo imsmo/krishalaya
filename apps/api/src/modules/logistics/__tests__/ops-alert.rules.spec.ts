@@ -46,8 +46,11 @@ describe('severity comes from the evidence, not the rule\'s mood', () => {
   it('escalates repeated cold-chain breaches and long silences', () => {
     expect(severityFor('cold_chain_breach', { breaches: 1 })).toBe('warning');
     expect(severityFor('cold_chain_breach', { breaches: 5 })).toBe('critical');
-    expect(severityFor('device_silent', { silentHours: 12 })).toBe('warning');
-    expect(severityFor('device_silent', { silentHours: 48 })).toBe('critical');
+    // MINUTES since TENANT-6d-5 — the same two days, in the unit the evidence now arrives in.
+    expect(severityFor('device_silent', { silentMinutes: 12 * 60 })).toBe('warning');
+    expect(severityFor('device_silent', { silentMinutes: 48 * 60 })).toBe('critical');
+    // And the boundary itself, which is what a severity threshold is actually about.
+    expect(severityFor('device_silent', { silentMinutes: 48 * 60 - 1 })).toBe('warning');
     expect(severityFor('maintenance_due', { alert: 'needs_attention' })).toBe('warning');
     expect(severityFor('maintenance_due', { alert: 'service_due' })).toBe('info');
   });

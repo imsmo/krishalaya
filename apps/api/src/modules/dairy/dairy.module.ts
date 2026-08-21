@@ -99,6 +99,8 @@ import { DeductionInstructionsController } from './controllers/v1/deduction-inst
 import { DairyDeductionInstructionService } from './services/dairy-deduction-instruction.service';
 import { DairyDeductionInstructionRepository } from './repositories/dairy-deduction-instruction.repository';
 import { DairyDeductionAssemblerService } from './services/dairy-deduction-assembler.service';
+import { CommunicationModule } from '../communication/communication.module';
+import { BmcCallService } from './services/bmc-call.service';
 
 // [PC-56 TENANT-6c-1] What used to stand here said the cycle-close job "is instantiated by apps/worker with a
 // privileged kv_relay Pool". APPS/WORKER INSTANTIATED NOTHING OF THE KIND, and could not have: its JOBS registry is
@@ -107,7 +109,10 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
 // It now runs through core/jobs/jobs.runner.ts, registered below beside the D2C cadence job — the pattern this file
 // already used for the one job it did wire.
 @Module({
-  imports: [FintechModule, LogisticsModule],
+  // PC-56 TENANT-6d-5 · CommunicationModule for `MaskedCallService` — W170's *"Call MCC-AND-03 operator"* is a
+  // privacy-proxy call, and the module that owns telephony owns it. CLAUDE.md's rule holds: a module's PUBLIC SERVICE
+  // (exported here) or its events, never its repositories. No cycle — CommunicationModule imports nothing.
+  imports: [FintechModule, LogisticsModule, CommunicationModule],
   controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController,
     // PC-56 TENANT-6c-2
     BillCyclesController, BillDisputesController,
@@ -150,7 +155,7 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
     // PC-56 TENANT-6c-6
     DairyCycleConsoleRepository, DairyCycleConsoleReadModel,
     // PC-56 TENANT-6d-1
-    BmcUnitRepository, BmcUnitService, BmcReadingService, DairyBmcReadModel,
+    BmcUnitRepository, BmcUnitService, BmcReadingService, BmcCallService, DairyBmcReadModel,
     MccConsoleRepository, MccOperatorAssignmentRepository, DairyCentresReadModel,
     DairyMembershipRouteRepository, DairyMembershipMoveService,
   ],

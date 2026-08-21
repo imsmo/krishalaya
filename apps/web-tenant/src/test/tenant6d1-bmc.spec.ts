@@ -49,7 +49,13 @@ const view = (o: Partial<DairyBmcMonitor> = {}): DairyBmcMonitor => ({
   },
   thresholds: { divertC: '7.5', condemnC: '8.0', silenceMinutes: 15 },
   quarter: { days: 90, readings: 1000, breaches: 8, units: 3, timeInRangeBp: 9920, litresLost: { kind: 'not_measurable', needs: ['a write-off act on a tank'] } },
-  alerting: { breachRules: 1, silentRules: 1, recipients: 2, silenceExpressible: false, eventCatalogued: true, smsDeliverable: true },
+  alerting: {
+    breachRules: 1, silentRules: 1, recipients: 2, eventCatalogued: true, smsDeliverable: true,
+    // TENANT-6d-5: minutes, the cadence, and the two questions about whether a critical alert may wake anybody.
+    silenceRuleMinutes: 15, silenceMatchesGap: true, evaluationMinutes: 10,
+    criticalCatalogued: true, criticalVoiceDeliverable: true,
+  },
+  callEnabled: true,
   ...o,
 });
 
@@ -130,13 +136,11 @@ describe('TENANT-6d-1 · W170 the BMC monitor', () => {
     for (const k of ['ok', 'noRules', 'noRecipients', 'notCatalogued', 'noSmsTemplate']) expect(hasKey(`dairy.bmc.alerting.${k}`)).toBe(true);
   });
 
-  it('prints the 15-minute promise `ops_alert_rules` cannot express', () => {
-    expect(silenceGapKey(view().alerting, view().thresholds)).toBe('dairy.bmc.alerting.silenceTooShort');
-    // A whole-hour threshold IS expressible, and then the screen says nothing about it.
-    expect(silenceGapKey({ ...view().alerting, silenceExpressible: true }, { ...view().thresholds, silenceMinutes: 60 })).toBeNull();
-    // 90 minutes is under no hour boundary — expressible as a number, not as a rule.
-    expect(silenceGapKey(view().alerting, { ...view().thresholds, silenceMinutes: 90 })).toBe('dairy.bmc.alerting.silenceNotWhole');
-    for (const k of ['silenceTooShort', 'silenceNotWhole']) expect(hasKey(`dairy.bmc.alerting.${k}`)).toBe(true);
+  it('says nothing about the silence rule only when the canon\'s sentence is true as written', () => {
+    // A rule exists, its threshold IS the number the screen calls a gap, and it is not tighter than the cadence.
+    // TENANT-6d-5 moved this assertion from *"the threshold cannot be expressed"* to *"the promise is kept"* — the
+    // three states below are what used to be hidden behind that one.
+    expect(silenceGapKey(view().alerting, view().thresholds)).toBeNull();
   });
 
   it('draws a chart from two points or more, and refuses one', () => {

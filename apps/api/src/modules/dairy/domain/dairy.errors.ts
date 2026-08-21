@@ -296,3 +296,16 @@ export class MembershipMoveRefusedError extends DomainError {
     super('MEMBERSHIP_MOVE_REFUSED', `This membership cannot be moved: ${refusal}`, 422, { refusal, ...detail });
   }
 }
+
+/**
+ * [PC-56 TENANT-6d-5 · W2521] A call this platform will not place, with every reason at once.
+ *
+ * 422 rather than 403 even when the reason is a permission: the caller reached a route they are allowed to reach (the
+ * dairy desk's own monitor) and asked for an act that cannot be performed on THIS tank right now. The screen prints the
+ * reasons; the status code is not the message.
+ */
+export class BmcCallRefusedError extends DomainError {
+  constructor(refusals: readonly string[]) {
+    super('BMC_CALL_REFUSED', `this call cannot be placed: ${refusals.join(', ')}`, 422, { refusals });
+  }
+}

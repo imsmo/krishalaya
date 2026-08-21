@@ -488,8 +488,16 @@ describe('PC-56 TENANT-6d-1 · W170 the BMC monitor', () => {
     expect(v.alerting.recipients).toBe(2);
     expect(v.alerting.eventCatalogued).toBe(true);
     expect(v.alerting.smsDeliverable).toBe(true);
-    // `device_silent` measures whole hours, so 15 minutes cannot be expressed by any rule a tenant could write.
-    expect(v.alerting.silenceExpressible).toBe(false);
+    // TENANT-6d-1 asserted `silenceExpressible: false` here, because `device_silent` measured whole hours and W170's
+    // fifteen minutes could not be written as a rule by anybody. TENANT-6d-5 made the threshold MINUTES, so what this
+    // screen reports is no longer whether the number CAN be said but what this cooperative actually watches for.
+    // This tenant has a breach rule and NO silence rule, so the screen calls a reading a gap after fifteen minutes and
+    // nobody is paged for it — which is a fact worth printing, not a null to swallow. (TENANT-6d-5 replaced
+    // `silenceExpressible` here: the threshold is minutes now, so the question is what a cooperative actually watches
+    // for rather than what the platform can hold.)
+    expect(v.alerting.silenceRuleMinutes).toBeNull();
+    expect(v.alerting.silenceMatchesGap).toBeNull();
+    expect(v.alerting.evaluationMinutes).toBe(10);
   });
 
   it('reports the SMS leg as UNDELIVERABLE when its template is missing — the PC-55 defect this wave found', async () => {

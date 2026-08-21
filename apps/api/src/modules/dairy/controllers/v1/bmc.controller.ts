@@ -14,7 +14,8 @@
 // `@Get('monitor')` IS DECLARED BEFORE `@Get(':id')` — Nest matches in declaration order, and the parameterised route
 // would otherwise answer the screen with "BMC unit 'monitor' not found". The same trap TENANT-6c-6 documented on the
 // cycle console, asserted the same way.
-import { Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -31,9 +32,17 @@ import {
   RegisterBmcSchema, RegisterBmcDto, ReportBmcLevelSchema, ReportBmcLevelDto,
   RecordBmcReadingSchema, RecordBmcReadingDto, SetBmcBandSchema, SetBmcBandDto,
   StateCompressorSchema, StateCompressorDto,
+  // PC-56 TENANT-6d-5 · the call
+  CallBmcOperatorSchema, CallBmcOperatorDto, PreviewBmcCallSchema, PreviewBmcCallDto,
 } from '../../dto/bmc.dto';
 import { CompressorState } from '../../domain/bmc-unit.entity';
 import { PreviewBmcDto, PreviewBmcSchema } from '../../dto/dairy-form-preview.dto';
+import { BmcCallService } from '../../services/bmc-call.service';
+import { BMC_CALL_FLAG } from '../../domain/bmc-call.flags';
+
+/** Same one-liner as every other dairy controller: the caller's IP for the audit row, and nothing else read off the
+ *  request object. */
+const ipOf = (r: Request) => r.ip || null;
 
 @Controller({ path: 'dairy/bmc', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -47,6 +56,8 @@ export class BmcController {
     private readonly units: BmcUnitService,
     private readonly readings: BmcReadingService,
     private readonly monitor: DairyBmcReadModel,
+    // PC-56 TENANT-6d-5 · W170's call, W2521–W2523's chain.
+    private readonly callSvc: BmcCallService,
   ) {}
 
   /**
@@ -89,11 +100,39 @@ export class BmcController {
     return this.units.previewRegister(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
   }
 
+  /**
+   * [PC-56 TENANT-6d-5 · W2521] The CONFIRM step for *"Call MCC-AND-03 operator"*.
+   *
+   * Declared with the other literal POSTs, above anything parameterised. Writes nothing and dials nothing: it answers
+   * the object under review and every reason the call would be refused, by the same function `call` uses.
+   *
+   * Behind `dairy_bmc_call` — its own flag, composing with the module's and the monitor's (TENANT-6d-2's guard fix), so
+   * a cooperative can switch off a button that rings a person without switching off the alarm that pages them.
+   */
+  @Post('call/preview') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(BMC_CALL_FLAG)
+  previewCall(@CurrentContext() ctx: RequestContext, @ZodBody(PreviewBmcCallSchema) dto: PreviewBmcCallDto) {
+    return this.callSvc.preview(ctx.tenantId, this.actor(ctx), dto.unitId, dto.reason ?? '').then((data) => ({ data }));
+  }
+
   /** The act W170's *"No BMC units → Add BMC"* points at (chain screens W2517–W2520). */
   @Post() @RequirePermissions(DairyPermissions.Manage)
   register(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(RegisterBmcSchema) dto: RegisterBmcDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.units.register(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
+  }
+
+  /**
+   * [PC-56 TENANT-6d-5 · W170] *"Call MCC-AND-03 operator"* — a number-masked call to whoever holds this centre.
+   *
+   * An Idempotency-Key is REQUIRED and passed straight through to the masked-call service: a village tablet retrying a
+   * dropped request must not ring an operator twice. This is the one act on this controller that reaches a person's
+   * phone, which is also why it carries its own flag.
+   */
+  @Post(':id/call') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(BMC_CALL_FLAG)
+  call(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string,
+       @Param('id') id: string, @ZodBody(CallBmcOperatorSchema) dto: CallBmcOperatorDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.callSvc.place(ctx.tenantId, this.actor(ctx), key, id, dto.reason, ipOf(r)).then((data) => ({ data }));
   }
 
   /** What "cold enough" means for this tank. A policy change, audited before and after. */

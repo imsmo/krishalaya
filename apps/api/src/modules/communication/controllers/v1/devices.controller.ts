@@ -3,7 +3,7 @@
 // DELETE notifications/devices  — revoke it (on logout)
 // Owner = the caller's own userId (from the token); a user can only touch their OWN devices (no IDOR).
 // Behind AuthGuard + PermissionsGuard + the `communication` flag (same as the rest of the module).
-import { Body, Controller, Delete, Post, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';

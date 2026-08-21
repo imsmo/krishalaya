@@ -24,6 +24,8 @@ import {
 } from '../domain/bmc';
 import { CompressorState } from '../domain/bmc-unit.entity';
 import { DairyActor } from '../services/mcc-centre.service';
+import { ALERT_EVALUATION_MINUTES, silentMinutesOf } from '../../logistics/domain/ops-alert.rules';
+import { BMC_CALL_FLAG } from '../domain/bmc-call.flags';
 
 export const BMC_MONITOR_FLAG = 'dairy_bmc_monitor';
 
@@ -77,8 +79,29 @@ export interface BmcMonitorView {
     breachRules: number;
     silentRules: number;
     recipients: number;
-    /** `device_silent` measures in WHOLE HOURS, so W170's 15-minute call cannot be expressed by any rule. */
-    silenceExpressible: boolean;
+    /**
+     * **THE THRESHOLD A RULE ACTUALLY WATCHES FOR, IN MINUTES** — the tightest active `device_silent` rule, or null when
+     * no rule watches silence at all.
+     *
+     * TENANT-6d-1 reported `silenceExpressible: false` here, because `device_silent` could only hold whole hours and
+     * W170's fifteen minutes was therefore unreachable by any rule. TENANT-6d-5 made the threshold MINUTES, so the
+     * honest field is no longer *"can this be said"* but *"what does this cooperative actually watch for"* — and
+     * whether that number is the one the screen calls a gap.
+     */
+    silenceRuleMinutes: number | null;
+    /**
+     * Does the rule's threshold match the gap the SCREEN uses (`dairy.bmc_silence_minutes`)? Null when no rule exists.
+     *
+     * Not forced equal, because a cooperative may legitimately show a gap sooner than they wake somebody — but two
+     * numbers for one promise is how a cooperative comes to believe an operator was called at fifteen minutes when the
+     * rule was left at twelve hours, so the screen says which is which.
+     */
+    silenceMatchesGap: boolean | null;
+    /**
+     * How often the evaluator runs. A rule may now ask for two minutes; it is still checked on this cadence, and a
+     * screen that printed the threshold without the cadence would be promising a precision nothing has.
+     */
+    evaluationMinutes: number;
     /** Is `ops.alert_fired` catalogued at all? 0086 created it; a deployment behind that migration has no alerts. */
     eventCatalogued: boolean;
     /**
@@ -90,7 +113,23 @@ export interface BmcMonitorView {
      * than promising a call.
      */
     smsDeliverable: boolean;
+    /**
+     * **IS THE CRITICAL ALERT CATALOGUED, AND CAN IT SPEAK?**
+     *
+     * TENANT-6d-5's finding: `resolveChannels()` suppresses push, SMS, WhatsApp and voice inside a recipient's quiet
+     * hours unless the CATALOGUE event is `critical`, and `ops.alert_fired` is catalogued `important` — so every
+     * critical ops alert this platform has ever raised was held until morning. 0165 catalogues `ops.alert_critical`
+     * (`critical`, unmutable, push + SMS + voice) and the fired alert's own severity chooses it. These two reads are
+     * how the SCREEN knows: a deployment behind the migration says so instead of promising a phone call at 2am.
+     */
+    criticalCatalogued: boolean;
+    /** An `ivr` template for the critical alert — W170's *"operator alerted (SMS + call)"* is about this leg, and a
+     *  channel with no template is recorded as `no_template` and sent nowhere (TENANT-6d-1's finding, twice over). */
+    criticalVoiceDeliverable: boolean;
   };
+  /** Whether *"Call MCC-AND-03 operator"* is switched on for this cooperative (`dairy_bmc_call`, default OFF). The
+   *  monitor offers the button or says the act is not enabled — it never draws a button that 404s. */
+  callEnabled: boolean;
 }
 
 @Injectable()
@@ -109,13 +148,16 @@ export class DairyBmcReadModel {
       const x = this.replica.forTenant(tenantId);
       const hours = Math.min(Math.max(q.hours ?? 6, 1), 168);
 
-      const [nowRow, rows, thresholds, quarter, rules, delivery] = await Promise.all([
+      const [nowRow, rows, thresholds, quarter, rules, delivery, callEnabled] = await Promise.all([
         x.query(`SELECT now() AS n`),
         this.units.monitor(tenantId, 24),
         this.units.thresholds(x, tenantId),
         this.units.windowCounts(tenantId, 90),
         this.alerts.listRules(tenantId).catch(() => []),
         this.opsAlertDelivery(x),
+        // Read rather than assumed: the monitor must not draw a button whose route answers not-found (TENANT-6d-2's
+        // ruling on the flag guard — a 404 from a flag is indistinguishable from a broken screen).
+        this.flags.isEnabled(BMC_CALL_FLAG, { tenantId }),
       ]);
       const now = (nowRow.rows[0] as { n: Date }).n;
 
@@ -180,11 +222,19 @@ export class DairyBmcReadModel {
         },
         alerting: {
           breachRules: breachRules.length, silentRules: silentRules.length, recipients: recipients.size,
-          // `device_silent` validates `silentHours` as an integer 1..720 and floors the measured gap to whole hours, so
-          // any silence threshold under an hour is unreachable — W170's fifteen minutes included.
-          silenceExpressible: thresholds.silenceMinutes >= 60 && thresholds.silenceMinutes % 60 === 0,
+          // The TIGHTEST active silence rule, in minutes — through `silentMinutesOf`, so a rule still written in the
+          // legacy `silentHours` key is reported in the unit the screen speaks rather than ignored.
+          silenceRuleMinutes: silentRules.length === 0
+            ? null
+            : Math.min(...silentRules.map((r: any) => silentMinutesOf(r.threshold as Record<string, unknown>))),
+          silenceMatchesGap: silentRules.length === 0
+            ? null
+            : Math.min(...silentRules.map((r: any) => silentMinutesOf(r.threshold as Record<string, unknown>))) === thresholds.silenceMinutes,
+          evaluationMinutes: ALERT_EVALUATION_MINUTES,
           eventCatalogued: delivery.catalogued, smsDeliverable: delivery.sms,
+          criticalCatalogued: delivery.criticalCatalogued, criticalVoiceDeliverable: delivery.criticalIvr,
         },
+        callEnabled,
       };
     });
   }
@@ -197,13 +247,24 @@ export class DairyBmcReadModel {
    * as `no_template` and sent nothing. TENANT-6d-1 seeds the three SMS templates; this read is how the SCREEN knows,
    * so a deployment that has not run the seed says *"the operator will not get a text"* instead of promising one.
    */
-  private async opsAlertDelivery(x: { query: (sql: string, params?: readonly unknown[]) => Promise<{ rows: unknown[] }> }): Promise<{ catalogued: boolean; sms: boolean }> {
+  private async opsAlertDelivery(x: { query: (sql: string, params?: readonly unknown[]) => Promise<{ rows: unknown[] }> }): Promise<{ catalogued: boolean; sms: boolean; criticalCatalogued: boolean; criticalIvr: boolean }> {
     const r = await x.query(
       `SELECT (SELECT count(*) FROM notification_events WHERE code = 'ops.alert_fired')::int AS ev,
               (SELECT count(*) FROM notification_templates
-                WHERE event_code = 'ops.alert_fired' AND channel = 'sms' AND is_active = true AND deleted_at IS NULL)::int AS sms`);
-    const row = (r.rows[0] ?? {}) as { ev?: number; sms?: number };
-    return { catalogued: Number(row.ev ?? 0) > 0, sms: Number(row.sms ?? 0) > 0 };
+                WHERE event_code = 'ops.alert_fired' AND channel = 'sms' AND is_active = true AND deleted_at IS NULL)::int AS sms,
+              -- TENANT-6d-5: the alert that is allowed to wake somebody, and whether its VOICE leg can render. A
+              -- template row is not enough on its own — 0122's send-time gate INNER JOINs the serving version, and a
+              -- template with none resolves to nothing and is recorded as no_template — so the version is checked here
+              -- rather than assumed. That is the defect TENANT-6c-2 found and TENANT-6d-1 hit again.
+              (SELECT count(*) FROM notification_events WHERE code = 'ops.alert_critical')::int AS crit_ev,
+              (SELECT count(*) FROM notification_templates
+                WHERE event_code = 'ops.alert_critical' AND channel = 'ivr' AND is_active = true
+                  AND serving_version_id IS NOT NULL AND deleted_at IS NULL)::int AS crit_ivr`);
+    const row = (r.rows[0] ?? {}) as { ev?: number; sms?: number; crit_ev?: number; crit_ivr?: number };
+    return {
+      catalogued: Number(row.ev ?? 0) > 0, sms: Number(row.sms ?? 0) > 0,
+      criticalCatalogued: Number(row.crit_ev ?? 0) > 0, criticalIvr: Number(row.crit_ivr ?? 0) > 0,
+    };
   }
 }
 

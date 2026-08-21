@@ -340,6 +340,41 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
 ON CONFLICT DO NOTHING;
 
 
+-- ==================================================================================================================
+-- PC-56 TENANT-6d-5 · **THE CRITICAL OPS ALERT — THE ONE THAT IS ALLOWED TO WAKE SOMEBODY.**
+-- ==================================================================================================================
+-- Migration 0165 catalogued `ops.alert_critical` (priority `critical`, channels push + sms + ivr,
+-- `user_can_opt_out = false`) for the defect it documents: `resolveChannels()` suppresses every intrusive channel
+-- during a recipient's quiet hours unless the CATALOGUE event is `critical`, and `ops.alert_fired` is catalogued
+-- `important`. So a tank breaching five times at two in the morning - `severityFor()`'s own `critical` verdict - was
+-- held on push, SMS and voice until the quiet window ended, while W170 promised *"alerts fire to the operator's phone
+-- before the dairy loses a rupee"*.
+--
+-- The event needs its copy here rather than in the migration, for the reason the note below this block explains: 0122's
+-- send-time gate INNER JOINs the serving version, and only THIS file backfills version rows for seed-authored copy.
+-- Nine rows - three channels x three languages.
+--
+-- THE IVR BODY IS THE SAME SENTENCE. A voice call reads the text out; a template that re-worded the alert for the ear
+-- would be a second copy of `OpsAlertService`'s composed body (`hit.body`), drifting from the evidence it was built
+-- from. The one difference is the punctuation of urgency: the title is spoken first either way, so the layout is left
+-- to the channel and the wording to the rule that fired.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('ops.alert_critical','push','en',NULL,'{{title}}','{{body}}',NULL,true),
+ ('ops.alert_critical','push','hi',NULL,'{{title}}','{{body}}',NULL,true),
+ ('ops.alert_critical','push','gu',NULL,'{{title}}','{{body}}',NULL,true),
+ ('ops.alert_critical','sms','en',NULL,NULL,'{{title}}: {{body}}',NULL,true),
+ ('ops.alert_critical','sms','hi',NULL,NULL,'{{title}}: {{body}}',NULL,true),
+ ('ops.alert_critical','sms','gu',NULL,NULL,'{{title}}: {{body}}',NULL,true),
+ ('ops.alert_critical','ivr','en',NULL,NULL,'{{title}}. {{body}}',NULL,true),
+ ('ops.alert_critical','ivr','hi',NULL,NULL,'{{title}}. {{body}}',NULL,true),
+ ('ops.alert_critical','ivr','gu',NULL,NULL,'{{title}}. {{body}}',NULL,true)
+ON CONFLICT DO NOTHING;
+
+-- AND THE VOICE LEG OF THE ORDINARY OPS ALERT IS *NOT* SEEDED. `ops.alert_fired`'s `default_channels` are
+-- `["push","sms"]` (0086) and this file does not widen them: a warning-level alert that phones somebody is exactly the
+-- alert that gets muted, and muting is how the critical one stops being heard too. The voice channel belongs to the
+-- event that earned it.
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

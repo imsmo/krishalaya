@@ -74,3 +74,25 @@ export const QueryBmcUnitsSchema = z.object({
   includeRetired: z.coerce.boolean().default(false),
 }).strict();
 export type QueryBmcUnitsDto = z.infer<typeof QueryBmcUnitsSchema>;
+
+/**
+ * PC-56 TENANT-6d-5 · the call, and its reason.
+ *
+ * The REASON is required at the schema — `min(3)` — because W2521's confirm step promises an audit entry with *"actor,
+ * time and reason"* and a reason nobody typed is a promise the trail cannot keep. Not pre-filled anywhere either: the
+ * platform putting words in a caller's mouth is how an audit trail comes to say the same sentence three hundred times.
+ * The bounds are the domain's own (`MIN_CALL_REASON` / `MAX_CALL_REASON`), restated here so the edge refuses a
+ * megabyte before a service reads a row — and asserted equal to them in the spec, so the two cannot drift.
+ */
+export const CallBmcOperatorSchema = z.object({
+  reason: z.string().min(3).max(300),
+}).strict();
+export type CallBmcOperatorDto = z.infer<typeof CallBmcOperatorSchema>;
+
+/** The confirm step's own body: the same reason, but a BLANK one is legal here — the screen has to be able to show the
+ *  object and the refusal *"a reason is required"* before the caller has typed anything. */
+export const PreviewBmcCallSchema = z.object({
+  unitId: z.string().uuid(),
+  reason: z.string().max(400).optional(),
+}).strict();
+export type PreviewBmcCallDto = z.infer<typeof PreviewBmcCallSchema>;

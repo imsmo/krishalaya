@@ -63,7 +63,11 @@ export const MAX_CARRIED_LENGTH = 1500;
 
 export interface CarriedValues { query: string; preserved: boolean }
 
-export function carryValues(step: ChainStep, values: Record<string, string | undefined | null>): CarriedValues {
+// `step` is a plain string rather than `ChainStep` since TENANT-6d-5: the MUTATE chain's three steps (confirm ·
+// success · failure) carry their values by exactly this mechanism, and the alternative was a second copy of this
+// function — or a cast that lies about which chain a URL belongs to. Each chain still validates its OWN step names on
+// the way IN (`chainStep`, `mutateStep`); this function only writes what it was handed.
+export function carryValues(step: string, values: Record<string, string | undefined | null>): CarriedValues {
   const q = new URLSearchParams();
   q.set('step', step);
   for (const [k, v] of Object.entries(values)) {
@@ -75,7 +79,7 @@ export function carryValues(step: ChainStep, values: Record<string, string | und
 }
 
 /** `?step=review&code=MCC-AND-04&…` — the href a submit button points at. */
-export function chainHref(path: string, step: ChainStep, values: Record<string, string | undefined | null>): string {
+export function chainHref(path: string, step: string, values: Record<string, string | undefined | null>): string {
   return `${path}?${carryValues(step, values).query}`;
 }
 

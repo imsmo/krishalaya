@@ -20,6 +20,8 @@ import {
   DairyCentresConsole, DairyCentreCustodyRow, AssignMccOperatorInput, SetMccShiftWindowInput,
   DairyMembershipRoute, DairyMoveVerdict, DairyMoveCaution, MoveMembershipInput,
   DairyReview, DairyMccReviewInput, DairyBmcReviewInput,
+  // PC-56 TENANT-6d-5 · W170's call
+  DairyBmcCallPreview, DairyBmcCallResult,
 } from '../types';
 
 export class DairyResource {
@@ -282,6 +284,28 @@ export class DairyResource {
     iotDeviceRef?: string; model?: string; serialNo?: string;
   }, idempotencyKey: string): Promise<DairyBmcUnit> {
     return (await this.http.request<DairyBmcUnit>('POST', 'dairy/bmc', { idempotencyKey, body: input })).data;
+  }
+
+  /**
+   * W2521's CONFIRM step for *"Call MCC-AND-03 operator"* — PC-56 TENANT-6d-5.
+   *
+   * `POST dairy/bmc/call/preview`, declared before the parameterised POSTs for the route-order reason this programme
+   * has now documented five times. Writes nothing, dials nothing, takes no idempotency key: it answers the object under
+   * review and every reason the call would be refused.
+   */
+  async previewBmcCall(input: { unitId: string; reason?: string }): Promise<DairyBmcCallPreview> {
+    return (await this.http.request<DairyBmcCallPreview>('POST', 'dairy/bmc/call/preview', { body: input })).data;
+  }
+
+  /**
+   * Place the call. A NUMBER-MASKED bridge to whoever holds custody of that centre — this SDK never sees a phone
+   * number, and neither does the platform.
+   *
+   * The idempotency key is required and travels all the way to the telephony provider, so a retry on a dropped
+   * connection cannot ring a village operator twice.
+   */
+  async callBmcOperator(unitId: string, input: { reason: string }, idempotencyKey: string): Promise<DairyBmcCallResult> {
+    return (await this.http.request<DairyBmcCallResult>('POST', `dairy/bmc/${encodeURIComponent(unitId)}/call`, { idempotencyKey, body: input })).data;
   }
 
   /** What "cold enough" means for this tank — a standing decision, audited before and after. */

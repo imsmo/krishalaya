@@ -11,7 +11,10 @@ import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer'
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../../shared/errors/app-error';
 import { OpsAlertRepository, AlertRule } from '../repositories/ops-alert.repository';
-import { validateThreshold, defaultsFor, dedupeKey, severityFor, alertTitle, type AlertKind } from '../domain/ops-alert.rules';
+import {
+  validateThreshold, defaultsFor, dedupeKey, severityFor, alertTitle, outboxTypeFor, silenceText, silentMinutesOf,
+  type AlertKind, type AlertSeverity,
+} from '../domain/ops-alert.rules';
 
 export interface AlertActor { userId: string; canManage: boolean }
 
@@ -85,8 +88,12 @@ export class OpsAlertService {
           });
           if (!created) return false;                     // cooldown bucket already fired — stay quiet
           // ONE outbox event; the notification spine owns delivery, preferences and quiet hours.
+          // THE EVENT TYPE CARRIES THE SEVERITY (TENANT-6d-5), because quiet hours are decided by the CATALOGUE
+          // event's priority and `ops.alert_fired` is catalogued `important` — so every critical alert this service has
+          // ever raised was suppressed on push, SMS and voice between a recipient's quiet hours. A warm tank at 02:00
+          // now travels as a critical event; a maintenance reminder still waits for morning.
           await this.outbox.write(tx, {
-            tenantId, aggregateType: 'ops_alert', aggregateId: id, eventType: 'ops.alert_fired',
+            tenantId, aggregateType: 'ops_alert', aggregateId: id, eventType: outboxTypeFor(hit.severity),
             payload: {
               v: 1, alertId: id, ruleId: rule.id, ruleName: rule.ruleName, kind: rule.kind,
               severity: hit.severity, subjectType: hit.subjectType, subjectRef: hit.subjectRef,
@@ -104,7 +111,10 @@ export class OpsAlertService {
   }
 
   /** Turn a rule into concrete hits, reading ONLY the W54-12 ledgered models. */
-  private async evidenceFor(tenantId: string, rule: AlertRule): Promise<Array<{ subjectType: string | null; subjectRef: string | null; severity: string; detail: Record<string, unknown>; body: string }>> {
+  // `severity` is the TYPED union rather than `string` (TENANT-6d-5): it now decides which catalogued event carries the
+  // alert — and therefore whether it may wake somebody — so the compiler, not a runtime string compare, is what
+  // guarantees only a real severity reaches that decision.
+  private async evidenceFor(tenantId: string, rule: AlertRule): Promise<Array<{ subjectType: string | null; subjectRef: string | null; severity: AlertSeverity; detail: Record<string, unknown>; body: string }>> {
     const t = rule.threshold as Record<string, number | string | undefined>;
     if (rule.kind === 'cold_chain_breach') {
       const windowHours = Number(t.windowHours ?? 6);
@@ -118,13 +128,15 @@ export class OpsAlertService {
       }));
     }
     if (rule.kind === 'device_silent') {
-      const silentHours = Number(t.silentHours ?? 12);
-      const rows = await this.repo.silentDevices(tenantId, silentHours);
+      // MINUTES, through the one function that knows both units (TENANT-6d-5). The threshold is reported alongside the
+      // measured gap so the notification says what it was judged against, not just that it happened.
+      const silentMinutes = silentMinutesOf(rule.threshold as Record<string, unknown>);
+      const rows = await this.repo.silentDevices(tenantId, silentMinutes);
       return rows.map((r) => ({
         subjectType: 'device', subjectRef: r.deviceRef,
-        severity: severityFor('device_silent', { silentHours: r.silentHours }),
-        detail: { lastSeen: r.lastSeen, silentHours: r.silentHours, thresholdHours: silentHours },
-        body: `Sensor ${r.deviceRef} has not reported for ~${r.silentHours}h (last seen ${r.lastSeen}).`,
+        severity: severityFor('device_silent', { silentMinutes: r.silentMinutes }),
+        detail: { lastSeen: r.lastSeen, silentMinutes: r.silentMinutes, thresholdMinutes: silentMinutes },
+        body: `Sensor ${r.deviceRef} has not reported for ${silenceText(r.silentMinutes)} (last seen ${r.lastSeen}).`,
       }));
     }
     const which = String(t.alert ?? 'any');
