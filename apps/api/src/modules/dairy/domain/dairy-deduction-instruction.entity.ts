@@ -3,6 +3,7 @@
 // W169: *"Deductions above 25% of gross need the member's fresh consent, **not just standing instructions**."* This is
 // the standing instruction that sentence contrasts against — and it exists so that "the cycle deducted it
 // automatically" can mean "the family arranged this", rather than "the software took what it found".
+import { NoticeVars } from './dairy-notice-vars';
 import { DomainEvent, DairyEventType } from './dairy.events';
 import { DeductionInstructionInvalidError } from './dairy.errors';
 
@@ -35,7 +36,7 @@ export class DairyDeductionInstruction {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: DeductionInstructionProps) {}
 
-  static authorise(input: Omit<DeductionInstructionProps, 'isActive' | 'revokedAt' | 'revokedBy'>): DairyDeductionInstruction {
+  static authorise(input: Omit<DeductionInstructionProps, 'isActive' | 'revokedAt' | 'revokedBy'> & { notice: NoticeVars }): DairyDeductionInstruction {
     if (!DEDUCTION_CHANNELS.includes(input.channel)) throw new DeductionInstructionInvalidError(`unknown channel '${input.channel}'`);
     // An ambassador SITTING WITH the member is supported; an ambassador acting on their behalf is not modelled at all
     // (0161's header says so), so an assisted arrangement must name who assisted and an unassisted one must not claim
@@ -58,6 +59,11 @@ export class DairyDeductionInstruction {
         userId: input.authorisedBy,
         instructionId: i.props.id, membershipId: i.props.membershipId, typeCode: i.props.typeCode,
         sourceId: i.props.sourceId, channel: i.props.channel,
+        // [PC-56 TENANT-6d-7] `{{what}}` and `{{how_much}}` — declared as
+        // *"lookup_values(milk_deduction).default_name + source"* and *"max_per_cycle_minor"* — were absent, so the one
+        // notice that tells a member a standing arrangement over their milk cheque now EXISTS read: "તમારા દૂધના
+        // પેમેન્ટમાંથી  કાપવાની મંજૂરી નોંધાઈ (મર્યાદા: )". An arrangement described by two blanks is not consent.
+        ...input.notice,
         maxPerCycleMinor: i.props.maxPerCycleMinor === null ? null : i.props.maxPerCycleMinor.toString(),
       },
     });
@@ -82,7 +88,7 @@ export class DairyDeductionInstruction {
    * The arrangement itself is never edited — the table's grants allow only this transition — so the history says what
    * was true in July when somebody asks in December. Changing an instalment is a revocation and a new row.
    */
-  revoke(at: Date, byUserId: string): void {
+  revoke(at: Date, byUserId: string, notice: NoticeVars): void {
     if (!this.props.isActive) throw new DeductionInstructionInvalidError('this arrangement has already ended');
     this.props.isActive = false;
     this.props.revokedAt = at;
@@ -93,6 +99,9 @@ export class DairyDeductionInstruction {
         userId: this.props.authorisedBy,
         instructionId: this.props.id, membershipId: this.props.membershipId, typeCode: this.props.typeCode,
         sourceId: this.props.sourceId, revokedBy: byUserId,
+        // The revocation notice is what makes *"you can stop this"* real (TENANT-6c-5's own sentence), and it named
+        // nothing: `{{what}}` was blank here too.
+        ...notice,
       },
     });
   }

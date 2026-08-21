@@ -23,8 +23,15 @@ function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationP
   const gateway = { providerCode: 'fake', dispatch: jest.fn(async () => ({ status: opts.gatewayStatus ?? 'accepted', providerMsgRef: 'pmr-1', costMinor: 12 })) };
   const events = { getByCode: jest.fn(async () => (opts.event === undefined ? catalog() : opts.event)) };
   const templates = { resolve: jest.fn(async (_t: any, _e: string, channel: NotifChannel) => template(channel)) };
-  const prefs = { listForUser: jest.fn(async () => opts.prefs ?? []) };
-  const quiet = { getForUser: jest.fn(async () => null) };
+  // [PC-56 TENANT-6d-7] The fan-out now asks ONE question per concern for the whole recipient set, and asks the
+  // one it never asked before: what language does this person read? A fake that answers `listForUser` cannot notice
+  // that nobody reads a language — which is part of why the defect survived four waves that each promised Gujarati.
+  const prefs = {
+    listForUser: jest.fn(async () => opts.prefs ?? []),
+    mapForUsers: jest.fn(async (ids: readonly string[]) => new Map(ids.map((id) =>
+      [id, new Map((opts.prefs ?? []).filter((p) => p.toJSON().userId === id).map((p) => [p.channel, p.isEnabled]))]))),
+  };
+  const quiet = { getForUser: jest.fn(async () => null), mapForUsers: jest.fn(async () => new Map()) };
   const pushSender = { providerCode: 'fake', send: jest.fn(async () => ({ sent: 1, invalidTokens: [] })) };
   const devices = { activeTokensForUser: jest.fn(async () => [{ token: 'tok', platform: 'android' }]), deactivate: jest.fn(async () => 1) };
   const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }),
@@ -32,7 +39,9 @@ function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationP
     // keeps every pre-existing assertion in this file about WHICH channels are attempted — the contactability
     // question is a separate axis and is covered behaviourally in tenant4d5-billing-notices.spec.ts, including
     // the case where it is false.
-    contactableOn: jest.fn(async () => true), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
+    contactableOn: jest.fn(async () => true),
+    profilesFor: jest.fn(async (_tx: unknown, ids: readonly string[]) => new Map(ids.map((id) => [id, { languageCode: 'en', hasEmail: true, hasPhone: true }]))),
+    getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
   // DEV-07/Q24: default OFF (Golden Law 8) unless a test opts in — preserves every pre-existing assertion in
   // this file untouched (they exercise the pre-DEV-07 multi-channel behavior, exactly as before this batch).
   const flags = { isEnabled: jest.fn(async () => opts.routineFlagOn ?? false) };

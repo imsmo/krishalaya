@@ -6,6 +6,7 @@
 // and nothing recorded a reason, a raiser, a time or an outcome.
 //
 // The rows are append-mostly by grant (0158): the testimony cannot be edited, only the resolution can be written, once.
+import { NoticeVars } from './dairy-notice-vars';
 import { DomainEvent, DairyEventType } from './dairy.events';
 import { DisputeAlreadyOpenError } from './dairy.errors';
 import { DomainError } from '../../../shared/errors/app-error';
@@ -99,7 +100,7 @@ export class MilkBillDispute {
    * processed, not answered — and W169's tile claims both of last cycle's disputes were "resolved", which is a word
    * that has to mean something.
    */
-  resolve(input: { outcome: 'upheld' | 'rejected'; byUserId: string; at: Date; note: string; voidedBill: boolean }): void {
+  resolve(input: { outcome: 'upheld' | 'rejected'; byUserId: string; at: Date; note: string; voidedBill: boolean; notice: NoticeVars }): void {
     if (this.props.status !== 'open') throw new DisputeAlreadyResolvedError(this.props.id, this.props.status);
     const note = (input.note ?? '').trim();
     if (note.length < REASON_FLOOR) throw new DisputeReasonTooShortError('resolution_note');
@@ -118,7 +119,12 @@ export class MilkBillDispute {
       type: DairyEventType.BillDisputeResolved,
       payload: {
         billId: this.props.billId, disputeId: this.props.id, membershipId: this.props.membershipId,
-        userId: this.props.raisedByUserId, outcome: input.outcome, note, voidedBill: input.voidedBill,
+        userId: this.props.raisedByUserId, outcomeCode: input.outcome, note, voidedBill: input.voidedBill,
+        // [PC-56 TENANT-6d-7] `{{period}}` was never in this payload and `{{outcome}}` was the enum, so the member who
+        // objected to their own bill was told *"તમારા બિલ ()નો વાંધો ઉકેલાયો: upheld"* — the fortnight blank and the
+        // verdict in a language they did not choose. `notice.outcome` is a sentence in three languages; the enum above
+        // stays for consumers that are code.
+        ...input.notice,
       },
     });
   }

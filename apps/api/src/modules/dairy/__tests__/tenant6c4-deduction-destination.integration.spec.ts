@@ -21,6 +21,7 @@
 //   6. **THE CONSENT GATE** against a real setting, a real threshold and a real bill whose figures changed.
 //
 // RUN UNDER TZ=Asia/Kolkata AS WELL AS UTC.
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -157,12 +158,12 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
       // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the
       // wiring of a fake.
-      assembler);
+      assembler, realNoticeVars(replica as never));
     credits = new DairyMemberCreditService(uow, outbox, idem, metrics, audit, creditRepo, memRepo, lineRepo);
     consents = new MilkBillDeductionConsentService(uow, outbox, idem, metrics, audit, consentRepo, billRepo, lineRepo, memRepo);
     void disputeRepo;
@@ -483,7 +484,10 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
         `SELECT payload FROM outbox_events WHERE tenant_id=$1 AND aggregate_id=$2 AND event_type='dairy.bill_deduction_consent_required'`, [tenantA, bigBill]);
       expect(ev.rowCount).toBe(1);
       expect(ev.rows[0].payload).toMatchObject({ userId: farmer, thresholdPct: 25, deductionsMinor: '300000' });
-      expect(ev.rows[0].payload.lines).toEqual([{ type: 'feed_credit', amountMinor: '300000' }]);
+      // [PC-56 TENANT-6d-7] The ARRAY under its own name, and the SENTENCE under the copy's — `{{lines}}` used to print
+      // `[{"type":"feed_credit","amountMinor":"300000"}]` into an SMS asking a farmer for consent.
+      expect(ev.rows[0].payload.lineItems).toEqual([{ type: 'feed_credit', amountMinor: '300000' }]);
+      expect(String((ev.rows[0].payload.lines as { en: string }).en)).toContain('INR 3,000.00');
     });
 
     it('REFUSES to pay it, and moves not a rupee', async () => {

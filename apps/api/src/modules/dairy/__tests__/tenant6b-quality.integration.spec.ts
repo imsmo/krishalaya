@@ -10,6 +10,7 @@
 // JS Dates, and a UTC-only test agrees with a defect that bites in the launch market:
 //
 //   DATABASE_ADMIN_URL=... DATABASE_URL=... TZ=Asia/Kolkata npx jest --selectProjects integration tenant6b
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -127,7 +128,7 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     // [PC-56 TENANT-6c-2] The bill service reads the tenant's dispute-window length before it can preview a bill.
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
@@ -144,10 +145,13 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
       // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the
       // wiring of a fake.
-      assembler);
+      assembler, realNoticeVars(replica as never));
     freshCollections = () => new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
-      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
-    quality = new MilkQualityService(uow, outbox, idem, metrics, audit, reviewRepo, collRepo);
+      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
+    quality = new MilkQualityService(uow, outbox, idem, metrics, audit, reviewRepo, collRepo,
+      // [PC-56 TENANT-6d-7] The membership read that finds the FARMER a decision notice is for. `dairy.quality_flag_decided`
+      // carried no recipient at all before this wave, so it has never sent a message.
+      memRepo, realNoticeVars(replica as never));
 
     await fundTenant(tenantA, 100_000_000n);
 

@@ -8,6 +8,7 @@
 // was called by no service and no route, no dairy bill event was in the notification map, and the only preview act was
 // per-bill while the canon's is per-cycle. These tests pin the window being SET and ENFORCED, the objection being
 // RECORDED and ANSWERED, and the void that makes an upheld objection actionable at all.
+import { fakeNoticeVars } from '../../../../test/helpers/notice-vars';
 import { MilkBill } from '../domain/milk-bill.entity';
 import { MilkBillDispute, DisputeReasonTooShortError, DisputeAlreadyResolvedError, REASON_FLOOR } from '../domain/milk-bill-dispute.entity';
 import { BILL_STATUSES, canTransition, isTerminal } from '../domain/milk-bill.state';
@@ -51,7 +52,7 @@ const bill = () => {
   b.pullEvents();
   return b;
 };
-const previewedBill = () => { const b = bill(); b.preview(PREVIEW_AT, WINDOW_END, 'farmer1'); b.pullEvents(); return b; };
+const previewedBill = () => { const b = bill(); b.preview(PREVIEW_AT, WINDOW_END, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.pullEvents(); return b; };
 const approvedBill = () => { const b = previewedBill(); b.approve(); b.pullEvents(); return b; };
 
 /* ----------------------------------------------------------------------------------------------------------- */
@@ -61,7 +62,7 @@ describe('the window: SET by the preview, and ENFORCED at the payment', () => {
     expect(b.disputeWindowEnds).toBeNull();
     expect(b.wasPreviewed).toBe(false);
 
-    b.preview(PREVIEW_AT, WINDOW_END, 'farmer1');
+    b.preview(PREVIEW_AT, WINDOW_END, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' });
 
     expect(b.status).toBe('previewed');
     expect(b.disputeWindowEnds).toEqual(WINDOW_END);
@@ -71,7 +72,10 @@ describe('the window: SET by the preview, and ENFORCED at the payment', () => {
     // The RECIPIENT is in the payload. ADMIN-6b's finding, four waves running: a notification-map row pointing at a
     // payload with no user id looks like a fix and sends nothing.
     expect(e.payload).toMatchObject({
-      userId: 'farmer1', membershipId: 'mem1', period: '2026-07-01..2026-07-15',
+      // [PC-56 TENANT-6d-7] `period` is the sentence a member reads (`01/07–15/07`); `periodRange` is the ISO pair a
+      // consumer parses. Both, under names that cannot collide — the collision is what blanked four of this notice's
+      // five variables for four waves.
+      userId: 'farmer1', membershipId: 'mem1', period: '01/07–15/07', periodRange: '2026-07-01..2026-07-15',
       netMinor: '84400', deductionsMinor: '0', totalLitresMilli: '204526',
       windowEndsAt: WINDOW_END.toISOString(),
     });
@@ -142,7 +146,8 @@ describe('the objection', () => {
     const b = previewedBill();
     b.dispute(INSIDE, 'my litres are short by about four'); b.pullEvents();
     const second = new Date('2026-07-18T04:00:00.000Z');
-    b.resolveToPreviewed(AFTER, second, 'farmer1', 'rejected');
+    b.resolveToPreviewed(AFTER, second, 'farmer1', 'rejected',
+      { period: '01/07–15/07', outcome: { en: 'your objection was not accepted', gu: 'તમારો વાંધો સ્વીકાર્યો નથી' }, note: 'n' });
     expect(b.status).toBe('previewed');
     expect(b.disputeWindowEnds).toEqual(second);
     // Not the old window: a resolution that answered the objection and simultaneously removed the member's ability to
@@ -150,7 +155,11 @@ describe('the objection', () => {
     expect(b.isDisputeWindowOpen(AFTER)).toBe(true);
     const [e] = b.pullEvents();
     expect(e.type).toBe('dairy.bill_dispute_resolved');
-    expect(e.payload).toMatchObject({ userId: 'farmer1', outcome: 'rejected', windowEndsAt: second.toISOString() });
+    expect(e.payload).toMatchObject({ userId: 'farmer1', outcomeCode: 'rejected', windowEndsAt: second.toISOString() });
+    // [PC-56 TENANT-6d-7] The SECOND emitter of this event code carries the copy's variables too — two emitters of one
+    // code is how a payload contract drifts while every test stays green.
+    expect(e.payload.outcome).toMatchObject({ gu: 'તમારો વાંધો સ્વીકાર્યો નથી' });
+    expect(e.payload.periodRange).toBe('2026-07-01..2026-07-15');
   });
 
   it('MilkBillDispute.open requires the member\'s own words at the programme\'s note floor', () => {
@@ -183,38 +192,42 @@ describe('the answer', () => {
   const open = () => MilkBillDispute.open({ id: 'd1', tenantId: 'tA', billId: 'b1', membershipId: 'mem1', raisedByUserId: 'farmer1', reason: 'my litres are short', windowEndedAt: WINDOW_END, at: INSIDE });
 
   it('requires a note the member can read', () => {
-    expect(() => open().resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'no', voidedBill: false }))
+    expect(() => open().resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'no', voidedBill: false, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } }))
       .toThrow(DisputeReasonTooShortError);
   });
 
   it('records the outcome, the decider and the note, and tells the RAISER', () => {
     const d = open();
     d.pullEvents();
-    d.resolve({ outcome: 'upheld', byUserId: 'op1', at: AFTER, note: 'Weight re-keyed from the slip and the bill rebuilt.', voidedBill: true });
+    d.resolve({ outcome: 'upheld', byUserId: 'op1', at: AFTER, note: 'Weight re-keyed from the slip and the bill rebuilt.', voidedBill: true, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } });
     const p = d.toProps();
     expect(p).toMatchObject({ status: 'upheld', resolvedBy: 'op1', voidedBill: true });
     expect(p.resolvedAt).toEqual(AFTER);
     const [e] = d.pullEvents();
     expect(e.type).toBe('dairy.bill_dispute_resolved');
-    expect(e.payload).toMatchObject({ userId: 'farmer1', outcome: 'upheld', voidedBill: true });
+    expect(e.payload).toMatchObject({ userId: 'farmer1', outcomeCode: 'upheld', voidedBill: true });
+    // [PC-56 TENANT-6d-7] `{{period}}` was never in this payload and `{{outcome}}` was the enum, so the member who
+    // objected read "તમારા બિલ ()નો વાંધો ઉકેલાયો: upheld". The word is a LangMap now; the enum kept its own name.
+    expect(e.payload.period).toBe('01/07–15/07');
+    expect(e.payload.outcome).toMatchObject({ en: 'your objection was accepted' });
   });
 
   it('cannot be answered twice — two operators must not both believe their note was recorded', () => {
     const d = open();
-    d.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'Checked against the slips; the litres match.', voidedBill: false });
-    expect(() => d.resolve({ outcome: 'upheld', byUserId: 'op2', at: AFTER, note: 'Actually they were right after all.', voidedBill: true }))
+    d.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'Checked against the slips; the litres match.', voidedBill: false, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } });
+    expect(() => d.resolve({ outcome: 'upheld', byUserId: 'op2', at: AFTER, note: 'Actually they were right after all.', voidedBill: true, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } }))
       .toThrow(DisputeAlreadyResolvedError);
   });
 
   it('refuses to void the bill on a REJECTED query — that is two decisions recorded as one', () => {
-    expect(() => open().resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: true }))
+    expect(() => open().resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: true, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } }))
       .toThrow(expect.objectContaining({ code: 'DISPUTE_VOID_REQUIRES_UPHELD' }));
   });
 
   it('assertNoOpen is what stops a second open query on one bill', () => {
     expect(() => MilkBillDispute.assertNoOpen(open(), 'b1')).toThrow(DisputeAlreadyOpenError);
     const resolved = open();
-    resolved.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: false });
+    resolved.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: false, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } });
     // A member who objects again after a rejection raises a NEW query, which the history keeps.
     expect(() => MilkBillDispute.assertNoOpen(resolved, 'b1')).not.toThrow();
     expect(() => MilkBillDispute.assertNoOpen(null, 'b1')).not.toThrow();
@@ -256,7 +269,7 @@ describe('the SQL', () => {
   it('a dispute\'s testimony is never in an UPDATE — only the resolution is', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const d = MilkBillDispute.open({ id: 'd1', tenantId: 'tA', billId: 'b1', membershipId: 'mem1', raisedByUserId: 'farmer1', reason: 'my litres are short', windowEndedAt: WINDOW_END, at: INSIDE });
-    d.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: false });
+    d.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: false, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } });
     await new MilkBillDisputeRepository(fakeReplica().provider).resolve(tx as never, d);
     const [sql] = tx.query.mock.calls[0];
     expect(sql).toMatch(/SET status=\$3, resolved_at=\$4, resolved_by=\$5, resolution_note=\$6, voided_bill=\$7/);
@@ -271,7 +284,7 @@ describe('the SQL', () => {
   it('resolving fails closed when the row did not move', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
     const d = MilkBillDispute.open({ id: 'd1', tenantId: 'tA', billId: 'b1', membershipId: 'mem1', raisedByUserId: 'farmer1', reason: 'my litres are short', windowEndedAt: WINDOW_END, at: INSIDE });
-    d.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: false });
+    d.resolve({ outcome: 'rejected', byUserId: 'op1', at: AFTER, note: 'The litres match the slips.', voidedBill: false, notice: { period: '01/07–15/07', outcome: { en: 'your objection was accepted' }, note: 'n' } });
     await expect(new MilkBillDisputeRepository(fakeReplica().provider).resolve(tx as never, d)).rejects.toBeInstanceOf(DisputeNotFoundError);
   });
 
@@ -373,7 +386,7 @@ describe('MilkBillService — the window comes from the DATABASE', () => {
       { applyAll: jest.fn(async () => []) } as never,
       { isEnabled: jest.fn(async () => true) } as never,
       // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
-      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never, fakeNoticeVars());
     return { svc, bills, collections, cycles, outbox, audit, b };
   }
 
@@ -435,7 +448,7 @@ describe('MilkBillDisputeService — who is allowed to object', () => {
     // THAT transaction. Calling the self-opening form deadlocked on the row lock — found live.
     const billService = { voidLoaded: jest.fn(async () => ({ id: 'b1' })), voidBill: jest.fn(async () => ({ id: 'b1' })) };
     const svc = new MilkBillDisputeService(uow as never, outbox as never, idem as never, metrics as never, audit as never,
-      disputes as never, bills as never, memberships as never, cycles as never, billService as never);
+      disputes as never, bills as never, memberships as never, cycles as never, billService as never, fakeNoticeVars());
     return { svc, disputes, bills, billService, outbox, audit, b };
   }
 

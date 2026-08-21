@@ -16,6 +16,7 @@
 //   5. **THE CAP AGAINST REAL SETTINGS**, including a tenant override that tightens it.
 //
 // RUN UNDER TZ=Asia/Kolkata AS WELL AS UTC.
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -162,12 +163,12 @@ run('PC-56 TENANT-6c-5 · the standing instruction (integration, real Postgres)'
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
-      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags, assembler);
+      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags, assembler, realNoticeVars(replica as never));
     cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo, lineRepo, flags);
     credits = new DairyMemberCreditService(uow, outbox, idem, metrics, audit, creditRepo, memRepo, lineRepo);
-    instructions = new DairyDeductionInstructionService(uow, outbox, idem, metrics, audit, instructionRepo, typeRepo, creditRepo, memRepo);
+    instructions = new DairyDeductionInstructionService(uow, outbox, idem, metrics, audit, instructionRepo, typeRepo, creditRepo, memRepo, realNoticeVars(replica as never));
 
     await setFlag('dairy_member_credit', true);
     await setFlag('dairy_deduction_recovery', true);

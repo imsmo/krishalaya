@@ -5,6 +5,7 @@
 // userMain, txnType 'milk_payment', a ZERO-SUM, idempotent ledger txn — Law 2). Every write: one ACID tx
 // (UoW), state via the machine (Law 5), outbox in-tx (Law 4), idempotent money mutations (Law 3), authz
 // THROWS (Law 6). No version column → bills lock FOR UPDATE. (Bank-disbursement payout_id is deferred.)
+import { DairyNoticeVarsService } from './dairy-notice-vars.service';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -76,6 +77,7 @@ export class MilkBillService {
     private readonly flags: FlagsService,
     // [PC-56 TENANT-6c-5] The standing instruction, applied: what the CYCLE deducts when nobody typed a line.
     private readonly assembler: DairyDeductionAssemblerService,
+    private readonly noticeVars: DairyNoticeVarsService,
   ) {}
 
   /**
@@ -257,7 +259,16 @@ export class MilkBillService {
       if (!bill) throw new BillNotFoundError(id);
       const membership = await this.memberships.getById(tenantId, bill.membershipIdRef, tx);
       if (!membership) throw new MembershipNotFoundError(bill.membershipIdRef);
-      bill.preview(now, await this.windowEnd(tx, tenantId, now), membership.farmerUserId);
+      const windowEndsAt = await this.windowEnd(tx, tenantId, now);
+      const bp = bill.toProps();
+      bill.preview(now, windowEndsAt, membership.farmerUserId,
+        // [PC-56 TENANT-6d-7] The figures the SMS interpolates, under the names the SMS uses. Until this wave the
+        // preview's four money-and-litre tokens rendered as empty strings, in every language.
+        await this.noticeVars.billPreviewed(tx, tenantId, {
+          periodStart: bp.periodStart, periodEnd: bp.periodEnd, totalLitresMilli: bp.totalLitresMilli,
+          netMinor: bill.netMinor, deductionsMinor: bill.deductionsMinor,
+          windowEndsAt,
+        }));
       await this.bills.update(tx, bill);
       await this.flush(tx, tenantId, bill.id, bill.pullEvents());
 
@@ -272,11 +283,22 @@ export class MilkBillService {
           tenantId, aggregateType: 'milk_bill', aggregateId: bill.id, eventType: DairyEventType.BillDeductionConsentRequired,
           payload: { v: 1,
             userId: membership.farmerUserId, billId: bill.id, membershipId: bill.membershipId,
-            period: `${bill.toProps().periodStart}..${bill.toProps().periodEnd}`,
+            // The DOMAIN's own range keeps its shape under a new name, because `{{period}}` is now the sentence a
+            // member reads (`01/07–15/07`) and a consumer that parses days still needs the ISO pair.
+            periodRange: `${bill.toProps().periodStart}..${bill.toProps().periodEnd}`,
             grossMinor: bill.grossMinor.toString(), deductionsMinor: bill.deductionsMinor.toString(),
             netMinor: bill.netMinor.toString(), thresholdPct: pct,
             // Which lines, by type — "₹2,400 was taken" is not an answer to "what for?".
-            lines: bill.deductionLines.map((l) => ({ type: l.type, amountMinor: l.amountMinor.toString() })),
+            lineItems: bill.deductionLines.map((l) => ({ type: l.type, amountMinor: l.amountMinor.toString() })),
+            // [PC-56 TENANT-6d-7] ...and the copy asked for `{{lines}}`, so `render()` printed that ARRAY into an SMS:
+            // `[{"type":"feed","amountMinor":"240000"}]`. It now also carries the sentence — "feed credit INR 500.00,
+            // loan INR 1,900.00" — per language, with each type's name from the lookup vocabulary. The array stays for
+            // consumers that are code; `{{lines}}` renders the sentence.
+            ...(await this.noticeVars.billConsent(tx, tenantId, {
+              periodStart: bill.toProps().periodStart, periodEnd: bill.toProps().periodEnd,
+              grossMinor: bill.grossMinor, deductionsMinor: bill.deductionsMinor, thresholdPct: pct,
+              lines: bill.deductionLines.map((l) => ({ typeCode: l.type, amountMinor: l.amountMinor })),
+            })),
           },
         });
       }

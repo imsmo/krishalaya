@@ -16,6 +16,7 @@
 // RUN UNDER TZ=Asia/Kolkata AS WELL AS UTC. The cycle's dates round-trip through JS Dates, and a UTC-only suite
 // blesses exactly the defect that bites in the launch market:
 //   DATABASE_ADMIN_URL=... DATABASE_URL=... TZ=Asia/Kolkata npx jest --selectProjects integration --testPathPattern tenant6c1
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -133,7 +134,7 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
     const creditRepo = new DairyMemberCreditRepository(replica as never);
@@ -149,7 +150,7 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
       // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the
       // wiring of a fake.
-      assembler);
+      assembler, realNoticeVars(replica as never));
     cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo,
       lineRepo, flags);
 

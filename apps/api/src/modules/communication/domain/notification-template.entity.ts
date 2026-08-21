@@ -1,6 +1,7 @@
 // modules/communication/domain/notification-template.entity.ts · a per event×channel×language template
 // (+ optional tenant override). Owns the {{variable}} render — the ONLY place body interpolation happens.
 import { NotifChannel } from './communication.events';
+import { isLangMap, pickLang } from '../../../core/i18n/lang-map';
 
 export interface NotificationTemplateProps {
   id: string; eventCode: string; channel: NotifChannel; languageCode: string; tenantId: string | null;
@@ -24,10 +25,23 @@ export class NotificationTemplate {
   get versionNo() { return this.props.versionNo ?? null; }
   get isTenantOverride() { return this.props.tenantId !== null; }
 
-  /** Interpolate {{vars}} from the payload. Missing keys render as '' (never leak '{{x}}' to a user). */
+  /**
+   * Interpolate {{vars}} from the payload. Missing keys render as '' (never leak '{{x}}' to a user).
+   *
+   * **[PC-56 TENANT-6d-7] A PAYLOAD VALUE MAY BE A PER-LANGUAGE MAP, AND THIS TEMPLATE'S OWN LANGUAGE CHOOSES FROM
+   * IT.** A domain event is emitted once and rendered for every recipient, so `{ shift: 'evening' }` in a payload had
+   * already decided that the Gujarati SMS would contain an English word — which is exactly what TENANT-6b-1's
+   * *"{{mcc}} માં {{shift}} નું તમારું દૂધ"* sent. `{ shift: { en: 'evening', gu: 'સાંજ', hi: 'shaam' } }` renders the
+   * right word in each of the three bodies with no change to the copy and no second interpolation site: this is still
+   * the only place a template body is filled in.
+   */
   render(vars: Record<string, unknown>): { subject: string | null; body: string } {
-    const sub = (s: string | null) => (s == null ? null : s.replace(TOKEN, (_m, k: string) => stringify(pick(vars, k))));
-    return { subject: sub(this.props.subject), body: this.props.body.replace(TOKEN, (_m, k: string) => stringify(pick(vars, k))) };
+    const value = (k: string) => {
+      const v = pick(vars, k);
+      return isLangMap(v) ? pickLang(v, this.props.languageCode) : v;
+    };
+    const sub = (s: string | null) => (s == null ? null : s.replace(TOKEN, (_m, k: string) => stringify(value(k))));
+    return { subject: sub(this.props.subject), body: this.props.body.replace(TOKEN, (_m, k: string) => stringify(value(k))) };
   }
   get createdAt() { return this.props.createdAt; }
   toJSON() { return { ...this.props }; }

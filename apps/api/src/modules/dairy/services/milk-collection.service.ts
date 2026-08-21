@@ -2,6 +2,7 @@
 // The amount is PRICED by the active rate card (float-free bigint math). Weight/fat/snf arrive as decimal
 // strings and are parsed to SCALED INTEGERS here (no float, Law: money correctness). One ACID tx (UoW),
 // outbox in-tx (Law 4), idempotent (Law 3 + UNIQUE(membership,collected_on,shift)), authz THROWS (Law 6).
+import { DairyNoticeVarsService } from './dairy-notice-vars.service';
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -46,6 +47,8 @@ export class MilkCollectionService {
     // [PC-56 TENANT-6d-6] The route AS OF the pour's day, and the diversion that may permit another village.
     private readonly routes: DairyMembershipRouteRepository,
     private readonly diversions: DairyDiversionRepository,
+    // [PC-56 TENANT-6d-7] The words the flag notice's own copy asks for. See domain/dairy-notice-vars.ts.
+    private readonly noticeVars: DairyNoticeVarsService,
   ) {}
 
   async record(tenantId: string, actor: DairyActor, idemKey: string, dto: RecordCollectionDto) {
@@ -131,7 +134,11 @@ export class MilkCollectionService {
               densityAtFlag: dto.density ?? null, fatPctAtFlag: dto.fatPct, snfPctAtFlag: dto.snfPct,
               amountWithheldMinor: amountMinor, currencyCode: 'INR',
               openedBy: actor.userId, priorReviews90d: prior,
-            }, membership.farmerUserId);
+            }, membership.farmerUserId,
+            // [PC-56 TENANT-6d-7] `{{mcc}}` and `{{shift}}`, in the words the copy asks for and in three languages —
+            // resolved for the centre the POUR was taken at (6d-6's `place.mccId`), not the membership's routing, so a
+            // diverted evening's hold notice names the village the milk is actually in.
+            await this.noticeVars.qualityOpened(tx, tenantId, { mccId: place.mccId, shift: dto.shift as MilkShift }));
             await this.reviews.insert(tx, review);
           }
 

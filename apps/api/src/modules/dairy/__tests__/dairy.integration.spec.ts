@@ -7,6 +7,7 @@
 //      approved, and PAID: the wallet moves tenant 'main' → farmer userMain (zero-sum, txnType milk_payment);
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's milk bill.
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -106,7 +107,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     // [PC-56 TENANT-6c-2] The bill service reads the tenant's dispute-window length before it can preview a bill.
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
@@ -123,7 +124,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
       // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the
       // wiring of a fake.
-      assembler);
+      assembler, realNoticeVars(replica as never));
 
     await fundTenant(tenantA, 10_000_000n);
     inspect = new Pool({ connectionString: APP_URL });

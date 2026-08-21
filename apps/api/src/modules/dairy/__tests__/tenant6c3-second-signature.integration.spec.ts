@@ -20,6 +20,7 @@
 //      live run can show the approval landing and the payment still refusing, on the same row, at the same instant.
 //
 // RUN UNDER TZ=Asia/Kolkata AS WELL AS UTC.
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -130,7 +131,7 @@ run('PC-56 TENANT-6c-3 · the second signature (integration, real Postgres)', ()
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
     const creditRepo = new DairyMemberCreditRepository(replica as never);
@@ -146,10 +147,10 @@ run('PC-56 TENANT-6c-3 · the second signature (integration, real Postgres)', ()
       lineRepo, typeRepo, creditRepo, consentRepo, applier, flags,
       // [PC-56 TENANT-6c-5] the REAL assembler — this is a live spec, so a mock here would be a spec that proves the
       // wiring of a fake.
-      assembler);
+      assembler, realNoticeVars(replica as never));
     cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo,
       lineRepo, flags);
-    disputes = new MilkBillDisputeService(uow, outbox, idem, metrics, audit, disputeRepo, billRepo, memRepo, cycleRepo, bills);
+    disputes = new MilkBillDisputeService(uow, outbox, idem, metrics, audit, disputeRepo, billRepo, memRepo, cycleRepo, bills, realNoticeVars(replica as never));
 
     await fundTenant(tenantA, 100_000_000n);
 

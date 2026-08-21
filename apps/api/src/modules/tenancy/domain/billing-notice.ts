@@ -15,6 +15,7 @@
 // returns early — silently — when it finds none. Every one of these seven payloads carries `tenantId` and not
 // one user id. "A map row pointing at a payload with no recipient is the shape of fix that looks done and
 // changes nothing." So the recipient question is the wave, and the map rows are the easy part.
+import { moneyText as coreMoneyText } from '../../../core/money/money-text';
 import { TenancyEventType } from './tenancy.events';
 
 /* --------------------------------------------------------------------------------------------------------- */
@@ -135,16 +136,11 @@ export function paidNoticeApplies(payload: Record<string, unknown>): boolean {
  *     follow-up rather than approximated here.
  */
 export function moneyText(minor: bigint, currencyCode: string, minorUnits: number): string {
-  if (!Number.isInteger(minorUnits) || minorUnits < 0 || minorUnits > 4) {
-    throw new Error(`moneyText: minor_units out of range for ${currencyCode}`);
-  }
-  const neg = minor < 0n;
-  const abs = neg ? -minor : minor;
-  const scale = 10n ** BigInt(minorUnits);
-  const whole = (abs / scale).toString();
-  const frac = minorUnits === 0 ? '' : `.${(abs % scale).toString().padStart(minorUnits, '0')}`;
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${currencyCode.toUpperCase()} ${neg ? '-' : ''}${grouped}${frac}`;
+  // [PC-56 TENANT-6d-7] ONE IMPLEMENTATION, TWO CALLERS. Six dairy member notices needed the same rendering, and the
+  // choice was "import another module's domain file" or "write the rule again". The rule now lives in
+  // `core/money/money-text.ts` and this stays as the tenancy module's name for it — so 4d-5's spec keeps testing the
+  // behaviour a tenant's invoice notice depends on, and there is still only one place that decides how money reads.
+  return coreMoneyText(minor, currencyCode, minorUnits);
 }
 
 /**

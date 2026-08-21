@@ -7,6 +7,7 @@
 //
 // Pours go in through the REAL MilkCollectionService, priced by a real card, so the numbers the desk reports are the
 // numbers a farmer was paid.
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -94,9 +95,9 @@ run('PC-56 TENANT-6b-2 · W168 quality desk (integration, real Postgres)', () =>
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
-      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     freshCollections = () => new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
-      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+      new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     // A fresh flag cache per desk, for the same reason TENANT-6b-1's suite needs one: the flag service caches for 30s by
     // design ("fast kill-switch propagation"), so a desk built once cannot see the flag flip mid-suite.
     makeDesk = () => new DairyQualityReadModel(qrepo, reviewRepo, new FlagsService(pools, new InMemoryCacheService()), metrics);

@@ -2,6 +2,7 @@
 // Pins THE MONEY PATH: pay() posts a ZERO-SUM wallet transfer tenant 'main' → farmer userMain (txnType
 // milk_payment) ONLY when the bill is approved, and moves NO money on a non-approved bill. Real SQL/RLS =
 // integration spec.
+import { fakeNoticeVars } from '../../../../test/helpers/notice-vars';
 import { MilkBillService } from '../services/milk-bill.service';
 import { MilkBill } from '../domain/milk-bill.entity';
 import { DairyMembership } from '../domain/dairy-membership.entity';
@@ -33,7 +34,7 @@ function harness(bill: MilkBill, opts: { recoveryEnabled?: boolean; consent?: un
       { getForUpdate: jest.fn(async () => null) } as never,
       consents as never, deductions as never, flags as never,
       // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
-      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never, fakeNoticeVars());
   return { svc, wallet, bills, cycles, deductions, consents, flags };
 }
 // [PC-56 TENANT-6c-4] A line names the ROW IT PAYS. The old shape — `{type, amountMinor}` in a jsonb array — is the
@@ -43,7 +44,7 @@ const line = (type: string, amountMinor: bigint, sourceType: string) =>
 
 const approvedBill = (deductions: ReturnType<typeof line>[] = []) => {
   const b = MilkBill.generate({ id: 'b1', tenantId: 't1', membershipId: 'mem1', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 70000n, grossMinor: 40000n, deductions });
-  b.preview(NOW, WINDOW, 'farmer1'); b.approve(); b.pullEvents(); return b;
+  b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.approve(); b.pullEvents(); return b;
 };
 const actor = { userId: 'op1', canManage: true };
 /** The window opens when the bill is previewed and the payment waits for it to shut (W169, TENANT-6c-2). */

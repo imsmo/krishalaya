@@ -18,6 +18,7 @@
 //      reason or the centres, and only a live UPDATE as that role can show it.
 //
 // RUN UNDER TZ=Asia/Kolkata AS WELL AS UTC.
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -101,7 +102,7 @@ run('PC-56 TENANT-6d-6 · the diversion (integration, real Postgres)', () => {
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, new DairyMembershipRepository(replica as never), mccRepo, routeRepo);
     pours = new MilkCollectionService(uow, outbox, idem, metrics, new MilkCollectionRepository(replica as never),
       new MilkRateCardRepository(replica as never), new DairyMembershipRepository(replica as never),
-      new MilkQualityReviewRepository(replica as never), flags, routeRepo, divRepo);
+      new MilkQualityReviewRepository(replica as never), flags, routeRepo, divRepo, realNoticeVars(replica as never));
     diversions = new DairyDiversionService(uow, outbox, idem, metrics, audit, divRepo, mccRepo);
 
     const v: any = await mccs.create(tenantA, opActor as never, `idem-${randomUUID()}`, { code: 'MCC-D6-VNT', defaultName: 'Vanthali' } as never, null);

@@ -51,7 +51,14 @@ run('tenancy SaaS invoicing (integration, real Postgres + RLS + relay)', () => {
   async function provisionTenant(id: string, slug: string) {
     await admin.query(`INSERT INTO lookup_types (code, default_name, is_tenant_extendable) VALUES ('tenant_type','Tenant Type', false) ON CONFLICT (code) DO NOTHING`);
     const lt = await admin.query(`INSERT INTO lookup_values (type_code, tenant_id, code, default_name) VALUES ('tenant_type', NULL, 'fpo', 'FPO') ON CONFLICT (type_code, tenant_id, code) DO UPDATE SET default_name=EXCLUDED.default_name RETURNING id`);
-    await admin.query(`INSERT INTO countries (code, default_name) VALUES ('IN','India') ON CONFLICT (code) DO NOTHING`);
+    // [PC-56 TENANT-6d-7] **THIS SUITE HAS BEEN RED SINCE `countries.currency_code` WAS MADE NOT NULL (0001).**
+    // `INSERT ... ON CONFLICT DO NOTHING` still checks NOT NULL on the proposed tuple BEFORE it looks for a conflict, so
+    // this fixture threw on every run whether or not 'IN' already existed — and 'IN' always does, because core/0002
+    // seeds it. Found while widening a dairy wave's live pattern to `tenancy`; the columns are supplied rather than the
+    // insert removed, so the fixture still says what it depends on.
+    await admin.query(
+      `INSERT INTO countries (code, default_name, currency_code, phone_prefix) VALUES ('IN','India','INR','+91')
+       ON CONFLICT (code) DO NOTHING`);
     await admin.query(`INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status) VALUES ($1,$2,$3,$4,$5,'IN','active') ON CONFLICT (id) DO NOTHING`, [id, slug, `${slug} Legal`, slug, lt.rows[0].id]);
   }
 

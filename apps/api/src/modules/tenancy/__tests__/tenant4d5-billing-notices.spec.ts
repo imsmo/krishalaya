@@ -674,11 +674,14 @@ describe('TENANT-4d-5 · a channel with no address is not a send', () => {
       { activeTokensForUser: async () => [{ token: 'tok', platform: 'android' }], deactivate: async () => 1 } as never,
       { getByCode: async () => NotificationEvent.rehydrate({ code: 'saas.usage_limit_alert', defaultName: 'x', priority: 'important', defaultChannels: ['inapp', 'email'], userCanOptOut: true, batchable: false }) } as never,
       { resolve: async (_t: unknown, e: string, ch: string) => NotificationTemplate.rehydrate({ id: `t-${ch}`, eventCode: e, channel: ch as never, languageCode: 'en', tenantId: null, subject: 's', body: 'b', providerTemplateRef: null, isActive: true, versionId: 'v1', versionNo: 1 }) } as never,
-      { listForUser: async () => [] } as never,
-      { getForUser: async () => null } as never,
+      { listForUser: async () => [], mapForUsers: async () => new Map() } as never,
+      { getForUser: async () => null, mapForUsers: async () => new Map() } as never,
       {
         // The recipient has an in-app inbox and NO email address — the ordinary case on a phone-first platform,
-        // and exactly the case W118's promised "email notice" lands in.
+        // and exactly the case W118's promised "email notice" lands in. [PC-56 TENANT-6d-7] The address question is
+        // now answered for the whole recipient set at once, by the same `addressableOn` rule, from this one row.
+        profilesFor: async (_tx: unknown, ids: readonly string[]) =>
+          new Map(ids.map((id) => [id, { languageCode: 'en', hasEmail: false, hasPhone: true }])),
         contactableOn: async (_tx: unknown, _u: string, channel: string) => channel !== 'email',
         insert: async (_tx: unknown, n: { toProps(): { channel: string }; status: string }) => { inserted.push({ channel: n.toProps().channel, status: n.status }); },
       } as never,

@@ -164,7 +164,7 @@ describe('THE ARRANGEMENT — what the member agreed to', () => {
   };
 
   it('publishes the MEMBER as the recipient — an arrangement recorded silently is software helping itself', () => {
-    const i = DairyDeductionInstruction.authorise({ ...base, maxPerCycleMinor: 20_000n });
+    const i = DairyDeductionInstruction.authorise({ ...base, maxPerCycleMinor: 20_000n , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } });
     const [e] = i.pullEvents();
     expect(e.type).toBe('dairy.deduction_instruction_authorised');
     expect(e.payload).toMatchObject({ userId: 'farmer1', typeCode: 'feed_credit', maxPerCycleMinor: '20000' });
@@ -173,46 +173,46 @@ describe('THE ARRANGEMENT — what the member agreed to', () => {
   it('an AMBASSADOR may sit with the member — and only that channel may name one', () => {
     // 0003's own consent-channel vocabulary, third wave running: a farmer with no smartphone arranges this beside an
     // ambassador or over an IVR call, and a platform that only accepts `app` has excluded the people it exists for.
-    expect(DairyDeductionInstruction.authorise({ ...base, channel: 'ambassador_assisted', assistedBy: 'amb1' }).isActive).toBe(true);
-    expect(() => DairyDeductionInstruction.authorise({ ...base, channel: 'ambassador_assisted' })).toThrow(DeductionInstructionInvalidError);
-    expect(() => DairyDeductionInstruction.authorise({ ...base, channel: 'ivr', assistedBy: 'amb1' })).toThrow(DeductionInstructionInvalidError);
+    expect(DairyDeductionInstruction.authorise({ ...base, channel: 'ambassador_assisted', assistedBy: 'amb1' , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } }).isActive).toBe(true);
+    expect(() => DairyDeductionInstruction.authorise({ ...base, channel: 'ambassador_assisted' , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } })).toThrow(DeductionInstructionInvalidError);
+    expect(() => DairyDeductionInstruction.authorise({ ...base, channel: 'ivr', assistedBy: 'amb1' , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } })).toThrow(DeductionInstructionInvalidError);
   });
 
   it('refuses an instalment of ZERO — that is a revocation wearing an instalment\'s clothes', () => {
     // It would otherwise sit in the table looking active while the assembler skipped it for ever: a member believing
     // their feed credit is being paid off, and a cooperative's books that never move.
-    expect(() => DairyDeductionInstruction.authorise({ ...base, maxPerCycleMinor: 0n })).toThrow(/revoke the arrangement/);
+    expect(() => DairyDeductionInstruction.authorise({ ...base, maxPerCycleMinor: 0n , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } })).toThrow(/revoke the arrangement/);
   });
 
   it('covers every source of its type, or exactly one', () => {
-    const blanket = DairyDeductionInstruction.authorise({ ...base });
+    const blanket = DairyDeductionInstruction.authorise({ ...base , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } });
     expect(blanket.covers('lv-feed', 'any-credit')).toBe(true);
     expect(blanket.covers('lv-loan', 'any-credit')).toBe(false);
-    const specific = DairyDeductionInstruction.authorise({ ...base, sourceId: 'credit1' });
+    const specific = DairyDeductionInstruction.authorise({ ...base, sourceId: 'credit1' , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } });
     expect(specific.covers('lv-feed', 'credit1')).toBe(true);
     expect(specific.covers('lv-feed', 'credit2')).toBe(false);
   });
 
   it('is REVOKED, never edited — and a revoked one covers nothing', () => {
-    const i = DairyDeductionInstruction.authorise({ ...base });
+    const i = DairyDeductionInstruction.authorise({ ...base , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } });
     i.pullEvents();
-    i.revoke(NOW, 'farmer1');
+    i.revoke(NOW, 'farmer1', { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } });
     expect(i.isActive).toBe(false);
     expect(i.covers('lv-feed', 'credit1')).toBe(false);
     const [e] = i.pullEvents();
     // The member is told it ended too: a revocation nobody can see is a "you can stop this" that cannot be verified.
     expect(e.type).toBe('dairy.deduction_instruction_revoked');
     expect(e.payload).toMatchObject({ userId: 'farmer1', revokedBy: 'farmer1' });
-    expect(() => i.revoke(NOW, 'farmer1')).toThrow(/already ended/);
+    expect(() => i.revoke(NOW, 'farmer1', { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } })).toThrow(/already ended/);
   });
 
   it('the SQL writes the arrangement and can only ever revoke it', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const repo = new DairyDeductionInstructionRepository({ forTenant: () => ({ query: jest.fn() }) } as never);
-    const i = DairyDeductionInstruction.authorise({ ...base, maxPerCycleMinor: 20_000n });
+    const i = DairyDeductionInstruction.authorise({ ...base, maxPerCycleMinor: 20_000n , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } });
     await repo.insert(tx as never, i);
     expect(tx.query.mock.calls[0][0]).toMatch(/INSERT INTO dairy_deduction_instructions/);
-    i.revoke(NOW, 'op1');
+    i.revoke(NOW, 'op1', { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } });
     await repo.revoke(tx as never, i);
     const sql = tx.query.mock.calls[1][0];
     expect(sql).toMatch(/SET is_active = false, revoked_at=\$3, revoked_by=\$4/);
@@ -223,8 +223,8 @@ describe('THE ARRANGEMENT — what the member agreed to', () => {
   it('the revocation FAILS CLOSED', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
     const repo = new DairyDeductionInstructionRepository({ forTenant: () => ({ query: jest.fn() }) } as never);
-    const i = DairyDeductionInstruction.authorise({ ...base });
-    i.revoke(NOW, 'op1');
+    const i = DairyDeductionInstruction.authorise({ ...base , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } });
+    i.revoke(NOW, 'op1', { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } });
     // A caller told "revoked" about a row that did not move would leave the assembler still honouring an arrangement
     // the member thinks is over — money out of a family's bill on the strength of a lie.
     await expect(repo.revoke(tx as never, i)).rejects.toMatchObject({ code: 'DAIRY_DEDUCTION_INSTRUCTION_NOT_FOUND' });
@@ -252,7 +252,7 @@ describe('THE ASSEMBLER — only what the member arranged', () => {
       id: `i-${over.typeId ?? 'lv-feed'}-${over.sourceId ?? 'all'}`, tenantId: 'tA', membershipId: 'mem1',
       typeId: over.typeId ?? 'lv-feed', typeCode: over.typeCode ?? 'feed_credit',
       sourceId: over.sourceId ?? null, maxPerCycleMinor: over.maxPerCycleMinor ?? null,
-      authorisedBy: 'farmer1', authorisedAt: NOW, channel: 'app', assistedBy: null, recordedBy: 'farmer1', note: null });
+      authorisedBy: 'farmer1', authorisedAt: NOW, channel: 'app', assistedBy: null, recordedBy: 'farmer1', note: null , notice: { what: { en: 'feed credit' }, how_much: { en: 'INR 200.00' } } });
 
   function harness(over: { live?: unknown[]; credits?: unknown[]; loans?: unknown[]; pct?: { assemblyPct: number; consentPct: number } } = {}) {
     const instructions = {

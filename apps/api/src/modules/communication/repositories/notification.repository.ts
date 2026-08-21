@@ -18,6 +18,27 @@ function toDomain(r: any): Notification {
 }
 export interface InboxQuery { status?: string; unreadOnly?: boolean; cursor?: { c: string; id: string }; limit: number; }
 
+/**
+ * What the platform knows about ONE recipient before it tries to reach them: the language they chose and whether
+ * they have an address at all.
+ *
+ * `languageCode` is `users.language_code` — NOT NULL with a default since migration 0003, and **read for the first
+ * time by TENANT-6d-7**. See `NotificationService.fanout` for what that cost.
+ */
+export interface RecipientProfile { languageCode: string; hasEmail: boolean; hasPhone: boolean; }
+
+/**
+ * THE ADDRESS RULE, ONCE. `contactableOn` (one recipient) and `profilesFor` (a whole village) must not disagree
+ * about what "reachable on this channel" means, and this programme has now found the same defect four times: a rule
+ * written twice drifts, and the copy that drifts is the one no test covers. Both callers decide here.
+ */
+export function addressableOn(channel: NotifChannel, row: { hasEmail: boolean; hasPhone: boolean } | null): boolean {
+  if (channel === 'inapp' || channel === 'push') return true;   // inapp needs no address; push has its own device check
+  if (!row) return false;                                       // no live user row → fail closed, never dispatch to an id we cannot see
+  // sms / whatsapp / ivr all ride the phone number.
+  return channel === 'email' ? row.hasEmail : row.hasPhone;
+}
+
 @Injectable()
 export class NotificationRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
@@ -48,11 +69,37 @@ export class NotificationRepository {
               (phone IS NOT NULL AND btrim(phone) <> '') AS has_phone
          FROM users WHERE id = $1 AND deleted_at IS NULL`, [userId]);
     const row = r.rows[0];
-    if (!row) return false;   // no live user row → no address (fail closed; never dispatch to an id we cannot see)
     // sms / whatsapp / ivr all ride the phone number. `users.phone` is NOT NULL UNIQUE on this platform, so this
     // is true for every live user and the check is a no-op for them — deliberately: it is here so that a future
     // channel cannot be added without answering the question, not to change today's SMS behaviour.
-    return channel === 'email' ? row.has_email : row.has_phone;
+    return addressableOn(channel, row ? { hasEmail: row.has_email, hasPhone: row.has_phone } : null);
+  }
+
+  /**
+   * **THE SAME TWO QUESTIONS FOR A WHOLE VILLAGE, IN ONE QUERY (PC-56 TENANT-6d-7).**
+   *
+   * W170 sends a notice to *"87 pourers"*. `fanout` used to ask the database five separate questions PER RECIPIENT —
+   * preferences, quiet hours, language (it did not ask at all, see below), an address per channel, a template per
+   * channel — inside the relay's single per-event transaction. At 87 that is some 350 round trips on one connection;
+   * at a district union's 2,000-member centre it is 8,000, and the notice does not go out at all because the
+   * transaction dies first. A cooperative's size is not a thing this platform gets to have an opinion about
+   * (rule zero), so the reads that CAN be set-based are.
+   *
+   * Returns a row per LIVE user only: a deleted or missing id is absent from the map, and `addressableOn(null)`
+   * refuses it — the same fail-closed answer `contactableOn` gives, from the same function.
+   */
+  async profilesFor(tx: TxContext, userIds: readonly string[]): Promise<Map<string, RecipientProfile>> {
+    const out = new Map<string, RecipientProfile>();
+    if (userIds.length === 0) return out;
+    const r = await tx.query<{ id: string; language_code: string; has_email: boolean; has_phone: boolean }>(
+      `SELECT id, language_code,
+              (email IS NOT NULL AND btrim(email) <> '') AS has_email,
+              (phone IS NOT NULL AND btrim(phone) <> '') AS has_phone
+         FROM users WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL`, [[...userIds]]);
+    for (const row of r.rows) {
+      out.set(row.id, { languageCode: row.language_code, hasEmail: row.has_email, hasPhone: row.has_phone });
+    }
+    return out;
   }
 
   /** Insert a delivery row in its FINAL resolved state (sent/failed/suppressed) — one write, no later update. */

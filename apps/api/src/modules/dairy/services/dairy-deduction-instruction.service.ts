@@ -10,6 +10,7 @@
 // are not probeable, and `channel = 'ambassador_assisted'` for a farmer with no smartphone — 0003's own vocabulary,
 // third wave running. An ambassador acting on a member's BEHALF from their own login is delegated authority, which
 // this platform does not model anywhere and which 0161's header refuses to fake here.
+import { DairyNoticeVarsService } from './dairy-notice-vars.service';
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
@@ -42,6 +43,7 @@ export class DairyDeductionInstructionService {
     private readonly types: DairyDeductionTypeRepository,
     private readonly credits: DairyMemberCreditRepository,
     private readonly memberships: DairyMembershipRepository,
+    private readonly noticeVars: DairyNoticeVarsService,
   ) {}
 
   /**
@@ -82,6 +84,13 @@ export class DairyDeductionInstructionService {
             maxPerCycleMinor: dto.maxPerCycleMinor === undefined ? null : BigInt(dto.maxPerCycleMinor),
             authorisedBy: actorUserId, authorisedAt: now, channel: dto.channel, assistedBy: dto.assistedBy ?? null,
             recordedBy: actorUserId, note: dto.note ?? null,
+            // [PC-56 TENANT-6d-7] `{{what}}` and `{{how_much}}` — the two variables this notice is made of, and the two
+            // that rendered as empty strings. An arrangement over somebody's milk cheque described by two blanks is
+            // not the consent record 6c-5 built.
+            notice: await this.noticeVars.deductionInstruction(tx, tenantId, {
+              typeCode: type.code,
+              maxPerCycleMinor: dto.maxPerCycleMinor === undefined ? null : BigInt(dto.maxPerCycleMinor),
+            }),
           });
           try {
             await this.instructions.insert(tx, instruction);
@@ -112,7 +121,9 @@ export class DairyDeductionInstructionService {
       const membership = await this.memberships.getById(tenantId, instruction.membershipId, tx);
       const isMember = membership?.farmerUserId === actor.userId;
       if (!isMember && !actor.canManage) throw new DeductionInstructionNotFoundError(id);   // 404, not 403
-      instruction.revoke(new Date(), actor.userId);
+      instruction.revoke(new Date(), actor.userId, await this.noticeVars.deductionInstruction(tx, tenantId, {
+        typeCode: instruction.toJSON().typeCode as string, maxPerCycleMinor: null,
+      }));
       await this.instructions.revoke(tx, instruction);
       await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'dairy.deduction_instruction.revoked',
         entityType: 'dairy_deduction_instruction', entityId: id, newValue: { byMember: isMember }, ip });

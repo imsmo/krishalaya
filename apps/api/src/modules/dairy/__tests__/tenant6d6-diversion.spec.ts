@@ -16,6 +16,7 @@
 //
 // So a pour's centre is MEASURED now, and this spec is mostly about the four answers `pourPlace` can give and the two
 // signatures a diversion needs before one of them is possible.
+import { fakeNoticeVars } from '../../../../test/helpers/notice-vars';
 import 'reflect-metadata';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { RequestMethod } from '@nestjs/common';
@@ -150,7 +151,7 @@ describe('PC-56 TENANT-6d-6 · where a pour may be recorded', () => {
         { inc: jest.fn(), observe: jest.fn() } as never, repo as never,
         { resolveActive: jest.fn(async () => ({ id: 'card', hasBonusSlabs: false, priceMinor: () => 100n, bonusMinor: () => 0n })) } as never,
         memberships as never, { priorReviews90d: jest.fn(async () => 0), insert: jest.fn() } as never,
-        { isEnabled: jest.fn(async () => false) } as never, routes as never, diversions as never);
+        { isEnabled: jest.fn(async () => false) } as never, routes as never, diversions as never, fakeNoticeVars());
       return { svc, repo, routes, diversions };
     };
     const dto = { membershipId: 'mem-1', shift: 'evening', collectedOn: '2026-08-21', weightKg: '10.000', fatPct: '6.40', snfPct: '8.90', waterFlag: false, adulterationFlags: [] };

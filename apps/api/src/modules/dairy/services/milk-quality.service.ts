@@ -14,6 +14,8 @@
 //
 // "never wallet freeze" is honoured structurally rather than promised: nothing here touches a wallet. The hold lives on
 // the pour, so the member's OTHER pours bill and pay normally while this one waits — which is exactly what W168 says.
+import { DairyNoticeVarsService } from './dairy-notice-vars.service';
+import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -40,6 +42,10 @@ export class MilkQualityService {
     private readonly audit: AuditWriter,
     private readonly reviews: MilkQualityReviewRepository,
     private readonly collections: MilkCollectionRepository,
+    // [PC-56 TENANT-6d-7] The two things the decision notice needed and did not have: WHO is told (the farmer behind
+    // the membership — this event named no recipient at all, so it has never sent a message) and IN WHICH WORDS.
+    private readonly memberships: DairyMembershipRepository,
+    private readonly noticeVars: DairyNoticeVarsService,
   ) {}
 
   /**
@@ -85,7 +91,9 @@ export class MilkQualityService {
           const review = await this.reviews.getForUpdate(tx, tenantId, reviewId);
           if (!review) throw new QualityReviewNotFoundError(reviewId);
           const before = review.status;
-          review.decide(input.outcome, actor.userId, new Date(), input.note ?? null);
+          const membership = await this.memberships.getById(tenantId, review.toProps().membershipId, tx);
+          review.decide(input.outcome, actor.userId, new Date(), input.note ?? null,
+            membership?.farmerUserId ?? null, await this.noticeVars.qualityDecided(tx, { outcome: input.outcome }));
           await this.reviews.update(tx, tenantId, review);
           // The pour's hold, in the same transaction. `from` is the hold the review's PREVIOUS status implied, so a
           // concurrent decision on the same pour loses the race loudly instead of overwriting the first outcome.

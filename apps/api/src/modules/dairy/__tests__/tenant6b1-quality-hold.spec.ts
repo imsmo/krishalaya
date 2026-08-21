@@ -22,6 +22,7 @@ import { MilkQualityReviewRepository } from '../repositories/milk-quality-review
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
 
 /* --------------------------------------------------------------------------------------------------------- */
+const NOTICE = { outcome: { en: 'cleared', hi: 'theek paya gaya', gu: 'પાસ થયું' } };
 const pour = (o: Partial<Parameters<typeof MilkCollection.record>[0]> = {}) => MilkCollection.record({
   id: 'c1', tenantId: 't1', mccId: 'm1', membershipId: 'mem1', shift: 'morning', collectedOn: '2026-07-13',
   weightMilliKg: 7_100n, fatCentiPct: 680n, snfCentiPct: 910n, density: null,
@@ -41,7 +42,7 @@ const review = (o: Partial<Parameters<typeof MilkQualityReview.open>[0]> = {}, f
     id: 'qr1', tenantId: 't1', collectionId: 'c1', collectedOn: '2026-07-13', membershipId: 'mem1', mccId: 'm1',
     shift: 'morning', waterFlag: true, reasons: [], densityAtFlag: '1.024', fatPctAtFlag: '6.20', snfPctAtFlag: '8.40',
     amountWithheldMinor: 57_100n, currencyCode: 'INR', openedBy: 'op1', priorReviews90d: 0, ...o,
-  }, farmer);
+  }, farmer, { mcc: 'Vanthali', shift: { en: 'evening', hi: 'shaam', gu: 'સાંજ' } });
 
 /** A repository over a fake replica that records the SQL it was asked to run. */
 function capturing(rowsFor: (sql: string) => unknown[] = () => []) {
@@ -183,27 +184,30 @@ describe('PC-56 TENANT-6b-1 · the review that records what humans did', () => {
 
   it('releases the pour when the sample is cleared, and never pays it when it is rejected', () => {
     const cleared = review(); cleared.pullEvents();
-    cleared.decide('cleared', 'sec1', new Date('2026-07-14T05:00:00Z'), 'rain water in the can');
+    cleared.decide('cleared', 'sec1', new Date('2026-07-14T05:00:00Z'), 'rain water in the can', 'farmer-1', NOTICE);
     expect(cleared.toJSON().holdState).toBe('released');
     expect(isBillable(cleared.holdState)).toBe(true);
 
     const rejected = review(); rejected.pullEvents();
-    rejected.decide('rejected', 'sec1', new Date('2026-07-14T05:00:00Z'), null);
+    rejected.decide('rejected', 'sec1', new Date('2026-07-14T05:00:00Z'), null, 'farmer-1', NOTICE);
     expect(rejected.toJSON().holdState).toBe('rejected');
     expect(isBillable(rejected.holdState)).toBe(false);
   });
 
   it('emits the decision with its outcome and whether a re-test actually happened', () => {
     const r = review(); r.pullEvents();
-    r.decide('cleared', 'sec1', new Date(), null);
+    r.decide('cleared', 'sec1', new Date(), null, 'farmer-1', NOTICE);
     const e = r.pullEvents();
     expect(e[0].type).toBe(DairyEventType.QualityFlagDecided);
-    expect(e[0].payload).toMatchObject({ outcome: 'cleared', holdState: 'released', retested: false, memberPresent: null });
+    expect(e[0].payload).toMatchObject({ outcomeCode: 'cleared', holdState: 'released', retested: false, memberPresent: null });
+    // [PC-56 TENANT-6d-7] `{{outcome}}` is the WORD in the member's own language; the enum kept a name of its own.
+    expect(e[0].payload.outcome).toMatchObject({ gu: 'પાસ થયું' });
+    expect(e[0].payload.userId).toBe('farmer-1');
   });
 
   it('lets a decision be taken without a re-test, but never hides that it was', () => {
     const r = review();
-    r.decide('rejected', 'sec1', new Date(), 'member said so at the counter');
+    r.decide('rejected', 'sec1', new Date(), 'member said so at the counter', 'farmer-1', NOTICE);
     const j = r.toJSON();
     expect(j.status).toBe('rejected');
     expect(j.retestAt).toBeNull();               // the skipped step stays visible
@@ -212,8 +216,8 @@ describe('PC-56 TENANT-6b-1 · the review that records what humans did', () => {
 
   it('refuses to reopen or re-decide: a reversal is a new dispute, not an edit to the old one', () => {
     const r = review();
-    r.decide('cleared', 'sec1', new Date(), null);
-    expect(() => r.decide('rejected', 'sec2', new Date(), null)).toThrow(/ILLEGAL_TRANSITION|Cannot move/);
+    r.decide('cleared', 'sec1', new Date(), null, 'farmer-1', NOTICE);
+    expect(() => r.decide('rejected', 'sec2', new Date(), null, 'farmer-1', NOTICE)).toThrow(/ILLEGAL_TRANSITION|Cannot move/);
     expect(() => r.retest('op2', new Date(), true, null)).toThrow(/ILLEGAL_TRANSITION|Cannot move/);
     expect(canReviewTransition('cleared', 'open')).toBe(false);
     expect(canReviewTransition('retested', 'open')).toBe(false);

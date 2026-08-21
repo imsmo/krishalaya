@@ -6,6 +6,7 @@
 // Two acts, and they belong to DIFFERENT PEOPLE, which is the whole reason this is its own service:
 //   raise()   — the MEMBER, about their own bill, inside their own window. No `dairy.manage` anywhere near it.
 //   resolve() — the COOPERATIVE, with a note the member is told, optionally voiding and rebuilding the bill.
+import { DairyNoticeVarsService } from './dairy-notice-vars.service';
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -38,6 +39,7 @@ export class MilkBillDisputeService {
     private readonly memberships: DairyMembershipRepository,
     private readonly cycles: DairyBillCycleRepository,
     private readonly billService: MilkBillService,
+    private readonly noticeVars: DairyNoticeVarsService,
   ) {}
 
   /**
@@ -109,7 +111,14 @@ export class MilkBillDisputeService {
         const membership = await this.memberships.getById(tenantId, bill.membershipIdRef, tx);
         if (!membership) throw new MembershipNotFoundError(bill.membershipIdRef);
 
-        dispute.resolve({ outcome: input.outcome, byUserId: actor.userId, at: now, note: input.note, voidedBill: input.voidBill });
+        const billProps = bill.toProps();
+        dispute.resolve({
+          outcome: input.outcome, byUserId: actor.userId, at: now, note: input.note, voidedBill: input.voidBill,
+          // [PC-56 TENANT-6d-7] `{{period}}` and a verdict in the member's own language.
+          notice: await this.noticeVars.billDisputeResolved(tx, {
+            periodStart: billProps.periodStart, periodEnd: billProps.periodEnd, outcome: input.outcome, note: input.note,
+          }),
+        });
         await this.disputes.resolve(tx, dispute);
 
         if (input.voidBill) {
@@ -119,7 +128,10 @@ export class MilkBillDisputeService {
           // transaction also means "the query was upheld" and "the bill was voided" cannot end up disagreeing.
           await this.billService.voidLoaded(tx, tenantId, actor, bill, input.note, ip, now);
         } else if (input.outcome === 'rejected') {
-          bill.resolveToPreviewed(now, await this.windowEnd(tx, tenantId, now), membership.farmerUserId, input.outcome);
+          bill.resolveToPreviewed(now, await this.windowEnd(tx, tenantId, now), membership.farmerUserId, input.outcome,
+            await this.noticeVars.billDisputeResolved(tx, {
+              periodStart: billProps.periodStart, periodEnd: billProps.periodEnd, outcome: input.outcome, note: input.note,
+            }));
           await this.bills.update(tx, bill);
           await this.flush(tx, tenantId, bill.id, bill.pullEvents());
         }

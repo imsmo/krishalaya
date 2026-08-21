@@ -6,6 +6,7 @@
 // any member could create the rate card that sets what every other member is paid, generate a bill and pay it out of
 // the cooperative's wallet. `settlement.close` was checked on neither act. And nothing anywhere stopped one person
 // previewing a cycle and approving it.
+import { fakeNoticeVars } from '../../../../test/helpers/notice-vars';
 import { DairyBillCycle } from '../domain/dairy-bill-cycle.entity';
 import {
   CYCLE_STATUSES, canTransition, cycleApprovalRefusal,
@@ -392,7 +393,7 @@ describe('the ordering W169 actually describes', () => {
       { applyAll: jest.fn(async () => []) } as never,
       { isEnabled: jest.fn(async () => true) } as never,
       // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
-      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never, fakeNoticeVars());
     return { svc, b };
   }
 

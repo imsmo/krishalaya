@@ -8,6 +8,7 @@
 // Written the same way as dairy.integration.spec.ts: pours are recorded through the REAL MilkCollectionService (priced
 // by a real rate card, into the real partitioned table), then read back through the real read model. No hand-inserted
 // milk_collections rows — a fixture that bypasses the writer proves nothing about what the writer stores.
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -91,7 +92,7 @@ run('PC-56 TENANT-6a · W167 counter board (integration, real Postgres)', () => 
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+    collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
 
     repo = new DairyCounterRepository(replica as any);
     // [PC-56 TENANT-6c-6] The payday tile now names the recorded cycle when one exists (0157).

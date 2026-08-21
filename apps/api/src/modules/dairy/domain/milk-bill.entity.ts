@@ -2,6 +2,7 @@
 // Aggregates a membership's collections over a period: gross − deductions = net. Lifecycle via milk-bill.state
 // (draft→previewed→approved→paid, +disputed). Money is bigint minor units; the payout (tenant → farmer)
 // happens in the service via the wallet boundary (Law 2) when the bill is paid. No version → lock FOR UPDATE.
+import { NoticeVars } from './dairy-notice-vars';
 import { BillStatus, assertTransition } from './milk-bill.state';
 import { DomainEvent, DairyEventType } from './dairy.events';
 import { BillNotPayableError, BillVoidReasonRequiredError, DeductionLinesNotLoadedError, DisputeWindowClosedError, DisputeWindowOpenError } from './dairy.errors';
@@ -123,17 +124,25 @@ export class MilkBill {
    * The event carries the member's `userId` and the figures the SMS interpolates, for the reason ADMIN-6b established
    * four waves ago: a notification-map row pointing at a payload with no recipient looks like a fix and sends nothing.
    */
-  preview(at: Date, disputeWindowEnds: Date, farmerUserId: string): void {
+  preview(at: Date, disputeWindowEnds: Date, farmerUserId: string, notice: NoticeVars): void {
     this.props.disputeWindowEnds = disputeWindowEnds;
     this.props.previewedAt = at;
     this.transition('previewed', DairyEventType.BillPreviewed, {
       userId: farmerUserId,
       membershipId: this.props.membershipId,
-      period: `${this.props.periodStart}..${this.props.periodEnd}`,
+      // [PC-56 TENANT-6d-7] The ISO pair keeps a name of its own: `{{period}}` is now the digits a member reads.
+      periodRange: `${this.props.periodStart}..${this.props.periodEnd}`,
       netMinor: this.props.netMinor.toString(),
       deductionsMinor: this.props.deductionsMinor.toString(),
       totalLitresMilli: this.props.totalLitresMilli.toString(),
       windowEndsAt: disputeWindowEnds.toISOString(),
+      // [PC-56 TENANT-6d-7] The comment above this method has claimed since TENANT-6c-2 that this payload carries
+      // *"the figures the SMS interpolates"*. It carried the figures the DOMAIN calls them: the seeded copy asks for
+      // `{{litres}}`, `{{net}}`, `{{deductions}}` and `{{window_ends}}`, and `render()` turned all four into empty
+      // strings — so W169's *"surprises are for birthdays, not milk money"* preview read "તમારું બિલ  લિટર,  ચોખ્ખા"
+      // with the numbers cut out of it. Money is formatted against the currency's OWN minor_units and the deadline in
+      // the cooperative's own timezone; both come from the database, neither from a constant.
+      ...notice,
     });
   }
 
@@ -151,15 +160,20 @@ export class MilkBill {
    * shown the same figures again and being told why — and a resolution that left the old window expired would answer
    * the objection and simultaneously remove the member's ability to make another.
    */
-  resolveToPreviewed(at: Date, disputeWindowEnds: Date, farmerUserId: string, outcome: string): void {
+  resolveToPreviewed(at: Date, disputeWindowEnds: Date, farmerUserId: string, outcome: string, notice: NoticeVars): void {
     this.props.disputeWindowEnds = disputeWindowEnds;
     this.props.previewedAt = at;
     this.transition('previewed', DairyEventType.BillDisputeResolved, {
       userId: farmerUserId,
       membershipId: this.props.membershipId,
-      period: `${this.props.periodStart}..${this.props.periodEnd}`,
-      outcome,
+      periodRange: `${this.props.periodStart}..${this.props.periodEnd}`,
+      outcomeCode: outcome,
       windowEndsAt: disputeWindowEnds.toISOString(),
+      // **THE SECOND EMITTER OF THE SAME EVENT CODE, AND IT HAD THE SAME HOLE.** `dairy.bill_dispute_resolved` is
+      // raised here (a rejected objection, which re-opens the member's window) and in `MilkBillDispute.resolve`. Two
+      // emitters of one code is how a payload contract drifts unseen: this one carried `period` in ISO and `outcome` as
+      // a raw enum, so `{{period}}` printed a range no farmer writes and `{{outcome}}` printed English.
+      ...notice,
     });
   }
 

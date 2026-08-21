@@ -6,6 +6,7 @@
 // deliberately strict about the difference between *what the platform knows* and *what somebody asserted*.
 import { DomainEvent, DairyEventType, MilkShift } from './dairy.events';
 import { InvalidCollectionError } from './dairy.errors';
+import { NoticeVars } from './dairy-notice-vars';
 import { ReviewStatus, assertReviewTransition, holdFor, needsCommitteeReview, COMMITTEE_REVIEW_WINDOW_DAYS } from './milk-quality.state';
 
 export interface MilkQualityReviewProps {
@@ -55,7 +56,7 @@ export class MilkQualityReview {
    * database and this file is pure.
    */
   static open(input: Omit<MilkQualityReviewProps, 'status' | 'committeeReviewRequired' | 'sampleSealed' | 'retestAt' | 'retestBy' | 'memberPresent' | 'outcomeNote' | 'decidedAt' | 'decidedBy'>
-    & { sampleSealed?: boolean }, farmerUserId: string | null): MilkQualityReview {
+    & { sampleSealed?: boolean }, farmerUserId: string | null, notice: NoticeVars): MilkQualityReview {
     if (!input.waterFlag && input.reasons.filter((r) => !!r).length === 0)
       throw new InvalidCollectionError('a quality review needs at least one reason');
     if (input.amountWithheldMinor < 0n) throw new InvalidCollectionError('withheld amount cannot be negative');
@@ -76,7 +77,12 @@ export class MilkQualityReview {
       type: DairyEventType.QualityFlagOpened,
       payload: {
         reviewId: r.props.id, collectionId: r.props.collectionId, membershipId: r.props.membershipId,
-        userId: farmerUserId, mccId: r.props.mccId, collectedOn: r.props.collectedOn, shift: r.props.shift,
+        userId: farmerUserId, mccId: r.props.mccId, collectedOn: r.props.collectedOn, shiftCode: r.props.shift,
+        // [PC-56 TENANT-6d-7] THE WORDS THE COPY ACTUALLY ASKS FOR. The seeded SMS reads "{{mcc}} માં {{shift}} નું
+        // તમારું દૂધ..." and `notification_event_variables` declares `mcc` (mcc_centres.default_name) and `shift`
+        // (milk_collections.shift, LOCALIZED). This payload carried `mccId` — a UUID — and the raw enum, so the
+        // message a farmer received named no centre and said "evening" in the middle of a Gujarati sentence.
+        ...notice,
         reasons: r.props.reasons, waterFlag: r.props.waterFlag,
         amountWithheldMinor: r.props.amountWithheldMinor.toString(), currencyCode: r.props.currencyCode,
         committeeReviewRequired: committee, priorReviews90d: r.props.priorReviews90d,
@@ -112,15 +118,31 @@ export class MilkQualityReview {
    * a member who admits the dilution at the counter should not have to wait for a ceremony — but it is never hidden:
    * `retestAt` stays null and the desk shows the decision as taken without re-testing the sealed sample.
    */
-  decide(outcome: 'cleared' | 'rejected', by: string, at: Date, note: string | null): void {
+  decide(outcome: 'cleared' | 'rejected', by: string, at: Date, note: string | null, farmerUserId: string | null, notice: NoticeVars): void {
     assertReviewTransition(this.props.status, outcome);
     this.props = { ...this.props, status: outcome, decidedAt: at, decidedBy: by, outcomeNote: note ?? this.props.outcomeNote };
     this.events.push({
       type: DairyEventType.QualityFlagDecided,
       payload: {
         reviewId: this.props.id, collectionId: this.props.collectionId, membershipId: this.props.membershipId,
-        outcome, holdState: this.holdState, retested: this.props.retestAt !== null, memberPresent: this.props.memberPresent,
+        // [PC-56 TENANT-6d-7] **THIS EVENT HAD NO RECIPIENT AND THEREFORE SENT NOTHING, EVER.**
+        // `NOTIFICATION_EVENT_MAP` maps it with `recipientKeys: ['userId']`; `DomainEventFanoutHandler` collects no
+        // recipient, returns early and increments nothing. W168's *"member notified in Gujarati"* covered the FLAG and
+        // never the DECISION — so a farmer whose pour was cleared or rejected was told by the notice that was
+        // catalogued, templated in three languages, versioned, DLT-noted, and never sent. This is ADMIN-6b's own
+        // finding — *"a map row pointing at a payload with no recipient looks like a fix and changes nothing"* — in the
+        // module that quoted it, one method below the one that got it right.
+        userId: farmerUserId,
+        // THE CODE AND THE WORD, UNDER NAMES THAT CANNOT COLLIDE. `{{outcome}}` is what the seeded copy says, so the
+        // WORD takes that name and the state machine's value becomes `outcomeCode` — a consumer that switches on it
+        // reads a code, a member reads a sentence, and neither is silently the other.
+        outcomeCode: outcome,
+        holdState: this.holdState, retested: this.props.retestAt !== null, memberPresent: this.props.memberPresent,
         amountMinor: this.props.amountWithheldMinor.toString(), currencyCode: this.props.currencyCode,
+        // `outcome` above is the STATE (a consumer's enum); `notice.outcome` is the WORD (a member's sentence), and the
+        // template's own language picks which of the three it renders. Both, deliberately: a payload is a projection of
+        // the domain AND the argument list of a sentence somebody reads.
+        ...notice,
       },
     });
   }

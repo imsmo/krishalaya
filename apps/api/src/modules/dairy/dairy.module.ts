@@ -11,6 +11,9 @@
 // governance (share registers / resolutions / votes), D2C subscriptions + deliveries, adulteration-pattern
 // scan, D2C route planning, Lactoscan analyzer ingestion, and BANK-DISBURSEMENT payout (payout_id) — the
 // current settlement credits the farmer's in-platform wallet; bank withdrawal rides the payments payout path.
+import { DairyNoticeVarsService } from './services/dairy-notice-vars.service';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
+import { LookupsModule } from '../lookups/lookups.module';
 import { D2cDeliveryRunsCadenceJob } from './jobs/d2c-delivery-runs.cadence-job';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
@@ -115,7 +118,9 @@ import { DairyDiversionRepository } from './repositories/dairy-diversion.reposit
   // PC-56 TENANT-6d-5 · CommunicationModule for `MaskedCallService` — W170's *"Call MCC-AND-03 operator"* is a
   // privacy-proxy call, and the module that owns telephony owns it. CLAUDE.md's rule holds: a module's PUBLIC SERVICE
   // (exported here) or its events, never its repositories. No cycle — CommunicationModule imports nothing.
-  imports: [FintechModule, LogisticsModule, CommunicationModule],
+  // [PC-56 TENANT-6d-7] `LookupsModule` for the deduction vocabulary in three languages — its PUBLIC service, per
+  // CLAUDE.md's rule that a module reaches another module through its service and never its repositories.
+  imports: [FintechModule, LogisticsModule, CommunicationModule, LookupsModule],
   controllers: [MccController, RateCardsController, CollectionsController, MilkBillsController, D2cController, DairyCounterController, QualityReviewsController, DairyQualityController,
     // PC-56 TENANT-6c-2
     BillCyclesController, BillDisputesController,
@@ -163,6 +168,10 @@ import { DairyDiversionRepository } from './repositories/dairy-diversion.reposit
     BmcUnitRepository, BmcUnitService, BmcReadingService, BmcCallService, DairyBmcReadModel, DairyDiversionRepository, DairyDiversionService,
     MccConsoleRepository, MccOperatorAssignmentRepository, DairyCentresReadModel,
     DairyMembershipRouteRepository, DairyMembershipMoveService,
+    // PC-56 TENANT-6d-7 · THE WORDS THAT NEVER ARRIVED. `UiMessageRepository` is core (platform vocabulary, no tenant
+    // column) and is provided here because this is its first caller on the server — `ui_messages` has existed since
+    // 0001 with no reader at all.
+    UiMessageRepository, DairyNoticeVarsService,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
     // PC-56 TENANT-6c-4

@@ -27,6 +27,11 @@ const ORDER = [
   'core/0011_labour_taxonomy.sql','core/0012_livestock_taxonomy.sql',
   'core/0013_selfserve_onboarding_flag.sql','core/0014_payout_failure_reasons.sql',
   'core/0015_dev07_routine_fanout_flag.sql',
+  // [PC-56 TENANT-6d-7] The platform's first `ui_messages` rows — the words a dairy notice needs in three languages,
+  // because a domain event is emitted once and rendered for every recipient. LISTED HERE AND CHECKED BY A SPEC:
+  // TENANT-6c-4 found `rules/0208_fintech_products.sql` had never been listed and therefore never existed in any
+  // database, and nothing would have said so. `db/scripts/__tests__` now asserts this list covers every seed file.
+  'core/0016_ui_messages_dairy_notices.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

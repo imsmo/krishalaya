@@ -8,6 +8,7 @@
 // One of them was a REAL defect the live run caught: `MilkRateCardService.create` never passed `bonusSlabs` to the
 // entity, so every card came back with `bonus_rules = []` and W168's premium band still paid nothing. The DTO accepted
 // it, the domain priced it, the repository persisted it — and the service in between dropped the caller's answer.
+import { fakeNoticeVars } from '../../../../test/helpers/notice-vars';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { MilkQualityService } from '../services/milk-quality.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
@@ -67,7 +68,7 @@ function recordHarness(o: { slabs?: Array<{ metric: 'fat' | 'snf'; minCentiPct: 
   const diversions = { liveFor: jest.fn(async () => o.diversion ?? null) };
   const svc = new MilkCollectionService(uow as never, outboxWriter as never, idem as never, metrics as never,
     repo as never, rateCards as never, memberships as never, reviews as never, flags as never,
-    routes as never, diversions as never);
+    routes as never, diversions as never, fakeNoticeVars());
   return { svc, inserted, reviewsInserted, outbox, flagAsked, flags, reviews, repo, routes, diversions };
 }
 
@@ -162,7 +163,7 @@ describe('PC-56 TENANT-6b-1 · deciding a review moves the pour\'s money', () =>
       id: 'qr1', tenantId, collectionId: 'c1', collectedOn: DAY, membershipId: 'mem1', mccId: 'm1', shift: 'morning',
       waterFlag: true, reasons: [], densityAtFlag: '1.024', fatPctAtFlag: '6.20', snfPctAtFlag: '8.40',
       amountWithheldMinor: 31_000n, currencyCode: 'INR', openedBy: 'op1', priorReviews90d: 0,
-    }, 'farmer1');
+    }, 'farmer1', { mcc: 'Vanthali', shift: { en: 'evening', hi: 'shaam', gu: 'સાંજ' } });
     review.pullEvents();
     if (status === 'retested') review.retest('op2', new Date(), true, null);
 
@@ -174,7 +175,10 @@ describe('PC-56 TENANT-6b-1 · deciding a review moves the pour\'s money', () =>
     const outboxWriter = { write: jest.fn(async (_tx: unknown, e: { eventType: string; payload: Record<string, unknown> }) => { outbox.push(e); }) };
     const audit = { write: jest.fn(async (_tx: unknown, e: Record<string, unknown>) => { audits.push(e); }) };
     const svc = new MilkQualityService(uow as never, outboxWriter as never, idem as never, metrics as never,
-      audit as never, reviews as never, collections as never);
+      audit as never, reviews as never, collections as never,
+      // [PC-56 TENANT-6d-7] The membership read that finds the FARMER the decision notice is for — this event named no
+      // recipient at all until this wave, so `dairy.quality_flag_decided` has never sent a message.
+      { getById: jest.fn(async () => ({ farmerUserId: 'farmer-42' })) } as never, fakeNoticeVars());
     return { svc, review, holdMoves, outbox, audits, reviews, collections };
   }
 
@@ -206,7 +210,11 @@ describe('PC-56 TENANT-6b-1 · deciding a review moves the pour\'s money', () =>
     await h.svc.decide(tenantId, actor, 'idem-d', 'qr1', { outcome: 'cleared', note: null });
     const ev = h.outbox.find((e) => e.eventType === 'dairy.quality_flag_decided');
     expect(ev).toBeDefined();
-    expect(ev!.payload).toMatchObject({ outcome: 'cleared', holdState: 'released', retested: true, memberPresent: true });
+    expect(ev!.payload).toMatchObject({ outcomeCode: 'cleared', holdState: 'released', retested: true, memberPresent: true });
+    // [PC-56 TENANT-6d-7] AND THE TWO THINGS THIS EVENT DID NOT CARRY: the farmer it is about (so the notification
+    // spine had no recipient and sent nothing at all), and the outcome as a WORD the member's own template can print.
+    expect(ev!.payload.userId).toBe('farmer-42');
+    expect(ev!.payload.outcome).toMatchObject({ gu: 'પાસ થયું' });
     expect(h.audits[0]).toMatchObject({
       action: 'dairy.quality_review.cleared', entityType: 'milk_quality_review',
       oldValue: { status: 'retested' }, newValue: { status: 'cleared', holdState: 'released' },
@@ -240,7 +248,8 @@ describe('PC-56 TENANT-6b-1 · deciding a review moves the pour\'s money', () =>
     const reviews = { getForUpdate: jest.fn(async () => null), update: jest.fn() };
     const collections = { setHoldState: jest.fn() };
     const svc = new MilkQualityService(uow as never, { write: jest.fn() } as never, idem as never, metrics as never,
-      { write: jest.fn() } as never, reviews as never, collections as never);
+      { write: jest.fn() } as never, reviews as never, collections as never,
+      { getById: jest.fn(async () => null) } as never, fakeNoticeVars());
     await expect(svc.decide(tenantId, actor, 'i', 'nope', { outcome: 'cleared' })).rejects.toThrow(/QUALITY_REVIEW_NOT_FOUND|not found/);
     expect(collections.setHoldState).not.toHaveBeenCalled();
   });
@@ -310,7 +319,7 @@ describe('PC-56 TENANT-6b-1 · a bill that has nothing to bill says WHY', () => 
       { applyAll: jest.fn(async () => []) } as never,
       { isEnabled: jest.fn(async () => true) } as never,
       // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
-      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never, fakeNoticeVars());
     return { svc, collections };
   }
 

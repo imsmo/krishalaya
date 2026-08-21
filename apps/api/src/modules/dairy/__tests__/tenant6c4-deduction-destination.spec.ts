@@ -8,6 +8,7 @@
 // no source record anywhere on this platform; the fintech module had promised `milk_bill_deduction` twice
 // (`REPAYMENT_STYLES`, and `loan_repayments.channel`'s own comment) with nothing implementing it; and the consent rule
 // had nowhere to live, because `consents` (0003) is a DPDP purpose table with no tenant, no amount and no reference.
+import { fakeNoticeVars } from '../../../../test/helpers/notice-vars';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { MilkBill } from '../domain/milk-bill.entity';
@@ -315,7 +316,7 @@ describe('THE COMPOSITION — the member is paid the GROSS', () => {
 
   function harness(lines: ReturnType<typeof line>[], opts: { consent?: unknown; recovery?: boolean } = {}) {
     const b = bill(lines);
-    b.preview(NOW, WINDOW, 'farmer1'); b.approve(); b.pullEvents();
+    b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.approve(); b.pullEvents();
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const uow = { run: jest.fn(async (_t: string, fn: any) => fn(tx)) };
     const wallet = { post: jest.fn(async () => ({ txnId: 'txn-gross', alreadyApplied: false })) };
@@ -331,7 +332,7 @@ describe('THE COMPOSITION — the member is paid the GROSS', () => {
       deductionLines as never, { byCode: jest.fn(), byIds: jest.fn() } as never, { getForUpdate: jest.fn() } as never,
       consents as never, deductions as never, { isEnabled: jest.fn(async () => opts.recovery !== false) } as never,
       // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
-      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never, fakeNoticeVars());
     return { svc, wallet, deductions, audit, b };
   }
 
@@ -534,7 +535,7 @@ describe('GENERATION — the operator\'s typo is caught while they are still the
       { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null) } as never,
       { applyAll: jest.fn(async () => []) } as never, { isEnabled: jest.fn(async () => true) } as never,
       // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
-      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never, fakeNoticeVars());
     return { svc, deductionLines, bills };
   }
   const dto = (over: Partial<{ type: string; amountMinor: string; sourceId: string }> = {}) => ({
@@ -614,7 +615,7 @@ describe('THE ASK is published at PREVIEW, with a recipient', () => {
       { consentThresholdPct: jest.fn(async () => 25), latestForBill: jest.fn(async () => null) } as never,
       { applyAll: jest.fn(async () => []) } as never, { isEnabled: jest.fn(async () => true) } as never,
       // [PC-56 TENANT-6c-5] the assembler: what the CYCLE deducts when nobody typed a line.
-      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never);
+      { assemble: jest.fn(async () => ({ lines: [], totalMinor: 0n, capMinor: 0n, deferred: [] })) } as never, fakeNoticeVars());
     return { svc, outbox };
   }
 
@@ -626,7 +627,11 @@ describe('THE ASK is published at PREVIEW, with a recipient', () => {
     // ADMIN-6b's finding, five waves running: a map row over a payload with no recipient sends nothing.
     expect(ask.payload.userId).toBe('farmer1');
     expect(ask.payload).toMatchObject({ thresholdPct: 25, grossMinor: '400000', deductionsMinor: '150000' });
-    expect(ask.payload.lines).toEqual([{ type: 'feed_credit', amountMinor: '150000' }]);
+    // [PC-56 TENANT-6d-7] The ARRAY kept a name of its own (`lineItems`) because the copy's `{{lines}}` needs a
+    // SENTENCE: `render()` used to print `[{"type":"feed_credit","amountMinor":"150000"}]` into an SMS asking a farmer
+    // to consent to a deduction. Both are in the payload; only one of them is a sentence.
+    expect(ask.payload.lineItems).toEqual([{ type: 'feed_credit', amountMinor: '150000' }]);
+    expect(ask.payload.lines).toMatchObject({ en: expect.stringContaining('INR') });
   });
 
   it('and asks NOTHING when the deductions are at or below it', async () => {

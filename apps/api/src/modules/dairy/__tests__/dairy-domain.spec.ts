@@ -79,7 +79,7 @@ describe('milk-bill.state machine + net computation', () => {
       totalLitresMilli: 70000n, grossMinor: 48000n, deductions: [line('feed_credit', 5000n, 'dairy_member_credit'), line('loan_emi', 3000n, 'loan')] });
     expect(b.toProps().deductionsMinor).toBe(8000n); expect(b.netMinor).toBe(40000n);
     b.pullEvents();
-    b.preview(NOW, WINDOW, 'farmer1'); b.approve(); b.markPaid(AFTER_WINDOW);
+    b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.approve(); b.markPaid(AFTER_WINDOW);
     expect(b.status).toBe('paid');
     expect(b.pullEvents().map((e) => e.type)).toEqual([DairyEventType.BillPreviewed, DairyEventType.BillApproved, DairyEventType.BillPaid]);
   });

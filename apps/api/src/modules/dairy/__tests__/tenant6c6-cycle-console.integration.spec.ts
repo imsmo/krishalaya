@@ -19,6 +19,7 @@
 //      route order is invisible in a diff and would 404 the whole screen.
 //
 // RUN UNDER TZ=Asia/Kolkata AS WELL AS UTC.
+import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -168,13 +169,13 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags,
-      new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never));
+      new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
-      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags, assembler);
+      lineRepo, typeRepo, creditRepo, consentRepo, applier, flags, assembler, realNoticeVars(replica as never));
     cycles = new DairyBillCycleService(uow, outbox, metrics, idem, cycleRepo, collRepo, bills, billRepo, memRepo, lineRepo, flags);
     credits = new DairyMemberCreditService(uow, outbox, idem, metrics, audit, creditRepo, memRepo, lineRepo);
-    instructions = new DairyDeductionInstructionService(uow, outbox, idem, metrics, audit, instructionRepo, typeRepo, creditRepo, memRepo);
-    disputesSvc = new MilkBillDisputeService(uow, outbox, idem, metrics, audit, disputeRepo, billRepo, memRepo, cycleRepo, bills);
+    instructions = new DairyDeductionInstructionService(uow, outbox, idem, metrics, audit, instructionRepo, typeRepo, creditRepo, memRepo, realNoticeVars(replica as never));
+    disputesSvc = new MilkBillDisputeService(uow, outbox, idem, metrics, audit, disputeRepo, billRepo, memRepo, cycleRepo, bills, realNoticeVars(replica as never));
     consents = new MilkBillDeductionConsentService(uow, outbox, idem, metrics, audit, consentRepo, billRepo, lineRepo, memRepo);
     rm = new DairyCycleConsoleReadModel(replica as never, cycleRepo, billRepo, consoleRepo, lineRepo, disputeRepo,
       instructionRepo, typeRepo, counterRepo, flags, metrics);

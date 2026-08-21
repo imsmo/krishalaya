@@ -42,8 +42,12 @@ function harness(opts: HarnessOpts) {
   };
   const events = { getByCode: jest.fn(async () => opts.event) };
   const templates = { resolve: jest.fn(async (_t: any, _e: string, channel: NotifChannel) => template(channel)) };
-  const prefs = { listForUser: jest.fn(async () => opts.prefs ?? []) };
-  const quiet = { getForUser: jest.fn(async () => null) };
+  const prefs = {
+    listForUser: jest.fn(async () => opts.prefs ?? []),
+    mapForUsers: jest.fn(async (ids: readonly string[]) => new Map(ids.map((id) =>
+      [id, new Map((opts.prefs ?? []).filter((p) => p.toJSON().userId === id).map((p) => [p.channel, p.isEnabled]))]))),
+  };
+  const quiet = { getForUser: jest.fn(async () => null), mapForUsers: jest.fn(async () => new Map()) };
   const pushSender = {
     providerCode: 'fake',
     send: jest.fn(async () => (opts.dispatchByChannel?.push === 'failed' ? { sent: 0, invalidTokens: [], failureReason: 'push_failed' } : { sent: 1, invalidTokens: [] })),
@@ -54,7 +58,9 @@ function harness(opts: HarnessOpts) {
     // keeps every pre-existing assertion in this file about WHICH channels are attempted — the contactability
     // question is a separate axis and is covered behaviourally in tenant4d5-billing-notices.spec.ts, including
     // the case where it is false.
-    contactableOn: jest.fn(async () => true), getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
+    contactableOn: jest.fn(async () => true),
+    profilesFor: jest.fn(async (_tx: unknown, ids: readonly string[]) => new Map(ids.map((id) => [id, { languageCode: 'en', hasEmail: true, hasPhone: true }]))),
+    getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
   const flags = { isEnabled: jest.fn(async (key: string) => (key === ROUTINE_FANOUT_FLAG ? (opts.routineFlagOn ?? false) : false)) };
   const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, pushSender as any, devices as any, events as any, templates as any, prefs as any, quiet as any, notifications as any, flags as any);
   return { svc, tx, gateway, pushSender, notifications, inserted, metrics, flags };
