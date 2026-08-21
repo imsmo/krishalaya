@@ -22,15 +22,34 @@ export function isShift(v: unknown): v is Shift {
 /**
  * W167 prints *"evening starts 17:00"* and its empty state says *"Morning shift opens 06:00"*.
  *
- * **There is no shift clock on this platform.** No column, no setting, no per-centre schedule: `milk_collections`
- * carries a `shift` label and a `collected_on` DATE, and nothing anywhere records when a shift opens or closes. Those
- * two times are the ones an operator would plan a queue around and a farmer would walk to the centre for, so the desk
- * states the shift it is showing and refuses to print an hour. A per-centre shift window is a real thing to build
- * (it belongs with the centre, which is TENANT-6d's screen) and a plausible one would send people to a closed door.
+ * **[PC-56 TENANT-6d-2] THIS NO LONGER REFUSES UNCONDITIONALLY, AND THAT IS THE POINT.** TENANT-6a wrote: *"there is
+ * no shift clock on this platform … a per-centre shift window is a real thing to build (it belongs with the centre,
+ * which is TENANT-6d's screen)"*. Migration 0163 built it. A refusal left in place after the thing exists is the same
+ * defect as a claim that stopped being true — this programme has now met it three times (TENANT-6c-6 found two), so
+ * the verdict is a FUNCTION of the centres on the board.
+ *
+ * THE ANSWER IS PER-TENANT ONLY WHEN THE CENTRES AGREE. W167's sentence is one line above a table of three centres,
+ * and three centres may keep three different evenings. So:
+ *   • every shown centre records this shift, and all of them the same → `recorded`, with the hour;
+ *   • some do and some do not, or they differ → `mixed`, with how many, and the hours belong to the rows;
+ *   • none does → `not_recorded`, naming the columns a cooperative would fill — which now EXIST, so the refusal is
+ *     something a secretary can act on rather than a gap in the schema.
  */
-export type ShiftClockVerdict = { kind: 'not_recorded'; missing: readonly string[] };
-export function shiftClockVerdict(): ShiftClockVerdict {
-  return { kind: 'not_recorded', missing: ['mcc_shift_open_at', 'mcc_shift_close_at'] };
+export type ShiftClockVerdict =
+  | { kind: 'not_recorded'; missing: readonly string[] }
+  | { kind: 'recorded'; opens: string; closes: string; centres: number }
+  | { kind: 'mixed'; centres: number; recorded: number };
+
+export function shiftClockVerdict(shift: Shift, windows: ReadonlyArray<{ opens: string; closes: string } | null>): ShiftClockVerdict {
+  const missing = [`mcc_centres.${shift}_opens_at`, `mcc_centres.${shift}_closes_at`] as const;
+  const recorded = windows.filter((w): w is { opens: string; closes: string } => w !== null);
+  if (recorded.length === 0) return { kind: 'not_recorded', missing };
+  const first = recorded[0];
+  const allSame = recorded.length === windows.length
+    && recorded.every((w) => w.opens === first.opens && w.closes === first.closes);
+  return allSame
+    ? { kind: 'recorded', opens: first.opens, closes: first.closes, centres: windows.length }
+    : { kind: 'mixed', centres: windows.length, recorded: recorded.length };
 }
 
 /* --------------------------------------------------------------------------------------------------------- */
@@ -143,6 +162,8 @@ export interface CentreShiftRow {
   amountMinor: bigint;
   flags: number;
   membershipsEnrolled: number;
+  /** [TENANT-6d-2] This centre's window FOR THE SHIFT BEING SHOWN (0163), or null when it has recorded none. */
+  shiftWindow: { opens: string; closes: string } | null;
 }
 
 /** Litres, to one decimal, from milli-kg. Milk is weighed and sold by litre-equivalents on this desk; the conversion

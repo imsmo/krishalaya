@@ -41,6 +41,10 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   DairyBillCycle, DairyCycleConsole, DairyCycleBillRow, DairyCycleAct, DairyCycleActRefusal, DairyCycleActCaution,
   // PC-56 TENANT-6d-1 · W170's tank
   DairyBmcUnit, DairyBmcMonitor, DairyBmcTile, DairyBmcReading, DairyBmcPlaybookStep,
+  // PC-56 TENANT-6d-2 · W171's board, its custody register and the preference mix.
+  DairyShiftWindow, DairyCustodyState, DairyCentreCustody, DairyTankCondition, DairyCentreRow,
+  DairyCentreReconciliation, DairyPreferenceRow, DairyCentresConsole, DairyCentreCustodyRow,
+  AssignMccOperatorInput, SetMccShiftWindowInput,
   DairyStabilityVerdict, DairyWorkedExample, DairyFlagProtocol,
   DairyCoverage, DairyFlagSummary, DairyAccrual, DairyShiftClock,
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,

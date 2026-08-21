@@ -12,7 +12,7 @@ import {
   MUTATE_CHAIN_IS_RETRY, SHIFTS, accrualKey, analyzerKey, analyzerText, analyzerVerified, billsGapKey, bmcKey,
   bmcText, bmcTone, boardHref, bonusIgnoredKey, centreCoverageText, centreQuietKey, coverageKey, coverageShareText,
   dairyState, dairyStateKey, flagKindKey, flagWorkflowKey, flagsKey, paydayKey, qualityText, retryChainKey,
-  shiftClockKey, shiftKey, shiftOf, totalsFoot, uniquenessKey, windowBasisKey, windowKey,
+  shiftClockKey, shiftClockText, shiftKey, shiftOf, totalsFoot, uniquenessKey, windowBasisKey, windowKey,
 } from '../features/dairy/counter';
 import { DAIRY_NAV, currentDairyNavKey, dairyNavLabelKey, dairyUnbuiltCount } from '../features/dairy/nav';
 
@@ -23,6 +23,9 @@ const hasKey = (k: string) => LOCALES.every((l) => dict(l).includes(`'${k}':`));
 const centre = (o: Partial<DairyCounterCentre> = {}): DairyCounterCentre => ({
   mccId: 'm1', code: 'MCC-VNT', name: 'Vanthali', litres: '812.4', pours: 104, pourers: 104,
   membershipsEnrolled: 118, fatPct: '6.4', snfPct: '8.9', amountMinor: '4881200', flags: 1,
+  // [TENANT-6d-2] The centre's own hours for the shift shown (0163). Null here is the pre-6d-2 world, which is still
+  // the honest default for a cooperative that has recorded none.
+  shiftWindow: null,
   analyzer: { kind: 'none_on_file' }, bmc: { kind: 'no_unit' }, ...o,
 });
 const accrual = (o: Partial<DairyAccrual> = {}): DairyAccrual => ({
@@ -49,10 +52,30 @@ describe('TENANT-6a · the shift, and the hours the console will not invent', ()
     expect(shiftOf('night')).toBe('morning');
   });
 
-  it('refuses to print "evening starts 17:00" — no shift clock exists to print', () => {
-    const key = shiftClockKey({ kind: 'not_recorded', missing: ['mcc_shift_open_at', 'mcc_shift_close_at'] });
+  // [PC-56 TENANT-6d-2] The refusal is still here, and it is now CONDITIONAL. Migration 0163 gave the centre the two
+  // columns TENANT-6a named, so a board whose centres have recorded their hours prints them — and a refusal left
+  // unconditional after the thing was built would be the same defect as a claim that stopped being true.
+  it('refuses to print "evening starts 17:00" only while no centre has recorded hours', () => {
+    const key = shiftClockKey({ kind: 'not_recorded', missing: ['mcc_centres.evening_opens_at', 'mcc_centres.evening_closes_at'] });
     expect(key).toBe('dairy.shift.clockNotRecorded');
     expect(hasKey(key)).toBe(true);
+    expect(shiftClockText({ kind: 'not_recorded', missing: [] })).toBeNull();
+  });
+
+  it('prints the hour when every centre on the board keeps the same one', () => {
+    const c = { kind: 'recorded' as const, opens: '17:00', closes: '20:00', centres: 3 };
+    expect(shiftClockKey(c)).toBe('dairy.shift.clockRecorded');
+    expect(shiftClockText(c)).toBe('17:00–20:00');
+    expect(hasKey('dairy.shift.clockRecorded')).toBe(true);
+  });
+
+  it('sends the reader to the rows when three centres keep three different evenings', () => {
+    const c = { kind: 'mixed' as const, centres: 3, recorded: 2 };
+    expect(shiftClockKey(c)).toBe('dairy.shift.clockMixed');
+    // NO HOUR: a tenant-level "evening starts 17:00" over centres that disagree is the sentence that sends a farmer
+    // to a closed door, which is the whole reason TENANT-6a refused to print one.
+    expect(shiftClockText(c)).toBeNull();
+    expect(hasKey('dairy.shift.clockMixed')).toBe(true);
   });
 
   it('keeps the day and the shift in the URL so yesterday evening is bookmarkable and Back works', () => {
@@ -237,10 +260,10 @@ describe('TENANT-6a · the dairy sub-nav', () => {
     // [UPDATED BY PC-56 TENANT-6b-2, THEN 6c-6] `quality` joined the built set when W168 landed (the canon links that
     // screen from nowhere at all, so the sub-nav is its only way in), and `cycles` when W169 landed. This assertion
     // tracks the set as 6d and 6e land theirs, and its whole job is to fail when a section is silently unbuilt again.
-    expect(DAIRY_NAV.filter((i) => canon.includes(i.key) && i.built).map((i) => i.key)).toEqual(['collections', 'quality', 'cycles', 'bmc']);
+    expect(DAIRY_NAV.filter((i) => canon.includes(i.key) && i.built).map((i) => i.key)).toEqual(['collections', 'quality', 'cycles', 'bmc', 'centres']);
     // [PC-56 TENANT-6c-6] Three now: W169 landed, so `cycles` has an href. This number is the point of the tile —
     // "five of these do nothing yet" must count DOWN as waves land, or it becomes decoration.
-    expect(dairyUnbuiltCount()).toBe(2);
+    expect(dairyUnbuiltCount()).toBe(1);
     expect(hasKey('dairy.nav.unbuilt')).toBe(true);
     expect(hasKey('dairy.nav.label')).toBe(true);
   });

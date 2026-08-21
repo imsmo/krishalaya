@@ -382,8 +382,8 @@ describe('TENANT-6b-2 · states, empties and the way in', () => {
   });
 
   it('counts down the unbuilt dairy sections as each wave lands one', () => {
-    expect(dairyUnbuiltCount()).toBe(2);            // centres, insights — 6c-6 built cycles, 6d-1 built the BMC — 6c/6d/6e
-    expect(DAIRY_NAV.filter((i) => i.built).map((i) => i.key).sort()).toEqual(['bmc', 'collections', 'console', 'cycles', 'quality']);
+    expect(dairyUnbuiltCount()).toBe(1);            // insights only — 6c-6 built cycles, 6d-1 the BMC, 6d-2 the centres
+    expect(DAIRY_NAV.filter((i) => i.built).map((i) => i.key).sort()).toEqual(['bmc', 'centres', 'collections', 'console', 'cycles', 'quality']);
     for (const i of DAIRY_NAV) expect(i.built).toBe(i.href !== null);
   });
 

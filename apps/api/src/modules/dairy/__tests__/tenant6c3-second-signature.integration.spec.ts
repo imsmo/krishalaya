@@ -38,6 +38,8 @@ import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inproc
 import { platform, PlatformAccount, TenantAccount } from '../../../core/wallet/account-codes';
 
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
+// PC-56 TENANT-6d-2: the custody register the centre service writes in the same transaction as the column.
+import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
@@ -122,7 +124,7 @@ run('PC-56 TENANT-6c-3 · the second signature (integration, real Postgres)', ()
     const disputeRepo = new MilkBillDisputeRepository(replica as never);
     const flags = new FlagsService(pools, new InMemoryCacheService());
 
-    mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo);
+    mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);

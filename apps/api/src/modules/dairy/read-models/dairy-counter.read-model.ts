@@ -28,6 +28,8 @@ export interface CounterCentreRow {
   fatPct: string | null; snfPct: string | null;
   amountMinor: string;
   flags: number;
+  /** [TENANT-6d-2] This centre's own hours for the shift shown, or null when it has recorded none (0163). */
+  shiftWindow: { opens: string; closes: string } | null;
   analyzer: AnalyzerVerdict;
   bmc: BmcTempVerdict;
 }
@@ -93,7 +95,9 @@ export class DairyCounterReadModel {
       return {
         day,
         shift: opts.shift,
-        shiftClock: shiftClockVerdict(),
+        // [TENANT-6d-2] The hour W167 prints, when the centres on this board agree about it — and TENANT-6a's honest
+        // refusal for a cooperative that has still recorded none.
+        shiftClock: shiftClockVerdict(opts.shift, rows.map((r: CentreShiftRow) => r.shiftWindow)),
         centres: rows.map((r: CentreShiftRow) => ({
           mccId: r.mccId, code: r.code, name: r.name,
           litres: litresText(r.weightMilliKg),
@@ -101,6 +105,7 @@ export class DairyCounterReadModel {
           fatPct: pctText(r.fatCentiPctWeighted), snfPct: pctText(r.snfCentiPctWeighted),
           amountMinor: r.amountMinor.toString(),
           flags: r.flags,
+          shiftWindow: r.shiftWindow,
           analyzer: analyzerVerdict({ model: r.analyzerModel, serial: r.analyzerSerial }),
           bmc: bmcTempVerdict(bmcByMcc.get(r.mccId) ?? { unitId: null, targetC: null, tempC: null, recordedAt: null }),
         })),

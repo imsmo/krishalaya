@@ -11,6 +11,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { CentreShiftRow, Shift } from '../domain/dairy-counter';
+import { hhmm } from '../domain/mcc-console';
 
 const big = (v: unknown): bigint => BigInt(String(v ?? '0'));
 const bigOrNull = (v: unknown): bigint | null => (v == null ? null : BigInt(String(v)));
@@ -55,6 +56,11 @@ export class DairyCounterRepository {
           GROUP BY mcc_id
        )
        SELECT m.id AS mcc_id, m.code, m.default_name, m.analyzer_model, m.analyzer_serial,
+              -- [TENANT-6d-2] The hours for THE SHIFT BEING SHOWN, from the centre (0163). Selected by the shift
+              -- parameter rather than fetched as four columns and chosen in TypeScript, so a board of the evening can
+              -- never print a morning window.
+              CASE WHEN $3 = 'morning' THEN m.morning_opens_at  ELSE m.evening_opens_at  END AS shift_opens_at,
+              CASE WHEN $3 = 'morning' THEN m.morning_closes_at ELSE m.evening_closes_at END AS shift_closes_at,
               coalesce(p.pours,0)::int AS pours, coalesce(p.pourers,0)::int AS pourers,
               coalesce(p.weight_milli_kg,0)::bigint AS weight_milli_kg,
               p.fat_centi, p.snf_centi,
@@ -74,6 +80,7 @@ export class DairyCounterRepository {
       fatCentiPctWeighted: bigOrNull(x.fat_centi), snfCentiPctWeighted: bigOrNull(x.snf_centi),
       amountMinor: big(x.amount_minor), flags: Number(x.flags ?? 0),
       membershipsEnrolled: Number(x.memberships ?? 0),
+      shiftWindow: shiftWindowOf(x.shift_opens_at ?? null, x.shift_closes_at ?? null),
     }));
   }
 
@@ -201,4 +208,14 @@ export class DairyCounterRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT current_date::text AS d`);
     return String((r.rows[0] as any)?.d ?? '');
   }
+}
+
+/**
+ * A shift's window, or null. Both ends or neither — `ck_mcc_shift_*` makes half a window impossible in the database,
+ * and this treats a half as UNRECORDED rather than repairing it (TENANT-6d-2's ruling: an invented closing time sends
+ * a farmer to a closed door).
+ */
+function shiftWindowOf(opens: string | null, closes: string | null): { opens: string; closes: string } | null {
+  const o = hhmm(opens); const c = hhmm(closes);
+  return o !== null && c !== null ? { opens: o, closes: c } : null;
 }

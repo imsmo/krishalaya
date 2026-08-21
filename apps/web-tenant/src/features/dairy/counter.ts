@@ -30,10 +30,25 @@ export function boardHref(shift: DairyShift, day?: string | null): string {
   return s ? `/dairy?${s}` : '/dairy';
 }
 
-/** W167 prints "evening starts 17:00" and its empty state "Morning shift opens 06:00". No shift clock exists on this
- *  platform, and those are the hours a farmer walks to the centre for — so the screen names the shift and says the
- *  hours are not recorded, rather than printing a time nobody set. */
-export function shiftClockKey(_c: DairyShiftClock): string { void _c; return 'dairy.shift.clockNotRecorded'; }
+/**
+ * W167 prints *"evening starts 17:00"* and its empty state *"Morning shift opens 06:00"*.
+ *
+ * **[PC-56 TENANT-6d-2] THIS USED TO RETURN THE REFUSAL UNCONDITIONALLY — CORRECTLY, AND THEN NOT.** TENANT-6a wrote
+ * that no shift clock existed anywhere on this platform and that a per-centre window belonged with the centre;
+ * migration 0163 built it. A refusal left in place after the thing exists is the same defect as a claim that stopped
+ * being true, so the key now follows the verdict: the hour when every centre on the board keeps the same one, a
+ * pointer to the rows when they differ, and TENANT-6a's sentence only for a cooperative that has recorded none.
+ */
+export function shiftClockKey(c: DairyShiftClock): string {
+  if (c.kind === 'recorded') return 'dairy.shift.clockRecorded';
+  if (c.kind === 'mixed') return 'dairy.shift.clockMixed';
+  return 'dairy.shift.clockNotRecorded';
+}
+
+/** The hour itself, when there is one to print. `null` keeps the caller from interpolating an absent time. */
+export function shiftClockText(c: DairyShiftClock): string | null {
+  return c.kind === 'recorded' ? `${c.opens}–${c.closes}` : null;
+}
 
 /* ------------------------------------------------------------------------------------------------------- */
 /* THE CENTRE ROW                                                                                          */

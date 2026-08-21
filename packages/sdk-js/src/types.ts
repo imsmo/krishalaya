@@ -675,6 +675,8 @@ export type MilkBillStatus = 'draft' | 'previewed' | 'disputed' | 'approved' | '
 export interface DairyMcc {
   id: string; code: string; defaultName: string; regionId: string | null; lat: string | null; lng: string | null;
   operatorUserId: string | null; capacityLitresShift: string | null; isActive: boolean; createdAt?: string | null;
+  /** [TENANT-6d-2] The hours, per shift (0163). Absent on responses from a deployment behind that migration. */
+  shiftWindows?: { morning: DairyShiftWindow | null; evening: DairyShiftWindow | null };
 }
 /** A farmer's membership at an MCC. */
 export interface DairyMembership {
@@ -896,7 +898,14 @@ export interface DairyMemberCredit {
 export interface IssueMemberCreditInput { membershipId: string; mccId?: string; description: string; valueMinor: string; issuedOn?: string; }
 /** [PC-56 TENANT-6c-4] W169: "Deductions above 25% of gross need the member's fresh consent, not just standing instructions." */
 export interface RecordDeductionConsentInput { granted: boolean; channel: 'app' | 'web' | 'ambassador_assisted' | 'ivr'; assistedBy?: string; note?: string; }
-export interface CreateMccInput { code: string; defaultName: string; regionId?: string; lat?: string; lng?: string; operatorUserId?: string; capacityLitresShift?: string; analyzerModel?: string; analyzerSerial?: string; }
+/**
+ * [TENANT-6d-2] `operatorUserId` IS OPTIONAL AND NO LONGER DEFAULTS TO THE CALLER.
+ *
+ * It used to, which recorded custody of member milk against whoever created the row — a dairy lead who added three
+ * centres became the recorded custodian of all three. Omitting it now means nobody holds the centre yet, which the
+ * board shows as exactly that. A `operatorReason` without an operator is refused.
+ */
+export interface CreateMccInput { code: string; defaultName: string; regionId?: string; lat?: string; lng?: string; operatorUserId?: string; operatorReason?: string; capacityLitresShift?: string; analyzerModel?: string; analyzerSerial?: string; morningOpensAt?: string; morningClosesAt?: string; eveningOpensAt?: string; eveningClosesAt?: string; }
 export interface EnrolMemberInput { farmerUserId: string; mccId: string; memberCode: string; paymentCycle?: DairyPaymentCycle; defaultAnimalType?: DairyAnimalType; }
 export interface CreateRateCardInput { defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel; ratePerKgFatMinor?: string; ratePerKgSnfMinor?: string; baseRatePerLitreMinor?: string; bonusSlabs?: DairyBonusSlab[]; effectiveFrom: string; effectiveTo?: string; }
 export interface RecordCollectionInput { membershipId: string; shift: DairyShift; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; density?: string; waterFlag?: boolean; adulterationFlags?: string[]; }
@@ -1334,7 +1343,22 @@ export interface LogisticsInsights {
 
 /** W167 says "evening starts 17:00". No shift clock exists on this platform — no column, no setting, no per-centre
  *  schedule — and those are the hours a farmer walks to the centre for. */
-export type DairyShiftClock = { kind: 'not_recorded'; missing: string[] };
+/**
+ * W167's *"evening starts 17:00"*.
+ *
+ * [PC-56 TENANT-6d-2] It used to be a single unconditional refusal, because no shift clock existed anywhere on this
+ * platform. Migration 0163 put one on the CENTRE, per shift — so the tenant-level answer is only `recorded` when every
+ * centre on the board keeps the same hours, `mixed` when they differ (the hours are then on the rows), and
+ * `not_recorded` for a cooperative that has still recorded none. That last case now names columns that EXIST, which is
+ * the difference between a refusal a secretary can act on and a gap in the schema.
+ */
+export type DairyShiftClock =
+  | { kind: 'not_recorded'; missing: string[] }
+  | { kind: 'recorded'; opens: string; closes: string; centres: number }
+  | { kind: 'mixed'; centres: number; recorded: number };
+
+/** A centre's local wall-clock window, `HH:MM`, whole minutes (0163 refuses seconds a screen could not print). */
+export interface DairyShiftWindow { opens: string; closes: string }
 
 /** The accrual window, DERIVED from the members' own `payment_cycle` preference (which nothing read before
  *  TENANT-6a), not a cycle the platform has committed to. */
@@ -1399,6 +1423,8 @@ export interface DairyCounterCentre {
   litres: string; pours: number; pourers: number; membershipsEnrolled: number;
   fatPct: string | null; snfPct: string | null;
   amountMinor: string; flags: number;
+  /** [TENANT-6d-2] This centre's own hours for the shift shown, or null when it has recorded none. */
+  shiftWindow: DairyShiftWindow | null;
   analyzer: DairyAnalyzer;
   bmc: DairyBmcTemp;
 }
@@ -1625,3 +1651,94 @@ export interface DairyBmcMonitor {
     smsDeliverable: boolean;
   };
 }
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-6d-2 · W171 — MCC centres, custody and the preference mix                                       */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+export type DairyCustodyState = 'held' | 'nobody' | 'unrecorded' | 'disagrees';
+
+/**
+ * Who is holding a centre's milk.
+ *
+ * `unrecorded` means the centre names an operator the platform will not stand behind — including one who holds no
+ * active role in this cooperative, which `mcc_centres.operator_user_id` allowed until 0163 because it references the
+ * PLATFORM-WIDE `users` table. `disagrees` means the column and the open custody row name different people and the
+ * board refuses to choose between them.
+ */
+export interface DairyCentreCustody {
+  state: DairyCustodyState;
+  operatorUserId: string | null;
+  operatorName: string | null;
+  /** `+9198****4321` — the platform's one masking rule, never the raw number. */
+  operatorPhoneMasked: string | null;
+  since: string | null;
+  days: number | null;
+  columnUserId: string | null;
+}
+
+export type DairyTankCondition = 'no_unit' | 'never' | 'stale' | 'in_range' | 'above_band' | 'below_min';
+
+/** One centre as W171's table row shows it. */
+export interface DairyCentreRow {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  capacityLitresShift: string | null;
+  /** The serial is MASKED (`…S412`): a device serial is not a figure a browse screen should export. */
+  analyzer: { model: string | null; serialMasked: string | null };
+  members: number;
+  custody: DairyCentreCustody;
+  hours: { morning: DairyShiftWindow | null; evening: DairyShiftWindow | null };
+  /** *"active · BMC warm"* — judged by TENANT-6d-1's own band arithmetic, not a second rule written in SQL. */
+  tank: { condition: DairyTankCondition; unitId: string | null; tempC: string | null; bandMaxC: string | null; ageMinutes: number | null };
+}
+
+/** W171's footer, *"3 centres · 312 memberships total ✓"* — where the tick is a check that the counts add up. */
+export interface DairyCentreReconciliation {
+  centres: number; shown: number; total: number; reconciles: boolean; unaccounted: number;
+}
+
+/**
+ * One membership preference, with the cycle that actually exists for it.
+ *
+ * `pending` is the honest state for a preference no cycle has opened for yet: TENANT-6c-1 ensures one cycle per
+ * DISTINCT preference and bills filter on it, so the choice IS honoured — once the cadence has run.
+ */
+export interface DairyPreferenceRow {
+  paymentCycle: string;
+  members: number;
+  shareBp: number | null;
+  state: 'honoured' | 'pending';
+  window: { from: string; to: string; payday: string; status: string } | null;
+}
+
+export interface DairyCentresConsole {
+  now: string;
+  centres: DairyCentreRow[];
+  reconciliation: DairyCentreReconciliation;
+  preferences: DairyPreferenceRow[];
+  honoured: { all: boolean; pending: string[] };
+  tanksNeedingAttention: number;
+  hoursUnrecorded: number;
+  custodyGaps: { unrecorded: number; nobody: number; disagrees: number };
+  /** Named, not hidden: the membership transfer is TENANT-6d-3, and why is on the read-model. */
+  gaps: { transferBuilt: false; shiftWindowHistory: false; reliefOperator: false };
+}
+
+/** One row of a centre's custody register. */
+export interface DairyCentreCustodyRow {
+  id: string;
+  mccId: string;
+  operatorUserId: string;
+  assignedAt: string;
+  assignedBy: string | null;
+  endedAt: string | null;
+  endedBy: string | null;
+  reason: string | null;
+}
+
+export interface AssignMccOperatorInput { operatorUserId: string; reason?: string }
+export interface SetMccShiftWindowInput { shift: 'morning' | 'evening'; opens?: string; closes?: string }

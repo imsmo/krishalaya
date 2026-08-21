@@ -17,6 +17,7 @@ import {
   DairyBillCycle, DairyCycleConsole,
   // PC-56 TENANT-6d-1 · W170's tank
   DairyBmcUnit, DairyBmcMonitor, DairyBmcReading,
+  DairyCentresConsole, DairyCentreCustodyRow, AssignMccOperatorInput, SetMccShiftWindowInput,
 } from '../types';
 
 export class DairyResource {
@@ -35,6 +36,37 @@ export class DairyResource {
   }
   async setMccActive(id: string, isActive: boolean): Promise<DairyMcc> {
     return (await this.http.request<DairyMcc>('POST', `dairy/mccs/${encodeURIComponent(id)}/active`, { body: { isActive } })).data;
+  }
+
+  /**
+   * W171's board — PC-56 TENANT-6d-2.
+   *
+   * `GET dairy/mccs/console`, and the route is declared BEFORE `dairy/mccs/:id` on the controller for the reason this
+   * programme has now hit three times: Nest matches in declaration order and the parameterised route would answer the
+   * board with *"MCC centre 'console' not found"*.
+   */
+  async centresConsole(params: { includeInactive?: boolean; limit?: number } = {}, signal?: AbortSignal): Promise<DairyCentresConsole> {
+    return (await this.http.request<DairyCentresConsole>('GET', 'dairy/mccs/console', { query: { includeInactive: params.includeInactive, limit: params.limit }, signal })).data;
+  }
+
+  /** Custody changes hands. Idempotency-keyed: a retried handover must not split one tenure into two. */
+  async assignMccOperator(id: string, input: AssignMccOperatorInput, idempotencyKey: string): Promise<DairyMcc> {
+    return (await this.http.request<DairyMcc>('POST', `dairy/mccs/${encodeURIComponent(id)}/operator`, { idempotencyKey, body: input })).data;
+  }
+
+  /** Nobody holds the centre — a state, not the absence of one. */
+  async releaseMccOperator(id: string, reason?: string): Promise<DairyMcc> {
+    return (await this.http.request<DairyMcc>('POST', `dairy/mccs/${encodeURIComponent(id)}/operator/release`, { body: reason === undefined ? {} : { reason } })).data;
+  }
+
+  /** The hours a farmer walks to. Omit `opens`/`closes` to CLEAR the shift and restore TENANT-6a's refusal. */
+  async setMccShiftWindow(id: string, input: SetMccShiftWindowInput): Promise<DairyMcc> {
+    return (await this.http.request<DairyMcc>('POST', `dairy/mccs/${encodeURIComponent(id)}/shift-window`, { body: input })).data;
+  }
+
+  /** Who has held this centre, newest first. */
+  async mccCustody(id: string, params: { limit?: number } = {}, signal?: AbortSignal): Promise<DairyCentreCustodyRow[]> {
+    return (await this.http.request<DairyCentreCustodyRow[]>('GET', `dairy/mccs/${encodeURIComponent(id)}/custody`, { query: { limit: params.limit }, signal })).data;
   }
 
   // ---- memberships ----

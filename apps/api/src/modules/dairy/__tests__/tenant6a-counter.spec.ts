@@ -25,7 +25,10 @@ const centre = (o: Partial<CentreShiftRow> = {}): CentreShiftRow => ({
   analyzerModel: 'Lactoscan SP', analyzerSerial: 'LS-412',
   pours: 102, pourers: 102, weightMilliKg: 824_000n,
   fatCentiPctWeighted: 660n, snfCentiPctWeighted: 900n,
-  amountMinor: 4_500_000n, flags: 0, membershipsEnrolled: 108, ...o,
+  amountMinor: 4_500_000n, flags: 0, membershipsEnrolled: 108,
+  // [TENANT-6d-2] The centre's own hours for the shift shown (0163). Null is the pre-6d-2 world and still the
+  // honest value for a cooperative that has recorded none.
+  shiftWindow: null, ...o,
 });
 
 function capturing(rowsFor: (sql: string) => unknown[] = () => []) {
@@ -46,10 +49,34 @@ describe('PC-56 TENANT-6a · the shift, and the clock nobody set', () => {
     expect(isShift(undefined)).toBe(false);
   });
 
-  it('refuses to print a shift hour, and names what a shift window would need', () => {
-    // W167: "evening starts 17:00"; its empty state: "Morning shift opens 06:00". No column, no setting, no schedule
-    // — and those are the hours a farmer walks to the centre for.
-    expect(shiftClockVerdict()).toEqual({ kind: 'not_recorded', missing: ['mcc_shift_open_at', 'mcc_shift_close_at'] });
+  // [PC-56 TENANT-6d-2] THE REFUSAL SURVIVES, AS A CONDITION. When TENANT-6a wrote this there was no column, no
+  // setting and no schedule anywhere on the platform; migration 0163 put a window on the CENTRE, per shift, so the
+  // verdict became a function of the board. What the assertion protects now is that the refusal still happens for a
+  // cooperative that has recorded nothing — and that it names columns which EXIST, so a secretary can act on it.
+  it('refuses to print a shift hour while no centre has recorded one, naming the columns to fill', () => {
+    expect(shiftClockVerdict('evening', [])).toEqual({
+      kind: 'not_recorded', missing: ['mcc_centres.evening_opens_at', 'mcc_centres.evening_closes_at'],
+    });
+    expect(shiftClockVerdict('morning', [null, null, null])).toEqual({
+      kind: 'not_recorded', missing: ['mcc_centres.morning_opens_at', 'mcc_centres.morning_closes_at'],
+    });
+  });
+
+  it('prints W167\'s hour when every centre on the board keeps the same one', () => {
+    const w = { opens: '17:00', closes: '20:00' };
+    expect(shiftClockVerdict('evening', [w, { ...w }, { ...w }]))
+      .toEqual({ kind: 'recorded', opens: '17:00', closes: '20:00', centres: 3 });
+  });
+
+  it('refuses a tenant-level hour when the centres disagree, or when only some have recorded one', () => {
+    // Three villages, three evenings. A single "evening starts 17:00" over that is the sentence that sends a farmer
+    // to a closed door — which is the whole reason TENANT-6a refused to print one.
+    expect(shiftClockVerdict('evening', [{ opens: '17:00', closes: '20:00' }, { opens: '17:30', closes: '20:30' }]))
+      .toEqual({ kind: 'mixed', centres: 2, recorded: 2 });
+    // And a board where two of three have recorded hours is MIXED, not "recorded" — the third centre's farmers would
+    // otherwise read an opening time that is nobody's.
+    expect(shiftClockVerdict('morning', [{ opens: '06:00', closes: '09:00' }, { opens: '06:00', closes: '09:00' }, null]))
+      .toEqual({ kind: 'mixed', centres: 3, recorded: 2 });
   });
 });
 

@@ -55,6 +55,10 @@ import { DairyCycleConsoleRepository } from './repositories/dairy-cycle-console.
 // WHO would be phoned about a warm tank.
 import { LogisticsModule } from '../logistics/logistics.module';
 import { BmcUnitRepository } from './repositories/bmc-unit.repository';
+// PC-56 TENANT-6d-2 · W171's board, its custody register and the reads behind them.
+import { MccConsoleRepository } from './repositories/mcc-console.repository';
+import { MccOperatorAssignmentRepository } from './repositories/mcc-operator-assignment.repository';
+import { DairyCentresReadModel } from './read-models/dairy-centres.read-model';
 import { BmcUnitService } from './services/bmc-unit.service';
 import { BmcReadingService } from './services/bmc-reading.service';
 import { DairyBmcReadModel } from './read-models/dairy-bmc.read-model';
@@ -144,6 +148,7 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
     DairyCycleConsoleRepository, DairyCycleConsoleReadModel,
     // PC-56 TENANT-6d-1
     BmcUnitRepository, BmcUnitService, BmcReadingService, DairyBmcReadModel,
+    MccConsoleRepository, MccOperatorAssignmentRepository, DairyCentresReadModel,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
     // PC-56 TENANT-6c-4

@@ -262,3 +262,23 @@ export class BmcUnitNotFoundError extends NotFoundError {
 export class BmcReadingRefusedError extends DomainError {
   constructor(reason: string, detail: Record<string, unknown> = {}) { super('BMC_READING_REFUSED', reason, 422, { reason, ...detail }); }
 }
+
+/**
+ * [PC-56 TENANT-6d-2 · W171] An operator who is not of this cooperative.
+ *
+ * `mcc_centres.operator_user_id` references the PLATFORM-WIDE `users` table (0003 — `phone` is unique across every
+ * tenant, a person's tenants live in `user_tenant_roles`), so the foreign key says nothing about tenancy. Handing
+ * custody of 108 families' milk to somebody with no active role in the cooperative is refused here with their id, and
+ * refused again by 0163's trigger for anything that does not come through this service.
+ */
+export class MccOperatorNotInTenantError extends DomainError {
+  constructor(userId: string) {
+    super('MCC_OPERATOR_NOT_IN_TENANT',
+      'This person holds no active role in the cooperative — custody of member milk cannot be assigned to them', 422, { userId });
+  }
+}
+
+/** A shift window, or a custody handover, that the centre refuses. 422: the caller can fix what they sent. */
+export class MccCentreInvalidError extends DomainError {
+  constructor(reason: string) { super('MCC_CENTRE_INVALID', reason, 422, { reason }); }
+}

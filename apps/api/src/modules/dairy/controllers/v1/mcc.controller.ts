@@ -16,6 +16,13 @@ import { SetMccActiveSchema, SetMccActiveDto } from '../../dto/update-mcc-centre
 import { QueryMccSchema, QueryMccDto } from '../../dto/query-mcc-centre.dto';
 import { CreateMembershipSchema, CreateMembershipDto } from '../../dto/create-dairy-membership.dto';
 import { QueryMembershipsSchema, QueryMembershipsDto } from '../../dto/query-dairy-membership.dto';
+import {
+  QueryMccConsoleSchema, QueryMccConsoleDto, AssignMccOperatorSchema, AssignMccOperatorDto,
+  ReleaseMccOperatorSchema, ReleaseMccOperatorDto, SetMccShiftWindowSchema, SetMccShiftWindowDto,
+  QueryMccCustodySchema, QueryMccCustodyDto,
+} from '../../dto/mcc-console.dto';
+import { DairyCentresReadModel, CENTRES_CONSOLE_FLAG } from '../../read-models/dairy-centres.read-model';
+import { MilkShift } from '../../domain/mcc-console';
 import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
@@ -25,7 +32,11 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('dairy')
 export class MccController {
-  constructor(private readonly mccs: MccCentreService, private readonly memberships: DairyMembershipService) {}
+  constructor(
+    private readonly mccs: MccCentreService,
+    private readonly memberships: DairyMembershipService,
+    private readonly centres: DairyCentresReadModel,
+  ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
 
   @Post() @RequirePermissions(DairyPermissions.Manage)
@@ -33,6 +44,19 @@ export class MccController {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.mccs.create(ctx.tenantId, this.actor(ctx), key, dto, ipOf(r)).then((data) => ({ data }));
   }
+  /**
+   * W171 itself. **DECLARED BEFORE `@Get(':id')`** — Nest matches in declaration order and the parameterised route
+   * would otherwise answer the board with *"MCC centre 'console' not found"*. Third sighting of that trap in this
+   * programme (TENANT-6c-6's cycle console, TENANT-6d-1's monitor), asserted the same way in the spec.
+   *
+   * Behind BOTH the module flag (on the controller) and `dairy_centres_console` — which is now a real AND rather than
+   * the screen flag cancelling the module's, see `core/feature-flags/flags.guard.ts`.
+   */
+  @Get('console') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(CENTRES_CONSOLE_FLAG)
+  console(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryMccConsoleSchema) q: QueryMccConsoleDto) {
+    return this.centres.view(ctx.tenantId, this.actor(ctx), { includeInactive: q.includeInactive, limit: q.limit }).then((data) => ({ data }));
+  }
+
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryMccSchema) q: QueryMccDto) {
     return this.mccs.list(ctx.tenantId, { activeOnly: q.activeOnly, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
@@ -42,6 +66,39 @@ export class MccController {
   @Post(':id/active') @RequirePermissions(DairyPermissions.Manage)
   setActive(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(SetMccActiveSchema) dto: SetMccActiveDto) {
     return this.mccs.setActive(ctx.tenantId, this.actor(ctx), id, dto.isActive, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /**
+   * W171: *"operator assignment is recorded (custody of member milk)"*.
+   *
+   * IDEMPOTENCY-KEY REQUIRED. Not because money moves, but because a handover retried on a dropped village connection
+   * would otherwise close the custody it had just opened and open a third — and a custody register with a phantom
+   * two-second tenure in it cannot answer the question it exists for.
+   */
+  @Post(':id/operator') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(CENTRES_CONSOLE_FLAG)
+  assignOperator(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string,
+                 @Headers('idempotency-key') key: string, @ZodBody(AssignMccOperatorSchema) dto: AssignMccOperatorDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.mccs.assignOperator(ctx.tenantId, this.actor(ctx), key, id, { operatorUserId: dto.operatorUserId, reason: dto.reason ?? null }, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /** Nobody holds the centre. No idempotency key: releasing twice is refused by the aggregate, not silently repeated. */
+  @Post(':id/operator/release') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(CENTRES_CONSOLE_FLAG)
+  releaseOperator(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(ReleaseMccOperatorSchema) dto: ReleaseMccOperatorDto) {
+    return this.mccs.releaseOperator(ctx.tenantId, this.actor(ctx), id, dto.reason ?? null, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /** The hours TENANT-6a refused to invent. Omitting `opens`/`closes` CLEARS the shift and restores that refusal. */
+  @Post(':id/shift-window') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(CENTRES_CONSOLE_FLAG)
+  setShiftWindow(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(SetMccShiftWindowSchema) dto: SetMccShiftWindowDto) {
+    const window = dto.opens !== undefined && dto.closes !== undefined ? { opens: dto.opens, closes: dto.closes } : null;
+    return this.mccs.setShiftWindow(ctx.tenantId, this.actor(ctx), id, dto.shift as MilkShift, window, ipOf(r)).then((data) => ({ data }));
+  }
+
+  /** Who has held this centre. Behind `dairy.manage`: a custody register names staff and how long each one served. */
+  @Get(':id/custody') @RequirePermissions(DairyPermissions.Manage) @FeatureFlag(CENTRES_CONSOLE_FLAG)
+  custody(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodQuery(QueryMccCustodySchema) q: QueryMccCustodyDto) {
+    return this.mccs.custodyHistory(ctx.tenantId, this.actor(ctx), id, q.limit).then((data) => ({ data }));
   }
 
   // memberships (farmer ↔ MCC) live under the MCC resource

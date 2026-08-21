@@ -38,6 +38,8 @@ import { ColdChainService } from '../../logistics/services/cold-chain.service';
 import { OpsAlertRepository } from '../../logistics/repositories/ops-alert.repository';
 
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
+// PC-56 TENANT-6d-2: the custody register the centre service writes in the same transaction as the column.
+import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { BmcUnitRepository } from '../repositories/bmc-unit.repository';
 import { MccCentreService } from '../services/mcc-centre.service';
 import { BmcUnitService } from '../services/bmc-unit.service';
@@ -78,7 +80,7 @@ run('PC-56 TENANT-6d-1 · W170 the tank (integration, real Postgres)', () => {
     unitRepo = new BmcUnitRepository(replica as never);
     const coldChain = new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never));
 
-    mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo);
+    mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     units = new BmcUnitService(uow, outbox, idem, metrics, audit, unitRepo, mccRepo);
     readings = new BmcReadingService(uow, metrics, unitRepo, coldChain);
     rm = new DairyBmcReadModel(replica as never, unitRepo, new OpsAlertRepository(replica as never), flags, metrics);

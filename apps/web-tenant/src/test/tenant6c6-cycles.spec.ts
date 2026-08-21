@@ -242,7 +242,7 @@ describe('TENANT-6c-6 · W169 the payout-cycle console', () => {
     expect(currentDairyNavKey('/dairy')).toBe('collections');
     // The invariant the nav has kept every wave: `built` means "has an href", exactly.
     for (const i of DAIRY_NAV) expect(i.built).toBe(i.href !== null);
-    expect(dairyUnbuiltCount()).toBe(2);      // centres, insights — TENANT-6d-1 built the BMC monitor
+    expect(dairyUnbuiltCount()).toBe(1);      // insights only — 6d-1 built the BMC monitor, 6d-2 the centres board
   });
 
   it('stops W167 telling operators the platform cannot record a payday — it has since 0157', () => {

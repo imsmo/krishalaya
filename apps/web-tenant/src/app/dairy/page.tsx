@@ -39,7 +39,7 @@ import type { DairyCounterBoard } from '@krishalaya/sdk-js';
 import {
   SHIFTS, accrualKey, analyzerKey, analyzerText, analyzerVerified, billsGapKey, bmcKey, bmcText, bmcTone,
   boardHref, bonusIgnoredKey, centreCoverageText, centreQuietKey, coverageKey, coverageShareText, dairyState,
-  dairyStateKey, flagKindKey, flagWorkflowKey, flagsKey, paydayKey, qualityText, retryChainKey, shiftClockKey,
+  dairyStateKey, flagKindKey, flagWorkflowKey, flagsKey, paydayKey, qualityText, retryChainKey, shiftClockKey, shiftClockText,
   shiftKey, shiftOf, totalsFoot, uniquenessKey, windowBasisKey, windowKey,
 } from '../../features/dairy/counter';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../features/dairy/nav';
@@ -113,6 +113,9 @@ export default async function DairyCounterPage({ searchParams }: { searchParams:
           <p className="kv-field__hint">
             {formatDate(board.day, lang)} · {t.t(shiftKey(board.shift))}
             {' · '}{t.t(shiftClockKey(board.shiftClock))}
+            {/* [TENANT-6d-2] The hour itself, when the centres agree on one — 0163 gave the centre the column that
+                TENANT-6a named and refused to invent. */}
+            {shiftClockText(board.shiftClock) && <> {shiftClockText(board.shiftClock)}</>}
           </p>
 
           {/* ---- the tiles ---- */}

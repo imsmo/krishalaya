@@ -36,7 +36,11 @@ import { CompressorState } from '../../domain/bmc-unit.entity';
 
 @Controller({ path: 'dairy/bmc', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
-@FeatureFlag(BMC_MONITOR_FLAG)
+// TWO FLAGS, BOTH REQUIRED (TENANT-6d-2 made them compose instead of overriding): a cooperative that is not
+// licensed for the dairy module must not have BMC routes, and a cooperative that is must still be able to switch
+// the monitor off on its own. Before the guard fix a screen flag CANCELLED its controller's flag, so this line
+// naming only the monitor left the tank routes live on a module that was switched off.
+@FeatureFlag('dairy', BMC_MONITOR_FLAG)
 export class BmcController {
   constructor(
     private readonly units: BmcUnitService,

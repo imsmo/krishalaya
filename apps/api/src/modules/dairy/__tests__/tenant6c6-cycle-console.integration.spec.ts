@@ -42,6 +42,8 @@ import { LoanRepaymentRepository } from '../../fintech/repositories/loan-repayme
 import { LoanService } from '../../fintech/services/loan.service';
 
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
+// PC-56 TENANT-6d-2: the custody register the centre service writes in the same transaction as the column.
+import { MccOperatorAssignmentRepository } from '../repositories/mcc-operator-assignment.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from '../repositories/milk-collection.repository';
@@ -159,7 +161,7 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
     const applier = new MilkBillDeductionService(wallet, outbox, lineRepo, creditRepo, typeRepo, loans);
     const assembler = new DairyDeductionAssemblerService(instructionRepo, creditRepo, typeRepo, memRepo, loans);
 
-    mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo);
+    mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo);
     cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags);

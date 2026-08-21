@@ -23,7 +23,8 @@ import { PaymentCycle } from '../../domain/dairy.events';
 
 @Controller({ path: 'dairy/quality', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
-@FeatureFlag('dairy_quality_desk')
+// The module gate AND the screen gate — see the note in bmc.controller.ts (TENANT-6d-2).
+@FeatureFlag('dairy', 'dairy_quality_desk')
 export class DairyQualityController {
   constructor(private readonly desk: DairyQualityReadModel) {}
 

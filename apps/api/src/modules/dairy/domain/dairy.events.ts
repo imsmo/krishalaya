@@ -62,6 +62,18 @@ export const DairyEventType = {
   // The cycle's own assembly pass. No member userId: what a member is told is their BILL (the preview), not that a
   // batch job ran — and a per-member notice here would double every preview message.
   CycleDeductionsAssembled: 'dairy.cycle_deductions_assembled',
+  // PC-56 TENANT-6d-2 · W171. Custody changing hands is the fact the cooperative's own systems most want out of this
+  // screen: somebody else is answerable for 108 families' milk from this instant. It carries BOTH people — the one
+  // taking custody and the one released — because a handover with only the arriving name cannot be reconciled against
+  // a shift roster, and "who was holding it yesterday" is the question a shortfall investigation opens with.
+  MccOperatorAssigned: 'dairy.mcc_operator_assigned',
+  // Nobody holds the centre. A separate fact rather than an assignment to null: a cooperative that deliberately leaves
+  // a centre unheld between two operators has made a decision, and a subscriber must be able to act on it (that centre
+  // should not be taking milk) without inspecting a payload for an absence.
+  MccOperatorReleased: 'dairy.mcc_operator_released',
+  // The hours changed. Emitted because a farmer-facing app, an SMS reminder and a printed noticeboard all derive from
+  // these two times, and every one of them is wrong the moment they change with nothing announced.
+  MccShiftWindowsSet: 'dairy.mcc_shift_windows_set',
 } as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 

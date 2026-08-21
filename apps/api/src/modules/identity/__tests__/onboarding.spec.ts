@@ -113,17 +113,51 @@ describe('OnboardingService.grantRole', () => {
 });
 
 describe('selfserve_onboarding feature flag gate (Law 10 kill-switch)', () => {
-  function guard(flagIsEnabled: boolean) {
-    const reflector: any = { getAllAndOverride: () => 'selfserve_onboarding' };
-    const flags: any = { isEnabled: jest.fn().mockResolvedValue(flagIsEnabled) };
-    return new FeatureFlagGuard(reflector, flags);
+  // [PC-56 TENANT-6d-2] The guard reads `getAll` and requires EVERY declared flag, because it used to read
+  // `getAllAndOverride` — so a flag on a route silently CANCELLED the flag on its controller, and a module's
+  // kill-switch did not switch the module off (`dairy` vs `dairy_cycle_preview` was the live example: the two acts
+  // that decide what 312 families are paid stayed callable with the dairy module off).
+  function guard(flagIsEnabled: boolean | boolean[], declared: Array<string | string[] | undefined> = [['selfserve_onboarding']]) {
+    const reflector: any = { getAll: () => declared };
+    const answers = Array.isArray(flagIsEnabled) ? [...flagIsEnabled] : null;
+    const flags: any = { isEnabled: jest.fn().mockImplementation(async () => (answers ? answers.shift() : flagIsEnabled)) };
+    return { g: new FeatureFlagGuard(reflector, flags), flags };
   }
   const ctx: any = { getHandler: () => ({}), getClass: () => ({}) };
 
   it('flag OFF → the route is invisible (404 NotFoundError, not 403)', async () => {
-    await expect(guard(false).canActivate(ctx)).rejects.toBeInstanceOf(NotFoundError);
+    await expect(guard(false).g.canActivate(ctx)).rejects.toBeInstanceOf(NotFoundError);
   });
   it('flag ON → request proceeds', async () => {
-    await expect(guard(true).canActivate(ctx)).resolves.toBe(true);
+    await expect(guard(true).g.canActivate(ctx)).resolves.toBe(true);
+  });
+  it('no flag declared → the route is open', async () => {
+    const h = guard(false, [undefined, undefined]);
+    await expect(h.g.canActivate(ctx)).resolves.toBe(true);
+    expect(h.flags.isEnabled).not.toHaveBeenCalled();
+  });
+  it('a STRING from an older decorator still gates the route', async () => {
+    await expect(guard(false, ['selfserve_onboarding']).g.canActivate(ctx)).rejects.toBeInstanceOf(NotFoundError);
+  });
+  it('EVERY declared flag must be on — a route flag cannot cancel its module flag', async () => {
+    // controller says `dairy` (ON), handler says `dairy_cycle_preview` (OFF) → invisible.
+    await expect(guard([true, false], [['dairy'], ['dairy_cycle_preview']]).g.canActivate(ctx)).rejects.toBeInstanceOf(NotFoundError);
+    // and the reverse: the module is off, so the screen's own flag being on changes nothing.
+    const off = guard([false, true], [['dairy'], ['dairy_cycle_preview']]);
+    await expect(off.g.canActivate(ctx)).rejects.toBeInstanceOf(NotFoundError);
+    // SHORT-CIRCUITS: the module's flag is checked first and the second flag is never read.
+    expect(off.flags.isEnabled).toHaveBeenCalledTimes(1);
+    // both on → through, and both were actually consulted.
+    const on = guard([true, true], [['dairy'], ['dairy_cycle_preview']]);
+    await expect(on.g.canActivate(ctx)).resolves.toBe(true);
+    expect(on.flags.isEnabled).toHaveBeenCalledTimes(2);
+  });
+  it('one place naming several flags requires all of them', async () => {
+    await expect(guard([true, false], [['dairy', 'dairy_centres_console']]).g.canActivate(ctx)).rejects.toBeInstanceOf(NotFoundError);
+  });
+  it('a flag named on BOTH levels is asked about once, not twice', async () => {
+    const h = guard(true, [['dairy'], ['dairy']]);
+    await expect(h.g.canActivate(ctx)).resolves.toBe(true);
+    expect(h.flags.isEnabled).toHaveBeenCalledTimes(1);
   });
 });

@@ -22,7 +22,8 @@ import { QueryCounterSchema, QueryCounterDto } from '../../dto/query-counter.dto
 
 @Controller({ path: 'dairy/counter', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
-@FeatureFlag('dairy_counter_board')
+// The module gate AND the screen gate — see the note in bmc.controller.ts (TENANT-6d-2).
+@FeatureFlag('dairy', 'dairy_counter_board')
 export class DairyCounterController {
   constructor(private readonly board: DairyCounterReadModel) {}
 
