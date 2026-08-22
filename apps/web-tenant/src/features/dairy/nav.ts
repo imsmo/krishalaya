@@ -32,7 +32,11 @@ export const DAIRY_NAV: readonly DairyNavItem[] = [
   // one was the pre-canon operator console, and the operator column could never be changed after create. It points
   // at a board with a custody register behind it now.
   { key: 'centres',     href: '/dairy/centres', built: true },
-  { key: 'insights',    href: null,      built: false },
+  // PC-56 TENANT-6e-1 · W172. The LAST dark entry: 6a drew all six sections and marked five "not built", and the four
+  // waves since lit the others. It points at a derived read plane that adds no table — and at two tiles that are
+  // sentences rather than numbers, because nothing on this platform records when a milk payment arrived or reduces
+  // anybody's litres. `dairyUnbuiltCount()` reaches zero here.
+  { key: 'insights',    href: '/dairy/insights', built: true },
   // The pre-canon operator console (P1-12), moved to /dairy/console by this wave rather than deleted: it is the only
   // surface that can currently create an MCC, enrol a member, write a rate card or approve a bill, and the canon
   // screens that will own those acts are TENANT-6b–6e. Marked `legacy` so nobody mistakes it for a canon screen.

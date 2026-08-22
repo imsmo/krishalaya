@@ -207,6 +207,6 @@ describe('TENANT-6d-1 · W170 the BMC monitor', () => {
     expect(currentDairyNavKey('/dairy/bmc')).toBe('bmc');
     expect(currentDairyNavKey('/dairy')).toBe('collections');
     for (const i of DAIRY_NAV) expect(i.built).toBe(i.href !== null);
-    expect(dairyUnbuiltCount()).toBe(1);      // insights only — TENANT-6d-2 built the centres board
+    expect(dairyUnbuiltCount()).toBe(0);      // [PC-56 TENANT-6e-1] W172 was the last one
   });
 });

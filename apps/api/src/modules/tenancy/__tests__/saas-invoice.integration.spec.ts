@@ -59,7 +59,13 @@ run('tenancy SaaS invoicing (integration, real Postgres + RLS + relay)', () => {
     await admin.query(
       `INSERT INTO countries (code, default_name, currency_code, phone_prefix) VALUES ('IN','India','INR','+91')
        ON CONFLICT (code) DO NOTHING`);
-    await admin.query(`INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status) VALUES ($1,$2,$3,$4,$5,'IN','active') ON CONFLICT (id) DO NOTHING`, [id, slug, `${slug} Legal`, slug, lt.rows[0].id]);
+    // [PC-56 TENANT-6e-1] **AND IT WAS RED AGAIN ON THE SECOND RUN, for a second reason 6d-7's fix uncovered.** The
+    // slug is a LITERAL (`acme`, `globex`) while the id is a fresh uuid per run, and `ON CONFLICT (id) DO NOTHING`
+    // cannot absorb a collision on `tenants_slug_key`. So this suite passed exactly once against any given cached test
+    // schema and failed on every run after it — invisible while the fixture threw earlier for the NOT NULL reason. The
+    // slug now carries the id, which is what every other live suite in this repo does.
+    const uniqueSlug = `${slug}-${id.slice(0, 8)}`;
+    await admin.query(`INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status) VALUES ($1,$2,$3,$4,$5,'IN','active') ON CONFLICT (id) DO NOTHING`, [id, uniqueSlug, `${slug} Legal`, slug, lt.rows[0].id]);
   }
 
   beforeAll(async () => {
@@ -71,7 +77,10 @@ run('tenancy SaaS invoicing (integration, real Postgres + RLS + relay)', () => {
     // The tenant's GST identity, so 0146's snapshot has something real to copy onto the invoice.
     await admin.query(`UPDATE tenants SET gstin='24AABCU9603R1Z5' WHERE id=$1`, [tenantA]);
     // a plan + an active subscription for tenant A whose period ends now
-    await admin.query(`INSERT INTO plans (id, code, default_name, country_code, currency_code, monthly_price_minor, annual_price_minor, is_active, version) VALUES ($1,'growth','Growth','IN','INR',99900,999000,true,1) ON CONFLICT (id) DO NOTHING`, [planA]);
+    // [PC-56 TENANT-6e-1] Same non-idempotency as the tenant slug, one level down: `plans` is UNIQUE on
+    // (code, version, country_code) while the id is fresh per run, so `ON CONFLICT (id)` cannot absorb it and this
+    // fixture worked exactly once per cached test schema. The CODE carries the run now.
+    await admin.query(`INSERT INTO plans (id, code, default_name, country_code, currency_code, monthly_price_minor, annual_price_minor, is_active, version) VALUES ($1,$2,'Growth','IN','INR',99900,999000,true,1) ON CONFLICT (id) DO NOTHING`, [planA, `growth-${planA.slice(0, 8)}`]);
     await admin.query(
       `INSERT INTO subscriptions (id, tenant_id, plan_id, status, billing_cycle, price_minor, currency_code, discount_pct, current_period_start, current_period_end, cancel_at_period_end)
        VALUES ($1,$2,$3,'active','monthly',99900,'INR',0, now() - interval '1 month', $4, false) ON CONFLICT (id) DO NOTHING`,

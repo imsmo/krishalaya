@@ -50,7 +50,7 @@ describe('TENANT-6d-2 · W171 the centres board', () => {
     expect(currentDairyNavKey('/dairy/centres')).toBe('centres');
     // …and it must not light up the collections tab as well.
     expect(currentDairyNavKey('/dairy')).toBe('collections');
-    expect(dairyUnbuiltCount()).toBe(1);      // insights only — TENANT-6e
+    expect(dairyUnbuiltCount()).toBe(0);      // [PC-56 TENANT-6e-1] W172 landed
   });
 });
 

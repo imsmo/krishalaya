@@ -24,6 +24,8 @@ import {
   DairyBmcCallPreview, DairyBmcCallResult,
   // PC-56 TENANT-6d-6 · W170's playbook step 2
   DairyDiversion, DairyDiversionNotice, DairyDiversionPreview, DairyDiversionRow,
+  // PC-56 TENANT-6e-1 · W172's derived read plane
+  DairyInsights, DairyInsightWindow,
 } from '../types';
 
 export class DairyResource {
@@ -351,6 +353,24 @@ export class DairyResource {
    */
   async diversionNotice(id: string, signal?: AbortSignal): Promise<DairyDiversionNotice> {
     return (await this.http.request<DairyDiversionNotice>('GET', `dairy/diversions/${encodeURIComponent(id)}/notice`, { signal })).data;
+  }
+
+  /**
+   * [PC-56 TENANT-6e-1] **W172 — IS THIS WORKING?** The cooperative's own 90-day view: daily volume and the counter
+   * rate per litre with their change against the preceding window, the pourer cohorts, the by-shift weekly chart, and
+   * the panel that tries to EXPLAIN the rate rather than only print it.
+   *
+   * **Read `kind` first.** The answer is one of W172's six states and five of them are not the ready page with empty
+   * fields: `not_enabled` (the screen's flag is off — say so, never draw zeroes), `unavailable` (a missing reference row
+   * is named), `no_data`, `not_enough_history` (fewer than two full cycles), or `ready`.
+   *
+   * Two figures on the ready page are REFUSALS carrying the facts they are missing — `payoutStreak` (nothing on this
+   * platform records when a milk payment actually arrived) and `spoilage` (nothing reduces anybody's litres anywhere in
+   * the schema). Render them as the sentences they are; a client that treats them as zeroes prints two claims the
+   * database cannot support.
+   */
+  async insights(params: { window?: DairyInsightWindow } = {}, signal?: AbortSignal): Promise<DairyInsights> {
+    return (await this.http.request<DairyInsights>('GET', 'dairy/insights', { query: { window: params.window }, signal })).data;
   }
 
   /** What "cold enough" means for this tank — a standing decision, audited before and after. */

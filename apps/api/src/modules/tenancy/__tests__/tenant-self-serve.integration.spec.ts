@@ -61,7 +61,7 @@ run('tenancy self-serve (integration, real Postgres + RLS + Law 11)', () => {
     await admin.query(
       `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status)
        VALUES ($1,$2,$3,$4,$5,'IN','active') ON CONFLICT (id) DO NOTHING`,
-      [id, slug, `${slug} Legal`, slug, typeId]);
+      [id, `${slug}-${id.slice(0, 8)}`, `${slug} Legal`, slug, typeId]);   // [PC-56 TENANT-6e-1] unique per run — see saas-invoice
   }
 
   beforeAll(async () => {

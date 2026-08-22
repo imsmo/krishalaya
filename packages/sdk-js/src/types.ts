@@ -2051,3 +2051,180 @@ export interface DairyReview {
   /** What the act is audited as, so the success screen can link to that entity's own trail. */
   entityType: string;
 }
+
+/* ================================================================================================================= */
+/* PC-56 TENANT-6e-1 · W172 · DAIRY INSIGHTS                                                                          */
+/* ================================================================================================================= */
+
+/** The windows the API accepts. A closed set: every query behind the page prunes `milk_collections` partitions with it,
+ *  and an arbitrary day count is a request able to read a cooperative's whole history in one page load. */
+export type DairyInsightWindow = 30 | 90 | 180;
+
+export interface DairyDayRange { from: string; to: string; days: number }
+
+export interface DairyInsightRanges {
+  current: DairyDayRange;
+  /** The same number of days immediately before `current` — what *"vs previous 90d"* compares against. */
+  previous: DairyDayRange;
+  /** The floor the pourer cohorts were judged against (one year). */
+  lookbackFrom: string;
+  window: DairyInsightWindow;
+}
+
+/**
+ * *"▲9% vs previous 90d"*, and the four ways that sentence can be unavailable.
+ *
+ * `deltaBps` is BASIS POINTS as a signed integer (9% is 900), so the page divides once rather than two screens
+ * disagreeing by a tenth over the same two numbers. `from_zero` exists because a cooperative that collected nothing
+ * last quarter has not improved by any percentage — every implementation that prints "+100%" there has chosen a number
+ * to avoid saying so.
+ */
+export type DairyChange =
+  | { kind: 'changed'; deltaBps: number; delta: string; from: string; to: string }
+  | { kind: 'from_zero'; to: string }
+  | { kind: 'to_zero'; from: string }
+  | { kind: 'both_zero' }
+  | { kind: 'no_previous' };
+
+/**
+ * *"not enough history — needs ≥ 2 full cycles"*, measured in CYCLES because that is the unit a secretary acts on:
+ * 30 days is two cycles for one cooperative and one for another. `atLeast` marks a bounded answer — the earliest pour
+ * is searched for only inside the one-year lookback, so a cooperative in its ninth season is told "over a year" rather
+ * than being quoted 365 days as if it were a measurement.
+ */
+export type DairyHistoryVerdict =
+  | { kind: 'no_data' }
+  | { kind: 'not_enough_history'; days: number; needDays: number; cycle: string; cycleDays: number; haveCycles: number; atLeast: boolean }
+  | { kind: 'ready'; days: number; cycle: string; cycleDays: number; haveCycles: number; atLeast: boolean };
+
+/** *"Daily volume avg 4,180 L"*. Milli-litres, averaged over every CALENDAR day in the window — not over the days that
+ *  had pours, which would flatter the cooperative whose centres were shut. `daysWithPours` is returned so the page can
+ *  say "collected on 62 of 90 days", the sentence that explains a low average without excusing it. */
+export interface DairyVolumeInsight {
+  perDayMilli: string;
+  totalMilli: string;
+  days: number;
+  basis: 'per_calendar_day';
+  daysWithPours: number;
+  change: DairyChange;
+}
+
+/**
+ * *"Member ₹/L ₹51.60"* — **the counter rate, BEFORE deductions**, which is what `basis` says out loud.
+ * `milk_collections.amount_minor` is what a pour earned when it was weighed; what a member receives is the bill's
+ * `net_minor`, after feed credit, loan EMI, insurance and share. Those are different numbers and the second is always
+ * smaller.
+ *
+ * `centiMinorPerLitre` is minor units per litre × 100: ₹51.60/L is 516000. The two extra places are kept because the
+ * figure is a ratio of two large sums, and rounding to whole paise before comparing two windows makes a real ₹0.004
+ * movement appear as ₹0.00 or ₹0.01 depending on nothing.
+ */
+export type DairyRatePerLitre =
+  | { kind: 'no_pours' }
+  | { kind: 'measured'; basis: 'gross_at_counter'; centiMinorPerLitre: string; amountMinor: string; milli: string; change: DairyChange };
+
+/** *"pourers active 312, +18 this quarter · 4 win-backs"*. The three cohorts PARTITION the active set; `inconsistent`
+ *  is returned instead of drawing a negative "continuing" count when they do not. */
+export type DairyPourerCohorts =
+  | { kind: 'no_pourers'; lookbackDays: number }
+  | { kind: 'inconsistent'; active: number; newcomers: number; winBacks: number; lookbackDays: number }
+  | {
+      kind: 'measured'; active: number; newcomers: number; winBacks: number; continuing: number;
+      lookbackDays: number; basis: 'first_pour_within_lookback'; change: DairyChange;
+    };
+
+/**
+ * *"On-time payout streak · 24 cycles"* — **REFUSED, and it is the most quotable number on the screen.**
+ *
+ * A streak is `consecutive cycles where the money arrived on or before the promised day`. This platform has the promise
+ * (`dairy_bill_cycles.payday`) and not the arrival: a cycle's status is `open|closed` only, `milk_bills.status` admits
+ * `paid` with no instant beside it, and `payouts` has no `settled_at` at all. `cyclesClosed` and
+ * `cyclesAllBillsApproved` are what stands in its place — weaker sentences, supportable ones.
+ */
+export interface DairyPayoutStreak {
+  kind: 'not_recorded';
+  missing: string[];
+  cyclesClosed: number;
+  cyclesAllBillsApproved: number;
+}
+
+/** *"Volume by shift (90d, weekly buckets)"*. Buckets are counted BACK from today, so the partial bucket lands at the
+ *  left edge rather than showing a collapse in collection at the right edge, where the eye reads "now". Every bucket is
+ *  present including the empty ones — a gap in the array becomes a compressed axis, and a compressed axis turns a
+ *  shutdown into a smooth line. */
+export interface DairyShiftBucket {
+  from: string; to: string; days: number;
+  byShift: Record<string, string>;
+  totalMilli: string;
+}
+
+export interface DairyShiftSeries {
+  buckets: DairyShiftBucket[];
+  shifts: string[];
+  bucketDays: number;
+  firstBucketDays: number;
+}
+
+/* `DairyBonusSlab` and `DairyPremiumBand` are TENANT-6b-2's, reused unchanged. The insights panel and the quality desk
+   count the same members against the same slab, and two declarations of that shape is how "184 pourers" comes to mean
+   two different things in one client. */
+
+/**
+ * *"184 pourers in the fat ≥ 6.5 slab, was 141"*.
+ *
+ * `comparable` is false when the two windows measured different things — a "141 would-qualify" against a "184 earned"
+ * is not a trend, it is a flag being switched on, and an arrow over it would credit the cooperative's milk for an act
+ * of configuration.
+ *
+ * **The previous window is NOT labelled with today's flag.** This platform holds no feature-flag history, so what the
+ * slabs were doing ninety days ago can only be inferred from money: a window where members were actually paid a premium
+ * had the slabs applied. When nothing was paid then and premiums ARE being paid now, `previous.kind` is
+ * `basis_unknown` — the slabs were either off back then or on with nobody clearing the band, and nothing records
+ * which. Render that as "not known", never as a zero and never as a comparison.
+ */
+export type DairyPremiumPrevious = DairyPremiumBand | { kind: 'basis_unknown'; slabs: DairyBonusSlab[] };
+
+export interface DairyPremiumTrend {
+  current: DairyPremiumBand;
+  previous: DairyPremiumPrevious;
+  change: DairyChange | null;
+  comparable: boolean;
+}
+
+/** *"zero spoilage"* — refused, reusing TENANT-6d-2's verdict rather than deciding it a second time: no relation on
+ *  this platform reduces anybody's litres anywhere in the schema. */
+export interface DairyLitresLost { kind: 'not_measurable'; needs: string[] }
+
+export interface DairyInsightsReady {
+  kind: 'ready';
+  ranges: DairyInsightRanges;
+  /** The window ends TODAY, which is a partial day until midnight — so the newest figures include a day still in
+   *  progress, and the page says so rather than the reader assuming otherwise. */
+  endsOnPartialDay: true;
+  currencyCode: string;
+  minorUnits: number;
+  history: DairyHistoryVerdict;
+  volume: DairyVolumeInsight;
+  ratePerLitre: DairyRatePerLitre;
+  pourers: DairyPourerCohorts;
+  payoutStreak: DairyPayoutStreak;
+  byShift: DairyShiftSeries;
+  premium: DairyPremiumTrend;
+  rateCards: DairyRateCardsInForce;
+  spoilage: DairyLitresLost;
+  /** The bonus actually PAID in the window — zero whenever `slabsApplied` is false, and then `premium.current.basis`
+   *  is `would_qualify` and says so. */
+  bonusMinor: string;
+  slabsApplied: boolean;
+  /** W172's restricted state: false means the aggregate is readable and one member's record is not. */
+  memberDrillDown: boolean;
+}
+
+/** W172's six states, as a union rather than an object with nullable fields — five of them are not "the ready page with
+ *  some values empty", and a flat shape is how a page ends up drawing a 90-day chart over four days of pours. */
+export type DairyInsights =
+  | { kind: 'not_enabled'; flag: string }
+  | { kind: 'unavailable'; missing: string[] }
+  | { kind: 'no_data'; ranges: DairyInsightRanges; history: DairyHistoryVerdict; memberDrillDown: boolean }
+  | { kind: 'not_enough_history'; ranges: DairyInsightRanges; history: DairyHistoryVerdict; memberDrillDown: boolean; pourersSoFar: number }
+  | DairyInsightsReady;

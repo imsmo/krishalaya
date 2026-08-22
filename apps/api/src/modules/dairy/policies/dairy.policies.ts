@@ -2,6 +2,7 @@
 //   dairy.manage — the cooperative/MCC operator: create MCCs + rate cards, enrol members, record
 //                  collections, generate/approve/PAY milk bills. Members READ their own data (no perm).
 import { RequestContext } from '../../../core/tenancy-context/request-context';
+import { IdentityPermissions } from '../../identity/policies/identity.policies';
 
 /**
  * [PC-56 TENANT-6c-3] `SettlementClose` is 0144's permission, reused rather than re-invented.
@@ -38,3 +39,19 @@ export const canCloseSettlement = (ctx: RequestContext) => ctx.permissions.has('
 /** The checker's verb for a playbook override (0166). `*` still passes, as it does for every permission on this
  *  platform — a god-mode caller is a different conversation (Law 11) and not a second rule here. */
 export const canOverrideDairy = (ctx: RequestContext) => ctx.permissions.has('dairy.override') || ctx.permissions.has('*');
+
+/**
+ * [PC-56 TENANT-6e-1] W172's restricted state: *"insights restricted — member drill-down needs `member.view360`"*.
+ *
+ * The insights page is an AGGREGATE and needs `dairy.manage` like every other dairy screen. Opening one member's record
+ * from it is a different decision, and 0128 already made it: `member.view360` is *"the deepest per-person read"*,
+ * granted to `tenant_admin` alone. So the drill-down is answered here rather than the page assuming that a manager who
+ * may see 312 pourers in total may also open any one of their files.
+ *
+ * The key is IMPORTED from identity rather than retyped. It is one seeded platform permission (0004 + 0128) and two
+ * copies of the string is how a rename leaves a screen silently granting nobody — Law 6's reasoning applied to a
+ * permission key. Identity's *policies* are its public authorisation surface; this is not a reach into its
+ * repositories, which is what Law 11 forbids.
+ */
+export const canDrillDownMember = (ctx: RequestContext) =>
+  ctx.permissions.has(IdentityPermissions.View360) || ctx.permissions.has('*');

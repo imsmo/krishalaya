@@ -177,3 +177,13 @@ details.kv-card > summary { cursor: pointer; }
 .kv-thread__body { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .kv-btn--sm { padding: 4px 10px; font-size: 13px; min-height: 32px; }
 .kv-fine { font-size: 12px; }
+
+/* --- PC-56 TENANT-6e-1 · W172's volume chart, drawn without a chart library ---
+   A bar is a meter beside a number, never instead of one: the litres are in the cell, the meter is decoration for a
+   sighted reader, and `role="img"` + `aria-label` on the element carries the same figure for a screen reader. No
+   JavaScript and no CDN — this page loads on a village 3G connection, and a 90 KB charting bundle to draw thirteen
+   rectangles is exactly the cost Rule Zero refuses to put on the people using it.
+   `--kv-meter-pct` is set inline per row (0–100, computed as integer arithmetic on bigints server-side).
+   `logical` properties throughout so the bars grow from the reading edge in an RTL locale. */
+.kv-meter { display: block; height: 6px; margin-block-start: 4px; border-radius: 9999px; background: var(--kv-neutral-100); }
+.kv-meter::before { content: ""; display: block; height: 100%; width: var(--kv-meter-pct, 0%); border-radius: 9999px; background: var(--kv-brand-500); }

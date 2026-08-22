@@ -56,6 +56,10 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   // it from there — a second copy agrees exactly once.
   DairyDiversion, DairyDiversionNotice, DairyDiversionPreview, DairyDiversionRefusal, DairyDiversionRow,
   DairyDiversionState, DairyNoticeState,
+  // PC-56 TENANT-6e-1 · W172 (dairy insights)
+  DairyInsights, DairyInsightsReady, DairyInsightWindow, DairyInsightRanges, DairyDayRange, DairyChange,
+  DairyHistoryVerdict, DairyVolumeInsight, DairyRatePerLitre, DairyPourerCohorts, DairyPayoutStreak,
+  DairyShiftSeries, DairyShiftBucket, DairyPremiumTrend, DairyPremiumPrevious, DairyLitresLost,
   DairyStabilityVerdict, DairyWorkedExample, DairyFlagProtocol,
   DairyCoverage, DairyFlagSummary, DairyAccrual, DairyShiftClock,
   DairyAnimalType, DairyPaymentCycle, DairyPricingModel, DairyShift, MilkBillStatus,

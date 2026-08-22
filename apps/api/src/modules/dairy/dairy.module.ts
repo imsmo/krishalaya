@@ -48,6 +48,7 @@ import { MilkQualityReviewRepository } from './repositories/milk-quality-review.
 // PC-56 TENANT-6b-2 · W168's desk itself — a pure read over 6b-1's writes.
 import { DairyQualityController } from './controllers/v1/dairy-quality.controller';
 import { DairyQualityReadModel } from './read-models/dairy-quality.read-model';
+import { DairyInsightsReadModel } from './read-models/dairy-insights.read-model';
 // PC-56 TENANT-6c-6 · W169's own console: the register, its tiles, and every act's refusal.
 import { DairyCycleConsoleReadModel } from './read-models/dairy-cycle-console.read-model';
 import { DairyCycleConsoleRepository } from './repositories/dairy-cycle-console.repository';
@@ -70,6 +71,7 @@ import { BmcReadingService } from './services/bmc-reading.service';
 import { DairyBmcReadModel } from './read-models/dairy-bmc.read-model';
 import { BmcController } from './controllers/v1/bmc.controller';
 import { DairyQualityRepository } from './repositories/dairy-quality.repository';
+import { DairyInsightsRepository } from './repositories/dairy-insights.repository';
 // PC-56 TENANT-6c-1 · W169's cycle: the noun this platform did not have, and the cadence job that fills it.
 import { DairyCycleCloseCadenceJob } from './jobs/dairy-cycle-close.cadence-job';
 import { DairyBillCycleService } from './services/dairy-bill-cycle.service';
@@ -105,6 +107,7 @@ import { DairyDeductionAssemblerService } from './services/dairy-deduction-assem
 import { CommunicationModule } from '../communication/communication.module';
 import { BmcCallService } from './services/bmc-call.service';
 import { DiversionsController } from './controllers/v1/diversions.controller';
+import { DairyInsightsController } from './controllers/v1/dairy-insights.controller';
 import { DairyDiversionService } from './services/dairy-diversion.service';
 import { DairyDiversionRepository } from './repositories/dairy-diversion.repository';
 
@@ -131,7 +134,7 @@ import { DairyDiversionRepository } from './repositories/dairy-diversion.reposit
     // PC-56 TENANT-6d-1 · W170
     BmcController,
     // PC-56 TENANT-6d-6 · W170's playbook step 2
-    DiversionsController],
+    DiversionsController, DairyInsightsController],
   providers: [
     MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService,
     MccCentreRepository, DairyMembershipRepository, MilkRateCardRepository, MilkCollectionRepository, MilkBillRepository, D2cService, D2cRepository,
@@ -153,6 +156,8 @@ import { DairyDiversionRepository } from './repositories/dairy-diversion.reposit
     MilkQualityService, MilkQualityReviewRepository,
     // PC-56 TENANT-6b-2
     DairyQualityRepository, DairyQualityReadModel,
+    // [PC-56 TENANT-6e-1] W172's derived read plane. No service: it decides nothing and writes nothing.
+    DairyInsightsRepository, DairyInsightsReadModel,
     // PC-56 TENANT-6c-2
     MilkBillDisputeRepository, MilkBillDisputeService,
     // PC-56 TENANT-6c-4
