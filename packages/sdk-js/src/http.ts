@@ -47,6 +47,42 @@ export class HttpClient {
     return this.attempt<T>(method, path, opts, false);
   }
 
+  /**
+   * [PC-56 TENANT-6e-2] A RAW request: headers and auth exactly as `request`, but the body is handed back UNREAD as the
+   * `Response`, for the one endpoint in this SDK that returns bytes rather than an envelope — the export download. No
+   * retry (a stream cannot be replayed), no 401 recovery (the caller mints a fresh link instead), no JSON parsing. A
+   * non-2xx is STILL a typed `SdkError`, read from the body, so a refused download surfaces its code (`outcome`) rather
+   * than a broken file.
+   */
+  async requestRaw(method: HttpMethod, path: string, opts: RequestOptions = {}): Promise<Response> {
+    const url = this.buildUrl(path, opts.query);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const onAbort = () => controller.abort();
+    opts.signal?.addEventListener('abort', onAbort);
+    try {
+      const headers = await this.headers(method, opts);
+      headers.accept = '*/*';
+      const res = await this.config.fetchImpl(url, { method, headers, signal: controller.signal });
+      if (!res.ok) {
+        const text = await res.text();
+        const json = (text ? safeParse(text) : {}) as { error?: Record<string, unknown>; meta?: { request_id?: string } } & Record<string, unknown>;
+        const e = (json.error ?? json) as { code?: string; message?: string; details?: Record<string, unknown> };
+        throw new SdkError(e.code ?? 'API_ERROR', res.status, e.message ?? `HTTP ${res.status}`, json.meta?.request_id ?? res.headers.get('x-request-id') ?? undefined, e.details ?? e);
+      }
+      // The timer is cleared in `finally` below, so the caller streams the body without a deadline of ours — a 4 GB
+      // export must not be aborted at `timeoutMs`; the connection's own liveness is the bound.
+      return res;
+    } catch (err) {
+      if (err instanceof SdkError) throw err;
+      if (controller.signal.aborted) throw new SdkTimeoutError(this.config.timeoutMs);
+      throw new SdkNetworkError(err instanceof Error ? err.message : 'network error', err);
+    } finally {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener('abort', onAbort);
+    }
+  }
+
   /** `isUnauthorizedRetry` is true only on the ONE retry issued after a successful refresh — it disables a
    * second recovery attempt for this same logical request, which is what bounds the loop to a single retry. */
   private async attempt<T>(method: HttpMethod, path: string, opts: RequestOptions, isUnauthorizedRetry: boolean): Promise<Envelope<T>> {

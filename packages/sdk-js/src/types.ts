@@ -2228,3 +2228,49 @@ export type DairyInsights =
   | { kind: 'no_data'; ranges: DairyInsightRanges; history: DairyHistoryVerdict; memberDrillDown: boolean }
   | { kind: 'not_enough_history'; ranges: DairyInsightRanges; history: DairyHistoryVerdict; memberDrillDown: boolean; pourersSoFar: number }
   | DairyInsightsReady;
+
+/* ---- PC-56 TENANT-6e-2 · the tenant EXPORT PLANE (W2553 queued, W2554 ready) ---------------------------------- */
+
+export type ExportJobStatus = 'queued' | 'running' | 'ready' | 'failed' | 'expired';
+
+/** W2553's ETA. `no_history` is *"no estimate yet"* — the platform has never finished an export, so it does not know how
+ *  long one takes, and it says so rather than printing zero. */
+export type ExportEta =
+  | { kind: 'no_history' }
+  | { kind: 'estimate'; seconds: number; basis: 'median_of_recent_runs'; sample: number; runsIncluded: number };
+
+/** W2553's position: 1-based (`1` = next to be made) across the ONE worker queue every tenant shares. */
+export interface ExportStanding { position: number; ahead: number; eta: ExportEta }
+
+/** W2554's receipt. `rowCount` is DATA rows — the header line is not a row. `notes` is what the file admits (refused
+ *  figures, bounds); a refused figure is never a row in the file. */
+export interface ExportReceipt {
+  fileName: string; rowCount: number; sha256: string; byteSize: number; contentType: string; generatedAt: string; requestedBy: string; notes: string[];
+}
+
+/** *"every fetch logged"* — served AND refused attempts, and any digest mismatch between stored and served bytes. */
+export interface ExportFetchCounts { attempts: number; served: number; refused: number; mismatched: number; lastServedAt: string | null }
+
+export type ExportDownloadState =
+  | { kind: 'available'; linkTtlSec: number }
+  | { kind: 'not_ready' }
+  | { kind: 'file_expired'; expiredAt: string | null }
+  | { kind: 'failed' };
+
+export type ExportFailureCode = 'unknown_dataset' | 'dataset_disabled' | 'money_shape_missing' | 'producer_failed' | 'storage_failed' | 'too_many_attempts';
+
+export interface ExportJob {
+  id: string; datasetCode: string; params: Record<string, unknown>; status: ExportJobStatus; attempts: number; requestedBy: string;
+  queuedAt: string; startedAt: string | null; generatedAt: string | null; failedAt: string | null; expiredAt: string | null; expiresAt: string | null;
+  receipt: ExportReceipt | null;
+  failure: { code: ExportFailureCode | string; detail: string | null } | null;
+  /** Present ONLY while `queued`. */
+  standing: ExportStanding | null;
+  /** Present from `ready` on. */
+  fetches: ExportFetchCounts | null;
+  download: ExportDownloadState;
+}
+
+/** The 15-minute signed link. Present it as `?token=` on `downloadPath` BESIDE the session — the link authorises the
+ *  file, the session says who fetched it. */
+export interface ExportMintedLink { token: string; jti: string; expiresAt: string; ttlSec: number; downloadPath: string }

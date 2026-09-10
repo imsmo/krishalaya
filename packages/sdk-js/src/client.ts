@@ -50,6 +50,7 @@ import { PrivacyResource } from './resources/privacy';
 import { OnboardingResource } from './resources/onboarding';
 import { MembersResource } from './resources/members';
 import { BulkImportsResource } from './resources/bulk-imports';
+import { ExportsPlaneResource } from './resources/exports-plane';
 
 export class KrishalayaClient {
   private readonly http: HttpClient;
@@ -125,6 +126,8 @@ export class KrishalayaClient {
   readonly members: MembersResource;
   /** PC-56 TENANT-1b-4 · bulk imports with W156's validate-first triage. */
   readonly bulkImports: BulkImportsResource;
+  /** PC-56 TENANT-6e-2 · the tenant EXPORT PLANE (W2553 queued / W2554 ready): status + position + ETA, signed link, bytes. */
+  readonly exportsPlane: ExportsPlaneResource;
   /** PC-56 TENANT-1c · W117's dashboard + W116's go-live checklist. */
   readonly consoleHome: ConsoleHomeResource;
   readonly market: MarketResource;
@@ -200,6 +203,7 @@ export class KrishalayaClient {
     this.users = new UsersResource(this.http);
     this.members = new MembersResource(this.http);
     this.bulkImports = new BulkImportsResource(this.http);
+    this.exportsPlane = new ExportsPlaneResource(this.http);
     this.consoleHome = new ConsoleHomeResource(this.http);
     this.market = new MarketResource(this.http);
     this.weather = new WeatherResource(this.http);

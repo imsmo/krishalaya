@@ -64,7 +64,13 @@ INSERT INTO notification_templates (event_code,channel,language_code,tenant_id,s
  ('review.prompt','inapp','en',NULL,'Rate your experience','How was your recent order? Leave a review.',NULL,true),
  ('auction.ended','push','en',NULL,'Auction ended','An auction you watched has ended — see the result.',NULL,true),
  ('auction.ended','inapp','en',NULL,'Auction ended','An auction you watched has ended — see the result.',NULL,true)
-ON CONFLICT (event_code,channel,language_code,tenant_id) DO NOTHING;
+-- [PC-56 TENANT-6e-2 2026-09-10] WAS `ON CONFLICT (event_code,channel,language_code,tenant_id) DO NOTHING` — a TARGETED
+-- conflict on the table's own unique key, whose `tenant_id` is NULL on every platform row. Postgres treats NULLs as
+-- distinct there, so that target could never fire (TENANT-6c-4's finding, and the reason every later block in this
+-- file uses the untargeted form), and since 0162 added `uq_notification_templates_platform` the second run of this
+-- file failed on THIS statement: `node db/scripts/seed.js` was not re-runnable on any database it had already seeded.
+-- Invisible because the programme's proof ran seeds exactly once per fresh database. Untargeted, like the rest.
+ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------------------------------------
 -- THE VARIABLE DECLARATIONS FOR THE COPY ABOVE (moved here by PC-56 TENANT-4d-5, chain repair)
@@ -443,6 +449,33 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('dairy.shift_diversion_cancelled','to',    'mcc_centres.default_name (the centre that was to take it)', 'Bhesan', true),
  ('dairy.shift_diversion_cancelled','day',   'dairy_shift_diversions.diverted_on (digits, DD/MM)',  '21/08',    true),
  ('dairy.shift_diversion_cancelled','shift', 'dairy_shift_diversions.shift (localized)',            'evening',  true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
+-- ==================================================================================================================
+-- PC-56 TENANT-6e-2 · **THE EXPORT** — W2553/W2554: *"you will find the file on the ready page"*
+-- ==================================================================================================================
+-- 0169.4 catalogues `exports.export_ready` (inapp + push, opt-out allowed — a courtesy, not a safety notice). The
+-- worker emits it in the SAME transaction that marks a job ready. Three variables, all required, all used in every
+-- body: `dataset` is a PER-LANGUAGE value read from `ui_messages` (seed 0017) so the Gujarati notice does not carry
+-- the platform code `dairy.insights`; `rows` is digits (DATA rows — the header is not a row, and the receipt says the
+-- same); `file` is the file name exactly as the receipt prints it, so the person can match the notice to the page.
+--
+-- NO LINK IN THE COPY. The download link is minted on the ready page and lives fifteen minutes; a link in a
+-- notification read the next morning would be a dead one, and the platform holds no per-tenant console origin to
+-- build one from anyway. The notice says where the file IS, which is the sentence W2553 itself uses.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('exports.export_ready','push','gu',NULL,'તમારી {{dataset}} ફાઇલ તૈયાર છે','{{file}} — {{rows}} હરોળ. ફાઇલ કન્સોલના "એક્સપોર્ટ તૈયાર" પેજ પર છે.',NULL,true),
+ ('exports.export_ready','push','hi',NULL,'Aapki {{dataset}} file taiyaar hai','{{file}} — {{rows}} rows. File console ke "Export ready" page par hai.',NULL,true),
+ ('exports.export_ready','push','en',NULL,'Your {{dataset}} export is ready','{{file}} — {{rows}} rows. Find it on the console''s "Export ready" page.',NULL,true),
+ ('exports.export_ready','inapp','gu',NULL,'તમારી {{dataset}} ફાઇલ તૈયાર છે','{{file}} — {{rows}} હરોળ. ફાઇલ કન્સોલના "એક્સપોર્ટ તૈયાર" પેજ પર છે; ડાઉનલોડ લિંક ત્યાંથી બનાવો, તે 15 મિનિટ માટે માન્ય રહે છે.',NULL,true),
+ ('exports.export_ready','inapp','hi',NULL,'Aapki {{dataset}} file taiyaar hai','{{file}} — {{rows}} rows. File console ke "Export ready" page par hai; download link wahin se banayein, woh 15 minute tak maanya rahega.',NULL,true),
+ ('exports.export_ready','inapp','en',NULL,'Your {{dataset}} export is ready','{{file}} — {{rows}} rows. Find it on the console''s "Export ready" page; make the download link there — it is valid for 15 minutes.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('exports.export_ready', 'dataset', 'ui_messages exports.dataset.<tenant_export_jobs.dataset_code> (localized)', 'dairy insights', true),
+ ('exports.export_ready', 'rows',    'tenant_export_jobs.row_count (digits, DATA rows)',                          '27',             true),
+ ('exports.export_ready', 'file',    'tenant_export_jobs.file_name',                                              'dairy-insights-90d-2026-09-10.csv', true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END

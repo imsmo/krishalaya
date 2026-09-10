@@ -110,6 +110,10 @@ import { DiversionsController } from './controllers/v1/diversions.controller';
 import { DairyInsightsController } from './controllers/v1/dairy-insights.controller';
 import { DairyDiversionService } from './services/dairy-diversion.service';
 import { DairyDiversionRepository } from './repositories/dairy-diversion.repository';
+// PC-56 TENANT-6e-2 · THE EXPORT. W172's file is the FIRST dataset on the tenant export plane (`core/exports-plane`);
+// the producer is registered below beside the cadence jobs, the same way the module registers everything it owns.
+import { DATASET_REGISTRY, DatasetRegistry } from '../../core/exports-plane/dataset.registry';
+import { DairyInsightsDataset } from './exports/dairy-insights.dataset';
 
 // [PC-56 TENANT-6c-1] What used to stand here said the cycle-close job "is instantiated by apps/worker with a
 // privileged kv_relay Pool". APPS/WORKER INSTANTIATED NOTHING OF THE KIND, and could not have: its JOBS registry is
@@ -177,6 +181,8 @@ import { DairyDiversionRepository } from './repositories/dairy-diversion.reposit
     // column) and is provided here because this is its first caller on the server — `ui_messages` has existed since
     // 0001 with no reader at all.
     UiMessageRepository, DairyNoticeVarsService,
+    // PC-56 TENANT-6e-2
+    DairyInsightsDataset,
   ],
   exports: [MccCentreService, DairyMembershipService, MilkRateCardService, MilkCollectionService, MilkBillService, MilkQualityService, DairyBillCycleService, MilkBillDisputeService,
     // PC-56 TENANT-6c-4
@@ -187,12 +193,16 @@ import { DairyDiversionRepository } from './repositories/dairy-diversion.reposit
 export class DairyModule implements OnModuleInit {
   constructor(
     @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    @Inject(DATASET_REGISTRY) private readonly datasets: DatasetRegistry,
     private readonly deliveryRuns: D2cDeliveryRunsCadenceJob,
     private readonly cycleClose: DairyCycleCloseCadenceJob,
+    private readonly insightsDataset: DairyInsightsDataset,
   ) {}
   onModuleInit(): void {
     this.jobs.register(this.deliveryRuns);
     // PC-56 TENANT-6c-1: the registration whose absence made "312 bills in draft" mean zero bills, on every tenant.
     this.jobs.register(this.cycleClose);
+    // PC-56 TENANT-6e-2: W172's export. Without this line `dairy.insights` is a code the worker fails with `unknown_dataset`.
+    this.datasets.register(this.insightsDataset);
   }
 }

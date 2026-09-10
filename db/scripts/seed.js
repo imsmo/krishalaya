@@ -32,6 +32,8 @@ const ORDER = [
   // TENANT-6c-4 found `rules/0208_fintech_products.sql` had never been listed and therefore never existed in any
   // database, and nothing would have said so. `db/scripts/__tests__` now asserts this list covers every seed file.
   'core/0016_ui_messages_dairy_notices.sql',
+  // [PC-56 TENANT-6e-2] The name of each export DATASET in three languages, for the `exports.export_ready` notice.
+  'core/0017_ui_messages_export_datasets.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

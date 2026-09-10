@@ -48,6 +48,9 @@ import {
 // The animal and pricing-model words are 6b-2's, reused: one key per fact, in one catalogue.
 import { animalTypeKey, pricingModelKey } from '../../../features/dairy/quality';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
+// PC-56 TENANT-6e-2 · W172's [Export] → W2553. The button is a form POST to a server action; the job's page does the rest.
+import { enqueueInsightsExportAction } from './actions';
+import { exportEnqueueErrorKey } from '../../../features/dairy/exports';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +62,7 @@ const ARROW: Record<'up' | 'down' | 'flat' | 'none', string> = {
   up: 'dairy.insights.change.up', down: 'dairy.insights.change.down', flat: 'dairy.insights.change.flat', none: '',
 };
 
-export default async function DairyInsightsPage({ searchParams }: { searchParams: { window?: string } }) {
+export default async function DairyInsightsPage({ searchParams }: { searchParams: { window?: string; exportError?: string } }) {
   await requireSession('/dairy/insights');
   const t = getTranslator();
   const lang = getLang();
@@ -124,6 +127,20 @@ export default async function DairyInsightsPage({ searchParams }: { searchParams
           </Link>
         ))}
       </nav>
+
+      {/* W172's page action: [Export] → W2553. One button, one POST, no JS. The plane refuses (flag off, no verb) with a
+          code that comes back here as a sentence; the queued screen is the job's own page. Not offered while the
+          screen itself is restricted or switched off — a file of a page one may not see is not a thing to offer. */}
+      {state !== 'restricted' && state !== 'notEnabled' && (
+        <form action={enqueueInsightsExportAction} style={{ display: 'inline' }}>
+          <input type="hidden" name="window" value={String(current)} />
+          <button type="submit" className="kv-btn kv-btn--secondary" aria-describedby="export-hint">{t.t('dairy.export.button')}</button>
+          <span id="export-hint" className="kv-field__hint"> {t.t('dairy.export.hint')}</span>
+        </form>
+      )}
+      {exportEnqueueErrorKey(searchParams.exportError) && (
+        <div className="kv-error" role="alert"><p>{t.t(exportEnqueueErrorKey(searchParams.exportError)!)}</p></div>
+      )}
 
       {state !== 'ok' || !ready ? (
         <div

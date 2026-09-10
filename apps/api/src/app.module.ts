@@ -15,6 +15,8 @@ import { BuyerModule } from './modules/buyer/buyer.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { MediaModule } from './core/media/media.module';
 import { BulkModule } from './core/bulk/bulk.module';
+// PC-56 TENANT-6e-2 · the tenant EXPORT PLANE (W2553/W2554): queue, worker, receipt, signed link, fetch log.
+import { ExportsPlaneModule } from './core/exports-plane/exports-plane.module';
 import { AuctionsModule } from './modules/auctions/auctions.module';
 import { OffersModule } from './modules/offers/offers.module';
 import { RequirementsModule } from './modules/requirements/requirements.module';
@@ -56,7 +58,7 @@ import { PartnerApiModule } from './modules/partner-api/partner-api.module';
 import { TenantWebhooksModule } from './modules/tenant-webhooks/tenant-webhooks.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, PartnerApiModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, InsuranceModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, AssistantModule, UnifiedSearchModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, ExportsPlaneModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, PartnerApiModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, InsuranceModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, AssistantModule, UnifiedSearchModule],
 })
 export class AppModule implements NestModule {
   // security-headers (every response, incl. error paths) THEN request-id THEN tenant-context (Law 1) on every route.

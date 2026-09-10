@@ -276,15 +276,26 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
     it('records pours into the fortnight that has already ended', async () => {
       const prev = previousCycleWindow(today, 'fortnightly');
       win = { ...win, from: prev.from, to: prev.to };
-      // Two members pour on the LAST day of the ended window; a third (monthly) pours the same day.
-      for (const m of [memA, memB, memMonthly]) {
+      // Two members pour on the LAST day of the ended window; a third (monthly) pours TODAY.
+      //
+      // [PC-56 TENANT-6e-2 2026-09-10 · TEST-ONLY FIX] The monthly member used to pour on `prev.to` as well, and the next
+      // test asserts their month "has not ended yet". That was true only in the SECOND half of a month: in the first half
+      // the previous fortnight ends on the last day of the previous MONTH, so the monthly cycle containing that pour had
+      // closed too and `buildBills` correctly drafted THREE bills — the suite was red from the 1st to the 15th of every
+      // month and green from the 16th, and nobody had run it in the first half. Pouring the monthly member today keeps
+      // both of the test's claims true on every calendar day: the pour exists and unbilled, and its month is open.
+      for (const m of [memA, memB]) {
         await collections.record(tenantIST, actor, `idem-${randomUUID()}`, {
           membershipId: m, mccId, shift: 'morning', collectedOn: prev.to,
           weightKg: '8.615', fatPct: '6.80', snfPct: '9.10', waterFlag: false, adulterationFlags: [],
         } as never);
       }
+      await collections.record(tenantIST, actor, `idem-${randomUUID()}`, {
+        membershipId: memMonthly, mccId, shift: 'morning', collectedOn: today,
+        weightKg: '8.615', fatPct: '6.80', snfPct: '9.10', waterFlag: false, adulterationFlags: [],
+      } as never);
       const n = (await admin.query(`SELECT count(*)::int c FROM milk_collections WHERE tenant_id=$1 AND collected_on=$2::date`, [tenantIST, prev.to])).rows[0].c;
-      expect(n).toBe(3);
+      expect(n).toBe(2);
     });
 
     it('ensures both windows, closes the ended one, and leaves the running one OPEN', async () => {

@@ -9,8 +9,13 @@
 // `dairy_insights` could never reach W172's flagged-off STATE — the page would get a 404 indistinguishable from a
 // mistyped URL, where the canon wants words ("insights are not switched on"). So `dairy` gates the route, the screen's
 // own flag is read inside the read model, and 0168.5 says the same thing from the database's side.
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
+import { BadRequestError } from '../../../../shared/errors/app-error';
+import { ExportPlaneService } from '../../../../core/exports-plane/export-plane.service';
+import { ZodBody } from '../../../../core/http/zod.pipe';
+import { DAIRY_INSIGHTS_DATASET, DairyInsightsExportParamsSchema, DairyInsightsExportParams } from '../../exports/dairy-insights.dataset';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodQuery } from '../../../../core/http/zod.pipe';
@@ -24,7 +29,7 @@ import { DairyPermissions, canDrillDownMember } from '../../policies/dairy.polic
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('dairy')
 export class DairyInsightsController {
-  constructor(private readonly insights: DairyInsightsReadModel) {}
+  constructor(private readonly insights: DairyInsightsReadModel, private readonly exportsPlane: ExportPlaneService) {}
 
   /**
    * W172. The window is validated against the domain's closed set, because an arbitrary day count is a request able to
@@ -39,6 +44,23 @@ export class DairyInsightsController {
   view(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryDairyInsightsSchema) q: QueryDairyInsightsDto) {
     return this.insights
       .view(ctx.tenantId, { userId: ctx.userId, canDrillDown: canDrillDownMember(ctx) }, { window: q.window })
+      .then((data) => ({ data }));
+  }
+
+  /**
+   * [PC-56 TENANT-6e-2] W172's **Export** button → W2553. ENQUEUES a job on the tenant export plane and returns it with
+   * its position and ETA; the page redirects to the job and polls there. Gated exactly as the page is: `dairy.manage`
+   * here, the module flag on the class, and the screen's own `dairy_insights` flag inside the PRODUCER — a job whose
+   * screen is switched off fails with `dataset_disabled` and says so on the receipt. The plane's own flag
+   * (`tenant_exports`) is read in the service and answers 404 with a code the page can name.
+   *
+   * Idempotency-Key required (Law 3). The same window asked twice while the first job is open returns the first job.
+   */
+  @Post('export') @RequirePermissions(DairyPermissions.Manage)
+  enqueueExport(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Headers('idempotency-key') key: string, @ZodBody(DairyInsightsExportParamsSchema) body: DairyInsightsExportParams) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.exportsPlane
+      .enqueue(ctx.tenantId, { userId: ctx.userId, permissions: ctx.permissions }, key, { datasetCode: DAIRY_INSIGHTS_DATASET, params: body }, req.ip || null)
       .then((data) => ({ data }));
   }
 }

@@ -136,4 +136,8 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // every one of these notices would have gone out in English while the canon says *"Gujarati voice"*.
   { outboxType: 'dairy.shift_diverted',           eventCode: 'dairy.shift_diverted',           recipientKeys: ['recipientUserIds'] },
   { outboxType: 'dairy.shift_diversion_cancelled', eventCode: 'dairy.shift_diversion_cancelled', recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-6e-2 · W2553: *"you will find the file on the ready page"*. The export plane's worker emits this in the
+  // same transaction that writes the receipt; `userId` is the REQUESTER and is in the payload (ADMIN-6b's lesson), and
+  // `dataset` is a per-language map from seed 0017 so the Gujarati notice does not carry the code `dairy.insights`.
+  { outboxType: 'exports.export_ready',           eventCode: 'exports.export_ready',           recipientKeys: ['userId'] },
 ];

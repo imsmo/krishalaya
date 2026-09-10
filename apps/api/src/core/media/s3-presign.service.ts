@@ -3,7 +3,8 @@
 // the server-side putObject (used for generated PDFs) is a real network PUT and IS wrapped in
 // core/resilience. Config comes from AppConfig.media (bucket/region/creds/endpoint). Fails CLOSED:
 // presign refuses if no bucket is configured (a misconfigured deploy can't hand out broken URLs).
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Readable } from 'node:stream';
 import { AppConfig } from '../config/app-config';
 import { ResilienceService } from '../resilience/resilience.service';
 import { InfraError } from '../../shared/errors/app-error';
@@ -48,6 +49,38 @@ export class ObjectStore {
       const res = await fetch(url, { method: 'GET' });
       if (!res.ok) throw new InfraError('S3_GET_FAILED', `S3 getObject failed (${res.status})`, { status: res.status });
       return Buffer.from(await res.arrayBuffer());
+    });
+  }
+
+  /**
+   * [PC-56 TENANT-6e-2] STREAMING put, for files that must never be held whole in an API pod's memory: the export plane
+   * writes a CSV to a temp file while hashing it, then streams that file up as one PUT with its known length. One
+   * object, one PUT — S3's single-PUT ceiling is 5 GB, which is a limit the plane names rather than a limit this method
+   * hides (`EXPORT_MAX_FILE_BYTES` in the worker). Same presign, same resilience wrap, same failure code as `putObject`.
+   *
+   * `duplex: 'half'` is what Node's fetch requires to send a streaming request body; the type is cast because the DOM
+   * `RequestInit` in the compiler's lib does not declare it while the runtime honours it.
+   */
+  async putObjectStream(key: string, body: Readable, contentType: string, contentLength: number): Promise<void> {
+    const url = this.presignUpload(key, 300);
+    await this.resilience.run('s3', async () => {
+      const init = { method: 'PUT', headers: { 'content-type': contentType, 'content-length': String(contentLength) }, body: Readable.toWeb(body), duplex: 'half' } as unknown as RequestInit;
+      const res = await fetch(url, init);
+      if (!res.ok) throw new InfraError('S3_PUT_FAILED', `S3 putObject failed (${res.status})`, { status: res.status });
+    });
+  }
+
+  /**
+   * [PC-56 TENANT-6e-2] STREAMING get: the export download is served THROUGH the API so every fetch can be logged and the
+   * digest re-computed over the bytes actually sent (0120's discipline). Buffering a whole export to do that would put
+   * a district union's file in the request pod's memory; this hands back the body as a Node stream to pipe.
+   */
+  async getObjectStream(key: string): Promise<Readable> {
+    const url = this.presignDownload(key, 120);
+    return this.resilience.run('s3', async () => {
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok || !res.body) throw new InfraError('S3_GET_FAILED', `S3 getObject failed (${res.status})`, { status: res.status });
+      return Readable.fromWeb(res.body as unknown as import('node:stream/web').ReadableStream);
     });
   }
 }

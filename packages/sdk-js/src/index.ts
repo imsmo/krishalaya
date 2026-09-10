@@ -56,6 +56,8 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   // it from there — a second copy agrees exactly once.
   DairyDiversion, DairyDiversionNotice, DairyDiversionPreview, DairyDiversionRefusal, DairyDiversionRow,
   DairyDiversionState, DairyNoticeState,
+  // PC-56 TENANT-6e-2 · the tenant export plane (W2553/W2554)
+  ExportJob, ExportJobStatus, ExportEta, ExportStanding, ExportReceipt, ExportFetchCounts, ExportDownloadState, ExportFailureCode, ExportMintedLink,
   // PC-56 TENANT-6e-1 · W172 (dairy insights)
   DairyInsights, DairyInsightsReady, DairyInsightWindow, DairyInsightRanges, DairyDayRange, DairyChange,
   DairyHistoryVerdict, DairyVolumeInsight, DairyRatePerLitre, DairyPourerCohorts, DairyPayoutStreak,

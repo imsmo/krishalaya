@@ -72,9 +72,12 @@ const PRE_APPLY_SEED_FIXUPS = {
   // Runs core/0001 (idempotent) immediately before 0086 applies, guaranteeing 'en'/'hi'/'gu' exist in `languages`
   // before any migration's notification_templates INSERT reads them.
   '0086_ops_alert_rules': [path.join(SEEDS_DIR, 'core', '0001_languages.sql')],
-  // Runs core/0007 (idempotent) immediately before 0122 applies, guaranteeing its referenced notification_events
-  // rows exist before 0122's notification_event_variables INSERT reads them.
-  '0122_template_versions_and_variables': [path.join(SEEDS_DIR, 'core', '0007_notification_events_templates.sql')],
+  // [PC-56 TENANT-6e-2 2026-09-10 CHAIN FIX] The 0122 fixup that used to sit here (running core/0007 before 0122)
+  // was REMOVED. core/0007 has since grown rows that need tables and events created AFTER 0122 (0122's own
+  // `notification_event_variables`, 0165's `ops.alert_critical`), so running it inside 0122's transaction made the
+  // chain fail at 0122 on every EMPTY database (proven 2026-09-10 from a fresh PG16 with this runner). It was also
+  // unnecessary: 0122's variable INSERT is `WHERE EXISTS` on notification_events, and the seed step that follows
+  // migrate inserts the same eight rows `ON CONFLICT DO NOTHING` — exactly one row either way (see 0122's comment).
   // Runs core/0010 (idempotent) immediately before 0123 applies: `provider_dependencies` INSERTs reference
   // integration_providers('razorpay') and ('razorpayx'), which (unlike 'agmarknet'/'msg91', fixed directly in
   // 0104/0123 themselves) are ONLY created by this seed — same class of defect, fourth instance.

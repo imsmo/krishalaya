@@ -26,6 +26,8 @@ import {
   DairyDiversion, DairyDiversionNotice, DairyDiversionPreview, DairyDiversionRow,
   // PC-56 TENANT-6e-1 · W172's derived read plane
   DairyInsights, DairyInsightWindow,
+  // PC-56 TENANT-6e-2 · W172's export lands on the tenant export plane
+  ExportJob,
 } from '../types';
 
 export class DairyResource {
@@ -371,6 +373,16 @@ export class DairyResource {
    */
   async insights(params: { window?: DairyInsightWindow } = {}, signal?: AbortSignal): Promise<DairyInsights> {
     return (await this.http.request<DairyInsights>('GET', 'dairy/insights', { query: { window: params.window }, signal })).data;
+  }
+
+  /**
+   * [PC-56 TENANT-6e-2] **W172's Export → W2553.** Enqueues the insights file on the tenant export plane and returns
+   * the job with its position and ETA; follow it with `client.exportsPlane.get(job.id)`. The same window asked twice
+   * while the first job is still open returns the first job. Idempotency-Key required (Law 3). 404 with
+   * `EXPORT_PLANE_DISABLED` when the plane's flag is off — a state with words, not a missing route.
+   */
+  async enqueueInsightsExport(params: { window?: DairyInsightWindow }, idempotencyKey: string): Promise<ExportJob> {
+    return (await this.http.request<ExportJob>('POST', 'dairy/insights/export', { idempotencyKey, body: { window: params.window ?? 90 } })).data;
   }
 
   /** What "cold enough" means for this tank — a standing decision, audited before and after. */
