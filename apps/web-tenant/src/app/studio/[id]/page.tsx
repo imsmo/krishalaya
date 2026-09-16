@@ -1,6 +1,6 @@
 // apps/web-tenant/src/app/studio/[id]/page.tsx · one course's studio detail (PC-26): facts + lessons + the
-// add-lesson form + ONLY the legal lifecycle actions (features/studio/manage mirrors draft→review→published;
-// published↔paused; →archived — the API re-checks each transition + education.author/.publish). A missing/
+// add-lesson form. PC-56 TENANT-7a moved every lifecycle act to the course mutate chain (`/courses/[id]/act`) — with a
+// reason and an audit row — so this page links there and no longer posts a status change of its own. A missing/
 // foreign id → notFound() (tenant-scoped read = IDOR guard). Money float-free; noindex.
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -10,8 +10,9 @@ import { tenantClient } from '../../../lib/api-client';
 import { MediaUploader } from '../../../components/MediaUploader';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatMoneyMinor } from '@krishalaya/i18n';
-import { canSubmit, canPublish, canPause, canResume, canArchive, CONTENT_KINDS } from '../../../features/studio/manage';
-import { courseLifecycleAction, addLessonAction } from '../actions';
+import { CONTENT_KINDS } from '../../../features/studio/manage';
+import { addLessonAction } from '../actions';
+import { courseHref, publishHref } from '../../../features/courses/desk';
 import type { Course, CourseLesson } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -20,8 +21,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('studio.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['created', 'submit', 'publish', 'resume', 'pause', 'archive', 'lesson']);
-const ERR = new Set(['action', 'illegal', 'lesson', 'lessonno', 'title', 'kind', 'content', 'quiz_empty', 'quiz_question', 'quiz_options', 'quiz_answer']);
+const OK = new Set(['lesson']);
+const ERR = new Set(['lesson', 'lessonno', 'title', 'kind', 'content', 'quiz_empty', 'quiz_question', 'quiz_options', 'quiz_answer']);
 
 export default async function StudioCoursePage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   await requireSession(`/studio/${params.id}`);
@@ -46,14 +47,6 @@ export default async function StudioCoursePage({ params, searchParams }: { param
     failed: t.t('studio.uploadFailed'), remove: t.t('studio.remove'),
   };
 
-  const lifecycle: Array<{ kind: string; label: string; show: boolean; muted?: boolean }> = [
-    { kind: 'submit', label: t.t('studio.actSubmit'), show: canSubmit(s) },
-    { kind: 'publish', label: t.t('studio.actPublish'), show: canPublish(s) },
-    { kind: 'pause', label: t.t('studio.actPause'), show: canPause(s), muted: true },
-    { kind: 'resume', label: t.t('studio.actResume'), show: canResume(s) },
-    { kind: 'archive', label: t.t('studio.actArchive'), show: canArchive(s), muted: true },
-  ];
-
   return (
     <section>
       <div className="kv-page-head">
@@ -71,14 +64,11 @@ export default async function StudioCoursePage({ params, searchParams }: { param
         <div className="kv-facts__row"><dt>{t.t('studio.colCert')}</dt><dd>{course.certEnabled ? t.t('studio.certYes') : t.t('common.dash')}</dd></div>
       </dl>
 
+      {/* PC-56 TENANT-7a: every act on the course itself (submit · publish · pause · resume · archive) is the mutate
+          chain behind W179/W416 — one write path, with a reason and an audit row. This page keeps the lessons. */}
       <div className="kv-actions">
-        {lifecycle.filter((a) => a.show).map((a) => (
-          <form key={a.kind} action={courseLifecycleAction} className="kv-inline-form">
-            <input type="hidden" name="id" value={course.id} />
-            <input type="hidden" name="kind" value={a.kind} />
-            <button type="submit" className={a.muted ? 'kv-btn kv-btn--muted' : 'kv-btn'}>{a.label}</button>
-          </form>
-        ))}
+        <Link href={courseHref(course.id)} className="kv-btn kv-btn--muted">{t.t('courses.detailTitle')}</Link>
+        <Link href={publishHref(course.id)} className="kv-btn">{t.t('courses.reviewPublish')}</Link>
       </div>
 
       <h2>{t.t('studio.lessons')}</h2>

@@ -37,8 +37,13 @@ const src = (p: string) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8'
  * packages are held together without importing across a service boundary.
  */
 function apiRefusals(constName: string): string[] {
-  const file = fs.readFileSync(
-    path.join(__dirname, '../../../api/src/modules/dairy/domain/dairy-form-review.ts'), 'utf8');
+  // PC-56 TENANT-7a lifted the generic half of the reviewer (WRITER_REFUSALS among it) to `shared/form-review.ts`;
+  // a name not declared in the dairy file is read from there. `indexOf` returning -1 would otherwise slice the last
+  // character and resolve the spread to NOTHING — silently weakening this parity check.
+  const dairy = fs.readFileSync(path.join(__dirname, '../../../api/src/modules/dairy/domain/dairy-form-review.ts'), 'utf8');
+  const shared = fs.readFileSync(path.join(__dirname, '../../../api/src/shared/form-review.ts'), 'utf8');
+  const file = dairy.includes(`export const ${constName} = [`) ? dairy : shared;
+  if (!file.includes(`export const ${constName} = [`)) throw new Error(`no API list named ${constName}`);
   const block = file.slice(file.indexOf(`export const ${constName} = [`));
   const list = block.slice(block.indexOf('['), block.indexOf('] as const'));
   const own = [...list.matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);

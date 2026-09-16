@@ -49,6 +49,8 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   DairyMembershipRoute, DairyMoveRefusal, DairyMoveCaution, DairyMoveVerdict, MoveMembershipInput,
   // PC-56 TENANT-6d-4 · the shared form chain's review step.
   DairyReview, DairyReviewField, DairyReviewRefusal, DairyMccReviewInput, DairyBmcReviewInput,
+  // PC-56 TENANT-7a · the course record and the desk (W178/W179/W416 + the course chains).
+  CourseFormInput, CourseTopic, CourseStats, CourseDesk, CourseAct, CourseActRefusal, CourseActVerdict, CourseGateState, CourseGateCheck, CourseGate, CourseActs, FormReview,
   // PC-56 TENANT-6d-5 · W170's call and W2521–W2523's mutate chain. TYPES only: the refusal LIST stays in the API's
   // own domain, and the web spec reads it from there — a second copy would agree exactly once.
   DairyBmcCallObject, DairyBmcCallPreview, DairyBmcCallRefusal, DairyBmcCallResult,
@@ -115,6 +117,7 @@ export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7
 export type { StorageBooking, AssayReport, NwrReceipt } from './resources/warehousing';
 export type { Coupon, CouponRedemption, Promotion } from './resources/promotions';
 export type { EduChannel, LiveSession } from './resources/education';
+export { COURSE_ACTS } from './types';
 export type { MembershipTier, UserMembership, CoopBylaws, VoteIneligibleReason, VotingVerdict,
   ShareRegisterRow, ShareRegisterTiles, ShareRegisterView, MyVotingEligibility, ResolutionTally } from './resources/memberships';
 export type { Requirement, RequirementResponse } from './resources/requirements';

@@ -48,7 +48,8 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureGroupLots ? [{ key: 'group-lots', href: '/group-lots', label: t.t('nav.groupLots') }] : []),
         ...(env.featureAuditor ? [{ key: 'auditor', href: '/auditor', label: t.t('nav.auditor') }] : []),
         ...(env.featureAiReview ? [{ key: 'ai-review', href: '/ai-review', label: t.t('nav.aiReview') }] : []),
-        ...(env.featureEducation ? [{ key: 'studio', href: '/studio', label: t.t('nav.studio') }] : []),
+        // PC-56 TENANT-7a: the desk's library (W178) beside the instructor's studio, both under the same console switch.
+        ...(env.featureEducation ? [{ key: 'courses', href: '/courses', label: t.t('nav.courses') }, { key: 'studio', href: '/studio', label: t.t('nav.studio') }] : []),
         ...(env.featureComms ? [{ key: 'comms', href: '/comms', label: t.t('nav.comms') }] : []),
         // The PEOPLE register is core and ungated: an FPO with no paid membership tiers still has members, and hiding
         // the roster behind the `memberships` flag would leave a tenant unable to see who belongs to them.

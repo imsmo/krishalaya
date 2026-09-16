@@ -483,6 +483,46 @@ export interface Course {
   id: string; instructorId: string; defaultTitle: string; topicId: string | null; audienceRoleIds: string[];
   level: string; priceMinor: string; currencyCode: string; certEnabled: boolean; coverMediaId: string | null;
   status: string; createdAt?: string;
+  /* PC-56 TENANT-7a · the desk's memory (migration 0170) and the registry decoration every read carries. */
+  isPlatformLibrary?: boolean;
+  submittedAt?: string | null; submittedBy?: string | null;
+  reviewedAt?: string | null; reviewedBy?: string | null; reviewNote?: string | null;
+  publishedAt?: string | null; archivedAt?: string | null;
+  topicCode?: string | null; topicName?: string | null; lessonCount?: number | null;
+  /** The price as MAJOR text at the currency's own scale, computed by the API — the console never divides money. */
+  priceMajor?: string | null;
+}
+
+/* ================================================================================================================= */
+/* PC-56 TENANT-7a · W178 / W179 / W416 + the course form and mutate chains                                          */
+/* ================================================================================================================= */
+
+/** The form as a person fills it: a topic CODE, a price in MAJOR units at the tenant's scale, a flag as text. */
+export interface CourseFormInput { defaultTitle?: string; topicCode?: string; level?: string; priceMajor?: string; certEnabled?: string; coverMediaId?: string }
+export interface CourseTopic { id: string; code: string; name: string }
+export interface CourseStats { courseId: string; learners: number; completed: number; certificates: number }
+export interface CourseDesk {
+  byStatus: Record<'draft' | 'review' | 'published' | 'paused' | 'archived', number>;
+  libraryPublished: number;
+  learners30d: number; completions30d: number; certificates30d: number; certificatesLifetime: number;
+  windowDays: number;
+  topics: CourseTopic[];
+}
+export const COURSE_ACTS = ['submit', 'publish', 'return', 'pause', 'resume', 'archive'] as const;
+export type CourseAct = (typeof COURSE_ACTS)[number];
+export type CourseActRefusal = 'NO_PERMISSION' | 'NOT_OWNER' | 'ILLEGAL_FROM_STATUS' | 'GATE_NOT_PASSED' | 'MAKER_IS_CHECKER' | 'REASON_REQUIRED';
+export interface CourseActVerdict { act: CourseAct; allowed: boolean; refusals: CourseActRefusal[]; to: string }
+export type CourseGateState = 'pass' | 'fail' | 'not_measured';
+export interface CourseGateCheck { code: string; state: CourseGateState; measured: { met: number; of: number } | null; named: string[]; declared: Record<string, string> | null }
+export interface CourseGate { ready: boolean; checks: CourseGateCheck[]; blocking: string[] }
+export interface CourseActs { course: Course; gate: CourseGate; acts: CourseActVerdict[]; stats: CourseStats | null }
+/** The shared FORM pattern's review (6d-4's shape, lifted to `shared/form-review` by 7a). Structurally `DairyReview`. */
+export interface FormReview {
+  ready: boolean;
+  fields: Array<{ name: string; entered: string | null; stored: string | null; normalised: boolean }>;
+  refusals: Array<{ field: string | null; code: string }>;
+  diff: Array<{ field: string; before: string | null; after: string | null }> | null;
+  entityType: string;
 }
 /** A lesson within a course. `contentKind` ∈ video|pdf|article|quiz|live|audio. `quiz` is an opaque JSON payload
  * (parsed defensively client-side). `mediaId` resolves to a presigned URL via the media resource. */

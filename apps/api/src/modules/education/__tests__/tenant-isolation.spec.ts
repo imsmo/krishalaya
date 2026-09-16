@@ -18,14 +18,15 @@ describe('courses isolation', () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
     await new CourseRepository(fakeReplica().provider).getForUpdate(tx as any, 'tenantA', 'c1');
     const [sql, params] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/id=\$1 AND tenant_id=\$2/); expect(sql).toMatch(/FOR UPDATE/); expect(params).toEqual(['c1', 'tenantA']);
+    expect(sql).toMatch(/c\.id=\$1 AND c\.tenant_id=\$2/); expect(sql).toMatch(/FOR UPDATE/); expect(params).toEqual(['c1', 'tenantA']);
   });
   it('browse list scopes to tenant OR platform, published only, keyset (no OFFSET)', async () => {
     const { provider, exec } = fakeReplica();
     await new CourseRepository(provider).listFor('tenantA', { box: 'browse', limit: 50 });
     const [sql] = exec.query.mock.calls[0];
-    expect(sql).toMatch(/\(tenant_id=\$1 OR tenant_id IS NULL\)/); expect(sql).toMatch(/status='published'/);
-    expect(sql).toMatch(/ORDER BY created_at DESC, id DESC/); expect(sql).not.toMatch(/OFFSET/i);
+    // PC-56 TENANT-7a: the platform library is its PUBLISHED rows — a KVK draft is not a tenant's to read.
+    expect(sql).toMatch(/\(c\.tenant_id=\$1 OR \(c\.tenant_id IS NULL AND c\.status='published'\)\)/); expect(sql).toMatch(/c\.status='published'/);
+    expect(sql).toMatch(/ORDER BY c\.created_at DESC, c\.id DESC/); expect(sql).not.toMatch(/OFFSET/i);
   });
   it('insert binds tenant_id', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };

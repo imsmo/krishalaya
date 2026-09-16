@@ -36,10 +36,12 @@ const run = APP_URL ? describe : describe.skip;
 run('education spine (integration, real Postgres + RLS + royalty split)', () => {
   let pools: PgPoolProvider; let admin: Pool; let inspect: Pool; let uow: PgUnitOfWork; let wallet: InProcessWalletClient;
   let instructors: InstructorService; let courses: CourseService; let enroll: EnrollmentService; let progress: LessonProgressService;
-  const tenantA = randomUUID(); const tenantB = randomUUID(); const instr = randomUUID(); const learner = randomUUID();
+  const tenantA = randomUUID(); const tenantB = randomUUID(); const instr = randomUUID(); const learner = randomUUID(); const desk = randomUUID();
   let courseId = ''; let enrollmentId = ''; const lessonIds: string[] = [];
   // canHost/canModerate were added to EducationActor when live sessions landed (PC-26b); this spec predates them.
-  const instrActor = { userId: instr, canAuthor: true, canPublish: true, canHost: true, canModerate: true, isAdmin: true };
+  // PC-56 TENANT-7a: the instructor no longer publishes their own course (maker ≠ checker) — a DESK actor does.
+  const instrActor = { userId: instr, canAuthor: true, canPublish: false, canHost: true, canModerate: true, isAdmin: false };
+  const deskActor = { userId: desk, canAuthor: false, canPublish: true, canHost: false, canModerate: false, isAdmin: true };
   const learnerActor = { userId: learner, canAuthor: false, canPublish: false, canHost: false, canModerate: false, isAdmin: false };
 
   const balUser = async (u: string) => BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [u])).rows[0]?.b ?? '0');
@@ -47,18 +49,19 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
-    await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B'); await makeUser(admin, instr); await makeUser(admin, learner);
+    await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B'); await makeUser(admin, instr); await makeUser(admin, learner); await makeUser(admin, desk);
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
     const shards = new ShardRouter(config);
     uow = new PgUnitOfWork(pools, shards);
     const replica = new PgReadReplicaProvider(pools, shards);
     const outbox = new PgOutboxWriter(); const idem = new PgIdempotencyService(pools); const metrics = new PromMetrics();
+    const audit = new AuditWriter(pools);
     wallet = new InProcessWalletClient(new LedgerRepository());
     const iRepo = new InstructorRepository(replica as any); const cRepo = new CourseRepository(replica as any); const lRepo = new CourseLessonRepository(replica as any);
     const eRepo = new EnrollmentRepository(replica as any); const pRepo = new LessonProgressRepository(replica as any);
     instructors = new InstructorService(uow, metrics, iRepo);
-    courses = new CourseService(uow, outbox, metrics, cRepo, lRepo, iRepo);
+    courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo);
     enroll = new EnrollmentService(uow, outbox, idem, metrics, wallet, cRepo, iRepo, eRepo);
     progress = new LessonProgressService(uow, outbox, metrics, eRepo, pRepo, lRepo);
     await fund(learner, 1_000_000n);
@@ -68,11 +71,19 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
 
   it('instructor authors + publishes a paid course with 2 lessons', async () => {
     await instructors.become(tenantA, instrActor, 'KVK trainer');
-    const c: any = await courses.create(tenantA, instrActor, { defaultTitle: 'Drip irrigation', audienceRoleIds: [], level: 'basic', priceMinor: '50000', certEnabled: false } as any);
+    // A PAID course needs the desk's key (W178: "paid courses need tenant_admin (money)") — so the desk creates it
+    // on the instructor's behalf here? No: the desk holds no instructor row. The instructor creates it FREE and the
+    // desk PRICES it (a price change is the desk's act), which is the two-key path the canon describes.
+    const c: any = await courses.create(tenantA, instrActor, `idem-${randomUUID()}`, { defaultTitle: 'Drip irrigation', topicCode: 'crop_care', level: 'basic', priceMajor: '0', certEnabled: '0' }, null);
     courseId = c.id;
-    for (const n of [1, 2]) { const l: any = await courses.upsertLesson(tenantA, instrActor, courseId, { moduleNo: 1, lessonNo: n, defaultTitle: `Lesson ${n}`, contentKind: 'video' } as any); lessonIds.push(l.id); }
-    await courses.setStatus(tenantA, instrActor, courseId, 'submit');
-    expect((await courses.setStatus(tenantA, instrActor, courseId, 'publish')).status).toBe('published');
+    const priced: any = await courses.update(tenantA, deskActor, `idem-${randomUUID()}`, courseId, { defaultTitle: 'Drip irrigation', topicCode: 'crop_care', level: 'basic', priceMajor: '500.00', certEnabled: '0' }, null);
+    expect(priced.priceMinor).toBe('50000');
+    // A gate that passes needs lessons that are not hollow: a video lesson without media is refused at submit.
+    const media = randomUUID();
+    await admin.query(`INSERT INTO media_assets (id, tenant_id, kind, s3_key, mime_type, bytes, sha256) VALUES ($1,$2,'video',$3,'video/mp4',1,repeat('a',64))`, [media, tenantA, `k/${media}`]);
+    for (const n of [1, 2]) { const l: any = await courses.upsertLesson(tenantA, instrActor, courseId, { moduleNo: 1, lessonNo: n, defaultTitle: `Lesson ${n}`, contentKind: 'video', mediaId: media } as any); lessonIds.push(l.id); }
+    await courses.act(tenantA, instrActor, `idem-${randomUUID()}`, courseId, 'submit', 'ready for the desk', null);
+    expect((await courses.act(tenantA, deskActor, `idem-${randomUUID()}`, courseId, 'publish', 'checked by the desk', null)).status).toBe('published');
   });
 
   it('learner enrolls → ZERO-SUM split ₹500 → instructor ₹400 + platform ₹100', async () => {

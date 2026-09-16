@@ -8,5 +8,7 @@ export const QueryCoursesSchema = z.object({
   status: z.enum(COURSE_STATUSES as unknown as [string, ...string[]]).optional(),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
+  /** PC-56 TENANT-7a · W178's Learners/Completion columns for this page's rows (desk or own courses). */
+  withStats: z.coerce.boolean().optional(),
 }).strict();
 export type QueryCoursesDto = z.infer<typeof QueryCoursesSchema>;

@@ -3,7 +3,10 @@
 // lesson PROGRESS (seconds watched + quiz score + completed). Enrollments/progress are the caller's OWN (server
 // resolves the learner — no IDOR). Money is bigint minor strings (Law 2). Gated server-side by the `education` flag.
 import { HttpClient } from '../http';
-import { Course, CourseLesson, Enrollment, LessonProgress, LearningResource, ResourceKind, CropCalendar, Page } from '../types';
+import {
+  Course, CourseLesson, Enrollment, LessonProgress, LearningResource, ResourceKind, CropCalendar, Page,
+  CourseDesk, CourseTopic, CourseStats, CourseFormInput, CourseActs, CourseAct, FormReview,
+} from '../types';
 
 export class CoursesResource {
   constructor(private readonly http: HttpClient) {}
@@ -20,31 +23,44 @@ export class CoursesResource {
     return (await this.http.request<CourseLesson[]>('GET', `education/courses/${encodeURIComponent(courseId)}/lessons`, { signal })).data;
   }
 
-  // --- AUTHOR/STUDIO surface (PC-26). Server-gated: education.author on create/update/submit/lesson/archive,
-  // education.publish on publish/pause; the `education` flag gates everything. Money bigint minor (Law 2). ---
-  /** Author: create a draft course. */
-  async create(input: { defaultTitle: string; topicId?: string | null; level?: string; priceMinor?: string; certEnabled?: boolean; coverMediaId?: string | null }): Promise<Course> {
-    return (await this.http.request<Course>('POST', 'education/courses', { body: input })).data;
+  // --- AUTHOR/STUDIO surface (PC-26, rebuilt by PC-56 TENANT-7a as the course RECORD and the DESK) ------------
+  // The form chain (W2546–W2549) and the mutate chain (W2550–W2552) are one review + one write each:
+  //   preview(form)            → what will be stored and every refusal, computed by the API (no key — writes nothing)
+  //   create(form, key)        → the same body; refused with the review's own codes when the review is not ready
+  //   update(id, form, key)    → the same, with a diff against the row as it stands
+  //   acts(id)                 → every act's verdict for this caller + W416's publish gate
+  //   act(id, act, reason, key)→ submit · publish · return · pause · resume · archive — WITH A REASON, audited
+  // The PC-26 `submit/publish/pause/archive` methods are gone: their routes took no reason and wrote no audit row.
+  /** The desk's tiles and chips (W178) — `course.publish`. */
+  async desk(signal?: AbortSignal): Promise<CourseDesk> {
+    return (await this.http.request<CourseDesk>('GET', 'education/courses/desk', { signal })).data;
   }
-  /** Author: patch a course's editable fields (draft/review). */
-  async update(id: string, patch: Partial<{ defaultTitle: string; topicId: string | null; level: string; priceMinor: string; certEnabled: boolean; coverMediaId: string | null }>): Promise<Course> {
-    return (await this.http.request<Course>('PATCH', `education/courses/${encodeURIComponent(id)}`, { body: patch })).data;
+  /** The topic registry (`course_topic`), for the form's select — any author. */
+  async topics(signal?: AbortSignal): Promise<CourseTopic[]> {
+    return (await this.http.request<CourseTopic[]>('GET', 'education/courses/topics', { signal })).data;
   }
-  /** Author: submit for review (draft → review). */
-  async submit(id: string): Promise<Course> {
-    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/submit`, {})).data;
+  /** W178's table: the desk's rows (`box=all`) with Learners/Completion per row. Keyset. */
+  async listDesk(params: { status?: string; topicId?: string; level?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<Course> & { stats: Record<string, CourseStats> }> {
+    const r = await this.http.request<Course[]>('GET', 'education/courses', { query: { box: 'all', status: params.status, topicId: params.topicId, level: params.level, cursor: params.cursor, limit: params.limit ?? 50, withStats: 'true' }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, stats: ((r.meta as { stats?: Record<string, CourseStats> } | undefined)?.stats) ?? {} };
   }
-  /** Editor: publish (review → published). Needs education.publish. */
-  async publish(id: string): Promise<Course> {
-    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/publish`, {})).data;
+  /** The review step. No idempotency key: it writes nothing. `id` makes it an EDIT's review, with a diff. */
+  async preview(input: CourseFormInput & { id?: string }): Promise<FormReview> {
+    return (await this.http.request<FormReview>('POST', 'education/courses/preview', { body: input })).data;
   }
-  /** Editor: pause a published course (hides it without losing enrollments). */
-  async pause(id: string): Promise<Course> {
-    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/pause`, {})).data;
+  async create(input: CourseFormInput, idempotencyKey: string): Promise<Course> {
+    return (await this.http.request<Course>('POST', 'education/courses', { idempotencyKey, body: input })).data;
   }
-  /** Author: archive (terminal). */
-  async archive(id: string): Promise<Course> {
-    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/archive`, {})).data;
+  async update(id: string, input: CourseFormInput, idempotencyKey: string): Promise<Course> {
+    return (await this.http.request<Course>('PATCH', `education/courses/${encodeURIComponent(id)}`, { idempotencyKey, body: input })).data;
+  }
+  /** W179/W416: every act's verdict for this caller, the object, and the publish gate. */
+  async acts(id: string, signal?: AbortSignal): Promise<CourseActs> {
+    return (await this.http.request<CourseActs>('GET', `education/courses/${encodeURIComponent(id)}/acts`, { signal })).data;
+  }
+  /** The act, with its reason (3–300 chars — the audit row's own words). */
+  async act(id: string, act: CourseAct, reason: string, idempotencyKey: string): Promise<Course> {
+    return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body: { reason } })).data;
   }
   /** Author: add/replace one lesson (module/lesson number addressing; video/text via contentKind + mediaId/body;
    *  `quiz` carries the canonical quiz JSON `{questions:[{q,options,answer,hint?}]}` — the shape the mobile

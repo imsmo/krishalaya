@@ -147,17 +147,33 @@ describe('HttpClient via resources', () => {
     expect(d.resolutionAmountMinor).toBe('50000');
   });
 
-  it('courses author surface: create POSTs; publish hits the lifecycle path (PC-26)', async () => {
+  it('courses (PC-56 TENANT-7a): the form body travels as typed, the key rides every write, the act carries its reason', async () => {
     const course = { id: 'c1', instructorId: 'i1', defaultTitle: 'Drip irrigation basics', topicId: null, audienceRoleIds: [], level: 'basic', priceMinor: '0', currencyCode: 'INR', certEnabled: false, coverMediaId: null, status: 'draft' };
-    const { fn, calls } = fakeFetch(() => ({ body: { data: course } }));
+    const { fn, calls } = fakeFetch(() => ({ body: { data: course, meta: { nextCursor: null, stats: { c1: { courseId: 'c1', learners: 3, completed: 1, certificates: 0 } } } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
-    await c.courses.create({ defaultTitle: 'Drip irrigation basics' });
-    await c.courses.publish('c1');
+    await c.courses.preview({ defaultTitle: 'Drip irrigation basics', priceMajor: '149', id: 'c1' });
+    await c.courses.create({ defaultTitle: 'Drip irrigation basics', topicCode: 'crop_care', priceMajor: '' }, 'idem-c');
+    await c.courses.update('c1', { defaultTitle: 'Drip' }, 'idem-u');
+    await c.courses.acts('c1');
+    await c.courses.act('c1', 'archive', 'superseded', 'idem-a');
     await c.courses.addLesson('c1', { lessonNo: 1, defaultTitle: 'Why drip', contentKind: 'video', mediaId: 'm1' });
-    expect(calls[0].url).toBe('https://api.test/v1/education/courses');
-    expect(calls[1].url).toBe('https://api.test/v1/education/courses/c1/publish');
-    expect(calls[2].url).toBe('https://api.test/v1/education/courses/c1/lessons');
-    expect(JSON.parse(String(calls[2].init?.body)).contentKind).toBe('video');
+    const desk = await c.courses.listDesk({ status: 'review', cursor: 'abc' });
+    await c.courses.desk();
+    await c.courses.topics();
+    const hdr = (i: number) => (calls[i].init?.headers as Record<string, string>)['idempotency-key'];
+    expect(calls[0].url).toBe('https://api.test/v1/education/courses/preview'); expect(hdr(0)).toBeUndefined();   // a review writes nothing
+    expect(JSON.parse(String(calls[0].init?.body))).toEqual({ defaultTitle: 'Drip irrigation basics', priceMajor: '149', id: 'c1' });
+    expect(calls[1].url).toBe('https://api.test/v1/education/courses'); expect(hdr(1)).toBe('idem-c');
+    expect(JSON.parse(String(calls[1].init?.body)).priceMajor).toBe('');                                        // the blank travels: FREE is the server's word
+    expect(calls[2].url).toBe('https://api.test/v1/education/courses/c1'); expect(calls[2].init?.method).toBe('PATCH'); expect(hdr(2)).toBe('idem-u');
+    expect(calls[3].url).toBe('https://api.test/v1/education/courses/c1/acts');
+    expect(calls[4].url).toBe('https://api.test/v1/education/courses/c1/acts/archive'); expect(hdr(4)).toBe('idem-a');
+    expect(JSON.parse(String(calls[4].init?.body))).toEqual({ reason: 'superseded' });
+    expect(calls[5].url).toBe('https://api.test/v1/education/courses/c1/lessons');
+    expect(calls[6].url).toContain('education/courses?'); expect(calls[6].url).toContain('box=all'); expect(calls[6].url).toContain('withStats=true'); expect(calls[6].url).toContain('status=review'); expect(calls[6].url).toContain('cursor=abc');
+    expect(desk.stats.c1.learners).toBe(3);
+    expect(calls[7].url).toBe('https://api.test/v1/education/courses/desk');
+    expect(calls[8].url).toBe('https://api.test/v1/education/courses/topics');
   });
 
   it('disputes.raise POSTs with Idempotency-Key + reason enum', async () => {

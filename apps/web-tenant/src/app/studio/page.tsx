@@ -3,18 +3,18 @@
 // Everything is server-gated by education.author/.publish + the `education` flag; a flag-off tenant sees the
 // degrade message, never a faked studio. Money float-free; keyset paging.
 //
-// Honest scope notes (recorded in the ledger): QUIZ authoring (lesson `quiz` JSON) and LIVE-session hosting
-// (live-sessions/channels controllers) exist API-side but ship in the NEXT studio wave — no placeholder UI here.
+// PC-56 TENANT-7a: the inline create form is GONE — one write, one path (6d-4's rule). *New course* is the course
+// form chain at `/courses/new` (W2546–W2549), and the desk's library is `/courses` (W178). This page remains the
+// INSTRUCTOR's own library until TENANT-7d rebuilds it as W410.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
-import { MediaUploader } from '../../components/MediaUploader';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor } from '@krishalaya/i18n';
-import { COURSE_LEVELS } from '../../features/studio/manage';
-import { createCourseAction, upsertInstructorAction } from './actions';
+import { upsertInstructorAction } from './actions';
+import { NEW_COURSE_HREF } from '../../features/courses/desk';
 import type { Course } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('studio.title'), robots: { index: false, follow: false } };
 }
 
-const ERR = new Set(['title', 'level', 'price', 'create', 'instructor']);
+const ERR = new Set(['instructor']);
 const OK = new Set(['instructor']);
 
 export default async function StudioPage({ searchParams }: { searchParams: { cursor?: string; ok?: string; error?: string } }) {
@@ -44,16 +44,14 @@ export default async function StudioPage({ searchParams }: { searchParams: { cur
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
 
-  const uploaderLabels = {
-    add: t.t('studio.coverAdd'), hint: t.t('studio.coverHint'), uploading: t.t('studio.uploading'),
-    failed: t.t('studio.uploadFailed'), remove: t.t('studio.remove'),
-  };
-
   return (
     <section>
       <div className="kv-page-head">
         <h1>{t.t('studio.title')}</h1>
-        <Link href="/studio/live" className="kv-btn--link">{t.t('studio.liveLink')} →</Link>
+        <span>
+          <Link href={NEW_COURSE_HREF} className="kv-btn">{t.t('courses.new')}</Link>{' '}
+          <Link href="/studio/live" className="kv-btn--link">{t.t('studio.liveLink')} →</Link>
+        </span>
       </div>
       <p className="kv-field__hint">{t.t('studio.hint')}</p>
       {okKey && <p className="kv-success" role="status">{t.t(`studio.ok.${okKey}`)}</p>}
@@ -73,32 +71,6 @@ export default async function StudioPage({ searchParams }: { searchParams: { cur
         />
       )}
       {nextCursor && <p className="kv-pager"><a href={`/studio?cursor=${encodeURIComponent(nextCursor)}`} className="kv-btn--link">{t.t('common.nextPage')}</a></p>}
-
-      <details className="kv-card">
-        <summary className="kv-card__title">{t.t('studio.create')}</summary>
-        <form action={createCourseAction} className="kv-form">
-          <label htmlFor="s-title" className="kv-field__label">{t.t('studio.courseTitle')}</label>
-          <input id="s-title" name="title" className="kv-input" required maxLength={250} />
-
-          <label htmlFor="s-level" className="kv-field__label">{t.t('studio.colLevel')}</label>
-          <select id="s-level" name="level" className="kv-input" defaultValue="basic">
-            {COURSE_LEVELS.map((l) => <option key={l} value={l}>{t.t(`studio.level.${l}`)}</option>)}
-          </select>
-
-          <label htmlFor="s-price" className="kv-field__label">{t.t('studio.price')}</label>
-          <input id="s-price" name="priceMajor" className="kv-input" inputMode="decimal" pattern="\d{1,12}(\.\d{1,2})?" placeholder="0" />
-          <p className="kv-field__hint">{t.t('studio.priceHint')}</p>
-
-          <label className="kv-field__label" htmlFor="s-cert">
-            <input id="s-cert" type="checkbox" name="certEnabled" value="1" /> {t.t('studio.certEnable')}
-          </label>
-
-          <span className="kv-field__label">{t.t('studio.cover')}</span>
-          <MediaUploader labels={uploaderLabels} fieldName="coverMediaId" single />
-
-          <button type="submit" className="kv-btn">{t.t('studio.createBtn')}</button>
-        </form>
-      </details>
 
       <details className="kv-card">
         <summary className="kv-card__title">{t.t('studio.instructor')}</summary>

@@ -52,51 +52,8 @@ export const PreviewMccSchema = z.object({
 }).strict();
 export type PreviewMccDto = z.infer<typeof PreviewMccSchema>;
 
-/**
- * What the WRITER would refuse about this body, as facts a review can print.
- *
- * Runs the create schema over the same values the create route would receive, and reports each complaint against the
- * field it names. This is what makes *"ready"* honest: a value the validator rejects is a refusal on the review, not a
- * 400 after somebody has pressed confirm.
- *
- * `too_big` is separated because *"too long"* is actionable in a way that *"rejected"* is not — the operator can see a
- * limit and shorten the entry.
- */
-export interface WriterIssue { path: string | null; tooLong: boolean }
-
-/**
- * Could this string be an id at all?
- *
- * A review looks values up in the database, and `mcc_centres.id` is a `uuid`: handing Postgres `MCC-AND-03` raises
- * `22P02` and the review — the one screen whose job is to explain what is wrong with an entry — answers with a 500. So
- * a value that cannot be an id is not asked about, and the reviewer's own refusal (*"no centre of this cooperative has
- * that id"*) is what the operator reads.
- */
-export function looksLikeId(s: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-}
-
-export function writerIssuesOf(schema: z.ZodTypeAny, body: Record<string, unknown>): WriterIssue[] {
-  const parsed = schema.safeParse(body);
-  if (parsed.success) return [];
-  return parsed.error.issues.map((i) => ({
-    path: typeof i.path[0] === 'string' ? (i.path[0] as string) : null,
-    tooLong: i.code === 'too_big',
-  }));
-}
-
-/**
- * Trim, and drop what was left blank.
- *
- * The chain's submit does exactly this before calling `create`, so the review has to do it before asking the create
- * schema anything — otherwise a field the operator left EMPTY would be reported as rejected (`min(1)`) while the
- * review's own row correctly shows it as storing nothing, and the screen would contradict itself.
- */
-export function submittedValues(dto: Record<string, unknown>): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(dto)) {
-    const s = typeof v === 'string' ? v.trim() : '';
-    if (s.length > 0) out[k] = s;
-  }
-  return out;
-}
+// The four helpers below (`WriterIssue`, `looksLikeId`, `writerIssuesOf`, `submittedValues`) are `shared/form-review.ts`
+// since PC-56 TENANT-7a — the course form needed them and modules do not import each other's DTOs. Re-exported.
+import { WriterIssue, looksLikeId, writerIssuesOf, submittedValues } from '../../../shared/form-review';
+export type { WriterIssue };
+export { looksLikeId, writerIssuesOf, submittedValues };

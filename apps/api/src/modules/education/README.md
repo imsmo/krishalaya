@@ -20,9 +20,13 @@ Instructors author courses; learners enrol (free or paid) and learn. Gated by th
 
 ## Surface (v1, all under the `education` flag)
 
-`PUT/GET /v1/education/instructors/me` (`course.author`). Courses (`course.author` to write, `course.publish`
-to publish/pause): `POST /v1/education/courses`, `GET` (box=`browse|mine|all`), `GET /:id`, `PATCH /:id`,
-`POST /:id/{submit,publish,pause,archive}`, `POST/GET /:id/lessons`. Enrollments (any learner):
+`PUT/GET /v1/education/instructors/me` (`course.author`). Courses (`course.author` to author, `course.publish` for the
+desk — PC-56 TENANT-7a): `POST /v1/education/courses/preview` (the form chain's review, no key), `GET /desk`,
+`GET /topics`, `POST /v1/education/courses` (the FORM body: topicCode · priceMajor at the tenant's currency scale;
+Idempotency-Key; audited), `GET` (box=`browse|mine|all`, `withStats`), `GET /:id`, `PATCH /:id` (same body, diff),
+`GET /:id/acts` (every act's verdict + W416's gate + this course's stats), `POST /:id/acts/:act` with `{reason}` for
+`submit · publish · return · pause · resume · archive` (Idempotency-Key; audited with the reason; publish is refused
+to the maker — and 0170's trigger refuses it again), `POST/GET /:id/lessons`. Enrollments (any learner):
 `POST /v1/education/enrollments` (Idempotency-Key), `GET`, `GET /:id`,
 `POST /:id/lessons/:lessonId/progress`, `GET /:id/progress`.
 

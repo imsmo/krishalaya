@@ -23,11 +23,11 @@ describe('Course.splitRevenue', () => {
 describe('Course lifecycle', () => {
   const mk = () => Course.create({ id: 'c1', tenantId: 't1', instructorId: 'i1', defaultTitle: 'Soil 101', topicId: null, audienceRoleIds: [], level: 'basic', priceMinor: 0n, currencyCode: 'INR', certEnabled: false, coverMediaId: null });
   it('draft→review→published→paused→published; archived blocks edits', () => {
-    const c = mk(); c.submitForReview(); c.publish(); expect(c.status).toBe('published');
-    c.pause(); expect(c.status).toBe('paused'); c.publish();
-    c.archive(); expect(() => c.update({ defaultTitle: 'x' })).toThrow(InvalidCourseError);
+    const T = new Date(); const c = mk(); c.submitForReview('maker', T); c.publish('checker', T); expect(c.status).toBe('published');
+    c.pause(); expect(c.status).toBe('paused'); c.resume();
+    c.archive(T); expect(() => c.update({ defaultTitle: 'x' })).toThrow(InvalidCourseError);
   });
-  it('cannot publish straight from draft', () => { expect(() => mk().publish()).toThrow(IllegalCourseTransitionError); });
+  it('cannot publish straight from draft', () => { expect(() => mk().publish('checker', new Date())).toThrow(IllegalCourseTransitionError); });
   it('rejects negative price', () => { expect(() => Course.create({ id: 'c1', tenantId: 't1', instructorId: 'i1', defaultTitle: 'x', topicId: null, audienceRoleIds: [], level: 'basic', priceMinor: -1n, currencyCode: 'INR', certEnabled: false, coverMediaId: null })).toThrow(InvalidCourseError); });
 });
 

@@ -23,109 +23,17 @@ import { cOfDeci, deciOfC } from './bmc';
 import { ShiftColumns, hhmm } from './mcc-console';
 
 /* --------------------------------------------------------------------------------------------------------- */
-/* THE SHAPE                                                                                                 */
+/* THE SHAPE — lifted to `shared/form-review.ts` by PC-56 TENANT-7a                                            */
 /* --------------------------------------------------------------------------------------------------------- */
-
-/** One line of the read-only review: what was typed, and what will actually be stored. */
-export interface ReviewField {
-  name: string;
-  /** As submitted, trimmed. Null when the operator left it empty. */
-  entered: string | null;
-  /**
-   * As it will be STORED — normalised by the same functions the writer uses. `"4"` becomes `"4.0"`, `"06:00:00"`
-   * becomes `"06:00"`, and an omitted band end becomes the default the register would apply. This column is the
-   * difference between a review and an echo.
-   */
-  stored: string | null;
-  /** True when the platform will store something other than what was typed, so the review can draw attention to it. */
-  normalised: boolean;
-}
-
-/** One refusal, against a field where there is one to blame. */
-export interface ReviewRefusal { field: string | null; code: string }
-
-export interface ReviewDiffRow { field: string; before: string | null; after: string | null }
-
-export interface ReviewResult {
-  ready: boolean;
-  fields: ReviewField[];
-  /** EVERY refusal, not the first: a form-error screen listing one field at a time is a form nobody finishes. */
-  refusals: ReviewRefusal[];
-  /** Null for a create — *"where applicable"* — so an empty table never implies a comparison nobody made. */
-  diff: ReviewDiffRow[] | null;
-  /** What the act will be audited as, so the success screen can link to that entity's own trail. */
-  entityType: string;
-}
-
-const field = (name: string, entered: string | null, stored: string | null): ReviewField => ({
-  name,
-  entered: entered === null || entered.trim().length === 0 ? null : entered.trim(),
-  stored,
-  normalised: (entered === null || entered.trim().length === 0 ? null : entered.trim()) !== stored,
-});
-
-/**
- * EVERY REFUSAL MUST BE REACHABLE.
- *
- * A refusal naming a field with no row on the review is a refusal the screen cannot print: it is not general (so it
- * does not head the page) and it belongs to no row (so it appears nowhere). The operator would read a review with no
- * reasons on it, press confirm, and land on the failure screen — precisely the defect this file exists to prevent, and
- * a silent one, because `ready` is still correctly false. This platform had two of them the first time these two
- * reviewers were written (`MCC_NOT_FOUND` filed against `mccId` while the row was called `centre`, and
- * `REASON_WITHOUT_OPERATOR` filed against a field that had no row at all).
- *
- * EXPORTED so it can be tested directly: no reviewer in this file files an orphan today, so an invariant left private
- * would be unreachable from any test — and an unreachable guard is a guard that quietly stops working.
- *
- * So the invariant is enforced where it cannot be forgotten, and it FAILS LOUD. A 500 on a review is recoverable —
- * the operator has written nothing and can be told the console is broken. A review that hides the one reason the write
- * will be refused is not: it spends somebody's afternoon and teaches them the confirm step means nothing.
- */
-export function assertRefusalsPrintable(entityType: string, fieldNames: readonly string[], refusals: readonly ReviewRefusal[]): void {
-  const rows = new Set(fieldNames);
-  const orphans = refusals.filter((r) => r.field !== null && !rows.has(r.field));
-  if (orphans.length > 0) {
-    throw new Error(
-      `dairy review (${entityType}): refusal(s) name fields with no review row: ${orphans.map((o) => `${o.field}/${o.code}`).join(', ')}`,
-    );
-  }
-}
-
-function result(entityType: string, fields: ReviewField[], refusals: ReviewRefusal[], diff: ReviewDiffRow[] | null): ReviewResult {
-  assertRefusalsPrintable(entityType, fields.map((f) => f.name), refusals);
-  return { ready: refusals.length === 0, fields, refusals, diff, entityType };
-}
-
-/* --------------------------------------------------------------------------------------------------------- */
-/* WHAT THE WRITER WOULD REFUSE                                                                              */
-/* --------------------------------------------------------------------------------------------------------- */
-
-/** One complaint from the create schema, named by the field it is about. See `dto/dairy-form-preview.dto.ts`. */
-export interface WriterIssue { path: string | null; tooLong: boolean }
-
-/** Both forms carry these two, because both writers can refuse a value for a reason the review has no words for. */
-export const WRITER_REFUSALS = ['TOO_LONG', 'VALUE_REJECTED'] as const;
-
-/**
- * The create schema's complaints, as review refusals — and NEVER on top of a reason that already names the field.
- *
- * This is the belt that makes `ready` a promise rather than a hope: whatever the writer's validator refuses, the review
- * refuses too. But it is only the belt. `VALUE_REJECTED` is a fallback for a rule this file does not model, and
- * printing it beside a precise reason would add noise to a screen somebody is reading in a hurry — so a field that
- * already has a reason of its own keeps only that reason.
- */
-function writerRefusals(issues: readonly WriterIssue[], rows: readonly string[], existing: readonly ReviewRefusal[]): ReviewRefusal[] {
-  const named = new Set(existing.filter((r) => r.field !== null).map((r) => r.field as string));
-  const out: ReviewRefusal[] = [];
-  for (const i of issues) {
-    const field = i.path !== null && rows.includes(i.path) ? i.path : null;
-    if (field !== null && named.has(field)) continue;
-    const code = i.tooLong ? 'TOO_LONG' : 'VALUE_REJECTED';
-    if (out.some((o) => o.field === field && o.code === code)) continue;
-    out.push({ field, code });
-  }
-  return out;
-}
+// The generic half of this file (the review row, the refusal, the printability invariant, the writer belt) is now
+// `shared/form-review.ts`, because the course form (TENANT-7a) needed the same shape and the module blueprint forbids
+// one module importing another's domain. Re-exported here so nothing that imported these names from dairy moves.
+import {
+  ReviewField, ReviewRefusal, ReviewDiffRow, ReviewResult, WriterIssue, WRITER_REFUSALS,
+  assertRefusalsPrintable, field, reviewResult as result, writerRefusals, trimOrNull, refusalsFor, generalRefusals,
+} from '../../../shared/form-review';
+export type { ReviewField, ReviewRefusal, ReviewDiffRow, ReviewResult, WriterIssue };
+export { WRITER_REFUSALS, assertRefusalsPrintable, refusalsFor, generalRefusals };
 
 /* --------------------------------------------------------------------------------------------------------- */
 /* ADD BMC — W2517–W2520                                                                                     */
@@ -313,11 +221,6 @@ export function reviewCentre(i: CentreReviewInput): ReviewResult {
 /* HELPERS                                                                                                   */
 /* --------------------------------------------------------------------------------------------------------- */
 
-function trimOrNull(s: string | null | undefined): string | null {
-  const t = (s ?? '').trim();
-  return t.length === 0 ? null : t;
-}
-
 /**
  * `"2000"` → `"2000.00"`, by STRING.
  *
@@ -330,12 +233,3 @@ export function twoDecimals(s: string): string {
   return `${m[1]}.${(m[2] ?? '').padEnd(2, '0')}`;
 }
 
-/** Does this review's refusal list contain a reason against a given field? The form-error screen's own question. */
-export function refusalsFor(r: ReviewResult, fieldName: string): string[] {
-  return r.refusals.filter((x) => x.field === fieldName).map((x) => x.code);
-}
-
-/** The refusals that belong to no field — a permission, a flag. They head the form-error screen rather than a row. */
-export function generalRefusals(r: ReviewResult): string[] {
-  return r.refusals.filter((x) => x.field === null).map((x) => x.code);
-}

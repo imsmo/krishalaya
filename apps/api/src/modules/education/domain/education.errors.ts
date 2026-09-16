@@ -11,3 +11,15 @@ export class InvalidCourseError extends DomainError { constructor(detail: string
 export class InvalidRoyaltyError extends DomainError { constructor(bps: number) { super('ROYALTY_INVALID', `royalty_bps must be 0..10000, got ${bps}`, 422, { bps }); } }
 export class CannotEnrollOwnCourseError extends DomainError { constructor() { super('CANNOT_ENROLL_OWN_COURSE', 'An instructor cannot enroll in their own course', 409, {}); } }
 export class EducationForbiddenError extends DomainError { constructor(detail = 'forbidden') { super('EDUCATION_FORBIDDEN', detail, 403, {}); } }
+// PC-56 TENANT-7a · the two refusals of the course record. Each carries the CODES the review/verdict computed, so a
+// console can print the same sentences the confirm screen would have — a 409 with words, never a bare 409.
+export class CourseFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('COURSE_FORM_REFUSED', `Course form refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class CourseActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[]) {
+    super('COURSE_ACT_REFUSED', `Course act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
+  }
+}
