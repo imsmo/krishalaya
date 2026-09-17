@@ -140,4 +140,9 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // same transaction that writes the receipt; `userId` is the REQUESTER and is in the payload (ADMIN-6b's lesson), and
   // `dataset` is a per-language map from seed 0017 so the Gujarati notice does not carry the code `dairy.insights`.
   { outboxType: 'exports.export_ready',           eventCode: 'exports.export_ready',           recipientKeys: ['userId'] },
+  // PC-56 TENANT-7c · W414 *"Reminder cadence — 1 day, 1 hour, 10 min before"*. The education module's registered cadence
+  // job claims each (class, offset) once and emits this with the REGISTERED members as `recipientUserIds` and the digits
+  // the notice prints (`title`, `day`, `time` — the wall-clock the database resolved in the cooperative's zone). Catalogued
+  // by 0172; templates en/hi/gu in seed 0007; guarded by tenant7c's render check.
+  { outboxType: 'education.live_reminder',        eventCode: 'education.live_reminder',        recipientKeys: ['recipientUserIds'] },
 ];

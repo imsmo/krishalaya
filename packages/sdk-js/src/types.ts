@@ -568,6 +568,46 @@ export interface LessonRecord extends LessonView {
   audioLessons: Array<{ id: string; defaultTitle: string; position: string; pairedWith: string | null }>;
   form: Record<string, string>;
 }
+/* ================================================================================================================= */
+/* PC-56 TENANT-7c · W414 / W415 + the live-form and live-mutate chains — THE LIVE CLASS                                */
+/* ================================================================================================================= */
+
+export type LiveStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
+export const LIVE_BOXES = ['upcoming', 'past', 'mine', 'all'] as const;
+export type LiveBox = (typeof LIVE_BOXES)[number];
+/** The live form as a person fills it: a date `YYYY-MM-DD` and a wall-clock `HH:MM` IN THE COOPERATIVE'S ZONE (the
+ *  database resolves the instant), minutes, a capacity, the join link, two checkboxes (`1`). */
+export const LIVE_FORM_FIELDS = ['courseId', 'title', 'date', 'time', 'durationMins', 'capacity', 'joinUrl', 'remind', 'clashAccepted'] as const;
+export type LiveFormInput = Partial<Record<(typeof LIVE_FORM_FIELDS)[number], string>>;
+export const LIVE_ACTS = ['start', 'end', 'cancel', 'attendance', 'recording', 'to_lesson'] as const;
+export type LiveAct = (typeof LIVE_ACTS)[number];
+export type LiveActRefusal = 'NO_PERMISSION' | 'NOT_HOST' | 'COURSE_ARCHIVED' | 'ILLEGAL_FROM_STATUS' | 'PROVIDER_NOT_CONFIGURED' | 'TOO_EARLY' | 'BEFORE_START'
+  | 'ATTENDANCE_REQUIRED' | 'ATTENDANCE_INVALID' | 'MEDIA_REQUIRED' | 'MEDIA_UNKNOWN' | 'MEDIA_KIND_MISMATCH' | 'MEDIA_NOT_CLEAN' | 'RECORDING_REQUIRED' | 'LESSON_EXISTS' | 'REASON_REQUIRED';
+export interface LiveActVerdict { act: LiveAct; allowed: boolean; refusals: LiveActRefusal[]; to: LiveStatus | null }
+/** The class row. `scheduledAt` is the START instant (UTC ISO); the wall-clock in the cooperative's zone rides beside it on every read. */
+export interface LiveClass {
+  id: string; hostUserId: string; channelId: string | null; courseId: string | null; title: string; topicId: string | null;
+  scheduledAt: string; durationMins: number; capacity: number | null; joinUrl: string | null; clashAccepted: boolean; remind: boolean;
+  status: LiveStatus; playbackUrl: string | null; recordingMediaId: string | null; recordingAttachedAt: string | null; recordingLessonId: string | null;
+  startedAt: string | null; endedAt: string | null; cancelledAt: string | null;
+  attendanceCount: number | null; attendanceRecordedAt: string | null; attendanceRecordedBy: string | null; createdAt?: string;
+}
+export interface LiveClassListItem {
+  session: LiveClass; localDate: string; localTime: string; timezone: string; registered: number;
+  course: { id: string; defaultTitle: string } | null;
+}
+export type ReminderKind = 'day' | 'hour' | 'soon';
+export interface LiveClassView extends LiveClassListItem {
+  course: { id: string; defaultTitle: string; status: string } | null;
+  window: { opensAt: string; closesAt: string };
+  joinVisible: boolean; isHost: boolean; privileged: boolean; canEdit: boolean; registeredSelf: boolean; providerConfigured: boolean;
+  acts: LiveActVerdict[];
+  recording: LessonMediaFacts | null;
+  recordingLesson: { id: string; defaultTitle: string; position: string } | null;
+  reminders: Array<{ kind: ReminderKind; sentAt: string; recipients: number }>;
+  form: Record<string, string>;
+}
+
 /** The caller's own enrollment in a course (progress + completion + certificate). */
 export interface Enrollment {
   id: string; courseId: string; learnerUserId: string; paymentId: string | null; progressPct: number;

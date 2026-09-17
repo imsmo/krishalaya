@@ -7,6 +7,7 @@ import {
   Course, CourseLesson, Enrollment, LessonProgress, LearningResource, ResourceKind, CropCalendar, Page,
   CourseDesk, CourseTopic, CourseStats, CourseFormInput, CourseActs, CourseAct, FormReview,
   CourseOutline, LessonRecord, LessonFormInput, SubtitleFormInput, QuestionFormInput, LessonAct,
+  LiveBox, LiveClass, LiveClassListItem, LiveClassView, LiveFormInput, LiveAct,
 } from '../types';
 
 export class CoursesResource {
@@ -105,33 +106,13 @@ export class CoursesResource {
   }
 }
 
-/** PC-26b: live-session hosting (education.host) + external content channels. Server-gated by the `education`
- *  flag; the studio only reflects legality. */
+/** PC-26b: external content channels (channel.host; moderation is admin-side) + the instructor self-profile. The live
+ *  methods that lived here (schedule on a channel · start · end · cancel, no key, no reason, no audit row) are GONE
+ *  since PC-56 TENANT-7c — the live class is `LiveClassesResource` below. */
 export interface EduChannel { id: string; provider: string; title: string; handle: string | null; externalUrl: string; topicId: string | null; description: string | null; status: string; createdAt?: string; }
-export interface LiveSession { id: string; channelId: string; title: string; topicId: string | null; scheduledAt: string; status: string; startedAt?: string | null; endedAt?: string | null; createdAt?: string; }
 
 export class LiveStudioResource {
   constructor(private readonly http: HttpClient) {}
-  /** Host: schedule a live session on one of your channels. */
-  async schedule(input: { channelId: string; title: string; topicId?: string | null; scheduledAt: string }): Promise<LiveSession> {
-    return (await this.http.request<LiveSession>('POST', 'education/live-sessions', { body: input })).data;
-  }
-  async list(params: { box?: 'upcoming' | 'mine' | 'all'; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<LiveSession>> {
-    const r = await this.http.request<LiveSession[]>('GET', 'education/live-sessions', { query: { box: params.box ?? 'upcoming', cursor: params.cursor, limit: params.limit ?? 50 }, signal });
-    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
-  }
-  async get(id: string, signal?: AbortSignal): Promise<LiveSession> {
-    return (await this.http.request<LiveSession>('GET', `education/live-sessions/${encodeURIComponent(id)}`, { signal })).data;
-  }
-  async start(id: string): Promise<LiveSession> {
-    return (await this.http.request<LiveSession>('POST', `education/live-sessions/${encodeURIComponent(id)}/start`, {})).data;
-  }
-  async end(id: string): Promise<LiveSession> {
-    return (await this.http.request<LiveSession>('POST', `education/live-sessions/${encodeURIComponent(id)}/end`, {})).data;
-  }
-  async cancel(id: string): Promise<LiveSession> {
-    return (await this.http.request<LiveSession>('POST', `education/live-sessions/${encodeURIComponent(id)}/cancel`, {})).data;
-  }
   // --- channels (a host registers external content channels; moderation is admin-side) ---
   async channels(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<EduChannel>> {
     const r = await this.http.request<EduChannel[]>('GET', 'education/channels', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
@@ -147,6 +128,42 @@ export class LiveStudioResource {
   }
   async upsertInstructor(input: { bio?: string | null }): Promise<{ id: string; bio: string | null }> {
     return (await this.http.request<{ id: string; bio: string | null }>('PUT', 'education/instructors/me', { body: input })).data;
+  }
+}
+
+/** PC-56 TENANT-7c · THE LIVE CLASS (W414 · W415 + the live-form and live-mutate chains). Declared honestly: this platform
+ *  has no video provider, so a class is SCHEDULED (an instant in the cooperative's own timezone), HELD on a join link
+ *  the host pastes, marked ENDED, its ATTENDANCE recorded, its RECORDING attached through core/media and published as a
+ *  lesson by an act. Same shape as the course and lesson records: one review + one write each, an Idempotency-Key on
+ *  every write, the acts as verdicts. */
+export class LiveClassesResource {
+  constructor(private readonly http: HttpClient) {}
+  /** W414's table. Keyset on (scheduled_at, id): `upcoming` ascends, `past`/`mine`/`all` descend. */
+  async list(params: { box?: LiveBox; courseId?: string; status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<LiveClassListItem>> {
+    const r = await this.http.request<LiveClassListItem[]>('GET', 'education/live-sessions', { query: { box: params.box ?? 'upcoming', courseId: params.courseId, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** W415: the class with its window, its acts' verdicts for this caller, its recording, the reminders sent. */
+  async get(id: string, signal?: AbortSignal): Promise<LiveClassView> {
+    return (await this.http.request<LiveClassView>('GET', `education/live-sessions/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** The form's review. No key: it writes nothing. `id` makes it an EDIT's review, with a diff. */
+  async preview(input: LiveFormInput & { id?: string }): Promise<FormReview> {
+    return (await this.http.request<FormReview>('POST', 'education/live-sessions/preview', { body: input })).data;
+  }
+  async create(input: LiveFormInput, idempotencyKey: string): Promise<LiveClass> {
+    return (await this.http.request<LiveClass>('POST', 'education/live-sessions', { idempotencyKey, body: input })).data;
+  }
+  async update(id: string, input: LiveFormInput, idempotencyKey: string): Promise<LiveClass> {
+    return (await this.http.request<LiveClass>('PATCH', `education/live-sessions/${encodeURIComponent(id)}`, { idempotencyKey, body: input })).data;
+  }
+  /** The act, with its reason (3–300 chars); `count` for attendance, `mediaId` for the recording. */
+  async act(id: string, act: LiveAct, body: { reason: string; count?: string; mediaId?: string }, idempotencyKey: string): Promise<LiveClass> {
+    return (await this.http.request<LiveClass>('POST', `education/live-sessions/${encodeURIComponent(id)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body })).data;
+  }
+  /** A member registers (refused `CLASS_NOT_OPEN` / `CLASS_FULL`). */
+  async register(id: string, idempotencyKey: string): Promise<{ registered: boolean; count: number }> {
+    return (await this.http.request<{ registered: boolean; count: number }>('POST', `education/live-sessions/${encodeURIComponent(id)}/register`, { idempotencyKey, body: {} })).data;
   }
 }
 

@@ -44,15 +44,30 @@ describe('LearningResource', () => {
   });
 });
 
-describe('LiveSession', () => {
-  const mk = () => LiveSession.schedule({ id: 's1', tenantId: 't1', hostUserId: 'u1', channelId: 'c1', title: 'Soil Q&A', topicId: null, scheduledAt: new Date() });
+describe('LiveSession (PC-56 TENANT-7c shape)', () => {
+  const mk = () => LiveSession.schedule({ id: 's1', tenantId: 't1', hostUserId: 'u1', courseId: 'c1', title: 'Soil Q&A', scheduledAt: new Date('2026-07-16T15:00:00Z'), durationMins: 90, capacity: 500, joinUrl: 'https://meet.example/x', clashAccepted: false, remind: true });
   it('scheduled→live→ended; cannot cancel a live session', () => {
     const s = mk(); s.start('stream-1', 'https://play/1'); expect(s.status).toBe('live');
     expect(() => s.cancel()).toThrow(IllegalLiveTransitionError);
-    s.end('rec-1'); expect(s.status).toBe('ended');
+    s.end(); expect(s.status).toBe('ended');
   });
-  it('scheduled can be cancelled; cannot end a scheduled (not-yet-live) session', () => {
-    const s = mk(); expect(() => s.end(null)).toThrow(IllegalLiveTransitionError);
-    s.cancel(); expect(s.status).toBe('cancelled');
+  it('scheduled can be cancelled, and — held elsewhere — ended without ever being live (7c)', () => {
+    const s = mk(); s.end(); expect(s.status).toBe('ended'); expect(s.toProps().endedAt).not.toBeNull(); expect(s.toProps().startedAt).toBeNull();
+    const c = mk(); c.cancel(); expect(c.status).toBe('cancelled'); expect(c.toProps().cancelledAt).not.toBeNull();
+    expect(() => c.end()).toThrow(IllegalLiveTransitionError);
+  });
+  it('attendance, the recording and the lesson follow the end, in that order, once', () => {
+    const s = mk();
+    expect(() => s.recordAttendance(10, 'u1')).toThrow(); expect(() => s.attachRecording('m1')).toThrow();
+    s.end(); s.recordAttendance(342, 'u1'); expect(s.toProps()).toMatchObject({ attendanceCount: 342, attendanceRecordedBy: 'u1' });
+    expect(() => s.recordAttendance(-1, 'u1')).toThrow(); expect(() => s.recordAttendance(1.5, 'u1')).toThrow();
+    expect(() => s.publishedAsLesson('l1')).toThrow();
+    s.attachRecording('m1'); s.publishedAsLesson('l1');
+    expect(() => s.publishedAsLesson('l2')).toThrow(); expect(() => s.attachRecording('m2')).toThrow();
+  });
+  it('an edit is only while scheduled', () => {
+    const s = mk(); s.reschedule({ title: 'Soil Q&A II', scheduledAt: new Date('2026-07-17T15:00:00Z'), durationMins: 60, capacity: null, joinUrl: null, clashAccepted: true, remind: false });
+    expect(s.toProps()).toMatchObject({ title: 'Soil Q&A II', durationMins: 60, capacity: null, clashAccepted: true, remind: false });
+    s.cancel(); expect(() => s.reschedule({ title: 'x', scheduledAt: new Date(), durationMins: 60, capacity: null, joinUrl: null, clashAccepted: false, remind: true })).toThrow();
   });
 });

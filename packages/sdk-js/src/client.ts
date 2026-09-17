@@ -31,7 +31,7 @@ import { ConversationsResource, MaskedCallsResource } from './resources/messagin
 import { AuctionsResource } from './resources/auctions';
 import { LabourResource } from './resources/labour';
 import { AmbassadorsResource } from './resources/ambassadors';
-import { CoursesResource, EnrollmentsResource, ResourcesResource, LiveStudioResource } from './resources/education';
+import { CoursesResource, EnrollmentsResource, ResourcesResource, LiveStudioResource, LiveClassesResource } from './resources/education';
 import { MembershipsResource } from './resources/memberships';
 import { PromotionsResource } from './resources/promotions';
 import { RequirementsResource } from './resources/requirements';
@@ -97,6 +97,8 @@ export class KrishalayaClient {
   readonly courses: CoursesResource;
   readonly enrollments: EnrollmentsResource;
   readonly liveStudio: LiveStudioResource;
+  /** PC-56 TENANT-7c · the live class (W414 · W415). */
+  readonly liveClasses: LiveClassesResource;
   readonly memberships: MembershipsResource;
   readonly promotions: PromotionsResource;
   readonly requirements: RequirementsResource;
@@ -178,6 +180,7 @@ export class KrishalayaClient {
     this.courses = new CoursesResource(this.http);
     this.enrollments = new EnrollmentsResource(this.http);
     this.liveStudio = new LiveStudioResource(this.http);
+    this.liveClasses = new LiveClassesResource(this.http);
     this.memberships = new MembershipsResource(this.http);
     this.promotions = new PromotionsResource(this.http);
     this.requirements = new RequirementsResource(this.http);

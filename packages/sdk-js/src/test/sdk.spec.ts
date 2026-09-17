@@ -204,6 +204,35 @@ describe('HttpClient via resources', () => {
     expect(moved.durationSecs).toBe(405);
   });
 
+  it('live classes (PC-56 TENANT-7c): the schedule by (scheduled_at, id), the class, one review without a key, two writes and the acts with one, a member\'s registration', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 's1', hostUserId: 'h', courseId: 'c1', title: 'Mastitis', scheduledAt: '2026-07-16T15:00:00.000Z', durationMins: 90, capacity: 500, joinUrl: null, clashAccepted: false, remind: true, status: 'scheduled', recordingMediaId: null, recordingLessonId: null, attendanceCount: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.liveClasses.list({ box: 'past', courseId: 'c1', status: 'ended', cursor: 'abc', limit: 20 });
+    await c.liveClasses.get('s1');
+    // the wall-clock travels as typed — a date and a time in the COOPERATIVE's zone; the server resolves the instant
+    await c.liveClasses.preview({ courseId: 'c1', title: 'Mastitis', date: '2026-07-16', time: '20:30', durationMins: '90', capacity: '500', remind: '1', id: 's1' });
+    await c.liveClasses.create({ courseId: 'c1', title: 'Mastitis', date: '2026-07-16', time: '20:30' }, 'idem-c');
+    await c.liveClasses.update('s1', { title: 'Mastitis II', date: '2026-07-17', time: '20:30' }, 'idem-u');
+    const ended = await c.liveClasses.act('s1', 'end', { reason: 'held on the meet link' }, 'idem-e');
+    await c.liveClasses.act('s1', 'attendance', { reason: 'counted', count: '342' }, 'idem-a');
+    await c.liveClasses.act('s1', 'recording', { reason: 'uploaded', mediaId: 'm1' }, 'idem-r');
+    await c.liveClasses.register('s1', 'idem-g');
+    const hdr = (i: number) => (calls[i].init?.headers as Record<string, string>)['idempotency-key'];
+    expect(calls[0].url).toContain('education/live-sessions?'); expect(calls[0].url).toContain('box=past'); expect(calls[0].url).toContain('courseId=c1'); expect(calls[0].url).toContain('status=ended'); expect(calls[0].url).toContain('cursor=abc'); expect(calls[0].url).toContain('limit=20');
+    expect(calls[1].url).toBe('https://api.test/v1/education/live-sessions/s1');
+    expect(calls[2].url).toBe('https://api.test/v1/education/live-sessions/preview'); expect(hdr(2)).toBeUndefined();
+    expect(JSON.parse(String(calls[2].init?.body))).toMatchObject({ date: '2026-07-16', time: '20:30', id: 's1' });
+    expect(calls[3].url).toBe('https://api.test/v1/education/live-sessions'); expect(calls[3].init?.method).toBe('POST'); expect(hdr(3)).toBe('idem-c');
+    expect(calls[4].url).toBe('https://api.test/v1/education/live-sessions/s1'); expect(calls[4].init?.method).toBe('PATCH'); expect(hdr(4)).toBe('idem-u');
+    expect(calls[5].url).toBe('https://api.test/v1/education/live-sessions/s1/acts/end'); expect(hdr(5)).toBe('idem-e'); expect(JSON.parse(String(calls[5].init?.body))).toEqual({ reason: 'held on the meet link' });
+    expect(calls[6].url).toBe('https://api.test/v1/education/live-sessions/s1/acts/attendance'); expect(JSON.parse(String(calls[6].init?.body))).toEqual({ reason: 'counted', count: '342' });
+    expect(calls[7].url).toBe('https://api.test/v1/education/live-sessions/s1/acts/recording'); expect(JSON.parse(String(calls[7].init?.body))).toEqual({ reason: 'uploaded', mediaId: 'm1' });
+    expect(calls[8].url).toBe('https://api.test/v1/education/live-sessions/s1/register'); expect(hdr(8)).toBe('idem-g');
+    expect(ended.durationMins).toBe(90);
+    // PC-26b's channel-gated live methods are gone with their routes
+    expect((c.liveStudio as unknown as Record<string, unknown>).schedule).toBeUndefined(); expect((c.liveStudio as unknown as Record<string, unknown>).start).toBeUndefined();
+  });
+
   it('disputes.raise POSTs with Idempotency-Key + reason enum', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd9', orderId: 'o1', raisedBy: 'b1', againstUser: 's1', reasonId: null, description: 'late by 3 days', status: 'open', sellerRespondBy: null, resolutionType: null, resolutionAmountMinor: null, resolvedBy: null, resolvedAt: null, slaDueAt: null } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

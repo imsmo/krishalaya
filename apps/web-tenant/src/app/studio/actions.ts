@@ -8,7 +8,6 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { SdkError } from '@krishalaya/sdk-js';
 
 function back(path: string, qs: string): never { redirect(`${path}?${qs}`); }
 
@@ -35,36 +34,5 @@ export async function registerChannelAction(formData: FormData): Promise<void> {
   revalidatePath('/studio/live');
   back('/studio/live', 'ok=channel');
 }
-
-export async function scheduleLiveAction(formData: FormData): Promise<void> {
-  await requireSession('/studio/live');
-  const { buildLive } = await import('../../features/studio/quiz');
-  const built = buildLive({
-    channelId: String(formData.get('channelId') ?? ''),
-    title: String(formData.get('title') ?? ''),
-    scheduledAtLocal: String(formData.get('scheduledAt') ?? ''),
-  });
-  if (!built.ok) back('/studio/live', `error=live_${built.error}`);
-  try { await tenantClient().liveStudio.schedule(built.value); }
-  catch { back('/studio/live', 'error=live'); }
-  revalidatePath('/studio/live');
-  back('/studio/live', 'ok=live');
-}
-
-export async function liveLifecycleAction(formData: FormData): Promise<void> {
-  await requireSession('/studio/live');
-  const id = String(formData.get('id') ?? '').trim();
-  const kind = String(formData.get('kind') ?? '');
-  if (!id) redirect('/studio/live');
-  try {
-    const ls = tenantClient().liveStudio;
-    if (kind === 'start') await ls.start(id);
-    else if (kind === 'end') await ls.end(id);
-    else if (kind === 'cancel') await ls.cancel(id);
-    else back('/studio/live', 'error=action');
-  } catch (e) {
-    back('/studio/live', `error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'action'}`);
-  }
-  revalidatePath('/studio/live');
-  back('/studio/live', `ok=${kind}`);
-}
+// PC-56 TENANT-7c: `scheduleLiveAction` and `liveLifecycleAction` are GONE — the live class is scheduled and acted on through
+// the API-reviewed chains at /live/new and /live/[id]/act (features/live/classes.ts).

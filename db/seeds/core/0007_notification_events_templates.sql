@@ -478,6 +478,33 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('exports.export_ready', 'file',    'tenant_export_jobs.file_name',                                              'dairy-insights-90d-2026-09-10.csv', true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-7c · **THE LIVE CLASS** — W414: *"Reminder cadence — important tier — 1 day, 1 hour, 10 min before"*
+-- ==================================================================================================================
+-- 0172.7 catalogues `education.live_reminder` (push + inapp, opt-out allowed — a reminder is a courtesy). The education
+-- module's REGISTERED cadence job (`education-live-reminders`) claims each (class, offset) once through a UNIQUE row and
+-- emits the event in the same transaction with the class's REGISTERED members as recipients. Three variables, all
+-- required, all used in every body: `title` is the class title as the host typed it; `day` is DD/MM and `time` HH:MM —
+-- the wall-clock the DATABASE resolved in the cooperative's own timezone (6c-1's resolution), so a class at 20:30 in
+-- Anand reads 20:30 to a member in Anand. NO ENUM IN THE COPY: the offset ("a day before", "an hour before") is not a
+-- token — the kinds share one body, because a member reading "starts at 20:30 on 16/07" needs no second sentence.
+-- NO LINK IN THE COPY: the join link is shown on the class page inside the join window, to registered members only;
+-- a link in a notification read by anyone who picks up the phone would be a link to a room the class is being held in.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('education.live_reminder','push','gu',NULL,'જીવંત વર્ગ: {{title}}','{{day}} ના રોજ {{time}} વાગ્યે શરૂ થાય છે. જોડાવાની લિંક વર્ગના પેજ પર છે.',NULL,true),
+ ('education.live_reminder','push','hi',NULL,'Live class: {{title}}','{{day}} ko {{time}} baje shuru hogi. Judne ki link class ke page par hai.',NULL,true),
+ ('education.live_reminder','push','en',NULL,'Live class: {{title}}','Starts at {{time}} on {{day}}. The join link is on the class page.',NULL,true),
+ ('education.live_reminder','inapp','gu',NULL,'જીવંત વર્ગ: {{title}}','{{day}} ના રોજ {{time}} વાગ્યે શરૂ થાય છે. જોડાવાની લિંક વર્ગના પેજ પર છે; તે વર્ગની 15 મિનિટ પહેલાં ખુલે છે.',NULL,true),
+ ('education.live_reminder','inapp','hi',NULL,'Live class: {{title}}','{{day}} ko {{time}} baje shuru hogi. Judne ki link class ke page par hai; woh class se 15 minute pehle khulti hai.',NULL,true),
+ ('education.live_reminder','inapp','en',NULL,'Live class: {{title}}','Starts at {{time}} on {{day}}. The join link is on the class page; it opens 15 minutes before the class.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('education.live_reminder', 'title', 'live_sessions.title',                                                    'Mastitis: spot it early', true),
+ ('education.live_reminder', 'day',   'live_sessions.scheduled_at AT TIME ZONE the tenant country''s zone (digits, DD/MM)', '16/07',            true),
+ ('education.live_reminder', 'time',  'live_sessions.scheduled_at AT TIME ZONE the tenant country''s zone (digits, HH:MM)', '20:30',            true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

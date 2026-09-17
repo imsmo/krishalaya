@@ -104,23 +104,31 @@ describe('learning_resources isolation', () => {
   });
 });
 
-describe('live_sessions isolation', () => {
-  it('getForUpdate binds tenant_id + FOR UPDATE; list keyset (no OFFSET); registration uses ON CONFLICT', async () => {
+describe('live_sessions isolation (PC-56 TENANT-7c shape)', () => {
+  it('getForUpdate locks the row by id AND tenant_id; list keyset on (scheduled_at, id) (no OFFSET); registration binds tenant_id and uses ON CONFLICT on the two NOT NULL key columns', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
     const repo = new LiveSessionRepository(fakeReplica().provider);
     await repo.getForUpdate(tx as any, 'tenantA', 's1');
     expect(tx.query.mock.calls[0][0]).toMatch(/id=\$1 AND tenant_id=\$2/); expect(tx.query.mock.calls[0][0]).toMatch(/FOR UPDATE/);
     const tx2 = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
-    await repo.register(tx2 as any, 's1', 'u9');
-    expect(tx2.query.mock.calls[0][0]).toMatch(/INSERT INTO live_session_registrations/); expect(tx2.query.mock.calls[0][0]).toMatch(/ON CONFLICT \(session_id, user_id\) DO NOTHING/);
+    expect(await repo.register(tx2 as any, 'tenantA', 's1', 'u9')).toBe(true);
+    expect(tx2.query.mock.calls[0][0]).toMatch(/INSERT INTO live_session_registrations \(tenant_id, session_id, user_id\)/); expect(tx2.query.mock.calls[0][0]).toMatch(/ON CONFLICT \(session_id, user_id\) DO NOTHING/);
+    expect(tx2.query.mock.calls[0][1]).toContain('tenantA');
     const fr = fakeReplica();
     await new LiveSessionRepository(fr.provider).listFor('tenantA', { box: 'upcoming', limit: 50 });
-    expect(fr.exec.query.mock.calls[0][0]).toMatch(/tenant_id=\$1/); expect(fr.exec.query.mock.calls[0][0]).not.toMatch(/OFFSET/i);
+    expect(fr.exec.query.mock.calls[0][0]).toMatch(/s\.tenant_id=\$1/); expect(fr.exec.query.mock.calls[0][0]).not.toMatch(/OFFSET/i); expect(fr.exec.query.mock.calls[0][0]).toMatch(/ORDER BY s\.scheduled_at ASC, s\.id ASC/);
+    const fr2 = fakeReplica();
+    await new LiveSessionRepository(fr2.provider).listFor('tenantA', { box: 'past', limit: 50, cursor: { at: '2026-07-16T15:00:00Z', id: 'x' } });
+    expect(fr2.exec.query.mock.calls[0][0]).toMatch(/s\.scheduled_at < \$2 OR \(s\.scheduled_at=\$2 AND s\.id < \$3\)/); expect(fr2.exec.query.mock.calls[0][0]).toMatch(/ORDER BY s\.scheduled_at DESC, s\.id DESC/);
   });
-  it('insert binds tenant_id', async () => {
+  it('insert binds tenant_id; the wall-clock is resolved AT TIME ZONE the tenant country\'s zone in SQL, never in Node', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
-    const s = LiveSession.schedule({ id: 's1', tenantId: 'tenantA', hostUserId: 'u1', channelId: 'ch1', title: 'Q', topicId: null, scheduledAt: new Date() });
+    const s = LiveSession.schedule({ id: 's1', tenantId: 'tenantA', hostUserId: 'u1', courseId: 'c1', title: 'Q', scheduledAt: new Date(), durationMins: 60, capacity: null, joinUrl: null, clashAccepted: false, remind: true });
     await new LiveSessionRepository(fakeReplica().provider).insert(tx as any, s);
     expect(tx.query.mock.calls[0][0]).toMatch(/INSERT INTO live_sessions/); expect(tx.query.mock.calls[0][1]).toContain('tenantA');
+    const fr = fakeReplica();
+    await new LiveSessionRepository(fr.provider).resolveStart('tenantA', '2026-07-16', '20:30');
+    expect(fr.exec.query.mock.calls[0][0]).toMatch(/AT TIME ZONE co\.timezone/); expect(fr.exec.query.mock.calls[0][0]).toMatch(/JOIN countries co ON co\.code = t\.country_code/);
+    expect(fr.exec.query.mock.calls[0][1]).toEqual(['2026-07-16', '20:30', 'tenantA']);
   });
 });

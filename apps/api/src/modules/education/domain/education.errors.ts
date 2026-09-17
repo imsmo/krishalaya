@@ -34,3 +34,19 @@ export class LessonActRefusedError extends DomainError {
     super('LESSON_ACT_REFUSED', `Lesson act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
   }
 }
+// PC-56 TENANT-7c · the live class's three refusals — the live form, the live acts, and a member's registration.
+export class LiveFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('LIVE_FORM_REFUSED', `Live class form refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class LiveActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[]) {
+    super('LIVE_ACT_REFUSED', `Live class act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
+  }
+}
+export class LiveRegisterRefusedError extends DomainError {
+  constructor(refusals: readonly string[]) {
+    super('LIVE_REGISTER_REFUSED', `Registration refused: ${refusals.join(', ')}`, 409, { refusals });
+  }
+}

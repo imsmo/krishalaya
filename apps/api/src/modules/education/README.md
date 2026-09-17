@@ -54,25 +54,59 @@ approval** (`content.moderate`):
 - **Resources** — curated items (`video`/`blog`/`post`/`audio`/`article`) pointing at an external URL or a media
   file. Under the host's **own approved channel** a resource auto-approves (trust established); otherwise it's
   `pending` until a moderator approves. Moderators can take a resource down.
-- **Live sessions** — an approved-channel host schedules a session, then `start`s it: the external streaming
-  provider (resilience-wrapped `STREAM_PROVIDER` port; HTTP adapter by config else noop) issues a stream ref +
-  playback URL; lifecycle `scheduled → live → ended` (cancel only while scheduled). Any learner can register.
+- **Live sessions** — PC-26b's channel-gated stream (schedule on an approved channel → `start` via the provider →
+  end) is GONE since PC-56 TENANT-7c. See **The live class** below.
 
 Surface: `POST/GET/PATCH /v1/education/channels` + `POST /:id/{approve,suspend,reject}` (moderator);
-`POST/GET /v1/education/resources` + `POST /:id/{approve,takedown}`; `POST/GET /v1/education/live-sessions`,
-`GET /:id`, `POST /:id/{start,end,cancel,register}`. New perms: `channel.host`, `content.moderate`.
+`POST/GET /v1/education/resources` + `POST /:id/{approve,takedown}`. Perms: `channel.host`, `content.moderate`.
 
-Threats: only a channel's owner may edit it / host its sessions (404, not 403, on non-owners); an unapproved
-channel can't publish or stream (fail-closed); moderation is `content.moderate`-only + audited; external URLs
-are anchored-regex validated (no `javascript:`/SSRF bait); the stream provider degrades to a typed 503 (no
-half-started sessions); RLS isolates channels/resources/sessions per tenant.
+Threats: only a channel's owner may edit it (404, not 403, on non-owners); an unapproved channel can't publish
+(fail-closed); moderation is `content.moderate`-only + audited; external URLs are anchored-regex validated (no
+`javascript:`/SSRF bait); RLS isolates channels/resources per tenant.
+
+## The live class (W414 · W415 + the live-form and live-mutate chains) — PC-56 TENANT-7c, migration 0172
+
+**Declared honestly: this platform has no video provider.** `STREAM_PROVIDER_URL` unset binds `NoopStreamGateway`
+(providerCode `noop`), which in production answers `provider_not_configured`. So a class is a SCHEDULED CLASS on a
+course, hosted by the course's instructor (or acted on by the content desk, `course.publish`):
+
+- **Scheduled in the cooperative's own timezone.** The host types a date and a wall-clock time; the DATABASE resolves
+  the instant `AT TIME ZONE` `tenants.country_code → countries.timezone` (`LiveSessionRepository.resolveStart`, 6c-1's
+  resolution) and every read hands back `local_date`/`local_time` in the same zone. Nothing builds a Date from digits.
+- **Reviewed before written** (`domain/live-class-review.ts`, one function for `preview` · `create` · `update`): the
+  instant and the end shown as rows the form never asked for; refusals by name (`NOT_OWNER`, `COURSE_ARCHIVED`,
+  `STARTS_IN_PAST`, `CAPACITY_NEEDS_DESK` above 500 without the desk's key, `JOIN_URL_INVALID` — https only,
+  `HOST_CLASH` against the host's OWN classes on this cooperative's calendar, lifted by *Schedule anyway* → stored
+  `clash_accepted`). No calendar crosses tenants (RLS is the wall).
+- **Held on a join link** the host pastes; shown to registered members from 15 minutes before the start to 30 after
+  the end (`live-clock.ts`), to the host and the desk always. `register` refuses `CLASS_NOT_OPEN` / `CLASS_FULL`.
+- **Acts as verdicts** (`domain/live-class-acts.ts`), re-taken on the locked row, a reason on every audit row
+  (`education.live.<act>` on entity `live_session`), an Idempotency-Key on every write: `start` (refused
+  `PROVIDER_NOT_CONFIGURED` unless something other than the noop is bound; `TOO_EARLY` beyond 15 min) · `end` (from
+  `live`, or from `scheduled` once the start has passed — *held elsewhere*, `live-session.state.ts`) · `cancel` ·
+  `attendance` (a number the host records — never a live counter) · `recording` (a video/audio asset in THIS tenant's
+  bucket, through core/media: store · scan · serve) · `to_lesson` (a `live`-kind lesson appended to the course's last
+  module, once, only when the scan is clean — DELTA-047's "auto-publishes" performed by a person).
+- **Reminders** (`jobs/live-reminder.cadence-job.ts`, registered in `SCHEDULED_JOB_REGISTRY`, kv_relay pool): offsets
+  from the tenant setting `education.live_reminder_offsets_mins` (default 1 day · 1 hour · 10 min); each (class, kind)
+  claimed once through `live_class_reminders`' UNIQUE row; outbox `education.live_reminder` with the registered members
+  and the cooperative wall-clock digits → the notification spine (templates en/hi/gu, seed 0007).
+- **RLS**: `live_session_registrations` carries the session's `tenant_id` by trigger since 0172, ENABLE + FORCE (0027
+  had none); `live_class_reminders` REVOKE ALL then SELECT to kv_app, SELECT/INSERT to kv_relay.
+
+Surface: `GET /v1/education/live-sessions` (keyset by `(scheduled_at, id)`; `box=upcoming|past|mine|all`, `courseId`,
+`status`) · `POST /preview` · `POST /` · `GET /:id` · `PATCH /:id` · `POST /:id/acts/:act` · `POST /:id/register`.
+
+NOT HERE, BY NAME (no table, no provider): a live attendee counter, the question queue with voice transcripts, slow
+mode, a co-host, low-bandwidth mode, *connection dropped · rejoin*, auto-record, a shared cross-tenant calendar, the
+"best turnout" hint band, and *Retry* as an act.
 
 ## Deferred (schema present, not built)
 
 Certificate (PDF) issuance on completion (`cert_enabled` + `certificate_media_id` are stored; rendering reuses
 the media/PDF pipeline when wired); the online payment-intent enrol path (wallet purchase is the path here);
-instructor payout aggregation jobs; quiz auto-grading; external channel-metadata fetch + live recording
-retrieval (the `recording_media_id` slot is stored, ingestion deferred).
+instructor payout aggregation jobs; quiz auto-grading; external channel-metadata fetch. The live class's recording is
+attached by the host through core/media (TENANT-7c); nothing on this platform records or retrieves a stream.
 
 ## Tests
 
