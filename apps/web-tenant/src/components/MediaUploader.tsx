@@ -14,7 +14,14 @@ import { requestUploadAction, confirmUploadAction } from '../app/listings/new/ac
 
 type Item = { localId: string; name: string; status: 'uploading' | 'done' | 'failed'; mediaId?: string };
 
-const ACCEPT = 'image/jpeg,image/png,image/webp';
+// PC-56 TENANT-7b: the lesson form uploads a VIDEO (MP4/MOV), an AUDIO file or a PDF through the same three steps; the
+// MIME lists mirror `core/media`'s allow-list per kind, and dimensions are read for images only.
+const ACCEPT_BY_KIND: Record<'image' | 'video' | 'audio' | 'document', string> = {
+  image: 'image/jpeg,image/png,image/webp',
+  video: 'video/mp4,video/quicktime',
+  audio: 'audio/mpeg,audio/mp4,audio/ogg',
+  document: 'application/pdf',
+};
 
 async function sha256Hex(buf: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', buf);
@@ -31,8 +38,12 @@ function imageDims(file: File): Promise<{ width?: number; height?: number }> {
   });
 }
 
-export function MediaUploader({ labels, fieldName = 'mediaIds', single = false }: {
+export function MediaUploader({ labels, fieldName = 'mediaIds', single = false, kind = 'image', inputId = 'media' }: {
   labels: { add: string; hint: string; uploading: string; failed: string; remove: string };
+  /** The media kind this uploader mints tickets for (default image). */
+  kind?: 'image' | 'video' | 'audio' | 'document';
+  /** The file input's id, so two uploaders on one page do not share a label. */
+  inputId?: string;
   /** Name of the hidden input(s) the confirmed mediaIds are submitted under (default 'mediaIds'). */
   fieldName?: string;
   /** When true, only one photo is kept (e.g. a single proof-of-delivery image). */
@@ -46,8 +57,8 @@ export function MediaUploader({ labels, fieldName = 'mediaIds', single = false }
     setItems((prev) => [...(single ? [] : prev), { localId, name: file.name, status: 'uploading' }]);
     try {
       const buf = await file.arrayBuffer();
-      const [sha, dims] = await Promise.all([sha256Hex(buf), imageDims(file)]);
-      const ticket = await requestUploadAction({ kind: 'image', mimeType: file.type, declaredBytes: file.size });
+      const [sha, dims] = await Promise.all([sha256Hex(buf), kind === 'image' ? imageDims(file) : Promise.resolve({} as { width?: number; height?: number })]);
+      const ticket = await requestUploadAction({ kind, mimeType: file.type, declaredBytes: file.size });
       const put = await fetch(ticket.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
       if (!put.ok) throw new Error(`upload failed: ${put.status}`);
       const confirmed = await confirmUploadAction(ticket.mediaId, { bytes: file.size, sha256: sha, width: dims.width, height: dims.height });
@@ -55,7 +66,7 @@ export function MediaUploader({ labels, fieldName = 'mediaIds', single = false }
     } catch {
       setItems((prev) => prev.map((it) => (it.localId === localId ? { ...it, status: 'failed' } : it)));
     }
-  }, []);
+  }, [kind, single]);
 
   const onPick = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -67,8 +78,8 @@ export function MediaUploader({ labels, fieldName = 'mediaIds', single = false }
 
   return (
     <div className="kv-uploader">
-      <input ref={inputRef} id="media" type="file" accept={ACCEPT} multiple={!single} className="kv-input" onChange={onPick} aria-describedby="media-hint" />
-      <p id="media-hint" className="kv-field__hint">{labels.hint}</p>
+      <input ref={inputRef} id={inputId} type="file" accept={ACCEPT_BY_KIND[kind]} multiple={!single} className="kv-input" onChange={onPick} aria-describedby={`${inputId}-hint`} aria-label={labels.add} />
+      <p id={`${inputId}-hint`} className="kv-field__hint">{labels.hint}</p>
       <ul className="kv-upload-list">
         {items.map((it) => (
           <li key={it.localId} className={`kv-upload-tile${it.status === 'failed' ? ' kv-upload-tile--error' : ''}`}>

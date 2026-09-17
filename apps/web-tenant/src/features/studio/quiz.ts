@@ -1,56 +1,10 @@
-// apps/web-tenant/src/features/studio/quiz.ts · PURE quiz authoring (PC-26b). Trainers write a plain-text
-// format (works in any textarea, no client JS); this parses it into the CANONICAL quiz JSON the mobile learner
-// parser consumes: { questions: [{ q, options: string[≥2], answer: <0-based index>, hint? }] }.
+// apps/web-tenant/src/features/studio/quiz.ts · PURE live-scheduling helpers (PC-26b).
 //
-// Format (one block per question, blank-line separated):
-//   Q: How often should drip lines be flushed?
-//   A) Never
-//   *B) Every 2–4 weeks     ← the * marks the correct option (exactly one per question)
-//   C) Only when clogged
-//   H: Flushing prevents emitter clogging.   ← optional hint line
-export type QuizQuestion = { q: string; options: string[]; answer: number; hint?: string };
-export type QuizResult =
-  | { ok: true; value: { questions: QuizQuestion[] } }
-  | { ok: false; error: 'empty' | 'question' | 'options' | 'answer' };
-
-const MAX_QUESTIONS = 50;
-const OPT_RE = /^(\*?)([A-Za-z])[).]\s*(.+)$/;
-
-export function parseQuizText(raw: string): QuizResult {
-  const blocks = raw.replace(/\r\n/g, '\n').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
-  if (blocks.length === 0) return { ok: false, error: 'empty' };
-  if (blocks.length > MAX_QUESTIONS) return { ok: false, error: 'question' };
-  const questions: QuizQuestion[] = [];
-  for (const block of blocks) {
-    const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
-    const qLine = lines.find((l) => /^Q\s*:/i.test(l));
-    if (!qLine) return { ok: false, error: 'question' };
-    const q = qLine.replace(/^Q\s*:/i, '').trim();
-    if (!q) return { ok: false, error: 'question' };
-    const options: string[] = [];
-    let answer = -1;
-    let hint: string | undefined;
-    for (const line of lines) {
-      if (line === qLine) continue;
-      const h = /^H\s*:/i.exec(line);
-      if (h) { const ht = line.replace(/^H\s*:/i, '').trim(); if (ht) hint = ht; continue; }
-      const m = OPT_RE.exec(line);
-      if (!m) continue; // tolerate stray lines rather than failing the whole quiz
-      if (m[1] === '*') {
-        if (answer !== -1) return { ok: false, error: 'answer' }; // two correct marks
-        answer = options.length;
-      }
-      options.push(m[3].trim());
-    }
-    if (options.length < 2) return { ok: false, error: 'options' };
-    if (answer === -1) return { ok: false, error: 'answer' };
-    const question: QuizQuestion = { q, options, answer };
-    if (hint) question.hint = hint;
-    questions.push(question);
-  }
-  return { ok: true, value: { questions } };
-}
-
+// PC-56 TENANT-7b: `parseQuizText` (PC-26b's plain-text quiz format — `Q:` / `*A)` / `H:` blocks) is GONE. W413 draws a
+// question as options with a MANDATORY explanation each and a certificate threshold; a text block cannot carry an
+// explanation per option legibly, and the quiz is authored one question at a time through the API-reviewed chain at
+// `/courses/[id]/lessons/[lessonId]/quiz` (features/courses/lessons.ts). What remains here is the live class's helpers,
+// which TENANT-7c will rebuild as its own chains.
 /** Live scheduling validation (PC-26b): channel required; title 1–250; datetime-local → future ISO. */
 export type LiveResult =
   | { ok: true; value: { channelId: string; title: string; scheduledAt: string } }

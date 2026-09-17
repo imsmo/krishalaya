@@ -67,7 +67,9 @@ export interface CarriedValues { query: string; preserved: boolean }
 // success · failure) carry their values by exactly this mechanism, and the alternative was a second copy of this
 // function — or a cast that lies about which chain a URL belongs to. Each chain still validates its OWN step names on
 // the way IN (`chainStep`, `mutateStep`); this function only writes what it was handed.
-export function carryValues(step: string, values: Record<string, string | undefined | null>): CarriedValues {
+// `max` was added by TENANT-7b: the lesson chains carry an article body or a subtitle track, longer than 1,500
+// characters; they declare their own ceiling (`MAX_CARRIED_LENGTH_LESSON`) and every other chain keeps this one.
+export function carryValues(step: string, values: Record<string, string | undefined | null>, max: number = MAX_CARRIED_LENGTH): CarriedValues {
   const q = new URLSearchParams();
   q.set('step', step);
   for (const [k, v] of Object.entries(values)) {
@@ -75,12 +77,12 @@ export function carryValues(step: string, values: Record<string, string | undefi
     if (s.length > 0) q.set(k, s);
   }
   const query = q.toString();
-  return query.length <= MAX_CARRIED_LENGTH ? { query, preserved: true } : { query: `step=${step}`, preserved: false };
+  return query.length <= max ? { query, preserved: true } : { query: `step=${step}`, preserved: false };
 }
 
 /** `?step=review&code=MCC-AND-04&…` — the href a submit button points at. */
-export function chainHref(path: string, step: string, values: Record<string, string | undefined | null>): string {
-  return `${path}?${carryValues(step, values).query}`;
+export function chainHref(path: string, step: string, values: Record<string, string | undefined | null>, max?: number): string {
+  return `${path}?${carryValues(step, values, max).query}`;
 }
 
 /** Read the fields back out of the URL, so the form re-renders with what was typed. */
@@ -88,7 +90,9 @@ export function readCarried(sp: Record<string, string | string[] | undefined>, n
   const out: Record<string, string> = {};
   for (const n of names) {
     const v = sp[n];
-    const s = Array.isArray(v) ? v[0] : v;
+    // Two inputs may share a name (TENANT-7b: a typed media id beside the uploader's hidden one); the first NON-BLANK
+    // value is the one a person meant.
+    const s = Array.isArray(v) ? v.find((x) => typeof x === 'string' && x.trim().length > 0) : v;
     if (typeof s === 'string' && s.trim().length > 0) out[n] = s.trim();
   }
   return out;
@@ -166,8 +170,8 @@ export function canLinkAudit(entityType: string | null, entityId: string | null)
  * The retry path goes back to the REVIEW step with the values intact, not to a blank form: an operator whose write
  * failed on a duplicate code should see their own entries with the reason beside them.
  */
-export function retryHref(path: string, values: Record<string, string | undefined | null>): string {
-  return chainHref(path, 'review', values);
+export function retryHref(path: string, values: Record<string, string | undefined | null>, max?: number): string {
+  return chainHref(path, 'review', values, max);
 }
 
 /** The failure screen's own copy: nothing was written, and this is why. */

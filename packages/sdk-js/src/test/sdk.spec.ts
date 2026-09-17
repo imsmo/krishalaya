@@ -156,7 +156,7 @@ describe('HttpClient via resources', () => {
     await c.courses.update('c1', { defaultTitle: 'Drip' }, 'idem-u');
     await c.courses.acts('c1');
     await c.courses.act('c1', 'archive', 'superseded', 'idem-a');
-    await c.courses.addLesson('c1', { lessonNo: 1, defaultTitle: 'Why drip', contentKind: 'video', mediaId: 'm1' });
+    await c.courses.createLesson('c1', { defaultTitle: 'Why drip', contentKind: 'video', mediaId: 'm1', duration: '8:20' }, 'idem-l');
     const desk = await c.courses.listDesk({ status: 'review', cursor: 'abc' });
     await c.courses.desk();
     await c.courses.topics();
@@ -169,11 +169,39 @@ describe('HttpClient via resources', () => {
     expect(calls[3].url).toBe('https://api.test/v1/education/courses/c1/acts');
     expect(calls[4].url).toBe('https://api.test/v1/education/courses/c1/acts/archive'); expect(hdr(4)).toBe('idem-a');
     expect(JSON.parse(String(calls[4].init?.body))).toEqual({ reason: 'superseded' });
-    expect(calls[5].url).toBe('https://api.test/v1/education/courses/c1/lessons');
+    expect(calls[5].url).toBe('https://api.test/v1/education/courses/c1/lessons'); expect(hdr(5)).toBe('idem-l');
     expect(calls[6].url).toContain('education/courses?'); expect(calls[6].url).toContain('box=all'); expect(calls[6].url).toContain('withStats=true'); expect(calls[6].url).toContain('status=review'); expect(calls[6].url).toContain('cursor=abc');
     expect(desk.stats.c1.learners).toBe(3);
     expect(calls[7].url).toBe('https://api.test/v1/education/courses/desk');
     expect(calls[8].url).toBe('https://api.test/v1/education/courses/topics');
+  });
+
+  it('lessons (PC-56 TENANT-7b): the outline, the record, three reviews without a key, five writes with one, the act with its reason', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'l1', courseId: 'c1', moduleNo: 1, lessonNo: 2, defaultTitle: 'Colostrum', contentKind: 'video', mediaId: 'm1', body: null, durationSecs: 405, quiz: null, status: 'draft' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.courses.outline('c1');
+    await c.courses.lesson('c1', 'l1');
+    await c.courses.previewLesson('c1', { defaultTitle: 'Colostrum', contentKind: 'video', duration: '6:45', lessonId: 'l1' });
+    await c.courses.updateLesson('c1', 'l1', { defaultTitle: 'Colostrum', contentKind: 'video', duration: '6:45' }, 'idem-u');
+    await c.courses.previewSubtitle('c1', 'l1', { languageCode: 'gu', body: 'WEBVTT', reviewed: '1' });
+    await c.courses.saveSubtitle('c1', 'l1', { languageCode: 'gu', body: 'WEBVTT', reviewed: '1' }, 'idem-s');
+    await c.courses.previewQuestion('c1', 'l1', 2, { q: 'How soon?', opt1: '1h', expl1: 'right', opt2: '6h', expl2: 'late', answer: '1', passingPct: '70%' });
+    await c.courses.saveQuestion('c1', 'l1', 2, { q: 'How soon?', opt1: '1h', expl1: 'right', opt2: '6h', expl2: 'late', answer: '1', passingPct: '70%' }, 'idem-q');
+    const moved = await c.courses.lessonAct('c1', 'l1', 'move_up', 'the quiz follows its video', 'idem-a');
+    const hdr = (i: number) => (calls[i].init?.headers as Record<string, string>)['idempotency-key'];
+    expect(calls[0].url).toBe('https://api.test/v1/education/courses/c1/outline');
+    expect(calls[1].url).toBe('https://api.test/v1/education/courses/c1/lessons/l1');
+    expect(calls[2].url).toBe('https://api.test/v1/education/courses/c1/lessons/preview'); expect(hdr(2)).toBeUndefined();
+    expect(JSON.parse(String(calls[2].init?.body))).toEqual({ defaultTitle: 'Colostrum', contentKind: 'video', duration: '6:45', lessonId: 'l1' });   // the clock travels as typed: the server keeps seconds
+    expect(calls[3].url).toBe('https://api.test/v1/education/courses/c1/lessons/l1'); expect(calls[3].init?.method).toBe('PATCH'); expect(hdr(3)).toBe('idem-u');
+    expect(calls[4].url).toBe('https://api.test/v1/education/courses/c1/lessons/l1/subtitles/preview'); expect(hdr(4)).toBeUndefined();
+    expect(calls[5].url).toBe('https://api.test/v1/education/courses/c1/lessons/l1/subtitles'); expect(calls[5].init?.method).toBe('PUT'); expect(hdr(5)).toBe('idem-s');
+    expect(calls[6].url).toBe('https://api.test/v1/education/courses/c1/lessons/l1/questions/2/preview'); expect(hdr(6)).toBeUndefined();
+    expect(calls[7].url).toBe('https://api.test/v1/education/courses/c1/lessons/l1/questions/2'); expect(calls[7].init?.method).toBe('PUT'); expect(hdr(7)).toBe('idem-q');
+    expect(JSON.parse(String(calls[7].init?.body)).answer).toBe('1');   // the option NUMBER as a person picked it; 0-based is the server's business
+    expect(calls[8].url).toBe('https://api.test/v1/education/courses/c1/lessons/l1/acts/move_up'); expect(hdr(8)).toBe('idem-a');
+    expect(JSON.parse(String(calls[8].init?.body))).toEqual({ reason: 'the quiz follows its video' });
+    expect(moved.durationSecs).toBe(405);
   });
 
   it('disputes.raise POSTs with Idempotency-Key + reason enum', async () => {

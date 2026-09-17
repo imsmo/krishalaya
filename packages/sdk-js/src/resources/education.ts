@@ -6,6 +6,7 @@ import { HttpClient } from '../http';
 import {
   Course, CourseLesson, Enrollment, LessonProgress, LearningResource, ResourceKind, CropCalendar, Page,
   CourseDesk, CourseTopic, CourseStats, CourseFormInput, CourseActs, CourseAct, FormReview,
+  CourseOutline, LessonRecord, LessonFormInput, SubtitleFormInput, QuestionFormInput, LessonAct,
 } from '../types';
 
 export class CoursesResource {
@@ -62,11 +63,45 @@ export class CoursesResource {
   async act(id: string, act: CourseAct, reason: string, idempotencyKey: string): Promise<Course> {
     return (await this.http.request<Course>('POST', `education/courses/${encodeURIComponent(id)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body: { reason } })).data;
   }
-  /** Author: add/replace one lesson (module/lesson number addressing; video/text via contentKind + mediaId/body;
-   *  `quiz` carries the canonical quiz JSON `{questions:[{q,options,answer,hint?}]}` — the shape the mobile
-   *  learner parser consumes). */
-  async addLesson(courseId: string, input: { moduleNo?: number; lessonNo: number; defaultTitle: string; contentKind: string; mediaId?: string | null; body?: string | null; durationSecs?: number | null; quiz?: unknown }): Promise<CourseLesson> {
-    return (await this.http.request<CourseLesson>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons`, { body: input })).data;
+
+  // --- THE LESSON RECORD (PC-56 TENANT-7b: W411 · W412 · W413 + the lesson-form, lesson-mutate and quiz-form chains) ---
+  // Same shape as the course record above: one review + one write each, an Idempotency-Key on every write, and the
+  // acts as verdicts. PC-26's `addLesson` (an upsert keyed on module·lesson, no key, no audit row) is gone.
+  /** W411: the outline — every lesson with its position, subtitle coverage, learner reality, the gate, `canEdit`. */
+  async outline(courseId: string, signal?: AbortSignal): Promise<CourseOutline> {
+    return (await this.http.request<CourseOutline>('GET', `education/courses/${encodeURIComponent(courseId)}/outline`, { signal })).data;
+  }
+  /** W412/W413: one lesson with its media facts, twin, tracks, quiz summary and every act's verdict for this caller. */
+  async lesson(courseId: string, lessonId: string, signal?: AbortSignal): Promise<LessonRecord> {
+    return (await this.http.request<LessonRecord>('GET', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}`, { signal })).data;
+  }
+  /** The lesson form's review. No key: it writes nothing. `lessonId` makes it an EDIT's review, with a diff. */
+  async previewLesson(courseId: string, input: LessonFormInput & { lessonId?: string }): Promise<FormReview> {
+    return (await this.http.request<FormReview>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons/preview`, { body: input })).data;
+  }
+  async createLesson(courseId: string, input: LessonFormInput, idempotencyKey: string): Promise<CourseLesson> {
+    return (await this.http.request<CourseLesson>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons`, { idempotencyKey, body: input })).data;
+  }
+  async updateLesson(courseId: string, lessonId: string, input: LessonFormInput, idempotencyKey: string): Promise<CourseLesson> {
+    return (await this.http.request<CourseLesson>('PATCH', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}`, { idempotencyKey, body: input })).data;
+  }
+  /** W412 "Subtitle tracks — Edit": one track per (lesson, language), reviewed by a person or not. */
+  async previewSubtitle(courseId: string, lessonId: string, input: SubtitleFormInput): Promise<FormReview> {
+    return (await this.http.request<FormReview>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/subtitles/preview`, { body: input })).data;
+  }
+  async saveSubtitle(courseId: string, lessonId: string, input: SubtitleFormInput, idempotencyKey: string): Promise<{ languageCode: string; status: string; bodyLength: number }> {
+    return (await this.http.request<{ languageCode: string; status: string; bodyLength: number }>('PUT', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/subtitles`, { idempotencyKey, body: input })).data;
+  }
+  /** W413 "Save question": question `n` (1-based; `count + 1` appends). The threshold rides on every question's form. */
+  async previewQuestion(courseId: string, lessonId: string, n: number, input: QuestionFormInput): Promise<FormReview> {
+    return (await this.http.request<FormReview>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/questions/${n}/preview`, { body: input })).data;
+  }
+  async saveQuestion(courseId: string, lessonId: string, n: number, input: QuestionFormInput, idempotencyKey: string): Promise<CourseLesson> {
+    return (await this.http.request<CourseLesson>('PUT', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/questions/${n}`, { idempotencyKey, body: input })).data;
+  }
+  /** The lesson act, with its reason: ready · reopen · move_up · move_down (W412 "Mark ready", W411's row menu). */
+  async lessonAct(courseId: string, lessonId: string, act: LessonAct, reason: string, idempotencyKey: string): Promise<CourseLesson> {
+    return (await this.http.request<CourseLesson>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body: { reason } })).data;
   }
 }
 

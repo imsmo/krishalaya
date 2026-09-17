@@ -26,6 +26,7 @@ import { EnrollmentRepository } from '../repositories/enrollment.repository';
 import { LessonProgressRepository } from '../repositories/lesson-progress.repository';
 import { InstructorService } from '../services/instructor.service';
 import { CourseService } from '../services/course.service';
+import { LessonService } from '../services/lesson.service';
 import { EnrollmentService } from '../services/enrollment.service';
 import { LessonProgressService } from '../services/lesson-progress.service';
 
@@ -35,7 +36,7 @@ const run = APP_URL ? describe : describe.skip;
 
 run('education spine (integration, real Postgres + RLS + royalty split)', () => {
   let pools: PgPoolProvider; let admin: Pool; let inspect: Pool; let uow: PgUnitOfWork; let wallet: InProcessWalletClient;
-  let instructors: InstructorService; let courses: CourseService; let enroll: EnrollmentService; let progress: LessonProgressService;
+  let instructors: InstructorService; let courses: CourseService; let lessons: LessonService; let enroll: EnrollmentService; let progress: LessonProgressService;
   const tenantA = randomUUID(); const tenantB = randomUUID(); const instr = randomUUID(); const learner = randomUUID(); const desk = randomUUID();
   let courseId = ''; let enrollmentId = ''; const lessonIds: string[] = [];
   // canHost/canModerate were added to EducationActor when live sessions landed (PC-26b); this spec predates them.
@@ -61,7 +62,9 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
     const iRepo = new InstructorRepository(replica as any); const cRepo = new CourseRepository(replica as any); const lRepo = new CourseLessonRepository(replica as any);
     const eRepo = new EnrollmentRepository(replica as any); const pRepo = new LessonProgressRepository(replica as any);
     instructors = new InstructorService(uow, metrics, iRepo);
-    courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo);
+    const lessonsSvc = new LessonService(uow, metrics, audit, idem, cRepo, lRepo, iRepo);
+    lessons = lessonsSvc;
+    courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo, lessonsSvc);
     enroll = new EnrollmentService(uow, outbox, idem, metrics, wallet, cRepo, iRepo, eRepo);
     progress = new LessonProgressService(uow, outbox, metrics, eRepo, pRepo, lRepo);
     await fund(learner, 1_000_000n);
@@ -78,10 +81,12 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
     courseId = c.id;
     const priced: any = await courses.update(tenantA, deskActor, `idem-${randomUUID()}`, courseId, { defaultTitle: 'Drip irrigation', topicCode: 'crop_care', level: 'basic', priceMajor: '500.00', certEnabled: '0' }, null);
     expect(priced.priceMinor).toBe('50000');
-    // A gate that passes needs lessons that are not hollow: a video lesson without media is refused at submit.
-    const media = randomUUID();
-    await admin.query(`INSERT INTO media_assets (id, tenant_id, kind, s3_key, mime_type, bytes, sha256) VALUES ($1,$2,'video',$3,'video/mp4',1,repeat('a',64))`, [media, tenantA, `k/${media}`]);
-    for (const n of [1, 2]) { const l: any = await courses.upsertLesson(tenantA, instrActor, courseId, { moduleNo: 1, lessonNo: n, defaultTitle: `Lesson ${n}`, contentKind: 'video', mediaId: media } as any); lessonIds.push(l.id); }
+    // A gate that passes needs lessons that are not hollow and are READY (PC-56 TENANT-7b): two article lessons, marked ready.
+    for (const n of [1, 2]) {
+      const l: any = await lessons.create(tenantA, instrActor, `idem-${randomUUID()}`, courseId, { defaultTitle: `Lesson ${n}`, contentKind: 'article', body: `Drip lesson ${n}` }, null);
+      lessonIds.push(l.id);
+      await lessons.act(tenantA, instrActor, `idem-${randomUUID()}`, courseId, l.id, 'ready', 'complete and checked', null);
+    }
     await courses.act(tenantA, instrActor, `idem-${randomUUID()}`, courseId, 'submit', 'ready for the desk', null);
     expect((await courses.act(tenantA, deskActor, `idem-${randomUUID()}`, courseId, 'publish', 'checked by the desk', null)).status).toBe('published');
   });

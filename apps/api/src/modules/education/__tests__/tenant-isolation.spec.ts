@@ -65,7 +65,7 @@ describe('course_lessons gated via the course join', () => {
     const { provider, exec } = fakeReplica();
     await new CourseLessonRepository(provider).listForCourse('tenantA', 'c1');
     const [sql] = exec.query.mock.calls[0];
-    expect(sql).toMatch(/JOIN courses c ON c\.id=l\.course_id/); expect(sql).toMatch(/c\.tenant_id=\$2 OR c\.tenant_id IS NULL/);
+    expect(sql).toMatch(/JOIN courses c ON c\.id=l\.course_id/); expect(sql).toMatch(/c\.tenant_id=\$2 OR \(c\.tenant_id IS NULL AND c\.status='published'\)/);   // 7a's libraryVisible, 7b: the table also carries its own RLS (0171)
   });
 });
 

@@ -28,8 +28,8 @@ export function editCourseHref(id: string): string { return `/courses/new?id=${e
 export function publishHref(id: string): string { return `/courses/${encodeURIComponent(id)}/publish`; }
 /** The mutate chain's confirm step for one act on one course — the reason travels in the URL until it is written. */
 export function actHref(id: string, act: CourseAct): string { return `/courses/${encodeURIComponent(id)}/act?step=confirm&act=${act}`; }
-/** The lesson outline lives with PC-26's studio until TENANT-7b ships the lesson chain (W2664–W2670). */
-export function lessonsHref(id: string): string { return `/studio/${encodeURIComponent(id)}`; }
+/** W179's *Add lesson*: the lesson FORM chain (W2664–W2667, TENANT-7b). The outline itself is `/courses/[id]/outline` (W411). */
+export function lessonsHref(id: string): string { return `/courses/${encodeURIComponent(id)}/lessons/new`; }
 
 /* --------------------------------------------------------------------------------------------------------- */
 /* W178 · THE LIBRARY                                                                                        */

@@ -513,7 +513,7 @@ export type CourseAct = (typeof COURSE_ACTS)[number];
 export type CourseActRefusal = 'NO_PERMISSION' | 'NOT_OWNER' | 'ILLEGAL_FROM_STATUS' | 'GATE_NOT_PASSED' | 'MAKER_IS_CHECKER' | 'REASON_REQUIRED';
 export interface CourseActVerdict { act: CourseAct; allowed: boolean; refusals: CourseActRefusal[]; to: string }
 export type CourseGateState = 'pass' | 'fail' | 'not_measured';
-export interface CourseGateCheck { code: string; state: CourseGateState; measured: { met: number; of: number } | null; named: string[]; declared: Record<string, string> | null }
+export interface CourseGateCheck { code: string; state: CourseGateState; /** set on the per-language `SUBTITLES` check (7b) */ lang?: string | null; measured: { met: number; of: number } | null; named: string[]; declared: Record<string, string> | null }
 export interface CourseGate { ready: boolean; checks: CourseGateCheck[]; blocking: string[] }
 export interface CourseActs { course: Course; gate: CourseGate; acts: CourseActVerdict[]; stats: CourseStats | null }
 /** The shared FORM pattern's review (6d-4's shape, lifted to `shared/form-review` by 7a). Structurally `DairyReview`. */
@@ -525,10 +525,48 @@ export interface FormReview {
   entityType: string;
 }
 /** A lesson within a course. `contentKind` ∈ video|pdf|article|quiz|live|audio. `quiz` is an opaque JSON payload
- * (parsed defensively client-side). `mediaId` resolves to a presigned URL via the media resource. */
+ * (parsed defensively client-side). `mediaId` resolves to a presigned URL via the media resource.
+ * PC-56 TENANT-7b (migration 0171): the lesson's own `status` (draft | ready), its audio-only twin, its thumbnail as a
+ * second into its own video, its chapter marks and — for a quiz — the certificate threshold. */
 export interface CourseLesson {
   id: string; courseId: string; moduleNo: number; lessonNo: number; defaultTitle: string; contentKind: string;
   mediaId: string | null; body: string | null; durationSecs: number | null; quiz: unknown | null; createdAt?: string;
+  status?: LessonStatus; readyAt?: string | null; readyBy?: string | null;
+  siblingLessonId?: string | null; thumbnailFrameSecs?: number | null; chapters?: LessonChapter[]; quizPassingPct?: number | null;
+}
+export type LessonStatus = 'draft' | 'ready';
+export interface LessonChapter { at: number; title: string }
+
+/* ================================================================================================================= */
+/* PC-56 TENANT-7b · W411 / W412 / W413 + the lesson-form, lesson-mutate and quiz-form chains                        */
+/* ================================================================================================================= */
+
+/** The lesson form as a person fills it: clocks as `mm:ss`, chapters as lines, ids as typed. */
+export const LESSON_FORM_FIELDS = ['moduleNo', 'defaultTitle', 'contentKind', 'mediaId', 'body', 'duration', 'siblingLessonId', 'thumbnailAt', 'chapters'] as const;
+export type LessonFormInput = Partial<Record<(typeof LESSON_FORM_FIELDS)[number], string>>;
+export const SUBTITLE_FORM_FIELDS = ['languageCode', 'body', 'reviewed'] as const;
+export type SubtitleFormInput = Partial<Record<(typeof SUBTITLE_FORM_FIELDS)[number], string>>;
+/** W413's form: the question, up to six options with an explanation each, the answer as an option NUMBER, the threshold. */
+export const QUIZ_MAX_OPTIONS = 6;
+export const QUESTION_FORM_FIELDS = ['q', 'opt1', 'opt2', 'opt3', 'opt4', 'opt5', 'opt6', 'expl1', 'expl2', 'expl3', 'expl4', 'expl5', 'expl6', 'answer', 'passingPct'] as const;
+export type QuestionFormInput = Partial<Record<(typeof QUESTION_FORM_FIELDS)[number], string>>;
+export const LESSON_ACTS = ['ready', 'reopen', 'move_up', 'move_down'] as const;
+export type LessonAct = (typeof LESSON_ACTS)[number];
+export type LessonActRefusal = 'NO_PERMISSION' | 'NOT_OWNER' | 'COURSE_ARCHIVED' | 'ILLEGAL_FROM_STATUS' | 'HOLLOW' | 'MEDIA_NOT_CLEAN' | 'QUIZ_EXPLANATIONS_MISSING' | 'QUIZ_THRESHOLD_MISSING' | 'AT_TOP' | 'AT_BOTTOM' | 'REASON_REQUIRED';
+export interface LessonActVerdict { act: LessonAct; allowed: boolean; refusals: LessonActRefusal[]; to: LessonStatus | null }
+/** What the media boundary knows about a lesson's file: kind, MIME, bytes, and the SCAN state — the only pipeline this platform runs on it. */
+export interface LessonMediaFacts { id: string; kind: string; scanStatus: string; mimeType: string; bytes: string; durationSecs: number | null }
+export interface LessonStats { lessonId: string; started: number; completed: number }
+export interface LessonView { lesson: CourseLesson; position: number; subtitles: Record<string, 'draft' | 'reviewed'>; stats: LessonStats | null }
+export interface CourseOutline { course: Course; lessons: LessonView[]; languages: string[]; canEdit: boolean; gate: CourseGate }
+export interface SubtitleTrack { id: string; lessonId: string; languageCode: string; status: 'draft' | 'reviewed'; bodyLength: number; reviewedAt: string | null; reviewedBy: string | null; updatedAt: string | null }
+export interface LessonRecord extends LessonView {
+  course: Course; moduleSize: number; media: LessonMediaFacts | null;
+  sibling: { id: string; defaultTitle: string } | null; pairedWith: { id: string; defaultTitle: string } | null;
+  tracks: SubtitleTrack[]; languages: string[]; acts: LessonActVerdict[]; canEdit: boolean;
+  quiz: { questions: number; missingExplanations: Array<{ question: number; option: number }> } | null;
+  audioLessons: Array<{ id: string; defaultTitle: string; position: string; pairedWith: string | null }>;
+  form: Record<string, string>;
 }
 /** The caller's own enrollment in a course (progress + completion + certificate). */
 export interface Enrollment {

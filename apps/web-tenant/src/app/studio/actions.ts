@@ -3,35 +3,14 @@
 // education.author / education.publish + the `education` flag — this console only reflects legality
 // (features/studio/manage mirrors the lesson rules); the API re-checks everything. PC-56 TENANT-7a: course create and
 // every lifecycle act moved to `/courses/new` and `/courses/[id]/act` — one write path each, with a reason and an audit row.
+// PC-56 TENANT-7b: the add-lesson form moved to the lesson chain at `/courses/[id]/lessons/new` (API-reviewed, keyed, audited).
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { buildLesson } from '../../features/studio/manage';
 import { SdkError } from '@krishalaya/sdk-js';
 
 function back(path: string, qs: string): never { redirect(`${path}?${qs}`); }
-
-export async function addLessonAction(formData: FormData): Promise<void> {
-  await requireSession('/studio');
-  const id = String(formData.get('id') ?? '').trim();
-  if (!id) redirect('/studio');
-  const path = `/studio/${encodeURIComponent(id)}`;
-  const built = buildLesson({
-    moduleNo: String(formData.get('moduleNo') ?? ''),
-    lessonNo: String(formData.get('lessonNo') ?? ''),
-    title: String(formData.get('title') ?? ''),
-    contentKind: String(formData.get('contentKind') ?? ''),
-    mediaId: String(formData.get('lessonMediaId') ?? ''),
-    body: String(formData.get('body') ?? ''),
-    quizText: String(formData.get('quizText') ?? ''),
-  });
-  if (!built.ok) back(path, `error=${built.error}`);
-  try { await tenantClient().courses.addLesson(id, built.value); }
-  catch (e) { back(path, `error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'lesson'}`); }
-  revalidatePath(path);
-  back(path, 'ok=lesson');
-}
 
 // --- PC-26b: instructor self-profile + live-session hosting -----------------------------------------------
 

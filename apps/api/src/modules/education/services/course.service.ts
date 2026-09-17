@@ -1,4 +1,5 @@
-// modules/education/services/course.service.ts · course authoring + lifecycle + lessons.
+// modules/education/services/course.service.ts · course authoring + lifecycle. The LESSON record is lesson.service.ts
+// (PC-56 TENANT-7b); this service asks it for W416's gate.
 // One ACID tx per write (UoW), outbox in-tx (Law 4). authz THROWS (Law 6): only the course's OWN instructor may
 // edit/add lessons (anti-IDOR); publishing needs course.publish. price_minor is bigint minor units (Law 2).
 //
@@ -25,17 +26,16 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempoten
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ReviewResult, submittedValues, writerIssuesOf, looksLikeId } from '../../../shared/form-review';
 import { Course } from '../domain/course.entity';
-import { CourseLesson } from '../domain/course-lesson.entity';
-import { DomainEvent, ContentKind } from '../domain/education.events';
+import { DomainEvent } from '../domain/education.events';
 import { CourseRepository, CourseStats, DeskSummary } from '../repositories/course.repository';
 import { CourseLessonRepository } from '../repositories/course-lesson.repository';
 import { InstructorRepository } from '../repositories/instructor.repository';
 import { CourseFormDto, CourseWriterSchema, PreviewCourseDto } from '../dto/create-course.dto';
-import { UpsertLessonDto } from '../dto/create-course-lesson.dto';
 import { CourseNotFoundError, EducationForbiddenError, CourseFormRefusedError, CourseActRefusedError } from '../domain/education.errors';
 import { CourseReviewInput, CurrentCourse, reviewCourse, storedCourse } from '../domain/course-review';
 import { CourseAct, ActVerdict, actVerdict, allVerdicts, isCourseAct } from '../domain/course-acts';
-import { GateResult, computeGate } from '../domain/course-publish-gate';
+import { GateResult } from '../domain/course-publish-gate';
+import { LessonService } from './lesson.service';
 import { EducationActor } from './instructor.service';
 
 const DESK_WINDOW_DAYS = 30;   // W178: "(30d)" on three of its four tiles
@@ -51,6 +51,7 @@ export class CourseService {
     private readonly repo: CourseRepository,
     private readonly lessons: CourseLessonRepository,
     private readonly instructors: InstructorRepository,
+    private readonly lessonsSvc: LessonService,
   ) {}
 
   /* ---- THE FORM: review and write, one function ------------------------------------------------------------ */
@@ -153,13 +154,9 @@ export class CourseService {
     return (await this.verdicts(tenantId, actor, id)).gate;
   }
 
-  private async gateFor(tenantId: string, c: Course, hasInstructor: boolean): Promise<GateResult> {
-    const lessons = await this.lessons.listForCourse(tenantId, c.id);
-    const p = c.toProps();
-    return computeGate({
-      lessons: lessons.map((l) => { const x = l.toProps(); return { moduleNo: x.moduleNo, lessonNo: x.lessonNo, defaultTitle: x.defaultTitle, contentKind: x.contentKind, mediaId: x.mediaId, body: x.body, quiz: x.quiz }; }),
-      topicCode: p.topicCode ?? null, priceMinor: p.priceMinor.toString(), currencyCode: p.currencyCode, certEnabled: p.certEnabled, hasInstructor,
-    });
+  /** W416's gate is computed over the LESSON record — TENANT-7b's service owns that read. */
+  private gateFor(tenantId: string, c: Course, hasInstructor: boolean, tx?: TxContext): Promise<GateResult> {
+    return this.lessonsSvc.gateFor(tenantId, c, hasInstructor, tx);
   }
 
   /** The act. The verdict is RE-TAKEN inside the transaction, on the locked row — a confirm screen is not a token. */
@@ -173,7 +170,7 @@ export class CourseService {
         const owner = await this.instructors.getById(tenantId, c.instructorId, tx);
         const isOwner = owner?.userId === actor.userId;
         if (!isOwner && !actor.canPublish) throw new CourseNotFoundError(id);
-        const gate = act === 'submit' ? await this.gateFor(tenantId, c, owner !== null) : null;
+        const gate = act === 'submit' ? await this.gateFor(tenantId, c, owner !== null, tx) : null;
         const v = actVerdict({ act, status: c.status, canAuthor: actor.canAuthor, canPublish: actor.canPublish, isOwner, isSubmitter: c.submittedBy === actor.userId, gateReady: gate?.ready ?? null, reason });
         if (!v.allowed) throw new CourseActRefusedError(act, v.refusals);
         const before = c.toJSON();
@@ -227,31 +224,6 @@ export class CourseService {
   async topics(tenantId: string) { return this.repo.topics(tenantId); }
   async moneyShape(tenantId: string) { return this.repo.moneyShape(tenantId); }
 
-  /* ---- LESSONS (PC-26; the lesson chain is TENANT-7b's) ------------------------------------------------------ */
-
-  async upsertLesson(tenantId: string, actor: EducationActor, courseId: string, dto: UpsertLessonDto) {
-    if (!actor.canAuthor) throw new EducationForbiddenError('requires course.author');
-    return this.uow.run(tenantId, async (tx) => {
-      const course = await this.repo.getForUpdate(tx, tenantId, courseId);
-      if (!course) throw new CourseNotFoundError(courseId);
-      await this.assertOwner(tenantId, actor, course, tx);
-      const lesson = CourseLesson.create({ id: uuidv7(), courseId, moduleNo: dto.moduleNo, lessonNo: dto.lessonNo, defaultTitle: dto.defaultTitle,
-        contentKind: dto.contentKind as ContentKind, mediaId: dto.mediaId ?? null, body: dto.body ?? null, durationSecs: dto.durationSecs ?? null, quiz: dto.quiz ?? null });
-      await this.lessons.upsert(tx, lesson, actor.userId);
-      return lesson.toJSON();
-    }, { userId: actor.userId });
-  }
-  async listLessons(tenantId: string, courseId: string) {
-    const c = await this.repo.getById(tenantId, courseId);
-    if (!c) throw new CourseNotFoundError(courseId);
-    return (await this.lessons.listForCourse(tenantId, courseId)).map((l) => l.toJSON());
-  }
-
-  /** Only the course's own instructor may modify it. 404, not 403, on a non-owner so course ids can't be probed. */
-  private async assertOwner(tenantId: string, actor: EducationActor, course: Course, tx: TxContext): Promise<void> {
-    const instructor = await this.instructors.getById(tenantId, course.instructorId, tx);
-    if (!instructor || instructor.userId !== actor.userId) throw new CourseNotFoundError(course.id);
-  }
   private async flush(tx: TxContext, tenantId: string | null, id: string, evts: DomainEvent[]): Promise<void> {
     for (const e of evts) await this.outbox.write(tx, { tenantId, aggregateType: 'course', aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
   }

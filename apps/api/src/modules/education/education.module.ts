@@ -13,12 +13,14 @@
 import { Module } from '@nestjs/common';
 import { InstructorsController } from './controllers/v1/instructors.controller';
 import { CoursesController } from './controllers/v1/courses.controller';
+import { LessonsController } from './controllers/v1/lessons.controller';
 import { EnrollmentsController } from './controllers/v1/enrollments.controller';
 import { ChannelsController } from './controllers/v1/channels.controller';
 import { ResourcesController } from './controllers/v1/resources.controller';
 import { LiveSessionsController } from './controllers/v1/live-sessions.controller';
 import { InstructorService } from './services/instructor.service';
 import { CourseService } from './services/course.service';
+import { LessonService } from './services/lesson.service';
 import { EnrollmentService } from './services/enrollment.service';
 import { LessonProgressService } from './services/lesson-progress.service';
 import { LearningChannelService } from './services/learning-channel.service';
@@ -36,15 +38,15 @@ import { CropCalendarReadModel } from './read-models/crop-calendar.read-model';
 import { streamProviderProvider } from './gateway/stream.provider';
 
 @Module({
-  controllers: [InstructorsController, CoursesController, EnrollmentsController, ChannelsController, ResourcesController, LiveSessionsController],
+  controllers: [InstructorsController, CoursesController, LessonsController, EnrollmentsController, ChannelsController, ResourcesController, LiveSessionsController],
   providers: [
-    InstructorService, CourseService, EnrollmentService, LessonProgressService,
+    InstructorService, CourseService, LessonService, EnrollmentService, LessonProgressService,
     LearningChannelService, LearningResourceService, LiveSessionService,
     InstructorRepository, CourseRepository, CourseLessonRepository, EnrollmentRepository, LessonProgressRepository,
     LearningChannelRepository, LearningResourceRepository, LiveSessionRepository,
     CropCalendarReadModel,
     streamProviderProvider,
   ],
-  exports: [CourseService, EnrollmentService, LearningChannelService, LiveSessionService],
+  exports: [CourseService, LessonService, EnrollmentService, LearningChannelService, LiveSessionService],
 })
 export class EducationModule {}

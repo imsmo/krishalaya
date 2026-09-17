@@ -12,7 +12,7 @@
 //     read over the module's hottest table and belongs with the lesson record, TENANT-7b); the hour-of-day and the
 //     audio-only share have NO column at all. All three are named on the screen, not faked.
 //   • *"Preview as member"*: the learner surface is the mobile app; the console has no learner view. Named.
-//   • *"Add lesson"*: the lesson chain (W2664–W2667) is TENANT-7b's; until then the link goes to PC-26's studio form.
+//   • *"Add lesson"*: the lesson chain (W2664–W2667, TENANT-7b) at `/courses/[id]/lessons/new`; the outline is W411.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -21,11 +21,12 @@ import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
 import { SdkError } from '@krishalaya/sdk-js';
-import type { Course, CourseActs, CourseLesson, CourseStats } from '@krishalaya/sdk-js';
+import type { Course, CourseActs, CourseLesson, CourseStats, LessonStats } from '@krishalaya/sdk-js';
 import {
   COURSES_HREF, DETAIL_ROW_ACTS, actHref, actLabelKey, actRefusalKey, courseTransportState, editCourseHref, lessonsHref, levelKey,
   originKey, pageStateKey, publishHref, refusedActs, statusKey, verdictFor, completionPct, learnersOf,
 } from '../../../features/courses/desk';
+import { lessonCompletionText, lessonHref, lessonStatusKey, outlineHref } from '../../../features/courses/lessons';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +50,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
   let acts: CourseActs | null = null;
   let stats: CourseStats | null = null;
   let state: ReturnType<typeof courseTransportState> | null = null;
+  let lessonStats: Record<string, LessonStats | null> = {};
   try {
     course = await tenantClient().courses.get(params.id);
   } catch (e) {
@@ -59,6 +61,8 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
     // The verdicts are the desk's or the owner's; a reader with neither still sees the record (W179's restricted state
     // is about EDITING). The stats are the desk's read; an owner sees them for their own course through `mine`.
     try { acts = await tenantClient().courses.acts(course.id); stats = acts.stats; } catch { acts = null; }
+    // PC-56 TENANT-7b: the per-lesson learner reality (started / completed per lesson) is the outline's read.
+    try { lessonStats = Object.fromEntries((await tenantClient().courses.outline(course.id)).lessons.filter((v) => v.stats).map((v) => [v.lesson.id, v.stats])); } catch { lessonStats = {}; }
   }
 
   if (state !== null || !course) {
@@ -90,6 +94,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
         <span>
           {editable && <Link href={editCourseHref(course.id)} className="kv-btn kv-btn--muted">{t.t('courses.edit')}</Link>}{' '}
           {!course.isPlatformLibrary && <Link href={publishHref(course.id)} className="kv-btn kv-btn--muted">{t.t('courses.reviewPublish')}</Link>}{' '}
+          {!course.isPlatformLibrary && <Link href={outlineHref(course.id)} className="kv-btn kv-btn--muted">{t.t('lessons.outlineTitle')}</Link>}{' '}
           {editable && <Link href={lessonsHref(course.id)} className="kv-btn">{t.t('courses.addLesson')}</Link>}
         </span>
       </div>
@@ -135,10 +140,10 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
             {lessons.map((l) => (
               <tr key={l.id}>
                 <td>{l.moduleNo}·{l.lessonNo}</td>
-                <td>{l.defaultTitle}</td>
+                <td><Link href={lessonHref(course.id, l.id)}>{l.defaultTitle}</Link> <span className="kv-badge">{t.t(lessonStatusKey(l.status))}</span></td>
                 <td><span className="kv-badge">{t.t(`courses.kind.${l.contentKind}`)}</span></td>
                 <td>{l.contentKind === 'quiz' ? t.t('courses.quizQuestions', { n: formatNumber(Array.isArray((l.quiz as { questions?: unknown[] } | null)?.questions) ? ((l.quiz as { questions: unknown[] }).questions.length) : 0, lang) }) : (durationText(l.durationSecs) ?? t.t('common.dash'))}</td>
-                <td><span className="kv-field__hint">{t.t('courses.lessonCompletionNotBuilt')}</span></td>
+                <td>{lessonCompletionText(lessonStats[l.id]) ?? <span className="kv-field__hint">{t.t('lessons.completionNobody')}</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -157,7 +162,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
 
       <h2>{t.t('courses.quiz.heading')}</h2>
       <p>{quizzes.length === 0 ? t.t('courses.quiz.none') : t.t('courses.quiz.count', { n: formatNumber(quizzes.length, lang) })} <span className="kv-field__hint">{t.t('courses.quiz.rule')}</span></p>
-      <p className="kv-field__hint">{t.t('courses.quiz.thresholdNotBuilt')}</p>
+      <p className="kv-field__hint">{t.t('courses.quiz.thresholdOnLesson')}</p>
 
       {/* ---- W179's archive box: destructive, its own place, its reason on the confirm step ---- */}
       {archive && (

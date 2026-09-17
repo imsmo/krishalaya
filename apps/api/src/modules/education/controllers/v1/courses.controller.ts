@@ -1,4 +1,5 @@
-// modules/education/controllers/v1/courses.controller.ts · course authoring + lifecycle + lessons + browse.
+// modules/education/controllers/v1/courses.controller.ts · course authoring + lifecycle + browse. The LESSON routes
+// moved to lessons.controller.ts at PC-56 TENANT-7b (the lesson record has chains of its own).
 // Authoring/lessons need course.author and the OWN course (service enforces, 404 on non-owner); the desk's acts need
 // course.publish. Browse/get are any authenticated user (published + platform library). `education` flag.
 //
@@ -25,7 +26,6 @@ import { CourseService } from '../../services/course.service';
 import { EducationPermissions, canAuthor, canPublish, isEducationAdmin, canHost, canModerateContent } from '../../policies/education.policies';
 import { CourseFormSchema, CourseFormDto, PreviewCourseSchema, PreviewCourseDto, CourseActSchema, CourseActDto } from '../../dto/create-course.dto';
 import { QueryCoursesSchema, QueryCoursesDto } from '../../dto/query-course.dto';
-import { UpsertLessonSchema, UpsertLessonDto } from '../../dto/create-course-lesson.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 const ipOf = (r: Request) => r.ip || null;
@@ -71,9 +71,4 @@ export class CoursesController {
   act(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @Param('id') id: string, @Param('act') act: string, @ZodBody(CourseActSchema) dto: CourseActDto) {
     return this.svc.act(ctx.tenantId, this.actor(ctx), key, id, act, dto.reason, ipOf(r)).then((data) => ({ data }));
   }
-
-  @Post(':id/lessons') @RequirePermissions(EducationPermissions.Author)
-  upsertLesson(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(UpsertLessonSchema) dto: UpsertLessonDto) { return this.svc.upsertLesson(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
-  @Get(':id/lessons')
-  lessons(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.listLessons(ctx.tenantId, id).then((data) => ({ data })); }
 }

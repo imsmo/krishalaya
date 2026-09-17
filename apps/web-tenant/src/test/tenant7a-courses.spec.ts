@@ -42,7 +42,7 @@ describe('PC-56 TENANT-7a · routes', () => {
     expect(editCourseHref('x')).toBe('/courses/new?id=x');
     expect(publishHref('x')).toBe('/courses/x/publish');
     expect(actHref('x', 'archive')).toBe('/courses/x/act?step=confirm&act=archive');
-    expect(lessonsHref('x')).toBe('/studio/x');
+    expect(lessonsHref('x')).toBe('/courses/x/lessons/new');   // TENANT-7b: the lesson chain, no longer PC-26's studio form
   });
   it('a status chip is a GET filter that RESETS the cursor; page 3 of published is not page 3 of draft', () => {
     expect(libraryHref(null)).toBe('/courses');
@@ -118,16 +118,15 @@ describe('PC-56 TENANT-7a · the acts and the gate, in step with the API', () =>
     expect(verdictFor(all, 'publish')?.refusals).toEqual(['NO_PERMISSION', 'MAKER_IS_CHECKER']);
     expect(verdictFor(all, 'pause')).toBeNull();
   });
-  it('every gate check has a name ×3, every state a word ×3, and every UNMEASURED check a reason ×3 naming what is missing', () => {
+  it('every gate check has a name ×3, every state a word ×3; since 7b no check is UNMEASURED and the api file says so', () => {
     const checks = apiList('course-publish-gate.ts', 'GATE_CHECKS');
     expect(checks.length).toBe(12);
+    expect(checks).toContain('SUBTITLES'); expect(checks).not.toContain('SUBTITLES_GU');   // one check per tenant language, never three fixed codes
     for (const c of checks) three(gateCheckKey(c));
     for (const s of ['pass', 'fail', 'not_measured'] as const) three(gateStateKey(s));
-    const unmeasured = api('course-publish-gate.ts');
-    const block = unmeasured.slice(unmeasured.indexOf('UNMEASURED_CHECKS: ReadonlySet<GateCheck> = new Set<GateCheck>(['));
-    const codes = [...block.slice(0, block.indexOf('])')).matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);
-    expect(codes).toEqual(['AUDIO_SIBLINGS', 'SUBTITLES_GU', 'SUBTITLES_HI', 'SUBTITLES_EN', 'QUIZ_EXPLANATIONS', 'THUMBNAILS_REAL']);
-    for (const c of codes) { three(gateUnmeasuredKey(c)); expect(en[gateUnmeasuredKey(c)]).toMatch(/No .*(column|table|field|frame)|has no|is stored/i); }
+    expect(api('course-publish-gate.ts')).not.toContain('UNMEASURED_CHECKS');
+    expect(api('course-publish-gate.ts')).not.toMatch(/state: 'not_measured'/);
+    expect(typeof gateUnmeasuredKey('X')).toBe('string');
     const m = (c: Partial<CourseGateCheck>): CourseGateCheck => ({ code: 'HAS_LESSONS', state: 'pass', measured: null, named: [], declared: null, ...c });
     expect(gateMeasuredText(m({ measured: { met: 10, of: 12 } }))).toBe('10/12');
     expect(gateMeasuredText(m({}))).toBeNull();

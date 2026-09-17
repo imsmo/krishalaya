@@ -5,11 +5,12 @@
 // are the honest gap, not hidden behind an average."* And its states: *Returned with notes · Nothing submitted yet ·
 // Publish stays with the desk · Couldn't submit for review*.
 //
-// THE GATE IS THE API's (`course-publish-gate`), and it has THREE states per check: pass, fail, and NOT MEASURED. Six
-// of W416's seven gates have no column on this platform (subtitle tracks, thumbnail frames, a video's audio sibling,
-// a quiz option's explanation) — they are printed as not measured with the reason, and they do not block, because a
-// wall built on a table that does not exist is a wall (W413's own sentence). What IS measured blocks, and names the
-// lesson by position.
+// THE GATE IS THE API's (`course-publish-gate`), and it has THREE states per check: pass, fail, and NOT MEASURED. At 7a
+// six of W416's seven gates had no column (subtitle tracks, thumbnail frames, a video's audio sibling, a quiz option's
+// explanation) and were printed as not measured, never blocking. PC-56 TENANT-7b gave the lesson record those columns
+// (0171) and the six are MEASURED now — one `SUBTITLES` row per language the tenant teaches in, never three fixed codes
+// — and they block, naming the lesson by position. `not_measured` remains in the type for a check some future wave
+// cannot yet answer; no check prints it today.
 //
 // TWO PERSONAS, ONE SCREEN. The instructor sees the gate and *Submit for review*; the desk sees the same gate and
 // *Publish* / *Return with notes*. Which buttons exist is the API's verdict for THIS caller — a maker never sees a
@@ -23,6 +24,7 @@ import { getTranslator, getLang } from '../../../../lib/i18n';
 import { formatDate } from '@krishalaya/i18n';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { CourseActs } from '@krishalaya/sdk-js';
+import { gateRowKey, outlineHref } from '../../../../features/courses/lessons';
 import {
   DESK_ACTS, actHref, actLabelKey, actRefusalKey, courseHref, courseTransportState, gateCheckKey, gateMeasuredText, gateStateKey,
   gateUnmeasuredKey, pageStateKey, publishScreenKey, publishScreenState, statusKey, verdictFor,
@@ -92,8 +94,8 @@ export default async function CoursePublishPage({ params }: { params: { id: stri
         <thead><tr><th>{t.t('courses.publish.col.check')}</th><th>{t.t('courses.publish.col.state')}</th><th>{t.t('courses.publish.col.detail')}</th></tr></thead>
         <tbody>
           {gate.checks.map((c) => (
-            <tr key={c.code}>
-              <td>{t.t(gateCheckKey(c.code))}</td>
+            <tr key={gateRowKey(c)}>
+              <td>{t.t(gateCheckKey(c.code))}{c.code === 'SUBTITLES' && c.lang ? ` — ${c.lang}` : ''}</td>
               <td>
                 <span className={c.state === 'fail' ? 'kv-badge kv-error' : 'kv-badge'} aria-label={t.t(gateStateKey(c.state))}>
                   {c.state === 'pass' ? '✓' : c.state === 'fail' ? '✗' : '—'} {t.t(gateStateKey(c.state))}
@@ -102,6 +104,7 @@ export default async function CoursePublishPage({ params }: { params: { id: stri
               </td>
               <td>
                 {c.state === 'not_measured' && <span className="kv-field__hint">{t.t(gateUnmeasuredKey(c.code))}</span>}
+                {c.code === 'THUMBNAILS_REAL' && <span className="kv-field__hint">{t.t('courses.gateNote.THUMBNAILS_REAL')} </span>}
                 {c.named.length > 0 && <ul>{c.named.map((n) => <li key={n}>{n}</li>)}</ul>}
                 {c.declared && <span className="kv-field__hint">{Object.entries(c.declared).map(([k, v]) => `${k}: ${v}`).join(' · ')}</span>}
               </td>
@@ -109,7 +112,7 @@ export default async function CoursePublishPage({ params }: { params: { id: stri
           ))}
         </tbody>
       </table>
-      <p className="kv-field__hint">{gate.ready ? t.t('courses.publish.gateReady') : t.t('courses.publish.gateBlocked', { n: String(failing.length) })}</p>
+      <p className="kv-field__hint">{gate.ready ? t.t('courses.publish.gateReady') : t.t('courses.publish.gateBlocked', { n: String(failing.length) })} <Link href={outlineHref(course.id)} className="kv-btn--link">{t.t('lessons.outlineTitle')}</Link></p>
       <p className="kv-field__hint">{t.t('courses.publish.unmeasuredNote')}</p>
 
       {/* ---- the instructor's act ---- */}

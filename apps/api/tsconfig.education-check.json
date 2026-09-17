@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.json", "include": ["src/main.ts", "src/app.module.ts", "src/core/**/*.ts", "src/shared/**/*.ts", "src/modules/listings/**/*.ts", "src/modules/education/**/*.ts", "src/modules/dairy/**/*.ts", "test/**/*.ts"] }

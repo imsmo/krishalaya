@@ -24,6 +24,7 @@ import { CourseRepository } from '../repositories/course.repository';
 import { CourseLessonRepository } from '../repositories/course-lesson.repository';
 import { InstructorService } from '../services/instructor.service';
 import { CourseService } from '../services/course.service';
+import { LessonService } from '../services/lesson.service';
 import { CourseActRefusedError, CourseFormRefusedError, CourseNotFoundError } from '../domain/education.errors';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -32,7 +33,7 @@ const run = APP_URL ? describe : describe.skip;
 
 run('PC-56 TENANT-7a · the course record & the desk (integration, real Postgres + RLS + 0170)', () => {
   let pools: PgPoolProvider; let admin: Pool; let app: Pool; let uow: PgUnitOfWork;
-  let courses: CourseService; let instructors: InstructorService;
+  let courses: CourseService; let instructors: InstructorService; let lessons: LessonService;
   const tenantA = randomUUID(); const tenantB = randomUUID();
   const author = randomUUID(); const other = randomUUID(); const desk = randomUUID(); const desk2 = randomUUID();
   const A = { userId: author, canAuthor: true, canPublish: false, isAdmin: false, canHost: false, canModerate: false };
@@ -58,7 +59,8 @@ run('PC-56 TENANT-7a · the course record & the desk (integration, real Postgres
     const outbox = new PgOutboxWriter(); const idem = new PgIdempotencyService(pools); const metrics = new PromMetrics(); const audit = new AuditWriter(pools);
     const iRepo = new InstructorRepository(replica as any); const cRepo = new CourseRepository(replica as any); const lRepo = new CourseLessonRepository(replica as any);
     instructors = new InstructorService(uow, metrics, iRepo);
-    courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo);
+    lessons = new LessonService(uow, metrics, audit, idem, cRepo, lRepo, iRepo);
+    courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo, lessons);
     app = new Pool({ connectionString: APP_URL });
   }, 30000);
   afterAll(async () => { await pools?.onModuleDestroy(); await app?.end(); await admin?.end(); });
@@ -114,17 +116,23 @@ run('PC-56 TENANT-7a · the course record & the desk (integration, real Postgres
     expect((await courses.preview(tenantA, O, { id: courseId, ...form({ defaultTitle: 'Groundnut: seed to sale', priceMajor: '149', coverMediaId: media }) })).refusals).toEqual([{ field: null, code: 'NOT_OWNER' }]);
   });
 
-  it('the gate blocks submit and names the hollow lesson; a fixed lesson passes; submit records the maker', async () => {
-    await courses.upsertLesson(tenantA, A, courseId, { moduleNo: 1, lessonNo: 1, defaultTitle: 'Seed selection', contentKind: 'video' } as any);
+  it('the gate blocks submit and names the hollow lesson; a fixed, READY lesson passes; submit records the maker', async () => {
+    // PC-56 TENANT-7b: the lesson is born through its own reviewed chain. A `live` lesson with neither recording nor
+    // summary is hollow; the gate names it. Fixed (a summary) and marked ready, the gate passes — a live lesson carries
+    // speech, so its subtitle checks are met with a reviewed track per tenant language.
+    const l: any = await lessons.create(tenantA, A, key(), courseId, { defaultTitle: 'Seed selection', contentKind: 'live' }, null);
     const v0 = await courses.verdicts(tenantA, A, courseId);
-    expect(v0.gate.ready).toBe(false); expect(v0.gate.blocking).toEqual(['NO_HOLLOW_LESSON']);
+    expect(v0.gate.ready).toBe(false); expect(v0.gate.blocking).toEqual(['NO_HOLLOW_LESSON', 'LESSONS_READY', 'SUBTITLES']);
     expect(v0.gate.checks.find((c) => c.code === 'NO_HOLLOW_LESSON')?.named).toEqual(['1·1 Seed selection']);
     expect(v0.acts.find((a) => a.act === 'submit')).toMatchObject({ allowed: false, refusals: ['GATE_NOT_PASSED'] });
     await expect(courses.act(tenantA, A, key(), courseId, 'submit', 'ready for the desk', null)).rejects.toMatchObject({ code: 'COURSE_ACT_REFUSED', details: { refusals: ['GATE_NOT_PASSED'] } });
-    await courses.upsertLesson(tenantA, A, courseId, { moduleNo: 1, lessonNo: 1, defaultTitle: 'Seed selection', contentKind: 'video', mediaId: media } as any);
+    await lessons.update(tenantA, A, key(), courseId, l.id, { defaultTitle: 'Seed selection', contentKind: 'live', body: 'Recap of the live session' }, null);
+    for (const lang of ['hi', 'en', 'gu']) await lessons.saveSubtitle(tenantA, A, key(), courseId, l.id, { languageCode: lang, body: 'WEBVTT\n\n00:00.000 --> 00:05.000\nSeed selection', reviewed: '1' }, null);
+    await lessons.act(tenantA, A, key(), courseId, l.id, 'ready', 'checked the recap', null);
     const v1 = await courses.verdicts(tenantA, A, courseId);
+    expect(v1.gate.blocking).toEqual([]);
     expect(v1.gate.ready).toBe(true);
-    expect(v1.gate.checks.filter((c) => c.state === 'not_measured').map((c) => c.code)).toEqual(['AUDIO_SIBLINGS', 'SUBTITLES_GU', 'SUBTITLES_HI', 'SUBTITLES_EN', 'QUIZ_EXPLANATIONS', 'THUMBNAILS_REAL']);
+    expect(v1.gate.checks.filter((c) => c.state === 'not_measured')).toEqual([]);
     // a reason too short is refused BEFORE anything is written
     await expect(courses.act(tenantA, A, key(), courseId, 'submit', 'ok', null)).rejects.toMatchObject({ details: { refusals: ['REASON_REQUIRED'] } });
     const s: any = await courses.act(tenantA, A, key(), courseId, 'submit', 'ready for the desk', null);

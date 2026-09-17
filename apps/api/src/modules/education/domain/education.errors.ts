@@ -23,3 +23,14 @@ export class CourseActRefusedError extends DomainError {
     super('COURSE_ACT_REFUSED', `Course act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
   }
 }
+// PC-56 TENANT-7b · the lesson record's two refusals — the lesson/subtitle/question forms and the lesson acts.
+export class LessonFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('LESSON_FORM_REFUSED', `Lesson form refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class LessonActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[]) {
+    super('LESSON_ACT_REFUSED', `Lesson act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
+  }
+}

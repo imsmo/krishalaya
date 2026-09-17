@@ -4,11 +4,11 @@
 //   • course-money      — digits move, nothing is multiplied; the scale is the currency's, never assumed to be two.
 //   • course-review     — the form's review is a DECISION (what will be stored, every refusal) and a diff on an edit.
 //   • course-acts       — six verdicts in the order permission → owner → stage → gate → maker-checker → reason.
-//   • course-publish-gate — W416's checklist, honest about the four checks this platform cannot measure.
+//   • course-publish-gate — W416's checklist (measured on the lesson record since 7b; the six new checks are in the 7b spec).
 import { isFree, minorToMajorText, parseMajorToMinor } from '../domain/course-money';
 import { COURSE_FORM_FIELDS, COURSE_REVIEW_REFUSALS, CourseReviewInput, reviewCourse, storedCourse } from '../domain/course-review';
 import { ACT_REFUSALS, COURSE_ACTS, actVerdict, allVerdicts, isCourseAct, reasonUsable } from '../domain/course-acts';
-import { GATE_CHECKS, UNMEASURED_CHECKS, computeGate, isHollow, quizQuestionsOk } from '../domain/course-publish-gate';
+import { GATE_CHECKS, GateLesson, computeGate, isHollow, quizQuestionsOk } from '../domain/course-publish-gate';
 import { assertRefusalsPrintable, refusalsFor, generalRefusals } from '../../../shared/form-review';
 
 const INR = { currencyCode: 'INR', minorUnits: 2 };
@@ -173,9 +173,11 @@ describe('PC-56 TENANT-7a · six acts, verdicts in order', () => {
   });
 });
 
-describe('PC-56 TENANT-7a · W416\'s gate, honest about what it cannot measure', () => {
-  const L = (o: Partial<Parameters<typeof isHollow>[0]>) => ({ moduleNo: 1, lessonNo: 1, defaultTitle: 'x', contentKind: 'video' as const, mediaId: 'm', body: null, quiz: null, ...o });
-  const G = (lessons: ReturnType<typeof L>[], o: Partial<Parameters<typeof computeGate>[0]> = {}) => computeGate({ lessons, topicCode: 'crop_care', priceMinor: '0', currencyCode: 'INR', certEnabled: true, hasInstructor: true, ...o });
+describe('PC-56 TENANT-7a · W416\'s gate — measured on the lesson record since 7b (the 7b spec holds the six new checks)', () => {
+  // A READY article lesson: the shape that passes every check without media, a twin, a track or a frame.
+  const L = (o: Partial<GateLesson>): GateLesson => ({ id: `id-${o.moduleNo ?? 1}-${o.lessonNo ?? 1}`, moduleNo: 1, lessonNo: 1, defaultTitle: 'x', contentKind: 'video', mediaId: 'm', body: null, quiz: null, status: 'ready', siblingLessonId: null, thumbnailFrameSecs: null, durationSecs: null, quizPassingPct: null, ...o });
+  const ART = (o: Partial<GateLesson> = {}) => L({ contentKind: 'article', mediaId: null, body: 'text', ...o });
+  const G = (lessons: GateLesson[], o: Partial<Parameters<typeof computeGate>[0]> = {}) => computeGate({ lessons, reviewedSubtitles: new Map(), languages: ['hi', 'en', 'gu'], topicCode: 'crop_care', priceMinor: '0', currencyCode: 'INR', certEnabled: true, hasInstructor: true, ...o });
   it('hollow: video/pdf/audio without media, article without body, quiz without questions; live needs a recording or a summary', () => {
     expect(isHollow(L({ mediaId: null }))).toBe(true);
     expect(isHollow(L({ contentKind: 'pdf', mediaId: null }))).toBe(true);
@@ -195,29 +197,27 @@ describe('PC-56 TENANT-7a · W416\'s gate, honest about what it cannot measure',
     expect(quizQuestionsOk({ questions: [{ q: 'a', options: ['x', 'y'], answer: -1 }] })).toEqual({ ok: false, questions: 1 });
     expect(quizQuestionsOk({ questions: [{ q: 'a', options: ['x', 'y'], answer: 1 }, { q: 'b', options: ['x', 'y', 'z'], answer: 0 }] })).toEqual({ ok: true, questions: 2 });
   });
-  it('an empty course fails HAS_LESSONS; every check is present; the unmeasured six never block', () => {
+  it('an empty course fails HAS_LESSONS; every check is present (SUBTITLES once per tenant language); nothing is not_measured any more', () => {
     const g = G([]);
     expect(g.ready).toBe(false); expect(g.blocking).toEqual(['HAS_LESSONS']);
-    expect(g.checks.map((c) => c.code)).toEqual([...GATE_CHECKS]);
-    for (const c of g.checks) if (UNMEASURED_CHECKS.has(c.code)) { expect(c.state).toBe('not_measured'); expect(g.blocking).not.toContain(c.code); }
-    expect(UNMEASURED_CHECKS.size).toBe(6);
+    expect([...new Set(g.checks.map((c) => c.code))]).toEqual([...GATE_CHECKS]);
+    expect(g.checks.filter((c) => c.code === 'SUBTITLES').map((c) => c.lang)).toEqual(['hi', 'en', 'gu']);
+    expect(g.checks.filter((c) => c.state === 'not_measured')).toEqual([]);
   });
   it('names the hollow lessons by position (W416: "two lessons named above are the honest gap") and counts met/of', () => {
-    const g = G([L({ lessonNo: 1 }), L({ lessonNo: 2, mediaId: null, defaultTitle: 'Season-wise ration planning' }), L({ moduleNo: 2, lessonNo: 1, contentKind: 'quiz', mediaId: null, quiz: { questions: [{ q: 'a', options: ['x'], answer: 0 }] }, defaultTitle: 'Quick check' })]);
+    const g = G([ART({ lessonNo: 1 }), ART({ lessonNo: 2, body: null, defaultTitle: 'Season-wise ration planning' }), L({ moduleNo: 2, lessonNo: 1, contentKind: 'quiz', mediaId: null, quiz: { questions: [{ q: 'a', options: ['x'], answer: 0 }] }, defaultTitle: 'Quick check' })]);
     expect(g.ready).toBe(false);
-    expect(g.blocking).toEqual(['NO_HOLLOW_LESSON', 'QUIZ_WELL_FORMED']);
+    expect(g.blocking).toEqual(['NO_HOLLOW_LESSON', 'QUIZ_WELL_FORMED', 'QUIZ_EXPLANATIONS', 'QUIZ_THRESHOLD']);
     const hollow = g.checks.find((c) => c.code === 'NO_HOLLOW_LESSON')!;
     expect(hollow.measured).toEqual({ met: 1, of: 3 });
     expect(hollow.named).toEqual(['1·2 Season-wise ration planning', '2·1 Quick check']);
     const quiz = g.checks.find((c) => c.code === 'QUIZ_WELL_FORMED')!;
     expect(quiz.measured).toEqual({ met: 0, of: 1 }); expect(quiz.named).toEqual(['2·1 Quick check']);
-    const audio = g.checks.find((c) => c.code === 'AUDIO_SIBLINGS')!;
-    expect(audio.measured).toEqual({ met: 0, of: 2 });   // two video lessons, and no way to know which is paired
   });
   it('topic and instructor are declared or fail; price + certificate always pass as a declaration the desk co-signs', () => {
-    const g = G([L({})], { topicCode: null, hasInstructor: false, priceMinor: '14900', certEnabled: false });
+    const g = G([ART()], { topicCode: null, hasInstructor: false, priceMinor: '14900', certEnabled: false });
     expect(g.blocking).toEqual(['TOPIC_DECLARED', 'INSTRUCTOR_PROFILE']);
     expect(g.checks.find((c) => c.code === 'PRICE_CERT_DECLARED')).toMatchObject({ state: 'pass', declared: { priceMinor: '14900', currencyCode: 'INR', certEnabled: 'no' } });
-    expect(G([L({})]).ready).toBe(true);
+    expect(G([ART()]).ready).toBe(true);
   });
 });
