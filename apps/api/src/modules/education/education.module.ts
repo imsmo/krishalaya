@@ -11,7 +11,12 @@
 //      cadence job → outbox → the notification spine), the host marks it ENDED, records ATTENDANCE, attaches the
 //      RECORDING through core/media and publishes it as a lesson. NO VIDEO PROVIDER EXISTS on this platform: `start`
 //      (the stream edge) is refused by name unless something other than the noop gateway is bound.
-// Gated by the `education` flag (default OFF).
+//  (D) THE EARNINGS (PC-56 TENANT-7d-money, 0174) — every paid enrollment posts its split (buyer → instructor main|hold ·
+//      tenant commission · platform fees) in the COURSE's currency and records ONE `instructor_royalty_lines` row; W418 is
+//      a SUM over those lines per currency; the tenant owns the split RULE (maker ≠ checker); the instructor's AGREEMENT
+//      gates the release of held royalty; money OUT is the payments module's payout plane (purpose `course_royalty`,
+//      rides the tenant's two-person batch). PaymentsModule is imported for its PUBLIC `PayoutService` only.
+// Gated by the `education` flag (default OFF); the split by `course_royalty_split`, W418 by `instructor_earnings` (both OFF).
 // DEFERRED: certificate (PDF) issuance on completion; online payment-intent enrol path (wallet is the path);
 // instructor payout aggregation jobs; quiz auto-grading; external-metadata fetch + recording retrieval.
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
@@ -43,10 +48,19 @@ import { LearningResourceRepository } from './repositories/learning-resource.rep
 import { LiveSessionRepository } from './repositories/live-session.repository';
 import { CropCalendarReadModel } from './read-models/crop-calendar.read-model';
 import { streamProviderProvider } from './gateway/stream.provider';
+import { PaymentsModule } from '../payments/payments.module';
+import { DATASET_REGISTRY, DatasetRegistry } from '../../core/exports-plane/dataset.registry';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
+import { InstructorEarningsController } from './controllers/v1/instructor-earnings.controller';
+import { InstructorEarningsService } from './services/instructor-earnings.service';
+import { InstructorEarningsRepository } from './repositories/instructor-earnings.repository';
+import { InstructorEarningsDataset } from './exports/instructor-earnings.dataset';
 
 @Module({
-  controllers: [InstructorsController, CoursesController, LessonsController, EnrollmentsController, ChannelsController, ResourcesController, LiveSessionsController],
+  imports: [PaymentsModule],
+  controllers: [InstructorsController, InstructorEarningsController, CoursesController, LessonsController, EnrollmentsController, ChannelsController, ResourcesController, LiveSessionsController],
   providers: [
+    InstructorEarningsService, InstructorEarningsRepository, InstructorEarningsDataset, UiMessageRepository,
     InstructorService, CourseService, LessonService, EnrollmentService, LessonProgressService,
     LearningChannelService, LearningResourceService, LiveSessionService,
     InstructorRepository, CourseRepository, CourseLessonRepository, EnrollmentRepository, LessonProgressRepository,
@@ -55,9 +69,18 @@ import { streamProviderProvider } from './gateway/stream.provider';
     streamProviderProvider,
     { provide: LiveReminderCadenceJob, useFactory: (live: LiveSessionService, f: FlagsService) => new LiveReminderCadenceJob(LIVE_REMINDER_TICK_MS, live, f), inject: [LiveSessionService, FlagsService] },
   ],
-  exports: [CourseService, LessonService, EnrollmentService, LearningChannelService, LiveSessionService],
+  exports: [CourseService, LessonService, EnrollmentService, LearningChannelService, LiveSessionService, InstructorEarningsService],
 })
 export class EducationModule implements OnModuleInit {
-  constructor(@Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry, private readonly reminders: LiveReminderCadenceJob) {}
-  onModuleInit(): void { this.jobs.register(this.reminders); }
+  constructor(
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    @Inject(DATASET_REGISTRY) private readonly datasets: DatasetRegistry,
+    private readonly reminders: LiveReminderCadenceJob,
+    private readonly earningsDataset: InstructorEarningsDataset,
+  ) {}
+  onModuleInit(): void {
+    this.jobs.register(this.reminders);
+    // PC-56 TENANT-7d-money: W418's export. Without this line `education.instructor_earnings` fails with `unknown_dataset`.
+    this.datasets.register(this.earningsDataset);
+  }
 }

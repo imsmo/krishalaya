@@ -233,6 +233,34 @@ describe('HttpClient via resources', () => {
     expect((c.liveStudio as unknown as Record<string, unknown>).schedule).toBeUndefined(); expect((c.liveStudio as unknown as Record<string, unknown>).start).toBeUndefined();
   });
 
+  it('the earnings (PC-56 TENANT-7d-money): W418\'s view and statement, the payout review without a key and the request with one, the export, the rule and the agreement', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'x', tiles: [], payoutId: 'p1', status: 'queued' }, meta: { nextCursor: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.instructorEarnings.view();
+    await c.instructorEarnings.view('i9');
+    await c.instructorEarnings.statement({ cursor: 'abc', limit: 25 });
+    await c.instructorEarnings.payoutReview({ amountMinor: '10000', currencyCode: 'INR', bankAccountId: 'b1' });
+    await c.instructorEarnings.requestPayout({ amountMinor: '10000', currencyCode: 'INR', bankAccountId: 'b1' }, 'idem-w');
+    await c.instructorEarnings.enqueueExport('idem-x');
+    await c.instructorEarnings.rule();
+    await c.instructorEarnings.proposeRule({ instructorShareBps: 7500, note: 'we host' }, 'idem-r');
+    await c.instructorEarnings.decideRule('r1', { act: 'reject', note: 'too generous' }, 'idem-d');
+    await c.instructorEarnings.offerAgreement({ instructorId: 'i1' }, 'idem-o');
+    await c.instructorEarnings.actAgreement('a1', 'accept', 'idem-a');
+    const hdr = (i: number) => (calls[i].init?.headers as Record<string, string>)['idempotency-key'];
+    expect(calls[0].url).toBe('https://api.test/v1/education/earnings');
+    expect(calls[1].url).toBe('https://api.test/v1/education/earnings?instructor=i9');
+    expect(calls[2].url).toContain('education/earnings/statement?'); expect(calls[2].url).toContain('cursor=abc'); expect(calls[2].url).toContain('limit=25');
+    expect(calls[3].url).toBe('https://api.test/v1/education/earnings/payouts/review'); expect(hdr(3)).toBeUndefined();
+    expect(calls[4].url).toBe('https://api.test/v1/education/earnings/payouts'); expect(hdr(4)).toBe('idem-w'); expect(JSON.parse(String(calls[4].init?.body))).toEqual({ amountMinor: '10000', currencyCode: 'INR', bankAccountId: 'b1' });
+    expect(calls[5].url).toBe('https://api.test/v1/education/earnings/export'); expect(hdr(5)).toBe('idem-x'); expect(JSON.parse(String(calls[5].init?.body))).toEqual({});
+    expect(calls[6].url).toBe('https://api.test/v1/education/earnings/rule'); expect(calls[6].init?.method).toBe('GET');
+    expect(calls[7].url).toBe('https://api.test/v1/education/earnings/rule'); expect(calls[7].init?.method).toBe('POST'); expect(hdr(7)).toBe('idem-r');
+    expect(calls[8].url).toBe('https://api.test/v1/education/earnings/rule/r1/decide'); expect(JSON.parse(String(calls[8].init?.body))).toEqual({ act: 'reject', note: 'too generous' });
+    expect(calls[9].url).toBe('https://api.test/v1/education/earnings/agreements'); expect(hdr(9)).toBe('idem-o');
+    expect(calls[10].url).toBe('https://api.test/v1/education/earnings/agreements/a1/accept'); expect(hdr(10)).toBe('idem-a');
+  });
+
   it('the instructor (PC-56 TENANT-7d): the studio, the profile, two reviews without a key, the writes and the acts with one, the desk\'s list, the templates', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'i1', userId: 'u1', isVerified: false, displayName: 'Dr. Kalpana Joshi', languages: ['gu', 'hi'], visibility: 'public', instructor: { id: 'i1' }, credential: null, lessons: 7 } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

@@ -55,6 +55,8 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   LiveStatus, LiveBox, LiveFormInput, LiveAct, LiveActRefusal, LiveActVerdict, LiveClass, LiveClassListItem, LiveClassView, ReminderKind,   // PC-56 TENANT-7c
   InstructorVisibility, Instructor, CredentialStatus, InstructorCredential, ProfileFormInput, CredentialFormInput, InstructorAct, InstructorActRefusal, InstructorActVerdict, CompletenessCheck,
   CredentialView, InstructorView, InstructorListItem, StudioFacts, CourseTemplateSummary, StudioView, CourseTemplate, TemplateFormInput,   // PC-56 TENANT-7d
+  RoyaltyLineState, EarningsFigure, EarningsTile, AgreementStatus, AgreementAct, InstructorAgreement, RoyaltyRuleStatus, RoyaltyRule, CourseEarningsRow, RoyaltyPayoutRow, RoyaltyPayoutRefusal, EarningsRefusedByName,
+  EarningsView, EarningsStatementLine, RoyaltyPayoutInput, RoyaltyPayoutReview, RoyaltyRuleView,   // PC-56 TENANT-7d-money
   // PC-56 TENANT-6d-5 · W170's call and W2521–W2523's mutate chain. TYPES only: the refusal LIST stays in the API's
   // own domain, and the web spec reads it from there — a second copy would agree exactly once.
   DairyBmcCallObject, DairyBmcCallPreview, DairyBmcCallRefusal, DairyBmcCallResult,

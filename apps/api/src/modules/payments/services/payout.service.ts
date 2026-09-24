@@ -82,9 +82,11 @@ export class PayoutService {
           const id = uuidv7();
           // reserve funds: debit the user's wallet, credit the platform payouts account (zero-sum).
           // The wallet enforces no-overdraw — a withdrawal beyond balance fails here, loudly.
+          // PC-56 TENANT-7d-money: the legs carry THE PAYOUT'S CURRENCY. `userMain(userId)` defaulted to INR, so a payout row
+          // saying AED debited the rupee wallet — a false record, corrected at source (not flagged).
           const txn = await this.wallet.post(tx, {
             tenantId, txnType: 'payout', idempotencyKey: `payout:${id}`, referenceType: 'payout', referenceId: id, initiatedBy: userId,
-            legs: [ { account: userMain(userId), amountMinor: -amount }, { account: platform(PlatformAccount.Payouts), amountMinor: amount } ],
+            legs: [ { account: userMain(userId, dto.currencyCode), amountMinor: -amount }, { account: platform(PlatformAccount.Payouts, dto.currencyCode), amountMinor: amount } ],
           });
 
           const payout = Payout.queue({ id, tenantId, userId, bankAccountId: dto.bankAccountId, purposeId,
@@ -119,7 +121,7 @@ export class PayoutService {
 
         if (res.status === 'success') {
           await this.wallet.post(tx, { tenantId, txnType: 'payout', idempotencyKey: `payout-exec:${payoutId}`, referenceType: 'payout', referenceId: payoutId, initiatedBy: 'system',
-            legs: [ { account: platform(PlatformAccount.Payouts), amountMinor: -v.amountMinor }, { account: platform(PlatformAccount.Gateway), amountMinor: v.amountMinor } ] });
+            legs: [ { account: platform(PlatformAccount.Payouts, v.currencyCode), amountMinor: -v.amountMinor }, { account: platform(PlatformAccount.Gateway, v.currencyCode), amountMinor: v.amountMinor } ] });
           p.markSuccess();
           await this.repo.update(tx, p);
           // PC-56 ADMIN-6b — THE PAYLOAD GAINS A RECIPIENT, WHICH IS WHAT MADE THIS EVENT UNNOTIFIABLE. `payout.credited`
@@ -141,7 +143,7 @@ export class PayoutService {
           });
         } else if (res.status === 'failed') {
           await this.wallet.post(tx, { tenantId, txnType: 'payout', idempotencyKey: `payout-reverse:${payoutId}`, referenceType: 'payout', referenceId: payoutId, initiatedBy: 'system',
-            legs: [ { account: platform(PlatformAccount.Payouts), amountMinor: -v.amountMinor }, { account: userMain(v.userId ?? ''), amountMinor: v.amountMinor } ] });
+            legs: [ { account: platform(PlatformAccount.Payouts, v.currencyCode), amountMinor: -v.amountMinor }, { account: userMain(v.userId ?? '', v.currencyCode), amountMinor: v.amountMinor } ] });
           p.markFailed(res.failureCode ?? 'gateway_failed', res.failureReason ?? null);
           p.reverse();                                  // funds returned to the user wallet
           await this.repo.update(tx, p);

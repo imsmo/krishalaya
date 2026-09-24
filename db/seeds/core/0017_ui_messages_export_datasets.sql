@@ -16,3 +16,10 @@ INSERT INTO ui_messages (key, language_code, text) VALUES
   ('exports.dataset.dairy.insights', 'hi', 'dairy insights (doodh sangrah ka saar)'),
   ('exports.dataset.dairy.insights', 'gu', 'ડેરી ઇનસાઇટ્સ')
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 TENANT-7d-money] W418's file: the instructor's own earnings statement (dataset `education.instructor_earnings`).
+INSERT INTO ui_messages (key, language_code, text) VALUES
+  ('exports.dataset.education.instructor_earnings', 'en', 'instructor earnings statement'),
+  ('exports.dataset.education.instructor_earnings', 'hi', 'प्रशिक्षक कमाई विवरण'),
+  ('exports.dataset.education.instructor_earnings', 'gu', 'પ્રશિક્ષક કમાણી પત્રક')
+ON CONFLICT DO NOTHING;

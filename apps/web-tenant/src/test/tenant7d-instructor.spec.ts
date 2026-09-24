@@ -72,7 +72,7 @@ describe('PC-56 TENANT-7d · W410 the studio home', () => {
     expect(apiList('instructor-review.ts', 'COMPLETENESS_CHECKS')).toEqual(['bio', 'languages', 'credentialFiled', 'credentialAccepted', 'verified']);
   });
   it('everything refused by name has its sentence ×3', () => {
-    expect(REFUSED_BY_NAME).toEqual(['earnings', 'watchMonth', 'rating', 'faceMatch', 'retry', 'learnerInsights', 'tenantTemplates', 'deactivate']);
+    expect(REFUSED_BY_NAME).toEqual(['watchMonth', 'rating', 'faceMatch', 'retry', 'learnerInsights', 'tenantTemplates', 'deactivate']);   // 7d-money: earnings is W418's, linked — no longer refused
     for (const n of REFUSED_BY_NAME) three(refusedKey(n));
     for (const k of ['studio.lead', 'studio.createProfile', 'studio.templatesAfterProfile', 'studio.unnamed', 'studio.verified', 'studio.notVerified', 'studio.profileLink', 'studio.completeness', 'studio.deskList', 'studio.myCourses', 'studio.empty', 'studio.emptyTemplate', 'studio.startFromTemplate', 'studio.noTemplates', 'studio.colTopic', 'studio.colLearners', 'studio.colCompletion', 'studio.openBuilder', 'studio.classes', 'studio.upcomingClasses', 'studio.noClasses']) three(k);
   });

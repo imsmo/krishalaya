@@ -652,6 +652,39 @@ export interface StudioView {
   courses: Array<Course & { stats: CourseStats | null }>; byStatus: Record<string, number>; templates: CourseTemplateSummary[];
 }
 export interface CourseTemplate extends CourseTemplateSummary { id: string; outline: unknown; platform: boolean }
+
+// --- PC-56 TENANT-7d-money · THE EARNINGS (W418). Every money figure is a bigint-as-text of MINOR units at `minorUnits`;
+// the console formats, never computes. One tile per currency — never a mixed total (6e-1). ---
+export type RoyaltyLineState = 'paid_to_wallet' | 'held_pending_agreement' | 'released';
+export interface EarningsFigure { currencyCode: string; minorUnits: number; gross: string; instructor: string; tenant: string; platform: string; held: string; heldLines: number; released: string; purchases: number }
+export interface EarningsTile { currencyCode: string; minorUnits: number; lifetime: EarningsFigure; mtd: EarningsFigure | null; paidOut: string; pending: string; available: string }
+export type AgreementStatus = 'offered' | 'accepted' | 'declined' | 'superseded';
+export type AgreementAct = 'accept' | 'decline' | 'supersede';
+export interface InstructorAgreement { id: string; version: number; status: AgreementStatus; instructorShareBps: number; tenantShareBps: number; platformShareBps: number; offeredAt: string; acceptedAt: string | null; termsNote: string | null; offeredBy: string; acceptedBy: string | null }
+export type RoyaltyRuleStatus = 'proposed' | 'active' | 'rejected' | 'superseded';
+export interface RoyaltyRule { id: string; source: 'tenant' | 'platform'; instructorShareBps: number; tenantShareBps: number; platformShareBps: number; status: RoyaltyRuleStatus; proposedBy: string | null; proposedAt: string; decidedBy: string | null; decidedAt: string | null; decisionNote: string | null; effectiveFrom: string | null }
+export interface CourseEarningsRow { courseId: string; title: string; status: string; priceMinor: string; currencyCode: string; minorUnits: number | null; enrollments: number; paid: number; gross: string; instructor: string; tenantPlatform: string }
+export interface RoyaltyPayoutRow { id: string; status: string; amountMinor: string; currencyCode: string; batchId: string | null; batchStatus: string | null; createdAt: string; failureCode: string | null }
+export type RoyaltyPayoutRefusal = 'AGREEMENT_NOT_ACCEPTED' | 'AMOUNT_INVALID' | 'CURRENCY_UNKNOWN' | 'ROYALTY_INSUFFICIENT' | 'NOT_INSTRUCTOR';
+export type EarningsRefusedByName = 'monthlyLaneClock' | 'refunds' | 'cachedFigures' | 'retry';
+export interface EarningsView {
+  instructor: { id: string; userId: string; name: string | null; royaltyBps: number; isSelf: boolean };
+  privileged: boolean;
+  timezone: string; today: string; monthStart: string;
+  splitFlagOn: boolean;
+  agreement: { current: InstructorAgreement | null; offered: InstructorAgreement | null; history: InstructorAgreement[] };
+  rule: RoyaltyRule | null;
+  tiles: EarningsTile[];
+  courses: CourseEarningsRow[];
+  payouts: RoyaltyPayoutRow[];
+  bankAccounts: Array<{ id: string; label: string; verified: boolean }>;
+  payoutRefusals: Array<{ currencyCode: string; refusals: RoyaltyPayoutRefusal[] }>;
+  refusedByName: readonly EarningsRefusedByName[];
+}
+export interface EarningsStatementLine { id: string; occurredAt: string; courseId: string; courseTitle: string | null; enrollmentId: string; currencyCode: string; minorUnits: number; gross: string; instructor: string; tenant: string; platform: string; instructorShareBps: number; state: RoyaltyLineState; ledgerTxnId: string; releasedAt: string | null }
+export interface RoyaltyPayoutInput { amountMinor: string; currencyCode: string; bankAccountId: string }
+export interface RoyaltyPayoutReview { ready: boolean; refusals: RoyaltyPayoutRefusal[]; available: string | null; held: string | null; currencyCode: string; amountMinor: string; purpose: 'course_royalty'; ridesBatch: true; agreementVersion: number | null }
+export interface RoyaltyRuleView { inForce: RoyaltyRule | null; platformDefault: RoyaltyRule | null; history: RoyaltyRule[]; canPropose: boolean; splitFlagOn: boolean }
 export const TEMPLATE_FORM_FIELDS = ['templateCode', 'title'] as const;
 export type TemplateFormInput = Partial<Record<(typeof TEMPLATE_FORM_FIELDS)[number], string>>;
 

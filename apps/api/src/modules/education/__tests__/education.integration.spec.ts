@@ -23,6 +23,8 @@ import { InstructorRepository } from '../repositories/instructor.repository';
 import { CourseRepository } from '../repositories/course.repository';
 import { CourseLessonRepository } from '../repositories/course-lesson.repository';
 import { EnrollmentRepository } from '../repositories/enrollment.repository';
+import { InstructorEarningsRepository } from '../repositories/instructor-earnings.repository';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { LessonProgressRepository } from '../repositories/lesson-progress.repository';
 import { InstructorService } from '../services/instructor.service';
 import { CourseService } from '../services/course.service';
@@ -65,7 +67,10 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
     const lessonsSvc = new LessonService(uow, metrics, audit, idem, cRepo, lRepo, iRepo);
     lessons = lessonsSvc;
     courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo, lessonsSvc);
-    enroll = new EnrollmentService(uow, outbox, idem, metrics, wallet, cRepo, iRepo, eRepo);
+    // PC-56 TENANT-7d-money: the split's facts (0174) and the flag — OFF here, so this spec still proves the pre-0174 shape
+    // (instructor ₹400 to MAIN, platform ₹100, tenant 0) — but in the COURSE's currency and WITH a line recording it.
+    // The flag is pinned OFF here (not read from the table: another suite may flip the real flag while this one runs).
+    enroll = new EnrollmentService(uow, outbox, idem, metrics, wallet, cRepo, iRepo, eRepo, new InstructorEarningsRepository(replica as any), { isEnabled: async () => false } as unknown as FlagsService);
     progress = new LessonProgressService(uow, outbox, metrics, eRepo, pRepo, lRepo);
     await fund(learner, 1_000_000n);
     inspect = new Pool({ connectionString: APP_URL });
@@ -97,6 +102,9 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
     enrollmentId = e.id; expect(e.pricePaidMinor).toBe('50000');
     expect(lBefore - (await balUser(learner))).toBe(50000n);   // learner debited ₹500
     expect((await balUser(instr)) - iBefore).toBe(40000n);     // instructor credited 80%
+    // 7d-money: the line records exactly what was posted — flag OFF ⇒ the row's royalty, tenant 0, the rest platform, currency INR at scale 2
+    expect((await admin.query(`SELECT currency_code, minor_units, gross_minor, instructor_minor, tenant_minor, platform_minor, state, rule_id FROM instructor_royalty_lines WHERE enrollment_id=$1`, [enrollmentId])).rows[0])
+      .toEqual({ currency_code: 'INR', minor_units: 2, gross_minor: '50000', instructor_minor: '40000', tenant_minor: '0', platform_minor: '10000', state: 'paid_to_wallet', rule_id: null });
   });
 
   it('completing both lessons drives progress to 100 + completion', async () => {

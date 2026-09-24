@@ -185,3 +185,15 @@ SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
  ('milk_deduction','share','Cooperative share allotment','{"destination":"none","unsupported_reason":"The registry wave already ruled on this: the deduction, the consent record and the share certificate are one money movement, and coop_share_registers has no allotment act. Offering the deduction alone would take a family''s money for a certificate that never arrives."}',4)
   ) AS v(type_code, code, default_name, meta, sort_order)
  WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-7d-money · 0174] The instructor's money out and the hold release. ALSO INSERTED BY MIGRATION 0174,
+-- identically and idempotently (the migration is what an existing database gets; this file is the fresh install).
+-- `course_royalty` declares in its own meta that it RIDES THE BATCH: 0114's trigger (re-created by 0174) refuses to
+-- let such a payout leave `queued` unbatched, so the money leaves only through TENANT-4b's two-person gate.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('payout_purpose','course_royalty','Instructor course royalty','{"rides_batch":true,"reason":"W418: a royalty payout rides the tenant''s payout batch (TENANT-4b two-person gate) and never leaves queued unbatched (0174)."}',10),
+ ('ledger_txn_type','course_royalty_release','Course royalty released from hold on agreement acceptance (instructor hold -> main)','{}',20)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);

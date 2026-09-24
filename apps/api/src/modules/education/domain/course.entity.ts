@@ -46,6 +46,8 @@ export class Course {
   get instructorId() { return this.props.instructorId; }
   get status() { return this.props.status; }
   get priceMinor() { return this.props.priceMinor; }
+  /** The course's currency — the TENANT's since 7a; every purchase leg carries it (7d-money). */
+  get currencyCode() { return this.props.currencyCode; }
   get isFree() { return this.props.priceMinor === 0n; }
   get certEnabled() { return this.props.certEnabled; }
   get submittedBy() { return this.props.submittedBy ?? null; }

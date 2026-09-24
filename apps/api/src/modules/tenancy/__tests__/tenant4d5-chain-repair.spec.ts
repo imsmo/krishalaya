@@ -127,9 +127,13 @@ describe('TENANT-4d-5 · no migration may depend on reference data that arrives 
     const referenced = new Set<string>();
     for (const f of later()) {
       const s = sql(read(f));
+      // PC-56 TENANT-7d-money: a migration may guarantee a role ITSELF — the same `INSERT INTO roles … WHERE NOT EXISTS`
+      // shape as 0056a, placed BEFORE the binding in the same file (0174 does this for `instructor`, the one role 0056a
+      // did not carry). Mirrors the lookup-type test's `selfCreated` below: guaranteed by 0056a OR by the file itself.
+      const selfCreated = new Set([...s.matchAll(/INSERT INTO roles\s*\([\s\S]{0,2000}?;/g)].flatMap((m) => [...m[0].matchAll(/'([a-z_]+)'/g)].map((x) => x[1])));
       for (const m of s.matchAll(/INSERT INTO (?:role_permissions|payout_purpose_roles)[\s\S]{0,4000}?;/g)) {
-        for (const c of m[0].matchAll(/r?\.?code\s*=\s*'([a-z_]+)'/g)) referenced.add(c[1]);
-        for (const c of m[0].matchAll(/\(\s*'[a-z_]+'\s*,\s*'([a-z_]+)'\s*,/g)) referenced.add(c[1]);
+        for (const c of m[0].matchAll(/r?\.?code\s*=\s*'([a-z_]+)'/g)) if (!selfCreated.has(c[1])) referenced.add(c[1]);
+        for (const c of m[0].matchAll(/\(\s*'[a-z_]+'\s*,\s*'([a-z_]+)'\s*,/g)) if (!selfCreated.has(c[1])) referenced.add(c[1]);
       }
     }
     expect(referenced.size).toBeGreaterThan(0);

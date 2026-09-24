@@ -4,9 +4,9 @@
 // The instructor's HONEST desk: their profile as it stands (with the verified badge drawn only from the API's fact),
 // their courses by state with W410's Learners / Completion columns, their next class, and four tiles — three MEASURED
 // (learners who enrolled in a declared 30-day window; watch-hours as the LIFETIME sum, because `lesson_progress` has no
-// timestamp and *"this month"* is not a fact it holds; certificates ever) and ONE REFUSED BY NAME: *"Earnings MTD
-// ₹25,508.80 — your 80% royalty share"* is 7d-money's number — the money path pays the wallet at purchase and keeps no
-// royalty ledger, so this tile prints what exists (the royalty share on the row) and *not measured*, never a figure.
+// timestamp and *"this month"* is not a fact it holds; certificates ever) and ONE that is W418's: *"Earnings MTD
+// ₹25,508.80 — your 80% royalty share"* is summed on the earnings desk over 0174's royalty ledger (7d-money); this tile
+// prints the share on record and links there rather than repeating a figure a second read model would have to agree with.
 //
 // PC-26's inline bio form is GONE: the profile is the instructor FORM chain at `/studio/profile/edit` (W2636–W2639). *New
 // course* is the course chain (7a); *Start from template* is the STUDIO FORM chain at `/studio/from-template`
@@ -25,6 +25,7 @@ import { SdkError } from '@krishalaya/sdk-js';
 import type { StudioView } from '@krishalaya/sdk-js';
 import { NEW_COURSE_HREF } from '../../features/courses/desk';
 import { liveClassHref, liveHref, whenText } from '../../features/live/classes';
+import { EARNINGS_PATH } from '../../features/studio/earnings';
 import {
   STUDIO_TILES, completenessDone, completenessKey, coursesByState, editProfileHref, fromTemplateHref, instructorsHref, profileHref, refusedKey, studioHref, studioState, studioStateKey,
   tileKey, tileMeasured, verifiedBadge, watchHoursText,
@@ -97,7 +98,7 @@ export default async function StudioPage() {
                   {tile === 'learners' && t.t(tileKey(tile, 'sub'), { days: formatNumber(view.windowDays, lang), lifetime: formatNumber(facts?.learnersLifetime ?? 0, lang) })}
                   {tile === 'watchHours' && <>{t.t(tileKey(tile, 'sub'))} {t.t(refusedKey('watchMonth'))}</>}
                   {tile === 'certificates' && t.t(tileKey(tile, 'sub'))}
-                  {tile === 'earnings' && <>{t.t(tileKey(tile, 'sub'), { share: formatNumber(me.instructor.royaltyBps / 100, lang) })} {t.t(refusedKey('earnings'))}</>}
+                  {tile === 'earnings' && <>{t.t(tileKey(tile, 'sub'), { share: formatNumber(me.instructor.royaltyBps / 100, lang) })} <Link href={EARNINGS_PATH} className="kv-btn--link">{t.t('studio.tile.earnings.link')}</Link></>}
                 </span>
               </div>
             ))}

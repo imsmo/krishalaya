@@ -12,9 +12,9 @@
 //   • REFUSED BY NAME, because nothing on this platform performs them: W419's *"Rating 4.8 / 5 from enrolled learners"*
 //     (no table — `rating` is typed `null` by the API), *"verified against the certificate face"* (no face is matched;
 //     the desk's accept is a person's act), the *"Couldn't verify the credential … Retry"* (no automated check to
-//     retry); W410's *"Earnings MTD ₹25,508.80 — your 80% royalty share"* (7d-money's number: the money path pays at
-//     purchase and keeps no royalty ledger — printed as not measured, never as a figure) and *"Watch-hours THIS MONTH"*
-//     (lesson_progress has no timestamp — the LIFETIME sum is the fact, and the month is named as unmeasured).
+//     retry) and *"Watch-hours THIS MONTH"* (lesson_progress has no timestamp — the LIFETIME sum is the fact, and the
+//     month is named as unmeasured). W410's *"Earnings MTD"* tile is W418's number since 7d-money (0174): this tile
+//     prints the share on record and LINKS to the earnings desk, where every figure is a sum over the royalty ledger.
 //   • NO ARITHMETIC THIS FILE INVENTS beyond integer conversion of the API's sums: `watchHours` is seconds ÷ 3600 in
 //     integer arithmetic on a string the API sent (a bigint as text), rounded down and never averaged.
 import type { CompletenessCheck, CredentialStatus, CredentialView, InstructorAct, InstructorActVerdict, InstructorView, StudioView } from '@krishalaya/sdk-js';
@@ -77,7 +77,7 @@ export const COURSE_STATE_ORDER = ['draft', 'review', 'published', 'paused', 'ar
 export function coursesByState(byStatus: Record<string, number>): Array<{ status: string; n: number }> {
   return COURSE_STATE_ORDER.map((status) => ({ status, n: byStatus[status] ?? 0 }));
 }
-/** W410's four tiles — three measured, one refused by name (7d-money). */
+/** W410's four tiles — three measured here; earnings is measured on W418 (7d-money) and this tile links to it. */
 export const STUDIO_TILES = ['learners', 'watchHours', 'certificates', 'earnings'] as const;
 export type StudioTile = (typeof STUDIO_TILES)[number];
 export function tileKey(t: StudioTile, part: 'label' | 'sub'): string { return `studio.tile.${t}.${part}`; }
@@ -87,7 +87,7 @@ export function completenessDone(view: Pick<InstructorView, 'completeness'>): { 
   return { done: view.completeness.filter((c) => c.done).length, of: view.completeness.length };
 }
 /** Everything W410/W419 draw that this platform does not perform — printed by name, never as a control or a figure. */
-export const REFUSED_BY_NAME = ['earnings', 'watchMonth', 'rating', 'faceMatch', 'retry', 'learnerInsights', 'tenantTemplates', 'deactivate'] as const;
+export const REFUSED_BY_NAME = ['watchMonth', 'rating', 'faceMatch', 'retry', 'learnerInsights', 'tenantTemplates', 'deactivate'] as const;
 export function refusedKey(name: (typeof REFUSED_BY_NAME)[number]): string { return `studio.refused.${name}`; }
 
 /* --------------------------------------------------------------------------------------------------------- */

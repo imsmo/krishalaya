@@ -218,7 +218,12 @@ describe('TENANT-4b · THE LEAK IS CLOSED: every batch read takes a tenant', () 
     const methods = ['getById', 'getApprovalById', 'list'];
     for (const m of methods) {
       const body = code.slice(code.indexOf(`async ${m}(`), code.indexOf(`async ${m}(`) + 900);
-      expect(body).toContain('this.pools.replica(0)');
+      // PC-56 TENANT-7d-money: the read goes through `tenantRead` — the SAME replica pool, but inside a READ ONLY tx with
+      // `app.tenant_id` set. A raw `pools.replica(0).query` against payout_batches (RLS since 0143) returned NO ROWS to
+      // kv_app, so `decide` answered "batch not found" for the batch `prepare` had just written. Proven live in
+      // education's tenant7dm-earnings.integration.spec; this guard now asserts the tenant-aware shape.
+      expect(body).toContain('this.tenantRead(');
+      expect(body).not.toContain('this.pools.replica(0).query');
       expect(body).toMatch(/tenant_id\s*=\s*\$|tenant_id=\$\{/);
     }
     // The ONE tx-level read without a tenant predicate is `getForUpdate`, which the privileged worker path

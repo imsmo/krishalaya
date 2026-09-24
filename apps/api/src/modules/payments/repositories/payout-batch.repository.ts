@@ -252,7 +252,7 @@ export class PayoutBatchRepository {
     if (opts.statuses?.length) where += ` AND p.status::text = ANY(${p(opts.statuses)}::text[])`;
     if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where += ` AND (p.created_at < ${cc} OR (p.created_at = ${cc} AND p.id < ${ci}))`; }
     const lp = p(opts.limit);
-    const r = await this.pools.replica(0).query<any>(
+    const r = await this.tenantRead<any>(opts.tenantId,
       `SELECT p.id::text AS id, p.user_id::text AS user_id, lv.code AS purpose_code, p.reference_type,
               p.reference_id::text AS reference_id, p.amount_minor::text AS amount_minor, p.currency_code,
               p.status::text AS status, p.priority, p.failure_code, p.failure_reason,
@@ -277,7 +277,7 @@ export class PayoutBatchRepository {
 
   /** W145's tab counts, one query, tenant-scoped. */
   async countsByStatus(tenantId: string): Promise<Record<string, number>> {
-    const r = await this.pools.replica(0).query<{ status: string; n: string }>(
+    const r = await this.tenantRead<{ status: string; n: string }>(tenantId,
       `SELECT status::text AS status, count(*)::text AS n FROM payouts WHERE tenant_id=$1 GROUP BY 1`, [tenantId]);
     return r.rows.reduce<Record<string, number>>((a, x) => { a[x.status] = Number(x.n); return a; }, {});
   }
@@ -303,14 +303,38 @@ export class PayoutBatchRepository {
     return x ? { id: x.id, status: x.status, failureCode: x.failure_code ?? null, autoAttempts: Number(x.auto_attempts ?? 0), updatedAt: x.updated_at } : null;
   }
 
+  /**
+   * PC-56 TENANT-7d-money · FOUND ON THE WAY IN. Every tenant-scoped read below ran on `pools.replica(0)` RAW — a pooled
+   * connection with NO `app.tenant_id` — against `payout_batches`, which 0143 put under RLS (`payout_batches_read USING
+   * tenant_id = current_tenant_id()`). For `kv_app` that SELECT returns NO ROWS, so `decide` answered "batch not found"
+   * for the batch `prepare` had just written and W146's review read nothing (proven live by this wave's suite; 4b's
+   * specs mocked this repository). The replica read now runs the way `PgReadReplicaProvider.forTenant` does — a
+   * READ ONLY transaction with the tenant set LOCAL — so RLS isolates rather than blinds.
+   */
+  private async tenantRead<T = any>(tenantId: string, sql: string, params: readonly unknown[]): Promise<{ rows: T[]; rowCount: number }> {
+    const client = await this.pools.replica(0).connect();
+    try {
+      await client.query('BEGIN READ ONLY');
+      await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
+      const r = await client.query(sql, params as unknown[]);
+      await client.query('COMMIT');
+      return { rows: r.rows as T[], rowCount: r.rowCount ?? 0 };
+    } catch (e) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
   // --- reads (replica, CQRS) — tenant-scoped since PC-56 TENANT-4b ---
   async getById(tenantId: string, id: string): Promise<PayoutBatch | null> {
-    const r = await this.pools.replica(0).query(`SELECT ${COLS} FROM payout_batches WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
+    const r = await this.tenantRead(tenantId, `SELECT ${COLS} FROM payout_batches WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
 
   async getApprovalById(tenantId: string, id: string): Promise<PayoutBatchApprovalRow | null> {
-    const r = await this.pools.replica(0).query(`SELECT ${COLS} FROM payout_batches WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
+    const r = await this.tenantRead(tenantId, `SELECT ${COLS} FROM payout_batches WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
     return r.rows[0] ? toApprovalRow(r.rows[0]) : null;
   }
 
@@ -322,7 +346,7 @@ export class PayoutBatchRepository {
     if (opts.batchType) where += ` AND batch_type=${p(opts.batchType)}`;
     if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
     const lp = p(opts.limit);
-    const r = await this.pools.replica(0).query(`SELECT ${COLS} FROM payout_batches WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    const r = await this.tenantRead(opts.tenantId, `SELECT ${COLS} FROM payout_batches WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
   }
 }

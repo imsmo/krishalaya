@@ -167,6 +167,10 @@ export class PayoutRepository {
              AND (p.batch_id IS NULL
                   OR EXISTS (SELECT 1 FROM payout_batches b
                               WHERE b.id = p.batch_id AND b.status IN ('approved','executing')))
+             -- PC-56 TENANT-7d-money (0174): a purpose whose lookup meta declares rides_batch (course_royalty) is NEVER
+             -- claimed unbatched — the trigger would refuse it anyway; this is the manners, as above.
+             AND (p.batch_id IS NOT NULL
+                  OR NOT EXISTS (SELECT 1 FROM lookup_values lv WHERE lv.id = p.purpose_id AND COALESCE((lv.meta->>'rides_batch')::boolean, false)))
            ORDER BY p.priority ASC, p.created_at ASC
            FOR UPDATE SKIP LOCKED LIMIT $1)
         RETURNING id, tenant_id`, [limit]);

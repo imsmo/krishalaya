@@ -9,6 +9,7 @@ import {
   CourseOutline, LessonRecord, LessonFormInput, SubtitleFormInput, QuestionFormInput, LessonAct,
   LiveBox, LiveClass, LiveClassListItem, LiveClassView, LiveFormInput, LiveAct,
   Instructor, InstructorCredential, InstructorView, InstructorListItem, InstructorAct, ProfileFormInput, CredentialFormInput, StudioView, CourseTemplate, TemplateFormInput,
+  EarningsView, EarningsStatementLine, RoyaltyPayoutInput, RoyaltyPayoutReview, RoyaltyRuleView, InstructorAgreement, AgreementAct, ExportJob, PayoutSummary,
 } from '../types';
 
 export class CoursesResource {
@@ -257,5 +258,54 @@ export class ResourcesResource {
   /** Editorial crop-agronomy calendars (P1-5): reference growth-stage timelines by crop/season/region (read-only). */
   async cropCalendars(params: { crop?: string; season?: string; regionId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<CropCalendar[]> {
     return (await this.http.request<CropCalendar[]>('GET', 'education/resources/crop-calendars', { query: { crop: params.crop, season: params.season, regionId: params.regionId, limit: params.limit }, signal })).data;
+  }
+}
+
+/** PC-56 TENANT-7d-money · W418 — the instructor's earnings over the royalty ledger (0174). Every figure is a SUM the API
+ *  made per currency in minor units; this resource carries strings and formats nothing. `EARNINGS_DISABLED` (404 with a
+ *  code) is W418's flagged-off state. Money OUT is the payment plane's request (purpose `course_royalty`), which rides the
+ *  tenant's two-person batch — the SDK never posts a leg. */
+export class InstructorEarningsResource {
+  constructor(private readonly http: HttpClient) {}
+  /** W418 — the caller's own desk; `instructorId` for the finance desk. */
+  async view(instructorId?: string | null, signal?: AbortSignal): Promise<EarningsView> {
+    return (await this.http.request<EarningsView>('GET', 'education/earnings', { query: { instructor: instructorId ?? undefined }, signal })).data;
+  }
+  /** The statement of lines. Keyset. */
+  async statement(params: { instructorId?: string | null; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<EarningsStatementLine>> {
+    const r = await this.http.request<EarningsStatementLine[]>('GET', 'education/earnings/statement', { query: { instructor: params.instructorId ?? undefined, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The confirm step's verdict (writes nothing). */
+  async payoutReview(input: RoyaltyPayoutInput): Promise<RoyaltyPayoutReview> {
+    return (await this.http.request<RoyaltyPayoutReview>('POST', 'education/earnings/payouts/review', { body: input })).data;
+  }
+  /** The payout request — queued on the payment plane; it leaves only through the tenant's approved batch. */
+  async requestPayout(input: RoyaltyPayoutInput, idempotencyKey: string): Promise<PayoutSummary & { payoutId: string }> {
+    return (await this.http.request<PayoutSummary & { payoutId: string }>('POST', 'education/earnings/payouts', { idempotencyKey, body: input })).data;
+  }
+  /** W418's Export → the tenant export plane (dataset `education.instructor_earnings`). */
+  async enqueueExport(idempotencyKey: string): Promise<ExportJob> {
+    return (await this.http.request<ExportJob>('POST', 'education/earnings/export', { idempotencyKey, body: {} })).data;
+  }
+  /** The tenant's split rule: in force, the platform default, the history. */
+  async rule(signal?: AbortSignal): Promise<RoyaltyRuleView> {
+    return (await this.http.request<RoyaltyRuleView>('GET', 'education/earnings/rule', { signal })).data;
+  }
+  /** The finance desk proposes ONLY the instructor share; the platform's is copied, the tenant's is the remainder. */
+  async proposeRule(input: { instructorShareBps: number; note?: string | null }, idempotencyKey: string): Promise<{ id: string; status: string; instructorBps: number; tenantBps: number; platformBps: number }> {
+    return (await this.http.request<{ id: string; status: string; instructorBps: number; tenantBps: number; platformBps: number }>('POST', 'education/earnings/rule', { idempotencyKey, body: input })).data;
+  }
+  /** A DIFFERENT finance person approves or rejects (with a note). */
+  async decideRule(ruleId: string, input: { act: 'approve' | 'reject'; note?: string | null }, idempotencyKey: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `education/earnings/rule/${encodeURIComponent(ruleId)}/decide`, { idempotencyKey, body: input })).data;
+  }
+  /** The desk offers an instructor an agreement (at the rule in force, or a negotiated instructor share). */
+  async offerAgreement(input: { instructorId: string; instructorShareBps?: number | null; termsNote?: string | null }, idempotencyKey: string): Promise<InstructorAgreement> {
+    return (await this.http.request<InstructorAgreement>('POST', 'education/earnings/agreements', { idempotencyKey, body: input })).data;
+  }
+  /** accept · decline (the instructor) · supersede (the desk). Acceptance releases every held line. */
+  async actAgreement(agreementId: string, act: AgreementAct, idempotencyKey: string): Promise<{ id: string; version: number; status: string; released: Array<{ currencyCode: string; amountMinor: string; lines: number; txnId: string }> }> {
+    return (await this.http.request<{ id: string; version: number; status: string; released: Array<{ currencyCode: string; amountMinor: string; lines: number; txnId: string }> }>('POST', `education/earnings/agreements/${encodeURIComponent(agreementId)}/${act}`, { idempotencyKey, body: {} })).data;
   }
 }
