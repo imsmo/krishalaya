@@ -8,6 +8,7 @@ import {
   CourseDesk, CourseTopic, CourseStats, CourseFormInput, CourseActs, CourseAct, FormReview,
   CourseOutline, LessonRecord, LessonFormInput, SubtitleFormInput, QuestionFormInput, LessonAct,
   LiveBox, LiveClass, LiveClassListItem, LiveClassView, LiveFormInput, LiveAct,
+  Instructor, InstructorCredential, InstructorView, InstructorListItem, InstructorAct, ProfileFormInput, CredentialFormInput, StudioView, CourseTemplate, TemplateFormInput,
 } from '../types';
 
 export class CoursesResource {
@@ -100,15 +101,25 @@ export class CoursesResource {
   async saveQuestion(courseId: string, lessonId: string, n: number, input: QuestionFormInput, idempotencyKey: string): Promise<CourseLesson> {
     return (await this.http.request<CourseLesson>('PUT', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/questions/${n}`, { idempotencyKey, body: input })).data;
   }
+  /** PC-56 TENANT-7d · the studio form (W2775–W2778 "Start from template"): the registry, its review, and the write. */
+  async templates(signal?: AbortSignal): Promise<CourseTemplate[]> {
+    return (await this.http.request<CourseTemplate[]>('GET', 'education/courses/templates', { signal })).data;
+  }
+  async previewFromTemplate(input: TemplateFormInput): Promise<FormReview> {
+    return (await this.http.request<FormReview>('POST', 'education/courses/from-template/preview', { body: input })).data;
+  }
+  async createFromTemplate(input: TemplateFormInput, idempotencyKey: string): Promise<Course & { lessons: number }> {
+    return (await this.http.request<Course & { lessons: number }>('POST', 'education/courses/from-template', { idempotencyKey, body: input })).data;
+  }
   /** The lesson act, with its reason: ready · reopen · move_up · move_down (W412 "Mark ready", W411's row menu). */
   async lessonAct(courseId: string, lessonId: string, act: LessonAct, reason: string, idempotencyKey: string): Promise<CourseLesson> {
     return (await this.http.request<CourseLesson>('POST', `education/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body: { reason } })).data;
   }
 }
 
-/** PC-26b: external content channels (channel.host; moderation is admin-side) + the instructor self-profile. The live
- *  methods that lived here (schedule on a channel · start · end · cancel, no key, no reason, no audit row) are GONE
- *  since PC-56 TENANT-7c — the live class is `LiveClassesResource` below. */
+/** PC-26b: external content channels (channel.host; moderation is admin-side). The live methods that lived here are GONE
+ *  since PC-56 TENANT-7c (`LiveClassesResource`); the instructor self-profile (`myInstructor` · `upsertInstructor`, no key,
+ *  no audit row) is GONE since PC-56 TENANT-7d — the instructor is `InstructorsResource` below. */
 export interface EduChannel { id: string; provider: string; title: string; handle: string | null; externalUrl: string; topicId: string | null; description: string | null; status: string; createdAt?: string; }
 
 export class LiveStudioResource {
@@ -120,14 +131,6 @@ export class LiveStudioResource {
   }
   async registerChannel(input: { provider: string; title: string; handle?: string | null; externalUrl: string; topicId?: string | null; description?: string | null }): Promise<EduChannel> {
     return (await this.http.request<EduChannel>('POST', 'education/channels', { body: input })).data;
-  }
-  // --- instructor self-profile ---
-  async myInstructor(signal?: AbortSignal): Promise<{ id: string; bio: string | null } | null> {
-    try { return (await this.http.request<{ id: string; bio: string | null }>('GET', 'education/instructors/me', { signal })).data; }
-    catch { return null; }
-  }
-  async upsertInstructor(input: { bio?: string | null }): Promise<{ id: string; bio: string | null }> {
-    return (await this.http.request<{ id: string; bio: string | null }>('PUT', 'education/instructors/me', { body: input })).data;
   }
 }
 
@@ -164,6 +167,57 @@ export class LiveClassesResource {
   /** A member registers (refused `CLASS_NOT_OPEN` / `CLASS_FULL`). */
   async register(id: string, idempotencyKey: string): Promise<{ registered: boolean; count: number }> {
     return (await this.http.request<{ registered: boolean; count: number }>('POST', `education/live-sessions/${encodeURIComponent(id)}/register`, { idempotencyKey, body: {} })).data;
+  }
+}
+
+/** PC-56 TENANT-7d · THE INSTRUCTOR (W410 · W419 + the instructor-form and instructor-mutate chains). One review + one
+ *  write per form, an Idempotency-Key on every write, the acts as verdicts. `isVerified` is written only by the desk's acts. */
+export class InstructorsResource {
+  constructor(private readonly http: HttpClient) {}
+  /** W410 — the caller's own desk. */
+  async studio(signal?: AbortSignal): Promise<StudioView> {
+    return (await this.http.request<StudioView>('GET', 'education/instructors/studio', { signal })).data;
+  }
+  /** The platform language registry's active rows (Law 6) — the form's choices. */
+  async languages(signal?: AbortSignal): Promise<Array<{ code: string; nameEnglish: string; nameNative: string }>> {
+    return (await this.http.request<Array<{ code: string; nameEnglish: string; nameNative: string }>>('GET', 'education/instructors/languages', { signal })).data;
+  }
+  /** W419 for the caller. `INSTRUCTOR_NOT_FOUND` when they have no profile yet. */
+  async me(signal?: AbortSignal): Promise<InstructorView> {
+    return (await this.http.request<InstructorView>('GET', 'education/instructors/me', { signal })).data;
+  }
+  /** W419 for an instructor — themselves, the desk, or anyone for a PUBLIC profile. */
+  async get(id: string, signal?: AbortSignal): Promise<InstructorView> {
+    return (await this.http.request<InstructorView>('GET', `education/instructors/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** The desk's list (course.publish). Keyset. */
+  async list(params: { verified?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<InstructorListItem>> {
+    const r = await this.http.request<InstructorListItem[]>('GET', 'education/instructors', { query: { verified: params.verified === undefined ? undefined : String(params.verified), cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The form's review. No key: it writes nothing. `credentialId` makes a credential review a RE-UPLOAD's, with a diff. */
+  async preview(input: ({ form: 'profile' } & ProfileFormInput) | ({ form: 'credential'; credentialId?: string } & CredentialFormInput)): Promise<FormReview> {
+    return (await this.http.request<FormReview>('POST', 'education/instructors/preview', { body: input })).data;
+  }
+  /** W419 "Save profile" — creates the row on the first save. */
+  async saveProfile(input: ProfileFormInput, idempotencyKey: string): Promise<Instructor> {
+    return (await this.http.request<Instructor>('PUT', 'education/instructors/me', { idempotencyKey, body: input })).data;
+  }
+  /** W419 "Add credential". */
+  async fileCredential(input: CredentialFormInput, idempotencyKey: string): Promise<InstructorCredential> {
+    return (await this.http.request<InstructorCredential>('POST', 'education/instructors/me/credentials', { idempotencyKey, body: input })).data;
+  }
+  /** The re-upload form's first values (the rejected credential, without its document) and the desk's note. */
+  async credentialForm(credentialId: string, signal?: AbortSignal): Promise<Record<string, string> & { reviewNote: string }> {
+    return (await this.http.request<Record<string, string> & { reviewNote: string }>('GET', `education/instructors/me/credentials/${encodeURIComponent(credentialId)}/form`, { signal })).data;
+  }
+  /** W419 "Re-upload a clearer scan" — a REJECTED credential, re-filed. */
+  async refileCredential(credentialId: string, input: CredentialFormInput, idempotencyKey: string): Promise<InstructorCredential> {
+    return (await this.http.request<InstructorCredential>('PATCH', `education/instructors/me/credentials/${encodeURIComponent(credentialId)}`, { idempotencyKey, body: input })).data;
+  }
+  /** The act, with its reason (3–300 chars); `credentialId` for accept · reject · withdraw. */
+  async act(instructorId: string, act: InstructorAct, body: { reason: string; credentialId?: string }, idempotencyKey: string): Promise<{ instructor: Instructor; credential: InstructorCredential | null }> {
+    return (await this.http.request<{ instructor: Instructor; credential: InstructorCredential | null }>('POST', `education/instructors/${encodeURIComponent(instructorId)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body })).data;
   }
 }
 

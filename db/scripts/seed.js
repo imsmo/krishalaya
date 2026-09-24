@@ -34,6 +34,8 @@ const ORDER = [
   'core/0016_ui_messages_dairy_notices.sql',
   // [PC-56 TENANT-6e-2] The name of each export DATASET in three languages, for the `exports.export_ready` notice.
   'core/0017_ui_messages_export_datasets.sql',
+  // PC-56 TENANT-7d · the platform's course templates (W410 / W2775 "Start from template"), over 0173's course_templates.
+  'core/0018_course_templates.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

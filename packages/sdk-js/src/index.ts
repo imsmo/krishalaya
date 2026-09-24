@@ -53,6 +53,8 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   CourseFormInput, CourseTopic, CourseStats, CourseDesk, CourseAct, CourseActRefusal, CourseActVerdict, CourseGateState, CourseGateCheck, CourseGate, CourseActs, FormReview,
   LessonStatus, LessonChapter, LessonFormInput, SubtitleFormInput, QuestionFormInput, LessonAct, LessonActRefusal, LessonActVerdict, LessonMediaFacts, LessonStats, LessonView, CourseOutline, SubtitleTrack, LessonRecord,   // PC-56 TENANT-7b
   LiveStatus, LiveBox, LiveFormInput, LiveAct, LiveActRefusal, LiveActVerdict, LiveClass, LiveClassListItem, LiveClassView, ReminderKind,   // PC-56 TENANT-7c
+  InstructorVisibility, Instructor, CredentialStatus, InstructorCredential, ProfileFormInput, CredentialFormInput, InstructorAct, InstructorActRefusal, InstructorActVerdict, CompletenessCheck,
+  CredentialView, InstructorView, InstructorListItem, StudioFacts, CourseTemplateSummary, StudioView, CourseTemplate, TemplateFormInput,   // PC-56 TENANT-7d
   // PC-56 TENANT-6d-5 · W170's call and W2521–W2523's mutate chain. TYPES only: the refusal LIST stays in the API's
   // own domain, and the web spec reads it from there — a second copy would agree exactly once.
   DairyBmcCallObject, DairyBmcCallPreview, DairyBmcCallRefusal, DairyBmcCallResult,
@@ -123,6 +125,7 @@ export { LiveClassesResource } from './resources/education';
 export { COURSE_ACTS } from './types';
 export { LESSON_ACTS, LESSON_FORM_FIELDS, SUBTITLE_FORM_FIELDS, QUESTION_FORM_FIELDS, QUIZ_MAX_OPTIONS } from './types'; // PC-56 TENANT-7b
 export { LIVE_ACTS, LIVE_FORM_FIELDS, LIVE_BOXES } from './types'; // PC-56 TENANT-7c
+export { INSTRUCTOR_ACTS, PROFILE_FORM_FIELDS, CREDENTIAL_FORM_FIELDS, TEMPLATE_FORM_FIELDS } from './types'; // PC-56 TENANT-7d
 export type { MembershipTier, UserMembership, CoopBylaws, VoteIneligibleReason, VotingVerdict,
   ShareRegisterRow, ShareRegisterTiles, ShareRegisterView, MyVotingEligibility, ResolutionTally } from './resources/memberships';
 export type { Requirement, RequirementResponse } from './resources/requirements';

@@ -11,16 +11,8 @@ import { requireSession } from '../../lib/session';
 
 function back(path: string, qs: string): never { redirect(`${path}?${qs}`); }
 
-// --- PC-26b: instructor self-profile + live-session hosting -----------------------------------------------
-
-export async function upsertInstructorAction(formData: FormData): Promise<void> {
-  await requireSession('/studio');
-  const bio = String(formData.get('bio') ?? '').trim().slice(0, 2000);
-  try { await tenantClient().liveStudio.upsertInstructor({ bio: bio || null }); }
-  catch { back('/studio', 'error=instructor'); }
-  revalidatePath('/studio');
-  back('/studio', 'ok=instructor');
-}
+// PC-56 TENANT-7d: `upsertInstructorAction` (a bio, no key, no audit row) is GONE — the profile is the instructor form chain at
+// /studio/profile/edit (API-reviewed, keyed, audited; features/studio/instructor.ts).
 
 export async function registerChannelAction(formData: FormData): Promise<void> {
   await requireSession('/studio/live');

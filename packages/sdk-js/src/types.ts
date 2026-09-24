@@ -608,6 +608,53 @@ export interface LiveClassView extends LiveClassListItem {
   form: Record<string, string>;
 }
 
+/* ================================================================================================================= */
+/** PC-56 TENANT-7d · THE INSTRUCTOR (W410 · W419 + the instructor-form, instructor-mutate and studio-form chains).
+ *  `isVerified` is a TRUST fact: written only by the desk's `verify`/`unverify` acts (maker ≠ checker), on at least one
+ *  ACCEPTED credential. `rating` is typed `null` — nothing on this platform records one. */
+export type InstructorVisibility = 'public' | 'private';
+export interface Instructor {
+  id: string; userId: string; bio: string | null; royaltyBps: number; isVerified: boolean; createdAt?: string;
+  displayName: string | null; languages: string[]; visibility: InstructorVisibility;
+  verifiedAt: string | null; verifiedBy: string | null; verificationNote: string | null;
+}
+export type CredentialStatus = 'submitted' | 'accepted' | 'rejected' | 'withdrawn';
+export interface InstructorCredential {
+  id: string; instructorId: string; title: string; issuer: string | null; yearAwarded: number | null; documentMediaId: string;
+  status: CredentialStatus; submittedAt: string; reviewedAt: string | null; reviewedBy: string | null; reviewNote: string | null;
+}
+export const PROFILE_FORM_FIELDS = ['displayName', 'bio', 'languages', 'visibility'] as const;
+export type ProfileFormInput = Partial<Record<(typeof PROFILE_FORM_FIELDS)[number], string>>;
+export const CREDENTIAL_FORM_FIELDS = ['title', 'issuer', 'yearAwarded', 'documentMediaId'] as const;
+export type CredentialFormInput = Partial<Record<(typeof CREDENTIAL_FORM_FIELDS)[number], string>>;
+export const INSTRUCTOR_ACTS = ['verify', 'unverify', 'accept', 'reject', 'withdraw'] as const;
+export type InstructorAct = (typeof INSTRUCTOR_ACTS)[number];
+export type InstructorActRefusal = 'NO_PERMISSION' | 'NOT_DESK' | 'NOT_OWNER' | 'MAKER_IS_CHECKER' | 'PLATFORM_INSTRUCTOR' | 'ALREADY_VERIFIED' | 'NOT_VERIFIED' | 'NO_ACCEPTED_CREDENTIAL'
+  | 'CREDENTIAL_REQUIRED' | 'CREDENTIAL_UNKNOWN' | 'ILLEGAL_FROM_STATUS' | 'DOCUMENT_NOT_CLEAN' | 'LAST_ACCEPTED_CREDENTIAL' | 'REASON_REQUIRED';
+export interface InstructorActVerdict { act: InstructorAct; allowed: boolean; refusals: InstructorActRefusal[]; to: CredentialStatus | 'verified' | 'unverified' | null; credentialId: string | null }
+export type CompletenessCheck = 'bio' | 'languages' | 'credentialFiled' | 'credentialAccepted' | 'verified';
+export interface CredentialView { credential: InstructorCredential; document: { kind: string; scanStatus: string; mimeType: string } | null }
+export interface InstructorView {
+  instructor: Instructor; name: string | null; isSelf: boolean; privileged: boolean;
+  credentials: CredentialView[];
+  completeness: Array<{ check: CompletenessCheck; done: boolean }>;
+  acts: InstructorActVerdict[];
+  languages: Array<{ code: string; nameEnglish: string; nameNative: string }>;
+  form: Record<string, string>;
+  rating: null;
+}
+export interface InstructorListItem { instructor: Instructor; fullName: string | null; pendingCredentials: number; acceptedCredentials: number; courses: number }
+/** W410's facts. `watchSecondsLifetime` is a bigint as text; there is no "this month" for watch time (lesson_progress has no timestamp). */
+export interface StudioFacts { learnersWindow: number; learnersLifetime: number; watchSecondsLifetime: string; certificatesLifetime: number; upcomingClasses: number; nextClass: { id: string; title: string; scheduledAt: string; localDate: string; localTime: string } | null }
+export interface CourseTemplateSummary { code: string; title: string; topicCode: string; level: string }
+export interface StudioView {
+  instructor: InstructorView | null; windowDays: number; facts: StudioFacts | null;
+  courses: Array<Course & { stats: CourseStats | null }>; byStatus: Record<string, number>; templates: CourseTemplateSummary[];
+}
+export interface CourseTemplate extends CourseTemplateSummary { id: string; outline: unknown; platform: boolean }
+export const TEMPLATE_FORM_FIELDS = ['templateCode', 'title'] as const;
+export type TemplateFormInput = Partial<Record<(typeof TEMPLATE_FORM_FIELDS)[number], string>>;
+
 /** The caller's own enrollment in a course (progress + completion + certificate). */
 export interface Enrollment {
   id: string; courseId: string; learnerUserId: string; paymentId: string | null; progressPct: number;

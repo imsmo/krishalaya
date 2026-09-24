@@ -10,6 +10,10 @@
 //   PATCH  /education/courses/:id            edit, same body, same review, audited before/after
 //   GET    /education/courses/:id/acts       every act's verdict for this caller + the publish gate (W416)
 //   POST   /education/courses/:id/acts/:act  submit · publish · return · pause · resume · archive — WITH A REASON
+// PC-56 TENANT-7d — the STUDIO form (W2775–W2778 "Start from template"):
+//   GET    /education/courses/templates      the template registry this tenant may start from (0173)
+//   POST   /education/courses/from-template/preview   the studio chain's review — the draft course and lessons the template will write
+//   POST   /education/courses/from-template  create the draft course + its draft lessons in one transaction; key; audited
 // The four PC-26 lifecycle routes (`/submit`, `/publish`, `/pause`, `/archive`) are gone: they took no reason, wrote no
 // audit row, and let the course's own instructor publish. One write path per act (6d-4's rule).
 //
@@ -25,6 +29,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { CourseService } from '../../services/course.service';
 import { EducationPermissions, canAuthor, canPublish, isEducationAdmin, canHost, canModerateContent } from '../../policies/education.policies';
 import { CourseFormSchema, CourseFormDto, PreviewCourseSchema, PreviewCourseDto, CourseActSchema, CourseActDto } from '../../dto/create-course.dto';
+import { TemplateFormSchema, TemplateFormDto } from '../../dto/create-instructor.dto';
 import { QueryCoursesSchema, QueryCoursesDto } from '../../dto/query-course.dto';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -46,6 +51,16 @@ export class CoursesController {
   /** The topic registry, for the form's select — any author. */
   @Get('topics') @RequirePermissions(EducationPermissions.Author)
   topics(@CurrentContext() ctx: RequestContext) { return this.svc.topics(ctx.tenantId).then((data) => ({ data })); }
+
+  /** PC-56 TENANT-7d · the studio form. */
+  @Get('templates') @RequirePermissions(EducationPermissions.Author)
+  templates(@CurrentContext() ctx: RequestContext) { return this.svc.templates(ctx.tenantId).then((rows) => ({ data: rows.map(({ id, code, title, topicCode, level, outline, tenantId }) => ({ id, code, title, topicCode, level, outline, platform: tenantId === null })) })); }
+  @Post('from-template/preview')
+  previewFromTemplate(@CurrentContext() ctx: RequestContext, @ZodBody(TemplateFormSchema) dto: TemplateFormDto) { return this.svc.previewFromTemplate(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data })); }
+  @Post('from-template') @RequirePermissions(EducationPermissions.Author)
+  createFromTemplate(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(TemplateFormSchema) dto: TemplateFormDto) {
+    return this.svc.createFromTemplate(ctx.tenantId, this.actor(ctx), key, dto, ipOf(r)).then((data) => ({ data }));
+  }
 
   @Post() @RequirePermissions(EducationPermissions.Author)
   create(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CourseFormSchema) dto: CourseFormDto) {

@@ -58,7 +58,7 @@ run('PC-56 TENANT-7a · the course record & the desk (integration, real Postgres
     const replica = new PgReadReplicaProvider(pools, shards);
     const outbox = new PgOutboxWriter(); const idem = new PgIdempotencyService(pools); const metrics = new PromMetrics(); const audit = new AuditWriter(pools);
     const iRepo = new InstructorRepository(replica as any); const cRepo = new CourseRepository(replica as any); const lRepo = new CourseLessonRepository(replica as any);
-    instructors = new InstructorService(uow, metrics, iRepo);
+    instructors = new InstructorService(uow, metrics, iRepo, audit, idem, cRepo);
     lessons = new LessonService(uow, metrics, audit, idem, cRepo, lRepo, iRepo);
     courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo, lessons);
     app = new Pool({ connectionString: APP_URL });

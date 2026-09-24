@@ -31,7 +31,10 @@ import { CourseRepository, CourseStats, DeskSummary } from '../repositories/cour
 import { CourseLessonRepository } from '../repositories/course-lesson.repository';
 import { InstructorRepository } from '../repositories/instructor.repository';
 import { CourseFormDto, CourseWriterSchema, PreviewCourseDto } from '../dto/create-course.dto';
-import { CourseNotFoundError, EducationForbiddenError, CourseFormRefusedError, CourseActRefusedError } from '../domain/education.errors';
+import { TemplateFormDto, TemplateWriterSchema } from '../dto/create-instructor.dto';
+import { CourseLesson } from '../domain/course-lesson.entity';
+import { TemplateReviewInput, reviewFromTemplate, storedFromTemplate } from '../domain/course-template';
+import { CourseNotFoundError, EducationForbiddenError, CourseFormRefusedError, CourseActRefusedError, StudioFormRefusedError } from '../domain/education.errors';
 import { CourseReviewInput, CurrentCourse, reviewCourse, storedCourse } from '../domain/course-review';
 import { CourseAct, ActVerdict, actVerdict, allVerdicts, isCourseAct } from '../domain/course-acts';
 import { GateResult } from '../domain/course-publish-gate';
@@ -128,6 +131,54 @@ export class CourseService {
       },
     };
   }
+
+  /* ---- PC-56 TENANT-7d · THE STUDIO FORM: "Start from template" (W2775–W2778) ------------------------------- */
+
+  /** The studio chain's review: what the template will write — a draft course and its draft lessons — and every refusal. */
+  async previewFromTemplate(tenantId: string, actor: EducationActor, dto: TemplateFormDto): Promise<ReviewResult> {
+    if (!actor.canAuthor && !actor.canPublish) throw new EducationForbiddenError('requires course.author');
+    return this.uow.run(tenantId, async (tx) => reviewFromTemplate(await this.templateInput(tx, tenantId, actor, dto)), { userId: actor.userId });
+  }
+
+  /** The write: the course (draft, free, the tenant's currency) and one draft lesson per outline entry, in one transaction, audited as a course create that names its template. */
+  async createFromTemplate(tenantId: string, actor: EducationActor, idemKey: string, dto: TemplateFormDto, ip: string | null) {
+    if (!actor.canAuthor) throw new EducationForbiddenError('requires course.author');
+    return this.idem.remember(idemKey, actor.userId, 'education.course.from_template', () =>
+      timed(this.metrics, 'education.course.from_template', { tenant: tenantId }, () =>
+        this.uow.run(tenantId, async (tx) => {
+          const input = await this.templateInput(tx, tenantId, actor, dto);
+          const stored = storedFromTemplate(input);
+          if (!stored) throw new StudioFormRefusedError(reviewFromTemplate(input).refusals);
+          const instructor = await this.instructors.findByUser(tenantId, actor.userId, tx);
+          if (!instructor) throw new StudioFormRefusedError([{ field: null, code: 'NO_INSTRUCTOR_PROFILE' }]);
+          const c = Course.create({ id: uuidv7(), tenantId, instructorId: instructor.id, defaultTitle: stored.defaultTitle, topicId: stored.topicId,
+            audienceRoleIds: [], level: stored.level, priceMinor: BigInt(0), currencyCode: stored.currencyCode, certEnabled: false, coverMediaId: null });
+          await this.repo.insert(tx, c, tenantId, actor.userId);
+          // one DRAFT lesson per outline entry, at the position the review showed (module · lesson, both from 1), no media, no body, no questions
+          const scaffold: CourseLesson[] = [];
+          stored.outline.forEach((m, mi) => m.lessons.forEach((l, li) => scaffold.push(CourseLesson.create({
+            id: uuidv7(), courseId: c.id, moduleNo: mi + 1, lessonNo: li + 1, defaultTitle: l.title, contentKind: l.kind, mediaId: null, body: null, durationSecs: null, quiz: null,
+            siblingLessonId: null, thumbnailFrameSecs: null, chapters: [], quizPassingPct: null,
+          }))));
+          for (const l of scaffold) await this.lessons.insert(tx, l, actor.userId);
+          const lessonIds = scaffold.map((l) => l.id);
+          const written = (await this.repo.getById(tenantId, c.id, tx)) ?? c;
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'education.course.create', entityType: 'course', entityId: c.id, newValue: { ...written.toJSON(), fromTemplate: stored.templateId, lessons: lessonIds.length }, ip });
+          return { ...written.toJSON(), lessons: lessonIds.length };
+        }, { userId: actor.userId })));
+  }
+
+  private async templateInput(tx: TxContext, tenantId: string, actor: EducationActor, form: TemplateFormDto): Promise<TemplateReviewInput> {
+    const body = submittedValues(form as Record<string, unknown>);
+    const template = body.templateCode ? await this.repo.templateByCode(tenantId, body.templateCode, tx) : undefined;
+    const [topic, money, me] = await Promise.all([
+      template ? this.repo.topicByCode(tenantId, template.topicCode, tx) : Promise.resolve(null),
+      this.repo.moneyShape(tenantId, tx), this.instructors.findByUser(tenantId, actor.userId, tx),
+    ]);
+    return { canAuthor: actor.canAuthor, hasInstructorProfile: me !== null, template, topic, money, entered: form, writerIssues: writerIssuesOf(TemplateWriterSchema, body) };
+  }
+  /** The registry, for the studio form's choices. */
+  async templates(tenantId: string) { return this.repo.templates(tenantId); }
 
   /* ---- THE ACTS: verdict, then act -------------------------------------------------------------------------- */
 

@@ -233,6 +233,47 @@ describe('HttpClient via resources', () => {
     expect((c.liveStudio as unknown as Record<string, unknown>).schedule).toBeUndefined(); expect((c.liveStudio as unknown as Record<string, unknown>).start).toBeUndefined();
   });
 
+  it('the instructor (PC-56 TENANT-7d): the studio, the profile, two reviews without a key, the writes and the acts with one, the desk\'s list, the templates', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'i1', userId: 'u1', isVerified: false, displayName: 'Dr. Kalpana Joshi', languages: ['gu', 'hi'], visibility: 'public', instructor: { id: 'i1' }, credential: null, lessons: 7 } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.instructors.studio();
+    await c.instructors.languages();
+    await c.instructors.me();
+    await c.instructors.get('i1');
+    await c.instructors.list({ verified: false, cursor: 'abc', limit: 20 });
+    await c.instructors.preview({ form: 'profile', displayName: 'Dr. Kalpana Joshi', bio: 'Dairy scientist', languages: 'gu,hi,en', visibility: 'public' });
+    await c.instructors.preview({ form: 'credential', credentialId: 'k1', title: 'BVSc & AH', documentMediaId: 'm1' });
+    await c.instructors.saveProfile({ displayName: 'Dr. Kalpana Joshi', bio: 'Dairy scientist', languages: 'gu,hi,en', visibility: 'public' }, 'idem-p');
+    await c.instructors.fileCredential({ title: 'BVSc & AH', issuer: 'GAU', yearAwarded: '2009', documentMediaId: 'm1' }, 'idem-f');
+    await c.instructors.credentialForm('k1');
+    await c.instructors.refileCredential('k1', { title: 'BVSc & AH', documentMediaId: 'm2' }, 'idem-r');
+    await c.instructors.act('i1', 'accept', { reason: 'certificate checked', credentialId: 'k1' }, 'idem-a');
+    await c.instructors.act('i1', 'verify', { reason: 'two accepted credentials' }, 'idem-v');
+    await c.courses.templates();
+    await c.courses.previewFromTemplate({ templateCode: 'clean_milk', title: 'Clean Milk — Anand' });
+    const made = await c.courses.createFromTemplate({ templateCode: 'clean_milk' }, 'idem-t');
+    const hdr = (i: number) => (calls[i].init?.headers as Record<string, string>)['idempotency-key'];
+    expect(calls[0].url).toBe('https://api.test/v1/education/instructors/studio');
+    expect(calls[1].url).toBe('https://api.test/v1/education/instructors/languages');
+    expect(calls[2].url).toBe('https://api.test/v1/education/instructors/me');
+    expect(calls[3].url).toBe('https://api.test/v1/education/instructors/i1');
+    expect(calls[4].url).toContain('education/instructors?'); expect(calls[4].url).toContain('verified=false'); expect(calls[4].url).toContain('cursor=abc'); expect(calls[4].url).toContain('limit=20');
+    expect(calls[5].url).toBe('https://api.test/v1/education/instructors/preview'); expect(hdr(5)).toBeUndefined(); expect(JSON.parse(String(calls[5].init?.body))).toMatchObject({ form: 'profile', languages: 'gu,hi,en' });
+    expect(JSON.parse(String(calls[6].init?.body))).toMatchObject({ form: 'credential', credentialId: 'k1' }); expect(hdr(6)).toBeUndefined();
+    expect(calls[7].url).toBe('https://api.test/v1/education/instructors/me'); expect(calls[7].init?.method).toBe('PUT'); expect(hdr(7)).toBe('idem-p');
+    expect(calls[8].url).toBe('https://api.test/v1/education/instructors/me/credentials'); expect(calls[8].init?.method).toBe('POST'); expect(hdr(8)).toBe('idem-f');
+    expect(calls[9].url).toBe('https://api.test/v1/education/instructors/me/credentials/k1/form');
+    expect(calls[10].url).toBe('https://api.test/v1/education/instructors/me/credentials/k1'); expect(calls[10].init?.method).toBe('PATCH'); expect(hdr(10)).toBe('idem-r');
+    expect(calls[11].url).toBe('https://api.test/v1/education/instructors/i1/acts/accept'); expect(hdr(11)).toBe('idem-a'); expect(JSON.parse(String(calls[11].init?.body))).toEqual({ reason: 'certificate checked', credentialId: 'k1' });
+    expect(calls[12].url).toBe('https://api.test/v1/education/instructors/i1/acts/verify'); expect(JSON.parse(String(calls[12].init?.body))).toEqual({ reason: 'two accepted credentials' });
+    expect(calls[13].url).toBe('https://api.test/v1/education/courses/templates');
+    expect(calls[14].url).toBe('https://api.test/v1/education/courses/from-template/preview'); expect(hdr(14)).toBeUndefined();
+    expect(calls[15].url).toBe('https://api.test/v1/education/courses/from-template'); expect(hdr(15)).toBe('idem-t');
+    expect(made.lessons).toBe(7);
+    // PC-26b's unkeyed, unaudited self-profile methods are gone with the studio's inline form
+    expect((c.liveStudio as unknown as Record<string, unknown>).myInstructor).toBeUndefined(); expect((c.liveStudio as unknown as Record<string, unknown>).upsertInstructor).toBeUndefined();
+  });
+
   it('disputes.raise POSTs with Idempotency-Key + reason enum', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd9', orderId: 'o1', raisedBy: 'b1', againstUser: 's1', reasonId: null, description: 'late by 3 days', status: 'open', sellerRespondBy: null, resolutionType: null, resolutionAmountMinor: null, resolvedBy: null, resolvedAt: null, slaDueAt: null } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });

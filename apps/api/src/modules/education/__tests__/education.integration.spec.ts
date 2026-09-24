@@ -61,7 +61,7 @@ run('education spine (integration, real Postgres + RLS + royalty split)', () => 
     wallet = new InProcessWalletClient(new LedgerRepository());
     const iRepo = new InstructorRepository(replica as any); const cRepo = new CourseRepository(replica as any); const lRepo = new CourseLessonRepository(replica as any);
     const eRepo = new EnrollmentRepository(replica as any); const pRepo = new LessonProgressRepository(replica as any);
-    instructors = new InstructorService(uow, metrics, iRepo);
+    instructors = new InstructorService(uow, metrics, iRepo, audit, idem, cRepo);
     const lessonsSvc = new LessonService(uow, metrics, audit, idem, cRepo, lRepo, iRepo);
     lessons = lessonsSvc;
     courses = new CourseService(uow, outbox, metrics, audit, idem, cRepo, lRepo, iRepo, lessonsSvc);

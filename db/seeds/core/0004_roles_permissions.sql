@@ -131,7 +131,10 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','customer') AND p.code IN ('service.book'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('notification.manage'))
    OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('message.moderate'))
-   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','vet','tenant_admin') AND p.code IN ('course.author'))
+   -- [PC-56 TENANT-7d] THE INSTRUCTOR ROLE HELD NO VERB. `instructor` ("Education Instructor", M09, line 16 above) was
+   -- seeded with NO permission at all: a member given the platform's own instructor role could not author a course,
+   -- while six other roles could. The role's one verb is course.author.
+   OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','vet','instructor','tenant_admin') AND p.code IN ('course.author'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('course.publish'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','vet','tenant_admin') AND p.code IN ('channel.host'))
    OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('content.moderate'))

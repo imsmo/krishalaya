@@ -50,3 +50,20 @@ export class LiveRegisterRefusedError extends DomainError {
     super('LIVE_REGISTER_REFUSED', `Registration refused: ${refusals.join(', ')}`, 409, { refusals });
   }
 }
+// PC-56 TENANT-7d · the instructor's refusals — the profile/credential forms, the acts, and the studio form (from a template).
+export class InstructorFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('INSTRUCTOR_FORM_REFUSED', `Instructor form refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class InstructorActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[]) {
+    super('INSTRUCTOR_ACT_REFUSED', `Instructor act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
+  }
+}
+export class CredentialNotFoundError extends DomainError { constructor(id: string) { super('CREDENTIAL_NOT_FOUND', `Credential ${id} not found`, 404, { id }); } }
+export class StudioFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('STUDIO_FORM_REFUSED', `Studio form refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}

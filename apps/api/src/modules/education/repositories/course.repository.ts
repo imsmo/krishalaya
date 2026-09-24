@@ -10,6 +10,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Course } from '../domain/course.entity';
+import { CourseTemplateRow } from '../domain/course-template';
 import { CourseStatus, CourseLevel } from '../domain/education.events';
 import { MoneyShape, minorToMajorText } from '../domain/course-money';
 
@@ -31,6 +32,7 @@ function toDomain(r: any): Course {
     // The price as MAJOR text, computed here from the currency's own scale — null when the platform holds no scale for it.
     priceMajor: r.minor_units == null ? null : minorToMajorText(String(r.price_minor), Number(r.minor_units)) });
 }
+const templateRow = (x: any): CourseTemplateRow => ({ id: x.id, tenantId: x.tenant_id ?? null, code: x.code, title: x.title, topicCode: x.topic_code, level: x.level, outline: x.outline, isActive: x.is_active });
 export interface CourseListQuery { box: 'browse' | 'mine' | 'all'; instructorId?: string; topicId?: string; level?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
 
 /** W178's table columns and tiles, from `enrollments` — this tenant's learners only, which for a platform course is what this tenant may know. */
@@ -110,6 +112,19 @@ export class CourseRepository {
     const x = r.rows[0] as Record<string, unknown> | undefined;
     if (!x || x.currency_code == null || x.minor_units == null) return null;
     return { currencyCode: String(x.currency_code), minorUnits: Number(x.minor_units) };
+  }
+  /* ---- PC-56 TENANT-7d · course templates (0173) — a registry read; nothing in apps/api writes one ---------------- */
+  /** The templates this tenant may start from: the platform's (tenant_id NULL) and its own, active first-class rows only. */
+  async templates(tenantId: string, tx?: TxContext): Promise<CourseTemplateRow[]> {
+    const sql = `SELECT id, tenant_id, code, title, topic_code, level, outline, is_active FROM course_templates WHERE (tenant_id IS NULL OR tenant_id=$1) AND is_active AND deleted_at IS NULL ORDER BY sort_order, code`;
+    const r = tx ? await tx.query(sql, [tenantId]) : await this.replica.forTenant(tenantId).query(sql, [tenantId]);
+    return r.rows.map(templateRow);
+  }
+  /** One template by code — a tenant's own row wins over a platform row of the same code. Inactive rows ARE returned, so the review can refuse TEMPLATE_INACTIVE by name. */
+  async templateByCode(tenantId: string, code: string, tx?: TxContext): Promise<CourseTemplateRow | null> {
+    const sql = `SELECT id, tenant_id, code, title, topic_code, level, outline, is_active FROM course_templates WHERE (tenant_id IS NULL OR tenant_id=$1) AND code=$2 AND deleted_at IS NULL ORDER BY tenant_id NULLS LAST LIMIT 1`;
+    const r = tx ? await tx.query(sql, [tenantId, code]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, code]);
+    return r.rows[0] ? templateRow(r.rows[0]) : null;
   }
   /** W178's Learners / Completion columns, for the page's rows only — never a count over every course a tenant has. */
   async statsFor(tenantId: string, courseIds: readonly string[]): Promise<Map<string, CourseStats>> {
