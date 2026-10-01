@@ -22,7 +22,7 @@ function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationP
   const metrics = { inc: jest.fn(), observe: jest.fn() };
   const gateway = { providerCode: 'fake', dispatch: jest.fn(async () => ({ status: opts.gatewayStatus ?? 'accepted', providerMsgRef: 'pmr-1', costMinor: 12 })) };
   const events = { getByCode: jest.fn(async () => (opts.event === undefined ? catalog() : opts.event)) };
-  const templates = { resolve: jest.fn(async (_t: any, _e: string, channel: NotifChannel) => template(channel)) };
+  const templates = { resolve: jest.fn(async (_t: any, _e: string, channel: NotifChannel) => template(channel)), tenantLanguageOrder: jest.fn(async () => [] as string[]) };
   // [PC-56 TENANT-6d-7] The fan-out now asks ONE question per concern for the whole recipient set, and asks the
   // one it never asked before: what language does this person read? A fake that answers `listForUser` cannot notice
   // that nobody reads a language — which is part of why the defect survived four waves that each promised Gujarati.

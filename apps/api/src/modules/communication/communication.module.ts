@@ -30,7 +30,7 @@ import { BroadcastService } from './services/broadcast.service';
 import { BroadcastRepository } from './repositories/broadcast.repository';
 import { BroadcastRequestedHandler } from './events/handlers/broadcast-requested.handler';
 import { PreferenceService } from './services/preference.service';
-import { TemplateAdminService } from './services/template-admin.service';
+import { TemplateOverrideService } from './services/template-override.service';
 import { ConversationService } from './services/conversation.service';
 import { MessageService } from './services/message.service';
 import { MaskedCallService } from './services/masked-call.service';
@@ -51,7 +51,7 @@ import { NOTIFICATION_EVENT_MAP } from './events/notification-event-map';
 @Module({
   controllers: [NotificationsController, PreferencesController, TemplatesController, DeliveryWebhookController, ConversationsController, MaskedCallsController, MaskedCallWebhookController, DevicesController, BroadcastsController],
   providers: [
-    NotificationService, PreferenceService, TemplateAdminService, ConversationService, MessageService, MaskedCallService, DeviceService, BroadcastService,
+    NotificationService, PreferenceService, TemplateOverrideService, ConversationService, MessageService, MaskedCallService, DeviceService, BroadcastService,
     NotificationEventRepository, NotificationTemplateRepository, NotificationPreferenceRepository, QuietHoursRepository, NotificationRepository,
     ConversationRepository, MessageRepository, MaskedCallRepository, PushDeviceRepository, BroadcastRepository,
     notificationGatewayProvider, maskingProviderProvider, pushSenderProvider,

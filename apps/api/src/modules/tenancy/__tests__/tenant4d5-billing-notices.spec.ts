@@ -673,7 +673,7 @@ describe('TENANT-4d-5 · a channel with no address is not a send', () => {
       { providerCode: 'fake', send: async () => ({ sent: 1, invalidTokens: [] }) } as never,
       { activeTokensForUser: async () => [{ token: 'tok', platform: 'android' }], deactivate: async () => 1 } as never,
       { getByCode: async () => NotificationEvent.rehydrate({ code: 'saas.usage_limit_alert', defaultName: 'x', priority: 'important', defaultChannels: ['inapp', 'email'], userCanOptOut: true, batchable: false }) } as never,
-      { resolve: async (_t: unknown, e: string, ch: string) => NotificationTemplate.rehydrate({ id: `t-${ch}`, eventCode: e, channel: ch as never, languageCode: 'en', tenantId: null, subject: 's', body: 'b', providerTemplateRef: null, isActive: true, versionId: 'v1', versionNo: 1 }) } as never,
+      { tenantLanguageOrder: async () => [], resolve: async (_t: unknown, e: string, ch: string) => NotificationTemplate.rehydrate({ id: `t-${ch}`, eventCode: e, channel: ch as never, languageCode: 'en', tenantId: null, subject: 's', body: 'b', providerTemplateRef: null, isActive: true, versionId: 'v1', versionNo: 1 }) } as never,
       { listForUser: async () => [], mapForUsers: async () => new Map() } as never,
       { getForUser: async () => null, mapForUsers: async () => new Map() } as never,
       {

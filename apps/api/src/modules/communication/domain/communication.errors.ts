@@ -27,7 +27,7 @@ export class CommForbiddenError extends DomainError {
 /**
  * **SECURITY COPY IS PLATFORM-CONTROLLED (PC-56 ADMIN-11b).** W101 states the rule — "auth.otp and dispute events are
  * opt-out-locked and tenant overrides are disabled on them; security copy stays platform-controlled" — and until that
- * wave nothing enforced it in either realm: `TemplateAdminService.upsert` checked only that the event existed, and
+ * wave nothing enforced it in either realm: `TemplateAdminService.upsert` (PC-27; replaced by TENANT-8a's `TemplateOverrideService`) checked only that the event existed, and
  * `resolve()` sorts `tenant_id NULLS LAST`, so a tenant row BEAT the platform default for every event including
  * `auth.otp`. A tenant holding `notification.manage` could replace the wording of the one-time-password message its
  * farmers receive.
@@ -43,4 +43,19 @@ export class SecurityCopyPlatformOnlyError extends DomainError {
 }
 export class InvalidPushDeviceError extends DomainError {
   constructor(detail = 'Invalid push device registration') { super('PUSH_DEVICE_INVALID', detail, 400, {}); }
+}
+// PC-56 TENANT-8a · THE OVERRIDE. Each refusal carries the CODES the review/verdict computed, so the console prints the
+// sentence the review would have printed — a 422/409 with words, never a bare status.
+export class TemplateFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('TEMPLATE_FORM_REFUSED', `Template override refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class TemplateActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[]) {
+    super('TEMPLATE_ACT_REFUSED', `Template act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
+  }
+}
+export class TemplateNotFoundError extends DomainError {
+  constructor(id: string) { super('TEMPLATE_NOT_FOUND', `Template ${id} not found`, 404, { id }); }
 }

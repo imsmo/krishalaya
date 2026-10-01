@@ -72,7 +72,12 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('insurance.enrol','Enrol in / cancel an insurance policy','M19'),('insurance.manage','Manage insurance products + policies (insurer/tenant admin)','M19'),
  ('scheme.apply','Apply to government schemes','M17'),
  ('service.offer','List + manage own service offerings + drive booking lifecycle','M30'),('service.book','Request + complete-and-pay service bookings','M30'),
- ('notification.manage','Author notification templates + read tenant delivery log','M13'),
+ ('notification.manage','Send tenant broadcasts + read the notification event catalogue','M13'),
+ -- [PC-56 TENANT-8a] TEMPLATE AUTHORING WAS ON `notification.manage`, HELD BY THE SUPPORT AGENT (F-19): the same key that
+ -- messages every member also rewrote what every member receives, and there was no checker. Two verbs now — the author's
+ -- and the checker's — and maker ≠ checker is 0175's trigger, so a holder of both still cannot approve their own words.
+ ('notification.templates.manage','Write a notification template override (draft), submit it, withdraw your own','M13'),
+ ('notification.templates.approve','Approve / reject a colleague''s template override; retire an override','M13'),
  ('message.moderate','Moderate chat: review/unflag/lock conversations','M13'),
  ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
@@ -83,6 +88,10 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('trace.manage','Create trace lots + append farm-to-fork journey events','M16'),
  ('bulk.import','Create + manage bulk CSV import jobs',NULL)
 ON CONFLICT (code) DO NOTHING;
+-- [PC-56 TENANT-8a] `notification.manage` no longer authors templates; its name says so on a database seeded before
+-- this wave too (the INSERT above does nothing to an existing row). Re-runnable: a second run changes nothing.
+UPDATE permissions SET default_name = 'Send tenant broadcasts + read the notification event catalogue'
+ WHERE code = 'notification.manage' AND default_name IS DISTINCT FROM 'Send tenant broadcasts + read the notification event catalogue';
 
 -- grants (sample of the full PRD §10 matrix; complete in admin UI)
 INSERT INTO role_permissions (role_id, permission_code)
@@ -130,6 +139,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','vet','equipment_owner') AND p.code IN ('service.offer'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','customer') AND p.code IN ('service.book'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('notification.manage'))
+   OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('notification.templates.manage'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('notification.templates.approve'))
    OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('message.moderate'))
    -- [PC-56 TENANT-7d] THE INSTRUCTOR ROLE HELD NO VERB. `instructor` ("Education Instructor", M09, line 16 above) was
    -- seeded with NO permission at all: a member given the platform's own instructor role could not author a course,

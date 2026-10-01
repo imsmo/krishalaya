@@ -11,6 +11,15 @@ Gated by the `communication` feature flag (default **OFF**).
 - **Templates** (`notification_templates`) — per `event × channel × language`, with **tenant overrides** layered
   over platform defaults. `{{variable}}` rendering lives only in the template entity (ReDoS-safe token, missing
   keys render blank — a token never leaks to a user).
+  **[PC-56 TENANT-8a] A tenant override is a VERSION, and it serves only after a second person approves it.** The
+  words `resolve()` sends come from the row's `serving_version_id` (0122); a tenant writes a DRAFT version
+  (`authored_by_user_id`), submits it, and a colleague with `notification.templates.approve` — never the author (the
+  verdict in `domain/template-override.ts` AND 0175's `trg_ntv_tenant_decision`, 23514) — approves it, which moves the
+  pointer. On SMS / WhatsApp the approval goes to `submitted_to_provider` and never serves (ADMIN-11b-Q1 owns the
+  provider). The channel must be in the event's `default_channels` (F-11, review + trigger). The platform row and the
+  catalogue (`notification_events`, `notification_event_variables`, `messaging_sender_ids`) are read-only to `kv_app`
+  (0175). Reviewer: `domain/template-override-review.ts`; SMS segments: `domain/sms-segments.ts` (the tenant realm's
+  port of ADMIN-11b's).
 - **Preferences + quiet hours** (`notification_preferences`, `user_quiet_hours`, user-scoped) — per-channel
   opt-in/out and a DST-correct quiet window (resolved via `Intl`, no library).
 - **Delivery log** (`notifications`, PARTITIONED by `created_at`) — one row per recipient×channel, with
@@ -26,8 +35,9 @@ relay's per-event transaction the handler:
 1. resolves the catalog event → channel set via `resolveChannels` (default channels ∩ the user's preferences;
    **mandatory events ignore opt-out**, and **`critical` events bypass quiet hours** while intrusive channels —
    push/sms/whatsapp/ivr — are suppressed in quiet hours for non-critical; email/in-app are never suppressed);
-2. resolves the effective template (tenant override → platform default; requested language → `en`/`hi`
-   fallback) and renders it;
+2. resolves the effective template (tenant override → platform default; the reader's language → the emitter's →
+   THIS tenant's `tenant_languages` in its order → `en` — `domain/fallback-languages.ts`, TENANT-8a / F-22; it was a
+   hardcoded `en`/`hi` for every tenant) and renders it;
 3. dispatches each non-`inapp` channel via the gateway (resilience-wrapped, **degrades to a `failed` row** if
    the notifier is down — never throws into the relay); `inapp` needs no send (the row IS the inbox item);
 4. records ONE delivery row per channel in its final state and writes its own outbox events.
@@ -39,8 +49,12 @@ re-delivery never double-records, and the gateway (which dedups on that id) neve
 
 - `GET /v1/notifications` — the caller's own inbox (keyset; `status`, `unreadOnly`). `POST /v1/notifications/:id/read`.
 - `GET/PUT /v1/notifications/preferences`, `GET/PUT /v1/notifications/quiet-hours` — the caller's own settings.
-- `GET /v1/notifications/events`, `GET /v1/notifications/templates`, `POST /v1/notifications/templates` —
-  catalog browse + tenant template authoring (`notification.manage`).
+- `GET /v1/notifications/events` — catalog browse (`notification.manage`).
+- [TENANT-8a] `GET /v1/notifications/templates` (W180, keyset on the slot + live summary), `GET …/templates/catalogue`,
+  `GET …/templates/languages`, `POST …/templates/preview` (the form's review), `POST …/templates` (a DRAFT version,
+  Idempotency-Key), `GET …/templates/:id` (W181), `GET …/templates/:id/acts`, `POST …/templates/:id/acts/:act`
+  (submit · approve · reject · withdraw · retire, reason + key, audited `communication.template.<act>`). Authoring is
+  `notification.templates.manage`; the checker is `notification.templates.approve`.
 - `POST /v1/notifications/delivery-callback` — the external notifier's delivery-status webhook (PUBLIC, trust
   via HMAC-SHA256 over the raw body against `NOTIFY_WEBHOOK_SECRET`; fail-closed if unconfigured).
 

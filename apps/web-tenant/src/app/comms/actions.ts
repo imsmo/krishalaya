@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { buildBroadcast, buildTemplate } from '../../features/comms/hub';
+import { buildBroadcast } from '../../features/comms/hub';
 
 function back(qs: string): never { redirect(`/comms?${qs}`); }
 
@@ -23,21 +23,4 @@ export async function sendBroadcastAction(formData: FormData): Promise<void> {
   catch { back('error=broadcast'); }
   revalidatePath('/comms');
   back('ok=broadcast');
-}
-
-export async function upsertTemplateAction(formData: FormData): Promise<void> {
-  await requireSession('/comms');
-  const built = buildTemplate({
-    eventCode: String(formData.get('eventCode') ?? ''),
-    channel: String(formData.get('channel') ?? ''),
-    languageCode: String(formData.get('languageCode') ?? ''),
-    subject: String(formData.get('subject') ?? ''),
-    body: String(formData.get('body') ?? ''),
-    isActive: formData.get('isActive') === '1',
-  });
-  if (!built.ok) back(`error=tpl_${built.error}`);
-  try { await tenantClient().notifications.upsertTemplate(built.value); }
-  catch { back('error=template'); }
-  revalidatePath('/comms');
-  back('ok=template');
 }

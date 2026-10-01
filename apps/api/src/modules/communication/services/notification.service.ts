@@ -3,7 +3,8 @@
 //   1. resolves the catalog event (global) → its default channels + opt-out rule + priority;
 //   2. applies the user's preferences + quiet hours (channel-resolution policy) — critical events bypass quiet
 //      hours, mandatory events ignore opt-outs (fail-closed: an unknown event is skipped, never spammed);
-//   3. resolves the effective template (tenant override → platform default; requested language → 'en'/'hi'),
+//   3. resolves the effective template (tenant override → platform default; the reader's language → the emitter's →
+//      THIS TENANT's languages in its order → 'en' — `fallbackChain`, PC-56 TENANT-8a / F-22),
 //      renders it, and DISPATCHES via the external notifier gateway (resilience-wrapped; 'inapp' needs no send);
 //   4. records ONE delivery-log row per channel in its final state (sent/failed/suppressed) + outbox events.
 // Idempotent on re-delivery: the notification id is DERIVED deterministically from (dedupeKey, recipient,
@@ -28,9 +29,9 @@ import { NotificationPreferenceRepository } from '../repositories/notification-p
 import { QuietHoursRepository } from '../repositories/quiet-hours.repository';
 import { DeliveryReport, NotificationRepository, RecipientProfile, addressableOn } from '../repositories/notification.repository';
 import { NotificationNotFoundError, CommForbiddenError } from '../domain/communication.errors';
+import { fallbackChain, LAST_RESORT_LANGUAGE } from '../domain/fallback-languages';
 
 export interface FanoutInput { tenantId: string | null; eventCode: string; recipients: string[]; payload: Record<string, unknown>; dedupeKey: string; languageCode?: string; }
-const FALLBACK_LANGS = ['en', 'hi'];
 
 /** Q24/DELTA-059 (decided G0-4 2026-07-22, see channel-resolution.ts's own header for the full ruling + tier
  *  mapping). Law 8: OFF by default — the founder flips this per Design_Program/12_G0-2_DECISION_REGISTER.md's own
@@ -96,12 +97,15 @@ export class NotificationService {
     // Template resolution is per (language, channel), NOT per (recipient, channel): a village on one language asks
     // once instead of 87 times, and a village on three asks three times.
     const templateCache = new Map<string, NotificationTemplate | null>();
+    // [PC-56 TENANT-8a · F-22] The fallback rungs were `['en', 'hi']` for every tenant — a Gujarati cooperative's member
+    // fell back to Hindi before Gujarati. They are THIS tenant's own languages now (read once per fan-out), then English.
+    const tenantLangs = await this.templates.tenantLanguageOrder(input.tenantId, tx);
     // Q24/DELTA-059: per-recipient flag check (rollout can stage by tenant/user — Law 8), read once per fanout
     // call (not per-recipient-and-channel) since the flag targets tenant/event scope, not a per-channel choice.
     const routineFlagOn = await this.flags.isEnabled(ROUTINE_FANOUT_FLAG, { tenantId: input.tenantId ?? undefined });
     for (const userId of recipients) {
       const profile = profiles.get(userId) ?? null;
-      const lang = profile?.languageCode ?? input.languageCode ?? FALLBACK_LANGS[0];
+      const lang = profile?.languageCode ?? input.languageCode ?? LAST_RESORT_LANGUAGE;
       const prefMap = prefsByUser.get(userId) ?? new Map<NotifChannel, boolean>();
       const quiet = quietByUser.get(userId) ?? null;
       const decision = resolveChannels(event.toCatalog(), prefMap, quiet, new Date());
@@ -117,7 +121,7 @@ export class NotificationService {
 
       let primaryStatus: NotifStatus | null = null;
       for (const channel of policy.toSendNow) {
-        const status = await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode });
+        const status = await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode, tenantLangs });
         if (channel === policy.primary) primaryStatus = status;
       }
       // SMS fallback: only when the routine policy proposed one AND the primary genuinely failed to deliver
@@ -127,17 +131,17 @@ export class NotificationService {
       // guarantee the module already documents for every other channel; see deriveId() below).
       if (policy.fallback && primaryStatus === 'failed') {
         this.metrics.inc('comm.routine_fallback_sms', { event: event.code });
-        await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel: policy.fallback, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode });
+        await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel: policy.fallback, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode, tenantLangs });
       }
     }
   }
 
-  private async deliver(tx: TxContext, a: { tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string; profile: RecipientProfile | null; templateCache: Map<string, NotificationTemplate | null>; inputLang?: string }): Promise<NotifStatus> {
+  private async deliver(tx: TxContext, a: { tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string; profile: RecipientProfile | null; templateCache: Map<string, NotificationTemplate | null>; inputLang?: string; tenantLangs?: readonly string[] }): Promise<NotifStatus> {
     const id = deriveId(a.dedupeKey, a.userId, a.channel);
-    // TEMPLATE RESOLUTION: the RECIPIENT'S OWN language first, then the emitter's if it named one, then the platform
-    // fallbacks. Cached per (language, channel) for the whole fan-out — the words for a language do not differ by
+    // TEMPLATE RESOLUTION: the RECIPIENT'S OWN language first, then the emitter's if it named one, then this tenant's
+    // own languages in its order, then English (`fallbackChain`). Cached per (language, channel) for the whole fan-out — the words for a language do not differ by
     // reader, and 87 identical lookups on one connection was most of what a village notice cost.
-    const chain = [a.lang, ...(a.inputLang ? [a.inputLang] : []), ...FALLBACK_LANGS].filter((l, i, xs) => xs.indexOf(l) === i);
+    const chain = fallbackChain(a.lang, a.inputLang, a.tenantLangs ?? []);
     let template: NotificationTemplate | null = null;
     for (const l of chain) {
       const key = `${l}|${a.channel}`;

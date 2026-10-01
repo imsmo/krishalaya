@@ -1,4 +1,5 @@
-import { buildBroadcast, buildTemplate, NOTIF_CHANNELS } from '../features/comms/hub';
+import * as hub from '../features/comms/hub';
+import { buildBroadcast } from '../features/comms/hub';
 
 describe('features/comms/hub (PC-27)', () => {
   it('broadcast: title ≤160, body ≤2000, role optional (blank dropped)', () => {
@@ -11,12 +12,9 @@ describe('features/comms/hub (PC-27)', () => {
     expect(buildBroadcast({ title: 'x', body: '', audienceRoleCode: '' })).toEqual({ ok: false, error: 'body' });
   });
 
-  it('template: event/channel/lang/body rules; subject optional', () => {
-    expect(buildTemplate({ eventCode: 'order.confirmed', channel: 'whatsapp', languageCode: 'hi', subject: '', body: 'आपका ऑर्डर {orderNo} पक्का हुआ।', isActive: true }).ok).toBe(true);
-    expect(buildTemplate({ eventCode: '', channel: 'whatsapp', languageCode: 'hi', subject: '', body: 'x', isActive: true })).toEqual({ ok: false, error: 'event' });
-    expect(buildTemplate({ eventCode: 'e', channel: 'fax', languageCode: 'hi', subject: '', body: 'x', isActive: true })).toEqual({ ok: false, error: 'channel' });
-    expect(buildTemplate({ eventCode: 'e', channel: 'sms', languageCode: 'HINDI', subject: '', body: 'x', isActive: true })).toEqual({ ok: false, error: 'lang' });
-    expect(buildTemplate({ eventCode: 'e', channel: 'sms', languageCode: 'gu', subject: '', body: '', isActive: false })).toEqual({ ok: false, error: 'body' });
-    expect(NOTIF_CHANNELS).toContain('whatsapp');
+  // [PC-56 TENANT-8a] The inert template builder is gone: a tenant override is a reviewed draft now (/content/templates).
+  it('no longer builds a template (the upsert never sent — F-1)', () => {
+    expect((hub as Record<string, unknown>).buildTemplate).toBeUndefined();
+    expect((hub as Record<string, unknown>).NOTIF_CHANNELS).toBeUndefined();
   });
 });

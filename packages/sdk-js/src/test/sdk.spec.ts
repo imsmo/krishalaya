@@ -1926,3 +1926,37 @@ describe('partner-api realm', () => {
     expect(page.nextCursor).toBeNull();                                    // stop condition, no fake total
   });
 });
+
+// PC-56 TENANT-8a · THE OVERRIDE — every route has its method (F-14's discipline), keyed writes carry the key.
+describe('notification template overrides (TENANT-8a)', () => {
+  it('reads W180 with its live summary from meta, and W181 by template id', async () => {
+    const summary = { eventsTotal: 68, lockedEvents: 31, eventsWithoutTemplate: ['bid.won'], whatsappServing: 0, whatsappEvents: 5, platformRows: 224, platformServing: 200, overrideRows: 0, overridesServing: 0, versionsOpen: 0, versionsAtProvider: 0 };
+    const { fn, calls } = fakeFetch((c) => (c.url.includes('/templates?') ? { body: { data: [], meta: { nextCursor: null, summary, canAuthor: true, canApprove: false } } } : { body: { data: { slot: {} } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const idx = await c.notifications.templateIndex({ eventCode: 'order.', only: 'overrides', limit: 20 });
+    expect(calls[0].url).toBe('https://api.test/v1/notifications/templates?eventCode=order.&only=overrides&limit=20');
+    expect(idx).toEqual({ items: [], nextCursor: null, summary, canAuthor: true, canApprove: false });
+    await c.notifications.templateView('t 1');
+    expect(calls[1].url).toBe('https://api.test/v1/notifications/templates/t%201');
+  });
+  it('previews without a key, saves a draft and acts WITH one', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.notifications.previewTemplate({ eventCode: 'order.confirmed', channel: 'push' });
+    await c.notifications.saveTemplateDraft({ eventCode: 'order.confirmed', channel: 'push', languageCode: 'gu', body: 'b', reason: 'why' }, 'idem-d');
+    await c.notifications.templateActs('t1', 'a reason');
+    await c.notifications.templateAct('t1', 'approve', { reason: 'reads well', versionId: 'v1' }, 'idem-a');
+    await c.notifications.templateCatalogue(); await c.notifications.templateLanguages();
+    const h = (i: number) => (calls[i].init.headers as Record<string, string>)['idempotency-key'];
+    expect(calls[0].url).toBe('https://api.test/v1/notifications/templates/preview'); expect(h(0)).toBeUndefined();
+    expect(calls[1].init.method).toBe('POST'); expect(calls[1].url).toBe('https://api.test/v1/notifications/templates'); expect(h(1)).toBe('idem-d');
+    expect(calls[2].url).toBe('https://api.test/v1/notifications/templates/t1/acts?reason=a+reason');
+    expect(calls[3].url).toBe('https://api.test/v1/notifications/templates/t1/acts/approve'); expect(h(3)).toBe('idem-a');
+    expect(JSON.parse(String(calls[3].init.body))).toEqual({ reason: 'reads well', versionId: 'v1' });
+    expect(calls[4].url).toBe('https://api.test/v1/notifications/templates/catalogue');
+    expect(calls[5].url).toBe('https://api.test/v1/notifications/templates/languages');
+    // PC-27's inert writer is gone from the surface.
+    expect((c.notifications as unknown as Record<string, unknown>).upsertTemplate).toBeUndefined();
+    expect((c.notifications as unknown as Record<string, unknown>).listTemplates).toBeUndefined();
+  });
+});

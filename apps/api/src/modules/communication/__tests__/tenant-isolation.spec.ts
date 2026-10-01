@@ -61,11 +61,18 @@ describe('templates resolution (tenant override → platform default)', () => {
     expect(sql).not.toMatch(/t\.body/);
     expect(params).toEqual(['order.delivered', 'push', 'en', 'tenantA']);
   });
-  it('listFor scopes to tenant + platform, keyset (no OFFSET)', async () => {
+  // [PC-56 TENANT-8a] `listFor` read `t.body` — the row, not the serving version — and printed as live words that never
+  // sent (F-1). It is gone; W180's `index` reads the words' SOURCE from the serving versions and pages on the slot.
+  it('index scopes to tenant + platform, keyset on the slot (no OFFSET), and never reads the row body', async () => {
     const { provider, exec } = fakeReplica();
-    await new NotificationTemplateRepository(provider).listFor('tenantA', { limit: 50 });
-    const [sql] = exec.query.mock.calls[0];
-    expect(sql).toMatch(/\(tenant_id=\$1 OR tenant_id IS NULL\)/); expect(sql).not.toMatch(/OFFSET/i);
+    exec.query.mockResolvedValue({ rows: [], rowCount: 0 });
+    await new NotificationTemplateRepository(provider).index('tenantA', { limit: 50, cursor: { e: 'order.delivered', c: 'sms', l: 'gu' } });
+    const [sql, params] = exec.query.mock.calls[0];
+    expect(sql).toMatch(/\(tenant_id IS NULL OR tenant_id = \$1\)/); expect(sql).not.toMatch(/OFFSET/i);
+    expect(sql).toMatch(/\(s\.event_code, s\.channel, s\.language_code\) > \(\$2, \$3, \$4\)/);
+    expect(sql).toMatch(/o\.tenant_id = \$1/);
+    expect(sql).not.toMatch(/\bt\.body|\bo\.body|\bp\.body/);
+    expect(params).toEqual(['tenantA', 'order.delivered', 'sms', 'gu', 50]);
   });
 });
 

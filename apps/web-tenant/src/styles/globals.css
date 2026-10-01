@@ -187,3 +187,10 @@ details.kv-card > summary { cursor: pointer; }
    `logical` properties throughout so the bars grow from the reading edge in an RTL locale. */
 .kv-meter { display: block; height: 6px; margin-block-start: 4px; border-radius: 9999px; background: var(--kv-neutral-100); }
 .kv-meter::before { content: ""; display: block; height: 100%; width: var(--kv-meter-pct, 0%); border-radius: 9999px; background: var(--kv-brand-500); }
+
+/* --- PC-56 TENANT-8a · THE OVERRIDE — a template's words, side by side with the platform default underneath ---
+   The words are shown exactly as stored (`pre-wrap`: an SMS's line breaks are billable characters) and never clipped.
+   Logical properties so the rule sits on the reading edge in an RTL locale. */
+.kv-template-body { white-space: pre-wrap; overflow-wrap: anywhere; margin-block: 6px; padding-block: 8px; padding-inline: 12px; border-inline-start: 3px solid var(--kv-neutral-200, #e5e5e5); }
+.kv-template-body--mine { border-inline-start-color: var(--kv-brand-500, #16a34a); }
+.kv-template-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }

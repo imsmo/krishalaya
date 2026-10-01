@@ -41,7 +41,7 @@ function harness(opts: HarnessOpts) {
     }),
   };
   const events = { getByCode: jest.fn(async () => opts.event) };
-  const templates = { resolve: jest.fn(async (_t: any, _e: string, channel: NotifChannel) => template(channel)) };
+  const templates = { resolve: jest.fn(async (_t: any, _e: string, channel: NotifChannel) => template(channel)), tenantLanguageOrder: jest.fn(async () => [] as string[]) };
   const prefs = {
     listForUser: jest.fn(async () => opts.prefs ?? []),
     mapForUsers: jest.fn(async (ids: readonly string[]) => new Map(ids.map((id) =>

@@ -2472,3 +2472,71 @@ export interface ExportJob {
 /** The 15-minute signed link. Present it as `?token=` on `downloadPath` BESIDE the session — the link authorises the
  *  file, the session says who fetched it. */
 export interface ExportMintedLink { token: string; jti: string; expiresAt: string; ttlSec: number; downloadPath: string }
+
+/* ================================================================================================================= */
+/* PC-56 TENANT-8a · THE OVERRIDE — W180 / W181 + the template-form, template-mutate and templates-form chains         */
+/* ================================================================================================================= */
+
+/** The override form as a person fills it (strings; the chain carries them in the URL). */
+export const TEMPLATE_OVERRIDE_FORM_FIELDS = ['eventCode', 'channel', 'languageCode', 'subject', 'body', 'reason'] as const;
+export type TemplateOverrideFormInput = Partial<Record<(typeof TEMPLATE_OVERRIDE_FORM_FIELDS)[number], string>>;
+export const TEMPLATE_OVERRIDE_ACTS = ['submit', 'approve', 'reject', 'withdraw', 'retire'] as const;
+export type TemplateOverrideAct = (typeof TEMPLATE_OVERRIDE_ACTS)[number];
+export type TemplateOverrideLifecycle = 'draft' | 'submitted' | 'approved' | 'submitted_to_provider' | 'rejected' | 'superseded';
+/** Who answers this event × channel × language at send time: this tenant's approved override, the platform default, or nobody. */
+export type TemplateServingSource = 'override' | 'platform' | 'none';
+export type TemplateActRefusal =
+  | 'NO_PERMISSION' | 'SECURITY_COPY_PLATFORM_ONLY' | 'CHANNEL_NOT_DEFAULT' | 'NO_OPEN_VERSION' | 'VERSION_CHANGED' | 'ILLEGAL_FROM_STATUS'
+  | 'MAKER_IS_CHECKER' | 'NOT_AUTHOR' | 'NOTHING_SERVING' | 'REASON_REQUIRED' | 'REASON_TOO_LONG';
+export interface TemplateActVerdict { act: TemplateOverrideAct; allowed: boolean; refusals: TemplateActRefusal[]; to: TemplateOverrideLifecycle | 'retired' | null }
+
+export interface TemplateSlot {
+  eventCode: string; channel: string; languageCode: string;
+  priority: string; userCanOptOut: boolean; channelIsDefault: boolean; defaultChannels: string[];
+  platform: { templateId: string | null; servingVersionNo: number | null; serves: boolean };
+  override: { templateId: string | null; servingVersionNo: number | null; serves: boolean; servingSince: string | null; latestVersionNo: number | null; latestLifecycle: TemplateOverrideLifecycle | null; latestAt: string | null };
+  source: TemplateServingSource;
+  /** Security copy (opt-out-locked or critical): platform-controlled, no tenant override. */
+  locked: boolean;
+}
+/** W180's header — every figure a live count. */
+export interface TemplateSummary {
+  eventsTotal: number; lockedEvents: number; eventsWithoutTemplate: string[]; whatsappServing: number; whatsappEvents: number;
+  platformRows: number; platformServing: number; overrideRows: number; overridesServing: number; versionsOpen: number; versionsAtProvider: number;
+}
+export interface TemplateIndex { items: TemplateSlot[]; nextCursor: string | null; summary: TemplateSummary; canAuthor: boolean; canApprove: boolean }
+export interface TemplateSegments { encoding: 'gsm7' | 'ucs2'; units: number; segments: number; perSegment: number; characters: number }
+export interface TemplateVariable { name: string; sourceRef: string; sampleValue: string; isRequired: boolean }
+export interface TemplateVersionRow {
+  id: string; versionNo: number; lifecycle: TemplateOverrideLifecycle; subject: string | null; body: string; reason: string; rejectionReason: string | null; createdAt: string;
+  authoredByUserId: string | null; authorName: string | null; authoredByYou: boolean; submittedAt: string | null;
+  approvedByUserId: string | null; approverName: string | null; approvedByAdmin: boolean; approvedAt: string | null;
+  rejectedByUserId: string | null; rejecterName: string | null; rejectedAt: string | null;
+}
+/** W181. */
+export interface TemplateView {
+  slot: TemplateSlot;
+  event: { code: string; defaultName: string; priority: string; userCanOptOut: boolean; defaultChannels: string[] };
+  variables: TemplateVariable[];
+  platform: { templateId: string | null; words: { versionNo: number; subject: string | null; body: string } | null; rendered: string | null };
+  override: { templateId: string; words: { versionNo: number; subject: string | null; body: string; approvedAt: string | null } | null; rendered: string | null; segments: TemplateSegments | null } | null;
+  open: { id: string; versionNo: number; lifecycle: TemplateOverrideLifecycle; authoredByUserId: string | null; authoredByYou: boolean; rendered: string; segments: TemplateSegments | null } | null;
+  versions: TemplateVersionRow[];
+  acts: TemplateActVerdict[];
+  provider: 'none' | 'dlt' | 'whatsapp';
+  canAuthor: boolean; canApprove: boolean;
+}
+/** The form's review — `FormReview` plus what a member WILL receive. */
+export interface TemplateOverrideReview extends FormReview {
+  preview: {
+    rendered: { subject: string | null; body: string } | null;
+    segments: TemplateSegments | null; segmentBudget: number | null;
+    variables: Array<{ name: string; sampleValue: string; isRequired: boolean; used: boolean }>;
+    variablesDeclared: boolean; unknownTokens: string[]; missingRequired: string[];
+    servesAfterApproval: boolean; provider: 'none' | 'dlt' | 'whatsapp'; nextVersionNo: number;
+    servingToday: { source: TemplateServingSource; versionNo: number | null; subject: string | null; body: string | null };
+  };
+}
+export interface TemplateCatalogueEvent { code: string; defaultName: string; priority: string; defaultChannels: string[]; userCanOptOut: boolean; batchable: boolean; locked: boolean }
+export interface TemplateLanguage { code: string; nameEnglish: string; nameNative: string; tenantDeclared: boolean }
+export interface TemplateActs { view: TemplateView; verdicts: TemplateActVerdict[] }
