@@ -25,6 +25,9 @@ node_modules/
 # ----------------------------------------------------------------------------
 dist/
 build/
+# HOTFIX-1 · `build/` is meant for compiled output; docs/build/ is the build-plan DOCUMENTATION (referenced by
+# docs/spec/13_docs_ci.md) and was silently swallowed. Re-include it by name.
+!docs/build/
 out/
 lib-cov/
 *.tgz
@@ -112,6 +115,12 @@ playwright-report/
 # Cloud / service credentials
 *.pem
 secrets/
+# HOTFIX-1 · `secrets/` above is for directories of secret FILES. It also swallowed two SOURCE directories that hold
+# no secret at all (grep-verified: no credential-shaped literal in either), so a fresh clone of origin/main could not
+# compile apps/api (6 importers of core/secrets) nor `terraform init` staging/prod (`source = "../../modules/secrets"`).
+# Re-include each by exact path; every other `secrets/` directory stays ignored. Add a source dir here, never widen.
+!apps/api/src/core/secrets/
+!infra/terraform/modules/secrets/
 *-credentials.json
 gha-creds-*.json
 

@@ -5,8 +5,8 @@
 // riding that plane, 0141 charge changes) and the first one where the thing being signed is a LIST rather
 // than an amount: the checker is approving 42 destinations, not one figure, so the pre-flight evidence is
 // stored WITH the decision and the items are frozen into the batch before anybody is asked to sign.
-import { Injectable } from '@nestjs/common';
-import { UnitOfWork, type TxContext } from '../../../core/database/unit-of-work';
+import { Inject, Injectable } from '@nestjs/common';
+import { UNIT_OF_WORK, UnitOfWork, type TxContext } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { DomainError, ForbiddenError } from '../../../shared/errors/app-error';
 import { PayoutBatchRepository, type PayoutBatchApprovalRow } from '../repositories/payout-batch.repository';
@@ -32,7 +32,7 @@ export interface DecideResult { batchId: string; status: 'approved' | 'rejected'
 @Injectable()
 export class PayoutApprovalService {
   constructor(
-    private readonly uow: UnitOfWork,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
     private readonly repo: PayoutBatchRepository,
     private readonly wallet: OrgWalletReadModel,
   ) {}

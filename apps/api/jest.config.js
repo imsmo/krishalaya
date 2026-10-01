@@ -47,6 +47,8 @@ module.exports = {
         '<rootDir>/modules/traceability/__tests__/**/*.spec.ts',
         '<rootDir>/modules/ai-governance/__tests__/**/*.spec.ts',
         '<rootDir>/core/**/__tests__/**/*.spec.ts',
+        // HOTFIX-1 · the full-AppModule boot gate (no DB needed: DI resolution only).
+        '<rootDir>/__tests__/**/*.spec.ts',
         '<rootDir>/shared/**/__tests__/**/*.spec.ts',
       ],
       testPathIgnorePatterns: ['\\.e2e-spec\\.ts$', '\\.integration\\.spec\\.ts$'],

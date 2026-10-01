@@ -15,7 +15,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
-import { OpsAlertRepository } from '../../logistics/repositories/ops-alert.repository';
+import { OpsAlertService } from '../../logistics/services/ops-alert.service';
 import { BmcUnitRepository } from '../repositories/bmc-unit.repository';
 import { DairyForbiddenError } from '../domain/dairy.errors';
 import {
@@ -141,7 +141,7 @@ export class DairyBmcReadModel {
   constructor(
     @Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider,
     private readonly units: BmcUnitRepository,
-    private readonly alerts: OpsAlertRepository,
+    private readonly alerts: OpsAlertService,
     private readonly flags: FlagsService,
     @Inject(METRICS) private readonly metrics: Metrics,
   ) {}

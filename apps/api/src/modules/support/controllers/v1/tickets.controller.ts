@@ -1,13 +1,14 @@
 // modules/support/controllers/v1/tickets.controller.ts · open + handle support tickets.
 // open/csat are the requester's own (open needs an Idempotency-Key); assign/respond/transition need
 // support.handle. Reads are owner-or-agent (404 for a stranger — no IDOR). `support` flag.
-import { Body, Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
+import type { Request } from 'express';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { SupportTicketService } from '../../services/support-ticket.service';
 import { SupportThreadService } from '../../services/support-thread.service';
@@ -16,6 +17,9 @@ import { OpenTicketSchema, OpenTicketDto } from '../../dto/create-support-ticket
 import { AssignTicketSchema, AssignTicketDto, TransitionTicketSchema, TransitionTicketDto, CsatSchema, CsatDto } from '../../dto/update-support-ticket.dto';
 import { QueryTicketsSchema, QueryTicketsDto } from '../../dto/query-support-ticket.dto';
 
+// HOTFIX-1 (8c's F-7 class): the audit row's `ip` is an inet — the client's address (`req.ip`, behind main.ts's
+// `trust proxy` hops) or NULL, never `ctx.requestId` (a UUID, which made every one of these writes a 22P02 and rolled back).
+export const ipOf = (r: Pick<Request, 'ip'>): string | null => (typeof r.ip === 'string' && r.ip.length > 0 ? r.ip : null);
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
 @Controller({ path: 'support/tickets', version: '1' })
@@ -46,11 +50,11 @@ export class TicketsController {
   }
 
   @Post(':id/assign') @RequirePermissions(SupportPermissions.Handle)
-  assign(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(AssignTicketSchema) dto: AssignTicketDto) { return this.svc.assign(ctx.tenantId, this.actor(ctx), id, dto.assigneeUserId, ctx.requestId).then((data) => ({ data })); }
+  assign(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(AssignTicketSchema) dto: AssignTicketDto) { return this.svc.assign(ctx.tenantId, this.actor(ctx), id, dto.assigneeUserId, ipOf(r)).then((data) => ({ data })); }
   @Post(':id/respond') @RequirePermissions(SupportPermissions.Handle)
-  respond(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.respond(ctx.tenantId, this.actor(ctx), id, ctx.requestId).then((data) => ({ data })); }
+  respond(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.svc.respond(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }
   @Post(':id/transition') @RequirePermissions(SupportPermissions.Handle)
-  transition(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(TransitionTicketSchema) dto: TransitionTicketDto) { return this.svc.transition(ctx.tenantId, this.actor(ctx), id, dto, ctx.requestId).then((data) => ({ data })); }
+  transition(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(TransitionTicketSchema) dto: TransitionTicketDto) { return this.svc.transition(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }
 
   // PC-56 ADMIN-2c · every rating this ticket has ever had (0099). Before that migration a reopen DELETED the
   // previous rating, so this endpoint had nothing it could have returned.

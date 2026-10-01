@@ -58,6 +58,10 @@ export class OpsAlertService {
   }
 
   rules(tenantId: string, a: AlertActor, q: { kind?: string; activeOnly?: boolean }) { this.assert(a); return this.repo.listRules(tenantId, q); }
+  /** [HOTFIX-1] The PUBLIC read another module may call for "who would be told" (dairy's BMC monitor, W170). The
+   *  caller has already enforced its own permission; this exists so no module reaches into OpsAlertRepository —
+   *  which LogisticsModule never exported, so `DairyBmcReadModel` could not be constructed and the API could not boot. */
+  listRules(tenantId: string): Promise<AlertRule[]> { return this.repo.listRules(tenantId); }
   feed(tenantId: string, a: AlertActor, q: { kind?: string; severity?: string; unacknowledgedOnly?: boolean; limit: number }) { this.assert(a); return this.repo.feed(tenantId, q); }
 
   async acknowledge(tenantId: string, a: AlertActor, id: string) {

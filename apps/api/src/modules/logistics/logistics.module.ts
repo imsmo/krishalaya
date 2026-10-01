@@ -88,7 +88,7 @@ import { ALERT_EVALUATION_INTERVAL_MS } from './domain/ops-alert.rules';
       // 10 minutes" from its own literal would keep saying it after this factory changed.
       useFactory: (svc: OpsAlertService) => new OpsAlertsCadenceJob(ALERT_EVALUATION_INTERVAL_MS, svc),
       inject: [OpsAlertService] }],
-  exports: [ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService, FleetRegisterReadModel, RouteBoardReadModel, FreightInvoiceService],
+  exports: [OpsAlertService, ShipmentService, LogisticsPartnerService, VehicleService, PickupSlotService, DeliveryZoneService, DeliveryRouteService, ColdChainService, FleetRegisterReadModel, RouteBoardReadModel, FreightInvoiceService],
 })
 export class LogisticsModule implements OnModuleInit {
   constructor(
