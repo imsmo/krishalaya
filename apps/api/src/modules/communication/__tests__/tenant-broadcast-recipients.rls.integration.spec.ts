@@ -6,6 +6,10 @@
 // tenant_broadcast_recipients is PARTITION BY RANGE(created_at) (event-log-volume audience snapshot) — this
 // probe exercises the parent table; RLS on a partitioned parent applies uniformly to every child partition
 // (verified separately via verify-rls-coverage.js's gaps:[] against every monthly child).
+// [PC-56 TENANT-8e] 0179 rewrote both tables: the broadcast row is born a DRAFT on channel `inapp` (0073's `whatsapp`
+// default was false on every row), `recipient_count` / `delivery_status` are gone (the log is the count), and a recipient
+// row carries the member's delivery-instance key (`fanout_key`). The policies are `tb_tenant` / `tbr_tenant` (USING + WITH
+// CHECK). This probe keeps its four questions on the new shape.
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 
@@ -45,15 +49,15 @@ run('tenant_broadcast_recipients RLS (integration, real Postgres)', () => {
     userA = u.rows[0].id;
 
     const bc = await admin.query(
-      `INSERT INTO tenant_broadcasts (tenant_id, created_by_user_id, title, body, channel, eligible_count, recipient_count)
-       VALUES ($1,$2,'Test broadcast','test body','whatsapp',2412,1387) RETURNING id`,
+      `INSERT INTO tenant_broadcasts (tenant_id, created_by_user_id, title, body)
+       VALUES ($1,$2,'Test broadcast','test body') RETURNING id`,
       [tenantA, userA],
     );
     broadcastA = bc.rows[0].id;
 
     await admin.query(
-      `INSERT INTO tenant_broadcast_recipients (tenant_id, broadcast_id, user_id, delivery_status)
-       VALUES ($1,$2,$3,'delivered')`,
+      `INSERT INTO tenant_broadcast_recipients (tenant_id, broadcast_id, user_id, fanout_key)
+       VALUES ($1,$2,$3,repeat('a', 64))`,
       [tenantA, broadcastA, userA],
     );
   }, 30000);
@@ -71,16 +75,16 @@ run('tenant_broadcast_recipients RLS (integration, real Postgres)', () => {
 
   it('tenant A can read its own broadcast recipient row', async () => {
     await inspect.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantA]);
-    const right = await inspect.query(`SELECT id, delivery_status FROM tenant_broadcast_recipients WHERE broadcast_id=$1`, [broadcastA]);
+    const right = await inspect.query(`SELECT id, fanout_key FROM tenant_broadcast_recipients WHERE broadcast_id=$1`, [broadcastA]);
     expect(right.rows.length).toBe(1);
-    expect(right.rows[0].delivery_status).toBe('delivered');
+    expect(right.rows[0].fanout_key).toBe('a'.repeat(64));
   });
 
   it('tenant B cannot insert a recipient row tagged tenant_id=A (cross-tenant write rejected)', async () => {
     await inspect.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantB]);
     await expect(inspect.query(
-      `INSERT INTO tenant_broadcast_recipients (tenant_id, broadcast_id, user_id, delivery_status)
-       VALUES ($1,$2,$3,'queued')`,
+      `INSERT INTO tenant_broadcast_recipients (tenant_id, broadcast_id, user_id, fanout_key)
+       VALUES ($1,$2,$3,repeat('b', 64))`,
       [tenantA, broadcastA, userA],
     )).rejects.toThrow(/row-level security/i);
   });
@@ -92,8 +96,8 @@ run('tenant_broadcast_recipients RLS (integration, real Postgres)', () => {
       ['+9199' + tenantA.replace(/-/g, '').slice(0, 8)],
     );
     await expect(inspect.query(
-      `INSERT INTO tenant_broadcast_recipients (tenant_id, broadcast_id, user_id, delivery_status)
-       VALUES ($1,$2,$3,'queued')`,
+      `INSERT INTO tenant_broadcast_recipients (tenant_id, broadcast_id, user_id, fanout_key)
+       VALUES ($1,$2,$3,repeat('b', 64))`,
       [tenantA, broadcastA, otherUser.rows[0].id],
     )).resolves.toBeDefined();
   });

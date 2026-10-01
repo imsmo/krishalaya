@@ -6,6 +6,8 @@ import {
   NotificationItem, NotificationPreference, QuietHours, QuietHoursInput, Page, InboxPage, InboxFilters, InboxQuery, NotificationBell, NotificationLadder, DeliveryHealth,
   NotificationMatrix, QuietWindowReview, PreferenceReview, LanguageReview, TemplateActs, TemplateCatalogueEvent, TemplateIndex, TemplateLanguage, TemplateOverrideAct,
   TemplateOverrideFormInput, TemplateOverrideReview, TemplateSummary, TemplateView, TemplateSlot,
+  BroadcastAct, BroadcastActs, BroadcastFormInput, BroadcastPage, BroadcastPreview, BroadcastRole, BroadcastView, ExportJob, TenantBroadcast,
+  WhatsAppHub, WhatsAppOptinInput, WhatsAppOptinReview, WhatsAppOptinView,
 } from '../types';
 
 export class NotificationsResource {
@@ -98,14 +100,56 @@ export class NotificationsResource {
     return (await this.http.request<{ ok: boolean; revoked: boolean }>('DELETE', 'notifications/devices', { body: { token } })).data;
   }
 
-  // --- PC-27: tenant comms hub (comm.manage, server-gated) — broadcasts + notification templates ---
-  /** Operator: send a broadcast to tenant members (all, or one role). Idempotency-Key required (Law 3). */
-  async sendBroadcast(input: { title: string; body: string; audienceRoleCode?: string }, idempotencyKey: string): Promise<{ id: string; recipients?: number }> {
-    return (await this.http.request<{ id: string; recipients?: number }>('POST', 'communication/broadcasts', { idempotencyKey, body: input })).data;
+  // --- PC-56 TENANT-8e · THE BROADCAST PLANE — an IN-APP announcement (no WhatsApp provider exists) ---
+  // PC-27's `sendBroadcast(input, key)` (create WAS send; the console minted a fresh key per click — F-17) and
+  // `listBroadcasts` (typed a `recipients` field the API never returned — F-14) are replaced by the chain below.
+  /** W429's history (keyset on the id), the status counts and whether the caller may send. Counts are the log's. */
+  async broadcasts(params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<BroadcastPage> {
+    const r = await this.http.request<TenantBroadcast[]>('GET', 'communication/broadcasts', { query: { status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    const m = (r.meta ?? {}) as { nextCursor?: string | null; byStatus?: Record<string, number>; zone?: string | null; canSend?: boolean };
+    return { items: r.data, nextCursor: m.nextCursor ?? null, byStatus: m.byStatus ?? {}, zone: m.zone ?? null, canSend: Boolean(m.canSend) };
   }
-  async listBroadcasts(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: Array<{ id: string; title: string; body: string; audienceRoleCode?: string | null; createdAt?: string; recipients?: number }>; nextCursor: string | null }> {
-    const r = await this.http.request<Array<{ id: string; title: string; body: string; audienceRoleCode?: string | null; createdAt?: string; recipients?: number }>>('GET', 'communication/broadcasts', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
-    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  /** The form's audience choices: the registry's active tenant roles with this cooperative's member counts. */
+  async broadcastRoles(signal?: AbortSignal): Promise<{ roles: BroadcastRole[]; everyone: number }> {
+    return (await this.http.request<{ roles: BroadcastRole[]; everyone: number }>('GET', 'communication/broadcasts/roles', { signal })).data;
+  }
+  /** The form chain's review + the honest maths (audience, templates ×3 languages, channel, quiet-hours impact). No key. */
+  async previewBroadcast(input: BroadcastFormInput, draftId?: string): Promise<BroadcastPreview> {
+    const path = draftId ? `communication/broadcasts/${encodeURIComponent(draftId)}/preview` : 'communication/broadcasts/preview';
+    return (await this.http.request<BroadcastPreview>('POST', path, { body: input })).data;
+  }
+  /** *Save draft* — a new draft, or an edit of one (`draftId`). The FORM's Idempotency-Key (required). */
+  async saveBroadcastDraft(input: BroadcastFormInput, idempotencyKey: string, draftId?: string): Promise<BroadcastView> {
+    return (await this.http.request<BroadcastView>(draftId ? 'PATCH' : 'POST', draftId ? `communication/broadcasts/${encodeURIComponent(draftId)}` : 'communication/broadcasts', { idempotencyKey, body: input })).data;
+  }
+  /** The receipt: the broadcast and what the delivery log says it did. */
+  async broadcast(id: string, signal?: AbortSignal): Promise<BroadcastView> {
+    return (await this.http.request<BroadcastView>('GET', `communication/broadcasts/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** The mutate chain's confirm step: both verdicts (the typed reason judged when given) and, for a draft, the send maths. */
+  async broadcastActs(id: string, reason?: string, signal?: AbortSignal): Promise<BroadcastActs> {
+    return (await this.http.request<BroadcastActs>('GET', `communication/broadcasts/${encodeURIComponent(id)}/acts`, { query: { reason }, signal })).data;
+  }
+  /** *Send broadcast* (now → queued, at its time → scheduled) or cancel — a reason, the confirm page's key. */
+  async broadcastAct(id: string, act: BroadcastAct, reason: string, idempotencyKey: string): Promise<BroadcastView> {
+    return (await this.http.request<BroadcastView>('POST', `communication/broadcasts/${encodeURIComponent(id)}/${act}`, { idempotencyKey, body: { reason } })).data;
+  }
+  /** W2839 · enqueue the broadcast-history export (dataset `communication.broadcasts`; there is no WhatsApp dataset). */
+  async enqueueBroadcastsExport(idempotencyKey: string): Promise<ExportJob> {
+    return (await this.http.request<ExportJob>('POST', 'communication/broadcasts/export', { idempotencyKey, body: {} })).data;
+  }
+  // --- PC-56 TENANT-8e · WhatsApp (W425, W430) — declared by name; the opt-in policy is the one record ---
+  async whatsappHub(signal?: AbortSignal): Promise<WhatsAppHub> {
+    return (await this.http.request<WhatsAppHub>('GET', 'channels/whatsapp', { signal })).data;
+  }
+  async whatsappOptinPolicy(signal?: AbortSignal): Promise<WhatsAppOptinView> {
+    return (await this.http.request<WhatsAppOptinView>('GET', 'channels/whatsapp/optin-policy', { signal })).data;
+  }
+  async previewWhatsAppOptinPolicy(input: WhatsAppOptinInput): Promise<WhatsAppOptinReview> {
+    return (await this.http.request<WhatsAppOptinReview>('POST', 'channels/whatsapp/optin-policy/preview', { body: input })).data;
+  }
+  async saveWhatsAppOptinPolicy(input: WhatsAppOptinInput, idempotencyKey: string): Promise<{ saved: boolean; version: number; collectionState: 'not_collected' }> {
+    return (await this.http.request<{ saved: boolean; version: number; collectionState: 'not_collected' }>('PUT', 'channels/whatsapp/optin-policy', { idempotencyKey, body: input })).data;
   }
   /** The platform event catalogue templates can bind to (real codes, never guessed). */
   async templateEvents(signal?: AbortSignal): Promise<Array<{ code: string; description?: string | null }>> {

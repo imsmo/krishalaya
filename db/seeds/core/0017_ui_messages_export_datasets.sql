@@ -23,3 +23,11 @@ INSERT INTO ui_messages (key, language_code, text) VALUES
   ('exports.dataset.education.instructor_earnings', 'hi', 'प्रशिक्षक कमाई विवरण'),
   ('exports.dataset.education.instructor_earnings', 'gu', 'પ્રશિક્ષક કમાણી પત્રક')
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 TENANT-8e] W2839/W2840's file: the cooperative's in-app broadcasts, counted from the delivery log
+-- (dataset `communication.broadcasts`). There is no WhatsApp dataset — the receipt says so.
+INSERT INTO ui_messages (key, language_code, text) VALUES
+  ('exports.dataset.communication.broadcasts', 'en', 'announcements (in-app broadcasts)'),
+  ('exports.dataset.communication.broadcasts', 'hi', 'सूचनाएँ (ऐप-भीतर प्रसारण)'),
+  ('exports.dataset.communication.broadcasts', 'gu', 'જાહેરાતો (ઍપમાંના પ્રસારણ)')
+ON CONFLICT DO NOTHING;

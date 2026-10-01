@@ -889,7 +889,8 @@ export interface TenantAnalytics {
   topSellers: { sellerUserId: string; orders: number; salesMinor: string }[];
 }
 /** A tenant→audience broadcast (status queued→sending→sent; counts reflect enqueued recipients). */
-export interface TenantBroadcast { id: string; audienceRoleCode: string | null; title: string; body: string; status: string; recipientCount: number; sentCount: number; failureReason: string | null; createdAt?: string; }
+// [PC-56 TENANT-8e] `TenantBroadcast` moved below (the broadcast plane): `recipientCount` / `sentCount` were copies the handler
+// wrote (`markSent(total, total)`) and are gone — the counts are the delivery log's (`BroadcastCounts`).
 
 // --- tenant self-config (P1-10): commission-rules / delivery-zones / settings (branding+languages) ---
 // Money rules stay SERVER-authoritative: the app never computes a fee — it only reads/edits the rule rows.
@@ -2763,3 +2764,62 @@ export interface CmsBannerSlotPreview {
 export interface CmsBannerSlotResult { id: string; placement: string; order: string[]; position: number }
 export interface CmsLiveBanner { id: string; placement: string; slotOrder: number; mediaId: string; targetUrl: string | null; endsAt: string; phase: CmsBannerPhase; text: CmsBannerText }
 export interface CmsLiveBanners { items: CmsLiveBanner[]; languageCode: string | null; reader: CmsReaderFact }
+
+// --- PC-56 TENANT-8e · THE BROADCAST PLANE (an in-app announcement — no WhatsApp provider exists) ---------------------
+export const BROADCAST_STATUSES = ['draft', 'scheduled', 'queued', 'sending', 'sent', 'failed', 'cancelled'] as const;
+export type BroadcastStatus = (typeof BROADCAST_STATUSES)[number];
+export const BROADCAST_ACTS = ['send', 'cancel'] as const;
+export type BroadcastAct = (typeof BROADCAST_ACTS)[number];
+export const BROADCAST_FORM_FIELDS = ['title', 'body', 'audienceRoleCode', 'scheduledAt', 'channel'] as const;
+export interface BroadcastFormInput { title?: string; body?: string; audienceRoleCode?: string; scheduledAt?: string; channel?: string }
+export interface BroadcastChannelCounts {
+  channel: string; total: number; sent: number; delivered: number; read: number; failed: number; held: number; suppressed: number;
+  queued: number; released: number; other: number; failedBy: Record<string, number>; suppressedBy: Record<string, number>;
+}
+/** Counted from the DELIVERY LOG (never a copy): `sent` = rows sent/delivered/read on every channel; `inapp` = members holding the item. */
+export interface BroadcastCounts {
+  recipients: number; sent: number; delivered: number; read: number; failed: number; held: number; suppressed: number; queued: number; other: number;
+  inapp: number; channels: BroadcastChannelCounts[];
+}
+export interface TenantBroadcast {
+  id: string; audienceRoleCode: string | null; title: string; body: string; status: BroadcastStatus | string; channel: 'inapp' | 'whatsapp' | string;
+  scheduledAt: string | null; scheduledLocal?: string | null; eligibleCount: number; createdByUserId?: string;
+  sendRequestedBy: string | null; sendRequestedAt: string | null; queuedAt: string | null; fannedOutAt: string | null;
+  failedAt: string | null; failureReason: string | null; cancelledBy: string | null; cancelledAt: string | null; cancelReason: string | null;
+  createdAt?: string; updatedAt?: string; counts?: BroadcastCounts | null;
+}
+export interface BroadcastPage { items: TenantBroadcast[]; nextCursor: string | null; byStatus: Record<string, number>; zone: string | null; canSend: boolean }
+export interface BroadcastView { broadcast: TenantBroadcast; counts: BroadcastCounts | null; zone: string | null; canSend?: boolean }
+export interface BroadcastRole { code: string; name: string; members: number }
+export interface BroadcastChannelImpact { channel: string; now: number; held: number; optedOut: number; noDevice: number }
+export interface BroadcastImpact {
+  at: string; examined: number; audience: number; cut: boolean; channels: BroadcastChannelImpact[]; heldUntil: string | null;
+  windows: { own: number; tenantDefault: number; none: number };
+}
+export interface BroadcastFormReview extends FormReview {
+  stored: { title: string | null; body: string | null; audienceRoleCode: string | null; scheduledAt: string | null; channel: string | null };
+  mode: 'create' | 'update';
+}
+export interface BroadcastPreview {
+  review: BroadcastFormReview;
+  audience: { roleCode: string | null; size: number; everyone: number };
+  templates: { required: string[]; gaps: string[]; sendable: boolean };
+  channel: { value: 'inapp'; whatsappConnected: boolean };
+  impact: BroadcastImpact | null; zone: string | null;
+}
+export interface BroadcastActVerdict { act: BroadcastAct; allowed: boolean; refusals: string[]; gaps: string[]; to: string | null }
+export interface BroadcastActs { view: BroadcastView; verdicts: BroadcastActVerdict[]; preview: BroadcastPreview | null }
+
+// --- PC-56 TENANT-8e · WHATSAPP, declared honestly (W425–W430) ------------------------------------------------------
+export interface WhatsAppRefusal { code: string; owner: 'founder_provider_decision' | 'admin_11b_q1' | 'tenant_support_desk' | 'platform_whatsapp_bot' | string; instead: string | null }
+export interface WhatsAppHub {
+  provider: { connected: boolean; messageProviders: Array<{ code: string; category: string }> };
+  templates: { byChannel: Array<{ channel: string; platform: number; own: number }>; whatsappServing: number; whatsappOverrides: number; eventsDeclaringWhatsApp: string[] };
+  broadcasts: { windowDays: number; byStatus: Record<string, number>; fannedOut: number; cut: boolean; counts: Omit<BroadcastCounts, 'channels'> };
+  optin: { recorded: boolean; collectionState: 'not_collected'; version: number | null };
+  refused: WhatsAppRefusal[];
+}
+export interface WhatsAppOptinPolicy { sources: string[]; consentStatement: string; collectionState: 'not_collected'; version: number; updatedAt: string; updatedBy: string | null; createdAt: string }
+export interface WhatsAppOptinView { policy: WhatsAppOptinPolicy | null; sources: Array<{ code: string; name: string }>; collectionState: 'not_collected'; canManage: boolean; providerConnected: boolean }
+export interface WhatsAppOptinInput { sources?: string[]; consentStatement?: string; expectVersion?: number }
+export interface WhatsAppOptinReview extends FormReview { stored: { sources: string[]; consentStatement: string | null }; mode: 'create' | 'update'; collectionState: 'not_collected' }

@@ -53,6 +53,8 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureEducation ? [{ key: 'courses', href: '/courses', label: t.t('nav.courses') }, { key: 'live', href: '/live', label: t.t('nav.live') }, { key: 'studio', href: '/studio', label: t.t('nav.studio') }, { key: 'earnings', href: '/studio/earnings', label: t.t('nav.earnings') }] : []),
         // PC-56 TENANT-8a: the tenant's template overrides (W180) beside the comms hub, under the same console switch.
         ...(env.featureComms ? [{ key: 'comms', href: '/comms', label: t.t('nav.comms') }, { key: 'templates', href: '/content/templates', label: t.t('nav.templates') }] : []),
+        // PC-56 TENANT-8e: WhatsApp, declared by name (no provider) — the hub says what exists instead. Same switch.
+        ...(env.featureComms ? [{ key: 'whatsapp', href: '/channels/whatsapp', label: t.t('nav.whatsapp') }] : []),
         // PC-56 TENANT-8c: the cooperative's pages (W175) and FAQ (W177), under their own console switch.
         // PC-56 TENANT-8d: the banners (W173) beside them, the same switch (the API's `cms` flag stays the gate).
         ...(env.featureCms ? [{ key: 'pages', href: '/content/pages', label: t.t('nav.pages') }, { key: 'faq', href: '/content/faq', label: t.t('nav.faq') }, { key: 'banners', href: '/content/banners', label: t.t('nav.banners') }] : []),

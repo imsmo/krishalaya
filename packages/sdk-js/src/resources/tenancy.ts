@@ -91,12 +91,19 @@ export class TenancyResource {
   async analytics(params: { from?: string; to?: string; currency?: string } = {}, signal?: AbortSignal): Promise<TenantAnalytics> {
     return (await this.http.request<TenantAnalytics>('GET', 'tenancy/analytics', { query: { from: params.from, to: params.to, currency: params.currency }, signal })).data;
   }
-  /** Send a broadcast to an audience (all active members, or one role). Async fan-out via the notification spine. Idempotent (Law 3). */
+  /** Compose and send an announcement (all active members, or one role) — [PC-56 TENANT-8e] two keyed acts: *Save draft*
+   *  then *Send* (the API re-takes every check at send: the role registry, the frame's templates, the audience). Both keys
+   *  derive from the caller's ONE key, so a retried tap replays both and never sends twice. Returns the queued broadcast;
+   *  its counts are on the receipt (`notifications.broadcast`), read from the delivery log, never at send. */
   async broadcast(input: { title: string; body: string; audienceRoleCode?: string }, idempotencyKey: string): Promise<TenantBroadcast> {
-    return (await this.http.request<TenantBroadcast>('POST', 'communication/broadcasts', { idempotencyKey, body: input })).data;
+    const draft = (await this.http.request<{ broadcast: TenantBroadcast }>('POST', 'communication/broadcasts', { idempotencyKey: `${idempotencyKey}:draft`, body: input })).data;
+    const sent = (await this.http.request<{ broadcast: TenantBroadcast }>('POST', `communication/broadcasts/${encodeURIComponent(draft.broadcast.id)}/send`, {
+      idempotencyKey: `${idempotencyKey}:send`, body: { reason: 'Sent from the mobile console' } })).data;
+    return sent.broadcast;
   }
   /** The tenant's broadcast history (keyset). */
   async listBroadcasts(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<TenantBroadcast>> {
+    // [PC-56 TENANT-8e] the items now carry their log counts (`counts`), and the cursor is the last id.
     const r = await this.http.request<TenantBroadcast[]>('GET', 'communication/broadcasts', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }

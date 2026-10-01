@@ -196,3 +196,10 @@ export type {
   LogisticsOnTime, LogisticsTransitLoss, LogisticsCostPerUnit, LogisticsFailureBreakdown, LogisticsHistory,
   LogisticsLane,
 } from './types';
+// PC-56 TENANT-8e · the broadcast plane (an in-app announcement) and WhatsApp, declared by name.
+export { BROADCAST_STATUSES, BROADCAST_ACTS, BROADCAST_FORM_FIELDS } from './types';
+export type {
+  BroadcastStatus, BroadcastAct, BroadcastFormInput, BroadcastCounts, BroadcastChannelCounts, BroadcastPage, BroadcastView, BroadcastRole, BroadcastImpact,
+  BroadcastChannelImpact, BroadcastFormReview, BroadcastPreview, BroadcastActVerdict, BroadcastActs,
+  WhatsAppRefusal, WhatsAppHub, WhatsAppOptinPolicy, WhatsAppOptinView, WhatsAppOptinInput, WhatsAppOptinReview,
+} from './types';

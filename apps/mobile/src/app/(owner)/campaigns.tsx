@@ -3,7 +3,8 @@
 // page) and per-campaign real stats. A "New broadcast" entry routes to the composer (157). Behind
 // `tenant_admin_lite`. Keyset via the SDK; degrade-never-die (loading skeleton / designed empty / inline retry).
 //
-// §13 (NOT faked): title, status, audienceRoleCode, recipientCount, sentCount are REAL TenantBroadcast fields;
+// §13 (NOT faked): title, status, audienceRoleCode are REAL TenantBroadcast fields; [PC-56 TENANT-8e] recipients and sent are
+// the delivery LOG's counts (`counts`, read by the API — `recipientCount`/`sentCount` were copies the handler wrote, now gone);
 // the tab buckets map the real status enum (queued→sending→sent|failed). The mockup's engagement FUNNEL
 // ("Opened 84%", "Acted 142", "Completed 49% conversion", "Claimed / Listed"), the "Day 3 of 7" progress, the
 // crop/segment-specific audience ("567 wheat farmers", "47 pending", "89 new") and the "Suggested campaign"
@@ -76,8 +77,8 @@ export default function Campaigns() {
                 {t('owner.campaigns.audienceLine', { audience: item.audienceRoleCode ? t(`owner.campaigns.role.${item.audienceRoleCode}`, { defaultValue: item.audienceRoleCode }) : t('owner.campaigns.role.all') })}
               </Text>
               <View style={styles.stats}>
-                <Stat n={item.recipientCount} label={t('owner.campaigns.recipients')} />
-                <Stat n={item.sentCount} label={t('owner.campaigns.sent')} />
+                <Stat n={item.counts?.recipients ?? item.eligibleCount} label={t('owner.campaigns.recipients')} />
+                <Stat n={item.counts?.sent ?? 0} label={t('owner.campaigns.sent')} />
               </View>
             </Card>
           )}

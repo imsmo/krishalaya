@@ -50,7 +50,11 @@ interface DeliverCtx {
   tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string;
   profile: RecipientProfile | null; templateCache: Map<string, NotificationTemplate | null>; inputLang?: string; tenantLangs?: readonly string[]; fanoutKey: string;
 }
-export interface FanoutInput { tenantId: string | null; eventCode: string; recipients: string[]; payload: Record<string, unknown>; dedupeKey: string; languageCode?: string; }
+export interface FanoutInput {
+  tenantId: string | null; eventCode: string; recipients: string[]; payload: Record<string, unknown>; dedupeKey: string; languageCode?: string;
+  /** [PC-56 TENANT-8e] false = never take the routine rule's SMS fallback (a broadcast is never forced to SMS — W429). */
+  allowRoutineFallback?: boolean;
+}
 
 /** Q24/DELTA-059 (decided G0-4 2026-07-22, see channel-resolution.ts's own header for the full ruling + tier
  *  mapping). Law 8: OFF by default — the founder flips this per Design_Program/12_G0-2_DECISION_REGISTER.md's own
@@ -164,7 +168,7 @@ export class NotificationService {
       // [PC-56 TENANT-8b] …and the fallback respects quiet hours and opt-outs like any other SMS: it is HELD at night,
       // skipped when the member's SMS row already exists (held or opted out), never a second row for one channel.
       let fallbackUsed: NotifChannel | null = null;
-      if (policy.fallback && primaryStatus === 'failed') {
+      if (policy.fallback && primaryStatus === 'failed' && input.allowRoutineFallback !== false) {
         const action = fallbackAction({ fallback: policy.fallback, resolved: decision, priority: event.priority, inQuiet: window ? isWithinWindow(now, window) : false });
         if (action === 'send') {
           this.metrics.inc('comm.routine_fallback_sms', { event: event.code });

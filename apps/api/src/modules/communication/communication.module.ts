@@ -17,6 +17,8 @@
 // webhook's `failed`; the in-app-only inbox, the bell, the ladder, the member's own matrix (InboxService · PreferenceService).
 // Still deferred and refused by name on the pages: the digest, collapse threads, archive, channel master switches, the
 // retry poller.
+// [PC-56 TENANT-8e] The broadcast plane: drafts, the send / cancel acts, the registered schedule job, recipients keyed to the
+// log, counts from the log, the `communication.broadcasts` export; WhatsApp declared by name (`WhatsAppService`, no provider).
 import { Module, OnModuleInit, Inject } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
@@ -29,6 +31,15 @@ import { MaskedCallsController } from './controllers/v1/masked-calls.controller'
 import { MaskedCallWebhookController } from './controllers/v1/masked-call-webhook.controller';
 import { DevicesController } from './controllers/v1/devices.controller';
 import { BroadcastsController } from './controllers/v1/broadcasts.controller';
+import { WhatsAppController } from './controllers/v1/whatsapp.controller';
+import { WhatsAppService } from './services/whatsapp.service';
+import { WhatsAppRepository } from './repositories/whatsapp.repository';
+import { BroadcastScheduleCadenceJob } from './jobs/broadcast-schedule.cadence-job';
+import { BroadcastsDataset } from './exports/broadcasts.dataset';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
+import { DATASET_REGISTRY, DatasetRegistry } from '../../core/exports-plane/dataset.registry';
+import { OUTBOX_WRITER, OutboxWriter } from '../../core/outbox/outbox.writer';
+import { AUDIT_WRITER, AuditWriter } from '../../core/audit/audit.writer';
 import { NotificationService } from './services/notification.service';
 import { BroadcastService } from './services/broadcast.service';
 import { BroadcastRepository } from './repositories/broadcast.repository';
@@ -56,9 +67,10 @@ import { DomainEventFanoutHandler } from './events/handlers/domain-event-fanout.
 import { NOTIFICATION_EVENT_MAP } from './events/notification-event-map';
 
 @Module({
-  controllers: [NotificationsController, PreferencesController, TemplatesController, DeliveryWebhookController, ConversationsController, MaskedCallsController, MaskedCallWebhookController, DevicesController, BroadcastsController],
+  controllers: [NotificationsController, PreferencesController, TemplatesController, DeliveryWebhookController, ConversationsController, MaskedCallsController, MaskedCallWebhookController, DevicesController, BroadcastsController, WhatsAppController],
   providers: [
     NotificationService, PreferenceService, InboxService, HeldReleaseCadenceJob, TemplateOverrideService, ConversationService, MessageService, MaskedCallService, DeviceService, BroadcastService,
+    WhatsAppService, WhatsAppRepository, BroadcastScheduleCadenceJob, BroadcastsDataset, UiMessageRepository,
     NotificationEventRepository, NotificationTemplateRepository, NotificationPreferenceRepository, QuietHoursRepository, NotificationRepository,
     ConversationRepository, MessageRepository, MaskedCallRepository, PushDeviceRepository, BroadcastRepository,
     notificationGatewayProvider, maskingProviderProvider, pushSenderProvider,
@@ -72,12 +84,21 @@ export class CommunicationModule implements OnModuleInit {
     private readonly broadcasts: BroadcastRepository,
     @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
     private readonly heldRelease: HeldReleaseCadenceJob,
+    private readonly broadcastSchedule: BroadcastScheduleCadenceJob,
+    private readonly broadcastsDataset: BroadcastsDataset,
+    @Inject(DATASET_REGISTRY) private readonly datasets: DatasetRegistry,
+    @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
+    @Inject(AUDIT_WRITER) private readonly audit: AuditWriter,
   ) {}
   // Register one fanout consumer per mapped domain-event type (the registry keys by a single eventType).
   onModuleInit(): void {
     for (const entry of NOTIFICATION_EVENT_MAP) this.registry.register(new DomainEventFanoutHandler(entry, this.notifications));
     // The tenant-broadcast fan-out (communication.broadcast_requested → notification spine, batched).
-    this.registry.register(new BroadcastRequestedHandler(this.broadcasts, this.notifications));
+    this.registry.register(new BroadcastRequestedHandler(this.broadcasts, this.notifications, this.outbox, this.audit));
+    // PC-56 TENANT-8e (F-21): `scheduled_at` is honoured — a due scheduled broadcast is queued by this REGISTERED job.
+    this.jobs.register(this.broadcastSchedule);
+    // PC-56 TENANT-8e · W2839/W2840: the broadcast history on the export plane. No WhatsApp dataset exists (the receipt says so).
+    this.datasets.register(this.broadcastsDataset);
     // PC-56 TENANT-8b (F-4): the morning half of quiet hours. NOT behind an env gate — a hold nothing releases is the
     // silent drop F-4 names. Its emergency stop is the kill-switch flag `notification.held_release_kill_switch`, and the
     // runner-wide JOBS_ENABLED switch still applies.

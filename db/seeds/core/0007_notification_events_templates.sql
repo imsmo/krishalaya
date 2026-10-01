@@ -505,6 +505,31 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('education.live_reminder', 'time',  'live_sessions.scheduled_at AT TIME ZONE the tenant country''s zone (digits, HH:MM)', '20:30',            true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-8e · **THE BROADCAST HAD NO WORDS TO SEND IN** — W429 / F-2
+-- ==================================================================================================================
+-- `tenant.broadcast` (promotional, push + in-app, opt-out-able) was catalogued in PC-27 and NO template was ever seeded
+-- for it, so every push leg of every broadcast recorded `failed · no_template` — and the handler marked the broadcast
+-- `sent` regardless. These six are the FRAME a cooperative's announcement is delivered in, in en · hi · gu: the subject
+-- says it is an announcement from the cooperative, the body is the cooperative's own words exactly as written
+-- (`{{body}}`). The words themselves are ONE text in whatever language the cooperative wrote them — a per-language
+-- announcement is not modelled (named in the 8e report). 0179's `broadcast_template_gaps()` refuses to queue a broadcast
+-- while any of these six does not serve, so a missing row is a refusal at enqueue, never a `no_template` per member.
+-- No link in the copy: the in-app item IS the announcement.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('tenant.broadcast','push','en',NULL,'Announcement: {{title}}','{{body}}',NULL,true),
+ ('tenant.broadcast','push','hi',NULL,'सूचना: {{title}}','{{body}}',NULL,true),
+ ('tenant.broadcast','push','gu',NULL,'સૂચના: {{title}}','{{body}}',NULL,true),
+ ('tenant.broadcast','inapp','en',NULL,'Announcement: {{title}}','{{body}}',NULL,true),
+ ('tenant.broadcast','inapp','hi',NULL,'सूचना: {{title}}','{{body}}',NULL,true),
+ ('tenant.broadcast','inapp','gu',NULL,'સૂચના: {{title}}','{{body}}',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('tenant.broadcast', 'title', 'tenant_broadcasts.title (the cooperative''s own words, plain text, ≤160)', 'Mandi closed on Monday', true),
+ ('tenant.broadcast', 'body',  'tenant_broadcasts.body (the cooperative''s own words, plain text, ≤2000)',  'The mandi yard is closed for cleaning on Monday. Bring your produce on Tuesday from 7am.', true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

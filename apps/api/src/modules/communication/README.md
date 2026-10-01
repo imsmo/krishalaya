@@ -25,6 +25,18 @@ Gated by the `communication` feature flag (default **OFF**).
 - **Delivery log** (`notifications`, PARTITIONED by `created_at`) — one row per recipient×channel, with
   `cost_minor` for the SMS cost-bomb monitor and a `notif_status` state machine.
 
+- **Broadcasts** (`tenant_broadcasts`, `tenant_broadcast_recipients`) — **[PC-56 TENANT-8e] an IN-APP ANNOUNCEMENT, not
+  WhatsApp.** No WhatsApp provider exists (`whatsapp_provider_connected()` = false; `apps/whatsapp-bot` exits 1), so
+  `channel` is `inapp` and 0179's CHECK admits `whatsapp` only while a provider row exists. Born a DRAFT (the form chain,
+  `domain/broadcast-review.ts`), sent or cancelled by the mutate chain (`domain/broadcast-acts.ts`) on
+  `notification.broadcast.send` (tenant_admin only), keyed by the form; the state machine is `domain/broadcast.state.ts`
+  and 0179's guard. `scheduled_at` is honoured by `jobs/broadcast-schedule.cadence-job.ts` (registered). The fan-out
+  writes one recipients row per member with its delivery-instance key and never takes the routine rule's SMS fallback;
+  every count on a receipt is the delivery log's (`domain/broadcast-counts.ts`) — nothing writes a sent count. The
+  review prints the audience, the frame's templates (en · hi · gu) and the quiet-hours estimate (`domain/broadcast-audience.ts`).
+  Export dataset `communication.broadcasts` (`exports/broadcasts.dataset.ts`); WhatsApp's honest surfaces and the
+  opt-in policy record (`whatsapp_optin_policies`, `not_collected`) are `services/whatsapp.service.ts`.
+
 ## The fanout (how every module's events become notifications)
 
 Each module emits domain events through the transactional outbox. `notification-event-map.ts` maps a real

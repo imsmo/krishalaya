@@ -68,3 +68,25 @@ export class InboxFormRefusedError extends DomainError {
 export class NotificationUpdateLostError extends DomainError {
   constructor(id: string) { super('NOTIFICATION_UPDATE_LOST', `Notification ${id}: the update matched no row`, 409, { id }); }
 }
+// PC-56 TENANT-8e · THE BROADCAST PLANE. Refusals carry the review's / the verdict's own codes (a sentence, never a bare status).
+export class BroadcastFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('BROADCAST_FORM_REFUSED', `Broadcast draft refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class BroadcastActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[], gaps: readonly string[] = []) {
+    super('BROADCAST_ACT_REFUSED', `Broadcast ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals, gaps });
+  }
+}
+export class BroadcastNotFoundError extends DomainError {
+  constructor(id: string) { super('BROADCAST_NOT_FOUND', `Broadcast ${id} not found`, 404, { id }); }
+}
+export class WhatsAppPolicyRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('WHATSAPP_POLICY_REFUSED', `WhatsApp opt-in policy refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class WhatsAppPolicyChangedError extends DomainError {
+  constructor() { super('WHATSAPP_POLICY_CHANGED', 'The opt-in policy was changed by someone else since you reviewed it', 409, {}); }
+}

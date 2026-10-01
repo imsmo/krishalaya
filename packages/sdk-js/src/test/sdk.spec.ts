@@ -2103,3 +2103,53 @@ describe('cms banners (TENANT-8d)', () => {
     expect([calls[9].init.method, calls[9].url, h(9)]).toEqual(['POST', 'https://api.test/v1/cms/banners/b1/click', undefined]);
   });
 });
+
+// PC-56 TENANT-8e · THE BROADCAST PLANE + WHATSAPP — every route has its method; reads carry no key, every write the FORM's
+// (F-17); the list's meta is read as the API sends it (F-14: PC-27 typed a `recipients` field the API never returned).
+describe('broadcasts + whatsapp (TENANT-8e)', () => {
+  it('reads: the history with its meta, roles, receipt, acts, the hub, the policy — no key on any', async () => {
+    const meta = { nextCursor: 'b9', byStatus: { sent: 2 }, zone: 'Asia/Kolkata', canSend: false };
+    const { fn, calls } = fakeFetch((c) => (c.url.includes('/communication/broadcasts?') ? { body: { data: [{ id: 'b1', counts: { sent: 5 } }], meta } } : { body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.notifications.broadcasts({ status: 'sent', limit: 20 });
+    expect(calls[0].url).toBe('https://api.test/v1/communication/broadcasts?status=sent&limit=20');
+    expect(page).toEqual({ items: [{ id: 'b1', counts: { sent: 5 } }], nextCursor: 'b9', byStatus: { sent: 2 }, zone: 'Asia/Kolkata', canSend: false });
+    expect('recipients' in page.items[0]).toBe(false);
+    await c.notifications.broadcastRoles(); await c.notifications.broadcast('b 1'); await c.notifications.broadcastActs('b1', 'why'); await c.notifications.broadcastActs('b1');
+    await c.notifications.whatsappHub(); await c.notifications.whatsappOptinPolicy();
+    expect(calls.slice(1).map((x) => x.url)).toEqual([
+      'https://api.test/v1/communication/broadcasts/roles', 'https://api.test/v1/communication/broadcasts/b%201',
+      'https://api.test/v1/communication/broadcasts/b1/acts?reason=why', 'https://api.test/v1/communication/broadcasts/b1/acts',
+      'https://api.test/v1/channels/whatsapp', 'https://api.test/v1/channels/whatsapp/optin-policy',
+    ]);
+    expect(calls.every((x) => (x.init.headers as Record<string, string>)['idempotency-key'] === undefined)).toBe(true);
+  });
+  it('previews without a key; draft, edit, send, cancel, export and the policy WITH the form\'s key; mobile\'s compose is draft-then-send on derived keys', async () => {
+    const { fn, calls } = fakeFetch((c) => ({ body: { data: c.url.endsWith('/communication/broadcasts') ? { broadcast: { id: 'd1' } } : { broadcast: { id: 'd1', status: 'queued' } } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const h = (i: number) => (calls[i].init.headers as Record<string, string>)['idempotency-key'];
+    await c.notifications.previewBroadcast({ title: 'T', body: 'B' });
+    await c.notifications.previewBroadcast({ title: 'T' }, 'd1');
+    await c.notifications.saveBroadcastDraft({ title: 'T', body: 'B' }, 'k-d');
+    await c.notifications.saveBroadcastDraft({ title: 'T2' }, 'k-e', 'd1');
+    await c.notifications.broadcastAct('d1', 'send', 'monday notice', 'k-s');
+    await c.notifications.broadcastAct('d1', 'cancel', 'wrong day', 'k-c');
+    await c.notifications.enqueueBroadcastsExport('k-x');
+    await c.notifications.previewWhatsAppOptinPolicy({ sources: ['qr_till_card'] });
+    await c.notifications.saveWhatsAppOptinPolicy({ sources: ['qr_till_card'], consentStatement: 'I agree to messages' }, 'k-p');
+    expect([0, 1].map((i) => [calls[i].init.method, calls[i].url, h(i)])).toEqual([
+      ['POST', 'https://api.test/v1/communication/broadcasts/preview', undefined], ['POST', 'https://api.test/v1/communication/broadcasts/d1/preview', undefined]]);
+    expect([2, 3, 4, 5, 6].map((i) => [calls[i].init.method, calls[i].url, h(i)])).toEqual([
+      ['POST', 'https://api.test/v1/communication/broadcasts', 'k-d'], ['PATCH', 'https://api.test/v1/communication/broadcasts/d1', 'k-e'],
+      ['POST', 'https://api.test/v1/communication/broadcasts/d1/send', 'k-s'], ['POST', 'https://api.test/v1/communication/broadcasts/d1/cancel', 'k-c'],
+      ['POST', 'https://api.test/v1/communication/broadcasts/export', 'k-x']]);
+    expect(JSON.parse(String(calls[4].init.body))).toEqual({ reason: 'monday notice' });
+    expect([calls[7].url, h(7)]).toEqual(['https://api.test/v1/channels/whatsapp/optin-policy/preview', undefined]);
+    expect([calls[8].init.method, calls[8].url, h(8)]).toEqual(['PUT', 'https://api.test/v1/channels/whatsapp/optin-policy', 'k-p']);
+    const n = calls.length;
+    const sent = await c.tenancy.broadcast({ title: 'T', body: 'B', audienceRoleCode: 'farmer' }, 'k-m');
+    expect([calls[n].url, h(n), calls[n + 1].url, h(n + 1)]).toEqual([
+      'https://api.test/v1/communication/broadcasts', 'k-m:draft', 'https://api.test/v1/communication/broadcasts/d1/send', 'k-m:send']);
+    expect(sent).toEqual({ id: 'd1', status: 'queued' });
+  });
+});

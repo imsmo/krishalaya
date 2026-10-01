@@ -11,7 +11,8 @@
 // picker, and Save Draft are NOT on the mobile contract — there's no audience-estimate/segment/draft endpoint and
 // send takes no channel/CTA/rate input. So we DON'T fabricate them: audience is the real "All farmers" role, the
 // channels are shown as an informational note (delivery follows each farmer's prefs), advanced segments/drafts are
-// flagged to the web console, and the send button carries no fabricated count. The REAL recipientCount comes back
+// flagged to the web console, and the send button carries no fabricated count. [PC-56 TENANT-8e] The REAL eligibleCount (the
+// audience the API counted at send — `recipientCount` was a copy the handler wrote and is gone) comes back
 // on the TenantBroadcast after send. Char counter is a pure count. Money (rates) never faked (Law 2).
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
@@ -40,7 +41,7 @@ export default function Broadcast() {
     setError(undefined); setBusy(true);
     try {
       const res = await sendBroadcast({ ...v.input!, audienceRoleCode: 'farmer' });
-      Alert.alert(t('owner.broadcast.heading'), t('owner.broadcast.sent', { n: String(res.recipientCount ?? 0) }));
+      Alert.alert(t('owner.broadcast.heading'), t('owner.broadcast.sent', { n: String(res.eligibleCount ?? 0) }));
       setTitle(''); setBody(''); router.back();
     } catch (e) {
       const msg = e instanceof SdkError && e.isForbidden ? t('owner.notAllowed') : t('owner.broadcast.failed');
