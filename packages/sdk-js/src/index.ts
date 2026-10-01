@@ -131,6 +131,13 @@ export { LESSON_ACTS, LESSON_FORM_FIELDS, SUBTITLE_FORM_FIELDS, QUESTION_FORM_FI
 export { LIVE_ACTS, LIVE_FORM_FIELDS, LIVE_BOXES } from './types'; // PC-56 TENANT-7c
 export { INSTRUCTOR_ACTS, PROFILE_FORM_FIELDS, CREDENTIAL_FORM_FIELDS, TEMPLATE_FORM_FIELDS } from './types'; // PC-56 TENANT-7d
 export { TEMPLATE_OVERRIDE_ACTS, TEMPLATE_OVERRIDE_FORM_FIELDS } from './types'; // PC-56 TENANT-8a
+// PC-56 TENANT-8b · THE INBOX
+export { NOTIFICATION_FORMS, INBOX_ACTS } from './types';
+export type {
+  QuietHoursInput, NotificationTier, NotificationOutcome, SuppressedReason, NotificationAlsoOn, InboxPage, InboxFilters, InboxQuery, NotificationBell,
+  LadderStep, LadderChannel, NotificationLadder, DeliveryHealth, MatrixCell, MatrixEvent, EffectiveQuietWindow, NotificationMatrix,
+  QuietWindowReview, PreferenceReview, LanguageReview, NotificationForm, InboxAct,
+} from './types';
 export type { MembershipTier, UserMembership, CoopBylaws, VoteIneligibleReason, VotingVerdict,
   ShareRegisterRow, ShareRegisterTiles, ShareRegisterView, MyVotingEligibility, ResolutionTally } from './resources/memberships';
 export type { Requirement, RequirementResponse } from './resources/requirements';

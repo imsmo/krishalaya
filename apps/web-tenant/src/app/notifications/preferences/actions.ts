@@ -1,43 +1,28 @@
 'use server';
-// apps/web-tenant/src/app/notifications/preferences/actions.ts · save notification preferences + quiet hours.
-// AUTHENTICATED (requireSession). Both are full-replace PUTs (idempotent by nature → no Idempotency-Key in the
-// SDK). Preferences are encoded so the server gets the COMPLETE matrix back: each event×channel pair rides as a
-// hidden `pref` field (eventCode::channel); a checkbox is present (in `enabled`) only when opted in → isEnabled =
-// the pair is in the checked set. A mandatory event can't be disabled (the server rejects it); surfaced generically.
-import { revalidatePath } from 'next/cache';
+// apps/web-tenant/src/app/notifications/preferences/actions.ts · W433's *Save preferences* → the notification FORM chain's
+// review (W2684) · PC-56 TENANT-8b.
+//
+// WRITES NOTHING. The matrix posts every editable cell (a hidden `cell` per cell, a checked `on` when ticked); this action
+// re-reads YOUR matrix, keeps only the cells you CHANGED (`matrixChanges` — locked and not-sent cells are never editable,
+// so they can never be smuggled in), and opens the chain's review with those changes in the URL (the house pattern: values
+// in the query string, the review computed by the API). The write happens only from the review, under the key the review
+// page mints. (PC-28b's `savePreferencesAction` / `saveQuietHoursAction` wrote straight from the form with no review, no
+// key and no audit row — gone.)
 import { redirect } from 'next/navigation';
-import type { NotificationPreference, QuietHours } from '@krishalaya/sdk-js';
 import { tenantClient } from '../../../lib/api-client';
 import { requireSession } from '../../../lib/session';
+import { MAX_CHANGES, PREFS_EDIT_HREF, PREFS_HREF, encodeChanges, matrixChanges } from '../../../features/notifications/inbox';
 
-const PREFS_PATH = '/notifications/preferences';
-
-export async function savePreferencesAction(formData: FormData): Promise<void> {
-  await requireSession(PREFS_PATH);
-  const pairs = formData.getAll('pref').map(String);
-  const enabled = new Set(formData.getAll('enabled').map(String));
-  const preferences: NotificationPreference[] = [];
-  for (const key of pairs) {
-    const [eventCode, channel] = key.split('::');
-    if (eventCode && channel) preferences.push({ eventCode, channel, isEnabled: enabled.has(key) });
-  }
-  try { await tenantClient().notifications.setPreferences(preferences); }
-  catch { redirect(`${PREFS_PATH}?status=preferr`); } // e.g. tried to disable a mandatory event
-  revalidatePath(PREFS_PATH);
-  redirect(`${PREFS_PATH}?status=prefsaved`);
-}
-
-export async function saveQuietHoursAction(formData: FormData): Promise<void> {
-  await requireSession(PREFS_PATH);
-  const starts = String(formData.get('starts') ?? '').trim();
-  const ends = String(formData.get('ends') ?? '').trim();
-  const timezone = String(formData.get('timezone') ?? '').trim();
-  if (!/^\d{2}:\d{2}$/.test(starts) || !/^\d{2}:\d{2}$/.test(ends) || !timezone) {
-    redirect(`${PREFS_PATH}?status=qherr`);
-  }
-  const input: QuietHours = { starts, ends, timezone };
-  try { await tenantClient().notifications.setQuietHours(input); }
-  catch { redirect(`${PREFS_PATH}?status=qherr`); }
-  revalidatePath(PREFS_PATH);
-  redirect(`${PREFS_PATH}?status=qhsaved`);
+export async function prepareMatrixAction(formData: FormData): Promise<void> {
+  await requireSession(PREFS_HREF);
+  const posted = formData.getAll('cell').map(String);
+  const ticked = new Set(formData.getAll('on').map(String));
+  let changes: ReturnType<typeof matrixChanges> = [];
+  try { changes = matrixChanges(await tenantClient().notifications.matrix(), posted, ticked); }
+  catch { redirect(PREFS_HREF); }
+  if (changes.length === 0) redirect(`${PREFS_HREF}?note=nochange`);
+  if (changes.length > MAX_CHANGES) redirect(`${PREFS_HREF}?note=toomany`);
+  const q = new URLSearchParams({ form: 'preferences', step: 'review' });
+  for (const s of encodeChanges(changes)) q.append('set', s);
+  redirect(`${PREFS_EDIT_HREF}?${q.toString()}`);
 }

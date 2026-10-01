@@ -13,6 +13,10 @@
 // provider port. A new chat message emits comm.message_posted, which the SAME fanout turns into a push/in-app
 // alert to the other participants. Gated by the `communication` flag (default OFF).
 // DEFERRED: the smart-digest batching engine + a DB-level failed-notification retry poller; IVR/voice rendering.
+// [PC-56 TENANT-8b] Built: suppressed/held rows written by the fan-out and released by `HeldReleaseCadenceJob`; the
+// webhook's `failed`; the in-app-only inbox, the bell, the ladder, the member's own matrix (InboxService · PreferenceService).
+// Still deferred and refused by name on the pages: the digest, collapse threads, archive, channel master switches, the
+// retry poller.
 import { Module, OnModuleInit, Inject } from '@nestjs/common';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
@@ -30,6 +34,9 @@ import { BroadcastService } from './services/broadcast.service';
 import { BroadcastRepository } from './repositories/broadcast.repository';
 import { BroadcastRequestedHandler } from './events/handlers/broadcast-requested.handler';
 import { PreferenceService } from './services/preference.service';
+import { InboxService } from './services/inbox.service';
+import { HeldReleaseCadenceJob } from './jobs/held-release.cadence-job';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { TemplateOverrideService } from './services/template-override.service';
 import { ConversationService } from './services/conversation.service';
 import { MessageService } from './services/message.service';
@@ -51,7 +58,7 @@ import { NOTIFICATION_EVENT_MAP } from './events/notification-event-map';
 @Module({
   controllers: [NotificationsController, PreferencesController, TemplatesController, DeliveryWebhookController, ConversationsController, MaskedCallsController, MaskedCallWebhookController, DevicesController, BroadcastsController],
   providers: [
-    NotificationService, PreferenceService, TemplateOverrideService, ConversationService, MessageService, MaskedCallService, DeviceService, BroadcastService,
+    NotificationService, PreferenceService, InboxService, HeldReleaseCadenceJob, TemplateOverrideService, ConversationService, MessageService, MaskedCallService, DeviceService, BroadcastService,
     NotificationEventRepository, NotificationTemplateRepository, NotificationPreferenceRepository, QuietHoursRepository, NotificationRepository,
     ConversationRepository, MessageRepository, MaskedCallRepository, PushDeviceRepository, BroadcastRepository,
     notificationGatewayProvider, maskingProviderProvider, pushSenderProvider,
@@ -63,11 +70,17 @@ export class CommunicationModule implements OnModuleInit {
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     private readonly notifications: NotificationService,
     private readonly broadcasts: BroadcastRepository,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    private readonly heldRelease: HeldReleaseCadenceJob,
   ) {}
   // Register one fanout consumer per mapped domain-event type (the registry keys by a single eventType).
   onModuleInit(): void {
     for (const entry of NOTIFICATION_EVENT_MAP) this.registry.register(new DomainEventFanoutHandler(entry, this.notifications));
     // The tenant-broadcast fan-out (communication.broadcast_requested → notification spine, batched).
     this.registry.register(new BroadcastRequestedHandler(this.broadcasts, this.notifications));
+    // PC-56 TENANT-8b (F-4): the morning half of quiet hours. NOT behind an env gate — a hold nothing releases is the
+    // silent drop F-4 names. Its emergency stop is the kill-switch flag `notification.held_release_kill_switch`, and the
+    // runner-wide JOBS_ENABLED switch still applies.
+    this.jobs.register(this.heldRelease);
   }
 }

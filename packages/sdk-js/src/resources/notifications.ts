@@ -3,38 +3,89 @@
 // is idempotent server-side. Gated server-side by the `communication` flag.
 import { HttpClient } from '../http';
 import {
-  NotificationItem, NotificationPreference, QuietHours, Page, TemplateActs, TemplateCatalogueEvent, TemplateIndex, TemplateLanguage, TemplateOverrideAct,
+  NotificationItem, NotificationPreference, QuietHours, QuietHoursInput, Page, InboxPage, InboxFilters, InboxQuery, NotificationBell, NotificationLadder, DeliveryHealth,
+  NotificationMatrix, QuietWindowReview, PreferenceReview, LanguageReview, TemplateActs, TemplateCatalogueEvent, TemplateIndex, TemplateLanguage, TemplateOverrideAct,
   TemplateOverrideFormInput, TemplateOverrideReview, TemplateSummary, TemplateView, TemplateSlot,
 } from '../types';
 
 export class NotificationsResource {
   constructor(private readonly http: HttpClient) {}
 
-  /** The caller's notification inbox (keyset). `unreadOnly` / `status` filter server-side. */
-  async inbox(opts: { status?: string; unreadOnly?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<NotificationItem>> {
-    const r = await this.http.request<NotificationItem[]>('GET', 'notifications', {
-      query: { status: opts.status, unreadOnly: opts.unreadOnly, cursor: opts.cursor, limit: opts.limit ?? 50 }, signal,
-    });
-    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  /** The caller's notification inbox (keyset) — [PC-56 TENANT-8b] IN-APP items only (F-9). Kept for the storefront,
+   *  partner and mobile inboxes; `inboxPage` returns the cooperative's zone and today beside the items. */
+  async inbox(opts: InboxQuery = {}, signal?: AbortSignal): Promise<Page<NotificationItem>> {
+    const p = await this.inboxPage(opts, signal);
+    return { items: p.items, nextCursor: p.nextCursor };
   }
-  /** Mark one notification read (idempotent). */
-  async markRead(id: string): Promise<NotificationItem> {
-    return (await this.http.request<NotificationItem>('POST', `notifications/${encodeURIComponent(id)}/read`)).data;
+  /** W204 / W431 · your in-app items with the GET-form filters (state · tier · module · channel), keyset. */
+  async inboxPage(opts: InboxQuery = {}, signal?: AbortSignal): Promise<InboxPage> {
+    const r = await this.http.request<NotificationItem[]>('GET', 'notifications', {
+      query: { status: opts.status, unreadOnly: opts.unreadOnly, state: opts.state, tier: opts.tier, module: opts.module, channel: opts.channel, cursor: opts.cursor, limit: opts.limit ?? 50 }, signal,
+    });
+    const m = (r.meta ?? {}) as { nextCursor?: string | null; zone?: string | null; today?: string | null };
+    return { items: r.data, nextCursor: m.nextCursor ?? null, zone: m.zone ?? null, today: m.today ?? null };
+  }
+  /** The filter vocabularies — tiers and modules from the catalogue. */
+  async inboxFilters(signal?: AbortSignal): Promise<InboxFilters> {
+    return (await this.http.request<InboxFilters>('GET', 'notifications/filters', { signal })).data;
+  }
+  /** W432 · the bell: unread (capped), the latest eight, what is held for you tonight. */
+  async bell(signal?: AbortSignal): Promise<NotificationBell> {
+    return (await this.http.request<NotificationBell>('GET', 'notifications/bell', { signal })).data;
+  }
+  /** W434 · one of your notifications, every channel of its delivery instance as a ladder. `at` = the item's `at`. */
+  async ladder(id: string, at: string, signal?: AbortSignal): Promise<NotificationLadder> {
+    return (await this.http.request<NotificationLadder>('GET', `notifications/${encodeURIComponent(id)}/ladder`, { query: { at }, signal })).data;
+  }
+  /** W204 · tenant-wide delivery health (24h) — notification.manage; anyone else gets COMM_FORBIDDEN (a sentence). */
+  async deliveryHealth(signal?: AbortSignal): Promise<DeliveryHealth> {
+    return (await this.http.request<DeliveryHealth>('GET', 'notifications/delivery-health', { signal })).data;
+  }
+  /** The mark-all-read confirm step's object. */
+  async readAllPreview(signal?: AbortSignal): Promise<{ unread: number }> {
+    return (await this.http.request<{ unread: number }>('GET', 'notifications/read-all', { signal })).data;
+  }
+  /** MARK ALL READ — the form's Idempotency-Key (required), audited server-side. */
+  async markAllRead(idempotencyKey: string): Promise<{ marked: number }> {
+    return (await this.http.request<{ marked: number }>('POST', 'notifications/read-all', { idempotencyKey })).data;
+  }
+  /** Mark one notification read (idempotent). `at` (the item's own instant) prunes to one partition; the key is the form's. */
+  async markRead(id: string, opts: { at?: string; idempotencyKey?: string } = {}): Promise<NotificationItem> {
+    return (await this.http.request<NotificationItem>('POST', `notifications/${encodeURIComponent(id)}/read`, {
+      idempotencyKey: opts.idempotencyKey, body: opts.at ? { at: opts.at } : {},
+    })).data;
   }
 
+  /** W433 · YOUR matrix (authentication only — F-13): every event, its tier and channels, locks, your overrides, the
+   *  window that applies to you, your language, the routine rule as decided. */
+  async matrix(signal?: AbortSignal): Promise<NotificationMatrix> {
+    return (await this.http.request<NotificationMatrix>('GET', 'notifications/matrix', { signal })).data;
+  }
   async getPreferences(signal?: AbortSignal): Promise<NotificationPreference[]> {
     return (await this.http.request<NotificationPreference[]>('GET', 'notifications/preferences', { signal })).data;
   }
-  /** Bulk set per event×channel opt-in/out (a mandatory event can't be disabled — server throws). */
-  async setPreferences(preferences: NotificationPreference[]): Promise<NotificationPreference[]> {
-    return (await this.http.request<NotificationPreference[]>('PUT', 'notifications/preferences', { body: { preferences } })).data;
+  /** The Save-preferences review (writes nothing — no key). */
+  async previewPreferences(preferences: NotificationPreference[]): Promise<PreferenceReview> {
+    return (await this.http.request<PreferenceReview>('POST', 'notifications/preferences/preview', { body: { preferences } })).data;
+  }
+  /** Bulk set per event×channel opt-in/out (a mandatory event can't be disabled — server throws). Keyed when given. */
+  async setPreferences(preferences: NotificationPreference[], idempotencyKey?: string): Promise<{ updated: number }> {
+    return (await this.http.request<{ updated: number }>('PUT', 'notifications/preferences', { idempotencyKey, body: { preferences } })).data;
   }
 
   async getQuietHours(signal?: AbortSignal): Promise<QuietHours | null> {
     return (await this.http.request<QuietHours | null>('GET', 'notifications/quiet-hours', { signal })).data;
   }
-  async setQuietHours(input: QuietHours): Promise<QuietHours> {
-    return (await this.http.request<QuietHours>('PUT', 'notifications/quiet-hours', { body: input })).data;
+  /** The Change-window review: the zone against the registry, the window maths, the diff (writes nothing). */
+  async previewQuietHours(input: { starts?: string; ends?: string; timezone?: string }): Promise<QuietWindowReview> {
+    return (await this.http.request<QuietWindowReview>('POST', 'notifications/quiet-hours/preview', { body: input })).data;
+  }
+  async setQuietHours(input: QuietHoursInput, idempotencyKey?: string): Promise<QuietHours> {
+    return (await this.http.request<QuietHours>('PUT', 'notifications/quiet-hours', { idempotencyKey, body: input })).data;
+  }
+  /** The Change-language review (the platform's ACTIVE registry). The write is `users.updateMe({ languageCode })`. */
+  async previewLanguage(languageCode: string | undefined): Promise<LanguageReview> {
+    return (await this.http.request<LanguageReview>('POST', 'notifications/language/preview', { body: languageCode ? { languageCode } : {} })).data;
   }
 
   /** Register this device's push token so the server can target it (call after login). Idempotent: the

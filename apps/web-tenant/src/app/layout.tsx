@@ -23,7 +23,8 @@ import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
 import type { UserProfile } from '@krishalaya/sdk-js';
 import { AppShell, KvUiGlobalStyles } from '@krishalaya/ui';
 import { Sidebar } from '../components/Sidebar';
-import { ConsoleTopbar } from '../components/ConsoleTopbar';
+import { ConsoleTopbar, type BellState } from '../components/ConsoleTopbar';
+import { SdkError } from '@krishalaya/sdk-js';
 
 export const metadata: Metadata = {
   title: { default: env.appName, template: `%s · ${env.appName}` },
@@ -35,8 +36,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const t = getTranslator();
   const authed = hasSessionCookie();
   let me: UserProfile | null = null;
+  // PC-56 TENANT-8b · W432: the bell's one read per page (unread capped at 100, the latest eight, what is held). A 404 is
+  // the communication module switched off → no bell; any other failure → the bell with no badge and a retry row.
+  let bell: BellState = { kind: 'hidden' };
   if (authed) {
-    try { me = await tenantClient().auth.me(); } catch { me = null; }
+    const [m, b] = await Promise.allSettled([tenantClient().auth.me(), tenantClient().notifications.bell()]);
+    me = m.status === 'fulfilled' ? m.value : null;
+    bell = b.status === 'fulfilled' ? { kind: 'ok', bell: b.value }
+      : (b.reason instanceof SdkError && (b.reason.status === 404 || b.reason.status === 401)) ? { kind: 'hidden' } : { kind: 'error' };
   }
   // DEV-19: theme (dark/light/system) + senior-mode attrs, resolved SERVER-SIDE from cookies (see
   // `lib/mechanism.ts`) — rendered directly into the initial HTML, so there is no client-side flash/hydration
@@ -52,7 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <a href="#main" className="kv-skip">{t.t('common.skipToContent')}</a>
         {authed ? (
-          <AppShell sidebar={<Sidebar me={me} />} topbar={<ConsoleTopbar me={me} />}>
+          <AppShell sidebar={<Sidebar me={me} />} topbar={<ConsoleTopbar me={me} bell={bell} />}>
             <div id="main">{children}</div>
           </AppShell>
         ) : (

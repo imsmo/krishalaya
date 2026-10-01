@@ -194,3 +194,28 @@ details.kv-card > summary { cursor: pointer; }
 .kv-template-body { white-space: pre-wrap; overflow-wrap: anywhere; margin-block: 6px; padding-block: 8px; padding-inline: 12px; border-inline-start: 3px solid var(--kv-neutral-200, #e5e5e5); }
 .kv-template-body--mine { border-inline-start-color: var(--kv-brand-500, #16a34a); }
 .kv-template-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+
+/* --- PC-56 TENANT-8b · THE INBOX — the bell (W432), the center (W431), the ladder (W434), the matrix (W433) ---
+   The bell is a native <details> disclosure (no client JS): the summary is the icon button, the popover is anchored to
+   the inline-END edge (logical properties, so it opens toward the reading start in an RTL locale). The badge is drawn
+   only when there is something unread (W432: zero unread = no badge) and caps at 99+ in the helper, never here. */
+.kv-bell { position: relative; display: inline-block; margin-inline-end: 12px; }
+.kv-bell > summary { list-style: none; cursor: pointer; position: relative; }
+.kv-bell > summary::-webkit-details-marker { display: none; }
+.kv-bell__badge { position: absolute; inset-block-start: -4px; inset-inline-end: -6px; min-inline-size: 18px; padding-inline: 4px; border-radius: 9999px; font-size: 11px; line-height: 18px; text-align: center; background: var(--kv-brand-500, #16a34a); color: var(--kv-neutral-0, #fff); }
+.kv-bell__popover { position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 6px); inline-size: min(360px, 90vw); max-block-size: 70vh; overflow: auto; z-index: 20; padding-block: 8px; padding-inline: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); background: var(--kv-neutral-0); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); }
+.kv-bell__head { margin-block: 4px 8px; }
+.kv-bell__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.kv-bell__item { padding-inline-start: 8px; border-inline-start: 3px solid transparent; }
+.kv-bell__item--unread { border-inline-start-color: var(--kv-brand-500, #16a34a); }
+.kv-notif-row--unread td:first-child { border-inline-start: 3px solid var(--kv-brand-500, #16a34a); }
+.kv-notif-filterform { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-block: var(--kv-space); max-inline-size: none; }
+.kv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-block: 8px; }
+.kv-kpi { display: grid; gap: 2px; padding-block: 8px; padding-inline: 12px; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); }
+.kv-kpi__label { font-size: 13px; color: var(--kv-neutral-600); }
+.kv-ladder { list-style: none; margin-block: var(--kv-space); padding: 0; display: grid; gap: 12px; }
+.kv-ladder__channel { padding-block: 8px; padding-inline: 12px; border-inline-start: 3px solid var(--kv-neutral-200, #e5e5e5); }
+.kv-ladder__steps { margin-block: 4px; padding-inline-start: 20px; }
+.kv-matrix td, .kv-matrix th { text-align: center; }
+.kv-matrix th[scope="row"], .kv-matrix th[scope="rowgroup"] { text-align: start; }
+.kv-sr-only { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

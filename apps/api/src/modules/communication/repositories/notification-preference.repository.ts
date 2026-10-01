@@ -55,4 +55,10 @@ export class NotificationPreferenceRepository {
         [userId, p.eventCode, p.channel, p.isEnabled]);
     }
   }
+
+  /** [PC-56 TENANT-8b] The member's own language (`users.language_code`) — W433's "Language" row and the review's diff. */
+  async languageOf(userId: string): Promise<string | null> {
+    const r = await this.replica.forTenant('').query<{ language_code: string }>(`SELECT language_code FROM users WHERE id = $1 AND deleted_at IS NULL`, [userId]);
+    return r.rows[0]?.language_code ?? null;
+  }
 }

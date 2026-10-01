@@ -1960,3 +1960,47 @@ describe('notification template overrides (TENANT-8a)', () => {
     expect((c.notifications as unknown as Record<string, unknown>).listTemplates).toBeUndefined();
   });
 });
+
+// PC-56 TENANT-8b · THE INBOX — every route has its method; the acts carry the FORM's key; `at` rides exact.
+describe('the inbox (TENANT-8b)', () => {
+  it('reads the inbox with its GET-form filters, the zone and today from meta; the bell, the ladder, the matrix, the filters', async () => {
+    const { fn, calls } = fakeFetch((c) => (c.url.includes('/notifications?') ? { body: { data: [{ id: 'n1' }], meta: { nextCursor: 'c2', zone: 'Asia/Kolkata', today: '2026-10-01' } } } : { body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const p = await c.notifications.inboxPage({ state: 'unread', tier: 'critical', module: 'dispute', channel: 'sms', limit: 25 });
+    expect(calls[0].url).toBe('https://api.test/v1/notifications?state=unread&tier=critical&module=dispute&channel=sms&limit=25');
+    expect(p).toEqual({ items: [{ id: 'n1' }], nextCursor: 'c2', zone: 'Asia/Kolkata', today: '2026-10-01' });
+    expect(await c.notifications.inbox({ unreadOnly: true })).toEqual({ items: [{ id: 'n1' }], nextCursor: 'c2' });   // the older callers' shape
+    await c.notifications.bell(); await c.notifications.ladder('n 1', '2026-10-01T02:10:00.123456Z'); await c.notifications.matrix();
+    await c.notifications.inboxFilters(); await c.notifications.deliveryHealth(); await c.notifications.readAllPreview();
+    expect(calls.slice(2).map((x) => x.url)).toEqual([
+      'https://api.test/v1/notifications/bell',
+      'https://api.test/v1/notifications/n%201/ladder?at=2026-10-01T02%3A10%3A00.123456Z',
+      'https://api.test/v1/notifications/matrix',
+      'https://api.test/v1/notifications/filters',
+      'https://api.test/v1/notifications/delivery-health',
+      'https://api.test/v1/notifications/read-all',
+    ]);
+  });
+  it('previews without a key; marks read / all read and writes preferences + quiet hours WITH the form\'s key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.notifications.previewQuietHours({ starts: '22:00', ends: '05:30' });
+    await c.notifications.previewPreferences([{ eventCode: 'order.packed', channel: 'sms', isEnabled: false }]);
+    await c.notifications.previewLanguage('gu');
+    await c.notifications.markAllRead('idem-all');
+    await c.notifications.markRead('n1', { at: '2026-10-01T02:10:00.123456Z', idempotencyKey: 'idem-one' });
+    await c.notifications.setQuietHours({ starts: '22:00', ends: '05:30' }, 'idem-qh');
+    await c.notifications.setPreferences([{ eventCode: 'order.packed', channel: 'sms', isEnabled: false }], 'idem-pr');
+    await c.notifications.markRead('n2');
+    const h = (i: number) => (calls[i].init.headers as Record<string, string>)['idempotency-key'];
+    expect(calls.map((x) => `${x.init.method} ${x.url.replace('https://api.test/v1/', '')}`)).toEqual([
+      'POST notifications/quiet-hours/preview', 'POST notifications/preferences/preview', 'POST notifications/language/preview',
+      'POST notifications/read-all', 'POST notifications/n1/read', 'PUT notifications/quiet-hours', 'PUT notifications/preferences', 'POST notifications/n2/read',
+    ]);
+    expect([h(0), h(1), h(2)]).toEqual([undefined, undefined, undefined]);
+    expect([h(3), h(4), h(5), h(6), h(7)]).toEqual(['idem-all', 'idem-one', 'idem-qh', 'idem-pr', undefined]);
+    expect(JSON.parse(String(calls[4].init.body))).toEqual({ at: '2026-10-01T02:10:00.123456Z' });
+    expect(JSON.parse(String(calls[5].init.body))).toEqual({ starts: '22:00', ends: '05:30' });   // no zone literal: blank → the cooperative's
+    expect(JSON.parse(String(calls[2].init.body))).toEqual({ languageCode: 'gu' });
+  });
+});

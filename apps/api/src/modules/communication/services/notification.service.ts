@@ -7,9 +7,15 @@
 //      THIS TENANT's languages in its order → 'en' — `fallbackChain`, PC-56 TENANT-8a / F-22),
 //      renders it, and DISPATCHES via the external notifier gateway (resilience-wrapped; 'inapp' needs no send);
 //   4. records ONE delivery-log row per channel in its final state (sent/failed/suppressed) + outbox events.
+//      [PC-56 TENANT-8b] "suppressed" is WRITTEN now (F-4): every channel the event is sent on gets a row — the ones
+//      not sent carry `suppressed_reason` (opted_out · quiet_hours · routine_collapsed), and a quiet-hours suppression
+//      is a HOLD (`held_until` = the end of the member's window) that `releaseHeld` sends when the window opens.
+//      The window is the member's own, else the COOPERATIVE's default in the cooperative's zone (F-5), and a zone the
+//      process cannot use is sanitised to the cooperative's, logged, and never thrown (F-6). Every row of one send
+//      shares `fanout_key` (W434's delivery instance).
 // Idempotent on re-delivery: the notification id is DERIVED deterministically from (dedupeKey, recipient,
 // channel), so the gateway (which dedups on that id) never double-sends after a relay retry.
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -28,9 +34,22 @@ import { NotificationTemplate } from '../domain/notification-template.entity';
 import { NotificationPreferenceRepository } from '../repositories/notification-preference.repository';
 import { QuietHoursRepository } from '../repositories/quiet-hours.repository';
 import { DeliveryReport, NotificationRepository, RecipientProfile, addressableOn } from '../repositories/notification.repository';
-import { NotificationNotFoundError, CommForbiddenError } from '../domain/communication.errors';
+import { CommForbiddenError } from '../domain/communication.errors';
 import { fallbackChain, LAST_RESORT_LANGUAGE } from '../domain/fallback-languages';
+import { EffectiveWindow, effectiveWindow, parseWindowSetting, isWithinWindow, windowEndAfter } from '../domain/quiet-window';
+import { fallbackAction, fanoutKeyOf, releaseDecision, suppressionRows, SuppressedReason } from '../domain/delivery-log';
 
+/** The fan-out's clock. Injectable so a live suite can pin "now" to a known side of a quiet window — the default window
+ *  is real (F-5), so a suite asserting a 22:00 push was SENT would otherwise depend on the hour it ran. */
+export const NOTIFICATION_CLOCK = Symbol('NOTIFICATION_CLOCK');
+/** 0176's kill-switch (0121 tier: ON = stop). OFF by default — the release runs. */
+export const HELD_RELEASE_KILL_SWITCH = 'notification.held_release_kill_switch';
+export type ReleaseOutcome = 'sent' | 'failed' | 'reheld' | 'opted_out';
+
+interface DeliverCtx {
+  tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string;
+  profile: RecipientProfile | null; templateCache: Map<string, NotificationTemplate | null>; inputLang?: string; tenantLangs?: readonly string[]; fanoutKey: string;
+}
 export interface FanoutInput { tenantId: string | null; eventCode: string; recipients: string[]; payload: Record<string, unknown>; dedupeKey: string; languageCode?: string; }
 
 /** Q24/DELTA-059 (decided G0-4 2026-07-22, see channel-resolution.ts's own header for the full ruling + tier
@@ -62,7 +81,9 @@ export class NotificationService {
     private readonly quiet: QuietHoursRepository,
     private readonly notifications: NotificationRepository,
     private readonly flags: FlagsService,
+    @Optional() @Inject(NOTIFICATION_CLOCK) private readonly clock?: () => Date,
   ) {}
+  private now(): Date { return this.clock ? this.clock() : new Date(); }
 
   /** Fan a single domain event out to its recipients' channels. Runs inside the relay tx (tenant context set). */
   async fanout(tx: TxContext, input: FanoutInput): Promise<void> {
@@ -94,6 +115,10 @@ export class NotificationService {
     const profiles = await this.notifications.profilesFor(tx, recipients);
     const prefsByUser = await this.prefs.mapForUsers(recipients, event.code, tx);
     const quietByUser = await this.quiet.mapForUsers(recipients, tx);
+    // [PC-56 TENANT-8b · F-5] What a member with no window inherits: the cooperative's default, in its zone. Read once.
+    const quietCtx = await this.quiet.tenantContext(input.tenantId, tx);
+    const tenantDefault = parseWindowSetting(quietCtx.defaultWindow);
+    const now = this.now();
     // Template resolution is per (language, channel), NOT per (recipient, channel): a village on one language asks
     // once instead of 87 times, and a village on three asks three times.
     const templateCache = new Map<string, NotificationTemplate | null>();
@@ -107,9 +132,16 @@ export class NotificationService {
       const profile = profiles.get(userId) ?? null;
       const lang = profile?.languageCode ?? input.languageCode ?? LAST_RESORT_LANGUAGE;
       const prefMap = prefsByUser.get(userId) ?? new Map<NotifChannel, boolean>();
-      const quiet = quietByUser.get(userId) ?? null;
-      const decision = resolveChannels(event.toCatalog(), prefMap, quiet, new Date());
-      for (const { channel } of decision.suppressed) this.metrics.inc('comm.suppressed', { event: event.code, channel });
+      // F-6: `effectiveWindow` SANITISES the zone — a member's `Asia/Kolkatta` degrades to the cooperative's zone and is
+      // reported here, instead of throwing a RangeError that rolled back the whole village's notice.
+      const window = effectiveWindow(quietByUser.get(userId) ?? null, tenantDefault, quietCtx.zone);
+      if (window?.sanitised) {
+        this.metrics.inc('comm.quiet_hours.timezone_sanitised', { event: event.code });
+        this.log.warn(`quiet hours: user ${userId} names zone "${window.requestedZone}", which this process cannot use; read in ${window.timezone} instead (the fan-out continues)`);
+      }
+      const decision = resolveChannels(event.toCatalog(), prefMap, window, now);
+      const fanoutKey = fanoutKeyOf(input.dedupeKey, userId);
+      const ctx = { tenantId: input.tenantId, userId, event: event.code, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode, tenantLangs, fanoutKey };
 
       // Flag OFF (default) → old behavior, unchanged: every resolved channel is dispatched (multi-channel).
       // Flag ON → routine tiers (informational/promotional) collapse to ONE primary + passive channels
@@ -121,7 +153,7 @@ export class NotificationService {
 
       let primaryStatus: NotifStatus | null = null;
       for (const channel of policy.toSendNow) {
-        const status = await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode, tenantLangs });
+        const status = await this.deliver(tx, { ...ctx, channel });
         if (channel === policy.primary) primaryStatus = status;
       }
       // SMS fallback: only when the routine policy proposed one AND the primary genuinely failed to deliver
@@ -129,18 +161,59 @@ export class NotificationService {
       // notification id is derived the SAME way as any other channel — deterministic per (dedupeKey, userId,
       // 'sms') — so a relay retry of this exact fanout re-derives the identical id (gateway-level dedup, same
       // guarantee the module already documents for every other channel; see deriveId() below).
+      // [PC-56 TENANT-8b] …and the fallback respects quiet hours and opt-outs like any other SMS: it is HELD at night,
+      // skipped when the member's SMS row already exists (held or opted out), never a second row for one channel.
+      let fallbackUsed: NotifChannel | null = null;
       if (policy.fallback && primaryStatus === 'failed') {
-        this.metrics.inc('comm.routine_fallback_sms', { event: event.code });
-        await this.deliver(tx, { tenantId: input.tenantId, userId, event: event.code, channel: policy.fallback, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode, tenantLangs });
+        const action = fallbackAction({ fallback: policy.fallback, resolved: decision, priority: event.priority, inQuiet: window ? isWithinWindow(now, window) : false });
+        if (action === 'send') {
+          this.metrics.inc('comm.routine_fallback_sms', { event: event.code });
+          await this.deliver(tx, { ...ctx, channel: policy.fallback });
+          fallbackUsed = policy.fallback;
+        } else if (action === 'hold') {
+          await this.recordSuppressed(tx, { ...ctx, channel: policy.fallback }, 'quiet_hours', (window ? windowEndAfter(now, window) : null) ?? now);
+          fallbackUsed = policy.fallback;
+        }
+      }
+      // F-4 · EVERY CHANNEL NOT SENT IS A ROW, WITH ITS REASON. Before this wave this was `metrics.inc` and nothing else.
+      for (const sup of suppressionRows({ resolved: decision, sentNow: policy.toSendNow, fallbackUsed, window, now })) {
+        await this.recordSuppressed(tx, { ...ctx, channel: sup.channel }, sup.reason, sup.heldUntil);
       }
     }
   }
 
-  private async deliver(tx: TxContext, a: { tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string; profile: RecipientProfile | null; templateCache: Map<string, NotificationTemplate | null>; inputLang?: string; tenantLangs?: readonly string[] }): Promise<NotifStatus> {
-    const id = deriveId(a.dedupeKey, a.userId, a.channel);
-    // TEMPLATE RESOLUTION: the RECIPIENT'S OWN language first, then the emitter's if it named one, then this tenant's
-    // own languages in its order, then English (`fallbackChain`). Cached per (language, channel) for the whole fan-out — the words for a language do not differ by
-    // reader, and 87 identical lookups on one connection was most of what a village notice cost.
+  /** F-4 · write the channel the fan-out did NOT send, with its reason (and, for quiet hours, when it will be). */
+  private async recordSuppressed(tx: TxContext, a: { tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string; fanoutKey: string },
+    reason: SuppressedReason, heldUntil: Date | null): Promise<void> {
+    const n = Notification.queue({ id: deriveId(a.dedupeKey, a.userId, a.channel), tenantId: a.tenantId, userId: a.userId, eventCode: a.event, channel: a.channel,
+      templateId: null, templateVersionId: null, languageCode: a.lang, payload: a.payload, fanoutKey: a.fanoutKey });
+    n.markSuppressed(reason, heldUntil);
+    await this.notifications.insert(tx, n);
+    await this.flush(tx, a.tenantId, n.id, n.pullEvents());
+    this.metrics.inc('comm.suppressed', { event: a.event, channel: a.channel, reason });
+  }
+
+  private async deliver(tx: TxContext, a: DeliverCtx): Promise<NotifStatus> {
+    const template = await this.resolveTemplate(tx, a);
+    const n = Notification.queue({ id: deriveId(a.dedupeKey, a.userId, a.channel), tenantId: a.tenantId, userId: a.userId, eventCode: a.event, channel: a.channel,
+      templateId: template?.id ?? null,
+      // **THE VERSION, NOT ONLY THE TEMPLATE (0122).** `template_id` points at a row whose body used to be replaced in
+      // place, so the log recorded WHICH template was used and could not say WHAT WAS SENT — and `payload` holds the
+      // variables, not the rendered text. The version is immutable, so this is the column that answers a farmer's "the
+      // OTP message never arrived" and a regulator's "what wording went out under this DLT header".
+      templateVersionId: template?.versionId ?? null,
+      languageCode: template?.languageCode ?? a.lang, payload: a.payload, fanoutKey: a.fanoutKey });
+    await this.dispatchInto(tx, n, a, template);
+    await this.notifications.insert(tx, n);
+    await this.flush(tx, a.tenantId, n.id, n.pullEvents());
+    this.metrics.inc('comm.delivered', { event: a.event, channel: a.channel, status: n.status });
+    return n.status;
+  }
+
+  // TEMPLATE RESOLUTION: the RECIPIENT'S OWN language first, then the emitter's if it named one, then this tenant's
+  // own languages in its order, then English (`fallbackChain`). Cached per (language, channel) for the whole fan-out — the words for a language do not differ by
+  // reader, and 87 identical lookups on one connection was most of what a village notice cost.
+  private async resolveTemplate(tx: TxContext, a: Pick<DeliverCtx, 'tenantId' | 'event' | 'channel' | 'lang' | 'inputLang' | 'tenantLangs' | 'templateCache'>): Promise<NotificationTemplate | null> {
     const chain = fallbackChain(a.lang, a.inputLang, a.tenantLangs ?? []);
     let template: NotificationTemplate | null = null;
     for (const l of chain) {
@@ -155,16 +228,13 @@ export class NotificationService {
     if (template && template.languageCode !== a.lang) {
       this.metrics.inc('comm.language_fallback', { event: a.event, channel: a.channel, wanted: a.lang, used: template.languageCode });
     }
-    const rendered = template ? template.render(a.payload) : { subject: null, body: '' };
-    const n = Notification.queue({ id, tenantId: a.tenantId, userId: a.userId, eventCode: a.event, channel: a.channel,
-      templateId: template?.id ?? null,
-      // **THE VERSION, NOT ONLY THE TEMPLATE (0122).** `template_id` points at a row whose body used to be replaced in
-      // place, so the log recorded WHICH template was used and could not say WHAT WAS SENT — and `payload` holds the
-      // variables, not the rendered text. The version is immutable, so this is the column that answers a farmer's "the
-      // OTP message never arrived" and a regulator's "what wording went out under this DLT header".
-      templateVersionId: template?.versionId ?? null,
-      languageCode: template?.languageCode ?? a.lang, payload: a.payload });
+    return template;
+  }
 
+  /** Send a queued row on its channel (or record why not). Shared by the fan-out and the release of a held row, so a
+   *  morning release obeys exactly the rules a daytime send does (template, address, device, notifier). */
+  private async dispatchInto(tx: TxContext, n: Notification, a: Pick<DeliverCtx, 'tenantId' | 'userId' | 'event' | 'channel' | 'lang' | 'payload' | 'profile'>, template: NotificationTemplate | null): Promise<void> {
+    const rendered = template ? template.render(a.payload) : { subject: null, body: '' };
     if (a.channel === 'inapp') {
       n.markSent(null, null);   // the inbox row IS the in-app item; nothing to send externally
     } else if (!template) {
@@ -181,15 +251,51 @@ export class NotificationService {
       // send via the resilient PUSH_SENDER. Dead tokens (DeviceNotRegistered) are deactivated in-tx (hygiene).
       await this.deliverPush(tx, a, n, { subject: rendered.subject, body: rendered.body });
     } else {
-      const res = await this.gateway.dispatch({ idempotencyKey: id, tenantId: a.tenantId, userId: a.userId, channel: a.channel as NotifyChannel,
+      const res = await this.gateway.dispatch({ idempotencyKey: n.id, tenantId: a.tenantId, userId: a.userId, channel: a.channel as NotifyChannel,
         eventCode: a.event, languageCode: n.toProps().languageCode ?? a.lang, subject: rendered.subject, body: rendered.body, providerTemplateRef: template.providerTemplateRef, payload: a.payload });
       if (res.status === 'accepted') n.markSent(res.providerMsgRef ?? null, res.costMinor ?? null);
       else n.markFailed(res.failureReason ?? 'dispatch_failed');
     }
-    await this.notifications.insert(tx, n);
-    await this.flush(tx, a.tenantId, n.id, n.pullEvents());
-    this.metrics.inc('comm.delivered', { event: a.event, channel: a.channel, status: n.status });
-    return n.status;
+  }
+
+  /**
+   * **THE MORNING HALF OF A HOLD (F-4, W432's promise).** A held row whose window has ended, claimed by the release job
+   * on its own transaction (`app.tenant_id` set). Re-asked, because a night is long (`releaseDecision`): opted out since →
+   * never sent; the window widened → held again; otherwise `suppressed → queued` and sent on exactly the daytime path
+   * (`dispatchInto`) — template in the reader's language, address, device, notifier. The row keeps
+   * `suppressed_reason = quiet_hours` and gains `released_at`, so W434 can draw "held → released → sent".
+   */
+  async releaseHeld(tx: TxContext, n: Notification): Promise<ReleaseOutcome> {
+    const p = n.toProps();
+    const now = this.now();
+    const event = await this.events.getByCode(p.eventCode, tx);
+    const prefs = await this.prefs.mapForUsers([p.userId], p.eventCode, tx);
+    const own = (await this.quiet.mapForUsers([p.userId], tx)).get(p.userId) ?? null;
+    const qctx = await this.quiet.tenantContext(p.tenantId, tx);
+    const window: EffectiveWindow | null = effectiveWindow(own, parseWindowSetting(qctx.defaultWindow), qctx.zone);
+    const d = releaseDecision({
+      priority: event?.priority ?? 'informational', userCanOptOut: event?.userCanOptOut ?? true, channel: p.channel,
+      prefEnabled: prefs.get(p.userId)?.get(p.channel), window, now,
+    });
+    if (d.kind === 'opted_out') { n.dropHoldAsOptedOut(); await this.notifications.updateReleased(tx, n); return 'opted_out'; }
+    if (d.kind === 'rehold') { n.rehold(d.until); await this.notifications.updateReleased(tx, n); return 'reheld'; }
+    n.release(now);
+    const profile = (await this.notifications.profilesFor(tx, [p.userId])).get(p.userId) ?? null;
+    const lang = p.languageCode ?? profile?.languageCode ?? LAST_RESORT_LANGUAGE;
+    const tenantLangs = await this.templates.tenantLanguageOrder(p.tenantId, tx);
+    const a = { tenantId: p.tenantId, userId: p.userId, event: p.eventCode, channel: p.channel, lang, payload: p.payload, profile, templateCache: new Map<string, NotificationTemplate | null>(), tenantLangs };
+    const template = await this.resolveTemplate(tx, a);
+    n.attachTemplate(template?.id ?? null, template?.versionId ?? null, template?.languageCode ?? lang);
+    await this.dispatchInto(tx, n, a, template);
+    await this.notifications.updateReleased(tx, n);
+    await this.flush(tx, p.tenantId, n.id, n.pullEvents());
+    this.metrics.inc('comm.held_released', { event: p.eventCode, channel: p.channel, status: n.status });
+    return n.status === 'failed' ? 'failed' : 'sent';
+  }
+
+  /** Is the release switched off (the kill-switch fired)? Read by the job and printed by the bell / ladder. */
+  async releaseStopped(tenantId?: string | null): Promise<boolean> {
+    return this.flags.isEnabled(HELD_RELEASE_KILL_SWITCH, { tenantId: tenantId ?? undefined }).catch(() => false);
   }
 
   /** Send a rendered notification to the recipient's registered push devices (P0-10). The token is the
@@ -208,24 +314,8 @@ export class NotificationService {
     else n.markFailed(res.failureReason ?? 'push_failed');
   }
 
-  // ---- the recipient's own inbox (controller-facing) -------------------------------------------------
-  async listInbox(tenantId: string, userId: string, q: { status?: string; unreadOnly?: boolean; cursor?: { c: string; id: string }; limit: number }) {
-    const rows = await this.notifications.listForUser(userId, tenantId, q);
-    const items = rows.map((n) => n.toJSON());
-    const last = items[items.length - 1];
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${(last as any).createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
-    return { items, nextCursor };
-  }
-  async markRead(tenantId: string, userId: string, id: string) {
-    return this.uow.run(tenantId, async (tx) => {
-      const n = await this.notifications.getForUserUpdate(tx, userId, id);
-      if (!n) throw new NotificationNotFoundError(id);   // 404 for a non-owner (no cross-user IDOR)
-      n.markRead();
-      await this.notifications.update(tx, n);
-      await this.flush(tx, tenantId, n.id, n.pullEvents());
-      return n.toJSON();
-    }, { userId });
-  }
+  // ---- the recipient's own inbox moved to `InboxService` (PC-56 TENANT-8b): the bell, the center, mark-read and
+  // mark-all-read as audited, keyed acts, and W434's ladder. This service keeps the SEND side.
 
   /**
    * **THE MODULE'S PUBLIC ANSWER TO *"DID THEY GET IT?"* (PC-56 TENANT-6d-8.)**
@@ -244,13 +334,23 @@ export class NotificationService {
     return this.notifications.deliveryReport(tenantId, i, x);
   }
 
-  /** Delivery-status webhook from the external notifier (provider_msg_ref → delivered). Idempotent. */
-  async applyDeliveryStatus(tenantId: string | null, providerMsgRef: string, status: 'delivered' | 'failed'): Promise<boolean> {
+  /**
+   * **THE DELIVERY RECEIPT, BOTH WAYS (F-10).** The webhook used to answer `applied: true` to a `failed` receipt and
+   * leave the row `sent` — the provider told the platform a farmer never got the message and the log kept saying it
+   * went. Now: `sent → delivered` with `delivered_at`, `sent → failed` with `failed_at` and a failure CODE (the
+   * provider's own words are normalised — `provider_rejected` when unknown — and ride the outbox event). A receipt for a
+   * row already past `sent` (a duplicate, or a late `delivered` after `read`) is `unchanged`, idempotently.
+   */
+  async applyDeliveryStatus(tenantId: string | null, providerMsgRef: string, status: 'delivered' | 'failed', reason?: string | null): Promise<'delivered' | 'failed' | 'unchanged' | 'not_found'> {
     return this.uow.run(tenantId ?? '', async (tx) => {
       const n = await this.notifications.getByProviderRef(tx, providerMsgRef);
-      if (!n) return false;
-      if (status === 'delivered' && n.status === 'sent') { n.markDelivered(); await this.notifications.update(tx, n); }
-      return true;
+      if (!n) return 'not_found' as const;
+      if (n.status !== 'sent') return 'unchanged' as const;
+      if (status === 'delivered') n.markDelivered(this.now()); else n.markFailedByProvider(reason);
+      await this.notifications.update(tx, n);
+      await this.flush(tx, n.tenantId, n.id, n.pullEvents());
+      this.metrics.inc('comm.delivery_receipt', { channel: n.channel, status });
+      return status;
     });
   }
 

@@ -28,6 +28,9 @@ import { QuietHoursRepository } from '../repositories/quiet-hours.repository';
 import { NotificationRepository } from '../repositories/notification.repository';
 import { NotificationService } from '../services/notification.service';
 import { PreferenceService } from '../services/preference.service';
+import { InboxService } from '../services/inbox.service';
+import { AuditWriter } from '../../../core/audit/audit.writer';
+import { PgIdempotencyService as PgIdem } from '../../../core/idempotency/idempotency.service.pg';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -35,7 +38,7 @@ const run = APP_URL ? describe : describe.skip;
 
 run('communication spine (integration, real Postgres + RLS + seeded catalog)', () => {
   let pools: PgPoolProvider; let admin: Pool; let inspect: Pool; let uow: PgUnitOfWork;
-  let notifications: NotificationService; let prefsSvc: PreferenceService; let notifRepo: NotificationRepository;
+  let notifications: NotificationService; let prefsSvc: PreferenceService; let notifRepo: NotificationRepository; let inbox: InboxService;
   const tenantA = randomUUID(); const tenantB = randomUUID(); const user = randomUUID();
 
   beforeAll(async () => {
@@ -56,8 +59,12 @@ run('communication spine (integration, real Postgres + RLS + seeded catalog)', (
     const quiet = new QuietHoursRepository(replica as any);
     notifRepo = new NotificationRepository(replica as any);
     const flags = new FlagsService(pools, new InMemoryCacheService());   // DB-backed; unseeded flag ⇒ OFF (old behavior), matching production default
-    notifications = new NotificationService(uow, outbox, metrics, gateway, pushSender, pushDevices, events, templates, prefs, quiet, notifRepo, flags);
-    prefsSvc = new PreferenceService(uow, outbox, events, prefs, quiet);
+    // [PC-56 TENANT-8b] the cooperative's default quiet window is real now (F-5), so the clock is pinned to midday IST:
+    // this suite asserts SENDS, and a 22:00 run would (correctly) hold the push instead.
+    notifications = new NotificationService(uow, outbox, metrics, gateway, pushSender, pushDevices, events, templates, prefs, quiet, notifRepo, flags, () => new Date('2026-09-30T06:30:00Z'));
+    const audit = new AuditWriter(pools); const idem = new PgIdem(pools);
+    prefsSvc = new PreferenceService(uow, outbox, events, prefs, quiet, audit, idem, templates, flags);
+    inbox = new InboxService(uow, outbox, audit, idem, metrics, notifRepo, events, notifications);
     inspect = new Pool({ connectionString: APP_URL });
 
     // [PC-56 TENANT-6c-2] THIS SPEC HAS BEEN FAILING SINCE FIRST-PARTY PUSH SHIPPED, AND NOBODY RAN IT.
@@ -83,23 +90,31 @@ run('communication spine (integration, real Postgres + RLS + seeded catalog)', (
     expect(byCh.push).toBe('sent'); expect(byCh.inapp).toBe('sent'); expect(byCh.sms).toBe('failed');
   });
 
-  it('inbox lists the rows and mark-read flips one to read', async () => {
-    const { items } = await notifications.listInbox(tenantA, user, { limit: 50 });
-    expect(items.length).toBeGreaterThanOrEqual(3);
+  it('inbox lists the IN-APP item only (PC-56 TENANT-8b, F-9) and mark-read flips it to read', async () => {
+    const { items } = await inbox.list(tenantA, user, { limit: 50 });
+    // One delivery instance, one inbox line: the push and SMS rows of the same send are its ladder, not more lines.
+    expect(items.every((i: any) => i.channel === 'inapp')).toBe(true);
+    expect(items.length).toBe(1);
+    expect(items[0].alsoOn.map((a) => a.channel).sort()).toEqual(['push', 'sms']);
     const inapp = items.find((i: any) => i.channel === 'inapp');
     // assert it exists rather than asserting it away: if the seeded in-app row is missing, THAT is the failure worth
     // reporting, not a cascade of undefined-property errors further down
     expect(inapp).toBeDefined();
-    const read = await notifications.markRead(tenantA, user, inapp!.id);
+    const read = await inbox.markRead(tenantA, { userId: user, canManage: false }, inapp!.id, { at: inapp!.at });
     expect(read.status).toBe('read');
+    // [PC-56 TENANT-8b] and the ROW says read — before this wave the point update bound a millisecond Date against a
+    // microsecond column and matched nothing, while the response said `read` (NotificationRepository's AT()).
+    expect((await admin.query(`SELECT status::text AS s, read_at FROM notifications WHERE id = $1`, [inapp!.id])).rows[0].s).toBe('read');
   });
 
-  it('opting out of push suppresses the push row on the next fanout', async () => {
+  it('opting out of push suppresses the push on the next fanout — RECORDED as suppressed · opted_out (F-4), never sent', async () => {
     await prefsSvc.setPreferences(tenantA, user, [{ eventCode: 'order.confirmed', channel: 'push', isEnabled: false }]);
     const before = (await admin.query(`SELECT count(*)::int n FROM notifications WHERE tenant_id=$1 AND user_id=$2 AND channel='push'`, [tenantA, user])).rows[0].n;
     await uow.run(tenantA, (tx) => notifications.fanout(tx, { tenantId: tenantA, eventCode: 'order.confirmed', recipients: [user], payload: { orderNo: 'A-2' }, dedupeKey: `evt-${randomUUID()}` }));
     const after = (await admin.query(`SELECT count(*)::int n FROM notifications WHERE tenant_id=$1 AND user_id=$2 AND channel='push'`, [tenantA, user])).rows[0].n;
-    expect(after).toBe(before);   // no new push row — suppressed by the opt-out
+    expect(after).toBe(before + 1);   // [PC-56 TENANT-8b] one NEW push row — and it is a suppression, not a send
+    const last = (await admin.query(`SELECT status, suppressed_reason FROM notifications WHERE tenant_id=$1 AND user_id=$2 AND channel='push' ORDER BY created_at DESC LIMIT 1`, [tenantA, user])).rows[0];
+    expect([last.status, last.suppressed_reason]).toEqual(['suppressed', 'opted_out']);
   });
 
   it('RLS: tenant B cannot see tenant A\'s notifications', async () => {

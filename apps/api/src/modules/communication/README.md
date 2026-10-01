@@ -49,6 +49,17 @@ re-delivery never double-records, and the gateway (which dedups on that id) neve
 
 - `GET /v1/notifications` — the caller's own inbox (keyset; `status`, `unreadOnly`). `POST /v1/notifications/:id/read`.
 - `GET/PUT /v1/notifications/preferences`, `GET/PUT /v1/notifications/quiet-hours` — the caller's own settings.
+- [TENANT-8b · THE INBOX, migration 0176] The inbox is the **in-app row only** (F-9), each item naming its other channels
+  (`fanout_key`, one per event × recipient); `GET …/notifications/bell` (unread capped at 100, latest 8, what is held),
+  `GET …/filters`, `GET …/:id/ladder?at=` (W434 — every channel of one delivery instance as a ladder from its own
+  columns), `GET/POST …/read-all` (keyed, one audit row with the count), `GET …/delivery-health` (24 h, `notification.manage`),
+  `GET …/matrix` (W433 — the member's OWN catalogue read, F-13), `POST …/quiet-hours/preview` · `…/preferences/preview` ·
+  `…/language/preview` (the form chain's reviews). Every channel NOT sent is now a row (`suppressed` +
+  `suppressed_reason`); a quiet-hours suppression is a HOLD (`held_until`) that `HeldReleaseCadenceJob` sends when the
+  window ends (kill-switch `notification.held_release_kill_switch`); a member with no window gets the cooperative's
+  `notification.quiet_hours_default` (21:00–06:00) in `countries.timezone` (F-5); a zone the process cannot use is sanitised,
+  never thrown (F-6) and refused at write (`pg_timezone_names`); the webhook's `failed` is applied with a vocabulary reason
+  (F-10). Point lookups on `created_at` are a one-millisecond range (`AT()` — JS Dates lose the column's microseconds).
 - `GET /v1/notifications/events` — catalog browse (`notification.manage`).
 - [TENANT-8a] `GET /v1/notifications/templates` (W180, keyset on the slot + live summary), `GET …/templates/catalogue`,
   `GET …/templates/languages`, `POST …/templates/preview` (the form's review), `POST …/templates` (a DRAFT version,
@@ -106,7 +117,9 @@ Moderation (`message.moderate`) can lock threads + unflag after review.
 
 ## Deferred (schema present, not built)
 
-The smart-digest batching engine (`batchable` + `batched_into`); a DB-level failed-notification retry poller;
+The smart-digest batching engine (`batchable` + `batched_into` — refused by name on W204/W433, TENANT-8b); a DB-level
+failed-notification retry poller (W434's retry ladder, refused by name); collapse threads / archive / channel master
+switches / a one-night quiet-hours suspension (W431/W433, refused by name);
 IVR/voice rendering; call recording retrieval (consent-gated `recording_media_id` is stored but not exposed).
 
 ## Tests

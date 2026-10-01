@@ -59,3 +59,12 @@ export class TemplateActRefusedError extends DomainError {
 export class TemplateNotFoundError extends DomainError {
   constructor(id: string) { super('TEMPLATE_NOT_FOUND', `Template ${id} not found`, 404, { id }); }
 }
+// PC-56 TENANT-8b · THE INBOX. A form-chain write refused with the review's own codes (the console prints the sentence).
+export class InboxFormRefusedError extends DomainError {
+  constructor(form: string, refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('INBOX_FORM_REFUSED', `${form} refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { form, refusals });
+  }
+}
+export class NotificationUpdateLostError extends DomainError {
+  constructor(id: string) { super('NOTIFICATION_UPDATE_LOST', `Notification ${id}: the update matched no row`, 409, { id }); }
+}

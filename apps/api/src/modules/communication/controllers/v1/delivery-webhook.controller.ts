@@ -1,7 +1,10 @@
 // modules/communication/controllers/v1/delivery-webhook.controller.ts · PUBLIC, UNAUTHENTICATED delivery-status
 // sink: the external notifier POSTs here when a message is delivered/failed. Trust is established ONLY by the
 // HMAC-SHA256 signature over the RAW body (constant-time compare against NOTIFY_WEBHOOK_SECRET) — fail-closed
-// if unconfigured or mismatched. Idempotent (provider_msg_ref → delivered). `communication` flag.
+// if unconfigured or mismatched. Idempotent (provider_msg_ref → delivered | failed). `communication` flag.
+// [PC-56 TENANT-8b · F-10] `failed` is APPLIED now (it was accepted and discarded): `sent → failed` with a failure CODE —
+// the body's optional `reason` normalised to the notification_failure_reason vocabulary — and `failed_at`; `delivered`
+// stamps `delivered_at`. The answer says what happened: `delivered` · `failed` · `unchanged` · `not_found`.
 import { Controller, Headers, HttpCode, Inject, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -51,7 +54,7 @@ export class DeliveryWebhookController {
       await this.receipts.settle(receipt, { signatureOk: false, reason: 'mismatch', status: 'ignored' });
       throw new ForbiddenError('bad signature');
     }
-    const body = (req.body ?? {}) as { tenantId?: string | null; providerMsgRef?: string; status?: string };
+    const body = (req.body ?? {}) as { tenantId?: string | null; providerMsgRef?: string; status?: string; reason?: unknown };
     if (!body.providerMsgRef || (body.status !== 'delivered' && body.status !== 'failed')) {
       // A GOOD signature over a body this endpoint cannot use: the signature verdict stays true, because it was, and
       // the processing status carries the fault. Recording it as a signature failure would blame the caller's secret
@@ -59,8 +62,9 @@ export class DeliveryWebhookController {
       await this.receipts.settle(receipt, { signatureOk: true, reason: 'ok', status: 'failed', error: 'providerMsgRef + status(delivered|failed) required' });
       throw new BadRequestError('providerMsgRef + status(delivered|failed) required');
     }
-    const applied = await this.svc.applyDeliveryStatus(body.tenantId ?? null, body.providerMsgRef, body.status);
+    const reason = typeof body.reason === 'string' ? body.reason.slice(0, 200) : null;
+    const outcome = await this.svc.applyDeliveryStatus(body.tenantId ?? null, body.providerMsgRef, body.status, reason);
     await this.receipts.settle(receipt, { signatureOk: true, reason: 'ok', status: 'processed' });
-    return { data: { applied } };
+    return { data: { applied: outcome !== 'not_found', outcome } };
   }
 }

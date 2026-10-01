@@ -6,7 +6,6 @@ import { NotificationService } from '../services/notification.service';
 import { NotificationEvent } from '../domain/notification-event.entity';
 import { NotificationTemplate } from '../domain/notification-template.entity';
 import { NotificationPreference } from '../domain/notification-preference.entity';
-import { NotificationNotFoundError } from '../domain/communication.errors';
 import { NotifChannel } from '../domain/communication.events';
 
 // default channels are sms + inapp: sms exercises the external gateway path; inapp needs no send. (The PUSH
@@ -31,7 +30,7 @@ function harness(opts: { event?: NotificationEvent | null; prefs?: NotificationP
     mapForUsers: jest.fn(async (ids: readonly string[]) => new Map(ids.map((id) =>
       [id, new Map((opts.prefs ?? []).filter((p) => p.toJSON().userId === id).map((p) => [p.channel, p.isEnabled]))]))),
   };
-  const quiet = { getForUser: jest.fn(async () => null), mapForUsers: jest.fn(async () => new Map()) };
+  const quiet = { getForUser: jest.fn(async () => null), mapForUsers: jest.fn(async () => new Map()), tenantContext: jest.fn(async () => ({ zone: null, defaultWindow: null })) };
   const pushSender = { providerCode: 'fake', send: jest.fn(async () => ({ sent: 1, invalidTokens: [] })) };
   const devices = { activeTokensForUser: jest.fn(async () => [{ token: 'tok', platform: 'android' }]), deactivate: jest.fn(async () => 1) };
   const notifications = { insert: jest.fn(async (_tx: any, n: any) => { inserted.push(n); }),
@@ -73,10 +72,13 @@ describe('NotificationService.fanout', () => {
     const inapp = h.inserted.find((n) => n.toProps().channel === 'inapp');
     expect(inapp.status).toBe('sent');                              // inapp unaffected
   });
-  it('honors an opt-out: a disabled channel is not recorded', async () => {
+  it('honors an opt-out: a disabled channel is never SENT — and (PC-56 TENANT-8b, F-4) is RECORDED as suppressed', async () => {
     const h = harness({ prefs: [NotificationPreference.rehydrate({ userId: 'u1', eventCode: 'order.delivered', channel: 'sms', isEnabled: false })] });
     await h.svc.fanout(h.tx as any, { tenantId: 't1', eventCode: 'order.delivered', recipients: ['u1'], payload: {}, dedupeKey: 'evt-3' });
-    expect(h.inserted.map((n) => n.toProps().channel)).toEqual(['inapp']);
+    expect(h.inserted.filter((n) => n.status !== 'suppressed').map((n) => n.toProps().channel)).toEqual(['inapp']);
+    expect(h.gateway.dispatch).not.toHaveBeenCalled();
+    const sms = h.inserted.find((n) => n.toProps().channel === 'sms');
+    expect([sms.status, sms.toProps().suppressedReason, sms.toProps().heldUntil]).toEqual(['suppressed', 'opted_out', null]);
   });
   it('derives a STABLE notification id (idempotent re-delivery → same id → gateway dedup)', async () => {
     const a = harness(); await a.svc.fanout(a.tx as any, { tenantId: 't1', eventCode: 'order.delivered', recipients: ['u1'], payload: {}, dedupeKey: 'evt-X' });
@@ -88,9 +90,4 @@ describe('NotificationService.fanout', () => {
   });
 });
 
-describe('NotificationService.markRead', () => {
-  it('404s for a non-owner / missing notification (no cross-user IDOR)', async () => {
-    const h = harness();
-    await expect(h.svc.markRead('t1', 'u1', 'n-does-not-exist')).rejects.toBeInstanceOf(NotificationNotFoundError);
-  });
-});
+// (mark-read moved to InboxService — PC-56 TENANT-8b; its 404-for-a-non-owner pin lives in tenant8b-inbox.spec.ts.)

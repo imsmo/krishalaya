@@ -8,31 +8,24 @@
 //     'critical' (critical bypasses quiet hours); email + in-app are never quiet-hours-suppressed (passive);
 //   • the result is deterministic and float-free.
 import { NotifChannel, NotifPriority } from './communication.events';
+import { isWithinWindow } from './quiet-window';
 
 export interface CatalogEvent { code: string; priority: NotifPriority; defaultChannels: NotifChannel[]; userCanOptOut: boolean; }
 export interface QuietHours { starts: string; ends: string; timezone: string; }   // 'HH:MM[:SS]'
+/** Why a channel was not sent (0176's `suppressed_reason`). `routine_collapsed` is decided by `applyRoutinePolicy`;
+ *  `channel_off` is reserved for a channel master switch (W433 — refused by name, written by nothing yet). */
 export type SuppressReason = 'opted_out' | 'quiet_hours';
 export interface ChannelDecision { channels: NotifChannel[]; suppressed: { channel: NotifChannel; reason: SuppressReason }[]; }
 
 const INTRUSIVE: ReadonlySet<NotifChannel> = new Set<NotifChannel>(['push', 'sms', 'whatsapp', 'ivr']);
+/** Channels quiet hours HOLD (push/sms/whatsapp/ivr interrupt); email and in-app never wait. */
+export function isIntrusive(ch: NotifChannel): boolean { return INTRUSIVE.has(ch); }
 
-/** Local wall-clock minutes-of-day in the user's timezone (stdlib Intl, DST-correct, no float). */
-export function minutesOfDayInTz(now: Date, timezone: string): number {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
-  const h = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
-  const m = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
-  return (h % 24) * 60 + m;
-}
-function toMinutes(hhmm: string): number { const [h, m] = hhmm.split(':'); return (Number(h) % 24) * 60 + Number(m ?? '0'); }
-
-/** Is `now` inside the (possibly overnight) quiet window? */
-export function isWithinQuietHours(now: Date, q: QuietHours): boolean {
-  const cur = minutesOfDayInTz(now, q.timezone);
-  const start = toMinutes(q.starts), end = toMinutes(q.ends);
-  if (start === end) return false;                 // zero-length window = disabled
-  return start < end ? (cur >= start && cur < end) // same-day window
-                     : (cur >= start || cur < end);// overnight window (e.g. 21:00→06:00)
-}
+// [PC-56 TENANT-8b] The window arithmetic moved to `quiet-window.ts` (one place: inside-window, the window's END for a
+// held row, its length and next occurrence for the review). These two names stay so existing callers keep compiling.
+export { minutesOfDayInTz } from './quiet-window';
+/** Is `now` inside the (possibly overnight) quiet window? The zone MUST already be sanitised (`effectiveWindow`). */
+export function isWithinQuietHours(now: Date, q: QuietHours): boolean { return isWithinWindow(now, q); }
 
 export function resolveChannels(
   event: CatalogEvent,

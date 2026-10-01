@@ -47,7 +47,7 @@ function harness(opts: HarnessOpts) {
     mapForUsers: jest.fn(async (ids: readonly string[]) => new Map(ids.map((id) =>
       [id, new Map((opts.prefs ?? []).filter((p) => p.toJSON().userId === id).map((p) => [p.channel, p.isEnabled]))]))),
   };
-  const quiet = { getForUser: jest.fn(async () => null), mapForUsers: jest.fn(async () => new Map()) };
+  const quiet = { getForUser: jest.fn(async () => null), mapForUsers: jest.fn(async () => new Map()), tenantContext: jest.fn(async () => ({ zone: null, defaultWindow: null })) };
   const pushSender = {
     providerCode: 'fake',
     send: jest.fn(async () => (opts.dispatchByChannel?.push === 'failed' ? { sent: 0, invalidTokens: [], failureReason: 'push_failed' } : { sent: 1, invalidTokens: [] })),
@@ -74,7 +74,7 @@ describe('Q24/DELTA-059 routine fan-out policy (flag ON)', () => {
   it('(a) a routine event picks exactly ONE primary (non-passive) channel', async () => {
     const h = harness({ event: informational(), routineFlagOn: true });
     await h.svc.fanout(h.tx as any, { tenantId: 't1', eventCode: 'requirement.matched', recipients: ['u1'], payload: {}, dedupeKey: 'e1' });
-    const nonPassive = h.inserted.filter((n) => n.toProps().channel !== 'inapp');
+    const nonPassive = h.inserted.filter((n) => n.toProps().channel !== 'inapp' && n.status !== 'suppressed');
     expect(nonPassive).toHaveLength(1);
     expect(nonPassive[0].toProps().channel).toBe('push');           // first non-passive in default_channels order
     expect(h.inserted.map((n) => n.toProps().channel).sort()).toEqual(['inapp', 'push']); // passive still recorded
@@ -83,8 +83,11 @@ describe('Q24/DELTA-059 routine fan-out policy (flag ON)', () => {
   it('(b) a primary delivery failure enqueues the SMS fallback exactly once', async () => {
     const h = harness({ event: promotional3ch(), routineFlagOn: true, dispatchByChannel: { whatsapp: 'failed', sms: 'accepted' } });
     await h.svc.fanout(h.tx as any, { tenantId: 't1', eventCode: 'test.promo_3ch', recipients: ['u1'], payload: {}, dedupeKey: 'e2' });
-    const channels = h.inserted.map((n) => n.toProps().channel);
-    expect(channels).toEqual(['whatsapp', 'sms']);                  // primary (failed) + exactly ONE fallback row
+    // [PC-56 TENANT-8b · F-4] the collapsed channel is now a ROW (`suppressed · routine_collapsed`), written after the
+    // attempts; the attempts themselves are unchanged — primary (failed) + exactly ONE fallback row.
+    const attempts = h.inserted.filter((n) => n.status !== 'suppressed').map((n) => n.toProps().channel);
+    expect(attempts).toEqual(['whatsapp', 'sms']);
+    expect(h.inserted.filter((n) => n.status === 'suppressed').map((n) => [n.toProps().channel, n.toProps().suppressedReason])).toEqual([['push', 'routine_collapsed']]);
     const whatsapp = h.inserted.find((n) => n.toProps().channel === 'whatsapp');
     const sms = h.inserted.find((n) => n.toProps().channel === 'sms');
     expect(whatsapp.status).toBe('failed');
@@ -95,8 +98,11 @@ describe('Q24/DELTA-059 routine fan-out policy (flag ON)', () => {
   it('(c) NEVER fans out to all channels for routine, even with 3 catalog channels (assert send count)', async () => {
     const h = harness({ event: promotional3ch(), routineFlagOn: true });   // all succeed — no fallback needed
     await h.svc.fanout(h.tx as any, { tenantId: 't1', eventCode: 'test.promo_3ch', recipients: ['u1'], payload: {}, dedupeKey: 'e3' });
-    expect(h.inserted).toHaveLength(1);                              // NOT 3 — the catalog had 3 candidates
-    expect(h.inserted[0].toProps().channel).toBe('whatsapp');
+    const sent = h.inserted.filter((n) => n.status !== 'suppressed');
+    expect(sent).toHaveLength(1);                                    // NOT 3 — the catalog had 3 candidates
+    expect(sent[0].toProps().channel).toBe('whatsapp');
+    // [PC-56 TENANT-8b · F-4] the two it did not send are recorded, with the decided rule as the reason.
+    expect(h.inserted.filter((n) => n.status === 'suppressed').map((n) => n.toProps().suppressedReason)).toEqual(['routine_collapsed', 'routine_collapsed']);
     expect(h.gateway.dispatch).toHaveBeenCalledTimes(1);
   });
 

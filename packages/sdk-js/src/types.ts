@@ -185,9 +185,72 @@ export interface EkycSessionSummary { id: string; docType: 'aadhaar' | 'pan'; ma
 export interface NotificationItem {
   id: string; eventCode: string; channel: string; status: string; languageCode?: string | null;
   payload: Record<string, unknown>; createdAt?: string; readAt?: string | null;
+  // [PC-56 TENANT-8b] the inbox lists IN-APP items only (F-9); these say what the rest of the delivery log says.
+  sentAt?: string | null;
+  /** The row's instant to the microsecond — carry it to `ladder` / `markRead` so the lookup is exact (one partition). */
+  at?: string;
+  tier?: NotificationTier | null; module?: string; localDay?: string | null; localTime?: string | null; fanoutKey?: string | null;
+  /** The other channels of this delivery instance, each with what its own row says. */
+  alsoOn?: NotificationAlsoOn[];
 }
 export interface NotificationPreference { eventCode: string; channel: string; isEnabled: boolean; }
+/** `timezone` blank → the cooperative's zone (F-22: never an `Asia/Kolkata` literal); the database refuses an unknown one. */
 export interface QuietHours { starts: string; ends: string; timezone: string; }
+export interface QuietHoursInput { starts: string; ends: string; timezone?: string; }
+
+/* ================================================================================================================= */
+/* PC-56 TENANT-8b · THE INBOX (W204 · W431 · W432 · W433 · W434 + the notification form / mutate chains)             */
+/* ================================================================================================================= */
+export type NotificationTier = 'critical' | 'important' | 'informational' | 'promotional';
+export type NotificationOutcome = 'queued' | 'held' | 'released' | 'suppressed' | 'sent' | 'delivered' | 'failed' | 'read';
+export type SuppressedReason = 'quiet_hours' | 'channel_off' | 'routine_collapsed' | 'opted_out';
+export interface NotificationAlsoOn { channel: string; status: string; outcome: NotificationOutcome; suppressedReason: SuppressedReason | null; failureReason: string | null }
+export interface InboxPage { items: NotificationItem[]; nextCursor: string | null; zone: string | null; today: string | null }
+export interface InboxFilters { tiers: NotificationTier[]; modules: string[] }
+export interface InboxQuery { state?: 'unread' | 'read'; tier?: string; module?: string; channel?: string; cursor?: string; limit?: number; status?: string; unreadOnly?: boolean }
+export interface NotificationBell {
+  /** Capped at 100 by the server — the badge reads 99+ (W432). */
+  unread: number; latest: NotificationItem[];
+  /** Your push / SMS / WhatsApp / IVR legs held by quiet hours right now, and the earliest release. */
+  held: number; nextRelease: string | null;
+  /** The release's kill-switch is fired: held rows wait (nothing is lost) until it is turned off. */
+  releaseStopped: boolean; zone: string | null; today: string | null;
+}
+export interface LadderStep { kind: NotificationOutcome; at: string | null; reason: string | null; until?: string | null }
+export interface LadderChannel { channel: string; status: string; outcome: NotificationOutcome; suppressedReason: SuppressedReason | null; failureReason: string | null; steps: LadderStep[] }
+export interface NotificationLadder {
+  id: string; eventCode: string; tier: NotificationTier | null; module: string; payload: Record<string, unknown>; createdAt: string;
+  /** False for a row written before the delivery instance was recorded: only its own channel can be shown. */
+  grouped: boolean; releaseStopped: boolean; channels: LadderChannel[];
+}
+export interface DeliveryHealth {
+  hours: number; leftPlatform: number; delivered: number; awaitingReceipt: number; failed: number; suppressed: number; inapp: number;
+  /** Sends that carry a cost — a COUNT: there is no currency column, so no ₹ sum is printed. */
+  costedSends: number;
+  suppressedByReason: Record<string, number>; failedByReason: Record<string, number>;
+}
+export interface MatrixCell { channel: string; sentOn: boolean; enabled: boolean | null; explicit: boolean }
+export interface MatrixEvent { code: string; defaultName: string; priority: NotificationTier; locked: boolean; cells: MatrixCell[] }
+export interface EffectiveQuietWindow { starts: string; ends: string; timezone: string; source: 'own' | 'tenant_default'; sanitised: boolean; requestedZone: string | null }
+export interface NotificationMatrix {
+  channels: string[];
+  tiers: Array<{ tier: NotificationTier; events: MatrixEvent[] }>;
+  counts: { events: number; locked: number; critical: number; explicit: number };
+  routineRule: { decided: true; on: boolean; flag: string };
+  quietHours: { effective: EffectiveQuietWindow | null; own: QuietHours | null; tenantDefault: { starts: string; ends: string } | null; tenantZone: string | null; held: string[]; neverHeld: string[] };
+  language: { current: string | null; active: Array<{ code: string; nameEnglish: string; nameNative: string }>; tenantLanguages: string[] };
+}
+export interface QuietWindowReview extends FormReview {
+  maths: { lengthMinutes: number; off: boolean; crossesMidnight: boolean; next: { start: string; end: string; current: boolean } | null; zone: string | null; zoneFromTenant: boolean };
+  stored: { starts: string | null; ends: string | null; timezone: string | null };
+}
+export interface PreferenceReview extends FormReview { changes: Array<NotificationPreference & { before: boolean; locked: boolean }> }
+export interface LanguageReview extends FormReview { tenantSpeaks: boolean }
+/** The notification FORM chain's three acts (W2683–W2686) and the mutate chains' acts (W2687–W2692). */
+export const NOTIFICATION_FORMS = ['window', 'preferences', 'language'] as const;
+export type NotificationForm = (typeof NOTIFICATION_FORMS)[number];
+export const INBOX_ACTS = ['read', 'readAll'] as const;
+export type InboxAct = (typeof INBOX_ACTS)[number];
 
 // --- orders (module 5) — money is bigint minor-unit STRINGS (Law 2) ---
 /** One row in the buyer/seller order timeline (CQRS read-model). `counterparty` is the other party's userId. */
