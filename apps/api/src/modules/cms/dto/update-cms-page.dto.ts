@@ -1,9 +1,5 @@
-// modules/cms/dto/update-cms-page.dto.ts · zod .strict() — edit a DRAFT page version.
-import { z } from 'zod';
-import { PAGE_KINDS } from '../domain/cms.events';
-export const UpdatePageSchema = z.object({
-  defaultTitle: z.string().min(1).max(250).optional(),
-  body: z.string().min(1).max(200000).optional(),
-  pageKind: z.enum(PAGE_KINDS as unknown as [string, ...string[]]).optional(),
-}).strict();
-export type UpdatePageDto = z.infer<typeof UpdatePageSchema>;
+// modules/cms/dto/update-cms-page.dto.ts · PC-56 TENANT-8c · `PATCH /cms/pages/:id` (the SDK's `pages.update`) is the
+// form write aimed at ONE draft: the same body as the form (`PageFormSchema`), the same review, and the writer refuses
+// (409 CMS_PAGE_CHANGED) when that id is not the slug's open draft any more. Kept as its own name for the route.
+export { PageFormSchema as UpdatePageSchema } from './create-cms-page.dto';
+export type { PageFormDto as UpdatePageDto } from './create-cms-page.dto';

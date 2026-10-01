@@ -2603,3 +2603,92 @@ export interface TemplateOverrideReview extends FormReview {
 export interface TemplateCatalogueEvent { code: string; defaultName: string; priority: string; defaultChannels: string[]; userCanOptOut: boolean; batchable: boolean; locked: boolean }
 export interface TemplateLanguage { code: string; nameEnglish: string; nameNative: string; tenantDeclared: boolean }
 export interface TemplateActs { view: TemplateView; verdicts: TemplateActVerdict[] }
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-8c · THE PAGES — W175 / W176 / W177 + the page-form, page-mutate, pages-form, faq-form, faq-mutate      */
+/* chains. Every route of `cms/pages` and `cms/faq` has its method (F-14: before this wave none did).                  */
+/* ------------------------------------------------------------------------------------------------------------------ */
+export const CMS_PAGE_KINDS = ['static', 'policy', 'faq', 'help_article'] as const;
+export type CmsPageKind = (typeof CMS_PAGE_KINDS)[number];
+export type CmsPageStatus = 'draft' | 'published' | 'archived';
+export const CMS_PAGE_ACTS = ['publish', 'archive', 'restore'] as const;
+export type CmsPageAct = (typeof CMS_PAGE_ACTS)[number];
+/** The form's fields, in the order the review prints them. */
+export const CMS_PAGE_FORM_FIELDS = ['slug', 'pageKind', 'defaultTitle', 'body', 'languageCode', 'topic', 'reason'] as const;
+/** `new` — New page / New FAQ entry; `version` — the editor's chain on a slug the cooperative may hold. */
+export type CmsPageIntent = 'new' | 'version';
+export type CmsPageWriteMode = 'new_page' | 'new_version' | 'edit_draft';
+/** Who answers `by-slug` for this tenant: its own live version (whatever its number — F-14), the platform's, or nobody. */
+export type CmsServingSource = 'own' | 'platform' | 'none';
+export interface CmsServing { source: CmsServingSource; version: number | null }
+export type CmsSlugState = 'published' | 'draft' | 'archived' | 'platform';
+/** THERE IS NO READER: the surfaces that fetch `cms/*` (none) — printed by name, never previewed. */
+export interface CmsReaderFact { surfaces: string[]; route: string; gap: string[] }
+
+/** One published (or any) version as the API serves it. */
+export interface CmsPage {
+  id: string; slug: string; pageKind: CmsPageKind; defaultTitle: string; body: string; version: number; status: CmsPageStatus;
+  publishedAt: string | null; createdAt?: string; updatedAt?: string; platform: boolean; languageCode: string | null; topic: string | null; sortOrder: number;
+  publishedBy: string | null; archivedAt: string | null; archivedBy: string | null; archivedReason: string | null; createdBy: string | null; lastEditedBy: string | null;
+}
+export interface CmsPageQuery { pageKind?: string; state?: string; languageCode?: string; cursor?: string; limit?: number }
+export interface CmsPageIndexItem {
+  slug: string; pageKind: CmsPageKind; title: string; languageCode: string | null; topic: string | null; state: CmsSlugState; serving: CmsServing;
+  own: { rows: number; latestVersion: number | null; latestStatus: CmsPageStatus | null; latestId: string | null; publishedVersion: number | null; publishedId: string | null; draftVersion: number | null; draftId: string | null; updatedAt: string | null };
+  platform: { version: number | null; id: string | null; title: string | null; languageCode: string | null };
+}
+export interface CmsPageCounts { byKind: Record<string, number>; byState: Record<string, number>; slugs: number; platformOnly: number }
+export interface CmsPageIndex { items: CmsPageIndexItem[]; nextCursor: string | null; counts: CmsPageCounts; canAuthor: boolean; canPublish: boolean; reader: CmsReaderFact }
+
+export type CmsPageActRefusal =
+  | 'NO_PERMISSION' | 'PLATFORM_PAGE' | 'ILLEGAL_FROM_STATUS' | 'MAKER_IS_CHECKER' | 'BODY_NOT_MARKDOWN' | 'DRAFT_OPEN'
+  | 'ARCHIVE_REASON_REQUIRED' | 'ARCHIVE_REASON_UNKNOWN' | 'REASON_REQUIRED' | 'REASON_TOO_LONG' | 'REFUSED_BY_DATABASE';
+export interface CmsPageActVerdict { act: CmsPageAct; allowed: boolean; refusals: CmsPageActRefusal[]; to: CmsPageStatus | null }
+export interface CmsVersionView {
+  id: string; version: number; status: CmsPageStatus; pageKind: CmsPageKind; defaultTitle: string; body: string; languageCode: string | null; topic: string | null; sortOrder: number;
+  createdAt: string | null; publishedAt: string | null; archivedAt: string | null; archivedReason: string | null;
+  authorName: string | null; publisherName: string | null; archiverName: string | null; editorName: string | null;
+  authoredByYou: boolean; lastEditedByYou: boolean; acts: CmsPageActVerdict[];
+}
+export interface CmsSlugView {
+  slug: string; pageKind: CmsPageKind | null; needsChecker: boolean;
+  versions: CmsVersionView[]; draft: CmsVersionView | null; live: CmsVersionView | null; latest: CmsVersionView | null;
+  platform: { id: string; version: number; pageKind: CmsPageKind; defaultTitle: string; body: string; languageCode: string | null } | null;
+  serving: CmsServing; contiguous: boolean; languages: string[];
+  canAuthor: boolean; canPublish: boolean; reader: CmsReaderFact;
+}
+export interface CmsVocabEntry { code: string; name: string; chosen: boolean; sortOrder: number }
+export interface CmsVocabulary { kinds: CmsPageKind[]; topics: CmsVocabEntry[]; archiveReasons: CmsVocabEntry[]; languages: TemplateLanguage[] }
+/** The form body: strings, as typed (values travel in the URL); `expect` is the review's own `mode:version` token. */
+export interface CmsPageFormInput {
+  slug?: string; pageKind?: string; defaultTitle?: string; body?: string; languageCode?: string; topic?: string; reason?: string;
+  intent?: CmsPageIntent; expect?: string;
+}
+export interface CmsPageReview extends FormReview {
+  preview: {
+    mode: CmsPageWriteMode | null; version: number | null; draftId: string | null; expect: string | null; kind: string | null; needsChecker: boolean;
+    servingToday: CmsServing; replacesPlatformVersion: number | null; historyVersions: number[]; faqPlace: number | null;
+    rawHtmlTags: string[]; unsafeLinkSchemes: string[];
+  };
+}
+export interface CmsPageWriteResult { id: string; slug: string; version: number; mode: CmsPageWriteMode; status: 'draft'; needsChecker: boolean }
+export interface CmsPageActs {
+  view: CmsSlugView; version: CmsVersionView | null; platformPage: boolean; verdicts: CmsPageActVerdict[]; archiveReasons: CmsVocabEntry[];
+  servingAfter: { publish: CmsServing; archive: CmsServing }; restoreAs: number; supersedes: number | null;
+}
+export interface CmsPageActResult { id: string; slug: string; act: CmsPageAct; version: number; status: CmsPageStatus; before: Record<string, unknown>; after: Record<string, unknown> }
+
+export type CmsFaqDirection = 'up' | 'down';
+export type CmsFaqActRefusal = 'NO_PERMISSION' | 'NOT_FAQ' | 'ENTRY_NOT_IN_TOPIC' | 'AT_TOP' | 'AT_BOTTOM' | 'REASON_REQUIRED' | 'REASON_TOO_LONG';
+export interface CmsFaqItem extends Omit<CmsPageIndexItem, 'serving'> { sortOrder: number; position: number | null; ofTopic: number; canMoveUp: boolean; canMoveDown: boolean }
+export interface CmsFaqIndex {
+  items: CmsFaqItem[]; topics: CmsVocabEntry[];
+  tiles: { entries: number; published: number; drafts: number; bySourceLanguage: Array<{ code: string; n: number }>; byTopic: Array<{ topic: string; n: number }> };
+  truncated: boolean; canAuthor: boolean; canPublish: boolean; reader: CmsReaderFact;
+}
+export interface CmsFaqMovePreview {
+  allowed: boolean; refusals: CmsFaqActRefusal[]; topic: string | null; slug: string; title: string | null; position: number | null;
+  order: Array<{ slug: string; sortOrder: number }>;
+  plan: { ok: true; steps: Array<{ slug: string; from: number; to: number }>; order: string[] } | { ok: false; refusal: string } | null;
+}
+export interface CmsFaqMoveResult { id: string | null; slug: string; topic: string | null; order: string[]; position: number }

@@ -19,13 +19,17 @@ describe('cms_pages isolation', () => {
     await new CmsPageRepository(fakeReplica().provider).insert(tx2 as any, page(), 'tenantA', 'u1');
     expect(tx2.query.mock.calls[0][0]).toMatch(/INSERT INTO cms_pages/); expect(tx2.query.mock.calls[0][1]).toContain('tenantA');
   });
-  it('publishedBySlug + listFor scope to tenant OR platform; published-only; keyset (no OFFSET)', async () => {
+  it('publishedBySlug scopes to tenant OR platform, published-only, and the TENANT row wins (F-14); index is keyset (no OFFSET)', async () => {
     const { provider, exec } = fakeReplica();
     await new CmsPageRepository(provider).publishedBySlug('tenantA', 'privacy-policy');
     expect(exec.query.mock.calls[0][0]).toMatch(/\(tenant_id=\$1 OR tenant_id IS NULL\)/); expect(exec.query.mock.calls[0][0]).toMatch(/status='published'/);
+    // PC-56 TENANT-8c: ranked by version alone, a platform v5 shadowed the tenant's own v1.
+    expect(exec.query.mock.calls[0][0]).toMatch(/ORDER BY \(tenant_id IS NULL\) ASC, version DESC/);
     const fr = fakeReplica();
-    await new CmsPageRepository(fr.provider).listFor('tenantA', { limit: 50 });
-    expect(fr.exec.query.mock.calls[0][0]).toMatch(/ORDER BY created_at DESC, id DESC/); expect(fr.exec.query.mock.calls[0][0]).not.toMatch(/OFFSET/i);
+    await new CmsPageRepository(fr.provider).index('tenantA', { limit: 50, cursor: 'about' });
+    const [sql, params] = fr.exec.query.mock.calls[0];
+    expect(sql).toMatch(/tenant_id = \$1/); expect(sql).toMatch(/slug > \$2/); expect(sql).toMatch(/ORDER BY slug LIMIT \$3/); expect(sql).not.toMatch(/OFFSET/i);
+    expect(params).toEqual(['tenantA', 'about', 50]);
   });
 });
 

@@ -12,7 +12,8 @@ import { DomainEvent } from '../domain/cms.events';
 import { BannerRepository } from '../repositories/banner.repository';
 import { CreateBannerDto } from '../dto/create-banner.dto';
 import { BannerNotFoundError, CmsForbiddenError } from '../domain/cms.errors';
-import { CmsActor } from './cms-page.service';
+/** PC-56 TENANT-8c: the banner actor is its own (pages moved to cms.pages.*); banners keep `cms.manage` until 8d. */
+export interface CmsActor { userId: string; canManage: boolean }
 
 @Injectable()
 export class BannerService {

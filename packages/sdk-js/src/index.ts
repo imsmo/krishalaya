@@ -57,6 +57,9 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   CredentialView, InstructorView, InstructorListItem, StudioFacts, CourseTemplateSummary, StudioView, CourseTemplate, TemplateFormInput,   // PC-56 TENANT-7d
   TemplateOverrideFormInput, TemplateOverrideAct, TemplateOverrideLifecycle, TemplateServingSource, TemplateActRefusal, TemplateActVerdict, TemplateSlot, TemplateSummary, TemplateIndex,
   TemplateSegments, TemplateVariable, TemplateVersionRow, TemplateView, TemplateOverrideReview, TemplateCatalogueEvent, TemplateLanguage, TemplateActs,   // PC-56 TENANT-8a
+  CmsPageKind, CmsPageStatus, CmsPageAct, CmsPageIntent, CmsPageWriteMode, CmsServingSource, CmsServing, CmsSlugState, CmsReaderFact, CmsPage, CmsPageQuery, CmsPageIndexItem,
+  CmsPageCounts, CmsPageIndex, CmsPageActRefusal, CmsPageActVerdict, CmsVersionView, CmsSlugView, CmsVocabEntry, CmsVocabulary, CmsPageFormInput, CmsPageReview,
+  CmsPageWriteResult, CmsPageActs, CmsPageActResult, CmsFaqDirection, CmsFaqActRefusal, CmsFaqItem, CmsFaqIndex, CmsFaqMovePreview, CmsFaqMoveResult,   // PC-56 TENANT-8c
   RoyaltyLineState, EarningsFigure, EarningsTile, AgreementStatus, AgreementAct, InstructorAgreement, RoyaltyRuleStatus, RoyaltyRule, CourseEarningsRow, RoyaltyPayoutRow, RoyaltyPayoutRefusal, EarningsRefusedByName,
   EarningsView, EarningsStatementLine, RoyaltyPayoutInput, RoyaltyPayoutReview, RoyaltyRuleView,   // PC-56 TENANT-7d-money
   // PC-56 TENANT-6d-5 · W170's call and W2521–W2523's mutate chain. TYPES only: the refusal LIST stays in the API's
@@ -131,6 +134,8 @@ export { LESSON_ACTS, LESSON_FORM_FIELDS, SUBTITLE_FORM_FIELDS, QUESTION_FORM_FI
 export { LIVE_ACTS, LIVE_FORM_FIELDS, LIVE_BOXES } from './types'; // PC-56 TENANT-7c
 export { INSTRUCTOR_ACTS, PROFILE_FORM_FIELDS, CREDENTIAL_FORM_FIELDS, TEMPLATE_FORM_FIELDS } from './types'; // PC-56 TENANT-7d
 export { TEMPLATE_OVERRIDE_ACTS, TEMPLATE_OVERRIDE_FORM_FIELDS } from './types'; // PC-56 TENANT-8a
+export { CMS_PAGE_KINDS, CMS_PAGE_ACTS, CMS_PAGE_FORM_FIELDS } from './types'; // PC-56 TENANT-8c
+export { CmsResource, CmsPagesApi, CmsFaqApi } from './resources/cms'; // PC-56 TENANT-8c
 // PC-56 TENANT-8b · THE INBOX
 export { NOTIFICATION_FORMS, INBOX_ACTS } from './types';
 export type {

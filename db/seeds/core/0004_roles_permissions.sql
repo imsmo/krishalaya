@@ -83,11 +83,20 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
- ('cms.manage','Author/publish CMS pages + manage banners','M50'),
+ ('cms.manage','Manage CMS banners (pages moved to cms.pages.* in TENANT-8c)','M50'),
+ -- [PC-56 TENANT-8c] ONE KEY WROTE, PUBLISHED AND CHECKED EVERY PAGE (F-19): `cms.manage` (tenant_admin only) authored a
+ -- page, published it and archived it, and a POLICY page — terms, privacy, refund: what binds the cooperative to its
+ -- members — went live on one person's word. Two verbs now: the author's and the checker's. Maker ≠ checker on a policy
+ -- page is 0177's trigger, so a holder of both still cannot publish a policy page they wrote or last edited.
+ ('cms.pages.manage','Write CMS pages and FAQ entries (drafts), restore an archived version as a draft, reorder the FAQ','M50'),
+ ('cms.pages.publish','Publish or archive a CMS page version (a policy page: never one you wrote or last edited)','M50'),
  ('market.manage','Ingest mandi prices + generate fair-price predictions','M16'),
  ('trace.manage','Create trace lots + append farm-to-fork journey events','M16'),
  ('bulk.import','Create + manage bulk CSV import jobs',NULL)
 ON CONFLICT (code) DO NOTHING;
+-- [PC-56 TENANT-8c] `cms.manage` no longer touches pages; its name says so on a database seeded before this wave too.
+UPDATE permissions SET default_name = 'Manage CMS banners (pages moved to cms.pages.* in TENANT-8c)'
+ WHERE code = 'cms.manage' AND default_name IS DISTINCT FROM 'Manage CMS banners (pages moved to cms.pages.* in TENANT-8c)';
 -- [PC-56 TENANT-8a] `notification.manage` no longer authors templates; its name says so on a database seeded before
 -- this wave too (the INSERT above does nothing to an existing row). Re-runnable: a second run changes nothing.
 UPDATE permissions SET default_name = 'Send tenant broadcasts + read the notification event catalogue'
@@ -152,6 +161,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('ambassador.manage'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('support.handle'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('cms.manage'))
+   OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('cms.pages.manage'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('cms.pages.publish'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('market.manage'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','organic_store','pharma_store','fpo_coordinator','tenant_admin') AND p.code IN ('trace.manage'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('bulk.import'))

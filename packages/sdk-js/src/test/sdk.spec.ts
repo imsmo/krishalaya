@@ -2004,3 +2004,54 @@ describe('the inbox (TENANT-8b)', () => {
     expect(JSON.parse(String(calls[2].init.body))).toEqual({ languageCode: 'gu' });
   });
 });
+
+// PC-56 TENANT-8c · THE PAGES — every cms route has its method (F-14); reads carry no key, writes carry the FORM's.
+describe('cms pages + FAQ (TENANT-8c)', () => {
+  it('reads W175 (meta: counts, verbs, the reader fact), W176 by slug, one version, by-slug, the vocabulary, the FAQ', async () => {
+    const meta = { nextCursor: 'about', counts: { byKind: { static: 1 }, byState: { published: 1 }, slugs: 1, platformOnly: 0 }, canAuthor: true, canPublish: false, reader: { surfaces: [], route: 'GET /v1/cms/pages/by-slug/:slug', gap: ['web-storefront', 'mobile'] } };
+    const { fn, calls } = fakeFetch((c) => (c.url.includes('/cms/pages?') ? { body: { data: [], meta } } : c.url.includes('/cms/faq?') || c.url.endsWith('/cms/faq') ? { body: { data: [{ slug: 'q' }], meta: { topics: [], tiles: { entries: 1 }, truncated: false, canAuthor: true, canPublish: true, reader: meta.reader } } } : { body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const idx = await c.cms.pages.list({ pageKind: 'policy', state: 'draft', languageCode: 'gu', limit: 20 });
+    expect(calls[0].url).toBe('https://api.test/v1/cms/pages?pageKind=policy&state=draft&languageCode=gu&limit=20');
+    expect(idx).toEqual({ items: [], ...meta });
+    await c.cms.pages.view('how to'); await c.cms.pages.get('p 1'); await c.cms.pages.bySlug('about'); await c.cms.pages.vocabulary();
+    expect(calls.slice(1, 5).map((x) => x.url)).toEqual(['https://api.test/v1/cms/pages/slug/how%20to', 'https://api.test/v1/cms/pages/p%201', 'https://api.test/v1/cms/pages/by-slug/about', 'https://api.test/v1/cms/pages/vocabulary']);
+    const faq = await c.cms.faq.list({ topic: 'payments' });
+    expect(calls[5].url).toBe('https://api.test/v1/cms/faq?topic=payments');
+    expect(faq.items).toEqual([{ slug: 'q' }]); expect(faq.tiles).toEqual({ entries: 1 });
+    await c.cms.faq.get('q');
+    expect(calls[6].url).toBe('https://api.test/v1/cms/pages/slug/q');
+    expect(calls.every((x) => (x.init.headers as Record<string, string>)['idempotency-key'] === undefined)).toBe(true);
+  });
+  it('previews and judges without a key; every write and act WITH the form\'s key; the FAQ fixes its kind', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const h = (i: number) => (calls[i].init.headers as Record<string, string>)['idempotency-key'];
+    await c.cms.pages.preview({ slug: 'about', intent: 'new' });
+    await c.cms.pages.create({ slug: 'about', pageKind: 'static', expect: 'new_page:1' }, 'idem-c');
+    await c.cms.pages.update('d1', { slug: 'about', body: '# x' }, 'idem-u');
+    await c.cms.pages.acts('d1', { reason: 'a reason', archiveReason: 'outdated' });
+    await c.cms.pages.publish('d1', { reason: 'ok' }, 'idem-p');
+    await c.cms.pages.archive('d1', { reason: 'old', archiveReason: 'outdated' }, 'idem-a');
+    await c.cms.pages.restore('d1', { reason: 'back' }, 'idem-r');
+    await c.cms.faq.create({ slug: 'q', topic: 'payments' }, 'idem-f');
+    await c.cms.faq.update('d2', { slug: 'q', topic: 'payments' }, 'idem-fu');
+    await c.cms.faq.publish('d2', { reason: 'ok' }, 'idem-fp');
+    await c.cms.faq.reorderPreview('q', 'up', 'why');
+    await c.cms.faq.reorder({ slug: 'q', direction: 'down', reason: 'why' }, 'idem-m');
+    expect(calls[0].url).toBe('https://api.test/v1/cms/pages/preview'); expect(h(0)).toBeUndefined();
+    expect([calls[1].init.method, calls[1].url, h(1)]).toEqual(['POST', 'https://api.test/v1/cms/pages', 'idem-c']);
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({ slug: 'about', pageKind: 'static', expect: 'new_page:1' });
+    expect([calls[2].init.method, calls[2].url, h(2)]).toEqual(['PATCH', 'https://api.test/v1/cms/pages/d1', 'idem-u']);
+    expect(calls[3].url).toBe('https://api.test/v1/cms/pages/d1/acts?reason=a+reason&archiveReason=outdated'); expect(h(3)).toBeUndefined();
+    expect([calls[4].url, h(4)]).toEqual(['https://api.test/v1/cms/pages/d1/publish', 'idem-p']);
+    expect([calls[5].url, h(5)]).toEqual(['https://api.test/v1/cms/pages/d1/archive', 'idem-a']);
+    expect(JSON.parse(String(calls[5].init.body))).toEqual({ reason: 'old', archiveReason: 'outdated' });
+    expect([calls[6].url, h(6)]).toEqual(['https://api.test/v1/cms/pages/d1/restore', 'idem-r']);
+    expect(JSON.parse(String(calls[7].init.body))).toEqual({ slug: 'q', topic: 'payments', pageKind: 'faq', intent: 'new' });
+    expect([calls[8].init.method, JSON.parse(String(calls[8].init.body)).pageKind, h(8)]).toEqual(['PATCH', 'faq', 'idem-fu']);
+    expect([calls[9].url, h(9)]).toEqual(['https://api.test/v1/cms/pages/d2/publish', 'idem-fp']);
+    expect(calls[10].url).toBe('https://api.test/v1/cms/faq/reorder?slug=q&direction=up&reason=why'); expect(h(10)).toBeUndefined();
+    expect([calls[11].init.method, calls[11].url, h(11)]).toEqual(['POST', 'https://api.test/v1/cms/faq/reorder', 'idem-m']);
+  });
+});

@@ -6,3 +6,33 @@ export class BannerNotFoundError extends DomainError { constructor(id: string) {
 export class InvalidPageError extends DomainError { constructor(detail: string) { super('CMS_PAGE_INVALID', detail, 422, { detail }); } }
 export class InvalidBannerError extends DomainError { constructor(detail: string) { super('CMS_BANNER_INVALID', detail, 422, { detail }); } }
 export class CmsForbiddenError extends DomainError { constructor(detail = 'forbidden') { super('CMS_FORBIDDEN', detail, 403, {}); } }
+// PC-56 TENANT-8c · THE PAGES. Each refusal carries the CODES the review / verdict computed, so the console prints the
+// sentence the review would have printed — a 422 / 409 with words, never a bare status (8a's shape).
+export class PageFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('CMS_PAGE_FORM_REFUSED', `Page write refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+export class PageActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[]) {
+    super('CMS_PAGE_ACT_REFUSED', `Page act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals });
+  }
+}
+/** F-20: the write the review promised (`new_page:1`, `new_version:3`, `edit_draft:3`) is no longer the write the
+ *  database would make — a colleague wrote first. A typed 409, never the raw 23505 → 500 it used to be. */
+export class PageChangedError extends DomainError {
+  constructor(slug: string, expected: string, actual: string | null) {
+    super('CMS_PAGE_CHANGED', `Page ${slug} changed since it was reviewed (reviewed ${expected}, now ${actual ?? 'not writable'})`, 409, { slug, expected, actual, refusals: ['VERSION_CHANGED'] });
+  }
+}
+/** The backstop: a UNIQUE (version, one draft, one live) refused the write — still a 409 with a code, never a 500. */
+export class PageVersionTakenError extends DomainError {
+  constructor(slug: string, constraint: string | null) {
+    super('CMS_PAGE_VERSION_TAKEN', `Page ${slug}: ${constraint ?? 'a unique rule'} refused the write — another write of this slug got there first`, 409, { slug, constraint });
+  }
+}
+export class FaqMoveRefusedError extends DomainError {
+  constructor(refusals: readonly string[]) {
+    super('CMS_FAQ_MOVE_REFUSED', `FAQ reorder refused: ${refusals.join(', ')}`, 409, { refusals });
+  }
+}

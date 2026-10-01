@@ -21,6 +21,7 @@ import { IntegrationsResource } from './resources/integrations';
 import { WebhooksResource } from './resources/webhooks';
 import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
+import { CmsResource } from './resources/cms';
 import { OrdersResource } from './resources/orders';
 import { ShipmentsResource, FleetResource, RoutesResource, FreightResource, LogisticsDeskResource } from './resources/logistics';
 import { ReviewsResource } from './resources/reviews';
@@ -145,6 +146,8 @@ export class KrishalayaClient {
   readonly parcels: ParcelsResource;
   readonly privacy: PrivacyResource;
   readonly onboarding: OnboardingResource;
+  /** PC-56 TENANT-8c · pages + FAQ (`cms/pages`, `cms/faq`). */
+  readonly cms: CmsResource;
 
   constructor(config: SdkConfig) {
     this.http = new HttpClient(resolveConfig(config));
@@ -164,6 +167,7 @@ export class KrishalayaClient {
     this.kyc = new KycResource(this.http);
     this.bankAccounts = new BankAccountsResource(this.http);
     this.notifications = new NotificationsResource(this.http);
+    this.cms = new CmsResource(this.http);
     this.orders = new OrdersResource(this.http);
     this.shipments = new ShipmentsResource(this.http);
     this.fleet = new FleetResource(this.http);

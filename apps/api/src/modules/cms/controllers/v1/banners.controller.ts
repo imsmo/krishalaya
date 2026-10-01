@@ -1,7 +1,8 @@
 // modules/cms/controllers/v1/banners.controller.ts · banner scheduling (admin) + live browse + click tracking.
 // create/activate/deactivate + the `all` box need cms.manage; the `live` box + click are any authenticated user.
 // `cms` flag.
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -12,6 +13,7 @@ import { BannerService } from '../../services/banner.service';
 import { CmsPermissions, canManageCms } from '../../policies/cms.policies';
 import { CreateBannerSchema, CreateBannerDto } from '../../dto/create-banner.dto';
 import { QueryBannersSchema, QueryBannersDto } from '../../dto/query-banner.dto';
+import { ipOf } from './pages.controller';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -23,7 +25,8 @@ export class BannersController {
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageCms(ctx) }; }
 
   @Post() @RequirePermissions(CmsPermissions.Manage)
-  create(@CurrentContext() ctx: RequestContext, @ZodBody(CreateBannerSchema) dto: CreateBannerDto) { return this.svc.create(ctx.tenantId, this.actor(ctx), dto, ctx.requestId).then((data) => ({ data })); }
+  // PC-56 TENANT-8c (F-7): the audit row's `ip` is the client's, never the request id. The rest of the banners is 8d's.
+  create(@CurrentContext() ctx: RequestContext, @Req() r: Request, @ZodBody(CreateBannerSchema) dto: CreateBannerDto) { return this.svc.create(ctx.tenantId, this.actor(ctx), dto, ipOf(r)).then((data) => ({ data })); }
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryBannersSchema) q: QueryBannersDto) {
     return this.svc.list(ctx.tenantId, this.actor(ctx), { box: q.box, placement: q.placement, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
