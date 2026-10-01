@@ -208,6 +208,20 @@ export class ExportPlaneService {
     };
   }
 
+  /** [PC-56 TENANT-9c · W201] The caller's OWN jobs for these datasets, newest first (keyset). Each row is the same
+   *  projection W2553/W2554 read, so the list can never disagree with the job's own page. A dataset the caller may not read
+   *  is dropped from the set before the query (403-by-omission is the plane's rule: a member enumerates nothing). */
+  async listMine(tenantId: string, actor: ExportActor, datasetCodes: readonly string[], cursor: { ts: string; id: string } | undefined, limit = 20): Promise<{ items: ExportJobView[]; next: { ts: string; id: string } | null }> {
+    await this.assertPlaneOn(tenantId);
+    const readable = datasetCodes.filter((c) => { const p = this.registry.get(c); return !!p && this.can(actor, p.permission); });
+    if (readable.length === 0) return { items: [], next: null };
+    const rows = await this.jobs.listForRequester(tenantId, actor.userId, readable, cursor, limit);
+    const items: ExportJobView[] = [];
+    for (const r of rows) items.push(this.project(r.job, await this.standingFor(tenantId, r.job), await this.fetchesFor(tenantId, r.job)));
+    const last = rows[rows.length - 1];
+    return { items, next: rows.length === Math.min(Math.max(limit, 1), 50) && last ? { ts: last.cursorTs, id: last.job.id } : null };
+  }
+
   /* ------------------------------------------------------------------------------------------------------------ */
 
   /** The job, or 404 — and 403 for a member without the DATASET's permission (W2554's restricted state has words; a

@@ -6,6 +6,7 @@ import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { Public } from '../../../../core/auth/public.decorator';
+import { AuditorReadAct } from '../../../../core/auth/auditor-read-only.guard';
 import { RateLimit } from '../../../../core/http/rate-limit.guard';
 import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
@@ -37,7 +38,8 @@ export class AuthController {
     return { data: await this.auth.refreshSession(dto, ipOf(req)) };
   }
 
-  @UseGuards(AuthGuard, PermissionsGuard) @Post('logout')
+  // PC-56 TENANT-9c: ending one's own session is not business data — the auditor's named carve-out (`session.logout`).
+  @UseGuards(AuthGuard, PermissionsGuard) @AuditorReadAct('session.logout') @Post('logout')
   async logout(@CurrentContext() ctx: RequestContext, @ZodBody(LogoutSchema) dto: LogoutDto) {
     return { data: await this.auth.logout(ctx.tenantId, ctx.userId, ctx.sessionId, dto.allDevices) };
   }

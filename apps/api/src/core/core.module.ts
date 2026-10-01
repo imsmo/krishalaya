@@ -59,6 +59,7 @@ import { TenantContextMiddleware } from './tenancy-context/tenant-context.middle
 // had no verifier, so every W008 promise described behaviour that did not exist.
 import { ImpersonationGate } from './auth/impersonation.gate';
 import { ImpersonationReadOnlyGuard } from './auth/impersonation-read-only.guard';
+import { AuditorReadOnlyGuard } from './auth/auditor-read-only.guard';
 import { ImpersonationInterceptor } from './auth/impersonation.interceptor';
 import { RequestIdMiddleware } from './http/request-id.middleware';
 import { SecurityHeadersMiddleware } from './http/security-headers.middleware';
@@ -137,6 +138,9 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     // that will be forgotten on one. The guard refuses a mutating method under an act-as token; the interceptor checks
     // the grant is still live and writes the per-request record W008 promises.
     { provide: APP_GUARD, useClass: ImpersonationReadOnlyGuard },
+    // PC-56 TENANT-9c. GLOBAL for the same reason: an auditor session is refused every non-GET on every route, and the
+    // three carve-outs are named on their routes (`@AuditorReadAct`) and enumerated by a spec over the real router.
+    { provide: APP_GUARD, useClass: AuditorReadOnlyGuard },
     { provide: APP_INTERCEPTOR, useClass: ImpersonationInterceptor },
   ],
   exports: [

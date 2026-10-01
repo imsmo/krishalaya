@@ -4,6 +4,7 @@ import { Controller, Get, Headers, Param, Post, Query, UseGuards, Req } from '@n
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { ForbiddenError } from '../../../../shared/errors/app-error';
 import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
@@ -73,9 +74,12 @@ export class GovernanceController {
    * allotment is a money movement at first settlement ("Rs 200 deducted with consent"), and a register write with no allotment
    * path behind it would be a control whose promise the code cannot keep.
    */
+  // [PC-56 TENANT-9c · F-18] `governance.read` (0181 — the canon's auditor: "share register + resolutions + tallies") OR the
+  // `report.view` it always took (support_agent / gov_officer keep it; nobody loses the read). Either code, not both.
   @Get('register')
-  @RequirePermissions('report.view')
   register(@CurrentContext() ctx: RequestContext, @Query('cursor') cursor?: string) {
+    const ok = ['governance.read', 'report.view', '*'].some((p) => ctx.permissions.has(p));
+    if (!ok) throw new ForbiddenError('Missing permission(s): governance.read or report.view', { required: ['governance.read', 'report.view'] });
     return this.register_.view(ctx.tenantId, cursor).then((data) => ({ data }));
   }
 

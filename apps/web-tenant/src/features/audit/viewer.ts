@@ -24,8 +24,10 @@ export function validateFilters(f: AuditFilterForm): string | null {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function isUuid(s: string): boolean { return UUID.test(s); }
 
-/** Build the SDK query object from the filter form, dropping empties and converting date bounds to ISO.
- *  `to` is made exclusive end-of-day so a single-day range includes that whole day. */
+/** Build the SDK query object from the filter form, dropping empties.
+ *  [PC-56 TENANT-9c · F-9] The days are passed AS DAYS — the cooperative's own civil days, both inclusive — and the API
+ *  turns them into instants in `countries.timezone`. They were `${from}T00:00:00.000Z` / `${to}T23:59:59.999Z`: UTC days,
+ *  so an Anand cooperative's "13 Jul" began at 05:30 its own time. */
 export function buildAuditQuery(f: AuditFilterForm): Record<string, string> {
   const q: Record<string, string> = {};
   const put = (k: string, v?: string) => { const s = (v ?? '').trim(); if (s) q[k] = s; };
@@ -33,8 +35,8 @@ export function buildAuditQuery(f: AuditFilterForm): Record<string, string> {
   put('entityType', f.entityType);
   put('entityId', f.entityId);
   put('actorUserId', f.actorUserId);
-  if (f.from && ISO_DATE.test(f.from)) q.from = `${f.from}T00:00:00.000Z`;
-  if (f.to && ISO_DATE.test(f.to)) q.to = `${f.to}T23:59:59.999Z`;
+  if (f.from && ISO_DATE.test(f.from)) q.from = f.from;
+  if (f.to && ISO_DATE.test(f.to)) q.to = f.to;
   return q;
 }
 

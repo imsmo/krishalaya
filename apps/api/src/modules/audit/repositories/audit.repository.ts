@@ -20,9 +20,11 @@ const COLS = `id::text AS "id", actor_user_id AS "actorUserId", actor_role AS "a
   reason, request_id AS "requestId", created_at AS "createdAt",
   to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "cursorTs"`;
 
+/** [PC-56 TENANT-9c · F-9] The window is a pair of CIVIL days in the cooperative's zone, both inclusive — SQL turns each
+ *  into its instant (`day::timestamp AT TIME ZONE zone`); the bound itself (≤ 92 days) is the service's (`resolveWindow`). */
 export interface AuditFilter {
   action?: string; entityType?: string; entityId?: string; actorUserId?: string;
-  from?: string; to?: string; cursor?: { ts: string; id: string }; limit: number;
+  fromDay: string; toDay: string; zone: string; cursor?: { ts: string; id: string }; limit: number;
 }
 
 @Injectable()
@@ -37,8 +39,9 @@ export class AuditRepository {
     if (f.entityType) add('entity_type = $N', f.entityType);
     if (f.entityId) add('entity_id = $N', f.entityId);
     if (f.actorUserId) add('actor_user_id = $N', f.actorUserId);
-    if (f.from) add('created_at >= $N', f.from);
-    if (f.to) add('created_at < $N', f.to);
+    params.push(f.zone); const zp = params.length;
+    add(`created_at >= ($N::date)::timestamp AT TIME ZONE $${zp}`, f.fromDay);
+    add(`created_at < (($N::date) + 1)::timestamp AT TIME ZONE $${zp}`, f.toDay);
     if (f.cursor) {
       // keyset: rows strictly older than the cursor (created_at DESC, id DESC)
       params.push(f.cursor.ts); const tsp = params.length;
@@ -51,6 +54,19 @@ export class AuditRepository {
       params,
     );
     return r.rows as AuditRow[];
+  }
+
+  /** W200's "Privileged actions (FY)": how many trail rows the window holds, and how many of them say who (role) and why. */
+  async countsFor(tenantId: string, fromDay: string, toDay: string, zone: string): Promise<{ total: number; withRole: number; withReason: number }> {
+    const r = await this.replica.forTenant(tenantId).query<{ total: string; with_role: string; with_reason: string }>(
+      `SELECT count(*)::text AS total, count(actor_role)::text AS with_role,
+              count(*) FILTER (WHERE reason IS NOT NULL AND btrim(reason) <> '')::text AS with_reason
+         FROM audit_log
+        WHERE tenant_id = $1 AND created_at >= ($2::date)::timestamp AT TIME ZONE $4
+          AND created_at < (($3::date) + 1)::timestamp AT TIME ZONE $4`,
+      [tenantId, fromDay, toDay, zone]);
+    const x = r.rows[0];
+    return { total: Number(x?.total ?? 0), withRole: Number(x?.with_role ?? 0), withReason: Number(x?.with_reason ?? 0) };
   }
 
   async getById(tenantId: string, id: string): Promise<AuditRow | null> {

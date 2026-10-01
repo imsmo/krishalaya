@@ -45,6 +45,8 @@ import { kycVerdictFor } from '../../payments/domain/payout-kyc';
 import { AuditRepository } from '../../audit/repositories/audit.repository';
 import { GoLiveReadModel } from '../../tenancy/read-models/go-live.read-model';
 import { AuditService } from '../../audit/services/audit.service';
+import { AuditReadLogRepository } from '../../audit/repositories/audit-read-log.repository';
+import { AuditorClockRepository } from '../../audit/repositories/auditor-clock.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -343,10 +345,15 @@ run('TENANT-9a · the KYC desk (integration, real Postgres + RLS as kv_app)', ()
     for (const [a, us] of [['probe.a', '.122900'], ['probe.b', '.123100'], ['probe.c', '.123400'], ['probe.d', '.123700']]) {
       await admin.query(`INSERT INTO audit_log (tenant_id, action, entity_type, created_at) VALUES ($1, $2, 'probe', $3::timestamptz)`, [t, a, `2026-10-04T10:00:00${us}Z`]);
     }
-    const svc = new AuditService(new AuditRepository(new PgReadReplicaProvider(pools, new ShardRouter(new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' }))) as any));
+    // [PC-56 TENANT-9c] the service now records every read (audit_read_log), reads the cooperative's clock and its flag,
+    // and bounds the window in the cooperative's days — so the probe asks for the probe's own day.
+    const replica9c = new PgReadReplicaProvider(pools, new ShardRouter(new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' })));
+    const svc = new AuditService(new AuditRepository(replica9c as any), new AuditReadLogRepository(uow, replica9c as any), new AuditorClockRepository(replica9c as any),
+      { isEnabled: async () => true } as any, uow, new AuditWriter(pools));
+    const probeUser = randomUUID(); await makeUser(admin, probeUser);
     const seen: string[] = []; let cursor: string | undefined;
     for (let i = 0; i < 6; i++) {
-      const r = await svc.list(t, { canRead: true } as any, { limit: 1, cursor } as any);
+      const r = await svc.list(t, { userId: probeUser, canRead: true, roles: ['auditor'] } as any, { limit: 1, cursor, from: '2026-10-03', to: '2026-10-05' } as any);
       seen.push(...r.items.map((x: any) => x.action));
       if (!r.nextCursor) break; cursor = r.nextCursor;
     }

@@ -14,6 +14,7 @@ import { Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/commo
 import type { Request, Response } from 'express';
 import { createHash } from 'node:crypto';
 import { AuthGuard } from '../../../auth/auth.guard';
+import { AuditorReadAct } from '../../../auth/auditor-read-only.guard';
 import { ZodQuery } from '../../../http/zod.pipe';
 import { CurrentContext } from '../../../tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../tenancy-context/request-context';
@@ -42,6 +43,8 @@ export class ExportsController {
 
   /** No Idempotency-Key: minting is not a mutation of anything but the audit trail, and two links for one click is not a
    *  double-fire — each is fifteen minutes of the same file, each traceable. */
+  // PC-56 TENANT-9c: part of the auditor's one exception — the file an export produced cannot be fetched without it.
+  @AuditorReadAct('export.link')
   @Post(':id/link')
   link(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Req() req: Request) {
     return this.svc.mintLink(ctx.tenantId, actorOf(ctx), idOf(id), ipOf(req)).then((data) => ({ data }));

@@ -112,6 +112,19 @@ export class ExportJobRepository {
     return { ahead: Number(row.ahead ?? 0), sample: Number(row.sample ?? 0), medianRunMs: row.median_ms === null || row.median_ms === undefined ? null : Number(row.median_ms) };
   }
 
+  /** [PC-56 TENANT-9c · W201] The requester's OWN jobs for the given datasets, newest first — keyset on (queued_at, id)
+   *  with the µs cursor (9a's F-7 fix). Tenant-scoped (RLS + `tenant_id = $1`), requester-scoped (`requested_by = $2`). */
+  async listForRequester(tenantId: string, requestedBy: string, datasets: readonly string[], cursor: { ts: string; id: string } | undefined, limit: number): Promise<Array<{ job: ExportJob; cursorTs: string }>> {
+    const params: unknown[] = [tenantId, requestedBy, datasets];
+    let cond = '';
+    if (cursor) { params.push(cursor.ts, cursor.id); cond = `AND (queued_at < $4::timestamptz OR (queued_at = $4::timestamptz AND id < $5::uuid))`; }
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT ${COLS}, to_char(queued_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_ts FROM tenant_export_jobs
+        WHERE tenant_id=$1 AND requested_by=$2 AND dataset_code = ANY($3::text[]) AND deleted_at IS NULL ${cond}
+        ORDER BY queued_at DESC, id DESC LIMIT ${Math.min(Math.max(limit, 1), 50)}`, params);
+    return r.rows.map((x) => ({ job: toDomain(x), cursorTs: x.cursor_ts as string }));
+  }
+
   /* ---- the runner's cross-tenant peeks (kv_relay pool, SELECT only) ---- */
 
   /** The head of the one FIFO. `LIMIT 1`: one job per tick, as the brief says — a worker that drains the whole queue in

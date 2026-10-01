@@ -26,3 +26,14 @@ export function canManageCommissionRules(ctx: RequestContext): boolean {
 export function canReadFinance(ctx: RequestContext): boolean {
   return ctx.permissions.has('report.view') || ctx.permissions.has('*');
 }
+
+/**
+ * [PC-56 TENANT-9c · F-8] ISSUING A GST CREDIT NOTE IS A MONEY VERB OF ITS OWN. It was `canReadFinance` (`report.view`) — a
+ * READ code the auditor, the gov officer and the support agent hold — so the role the canon defines by having no write could
+ * issue a tax document. `payments.credit_note.issue` (0181, tenant_admin; no tenant finance role exists). The approval it
+ * spends is still a second person's (0139); this is who may be the hand that issues it.
+ */
+export const CREDIT_NOTE_ISSUE = 'payments.credit_note.issue';
+export function canIssueCreditNote(ctx: RequestContext): boolean {
+  return ctx.permissions.has(CREDIT_NOTE_ISSUE) || ctx.permissions.has('*');
+}

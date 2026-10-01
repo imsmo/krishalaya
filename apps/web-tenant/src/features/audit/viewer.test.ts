@@ -22,7 +22,7 @@ describe('audit/viewer — query building', () => {
   it('drops empties + maps date bounds to inclusive-day ISO', () => {
     expect(buildAuditQuery({ action: ' ', entityType: 'user' })).toEqual({ entityType: 'user' });
     expect(buildAuditQuery({ from: '2026-06-01', to: '2026-06-30' })).toEqual({
-      from: '2026-06-01T00:00:00.000Z', to: '2026-06-30T23:59:59.999Z',
+      from: '2026-06-01', to: '2026-06-30',   // PC-56 TENANT-9c: the cooperative's days, not UTC instants
     });
   });
   it('ignores malformed dates', () => {

@@ -14,6 +14,7 @@ import { TenancyResource, ConsoleHomeResource } from './resources/tenancy';
 import { DairyResource } from './resources/dairy';
 import { GroupLotsResource } from './resources/group-lots';
 import { AuditResource } from './resources/audit';
+import { AuditorResource } from './resources/auditor';
 import { AiReviewResource } from './resources/ai-review';
 import { SearchResource } from './resources/search';
 import { TenantConfigResource } from './resources/tenant-config';
@@ -119,6 +120,8 @@ export class KrishalayaClient {
   readonly dairy: DairyResource;
   readonly groupLots: GroupLotsResource;
   readonly audit: AuditResource;
+  /** PC-56 TENANT-9c · the auditor realm (W200/W201/W436/W437/W2498). */
+  readonly auditor: AuditorResource;
   readonly aiReview: AiReviewResource;
   readonly search: SearchResource;
   readonly tenantConfig: TenantConfigResource;
@@ -205,6 +208,7 @@ export class KrishalayaClient {
     this.dairy = new DairyResource(this.http);
     this.groupLots = new GroupLotsResource(this.http);
     this.audit = new AuditResource(this.http);
+    this.auditor = new AuditorResource(this.http);
     this.aiReview = new AiReviewResource(this.http);
     this.search = new SearchResource(this.http);
     this.tenantConfig = new TenantConfigResource(this.http);

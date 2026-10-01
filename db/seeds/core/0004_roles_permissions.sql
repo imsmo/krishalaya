@@ -89,6 +89,12 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- checker and "the organisation's admin never certifies the organisation" are 0180's trigger. Also in migration 0180.
  ('kyc.manage','Upload the organisation''s KYC documents; submit a member''s document on their behalf','M01'),
  ('kyc.review','Verification desk: verify, reject or ask for more on a KYC document (never one you submitted, never your own, never your organisation''s as its admin)','M01'),
+ -- [PC-56 TENANT-9c] A GST CREDIT NOTE WAS ISSUED ON `report.view` (F-8) — a read code the auditor, the gov officer and the
+ -- support agent hold. It is a money verb of its own now, tenant_admin only. `kyc.read` / `governance.read` are the canon's
+ -- auditor reads as real rows. Also in migration 0181.
+ ('payments.credit_note.issue','Issue a GST credit note against an approved proposal (a money verb — never report.view)','M05'),
+ ('kyc.read','Read the KYC desk — the organisation''s documents, the member desk and the queue (no act, no reveal)','M01'),
+ ('governance.read','Read the share register, the resolutions and their tallies (never an individual ballot)','M04'),
  ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
@@ -127,7 +133,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code='vyapari'       AND p.code IN ('order.create','offer.create','requirement.post','auction.bid','auction.create','wallet.view'))
    OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','dispute.resolve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage','logistics.manage','promotion.manage','membership.manage'))
    OR (r.code='support_agent' AND p.code IN ('dispute.resolve','report.view'))
-   OR (r.code='auditor'       AND p.code IN ('ledger.read','report.view','audit.read'))
+   -- [PC-56 TENANT-9c] THE AUDITOR'S SET IS EXACTLY FIVE READS (0181); the AuditorReadOnlyGuard refuses it every non-GET.
+   OR (r.code='auditor'       AND p.code IN ('ledger.read','report.view','audit.read','kyc.read','governance.read'))
    OR (r.code='tenant_admin'  AND p.code IN ('audit.read'))
    OR (r.code='ai_ops'        AND p.code IN ('ai.review','listing.moderate'))
    OR (r.code='super_admin'   AND p.code IN ('plan.manage','tenant.manage','user.impersonate','flag.toggle'))
@@ -190,4 +197,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- a desk officer who must open evidence is given the reveal by a staff override, a decision somebody records.
    OR (r.code IN ('tenant_admin') AND p.code IN ('kyc.manage','kyc.review'))
    OR (r.code IN ('fpo_coordinator') AND p.code IN ('kyc.review'))
+   -- [PC-56 TENANT-9c] the credit note's own money verb (no tenant finance role exists) and the two reads (0181).
+   OR (r.code IN ('tenant_admin') AND p.code IN ('payments.credit_note.issue','kyc.read','governance.read'))
 ON CONFLICT DO NOTHING;

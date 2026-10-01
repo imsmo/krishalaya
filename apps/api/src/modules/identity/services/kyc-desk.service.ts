@@ -35,6 +35,8 @@ export interface DeskActor { userId: string; permissions: ReadonlySet<string>; i
 const can = (a: DeskActor, p: string) => a.permissions.has(p) || a.permissions.has('*');
 export const KYC_MANAGE = 'kyc.manage';
 export const KYC_REVIEW = 'kyc.review';
+/** [PC-56 TENANT-9c · F-18] the desk's READS without its acts — the canon's auditor ("what the auditor can see"). 0181. */
+export const KYC_READ = 'kyc.read';
 export const PII_REVEAL = 'member.pii.reveal';
 
 @Injectable()
@@ -51,7 +53,7 @@ export class KycDeskService {
     private readonly media: MediaService,
   ) {}
 
-  private assertDesk(a: DeskActor) { if (!can(a, KYC_REVIEW) && !can(a, KYC_MANAGE)) throw new KycDeskRestrictedError(); }
+  private assertDesk(a: DeskActor) { if (!can(a, KYC_REVIEW) && !can(a, KYC_MANAGE) && !can(a, KYC_READ)) throw new KycDeskRestrictedError(); }
 
   // ------------------------------------------------------------------------------------------------ reads (W121, W122)
 
@@ -88,7 +90,7 @@ export class KycDeskService {
     const rec = await this.desk.record(tenantId, id);
     if (!rec) throw new KycNotFoundError(id);
     // A member may read their OWN document's record; anyone else needs the desk.
-    if (!(rec.doc.userId === actor.userId) && !can(actor, KYC_REVIEW) && !can(actor, KYC_MANAGE)) throw new KycDeskRestrictedError();
+    if (!(rec.doc.userId === actor.userId) && !can(actor, KYC_REVIEW) && !can(actor, KYC_MANAGE) && !can(actor, KYC_READ)) throw new KycDeskRestrictedError();
     const acts = await this.uow.run(tenantId, (tx) => this.verdicts(tx, tenantId, actor, id), { userId: actor.userId });
     return { ...rec, acts, can: { manage: can(actor, KYC_MANAGE), review: can(actor, KYC_REVIEW), reveal: can(actor, PII_REVEAL) } };
   }

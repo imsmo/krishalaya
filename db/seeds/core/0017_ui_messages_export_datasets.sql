@@ -31,3 +31,17 @@ INSERT INTO ui_messages (key, language_code, text) VALUES
   ('exports.dataset.communication.broadcasts', 'hi', 'सूचनाएँ (ऐप-भीतर प्रसारण)'),
   ('exports.dataset.communication.broadcasts', 'gu', 'જાહેરાતો (ઍપમાંના પ્રસારણ)')
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 TENANT-9c] The auditor realm's three files (W201 / W2498 / W2499): the audit trail (masked as on screen), the
+-- ledger legs through the tenant funnel, and one section of the compliance pack per file. All UNSIGNED — the receipt says so.
+INSERT INTO ui_messages (key, language_code, text) VALUES
+  ('exports.dataset.audit.trail', 'en', 'audit trail (masked)'),
+  ('exports.dataset.audit.trail', 'hi', 'ऑडिट ट्रेल (छिपे विवरण सहित)'),
+  ('exports.dataset.audit.trail', 'gu', 'ઑડિટ ટ્રેલ (છુપાવેલી વિગતો સાથે)'),
+  ('exports.dataset.ledger.entries', 'en', 'ledger entries'),
+  ('exports.dataset.ledger.entries', 'hi', 'खाता-बही प्रविष्टियाँ'),
+  ('exports.dataset.ledger.entries', 'gu', 'ખાતાવહી નોંધો'),
+  ('exports.dataset.compliance.pack', 'en', 'compliance pack section'),
+  ('exports.dataset.compliance.pack', 'hi', 'अनुपालन पैक का खंड'),
+  ('exports.dataset.compliance.pack', 'gu', 'અનુપાલન પૅકનો વિભાગ')
+ON CONFLICT DO NOTHING;

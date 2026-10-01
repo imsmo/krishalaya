@@ -32,7 +32,8 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
   await requireSession(`/invoices/${params.id}`);
   const t = getTranslator();
   const lang = getLang();
-  const canFinance = tenantHasPerm('report.view');
+  // PC-56 TENANT-9c: issuing is its own money verb now (was report.view, which the auditor holds).
+  const canFinance = tenantHasPerm('payments.credit_note.issue');
 
   let inv: TradeInvoiceDetail;
   try { inv = await tenantClient().payments.invoices.detail(params.id); }

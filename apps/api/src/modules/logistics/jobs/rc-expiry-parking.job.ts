@@ -86,8 +86,8 @@ export class RcExpiryParkingJob {
           // Audited as the platform, not as a person: no human clicked this, and attributing it to one would be
           // a status recording an act nobody performed. `actor_user_id` stays NULL and the action names the job.
           await client.query(
-            `INSERT INTO audit_log (tenant_id, actor_user_id, action, entity_type, entity_id, old_value, new_value)
-             VALUES ($1, NULL, 'logistics.vehicle_parked_rc_invalid', 'vehicle', $2, $3::jsonb, $4::jsonb)`,
+            `INSERT INTO audit_log (tenant_id, actor_user_id, actor_role, action, entity_type, entity_id, old_value, new_value)
+             VALUES ($1, NULL, 'system', 'logistics.vehicle_parked_rc_invalid', 'vehicle', $2, $3::jsonb, $4::jsonb)`,
             [v.tenantId, v.id, JSON.stringify({ isActive: true }),
              JSON.stringify({ isActive: false, rcStatus: v.rcStatus, rcValidUntil: v.rcValidUntil })]);
           await client.query('COMMIT');

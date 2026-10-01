@@ -61,6 +61,7 @@ import { ChargeConsoleReadModel } from './read-models/charge-console.read-model'
 // first time. Separate from WalletController, which is the caller's personal wallet.
 import { OrgWalletController } from './controllers/v1/org-wallet.controller';
 import { OrgWalletReadModel } from './read-models/org-wallet.read-model';
+import { AuditorLedgerReadModel } from './read-models/auditor-ledger.read-model';
 import { OrgWalletExportService } from './services/org-wallet-export.service';
 // PC-56 TENANT-4b: W145/W146 — the payout queue and the maker-checker gate over a run.
 import { PayoutApprovalService } from './services/payout-approval.service';
@@ -124,6 +125,8 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     ChargeChangeService,
     ChargeConsoleReadModel,
     OrgWalletReadModel,
+    // PC-56 TENANT-9c · the auditor's ledger funnel (W200/W436/`ledger.entries`), exported for the auditor realm only.
+    AuditorLedgerReadModel,
     OrgWalletExportService,
     PayoutApprovalService,
     PayoutConsoleReadModel,
@@ -172,7 +175,7 @@ import { AutopayController } from './controllers/v1/autopay.controller';
   // for the auto-debit THIN LINK (linkAutopayMandate reads a mandate's status/purpose/owner via
   // MandateService.getById — the SERVICE, never MandateRepository directly, per Law 11). No behavior change
   // to MandateService itself.
-  exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel, MandateService],
+  exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel, MandateService, AuditorLedgerReadModel],
 })
 export class PaymentsModule implements OnModuleInit {
   constructor(

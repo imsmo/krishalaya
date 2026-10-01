@@ -18,7 +18,7 @@ import { TradeInvoiceService } from '../../services/trade-invoice.service';
 import { Gstr1ExportService } from '../../services/gstr1-export.service';
 import { CreditNoteService } from '../../services/credit-note.service';
 import { InvoiceConsoleReadModel } from '../../read-models/invoice-console.read-model';
-import { canModeratePayment, canReadFinance } from '../../policies/payments.policies';
+import { canIssueCreditNote, canModeratePayment, canReadFinance } from '../../policies/payments.policies';
 import { periodWindow } from '../../domain/gstr1';
 import {
   QueryInvoicesSchema, QueryInvoicesDto, Gstr1ExportSchema, Gstr1ExportDto,
@@ -67,7 +67,7 @@ export class InvoicesController {
   @Post(':id/credit-notes')
   issueCreditNote(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(IssueCreditNoteSchema) dto: IssueCreditNoteDto) {
     return this.creditNotes.issue(ctx.tenantId, {
-      userId: ctx.userId, canFinance: canReadFinance(ctx), canRefund: ctx.permissions.has('order.refund') || ctx.permissions.has('*'),
+      userId: ctx.userId, canIssue: canIssueCreditNote(ctx),
     }, { invoiceId: id, approvalId: dto.approvalId, reasonCode: dto.reasonCode, reasonText: dto.reasonText }, ipOf(r))
       .then((data) => ({ data }));
   }

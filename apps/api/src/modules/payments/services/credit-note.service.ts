@@ -26,7 +26,9 @@ import {
 } from '../domain/credit-note';
 import { InvoiceLine, RateBasis, SupplyType } from '../domain/invoice-tax';
 
-export interface CreditNoteActor { userId: string; canFinance: boolean; canRefund: boolean }
+/** [PC-56 TENANT-9c · F-8] `canIssue` = `payments.credit_note.issue` (was `canFinance` = `report.view`, a read code). The
+ *  never-read `canRefund` is gone (the survey: computed, never consulted). */
+export interface CreditNoteActor { userId: string; canIssue: boolean }
 
 export class InvoiceNotFoundForCreditError extends NotFoundError {
   constructor(id: string) { super('Invoice not found'); (this as any).details = { id }; }
@@ -58,7 +60,7 @@ export class CreditNoteService {
    * (uq_credit_note_approval and 0139's uq_refund_approval_applied say the same thing from two directions).
    */
   async issue(tenantId: string, actor: CreditNoteActor, input: { invoiceId: string; approvalId: string; reasonCode: string; reasonText: string }, ip: string | null = null) {
-    if (!actor.canFinance) throw new CreditNoteForbiddenError('report.view');
+    if (!actor.canIssue) throw new CreditNoteForbiddenError('payments.credit_note.issue');
     if (!isCreditNoteReason(input.reasonCode)) {
       throw new CreditNoteRefusedError('CREDIT_NOTE_REASON_INVALID', `reason must be one of: ${CREDIT_NOTE_REASONS.join(', ')}`);
     }

@@ -562,7 +562,15 @@ export interface AuditEntry {
   id: string; actorUserId: string | null; actorRole: string | null; action: string;
   entityType: string | null; entityId: string | null; oldValue: unknown; newValue: unknown;
   reason: string | null; requestId: string | null; createdAt: string;
+  /** [PC-56 TENANT-9c] false = the row predates 0181 and no writer recorded a role ("not recorded"). */
+  actorRoleRecorded?: boolean;
+  /** [PC-56 TENANT-9c] the diff paths NOT shown (masked, `••••`); empty on a recorded reveal. */
+  maskedFields?: string[];
+  /** [PC-56 TENANT-9c] true unless this is the answer to a recorded reveal. */
+  masked?: boolean;
 }
+/** [PC-56 TENANT-9c] the window the trail page ran over — civil days in the cooperative's zone, ≤ 92 days. */
+export interface AuditWindow { from: string; to: string; days: number; maxDays: number; zone: string; defaulted: boolean }
 
 // --- AI review queue (human-in-the-loop ops surface — P1-12) ---
 export type AiReviewStatus = 'pending' | 'in_review' | 'accepted' | 'rejected';

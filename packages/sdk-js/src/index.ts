@@ -27,7 +27,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   CommissionRule, CreateCommissionRuleInput, DeliveryZone, CreateDeliveryZoneInput, UpdateDeliveryZoneInput, TenantSetting, TenantFeature,
   IntegrationProvider, TenantIntegration, WebhookEndpoint,
   GroupLot, GroupLotPledge, GroupLotDetail, GroupLotStatus, CreateGroupLotInput, GroupLotSettlement,
-  AuditEntry,
+  AuditEntry, AuditWindow,
   AiReviewItem, AiReviewStatus, AiReviewQueueKind, EnqueueReviewInput, ResolveReviewInput,
   SearchHit, SearchEntityType, SearchEngine,
   DairyMcc, DairyMembership, DairyRateCard, DairyCollection, MilkBill,
@@ -101,6 +101,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
 // real gap, left unfixed and recorded in DEV-01_BASELINE.md as baseline-red for the mobile-completion phase (D2).]
 
 export * from './resources/livestock';
+export * from './resources/auditor'; // PC-56 TENANT-9c
 export * from './resources/returns';
 // PC-56 TENANT-3b: the dispute console reads + the refund maker-checker plane live in resources/admin.ts.
 export type { DisputeKpis, DisputeQueueRow, DisputeMoneyState, RefundGateState, RefundApproval } from './resources/admin';
