@@ -54,7 +54,8 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         // PC-56 TENANT-8a: the tenant's template overrides (W180) beside the comms hub, under the same console switch.
         ...(env.featureComms ? [{ key: 'comms', href: '/comms', label: t.t('nav.comms') }, { key: 'templates', href: '/content/templates', label: t.t('nav.templates') }] : []),
         // PC-56 TENANT-8c: the cooperative's pages (W175) and FAQ (W177), under their own console switch.
-        ...(env.featureCms ? [{ key: 'pages', href: '/content/pages', label: t.t('nav.pages') }, { key: 'faq', href: '/content/faq', label: t.t('nav.faq') }] : []),
+        // PC-56 TENANT-8d: the banners (W173) beside them, the same switch (the API's `cms` flag stays the gate).
+        ...(env.featureCms ? [{ key: 'pages', href: '/content/pages', label: t.t('nav.pages') }, { key: 'faq', href: '/content/faq', label: t.t('nav.faq') }, { key: 'banners', href: '/content/banners', label: t.t('nav.banners') }] : []),
         // The PEOPLE register is core and ungated: an FPO with no paid membership tiers still has members, and hiding
         // the roster behind the `memberships` flag would leave a tenant unable to see who belongs to them.
         { key: 'people', href: '/people', label: t.t('nav.people') },

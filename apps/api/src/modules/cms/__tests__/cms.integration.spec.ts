@@ -30,7 +30,7 @@ run('cms spine (integration, real Postgres + RLS + page versioning)', () => {
   const tenantA = randomUUID(); const tenantB = randomUUID(); const editor = randomUUID();
   const slug = 'privacy-policy'; let v1 = ''; let v2 = '';
   const actor = { userId: editor, canAuthor: true, canPublish: true };
-  const bannerActor = { userId: editor, canManage: true };
+  const bannerActor = { userId: editor, canManage: true };   // PC-56 TENANT-8d: cms.banners.manage
   const checker = randomUUID(); const checkerActor = { userId: checker, canAuthor: false, canPublish: true };
   const meta = { ip: null, requestId: null };
   let mediaId = '';
@@ -41,7 +41,7 @@ run('cms spine (integration, real Postgres + RLS + page versioning)', () => {
     mediaId = randomUUID();
     // [PC-56 TENANT-8c] media_assets.kind / mime_type / bytes / sha256 are NOT NULL — this fixture predates them and the suite
     // could not start (red at 4097b28 too — see the 8c report).
-    await admin.query(`INSERT INTO media_assets (id, tenant_id, kind, s3_key, mime_type, bytes, sha256) VALUES ($1,$2,'image',$3,'image/png',1,$4) ON CONFLICT DO NOTHING`, [mediaId, tenantA, `banners/${mediaId}.png`, 'a'.repeat(64)]);
+    await admin.query(`INSERT INTO media_assets (id, tenant_id, kind, s3_key, mime_type, bytes, sha256, scan_status) VALUES ($1,$2,'image',$3,'image/png',1,$4,'clean') ON CONFLICT DO NOTHING`, [mediaId, tenantA, `banners/${mediaId}.png`, 'a'.repeat(64)]);
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
     const shards = new ShardRouter(config);
@@ -49,7 +49,7 @@ run('cms spine (integration, real Postgres + RLS + page versioning)', () => {
     const replica = new PgReadReplicaProvider(pools, shards);
     const outbox = new PgOutboxWriter(); const metrics = new PromMetrics(); const audit = new AuditWriter(pools);
     pages = new CmsPageService(uow, outbox, metrics, audit, new CmsPageRepository(replica as any), new PgIdempotencyService(pools));
-    banners = new BannerService(uow, outbox, metrics, audit, new BannerRepository(replica as any));
+    banners = new BannerService(uow, outbox, metrics, audit, new BannerRepository(replica as any), new PgIdempotencyService(pools));
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
@@ -69,13 +69,17 @@ run('cms spine (integration, real Postgres + RLS + page versioning)', () => {
     const p: any = await pages.getBySlug(tenantA, slug);
     expect(p.version).toBe(2); expect(p.defaultTitle).toBe('Privacy v2');
   });
-  it('schedules a banner + tracks a click', async () => {
-    const b: any = await banners.create(tenantA, bannerActor, { placement: 'home_hero', mediaId, startsAt: new Date(Date.now() - 3600000).toISOString(), endsAt: new Date(Date.now() + 3600000).toISOString(), audienceRules: {} } as any, null);
-    await banners.recordClick(tenantA, { userId: randomUUID(), canManage: false }, b.id);
-    const row = (await admin.query(`SELECT click_count FROM banners WHERE id=$1`, [b.id])).rows[0];
-    expect(row.click_count).toBe(1);
-    const { items } = await banners.list(tenantA, bannerActor, { box: 'live', limit: 50 });
-    expect(items.length).toBeGreaterThanOrEqual(1);
+  it('schedules a banner (words in en · hi · gu, the tenant\'s clean image), activates it, tracks a click (PC-56 TENANT-8d)', async () => {
+    const form = { placement: 'home_hero', mediaId, startsDate: '2026-01-01', startsTime: '00:00', endsDate: '2099-12-31', endsTime: '23:00', reason: 'kharif seeds in stock',
+      headline_en: 'Seeds in stock', headline_hi: 'बीज उपलब्ध', headline_gu: 'બિયારણ આવી ગયું', intent: 'new' } as any;
+    const b: any = await banners.save(tenantA, bannerActor, randomUUID(), form, meta);
+    expect(b).toMatchObject({ mode: 'create', state: 'draft', missingLanguages: [] });
+    await banners.act(tenantA, bannerActor, randomUUID(), b.id, 'activate', { reason: 'goes live' }, meta);
+    await banners.recordClick(tenantA, { userId: randomUUID() }, b.id);
+    const row = (await admin.query(`SELECT click_count, state FROM banners WHERE id=$1`, [b.id])).rows[0];
+    expect(row).toMatchObject({ click_count: 1, state: 'active' });
+    const idx = await banners.index(tenantA, bannerActor, { phase: 'live', limit: 50 });
+    expect(idx.items.map((i: any) => i.id)).toContain(b.id);
   });
   it('RLS: tenant B cannot see tenant A\'s page', async () => {
     await inspect.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantB]);

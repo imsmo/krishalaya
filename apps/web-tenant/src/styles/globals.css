@@ -226,3 +226,9 @@ details.kv-card > summary { cursor: pointer; }
 .kv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 8px; }
 .kv-chip { display: inline-block; padding-block: 4px; padding-inline: 12px; border: 1px solid var(--kv-neutral-200, #e5e5e5); border-radius: 9999px; text-decoration: none; }
 .kv-chip--on { border-color: var(--kv-brand-500, #16a34a); font-weight: 600; }
+/* --- PC-56 TENANT-8d · THE BANNERS — a banner's words as STORED, one card per language, the width of a phone (W174's
+   "360px"), text never over a picture (no member app renders one yet, so the console does not pretend to). A missing
+   required language is a dashed card that says so. Logical properties throughout. --- */
+.kv-banner-words { max-inline-size: 360px; margin-block: 8px; padding-block: 10px; padding-inline: 14px; border: 1px solid var(--kv-neutral-200, #e5e5e5); border-inline-start: 4px solid var(--kv-brand-500, #16a34a); border-radius: 8px; overflow-wrap: anywhere; }
+.kv-banner-words--missing { border-style: dashed; border-inline-start-color: var(--kv-neutral-400, #a3a3a3); }
+.kv-banner-words__cta { display: inline-block; margin-block-start: 6px; font-weight: 600; }

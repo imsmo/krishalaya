@@ -83,7 +83,13 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
- ('cms.manage','Manage CMS banners (pages moved to cms.pages.* in TENANT-8c)','M50'),
+ ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
+ -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
+ -- to it), so it is not a page draft a support agent writes (cms.pages.manage) and not a page publish either: one verb
+ -- writes, activates, pauses, resumes, archives and reorders a banner, held by tenant_admin only. `cms.manage` is
+ -- retired: after this wave no route, service or policy reads it (grep in the 8d report); the row stays, inert, so a
+ -- role grant that names it never dangles.
+ ('cms.banners.manage','Write, activate, pause, resume, archive and reorder the cooperative''s app banners','M50'),
  -- [PC-56 TENANT-8c] ONE KEY WROTE, PUBLISHED AND CHECKED EVERY PAGE (F-19): `cms.manage` (tenant_admin only) authored a
  -- page, published it and archived it, and a POLICY page — terms, privacy, refund: what binds the cooperative to its
  -- members — went live on one person's word. Two verbs now: the author's and the checker's. Maker ≠ checker on a policy
@@ -95,8 +101,9 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('bulk.import','Create + manage bulk CSV import jobs',NULL)
 ON CONFLICT (code) DO NOTHING;
 -- [PC-56 TENANT-8c] `cms.manage` no longer touches pages; its name says so on a database seeded before this wave too.
-UPDATE permissions SET default_name = 'Manage CMS banners (pages moved to cms.pages.* in TENANT-8c)'
- WHERE code = 'cms.manage' AND default_name IS DISTINCT FROM 'Manage CMS banners (pages moved to cms.pages.* in TENANT-8c)';
+-- [PC-56 TENANT-8d] … and it no longer touches banners either: retired, and its name says so.
+UPDATE permissions SET default_name = 'Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)'
+ WHERE code = 'cms.manage' AND default_name IS DISTINCT FROM 'Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)';
 -- [PC-56 TENANT-8a] `notification.manage` no longer authors templates; its name says so on a database seeded before
 -- this wave too (the INSERT above does nothing to an existing row). Re-runnable: a second run changes nothing.
 UPDATE permissions SET default_name = 'Send tenant broadcasts + read the notification event catalogue'
@@ -161,6 +168,7 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('ambassador.manage'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('support.handle'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('cms.manage'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('cms.banners.manage'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('cms.pages.manage'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('cms.pages.publish'))
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('market.manage'))

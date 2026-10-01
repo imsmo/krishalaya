@@ -11,9 +11,16 @@ Money-free. Gated by the `cms` feature flag (default **OFF**).
   previously-published version** so exactly one is live; a published page is re-edited by minting a new version
   (a fresh draft) — the live content is never mutated. Body is markdown. Platform pages have `tenant_id NULL`
   (admin-api only, Law 11 — not writable here).
-- **Banners** (`banners`) — a scheduled placement that runs in `[starts_at, ends_at)`; `is_active` is the manual
-  on/off; **live** = active ∩ inside the window. `click_count` is incremented atomically (`+1` in SQL, no
-  read-modify-write race). An expiry job deactivates ended banners.
+- **Banners** (`banners` + `banner_texts`, PC-56 TENANT-8d / migration 0178) — one image at one placement (a
+  `cms_banner_placement` vocabulary code), run in `[starts_at, ends_at)` (typed as the cooperative's wall-clock, resolved
+  in the tenant's zone), for a declared audience (`{roles, regions}` — validated against `roles` / `admin_regions`,
+  evaluated by `domain/banner-audience.ts`). Its words are one `banner_texts` row per language; **en · hi · gu are
+  required before activation** (the review, the act and 0178's deferred trigger). Lifecycle `state` (`draft → active ⇄
+  paused`, any → `archived`, final — `domain/banner.state.ts`); *scheduled · live · ended* is the window at read time
+  (`is_active` is GENERATED from the state). The image must be the tenant's own, an image, scanned clean (F-8) — at
+  create, on every image change and at every activation. `banner_group_key` groups variants (no allocation engine);
+  `slot_order` orders a placement (a keyed, audited reorder). `click_count` is `+1` on a LIVE banner only. There is
+  **no expiry job** (PC-27's was registered nowhere — F-21 — and is deleted) and **no reader**: no app calls the live box.
 
 ## Surface (v1, under the `cms` flag)
 
@@ -30,15 +37,21 @@ code). `GET /v1/cms/pages/by-slug/:slug` serves the live page to any authenticat
 version wins over the platform's regardless of version (F-14). **No member surface calls it yet** (no storefront or
 mobile reader). FAQ (`page_kind = faq`, a `cms_faq_topic` topic and a place): `GET /v1/cms/faq`, `GET|POST
 /v1/cms/faq/reorder` (keyed, audited, the topic locked).
-Banners: `POST /v1/cms/banners` (`cms.manage`), `GET` (box=`live` any user, `all` agent), `GET /:id`
-(`cms.manage`), `POST /:id/{activate,deactivate}` (`cms.manage`), `POST /:id/click` (any user).
+Banners — PC-56 TENANT-8d (migration 0178), verb `cms.banners.manage` (tenant_admin; `cms.manage` retired), every write
+keyed and audited (actor · reason · before/after · client IP or NULL · request id): `GET /v1/cms/banners` (W173: phase ·
+placement · language GET filters, keyset, live counts), `GET /vocabulary`, `GET /live` (any member — the banners live for
+a placement, by the caller's audience facts and language; no app calls it), `POST /preview` (the form's review + reach),
+`POST /` (create, born a draft), `GET|POST /slot` (the reorder in a placement), `GET /:id` (W174), `PATCH /:id` (edit;
+`expect` → typed 409), `GET /:id/acts`, `POST /:id/{activate,pause,resume,archive}` (a reason), `POST /:id/click`.
 
 ## Threats considered (§4)
 
 - **Tenant isolation / RLS** — `tenant_id` binds every query; `cms_pages` + `banners` are RLS-protected
   (pages also allow NULL = platform pages, read-only here). Authoring always writes the caller's own tenant_id.
 - **No privilege escalation** — page writes need `cms.pages.manage`, publish `cms.pages.publish` (policy: maker ≠ checker,
-  also a trigger); banners `cms.manage`. Platform pages are read-only from the tenant realm by RLS (0177's policy split:
+  also a trigger); banners `cms.banners.manage`. `banners` / `banner_texts` (0178): RLS `tenant_id = current_tenant_id()`
+  USING + WITH CHECK, kv_app column grants (never `tenant_id`, `created_by`, the legacy columns; no DELETE on banners),
+  kv_relay no writes; a banner's image is checked against the tenant (an FK alone is not — F-8). Platform pages are read-only from the tenant realm by RLS (0177's policy split:
   SELECT admits the NULL row, INSERT/UPDATE only `tenant_id = current_tenant_id()`, the admin realm named) and by the
   column grants (no `tenant_id` / `slug` / `version` change, no DELETE). Every write is audited in the same tx.
 - **Immutability** (0177) — the words of a version that left draft are immutable in the database; the archive reason is a
@@ -53,7 +66,9 @@ Banners: `POST /v1/cms/banners` (`cms.manage`), `GET` (box=`live` any user, `all
 ## Deferred (schema present, not built)
 
 Per-language page translations (the `translations` table); banner audience-rule targeting evaluation (rules are
-stored, not yet matched at serve time); page preview tokens; scheduled (future-dated) page publish.
+stored, not yet matched at serve time — DONE in TENANT-8d, `domain/banner-audience.ts`); page preview tokens; scheduled
+(future-dated) page publish. TENANT-8d names: banner impressions (no reader, no counter), A/B allocation inside a variant
+group (DELTA-029's class), `min_orders` / KYC / cluster audiences, deep links (`app://…` — no route registry).
 
 ## Tests
 

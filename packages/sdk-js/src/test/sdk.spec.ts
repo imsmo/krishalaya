@@ -2055,3 +2055,51 @@ describe('cms pages + FAQ (TENANT-8c)', () => {
     expect([calls[11].init.method, calls[11].url, h(11)]).toEqual(['POST', 'https://api.test/v1/cms/faq/reorder', 'idem-m']);
   });
 });
+
+// PC-56 TENANT-8d · THE BANNERS — every cms/banners route has its method (F-14); reads carry no key, writes the FORM's.
+describe('cms banners (TENANT-8d)', () => {
+  it('reads W173 (meta: counts, placements, the verb, the reader fact), W174, the vocabulary, the live box, the confirm steps — no key', async () => {
+    const meta = { nextCursor: 'c1', counts: { byPhase: { live: 1 }, byPlacement: { home_hero: 1 }, total: 1 }, placements: [], canManage: true, reader: { surfaces: [], route: 'GET /v1/cms/banners/live', gap: ['mobile', 'web-storefront'] }, requiredLanguages: ['en', 'hi', 'gu'] };
+    const { fn, calls } = fakeFetch((c) => (c.url.includes('/cms/banners?') ? { body: { data: [], meta } } : c.url.includes('/cms/banners/live') ? { body: { data: [{ id: 'b' }], meta: { languageCode: 'gu', reader: meta.reader } } } : { body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const idx = await c.cms.banners.list({ phase: 'live', placement: 'home_hero', languageCode: 'gu', limit: 20 });
+    expect(calls[0].url).toBe('https://api.test/v1/cms/banners?phase=live&placement=home_hero&languageCode=gu&limit=20');
+    expect(idx).toEqual({ items: [], ...meta });
+    await c.cms.banners.get('b 1'); await c.cms.banners.vocabulary();
+    const live = await c.cms.banners.live({ placement: 'home_hero' });
+    expect(live).toEqual({ items: [{ id: 'b' }], languageCode: 'gu', reader: meta.reader });
+    await c.cms.banners.acts('b1', 'a reason'); await c.cms.banners.slotPreview('b1', 'up', 'why');
+    expect(calls.slice(1).map((x) => x.url)).toEqual([
+      'https://api.test/v1/cms/banners/b%201', 'https://api.test/v1/cms/banners/vocabulary', 'https://api.test/v1/cms/banners/live?placement=home_hero',
+      'https://api.test/v1/cms/banners/b1/acts?reason=a+reason', 'https://api.test/v1/cms/banners/slot?id=b1&direction=up&reason=why',
+    ]);
+    expect(calls.every((x) => (x.init.headers as Record<string, string>)['idempotency-key'] === undefined)).toBe(true);
+  });
+  it('previews without a key; every write and act WITH the form\'s key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const h = (i: number) => (calls[i].init.headers as Record<string, string>)['idempotency-key'];
+    await c.cms.banners.preview({ placement: 'home_hero', headline_gu: 'શબ્દ' });
+    await c.cms.banners.preview({ placement: 'wallet' }, 'b1');
+    await c.cms.banners.create({ placement: 'home_hero', headline_gu: 'શબ્દ' }, 'idem-c');
+    await c.cms.banners.update('b1', { placement: 'home_hero', expect: 'tok' }, 'idem-u');
+    await c.cms.banners.activate('b1', { reason: 'goes live' }, 'idem-a');
+    await c.cms.banners.pause('b1', { reason: 'stock out' }, 'idem-p');
+    await c.cms.banners.resume('b1', { reason: 'back' }, 'idem-r');
+    await c.cms.banners.archive('b1', { reason: 'season over' }, 'idem-x');
+    await c.cms.banners.slotMove({ id: 'b1', direction: 'down', reason: 'why' }, 'idem-s');
+    await c.cms.banners.click('b1');
+    expect([calls[0].url, h(0)]).toEqual(['https://api.test/v1/cms/banners/preview', undefined]);
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ placement: 'home_hero', headline_gu: 'શબ્દ' });
+    expect([calls[1].url, h(1)]).toEqual(['https://api.test/v1/cms/banners/preview?id=b1', undefined]);
+    expect([calls[2].init.method, calls[2].url, h(2)]).toEqual(['POST', 'https://api.test/v1/cms/banners', 'idem-c']);
+    expect([calls[3].init.method, calls[3].url, h(3)]).toEqual(['PATCH', 'https://api.test/v1/cms/banners/b1', 'idem-u']);
+    expect([4, 5, 6, 7].map((i) => [calls[i].url, h(i)])).toEqual([
+      ['https://api.test/v1/cms/banners/b1/activate', 'idem-a'], ['https://api.test/v1/cms/banners/b1/pause', 'idem-p'],
+      ['https://api.test/v1/cms/banners/b1/resume', 'idem-r'], ['https://api.test/v1/cms/banners/b1/archive', 'idem-x'],
+    ]);
+    expect(JSON.parse(String(calls[5].init.body))).toEqual({ reason: 'stock out' });
+    expect([calls[8].init.method, calls[8].url, h(8)]).toEqual(['POST', 'https://api.test/v1/cms/banners/slot', 'idem-s']);
+    expect([calls[9].init.method, calls[9].url, h(9)]).toEqual(['POST', 'https://api.test/v1/cms/banners/b1/click', undefined]);
+  });
+});

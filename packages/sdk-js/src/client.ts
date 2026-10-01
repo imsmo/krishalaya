@@ -146,7 +146,7 @@ export class KrishalayaClient {
   readonly parcels: ParcelsResource;
   readonly privacy: PrivacyResource;
   readonly onboarding: OnboardingResource;
-  /** PC-56 TENANT-8c · pages + FAQ (`cms/pages`, `cms/faq`). */
+  /** PC-56 TENANT-8c · pages + FAQ (`cms/pages`, `cms/faq`); TENANT-8d · banners (`cms/banners`). */
   readonly cms: CmsResource;
 
   constructor(config: SdkConfig) {

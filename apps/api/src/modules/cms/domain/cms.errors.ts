@@ -36,3 +36,27 @@ export class FaqMoveRefusedError extends DomainError {
     super('CMS_FAQ_MOVE_REFUSED', `FAQ reorder refused: ${refusals.join(', ')}`, 409, { refusals });
   }
 }
+// PC-56 TENANT-8d · THE BANNERS. The same shape: each refusal carries the codes the review / verdict computed.
+export class BannerFormRefusedError extends DomainError {
+  constructor(refusals: ReadonlyArray<{ field: string | null; code: string }>) {
+    super('CMS_BANNER_FORM_REFUSED', `Banner write refused: ${refusals.map((r) => (r.field ? `${r.field}/${r.code}` : r.code)).join(', ')}`, 422, { refusals });
+  }
+}
+/** F-8: the image is not the cooperative's own clean image — a typed refusal, never a bare FK pass. */
+export class BannerMediaRefusedError extends DomainError {
+  constructor(code: string) { super('CMS_BANNER_MEDIA_REFUSED', `Banner image refused: ${code}`, 422, { refusals: [{ field: 'mediaId', code }] }); }
+}
+export class BannerActRefusedError extends DomainError {
+  constructor(act: string, refusals: readonly string[], missingLanguages: readonly string[] = []) {
+    super('CMS_BANNER_ACT_REFUSED', `Banner act ${act} refused: ${refusals.join(', ')}`, 409, { act, refusals, missingLanguages });
+  }
+}
+/** An edit reviewed against a version of the banner a colleague has since changed. */
+export class BannerChangedError extends DomainError {
+  constructor(id: string, expected: string, actual: string | null) {
+    super('CMS_BANNER_CHANGED', `Banner ${id} changed since it was reviewed`, 409, { id, expected, actual, refusals: ['VERSION_CHANGED'] });
+  }
+}
+export class BannerSlotRefusedError extends DomainError {
+  constructor(refusals: readonly string[]) { super('CMS_BANNER_SLOT_REFUSED', `Banner reorder refused: ${refusals.join(', ')}`, 409, { refusals }); }
+}

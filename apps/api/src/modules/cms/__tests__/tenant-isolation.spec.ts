@@ -8,7 +8,7 @@ import { Banner } from '../domain/banner.entity';
 
 function fakeReplica() { const exec = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) }; return { provider: { forTenant: () => exec } as any, exec }; }
 const page = () => CmsPage.create({ id: 'p1', tenantId: 'tenantA', slug: 'privacy-policy', pageKind: 'policy', defaultTitle: 'P', body: 'b', version: 1 });
-const banner = () => Banner.create({ id: 'b1', tenantId: 'tenantA', placement: 'home_hero', mediaId: 'm1', languageCode: 'en', targetUrl: null, audienceRules: {}, startsAt: new Date(), endsAt: new Date(Date.now() + 86400000) });
+const banner = () => Banner.create({ id: 'b1', tenantId: 'tenantA', placement: 'home_hero', mediaId: 'm1', targetUrl: null, audience: { roles: [], regions: [] }, startsAt: new Date(), endsAt: new Date(Date.now() + 86400000), groupKey: null, slotOrder: 1, createdBy: 'u1' });
 
 describe('cms_pages isolation', () => {
   it('getForUpdate binds tenant_id + FOR UPDATE; insert binds tenant_id', async () => {
@@ -33,20 +33,32 @@ describe('cms_pages isolation', () => {
   });
 });
 
-describe('banners isolation', () => {
-  it('insert binds tenant_id; live list bounds on is_active + window; keyset (no OFFSET)', async () => {
+describe('banners isolation (PC-56 TENANT-8d)', () => {
+  it('insert binds tenant_id and is born a draft; the list binds tenant_id, filters a phase by state + window, keyset (no OFFSET)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     await new BannerRepository(fakeReplica().provider).insert(tx as any, banner(), 'u1');
-    expect(tx.query.mock.calls[0][0]).toMatch(/INSERT INTO banners/); expect(tx.query.mock.calls[0][1]).toContain('tenantA');
+    expect(tx.query.mock.calls[0][0]).toMatch(/INSERT INTO banners/); expect(tx.query.mock.calls[0][0]).toMatch(/'draft'/); expect(tx.query.mock.calls[0][1]).toContain('tenantA');
     const { provider, exec } = fakeReplica();
-    await new BannerRepository(provider).listFor('tenantA', { box: 'live', limit: 50 });
+    await new BannerRepository(provider).list('tenantA', { phase: 'live', limit: 50 });
     const [sql] = exec.query.mock.calls[0];
-    expect(sql).toMatch(/tenant_id=\$1/); expect(sql).toMatch(/is_active=true AND starts_at <= now\(\) AND ends_at > now\(\)/); expect(sql).not.toMatch(/OFFSET/i);
+    expect(sql).toMatch(/b\.tenant_id=\$1/); expect(sql).toMatch(/b\.state = 'active' AND b\.starts_at <= now\(\) AND b\.ends_at > now\(\)/); expect(sql).not.toMatch(/OFFSET/i);
+    expect(sql).toMatch(/AT TIME ZONE co\.timezone/);
   });
-  it('incrementClick is an atomic +1 bound by id + tenant_id', async () => {
+  it('the texts and the slot bind tenant_id; the slot lock is per (tenant, placement)', async () => {
+    const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
+    const repo = new BannerRepository(fakeReplica().provider);
+    await repo.replaceTexts(tx as any, 'tenantA', 'b1', [{ languageCode: 'gu', headline: 'h', body: null, ctaLabel: null }], 'u1');
+    expect(tx.query.mock.calls[0][0]).toMatch(/DELETE FROM banner_texts WHERE tenant_id=\$1 AND banner_id=\$2/);
+    expect(tx.query.mock.calls[1][0]).toMatch(/INSERT INTO banner_texts/); expect(tx.query.mock.calls[1][1][0]).toBe('tenantA');
+    await repo.slotForUpdate(tx as any, 'tenantA', 'home_hero');
+    expect(tx.query.mock.calls[2][0]).toMatch(/tenant_id=\$1 AND placement=\$2 AND state <> 'archived'.*FOR UPDATE/s);
+    await repo.lockSlot(tx as any, 'tenantA', 'home_hero');
+    expect(tx.query.mock.calls[3][1]).toEqual(['cms_banner_slot|tenantA|home_hero']);
+  });
+  it('incrementClick is an atomic +1 bound by id + tenant_id, on a LIVE banner only', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     await new BannerRepository(fakeReplica().provider).incrementClick(tx as any, 'tenantA', 'b1');
     const [sql, params] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/SET click_count = click_count \+ 1/); expect(sql).toMatch(/WHERE id=\$1 AND tenant_id=\$2/); expect(params).toEqual(['b1', 'tenantA']);
+    expect(sql).toMatch(/SET click_count = click_count \+ 1/); expect(sql).toMatch(/WHERE b\.id=\$1 AND b\.tenant_id=\$2/); expect(sql).toMatch(/b\.state = 'active'/); expect(params).toEqual(['b1', 'tenantA']);
   });
 });

@@ -2692,3 +2692,74 @@ export interface CmsFaqMovePreview {
   plan: { ok: true; steps: Array<{ slug: string; from: number; to: number }>; order: string[] } | { ok: false; refusal: string } | null;
 }
 export interface CmsFaqMoveResult { id: string | null; slug: string; topic: string | null; order: string[]; position: number }
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/* PC-56 TENANT-8d · THE BANNERS — W173 / W174 + the banner-form, banner-mutate, banners-form, banners-mutate chains.   */
+/* Every route of `cms/banners` has its method (F-14: before this wave none did).                                     */
+/* ------------------------------------------------------------------------------------------------------------------ */
+export const CMS_BANNER_STATES = ['draft', 'active', 'paused', 'archived'] as const;
+export type CmsBannerState = (typeof CMS_BANNER_STATES)[number];
+export const CMS_BANNER_PHASES = ['live', 'scheduled', 'ended', 'draft', 'paused', 'archived'] as const;
+export type CmsBannerPhase = (typeof CMS_BANNER_PHASES)[number];
+export const CMS_BANNER_ACTS = ['activate', 'pause', 'resume', 'archive'] as const;
+export type CmsBannerAct = (typeof CMS_BANNER_ACTS)[number];
+/** The banner form's own fields (the words are per language: `headline_<l>` · `body_<l>` · `cta_<l>`). */
+export const CMS_BANNER_FORM_FIELDS = ['placement', 'mediaId', 'groupKey', 'targetUrl', 'roles', 'regions', 'startsDate', 'startsTime', 'endsDate', 'endsTime', 'reason'] as const;
+export interface CmsBannerText { languageCode: string; headline: string; body: string | null; ctaLabel: string | null }
+export interface CmsBannerAudience { roles: string[]; regions: string[] }
+export interface CmsBannerImage { id: string; fileName: string; mimeType: string; scanStatus: string; clean: boolean }
+export interface CmsBannerWall { date: string; time: string }
+export interface CmsBanner {
+  id: string; placement: string; mediaId: string; targetUrl: string | null; audience: CmsBannerAudience; startsAt: string; endsAt: string;
+  groupKey: string | null; slotOrder: number; state: CmsBannerState; phase: CmsBannerPhase; clickCount: number;
+  activatedAt: string | null; pausedAt: string | null; pausedReason: string | null; archivedAt: string | null; archivedReason: string | null;
+  createdAt?: string; updatedAt?: string; version: string; legacyLanguageCode: string | null; texts: CmsBannerText[];
+}
+export interface CmsBannerIndexItem extends CmsBanner {
+  timezone: string; startsLocal: CmsBannerWall; endsLocal: CmsBannerWall; languages: string[]; missingLanguages: string[]; everyone: boolean; image: CmsBannerImage | null;
+}
+export interface CmsBannerPlacement { code: string; name: string; chosen: boolean; legacy: boolean; sortOrder: number }
+export interface CmsBannerCounts { byPhase: Record<string, number>; byPlacement: Record<string, number>; total: number }
+export interface CmsBannerQuery { phase?: string; placement?: string; languageCode?: string; cursor?: string; limit?: number }
+export interface CmsBannerIndex {
+  items: CmsBannerIndexItem[]; nextCursor: string | null; counts: CmsBannerCounts; placements: CmsBannerPlacement[]; canManage: boolean; reader: CmsReaderFact; requiredLanguages: string[];
+}
+export type CmsBannerActRefusal = 'NO_PERMISSION' | 'ILLEGAL_FROM_STATE' | 'TEXT_MISSING' | 'MEDIA_NOT_YOURS' | 'MEDIA_NOT_IMAGE' | 'MEDIA_NOT_CLEAN' | 'WINDOW_ENDED' | 'AUDIENCE_INVALID'
+  | 'BANNER_NOT_FOUND' | 'REASON_REQUIRED' | 'REASON_TOO_LONG' | 'REFUSED_BY_DATABASE';
+export interface CmsBannerActVerdict { act: CmsBannerAct; allowed: boolean; refusals: CmsBannerActRefusal[]; to: CmsBannerState | null; missingLanguages: string[] }
+export interface CmsBannerActivation { codes: string[]; missingLanguages: string[]; unknown: string[] }
+export interface CmsBannerRegion { id: string; path: string; name: string; level: number }
+export interface CmsBannerReach { matched: number; byLanguage: Array<{ code: string; members: number; hasText: boolean }>; hiddenNoText: number; considered: number; truncated: boolean }
+export interface CmsBannerView extends CmsBannerIndexItem {
+  offeredLanguages: string[]; hiddenLanguages: string[]; activation: CmsBannerActivation; acts: CmsBannerActVerdict[];
+  audienceRegions: CmsBannerRegion[]; reach: CmsBannerReach;
+  slot: { position: number | null; of: number; order: string[] };
+  siblings: Array<{ id: string; placement: string; state: CmsBannerState; mediaId: string; languages: string[] }>;
+  who: { author: string | null; lastEditor: string | null; activatedBy: string | null; pausedBy: string | null; archivedBy: string | null };
+  expect: string; canManage: boolean; reader: CmsReaderFact; requiredLanguages: string[];
+}
+export interface CmsBannerVocabulary {
+  placements: CmsBannerPlacement[]; roles: Array<{ code: string; name: string }>; regions: CmsBannerRegion[]; images: Array<{ id: string; s3Key: string; mimeType: string; kind: string; scanStatus: string }>;
+  timezone: string | null; requiredLanguages: string[]; languages: Array<{ code: string; nameEnglish: string; nameNative: string; required: boolean }>; notDeclarable: string[];
+}
+/** The form as strings (values travel in the URL): the fields above + `headline_<l>` · `body_<l>` · `cta_<l>`. */
+export type CmsBannerFormInput = Partial<Record<(typeof CMS_BANNER_FORM_FIELDS)[number], string>> & { intent?: 'new' | 'edit'; expect?: string } & Record<string, string | undefined>;
+export interface CmsBannerReview extends FormReview {
+  preview: {
+    mode: 'create' | 'update' | null; bannerId: string | null; state: CmsBannerState; phaseAfter: CmsBannerPhase | null; placement: string | null; slotPlace: number | null; placementChanged: boolean;
+    timezone: string | null; startsAt: string | null; endsAt: string | null; texts: CmsBannerText[]; missingLanguages: string[]; activatable: boolean; liveNow: boolean;
+    audience: CmsBannerAudience; everyone: boolean; groupKey: string | null; targetUrl: string | null; expect: string | null;
+  };
+  reach: CmsBannerReach | null;
+}
+export interface CmsBannerWriteResult { id: string; mode: 'create' | 'update'; state: CmsBannerState; missingLanguages: string[]; activatable: boolean }
+export interface CmsBannerActs { banner: CmsBanner & { timezone: string; startsLocal: CmsBannerWall; endsLocal: CmsBannerWall }; verdicts: CmsBannerActVerdict[]; activation: CmsBannerActivation; reader: CmsReaderFact }
+export interface CmsBannerActResult { id: string; act: CmsBannerAct; state: CmsBannerState; phase: CmsBannerPhase; before: { state: CmsBannerState; phase: CmsBannerPhase } }
+export type CmsBannerSlotRefusal = 'NO_PERMISSION' | 'BANNER_ARCHIVED' | 'NOT_IN_SLOT' | 'AT_TOP' | 'AT_BOTTOM' | 'REASON_REQUIRED' | 'REASON_TOO_LONG';
+export interface CmsBannerSlotPreview {
+  allowed: boolean; refusals: CmsBannerSlotRefusal[]; placement: string; id: string; direction: CmsFaqDirection;
+  before: Array<{ id: string; headline: string | null }>; after: Array<{ id: string; headline: string | null }> | null; position: number | null; reader: CmsReaderFact;
+}
+export interface CmsBannerSlotResult { id: string; placement: string; order: string[]; position: number }
+export interface CmsLiveBanner { id: string; placement: string; slotOrder: number; mediaId: string; targetUrl: string | null; endsAt: string; phase: CmsBannerPhase; text: CmsBannerText }
+export interface CmsLiveBanners { items: CmsLiveBanner[]; languageCode: string | null; reader: CmsReaderFact }
