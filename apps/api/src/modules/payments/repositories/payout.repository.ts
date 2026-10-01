@@ -50,7 +50,9 @@ export class PayoutRepository {
    */
   async callerRoleKyc(tx: TxContext, tenantId: string, userId: string): Promise<RoleKyc[]> {
     const r = await tx.query<{ role_code: string; kyc_status: string; is_active: boolean }>(
-      `SELECT r.code AS role_code, utr.kyc_status, utr.is_active
+      // [PC-56 TENANT-9a] F-3: the EFFECTIVE status — a role whose every evidencing document has lapsed reads `expired`
+      // here even before the expiry job runs (0180 `kyc_role_effective_status`). [money gate: founder review owed, Law 9]
+      `SELECT r.code AS role_code, kyc_role_effective_status(utr.tenant_id, utr.user_id, r.code, utr.kyc_status::text) AS kyc_status, utr.is_active
          FROM user_tenant_roles utr
          JOIN roles r ON r.id = utr.role_id
         WHERE utr.tenant_id = $1 AND utr.user_id = $2 AND utr.deleted_at IS NULL`,

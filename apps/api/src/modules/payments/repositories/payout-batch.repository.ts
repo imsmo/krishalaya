@@ -206,7 +206,7 @@ export class PayoutBatchRepository {
               COALESCE(EXISTS (SELECT 1 FROM wallet_accounts wa
                                 WHERE wa.owner_kind='user' AND wa.owner_user_id = p.user_id AND wa.is_frozen = true), false) AS wallet_frozen,
               COALESCE((
-                SELECT jsonb_agg(jsonb_build_object('roleCode', r2.code, 'kycStatus', utr.kyc_status, 'isActive', utr.is_active))
+                SELECT jsonb_agg(jsonb_build_object('roleCode', r2.code, 'kycStatus', kyc_role_effective_status(utr.tenant_id, utr.user_id, r2.code, utr.kyc_status::text), 'isActive', utr.is_active))   -- [PC-56 TENANT-9a] effective (0180)
                   FROM user_tenant_roles utr JOIN roles r2 ON r2.id = utr.role_id
                  WHERE utr.tenant_id = p.tenant_id AND utr.user_id = p.user_id AND utr.deleted_at IS NULL
               ), '[]'::jsonb) AS roles

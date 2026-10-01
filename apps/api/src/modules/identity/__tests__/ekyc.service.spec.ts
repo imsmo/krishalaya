@@ -33,12 +33,22 @@ function build() {
     async setVaultRef(_tx: any, _id: string, v: any) { vaultRefs.push(v); },
   };
   const kycInserts: any[] = [];
+  // [PC-56 TENANT-9a] the eKYC writes through the role projector: the person's documents + 0180's map decide which roles move.
   const kyc = {
     async resolveDocTypeId() { return '44444444-4444-4444-4444-444444444444'; },
     async insert(_tx: any, d: any) { kycInserts.push(d.toProps()); },
+    async insertDecision() { return 'dec'; },
+    async openSubmission() { return null; },
+    async personDocFacts() { return kycInserts.map((d) => ({ docTypeCode: d.docTypeCode, status: d.status, roleCode: null, validUntil: d.validUntil, decidedAt: '2026-10-04T00:00:00.000000Z' })); },
+    async roleMap() { return new Map([['aadhaar', ['worker']], ['pan', ['vyapari']]]); },
+    async today() { return '2026-10-04'; },
   };
   const kycStatuses: string[] = [];
-  const utr = { async setKycStatus(_tx: any, _t: string, _u: string, _r: any, s: string) { kycStatuses.push(s); } };
+  const roleWrites: Array<[string, string]> = [];
+  const utr = {
+    async roleFacts() { return [{ roleCode: 'worker', kycStatus: 'none', isActive: true }, { roleCode: 'farmer', kycStatus: 'pending', isActive: true }]; },
+    async setRoleKycStatus(_tx: any, _t: string, _u: string, role: string, s: string) { kycStatuses.push(s); roleWrites.push([role, s]); return 1; },
+  };
   const audits: any[] = [];
   const audit = { async write(_tx: any, e: any) { audits.push(e); } };
   const outboxed: any[] = [];
@@ -49,7 +59,7 @@ function build() {
     uow as any, outbox as any, new SandboxEkycProvider(), audit as any,
     sessions as any, users as any, kyc as any, utr as any,
   );
-  return { svc, store, vaultRefs, kycInserts, kycStatuses, audits, outboxed };
+  return { svc, store, vaultRefs, kycInserts, kycStatuses, roleWrites, audits, outboxed };
 }
 
 describe('EkycService', () => {
@@ -59,7 +69,7 @@ describe('EkycService', () => {
   });
 
   it('start → verify(123456) sets the user vault ref + last-4, writes a verified KYC doc, never stores the raw id', async () => {
-    const { svc, store, vaultRefs, kycInserts, kycStatuses } = build();
+    const { svc, store, vaultRefs, kycInserts, kycStatuses, roleWrites } = build();
     const started = await svc.start(TENANT, USER, { docType: 'aadhaar', idNumber: VALID_AADHAAR, fullName: 'Test' });
     expect(started.maskedId).toBe('XXXXXXXX0019');
     expect(started.otpRequired).toBe(true);
@@ -77,6 +87,9 @@ describe('EkycService', () => {
     expect(kycInserts[0].mediaId).toBeNull();
     expect(kycInserts[0].verifyMethod).toBe('ekyc:sandbox');
     expect(kycStatuses).toContain('verified');
+    // F-1: the Aadhaar verified the WORKER (the role it evidences) and left the FARMER exactly as it was.
+    expect(roleWrites).toEqual([['worker', 'verified']]);
+    expect(kycInserts[0].reviewedBy).toBeNull();
     // no raw id leaked into the vault ref / KYC doc
     expect(JSON.stringify({ vaultRefs, kycInserts })).not.toContain(VALID_AADHAAR);
   });

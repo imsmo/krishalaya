@@ -12,6 +12,8 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../../core/idempo
 import { BadRequestError, NotFoundError } from '../../../../shared/errors/app-error';
 import { KycDocumentService } from '../../services/kyc-document.service';
 import { z } from 'zod';
+import { decodeKeyset, UUID_RE } from '../../domain/kyc-cursor';
+import { KYC_REVIEW } from '../../services/kyc-desk.service';
 
 // PC-54 W54-1: reviewer-queue query (status defaults to the actionable box) + keyset cursor codec.
 const ReviewQueueSchema = z.object({
@@ -20,7 +22,8 @@ const ReviewQueueSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 }).strict();
 type ReviewQueueDto = z.infer<typeof ReviewQueueSchema>;
-const decodeReviewCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+// [PC-56 TENANT-9a] F-7: the cursor carries the MICROSECOND instant the database printed; a malformed one is page one.
+const decodeReviewCursor = (c?: string) => decodeKeyset(c, UUID_RE);
 import { EkycService } from '../../services/ekyc.service';
 import { BusinessKycService } from '../../services/business-kyc.service';
 import { SubmitKycSchema, SubmitKycDto, ReviewKycSchema, ReviewKycDto } from '../../dto/create-kyc-document.dto';
@@ -28,7 +31,10 @@ import { StartEkycSchema, StartEkycDto, VerifyEkycSchema, VerifyEkycDto } from '
 import { SubmitBusinessKycSchema, SubmitBusinessKycDto, ReviewBusinessKycSchema, ReviewBusinessKycDto } from '../../dto/submit-business-kyc.dto';
 import { IdentityPermissions } from '../../policies/identity.policies';
 
-const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+// [PC-56 TENANT-9a] F-17 (spoofable ip): the LEFTMOST X-Forwarded-For is whatever the client typed; `req.ip` is what the
+// trusted proxy chain resolved. A KYC decision's audit row records the latter.
+const ipOf = (req: Request) => req.ip || null;
+const actorOf = (ctx: RequestContext, req: Request) => ({ userId: ctx.userId, permissions: ctx.permissions, ip: ipOf(req), requestId: ctx.requestId || null });
 
 @Controller({ path: 'kyc', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -75,24 +81,25 @@ export class KycController {
     return this.business.review(ctx.tenantId, ctx.userId, id, dto, ipOf(req)).then((data) => ({ data }));
   }
 
+  /** A member's OWN document. [PC-56 TENANT-9a] Reviewed by the desk's builder (roles it evidences, validity, duplicate,
+   *  evidence); a refusal is `KYC_DESK_REFUSED` with every code. The service holds the Idempotency-Key. */
   @Post()
-  async submit(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(SubmitKycSchema) dto: SubmitKycDto) {
+  async submit(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Headers('idempotency-key') key: string, @ZodBody(SubmitKycSchema) dto: SubmitKycDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
-    const data = await this.idem.remember(key, ctx.userId, 'identity.kyc.submit', () => this.kyc.submit(ctx.tenantId, ctx.userId, dto));
-    return { data };
+    return { data: await this.kyc.submit(ctx.tenantId, actorOf(ctx, req), dto, key) };
   }
 
   // --- PC-54 W54-1 `kyc-review-read-models` (Ledger Appendix 6): the reviewer's QUEUE + CASE reads.
   // Evidence-before-decision: kyc/:id/review existed but every read was self-scoped — a blind approve is
   // forbidden. Approve-gated; static 'review/...' paths declared BEFORE the bare @Get().
   @Get('review/queue')
-  @RequirePermissions(IdentityPermissions.Approve)
+  @RequirePermissions(KYC_REVIEW)
   reviewQueue(@CurrentContext() ctx: RequestContext, @ZodQuery(ReviewQueueSchema) q: ReviewQueueDto) {
     return this.kyc.reviewQueue(ctx.tenantId, { status: q.status, cursor: decodeReviewCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
   @Get('review/:id')
-  @RequirePermissions(IdentityPermissions.Approve)
+  @RequirePermissions(KYC_REVIEW)
   async reviewCase(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     const data = await this.kyc.reviewCase(ctx.tenantId, id);
     if (!data) throw new NotFoundError('kyc document not found');
@@ -117,9 +124,12 @@ export class KycController {
     return this.kyc.list(ctx.tenantId, ctx.userId, status).then((data) => ({ data }));
   }
 
+  /** The legacy review route, now ON THE DESK'S RULES (PC-56 TENANT-9a): `kyc.review`, an Idempotency-Key, maker ≠
+   *  checker, evidence before decision, a coded reason. The desk's own route is `POST kyc/desk/documents/:id/acts/:act`. */
   @Post(':id/review')
-  @RequirePermissions(IdentityPermissions.Approve)
-  async review(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string, @ZodBody(ReviewKycSchema) dto: ReviewKycDto) {
-    return { data: await this.kyc.review(ctx.tenantId, ctx.userId, id, dto, ipOf(req)) };
+  @RequirePermissions(KYC_REVIEW)
+  async review(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Headers('idempotency-key') key: string, @Param('id') id: string, @ZodBody(ReviewKycSchema) dto: ReviewKycDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return { data: await this.kyc.review(ctx.tenantId, actorOf(ctx, req), id, dto, key) };
   }
 }

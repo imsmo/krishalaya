@@ -1,4 +1,4 @@
-// apps/web-tenant/src/app/kyc/loading.tsx · loading boundary while the KYC docs + profile resolve.
+// apps/web-tenant/src/app/kyc/loading.tsx · W121's Loading state while the desk resolves (PC-56 TENANT-9a).
 import { getTranslator } from '../../lib/i18n';
 
 export default function Loading() {

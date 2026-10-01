@@ -160,6 +160,50 @@ export interface KycDocType { id: string; code: string; name: string; }
 /** PC-54 W54-1: a reviewer-queue row — the FULL submission props (userId visible to the Approve holder; doc number stays MASKED). */
 export interface KycReviewItem extends KycDocument { userId: string; roleId?: string | null; issuedBy?: string | null; validFrom?: string | null; validUntil?: string | null; verifyMethod?: string | null; reviewedBy?: string | null; reviewedAt?: string | null; }
 
+// --- PC-56 TENANT-9a · THE KYC DESK (W121, W122, W2319–W2325). Every figure is the API's live answer; refusals are codes. ---
+export type KycSubjectKind = 'user' | 'organisation';
+export type KycDeskAct = 'verify' | 'reject' | 'request_more' | 'reveal';
+export type KycOrgTypeState = 'verified' | 'pending' | 'rejected' | 'expired' | 'missing';
+export interface KycOrgLine { docTypeCode: string; isRequired: boolean; state: KycOrgTypeState; documentId: string | null; validUntil: string | null; docTypeName: string | null; docNoMasked: string | null; daysLeft: number | null; renewalPendingId: string | null }
+export interface KycDeskOverview {
+  today: string; countryCode: string | null;
+  organisation: { verified: boolean; reason: 'all_required_verified' | 'no_requirement_declared' | 'required_types_missing'; missingRequired: string[]; verifiedAt: string | null; lines: KycOrgLine[];
+    unlisted: Array<{ id: string; docTypeCode: string; docTypeName: string; status: string; validUntil: string | null; docNoMasked: string | null }>; documentCount: number };
+  members: { people: number; fullyVerified: number; pending: number; oldestPendingDays: number | null; rejectedOpen: number; topRejectReason: string | null; expiredOpen: number; expiringSoon: number; remindersSent: number };
+  can: { manage: boolean; review: boolean; reveal: boolean };
+}
+export interface KycDeskRow {
+  id: string; subjectKind: KycSubjectKind; userId: string | null; subjectName: string | null; docTypeCode: string; docTypeName: string; docNoMasked: string | null;
+  status: KycStatus; lastDecision: string; reasonCode: string | null; validUntil: string | null; submittedBy: string; submittedByName: string | null; createdAt: string;
+  cursorTs: string; hasMedia: boolean; scanStatus: string | null;
+}
+export interface KycDeskQueueQuery { subjectKind?: KycSubjectKind; roleCode?: string; status?: KycStatus; docTypeCode?: string; expiringWithin?: number; cursor?: string; limit?: number }
+export interface KycActVerdict { act: KycDeskAct; allowed: boolean; refusals: string[]; to: 'verified' | 'rejected' | null }
+export interface KycDeskRecord {
+  doc: KycDeskRow & { validFrom: string | null; issuedBy: string | null; verifyMethod: string | null; reviewedBy: string | null; reviewedByName: string | null; reviewedAt: string | null;
+    rejectReason: string | null; supersedesId: string | null; supersededById: string | null; mediaMime: string | null; mediaBytes: string | null; roleId: string | null };
+  roles: Array<{ roleCode: string; recorded: string; effective: string; evidenced: boolean }>;
+  history: Array<{ act: string; fromStatus: string | null; toStatus: string; reasonCode: string | null; note: string | null; decidedBy: string | null; decidedByName: string | null; via: string; decidedAt: string }>;
+  today: string; acts: KycActVerdict[]; can: { manage: boolean; review: boolean; reveal: boolean };
+}
+export interface KycDeskCatalogue {
+  docTypes: Array<{ code: string; name: string; subjectKind: KycSubjectKind; validity: 'required' | 'optional'; evidences: string[] }>;
+  heldRoles: string[] | null; subjectName: string | null;
+  reasons: Array<{ code: string; acts: string[]; needsNote: boolean; name: string }>;
+}
+export interface KycSubmitInput { subjectKind?: KycSubjectKind; userId?: string; docTypeCode?: string; roleCode?: string; mediaId?: string; docNoMasked?: string; issuedBy?: string; validFrom?: string; validUntil?: string }
+export interface KycSubmitReview {
+  ready: boolean; refusals: Array<{ field: string | null; code: string }>;
+  fields: Array<{ name: string; entered: string | null; stored: string | null; normalised: boolean }>;
+  subjectKind: KycSubjectKind | null; evidences: string[]; self: boolean;
+  follows: { id: string; kind: 'renewal' | 'resubmission'; validUntil: string | null } | null;
+  validity: { required: boolean; validFrom: string | null; validUntil: string | null; daysValid: number | null };
+  scan: string | null; diff: Array<{ field: string; before: string | null; after: string | null }> | null;
+}
+export interface KycSubmitResult { id: string; status: string; evidences: string[]; follows: KycSubmitReview['follows']; roleWrites: Array<{ roleCode: string; from: string; to: string }> }
+export interface KycActPreview extends KycActVerdict { document: { id: string; status: string; docTypeCode: string | null; subjectKind: string } }
+export interface KycActResult { id: string; status: string; roleWrites: Array<{ roleCode: string; from: string; to: string }>; url: string | null; expiresInSec: number | null }
+
 // --- Business KYC (buyer, P0-5). Server stores + returns MASKED GSTIN/PAN only — never the raw tax id. ---
 export type BusinessType = 'proprietorship' | 'partnership' | 'pvt_ltd' | 'llp' | 'fpo' | 'cooperative' | 'trader' | 'huf' | 'other';
 export interface BusinessKycStatus {

@@ -111,3 +111,15 @@ export class EkycTooManyAttemptsError extends DomainError {
 export class IllegalEkycTransitionError extends DomainError {
   constructor(from: string, to: string) { super('EKYC_ILLEGAL_TRANSITION', `Cannot move eKYC session ${from}→${to}`, 409, { from, to }); }
 }
+
+/** PC-56 TENANT-9a · a KYC desk submission or act refused — every refusal at once, each by name (W2319: "every invalid
+ *  field is listed with its reason"; W2325: "the failure reason and a retry path"). Nothing was written. */
+export class KycDeskRefusedError extends DomainError {
+  constructor(readonly refusals: ReadonlyArray<{ field?: string | null; code: string }>) {
+    super('KYC_DESK_REFUSED', `refused: ${refusals.map((r) => r.code).join(', ')}`, 422, { refusals });
+  }
+}
+/** PC-56 TENANT-9a · the desk's reads need `kyc.review` or `kyc.manage` (W121's restricted state). */
+export class KycDeskRestrictedError extends DomainError {
+  constructor() { super('KYC_DESK_RESTRICTED', 'the KYC desk needs kyc.review or kyc.manage', 403); }
+}

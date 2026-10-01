@@ -32,10 +32,12 @@ export class GoLiveReadModel {
           WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY created_at LIMIT 1`, [tenantId]),
       // **VERIFIED, NOT SUBMITTED.** W116: "required before money moves". `reviewed_at` is when somebody decided, which is
       // the honest timestamp for the step — `created_at` would be when the tenant uploaded a certificate.
-      db.query<{ reviewed_at: string | null; created_at: string }>(
-        `SELECT reviewed_at, created_at FROM business_kyc_profiles
-          WHERE tenant_id = $1 AND status = 'verified' AND deleted_at IS NULL
-          ORDER BY created_at DESC LIMIT 1`, [tenantId]),
+      // [PC-56 TENANT-9a] F-4: THE ORGANISATION, NOT SOME BUYER. This read was `business_kyc_profiles … status='verified'
+      // LIMIT 1` over ANY user in the tenant, reviewed by the tenant itself. It is the organisation's own verification
+      // now, COMPUTED by 0180's `kyc_organisation_status()`: every document type REQUIRED for the tenant's country has a
+      // verified, unexpired organisation document (decided by somebody who is not the tenant's own admin).
+      db.query<{ reviewed_at: string | null; created_at: string | null }>(
+        `SELECT verified_at AS reviewed_at, NULL::timestamptz AS created_at FROM kyc_organisation_status($1) WHERE verified`, [tenantId]),
       // Staff and members in ONE query: both are `user_tenant_roles` rows and splitting them would be two round trips for
       // one shape. `MIN(created_at)` per side gives the step's timestamp — when the SECOND staff member arrived is what
       // "invite your team" actually completed on, so the console reads the count and the domain decides.

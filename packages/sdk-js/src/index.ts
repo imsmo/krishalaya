@@ -203,3 +203,6 @@ export type {
   BroadcastChannelImpact, BroadcastFormReview, BroadcastPreview, BroadcastActVerdict, BroadcastActs,
   WhatsAppRefusal, WhatsAppHub, WhatsAppOptinPolicy, WhatsAppOptinView, WhatsAppOptinInput, WhatsAppOptinReview,
 } from './types';
+
+// PC-56 TENANT-9a — the KYC desk.
+export type { KycSubjectKind, KycDeskAct, KycOrgTypeState, KycOrgLine, KycDeskOverview, KycDeskRow, KycDeskQueueQuery, KycActVerdict, KycDeskRecord, KycDeskCatalogue, KycSubmitInput, KycSubmitReview, KycSubmitResult, KycActPreview, KycActResult } from './types';

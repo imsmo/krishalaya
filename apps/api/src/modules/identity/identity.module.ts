@@ -14,6 +14,13 @@ import { UsersController } from './controllers/v1/users.controller';
 import { RolesController } from './controllers/v1/roles.controller';
 import { OnboardingController } from './controllers/v1/onboarding.controller';
 import { KycController } from './controllers/v1/kyc.controller';
+import { KycDeskController } from './controllers/v1/kyc-desk.controller';
+import { KycDeskService } from './services/kyc-desk.service';
+import { KycDeskReadModel } from './read-models/kyc-desk.read-model';
+import { KycDocumentExpiryJob } from './jobs/kyc-document-expiry.job';
+import { KycDocumentExpiryCadenceJob } from './jobs/kyc-document-expiry.cadence-job';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
+import { MediaModule } from '../../core/media/media.module';
 import { AddressesController } from './controllers/v1/addresses.controller';
 import { BankAccountsController } from './controllers/v1/bank-accounts.controller';
 import { ConsentsController } from './controllers/v1/consents.controller';
@@ -78,8 +85,8 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
   // before attaching a NEW member (W118's "at 100% new additions pause"). Module blueprint: a module may use
   // another's public service, never its repositories. forwardRef because TenancyModule's signup path already
   // reaches back into identity's AuthService (see the note below), so the two are mutually dependent.
-  imports: [forwardRef(() => TenancyModule)],
-  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController],
+  imports: [forwardRef(() => TenancyModule), MediaModule],   // PC-56 TENANT-9a: the reveal mints core/media's signed read
+  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, KycDeskController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController],
   providers: [
     AuthService, UserService, UserTenantRoleService, OnboardingService, RoleService, PermissionService,
     KycDocumentService, EkycService, BusinessKycService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
@@ -94,6 +101,13 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
     ConsentRepository, DataSubjectRequestRepository, RiskScoreRepository,
     OrderCompletedHandler, DisputeResolvedHandler,
     KycExpiryRemindersJob, DpdpErasureCoolingJob, RiskScoreRecomputeJob,
+    // PC-56 TENANT-9a · the KYC desk, its read model, the words its notices carry, and the expiry job (F-3).
+    KycDeskService, KycDeskReadModel, UiMessageRepository, KycDocumentExpiryJob,
+    {
+      provide: KycDocumentExpiryCadenceJob,
+      useFactory: (config: AppConfig, job: KycDocumentExpiryJob) => new KycDocumentExpiryCadenceJob(config.jobs.kycExpiryReminders.intervalMs, job),
+      inject: [AppConfig, KycDocumentExpiryJob],
+    },
     {
       // KV-BL-P0-9-follow-on: the nightly KYC-expiry-reminders cadence job (core/jobs/jobs.runner.ts
       // hosts it; this factory just supplies the configured interval — see AppConfig.jobs.kycExpiryReminders).
@@ -119,12 +133,15 @@ export class IdentityModule implements OnModuleInit {
     @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobRegistry: ScheduledJobRegistry,
     private readonly config: AppConfig,
     private readonly kycExpiryRemindersCadenceJob: KycExpiryRemindersCadenceJob,
+    private readonly kycDocumentExpiryCadenceJob: KycDocumentExpiryCadenceJob,
     @Inject(BULK_APPLIER_REGISTRY) private readonly bulkRegistry: BulkApplierRegistry,
     private readonly memberApplier: MemberBulkApplier,
   ) {}
   onModuleInit(): void {
     // per-job env gate (KYC_EXPIRY_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
     if (this.config.jobs.kycExpiryReminders.enabled) this.jobRegistry.register(this.kycExpiryRemindersCadenceJob);
+    // PC-56 TENANT-9a (F-3): `expired` is WRITTEN — the same env gate as the reminders (one KYC clock, one switch).
+    if (this.config.jobs.kycExpiryReminders.enabled) this.jobRegistry.register(this.kycDocumentExpiryCadenceJob);
     // PC-56 TENANT-1b-4: the 'members' importer W156 needs. Registered here in the module that OWNS users and roles —
     // core/bulk stays generic plumbing and never learns what a member is (the same contract catalogue's 'products'
     // applier follows). Before this line, `importType: 'members'` was a 422 and the whole screen pointed at nothing.

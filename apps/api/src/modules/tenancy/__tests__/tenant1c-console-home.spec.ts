@@ -207,13 +207,16 @@ describe('TENANT-1c · the two clauses that make a tick truthful', () => {
     return { rm: new GoLiveReadModel(replica as never), seen };
   }
 
-  it('counts only a VERIFIED business-KYC profile', async () => {
+  // [PC-56 TENANT-9a] F-4: the step is the ORGANISATION's verification, computed by 0180 — not "some buyer's business
+  // profile in the tenant". The read must never touch business_kyc_profiles again.
+  it('counts only the ORGANISATION verified (0180 kyc_organisation_status), never any member\'s business profile', async () => {
     const h = capture();
     await h.rm.facts('t1');
-    const kyc = h.seen.find((q) => /FROM business_kyc_profiles/.test(q))!;
-    expect(kyc).toMatch(/status = 'verified'/);
-    // And the timestamp is when somebody DECIDED, not when the tenant uploaded a certificate.
-    expect(kyc).toMatch(/reviewed_at/);
+    expect(h.seen.some((q) => /business_kyc_profiles/.test(q))).toBe(false);
+    const kyc = h.seen.find((q) => /kyc_organisation_status\(\$1\)/.test(q))!;
+    expect(kyc).toMatch(/WHERE verified/);
+    // And the timestamp is when the last required document was DECIDED.
+    expect(kyc).toMatch(/verified_at AS reviewed_at/);
   });
 
   it('counts only a PENNY-VERIFIED bank account', async () => {

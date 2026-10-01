@@ -21,8 +21,10 @@
 //      gives one JOB relative to another — this extends it to one TENANT relative to another within
 //      a single job's tick).
 //
-// WHY THIS IS PILOT-RELEVANT (not GA-deferred): identity's bank-KYC gate (S4) populates
-// kyc_documents.valid_until for verified docs and now BLOCKS payout/bank-account flows on expiry —
+// [PC-56 TENANT-9a] The claim this header used to make — that the bank-KYC gate "BLOCKS payout/bank-account flows on
+// expiry" — was FALSE until 0180 (F-3: `expired` was written by nothing). It is true now: `KycDocumentExpiryCadenceJob`
+// writes `expired` and re-derives the roles, and the payout gate reads validity itself (`kyc_role_effective_status`).
+// WHY THIS IS PILOT-RELEVANT (not GA-deferred): the money gate closes on expiry —
 // without this reminder job, a seller's KYC silently lapses with no nudge until a gated action fails
 // outright. The domain logic already existed (KycExpiryRemindersJob, idempotent per due-document via
 // the outbox) and was simply never scheduled.

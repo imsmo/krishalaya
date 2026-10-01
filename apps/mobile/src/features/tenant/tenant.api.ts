@@ -61,8 +61,9 @@ export function addFarmer(input: { phone: string; fullName?: string }): Promise<
 }
 
 // --- KYC review (148 approve-detail) ---
-export function reviewKyc(id: string, decision: 'verify' | 'reject', reason?: string): Promise<{ id: string; status: string }> {
-  return apiClient().kyc.review(id, { decision, reason });
+export function reviewKyc(id: string, decision: 'verify' | 'reject', reason?: string): Promise<{ status: string }> {
+  // [PC-56 TENANT-9a] the review route requires an Idempotency-Key now.
+  return apiClient().kyc.review(id, { decision, reason }, newId());
 }
 
 // --- disputes (155/156) ---

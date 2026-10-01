@@ -9,13 +9,16 @@ export interface AuditRow {
   id: string; actorUserId: string | null; actorRole: string | null; action: string;
   entityType: string | null; entityId: string | null; oldValue: unknown; newValue: unknown;
   reason: string | null; requestId: string | null; createdAt: Date;
+  /** [PC-56 TENANT-9a · F-7] the instant to the microsecond, as the cursor carries it. */
+  cursorTs: string;
 }
 
 // NB: ip + user_agent are deliberately NOT projected — they are operational metadata, not part of the
 // tenant-facing trail, and keep the read clear of incidental network PII.
 const COLS = `id::text AS "id", actor_user_id AS "actorUserId", actor_role AS "actorRole", action,
   entity_type AS "entityType", entity_id AS "entityId", old_value AS "oldValue", new_value AS "newValue",
-  reason, request_id AS "requestId", created_at AS "createdAt"`;
+  reason, request_id AS "requestId", created_at AS "createdAt",
+  to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "cursorTs"`;
 
 export interface AuditFilter {
   action?: string; entityType?: string; entityId?: string; actorUserId?: string;
@@ -40,7 +43,7 @@ export class AuditRepository {
       // keyset: rows strictly older than the cursor (created_at DESC, id DESC)
       params.push(f.cursor.ts); const tsp = params.length;
       params.push(f.cursor.id); const idp = params.length;
-      where.push(`(created_at < $${tsp} OR (created_at = $${tsp} AND id < $${idp}::bigint))`);
+      where.push(`(created_at < $${tsp}::timestamptz OR (created_at = $${tsp}::timestamptz AND id < $${idp}::bigint))`);
     }
     const lp = Math.min(Math.max(f.limit, 1), 100);
     const r = await this.replica.forTenant(tenantId).query(

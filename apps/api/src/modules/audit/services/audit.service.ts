@@ -28,7 +28,7 @@ export class AuditService {
       from: q.from, to: q.to, cursor: decodeAuditCursor(q.cursor), limit: q.limit,
     });
     const last = rows[rows.length - 1];
-    const nextCursor = rows.length === q.limit && last ? encodeAuditCursor(last.createdAt, last.id) : null;
+    const nextCursor = rows.length === q.limit && last ? encodeAuditCursor(last.cursorTs, last.id) : null;
     return { items: rows.map(wire), nextCursor };
   }
 

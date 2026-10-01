@@ -6,6 +6,7 @@
 //   403 → 'forbidden' (the access grant does not include KYC review)
 //   409 → 'illegal'   (the case moved under us — someone else decided it first)
 // A rejection ALWAYS carries a reason: a person must be able to learn why they were refused.
+import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { govClient } from '../../lib/api-client';
@@ -37,7 +38,9 @@ export async function decideKycAction(formData: FormData): Promise<void> {
   );
   if (!built.ok) back(id, `error=${built.error}`);
 
-  try { await client.kyc.review(id, built.value); }
+  // [PC-56 TENANT-9a] the review route now requires an Idempotency-Key (the desk's rules); web-gov's own form-minted key is
+  // named in the 9a report (this console mints per submit — the F-14 class, not this wave's surface).
+  try { await client.kyc.review(id, built.value, randomUUID()); }
   catch (e) {
     const status = e instanceof SdkError ? e.status : 0;
     back(id, `error=${status === 403 ? 'forbidden' : status === 409 ? 'illegal' : 'action'}`);

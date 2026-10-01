@@ -530,6 +530,60 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('tenant.broadcast', 'body',  'tenant_broadcasts.body (the cooperative''s own words, plain text, ≤2000)',  'The mandi yard is closed for cleaning on Monday. Bring your produce on Tuesday from 7am.', true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-9a · **THE KYC DESK** — W122: *"you are notified either way, with reasons if rejected"*; W121: *"renewal
+-- reminders sent in Gujarati"* (F-15)
+-- ==================================================================================================================
+-- The outbox events `identity.kyc_verified / kyc_rejected / kyc_expiring / kyc_expired` had no consumer and no catalogue
+-- row, so nobody was ever told. Four catalogued events now (push + in-app, opt-out allowed: a courtesy, the desk and the
+-- money gate are the control), bridged in `notification-event-map.ts`. The recipient is the person the document is about —
+-- for an ORGANISATION document, the person who submitted it. Variables: `document` is a PER-LANGUAGE value from
+-- `ui_messages` (seed 0019, `kyc.doc_type.<code>`), `reason` likewise (`kyc.reason.<code>`), `day` the date in DD/MM/YYYY.
+-- No link and no document number in the copy: a notice read by whoever picks up the phone names the document, not its number.
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
+ ('kyc.approved', 'KYC document verified',          'important', '["push","inapp"]', true, false),
+ ('kyc.rejected', 'KYC document needs attention',   'important', '["push","inapp"]', true, false),
+ ('kyc.expiring', 'KYC document expires soon',      'important', '["push","inapp"]', true, false),
+ ('kyc.expired',  'KYC document expired',           'important', '["push","inapp"]', true, false)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('kyc.approved','push','en',NULL,'Verified: {{document}}','Your {{document}} has been verified.',NULL,true),
+ ('kyc.approved','push','hi',NULL,'सत्यापित: {{document}}','आपका {{document}} सत्यापित हो गया है।',NULL,true),
+ ('kyc.approved','push','gu',NULL,'ચકાસાયેલ: {{document}}','તમારું {{document}} ચકાસાઈ ગયું છે.',NULL,true),
+ ('kyc.approved','inapp','en',NULL,'Verified: {{document}}','Your {{document}} has been verified.',NULL,true),
+ ('kyc.approved','inapp','hi',NULL,'सत्यापित: {{document}}','आपका {{document}} सत्यापित हो गया है।',NULL,true),
+ ('kyc.approved','inapp','gu',NULL,'ચકાસાયેલ: {{document}}','તમારું {{document}} ચકાસાઈ ગયું છે.',NULL,true),
+ ('kyc.rejected','push','en',NULL,'Action needed: {{document}}','Your {{document}} was not accepted: {{reason}}. Please submit it again.',NULL,true),
+ ('kyc.rejected','push','hi',NULL,'कार्रवाई ज़रूरी: {{document}}','आपका {{document}} स्वीकार नहीं हुआ: {{reason}}। कृपया दोबारा जमा करें।',NULL,true),
+ ('kyc.rejected','push','gu',NULL,'પગલું જરૂરી: {{document}}','તમારું {{document}} સ્વીકારાયું નથી: {{reason}}. કૃપા કરી ફરી જમા કરો.',NULL,true),
+ ('kyc.rejected','inapp','en',NULL,'Action needed: {{document}}','Your {{document}} was not accepted: {{reason}}. Please submit it again.',NULL,true),
+ ('kyc.rejected','inapp','hi',NULL,'कार्रवाई ज़रूरी: {{document}}','आपका {{document}} स्वीकार नहीं हुआ: {{reason}}। कृपया दोबारा जमा करें।',NULL,true),
+ ('kyc.rejected','inapp','gu',NULL,'પગલું જરૂરી: {{document}}','તમારું {{document}} સ્વીકારાયું નથી: {{reason}}. કૃપા કરી ફરી જમા કરો.',NULL,true),
+ ('kyc.expiring','push','en',NULL,'Renew soon: {{document}}','Your {{document}} is valid until {{day}}. Upload the renewal before then — the current one keeps working until it lapses.',NULL,true),
+ ('kyc.expiring','push','hi',NULL,'जल्द नवीनीकरण करें: {{document}}','आपका {{document}} {{day}} तक मान्य है। उससे पहले नवीनीकरण अपलोड करें — मौजूदा दस्तावेज़ तब तक काम करता रहेगा।',NULL,true),
+ ('kyc.expiring','push','gu',NULL,'જલ્દી નવીનીકરણ કરો: {{document}}','તમારું {{document}} {{day}} સુધી માન્ય છે. તે પહેલાં નવીનીકરણ અપલોડ કરો — હાલનું ત્યાં સુધી ચાલુ રહેશે.',NULL,true),
+ ('kyc.expiring','inapp','en',NULL,'Renew soon: {{document}}','Your {{document}} is valid until {{day}}. Upload the renewal before then — the current one keeps working until it lapses.',NULL,true),
+ ('kyc.expiring','inapp','hi',NULL,'जल्द नवीनीकरण करें: {{document}}','आपका {{document}} {{day}} तक मान्य है। उससे पहले नवीनीकरण अपलोड करें — मौजूदा दस्तावेज़ तब तक काम करता रहेगा।',NULL,true),
+ ('kyc.expiring','inapp','gu',NULL,'જલ્દી નવીનીકરણ કરો: {{document}}','તમારું {{document}} {{day}} સુધી માન્ય છે. તે પહેલાં નવીનીકરણ અપલોડ કરો — હાલનું ત્યાં સુધી ચાલુ રહેશે.',NULL,true),
+ ('kyc.expired','push','en',NULL,'Expired: {{document}}','Your {{document}} lapsed on {{day}}. Upload the renewed document to restore it.',NULL,true),
+ ('kyc.expired','push','hi',NULL,'समाप्त: {{document}}','आपका {{document}} {{day}} को समाप्त हो गया। इसे बहाल करने के लिए नवीनीकृत दस्तावेज़ अपलोड करें।',NULL,true),
+ ('kyc.expired','push','gu',NULL,'સમાપ્ત: {{document}}','તમારું {{document}} {{day}} ના રોજ સમાપ્ત થયું. ફરી ચાલુ કરવા નવીનીકૃત દસ્તાવેજ અપલોડ કરો.',NULL,true),
+ ('kyc.expired','inapp','en',NULL,'Expired: {{document}}','Your {{document}} lapsed on {{day}}. Upload the renewed document to restore it.',NULL,true),
+ ('kyc.expired','inapp','hi',NULL,'समाप्त: {{document}}','आपका {{document}} {{day}} को समाप्त हो गया। इसे बहाल करने के लिए नवीनीकृत दस्तावेज़ अपलोड करें।',NULL,true),
+ ('kyc.expired','inapp','gu',NULL,'સમાપ્ત: {{document}}','તમારું {{document}} {{day}} ના રોજ સમાપ્ત થયું. ફરી ચાલુ કરવા નવીનીકૃત દસ્તાવેજ અપલોડ કરો.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('kyc.approved', 'document', 'ui_messages kyc.doc_type.<kyc_documents.doc_type_code> (localized)', 'FSSAI licence', true),
+ ('kyc.rejected', 'document', 'ui_messages kyc.doc_type.<kyc_documents.doc_type_code> (localized)', 'Aadhaar', true),
+ ('kyc.rejected', 'reason',   'ui_messages kyc.reason.<kyc_documents.reason_code> (localized)',     'the photo is blurry or unreadable', true),
+ ('kyc.expiring', 'document', 'ui_messages kyc.doc_type.<kyc_documents.doc_type_code> (localized)', 'FSSAI licence', true),
+ ('kyc.expiring', 'day',      'kyc_documents.valid_until (digits, DD/MM/YYYY)',                     '30/09/2026', true),
+ ('kyc.expired',  'document', 'ui_messages kyc.doc_type.<kyc_documents.doc_type_code> (localized)', 'FSSAI licence', true),
+ ('kyc.expired',  'day',      'kyc_documents.valid_until (digits, DD/MM/YYYY)',                     '30/09/2026', true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

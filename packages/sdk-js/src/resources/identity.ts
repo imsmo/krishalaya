@@ -3,7 +3,7 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycDocument, KycReviewItem, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
+import { KycDeskOverview, KycDeskRow, KycDeskQueueQuery, KycDeskRecord, KycDeskCatalogue, KycSubmitInput, KycSubmitReview, KycSubmitResult, KycActPreview, KycActResult, KycDeskAct, KycDocument, KycReviewItem, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
@@ -21,8 +21,45 @@ export class KycResource {
   }
   /** Tenant-admin: review a member's KYC doc (approve/reject). Needs identity.approve — authorized SERVER-SIDE,
    * tenant-scoped (NOT god-mode, Law 11). The reviewer never sees raw doc numbers (masked only). */
-  async review(id: string, input: { decision: 'verify' | 'reject'; reason?: string }): Promise<{ id: string; status: string }> {
-    return (await this.http.request<{ id: string; status: string }>('POST', `kyc/${encodeURIComponent(id)}/review`, { body: input })).data;
+  // [PC-56 TENANT-9a] on the desk's rules now: `kyc.review`, maker ≠ checker, evidence before decision, a coded reason,
+  // and an Idempotency-Key (required). Prefer `deskAct`.
+  async review(id: string, input: { decision: 'verify' | 'reject'; reason?: string; reasonCode?: string }, idempotencyKey: string): Promise<{ status: string }> {
+    return (await this.http.request<{ status: string }>('POST', `kyc/${encodeURIComponent(id)}/review`, { idempotencyKey, body: input })).data;
+  }
+
+  // --- PC-56 TENANT-9a · THE KYC DESK (W121 / W122 / W2319–W2325) ---
+  /** W121: the organisation's documents (verified COMPUTED, missing types named) + the member desk tiles. */
+  async desk(signal?: AbortSignal): Promise<KycDeskOverview> {
+    return (await this.http.request<KycDeskOverview>('GET', 'kyc/desk', { signal })).data;
+  }
+  /** W121's queue (GET-form filters; keyset — pass back `nextCursor`). */
+  async deskQueue(q: KycDeskQueueQuery = {}, signal?: AbortSignal): Promise<{ items: KycDeskRow[]; nextCursor: string | null }> {
+    const r = await this.http.request<KycDeskRow[]>('GET', 'kyc/desk/queue', { query: { ...q, limit: q.limit ?? 25 } as Record<string, string | number | undefined>, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The submit form's catalogue (types per subject, what each evidences, the member's roles, the reasons). */
+  async deskCatalogue(userId?: string, signal?: AbortSignal): Promise<KycDeskCatalogue> {
+    return (await this.http.request<KycDeskCatalogue>('GET', 'kyc/desk/catalogue', { query: { userId }, signal })).data;
+  }
+  /** W2320: the review the API computes (read-only — no key). */
+  async deskPreview(input: KycSubmitInput): Promise<KycSubmitReview> {
+    return (await this.http.request<KycSubmitReview>('POST', 'kyc/desk/preview', { body: input })).data;
+  }
+  /** W2321: submit — keyed by the review page. */
+  async deskSubmit(input: KycSubmitInput, idempotencyKey: string): Promise<KycSubmitResult> {
+    return (await this.http.request<KycSubmitResult>('POST', 'kyc/desk/documents', { idempotencyKey, body: input })).data;
+  }
+  /** W122: one document — roles, validity, history, the acts as verdicts. */
+  async deskDocument(id: string, signal?: AbortSignal): Promise<KycDeskRecord> {
+    return (await this.http.request<KycDeskRecord>('GET', `kyc/desk/documents/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** W2323: the verdict at confirm (read-only — no key). */
+  async deskActPreview(id: string, act: KycDeskAct, input: { reasonCode?: string; note?: string } = {}): Promise<KycActPreview> {
+    return (await this.http.request<KycActPreview>('POST', `kyc/desk/documents/${encodeURIComponent(id)}/acts/${encodeURIComponent(act)}/preview`, { body: input })).data;
+  }
+  /** W2324: the act — keyed by the confirm page. A reveal answers a 15-minute signed link (recorded first). */
+  async deskAct(id: string, act: KycDeskAct, input: { reasonCode?: string; note?: string }, idempotencyKey: string): Promise<KycActResult> {
+    return (await this.http.request<KycActResult>('POST', `kyc/desk/documents/${encodeURIComponent(id)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body: input })).data;
   }
 
   // --- eKYC (Aadhaar/PAN provider verification). The RAW id is sent ONLY to start(); the server validates it,

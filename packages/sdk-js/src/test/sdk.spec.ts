@@ -2153,3 +2153,34 @@ describe('broadcasts + whatsapp (TENANT-8e)', () => {
     expect(sent).toEqual({ id: 'd1', status: 'queued' });
   });
 });
+
+// --- PC-56 TENANT-9a · the KYC desk: every route has a method; reads keyless, writes with the page's key ---
+describe('kyc desk (TENANT-9a)', () => {
+  it('reads are keyless GETs/POST-previews; writes carry the Idempotency-Key the page minted', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [], meta: { nextCursor: 'n1' } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.kyc.desk();
+    const q = await c.kyc.deskQueue({ subjectKind: 'organisation', status: 'pending', expiringWithin: 30 });
+    await c.kyc.deskCatalogue('u1');
+    await c.kyc.deskPreview({ subjectKind: 'organisation', docTypeCode: 'pan_org', mediaId: 'm1' });
+    await c.kyc.deskSubmit({ subjectKind: 'organisation', docTypeCode: 'pan_org', mediaId: 'm1' }, 'k-submit');
+    await c.kyc.deskDocument('d1');
+    await c.kyc.deskActPreview('d1', 'reject', { reasonCode: 'blurry_image' });
+    await c.kyc.deskAct('d1', 'reveal', { note: 'reading the certificate before deciding' }, 'k-reveal');
+    await c.kyc.review('d1', { decision: 'reject', reasonCode: 'blurry_image' }, 'k-legacy');
+    const h = (i: number) => (calls[i].init.headers as Record<string, string>)['idempotency-key'];
+    expect(calls.map((x) => `${x.init.method} ${x.url.replace('https://api.test/v1/', '')}`)).toEqual([
+      'GET kyc/desk',
+      'GET kyc/desk/queue?subjectKind=organisation&status=pending&expiringWithin=30&limit=25',
+      'GET kyc/desk/catalogue?userId=u1',
+      'POST kyc/desk/preview',
+      'POST kyc/desk/documents',
+      'GET kyc/desk/documents/d1',
+      'POST kyc/desk/documents/d1/acts/reject/preview',
+      'POST kyc/desk/documents/d1/acts/reveal',
+      'POST kyc/d1/review',
+    ]);
+    expect([h(0), h(3), h(4), h(6), h(7), h(8)]).toEqual([undefined, undefined, 'k-submit', undefined, 'k-reveal', 'k-legacy']);
+    expect(q.nextCursor).toBe('n1');
+  });
+});

@@ -145,4 +145,12 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // the notice prints (`title`, `day`, `time` — the wall-clock the database resolved in the cooperative's zone). Catalogued
   // by 0172; templates en/hi/gu in seed 0007; guarded by tenant7c's render check.
   { outboxType: 'education.live_reminder',        eventCode: 'education.live_reminder',        recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-9a · **W122: "you are notified either way, with reasons if rejected"; W121: "renewal reminders sent in
+  // Gujarati" — and nothing told anybody anything (F-15).** The outbox events existed with no consumer and no catalogue
+  // row. `notifyUserId` is the person the document is about, or the submitter of an ORGANISATION document, and it is put
+  // in the payload by the entity / the jobs — ADMIN-6b's rule: a map row over a payload with no recipient sends nothing.
+  { outboxType: 'identity.kyc_verified',        eventCode: 'kyc.approved',          recipientKeys: ['notifyUserId'] },
+  { outboxType: 'identity.kyc_rejected',        eventCode: 'kyc.rejected',          recipientKeys: ['notifyUserId'] },
+  { outboxType: 'identity.kyc_expiring',        eventCode: 'kyc.expiring',          recipientKeys: ['notifyUserId'] },
+  { outboxType: 'identity.kyc_expired',         eventCode: 'kyc.expired',           recipientKeys: ['notifyUserId'] },
 ];

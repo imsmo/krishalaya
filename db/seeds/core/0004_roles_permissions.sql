@@ -84,6 +84,11 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('notification.broadcast.send','Draft, send, schedule and cancel an announcement to the cooperative''s members (in-app + push)','M13'),
  ('notification.whatsapp.policy.manage','Record the cooperative''s WhatsApp opt-in policy (consent is not collected: no provider)','M13'),
  ('message.moderate','Moderate chat: review/unflag/lock conversations','M13'),
+ -- [PC-56 TENANT-9a] THE KYC DESK HAD NO VERB OF ITS OWN (F-18): review was `user.approve`. Two now — the maker's
+ -- (`kyc.manage`: the organisation's own documents, a member's on their behalf) and the desk's (`kyc.review`). Maker ≠
+ -- checker and "the organisation's admin never certifies the organisation" are 0180's trigger. Also in migration 0180.
+ ('kyc.manage','Upload the organisation''s KYC documents; submit a member''s document on their behalf','M01'),
+ ('kyc.review','Verification desk: verify, reject or ask for more on a KYC document (never one you submitted, never your own, never your organisation''s as its admin)','M01'),
  ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
@@ -181,4 +186,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('market.manage'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer','vyapari','organic_store','pharma_store','fpo_coordinator','tenant_admin') AND p.code IN ('trace.manage'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('bulk.import'))
+   -- [PC-56 TENANT-9a] the verification desk (0180). `member.pii.reveal` is NOT widened to the coordinator (0128's ruling):
+   -- a desk officer who must open evidence is given the reveal by a staff override, a decision somebody records.
+   OR (r.code IN ('tenant_admin') AND p.code IN ('kyc.manage','kyc.review'))
+   OR (r.code IN ('fpo_coordinator') AND p.code IN ('kyc.review'))
 ON CONFLICT DO NOTHING;

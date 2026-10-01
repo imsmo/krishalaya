@@ -24,6 +24,7 @@ import { UserRepository } from '../repositories/user.repository';
 import { KycDocumentRepository } from '../repositories/kyc-document.repository';
 import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
 import { KycDocument } from '../domain/kyc-document.entity';
+import { projectRoleKyc } from './kyc-role-projector';
 import { isValidId, maskId, last4 } from '../domain/id-masking';
 import {
   InvalidGovIdError, EkycSessionNotFoundError, EkycVerificationFailedError, EkycTooManyAttemptsError, UserNotFoundError,
@@ -110,17 +111,29 @@ export class EkycService {
       if (props.docType === 'aadhaar') await this.users.setVaultRef(tx, userId, { aadhaarVaultRef: out.vaultRef, aadhaarLast4: props.last4 });
       else await this.users.setVaultRef(tx, userId, { panVaultRef: out.vaultRef });
 
-      // write a VERIFIED kyc_documents row pointing at the catalogue doc_type (no media — provider attestation).
+      // [PC-56 TENANT-9a] F-1: a provider attestation verifies ONLY the roles its document type evidences (0180's
+      // `kyc_doc_type_roles` — Aadhaar evidences the identity-only capacities, never a seller's), through the one writer of
+      // role status (`projectRoleKyc`). No human reviewed it, so `reviewed_by` stays NULL (before 0180 the subject was
+      // recorded as their own reviewer). And a NAME MISMATCH no longer verifies anything: the document is filed `pending`
+      // for the desk, which decides it with the evidence in front of it.
       const docTypeId = await this.kyc.resolveDocTypeId(tx, tenantId, props.docType);
+      let roleWrites: unknown[] = [];
       if (docTypeId) {
-        const doc = KycDocument.submit({ id: uuidv7(), tenantId, userId, docTypeId, mediaId: null, docNoMasked: props.maskedId, verifyMethod: `ekyc:${this.provider.providerCode}`, validUntil: props.validUntil });
-        doc.verify(userId);   // system-verified via provider attestation
-        await this.kyc.insert(tx, doc);
-        await this.flush(tx, doc.id, doc.pullEvents(), tenantId);
+        const nameMismatch = out.nameMatch === false;
+        const open = nameMismatch ? await this.kyc.openSubmission(tx, tenantId, 'user', userId, props.docType) : null;
+        if (!open) {
+          const doc = KycDocument.submit({ id: uuidv7(), tenantId, userId, docTypeId, docTypeCode: props.docType, mediaId: null, docNoMasked: props.maskedId, verifyMethod: `ekyc:${this.provider.providerCode}`, validUntil: props.validUntil, submittedBy: userId });
+          if (!nameMismatch) doc.verify(null);
+          await this.kyc.insert(tx, doc);
+          await this.kyc.insertDecision(tx, nameMismatch
+            ? { tenantId, documentId: doc.id, act: 'submit', fromStatus: null, toStatus: 'pending', decidedBy: userId, via: 'submitter', note: 'eKYC name mismatch — filed for the desk' }
+            : { tenantId, documentId: doc.id, act: 'verify', fromStatus: null, toStatus: 'verified', decidedBy: null, via: 'ekyc' });
+          await this.flush(tx, doc.id, doc.pullEvents(), tenantId);
+        }
+        roleWrites = await projectRoleKyc(tx, tenantId, userId, this.kyc, this.utr);
       }
-      await this.utr.setKycStatus(tx, tenantId, userId, null, 'verified');
 
-      await this.audit.write(tx, { tenantId, actorUserId: userId, action: 'identity.ekyc.verified', entityType: 'ekyc_session', entityId: s.id, oldValue: null, newValue: { docType: props.docType, maskedId: props.maskedId, nameMatch: out.nameMatch ?? null }, reason: null, ip: null });
+      await this.audit.write(tx, { tenantId, actorUserId: userId, action: 'identity.ekyc.verified', entityType: 'ekyc_session', entityId: s.id, oldValue: null, newValue: { docType: props.docType, maskedId: props.maskedId, nameMatch: out.nameMatch ?? null, roleWrites }, reason: null, ip: null });
       await this.flush(tx, s.id, s.pullEvents(), tenantId);
       return { id: s.id, status: 'verified' as const, docType: props.docType, maskedId: props.maskedId, nameMatch: out.nameMatch ?? null };
     }, { userId });
