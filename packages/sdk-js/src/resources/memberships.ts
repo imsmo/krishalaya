@@ -51,15 +51,39 @@ export class MembershipsResource {
     return (await this.http.request<UserMembership>('POST', `memberships/${encodeURIComponent(id)}/cancel`, { body: {} })).data;
   }
 
-  // --- PC-54 W54-7 `governance-agm` (coop_resolutions/coop_votes) ---
-  async createResolution(input: { title: string; body?: string; resolutionType: 'agm_vote' | 'dividend' | 'patronage_bonus' | 'board_election'; votingOpens?: string; votingCloses?: string; payload?: Record<string, unknown> }, idempotencyKey: string): Promise<{ id: string; status: string }> {
+  // --- PC-54 W54-7 `governance-agm`, PC-56 TENANT-9b · W198 + the form chain W2741–W2744 + the mutate chain W2745–W2747 ---
+  // Every write takes the Idempotency-Key its review / confirm page minted (Law 3); open / close / withdraw go through ONE
+  // act route (the old `:id/open` / `:id/close` are gone — one write path, through the confirm).
+
+  /** W198: one keyset page (µs cursor), GET-form filters. Each row's `result` is its SNAPSHOT for a closed resolution. */
+  async resolutionsPage(params: { status?: string; type?: string; year?: number; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: ResolutionRow[]; nextCursor: string | null; zone: string | null }> {
+    const r = await this.http.request<ResolutionRow[]>('GET', 'governance/resolutions', { query: { status: params.status, type: params.type, year: params.year, cursor: params.cursor, limit: params.limit }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, zone: (r.meta?.zone as string | null) ?? null };
+  }
+  async resolutionCatalogue(signal?: AbortSignal): Promise<ResolutionCatalogue> {
+    return (await this.http.request<ResolutionCatalogue>('GET', 'governance/resolutions/catalogue', { signal })).data;
+  }
+  /** W2742: the API's review (read-only). Pass `id` to review an EDIT of that draft. */
+  async previewResolution(input: ResolutionDraftInput, id?: string): Promise<ResolutionDraftReview> {
+    return (await this.http.request<ResolutionDraftReview>('POST', 'governance/resolutions/preview', { body: { ...input, ...(id ? { id } : {}) } })).data;
+  }
+  async createResolution(input: ResolutionDraftInput, idempotencyKey: string): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', 'governance/resolutions', { body: input, idempotencyKey })).data;
   }
-  async resolutions(status?: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
-    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'governance/resolutions', { query: { status }, signal })).data;
+  async resolutionDraft(id: string, signal?: AbortSignal): Promise<ResolutionDraftValues> {
+    return (await this.http.request<ResolutionDraftValues>('GET', `governance/resolutions/${encodeURIComponent(id)}/draft`, { signal })).data;
   }
-  openResolution(id: string): Promise<{ id: string; status: string }> { return this.govStep(id, 'open'); }
-  closeResolution(id: string): Promise<{ id: string; status: string }> { return this.govStep(id, 'close'); }
+  async updateResolution(id: string, input: ResolutionDraftInput, idempotencyKey: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('PATCH', `governance/resolutions/${encodeURIComponent(id)}`, { body: input, idempotencyKey })).data;
+  }
+  /** W2745: the verdict at confirm (read-only). */
+  async previewResolutionAct(id: string, act: ResolutionAct, input: { reasonCode?: string; note?: string }): Promise<ResolutionActPreview> {
+    return (await this.http.request<ResolutionActPreview>('POST', `governance/resolutions/${encodeURIComponent(id)}/acts/${act}/preview`, { body: input })).data;
+  }
+  /** W2746: the act — recorded with actor · time · reason · before/after. */
+  async resolutionAct(id: string, act: ResolutionAct, input: { reasonCode?: string; note?: string }, idempotencyKey: string): Promise<{ id: string; status: string; outcome: string | null }> {
+    return (await this.http.request<{ id: string; status: string; outcome: string | null }>('POST', `governance/resolutions/${encodeURIComponent(id)}/acts/${act}`, { body: input, idempotencyKey })).data;
+  }
   /** One ballot per member — the server's PK is the ballot box (409 on a second vote). */
   /** `changed: true` when this replaced an earlier ballot — W198's "changeable until close". */
   async castVote(id: string, choice: string): Promise<{ resolutionId: string; choice: string; changed: boolean }> {
@@ -81,21 +105,27 @@ export class MembershipsResource {
     return (await this.http.request<MyVotingEligibility>('GET', 'governance/resolutions/me/eligibility', { signal })).data;
   }
 
-  async resolutionResults(id: string, signal?: AbortSignal): Promise<{ resolution: Record<string, unknown>; tally: ResolutionTally }> {
-    return (await this.http.request<{ resolution: Record<string, unknown>; tally: ResolutionTally }>('GET', `governance/resolutions/${encodeURIComponent(id)}/results`, { signal })).data;
-  }
-  private govStep(id: string, action: string): Promise<{ id: string; status: string }> {
-    return this.http.request<{ id: string; status: string }>('POST', `governance/resolutions/${encodeURIComponent(id)}/${action}`, { body: {} }).then((r) => r.data);
+  /** The tally — for a CLOSED resolution its snapshot only (`result.basis`: snapshot | not_recorded), never today's roll. */
+  async resolutionResults(id: string, signal?: AbortSignal): Promise<ResolutionResults> {
+    return (await this.http.request<ResolutionResults>('GET', `governance/resolutions/${encodeURIComponent(id)}/results`, { signal })).data;
   }
 
-  // --- PC-55 A8 `coop-payout-runs`: an ACTIVATED dividend/patronage vote → QUEUED payouts. Nothing executes
+  // --- PC-55 A8 `coop-payout-runs`, PC-56 TENANT-9b: a PASSED dividend/patronage vote → QUEUED payouts, in TWO acts. Nothing executes
   // here; execution needs live RazorpayX credentials and the response says so. One vote pays ONCE (DB-guarded),
   // the split sums to the pot exactly, and a run needs a SECOND human (maker != checker). ---
   async coopPayoutPreview(resolutionId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
     return (await this.http.request<Record<string, unknown>>('GET', `governance/resolutions/${encodeURIComponent(resolutionId)}/payout-preview`, { signal })).data;
   }
-  async coopPayoutRun(resolutionId: string, input: { confirmedBy: string }, idempotencyKey: string): Promise<{ id: string; batchId: string; purpose: string; potMinor: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; execution: { executed: boolean; note: string } }> {
-    return (await this.http.request<{ id: string; batchId: string; purpose: string; potMinor: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; execution: { executed: boolean; note: string } }>('POST', `governance/resolutions/${encodeURIComponent(resolutionId)}/payout-run`, { body: input, idempotencyKey })).data;
+  /** The MAKER prepares — no batch, no payout row (PC-56 TENANT-9b; the old one-call run "confirmed" with a uuid in its own body). */
+  async coopPayoutPrepare(resolutionId: string, idempotencyKey: string): Promise<{ id: string; status: 'prepared'; purpose: string; totalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; note: string }> {
+    return (await this.http.request<{ id: string; status: 'prepared'; purpose: string; totalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; note: string }>('POST', `governance/resolutions/${encodeURIComponent(resolutionId)}/payout-run`, { body: {}, idempotencyKey })).data;
+  }
+  /** The CHECKER confirms — the caller IS the checker and may not be the maker (PAYOUT_RUN_MAKER_IS_CHECKER). */
+  async coopPayoutConfirm(runId: string, idempotencyKey: string): Promise<{ id: string; batchId: string; status: 'queued'; purpose: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; execution: { executed: boolean; note: string } }> {
+    return (await this.http.request<{ id: string; batchId: string; status: 'queued'; purpose: string; queuedTotalMinor: string; queuedCount: number; skipped: Array<{ userId: string; reason: string }>; execution: { executed: boolean; note: string } }>('POST', `governance/resolutions/payout-runs/${encodeURIComponent(runId)}/confirm`, { body: {}, idempotencyKey })).data;
+  }
+  async coopPayoutCancel(runId: string, reason: string, idempotencyKey: string): Promise<{ id: string; status: 'cancelled' }> {
+    return (await this.http.request<{ id: string; status: 'cancelled' }>('POST', `governance/resolutions/payout-runs/${encodeURIComponent(runId)}/cancel`, { body: { reason }, idempotencyKey })).data;
   }
   async coopPayoutRuns(limit = 50, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'governance/resolutions/payout-runs/list', { query: { limit }, signal })).data;
@@ -177,4 +207,72 @@ export interface ResolutionTally {
   /** Share of CAST votes in favour. null when nobody has voted — "0% in favour" reads as a rejection, and no votes is not one. */
   inFavourBp: number | null;
   passed: boolean | null;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+/* PC-56 TENANT-9b · W198 + W2741–W2747 · THE RESOLUTIONS                                                             */
+/* ---------------------------------------------------------------------------------------------------------------- */
+
+export const RESOLUTION_ACTS = ['open', 'close', 'withdraw'] as const;
+export type ResolutionAct = (typeof RESOLUTION_ACTS)[number];
+export const RESOLUTION_DRAFT_FIELDS = ['title', 'body', 'resolutionType', 'majority', 'votingOpens', 'votingCloses',
+  'formulaMode', 'potAmount', 'ratePct', 'capAmount', 'fiscalYear'] as const;
+export type ResolutionDraftField = (typeof RESOLUTION_DRAFT_FIELDS)[number];
+/** Every field as typed: times are CIVIL `YYYY-MM-DDTHH:MM` in the cooperative's zone; money in MAJOR units. */
+export type ResolutionDraftInput = Partial<Record<ResolutionDraftField, string>>;
+
+export interface PassRule { quorumBp: number; num: number; den: number; strict: boolean }
+
+export interface ResolutionRow {
+  id: string; title: string; body: string | null; resolutionType: string; majority: string; status: string;
+  votingOpens: string | null; votingCloses: string | null; votingOpensCivil: string | null; votingClosesCivil: string | null;
+  payload: Record<string, unknown>; createdAt: string | null; openedAt: string | null; openedBy: string | null;
+  closedAt: string | null; closedBy: string | null; closeReason: string | null; withdrawnAt: string | null; withdrawReason: string | null;
+  eligibleAtClose: number | null; quorumBp: number | null; ruleFixedAt: 'open' | 'close' | null; outcome: string | null; cast: number;
+  result: { basis: 'live' | 'snapshot' | 'not_recorded' | 'none'; outcome: string | null; cast: number; eligibleAtClose: number | null;
+    turnoutBp: number | null; quorumBp: number | null; quorumMet: boolean | null };
+}
+
+export interface ResolutionCatalogue {
+  types: Array<{ code: string; dividendClass: boolean; modelled: boolean }>;
+  choices: Array<{ code: string; types: string[]; inFavour: boolean }>;
+  choicesByType: Record<string, string[]>;
+  closeReasons: string[]; withdrawReasons: string[];
+  rules: { ordinary: PassRule; special: PassRule };
+  zone: string; currency: { code: string; minorUnits: number } | null; fiscalYearStartMonth: number | null;
+}
+
+export interface ResolutionDraftReview {
+  ready: boolean;
+  fields: Array<{ name: string; entered: string | null; stored: string | null; normalised: boolean }>;
+  refusals: Array<{ field: string | null; code: string }>;
+  diff: Array<{ field: string; before: string | null; after: string | null }> | null;
+  entityType: string;
+  choices: string[]; rule: PassRule | null; secondPersonToClose: boolean;
+  window: { zone: string; opensCivil: string | null; closesCivil: string | null; opensAt: string | null; closesAt: string | null };
+  payload: Record<string, unknown> | null;
+  formula: null | { mode: string; potMinor: string | null; rateBp: number | null; capMinor: string | null; fiscalYear: number | null;
+    fiscalYearFrom: string | null; fiscalYearToExclusive: string | null; currency: string | null };
+}
+
+export interface ResolutionDraftValues {
+  id: string; status: string; title: string; body: string | null; resolutionType: string; majority: string;
+  votingOpens: string | null; votingCloses: string | null; payload: Record<string, unknown>; zone: string;
+  currency: { code: string; minorUnits: number } | null;
+}
+
+export interface ResolutionActPreview {
+  act: ResolutionAct; allowed: boolean; refusals: string[]; secondPerson: boolean;
+  resolution: { id: string; title: string; status: string; resolutionType: string; majority: string; openedAt: string | null;
+    openedBy: string | null; votingCloses: string | null; openedByYou: boolean };
+  willRecord: { rule?: PassRule; choices?: string[]; eligibleNow?: number | null; cast?: number; ruleFixedAt?: 'open' | 'close' };
+  reasons: string[];
+}
+
+export interface ResolutionResults {
+  resolution: ResolutionRow | Record<string, unknown>;
+  tally: ResolutionTally | null;
+  result: { basis: 'live' | 'snapshot' | 'not_recorded' | 'none'; tally: ResolutionTally | null; rule: PassRule | null;
+    ruleFixedAt: 'open' | 'close' | null; outcome: 'passed' | 'failed' | 'not_recorded' | null; disagreement: boolean };
+  choices: string[];
 }

@@ -24,13 +24,16 @@ import { UserMembershipService } from './services/user-membership.service';
 import { MembershipTierRepository } from './repositories/membership-tier.repository';
 import { UserMembershipRepository } from './repositories/user-membership.repository';
 import { MembershipPaymentSucceededHandler } from './events/handlers/payment-succeeded.handler';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
 
 // The expiry worker job (jobs/membership-renewals.job.ts) is instantiated by apps/worker with a
 // privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other expiry jobs.
 @Module({
   controllers: [MembershipTiersController, MembershipsController, GovernanceController],
   providers: [MembershipTierService, UserMembershipService, MembershipTierRepository, UserMembershipRepository,
-    MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository, ShareRegisterReadModel, CoopPayoutService, CoopPayoutRepository],
+    MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository, ShareRegisterReadModel, CoopPayoutService, CoopPayoutRepository,
+    // [PC-56 TENANT-9b] the outcome words a resolution notice is worded with (ui_messages, seed 0020).
+    UiMessageRepository],
   exports: [MembershipTierService, UserMembershipService],
 })
 export class MembershipsModule implements OnModuleInit {

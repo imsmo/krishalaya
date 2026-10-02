@@ -11,29 +11,58 @@ export class CoopPayoutRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
   async lockResolution(tx: TxContext, tenantId: string, id: string) {
-    const r = await tx.query<{ id: string; status: string; resolution_type: string; payload: Record<string, unknown>; title: string }>(
-      `SELECT id, status, resolution_type, payload, title FROM coop_resolutions
+    // [9b] `outcome` is the database's recorded result (0182) — the payability rule asks what the vote DECIDED.
+    const r = await tx.query<{ id: string; status: string; resolution_type: string; payload: Record<string, unknown>; title: string; outcome: string | null }>(
+      `SELECT id, status, resolution_type, payload, title, outcome FROM coop_resolutions
         WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ?? null;
   }
 
   /** Members eligible for a co-op payout, with their PRIMARY penny-verified bank account (payouts.bank_account_id
    *  is NOT NULL, so a member without one cannot be queued — the service records them as skipped, by name).
-   *  `basisMinor` is the patronage basis: the member's own dairy business in the last 12 months, from the
-   *  ledgered milk bills. Equal-split ignores it. */
-  async payableMembers(tenantId: string): Promise<PayableMember[]> {
+   *  `basisMinor` depends on the formula (PC-56 TENANT-9b):
+   *    • equal_split / patronage_pro_rata — the dairy members, basis = paid milk bills in the last 365 days (PC-55 A8's
+   *      basis, unchanged and NAMED: a rolling year, not the fiscal year);
+   *    • per_share_rate — the SHARE REGISTER's holders (shares_held > 0), basis = the total value of the holding
+   *      (`share_value_minor`, 0130's stated meaning) — W198's "Dividend 8%";
+   *    • patronage_pct — the dairy members, basis = paid milk bills whose period ENDS inside the cooperative's declared
+   *      fiscal year [fyFrom, fyToExclusive) — W198's "1.2% of member's FY sales". The window is civil days the service
+   *      computed from 0181's declared fiscal-year month; nothing here assumes April. */
+  async payableMembers(tenantId: string, basis: { kind: 'rolling_365' } | { kind: 'share_register' } | { kind: 'fiscal_year'; from: string; toExclusive: string } = { kind: 'rolling_365' }): Promise<PayableMember[]> {
+    const bank = `(SELECT b.id FROM bank_accounts b
+                WHERE b.user_id = %U% AND b.deleted_at IS NULL AND b.penny_verified_at IS NOT NULL
+                ORDER BY b.is_primary DESC, b.created_at ASC LIMIT 1)`;
+    if (basis.kind === 'share_register') {
+      const r = await this.replica.forTenant(tenantId).query(
+        `SELECT csr.member_user_id AS user_id, ${bank.replace('%U%', 'csr.member_user_id')} AS bank_account_id,
+                csr.share_value_minor::text AS basis_minor
+           FROM coop_share_registers csr
+          WHERE csr.tenant_id = $1 AND csr.deleted_at IS NULL AND csr.shares_held > 0
+          ORDER BY csr.member_user_id ASC LIMIT 20000`, [tenantId]);
+      return r.rows.map((x: any) => ({ userId: x.user_id, bankAccountId: x.bank_account_id, basisMinor: String(x.basis_minor) }));
+    }
+    const window = basis.kind === 'fiscal_year'
+      ? `mb.period_end >= $2::date AND mb.period_end < $3::date`
+      : `mb.period_end >= CURRENT_DATE - 365`;
+    const params: unknown[] = basis.kind === 'fiscal_year' ? [tenantId, basis.from, basis.toExclusive] : [tenantId];
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT m.farmer_user_id AS user_id,
-              (SELECT b.id FROM bank_accounts b
-                WHERE b.user_id = m.farmer_user_id AND b.deleted_at IS NULL AND b.penny_verified_at IS NOT NULL
-                ORDER BY b.is_primary DESC, b.created_at ASC LIMIT 1) AS bank_account_id,
+      `SELECT m.farmer_user_id AS user_id, ${bank.replace('%U%', 'm.farmer_user_id')} AS bank_account_id,
               COALESCE((SELECT SUM(mb.net_minor) FROM milk_bills mb
                          WHERE mb.tenant_id = $1 AND mb.membership_id = m.id AND mb.status = 'paid'
-                           AND mb.period_end >= CURRENT_DATE - 365), 0)::text AS basis_minor
+                           AND ${window}), 0)::text AS basis_minor
          FROM dairy_memberships m
         WHERE m.tenant_id = $1 AND m.is_active = true AND m.deleted_at IS NULL
-        ORDER BY m.farmer_user_id ASC LIMIT 20000`, [tenantId]);
+        ORDER BY m.farmer_user_id ASC LIMIT 20000`, params);
     return r.rows.map((x: any) => ({ userId: x.user_id, bankAccountId: x.bank_account_id, basisMinor: String(x.basis_minor) }));
+  }
+
+  /** The currency the run pays in and the declared fiscal-year month — the tenant's country's, never 'INR' (F-17). */
+  async moneyClock(tenantId: string): Promise<{ currency: string | null; fyMonth: number | null }> {
+    const r = await this.replica.forTenant(tenantId).query<{ currency: string | null; fy_month: number | null }>(
+      `SELECT c.currency_code AS currency, tenant_fiscal_year_start_month(t.id) AS fy_month
+         FROM tenants t JOIN countries c ON c.code = t.country_code WHERE t.id = $1`, [tenantId]);
+    const x = r.rows[0];
+    return { currency: x?.currency ? String(x.currency).trim() : null, fyMonth: x?.fy_month === null || x?.fy_month === undefined ? null : Number(x.fy_month) };
   }
 
   async insertBatch(tx: TxContext, b: { id: string; tenantId: string; batchType: string; totalMinor: string; count: number }): Promise<void> {
@@ -54,16 +83,18 @@ export class CoopPayoutRepository {
        `coop-run:${p.runId}:${p.userId}`, p.batchId]);
   }
 
-  async insertRun(tx: TxContext, r0: { id: string; tenantId: string; resolutionId: string; batchId: string; purposeCode: string; formulaSnapshot: Record<string, unknown>; totalMinor: string; memberCount: number; skippedCount: number; skippedDetail: unknown[]; currencyCode: string; preparedBy: string; confirmedBy: string; idempotencyKey: string }): Promise<{ ok: true } | { ok: false; conflict: 'already_run' | 'replay' }> {
+  /** The MAKER's act (PC-56 TENANT-9b): a `prepared` run — the formula, the computed total, the members — and NO batch
+   *  and NO payout row. 0182's trigger refuses it unless the resolution is payable; its checks keep money off a prepared run. */
+  async insertPreparedRun(tx: TxContext, r0: { id: string; tenantId: string; resolutionId: string; purposeCode: string; formulaSnapshot: Record<string, unknown>; totalMinor: string; memberCount: number; skippedCount: number; skippedDetail: unknown[]; currencyCode: string; preparedBy: string; idempotencyKey: string }): Promise<{ ok: true } | { ok: false; conflict: 'already_run' | 'replay' }> {
     try {
       await tx.query(
         `INSERT INTO coop_payout_runs (id, tenant_id, resolution_id, batch_id, purpose_code, formula_snapshot,
              total_minor, member_count, skipped_count, skipped_detail, currency_code, status,
-             prepared_by, confirmed_by, confirmed_at, idempotency_key)
-         VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10::jsonb,$11,'queued',$12,$13,now(),$14)`,
-        [r0.id, r0.tenantId, r0.resolutionId, r0.batchId, r0.purposeCode, JSON.stringify(r0.formulaSnapshot),
+             prepared_by, prepared_at, idempotency_key, created_by, updated_by)
+         VALUES ($1,$2,$3,NULL,$4,$5::jsonb,$6,$7,$8,$9::jsonb,$10,'prepared',$11,now(),$12,$11,$11)`,
+        [r0.id, r0.tenantId, r0.resolutionId, r0.purposeCode, JSON.stringify(r0.formulaSnapshot),
          r0.totalMinor, r0.memberCount, r0.skippedCount, JSON.stringify(r0.skippedDetail), r0.currencyCode,
-         r0.preparedBy, r0.confirmedBy, r0.idempotencyKey]);
+         r0.preparedBy, r0.idempotencyKey]);
       return { ok: true };
     } catch (e: unknown) {
       const err = e as { code?: string; constraint?: string };
@@ -72,6 +103,26 @@ export class CoopPayoutRepository {
       }
       throw e;
     }
+  }
+
+  async lockRun(tx: TxContext, tenantId: string, runId: string): Promise<Record<string, any> | null> {
+    const r = await tx.query(`SELECT * FROM coop_payout_runs WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [runId, tenantId]);
+    return r.rows[0] ?? null;
+  }
+
+  /** The CHECKER's act: the batch exists, the run is queued, and the confirming caller is recorded as the checker. */
+  async confirmRun(tx: TxContext, tenantId: string, runId: string, checker: string, batchId: string): Promise<boolean> {
+    const r = await tx.query(
+      `UPDATE coop_payout_runs SET status='queued', batch_id=$4, confirmed_by=$3, confirmed_at=now(), updated_by=$3
+        WHERE id=$1 AND tenant_id=$2 AND status='prepared' AND prepared_by <> $3`, [runId, tenantId, checker, batchId]);
+    return (r.rowCount ?? 0) === 1;
+  }
+
+  async cancelPreparedRun(tx: TxContext, tenantId: string, runId: string, by: string, reason: string): Promise<boolean> {
+    const r = await tx.query(
+      `UPDATE coop_payout_runs SET status='cancelled', cancel_reason=$4, cancelled_by=$3, updated_by=$3
+        WHERE id=$1 AND tenant_id=$2 AND status='prepared'`, [runId, tenantId, by, reason]);
+    return (r.rowCount ?? 0) === 1;
   }
 
   async listRuns(tenantId: string, limit: number): Promise<Array<Record<string, unknown>>> {
@@ -106,5 +157,6 @@ export class CoopPayoutRepository {
     confirmedAt: x.confirmed_at ? new Date(x.confirmed_at).toISOString() : null,
     batchStatus: x.batch_status, executedAt: x.executed_at ? new Date(x.executed_at).toISOString() : null,
     createdAt: new Date(x.created_at).toISOString(),
+    preparedAt: x.prepared_at ? new Date(x.prepared_at).toISOString() : null, cancelledBy: x.cancelled_by ?? null, cancelReason: x.cancel_reason ?? null,
   });
 }

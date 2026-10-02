@@ -1626,17 +1626,41 @@ describe('payout batches', () => {
   });
 });
 
-// --- governance-agm (PC-54 W54-7) ---
+// --- governance-agm (PC-54 W54-7) · the resolutions (PC-56 TENANT-9b) ---
 describe('governance', () => {
-  it('creates a resolution idempotently and casts one ballot', async () => {
+  it('creates a resolution with the REVIEW page\'s key, and casts one ballot', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'r1', status: 'draft' } } }));
     const c = createClient({ ...base, fetchImpl: fn });
-    await c.memberships.createResolution({ title: 'FY26 dividend 8%', resolutionType: 'dividend' }, 'idem-gov-1');
+    await c.memberships.createResolution({ title: 'FY26 dividend 8%', resolutionType: 'dividend', formulaMode: 'per_share_rate', ratePct: '8' }, 'idem-gov-1');
     expect(calls[0].url).toBe('https://api.test/v1/governance/resolutions');
     expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-gov-1');
-    await c.memberships.castVote('r1', 'yes');
+    await c.memberships.castVote('r1', 'for');
     expect(calls[1].url).toBe('https://api.test/v1/governance/resolutions/r1/vote');
-    expect(JSON.parse(String(calls[1].init.body))).toEqual({ choice: 'yes' });
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({ choice: 'for' });
+  });
+  it('[9b] reads keyless (page, catalogue, previews, results); writes keyed (edit, act) — one act route', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [], meta: { nextCursor: 'c2', zone: 'Asia/Kolkata' } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    const page = await c.memberships.resolutionsPage({ status: 'closed', type: 'dividend', year: 2025, cursor: 'c1', limit: 20 });
+    expect(page).toEqual({ items: [], nextCursor: 'c2', zone: 'Asia/Kolkata' });
+    expect(calls[0].url).toBe('https://api.test/v1/governance/resolutions?status=closed&type=dividend&year=2025&cursor=c1&limit=20');
+    await c.memberships.resolutionCatalogue();
+    await c.memberships.previewResolution({ title: 'x' }, 'r1');
+    await c.memberships.previewResolutionAct('r1', 'close', { reasonCode: 'agm_declared', note: 'minuted' });
+    await c.memberships.resolutionResults('r1');
+    await c.memberships.resolutionDraft('r1');
+    for (const i of [1, 2, 3, 4, 5]) expect((calls[i].init.headers as Record<string, string>)['idempotency-key']).toBeUndefined();
+    expect([calls[1].url, calls[2].url, calls[3].url, calls[5].url]).toEqual([
+      'https://api.test/v1/governance/resolutions/catalogue', 'https://api.test/v1/governance/resolutions/preview',
+      'https://api.test/v1/governance/resolutions/r1/acts/close/preview', 'https://api.test/v1/governance/resolutions/r1/draft']);
+    expect(JSON.parse(String(calls[2].init.body))).toEqual({ title: 'x', id: 'r1' });
+    await c.memberships.updateResolution('r1', { title: 'y' }, 'k-edit');
+    expect([calls[6].init.method, calls[6].url, (calls[6].init.headers as Record<string, string>)['idempotency-key']]).toEqual(['PATCH', 'https://api.test/v1/governance/resolutions/r1', 'k-edit']);
+    for (const [i, a] of (['open', 'close', 'withdraw'] as const).entries()) {
+      await c.memberships.resolutionAct('r1', a, { note: 'n' }, `k-${a}`);
+      expect([calls[7 + i].url, (calls[7 + i].init.headers as Record<string, string>)['idempotency-key']]).toEqual([`https://api.test/v1/governance/resolutions/r1/acts/${a}`, `k-${a}`]);
+    }
+    expect('openResolution' in c.memberships || 'closeResolution' in c.memberships).toBe(false);
   });
 });
 
@@ -1850,19 +1874,23 @@ describe('rider-payout-terms', () => {
   });
 });
 
-// --- coop payout runs (PC-55 A8) ---
+// --- coop payout runs (PC-55 A8) · two acts (PC-56 TENANT-9b) ---
 describe('coop-payout-runs', () => {
-  it('requires a second human, never sends amounts, and reports queued-not-paid with skipped members named', async () => {
-    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'run1', batchId: 'b1', purpose: 'dividend', potMinor: '10000000', queuedTotalMinor: '9800000', queuedCount: 98, skipped: [{ userId: 'u9', reason: 'skipped_no_bank_account' }], execution: { executed: false, note: 'Payouts are QUEUED' } } } }));
+  it('the MAKER prepares and a DIFFERENT caller confirms — no checker uuid in anybody\'s body, no amounts sent', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'run1', batchId: 'b1', status: 'queued', purpose: 'dividend', queuedTotalMinor: '9800000', queuedCount: 98, skipped: [{ userId: 'u9', reason: 'skipped_no_bank_account' }], execution: { executed: false, note: 'Payouts are QUEUED' } } } }));
     const c = createClient({ ...base, fetchImpl: fn });
-    const r = await c.memberships.coopPayoutRun('res1', { confirmedBy: '00000000-0000-7000-8000-000000000002' }, 'idem-coop-1');
+    await c.memberships.coopPayoutPrepare('res1', 'idem-coop-1');
     expect(calls[0].url).toBe('https://api.test/v1/governance/resolutions/res1/payout-run');
     expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-coop-1');
-    const body = JSON.parse(String(calls[0].init.body));
-    expect(body.confirmedBy).toBeDefined();               // maker-checker is part of the request contract
-    expect(body).not.toHaveProperty('potMinor');          // the pot comes from the VOTE, never the caller
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({});        // no confirmedBy, no potMinor — the vote decides
+    const r = await c.memberships.coopPayoutConfirm('run1', 'idem-coop-2');
+    expect(calls[1].url).toBe('https://api.test/v1/governance/resolutions/payout-runs/run1/confirm');
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({});
     expect(r.execution.executed).toBe(false);             // never claims money moved
     expect(r.skipped[0].reason).toBe('skipped_no_bank_account');  // a skipped member is named, not dropped
+    await c.memberships.coopPayoutCancel('run1', 'roll changed before confirm', 'idem-coop-3');
+    expect(JSON.parse(String(calls[2].init.body))).toEqual({ reason: 'roll changed before confirm' });
+    expect('coopPayoutRun' in c.memberships).toBe(false);
   });
 });
 

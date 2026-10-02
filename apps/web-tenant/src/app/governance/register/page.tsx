@@ -48,7 +48,7 @@ export default async function ShareRegisterPage({ searchParams }: { searchParams
 
       <nav className="kv-tabs" aria-label={t.t('reg.tabs')}>
         <span className="kv-tab kv-tab--active" aria-current="page">{t.t('reg.tab.register')}</span>
-        <a href="/governance" className="kv-tab">{t.t('reg.tab.resolutions')}</a>
+        <a href="/governance/resolutions" className="kv-tab">{t.t('reg.tab.resolutions')}</a>
       </nav>
 
       {failed ? (

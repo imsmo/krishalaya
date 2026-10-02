@@ -150,7 +150,11 @@ export type {
   QuietWindowReview, PreferenceReview, LanguageReview, NotificationForm, InboxAct,
 } from './types';
 export type { MembershipTier, UserMembership, CoopBylaws, VoteIneligibleReason, VotingVerdict,
-  ShareRegisterRow, ShareRegisterTiles, ShareRegisterView, MyVotingEligibility, ResolutionTally } from './resources/memberships';
+  ShareRegisterRow, ShareRegisterTiles, ShareRegisterView, MyVotingEligibility, ResolutionTally,
+  // PC-56 TENANT-9b · the resolutions
+  ResolutionAct, ResolutionDraftField, ResolutionDraftInput, PassRule, ResolutionRow, ResolutionCatalogue, ResolutionDraftReview,
+  ResolutionDraftValues, ResolutionActPreview, ResolutionResults } from './resources/memberships';
+export { RESOLUTION_ACTS, RESOLUTION_DRAFT_FIELDS } from './resources/memberships';
 export type { Requirement, RequirementResponse } from './resources/requirements';
 // PC-56 TENANT-1b · the people roster + member detail. `REVEALABLE_MEMBER_FIELDS` is a VALUE export (the console
 // renders the field picker from it, so the list cannot drift from the server's closed enum).

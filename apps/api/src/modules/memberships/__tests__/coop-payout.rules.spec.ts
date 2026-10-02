@@ -70,13 +70,20 @@ describe('the two human guards', () => {
   it('maker cannot be checker', () => {
     expect(canConfirmRun('officer-a', 'officer-b')).toBe(true);
     expect(canConfirmRun('officer-a', 'officer-a')).toBe(false);
+    expect(canConfirmRun(null, 'officer-a')).toBe(false);     // [9b] a run with no recorded maker has no checker either
   });
-  it('only an activated dividend/patronage resolution pays', () => {
-    expect(resolutionPayable('activated', 'dividend')).toEqual({ ok: true, purpose: 'dividend' });
-    expect(resolutionPayable('closed', 'patronage_bonus').ok).toBe(true);
-    expect(resolutionPayable('open', 'dividend').ok).toBe(false);        // the vote is still running
-    expect(resolutionPayable('draft', 'dividend').ok).toBe(false);
-    expect(resolutionPayable('activated', 'agm_vote').ok).toBe(false);   // an AGM vote is not a payment
-    expect(resolutionPayable('activated', 'board_election').ok).toBe(false);
+  // [PC-56 TENANT-9b · F-14] the rule was "activated or closed": `activated` is written by nothing, and `closed` paid a
+  // FAILED vote. Only a closed dividend-class resolution whose RECORDED outcome is `passed` pays.
+  it('only a closed dividend/patronage resolution whose recorded outcome is passed pays', () => {
+    expect(resolutionPayable('closed', 'dividend', 'passed')).toEqual({ ok: true, purpose: 'dividend' });
+    expect(resolutionPayable('closed', 'patronage_bonus', 'passed').ok).toBe(true);
+    expect(resolutionPayable('closed', 'dividend', 'failed')).toMatchObject({ ok: false, reason: 'not_passed' });      // the members said no
+    expect(resolutionPayable('closed', 'dividend', 'not_recorded')).toMatchObject({ ok: false, reason: 'outcome_not_recorded' });
+    expect(resolutionPayable('open', 'dividend', null)).toMatchObject({ ok: false, reason: 'not_closed' });           // still running
+    expect(resolutionPayable('draft', 'dividend', null).ok).toBe(false);
+    expect(resolutionPayable('activated', 'dividend', 'passed')).toMatchObject({ ok: false, reason: 'not_closed' });  // a status nothing writes
+    expect(resolutionPayable('closed', 'agm_vote', 'passed')).toMatchObject({ ok: false, reason: 'not_dividend_class' });
+    expect(resolutionPayable('closed', 'board_election', 'passed').ok).toBe(false);
   });
+
 });

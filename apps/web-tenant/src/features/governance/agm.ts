@@ -98,8 +98,9 @@ export function buildResolution(raw: { title: string; resolutionType: string; bo
 
 export const VOTE_CHOICES = ['for', 'against', 'abstain'] as const;
 export type VoteChoice = (typeof VOTE_CHOICES)[number];
-/** The API accepts any short string as a choice (board elections name candidates), so the console offers the standard
- *  three for a motion and validates length only — it must not narrow a vocabulary the cooperative owns. */
+/** Length only, here. [PC-56 TENANT-9b] The API no longer accepts any short string: a choice must be one 0182's
+ *  `resolution_choice` declares for the resolution's type (BALLOT_CHOICE_UNDECLARED, 422) — and a board election, whose
+ *  ballot names candidates, is refused by name (no candidate table). W198's ballot draws the API's own `choices`. */
 export function buildVote(raw: { choice: string }): { ok: true; value: { choice: string } } | { ok: false; error: 'choice' } {
   const choice = raw.choice.trim();
   if (!choice || choice.length > 20) return { ok: false, error: 'choice' };

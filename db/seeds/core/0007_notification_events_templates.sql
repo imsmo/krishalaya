@@ -584,6 +584,47 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('kyc.expired',  'day',      'kyc_documents.valid_until (digits, DD/MM/YYYY)',                     '30/09/2026', true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-9b · **THE RESOLUTIONS** — W198: *"Notice in-app + SMS + voice call"*, *"results published to all
+-- members"* (F-15)
+-- ==================================================================================================================
+-- Opening and closing a vote told nobody. Two catalogued events now (push + in-app; `important`; opt-out allowed — the
+-- notice is a courtesy, the vote's record is the control), bridged in `notification-event-map.ts`; recipients = every active
+-- member. Variables: `title` (the resolution's own text, plain), `closes` (DD/MM/YYYY HH:MM in the cooperative's zone, or the
+-- per-language "when the board closes voting" from seed 0020), `result` (per-language, seed 0020 `governance.outcome.*`),
+-- `for` / `against` / `abstain` (digits), `turnout` (digits + %). SMS and the voice call are NOT here: no DLT template, no
+-- voice provider (TENANT-1e-Q3, named). `resolution.closing_soon` is not catalogued — the canon draws no closing reminder.
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
+ ('resolution.opened', 'Voting opened on a resolution', 'important', '["push","inapp"]', true, false),
+ ('resolution.closed', 'A resolution''s result',        'important', '["push","inapp"]', true, false)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('resolution.opened','push','en',NULL,'Vote now: {{title}}','Voting is open on "{{title}}". Vote in the app before {{closes}} — you can change your vote until it closes.',NULL,true),
+ ('resolution.opened','push','hi',NULL,'अभी मतदान करें: {{title}}','"{{title}}" पर मतदान खुला है। {{closes}} से पहले ऐप में मतदान करें — बंद होने तक आप अपना मत बदल सकते हैं।',NULL,true),
+ ('resolution.opened','push','gu',NULL,'હમણાં મત આપો: {{title}}','"{{title}}" પર મતદાન ખુલ્લું છે. {{closes}} પહેલાં એપમાં મત આપો — બંધ થાય ત્યાં સુધી તમે તમારો મત બદલી શકો છો.',NULL,true),
+ ('resolution.opened','inapp','en',NULL,'Vote now: {{title}}','Voting is open on "{{title}}". Vote in the app before {{closes}} — you can change your vote until it closes.',NULL,true),
+ ('resolution.opened','inapp','hi',NULL,'अभी मतदान करें: {{title}}','"{{title}}" पर मतदान खुला है। {{closes}} से पहले ऐप में मतदान करें — बंद होने तक आप अपना मत बदल सकते हैं।',NULL,true),
+ ('resolution.opened','inapp','gu',NULL,'હમણાં મત આપો: {{title}}','"{{title}}" પર મતદાન ખુલ્લું છે. {{closes}} પહેલાં એપમાં મત આપો — બંધ થાય ત્યાં સુધી તમે તમારો મત બદલી શકો છો.',NULL,true),
+ ('resolution.closed','push','en',NULL,'Result: {{title}}','"{{title}}" — {{result}}. For {{for}}, against {{against}}, abstain {{abstain}}; turnout {{turnout}}.',NULL,true),
+ ('resolution.closed','push','hi',NULL,'परिणाम: {{title}}','"{{title}}" — {{result}}। पक्ष में {{for}}, विपक्ष में {{against}}, तटस्थ {{abstain}}; मतदान {{turnout}}।',NULL,true),
+ ('resolution.closed','push','gu',NULL,'પરિણામ: {{title}}','"{{title}}" — {{result}}. તરફેણમાં {{for}}, વિરુદ્ધ {{against}}, તટસ્થ {{abstain}}; મતદાન {{turnout}}.',NULL,true),
+ ('resolution.closed','inapp','en',NULL,'Result: {{title}}','"{{title}}" — {{result}}. For {{for}}, against {{against}}, abstain {{abstain}}; turnout {{turnout}}.',NULL,true),
+ ('resolution.closed','inapp','hi',NULL,'परिणाम: {{title}}','"{{title}}" — {{result}}। पक्ष में {{for}}, विपक्ष में {{against}}, तटस्थ {{abstain}}; मतदान {{turnout}}।',NULL,true),
+ ('resolution.closed','inapp','gu',NULL,'પરિણામ: {{title}}','"{{title}}" — {{result}}. તરફેણમાં {{for}}, વિરુદ્ધ {{against}}, તટસ્થ {{abstain}}; મતદાન {{turnout}}.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('resolution.opened', 'title',   'coop_resolutions.title (plain text)',                                      'Patronage bonus FY 2025-26', true),
+ ('resolution.opened', 'closes',  'coop_resolutions.voting_closes in countries.timezone (DD/MM/YYYY HH:MM), else ui_messages governance.notice.no_close', '19/07/2026 18:00', true),
+ ('resolution.closed', 'title',   'coop_resolutions.title (plain text)',                                      'Patronage bonus FY 2025-26', true),
+ ('resolution.closed', 'result',  'ui_messages governance.outcome.<coop_resolutions.outcome> (localized)',     'passed', true),
+ ('resolution.closed', 'for',     'count of coop_votes choice for (digits)',                                  '574', true),
+ ('resolution.closed', 'against', 'count of coop_votes choice against (digits)',                              '31', true),
+ ('resolution.closed', 'abstain', 'count of coop_votes choice abstain (digits)',                              '13', true),
+ ('resolution.closed', 'turnout', 'cast / eligible_at_close (digits + %)',                                    '52%', true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

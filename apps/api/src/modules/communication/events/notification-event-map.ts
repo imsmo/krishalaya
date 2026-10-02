@@ -153,4 +153,12 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'identity.kyc_rejected',        eventCode: 'kyc.rejected',          recipientKeys: ['notifyUserId'] },
   { outboxType: 'identity.kyc_expiring',        eventCode: 'kyc.expiring',          recipientKeys: ['notifyUserId'] },
   { outboxType: 'identity.kyc_expired',         eventCode: 'kyc.expired',           recipientKeys: ['notifyUserId'] },
+  // PC-56 TENANT-9b · **W198: "Notice in-app + SMS + voice call" and "results published to all members" — and opening or
+  // closing a vote told nobody anything (F-15).** `recipientUserIds` is every active member of the cooperative, put in the
+  // payload by `GovernanceService.transition` in the same transaction as the act (ADMIN-6b's rule: a row over a payload with
+  // no recipient sends nothing). In-app + push; SMS and the voice call are named, not built (no DLT template, no voice
+  // provider — TENANT-1e-Q3). `resolution.closing_soon` is NOT catalogued: the canon draws a notice before close, not a
+  // closing reminder, and a catalogued event no producer emits is the defect class itself.
+  { outboxType: 'governance.resolution_opened', eventCode: 'resolution.opened',     recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'governance.resolution_closed', eventCode: 'resolution.closed',     recipientKeys: ['recipientUserIds'] },
 ];

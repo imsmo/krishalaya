@@ -95,6 +95,9 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('payments.credit_note.issue','Issue a GST credit note against an approved proposal (a money verb — never report.view)','M05'),
  ('kyc.read','Read the KYC desk — the organisation''s documents, the member desk and the queue (no act, no reveal)','M01'),
  ('governance.read','Read the share register, the resolutions and their tallies (never an individual ballot)','M04'),
+ -- [PC-56 TENANT-9b] DRAFTING AND OPENING / CLOSING A VOTE WAS `tenant.settings` (F-18) — the code that edits a cooperative's
+ -- settings. Its own verb now; a special or dividend vote is closed by a second person (0182's trigger). Also in 0182.
+ ('governance.manage','Draft a resolution, edit a draft, open and close voting, withdraw (recorded; a special or dividend vote is closed by a second person)','M04'),
  ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
@@ -199,4 +202,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('fpo_coordinator') AND p.code IN ('kyc.review'))
    -- [PC-56 TENANT-9c] the credit note's own money verb (no tenant finance role exists) and the two reads (0181).
    OR (r.code IN ('tenant_admin') AND p.code IN ('payments.credit_note.issue','kyc.read','governance.read'))
+   -- [PC-56 TENANT-9b] the resolutions' acts (0182). No board role exists; the canon's "Drafting is board members" is named.
+   OR (r.code IN ('tenant_admin') AND p.code IN ('governance.manage'))
 ON CONFLICT DO NOTHING;

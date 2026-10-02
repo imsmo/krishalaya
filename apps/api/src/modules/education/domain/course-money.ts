@@ -12,27 +12,8 @@
 
 export interface MoneyShape { currencyCode: string; minorUnits: number }
 
-/** Digits only, an optional fraction no longer than the currency's scale. `""` is NOT a price — the caller decides what a blank means. */
-export function parseMajorToMinor(major: string, minorUnits: number): string | null {
-  if (!Number.isInteger(minorUnits) || minorUnits < 0 || minorUnits > 6) throw new Error(`course money: minor_units out of range: ${minorUnits}`);
-  const s = major.trim();
-  const m = /^(\d{1,12})(?:\.(\d{1,6}))?$/.exec(s);
-  if (!m) return null;
-  const whole = m[1];
-  const frac = m[2] ?? '';
-  if (frac.length > minorUnits) return null;               // ₹149.005 is not a rupee amount
-  const padded = frac.padEnd(minorUnits, '0');
-  const joined = `${whole}${padded}`.replace(/^0+(?=\d)/, '');
-  return joined;
-}
-
-/** `14900` at scale 2 → `149.00`; `5160` at 0 → `5160`. The stored value, printed the way a spreadsheet can sum it. */
-export function minorToMajorText(minor: string, minorUnits: number): string {
-  if (!/^\d+$/.test(minor)) throw new Error(`course money: not a minor amount: ${JSON.stringify(minor)}`);
-  if (minorUnits === 0) return minor.replace(/^0+(?=\d)/, '');
-  const padded = minor.padStart(minorUnits + 1, '0');
-  const whole = padded.slice(0, -minorUnits).replace(/^0+(?=\d)/, '');
-  return `${whole}.${padded.slice(-minorUnits)}`;
-}
+// [PC-56 TENANT-9b] The two converters moved to core/money/major-minor.ts (the resolution form needs them too); re-exported
+// here so nothing that imported them moves.
+export { parseMajorToMinor, minorToMajorText } from '../../../core/money/major-minor';
 
 export function isFree(priceMinor: string): boolean { return /^0+$/.test(priceMinor); }

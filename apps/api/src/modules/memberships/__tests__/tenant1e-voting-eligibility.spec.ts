@@ -272,7 +272,9 @@ describe('TENANT-1e · the gate runs, and runs before any write', () => {
   it('closing a resolution records the eligible roll — a turnout keeps its own denominator', () => {
     const src = voteSrc();
     const t = src.slice(src.indexOf('async transition('), src.indexOf('async vote('));
-    expect(t).toContain('recordEligibleAtClose(');
+    // [PC-56 TENANT-9b] the snapshot and the close are now ONE statement (`closeWithSnapshot`), so a resolution cannot be
+    // closed without its denominator; the outcome is written by 0182's trigger from that snapshot.
+    expect(t).toContain('closeWithSnapshot(');
     expect(t).toContain('eligibleCount(');
   });
 

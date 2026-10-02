@@ -4,6 +4,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { US_SQL, KeysetCursor } from '../../../shared/pagination/us-keyset';
+import type { GovernanceCatalogue } from '../domain/resolution-rules';
 
 /**
  * The roles that make somebody a MEMBER of a co-operative, as opposed to somebody who works for it.
@@ -14,21 +16,159 @@ import { TxContext } from '../../../core/database/unit-of-work';
  */
 export const MEMBER_ROLE_CODES = ['farmer', 'dairy_farmer', 'pashupalak', 'worker', 'sardar', 'vyapari', 'organic_store'];
 
-export interface Resolution { id: string; title: string; body: string | null; resolutionType: string; votingOpens: string | null; votingCloses: string | null; payload: Record<string, unknown>; status: string }
-const toRes = (r: any): Resolution => ({ id: r.id, title: r.title, body: r.body, resolutionType: r.resolution_type, votingOpens: r.voting_opens ? new Date(r.voting_opens).toISOString() : null, votingCloses: r.voting_closes ? new Date(r.voting_closes).toISOString() : null, payload: r.payload ?? {}, status: r.status });
+export interface Resolution {
+  id: string; title: string; body: string | null; resolutionType: string; votingOpens: string | null; votingCloses: string | null;
+  payload: Record<string, unknown>; status: string;
+  // [PC-56 TENANT-9b] the lifecycle 0182 records, and the snapshot a closed result is read from (never today's roll).
+  majority: string; createdAt: string | null; createdBy: string | null;
+  openedAt: string | null; openedBy: string | null; closedAt: string | null; closedBy: string | null; closeReason: string | null;
+  withdrawnAt: string | null; withdrawnBy: string | null; withdrawReason: string | null;
+  eligibleAtClose: number | null; quorumBp: number | null; passNum: number | null; passDen: number | null; passStrict: boolean | null;
+  ruleFixedAt: 'open' | 'close' | null; outcome: string | null;
+}
+const iso = (v: unknown): string | null => (v ? new Date(v as string).toISOString() : null);
+const intOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+const toRes = (r: any): Resolution => ({
+  id: r.id, title: r.title, body: r.body, resolutionType: r.resolution_type, votingOpens: iso(r.voting_opens), votingCloses: iso(r.voting_closes),
+  payload: r.payload ?? {}, status: r.status,
+  majority: r.majority ?? 'ordinary', createdAt: iso(r.created_at), createdBy: r.created_by ?? null,
+  openedAt: iso(r.opened_at), openedBy: r.opened_by ?? null, closedAt: iso(r.closed_at), closedBy: r.closed_by ?? null, closeReason: r.close_reason ?? null,
+  withdrawnAt: iso(r.withdrawn_at), withdrawnBy: r.withdrawn_by ?? null, withdrawReason: r.withdraw_reason ?? null,
+  eligibleAtClose: intOrNull(r.eligible_at_close), quorumBp: intOrNull(r.quorum_bp), passNum: intOrNull(r.pass_num), passDen: intOrNull(r.pass_den),
+  passStrict: r.pass_strict === null || r.pass_strict === undefined ? null : Boolean(r.pass_strict),
+  ruleFixedAt: r.rule_fixed_at ?? null, outcome: r.outcome ?? null,
+});
 
+export interface ResolutionListRow extends Resolution { cast: number; cursorTs: string; votingOpensCivil: string | null; votingClosesCivil: string | null }
+export interface ResolutionFilters { status?: string; type?: string; year?: number }
+export interface GovClock { zone: string; currency: { code: string; minorUnits: number } | null; fyMonth: number | null }
 @Injectable()
 export class GovernanceRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
-  async insert(tx: TxContext, r: { id: string; tenantId: string; title: string; body?: string; resolutionType: string; votingOpens?: string; votingCloses?: string; payload?: Record<string, unknown> }): Promise<void> {
-    await tx.query(`INSERT INTO coop_resolutions (id, tenant_id, title, body, resolution_type, voting_opens, voting_closes, payload) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [r.id, r.tenantId, r.title, r.body ?? null, r.resolutionType, r.votingOpens ?? null, r.votingCloses ?? null, JSON.stringify(r.payload ?? {})]);
+  async insert(tx: TxContext, r: { id: string; tenantId: string; title: string; body?: string | null; resolutionType: string; majority?: string; votingOpens?: string | null; votingCloses?: string | null; payload?: Record<string, unknown> | null; createdBy?: string }): Promise<void> {
+    await tx.query(`INSERT INTO coop_resolutions (id, tenant_id, title, body, resolution_type, majority, voting_opens, voting_closes, payload, created_by, updated_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)`,
+      [r.id, r.tenantId, r.title, r.body ?? null, r.resolutionType, r.majority ?? 'ordinary', r.votingOpens ?? null, r.votingCloses ?? null, JSON.stringify(r.payload ?? {}), r.createdBy ?? null]);
   }
-  async list(tenantId: string, status?: string): Promise<Resolution[]> {
-    const r = await this.replica.forTenant(tenantId).query(`SELECT * FROM coop_resolutions WHERE tenant_id=$1 AND ($2::text IS NULL OR status=$2) AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 100`, [tenantId, status ?? null]);
-    return r.rows.map(toRes);
+  /** Edit a DRAFT — the WHERE is the state machine's half here; 0182's guard is the other half (a non-draft → 23514). */
+  async updateDraft(tx: TxContext, tenantId: string, id: string, r: { title: string; body: string | null; resolutionType: string; majority: string; votingOpens: string | null; votingCloses: string | null; payload: Record<string, unknown> | null; userId: string }): Promise<Resolution | null> {
+    const q = await tx.query(`UPDATE coop_resolutions SET title=$3, body=$4, resolution_type=$5, majority=$6, voting_opens=$7, voting_closes=$8, payload=$9, updated_by=$10
+                               WHERE id=$1 AND tenant_id=$2 AND status='draft' AND deleted_at IS NULL RETURNING *`,
+      [id, tenantId, r.title, r.body, r.resolutionType, r.majority, r.votingOpens, r.votingCloses, JSON.stringify(r.payload ?? {}), r.userId]);
+    return q.rows[0] ? toRes(q.rows[0]) : null;
   }
+  /** Open: who, when, and the rule fixed now (0182: the rule members vote under). */
+  async open(tx: TxContext, tenantId: string, id: string, userId: string, rule: { quorumBp: number; num: number; den: number; strict: boolean }): Promise<Resolution | null> {
+    const q = await tx.query(`UPDATE coop_resolutions SET status='open', opened_at=now(), opened_by=$3, quorum_bp=$4, pass_num=$5, pass_den=$6, pass_strict=$7, rule_fixed_at='open', updated_by=$3
+                               WHERE id=$1 AND tenant_id=$2 AND status='draft' AND deleted_at IS NULL RETURNING *`,
+      [id, tenantId, userId, rule.quorumBp, rule.num, rule.den, rule.strict]);
+    return q.rows[0] ? toRes(q.rows[0]) : null;
+  }
+  /**
+   * Close: who, when, why, and the eligible roll AT THIS INSTANT — in ONE statement, so a resolution cannot be closed without
+   * its denominator (0130 §130.3). The OUTCOME is written by 0182's trigger from the frozen ballot box; it is read back, not
+   * supplied. `legacyRule` is only for a resolution opened before 0182 (no rule fixed at open): the rule in force now is
+   * recorded and marked `rule_fixed_at = 'close'`.
+   */
+  async closeWithSnapshot(tx: TxContext, tenantId: string, id: string, userId: string, reasonCode: string, eligible: number, legacyRule: { quorumBp: number; num: number; den: number; strict: boolean } | null): Promise<Resolution | null> {
+    const q = await tx.query(`UPDATE coop_resolutions SET status='closed', closed_at=now(), closed_by=$3, close_reason=$4, eligible_at_close=$5,
+                                     quorum_bp=COALESCE(quorum_bp, $6), pass_num=COALESCE(pass_num, $7), pass_den=COALESCE(pass_den, $8),
+                                     pass_strict=COALESCE(pass_strict, $9), rule_fixed_at=COALESCE(rule_fixed_at, CASE WHEN $6::int IS NULL THEN NULL ELSE 'close' END),
+                                     updated_by=$3
+                               WHERE id=$1 AND tenant_id=$2 AND status='open' AND eligible_at_close IS NULL AND deleted_at IS NULL RETURNING *`,
+      [id, tenantId, userId, reasonCode, eligible, legacyRule?.quorumBp ?? null, legacyRule?.num ?? null, legacyRule?.den ?? null, legacyRule?.strict ?? null]);
+    return q.rows[0] ? toRes(q.rows[0]) : null;
+  }
+  async withdraw(tx: TxContext, tenantId: string, id: string, userId: string, reasonCode: string): Promise<Resolution | null> {
+    const q = await tx.query(`UPDATE coop_resolutions SET status='withdrawn', withdrawn_at=now(), withdrawn_by=$3, withdraw_reason=$4, updated_by=$3
+                               WHERE id=$1 AND tenant_id=$2 AND status IN ('draft','open') AND deleted_at IS NULL RETURNING *`,
+      [id, tenantId, userId, reasonCode]);
+    return q.rows[0] ? toRes(q.rows[0]) : null;
+  }
+
+  /** 0182's vocabularies — the types (dividend-class, modelled), the declared ballot choices per type, the act reasons. */
+  async catalogue(tenantId: string): Promise<GovernanceCatalogue> {
+    const r = await this.replica.forTenant(tenantId).query<{ type_code: string; code: string; meta: any }>(
+      `SELECT type_code, code, meta FROM lookup_values
+        WHERE tenant_id IS NULL AND is_active AND deleted_at IS NULL
+          AND type_code IN ('resolution_type','resolution_choice','resolution_close_reason','resolution_withdraw_reason')
+        ORDER BY type_code, sort_order, code`);
+    const of = (t: string) => r.rows.filter((x) => x.type_code === t);
+    return {
+      types: of('resolution_type').map((x) => ({ code: x.code, dividendClass: x.meta?.dividend_class === true, modelled: x.meta?.modelled !== false })),
+      choices: of('resolution_choice').map((x) => ({ code: x.code, types: Array.isArray(x.meta?.types) ? x.meta.types.map(String) : [], inFavour: x.meta?.in_favour === true })),
+      closeReasons: of('resolution_close_reason').map((x) => x.code),
+      withdrawReasons: of('resolution_withdraw_reason').map((x) => x.code),
+    };
+  }
+
+  /** The cooperative's zone, currency (with its scale) and declared fiscal year — data, never compiled in (F-17). */
+  async clockOf(tenantId: string): Promise<GovClock> {
+    const r = await this.replica.forTenant(tenantId).query<{ zone: string; code: string | null; minor_units: number | null; fy_month: number | null }>(
+      `SELECT c.timezone AS zone, cu.code, cu.minor_units, tenant_fiscal_year_start_month(t.id) AS fy_month
+         FROM tenants t JOIN countries c ON c.code = t.country_code LEFT JOIN currencies cu ON cu.code = c.currency_code
+        WHERE t.id = $1`, [tenantId]);
+    const x = r.rows[0];
+    if (!x) return { zone: 'UTC', currency: null, fyMonth: null };
+    return {
+      zone: x.zone,
+      currency: x.code && x.minor_units !== null ? { code: String(x.code).trim(), minorUnits: Number(x.minor_units) } : null,
+      fyMonth: x.fy_month === null ? null : Number(x.fy_month),
+    };
+  }
+
+  /** A civil `YYYY-MM-DDTHH:MM` in the cooperative's zone → the instant, BY THE DATABASE (no JavaScript offset guess). */
+  async civilToInstant(tenantId: string, zone: string, civil: string): Promise<string | null> {
+    const r = await this.replica.forTenant(tenantId).query<{ at: string }>(
+      `SELECT to_char((($1::timestamp) AT TIME ZONE $2) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS at`, [civil, zone]);
+    return r.rows[0]?.at ?? null;
+  }
+  /** An instant → its civil `YYYY-MM-DDTHH:MM` in the zone (the edit form's prefill). */
+  async instantToCivil(tenantId: string, zone: string, at: string | null): Promise<string | null> {
+    if (!at) return null;
+    const r = await this.replica.forTenant(tenantId).query<{ c: string }>(
+      `SELECT to_char(($1::timestamptz) AT TIME ZONE $2, 'YYYY-MM-DD"T"HH24:MI') AS c`, [at, zone]);
+    return r.rows[0]?.c ?? null;
+  }
+
+  /**
+   * W198's list — keyset on the MICROSECOND creation instant + id (F-7 class: the cursor is the database's own printing,
+   * never a JS Date), filters as GET-forms: status, type, and YEAR — the civil year, in the cooperative's zone, of the close
+   * (or the planned close, or the drafting). `cast` is the ballot-box count; for a closed resolution that box is frozen.
+   */
+  async page(tenantId: string, zone: string, f: ResolutionFilters, limit: number, after?: KeysetCursor): Promise<ResolutionListRow[]> {
+    const params: unknown[] = [tenantId, f.status ?? null, f.type ?? null, f.year ?? null, zone, limit];
+    let keyset = '';
+    if (after) { params.push(after.ts, after.id); keyset = ` AND (r.created_at, r.id) < ($7::timestamptz, $8::uuid)`; }
+    const q = await this.replica.forTenant(tenantId).query<any>(
+      `SELECT r.*, ${US_SQL('r.created_at')} AS cursor_ts,
+              (SELECT COUNT(*)::int FROM coop_votes v WHERE v.resolution_id = r.id AND v.tenant_id = $1) AS cast_count,
+              to_char(r.voting_opens AT TIME ZONE $5, 'YYYY-MM-DD"T"HH24:MI') AS opens_civil,
+              to_char(r.voting_closes AT TIME ZONE $5, 'YYYY-MM-DD"T"HH24:MI') AS closes_civil
+         FROM coop_resolutions r
+        WHERE r.tenant_id = $1 AND r.deleted_at IS NULL
+          AND ($2::text IS NULL OR r.status = $2) AND ($3::text IS NULL OR r.resolution_type = $3)
+          AND ($4::int IS NULL OR EXTRACT(YEAR FROM (COALESCE(r.closed_at, r.voting_closes, r.created_at) AT TIME ZONE $5))::int = $4)${keyset}
+        ORDER BY r.created_at DESC, r.id DESC
+        LIMIT $6`, params);
+    return q.rows.map((x: any) => ({ ...toRes(x), cast: Number(x.cast_count ?? 0), cursorTs: x.cursor_ts, votingOpensCivil: x.opens_civil ?? null, votingClosesCivil: x.closes_civil ?? null }));
+  }
+
+  /** Every active MEMBER of the cooperative — the notice's recipients (W198: "Notice in-app … results published to all members"). */
+  async memberUserIds(tx: TxContext, tenantId: string): Promise<string[]> {
+    const r = await tx.query<{ user_id: string }>(
+      `SELECT DISTINCT utr.user_id FROM user_tenant_roles utr JOIN roles ro ON ro.id = utr.role_id
+        WHERE utr.tenant_id = $1 AND utr.is_active = true AND utr.deleted_at IS NULL AND ro.code = ANY($2::text[])
+        ORDER BY utr.user_id LIMIT 50000`, [tenantId, MEMBER_ROLE_CODES]);
+    return r.rows.map((x) => x.user_id);
+  }
+
+  /** The ballot box inside a transaction (the close reads the box it is freezing). */
+  async tallyTx(tx: TxContext, tenantId: string, resolutionId: string): Promise<Array<{ choice: string; votes: number }>> {
+    const r = await tx.query(`SELECT choice, COUNT(*)::int AS votes FROM coop_votes WHERE resolution_id=$1 AND tenant_id=$2 GROUP BY choice ORDER BY votes DESC`, [resolutionId, tenantId]);
+    return r.rows.map((x: any) => ({ choice: x.choice, votes: x.votes }));
+  }
+
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Resolution | null> {
     const r = await tx.query(`SELECT * FROM coop_resolutions WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toRes(r.rows[0]) : null;
@@ -37,10 +177,7 @@ export class GovernanceRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT * FROM coop_resolutions WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [id, tenantId]);
     return r.rows[0] ? toRes(r.rows[0]) : null;
   }
-  async setStatus(tx: TxContext, tenantId: string, id: string, from: string[], to: string): Promise<boolean> {
-    const r = await tx.query(`UPDATE coop_resolutions SET status=$4 WHERE id=$1 AND tenant_id=$2 AND status = ANY($3::text[]) AND deleted_at IS NULL`, [id, tenantId, from, to]);
-    return (r.rowCount ?? 0) > 0;
-  }
+
   /** Returns false on a duplicate ballot (the PK) — the caller turns that into a 409, never a double vote. */
   /**
    * Everything the eligibility rules need about one voter, in one round trip.
@@ -92,9 +229,22 @@ export class GovernanceRepository {
     return (await this.registerTotals(tenantId, minShares, minMonths)).eligible;
   }
 
+  /**
+   * Returns false when the member already has a ballot (the PK) — the caller then CHANGES it, never a second row.
+   *
+   * [PC-56 TENANT-9b · FOUND ON THE WAY] **THIS WAS `INSERT` + `catch (23505)`, AND A CHANGED VOTE COULD NEVER BE WRITTEN.**
+   * A unique violation ABORTS the transaction it happens in, so the `changeVote` that followed in the same unit of work
+   * failed with "current transaction is aborted" — TENANT-1e's "changeable until close" answered every change with a 500
+   * (proven at d8543fa; the wave report quotes it). `ON CONFLICT DO NOTHING` asks the same question without poisoning the
+   * transaction.
+   */
   async castVote(tx: TxContext, resolutionId: string, memberUserId: string, choice: string): Promise<boolean> {
-    try { await tx.query(`INSERT INTO coop_votes (resolution_id, member_user_id, choice) VALUES ($1,$2,$3)`, [resolutionId, memberUserId, choice]); return true; }
-    catch (e: any) { if (e?.code === '23505') return false; throw e; }
+    // [9b] tenant_id is the RESOLUTION's (0182's trigger forces it; the RLS policy checks it against the context).
+    const r = await tx.query(
+      `INSERT INTO coop_votes (resolution_id, member_user_id, choice, tenant_id) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (resolution_id, member_user_id) DO NOTHING RETURNING resolution_id`,
+      [resolutionId, memberUserId, choice, tx.tenantId]);
+    return (r.rowCount ?? 0) === 1;
   }
   /**
    * Change an existing vote (W198: "changeable until close").
@@ -108,27 +258,14 @@ export class GovernanceRepository {
     const r = await tx.query(
       `UPDATE coop_votes
           SET previous_choice = choice, choice = $3, changed_at = now(), change_count = change_count + 1
-        WHERE resolution_id = $1 AND member_user_id = $2 AND choice <> $3`,
-      [resolutionId, memberUserId, choice]);
+        WHERE resolution_id = $1 AND member_user_id = $2 AND choice <> $3 AND tenant_id = $4`,
+      [resolutionId, memberUserId, choice, tx.tenantId]);
     return (r.rowCount ?? 0) === 1;
   }
 
   async tally(tenantId: string, resolutionId: string): Promise<Array<{ choice: string; votes: number }>> {
-    const r = await this.replica.forTenant(tenantId).query(`SELECT choice, COUNT(*)::int AS votes FROM coop_votes WHERE resolution_id=$1 GROUP BY choice ORDER BY votes DESC`, [resolutionId]);
+    const r = await this.replica.forTenant(tenantId).query(`SELECT choice, COUNT(*)::int AS votes FROM coop_votes WHERE resolution_id=$1 AND tenant_id=$2 GROUP BY choice ORDER BY votes DESC`, [resolutionId, tenantId]);
     return r.rows.map((x: any) => ({ choice: x.choice, votes: x.votes }));
-  }
-
-  /**
-   * Snapshot the eligible roll onto the resolution as it closes.
-   *
-   * **A TURNOUT IS A FRACTION AND ONLY THE NUMERATOR SURVIVES.** `coop_votes` rows are permanent; the roll of members who
-   * COULD have voted keeps moving as shares transfer and members join, so W197's "Last AGM turnout · 64%" computed against
-   * today's roll would change every week for a vote that finished last year. Written once, inside the same transaction as
-   * the status change, so a resolution cannot be closed without its denominator (0130 §130.3).
-   */
-  async recordEligibleAtClose(tx: TxContext, tenantId: string, id: string, eligible: number): Promise<void> {
-    await tx.query(`UPDATE coop_resolutions SET eligible_at_close = $3 WHERE id = $1 AND tenant_id = $2 AND eligible_at_close IS NULL`,
-      [id, tenantId, eligible]);
   }
 
   /**
@@ -245,11 +382,13 @@ export class GovernanceRepository {
    */
   async lastClosed(tenantId: string): Promise<{ id: string; title: string; closedAt: string | null; cast: number; eligibleAtClose: number | null } | null> {
     const r = await this.replica.forTenant(tenantId).query<any>(
-      `SELECT r.id, r.title, r.updated_at AS closed_at, r.eligible_at_close,
-              (SELECT COUNT(*)::int FROM coop_votes v WHERE v.resolution_id = r.id) AS cast
+      // [9b] `closed_at` is recorded since 0182 (it was `updated_at` — the last write, not the close); a resolution closed
+      // before 0182 has none and prints "not recorded" — it still sorts, by its last write, behind every recorded close.
+      `SELECT r.id, r.title, r.closed_at, r.eligible_at_close,
+              (SELECT COUNT(*)::int FROM coop_votes v WHERE v.resolution_id = r.id AND v.tenant_id = $1) AS cast
          FROM coop_resolutions r
         WHERE r.tenant_id = $1 AND r.status = 'closed' AND r.deleted_at IS NULL
-        ORDER BY r.updated_at DESC NULLS LAST LIMIT 1`, [tenantId]);
+        ORDER BY r.closed_at DESC NULLS LAST, r.updated_at DESC LIMIT 1`, [tenantId]);
     const x = r.rows[0];
     if (!x) return null;
     return {
