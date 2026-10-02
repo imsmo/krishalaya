@@ -33,6 +33,13 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // aside — and when it is cancelled, with the reason the employer or the desk recorded (catalogue 0187, copy in seed 0007).
   { outboxType: 'labour.roster_confirmed',         eventCode: 'labour.roster_confirmed',  recipientKeys: ['recipientUserIds'] },
   { outboxType: 'labour.booking_cancelled',        eventCode: 'labour.booking_cancelled', recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-11c · every pledger hears what happened to the lot, in their language (W136 "every pledger hears it in their
+  // language"). Recipients travel in the payload (`recipientUserIds`); the cancel reason is a per-language map (seed core/0022);
+  // a settled notice is ONE event per member, carrying that member's own share. The nudge reaches non-pledgers who grow the crop.
+  { outboxType: 'group_lot.deadline_extended',     eventCode: 'group_lot.deadline_extended', recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'group_lot.cancelled',             eventCode: 'group_lot.cancelled',         recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'group_lot.nudge',                 eventCode: 'group_lot.nudge',             recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'group_lot.settled',               eventCode: 'group_lot.settled',           recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

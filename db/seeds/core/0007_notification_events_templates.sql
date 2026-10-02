@@ -709,6 +709,56 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('labour.booking_cancelled', 'reason',    'labour_cancel_reason default_name, or labour_bookings.cancel_reason_text for other (verbatim)', 'Rain forecast — rescheduling', true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-11c · **EVERY PLEDGER HEARS WHAT HAPPENED TO THE LOT, IN THEIR LANGUAGE.** Canon W136: "Whichever path —
+-- recorded, and every pledger hears it in their language". Before this wave no `group_lot.*` event reached anyone. Migration
+-- 0188 catalogues four events; their copy lives HERE, above the version backfill below (0122's send-time gate). Variables come
+-- from the outbox payload: `lotNo` (GL-…), `product` (the product's name), `deadline` (DD/MM/YYYY HH:mm, India), `progress`
+-- (whole percent), `reason` (a per-language map from seed core/0022, or the coordinator's own words for `other`), `share`
+-- (the member's settled share as money text). The nudge is a notification through these channels — a VOICE nudge is not built.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('group_lot.deadline_extended','push','en',NULL,'{{lotNo}}: new deadline','The pledge deadline for {{lotNo}} ({{product}}) was extended once, to {{deadline}}. Your pledge stands; you may still withdraw it until the lot lists.',NULL,true),
+ ('group_lot.deadline_extended','push','hi',NULL,'{{lotNo}}: नई अंतिम तिथि','{{lotNo}} ({{product}}) में वचन देने की अंतिम तिथि एक बार बढ़ाकर {{deadline}} कर दी गई है। आपका वचन बना रहेगा; लॉट सूचीबद्ध होने तक आप इसे वापस ले सकते हैं।',NULL,true),
+ ('group_lot.deadline_extended','push','gu',NULL,'{{lotNo}}: નવી અંતિમ તારીખ','{{lotNo}} ({{product}}) માં વચન આપવાની અંતિમ તારીખ એક વાર લંબાવીને {{deadline}} કરવામાં આવી છે. તમારું વચન યથાવત્ છે; લોટ યાદીમાં મુકાય ત્યાં સુધી તમે તેને પાછું ખેંચી શકો છો.',NULL,true),
+ ('group_lot.deadline_extended','inapp','en',NULL,'{{lotNo}}: new deadline','The pledge deadline for {{lotNo}} ({{product}}) was extended once, to {{deadline}}. Your pledge stands; you may still withdraw it until the lot lists.',NULL,true),
+ ('group_lot.deadline_extended','inapp','hi',NULL,'{{lotNo}}: नई अंतिम तिथि','{{lotNo}} ({{product}}) में वचन देने की अंतिम तिथि एक बार बढ़ाकर {{deadline}} कर दी गई है। आपका वचन बना रहेगा; लॉट सूचीबद्ध होने तक आप इसे वापस ले सकते हैं।',NULL,true),
+ ('group_lot.deadline_extended','inapp','gu',NULL,'{{lotNo}}: નવી અંતિમ તારીખ','{{lotNo}} ({{product}}) માં વચન આપવાની અંતિમ તારીખ એક વાર લંબાવીને {{deadline}} કરવામાં આવી છે. તમારું વચન યથાવત્ છે; લોટ યાદીમાં મુકાય ત્યાં સુધી તમે તેને પાછું ખેંચી શકો છો.',NULL,true),
+ ('group_lot.cancelled','push','en',NULL,'{{lotNo}} was cancelled','The group lot {{lotNo}} ({{product}}) was cancelled: {{reason}}. Your pledge is released — your produce is yours to sell.',NULL,true),
+ ('group_lot.cancelled','push','hi',NULL,'{{lotNo}} रद्द हुआ','सामूहिक लॉट {{lotNo}} ({{product}}) रद्द कर दिया गया: {{reason}}। आपका वचन मुक्त है — आपकी उपज आप स्वयं बेच सकते हैं।',NULL,true),
+ ('group_lot.cancelled','push','gu',NULL,'{{lotNo}} રદ થયો','સામૂહિક લોટ {{lotNo}} ({{product}}) રદ કરવામાં આવ્યો: {{reason}}. તમારું વચન મુક્ત છે — તમારી ઉપજ તમે પોતે વેચી શકો છો.',NULL,true),
+ ('group_lot.cancelled','inapp','en',NULL,'{{lotNo}} was cancelled','The group lot {{lotNo}} ({{product}}) was cancelled: {{reason}}. Your pledge is released — your produce is yours to sell.',NULL,true),
+ ('group_lot.cancelled','inapp','hi',NULL,'{{lotNo}} रद्द हुआ','सामूहिक लॉट {{lotNo}} ({{product}}) रद्द कर दिया गया: {{reason}}। आपका वचन मुक्त है — आपकी उपज आप स्वयं बेच सकते हैं।',NULL,true),
+ ('group_lot.cancelled','inapp','gu',NULL,'{{lotNo}} રદ થયો','સામૂહિક લોટ {{lotNo}} ({{product}}) રદ કરવામાં આવ્યો: {{reason}}. તમારું વચન મુક્ત છે — તમારી ઉપજ તમે પોતે વેચી શકો છો.',NULL,true),
+ ('group_lot.nudge','push','en',NULL,'Pool your {{product}} in {{lotNo}}','{{lotNo}} is pooling {{product}} and is {{progress}} pledged. Pledge by {{deadline}} to sell together at the pooled price.',NULL,true),
+ ('group_lot.nudge','push','hi',NULL,'{{lotNo}} में अपना {{product}} जोड़ें','{{lotNo}} में {{product}} इकट्ठा हो रहा है और {{progress}} वचन मिल चुके हैं। मिलकर बेचने के लिए {{deadline}} तक वचन दें।',NULL,true),
+ ('group_lot.nudge','push','gu',NULL,'{{lotNo}} માં તમારું {{product}} જોડો','{{lotNo}} માં {{product}} ભેગું થઈ રહ્યું છે અને {{progress}} વચન મળી ગયાં છે. સાથે મળીને વેચવા માટે {{deadline}} સુધીમાં વચન આપો.',NULL,true),
+ ('group_lot.nudge','inapp','en',NULL,'Pool your {{product}} in {{lotNo}}','{{lotNo}} is pooling {{product}} and is {{progress}} pledged. Pledge by {{deadline}} to sell together at the pooled price.',NULL,true),
+ ('group_lot.nudge','inapp','hi',NULL,'{{lotNo}} में अपना {{product}} जोड़ें','{{lotNo}} में {{product}} इकट्ठा हो रहा है और {{progress}} वचन मिल चुके हैं। मिलकर बेचने के लिए {{deadline}} तक वचन दें।',NULL,true),
+ ('group_lot.nudge','inapp','gu',NULL,'{{lotNo}} માં તમારું {{product}} જોડો','{{lotNo}} માં {{product}} ભેગું થઈ રહ્યું છે અને {{progress}} વચન મળી ગયાં છે. સાથે મળીને વેચવા માટે {{deadline}} સુધીમાં વચન આપો.',NULL,true),
+ ('group_lot.settled','push','en',NULL,'{{lotNo}}: {{share}} paid','Your share of the {{lotNo}} ({{product}}) sale, {{share}}, has been paid to your wallet.',NULL,true),
+ ('group_lot.settled','push','hi',NULL,'{{lotNo}}: {{share}} का भुगतान','{{lotNo}} ({{product}}) की बिक्री में आपका हिस्सा, {{share}}, आपके वॉलेट में भेज दिया गया है।',NULL,true),
+ ('group_lot.settled','push','gu',NULL,'{{lotNo}}: {{share}} ચૂકવાયા','{{lotNo}} ({{product}}) ના વેચાણમાં તમારો હિસ્સો, {{share}}, તમારા વૉલેટમાં ચૂકવી દેવામાં આવ્યો છે.',NULL,true),
+ ('group_lot.settled','inapp','en',NULL,'{{lotNo}}: {{share}} paid','Your share of the {{lotNo}} ({{product}}) sale, {{share}}, has been paid to your wallet.',NULL,true),
+ ('group_lot.settled','inapp','hi',NULL,'{{lotNo}}: {{share}} का भुगतान','{{lotNo}} ({{product}}) की बिक्री में आपका हिस्सा, {{share}}, आपके वॉलेट में भेज दिया गया है।',NULL,true),
+ ('group_lot.settled','inapp','gu',NULL,'{{lotNo}}: {{share}} ચૂકવાયા','{{lotNo}} ({{product}}) ના વેચાણમાં તમારો હિસ્સો, {{share}}, તમારા વૉલેટમાં ચૂકવી દેવામાં આવ્યો છે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('group_lot.deadline_extended','lotNo','group_lots.lot_no','GL-2026-0712-02',true),
+ ('group_lot.deadline_extended','product','products.default_name','Sesame, white',true),
+ ('group_lot.deadline_extended','deadline','group_lots.pledge_deadline (DD/MM/YYYY HH:mm, India)','14/07/2026 12:00',true),
+ ('group_lot.cancelled','lotNo','group_lots.lot_no','GL-2026-0712-02',true),
+ ('group_lot.cancelled','product','products.default_name','Sesame, white',true),
+ ('group_lot.cancelled','reason','ui_messages group_lot.cancel_reason.<code> (seed core/0022) in the reader''s language, or group_lots.cancel_reason_text for other (verbatim)','Target missed by the deadline',true),
+ ('group_lot.nudge','lotNo','group_lots.lot_no','GL-2026-0712-02',true),
+ ('group_lot.nudge','product','products.default_name','Sesame, white',true),
+ ('group_lot.nudge','progress','pledged / target, whole percent','86%',true),
+ ('group_lot.nudge','deadline','group_lots.pledge_deadline (DD/MM/YYYY HH:mm, India)','14/07/2026 12:00',true),
+ ('group_lot.settled','lotNo','group_lots.lot_no','GL-2026-0712-02',true),
+ ('group_lot.settled','product','products.default_name','Sesame, white',true),
+ ('group_lot.settled','share','group_lot_settlement_lines.share_minor (money text, core/money moneyText)','INR 21,600.00',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

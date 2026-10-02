@@ -1212,37 +1212,8 @@ describe('HttpClient via resources', () => {
     expect(dbt.amountMinor).toBe('600000');
   });
 
-  it('group-lots: create(idem) → pledge(idem) → ready → settle hit the right paths (P1-12)', async () => {
-    const { fn, calls } = fakeFetch((_c, n) =>
-      n === 1 ? { body: { data: [{ id: 'g1', status: 'pledging', productId: 'p1' }], meta: { nextCursor: null } } }
-      : n === 2 ? { body: { data: { id: 'g1', status: 'pledging', pledges: [] } } }
-      : n === 3 ? { body: { data: { id: 'g1', status: 'pledging', pledgedQuantity: '0.000' } } }
-      : n === 4 ? { body: { data: { id: 'g1', status: 'pledging', pledgedQuantity: '25.000', progressBps: 2500 } } }
-      : n === 5 ? { body: { data: { id: 'g1', status: 'ready' } } }
-      : { body: { data: { id: 'g1', status: 'settled', settlement: { grossMinor: '100000', coordinationFeeMinor: '5000', netMinor: '95000', shares: [{ pledgeId: 'pl1', shareMinor: '95000' }] } } } });
-    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
-
-    const lots = await c.groupLots.list({ box: 'mine', status: 'pledging' });
-    expect(calls[0].url).toBe('https://api.test/v1/group-lots?box=mine&status=pledging&limit=50');
-    expect(lots.items[0].id).toBe('g1');
-    await c.groupLots.get('g1');
-    expect(calls[1].url).toBe('https://api.test/v1/group-lots/g1');
-    await c.groupLots.create({ productId: 'p1', targetQuantity: '100.000', unitCode: 'kg', pledgeDeadline: '2026-08-01T00:00:00.000Z', coordinationFeeBps: 500 }, 'idem-gl');
-    expect(calls[2].url).toBe('https://api.test/v1/group-lots');
-    expect(calls[2].init.method).toBe('POST');
-    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-gl');
-    const pledged = await c.groupLots.pledge('g1', { farmerUserId: 'f1', quantity: '25' }, 'idem-pl');
-    expect(calls[3].url).toBe('https://api.test/v1/group-lots/g1/pledges');
-    expect((calls[3].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-pl');
-    expect(pledged.progressBps).toBe(2500);
-    await c.groupLots.markReady('g1');
-    expect(calls[4].url).toBe('https://api.test/v1/group-lots/g1/ready');
-    const s = await c.groupLots.settle('g1', '100000');
-    expect(calls[5].url).toBe('https://api.test/v1/group-lots/g1/settle');
-    expect(calls[5].init.method).toBe('POST');
-    expect(s.settlement.netMinor).toBe('95000');
-    expect(s.settlement.shares[0].shareMinor).toBe('95000');
-  });
+  // PC-56 TENANT-11c: the group-lots resource is pinned against the 11c API in test/group-lots.spec.ts (the old typed-gross
+  // `settle` and the `{farmerUserId, quantity}`-only pledge it asserted no longer exist).
 
   it('audit: list (filtered, keyset) + get hit the right read-only paths (P1-12)', async () => {
     const { fn, calls } = fakeFetch((_c, n) =>

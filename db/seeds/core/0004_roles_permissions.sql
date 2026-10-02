@@ -119,6 +119,10 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- money verb, tenant_admin's only. `worker.book` holders lose nothing. Also in migration 0187.
  ('labour.desk','Labour desk: post, fill, confirm the roster of and cancel a job FOR an employer, each with the employer''s recorded consent','M28'),
  ('labour.wages.approve','Run the wage pay for a desk-run labour job (moves escrowed wages to workers)','M28'),
+ -- [PC-56 TENANT-11c] THE GROUP-LOT SETTLEMENT'S SECOND PERSON (founder decision: maker ≠ checker). The lot's coordinator or
+ -- tenant_admin PREPARES the shares (no money); a tenant_admin who is neither the preparer nor the coordinator CONFIRMS,
+ -- which pays every pledger from the held sale proceeds (DB trigger on group_lot_settlements). Also in 0188.
+ ('group_lot.settle_approve','Confirm a prepared group-lot settlement: pays every pledger''s share + the fee from the held proceeds (never the preparer)','M12'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -235,4 +239,10 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- [PC-56 TENANT-11b] the labour desk (0187): on-behalf acts with consent; the desk-run pay is tenant_admin's only.
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('labour.desk'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('labour.wages.approve'))
+   -- [PC-56 TENANT-11c] group lots (0188). `group_lot.coordinate` opens a lot one coordinates oneself and acts on ONE's OWN lot
+   -- (the per-lot check is in the service); `group_lot.manage` is the tenant-wide reach (every lot + appointing a coordinator,
+   -- with the appointee's recorded consent) — tenant_admin's. The ambassador's role-wide coordinate and the fpo_coordinator's
+   -- manage are removed by 0188 (canon W135: coordinators are appointed by tenant_admin) and are not granted here.
+   OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('group_lot.coordinate'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('group_lot.manage','group_lot.settle_approve'))
 ON CONFLICT DO NOTHING;

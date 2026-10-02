@@ -50,8 +50,11 @@ describe('group-lots/state — lifecycle', () => {
 describe('group-lots/entity — pledge guards + progress', () => {
   const future = new Date(Date.now() + 86400000).toISOString();
   const past = new Date(Date.now() - 1000).toISOString();
+  // A lot is CREATED with a future deadline (11c refuses a past one at create); a lot whose deadline has since passed is
+  // rehydrated as the database would hand it back.
   function lot(deadline: string) {
-    return GroupLot.create({ id: 'g1', tenantId: 't1', coordinatorUserId: 'u1', productId: 'p1', targetQuantity: '100.000', unitCode: 'kg', pledgeDeadline: deadline, coordinationFeeBps: 0 });
+    const g = GroupLot.create({ id: 'g1', tenantId: 't1', coordinatorUserId: 'u1', productId: 'p1', targetQuantity: '100.000', unitCode: 'kg', pledgeDeadline: future, coordinationFeeBps: 0 });
+    return deadline === future ? g : GroupLot.rehydrate({ ...g.toProps(), pledgeDeadline: deadline });
   }
   it('accumulates pledges + computes progress bps', () => {
     const g = lot(future);
@@ -64,7 +67,7 @@ describe('group-lots/entity — pledge guards + progress', () => {
     expect(() => lot(past).applyPledge(parseQtyMilli('1'), new Date())).toThrow();
   });
   it('rejects a pledge once not pledging', () => {
-    const g = lot(future); g.markReady();
+    const g = lot(future); g.markReady(new Date(), 'listing at what we have');
     expect(() => g.applyPledge(parseQtyMilli('1'), new Date())).toThrow();
   });
 });

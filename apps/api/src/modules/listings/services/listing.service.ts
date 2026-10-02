@@ -339,6 +339,47 @@ export class ListingService {
     await this.repo.update(tx, listing);
     await this.flushEvents(tx, tenantId, id, listing.pullEvents());
   }
+  // ---- PC-56 TENANT-11c (F-4): THE GROUP LOT'S ONE LISTING, MOVED INSIDE THE LOT'S OWN TRANSACTION -------------------------
+  // The group-lots module calls these with ITS transaction so the lot and its listing can never disagree (a lot `listed` over
+  // no listing, or a listing on sale for a lot that rolled back). The listing is the COORDINATOR's (they sell the pooled lot),
+  // in the lot's unit, for the pledged quantity, with the minimum order = the whole lot — a group lot is sold in one sale, so
+  // its proceeds are one order's settlement. `listings.group_lot_id` (0005) is written here, the only writer. The suspended-
+  // seller wall and the plan quota apply exactly as on create. Quantities arrive as the lot's decimal string (≤ 3 decimals);
+  // this module's entity holds quantities as numbers (as every listing does), and a 3-decimal string round-trips exactly.
+
+  /** Create AND publish the lot's listing. Returns its id; the caller records it on the lot in the same transaction. */
+  async createForGroupLotInTx(tx: TxContext, tenantId: string, input: {
+    groupLotId: string; sellerUserId: string; productId: string; categoryId: string; title: string; description: string | null;
+    quantity: string; unitCode: string; pricePerUnitMinor: bigint; currencyCode: string; createdBy: string;
+  }): Promise<{ id: string }> {
+    await this.quota.assertWithinLimit(tenantId, QUOTA_METRIC);
+    await this.assertSellerNotSuspendedTx(tx, tenantId, input.sellerUserId);
+    const qty = Number(input.quantity);
+    const listing = Listing.create({
+      id: uuidv7(), tenantId, sellerUserId: input.sellerUserId, productId: input.productId, categoryId: input.categoryId,
+      title: input.title, description: input.description, quantityTotal: qty, minOrderQty: qty, unitCode: input.unitCode,
+      priceMinor: input.pricePerUnitMinor, currencyCode: input.currencyCode, organicClaim: 'none', saleType: 'group_lot',
+      pincode: null, regionId: null, lat: null, lng: null, visibility: 'tenant', aiExtracted: false, publishAt: null,
+      publishedAt: null, expiresAt: null, createdBy: input.createdBy === input.sellerUserId ? null : input.createdBy, harvestDate: null,
+    });
+    listing.publish();
+    await this.repo.insert(tx, listing);
+    await this.repo.setGroupLot(tx, tenantId, listing.id, input.groupLotId);
+    await this.quota.increment(tx, tenantId, QUOTA_METRIC, 1);
+    await this.flushEvents(tx, tenantId, listing.id, listing.pullEvents());
+    return { id: listing.id };
+  }
+  /** A lot cancelled while listed: its listing leaves the market (published → archived). A listing under auction is the
+   *  auction's to decide — refused here (the caller names it); a sold-out one is already off the market (no-op). */
+  async withdrawForGroupLotInTx(tx: TxContext, tenantId: string, id: string): Promise<'archived' | 'already_off' | 'in_auction'> {
+    const listing = await this.repo.getForUpdate(tx, tenantId, id);
+    if (listing.status === 'reserved_auction') return 'in_auction';
+    if (listing.status !== 'published' && listing.status !== 'paused') return 'already_off';
+    listing.archive();
+    await this.repo.update(tx, listing);
+    await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+    return 'archived';
+  }
   /** Drop the cached copy after the caller's commit. */
   async invalidate(tenantId: string, id: string): Promise<void> { await this.cache.del(cacheKey(tenantId, id)); }
 

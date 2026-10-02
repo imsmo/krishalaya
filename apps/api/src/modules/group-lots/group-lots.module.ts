@@ -1,22 +1,42 @@
 // modules/group-lots/group-lots.module.ts
-// Group lots (PRD §7.7): FPO/coordinator POOLING. A coordinator opens a lot for a product + target quantity,
-// records farmer pledges (running total, deadline-gated), marks it ready, and after the pooled sale SETTLES —
-// computing each pledger's proportional share of the net proceeds (gross − coordination fee bps), float-free +
-// zero-loss (Law 2). Built on the 0005 group_lots + group_lot_pledges tables (RLS auto-applied by 0014).
-// Gated by the `group_lots` feature flag (default OFF) + the `group_lot.coordinate` permission.
+// Group lots (PRD §7.7): FPO / coordinator POOLING. A coordinator opens a lot for a product + target quantity, members pledge
+// (and may withdraw until it lists), the lot becomes ready, is listed as ONE listing (sold directly or through an 11a
+// auction), is SOLD when that order completes (the seller net is held), and is SETTLED when a second person confirms the
+// prepared shares — every pledger paid from the real sale (PC-56 TENANT-11c, founder decision: maker ≠ checker).
 //
-// SCOPE (this build): create / list / detail / pledge / ready / cancel / settle (proportional share RECORD).
-// DEFERRED (flagged): linking a ready lot to a sale `listing` (listings module owns group_lot_id) and the actual
-// DISBURSEMENT of each share to the farmer's wallet — settle records the breakdown; the payout rides the
-// payments/wallet path (no money is moved here, honouring Law 2).
-import { Module } from '@nestjs/common';
+// What this module registers:
+//   • the ONE controller of `/v1/group-lots` (the listings duplicate is deleted — F-3);
+//   • two outbox consumers, neither touching the relay's kv_relay transaction with a write it holds no grant for:
+//     `orders.order_completed` (hop 1: read in kv_app, enqueue on the relay tx) and `group_lot.sale_settled` (hop 2: record the
+//     sale + hold the proceeds in kv_app's unit of work).
+// It reads the listings module only through ListingService (Law 11) and moves money only through WalletPort (Law 2).
+// Gated by the `group_lots` feature flag + the per-lot coordinator check.
+import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { ListingsModule } from '../listings/listings.module';
+import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
+import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
 import { GroupLotsController } from './controllers/v1/group-lots.controller';
 import { GroupLotService } from './services/group-lot.service';
 import { GroupLotRepository } from './repositories/group-lot.repository';
+import { GroupLotSettlementRepository } from './repositories/group-lot-settlement.repository';
+import { GroupLotOrderCompletedHandler } from './events/handlers/order-completed.handler';
+import { GroupLotSaleSettledHandler } from './events/handlers/sale-settled.handler';
 
 @Module({
+  imports: [ListingsModule],
   controllers: [GroupLotsController],
-  providers: [GroupLotService, GroupLotRepository],
+  providers: [GroupLotService, GroupLotRepository, GroupLotSettlementRepository, UiMessageRepository, GroupLotOrderCompletedHandler, GroupLotSaleSettledHandler],
   exports: [GroupLotService],
 })
-export class GroupLotsModule {}
+export class GroupLotsModule implements OnModuleInit {
+  constructor(
+    @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    private readonly orderCompleted: GroupLotOrderCompletedHandler,
+    private readonly saleSettled: GroupLotSaleSettledHandler,
+  ) {}
+  onModuleInit(): void {
+    this.registry.register(this.orderCompleted);
+    this.registry.register(this.saleSettled);
+  }
+}

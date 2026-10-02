@@ -248,3 +248,28 @@ SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
  ('labour_cancel_reason','other','Other (reason written by the employer)','{"textRequired": true}',4)
   ) AS v(type_code, code, default_name, meta, sort_order)
  WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-11c · 0188] The group-lot money vocabulary — founder decision: settle pays farmers from the real sale, maker ≠
+-- checker. hold = the sale's seller net, coordinator main -> coordinator hold, at the sale; settle = coordinator hold -> each
+-- pledger's main by share + the coordinator fee, at the second person's confirm. ALSO INSERTED BY MIGRATION 0188.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('ledger_txn_type','group_lot_hold','Group-lot sale proceeds held for distribution (coordinator main -> coordinator hold)','{}',30),
+ ('ledger_txn_type','group_lot_settle','Group-lot settlement: pooled proceeds paid to each pledger by share + the coordinator fee (coordinator hold -> members main)','{}',31)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-11c · 0188] Why a group lot was cancelled — canon W135 "members notified with reasons". Every pledger is told
+-- the reason in their language (seed core/0022). ALSO INSERTED BY MIGRATION 0188.
+INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES ('group_lot_cancel_reason','Group lot cancel reason',false)
+ON CONFLICT (code) DO NOTHING;
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('group_lot_cancel_reason','target_missed','Target missed by the deadline','{}',1),
+ ('group_lot_cancel_reason','coordinator_withdrew','The coordinator withdrew','{}',2),
+ ('group_lot_cancel_reason','quality','Quality did not meet the buyer''s grade','{}',3),
+ ('group_lot_cancel_reason','other','Other (reason written by the coordinator)','{"textRequired": true}',4)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);

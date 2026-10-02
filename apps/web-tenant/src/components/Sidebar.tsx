@@ -45,7 +45,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureLabour ? [{ key: 'labour', href: '/ops/labour', label: t.t('nav.labour') }] : []),
         ...(env.featureAmbassadors ? [{ key: 'ambassadors', href: '/ambassadors', label: t.t('nav.ambassadors') }] : []),
         ...(env.featureSchemes ? [{ key: 'schemes', href: '/schemes', label: t.t('nav.schemes') }] : []),
-        ...(env.featureGroupLots ? [{ key: 'group-lots', href: '/group-lots', label: t.t('nav.groupLots') }] : []),
+        ...(env.featureGroupLots ? [{ key: 'group-lots', href: '/marketplace/group-lots', label: t.t('nav.groupLots') }] : []),
         ...(env.featureAuditor ? [{ key: 'auditor', href: '/auditor', label: t.t('nav.auditor') }] : []),
         ...(env.featureAiReview ? [{ key: 'ai-review', href: '/ai-review', label: t.t('nav.aiReview') }] : []),
         // PC-56 TENANT-7a: the desk's library (W178) beside the instructor's studio, both under the same console switch.

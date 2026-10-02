@@ -700,20 +700,62 @@ export interface ReferralDeskSummary {
   invites30d: number; signedUp30d: number; awaitingActivation: number; activated30d: number;
   rewardsPaid30dMinor: null; rewardsPaidReason: 'reward_rule_not_configured'; byStatus: Record<string, number>; total: number;
 }
-// --- group lots (FPO pooling, P1-12) — quantities are decimal STRINGS; money bigint minor STRINGS (Law 2) ---
+// --- group lots (FPO pooling, P1-12; PC-56 TENANT-11c) — quantities are decimal STRINGS (≤ 3 dp, integer milli-units on the
+// server, never a JS float); money is bigint minor STRINGS (Law 2). The settlement pays every pledger from the REAL sale, in two
+// hands (prepare → confirm by a second person).
 export type GroupLotStatus = 'pledging' | 'ready' | 'listed' | 'sold' | 'settled' | 'cancelled';
-/** A pooled FPO lot. progressBps = pledged ÷ target in integer basis points. */
+/** A pooled FPO lot as the list prints it. progressBps = pledged ÷ target in integer basis points. */
 export interface GroupLot {
-  id: string; coordinatorUserId: string; productId: string; targetQuantity: string; pledgedQuantity: string;
+  id: string; lotNo: string | null; coordinatorUserId: string; productId: string; targetQuantity: string; pledgedQuantity: string;
   unitCode: string; pledgeDeadline: string; status: GroupLotStatus; coordinationFeeBps: number; progressBps: number; createdAt?: string | null;
+  listingId: string | null; listedAt: string | null; soldAt: string | null; saleOrderId: string | null; grossProceedsMinor: string | null; settledAt: string | null;
+  extendedOnce: boolean; originalDeadline: string | null; lastNudgedAt: string | null; readyAt: string | null; readyReason: string | null;
+  cancelReasonCode: string | null; cancelReasonText: string | null; cancelledAt: string | null; appointed: boolean;
+  productName?: string | null; coordinatorShortName?: string | null; memberCount?: number;
+  listing?: { id: string; status: string | null } | null;
+  auction?: { id: string; auctionNo: string; status: string; endsAt: string } | null;
+  viewerIsCoordinator?: boolean;
 }
-export interface GroupLotPledge { id: string; farmerUserId: string; quantity: string; qualityOk: boolean | null; settledShareMinor: string | null; }
-export interface GroupLotDetail extends GroupLot { pledges: GroupLotPledge[]; }
-export interface CreateGroupLotInput { productId: string; targetQuantity: string; unitCode: string; pledgeDeadline: string; coordinationFeeBps?: number; }
-/** The proportional settlement breakdown (float-free, sums exactly to net — Law 2). Money is NOT moved by this call. */
-export interface GroupLotSettlement extends GroupLot {
-  settlement: { grossMinor: string; coordinationFeeMinor: string; netMinor: string; shares: { pledgeId: string; shareMinor: string }[] };
+export interface GroupLotPage extends Page<GroupLot> { counts: Partial<Record<GroupLotStatus, number>> | null }
+/** A pledge row — the coordinator's / tenant_admin's view only (F-19): short name, masked phone, KYC of the producer role. */
+export interface GroupLotPledge {
+  id: string; memberShortName: string | null; memberPhoneMasked: string | null; quantity: string; status: 'active' | 'withdrawn' | 'released';
+  kycStatus: string | null; kycRole: string | null; createdAt: string; withdrawnAt: string | null; settledShareMinor: string | null;
+  recordedByCoordinator: boolean; isMine: boolean;
 }
+export interface GroupLotSettlementLine { pledgeId: string; quantity: string; shareMinor: string; isMine: boolean; memberShortName: string | null }
+export interface GroupLotSettlementView {
+  id: string; status: 'prepared' | 'confirmed' | 'refused'; grossMinor: string; feeBps: number; feeMinor: string; netMinor: string; quantity: string; unitCode: string;
+  preparedBy: string; preparedAt: string; preparedByMe: boolean; confirmedAt: string | null; confirmReason: string | null;
+  refusedAt: string | null; refuseReason: string | null; settlementTxnId: string | null; lines: GroupLotSettlementLine[]; linesRestricted: boolean;
+}
+export interface GroupLotViewerCan {
+  coordinate: boolean; ready: boolean; list: boolean; extend: boolean; nudge: boolean; cancel: boolean; pledgeSelf: boolean; pledgeOnBehalf: boolean;
+  withdraw: boolean; prepare: boolean; confirm: boolean; refuse: boolean; confirmBlocked: 'maker' | 'coordinator' | null;
+}
+export interface GroupLotDetail extends GroupLot {
+  myPledge: { quantity: string; status: 'active' | 'withdrawn' | 'released'; createdAt: string; settledShareMinor: string | null } | null;
+  /** null for a member — they read progress and their own pledge only (`pledgesRestricted`). */
+  pledges: GroupLotPledge[] | null; pledgesRestricted: boolean;
+  summary: { activeCount: number; activeQuantity: string; allVerified: boolean | null; withdrawnCount: number } | null;
+  settlement: GroupLotSettlementView | null;
+  /** B — a pooled figure only from ≥ `needed` confirmed pooled sales of this product; the solo estimate is not built. */
+  pooled: { available: boolean; salesCount: number; needed: number; basedOn?: number; pooledPerUnitMinor: string | null; solo: { built: false } };
+  nudge: { audienceRule: string; nextAt: string | null; voice: { built: false } };
+  viewerCan: GroupLotViewerCan;
+}
+export interface GroupLotConsentInput { channel: 'voice' | 'otp' | 'written'; mediaId?: string; note?: string }
+export interface CreateGroupLotInput {
+  productId: string; targetQuantity: string; unitCode: string; pledgeDeadline: string; coordinationFeeBps?: number;
+  /** tenant_admin appoints another member; that member's recorded consent is required. */
+  coordinatorUserId?: string; consent?: GroupLotConsentInput;
+}
+/** A1 — omit `farmerUserId` to pledge as yourself; a coordinator records a pledge FOR a member. */
+export interface GroupLotPledgeInput { farmerUserId?: string; quantity: string }
+export interface GroupLotCancelReason { code: string; defaultName: string; textRequired: boolean }
+export interface GroupLotNudgeResult { recipients: number; truncated: boolean; audienceRule: string; nextAt: string | null; voice: { built: false } }
+export interface GroupLotPrepared { lot: GroupLot; settlement: { id: string; status: string; grossMinor: string; feeMinor: string; netMinor: string; lines: Array<{ pledgeId: string; quantity: string; shareMinor: string }> } }
+export interface GroupLotConfirmed { lot: GroupLot; settlementId: string; movedMinor: string; alreadyConfirmed: boolean; settlementTxnId: string | null }
 
 // --- audit trail (read-only auditor surface — P1-12) ---
 /** One append-only audit_log entry (read-only). `id` is a bigint as a string. oldValue/newValue are arbitrary

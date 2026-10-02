@@ -40,6 +40,12 @@ export class ListingRepository {
     );
   }
 
+  /** PC-56 TENANT-11c — the only writer of `listings.group_lot_id` (0005): the group lot this listing sells. Set once, at create. */
+  async setGroupLot(tx: TxContext, tenantId: string, id: string, groupLotId: string): Promise<void> {
+    const r = await tx.query(`UPDATE listings SET group_lot_id=$3 WHERE id=$1 AND tenant_id=$2 AND group_lot_id IS NULL AND deleted_at IS NULL`, [id, tenantId, groupLotId]);
+    if (r.rowCount !== 1) throw new Error(`listings.group_lot_id write touched ${r.rowCount} rows for ${id}`);
+  }
+
   /** WRITE — optimistic-locked update. Throws on concurrent modification. */
   async update(tx: TxContext, l: Listing): Promise<void> {
     const p = l.toProps();

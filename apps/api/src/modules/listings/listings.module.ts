@@ -12,7 +12,6 @@ import { CommunicationModule } from '../communication/communication.module'; // 
 import { ListingsController } from './controllers/listings.controller';
 import { ListingQcController } from './controllers/listing-qc.controller';
 import { BoostsController } from './controllers/boosts.controller';
-import { GroupLotsController } from './controllers/group-lots.controller';
 import { SellersController } from './controllers/sellers.controller';
 import { TrustDocumentsController } from './controllers/trust-documents.controller';
 
@@ -23,8 +22,6 @@ import { ListingViewService } from './services/listing-view.service';
 import { ListingInquiryService } from './services/listing-inquiry.service';
 import { ListingTrustDocumentService } from './services/listing-trust-document.service';
 import { ListingAttributeService } from './services/listing-attribute.service';
-import { GroupLotService } from './services/group-lot.service';
-import { GroupLotPledgeService } from './services/group-lot-pledge.service';
 import { OnBehalfConsoleService } from './services/on-behalf-console.service';
 import { ListingBulkApplier } from './bulk/listing-bulk-applier';
 import { BULK_APPLIER_REGISTRY, BulkApplierRegistry } from '../../core/bulk/bulk-applier.registry';
@@ -43,8 +40,6 @@ import { ListingRepository } from './repositories/listing.repository';
 import { PriceHistoryRepository } from './repositories/price-history.repository';
 import { ListingAttributeRepository } from './repositories/listing-attribute.repository';
 import { ListingBoostRepository } from './repositories/listing-boost.repository';
-import { GroupLotRepository } from './repositories/group-lot.repository';
-import { GroupLotPledgeRepository } from './repositories/group-lot-pledge.repository';
 import { ListingMediaRepository } from './repositories/listing-media.repository';
 import { ListingTrustDocumentRepository } from './repositories/listing-trust-document.repository';
 
@@ -61,18 +56,22 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
 
 @Module({
   imports: [MediaModule, CommunicationModule, IdentityModule],
-  controllers: [ListingsController, ListingQcController, BoostsController, GroupLotsController, SellersController, TrustDocumentsController],
+  // PC-56 TENANT-11c (F-3): the group-lot controller, service, repositories, entities and DTOs that lived here are DELETED. They
+  // registered `POST /v1/group-lots` and `POST /v1/group-lots/:id/pledges` a second time, Nest answered from this module first,
+  // and every create died 42703 on a `version` column `group_lots` never had. The group-lots module is the one owner; this
+  // module keeps `listings.group_lot_id` and the in-transaction hook that creates a lot's listing (ListingService).
+  controllers: [ListingsController, ListingQcController, BoostsController, SellersController, TrustDocumentsController],
   providers: [
     ListingService, ListingBoostService, ListingViewService, ListingInquiryService, ListingTrustDocumentService,
-    ListingAttributeService, GroupLotService, GroupLotPledgeService, OnBehalfConsoleService, ListingBulkApplier,
+    ListingAttributeService, OnBehalfConsoleService, ListingBulkApplier,
     ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
-    ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository, ListingTrustDocumentRepository,
+    ListingBoostRepository, ListingMediaRepository, ListingTrustDocumentRepository,
     OrderCompletedHandler,
     ExpireListingsJob, BoostExpiryJob, PublishScheduledJob,
   ],
   // Export only what other bounded contexts may call (services + read-models).
-  exports: [ListingService, GroupLotService, ListingSearchReadModel, MandiBandReadModel,
+  exports: [ListingService, ListingSearchReadModel, MandiBandReadModel,
             ExpireListingsJob, BoostExpiryJob, PublishScheduledJob,
             OrderCompletedHandler],
 })
