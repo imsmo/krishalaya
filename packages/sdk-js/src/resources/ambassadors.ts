@@ -7,7 +7,9 @@
 // Law 11). Gated server-side by the `ambassadors` flag.
 import { HttpClient } from '../http';
 import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, SuggestedListingDraft, Page,
-  EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput, AmbassadorPayoutResult } from '../types';
+  EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput, AmbassadorPayoutResult,
+  AmbassadorRosterRow, AmbassadorRosterSort, AmbassadorSummary, AmbassadorCandidate, AmbassadorReview, AmbassadorReviewInput,
+  AmbassadorPayoutBatchResult, ReferralDeskRow, ReferralDeskSummary } from '../types';
 import type { CreateListingInput } from './listings';
 
 /** Ambassador-assisted farmer onboarding (the farmer is created on-behalf; DPDP consent is mandatory). */
@@ -85,40 +87,80 @@ export class AmbassadorsResource {
     return (await this.http.request<AmbassadorTarget[]>('GET', 'ambassadors/targets/me', { query: { limit }, signal })).data;
   }
 
-  // --- admin (tenant-operator; gated server-side by `ambassador.manage`, Law 11) — P1-12 ---
-  /** Enroll a user as an ambassador (back-office; NOT self-grant). */
-  async enroll(input: EnrollAmbassadorInput): Promise<AmbassadorProfile> {
-    return (await this.http.request<AmbassadorProfile>('POST', 'ambassadors', { body: input })).data;
+  // --- admin (tenant-operator; gated server-side by `ambassador.manage`, Law 11) — P1-12 · PC-56 TENANT-10a ---
+  /** Recruit an existing MEMBER as an ambassador (back-office; NOT self-grant). Name them by `phone` or `userId` (exactly
+   *  one). The act re-checks every refusal the review names (422 AMBASSADOR_REFUSED with `details.refusals`). Idempotent. */
+  async enroll(input: EnrollAmbassadorInput, idempotencyKey: string): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('POST', 'ambassadors', { body: input, idempotencyKey })).data;
   }
-  /** List the tenant's ambassadors (keyset). */
-  async list(params: { activeOnly?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AmbassadorProfile>> {
-    const r = await this.http.request<AmbassadorProfile[]>('GET', 'ambassadors', { query: { activeOnly: params.activeOnly, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
-    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  /** The recruit form's review (W2482; with refusals it is W2481) — nothing is written. */
+  async reviewRecruit(input: AmbassadorReviewInput): Promise<AmbassadorReview> {
+    return (await this.http.request<AmbassadorReview>('POST', 'ambassadors/review', { body: input })).data;
   }
-  async get(id: string, signal?: AbortSignal): Promise<AmbassadorProfile> {
-    return (await this.http.request<AmbassadorProfile>('GET', `ambassadors/${encodeURIComponent(id)}`, { signal })).data;
+  /** The recruit form's member lookup by phone (masked; `null` when the phone belongs to nobody). */
+  async candidate(phone: string, signal?: AbortSignal): Promise<AmbassadorCandidate | null> {
+    return (await this.http.request<AmbassadorCandidate | null>('GET', 'ambassadors/candidates', { query: { phone }, signal })).data;
   }
+  /** W159's roster (keyset; `total` for "Showing N of M"). `tier` is an ambassador_tier CODE; `inactive` = no recorded act in 60 days. */
+  async list(params: { activeOnly?: boolean; tier?: string; inactive?: boolean; sort?: AmbassadorRosterSort; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AmbassadorRosterRow>> {
+    const r = await this.http.request<AmbassadorRosterRow[]>('GET', 'ambassadors', { query: { activeOnly: params.activeOnly, tier: params.tier, inactive: params.inactive, sort: params.sort, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, total: (r.meta?.total as number | undefined) ?? null };
+  }
+  /** W159's KPI tiles + tier-tab counts. */
+  async summary(signal?: AbortSignal): Promise<AmbassadorSummary> {
+    return (await this.http.request<AmbassadorSummary>('GET', 'ambassadors/summary', { signal })).data;
+  }
+  /** One ambassador, named the way the roster names them. */
+  async get(id: string, signal?: AbortSignal): Promise<AmbassadorRosterRow> {
+    return (await this.http.request<AmbassadorRosterRow>('GET', `ambassadors/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** The edit form's review — the diff against the profile as it stands; nothing is written. */
+  async reviewEdit(id: string, input: AmbassadorReviewInput): Promise<AmbassadorReview> {
+    return (await this.http.request<AmbassadorReview>('POST', `ambassadors/${encodeURIComponent(id)}/review`, { body: input })).data;
+  }
+  /** Edit (audited `ambassador.updated`, before → after of exactly the fields that changed; `reason` optional). */
   async update(id: string, patch: UpdateAmbassadorInput): Promise<AmbassadorProfile> {
     return (await this.http.request<AmbassadorProfile>('PATCH', `ambassadors/${encodeURIComponent(id)}`, { body: patch })).data;
   }
-  async suspend(id: string): Promise<AmbassadorProfile> {
-    return (await this.http.request<AmbassadorProfile>('POST', `ambassadors/${encodeURIComponent(id)}/suspend`, {})).data;
+  /** Suspend — a reason (3–300 chars) is REQUIRED and recorded. */
+  async suspend(id: string, reason: string): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('POST', `ambassadors/${encodeURIComponent(id)}/suspend`, { body: { reason } })).data;
   }
-  async reinstate(id: string): Promise<AmbassadorProfile> {
-    return (await this.http.request<AmbassadorProfile>('POST', `ambassadors/${encodeURIComponent(id)}/reinstate`, {})).data;
+  /** Reinstate — a reason is optional (recorded when given). */
+  async reinstate(id: string, reason?: string): Promise<AmbassadorProfile> {
+    return (await this.http.request<AmbassadorProfile>('POST', `ambassadors/${encodeURIComponent(id)}/reinstate`, { body: reason ? { reason } : {} })).data;
   }
   /** An ambassador's earnings ledger (admin view; keyset). */
   async earnings(id: string, params: { unpaidOnly?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AmbassadorEarning>> {
     const r = await this.http.request<AmbassadorEarning[]>('GET', `ambassadors/${encodeURIComponent(id)}/earnings`, { query: { unpaidOnly: params.unpaidOnly, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  /** Pay out an ambassador's unpaid commission (server computes + moves money via the ledger; Law 2/3). Idempotent. */
-  async payout(id: string, idempotencyKey: string): Promise<AmbassadorPayoutResult> {
-    return (await this.http.request<AmbassadorPayoutResult>('POST', `ambassadors/${encodeURIComponent(id)}/payout`, { idempotencyKey })).data;
+  /** Pay out an ambassador's unpaid commission (`ambassador.payout`, tenant_admin; reason REQUIRED). The server locks the
+   *  unpaid set, posts ONE zero-sum wallet transfer keyed on that set, and stamps every row or rolls back. Idempotent. */
+  async payout(id: string, reason: string, idempotencyKey: string): Promise<AmbassadorPayoutResult> {
+    return (await this.http.request<AmbassadorPayoutResult>('POST', `ambassadors/${encodeURIComponent(id)}/payout`, { body: { reason }, idempotencyKey })).data;
   }
-  /** Activate a referral (admin) — accrues attribution commission server-side. */
-  async activateReferral(id: string): Promise<Referral> {
-    return (await this.http.request<Referral>('POST', `ambassadors/referrals/${encodeURIComponent(id)}/activate`, {})).data;
+  /** A13 · the weekly earnings run — every active ambassador with unpaid earnings, each in its own transaction
+   *  (`ambassador.payout`; reason REQUIRED; idempotent on the key). No automatic schedule exists (founder question F-23). */
+  async runPayouts(reason: string, idempotencyKey: string): Promise<AmbassadorPayoutBatchResult> {
+    return (await this.http.request<AmbassadorPayoutBatchResult>('POST', 'ambassadors/payouts/run', { body: { reason }, idempotencyKey })).data;
+  }
+  /** Activate a referral (admin) — a reason is REQUIRED (audited `referral.activated`); accrues onboarding commission server-side. */
+  async activateReferral(id: string, reason: string): Promise<Referral> {
+    return (await this.http.request<Referral>('POST', `ambassadors/referrals/${encodeURIComponent(id)}/activate`, { body: { reason } })).data;
+  }
+  /** W162 · the tenant's referral desk (every referral; masked names; status filter; keyset; `total`). */
+  async referralDesk(params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<ReferralDeskRow>> {
+    const r = await this.http.request<ReferralDeskRow[]>('GET', 'ambassadors/referrals/all', { query: { status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, total: (r.meta?.total as number | undefined) ?? null };
+  }
+  /** One W162 desk row (both people named, masked). */
+  async referral(id: string, signal?: AbortSignal): Promise<ReferralDeskRow> {
+    return (await this.http.request<ReferralDeskRow>('GET', `ambassadors/referrals/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** W162's KPI tiles (`rewardsPaid30dMinor` is null by name — no reward rule exists). */
+  async referralSummary(signal?: AbortSignal): Promise<ReferralDeskSummary> {
+    return (await this.http.request<ReferralDeskSummary>('GET', 'ambassadors/referrals/summary', { signal })).data;
   }
   /** Set a per-period target for an ambassador metric. */
   async setTarget(input: SetTargetInput): Promise<AmbassadorTarget> {

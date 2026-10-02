@@ -7,6 +7,7 @@ import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { uuidv7 } from '../../../core/database/uuid.util';
+import { encodeCursor } from '../domain/cursor';
 import { AmbassadorVisit, VisitPurpose } from '../domain/ambassador-visit.entity';
 import { DomainEvent } from '../domain/ambassadors.events';
 import { AmbassadorVisitRepository } from '../repositories/ambassador-visit.repository';
@@ -36,6 +37,7 @@ export class AmbassadorVisitService {
           regionId: dto.regionId ?? null, visitedAt: new Date(),
         });
         await this.visits.insert(tx, v);
+        await this.profiles.touchActivity(tx, tenantId, me.toProps().id);   // PC-56 TENANT-10a · F-15: the act is the activity
         await this.flush(tx, tenantId, v.id, v.pullEvents());
         return v.toJSON();
       }, { userId }));
@@ -48,7 +50,9 @@ export class AmbassadorVisitService {
     const rows = await this.visits.listForAmbassador(tenantId, me.toProps().id, q);
     const items = rows.map((v) => v.toJSON());
     const last = items[items.length - 1] as any;
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.visitedAt?.toISOString?.() ?? last.visitedAt}|${last.id}`).toString('base64') : null;
+    // visited_at is written by this service from a JS Date (millisecond-exact by construction), so its ISO form round-trips;
+    // the cursor uses the module's one strict encoding (domain/cursor.ts) so one decoder serves every list.
+    const nextCursor = items.length === q.limit && last ? encodeCursor(new Date(last.visitedAt).toISOString(), last.id) : null;
     return { items, nextCursor };
   }
 

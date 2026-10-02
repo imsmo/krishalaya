@@ -5,19 +5,21 @@
 import { AmbassadorsController } from '../controllers/v1/ambassadors.controller';
 
 const REQUEST_ID = '0192f0a8-7c1e-7d55-9a7e-3b1f2c4d5e6f';
+const AMB = '01a0c000-0000-7000-8000-0000000000a1';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ctx = { tenantId: 't-1', userId: 'u-1', sessionId: 's-1', requestId: REQUEST_ID, lang: 'en-IN', roles: [], permissions: new Set(['*']), shardId: 0 } as never;
 
 describe('AmbassadorsController — audit ip is the client address or NULL, never the request id (HOTFIX-1)', () => {
   const build = () => {
     const svc = { enroll: jest.fn(async () => ({})), setActive: jest.fn(async () => ({})) };
-    const c = new AmbassadorsController(svc as never, {} as never, {} as never);
+    const c = new AmbassadorsController(svc as never, {} as never, {} as never, {} as never);
     return { c, svc };
   };
   const cases: Array<[string, (c: AmbassadorsController, r: { ip?: string }) => Promise<unknown>, string, number]> = [
-    ['POST enroll', (c, r) => c.enroll(ctx, r as never, { userId: 'u-2' } as never), 'enroll', 3],
-    ['POST suspend', (c, r) => c.suspend(ctx, r as never, 'a-1'), 'setActive', 4],
-    ['POST reinstate', (c, r) => c.reinstate(ctx, r as never, 'a-1'), 'setActive', 4],
+    // PC-56 TENANT-10a: enroll takes an Idempotency-Key (the service's 4th argument) and suspend a reason — the ip moved to index 4.
+    ['POST enroll', (c, r) => c.enroll(ctx, r as never, 'idem-1', { userId: AMB, clusterRegionIds: [], kioskEnabled: false, aepsEnabled: false, monthlyStipendMinor: '0' } as never), 'enroll', 4],
+    ['POST suspend', (c, r) => c.suspend(ctx, r as never, AMB, { reason: 'left the village' }), 'setActive', 4],
+    ['POST reinstate', (c, r) => c.reinstate(ctx, r as never, AMB, {}), 'setActive', 4],
   ];
   it.each(cases)('%s passes req.ip through to the audit ip', async (_n, call, method, argIndex) => {
     const { c, svc } = build();

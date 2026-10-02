@@ -55,6 +55,7 @@ export class OnBehalfListingService {
     const created = await this.listings.create(tenantId, dto.farmerUserId, idemKey, dto.listing);
     // 4) audit BOTH parties (append-only) — who acted, for whom.
     await this.uow.run(tenantId, async (tx) => {
+      await this.profiles.touchActivity(tx, tenantId, me.toProps().id);   // PC-56 TENANT-10a · F-15
       await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'ambassadors.on_behalf_listing_created',
         entityType: 'listing', entityId: created.id, newValue: { farmerUserId: dto.farmerUserId, ambassadorUserId: actor.userId }, ip });
     }, { userId: actor.userId });

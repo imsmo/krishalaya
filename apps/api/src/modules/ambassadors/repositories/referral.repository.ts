@@ -6,10 +6,10 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { Referral } from '../domain/referral.entity';
 import { ReferralStatus } from '../domain/ambassadors.events';
 
-const COLS = `id, tenant_id, referrer_user_id, referee_user_id, code, status, reward_rule, reward_txn_id, created_at`;
+const COLS = `id, tenant_id, referrer_user_id, referee_user_id, code, status, reward_rule, reward_txn_id, activated_at, created_at, created_at::text AS created_at_raw`;
 function toDomain(r: any): Referral {
   return Referral.rehydrate({ id: r.id, tenantId: r.tenant_id, referrerUserId: r.referrer_user_id, refereeUserId: r.referee_user_id, code: r.code,
-    status: r.status as ReferralStatus, rewardRule: r.reward_rule ?? {}, rewardTxnId: r.reward_txn_id, createdAt: r.created_at });
+    status: r.status as ReferralStatus, rewardRule: r.reward_rule ?? {}, rewardTxnId: r.reward_txn_id, activatedAt: r.activated_at ?? null, createdAt: r.created_at, createdAtRaw: r.created_at_raw });
 }
 export interface ReferralListQuery { status?: string; cursor?: { c: string; id: string }; limit: number; }
 
@@ -29,6 +29,11 @@ export class ReferralRepository {
     const r = await tx.query(`SELECT ${COLS} FROM referrals WHERE tenant_id=$1 AND code=$2 AND referee_user_id IS NULL AND deleted_at IS NULL ORDER BY created_at LIMIT 1 FOR UPDATE`, [tenantId, code]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
+  /** F-18 / A10: does this user already hold ANY referral as the referee (claimed, assisted, activated)? */
+  async refereeHasAny(tx: TxContext, tenantId: string, refereeUserId: string): Promise<boolean> {
+    const r = await tx.query(`SELECT 1 FROM referrals WHERE tenant_id=$1 AND referee_user_id=$2 AND deleted_at IS NULL LIMIT 1`, [tenantId, refereeUserId]);
+    return (r.rowCount ?? 0) > 0;
+  }
   async findByReferee(tenantId: string, refereeUserId: string, tx?: TxContext): Promise<Referral | null> {
     const sql = `SELECT ${COLS} FROM referrals WHERE tenant_id=$1 AND referee_user_id=$2 AND deleted_at IS NULL ORDER BY created_at LIMIT 1`;
     const r = tx ? await tx.query(sql, [tenantId, refereeUserId]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, refereeUserId]);
@@ -36,14 +41,14 @@ export class ReferralRepository {
   }
   async update(tx: TxContext, r: Referral): Promise<void> {
     const p = r.toProps();
-    await tx.query(`UPDATE referrals SET referee_user_id=$3, status=$4, reward_txn_id=$5, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
-      [p.id, p.tenantId, p.refereeUserId, p.status, p.rewardTxnId]);
+    await tx.query(`UPDATE referrals SET referee_user_id=$3, status=$4, reward_txn_id=$5, activated_at=$6, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+      [p.id, p.tenantId, p.refereeUserId, p.status, p.rewardTxnId, p.activatedAt ?? null]);
   }
   async listForReferrer(tenantId: string, referrerUserId: string, q: ReferralListQuery): Promise<Referral[]> {
     const params: unknown[] = [tenantId, referrerUserId]; let where = `tenant_id=$1 AND referrer_user_id=$2 AND deleted_at IS NULL`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.status) where += ` AND status=${p(q.status)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc}::timestamptz OR (created_at = ${cc}::timestamptz AND id < ${ci}::uuid))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM referrals WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);

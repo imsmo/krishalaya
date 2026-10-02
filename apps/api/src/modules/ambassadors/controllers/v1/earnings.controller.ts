@@ -11,8 +11,8 @@ import { AmbassadorProfileService } from '../../services/ambassador-profile.serv
 import { AmbassadorEarningService } from '../../services/ambassador-earning.service';
 import { canManageAmbassadors } from '../../policies/ambassadors.policies';
 import { QueryEarningsSchema, QueryEarningsDto } from '../../dto/query-earning.dto';
+import { decodeCursor } from '../../domain/cursor';
 
-const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
 @Controller({ path: 'ambassadors/me/earnings', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)

@@ -6,6 +6,15 @@
 // referral linking farmer→ambassador). The onboarding COMMISSION is NOT self-granted here — it accrues only
 // when an admin ACTIVATES the referral (the existing audited ambassador.manage gate). The whole op is idempotent
 // on the caller's key (Law 3): re-running returns the same farmer (phone-unique) without duplicate side effects.
+//
+// PC-56 TENANT-10a · F-4 — AN EXISTING MEMBER IS NEVER "ONBOARDED". `adminCreate` resolves an existing user by phone and
+// returns them (shared identity behaviour, untouched here), so an active ambassador who knew a member's phone recorded
+// DPDP consents in that member's name and became their referrer — earning on their activation and every later sale.
+// Now the phone is checked FIRST: a phone that already belongs to an account is refused (409 AMB_EXISTING_USER) before
+// any consent or attribution row exists; and because a concurrent self-signup could land between that check and the
+// create, the created account's own `created_at` is compared with the moment the check ran — an account older than the
+// check is the same refusal, still before any consent is written. A retry with the same key replays the first result.
+// F-15: the ambassador's `last_activity_at` is touched inside the attribution transaction.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -19,7 +28,8 @@ import { DomainEvent } from '../domain/ambassadors.events';
 import { ReferralRepository } from '../repositories/referral.repository';
 import { AmbassadorProfileRepository } from '../repositories/ambassador-profile.repository';
 import { AmbassadorActor } from './ambassador-profile.service';
-import { NotAnAmbassadorError, ConsentRequiredError } from '../domain/ambassadors.errors';
+import { NotAnAmbassadorError, ConsentRequiredError, AssistedOnboardingExistingUserError } from '../domain/ambassadors.errors';
+import { normalizePhoneE164 } from '../../../shared/utils/phone';
 import { AssistedOnboardingDto } from '../dto/assisted-onboarding.dto';
 
 @Injectable()
@@ -43,9 +53,25 @@ export class AssistedOnboardingService {
 
     return this.idem.remember(idemKey, actor.userId, 'ambassadors.assisted_onboard', () =>
       timed(this.metrics, 'ambassadors.assisted_onboard', { tenant: tenantId }, async () => {
-        // 1. create / resolve the farmer (idempotent by phone; audited 'user.created_assisted')
+        // 0. F-4: the phone must belong to NOBODY yet. Checked before anything is written.
+        const phone = normalizePhoneE164(dto.phone);
+        const checkedAt = await this.uow.run(tenantId, async (tx) => {
+          if (phone) {
+            const r = await tx.query(`SELECT 1 FROM users WHERE phone=$1 AND deleted_at IS NULL LIMIT 1`, [phone]);
+            if ((r.rowCount ?? 0) > 0) throw new AssistedOnboardingExistingUserError();
+          }
+          const t = await tx.query<{ at: string }>(`SELECT clock_timestamp()::text AS at`);
+          return t.rows[0].at;
+        }, { userId: actor.userId });
+
+        // 1. create the farmer (identity's own path; audited 'user.created_assisted'; an invalid phone is refused there)
         const user = await this.users.adminCreate(tenantId, actor.userId,
           { phone: dto.phone, fullName: dto.fullName, languageCode: dto.languageCode, countryCode: dto.countryCode }, ip);
+        const createdBeforeCheck = await this.uow.run(tenantId, async (tx) => {
+          const r = await tx.query<{ older: boolean }>(`SELECT created_at < $2::timestamptz AS older FROM users WHERE id=$1`, [user.id, checkedAt]);
+          return r.rows[0]?.older === true;
+        }, { userId: actor.userId });
+        if (createdBeforeCheck) throw new AssistedOnboardingExistingUserError();
 
         // 2. record each DPDP consent on the farmer's behalf, stamped channel=ambassador_assisted + assistedBy
         for (const c of dto.consents) {
@@ -53,17 +79,22 @@ export class AssistedOnboardingService {
         }
 
         // 3. attribution: a 'signed_up' referral farmer→ambassador (idempotent; commission accrues on admin activation)
-        const referralId = await this.attribute(tenantId, ambassadorUserId, user.id);
+        const referralId = await this.attribute(tenantId, ambassadorUserId, me.toProps().id, user.id);
         return { user, ambassadorId: me.toProps().id, referralId };
       }));
   }
 
   /** Link the new farmer to the ambassador as a 'signed_up' referral, unless the farmer already has one. */
-  private async attribute(tenantId: string, ambassadorUserId: string, refereeUserId: string): Promise<string | null> {
+  private async attribute(tenantId: string, ambassadorUserId: string, ambassadorId: string, refereeUserId: string): Promise<string | null> {
     return this.uow.run(tenantId, async (tx) => {
+      await this.profiles.touchActivity(tx, tenantId, ambassadorId);
       const existing = await this.referrals.findByReferee(tenantId, refereeUserId, tx);
       if (existing) return existing.toJSON().id as string;          // already attributed — no duplicate
-      const code = `AMB-${uuidv7().slice(0, 8).toUpperCase()}`;
+      // F-28 (PC-56 TENANT-10a, found on the way): this was `AMB-<hex>` — a HYPHEN the referral code rule (^[A-Z0-9]{4,20}$)
+      // refuses, so every assisted onboarding threw InvalidReferralError AFTER the account and consents were written and
+      // no attribution was ever recorded. The code is now `AMB` + 8 hex digits from the uuid's RANDOM tail (its head is the
+      // millisecond clock, identical for every onboarding in the same minute): valid, and still unmistakably assisted.
+      const code = `AMB${uuidv7().replace(/-/g, '').slice(-8).toUpperCase()}`;
       const r = Referral.create({ id: uuidv7(), tenantId, referrerUserId: ambassadorUserId, refereeUserId: null, code, rewardRule: {} });
       r.signUp(refereeUserId);
       await this.referrals.insert(tx, r);

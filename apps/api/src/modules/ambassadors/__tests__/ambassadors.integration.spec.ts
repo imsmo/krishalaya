@@ -22,6 +22,7 @@ import { AmbassadorProfileRepository } from '../repositories/ambassador-profile.
 import { CommissionPlanRepository } from '../repositories/commission-plan.repository';
 import { AmbassadorEarningRepository } from '../repositories/ambassador-earning.repository';
 import { ReferralRepository } from '../repositories/referral.repository';
+import { AmbassadorRosterReadModel } from '../read-models/ambassador-roster.read-model';
 import { AmbassadorProfileService } from '../services/ambassador-profile.service';
 import { ReferralService } from '../services/referral.service';
 import { AmbassadorEarningService } from '../services/ambassador-earning.service';
@@ -45,6 +46,8 @@ run('ambassadors spine (integration, real Postgres + RLS + commission payout)', 
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, ambUser); await makeUser(admin, adminUser); await makeUser(admin, farmer);
+    // PC-56 TENANT-10a: a recruit must be an existing MEMBER of the cooperative (an active role in tenant A).
+    await admin.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) SELECT $1, $2, r.id, true FROM roles r WHERE r.code = 'farmer' ON CONFLICT DO NOTHING`, [ambUser, tenantA]);
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
     const shards = new ShardRouter(config);
@@ -54,22 +57,22 @@ run('ambassadors spine (integration, real Postgres + RLS + commission payout)', 
     wallet = new InProcessWalletClient(new LedgerRepository());
     const pRepo = new AmbassadorProfileRepository(replica as any); const plRepo = new CommissionPlanRepository(replica as any);
     const eRepo = new AmbassadorEarningRepository(replica as any); const rRepo = new ReferralRepository(replica as any);
-    profiles = new AmbassadorProfileService(uow, outbox, metrics, audit, pRepo);
-    earnings = new AmbassadorEarningService(uow, outbox, idem, metrics, wallet, plRepo, eRepo, pRepo);
-    referrals = new ReferralService(uow, outbox, idem, metrics, rRepo, pRepo, earnings);
+    profiles = new AmbassadorProfileService(uow, outbox, metrics, idem, audit, pRepo, new AmbassadorRosterReadModel(replica as any));
+    earnings = new AmbassadorEarningService(uow, outbox, idem, metrics, wallet, audit, plRepo, eRepo, pRepo);
+    referrals = new ReferralService(uow, outbox, idem, metrics, audit, rRepo, pRepo, earnings);
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   it('admin enrolls an ambassador; ambassador mints a code; farmer claims it', async () => {
-    ambassadorId = (await profiles.enroll(tenantA, adminActor, { userId: ambUser, clusterRegionIds: [], kioskEnabled: false, aepsEnabled: false, monthlyStipendMinor: '0' } as any, null)).id;
+    ambassadorId = (await profiles.enroll(tenantA, adminActor, { userId: ambUser, clusterRegionIds: [], kioskEnabled: false, aepsEnabled: false, monthlyStipendMinor: '0' }, `idem-${randomUUID()}`, null)).id;
     const r: any = await referrals.create(tenantA, ambActor, `idem-${randomUUID()}`, { code: 'KRISHI10' } as any);
     referralId = r.id; expect(r.status).toBe('invited');
     expect((await referrals.claim(tenantA, farmerActor, { code: 'KRISHI10' } as any)).status).toBe('signed_up');
   });
 
   it('activation accrues the ₹25 farmer_onboarded commission (seeded plan)', async () => {
-    await referrals.activate(tenantA, adminActor, referralId);
+    await referrals.activate(tenantA, adminActor, referralId, 'first sale confirmed');
     const { items } = await earnings.listForAmbassador(tenantA, ambassadorId, { limit: 50 });
     const onboard = items.find((e: any) => e.eventCode === 'farmer_onboarded');
     expect(onboard).toBeTruthy(); expect(onboard!.amountMinor).toBe('2500');   // ₹25 from seed 0207
@@ -77,11 +80,11 @@ run('ambassadors spine (integration, real Postgres + RLS + commission payout)', 
 
   it('payout settles unpaid earnings to the ambassador wallet (zero-sum commission)', async () => {
     const before = await balUser(ambUser);
-    const out: any = await earnings.payoutAmbassador(tenantA, ambassadorId, `idem-${randomUUID()}`);
+    const out: any = await earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassadorId, `idem-${randomUUID()}`, 'weekly run');
     expect(out.paidMinor).toBe('2500');
     expect((await balUser(ambUser)) - before).toBe(2500n);
-    // re-payout now finds nothing unpaid
-    await expect(earnings.payoutAmbassador(tenantA, ambassadorId, `idem-${randomUUID()}`)).rejects.toMatchObject({ code: 'NOTHING_TO_PAYOUT' });
+    // re-payout now finds nothing unpaid (red at 9743e8b: DEV-55 stamped zero rows and this second call paid again)
+    await expect(earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassadorId, `idem-${randomUUID()}`, 'weekly run')).rejects.toMatchObject({ code: 'NOTHING_TO_PAYOUT' });
   });
 
   it('RLS: tenant B cannot see tenant A\'s earnings', async () => {

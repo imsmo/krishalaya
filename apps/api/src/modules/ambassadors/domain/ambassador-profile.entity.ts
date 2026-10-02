@@ -7,7 +7,12 @@ export interface AmbassadorProfileProps {
   id: string; userId: string; tenantId: string; clusterRegionIds: string[]; tierId: string | null; mentorAmbassadorId: string | null;
   trainingCompletedAt: Date | null; kioskEnabled: boolean; aepsEnabled: boolean; monthlyStipendMinor: bigint;
   lastActivityAt: Date | null; isActive: boolean; createdAt?: Date;
+  /** PC-56 TENANT-10a · F-17: `created_at::text` (microseconds) — the list cursor is minted from it. */
+  createdAtRaw?: string;
 }
+
+/** PC-56 TENANT-10a · F-12: the fields an edit can change, as the audit row's before/after (money as minor strings). */
+export const EDITABLE_PROFILE_FIELDS = ['clusterRegionIds', 'tierId', 'mentorAmbassadorId', 'kioskEnabled', 'aepsEnabled', 'monthlyStipendMinor', 'trainingCompletedAt'] as const;
 export class AmbassadorProfile {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: AmbassadorProfileProps) {}
@@ -31,6 +36,13 @@ export class AmbassadorProfile {
   suspend(): void { if (!this.props.isActive) return; this.props.isActive = false; this.events.push({ type: AmbassadorEventType.AmbassadorSuspended, payload: { ambassadorId: this.props.id } }); }
   reinstate(): void { this.props.isActive = true; }
   touch(): void { this.props.lastActivityAt = new Date(); }
+  /** PURE: the editable fields as plain JSON — the audit row's `before` / `after` (F-12). */
+  editableSnapshot(): Record<string, unknown> {
+    const v = this.props;
+    return { clusterRegionIds: [...v.clusterRegionIds], tierId: v.tierId, mentorAmbassadorId: v.mentorAmbassadorId, kioskEnabled: v.kioskEnabled,
+      aepsEnabled: v.aepsEnabled, monthlyStipendMinor: v.monthlyStipendMinor.toString(),
+      trainingCompletedAt: v.trainingCompletedAt ? new Date(v.trainingCompletedAt).toISOString() : null };
+  }
   toJSON() {
     const v = this.props;
     return { id: v.id, userId: v.userId, clusterRegionIds: v.clusterRegionIds, tierId: v.tierId, mentorAmbassadorId: v.mentorAmbassadorId,

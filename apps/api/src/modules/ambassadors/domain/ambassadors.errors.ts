@@ -17,3 +17,13 @@ export class ConsentRequiredError extends DomainError { constructor() { super('C
 export class OnBehalfConsentRequiredError extends DomainError { constructor() { super('ON_BEHALF_CONSENT_REQUIRED', 'The farmer must grant on-behalf-listing consent to this ambassador first', 403, {}); } }
 /** A target for this ambassador + metric + period already exists (UNIQUE(ambassador_id, metric, period_start)). */
 export class DuplicateTargetError extends DomainError { constructor() { super('TARGET_EXISTS', 'A target for this metric + period already exists', 409, {}); } }
+/** PC-56 TENANT-10a · F-1. The payout locked N unpaid earnings and stamped a different number. THROWN INSIDE the payout's
+ *  transaction, so the wallet leg posted a moment earlier rolls back with it — money never moves for rows not stamped. */
+export class PayoutMarkMismatchError extends DomainError { constructor(locked: number, stamped: number) { super('PAYOUT_MARK_MISMATCH', `Payout locked ${locked} earnings but stamped ${stamped}; nothing was paid`, 409, { locked, stamped }); } }
+/** PC-56 TENANT-10a · F-4. Assisted onboarding is for a person with NO account. A phone that already belongs to somebody is
+ *  refused BEFORE any consent or attribution is written — an ambassador never records consents in an existing member's name. */
+export class AssistedOnboardingExistingUserError extends DomainError { constructor() { super('AMB_EXISTING_USER', 'This phone number already belongs to a member — assisted onboarding is only for a person without an account', 409, {}); } }
+/** PC-56 TENANT-10a · F-12. A state change the canon promises an audit reason for, sent without one (3–300 characters). */
+export class ReasonRequiredError extends DomainError { constructor(act: string) { super('REASON_REQUIRED', `A reason (3–300 characters) is required to ${act}`, 422, { act }); } }
+/** PC-56 TENANT-10a · F-14. The leaderboard is for the people it ranks and the people who manage them. */
+export class LeaderboardForbiddenError extends DomainError { constructor() { super('LEADERBOARD_FORBIDDEN', 'The leaderboard is visible to active ambassadors and ambassador managers only', 403, {}); } }

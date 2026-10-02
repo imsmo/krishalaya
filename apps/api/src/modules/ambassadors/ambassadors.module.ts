@@ -9,7 +9,17 @@
 // SCOPE: profiles + commission-plan resolution (7 seeded streams as data) + referrals (create/claim/activate) +
 // earning accrual (onboarding + sale, idempotent) + weekly payout. DEFERRED: milestone-bonus + 60-day
 // inactivity-reassignment jobs; AePS/kiosk operations; stipend disbursement; tier auto-promotion.
+//
+// PC-56 TENANT-10a — two module-level facts:
+//   • CONTROLLER ORDER IS ROUTE ORDER. Express matches in registration order, and AmbassadorsController owns the
+//     parametric `GET /ambassadors/:id` and `POST /ambassadors/:id/...`. Registered FIRST (as it was), `:id` swallowed
+//     `GET /ambassadors/leaderboard`, `/visits`, `/referrals`, `/targets/me` and `/aeps/events` — the leaderboard answered
+//     403 to every ambassador (and a manager's request died on a uuid cast). It is registered LAST; the
+//     `tenant10a-routes.spec.ts` gate walks the real metadata and fails if any earlier parametric route can shadow a
+//     later static one.
+//   • THE SALE-COMMISSION HANDLER RUNS ON kv_app (F-27) — see order-completed.handler.ts.
 import { Module, OnModuleInit, Inject } from '@nestjs/common';
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { IdentityModule } from '../identity/identity.module';
@@ -31,6 +41,8 @@ import { AssistedOnboardingService } from './services/assisted-onboarding.servic
 import { AmbassadorVisitService } from './services/ambassador-visit.service';
 import { AmbassadorTargetService } from './services/ambassador-target.service';
 import { LeaderboardReadModel } from './read-models/leaderboard.read-model';
+import { AmbassadorRosterReadModel } from './read-models/ambassador-roster.read-model';
+import { ReferralDeskReadModel } from './read-models/referral-desk.read-model';
 import { AmbassadorProfileRepository } from './repositories/ambassador-profile.repository';
 import { CommissionPlanRepository } from './repositories/commission-plan.repository';
 import { AmbassadorEarningRepository } from './repositories/ambassador-earning.repository';
@@ -41,10 +53,10 @@ import { OrderCompletedHandler } from './events/handlers/order-completed.handler
 
 @Module({
   imports: [IdentityModule, ListingsModule],   // ConsentService + UserService (assisted onboarding) + ListingService (on-behalf listing) — Law 11 reuse
-  controllers: [AmbassadorsController, ReferralsController, EarningsController, FieldOpsController, AepsController],
+  controllers: [ReferralsController, EarningsController, FieldOpsController, AepsController, AmbassadorsController],
   providers: [
     AmbassadorProfileService, CommissionPlanService, ReferralService, AmbassadorEarningService,
-    AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, OnBehalfListingService, docExtractionProvider, LeaderboardReadModel,
+    AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, OnBehalfListingService, docExtractionProvider, LeaderboardReadModel, AmbassadorRosterReadModel, ReferralDeskReadModel,
     AmbassadorProfileRepository, CommissionPlanRepository, AmbassadorEarningRepository, ReferralRepository,
     AmbassadorVisitRepository, AmbassadorTargetRepository, AepsService, AepsEventRepository],
   exports: [AmbassadorEarningService],
@@ -52,12 +64,13 @@ import { OrderCompletedHandler } from './events/handlers/order-completed.handler
 export class AmbassadorsModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
     private readonly referrals: ReferralRepository,
     private readonly profiles: AmbassadorProfileRepository,
     private readonly earnings: AmbassadorEarningService,
   ) {}
   // Referred-seller sale commission: consume orders.order_completed and accrue to the referring ambassador.
   onModuleInit(): void {
-    this.registry.register(new OrderCompletedHandler(this.referrals, this.profiles, this.earnings));
+    this.registry.register(new OrderCompletedHandler(this.uow, this.referrals, this.profiles, this.earnings));
   }
 }

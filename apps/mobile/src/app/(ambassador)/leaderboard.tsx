@@ -125,10 +125,13 @@ function Row({ entry, mine, lang, t }: { entry: LeaderboardEntry; mine: boolean;
           </Text>
           {mine ? <StatusPill label={t('amb.leaderboard.youPill')} tone="accent" /> : null}
         </View>
-        <View style={styles.earnedRow}>
-          <MoneyText minor={entry.earnedMinor} langCode={lang} size="xs" tone="muted" />
-          <Text style={styles.earnedLbl}>{t('amb.leaderboard.earned')}</Text>
-        </View>
+        {/* PC-56 TENANT-10a · F-14: another ambassador's earnings are not shown to an ambassador (null, never zero). */}
+        {entry.earnedMinor !== null ? (
+          <View style={styles.earnedRow}>
+            <MoneyText minor={entry.earnedMinor} langCode={lang} size="xs" tone="muted" />
+            <Text style={styles.earnedLbl}>{t('amb.leaderboard.earned')}</Text>
+          </View>
+        ) : null}
       </View>
       <Text style={styles.events}>{entry.events}</Text>
     </Card>

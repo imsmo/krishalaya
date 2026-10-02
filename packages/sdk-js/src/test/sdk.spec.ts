@@ -1112,10 +1112,10 @@ describe('HttpClient via resources', () => {
     expect(calls[5].url).toBe('https://api.test/v1/labour/assignments?box=booking&bookingId=b1&status=accepted&limit=50');
   });
 
-  it('ambassadors admin: enroll → list → suspend → reinstate → earnings → payout (idem) → activateReferral → setTarget (P1-12)', async () => {
+  it('ambassadors admin: enroll (idem) → list → suspend (reason) → reinstate → earnings → payout (reason + idem) → activateReferral (reason) → setTarget (P1-12 · TENANT-10a)', async () => {
     const { fn, calls } = fakeFetch((_c, n) =>
       n === 1 ? { body: { data: { id: 'amb1', userId: 'u1', isActive: true } } }
-      : n === 2 ? { body: { data: [{ id: 'amb1', userId: 'u1', isActive: true }], meta: { nextCursor: null } } }
+      : n === 2 ? { body: { data: [{ id: 'amb1', userId: 'u1', isActive: true }], meta: { nextCursor: null, total: 1 } } }
       : n === 3 ? { body: { data: { id: 'amb1', isActive: false } } }
       : n === 4 ? { body: { data: { id: 'amb1', isActive: true } } }
       : n === 5 ? { body: { data: [{ id: 'e1', ambassadorId: 'amb1', amountMinor: '12000', payoutId: null }], meta: { nextCursor: null } } }
@@ -1123,28 +1123,65 @@ describe('HttpClient via resources', () => {
       : n === 7 ? { body: { data: { id: 'r1', code: 'KV-ABC', status: 'activated' } } }
       : { body: { data: { id: 't1', ambassadorId: 'amb1', metric: 'onboardings', periodStart: '2026-07-01', periodEnd: '2026-07-31', targetValue: '25' } } });
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const hdr = (i: number) => calls[i].init.headers as Record<string, string>;
+    const body = (i: number) => JSON.parse(String(calls[i].init.body ?? 'null'));
 
-    await c.ambassadors.enroll({ userId: 'u1', monthlyStipendMinor: '0' });
+    await c.ambassadors.enroll({ phone: '9876543210', monthlyStipendMinor: '0' }, 'idem-en');
     expect(calls[0].url).toBe('https://api.test/v1/ambassadors');
     expect(calls[0].init.method).toBe('POST');
-    await c.ambassadors.list({ activeOnly: true });
-    expect(calls[1].url).toBe('https://api.test/v1/ambassadors?activeOnly=true&limit=50');
-    await c.ambassadors.suspend('amb1');
+    expect(hdr(0)['idempotency-key']).toBe('idem-en');
+    const page = await c.ambassadors.list({ activeOnly: true, tier: 'senior', sort: 'owed' });
+    expect(calls[1].url).toBe('https://api.test/v1/ambassadors?activeOnly=true&tier=senior&sort=owed&limit=50');
+    expect(page.total).toBe(1);
+    await c.ambassadors.suspend('amb1', 'not visiting villages');
     expect(calls[2].url).toBe('https://api.test/v1/ambassadors/amb1/suspend');
+    expect(body(2)).toEqual({ reason: 'not visiting villages' });
     await c.ambassadors.reinstate('amb1');
     expect(calls[3].url).toBe('https://api.test/v1/ambassadors/amb1/reinstate');
+    expect(body(3)).toEqual({});
     const earn = await c.ambassadors.earnings('amb1', { unpaidOnly: true });
     expect(calls[4].url).toBe('https://api.test/v1/ambassadors/amb1/earnings?unpaidOnly=true&limit=50');
     expect(earn.items[0].amountMinor).toBe('12000');
-    const po = await c.ambassadors.payout('amb1', 'idem-po');
+    const po = await c.ambassadors.payout('amb1', 'weekly run', 'idem-po');
     expect(calls[5].url).toBe('https://api.test/v1/ambassadors/amb1/payout');
-    expect((calls[5].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-po');
+    expect(hdr(5)['idempotency-key']).toBe('idem-po');
+    expect(body(5)).toEqual({ reason: 'weekly run' });
     expect(po.paidMinor).toBe('12000');
-    await c.ambassadors.activateReferral('r1');
+    await c.ambassadors.activateReferral('r1', 'first sale confirmed');
     expect(calls[6].url).toBe('https://api.test/v1/ambassadors/referrals/r1/activate');
+    expect(body(6)).toEqual({ reason: 'first sale confirmed' });
     await c.ambassadors.setTarget({ ambassadorId: 'amb1', metric: 'onboardings', periodStart: '2026-07-01', periodEnd: '2026-07-31', targetValue: '25' });
     expect(calls[7].url).toBe('https://api.test/v1/ambassadors/targets');
     expect(calls[7].init.method).toBe('POST');
+  });
+
+  it('PC-56 TENANT-10a · ambassadors: summary · candidate · reviews · weekly run (reason + idem) · referral desk + summary', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: { activeCount: 2, owedThisWeekMinor: '684000', uncoveredVillages: null, uncoveredReason: 'tenant_village_set_not_recorded' } } }
+      : n === 2 ? { body: { data: { userId: 'u1', displayName: 'Dinesh Bhai M.', phoneMasked: '+91 99••• ••205', isMember: true, ambassadorId: null } } }
+      : n === 3 || n === 4 ? { body: { data: { ready: true, fields: [], refusals: [], diff: null, entityType: 'ambassador_profile', member: null } } }
+      : n === 5 ? { body: { data: { batchId: 'b1', attempted: 1, paid: 1, nothingToPay: 0, failed: 0, totalPaidMinor: '12000', lines: [] } } }
+      : n === 6 ? { body: { data: [{ id: 'r1', code: 'MEERA88', status: 'invited', referee: null, reward: { state: 'not_configured' } }], meta: { nextCursor: 'c2', total: 148 } } }
+      : { body: { data: { invites30d: 148, rewardsPaid30dMinor: null, rewardsPaidReason: 'reward_rule_not_configured' } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    expect((await c.ambassadors.summary()).uncoveredVillages).toBeNull();
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors/summary');
+    expect((await c.ambassadors.candidate('+91 99123 45205'))?.phoneMasked).toBe('+91 99••• ••205');
+    expect(calls[1].url).toBe('https://api.test/v1/ambassadors/candidates?phone=%2B91+99123+45205');
+    await c.ambassadors.reviewRecruit({ phone: '9876543210', clusterRegionIds: ['x'] });
+    expect([calls[2].url, calls[2].init.method]).toEqual(['https://api.test/v1/ambassadors/review', 'POST']);
+    await c.ambassadors.reviewEdit('amb1', { kioskEnabled: true });
+    expect(calls[3].url).toBe('https://api.test/v1/ambassadors/amb1/review');
+    const run = await c.ambassadors.runPayouts('weekly run', 'idem-run');
+    expect(calls[4].url).toBe('https://api.test/v1/ambassadors/payouts/run');
+    expect((calls[4].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-run');
+    expect(JSON.parse(String(calls[4].init.body))).toEqual({ reason: 'weekly run' });
+    expect(run.paid).toBe(1);
+    const desk = await c.ambassadors.referralDesk({ status: 'invited' });
+    expect(calls[5].url).toBe('https://api.test/v1/ambassadors/referrals/all?status=invited&limit=50');
+    expect([desk.total, desk.nextCursor, desk.items[0].referee]).toEqual([148, 'c2', null]);
+    expect((await c.ambassadors.referralSummary()).rewardsPaid30dMinor).toBeNull();
+    expect(calls[6].url).toBe('https://api.test/v1/ambassadors/referrals/summary');
   });
 
   it('schemes operator: queue → verify → clarify → approve → recordDbt hit the right paths (P1-12)', async () => {

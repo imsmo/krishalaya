@@ -7,6 +7,11 @@ import { DomainEvent, AmbassadorEventType } from './ambassadors.events';
 export interface AmbassadorEarningProps {
   id: string; tenantId: string; ambassadorId: string; planId: string; eventCode: string;
   referenceType: string | null; referenceId: string | null; amountMinor: bigint; payoutId: string | null; createdAt?: Date;
+  /** PC-56 TENANT-10a (0184): the farmer this earning was earned on (the per-farmer caps). */
+  subjectUserId?: string | null;
+  /** PC-56 TENANT-10a · F-1/F-17: `created_at::text` — every microsecond Postgres stored. The payout stamps by it and the
+   *  list cursor is minted from it; a JS Date (milliseconds) is never round-tripped back into a WHERE. */
+  createdAtRaw?: string;
 }
 export class AmbassadorEarning {
   private readonly events: DomainEvent[] = [];
@@ -24,5 +29,5 @@ export class AmbassadorEarning {
   get payoutId() { return this.props.payoutId; }
   toProps(): Readonly<AmbassadorEarningProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
-  toJSON() { const v = this.props; return { id: v.id, ambassadorId: v.ambassadorId, eventCode: v.eventCode, referenceType: v.referenceType, referenceId: v.referenceId, amountMinor: v.amountMinor.toString(), payoutId: v.payoutId, createdAt: v.createdAt }; }
+  toJSON() { const v = this.props; return { id: v.id, ambassadorId: v.ambassadorId, eventCode: v.eventCode, referenceType: v.referenceType, referenceId: v.referenceId, amountMinor: v.amountMinor.toString(), payoutId: v.payoutId, subjectUserId: v.subjectUserId ?? null, createdAt: v.createdAt }; }
 }

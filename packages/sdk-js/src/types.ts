@@ -523,7 +523,9 @@ export interface AmbassadorVisit { id: string; ambassadorId: string; visitedUser
 /** A per-period goal for one metric. `targetValue` is a count, or bigint minor units for 'earnings_minor'. */
 export interface AmbassadorTarget { id: string; ambassadorId: string; metric: string; periodStart: string; periodEnd: string; targetValue: string; createdAt?: string; }
 /** A leaderboard row: an ambassador ranked by commission earned (bigint minor) in the window. */
-export interface LeaderboardEntry { ambassadorId: string; userId: string; tierId: string | null; earnedMinor: string; events: number; rank: number; }
+/** PC-56 TENANT-10a · F-14: `earnedMinor` is `null` for another ambassador's row unless the caller manages ambassadors —
+ *  "not shown", never zero. `displayName` is the short name (given name + family initial); `isSelf` marks the caller's row. */
+export interface LeaderboardEntry { ambassadorId: string; userId: string; tierId: string | null; earnedMinor: string | null; events: number; rank: number; displayName?: string | null; isSelf?: boolean; }
 /** The result of an assisted onboarding: the created/resolved farmer + the attribution referral id. */
 export interface AssistedOnboardingResult { user: { id: string; [k: string]: unknown }; ambassadorId: string; referralId: string | null; }
 /** P1-16-AI · AI-suggested listing fields from a farmer's document. ADVISORY — never auto-applied; the ambassador
@@ -535,11 +537,57 @@ export interface SuggestedListingDraft {
 }
 // --- ambassadors admin (P1-12) — tenant-operator surface; money is bigint minor STRINGS, moved server-side (Law 2/11) ---
 export type AmbassadorTargetMetric = 'onboardings' | 'sales_facilitated' | 'earnings_minor' | 'visits';
-export interface EnrollAmbassadorInput { userId: string; clusterRegionIds?: string[]; tierId?: string | null; mentorAmbassadorId?: string | null; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; }
-export interface UpdateAmbassadorInput { clusterRegionIds?: string[]; tierId?: string | null; mentorAmbassadorId?: string | null; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; trainingCompleted?: boolean; }
+/** PC-56 TENANT-10a: name the recruit by EXACTLY ONE of `phone` (the console's form — an existing member) or `userId`. */
+export interface EnrollAmbassadorInput { userId?: string; phone?: string; clusterRegionIds?: string[]; tierId?: string | null; mentorAmbassadorId?: string | null; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; }
+/** `reason` (3–300 chars) is optional on an edit and lands on the `ambassador.updated` audit row with the before/after. */
+export interface UpdateAmbassadorInput { clusterRegionIds?: string[]; tierId?: string | null; mentorAmbassadorId?: string | null; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; trainingCompleted?: boolean; reason?: string; }
 export interface SetTargetInput { ambassadorId: string; metric: AmbassadorTargetMetric; periodStart: string; periodEnd: string; targetValue: string; }
 /** The result of an ambassador commission payout (server-computed, wallet-moved). */
 export interface AmbassadorPayoutResult { payoutId: string; ambassadorId: string; paidMinor: string; earningCount: number; }
+
+/* ================================================================================================================= */
+/* PC-56 TENANT-10a · W159 AMBASSADORS · W162 REFERRALS                                                               */
+/* ================================================================================================================= */
+export type AmbassadorRosterSort = 'recent' | 'owed';
+/** One W159 roster row: the profile + how the person is named (short name, MASKED phone — the full number never crosses
+ *  the wire) + tier code + cluster region names + owed (unpaid, minor) + onboarded in 30 days + last recorded act. */
+export interface AmbassadorRosterRow extends AmbassadorProfile {
+  displayName: string | null; phoneMasked: string; tierCode: string | null;
+  clusterRegions: Array<{ id: string; name: string }>; clusterRegionNames: string[];
+  owedMinor: string; onboarded30d: number;
+}
+/** W159's KPI tiles. `uncoveredVillages` is null BY NAME — no table records the cooperative's own village set. */
+export interface AmbassadorSummary {
+  activeCount: number; villagesCovered: number; uncoveredVillages: null; uncoveredReason: 'tenant_village_set_not_recorded';
+  owedThisWeekMinor: string; owedAsOf: string; onboarded30d: number; newMembers30d: number; kioskCount: number; aepsCount: number;
+  tierCounts: Record<string, number>; inactive60d: number; total: number;
+}
+/** The recruit form's member lookup (masked). A person who is NOT a member of this cooperative is never named to it:
+ *  `isMember: false` with every other field null. */
+export interface AmbassadorCandidate { userId: string | null; displayName: string | null; phoneMasked: string | null; isMember: boolean; ambassadorId: string | null }
+/** The recruit / edit review (W2482; with refusals it IS W2481) — the shared chain's review shape, plus the member found. */
+export interface AmbassadorReview extends DairyReview { member: AmbassadorCandidate | null }
+/** The raw form entries a review is asked about (every value optional; a mistyped one is answered with its refusal). */
+export interface AmbassadorReviewInput { phone?: string; tierId?: string; clusterRegionIds?: string[]; mentorAmbassadorId?: string; kioskEnabled?: boolean; aepsEnabled?: boolean; monthlyStipendMinor?: string; trainingCompleted?: boolean }
+/** A13 · the weekly earnings run's result (each ambassador paid in its own transaction). */
+export type AmbassadorPayoutBatchLine =
+  | { ambassadorId: string; outcome: 'paid'; payoutId: string; paidMinor: string; earningCount: number }
+  | { ambassadorId: string; outcome: 'nothing_to_pay' }
+  | { ambassadorId: string; outcome: 'failed'; code: string };
+export interface AmbassadorPayoutBatchResult { batchId: string; attempted: number; paid: number; nothingToPay: number; failed: number; totalPaidMinor: string; lines: AmbassadorPayoutBatchLine[] }
+/** One W162 desk row. `referee` is null for an `invited` row ("not yet joined" — no invitee column exists). `reward` is
+ *  always `not_configured` (F-11: no reward rule exists on this platform). */
+export interface ReferralDeskRow {
+  id: string; code: string; status: string; createdAt: string; activatedAt: string | null;
+  referrer: { userId: string; displayName: string | null; phoneMasked: string; isAmbassador: boolean };
+  referee: { userId: string; displayName: string | null; phoneMasked: string } | null;
+  reward: { state: 'not_configured' };
+}
+/** W162's KPI tiles — a cohort over the last 30 days of invites. `rewardsPaid30dMinor` is null BY NAME. */
+export interface ReferralDeskSummary {
+  invites30d: number; signedUp30d: number; awaitingActivation: number; activated30d: number;
+  rewardsPaid30dMinor: null; rewardsPaidReason: 'reward_rule_not_configured'; byStatus: Record<string, number>; total: number;
+}
 // --- group lots (FPO pooling, P1-12) — quantities are decimal STRINGS; money bigint minor STRINGS (Law 2) ---
 export type GroupLotStatus = 'pledging' | 'ready' | 'listed' | 'sold' | 'settled' | 'cancelled';
 /** A pooled FPO lot. progressBps = pledged ÷ target in integer basis points. */

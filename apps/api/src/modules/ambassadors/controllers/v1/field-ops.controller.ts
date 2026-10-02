@@ -2,6 +2,8 @@
 // visit log, targets, leaderboard. Assisted-onboarding + visit-log require the caller to be an ACTIVE
 // ambassador (enforced in the service from the token, not a client id). Setting a target needs
 // ambassador.manage. The leaderboard is a tenant-scoped aggregate read. `ambassadors` flag.
+// PC-56 TENANT-10a · F-14: the leaderboard needs ambassador.manage OR an ACTIVE ambassador profile in this tenant; a
+// non-manager sees amounts for their own row only (others: rank + short name, earnedMinor null).
 import { Controller, Get, Headers, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -16,13 +18,16 @@ import { AmbassadorTargetService } from '../../services/ambassador-target.servic
 import { OnBehalfListingService } from '../../services/on-behalf-listing.service';
 import { LeaderboardReadModel } from '../../read-models/leaderboard.read-model';
 import { AmbassadorsPermissions, canManageAmbassadors } from '../../policies/ambassadors.policies';
+import { AmbassadorProfileRepository } from '../../repositories/ambassador-profile.repository';
+import { LeaderboardForbiddenError } from '../../domain/ambassadors.errors';
+import { decodeCursor } from '../../domain/cursor';
 import { AssistedOnboardingSchema, AssistedOnboardingDto } from '../../dto/assisted-onboarding.dto';
 import { CreateVisitSchema, CreateVisitDto, QueryVisitsSchema, QueryVisitsDto } from '../../dto/create-visit.dto';
 import { SetTargetSchema, SetTargetDto, QueryLeaderboardSchema, QueryLeaderboardDto } from '../../dto/create-target.dto';
 import { OnBehalfListingSchema, OnBehalfListingDto } from '../../dto/on-behalf-listing.dto';
 import { SuggestFromDocsSchema, SuggestFromDocsDto } from '../../dto/suggest-from-docs.dto';
 
-const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+// The visit list keeps its own (visited_at, id) keyset; its cursor is decoded by the same strict decoder as every list here.
 
 @Controller({ path: 'ambassadors', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -34,6 +39,7 @@ export class FieldOpsController {
     private readonly targets: AmbassadorTargetService,
     private readonly onBehalf: OnBehalfListingService,
     private readonly leaderboard: LeaderboardReadModel,
+    private readonly profiles: AmbassadorProfileRepository,
   ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageAmbassadors(ctx) }; }
 
@@ -69,8 +75,13 @@ export class FieldOpsController {
   }
 
   @Get('leaderboard')
-  leaderboardTop(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryLeaderboardSchema) q: QueryLeaderboardDto) {
-    return this.leaderboard.top(ctx.tenantId, { periodStart: q.periodStart, periodEnd: q.periodEnd, limit: q.limit }).then((data) => ({ data }));
+  async leaderboardTop(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryLeaderboardSchema) q: QueryLeaderboardDto) {
+    const canManage = canManageAmbassadors(ctx);
+    if (!canManage) {
+      const me = await this.profiles.findByUser(ctx.tenantId, ctx.userId);
+      if (!me || !me.isActive) throw new LeaderboardForbiddenError();
+    }
+    return this.leaderboard.top(ctx.tenantId, { periodStart: q.periodStart, periodEnd: q.periodEnd, limit: q.limit }, { userId: ctx.userId, canManage }).then((data) => ({ data }));
   }
 
   @Post('targets') @RequirePermissions(AmbassadorsPermissions.Manage)

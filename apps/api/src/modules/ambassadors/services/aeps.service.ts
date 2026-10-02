@@ -38,7 +38,10 @@ export class AepsService {
       throw new BadRequestError('the 3rd finger-fail must carry the escalation note (nearest bank mitra/branch — W392)');
     if (dto.status === 'success' && dto.exceptionCode) throw new BadRequestError('a success event carries no exception code');
     return this.idem.remember(key, userId, 'ambassadors.aeps.record', async () => {
-      await this.uow.run(tenantId, (tx) => this.repo.insert(tx, { ...dto, tenantId, ambassadorId: profile.id }), { userId });
+      await this.uow.run(tenantId, async (tx) => {
+        await this.repo.insert(tx, { ...dto, tenantId, ambassadorId: profile.id });
+        await this.profiles.touchActivity(tx, tenantId, profile.id);   // PC-56 TENANT-10a · F-15
+      }, { userId });
       return { recorded: true };
     });
   }

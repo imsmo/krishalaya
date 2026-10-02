@@ -104,7 +104,10 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('esg.disclose','Write, publish and withdraw the cooperative''s own ESG disclosures (words, never figures); generate the unsigned ESG export',NULL),
  ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
- ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
+ ('ambassador.manage','Enroll/suspend/edit ambassadors + activate referrals (payouts are ambassador.payout)','M-AMB'),
+ -- [PC-56 TENANT-10a] THE PAYOUT GETS ITS OWN VERB (F-3). `ambassador.manage` is held by support_agent too, and a payout moves
+ -- platform money to a village agent; the verb that moves it is tenant_admin's only. Also in migration 0184.
+ ('ambassador.payout','Run ambassador commission payouts','M-AMB'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -211,4 +214,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- [PC-56 TENANT-9d] ESG (0183). No compliance or finance role exists; the canon's "tenant compliance role" is named.
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('esg.read'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('esg.disclose'))
+   -- [PC-56 TENANT-10a] the ambassador payout's own money verb (0184). `ambassador.manage` keeps enrol/suspend/activate.
+   OR (r.code IN ('tenant_admin') AND p.code IN ('ambassador.payout'))
 ON CONFLICT DO NOTHING;

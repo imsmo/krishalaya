@@ -741,7 +741,9 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
           const relayUpd = await admin54.query(`SELECT has_column_privilege('kv_relay', $1, $2, 'UPDATE') AS ok`, [partName, col]);
           expect(relayUpd.rows[0].ok).toBe(false);
         }
-      }, 20000);
+      }, 180000); // [PC-56 TENANT-10a] was 20 s: `CALL ensure_partitions(1)` walks every partitioned table and takes ~66 s on this
+      // sandbox's disk (timed directly: `\timing` → 1m05.9s, twice), so the test timed out, held its client, and the suite's
+      // afterAll `pool.end()` then timed out too. The assertion is unchanged; only the wait is honest.
     });
 
     // ── POSITIVE-PATH GUARD — the control this whole batch exists to add: prove the
@@ -858,29 +860,36 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
         }
       });
 
-      it("DISCOVERED DEFECT (not fixed, escalated): markPaid()'s real call shape (JS Date round-tripped through node-pg) returns rowCount 0, not 1 — the weekly ambassador payout job silently pays nobody", async () => {
+      // [PC-56 TENANT-10a] FIXED (DEV-55). This test used to be titled "DISCOVERED DEFECT (not fixed, escalated): markPaid()'s
+      // real call shape (JS Date round-tripped through node-pg) returns rowCount 0, not 1 — the weekly ambassador payout job
+      // silently pays nobody" and asserted rowCount 0. Both halves of that title were wrong about the consequence (the wallet
+      // leg posted FIRST, so it was a double-pay, not a no-pay — survey_t10.md F-1) and it pinned the bug as the expected
+      // value. It now runs the REAL repository method, `AmbassadorEarningRepository.markPaid()`, as kv_app, against a row whose
+      // created_at carries non-zero microseconds, and asserts the corrected truth: the row is stamped and the count says so.
+      it("FIXED (DEV-55, TENANT-10a): markPaid()'s real statement, bound by the raw created_at text, stamps the microsecond row as kv_app and returns rowCount 1", async () => {
         const tenantId = '66666666-6666-6666-6666-666666666666';
         const ambassadorId = '77777777-7777-7777-7777-777777777777';
         const payoutId = 'aaaaaaaa-9999-9999-9999-999999999999';
         const earningId = 'bbbbbbbb-9999-9999-9999-999999999999';
         try {
           const inserted = await admin54.query(
-            `INSERT INTO ambassador_earnings (id, tenant_id, ambassador_id, plan_id, event_code, reference_type, reference_id, amount_minor)
-             VALUES ($1,$2,$3,gen_random_uuid(),'signup','order',gen_random_uuid(),1000) RETURNING created_at`,
+            `INSERT INTO ambassador_earnings (id, tenant_id, ambassador_id, plan_id, event_code, reference_type, reference_id, amount_minor, created_at)
+             VALUES ($1,$2,$3,gen_random_uuid(),'signup','order',gen_random_uuid(),1000, date_trunc('milliseconds', now()) + interval '123 microseconds')
+             RETURNING created_at, created_at::text AS created_at_raw`,
             [earningId, tenantId, ambassadorId],
           );
-          const createdAt = inserted.rows[0].created_at; // JS Date — exactly what payoutAmbassador() passes today
+          const createdAtRaw: string = inserted.rows[0].created_at_raw; // what lockUnpaid() now selects (COLS)
+          expect(createdAtRaw).toMatch(/\.\d{3}123/);                    // the microseconds a JS Date would have dropped
+          // eslint-disable-next-line @typescript-eslint/no-var-requires, no-restricted-syntax -- the real repository, lazily
+          const { AmbassadorEarningRepository } = require('../../../modules/ambassadors/repositories/ambassador-earning.repository');
+          const repo = new AmbassadorEarningRepository({ forTenant: () => { throw new Error('markPaid must run on the tx'); } });
           const client = await admin54.connect();
-          let updateResult: { rowCount: number | null };
+          let stamped = -1;
           try {
             await client.query('BEGIN');
             await client.query(`SET LOCAL ROLE kv_app`);
             await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
-            // byte-for-byte the real markPaid() statement (ambassador-earning.repository.ts:37)
-            updateResult = await client.query(
-              `UPDATE ambassador_earnings SET payout_id=$3 WHERE id=$1 AND created_at=$2 AND payout_id IS NULL`,
-              [earningId, createdAt, payoutId],
-            );
+            stamped = await repo.markPaid({ query: (sql: string, p: unknown[]) => client.query(sql, p), tenantId }, tenantId, [{ id: earningId, createdAtRaw }], payoutId);
             await client.query('COMMIT');
           } catch (e) {
             await client.query('ROLLBACK').catch(() => undefined);
@@ -888,12 +897,12 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
           } finally {
             client.release();
           }
-          // Documents the live defect exactly as found — NOT the desired behavior. If a
-          // future fix-forward corrects markPaid()'s timestamp handling, this assertion
-          // should flip to 1 and this test's title/comment should be updated to say FIXED.
-          expect(updateResult.rowCount).toBe(0);
+          expect(stamped).toBe(1);
           const check = await admin54.query(`SELECT payout_id FROM ambassador_earnings WHERE id=$1`, [earningId]);
-          expect(check.rows[0].payout_id).toBe(null);
+          expect(check.rows[0].payout_id).toBe(payoutId);
+          // and the OLD shape (a JS Date, milliseconds) still matches nothing — which is exactly why it double-paid
+          const legacy = await admin54.query(`SELECT count(*)::int n FROM ambassador_earnings WHERE id=$1 AND created_at=$2`, [earningId, inserted.rows[0].created_at]);
+          expect(legacy.rows[0].n).toBe(0);
         } finally {
           await admin54.query(`DELETE FROM ambassador_earnings WHERE id=$1`, [earningId]);
         }

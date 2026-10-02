@@ -1,7 +1,7 @@
 // modules/ambassadors/__tests__/tenant-isolation.spec.ts · tenant-scoping SQL contract (CI gate).
 // profiles/earnings/referrals bind tenant_id; lists are keyset (never OFFSET); mutations lock FOR UPDATE;
 // commission plans resolve tenant-override-then-platform; earnings updates bind (id, created_at) for partition
-// pruning; the accrual idempotency guard is reference-scoped.
+// pruning; the accrual idempotency guard is reference-scoped. (TENANT-10a: the created_at bound is the RAW text.)
 import { AmbassadorProfileRepository } from '../repositories/ambassador-profile.repository';
 import { CommissionPlanRepository } from '../repositories/commission-plan.repository';
 import { AmbassadorEarningRepository } from '../repositories/ambassador-earning.repository';
@@ -55,10 +55,24 @@ describe('ambassador_earnings isolation', () => {
     await new AmbassadorEarningRepository(provider).listForAmbassador('tenantA', 'a1', { limit: 50 });
     expect(exec.query.mock.calls[0][0]).toMatch(/tenant_id=\$1 AND ambassador_id=\$2/); expect(exec.query.mock.calls[0][0]).not.toMatch(/OFFSET/i);
   });
-  it('markPaid binds (id, created_at) for partition pruning + guards payout_id IS NULL', async () => {
+  // PC-56 TENANT-10a · F-1: the stamp binds (id, created_at::timestamptz from the RAW microsecond text) + tenant + payout_id IS
+  // NULL in ONE statement and RETURNS the count it stamped (the service throws on a mismatch). A JS Date never reaches it.
+  it('markPaid binds (id, raw created_at) for partition pruning + tenant + guards payout_id IS NULL; returns the stamped count', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
-    await new AmbassadorEarningRepository(fakeReplica().provider).markPaid(tx as any, [{ id: 'e1', createdAt: new Date() }], 'pay1');
-    expect(tx.query.mock.calls[0][0]).toMatch(/WHERE id=\$1 AND created_at=\$2 AND payout_id IS NULL/);
+    const n = await new AmbassadorEarningRepository(fakeReplica().provider).markPaid(tx as any, 'tenantA', [{ id: 'e1', createdAtRaw: '2026-10-02 10:00:00.123456+05:30' }], 'pay1');
+    expect(n).toBe(1);
+    const [sql, params] = tx.query.mock.calls[0];
+    expect(sql).toMatch(/e\.tenant_id = \$1 AND e\.id = k\.id AND e\.created_at = k\.created_at_raw::timestamptz AND e\.payout_id IS NULL/);
+    expect(params).toEqual(['tenantA', ['e1'], ['2026-10-02 10:00:00.123456+05:30'], 'pay1']);
+    expect(params.some((p: unknown) => p instanceof Date)).toBe(false);
+  });
+  it('lockUnpaid and every list select created_at::text (the microsecond-exact cursor / stamp source)', async () => {
+    const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
+    await new AmbassadorEarningRepository(fakeReplica().provider).lockUnpaid(tx as any, 'tenantA', 'a1');
+    expect(tx.query.mock.calls[0][0]).toMatch(/created_at::text AS created_at_raw/);
+    const { provider, exec } = fakeReplica();
+    await new AmbassadorEarningRepository(provider).listForAmbassador('tenantA', 'a1', { limit: 1, cursor: { c: '2026-10-02 10:00:00.123456+05:30', id: '01a0c000-0000-7000-8000-0000000000a1' } });
+    expect(exec.query.mock.calls[0][0]).toMatch(/created_at < \$3::timestamptz OR \(created_at = \$3::timestamptz AND id < \$4::uuid\)/);
   });
   it('lockUnpaid uses FOR UPDATE SKIP LOCKED', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
