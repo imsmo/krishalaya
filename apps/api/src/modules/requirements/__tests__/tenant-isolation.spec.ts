@@ -26,26 +26,36 @@ describe('requirements tenant isolation (SQL contract)', () => {
     expect(sql).toMatch(/WHERE id=\$1 AND tenant_id=\$2/); expect(sql).not.toMatch(/version/);
     expect(params[1]).toBe('tenantA');
   });
-  it('requirement.listOpen is keyset (no OFFSET) and tenant-scoped', async () => {
+  it('requirement.list (box=open) is keyset (no OFFSET), tenant-scoped, honours status, and its µs cursor is compared as timestamptz', async () => {
     const { provider, exec } = fakeReplica();
-    await new RequirementRepository(provider).listOpen('tenantA', { limit: 20 });
+    await new RequirementRepository(provider).list('tenantA', { box: 'open', status: 'partially_matched', cursor: { kind: 'created', c: '2026-07-11 10:00:00.123456+05:30', id: '00000000-0000-4000-8000-000000000001' }, limit: 20 });
     const [sql, params] = exec.query.mock.calls[0];
-    expect(sql).toMatch(/tenant_id=\$1 AND status IN \('open','partially_matched'\)/);
+    expect(sql).toMatch(/tenant_id=\$1 AND deleted_at IS NULL AND status IN \('open','partially_matched'\) AND status=\$2/);
+    expect(sql).toMatch(/created_at < \$3::timestamptz OR \(created_at = \$3::timestamptz AND id < \$4::uuid\)/);
     expect(sql).toMatch(/ORDER BY created_at DESC, id DESC/); expect(sql).not.toMatch(/OFFSET/i);
-    expect(params[0]).toBe('tenantA');
+    expect(params).toEqual(['tenantA', 'partially_matched', '2026-07-11 10:00:00.123456+05:30', '00000000-0000-4000-8000-000000000001', 20]);
   });
-  it('requirement.findDueToExpire is bounded + SKIP LOCKED', async () => {
+  it('requirement.list (sort=need_by) is the need-by ascending keyset, no need-by last', async () => {
+    const { provider, exec } = fakeReplica();
+    await new RequirementRepository(provider).list('tenantA', { box: 'all', sort: 'need_by', cursor: { kind: 'need_by', c: '2026-07-16', id: '00000000-0000-4000-8000-000000000001' }, limit: 5 });
+    const [sql] = exec.query.mock.calls[0];
+    expect(sql).toMatch(/ORDER BY COALESCE\(need_by, 'infinity'::date\) ASC, id ASC/);
+    expect(sql).toMatch(/COALESCE\(need_by, 'infinity'::date\) > \$2::date/);
+  });
+  it('requirement.dueToExpire claims per tenant (kv_app), bounded, on the India day', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
-    await reqRepo().findDueToExpire(tx as any, new Date(), 100);
-    const [sql] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/need_by IS NOT NULL AND need_by < \$1::date/); expect(sql).toMatch(/FOR UPDATE SKIP LOCKED/);
+    await reqRepo().dueToExpire(tx as any, 'tenantA', new Date(), 100);
+    const [sql, params] = tx.query.mock.calls[0];
+    expect(sql).toMatch(/tenant_id=\$1 AND status IN \('open','partially_matched'\) AND need_by IS NOT NULL/);
+    expect(sql).toMatch(/AT TIME ZONE 'Asia\/Kolkata'/); expect(sql).toMatch(/LIMIT \$3/);
+    expect(params[0]).toBe('tenantA');
   });
 
   it('response.getForUpdate binds tenant_id + FOR UPDATE', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
     await respRepo().getForUpdate(tx as any, 'tenantA', 'q1');
     const [sql, params] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/id=\$1 AND tenant_id=\$2/); expect(sql).toMatch(/FOR UPDATE/);
+    expect(sql).toMatch(/r.id=\$1 AND r.tenant_id=\$2/); expect(sql).toMatch(/FOR UPDATE/);
     expect(params).toEqual(['q1', 'tenantA']);
   });
   it('response.insert binds tenant_id + ON CONFLICT (uniqueness guard), no version', async () => {
@@ -60,14 +70,21 @@ describe('requirements tenant isolation (SQL contract)', () => {
     const { provider, exec } = fakeReplica();
     await new RequirementResponseRepository(provider).listForRequirement('tenantA', 'r1', { limit: 50 });
     const [sql, params] = exec.query.mock.calls[0];
-    expect(sql).toMatch(/tenant_id=\$1 AND requirement_id=\$2/); expect(sql).not.toMatch(/OFFSET/i);
+    expect(sql).toMatch(/r.tenant_id=\$1 AND r.requirement_id=\$2/); expect(sql).not.toMatch(/OFFSET/i);
     expect(params).toEqual(['tenantA', 'r1', 50]);
   });
-  it('response.findDueToExpire is bounded + SKIP LOCKED over submitted|shortlisted', async () => {
+  it('response.dueToExpire claims per tenant over submitted|shortlisted, bounded', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
-    await respRepo().findDueToExpire(tx as any, new Date(), 100);
-    const [sql] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/status IN \('submitted','shortlisted'\) AND valid_until IS NOT NULL AND valid_until < \$1/);
-    expect(sql).toMatch(/FOR UPDATE SKIP LOCKED/);
+    await respRepo().dueToExpire(tx as any, 'tenantA', new Date(), 100);
+    const [sql, params] = tx.query.mock.calls[0];
+    expect(sql).toMatch(/tenant_id=\$1 AND status IN \('submitted','shortlisted'\) AND valid_until IS NOT NULL AND valid_until < \$2/);
+    expect(params[0]).toBe('tenantA');
+  });
+  it('F-27c · a seller\'s own view is filtered IN SQL, before LIMIT', async () => {
+    const { provider, exec } = fakeReplica();
+    await new RequirementResponseRepository(provider).listForRequirement('tenantA', 'r1', { sellerUserId: 's1', limit: 20 });
+    const [sql, params] = exec.query.mock.calls[0];
+    expect(sql).toMatch(/r\.seller_user_id=\$3/); expect(sql.indexOf('seller_user_id=$3')).toBeLessThan(sql.indexOf('LIMIT'));
+    expect(params).toEqual(['tenantA', 'r1', 's1', 20]);
   });
 });

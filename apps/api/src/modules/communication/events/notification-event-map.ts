@@ -40,6 +40,9 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'group_lot.cancelled',             eventCode: 'group_lot.cancelled',         recipientKeys: ['recipientUserIds'] },
   { outboxType: 'group_lot.nudge',                 eventCode: 'group_lot.nudge',             recipientKeys: ['recipientUserIds'] },
   { outboxType: 'group_lot.settled',               eventCode: 'group_lot.settled',           recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-11d · the buyer hears a pooled quote from member stock arrived (catalogue 0189, copy in seed 0007). Each
+  // member's share was consented before the send; the buyer is the one recipient (`recipientUserIds`).
+  { outboxType: 'requirement.group_quoted',        eventCode: 'requirement.group_quoted',    recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

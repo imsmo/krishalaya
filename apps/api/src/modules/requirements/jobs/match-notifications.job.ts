@@ -1,47 +1,37 @@
-// modules/requirements/jobs/match-notifications.job.ts
-// Worker job (kv_relay): the periodic BACKSTOP to the event-driven listing-published handler. Live
-// matching is fully event-driven (ListingPublishedHandler fires the moment a listing is published); a
-// requirements-only sweep can't itself read the listings module (Law 11), so the job's self-contained,
-// genuinely-useful role is to REMIND a buyer whose OPEN requirement is approaching its need_by and still
-// hasn't been fulfilled — "your requirement is still open, sellers can still quote." Emits
-// `requirements.requirement_reminder` (recipient = the buyer); communication delivers it.
-// IDEMPOTENT + BOUNDED: claims only OPEN requirements within the need-by horizon that haven't been
-// reminded (reminded_at IS NULL, FOR UPDATE SKIP LOCKED, LIMIT), emits one reminder each, then stamps
-// reminded_at IN THE SAME tx — so a daily run never re-nudges (a §4 abuse/DoS guard). NOT a DI provider —
-// apps/worker instantiates it with the kv_relay Pool + a RequirementRepository.
+// modules/requirements/jobs/match-notifications.job.ts · PC-56 TENANT-11d · F-1 / F-9 — THE NEED-BY REMINDER, ACTUALLY SCHEDULED.
+//
+// The periodic backstop to the event-driven ListingPublishedHandler (which nudges a buyer the moment a matching listing is
+// published — the only automatic MATCHER on the platform, and it is rule-based: same product or category). This job's role is
+// the reminder: a buyer whose OPEN requirement approaches its need-by and is not filled hears "your requirement is still open"
+// (`requirements.requirement_reminder`, recipient = the buyer). Before this wave it was instantiated nowhere and claimed across
+// tenants on the kv_relay pool. It is now registered in `SCHEDULED_JOB_REGISTRY` and, like the expiry sweep, reads only `tenants`
+// as kv_relay; each tenant's claim, its reminders and the `reminded_at` stamp are ONE kv_app transaction (FOR UPDATE SKIP LOCKED,
+// bounded), so a re-run never re-nudges. No AI matching exists here and none is implied.
+import { Logger } from '@nestjs/common';
 import type { Pool } from 'pg';
-import { TxContext } from '../../../core/database/unit-of-work';
+import { ScheduledJob } from '../../../core/jobs/scheduled-job';
 import { RequirementRepository } from '../repositories/requirement.repository';
-import { RequirementEventType } from '../domain/requirements.events';
+import { RequirementService } from '../services/requirement.service';
 
-export class MatchNotificationsJob {
-  constructor(private readonly systemPool: Pool, private readonly requirements: RequirementRepository) {}
+export const MATCH_NOTIFICATIONS_JOB = 'requirements-need-by-reminder';
 
-  /** `horizonDays` = nudge requirements whose need_by is within the next N days (default 3); `limit` caps
-   *  the per-tick fan-out. Returns how many reminders were emitted. */
-  async run(horizonDays = 3, limit = 200): Promise<{ scanned: number; reminded: number }> {
-    const client = await this.systemPool.connect();
-    try {
-      await client.query('BEGIN');
-      const tx: TxContext = { query: (sql, params) => client.query(sql, params as any) as any, tenantId: '', userId: 'system' };
-      const now = new Date();
-      const horizon = new Date(now.getTime() + horizonDays * 86_400_000);
-      const due = await this.requirements.findDueForReminder(tx, now, horizon, limit);
-      for (const r of due) {
-        await client.query(
-          `INSERT INTO outbox_events (tenant_id, aggregate_type, aggregate_id, event_type, payload)
-           VALUES ($1,'requirement',$2,$3,$4::jsonb)`,
-          [r.tenantId, r.id, RequirementEventType.ReminderDue,
-           JSON.stringify({ v: 1, requirementId: r.id, buyerUserId: r.buyerUserId })]);
-      }
-      await this.requirements.markReminded(tx, due.map((d) => d.id));
-      await client.query('COMMIT');
-      return { scanned: due.length, reminded: due.length };
-    } catch (e) {
-      await client.query('ROLLBACK').catch(() => undefined);
-      throw e;
-    } finally {
-      client.release();
+export class MatchNotificationsJob implements ScheduledJob {
+  readonly name = MATCH_NOTIFICATIONS_JOB;
+  private readonly log = new Logger(MatchNotificationsJob.name);
+  constructor(readonly intervalMs: number, private readonly repo: RequirementRepository, private readonly requirements: RequirementService,
+    private readonly horizonDays = 3, private readonly limit = 200) {}
+
+  async sweep(pool: Pool, now: Date = new Date()): Promise<{ tenants: number; reminded: number; failed: number }> {
+    const tenants = await this.repo.activeTenants(pool);
+    let reminded = 0, failed = 0;
+    for (const tenantId of tenants) {
+      try { reminded += await this.requirements.remindDue(tenantId, now, this.horizonDays, this.limit); } catch { failed++; }
     }
+    return { tenants: tenants.length, reminded, failed };
+  }
+
+  async run(pool: Pool): Promise<void> {
+    const r = await this.sweep(pool);
+    if (r.reminded > 0 || r.failed > 0) this.log.log(`${this.name}: ${r.reminded} reminder(s), ${r.failed} failed, across ${r.tenants} tenant(s)`);
   }
 }

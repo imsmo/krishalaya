@@ -123,6 +123,10 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- tenant_admin PREPARES the shares (no money); a tenant_admin who is neither the preparer nor the coordinator CONFIRMS,
  -- which pays every pledger from the held sale proceeds (DB trigger on group_lot_settlements). Also in 0188.
  ('group_lot.settle_approve','Confirm a prepared group-lot settlement: pays every pledger''s share + the fee from the held proceeds (never the preparer)','M12'),
+ -- [PC-56 TENANT-11d] THE BUYER DESK (founder decision: linked responses, one order per member, per-member consent before
+ -- send). Posts a requirement FOR a named buyer and decides on their quotes only with the buyer's recorded consent; responds
+ -- with member stock, each member's consent recorded before the pooled quote is sent (requirement_consents). Also in 0189.
+ ('requirement.desk','Buyer desk: post for a named buyer and decide their quotes with their consent; respond with member stock after each member''s consent','M12'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -245,4 +249,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- manage are removed by 0188 (canon W135: coordinators are appointed by tenant_admin) and are not granted here.
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('group_lot.coordinate'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('group_lot.manage','group_lot.settle_approve'))
+   -- [PC-56 TENANT-11d] the buyer desk (0189): on-behalf posts and decisions with the buyer's consent; member-stock quotes.
+   OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('requirement.desk'))
 ON CONFLICT DO NOTHING;

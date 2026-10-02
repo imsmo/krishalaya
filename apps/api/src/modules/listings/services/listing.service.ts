@@ -380,6 +380,21 @@ export class ListingService {
     await this.flushEvents(tx, tenantId, id, listing.pullEvents());
     return 'archived';
   }
+  // ---- PC-56 TENANT-11d (A1 / A6): MEMBER STOCK FOR A BUYER'S REQUIREMENT — READS ONLY ----------------------------------------
+  // The requirements module asks through these (Law 11) and never reads the listings table itself for a decision. Neither moves
+  // stock: a requirement's line and its response reserve nothing (the order an accepted response becomes is an ordinary order).
+  /** The listing as it stands now, on the caller's transaction (the line's "published, available ≥ quantity" check). */
+  async stockForQuoteInTx(tx: TxContext, tenantId: string, id: string): Promise<{ id: string; sellerUserId: string; status: string; quantityAvailable: string; unitCode: string; priceMinor: bigint; productId: string; categoryId: string; title: string } | null> {
+    const l = await this.repo.findInTx(tx, tenantId, id);
+    if (!l) return null;
+    const p = l.toProps();
+    return { id: p.id, sellerUserId: p.sellerUserId, status: p.status, quantityAvailable: String(p.quantityAvailable), unitCode: p.unitCode, priceMinor: p.priceMinor,
+      productId: p.productId, categoryId: p.categoryId, title: p.title };
+  }
+  /** A6 — the rule-based member-stock match (see ListingRepository.memberStock). */
+  async memberStockForRequirement(tenantId: string, m: { productId: string | null; categoryId: string | null; unitCode: string; excludeSellerId: string; deliveryPincode: string | null; limit: number }) {
+    return this.repo.memberStock(tenantId, m);
+  }
   /** Drop the cached copy after the caller's commit. */
   async invalidate(tenantId: string, id: string): Promise<void> { await this.cache.del(cacheKey(tenantId, id)); }
 

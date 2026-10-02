@@ -16,4 +16,11 @@ export const ResponseEventType = {
   Rejected:    'requirements.response_rejected',
   Expired:     'requirements.response_expired',
 } as const;
+/** PC-56 TENANT-11d · the pooled quote (F-11). `requirement.group_quoted` reaches the buyer (catalogue 0189, copy seed 0007). */
+export const GroupEventType = {
+  Quoted:    'requirement.group_quoted',
+  Accepted:  'requirements.group_accepted',
+  Rejected:  'requirements.group_rejected',
+  Withdrawn: 'requirements.group_withdrawn',
+} as const;
 export type DomainEvent = { type: string; payload: Record<string, unknown> };

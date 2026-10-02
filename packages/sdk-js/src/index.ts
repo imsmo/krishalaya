@@ -163,7 +163,8 @@ export type { MembershipTier, UserMembership, CoopBylaws, VoteIneligibleReason, 
   ResolutionAct, ResolutionDraftField, ResolutionDraftInput, PassRule, ResolutionRow, ResolutionCatalogue, ResolutionDraftReview,
   ResolutionDraftValues, ResolutionActPreview, ResolutionResults } from './resources/memberships';
 export { RESOLUTION_ACTS, RESOLUTION_DRAFT_FIELDS } from './resources/memberships';
-export type { Requirement, RequirementResponse } from './resources/requirements';
+export type { Requirement, RequirementResponse, RequirementPage, RequirementStatus, MemberStock, MemberStockMatch, ResponseGroup, ResponseGroupLine,
+  ResponseGroupStatus, ConsentChannel, ConsentInput, CreateRequirementInput, UpdateRequirementInput } from './resources/requirements';
 // PC-56 TENANT-1b · the people roster + member detail. `REVEALABLE_MEMBER_FIELDS` is a VALUE export (the console
 // renders the field picker from it, so the list cannot drift from the server's closed enum).
 export { REVEALABLE_MEMBER_FIELDS, kycSeverity, isFullyVerified, rosterKycLabel, MIN_SUSPENSION_REASON } from './resources/members';

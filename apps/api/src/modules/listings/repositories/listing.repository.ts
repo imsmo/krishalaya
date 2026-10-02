@@ -87,6 +87,45 @@ export class ListingRepository {
     return r.rows[0] ? ListingMapper.toDomain(r.rows[0]) : null;
   }
 
+  /** PC-56 TENANT-11d — the listing as it stands NOW, on the caller's transaction (a requirement line's stock check must not read a
+   *  cached or lagging copy: "available ≥ quantity" is decided on the write connection). No lock: the listing stays the seller's. */
+  async findInTx(tx: TxContext, tenantId: string, id: string): Promise<Listing | null> {
+    const r = await tx.query<ListingRow>(`SELECT ${READ_COLS} FROM listings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [id, tenantId]);
+    return r.rows[0] ? ListingMapper.toDomain(r.rows[0]) : null;
+  }
+
+  /** PC-56 TENANT-11d (A6) — MEMBER STOCK for a requirement, by RULE: this tenant's PUBLISHED listings of the same product (or,
+   *  when the requirement names only a category, the same category), in the requirement's unit, available ≥ 1, whose seller is
+   *  an active member of the tenant and is not the buyer. Ordered by price ascending, then distance (km, haversine) when the
+   *  requirement's delivery pincode AND the listing's pincode (or the listing's own lat/lng) carry coordinates — otherwise by
+   *  price alone (distance NULL, said so on screen). Bounded. No score is computed: none exists. */
+  async memberStock(tenantId: string, m: { productId: string | null; categoryId: string | null; unitCode: string; excludeSellerId: string; deliveryPincode: string | null; limit: number }): Promise<Array<{
+    id: string; sellerUserId: string; title: string; quantityAvailable: string; unitCode: string; priceMinor: string; pincode: string | null; distanceKm: number | null;
+    sellerName: string | null; sellerPhone: string | null; matchedOn: 'product' | 'category';
+  }>> {
+    if (!m.productId && !m.categoryId) return [];
+    const params: unknown[] = [tenantId, m.unitCode, m.excludeSellerId, m.deliveryPincode, m.limit];
+    const on = m.productId ? (params.push(m.productId), `l.product_id = $${params.length}`) : (params.push(m.categoryId), `l.category_id = $${params.length}`);
+    const r = await this.replica.forTenant(tenantId).query(
+      `WITH dest AS (SELECT lat, lng FROM pincodes WHERE pincode = $4 AND lat IS NOT NULL AND lng IS NOT NULL LIMIT 1)
+       SELECT l.id, l.seller_user_id, l.title, l.quantity_available::text AS qa, l.unit_code, l.price_minor::text AS price, l.pincode,
+              u.full_name AS seller_name, u.phone AS seller_phone,
+              CASE WHEN d.lat IS NULL OR COALESCE(l.lat, pc.lat) IS NULL THEN NULL ELSE
+                round((6371 * 2 * asin(sqrt(power(sin(radians((COALESCE(l.lat, pc.lat) - d.lat) / 2)), 2)
+                  + cos(radians(d.lat)) * cos(radians(COALESCE(l.lat, pc.lat))) * power(sin(radians((COALESCE(l.lng, pc.lng) - d.lng) / 2)), 2))))::numeric, 1) END AS km
+         FROM listings l
+         JOIN users u ON u.id = l.seller_user_id
+         LEFT JOIN pincodes pc ON pc.pincode = l.pincode
+         LEFT JOIN dest d ON true
+        WHERE l.tenant_id = $1 AND l.status = 'published' AND l.deleted_at IS NULL AND ${on}
+          AND l.unit_code = $2 AND l.quantity_available >= 1 AND l.seller_user_id <> $3
+          AND EXISTS (SELECT 1 FROM user_tenant_roles utr WHERE utr.tenant_id = l.tenant_id AND utr.user_id = l.seller_user_id AND utr.is_active = true)
+        ORDER BY l.price_minor ASC, km ASC NULLS LAST, l.id ASC
+        LIMIT $5`, params);
+    return r.rows.map((x: any) => ({ id: x.id, sellerUserId: x.seller_user_id, title: x.title, quantityAvailable: x.qa, unitCode: x.unit_code, priceMinor: x.price,
+      pincode: x.pincode ?? null, distanceKm: x.km == null ? null : Number(x.km), sellerName: x.seller_name, sellerPhone: x.seller_phone, matchedOn: m.productId ? 'product' as const : 'category' as const }));
+  }
+
   /** READ — seller's listings, cursor-paginated off a replica. */
   async listBySeller(tenantId: string, sellerUserId: string, afterId: string | null, limit: number): Promise<Listing[]> {
     const r = await this.replica.forTenant(tenantId).query<ListingRow>(

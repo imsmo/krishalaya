@@ -1,42 +1,56 @@
-// modules/requirements/jobs/expire-requirements.job.ts
-// Worker job (kv_relay): lapse requirements past need_by AND quotes past valid_until. Claims across
-// tenants (FOR UPDATE SKIP LOCKED), bounded per tick; each expire() is idempotent (skips non-live).
-// NOT a DI provider — instantiated by apps/worker (or tests) with the privileged kv_relay Pool,
-// mirroring the auction/offer expiry jobs.
+// modules/requirements/jobs/expire-requirements.job.ts · PC-56 TENANT-11d · F-1 / F-9 — REQUIREMENT + QUOTE EXPIRY, ACTUALLY SCHEDULED.
+//
+// Before this wave the job was instantiated NOWHERE (the module header said "apps/worker"; apps/worker hosts no domain job —
+// WORKER-RUNTIME.md "Deferred: domain-handler jobs"), so a requirement never lapsed past its need-by and a quote never lapsed past
+// its validity; and as written it claimed `requirement_responses FOR UPDATE SKIP LOCKED` on the kv_relay pool, a role with NO
+// grant on that table — wired as-is, the first tick would have been a 42501. It is now registered in `SCHEDULED_JOB_REGISTRY`
+// (the 10b / 11a / 11b pattern: the runner takes a Postgres advisory lock per job name per tick, so N pods never race one sweep)
+// and claims PER TENANT IN kv_app's UNIT OF WORK: the only thing it reads with the kv_relay pool is `tenants` (granted since
+// 0014); every claim and every act after that runs as kv_app under RLS, and each act re-locks the row and re-checks its clock,
+// so a row claimed by two ticks is expired once. No grant to kv_relay was added. One failure never stops the rest.
+import { Logger } from '@nestjs/common';
 import type { Pool } from 'pg';
-import { TxContext } from '../../../core/database/unit-of-work';
+import { ScheduledJob } from '../../../core/jobs/scheduled-job';
+import { UnitOfWork } from '../../../core/database/unit-of-work';
 import { RequirementRepository } from '../repositories/requirement.repository';
 import { RequirementResponseRepository } from '../repositories/requirement-response.repository';
 import { RequirementService } from '../services/requirement.service';
 import { RequirementResponseService } from '../services/requirement-response.service';
 
-export class ExpireRequirementsJob {
+export const EXPIRE_REQUIREMENTS_JOB = 'requirements-expire';
+
+export class ExpireRequirementsJob implements ScheduledJob {
+  readonly name = EXPIRE_REQUIREMENTS_JOB;
+  private readonly log = new Logger(ExpireRequirementsJob.name);
   constructor(
-    private readonly systemPool: Pool,
+    readonly intervalMs: number,
+    private readonly uow: UnitOfWork,
     private readonly reqRepo: RequirementRepository,
     private readonly respRepo: RequirementResponseRepository,
     private readonly requirements: RequirementService,
     private readonly responses: RequirementResponseService,
+    private readonly limit = 200,
   ) {}
 
-  async run(limit = 200): Promise<{ requirements: number; responses: number; failed: number }> {
-    const now = new Date();
-    const dueReqs = await this.claim((tx) => this.reqRepo.findDueToExpire(tx, now, limit));
-    const dueResps = await this.claim((tx) => this.respRepo.findDueToExpire(tx, now, limit));
+  async sweep(pool: Pool, now: Date = new Date()): Promise<{ tenants: number; requirements: number; responses: number; failed: number }> {
+    const tenants = await this.reqRepo.activeTenants(pool);
     let requirements = 0, responses = 0, failed = 0;
-    for (const d of dueReqs) { try { await this.requirements.expire(d.tenantId, d.id); requirements++; } catch { failed++; } }
-    for (const d of dueResps) { try { await this.responses.expireResponse(d.tenantId, d.id); responses++; } catch { failed++; } }
-    return { requirements, responses, failed };
+    for (const tenantId of tenants) {
+      let reqIds: string[] = []; let respIds: string[] = [];
+      try {
+        [reqIds, respIds] = await this.uow.run(tenantId, async (tx) => [
+          await this.reqRepo.dueToExpire(tx, tenantId, now, this.limit),
+          await this.respRepo.dueToExpire(tx, tenantId, now, this.limit),
+        ], { userId: 'system' });
+      } catch { failed++; continue; }
+      for (const id of reqIds) { try { if (await this.requirements.expire(tenantId, id, now)) requirements++; } catch { failed++; } }
+      for (const id of respIds) { try { if (await this.responses.expireResponse(tenantId, id, now)) responses++; } catch { failed++; } }
+    }
+    return { tenants: tenants.length, requirements, responses, failed };
   }
 
-  private async claim<T extends { id: string; toProps(): { tenantId: string } }>(find: (tx: TxContext) => Promise<T[]>): Promise<Array<{ id: string; tenantId: string }>> {
-    const client = await this.systemPool.connect();
-    try {
-      await client.query('BEGIN');
-      const tx: TxContext = { query: (sql, params) => client.query(sql, params as any) as any, tenantId: '', userId: 'system' };
-      const rows = await find(tx);
-      await client.query('COMMIT');
-      return rows.map((r) => ({ id: r.id, tenantId: r.toProps().tenantId }));
-    } catch (e) { await client.query('ROLLBACK').catch(() => undefined); throw e; } finally { client.release(); }
+  async run(pool: Pool): Promise<void> {
+    const r = await this.sweep(pool);
+    if (r.requirements + r.responses > 0 || r.failed > 0) this.log.log(`${this.name}: ${r.requirements} requirement(s) + ${r.responses} quote(s) expired, ${r.failed} failed, across ${r.tenants} tenant(s)`);
   }
 }

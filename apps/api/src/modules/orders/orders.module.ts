@@ -39,13 +39,14 @@ import { AbandonedCartsJob } from './jobs/abandoned-carts.job';
 import { PaymentSucceededHandler } from './events/handlers/payment-succeeded.handler';
 import { OfferAcceptedHandler } from './events/handlers/offer-accepted.handler';
 import { QuoteAcceptedHandler } from './events/handlers/quote-accepted.handler';
+import { RequirementsModule } from '../requirements/requirements.module';
 import { AuctionWonHandler } from './events/handlers/auction-won.handler';
 import { ShipmentDeliveredHandler } from './events/handlers/shipment-delivered.handler';
 import { DisputeOpenedHandler } from './events/handlers/dispute-opened.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
 
 @Module({
-  imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule],   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
+  imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule, RequirementsModule],   // RequirementsModule (PC-56 TENANT-11d): RequirementOrderService — one order per accepted response   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
   controllers: [CartsController, CheckoutController, OrdersController],
   providers: [
     CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService, AuctionOrderService,

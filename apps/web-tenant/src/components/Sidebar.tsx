@@ -65,7 +65,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featurePromotions ? [{ key: 'promotions', href: '/marketplace/offers', label: t.t('nav.promotions') }] : []),   // PC-56 TENANT-10b: W129's canon route; '/offers' above is LISTING offers (F-20)
         ...(env.featureMarket ? [{ key: 'market', href: '/market', label: t.t('nav.market') }] : []),
         ...(env.featureInbox ? [{ key: 'inbox', href: '/inbox', label: t.t('nav.inbox') }] : []),
-        ...(env.featureRequirements ? [{ key: 'requirements', href: '/requirements', label: t.t('nav.requirements') }] : []),
+        ...(env.featureRequirements ? [{ key: 'requirements', href: '/marketplace/requirements', label: t.t('nav.requirements') }] : []),
         { key: 'disputes', href: '/disputes', label: t.t('nav.disputes') },
         // PC-55 B8. Returns sit beside disputes (same module, same permission family) and COD beside logistics
         // (the cash comes off deliveries), both unconditional like the rails they belong to. Governance is gated on

@@ -31,6 +31,7 @@ import { ListingService } from '../../listings/services/listing.service';
 
 import { RequirementRepository } from '../repositories/requirement.repository';
 import { RequirementResponseRepository } from '../repositories/requirement-response.repository';
+import { ResponseGroupRepository } from '../repositories/response-group.repository';
 import { RequirementService } from '../services/requirement.service';
 import { RequirementResponseService } from '../services/requirement-response.service';
 import { SellerIsBuyerError, DuplicateResponseError } from '../domain/requirements.errors';
@@ -78,8 +79,9 @@ run('requirements slice (integration, real Postgres + RLS)', () => {
     const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(replica as any), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     const reqRepo = new RequirementRepository(replica as any);
     const respRepo = new RequirementResponseRepository(replica as any);
-    requirements = new RequirementService(uow, outbox, idem, metrics, audit, reqRepo);
-    responses = new RequirementResponseService(uow, outbox, idem, metrics, audit, listings, reqRepo, respRepo);
+    const groupRepo = new ResponseGroupRepository(replica as any);
+    requirements = new RequirementService(uow, outbox, idem, metrics, audit, reqRepo, groupRepo);
+    responses = new RequirementResponseService(uow, outbox, idem, metrics, audit, listings, reqRepo, respRepo, groupRepo);
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
@@ -88,7 +90,7 @@ run('requirements slice (integration, real Postgres + RLS)', () => {
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   it('buyer posts a requirement; two sellers quote; the buyer cannot self-quote', async () => {
-    const r = await requirements.create(tenantA, buyer, `idem-${randomUUID()}`, { title: 'Need 50q wheat', quantity: '50', unitCode: 'quintal' } as any);
+    const r = await requirements.create(tenantA, { userId: buyer, canModerate: false, canPost: true }, `idem-${randomUUID()}`, { title: 'Need 50q wheat', quantity: '50', unitCode: 'quintal' } as any);
     requirementId = r.id; expect(r.status).toBe('open');
 
     const q1 = await responses.submit(tenantA, seller1, requirementId, `idem-${randomUUID()}`, { quotedPriceMinor: '90000', quantity: '50', listingId: listing1 } as any);
@@ -110,8 +112,9 @@ run('requirements slice (integration, real Postgres + RLS)', () => {
   it('buyer shortlists then accepts a quote → fulfilled + quote_accepted in the outbox', async () => {
     const sl = await responses.shortlist(tenantA, buyerActor(), quote1);
     expect(sl.status).toBe('shortlisted');
+    // PC-56 TENANT-11d: a shortlist is a response status only — the requirement moves on accepted QUANTITY
     const reqMid = await admin.query(`SELECT status FROM requirements WHERE id=$1`, [requirementId]);
-    expect(reqMid.rows[0].status).toBe('partially_matched');
+    expect(reqMid.rows[0].status).toBe('open');
 
     const acc = await responses.accept(tenantA, buyerActor(), quote1, null);
     expect(acc.status).toBe('accepted');
@@ -119,7 +122,7 @@ run('requirements slice (integration, real Postgres + RLS)', () => {
     expect(req.rows[0].status).toBe('fulfilled');
     const ob = await admin.query(`SELECT payload FROM outbox_events WHERE aggregate_id=$1 AND event_type='requirements.quote_accepted'`, [quote1]);
     expect(ob.rowCount).toBe(1);
-    expect(ob.rows[0].payload).toMatchObject({ buyerUserId: buyer, sellerUserId: seller1, listingId: listing1, quotedPriceMinor: '90000', quantity: '50' });
+    expect(ob.rows[0].payload).toMatchObject({ responseId: quote1, buyerUserId: buyer, sellerUserId: seller1, listingId: listing1, quotedPriceMinor: '90000', quantity: '50.000', unitCode: 'quintal' });
   });
 
   it('RLS: tenant B cannot see tenant A\'s requirement', async () => {

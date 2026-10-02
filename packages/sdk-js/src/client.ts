@@ -37,7 +37,7 @@ import { AmbassadorsResource } from './resources/ambassadors';
 import { CoursesResource, EnrollmentsResource, ResourcesResource, LiveStudioResource, LiveClassesResource, InstructorsResource, InstructorEarningsResource } from './resources/education';
 import { MembershipsResource } from './resources/memberships';
 import { PromotionsResource } from './resources/promotions';
-import { RequirementsResource } from './resources/requirements';
+import { RequirementsResource, ResponsesResource } from './resources/requirements';
 import { WarehousingResource } from './resources/warehousing';
 import { LivestockResource } from './resources/livestock';
 import { ReturnsResource } from './resources/returns';
@@ -109,6 +109,8 @@ export class KrishalayaClient {
   readonly memberships: MembershipsResource;
   readonly promotions: PromotionsResource;
   readonly requirements: RequirementsResource;
+  /** PC-56 TENANT-11d · `/v1/responses` — shortlist / accept (by quantity) / reject one quote, or a pooled quote as a whole. */
+  readonly responses: ResponsesResource;
   readonly warehousing: WarehousingResource;
   readonly livestock: LivestockResource;
   readonly returns: ReturnsResource;
@@ -200,6 +202,7 @@ export class KrishalayaClient {
     this.memberships = new MembershipsResource(this.http);
     this.promotions = new PromotionsResource(this.http);
     this.requirements = new RequirementsResource(this.http);
+    this.responses = new ResponsesResource(this.http);
     this.warehousing = new WarehousingResource(this.http);
     this.livestock = new LivestockResource(this.http);
     this.returns = new ReturnsResource(this.http);

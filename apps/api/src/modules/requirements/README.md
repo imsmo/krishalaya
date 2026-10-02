@@ -17,12 +17,12 @@ feature flag (default OFF).
 - **Quote** — `POST /v1/requirements/:id/responses` (`requirement.quote`, Idempotency-Key). A quote may
   name the seller's own **published** listing; naming someone else's, or an unpublished one, is rejected.
 - **Buyer decisions** — `POST /v1/responses/:id/shortlist|accept|reject`. Accepting (one ACID tx) marks
-  the quote `accepted` AND the requirement `fulfilled`, and emits `requirements.quote_accepted` (buyer,
+  the quote `accepted` and adds its accepted quantity to the requirement (11d: fulfilled by QUANTITY), and emits `requirements.quote_accepted` (buyer,
   seller, listing, quoted price, qty) via the **outbox**.
 - **Order from an accepted quote** — the orders module's `QuoteAcceptedHandler` consumes
   `requirements.quote_accepted` and creates the order (`source='requirement'`, `requirement_id` set —
   the provenance link; requirements has no order_id column, so `orders.requirement_id` IS the link).
-  Idempotent (one order per requirement). Proven by `quote-to-order.integration.spec.ts`.
+  Since 11d: ONE order per accepted RESPONSE, idempotent on `requirement_responses.order_id` (see below).
 - **Expiry** — the `expire-requirements` worker lapses requirements past `need_by` and quotes past
   `valid_until` (kv_relay pool, `FOR UPDATE SKIP LOCKED`, bounded, idempotent).
 
@@ -61,11 +61,26 @@ self-quote blocked -> duplicate blocked -> seller sees only own quote -> shortli
 (fulfilled + quote_accepted in outbox) -> cross-tenant RLS denial. `quote-to-order.integration.spec.ts`:
 accepted quote relays to an order (`source='requirement'`) and is idempotent.
 
+## PC-56 TENANT-11d — linked responses, one order per member, per-member consent before send
+- **Buyer desk** (`requirement.desk`: tenant_admin, fpo_coordinator) posts AS a named buyer (`onBehalf { buyerUserId, consent }`;
+  `requirement_consents` act=post; `posted_by` = the desk; the buyer is the member). It decides on the buyer's quotes only with
+  the buyer's consent for THAT act (shortlist / accept / reject). Moderators read and close (with a reason); they no longer decide.
+- **Pooled quote** (`requirement_response_groups` + `requirement_group_lines`, 0189): draft → lines from member stock (published,
+  same unit, available ≥ quantity, one per member, never the buyer) → each member's consent to exactly their figures (an edit
+  clears it, DB trigger) → send (refused `CONSENT_MISSING`, naming the member, while any line lacks it) writes one
+  `requirement_responses` row per line (`group_id`, `consent_id`, valid 48 h) in one transaction; `requirement.group_quoted`
+  reaches the buyer. Blended price = floor(Σ qty×price ÷ Σ qty) in integer thousandths, remainder shown.
+- **Accept by quantity**: `POST /v1/responses/:id/accept { quantity? }` or `POST /v1/responses/groups/:gid/accept`; the
+  requirement's `fulfilled_quantity` grows; `partially_matched` / `fulfilled` follow the quantity. Each accepted response becomes
+  ONE order (orders' `QuoteAcceptedHandler` → `RequirementOrderService`, kv_app UoW, `requirement_responses.order_id`).
+- **Member stock** `GET /v1/requirements/:id/matches` — rule-based (same product, else category; same unit; price ascending,
+  then distance when both pincodes carry coordinates). `ai_match_score` stays unwritten: "AI score not yet available".
+- **Jobs**: `ExpireRequirementsJob` + `MatchNotificationsJob` (need-by reminder) are registered in `SCHEDULED_JOB_REGISTRY` and
+  claim per tenant in kv_app's unit of work (the only kv_relay read is `tenants`).
+- Every act is audited (actor · reason · before/after · ip); cursors are µs; `REQ-<mmdd>-<nn>` by trigger.
+
 ## Deferred (flagged, not faked) — next wave
-- **Match notifications** — `events/handlers/listing-published.handler.ts` + `jobs/match-notifications.job.ts`
-  (nudge buyers when a fresh listing matches their open requirement) need the communication/notifications
-  module; intentionally not registered yet.
-- **AI match scoring** — the `ai_match_score` column is reserved for an AI ranking service.
+- **AI match scoring** — the `ai_match_score` column is reserved for an AI ranking service; nothing writes it (11d).
 
 ## Async glue (API-W4-01)
 - **Buyer edit** — `UpdateRequirementSchema` (zod .strict) + `Requirement.editDetails` (OPEN/partially_matched only,

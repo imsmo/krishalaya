@@ -49,18 +49,29 @@ describe('Requirement.post', () => {
   });
 });
 
-describe('Requirement lifecycle', () => {
-  it('shortlist moves open → partially_matched (idempotent thereafter)', () => {
+describe('Requirement lifecycle (PC-56 TENANT-11d · by fulfilled QUANTITY, not by a shortlist)', () => {
+  it('a partial acceptance moves open → partially_matched; reaching the quantity fulfils it', () => {
     const r = req(); r.pullEvents();
-    r.markPartiallyMatched(); expect(r.status).toBe('partially_matched');
-    r.markPartiallyMatched(); expect(r.status).toBe('partially_matched');   // no-op, no throw
+    expect(r.recordAccepted(25_000n, ['q1'])).toEqual({ before: '0.000', after: '25.000' });
+    expect(r.status).toBe('partially_matched');
+    expect(r.recordAccepted(25_000n, ['q2'])).toEqual({ before: '25.000', after: '50.000' });
+    expect(r.status).toBe('fulfilled');
+    expect(r.pullEvents().map((e) => e.type)).toEqual([RequirementEventType.PartiallyMatched, RequirementEventType.Fulfilled]);
   });
-  it('fulfil / close / expire respect the machine', () => {
-    expect(req().status).toBe('open');
-    const a = req(); a.fulfill('q1'); expect(a.status).toBe('fulfilled');
-    expect(() => a.close()).toThrow(RequirementNotOpenError);                // terminal
-    const b = req(); b.close(); expect(b.status).toBe('closed');
+  it('one acceptance at or above the quantity fulfils straight from open', () => {
+    const r = req(); r.recordAccepted(60_000n, ['q1']); expect(r.status).toBe('fulfilled');
+  });
+  it('close / expire respect the machine; a closed requirement records who and why', () => {
+    const a = req(); a.recordAccepted(50_000n, ['q1']);
+    expect(() => a.close('buyer1', null)).toThrow(RequirementNotOpenError);                // terminal
+    const b = req(); b.close('mod1', 'duplicate post'); expect(b.status).toBe('closed');
+    expect(b.toProps()).toMatchObject({ closedBy: 'mod1', closeReason: 'duplicate post' });
     const c = req(); c.expire(); expect(c.status).toBe('expired');
+  });
+  it('a desk post carries the buyer\'s consent; never for the desk itself', () => {
+    expect(() => req({ postedBy: 'desk1' })).toThrow(InvalidRequirementError);
+    expect(() => req({ postedBy: 'buyer1', postConsentId: 'c1' })).toThrow(InvalidRequirementError);
+    expect(req({ postedBy: 'desk1', postConsentId: 'c1' }).toProps().postedBy).toBe('desk1');
   });
 });
 
@@ -73,16 +84,29 @@ describe('RequirementResponse', () => {
   it('submitted → shortlisted → accepted carries the order inputs (buyer, price, qty, listing)', () => {
     const q = resp(); q.pullEvents();
     q.shortlist(); expect(q.status).toBe('shortlisted');
-    q.accept('buyer1', NOW);
+    expect(q.accept({ buyerUserId: 'buyer1', acceptedBy: 'buyer1', now: NOW, unitCode: 'quintal' })).toBe(50_000n);
     expect(q.status).toBe('accepted');
     const ev = q.pullEvents().find((e) => e.type === ResponseEventType.Accepted)!;
-    expect(ev.payload).toMatchObject({ buyerUserId: 'buyer1', sellerUserId: 'seller1', listingId: 'l1', quotedPriceMinor: '90000', quantity: '50' });
+    expect(ev.payload).toMatchObject({ responseId: 'q1', buyerUserId: 'buyer1', sellerUserId: 'seller1', listingId: 'l1', quotedPriceMinor: '90000', quantity: '50.000', unitCode: 'quintal', partial: false });
+  });
+  it('accepts BY QUANTITY: part of a quote, never more than it, never zero', () => {
+    const q = resp(); q.pullEvents();
+    expect(() => resp().accept({ buyerUserId: 'buyer1', acceptedBy: 'buyer1', now: NOW, unitCode: 'quintal', quantity: '50.001' })).toThrow(InvalidResponseError);
+    expect(() => resp().accept({ buyerUserId: 'buyer1', acceptedBy: 'buyer1', now: NOW, unitCode: 'quintal', quantity: '0' })).toThrow(InvalidResponseError);
+    expect(q.accept({ buyerUserId: 'buyer1', acceptedBy: 'desk1', now: NOW, unitCode: 'quintal', quantity: '25', decisionConsentId: 'c9' })).toBe(25_000n);
+    expect(q.toProps()).toMatchObject({ acceptedQuantity: '25.000', acceptedBy: 'desk1', decisionConsentId: 'c9' });
+    expect(q.pullEvents()[0].payload).toMatchObject({ quantity: '25.000', quotedQuantity: '50', partial: true });
+  });
+  it('a linked (pooled) response exists only with its member\'s consent', () => {
+    expect(() => resp({ groupId: 'g1' })).toThrow(InvalidResponseError);
+    expect(resp({ groupId: 'g1', consentId: 'c1' }).groupId).toBe('g1');
   });
   it('cannot be accepted without a listing, when expired, or when not live', () => {
-    expect(() => resp({ listingId: null }).accept('buyer1', NOW)).toThrow(ResponseNotAcceptableError);
+    const a = (q: RequirementResponse, now = NOW) => q.accept({ buyerUserId: 'buyer1', acceptedBy: 'buyer1', now, unitCode: 'quintal' });
+    expect(() => a(resp({ listingId: null }))).toThrow(ResponseNotAcceptableError);
     const expired = resp({ validUntil: new Date(NOW.getTime() + 1000) });
-    expect(() => expired.accept('buyer1', new Date(NOW.getTime() + 2000))).toThrow(ResponseNotLiveError);
+    expect(() => a(expired, new Date(NOW.getTime() + 2000))).toThrow(ResponseNotLiveError);
     const r = resp(); r.reject();
-    expect(() => r.accept('buyer1', NOW)).toThrow(ResponseNotLiveError);
+    expect(() => a(r)).toThrow(ResponseNotLiveError);
   });
 });

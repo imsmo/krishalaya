@@ -17,3 +17,29 @@ export class ResponseNotAcceptableError extends AppError { constructor() { super
 export class DuplicateResponseError extends AppError { constructor() { super('RESPONSE_DUPLICATE', 'You have already quoted on this requirement', 409); } }
 export class InvalidRequirementError extends DomainError { constructor(message: string) { super('REQUIREMENT_INVALID', message, 400); } }
 export class InvalidResponseError extends DomainError { constructor(message: string) { super('RESPONSE_INVALID', message, 400); } }
+
+// ---- PC-56 TENANT-11d -------------------------------------------------------------------------------------------------------
+/** A3 / A4: acting for a buyer, or responding with member stock, needs requirement.desk. */
+export class RequirementDeskForbiddenError extends AppError { constructor(message = 'This needs the buyer desk (requirement.desk)') { super('REQUIREMENT_DESK_FORBIDDEN', message, 403); } }
+/** A3 / A4 / F-20: the desk acts for the buyer only with the buyer's recorded consent for THAT act. */
+export class BuyerConsentRequiredError extends AppError {
+  constructor(act: string, code = 'REQUIREMENT_BUYER_CONSENT_REQUIRED') { super(code, code === 'REQUIREMENT_CONSENT_EVIDENCE_REQUIRED' ? 'A voice or written consent needs its evidence media' : `The buyer's recorded consent is required to ${act} for them`, 403, { act }); }
+}
+/** The named buyer / member is not an active member of this tenant. */
+export class NotATenantMemberError extends AppError { constructor(userId: string, role: 'buyer' | 'member') { super('REQUIREMENT_NOT_A_MEMBER', `The named ${role} is not an active member of this tenant`, 422, { userId, role }); } }
+/** A1: send is refused while any line lacks its member's consent — the refusal NAMES the member. */
+export class ConsentMissingError extends AppError {
+  constructor(members: Array<{ userId: string; name: string | null; lineId: string }>) {
+    super('CONSENT_MISSING', `Not sent — ${members.map((m) => m.name ?? 'a member').join(', ')} ${members.length === 1 ? 'has' : 'have'} not consented to their line`, 409, { members });
+  }
+}
+export class ResponseGroupNotFoundError extends NotFoundError { constructor(id: string) { super('Pooled quote not found'); (this as any).details = { id }; } }
+export class GroupLineNotFoundError extends NotFoundError { constructor(id: string) { super('Line not found'); (this as any).details = { id }; } }
+export class ResponseGroupStateError extends AppError { constructor(status: string, message = `The pooled quote is ${status}`) { super('REQUIREMENT_GROUP_STATE', message, 409, { status }); } }
+export class EmptyResponseGroupError extends AppError { constructor() { super('REQUIREMENT_GROUP_EMPTY', 'A pooled quote needs at least one member line', 409); } }
+/** A1: the line's listing must be a tenant member's PUBLISHED listing with available ≥ quantity, in the requirement's unit. */
+export class GroupLineInvalidError extends AppError { constructor(code: string, message: string, details?: Record<string, unknown>) { super(code, message, 422, details); } }
+/** A2: an accepted quantity must be > 0 and ≤ the quote's quantity. */
+export class AcceptQuantityError extends AppError { constructor(max: string) { super('RESPONSE_ACCEPT_QUANTITY_INVALID', `Accept between 0 and ${max} (the quote's quantity)`, 422, { max }); } }
+/** A7: a moderator closing a buyer's requirement must give a reason. */
+export class CloseReasonRequiredError extends AppError { constructor() { super('REQUIREMENT_CLOSE_REASON_REQUIRED', 'Closing a buyer\'s requirement needs a reason (3–300 characters)', 422); } }

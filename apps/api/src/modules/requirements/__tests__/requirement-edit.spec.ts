@@ -26,8 +26,13 @@ describe('Requirement.editDetails', () => {
     expect(() => open().editDetails({ budgetMinMinor: 500n, budgetMaxMinor: 100n })).toThrow(InvalidRequirementError);
     expect(() => open().editDetails({ title: '   ' })).toThrow(InvalidRequirementError);
   });
+  it('PC-56 TENANT-11d · a partly filled requirement cannot shrink to what buyers already accepted', () => {
+    const r = open(); r.recordAccepted(4_000n, ['resp1']);
+    expect(() => r.editDetails({ quantity: '4' })).toThrow(InvalidRequirementError);
+    r.editDetails({ quantity: '4.5' }); expect(r.toProps().quantity).toBe('4.5');
+  });
   it('refuses to edit once the requirement has left the accepting state', () => {
-    const r = open(); r.fulfill('resp1');
+    const r = open(); r.recordAccepted(10_000n, ['resp1']);
     expect(() => r.editDetails({ title: 'too late' })).toThrow(RequirementNotOpenError);
   });
 });

@@ -759,6 +759,26 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('group_lot.settled','share','group_lot_settlement_lines.share_minor (money text, core/money moneyText)','INR 21,600.00',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-11d · **A BUYER HEARS THAT MEMBERS POOLED THEIR STOCK FOR THEIR NEED.** Canon W132: the buyer desk's pooled quote
+-- "sends as two linked responses (one per member, status submitted)". Migration 0189 catalogues `requirement.group_quoted`; its copy
+-- lives HERE, above the version backfill below (0122's send-time gate). Variables come from the outbox payload: `reqNo`
+-- (REQ-mmdd-nn), `title` (the requirement's own title, as the buyer wrote it), `members` (how many members' linked responses).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('requirement.group_quoted','push','en',NULL,'{{reqNo}}: a pooled quote arrived','{{members}} members quoted together on {{reqNo}} ({{title}}). Each member confirmed their own share. Open it to shortlist, accept or decline.',NULL,true),
+ ('requirement.group_quoted','push','hi',NULL,'{{reqNo}}: एक संयुक्त भाव आया','{{reqNo}} ({{title}}) पर {{members}} सदस्यों ने मिलकर भाव दिया है। हर सदस्य ने अपने हिस्से की पुष्टि की है। शॉर्टलिस्ट, स्वीकार या अस्वीकार करने के लिए खोलें।',NULL,true),
+ ('requirement.group_quoted','push','gu',NULL,'{{reqNo}}: એક સંયુક્ત ભાવ આવ્યો','{{reqNo}} ({{title}}) પર {{members}} સભ્યોએ સાથે મળીને ભાવ આપ્યો છે. દરેક સભ્યે પોતાના હિસ્સાની પુષ્ટિ કરી છે. શોર્ટલિસ્ટ, સ્વીકાર અથવા અસ્વીકાર કરવા માટે ખોલો.',NULL,true),
+ ('requirement.group_quoted','inapp','en',NULL,'{{reqNo}}: a pooled quote arrived','{{members}} members quoted together on {{reqNo}} ({{title}}). Each member confirmed their own share. Open it to shortlist, accept or decline.',NULL,true),
+ ('requirement.group_quoted','inapp','hi',NULL,'{{reqNo}}: एक संयुक्त भाव आया','{{reqNo}} ({{title}}) पर {{members}} सदस्यों ने मिलकर भाव दिया है। हर सदस्य ने अपने हिस्से की पुष्टि की है। शॉर्टलिस्ट, स्वीकार या अस्वीकार करने के लिए खोलें।',NULL,true),
+ ('requirement.group_quoted','inapp','gu',NULL,'{{reqNo}}: એક સંયુક્ત ભાવ આવ્યો','{{reqNo}} ({{title}}) પર {{members}} સભ્યોએ સાથે મળીને ભાવ આપ્યો છે. દરેક સભ્યે પોતાના હિસ્સાની પુષ્ટિ કરી છે. શોર્ટલિસ્ટ, સ્વીકાર અથવા અસ્વીકાર કરવા માટે ખોલો.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('requirement.group_quoted','reqNo','requirements.req_no','REQ-0711-08',true),
+ ('requirement.group_quoted','title','requirements.title (the buyer''s own words)','GG-20 groundnut, grade A',true),
+ ('requirement.group_quoted','members','count of linked responses the pooled quote sent','2',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

@@ -31,9 +31,11 @@ import { ListingMediaRepository } from '../../listings/repositories/listing-medi
 import { ListingService } from '../../listings/services/listing.service';
 import { OrderRepository } from '../../orders/repositories/order.repository';
 import { QuoteAcceptedHandler } from '../../orders/events/handlers/quote-accepted.handler';
+import { RequirementOrderService } from '../services/requirement-order.service';
 
 import { RequirementRepository } from '../repositories/requirement.repository';
 import { RequirementResponseRepository } from '../repositories/requirement-response.repository';
+import { ResponseGroupRepository } from '../repositories/response-group.repository';
 import { RequirementService } from '../services/requirement.service';
 import { RequirementResponseService } from '../services/requirement-response.service';
 
@@ -73,20 +75,21 @@ run('order-from-accepted-quote via outbox relay (integration, real Postgres)', (
     const listings = new ListingService(uow, outbox, quota, idem, cache, metrics, new ListingRepository(replica as any), new PriceHistoryRepository(replica as any), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     const reqRepo = new RequirementRepository(replica as any);
     const respRepo = new RequirementResponseRepository(replica as any);
-    requirements = new RequirementService(uow, outbox, idem, metrics, audit, reqRepo);
-    responses = new RequirementResponseService(uow, outbox, idem, metrics, audit, listings, reqRepo, respRepo);
+    const groupRepo = new ResponseGroupRepository(replica as any);
+    requirements = new RequirementService(uow, outbox, idem, metrics, audit, reqRepo, groupRepo);
+    responses = new RequirementResponseService(uow, outbox, idem, metrics, audit, listings, reqRepo, respRepo, groupRepo);
 
     const flags = new FlagsService(pools, cache);
     const orderRepo = new OrderRepository(replica as any);
     const registry = new OutboxHandlerRegistry();
-    registry.register(new QuoteAcceptedHandler(orderRepo, listings, flags, outbox, metrics));   // orders consumes requirements.quote_accepted
+    registry.register(new QuoteAcceptedHandler(orderRepo, listings, flags, outbox, metrics, uow, new RequirementOrderService(respRepo)));   // 11d: one order per accepted response, in kv_app's UoW   // orders consumes requirements.quote_accepted
     dispatcher = new OutboxDispatcher(admin, registry, metrics);
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
 
   it('accepted quote → relay → order created (source=requirement, requirement_id set)', async () => {
-    const r = await requirements.create(tenantA, buyer, `idem-${randomUUID()}`, { title: 'Need 40q', quantity: '40', unitCode: 'quintal' } as any);
+    const r = await requirements.create(tenantA, { userId: buyer, canModerate: false, canPost: true }, `idem-${randomUUID()}`, { title: 'Need 40q', quantity: '40', unitCode: 'quintal' } as any);
     requirementId = r.id;
     const q = await responses.submit(tenantA, seller, requirementId, `idem-${randomUUID()}`, { quotedPriceMinor: '92000', quantity: '40', listingId } as any);
     await responses.accept(tenantA, { userId: buyer, canModerate: false }, q.id, null);
