@@ -35,14 +35,13 @@ describe('TENANT-4a · the three accounts, and what each figure is allowed to be
     expect(balanceVerdict(acct({ cachedMinor: '0', ledgerSumMinor: '0' }))).toEqual({ kind: 'reconciled', minor: '0' });
   });
 
-  it('THE HOLD ACCOUNT HAS NO WRITER, AND THE REGISTRY SAYS SO RATHER THAN THE SCREEN GUESSING', () => {
-    expect(TENANT_ACCOUNT_WRITERS.hold).toEqual([]);
+  it('[PC-56 TENANT-10b] THE HOLD ACCOUNT\'S ONLY WRITER IS THE PROMOTION RESERVATION, AND THE REGISTRY SAYS SO', () => {
+    expect(TENANT_ACCOUNT_WRITERS.hold).toEqual(['promotions.coupon_hold', 'payments.order_completed.promo_settle', 'promotions.coupon_release']);
     expect(TENANT_ACCOUNT_WRITERS.commission).toContain('orders.completed');
     expect(TENANT_ACCOUNT_WRITERS.main).toContain('dairy.milk_bill');
-    expect(holdBasis('0')).toBe('no_freeze_path');
-    // If somebody later builds a freeze path and forgets this registry, a non-zero balance still tells
-    // the truth — the basis is derived from the money as well as from the list.
-    expect(holdBasis('12820')).toBe('frozen_by_ledger');
+    expect(TENANT_ACCOUNT_WRITERS.main).toEqual(expect.arrayContaining(['promotions.coupon_hold', 'promotions.coupon_release']));
+    expect(holdBasis('0')).toBe('nothing_reserved');
+    expect(holdBasis('12820')).toBe('promotion_reservations');
   });
 });
 

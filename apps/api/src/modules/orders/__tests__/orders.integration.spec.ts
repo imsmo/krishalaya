@@ -42,6 +42,11 @@ import { PromotionService } from '../../promotions/services/promotion.service';
 import { PromotionRepository } from '../../promotions/repositories/promotion.repository';
 import { CouponRepository } from '../../promotions/repositories/coupon.repository';
 import { CouponRedemptionRepository } from '../../promotions/repositories/coupon-redemption.repository';
+import { CouponAttemptRepository } from '../../promotions/repositories/coupon-attempt.repository';
+import { CouponMoneyService } from '../../promotions/services/coupon-money.service';
+import { platform, PlatformAccount } from '../../../core/wallet/account-codes';
+import type { WalletPort } from '../../../core/wallet/wallet.port';
+import type { UnitOfWork } from '../../../core/database/unit-of-work';
 import { UserMembershipService } from '../../memberships/services/user-membership.service';
 import { MembershipTierRepository } from '../../memberships/repositories/membership-tier.repository';
 import { UserMembershipRepository } from '../../memberships/repositories/user-membership.repository';
@@ -69,7 +74,7 @@ run('orders slice (integration, real Postgres + RLS)', () => {
   let carts: CartService;
   let checkout: CheckoutService;
   let promotions: PromotionService;
-  let couponSvc: CouponService;
+  let couponSvc: CouponService; let wallet: WalletPort; let uowRef: UnitOfWork;
   let orders: OrderService;
   let isSuperuser = false;
 
@@ -118,7 +123,11 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     const promoRepo = new PromotionRepository(replica as any);
     const couponRepo = new CouponRepository(replica as any);
     promotions = new PromotionService(uow, outbox, idem, metrics, audit, promoRepo);
-    couponSvc = new CouponService(uow, outbox, idem, metrics, audit, promoRepo, couponRepo, new CouponRedemptionRepository(replica as any));
+    const redemptionRepo = new CouponRedemptionRepository(replica as any);
+    wallet = new InProcessWalletClient(new LedgerRepository());
+    // PC-56 TENANT-10b: + the attempts log and the money service (the coupon reserves from the tenant wallet).
+    couponSvc = new CouponService(uow, outbox, idem, metrics, audit, promoRepo, couponRepo, redemptionRepo, new CouponAttemptRepository(), new CouponMoneyService(wallet, redemptionRepo));
+    uowRef = uow;
     const membershipSvc = new UserMembershipService(uow, outbox, idem, metrics, new InProcessWalletClient(new LedgerRepository()), audit, new MembershipTierRepository(replica as any), new UserMembershipRepository(replica as any));
     checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo, checkoutGroupRepo,
       new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, membershipSvc,
@@ -201,10 +210,14 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     await makeUser(admin, buyer2);
     await admin.query(`UPDATE feature_flags SET is_enabled=true WHERE key='promotions'`);
     const now = Date.now();
+    // PC-56 TENANT-10b: a new promotion has a BUDGET (uncapped is refused by name), and the discount is RESERVED from the
+    // tenant's wallet — so the tenant's Main is funded first, as a cooperative's would be.
     const promo = await promotions.create(tenantA, { userId: seller, canManage: true } as any, `idem-${randomUUID()}`, {
-      promoType: 'festival', defaultName: 'Festival 10%', rules: { discountType: 'percent', percentOff: 10 },
+      promoType: 'festival', defaultName: 'Festival 10%', rules: { discountType: 'percent', percentOff: 10 }, budgetMinor: '10000000',
       startsAt: new Date(now - 3600_000).toISOString(), endsAt: new Date(now + 7 * 86400_000).toISOString(),
     } as any);
+    await uowRef.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'billing_adjustment', idempotencyKey: `fund-${randomUUID()}`,
+      legs: [{ account: platform(PlatformAccount.Suspense), amountMinor: -10000000n }, { account: { kind: 'tenant', tenantId: tenantA, accountCode: 'main', currencyCode: 'INR' }, amountMinor: 10000000n }] }), { userId: 'system' });
     const CODE = `SAVE${randomUUID().slice(0, 6).toUpperCase()}`;
     await couponSvc.createCoupon(tenantA, { userId: seller, canManage: true } as any, `idem-${randomUUID()}`, { promotionId: promo.id, code: CODE, perUserLimit: 1 } as any);
 
@@ -217,9 +230,10 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     expect(String(row.rows[0].discount_minor)).toBe(expectedDiscount.toString());          // 10% off recorded on the order
     expect(String(row.rows[0].total_minor)).toBe((subtotal - expectedDiscount).toString()); // buyer pays less
     // the redemption was recorded against this order (one coupon per order)
-    const red = await admin.query(`SELECT amount_minor FROM coupon_redemptions WHERE tenant_id=$1 AND order_id=$2`, [tenantA, cid]);
+    const red = await admin.query(`SELECT amount_minor, hold_txn_id FROM coupon_redemptions WHERE tenant_id=$1 AND order_id=$2`, [tenantA, cid]);
     expect(red.rowCount).toBe(1);
     expect(String(red.rows[0].amount_minor)).toBe(expectedDiscount.toString());
+    expect(red.rows[0].hold_txn_id).toBeTruthy();                                            // F-2: reserved from the tenant wallet
     await admin.query(`UPDATE feature_flags SET is_enabled=false WHERE key='promotions'`);
   });
 

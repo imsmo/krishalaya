@@ -62,7 +62,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         // the roster behind the `memberships` flag would leave a tenant unable to see who belongs to them.
         { key: 'people', href: '/people', label: t.t('nav.people') },
         ...(env.featureMemberships ? [{ key: 'members', href: '/members', label: t.t('nav.members') }] : []),
-        ...(env.featurePromotions ? [{ key: 'promotions', href: '/promotions', label: t.t('nav.promotions') }] : []),
+        ...(env.featurePromotions ? [{ key: 'promotions', href: '/marketplace/offers', label: t.t('nav.promotions') }] : []),   // PC-56 TENANT-10b: W129's canon route; '/offers' above is LISTING offers (F-20)
         ...(env.featureMarket ? [{ key: 'market', href: '/market', label: t.t('nav.market') }] : []),
         ...(env.featureInbox ? [{ key: 'inbox', href: '/inbox', label: t.t('nav.inbox') }] : []),
         ...(env.featureRequirements ? [{ key: 'requirements', href: '/requirements', label: t.t('nav.requirements') }] : []),

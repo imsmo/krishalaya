@@ -134,7 +134,8 @@ export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7
 // consoles import them via `from '@krishalaya/sdk-js'`, which failed to typecheck until now (surfaced by the
 // first full `pnpm build` of web-ops/web-gov). Grouped by module, same style as the lines above.
 export type { StorageBooking, AssayReport, NwrReceipt } from './resources/warehousing';
-export type { Coupon, CouponRedemption, Promotion } from './resources/promotions';
+export type { Coupon, CouponRedemption, Promotion, PromotionStatus, PromotionRules, CreatePromotionInput, PromotionReviewInput, PromotionReview, CouponReviewInput, CouponReview,
+  OffersSummary, CouponStatus, CouponListRow, CouponOutcome, CouponRedemptionRow, CouponNotice } from './resources/promotions';
 export type { EduChannel } from './resources/education';
 export { LiveClassesResource } from './resources/education';
 export { COURSE_ACTS } from './types';

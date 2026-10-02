@@ -6,6 +6,23 @@ a global `max_uses` + a `per_user_limit`). A buyer **validates** a code (preview
 against an order — the authoritative, capped, budget-bounded, append-only redemption. Built to the
 `listings`/`identity` bar. Gated by the `promotions` feature flag (default OFF).
 
+## PC-56 TENANT-10b — the tenant wallet funds the discount (founder decision F-2; supersedes the "no money" notes below)
+- **Reserve at redemption.** `redeemInTx` (checkout's own tx, coupon + promotion rows `FOR UPDATE`) posts
+  `promo_hold` tenant Main −d → tenant Hold +d (key `promo-hold:<orderId>:<couponId>`, inside a SAVEPOINT so a funds
+  refusal leaves nothing) BEFORE writing the redemption, which carries `hold_txn_id` (0185).
+- **Pay at settlement.** payments' `OrderCompletedHandler` calls `CouponMoneyService.settleOrderInTx` after the escrow
+  leg, in the relay tx: `promo_settle` tenant Hold −d → seller Main +d; the seller is settled on the FULL goods value.
+  The escrow txn is unchanged. kv_relay holds SELECT + UPDATE(settled_txn_id, settled_at) on `coupon_redemptions` only.
+- **Return on cancel / refund** (`orders.order_cancelled`, `orders.order_refunded`, before settlement): `promo_release`
+  tenant Hold −d → Main +d; the coupon's use and the promotion's spend are given back.
+- **A decline never aborts a checkout.** `couponDecision` (domain/coupon-outcome) answers both validate (preview) and
+  redeem: `applied | user_limit | budget_exhausted | window | tenant_funds_unavailable | invalid | max_uses_reached |
+  not_applicable`. Declined → the order is placed at full price with `couponNotice { code, outcome, messageKey }`.
+- **Every outcome is recorded** in `coupon_redemption_attempts` (append-only by trigger, RLS with WITH CHECK).
+- `spent_minor` = sum of reservations taken (and not released). A new promotion needs a budget; only `discount` and
+  `festival` (the types with an engine) can be created. The budget watch and festival scheduler run through
+  `SCHEDULED_JOB_REGISTRY`; the scheduler never re-opens a promotion a person paused (`paused_at`).
+
 ## What it owns
 - **Promotion** — `promo_type` + `rules` jsonb (parsed/validated into a typed `PromoRules`, never trusted
   freeform) + `budget_minor`/`spent_minor` + `[starts_at, ends_at]` + `is_active`. Validity is **derived**

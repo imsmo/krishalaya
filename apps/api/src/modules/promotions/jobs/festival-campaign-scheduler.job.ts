@@ -4,8 +4,9 @@
 // as time passes (activate when it opens, pause when it closes) so tenants don't have to toggle manually.
 // Claims festival promotions whose is_active disagrees with the window across tenants (SKIP LOCKED,
 // bounded), then aligns each via PromotionService (its own tx + outbox). IDEMPOTENT: a promotion already
-// aligned with its window is never re-claimed. NOT a DI provider — apps/worker instantiates it with the
-// kv_relay Pool + the repo + PromotionService.
+// aligned with its window is never re-claimed. PC-56 TENANT-10b (F-9): scheduled through SCHEDULED_JOB_REGISTRY by
+// jobs/promotions.cadence-jobs.ts, which hands it the runner's kv_relay Pool (it was instantiated nowhere before).
+// F-10: a promotion a PERSON paused is never claimed (repository) and never re-opened (service, under the row lock).
 import type { Pool } from 'pg';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { PromotionRepository } from '../repositories/promotion.repository';

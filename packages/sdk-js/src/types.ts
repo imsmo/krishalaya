@@ -366,14 +366,22 @@ export interface CartItem {
 export interface Cart { items: CartItem[]; subtotalMinor: string; }
 /** Checkout converts the cart into one order per seller (+ a group if multi-seller). The authoritative totals
  * (charges/discount/tax) live on each created order — read them back via orders.get. */
-export interface CheckoutResult { orders: Array<{ id: string; orderNo: string; totalMinor: string; status: string }>; checkoutGroupId: string | null; }
+export interface CheckoutResult {
+  orders: Array<{ id: string; orderNo: string; totalMinor: string; status: string }>; checkoutGroupId: string | null;
+  /** PC-56 TENANT-10b: present when a coupon was entered but NOT applied — the order was placed at full price. Render
+   *  `messageKey` (kind copy in the buyer's language), never `code`. */
+  couponNotice?: { code: string; outcome: string; messageKey: string };
+}
 
 /** One seller's slice of the read-only checkout totals preview (server-computed; money minor-unit strings). */
 export interface CheckoutPreviewSeller {
   sellerUserId: string;
   items: Array<{ listingId: string; title: string; quantity: number; unitCode: string; unitPriceMinor: string; lineTotalMinor: string }>;
   subtotalMinor: string; deliveryFeeMinor: string; platformFeeMinor: string; discountMinor: string; totalMinor: string;
+  /** @deprecated the machine code of a declined coupon — render `couponNotice.messageKey` instead (PC-56 TENANT-10b). */
   couponError?: string;
+  /** PC-56 TENANT-10b: the same decision checkout will make (per-user limit, budget, the cooperative's funds). */
+  couponNotice?: { code: string; outcome: string; messageKey: string };
 }
 /** Server-authoritative bill BEFORE checkout (no order, no money moved). Totals = sum of the seller slices. */
 export interface CheckoutPreview {

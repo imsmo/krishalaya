@@ -197,3 +197,15 @@ SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
  ('ledger_txn_type','course_royalty_release','Course royalty released from hold on agreement acceptance (instructor hold -> main)','{}',20)
   ) AS v(type_code, code, default_name, meta, sort_order)
  WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-10b · 0185] The promotion money vocabulary — F-2, the tenant wallet funds the discount. ALSO INSERTED BY
+-- MIGRATION 0185, identically and idempotently (the migration is what an existing database gets; this file is the fresh
+-- install). hold = reserved at coupon redemption; settle = paid to the seller at settlement; release = returned on cancel.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('ledger_txn_type','promo_hold','Promotion money reserved at coupon redemption (tenant main -> tenant hold)','{}',21),
+ ('ledger_txn_type','promo_settle','Promotion money paid to the seller at settlement (tenant hold -> seller main)','{}',22),
+ ('ledger_txn_type','promo_release','Promotion reservation released on cancel/refund (tenant hold -> tenant main)','{}',23)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);

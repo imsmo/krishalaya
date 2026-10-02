@@ -27,12 +27,12 @@ export function cardState(v: BalanceVerdict): CardState { return v.kind; }
  *  styled as an error either, because a stale cache is a reconciliation matter, not lost money. */
 export function needsDriftNotice(v: BalanceVerdict): boolean { return v.kind === 'drifted'; }
 
-/** W143's hold card. `no_freeze_path` is the sentence the screen prints instead of a plausible number:
- *  no code path anywhere freezes tenant money (TENANT-3b — escrow holds the buyer's gross for the whole
- *  order, and there is no partial freeze). */
-export type HoldBasis = 'no_freeze_path' | 'frozen_by_ledger';
-export function holdNoteKey(basis: HoldBasis): 'wal.holdNoFreezePath' | 'wal.holdFrozen' {
-  return basis === 'no_freeze_path' ? 'wal.holdNoFreezePath' : 'wal.holdFrozen';
+/** W143's hold card. PC-56 TENANT-10b (F-2): the hold account's ONLY writer is the promotion reservation — a coupon
+ *  applied at checkout moves its discount from Main into Hold until settlement pays it to the seller or a cancel returns
+ *  it. There is still no dispute freeze (TENANT-3b — escrow holds the buyer's gross for the whole order). */
+export type HoldBasis = 'nothing_reserved' | 'promotion_reservations';
+export function holdNoteKey(basis: HoldBasis): 'wal.holdNothingReserved' | 'wal.holdPromotionReservations' {
+  return basis === 'nothing_reserved' ? 'wal.holdNothingReserved' : 'wal.holdPromotionReservations';
 }
 
 /** W143's ledger-health panel. Three checks, three vocabularies:

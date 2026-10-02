@@ -15,23 +15,24 @@ export function isTenantAccountCode(v: string | undefined | null): v is TenantAc
 
 /** WHO WRITES EACH ACCOUNT — a registry in code, not a column, for the same reason 3c-2's charge
  *  surfaces are: "which code path moves this money" is a fact about the codebase, and a data column
- *  claiming it would drift the moment a new module posted a leg. `hold` names NO writer, and that is
- *  the honest answer W143's third card needs rather than a plausible number.
+ *  claiming it would drift the moment a new module posted a leg.
  *
- *  Verified 2026-08-12 by grepping every `kind: 'tenant'` AccountRef construction in apps/. */
+ *  Verified 2026-08-12 by grepping every `kind: 'tenant'` AccountRef construction in apps/.
+ *  PC-56 TENANT-10b (F-2): `hold` HAS A WRITER NOW — the promotion reservation. A coupon applied at checkout moves its
+ *  discount Main → Hold (`promo_hold`); settlement pays it Hold → the seller (`promo_settle`); a cancel/refund before
+ *  settlement returns it Hold → Main (`promo_release`). Nothing else writes `hold` — there is still no dispute freeze. */
 export const TENANT_ACCOUNT_WRITERS: Record<TenantAccountCode, readonly string[]> = {
-  main: ['dairy.milk_bill', 'schemes.disbursal', 'fintech.loan_disbursal', 'fintech.loan_application'],
+  main: ['dairy.milk_bill', 'schemes.disbursal', 'fintech.loan_disbursal', 'fintech.loan_application', 'promotions.coupon_hold', 'promotions.coupon_release'],
   commission: ['orders.completed', 'disputes.resolved', 'returns.refunded'],
-  hold: [],
+  hold: ['promotions.coupon_hold', 'payments.order_completed.promo_settle', 'promotions.coupon_release'],
 };
 
-export type HoldBasis = 'no_freeze_path' | 'frozen_by_ledger';
+/** Why the hold card shows what it shows. The ONLY writer of `hold` is the promotion reservation (TENANT-10b), so a
+ *  non-zero balance is coupon money reserved and not yet paid to a seller or returned; zero means nothing is reserved. */
+export type HoldBasis = 'nothing_reserved' | 'promotion_reservations';
 
-/** Why the hold card shows what it shows. A non-zero hold balance would mean somebody built a freeze
- *  path after this wave and did not update this registry — so the basis is derived from the BALANCE as
- *  well as the registry, never from the registry alone. */
 export function holdBasis(holdMinor: string): HoldBasis {
-  return BigInt(holdMinor) === 0n && TENANT_ACCOUNT_WRITERS.hold.length === 0 ? 'no_freeze_path' : 'frozen_by_ledger';
+  return BigInt(holdMinor) === 0n ? 'nothing_reserved' : 'promotion_reservations';
 }
 
 /* ------------------------------------------------------------------------------------------------

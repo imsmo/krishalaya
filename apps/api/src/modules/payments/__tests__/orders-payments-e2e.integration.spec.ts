@@ -39,6 +39,8 @@ import { GatewayRegistry } from '../gateway/gateway.registry';
 import { SandboxGateway } from '../gateway/sandbox.gateway';
 import { SandboxPayoutGateway } from '../gateway/sandbox-payout.gateway';
 import { OrderCompletedHandler } from '../events/handlers/order-completed.handler';
+import { CouponMoneyService } from '../../promotions/services/coupon-money.service';
+import { CouponRedemptionRepository } from '../../promotions/repositories/coupon-redemption.repository';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { SettlementPricingService } from '../services/settlement-pricing.service';
@@ -113,7 +115,7 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
     handlers.register(new PaymentSucceededHandler(new OrderRepository(replica as any), outbox));
     // commission_split defaults OFF → full escrow release to the seller (this spec asserts that path)
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handlers.register(new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository()));
+    handlers.register(new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any))));
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);
   }, 30000);
 

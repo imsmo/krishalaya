@@ -39,3 +39,23 @@ describe('pickDefaultMethod', () => {
     expect(out?.id).toBe('a');
   });
 });
+
+// PC-56 TENANT-10b · a declined coupon is a KIND MESSAGE KEY, never an error code — and every key exists ×3.
+import { DECLINED_COUPON_OUTCOMES, couponNoticeKey, isDeclinedOutcome, previewCouponOutcome } from '../features/checkout/preview';
+import { en as en10b } from '../i18n/en';
+import { hi as hi10b } from '../i18n/hi';
+import { gu as gu10b } from '../i18n/gu';
+describe('TENANT-10b · declined coupon notices', () => {
+  it('maps the API outcomes to kind message keys; unknown outcomes fall back to the generic line', () => {
+    expect(couponNoticeKey('tenant_funds_unavailable')).toBe('coupon.notice.tenant_funds_unavailable');
+    expect(couponNoticeKey('applied')).toBeNull(); expect(couponNoticeKey('TENANT_FUNDS_UNAVAILABLE')).toBeNull(); expect(isDeclinedOutcome(undefined)).toBe(false);
+    expect(previewCouponOutcome({ sellers: [{}, { couponNotice: { outcome: 'user_limit' } }] })).toBe('user_limit');
+    expect(previewCouponOutcome(null)).toBeNull();
+  });
+  it('every notice exists in en, hi and gu, and none of them is an error code', () => {
+    for (const o of [...DECLINED_COUPON_OUTCOMES, 'placedAtNormalPrice']) {
+      const k = `coupon.notice.${o}`;
+      for (const cat of [en10b, hi10b, gu10b]) { expect(typeof (cat as Record<string, string>)[k]).toBe('string'); expect((cat as Record<string, string>)[k]).not.toMatch(/[A-Z]{3,}_[A-Z]/); }
+    }
+  });
+});

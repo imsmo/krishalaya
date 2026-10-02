@@ -1,9 +1,14 @@
 // modules/promotions/domain/promotion.entity.ts
 // Promotion aggregate — a budgeted campaign whose `rules` jsonb defines a coupon discount. Pure domain:
-// money (budget/spent/discount) in bigint minor units; NO wallet movement (a discount is a price
-// reduction; spent_minor is promo ACCOUNTING). No version column (add_std_columns) → the service
+// money (budget/spent/discount) in bigint minor units. No version column (add_std_columns) → the service
 // serializes budget mutations with SELECT … FOR UPDATE. Validity (window/active/budget) lives in
 // promotion.state (Law 5). `rules` is parsed/validated on the way IN, never trusted as freeform.
+//
+// PC-56 TENANT-10b · F-2 / A6 — `spent_minor` IS NOW THE SUM OF RESERVATIONS TAKEN. A redemption reserves its discount
+// from the tenant's wallet (tenant Main → Hold, a real ledger txn, coupon-money.service); `reserve()` admits that amount
+// against the budget under the promotion row lock and `releaseSpend()` gives it back when the order is cancelled before
+// settlement. The entity moves no money itself — it is the budget's arithmetic; the wallet port is the money.
+// The human-pause bit (F-10): `pausedAt` set = a PERSON paused it, and the festival scheduler never re-opens it.
 import { derivePromotionStatus, isRedeemable, PromotionStatus } from './promotion.state';
 import { PromotionEventType, DomainEvent, DiscountType } from './promotions.events';
 import { InvalidPromotionError, PromotionBudgetExceededError } from './promotions.errors';
@@ -18,6 +23,10 @@ export interface PromoRules {
 export interface PromotionProps {
   id: string; tenantId: string; promoType: string; defaultName: string; rules: PromoRules;
   budgetMinor: bigint | null; spentMinor: bigint; startsAt: Date; endsAt: Date; isActive: boolean; createdAt: Date;
+  /** PC-56 TENANT-10b: who paused it (NULL with pausedAt set = paused before 0185 recorded who) and when. */
+  pausedByUserId?: string | null; pausedAt?: Date | null;
+  /** `created_at::text` — every microsecond Postgres stored (the keyset cursor, F-17). */
+  createdAtRaw?: string | null;
 }
 
 /** Parse + VALIDATE the freeform rules jsonb into a typed, bounded PromoRules (no ReDoS, no junk). */
@@ -50,7 +59,8 @@ export class Promotion {
     if (input.endsAt.getTime() <= input.startsAt.getTime()) throw new InvalidPromotionError('endsAt must be after startsAt');
     if (input.budgetMinor != null && input.budgetMinor < 0n) throw new InvalidPromotionError('budget cannot be negative');
     const p = new Promotion({ id: input.id, tenantId: input.tenantId, promoType: input.promoType, defaultName: input.defaultName.trim(),
-      rules: input.rules, budgetMinor: input.budgetMinor ?? null, spentMinor: 0n, startsAt: input.startsAt, endsAt: input.endsAt, isActive: true, createdAt: input.now ?? new Date() });
+      rules: input.rules, budgetMinor: input.budgetMinor ?? null, spentMinor: 0n, startsAt: input.startsAt, endsAt: input.endsAt, isActive: true, createdAt: input.now ?? new Date(),
+      pausedByUserId: null, pausedAt: null, createdAtRaw: null });
     p.events.push({ type: PromotionEventType.PromotionCreated, payload: { promotionId: p.props.id, promoType: p.props.promoType } });
     return p;
   }
@@ -60,14 +70,50 @@ export class Promotion {
   get isActive() { return this.props.isActive; }
   get spentMinor() { return this.props.spentMinor; }
   get budgetMinor() { return this.props.budgetMinor; }
+  get promoType() { return this.props.promoType; }
+  /** A PERSON paused this promotion (F-10). The scheduler reads this and never re-opens it. */
+  get isHumanPaused() { return this.props.pausedAt != null; }
   status(now: Date = new Date()): PromotionStatus { return derivePromotionStatus(this.props, now); }
   isRedeemableNow(now: Date = new Date()): boolean { return isRedeemable(this.props, now); }
   toProps(): Readonly<PromotionProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
 
+  /** SYSTEM toggle (budget sweep, festival scheduler) — never touches the human-pause bit. */
   setActive(active: boolean): void {
     this.props.isActive = active;
     this.events.push({ type: PromotionEventType.PromotionUpdated, payload: { promotionId: this.props.id, isActive: active } });
+  }
+
+  /** A PERSON pauses (F-10): inactive AND the human-pause bit, so no sweep re-opens it. */
+  pauseBy(userId: string, now: Date = new Date()): void {
+    this.props.isActive = false;
+    this.props.pausedByUserId = userId;
+    this.props.pausedAt = now;
+    this.events.push({ type: PromotionEventType.PromotionUpdated, payload: { promotionId: this.props.id, isActive: false, pausedBy: userId } });
+  }
+  /** A PERSON resumes: active, and the human-pause bit cleared. */
+  resume(): void {
+    this.props.isActive = true;
+    this.props.pausedByUserId = null;
+    this.props.pausedAt = null;
+    this.events.push({ type: PromotionEventType.PromotionUpdated, payload: { promotionId: this.props.id, isActive: true } });
+  }
+
+  /** A6 — would reserving `amountMinor` keep the reservations within the budget? (A NULL budget is a legacy uncapped row.) */
+  canReserve(amountMinor: bigint): boolean {
+    return this.props.budgetMinor == null || this.props.spentMinor + amountMinor <= this.props.budgetMinor;
+  }
+  /** A6 — take a reservation into the spend (the caller has ALREADY posted the wallet hold). Never over budget. */
+  reserve(amountMinor: bigint): void {
+    if (amountMinor <= 0n) return;
+    if (!this.canReserve(amountMinor)) throw new PromotionBudgetExceededError();
+    this.props.spentMinor += amountMinor;
+    if (this.props.budgetMinor != null && this.props.spentMinor >= this.props.budgetMinor) this.events.push({ type: PromotionEventType.BudgetExhausted, payload: { promotionId: this.props.id } });
+  }
+  /** A3 — a reservation returned to the tenant (order cancelled/refunded before settlement) leaves the spend. */
+  releaseSpend(amountMinor: bigint): void {
+    if (amountMinor <= 0n) return;
+    this.props.spentMinor = this.props.spentMinor > amountMinor ? this.props.spentMinor - amountMinor : 0n;
   }
 
   /** The discount this promotion grants on `subtotalMinor` (0 if below the minimum or it computes to 0). */

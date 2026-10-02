@@ -7,6 +7,8 @@ import { InvalidPromotionError, CouponExhaustedError } from './promotions.errors
 export interface CouponProps {
   id: string; tenantId: string; promotionId: string; code: string;
   maxUses: number | null; uses: number; perUserLimit: number; deletedAt: Date | null; createdAt: Date;
+  /** `created_at::text` — the microsecond keyset cursor (PC-56 TENANT-10b, F-17). */
+  createdAtRaw?: string | null;
 }
 const CODE_RE = /^[A-Z0-9_-]{3,40}$/;
 
@@ -35,5 +37,11 @@ export class Coupon {
     if (this.props.maxUses != null && this.props.uses >= this.props.maxUses) throw new CouponExhaustedError();
     this.props.uses += 1;
   }
+  /** The BACKSTOP's use: the discount is already on the order, so the cap is recorded as exceeded rather than refused. */
+  consumeUseUnchecked(): void { this.props.uses += 1; }
+  /** PC-56 TENANT-10b · A3 — a use given back when its order is cancelled/refunded before settlement. */
+  releaseUse(): void { if (this.props.uses > 0) this.props.uses -= 1; }
+  get maxUses() { return this.props.maxUses; }
+  get uses() { return this.props.uses; }
   hasGlobalCapacity(): boolean { return this.props.maxUses == null || this.props.uses < this.props.maxUses; }
 }

@@ -27,3 +27,21 @@ export function pickDefaultMethod(methods: DeliveryMethod[] | null | undefined):
 function toMinor(s: string): bigint {
   try { return BigInt(s); } catch { return 0n; }
 }
+
+/* PC-56 TENANT-10b · a declined coupon is a KIND MESSAGE, never an error code. The API answers a coupon it will not apply
+ * (the cooperative's wallet cannot cover it, the budget is spent, the buyer's per-user limit is reached, …) with
+ * `couponNotice: { outcome, messageKey }` — on the preview AND on the placed order, the same decision both times — and
+ * the order goes ahead at the normal price. The storefront renders only keys it knows; anything else is the generic line. */
+export const DECLINED_COUPON_OUTCOMES = ['user_limit', 'budget_exhausted', 'window', 'tenant_funds_unavailable', 'invalid', 'max_uses_reached', 'not_applicable'] as const;
+export type DeclinedCouponOutcome = (typeof DECLINED_COUPON_OUTCOMES)[number];
+export function isDeclinedOutcome(v: unknown): v is DeclinedCouponOutcome {
+  return typeof v === 'string' && (DECLINED_COUPON_OUTCOMES as readonly string[]).includes(v);
+}
+/** The buyer's kind message key for a declined coupon outcome (null when the outcome is not one this console knows). */
+export function couponNoticeKey(outcome: unknown): string | null {
+  return isDeclinedOutcome(outcome) ? `coupon.notice.${outcome}` : null;
+}
+/** The preview's first seller slice carries the coupon decision (the coupon applies to the primary seller only). */
+export function previewCouponOutcome(preview: { sellers: Array<{ couponNotice?: { outcome: string } }> } | null): string | null {
+  return preview?.sellers.find((s) => s.couponNotice)?.couponNotice?.outcome ?? null;
+}

@@ -1,4 +1,7 @@
 // modules/promotions/dto/create-promotion.dto.ts · zod .strict() (rejects unknown keys → no mass-assignment).
+// PC-56 TENANT-10b: the SHAPE is checked here; the RULES (budget required, the types with an engine, a cap only for a
+// percent rule, the window) are the review's own (domain/promotion.rules), re-run by the act — so an uncapped promotion or
+// a cashback one is refused BY NAME (PROMOTION_REFUSED · BUDGET_REQUIRED / PROMO_TYPE_NO_ENGINE), not by a validator.
 import { z } from 'zod';
 import { PROMO_TYPES, DISCOUNT_TYPES } from '../domain/promotions.events';
 

@@ -37,6 +37,8 @@ import { SettlementPricingService } from '../services/settlement-pricing.service
 import { CommissionRuleRepository } from '../repositories/commission-rule.repository';
 import { TaxRuleRepository } from '../repositories/tax-rule.repository';
 import { OrderCompletedHandler } from '../events/handlers/order-completed.handler';
+import { CouponMoneyService } from '../../promotions/services/coupon-money.service';
+import { CouponRedemptionRepository } from '../../promotions/repositories/coupon-redemption.repository';
 import { DisputeResolvedHandler } from '../events/handlers/dispute-resolved.handler';
 import { DisputeRepository } from '../../disputes/repositories/dispute.repository';
 import { DisputeRefundedHandler } from '../../disputes/events/handlers/dispute-refunded.handler';
@@ -114,7 +116,7 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
     const lines = new SettlementLineRepository();
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
     const handlers = new OutboxHandlerRegistry();
-    handlers.register(new OrderCompletedHandler(wallet, flags, pricing, lines));                                          // settle escrow → seller
+    handlers.register(new OrderCompletedHandler(wallet, flags, pricing, lines, new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any))));                                          // settle escrow → seller
     handlers.register(new DisputeResolvedHandler(wallet, flags, new PaymentRepository(replica as any), lines, pricing, outbox, metrics));  // dispute refund / clawback
     handlers.register(new DisputeRefundedHandler(new DisputeRepository(replica as any)));                                 // stamp resolution_txn_id
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);

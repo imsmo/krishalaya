@@ -20,6 +20,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
 import { ChargePricingService } from '../../payments/services/charge-pricing.service';
 import { CouponService } from '../../promotions/services/coupon.service';
+import type { CouponNotice } from '../../promotions/domain/coupon-outcome';
 import { UserMembershipService } from '../../memberships/services/user-membership.service';
 import { DeliveryZoneRepository } from '../../logistics/repositories/delivery-zone.repository';
 import { CartRepository } from '../repositories/cart.repository';
@@ -98,6 +99,7 @@ export class CheckoutService {
         const applyCoupon = dto.couponCode ? await this.flags.isEnabled('promotions', { tenantId, userId: buyerUserId }) : false;
         const applyMemberBenefits = await this.flags.isEnabled('memberships', { tenantId, userId: buyerUserId });
         let couponApplied = false;   // a coupon is redeemed against the PRIMARY (first) order only
+        let couponNotice: CouponNotice | null = null;
 
         return this.uow.run(tenantId, async (tx) => {
           const cartId = await this.carts.activeIdForUpdate(tx, tenantId, buyerUserId);
@@ -158,11 +160,15 @@ export class CheckoutService {
                 }
               }
             }
-            // coupon discount: redeemed atomically in THIS tx against the primary order (promotions flag)
+            // coupon discount: redeemed atomically in THIS tx against the primary order (promotions flag).
+            // PC-56 TENANT-10b · F-2 / F-21: the redemption RESERVES the discount from the tenant's wallet; a decline (no
+            // tenant funds, spent budget, per-user limit, ended window, unknown code…) no longer aborts the checkout — the
+            // order is placed at FULL price and the result carries the buyer's kind notice (a message key, not an error code).
             let discountMinor = 0n;
             if (applyCoupon && !couponApplied) {
               const r = await this.coupons.redeemInTx(tx, tenantId, buyerUserId, { code: dto.couponCode!, orderId: g.orderId, subtotalMinor: subtotal });
-              discountMinor = BigInt(r.discountMinor);
+              if (r.applied) discountMinor = BigInt(r.discountMinor);
+              else couponNotice = r.notice;
               couponApplied = true;
             }
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
@@ -178,7 +184,7 @@ export class CheckoutService {
           }
           await this.carts.markConverted(tx, cartId);
           this.metrics.inc('orders.checkout_done', { tenant: tenantId, orders: String(created.length) });
-          return { orders: created, checkoutGroupId };
+          return { orders: created, checkoutGroupId, ...(couponNotice ? { couponNotice } : {}) };
         }, { userId: buyerUserId });
       }));
   }
@@ -230,11 +236,17 @@ export class CheckoutService {
           }
         }
         // coupon DRY-RUN against the primary seller only (never redeemed here).
-        let discountMinor = 0n; let couponError: string | null = null;
+        // PC-56 TENANT-10b · A5 / F-22: the preview asks the SAME decision checkout makes (per-user limit, budget, the
+        // tenant's funds), so what the buyer is shown is what checkout will do. A decline carries the kind notice;
+        // `couponError` keeps the outcome's machine code for clients that predate `couponNotice`.
+        let discountMinor = 0n; let couponError: string | null = null; let couponNotice: CouponNotice | null = null;
         if (applyCoupon && !couponDone) {
           couponDone = true;
-          try { discountMinor = BigInt((await this.coupons.validate(tenantId, dto.couponCode!, g.subtotalMinor)).discountMinor); }
-          catch (e) { couponError = e instanceof DomainError ? (e as any).code ?? 'COUPON_INVALID' : 'COUPON_INVALID'; }
+          try {
+            const v = await this.coupons.validate(tenantId, buyerUserId, dto.couponCode!, g.subtotalMinor);
+            if (v.applied) discountMinor = BigInt(v.discountMinor);
+            else { couponNotice = v.notice; couponError = v.notice.code; }
+          } catch (e) { couponError = e instanceof DomainError ? (e as any).code ?? 'COUPON_INVALID' : 'COUPON_INVALID'; }
         }
         const total = g.subtotalMinor + deliveryFeeMinor + platformFeeMinor - discountMinor;
         out.push({
@@ -243,6 +255,7 @@ export class CheckoutService {
           subtotalMinor: g.subtotalMinor.toString(), deliveryFeeMinor: deliveryFeeMinor.toString(), platformFeeMinor: platformFeeMinor.toString(),
           discountMinor: discountMinor.toString(), totalMinor: (total < 0n ? 0n : total).toString(),
           ...(couponError ? { couponError } : {}),
+          ...(couponNotice ? { couponNotice } : {}),
         });
       }
       return out;

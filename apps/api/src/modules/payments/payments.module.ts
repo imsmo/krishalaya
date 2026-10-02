@@ -73,6 +73,7 @@ import { SettlementCycleService } from './services/settlement-cycle.service';
 import { OrgStatementService } from './services/org-statement.service';
 import { SettlementConsoleReadModel } from './read-models/settlement-console.read-model';
 import { DisputesModule } from '../disputes/disputes.module';
+import { PromotionsModule } from '../promotions/promotions.module';
 import { BookingClockedOutHandler } from './events/handlers/booking-clocked-out.handler';
 import { RazorpayPayoutWebhookHandler } from './events/handlers/razorpay-webhook.handler';
 import { PaymentsPublisher } from './events/payments.publisher';
@@ -92,7 +93,9 @@ import { AutopayController } from './controllers/v1/autopay.controller';
 @Module({
   // DisputesModule for RefundApprovalService — 0139's maker-checker plane, which 0140 widened to cover credit notes
   // (its PUBLIC service, never its repository; DisputesModule imports nothing, so there is no cycle).
-  imports: [MediaModule, TenancyModule, DisputesModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
+  // PC-56 TENANT-10b: PromotionsModule for CouponMoneyService — the settlement handler's promotion top-up leg (F-2 / A2).
+  // PromotionsModule imports nothing, so there is no cycle (OrdersModule imports both).
+  imports: [MediaModule, TenancyModule, DisputesModule, PromotionsModule],   // MediaService for rendered statement/invoice PDFs; TenancyModule for TenantService (DEV-27 Q23 badge)
   controllers: [PaymentsController, PaymentWebhooksController, PayoutsController, SettlementStatementsController, InvoicesController, ChargesController, CommissionRulesController, WalletController, OrgWalletController, SettlementCyclesController, AutopayController],
   providers: [
     PaymentService,

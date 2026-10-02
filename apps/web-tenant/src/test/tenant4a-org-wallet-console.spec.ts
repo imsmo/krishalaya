@@ -21,8 +21,8 @@ describe('TENANT-4a · a card prints the LEDGER, and says so when the cache disa
     expect(cardState({ kind: 'never_used', minor: '0' })).toBe('never_used');
   });
   it('THE HOLD CARD SAYS WHY IT IS ZERO — no code path freezes tenant money', () => {
-    expect(holdNoteKey('no_freeze_path')).toBe('wal.holdNoFreezePath');
-    expect(holdNoteKey('frozen_by_ledger')).toBe('wal.holdFrozen');
+    expect(holdNoteKey('nothing_reserved')).toBe('wal.holdNothingReserved');
+    expect(holdNoteKey('promotion_reservations')).toBe('wal.holdPromotionReservations');
   });
 });
 

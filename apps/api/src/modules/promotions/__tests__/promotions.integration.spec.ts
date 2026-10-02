@@ -3,7 +3,9 @@
 //   1. an admin creates a budgeted promotion (10% off, ₹150 budget) + a coupon (maxUses 2, perUser 1);
 //   2. validate() previews the discount; redeem() applies it (records the append-only redemption,
 //      increments uses + spent) — idempotent per (coupon, order);
-//   3. the per-user cap and the promotion BUDGET both fail CLOSED (no oversell), under row locks;
+//   3. the per-user cap and the promotion BUDGET both fail CLOSED (no oversell), under row locks — and since PC-56
+//      TENANT-10b they DECLINE (an outcome with a kind notice) instead of throwing, and the discount is RESERVED from the
+//      tenant's wallet (the tenant's Main is funded first, as a cooperative's would be);
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's promotion.
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 import { randomUUID } from 'node:crypto';
@@ -25,7 +27,12 @@ import { CouponRepository } from '../repositories/coupon.repository';
 import { CouponRedemptionRepository } from '../repositories/coupon-redemption.repository';
 import { PromotionService } from '../services/promotion.service';
 import { CouponService } from '../services/coupon.service';
-import { CouponUserLimitError, PromotionBudgetExceededError, DuplicateRedemptionError } from '../domain/promotions.errors';
+import { DuplicateRedemptionError } from '../domain/promotions.errors';
+import { CouponAttemptRepository } from '../repositories/coupon-attempt.repository';
+import { CouponMoneyService } from '../services/coupon-money.service';
+import { LedgerRepository } from '../../../core/wallet/ledger.repository';
+import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
+import { platform, PlatformAccount } from '../../../core/wallet/account-codes';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -64,7 +71,10 @@ run('promotions slice (integration, real Postgres + RLS)', () => {
     const couponRepo = new CouponRepository(replica as any);
     const redemptionRepo = new CouponRedemptionRepository(replica as any);
     promotions = new PromotionService(uow, outbox, idem, metrics, audit, promoRepo);
-    coupons = new CouponService(uow, outbox, idem, metrics, audit, promoRepo, couponRepo, redemptionRepo);
+    const wallet = new InProcessWalletClient(new LedgerRepository());
+    coupons = new CouponService(uow, outbox, idem, metrics, audit, promoRepo, couponRepo, redemptionRepo, new CouponAttemptRepository(), new CouponMoneyService(wallet, redemptionRepo));
+    await uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'billing_adjustment', idempotencyKey: `fund-${randomUUID()}`,
+      legs: [{ account: platform(PlatformAccount.Suspense), amountMinor: -1000000n }, { account: { kind: 'tenant', tenantId: tenantA, accountCode: 'main', currencyCode: 'INR' }, amountMinor: 1000000n }] }), { userId: 'system' });
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
@@ -80,14 +90,14 @@ run('promotions slice (integration, real Postgres + RLS)', () => {
     } as any);
     promotionId = p.id; expect(p.status).toBe('active');
     await coupons.createCoupon(tenantA, mgr(), `idem-${randomUUID()}`, { promotionId, code: CODE, maxUses: 2, perUserLimit: 1 } as any);
-    const v = await coupons.validate(tenantA, CODE, SUBTOTAL);
-    expect(v.discountMinor).toBe('10000');   // 10% of 100000
+    const v = await coupons.validate(tenantA, buyer1, CODE, SUBTOTAL);
+    expect(v).toMatchObject({ applied: true, discountMinor: '10000' });   // 10% of 100000
   });
 
   it('redeem applies the discount, records the redemption, increments uses + spent (idempotent per order)', async () => {
     const order1 = randomUUID();
     const r = await coupons.redeem(tenantA, buyer1, `idem-${randomUUID()}`, { code: CODE, orderId: order1, subtotalMinor: SUBTOTAL });
-    expect(r.discountMinor).toBe('10000');
+    expect(r).toMatchObject({ applied: true, discountMinor: '10000' });
     const c = await admin.query(`SELECT uses FROM coupons WHERE tenant_id=$1 AND code=$2`, [tenantA, CODE]);
     expect(c.rows[0].uses).toBe(1);
     const pr = await admin.query(`SELECT spent_minor FROM promotions WHERE id=$1`, [promotionId]);
@@ -99,14 +109,17 @@ run('promotions slice (integration, real Postgres + RLS)', () => {
     expect((await admin.query(`SELECT uses FROM coupons WHERE tenant_id=$1 AND code=$2`, [tenantA, CODE])).rows[0].uses).toBe(1);
   });
 
-  it('per-user cap and promotion budget both fail closed', async () => {
-    // buyer1 already redeemed once; perUserLimit=1 → a second (different order) is blocked
-    await expect(coupons.redeem(tenantA, buyer1, `idem-${randomUUID()}`, { code: CODE, orderId: randomUUID(), subtotalMinor: SUBTOTAL })).rejects.toBeInstanceOf(CouponUserLimitError);
+  it('per-user cap and promotion budget both fail closed — as a DECLINE with a kind notice, never an abort', async () => {
+    // buyer1 already redeemed once; perUserLimit=1 → a second (different order) is declined
+    const u = await coupons.redeem(tenantA, buyer1, `idem-${randomUUID()}`, { code: CODE, orderId: randomUUID(), subtotalMinor: SUBTOTAL });
+    expect(u).toMatchObject({ applied: false, outcome: 'user_limit', notice: { messageKey: 'coupon.notice.user_limit' } });
     // buyer2 is fresh, but the budget (15000) only had 5000 left after buyer1's 10000 → 10000 discount exceeds it
-    await expect(coupons.redeem(tenantA, buyer2, `idem-${randomUUID()}`, { code: CODE, orderId: randomUUID(), subtotalMinor: SUBTOTAL })).rejects.toBeInstanceOf(PromotionBudgetExceededError);
-    // nothing persisted by the failed attempts
+    const b = await coupons.redeem(tenantA, buyer2, `idem-${randomUUID()}`, { code: CODE, orderId: randomUUID(), subtotalMinor: SUBTOTAL });
+    expect(b).toMatchObject({ applied: false, outcome: 'budget_exhausted' });
+    // nothing persisted by the declined attempts (but each attempt is recorded)
     expect((await admin.query(`SELECT uses FROM coupons WHERE tenant_id=$1 AND code=$2`, [tenantA, CODE])).rows[0].uses).toBe(1);
     expect(String((await admin.query(`SELECT spent_minor FROM promotions WHERE id=$1`, [promotionId])).rows[0].spent_minor)).toBe('10000');
+    expect((await admin.query(`SELECT outcome::text o FROM coupon_redemption_attempts WHERE tenant_id=$1 AND stage='redeem' AND outcome <> 'applied' ORDER BY created_at`, [tenantA])).rows.map((x) => x.o)).toEqual(['user_limit', 'budget_exhausted']);
   });
 
   it('RLS: tenant B cannot see tenant A\'s promotion', async () => {

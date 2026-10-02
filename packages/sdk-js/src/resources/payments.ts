@@ -165,7 +165,8 @@ export interface OrgHealthLine { check: 'cached_vs_ledger' | 'own_chain' | 'plat
 export interface OrgWalletOverview {
   currencyCode: string;
   accounts: OrgAccountRow[];
-  holdBasis: 'no_freeze_path' | 'frozen_by_ledger';
+  /** PC-56 TENANT-10b: the hold account's only writer is the promotion reservation (coupon money reserved, not yet paid). */
+  holdBasis: 'nothing_reserved' | 'promotion_reservations';
   escrow: { heldMinor: string; orderCount: number; basis: 'ledger_net_by_tenant' };
   today: OrgMovementRow[];
   health: OrgHealthLine[];

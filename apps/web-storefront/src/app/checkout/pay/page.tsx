@@ -3,6 +3,7 @@
 // the id). If the order is already paid, skip straight to confirmation. Otherwise render the order total + the
 // PayButton (client), passing the PUBLISHABLE Razorpay key from env (null → PayButton fails closed). notFound()
 // if the order id is missing/invalid (no IDOR — the API + RLS only return the caller's own order).
+import { couponNoticeKey } from '../../../features/checkout/preview';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -21,7 +22,7 @@ export function generateMetadata(): Metadata {
   return { title: t.t('checkout.payTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PayPage({ searchParams }: { searchParams: { o?: string } }) {
+export default async function PayPage({ searchParams }: { searchParams: { o?: string; cn?: string } }) {
   await requireSession(`/checkout/pay?o=${encodeURIComponent(searchParams.o ?? '')}`);
   const orderId = searchParams.o;
   if (!orderId) notFound();
@@ -51,6 +52,7 @@ export default async function PayPage({ searchParams }: { searchParams: { o?: st
     <section className="kv-pay-page">
       <h1>{t.t('checkout.payTitle')}</h1>
       <p className="kv-checkout__orderno">{t.t('checkout.orderNo', { no: order.orderNo })}</p>
+      {couponNoticeKey(searchParams.cn) && <p className="kv-form__notice" role="status">{t.t(couponNoticeKey(searchParams.cn)!)} {t.t('coupon.notice.placedAtNormalPrice')}</p>}
       <p className="kv-cart__subtotal"><span>{t.t('checkout.amountDue')}</span> <strong>{formatMoneyMinor(order.totalMinor, order.currencyCode, lang)}</strong></p>
       <PayButton orderId={order.id} keyId={env.razorpayKeyId} labels={labels} />
       <p className="kv-cart__note">{t.t('checkout.payNote')}</p>

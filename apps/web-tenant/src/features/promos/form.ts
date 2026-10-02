@@ -1,27 +1,36 @@
 // apps/web-tenant/src/features/promos/form.ts · PURE validation for promotions + coupons (PC-28b). Mirrors
 // CreatePromotionSchema/PromoRulesSchema/CreateCouponSchema. Money float-free; percent 1–100; window must be a
 // future-ordered pair. No IO → unit-tested.
+// PC-56 TENANT-10b: the console's chains (`/marketplace/offers/new`, `/marketplace/offers/coupons/new`) ask the API's own
+// review, which is the authority; this pre-check mirrors its rulings so the two cannot drift: only the promotion types
+// with an engine (B7 / F-24), a REQUIRED budget (B2 / F-8 — uncapped is refused), and a per-order cap for percent rules.
 import { parseMajorToMinor } from '../listings/form';
 
-export const PROMO_TYPES = ['festival', 'cashback', 'recharge_bonus', 'listing_boost'] as const;
+export const PROMO_TYPES = ['discount', 'festival'] as const;
 export const DISCOUNT_TYPES = ['percent', 'flat'] as const;
 
 export type PromoResult =
-  | { ok: true; value: { promoType: string; defaultName: string; rules: { discountType: string; percentOff?: number; amountOffMinor?: string; minOrderMinor?: string }; startsAt: string; endsAt: string } }
-  | { ok: false; error: 'type' | 'name' | 'discount' | 'window' };
+  | { ok: true; value: { promoType: string; defaultName: string; rules: { discountType: string; percentOff?: number; amountOffMinor?: string; minOrderMinor?: string; maxDiscountMinor?: string }; budgetMinor: string; startsAt: string; endsAt: string } }
+  | { ok: false; error: 'type' | 'name' | 'discount' | 'window' | 'budget' };
 
-export function buildPromotion(raw: { promoType: string; name: string; discountType: string; percentOff: string; amountMajor: string; minOrderMajor: string; startsLocal: string; endsLocal: string }, now: Date = new Date()): PromoResult {
+export function buildPromotion(raw: { promoType: string; name: string; discountType: string; percentOff: string; amountMajor: string; minOrderMajor: string; startsLocal: string; endsLocal: string; budgetMajor: string; maxDiscountMajor?: string }, now: Date = new Date()): PromoResult {
   if (!(PROMO_TYPES as readonly string[]).includes(raw.promoType)) return { ok: false, error: 'type' };
   const defaultName = raw.name.trim();
   if (defaultName.length < 3 || defaultName.length > 150) return { ok: false, error: 'name' };
   if (!(DISCOUNT_TYPES as readonly string[]).includes(raw.discountType)) return { ok: false, error: 'discount' };
 
-  const rules: { discountType: string; percentOff?: number; amountOffMinor?: string; minOrderMinor?: string } = { discountType: raw.discountType };
+  const rules: { discountType: string; percentOff?: number; amountOffMinor?: string; minOrderMinor?: string; maxDiscountMinor?: string } = { discountType: raw.discountType };
   if (raw.discountType === 'percent') {
     const p = Number.parseInt(raw.percentOff, 10);
     if (!Number.isInteger(p) || p < 1 || p > 100) return { ok: false, error: 'discount' };
     rules.percentOff = p;
+    if ((raw.maxDiscountMajor ?? '').trim()) {
+      const cap = parseMajorToMinor(raw.maxDiscountMajor);
+      if (cap === undefined || cap === '0') return { ok: false, error: 'discount' };
+      rules.maxDiscountMinor = cap;
+    }
   } else {
+    if ((raw.maxDiscountMajor ?? '').trim()) return { ok: false, error: 'discount' };   // a flat rule IS its own cap
     const amountOffMinor = parseMajorToMinor(raw.amountMajor);
     if (amountOffMinor === undefined || amountOffMinor === '0') return { ok: false, error: 'discount' };
     rules.amountOffMinor = amountOffMinor;
@@ -37,7 +46,9 @@ export function buildPromotion(raw: { promoType: string; name: string; discountT
   if (Number.isNaN(starts.getTime()) || Number.isNaN(ends.getTime()) || ends.getTime() <= starts.getTime() || ends.getTime() <= now.getTime()) {
     return { ok: false, error: 'window' };
   }
-  return { ok: true, value: { promoType: raw.promoType, defaultName, rules, startsAt: starts.toISOString(), endsAt: ends.toISOString() } };
+  const budgetMinor = parseMajorToMinor(raw.budgetMajor);
+  if (budgetMinor === undefined || budgetMinor === '0') return { ok: false, error: 'budget' };   // uncapped is refused by name
+  return { ok: true, value: { promoType: raw.promoType, defaultName, rules, budgetMinor, startsAt: starts.toISOString(), endsAt: ends.toISOString() } };
 }
 
 export type CouponResult =

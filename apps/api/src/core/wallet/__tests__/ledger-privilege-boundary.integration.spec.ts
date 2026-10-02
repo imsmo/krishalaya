@@ -206,8 +206,13 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
   const SWEPT_PARTITIONED = ['kcc_drawl_ledger', 'group_ledger_entries', 'dbt_transfers',
     'ambassador_earnings', 'aeps_service_events', 'milk_collections'];
   const APPEND_ONLY_FULL = ['kcc_drawl_ledger', 'group_ledger_entries', 'dbt_transfers'];
+  // [PC-56 TENANT-10b · 0185] `coupon_redemptions` LEFT this list, and that is an act a reviewer should notice: founder
+  // decision F-2 (the tenant wallet funds a coupon discount) makes the order SETTLEMENT pay the reserved discount to the
+  // seller IN THE RELAY'S TRANSACTION (as kv_relay) — the redemption must be read and stamped under the same lock as the
+  // leg, or a cancel racing it could spend the same pooled Hold twice. kv_relay now holds exactly SELECT + column
+  // UPDATE(settled_txn_id, settled_at) on it, no INSERT, no DELETE, no other column — pinned by its own test below.
   const ZERO_KV_RELAY_NEED = ['kcc_drawl_ledger', 'group_ledger_entries', 'dbt_transfers', 'aeps_service_events',
-    'bank_accounts', 'bids', 'billing_adjustments', 'commission_plans_ambassador', 'coupon_redemptions',
+    'bank_accounts', 'bids', 'billing_adjustments', 'commission_plans_ambassador',
     'payments', 'upi_mandate_executions', 'worker_advances'];
 
   run47('money-bearing partition privilege sweep — permanent P0 regression (migration 0078, DEV-47)', () => {
@@ -222,7 +227,7 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
     });
 
     describe('static grant enumeration — parent + every existing partition, no hand-written list', () => {
-      it('kv_relay holds ZERO write/read grants on the 12 zero-legitimate-need tables (table-wide or column-restricted), incl. every partition of the 6 partitioned ones', async () => {
+      it('kv_relay holds ZERO write/read grants on the 11 zero-legitimate-need tables (table-wide or column-restricted), incl. every partition of the 6 partitioned ones', async () => {
         const res = await admin47.query(
           `WITH swept_relations AS (
              SELECT c.oid, c.relname FROM pg_class c WHERE c.relname = ANY($1)
@@ -244,6 +249,24 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
         expect(res.rows).toEqual([]);
       });
 
+      it('[0185] coupon_redemptions: kv_relay holds table-wide SELECT and column UPDATE(settled_txn_id, settled_at) ONLY; kv_app column UPDATE(released_txn_id, released_at) ONLY', async () => {
+        const table = await admin47.query(
+          `SELECT grantee, privilege_type FROM information_schema.role_table_grants
+            WHERE table_schema='public' AND table_name='coupon_redemptions' AND grantee IN ('kv_app','kv_relay') ORDER BY 1, 2`);
+        expect(table.rows).toEqual([
+          { grantee: 'kv_app', privilege_type: 'INSERT' }, { grantee: 'kv_app', privilege_type: 'SELECT' },
+          { grantee: 'kv_relay', privilege_type: 'SELECT' },
+        ]);
+        const cols = await admin47.query(
+          `SELECT grantee, column_name FROM information_schema.column_privileges
+            WHERE table_schema='public' AND table_name='coupon_redemptions' AND grantee IN ('kv_app','kv_relay') AND privilege_type='UPDATE'
+            ORDER BY 1, 2`);
+        expect(cols.rows).toEqual([
+          { grantee: 'kv_app', column_name: 'released_at' }, { grantee: 'kv_app', column_name: 'released_txn_id' },
+          { grantee: 'kv_relay', column_name: 'settled_at' }, { grantee: 'kv_relay', column_name: 'settled_txn_id' },
+        ]);
+      });
+
       it('kv_app holds ZERO table-wide UPDATE/DELETE on the 6 ledger-class tables (append-only or narrowly-mutable-only), incl. every existing partition', async () => {
         const res = await admin47.query(
           `WITH ledger_relations AS (
@@ -263,7 +286,7 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
       });
 
       it('DELETE is granted to neither kv_app nor kv_relay on any of the 15 swept relations', async () => {
-        const ALL_15 = [...ZERO_KV_RELAY_NEED, 'ambassador_earnings', 'milk_collections', 'payouts'];
+        const ALL_15 = [...ZERO_KV_RELAY_NEED, 'coupon_redemptions', 'ambassador_earnings', 'milk_collections', 'payouts'];   // 0185: coupon_redemptions kept in the DELETE sweep
         const res = await admin47.query(
           `SELECT table_name, grantee FROM information_schema.role_table_grants
            WHERE table_schema = 'public' AND grantee IN ('kv_app','kv_relay')

@@ -5,8 +5,8 @@
 // rare decoupled path — this sweep makes sure such promotions actually flip is_active=false so no further
 // coupons redeem. Claims exhausted-but-still-active promotions across tenants (SKIP LOCKED, bounded), then
 // deactivates each via PromotionService (its own tx + outbox). IDEMPOTENT: a promotion already inactive is
-// never re-claimed. NOT a DI provider — apps/worker instantiates it with the kv_relay Pool + the repo +
-// PromotionService, mirroring the other sweeps.
+// never re-claimed. PC-56 TENANT-10b (F-9): scheduled through SCHEDULED_JOB_REGISTRY by
+// jobs/promotions.cadence-jobs.ts, which hands it the runner's kv_relay Pool (it was instantiated nowhere before).
 import type { Pool } from 'pg';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { PromotionRepository } from '../repositories/promotion.repository';

@@ -17,7 +17,7 @@ import type { Cart, Address, CheckoutPreview, DeliveryMethod } from '@krishalaya
 import { serverClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { normalizeCoupon, pickDefaultMethod } from '../../features/checkout/preview';
+import { couponNoticeKey, normalizeCoupon, pickDefaultMethod, previewCouponOutcome } from '../../features/checkout/preview';
 import { placeOrderAction } from './actions';
 
 const CURRENCY = 'INR'; // platform settlement currency (cart read-model carries no per-line currency code)
@@ -66,6 +66,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { s
   ]);
   // A coupon was sent but the server applied no discount → surface the reason (the bill stays un-discounted).
   const couponRejected = !!appliedCoupon && !!preview && BigInt(preview.discountMinor) <= 0n;
+  // PC-56 TENANT-10b: the server says WHY in a kind message key (never an error code) — the same decision placement makes.
+  const couponNotice = couponRejected ? couponNoticeKey(previewCouponOutcome(preview)) : null;
   const defaultMethod = pickDefaultMethod(deliveryMethods);
 
   return (
@@ -84,7 +86,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { s
           <button type="submit" className="kv-btn kv-btn--ghost">{t.t('checkout.couponApply')}</button>
         </div>
         {appliedCoupon && !couponRejected && <p className="kv-form__notice" role="status">{t.t('checkout.couponApplied', { code: appliedCoupon })}</p>}
-        {couponRejected && <p className="kv-form__error" role="alert">{t.t('checkout.couponRejected')}</p>}
+        {couponRejected && <p className="kv-form__notice" role="status">{t.t(couponNotice ?? 'checkout.couponRejected')}</p>}
         {!appliedCoupon && <p className="kv-field__hint">{t.t('checkout.couponHint')}</p>}
       </form>
 

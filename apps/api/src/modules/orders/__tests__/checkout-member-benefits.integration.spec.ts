@@ -40,6 +40,8 @@ import { CouponService } from '../../promotions/services/coupon.service';
 import { PromotionRepository } from '../../promotions/repositories/promotion.repository';
 import { CouponRepository } from '../../promotions/repositories/coupon.repository';
 import { CouponRedemptionRepository } from '../../promotions/repositories/coupon-redemption.repository';
+import { CouponAttemptRepository } from '../../promotions/repositories/coupon-attempt.repository';
+import { CouponMoneyService } from '../../promotions/services/coupon-money.service';
 import { MembershipTierService } from '../../memberships/services/membership-tier.service';
 import { UserMembershipService } from '../../memberships/services/user-membership.service';
 import { MembershipTierRepository } from '../../memberships/repositories/membership-tier.repository';
@@ -88,7 +90,9 @@ run('checkout member benefits — platform fee override (integration, real Postg
     const cartItemRepo = new CartItemRepository(replica as any);
     const checkoutGroupRepo = new CheckoutGroupRepository(replica as any);
     carts = new CartService(uow, metrics, listings, cartRepo, new CartItemService(uow, metrics, listings, cartRepo, cartItemRepo));
-    const couponSvc = new CouponService(uow, outbox, idem, metrics, audit, new PromotionRepository(replica as any), new CouponRepository(replica as any), new CouponRedemptionRepository(replica as any));
+    const redemptionRepo = new CouponRedemptionRepository(replica as any);
+    // PC-56 TENANT-10b: + the attempts log and the money service (the coupon reserves from the tenant wallet).
+    const couponSvc = new CouponService(uow, outbox, idem, metrics, audit, new PromotionRepository(replica as any), new CouponRepository(replica as any), redemptionRepo, new CouponAttemptRepository(), new CouponMoneyService(wallet, redemptionRepo));
     const tierRepo = new MembershipTierRepository(replica as any);
     const membershipRepo = new UserMembershipRepository(replica as any);
     tiers = new MembershipTierService(uow, outbox, idem, metrics, audit, tierRepo);

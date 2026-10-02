@@ -511,4 +511,13 @@ export const en: Messages = {
   'returns.status.received': 'Received by the seller',
   'returns.status.refunded': 'Refunded',
   'returns.status.rejected': 'Rejected',
+  // PC-56 TENANT-10b · a declined coupon is a kind message, never an error code (the order goes ahead at the normal price)
+  "coupon.notice.user_limit": "You have already used this offer the most times it allows.",
+  "coupon.notice.budget_exhausted": "This offer has been fully used up for now — thank you for trying it.",
+  "coupon.notice.window": "This offer is not running right now.",
+  "coupon.notice.tenant_funds_unavailable": "This offer can't be applied right now — please try again later.",
+  "coupon.notice.invalid": "We couldn't find that code — please check it and try again.",
+  "coupon.notice.max_uses_reached": "This offer has reached the number of people it was for.",
+  "coupon.notice.not_applicable": "This offer doesn't apply to this order (it may need a larger order).",
+  "coupon.notice.placedAtNormalPrice": "Your order was placed at the normal price.",
 };

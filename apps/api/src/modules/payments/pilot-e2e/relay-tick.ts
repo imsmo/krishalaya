@@ -44,6 +44,8 @@ import { OrderRepository } from '../../orders/repositories/order.repository';
 import { PaymentSucceededHandler } from '../../orders/events/handlers/payment-succeeded.handler';
 
 import { OrderCompletedHandler } from '../events/handlers/order-completed.handler';
+import { CouponMoneyService } from '../../promotions/services/coupon-money.service';
+import { CouponRedemptionRepository } from '../../promotions/repositories/coupon-redemption.repository';
 import { SettlementPricingService } from '../services/settlement-pricing.service';
 import { CommissionRuleRepository } from '../repositories/commission-rule.repository';
 import { TaxRuleRepository } from '../repositories/tax-rule.repository';
@@ -103,7 +105,7 @@ async function main(): Promise<void> {
   const taxRuleRepo = new TaxRuleRepository(replica as any);
   const pricing = new SettlementPricingService(commissionRuleRepo, taxRuleRepo);
   const settlementLineRepo = new SettlementLineRepository();
-  const orderCompletedHandler = new OrderCompletedHandler(wallet, flags, pricing, settlementLineRepo);
+  const orderCompletedHandler = new OrderCompletedHandler(wallet, flags, pricing, settlementLineRepo, new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)));
 
   // --- communication fan-out (so "notification recorded" has something to prove) ---
   const gateway = new NoopNotificationGateway(config);

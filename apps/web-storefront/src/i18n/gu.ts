@@ -509,4 +509,13 @@ export const gu: Messages = {
   'returns.status.received': 'વિક્રેતાને મળ્યું',
   'returns.status.refunded': 'રિફંડ થયું',
   'returns.status.rejected': 'નામંજૂર',
+  // PC-56 TENANT-10b · a declined coupon is a kind message, never an error code (the order goes ahead at the normal price)
+  "coupon.notice.user_limit": "તમે આ ઑફર જેટલી વાર વાપરી શકાય એટલી વાર વાપરી ચૂક્યા છો.",
+  "coupon.notice.budget_exhausted": "આ ઑફર અત્યારે પૂરેપૂરી વપરાઈ ગઈ છે — પ્રયાસ માટે આભાર.",
+  "coupon.notice.window": "આ ઑફર અત્યારે ચાલતી નથી.",
+  "coupon.notice.tenant_funds_unavailable": "આ ઑફર અત્યારે લાગુ થઈ શકતી નથી — કૃપા કરી પછી ફરી પ્રયાસ કરો.",
+  "coupon.notice.invalid": "અમને એ કોડ મળ્યો નહીં — કૃપા કરી તપાસીને ફરી પ્રયાસ કરો.",
+  "coupon.notice.max_uses_reached": "આ ઑફર જેટલા લોકો માટે હતી એટલે સુધી પહોંચી ગઈ છે.",
+  "coupon.notice.not_applicable": "આ ઑફર આ ઑર્ડર પર લાગુ થતી નથી (કદાચ મોટો ઑર્ડર જોઈએ).",
+  "coupon.notice.placedAtNormalPrice": "તમારો ઑર્ડર સામાન્ય કિંમતે મુકાયો છે.",
 };

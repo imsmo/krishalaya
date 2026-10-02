@@ -27,6 +27,8 @@ import { TaxRuleRepository } from '../repositories/tax-rule.repository';
 import { SettlementPricingService } from '../services/settlement-pricing.service';
 import { SettlementLineRepository } from '../repositories/settlement-line.repository';
 import { OrderCompletedHandler } from '../events/handlers/order-completed.handler';
+import { CouponMoneyService } from '../../promotions/services/coupon-money.service';
+import { CouponRedemptionRepository } from '../../promotions/repositories/coupon-redemption.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -77,7 +79,7 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
     wallet = new InProcessWalletClient(new LedgerRepository());
     const flags = new FlagsService(pools, new InMemoryCacheService());
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handler = new OrderCompletedHandler(wallet, flags, pricing, new SettlementLineRepository());
+    handler = new OrderCompletedHandler(wallet, flags, pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)));
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
