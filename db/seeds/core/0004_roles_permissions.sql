@@ -98,6 +98,10 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- [PC-56 TENANT-9b] DRAFTING AND OPENING / CLOSING A VOTE WAS `tenant.settings` (F-18) — the code that edits a cooperative's
  -- settings. Its own verb now; a special or dividend vote is closed by a second person (0182's trigger). Also in 0182.
  ('governance.manage','Draft a resolution, edit a draft, open and close voting, withdraw (recorded; a special or dividend vote is closed by a second person)','M04'),
+ -- [PC-56 TENANT-9d] ESG HAD NO VERB (F-18 — "the tenant compliance role" names no row). Two now: the read and the disclosure
+ -- (words, never figures; the unsigned export). The auditor's five reads are unchanged. Also in migration 0183.
+ ('esg.read','Read the ESG dashboard, the method registry, the report checklist and its receipts (figures only where a published method meets a recorded fact)',NULL),
+ ('esg.disclose','Write, publish and withdraw the cooperative''s own ESG disclosures (words, never figures); generate the unsigned ESG export',NULL),
  ('course.author','Author courses + lessons (instructor)','M09'),('course.publish','Review/publish/pause courses (editor)','M09'),
  ('channel.host','Register external content channels + publish resources + host live sessions','M09'),('content.moderate','Approve/suspend channels + take down resources (M09)','M09'),
  ('ambassador.manage','Enroll/suspend ambassadors + activate referrals + run commission payouts','M-AMB'),
@@ -204,4 +208,7 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin') AND p.code IN ('payments.credit_note.issue','kyc.read','governance.read'))
    -- [PC-56 TENANT-9b] the resolutions' acts (0182). No board role exists; the canon's "Drafting is board members" is named.
    OR (r.code IN ('tenant_admin') AND p.code IN ('governance.manage'))
+   -- [PC-56 TENANT-9d] ESG (0183). No compliance or finance role exists; the canon's "tenant compliance role" is named.
+   OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('esg.read'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('esg.disclose'))
 ON CONFLICT DO NOTHING;

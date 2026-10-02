@@ -102,6 +102,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
 
 export * from './resources/livestock';
 export * from './resources/auditor'; // PC-56 TENANT-9c
+export * from './resources/esg'; // PC-56 TENANT-9d
 export * from './resources/returns';
 // PC-56 TENANT-3b: the dispute console reads + the refund maker-checker plane live in resources/admin.ts.
 export type { DisputeKpis, DisputeQueueRow, DisputeMoneyState, RefundGateState, RefundApproval } from './resources/admin';

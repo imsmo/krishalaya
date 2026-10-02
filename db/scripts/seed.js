@@ -40,6 +40,8 @@ const ORDER = [
   'core/0019_ui_messages_kyc.sql',
   // PC-56 TENANT-9b · the result and notice words a resolution notice is worded with (en/hi/gu).
   'core/0020_ui_messages_governance.sql',
+  // PC-56 TENANT-9d · the ESG method registry's words (0183): metric names, what an unpublished row needs, the published methods.
+  'core/0021_ui_messages_esg.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

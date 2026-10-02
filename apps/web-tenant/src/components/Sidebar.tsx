@@ -74,6 +74,8 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'returns', href: '/returns', label: t.t('nav.returns') },
         { key: 'cod', href: '/cod', label: t.t('nav.cod') },
         ...(env.featureMemberships ? [{ key: 'governance', href: '/governance', label: t.t('nav.governance') }] : []),
+        // PC-56 TENANT-9d: ESG (W423) — its own switch; the API's `esg` flag stays the gate.
+        ...(env.featureEsg ? [{ key: 'esg', href: '/esg', label: t.t('nav.esg') }] : []),
         { key: 'notifications', href: '/notifications', label: t.t('nav.notifications') },
         { key: 'billing', href: '/billing', label: t.t('nav.billing') },
         { key: 'team', href: '/team', label: t.t('nav.team') },

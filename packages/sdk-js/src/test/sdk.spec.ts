@@ -2212,3 +2212,31 @@ describe('kyc desk (TENANT-9a)', () => {
     expect(q.nextCursor).toBe('n1');
   });
 });
+
+describe('esg (TENANT-9d)', () => {
+  it('reads are keyless; the review and the act verdict are keyless POSTs; every write carries the page\'s Idempotency-Key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'd1', status: 'draft', rows: [], fact: null } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.esg.dashboard();
+    await c.esg.method('one_member_one_vote');
+    await c.esg.report();
+    await c.esg.enqueueReport({ lang: 'gu' }, 'k-export');
+    await c.esg.disclosureCatalogue();
+    await c.esg.previewDisclosure({ metricCode: 'adulteration', texts: { en: 'words' } });
+    await c.esg.previewDisclosure({ texts: { en: 'words' } }, 'd1');
+    await c.esg.createDisclosure({ metricCode: 'adulteration', texts: { en: 'words' } }, 'k-create');
+    await c.esg.disclosure('d1');
+    await c.esg.updateDisclosure('d1', { texts: { en: 'more words' } }, 'k-edit');
+    await c.esg.previewDisclosureAct('d1', 'publish', { note: 'board' });
+    await c.esg.disclosureAct('d1', 'withdraw', { reasonCode: 'inaccurate', note: 'board' }, 'k-act');
+    const h = (i: number) => (calls[i].init.headers as Record<string, string>)['idempotency-key'];
+    expect(calls.map((x) => `${x.init.method} ${x.url.replace('https://api.test/v1/', '')}`)).toEqual([
+      'GET esg/dashboard', 'GET esg/methods/one_member_one_vote', 'GET esg/report', 'POST esg/report/exports', 'GET esg/disclosures/catalogue',
+      'POST esg/disclosures/preview', 'POST esg/disclosures/preview', 'POST esg/disclosures', 'GET esg/disclosures/d1', 'PATCH esg/disclosures/d1',
+      'POST esg/disclosures/d1/acts/publish/preview', 'POST esg/disclosures/d1/acts/withdraw',
+    ]);
+    expect(calls.map((_, i) => h(i))).toEqual([undefined, undefined, undefined, 'k-export', undefined, undefined, undefined, 'k-create', undefined, 'k-edit', undefined, 'k-act']);
+    expect(JSON.parse(String(calls[6].init.body))).toEqual({ texts: { en: 'words' }, id: 'd1' });
+    expect(JSON.parse(String(calls[3].init.body))).toEqual({ lang: 'gu' });
+  });
+});

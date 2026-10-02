@@ -46,6 +46,9 @@ export const env = {
   /** Console visibility switch for FPO memberships (PC-28). OFF by default; the API's `memberships` flag +
    *  membership.manage perm remain the authoritative gates. */
   featureMemberships: process.env.NEXT_PUBLIC_FEATURE_MEMBERSHIPS === 'true',
+  /** PC-56 TENANT-9d · console visibility switch for ESG (W423, W424, W2598–W2604). OFF by default; the API's `esg` flag and
+   *  esg.read / esg.disclose remain the authoritative gates (a flagged-off API answers 404 → "Flagged off"). */
+  featureEsg: process.env.NEXT_PUBLIC_FEATURE_ESG === 'true',
   /** PC-28b visibility switches (API perms/flags stay authoritative): promotions+coupons, market insights, inbox. */
   featurePromotions: process.env.NEXT_PUBLIC_FEATURE_PROMOTIONS === 'true',
   featureMarket: process.env.NEXT_PUBLIC_FEATURE_MARKET === 'true',

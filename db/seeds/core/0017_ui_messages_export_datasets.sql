@@ -45,3 +45,11 @@ INSERT INTO ui_messages (key, language_code, text) VALUES
   ('exports.dataset.compliance.pack', 'hi', 'अनुपालन पैक का खंड'),
   ('exports.dataset.compliance.pack', 'gu', 'અનુપાલન પૅકનો વિભાગ')
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 TENANT-9d] W424's file: the ESG figures a PUBLISHED method backs with a RECORDED fact, every excluded metric named on
+-- the receipt, the cooperative's published disclosures beside them. UNSIGNED — the receipt says so.
+INSERT INTO ui_messages (key, language_code, text) VALUES
+  ('exports.dataset.esg.metrics', 'en', 'ESG figures (unsigned)'),
+  ('exports.dataset.esg.metrics', 'hi', 'ESG आँकड़े (बिना हस्ताक्षर)'),
+  ('exports.dataset.esg.metrics', 'gu', 'ESG આંકડા (સહી વગર)')
+ON CONFLICT DO NOTHING;
