@@ -177,6 +177,16 @@ export class Listing {
   }
 
   pause(): void { this.transition('paused'); }
+  /** PC-56 TENANT-11a (F-7): the listing goes under the hammer — published → reserved_auction. */
+  reserveForAuction(): void { this.transition('reserved_auction'); }
+  /** The auction ended without a sale (cancel / lapse / failed reserve) — reserved_auction → published. */
+  releaseFromAuction(): void { if (this.props.status === 'reserved_auction') this.transition('published'); }
+  /** The auction settled: the lot is consumed. Whatever remains (an auction lot smaller than the stock) is on sale again. */
+  consumeForAuction(qty: number): void {
+    if (this.props.status !== 'reserved_auction') throw new ListingNotEditableError(this.props.id, this.props.status);
+    this.reduceStock(qty);                                  // → sold_out at zero (reduceStock's own rule)
+    if (this.props.status === 'reserved_auction') this.transition('published');
+  }
   reject(): void { this.transition('rejected'); }
   hide(): void { this.transition('hidden'); }
   archive(): void { this.transition('archived'); }

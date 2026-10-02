@@ -7,10 +7,14 @@ describe('emdHeldMinor', () => {
     expect(emdHeldMinor(500000n, 5000n, null)).toBe(5000n);
     expect(emdHeldMinor(500000n, 5000n, 0)).toBe(5000n);   // 0 bps falls back to fixed
   });
-  it('computes a percentage of the bid (basis points) with integer truncation — no float', () => {
-    // 2% of ₹5,000.00 = 500000 * 200 / 10000 = 10000
-    expect(emdHeldMinor(500000n, 5000n, 200)).toBe(10000n);
-    // 1.5% of ₹1,234.56 = 123456 * 150 / 10000 = 1851 (truncated, never 1851.84)
+  it('computes a percentage of the LOT value (basis points) with integer truncation — no float', () => {
+    // 1.5% of ₹1,234.56 (one unit) = 123456 * 150 / 10000 = 1851 (truncated, never 1851.84)
     expect(emdHeldMinor(123456n, 0n, 150)).toBe(1851n);
+    // PC-56 TENANT-11a F-12: a per-unit bid of ₹655 on a 200 kg lot — 2% of the LOT (₹1,31,000) = ₹2,620
+    expect(emdHeldMinor(65500n, 0n, 200, '200.000')).toBe(262000n);
+  });
+  it('F-27b: a flat emd_minor wins over a percentage — the same rule the entity charges', () => {
+    // before 11a the read gave the percentage precedence and showed 10000 while the entity held 5000
+    expect(emdHeldMinor(500000n, 5000n, 200)).toBe(5000n);
   });
 });

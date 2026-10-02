@@ -11,6 +11,10 @@ export const LISTING_STATUSES = [
   // remove slow — a held listing is reversible, a wrong removal costs a farmer income", and collapsing the two states
   // would lose the distinction between a seller pausing their own sale and the platform stopping it.
   'held',
+  // PC-56 TENANT-11a (F-7, 0186). The produce is UNDER AUCTION: it cannot be bought directly (isPurchasable is published
+  // only) and the seller cannot pause, hide or archive it from under the bidders. Only the auction moves it on — back to
+  // published (cancel / lapse / failed reserve) or to sold_out (settlement consumes the lot).
+  'reserved_auction',
   'sold_out', 'expired', 'rejected', 'hidden', 'archived',
 ] as const;
 export type ListingStatus = (typeof LISTING_STATUSES)[number];
@@ -19,7 +23,8 @@ export type ListingStatus = (typeof LISTING_STATUSES)[number];
 const TRANSITIONS: Readonly<Record<ListingStatus, readonly ListingStatus[]>> = Object.freeze({
   draft:            ['pending_approval', 'published', 'archived'],
   pending_approval: ['published', 'rejected', 'draft'],
-  published:        ['paused', 'sold_out', 'expired', 'hidden', 'held', 'archived'],
+  published:        ['paused', 'sold_out', 'expired', 'hidden', 'held', 'archived', 'reserved_auction'],
+  reserved_auction: ['published', 'sold_out'],
   paused:           ['published', 'held', 'archived'],
   // A hold RELEASES to published (the ordinary outcome — most holds are wrong, by design) or ends in archived, which
   // is how a removal terminates. It deliberately cannot go to `hidden`: hidden is the seller's state and moving a

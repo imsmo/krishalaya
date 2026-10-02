@@ -18,7 +18,7 @@ describe('auctions tenant isolation (SQL contract)', () => {
   it('auction.update is optimistic-locked (version) and tenant-scoped', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const { Auction } = await import('../domain/auction.entity');
-    const a = Auction.create({ id: 'au1', tenantId: 'tenantA', listingId: 'l1', kind: 'english_open', startPriceMinor: 100000n, startsAt: new Date('2026-04-01T00:00:00Z'), endsAt: new Date('2026-04-02T00:00:00Z') });
+    const a = Auction.create({ id: 'au1', tenantId: 'tenantA', listingId: 'l1', kind: 'english_open', quantity: '200', unitCode: 'kg', startPriceMinor: 100000n, startsAt: new Date('2026-04-01T00:00:00Z'), endsAt: new Date('2026-04-02T00:00:00Z') });
     await new AuctionRepository(fakeReplica().provider).update(tx as any, a);
     const [sql, params] = tx.query.mock.calls[0];
     expect(sql).toMatch(/WHERE id=\$1 AND tenant_id=\$2 AND version=\$7/);
@@ -26,12 +26,13 @@ describe('auctions tenant isolation (SQL contract)', () => {
     expect(params[1]).toBe('tenantA');
   });
 
-  it('auction.findDueToClose is bounded + SKIP LOCKED (worker, cross-tenant)', async () => {
+  it('PC-56 TENANT-11a F-9: the close claim is PER TENANT (kv_app tx, RLS on) and bounded — no cross-tenant FOR UPDATE as kv_relay', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
-    await new AuctionRepository(fakeReplica().provider).findDueToClose(tx as any, new Date(), 100);
-    const [sql] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/status IN \('live','extended'\) AND ends_at <= \$1/);
-    expect(sql).toMatch(/FOR UPDATE SKIP LOCKED/);
+    await new AuctionRepository(fakeReplica().provider).dueToClose(tx as any, 'tenantA', new Date(), 100);
+    const [sql, params] = tx.query.mock.calls[0];
+    expect(sql).toMatch(/tenant_id=\$1 AND status IN \('live','extended'\) AND ends_at <= \$2/);
+    expect(sql).toMatch(/LIMIT \$3/);
+    expect(params[0]).toBe('tenantA');
   });
 
   it('bid.highest binds tenant_id + auction_id', async () => {

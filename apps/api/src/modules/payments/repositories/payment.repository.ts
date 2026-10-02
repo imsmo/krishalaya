@@ -28,6 +28,22 @@ function toDomain(r: any): Payment {
 export class PaymentRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
+  /** PC-56 TENANT-11a (F-2): what this order has ALREADY been credited in escrow by an auction deposit — the net of the
+   *  escrow legs of `emd_apply` / `emd_forfeit` / `emd_return` txns referenced to the order (apply +EMD; forfeit / return
+   *  −EMD). The winner's EMD was applied to the order at settlement, so the order is paid by `total − credit`, never by
+   *  the total again (escrow would hold the EMD twice). 0 for every non-auction order. Read inside the caller's tx when
+   *  given one (the wallet-pay path), else on the replica (the gateway intent check, outside any tx). */
+  async orderEmdCreditMinor(tenantId: string, orderId: string, tx?: TxContext): Promise<bigint> {
+    const sql = `SELECT COALESCE(sum(e.amount_minor), 0)::text AS n
+         FROM ledger_transactions t JOIN lookup_values lv ON lv.id = t.txn_type_id
+         JOIN ledger_entries e ON e.txn_id = t.id JOIN wallet_accounts w ON w.id = e.account_id
+        WHERE t.tenant_id = $1 AND t.reference_type = 'order' AND t.reference_id = $2
+          AND lv.code IN ('emd_apply', 'emd_forfeit', 'emd_return') AND w.owner_kind = 'platform' AND w.account_code = 'escrow'`;
+    const r = tx ? await tx.query<{ n: string }>(sql, [tenantId, orderId]) : await this.replica.forTenant(tenantId).query<{ n: string }>(sql, [tenantId, orderId]);
+    const n = BigInt(r.rows[0]?.n ?? '0');
+    return n > 0n ? n : 0n;
+  }
+
   async insert(tx: TxContext, p: Payment): Promise<void> {
     const v = p.toProps();
     await tx.query(

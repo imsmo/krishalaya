@@ -5,7 +5,7 @@ import { Auction } from '../domain/auction.entity';
 import { AuctionEventType } from '../domain/auctions.events';
 import { BidTooLowError, AuctionNotBiddableError, InvalidAuctionError } from '../domain/auctions.errors';
 
-const base = { id: 'a1', tenantId: 't1', listingId: 'l1', startsAt: new Date('2026-04-01T00:00:00Z'), endsAt: new Date('2026-04-02T00:00:00Z') };
+const base = { id: 'a1', tenantId: 't1', listingId: 'l1', quantity: '1', unitCode: 'lot', startsAt: new Date('2026-04-01T00:00:00Z'), endsAt: new Date('2026-04-02T00:00:00Z') };
 const english = (over: any = {}) => Auction.create({ ...base, kind: 'english_open', startPriceMinor: 100000n, minIncrementMinor: 10000n, ...over });
 
 describe('auction.state machine', () => {
@@ -39,13 +39,14 @@ describe('bid rules', () => {
     const a = english(); a.open();
     expect(a.minNextBidMinor(null)).toBe(100000n);
     expect(a.minNextBidMinor(120000n)).toBe(130000n);
-    expect(() => a.assertBidAcceptable(125000n, 120000n)).toThrow(BidTooLowError);   // < high+increment
-    a.assertBidAcceptable(130000n, 120000n);                                          // ok
+    const inWindow = new Date('2026-04-01T12:00:00Z');
+    expect(() => a.assertBidAcceptable(125000n, 120000n, inWindow)).toThrow(BidTooLowError);   // < high+increment
+    a.assertBidAcceptable(130000n, 120000n, inWindow);                                          // ok
   });
   it('sealed: min is always the start price (no increment, no visibility)', () => {
     const s = Auction.create({ ...base, kind: 'sealed', startPriceMinor: 100000n }); s.open();
     expect(s.minNextBidMinor(999999n)).toBe(100000n);
-    expect(() => s.assertBidAcceptable(90000n, null)).toThrow(BidTooLowError);
+    expect(() => s.assertBidAcceptable(90000n, null, new Date('2026-04-01T12:00:00Z'))).toThrow(BidTooLowError);
   });
   it('rejects bids when not biddable', () => {
     const a = english();   // still scheduled
@@ -73,27 +74,27 @@ describe('anti-snipe + resolution', () => {
   });
   it('resolve → failed_reserve when reserve unmet or no bids', () => {
     const a = english({ reservePriceMinor: 200000n }); a.open(); a.closeBidding();
-    a.resolve({ amountMinor: 150000n, bidId: 'b1' }, 1);   // below reserve
+    a.resolve({ amountMinor: 150000n, bidId: 'b1', bidderUserId: 'u1' }, 1);   // below reserve
     expect(a.status).toBe('failed_reserve');
     const b = english(); b.open(); b.closeBidding(); b.resolve(null, 0);
     expect(b.status).toBe('failed_reserve');
   });
   it('resolve → settled (or awaiting_approval) when reserve met', () => {
     const a = english({ reservePriceMinor: 120000n }); a.open(); a.closeBidding();
-    a.resolve({ amountMinor: 150000n, bidId: 'b1' }, 1);
+    a.resolve({ amountMinor: 150000n, bidId: 'b1', bidderUserId: 'u1' }, 1);
     expect(a.status).toBe('settled');
     expect(a.toProps().winningBidId).toBe('b1');
     expect(a.pullEvents().map((e) => e.type)).toContain(AuctionEventType.Won);
 
     const ap = english({ requiresSellerApproval: true }); ap.open(); ap.closeBidding();
-    ap.resolve({ amountMinor: 150000n, bidId: 'b2' }, 1);
+    ap.resolve({ amountMinor: 150000n, bidId: 'b2', bidderUserId: 'u1' }, 1);
     expect(ap.status).toBe('awaiting_approval');
-    ap.approve({ amountMinor: 150000n, bidId: 'b2' });
+    ap.approve({ amountMinor: 150000n, bidId: 'b2', bidderUserId: 'u1' });
     expect(ap.status).toBe('settled');
   });
   it('min-bidders not met → failed_reserve', () => {
     const a = english({ minBidders: 3 }); a.open(); a.closeBidding();
-    a.resolve({ amountMinor: 150000n, bidId: 'b1' }, 1);
+    a.resolve({ amountMinor: 150000n, bidId: 'b1', bidderUserId: 'u1' }, 1);
     expect(a.status).toBe('failed_reserve');
   });
 });

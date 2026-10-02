@@ -57,6 +57,8 @@ class FakeWallet implements WalletPort {
 
 /** In-memory stand-in for the real (SQL) PaymentRepository. Duck-typed — cast at the call site. */
 class FakePaymentRepository {
+  /** PC-56 TENANT-11a: no auction deposit was credited to any order in these tests (credit 0 → due = total). */
+  async orderEmdCreditMinor(): Promise<bigint> { return 0n; }
   byId = new Map<string, Payment>();
   byGatewayOrder = new Map<string, string>();
   async resolvePurposeId(): Promise<string | null> { return 'purpose-direct-order'; }

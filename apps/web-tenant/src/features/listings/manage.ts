@@ -5,6 +5,8 @@
 
 export const LISTING_STATUSES = [
   'draft', 'pending_approval', 'published', 'paused', 'sold_out', 'expired', 'rejected', 'hidden', 'archived',
+  // PC-56 TENANT-11a (0186): under auction — only the auction moves it on.
+  'reserved_auction',
 ] as const;
 export type ListingStatus = (typeof LISTING_STATUSES)[number];
 

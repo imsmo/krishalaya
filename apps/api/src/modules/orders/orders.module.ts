@@ -20,6 +20,7 @@ import { CheckoutGroupService } from './services/checkout-group.service';
 import { OrderService } from './services/order.service';
 import { OrderPaymentService } from './services/order-payment.service';
 import { OrderItemService } from './services/order-item.service';
+import { AuctionOrderService } from './services/auction-order.service';   // PC-56 TENANT-11a: the in-tx auction settlement order (F-16)
 import { OrderTimelineReadModel } from './read-models/order-timeline.read-model';
 import { OrderTrackingReadModel } from './read-models/order-tracking.read-model';
 import { OrderBuyerSummaryReadModel } from './read-models/order-buyer-summary.read-model';
@@ -47,13 +48,13 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
   imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule],   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
   controllers: [CartsController, CheckoutController, OrdersController],
   providers: [
-    CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService,
+    CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService, AuctionOrderService,
     OrderTimelineReadModel, OrderTrackingReadModel, OrderBuyerSummaryReadModel, TenantOrderStatsReadModel, OrderConsoleReadModel, OrdersPublisher,
     CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository, DeliveryZoneRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
     PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, AuctionWonHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
   ],
-  exports: [OrderService, SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob],
+  exports: [OrderService, AuctionOrderService, SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob],
 })
 export class OrdersModule implements OnModuleInit {
   constructor(

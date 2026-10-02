@@ -8,7 +8,7 @@ import { InvalidAuctionError } from '../domain/auctions.errors';
 import { AuctionsPublisher } from '../events/auctions.publisher';
 import { NOTIFICATION_EVENT_MAP } from '../../communication/events/notification-event-map';
 
-const base = { id: 'a1', tenantId: 't1', listingId: 'l1', startsAt: new Date('2026-04-01T00:00:00Z'), endsAt: new Date('2026-04-02T00:00:00Z') };
+const base = { id: 'a1', tenantId: 't1', listingId: 'l1', quantity: '1', unitCode: 'lot', startsAt: new Date('2026-04-01T00:00:00Z'), endsAt: new Date('2026-04-02T00:00:00Z') };
 const english = (over: any = {}) => Auction.create({ ...base, kind: 'english_open', startPriceMinor: 100000n, minIncrementMinor: 10000n, ...over });
 
 describe('AuctionWatcher', () => {

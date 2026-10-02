@@ -7,7 +7,8 @@ import {
 
 describe('TENANT-2a · the tab vocabulary is the state machine’s, closed, with held made visible', () => {
   it('contains every status incl. held — a platform-held listing must never be unreachable by tab', () => {
-    expect(CONSOLE_TABS).toEqual(['all', 'published', 'pending_approval', 'draft', 'paused', 'sold_out', 'expired', 'rejected', 'hidden', 'held', 'archived']);
+    // PC-56 TENANT-11a: `reserved_auction` (0186) joins the state machine — a listing under auction is reachable by tab too.
+    expect(CONSOLE_TABS).toEqual(['all', 'published', 'pending_approval', 'draft', 'paused', 'sold_out', 'expired', 'rejected', 'hidden', 'held', 'reserved_auction', 'archived']);
   });
   it('rejects anything outside the vocabulary', () => {
     expect(isConsoleTab('published')).toBe(true);

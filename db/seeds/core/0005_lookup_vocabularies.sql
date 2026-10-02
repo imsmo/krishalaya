@@ -209,3 +209,15 @@ SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
  ('ledger_txn_type','promo_release','Promotion reservation released on cancel/refund (tenant hold -> tenant main)','{}',23)
   ) AS v(type_code, code, default_name, meta, sort_order)
  WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-11a · 0186] The auction deposit vocabulary — F-2, the winner's EMD is APPLIED to the order and FORFEITED to
+-- the seller on default. ALSO INSERTED BY MIGRATION 0186, identically and idempotently. apply = winner hold -> escrow at
+-- settlement; forfeit = escrow -> seller main on default; return = escrow -> winner main when the seller/system cancels.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('ledger_txn_type','emd_apply','Auction winner''s EMD applied to the order (winner hold -> platform escrow)','{}',24),
+ ('ledger_txn_type','emd_forfeit','Auction winner''s applied EMD forfeited to the seller on default (escrow -> seller main)','{}',25),
+ ('ledger_txn_type','emd_return','Auction winner''s applied EMD returned when the order is cancelled by the seller or system (escrow -> winner main)','{}',26)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);

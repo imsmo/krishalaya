@@ -30,6 +30,10 @@ function toDomain(r: any): Order {
     commissionRuleSnapshot: r.commission_rule_snapshot ?? null });
 }
 
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+/** A cancelling PERSON's id, or NULL for the system (no person acted). */
+const personOrNull = (v: string | null | undefined): string | null => (v && UUID_RE.test(v) ? v : null);
+
 @Injectable()
 export class OrderRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
@@ -74,6 +78,11 @@ export class OrderRepository {
   async existsForAuction(tx: TxContext, tenantId: string, auctionId: string): Promise<boolean> {
     const r = await tx.query(`SELECT 1 FROM orders WHERE tenant_id=$1 AND auction_id=$2 LIMIT 1`, [tenantId, auctionId]);
     return (r.rowCount ?? 0) > 0;
+  }
+  /** PC-56 TENANT-11a: the auction's order (if any) — the in-tx settlement's idempotency read. */
+  async findIdForAuction(tx: TxContext, tenantId: string, auctionId: string): Promise<{ id: string; totalMinor: bigint; status: OrderStatus } | null> {
+    const r = await tx.query<{ id: string; total_minor: string; status: OrderStatus }>(`SELECT id, total_minor, status FROM orders WHERE tenant_id=$1 AND auction_id=$2 LIMIT 1`, [tenantId, auctionId]);
+    return r.rows[0] ? { id: r.rows[0].id, totalMinor: BigInt(r.rows[0].total_minor), status: r.rows[0].status } : null;
   }
   async linkAuction(tx: TxContext, tenantId: string, orderId: string, auctionId: string): Promise<void> {
     await tx.query(`UPDATE orders SET auction_id=$3 WHERE id=$1 AND tenant_id=$2`, [orderId, tenantId, auctionId]);
@@ -136,9 +145,13 @@ export class OrderRepository {
       `UPDATE orders SET status=$4, quality_window_ends=$5, cancel_reason_id=$6, cancelled_by=$7, completed_at=$8,
          version=version+1, updated_at=now()
        WHERE id=$1 AND tenant_id=$2 AND created_at=$3 AND version=$9`,
-      [p.id, p.tenantId, p.createdAt, p.status, p.qualityWindowEnds, p.cancelReasonId, p.cancelledBy, p.completedAt, p.version]);
+      // PC-56 TENANT-11a (found while proving the auction default): `Order.systemCancel` records `cancelledBy = 'system'`,
+      // and `orders.cancelled_by` / `order_events.actor_user_id` are uuid columns — so EVERY system cancel (the seller-confirm
+      // timeout job's included) died 22P02 "invalid input syntax for type uuid". A system act has no person: it is stored
+      // as NULL, and the timeline note says it was the system.
+      [p.id, p.tenantId, p.createdAt, p.status, p.qualityWindowEnds, p.cancelReasonId, personOrNull(p.cancelledBy), p.completedAt, p.version]);
     if (r.rowCount === 0) return false;
-    if (fromStatus !== p.status) await this.recordEvent(tx, p.tenantId, p.id, fromStatus, p.status, p.cancelledBy ?? null, null);
+    if (fromStatus !== p.status) await this.recordEvent(tx, p.tenantId, p.id, fromStatus, p.status, personOrNull(p.cancelledBy), p.cancelledBy === 'system' ? 'system' : null);
     return true;
   }
   async recordEvent(tx: TxContext, tenantId: string, orderId: string, from: OrderStatus | null, to: OrderStatus, actor: string | null, note: string | null): Promise<void> {

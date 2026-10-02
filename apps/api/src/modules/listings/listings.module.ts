@@ -50,7 +50,9 @@ import { ListingTrustDocumentRepository } from './repositories/listing-trust-doc
 
 // Event handlers (consume domain/integration events)
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
-import { AuctionSettledHandler } from './events/handlers/auction-settled.handler';
+// PC-56 TENANT-11a (F-7): `AuctionSettledHandler` (consumed `auctions.auction_settled`, an event nothing emitted, and was never
+// registered) is DELETED in favour of the auction's own in-transaction path: ListingService.reserveForAuctionInTx at create,
+// releaseFromAuctionInTx on cancel / lapse / failed reserve, consumeForAuctionInTx at settlement, restockInTx on default.
 
 // Scheduled jobs (run in worker; registered here so DI resolves their deps)
 import { ExpireListingsJob } from './jobs/expire-listings.job';
@@ -66,13 +68,13 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
     ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, GroupLotRepository, GroupLotPledgeRepository, ListingMediaRepository, ListingTrustDocumentRepository,
-    OrderCompletedHandler, AuctionSettledHandler,
+    OrderCompletedHandler,
     ExpireListingsJob, BoostExpiryJob, PublishScheduledJob,
   ],
   // Export only what other bounded contexts may call (services + read-models).
   exports: [ListingService, GroupLotService, ListingSearchReadModel, MandiBandReadModel,
             ExpireListingsJob, BoostExpiryJob, PublishScheduledJob,
-            OrderCompletedHandler, AuctionSettledHandler],
+            OrderCompletedHandler],
 })
 export class ListingsModule implements OnModuleInit {
   constructor(

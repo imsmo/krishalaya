@@ -40,7 +40,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'offers', href: '/offers', label: t.t('nav.offers') },
         { key: 'payouts', href: '/payouts', label: t.t('nav.payouts') },
         { key: 'wallet', href: '/wallet', label: t.t('nav.wallet') },
-        ...(env.featureAuctions ? [{ key: 'auctions', href: '/auctions', label: t.t('nav.auctions') }] : []),
+        ...(env.featureAuctions ? [{ key: 'auctions', href: '/marketplace/auctions', label: t.t('nav.auctions') }] : []),
         ...(env.featureDairy ? [{ key: 'dairy', href: '/dairy', label: t.t('nav.dairy') }] : []),
         ...(env.featureLabour ? [{ key: 'labour', href: '/labour', label: t.t('nav.labour') }] : []),
         ...(env.featureAmbassadors ? [{ key: 'ambassadors', href: '/ambassadors', label: t.t('nav.ambassadors') }] : []),

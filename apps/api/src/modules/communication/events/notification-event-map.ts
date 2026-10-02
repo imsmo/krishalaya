@@ -21,6 +21,14 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'auctions.bidder_outbid',       eventCode: 'bid.outbid',           recipientKeys: ['previousBidderUserId'] },
   // P1-7: an auction closed → notify everyone who WATCHED it (fanout list travels as recipientUserIds).
   { outboxType: 'auctions.watchers_auction_ended', eventCode: 'auction.ended',     recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-11a (F-10): the auction OUTCOMES reach the people they affect (catalogue 0186, copy in seed core/0007).
+  // The winner learns they won (`bid.won` was catalogued in 0068 and never mapped); every bidder and the seller learn a
+  // cancellation (with the tenant_admin's reason), a failed reserve, a lapse and a default.
+  { outboxType: 'auctions.auction_won',            eventCode: 'bid.won',                recipientKeys: ['bidderUserId'] },
+  { outboxType: 'auctions.auction_cancelled',      eventCode: 'auction.cancelled',      recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'auctions.auction_failed_reserve', eventCode: 'auction.failed_reserve', recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'auctions.auction_defaulted',      eventCode: 'auction.defaulted',      recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'auctions.auction_lapsed',         eventCode: 'auction.lapsed',         recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

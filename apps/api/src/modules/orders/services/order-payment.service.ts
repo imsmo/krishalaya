@@ -35,11 +35,13 @@ export class OrderPaymentService {
           const p = order.toProps();
           if (p.buyerUserId !== buyerUserId) throw new OrderForbiddenError('Only the buyer can pay for this order');
           if (p.status !== 'payment_pending') throw new OrderNotAwaitingPaymentError(orderId, p.status);
+          // PC-56 TENANT-11a (F-2): an auction order is paid by its balance — the winner's EMD is already in escrow for it.
+          const due = await this.payments.amountDueForOrderInTx(tx, tenantId, orderId, p.totalMinor);
           const r = await this.payments.captureOrderFromWalletInTx(tx, {
-            tenantId, buyerUserId, orderId, amountMinor: p.totalMinor, currencyCode: p.currencyCode,
+            tenantId, buyerUserId, orderId, amountMinor: due, currencyCode: p.currencyCode,
           });
           // order → 'confirmed' happens async via PaymentSucceededHandler; the wallet is debited NOW.
-          return { orderId, paymentId: r.paymentId, status: 'success', amountMinor: p.totalMinor.toString(), currencyCode: p.currencyCode };
+          return { orderId, paymentId: r.paymentId, status: 'success', amountMinor: due.toString(), currencyCode: p.currencyCode };
         }, { userId: buyerUserId })));
   }
 }

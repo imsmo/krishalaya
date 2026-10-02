@@ -625,6 +625,61 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('resolution.closed', 'turnout', 'cast / eligible_at_close (digits + %)',                                    '52%', true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-11a · **THE AUCTION OUTCOMES REACH THE PEOPLE THEY AFFECT.** Before this wave the only auction notices were
+-- "outbid" and "an auction you watched ended" (survey F-10): a bidder whose live auction was cancelled was never told why,
+-- a winner was never told they won (`bid.won` was catalogued in 0068 with NO template — it could never send), and a seller
+-- learned of a failed reserve from nothing. Migration 0186 catalogues four events; their copy lives HERE, above the
+-- version backfill below, for the reason that note gives (0122's send-time gate INNER JOINs the serving version). Every
+-- variable comes from the outbox payload: `auctionNo` (AUC-…), `title` (the listing title at the time), `reason` (the
+-- tenant_admin's words, verbatim — a cancellation reason is the bidders' to read, not ours to paraphrase).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('bid.won','push','en',NULL,'You won {{auctionNo}}','You won the auction for {{title}}. Your EMD is applied to the order; pay the balance within 48 hours or the EMD is forfeited to the seller.',NULL,true),
+ ('bid.won','push','hi',NULL,'आप {{auctionNo}} जीत गए','आपने {{title}} की नीलामी जीती। आपकी EMD ऑर्डर में लगा दी गई है; बाकी राशि 48 घंटे में चुकाएँ, वरना EMD विक्रेता को ज़ब्त हो जाएगी।',NULL,true),
+ ('bid.won','push','gu',NULL,'તમે {{auctionNo}} જીત્યા','તમે {{title}} ની હરાજી જીતી. તમારી EMD ઓર્ડરમાં લાગુ થઈ છે; બાકી રકમ 48 કલાકમાં ચૂકવો, નહીં તો EMD વેચનારને જપ્ત થશે.',NULL,true),
+ ('bid.won','sms','en',NULL,NULL,'Krishalaya: you won {{auctionNo}} ({{title}}). EMD applied; pay the balance within 48 h or the EMD is forfeited to the seller.',NULL,true),
+ ('bid.won','sms','hi',NULL,NULL,'कृषालय: आप {{auctionNo}} ({{title}}) जीत गए। EMD लगा दी गई; बाकी 48 घंटे में चुकाएँ वरना EMD विक्रेता को ज़ब्त।',NULL,true),
+ ('bid.won','sms','gu',NULL,NULL,'કૃષાલય: તમે {{auctionNo}} ({{title}}) જીત્યા. EMD લાગુ; બાકી 48 કલાકમાં ચૂકવો નહીં તો EMD વેચનારને જપ્ત.',NULL,true),
+ ('auction.cancelled','push','en',NULL,'{{auctionNo}} was cancelled','The auction for {{title}} was cancelled: {{reason}}. Every bid is void and your EMD has been returned to your wallet.',NULL,true),
+ ('auction.cancelled','push','hi',NULL,'{{auctionNo}} रद्द हुई','{{title}} की नीलामी रद्द कर दी गई: {{reason}}। हर बोली रद्द है और आपकी EMD आपके वॉलेट में लौटा दी गई है।',NULL,true),
+ ('auction.cancelled','push','gu',NULL,'{{auctionNo}} રદ થઈ','{{title}} ની હરાજી રદ કરવામાં આવી: {{reason}}. દરેક બોલી રદ છે અને તમારી EMD તમારા વૉલેટમાં પાછી આપવામાં આવી છે.',NULL,true),
+ ('auction.cancelled','inapp','en',NULL,'{{auctionNo}} was cancelled','The auction for {{title}} was cancelled: {{reason}}. Every bid is void and your EMD has been returned to your wallet.',NULL,true),
+ ('auction.cancelled','inapp','hi',NULL,'{{auctionNo}} रद्द हुई','{{title}} की नीलामी रद्द कर दी गई: {{reason}}। हर बोली रद्द है और आपकी EMD आपके वॉलेट में लौटा दी गई है।',NULL,true),
+ ('auction.cancelled','inapp','gu',NULL,'{{auctionNo}} રદ થઈ','{{title}} ની હરાજી રદ કરવામાં આવી: {{reason}}. દરેક બોલી રદ છે અને તમારી EMD તમારા વૉલેટમાં પાછી આપવામાં આવી છે.',NULL,true),
+ ('auction.failed_reserve','push','en',NULL,'{{auctionNo}} closed without a sale','The auction for {{title}} closed without a sale (reserve or minimum bidders not met). Every EMD has been returned.',NULL,true),
+ ('auction.failed_reserve','push','hi',NULL,'{{auctionNo}} बिना बिक्री के बंद','{{title}} की नीलामी बिना बिक्री के बंद हुई (रिज़र्व या न्यूनतम बोलीदाता पूरे नहीं)। हर EMD लौटा दी गई है।',NULL,true),
+ ('auction.failed_reserve','push','gu',NULL,'{{auctionNo}} વેચાણ વિના બંધ','{{title}} ની હરાજી વેચાણ વિના બંધ થઈ (રિઝર્વ અથવા લઘુત્તમ બોલીદાર પૂરા નહીં). દરેક EMD પાછી આપવામાં આવી છે.',NULL,true),
+ ('auction.failed_reserve','inapp','en',NULL,'{{auctionNo}} closed without a sale','The auction for {{title}} closed without a sale (reserve or minimum bidders not met). Every EMD has been returned.',NULL,true),
+ ('auction.failed_reserve','inapp','hi',NULL,'{{auctionNo}} बिना बिक्री के बंद','{{title}} की नीलामी बिना बिक्री के बंद हुई (रिज़र्व या न्यूनतम बोलीदाता पूरे नहीं)। हर EMD लौटा दी गई है।',NULL,true),
+ ('auction.failed_reserve','inapp','gu',NULL,'{{auctionNo}} વેચાણ વિના બંધ','{{title}} ની હરાજી વેચાણ વિના બંધ થઈ (રિઝર્વ અથવા લઘુત્તમ બોલીદાર પૂરા નહીં). દરેક EMD પાછી આપવામાં આવી છે.',NULL,true),
+ ('auction.defaulted','push','en',NULL,'{{auctionNo}} defaulted','The balance for {{title}} was not paid in time. The winner''s EMD has been forfeited to the seller and the listing is back on sale.',NULL,true),
+ ('auction.defaulted','push','hi',NULL,'{{auctionNo}} में चूक','{{title}} की बाकी राशि समय पर नहीं चुकाई गई। विजेता की EMD विक्रेता को ज़ब्त कर दी गई है और लिस्टिंग फिर बिक्री पर है।',NULL,true),
+ ('auction.defaulted','push','gu',NULL,'{{auctionNo}} માં ચૂક','{{title}} ની બાકી રકમ સમયસર ચૂકવાઈ નથી. વિજેતાની EMD વેચનારને જપ્ત કરવામાં આવી છે અને લિસ્ટિંગ ફરી વેચાણ પર છે.',NULL,true),
+ ('auction.defaulted','inapp','en',NULL,'{{auctionNo}} defaulted','The balance for {{title}} was not paid in time. The winner''s EMD has been forfeited to the seller and the listing is back on sale.',NULL,true),
+ ('auction.defaulted','inapp','hi',NULL,'{{auctionNo}} में चूक','{{title}} की बाकी राशि समय पर नहीं चुकाई गई। विजेता की EMD विक्रेता को ज़ब्त कर दी गई है और लिस्टिंग फिर बिक्री पर है।',NULL,true),
+ ('auction.defaulted','inapp','gu',NULL,'{{auctionNo}} માં ચૂક','{{title}} ની બાકી રકમ સમયસર ચૂકવાઈ નથી. વિજેતાની EMD વેચનારને જપ્ત કરવામાં આવી છે અને લિસ્ટિંગ ફરી વેચાણ પર છે.',NULL,true),
+ ('auction.lapsed','push','en',NULL,'{{auctionNo}} lapsed','The seller did not decide on {{title}} in time, so the auction ended with no sale. Every EMD has been returned.',NULL,true),
+ ('auction.lapsed','push','hi',NULL,'{{auctionNo}} समाप्त','विक्रेता ने {{title}} पर समय पर फ़ैसला नहीं किया, इसलिए नीलामी बिना बिक्री के समाप्त हुई। हर EMD लौटा दी गई है।',NULL,true),
+ ('auction.lapsed','push','gu',NULL,'{{auctionNo}} સમાપ્ત','વેચનારે {{title}} પર સમયસર નિર્ણય લીધો નહીં, તેથી હરાજી વેચાણ વિના સમાપ્ત થઈ. દરેક EMD પાછી આપવામાં આવી છે.',NULL,true),
+ ('auction.lapsed','inapp','en',NULL,'{{auctionNo}} lapsed','The seller did not decide on {{title}} in time, so the auction ended with no sale. Every EMD has been returned.',NULL,true),
+ ('auction.lapsed','inapp','hi',NULL,'{{auctionNo}} समाप्त','विक्रेता ने {{title}} पर समय पर फ़ैसला नहीं किया, इसलिए नीलामी बिना बिक्री के समाप्त हुई। हर EMD लौटा दी गई है।',NULL,true),
+ ('auction.lapsed','inapp','gu',NULL,'{{auctionNo}} સમાપ્ત','વેચનારે {{title}} પર સમયસર નિર્ણય લીધો નહીં, તેથી હરાજી વેચાણ વિના સમાપ્ત થઈ. દરેક EMD પાછી આપવામાં આવી છે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('bid.won',                'auctionNo', 'auctions.auction_no',                      'AUC-2026-0713-01', true),
+ ('bid.won',                'title',     'listings.title at settlement',            'Ghee, buffalo', true),
+ ('auction.cancelled',      'auctionNo', 'auctions.auction_no',                      'AUC-2026-0713-01', true),
+ ('auction.cancelled',      'title',     'listings.title at cancellation',          'Ghee, buffalo', true),
+ ('auction.cancelled',      'reason',    'auctions.cancel_reason (verbatim)',       'quality complaint on the lot', true),
+ ('auction.failed_reserve', 'auctionNo', 'auctions.auction_no',                      'AUC-2026-0713-01', true),
+ ('auction.failed_reserve', 'title',     'listings.title at close',                 'Ghee, buffalo', true),
+ ('auction.defaulted',      'auctionNo', 'auctions.auction_no',                      'AUC-2026-0713-01', true),
+ ('auction.defaulted',      'title',     'listings.title at default',               'Ghee, buffalo', true),
+ ('auction.lapsed',         'auctionNo', 'auctions.auction_no',                      'AUC-2026-0713-01', true),
+ ('auction.lapsed',         'title',     'listings.title at lapse',                 'Ghee, buffalo', true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

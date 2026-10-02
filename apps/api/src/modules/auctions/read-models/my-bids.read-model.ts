@@ -5,14 +5,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { BidRepository } from '../repositories/bid.repository';
-import { applyBpsFloor } from '../../../core/money/rounding';
+import { emdForLot } from '../domain/lot';
+import { encodeCursor } from '../domain/cursor';
 
-/** PURE: the EMD held for a bid — a % of the bid amount (basis points) when configured, else the auction's
- *  fixed emd_minor. Integer math only (Law 2): bps path truncates via the platform's canonical `applyBpsFloor`
- *  (DEV-26/Q15), never floats. Exported for unit tests. */
-export function emdHeldMinor(amountMinor: bigint, emdMinor: bigint, emdPctBps: number | null): bigint {
-  if (emdPctBps != null && emdPctBps > 0) return applyBpsFloor(amountMinor, emdPctBps);
-  return emdMinor;
+/** PURE: the EMD held for a bidder in an auction — PC-56 TENANT-11a F-27b: the SAME rule the entity charges (domain/lot.ts
+ *  `emdForLot`): the flat `emd_minor` FIRST, else `emd_pct_bps` of the LOT value of the bidder's FIRST bid (quantity × per-unit
+ *  price). The old read gave the percentage precedence and applied it to the bid in hand, so "my bids" could show a hold
+ *  that was never taken. `quantity` defaults to one unit for callers that predate the lot. Exported for unit tests. */
+export function emdHeldMinor(firstAmountMinor: bigint, emdMinor: bigint, emdPctBps: number | null, quantity = '1'): bigint {
+  return emdForLot(firstAmountMinor, quantity, emdMinor, emdPctBps);
 }
 
 @Injectable()
@@ -26,7 +27,8 @@ export class MyBidsReadModel {
       auctionId: b.auctionId,
       listingId: b.listingId,
       amountMinor: b.amountMinor,
-      emdHeldMinor: emdHeldMinor(BigInt(b.amountMinor), BigInt(b.emdMinor), b.emdPctBps).toString(),
+      emdHeldMinor: emdHeldMinor(BigInt(b.firstAmountMinor), BigInt(b.emdMinor), b.emdPctBps, b.quantity).toString(),
+      quantity: b.quantity, unitCode: b.unitCode,
       auctionStatus: b.auctionStatus,
       endsAt: b.endsAt,
       isWinning: b.winningBidId != null && b.winningBidId === b.id,
@@ -34,6 +36,6 @@ export class MyBidsReadModel {
     }));
     const last = rows[rows.length - 1];
     this.metrics.inc('auctions.my_bids', { tenant: tenantId });
-    return { items, nextCursor: rows.length === opts.limit && last ? Buffer.from(`${last.createdAt.toISOString()}|${last.id}`).toString('base64') : null };
+    return { items, nextCursor: rows.length === opts.limit && last ? encodeCursor(last.createdAtRaw, last.id) : null };
   }
 }

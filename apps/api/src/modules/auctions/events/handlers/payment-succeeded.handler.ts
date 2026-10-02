@@ -1,54 +1,32 @@
 // modules/auctions/events/handlers/payment-succeeded.handler.ts
-// Consumes payments.payment_succeeded (delivered by the outbox relay). Acts ONLY on payments whose
-// referenceType is 'auction' — i.e. the WINNER settling their auction win directly against the auction
-// (referenceId = auctionId). On success it RELEASES the winner's EMD hold (hold → main) via the wallet
-// boundary (Law 2): once they've actually paid, the anti-spam deposit is returned. Idempotent on the
-// wallet key `emd-release:<auction>:<winner>` (the same key the close path uses), so a re-delivery — or
-// a winner whose EMD was already released at close — is a harmless no-op. Touches ONLY auctions' own
-// tables + the wallet (Law 11). Runs inside the relay's per-event tx.
-import { Inject, Injectable } from '@nestjs/common';
+// Consumes payments.payment_succeeded (delivered by the outbox relay).
+//
+// PC-56 TENANT-11a (F-2, F-9). What this handler did before: on a payment with referenceType 'auction' it RELEASED the
+// winner's EMD (hold → main), reading `bids` on the relay's transaction AS kv_relay — which has no grant on `bids`, so
+// the whole event (every handler of it) rolled back and was quarantined (survey F-9). Under the founder's model the
+// winner's EMD is no longer released on payment: it was APPLIED to the order at settlement (AuctionService.settleInTx),
+// and the winner pays the BALANCE on the order itself (referenceType 'order', amount due = total − applied EMD).
+//
+// So this handler now does exactly one thing: when an ORDER payment lands for an auction's order, it records the
+// settlement `paid` (the default sweep then leaves it alone). It runs through AuctionService — the request-tier kv_app
+// unit of work, as TENANT-10a's sale handler does — and never queries on the relay's transaction. A payment that names
+// an AUCTION as its reference is no longer a path that settles anything (no money moves; nothing in the platform creates
+// one — payment intents for 'auction' are not validated by the payments module either, its own README says so).
+import { Injectable, Logger } from '@nestjs/common';
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
-import { TxContext } from '../../../../core/database/unit-of-work';
-import { WALLET_SERVICE, WalletPort } from '../../../../core/wallet/wallet.port';
-import { userMain, userHold } from '../../../../core/wallet/account-codes';
-import { AuctionRepository } from '../../repositories/auction.repository';
-import { BidRepository } from '../../repositories/bid.repository';
-import { AuctionsPublisher } from '../auctions.publisher';
+import { AuctionService } from '../../services/auction.service';
 
 @Injectable()
 export class AuctionPaymentSucceededHandler implements OutboxHandler {
   readonly eventType = 'payments.payment_succeeded';
-  constructor(
-    @Inject(WALLET_SERVICE) private readonly wallet: WalletPort,
-    private readonly auctions: AuctionRepository,
-    private readonly bids: BidRepository,
-    private readonly publisher: AuctionsPublisher,
-  ) {}
+  private readonly log = new Logger(AuctionPaymentSucceededHandler.name);
+  constructor(private readonly auctions: AuctionService) {}
 
-  async handle(event: OutboxEvent, tx: TxContext): Promise<void> {
+  async handle(event: OutboxEvent): Promise<void> {
     const tenantId = event.tenantId;
     const p = event.payload as Record<string, unknown>;
-    if (!tenantId || p.referenceType !== 'auction') return;          // only a direct auction settlement
-    const auctionId = typeof p.referenceId === 'string' ? p.referenceId : undefined;
-    if (!auctionId) return;
-
-    const a = await this.auctions.getForUpdate(tx, tenantId, auctionId);
-    if (!a) return;
-    const winningBidId = a.toProps().winningBidId;
-    if (!winningBidId) return;                                        // no winner → nothing to settle
-    const winnerUserId = await this.bids.bidderOfBid(tx, tenantId, winningBidId);
-    if (!winnerUserId) return;
-
-    const first = (await this.bids.firstBidAmounts(tx, tenantId, auctionId)).find((f) => f.bidderUserId === winnerUserId);
-    if (!first) return;
-    const emd = a.emdForBid(first.firstAmountMinor);
-    if (emd <= 0n) return;
-
-    // return the winner's held EMD — idempotent on the shared release key (no double-release)
-    await this.wallet.post(tx, {
-      tenantId, txnType: 'emd_hold', idempotencyKey: `emd-release:${auctionId}:${winnerUserId}`, referenceType: 'auction', referenceId: auctionId, initiatedBy: 'system',
-      legs: [ { account: userHold(winnerUserId), amountMinor: -emd }, { account: userMain(winnerUserId), amountMinor: emd } ],
-    });
-    await this.publisher.emdReleased(tx, tenantId, auctionId, winnerUserId, emd);
+    if (!tenantId || typeof p.referenceId !== 'string') return;
+    if (p.referenceType === 'order') { await this.auctions.onOrderPaid(tenantId, p.referenceId); return; }   // no-op unless it is an auction's order
+    if (p.referenceType === 'auction') this.log.warn(`payment ${event.aggregateId} names auction ${p.referenceId} directly — not a settlement path since TENANT-11a; nothing moved`);
   }
 }

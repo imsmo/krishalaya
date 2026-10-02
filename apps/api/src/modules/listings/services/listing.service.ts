@@ -302,6 +302,46 @@ export class ListingService {
     await this.cache.del(cacheKey(tenantId, id));
   }
 
+  // ---- PC-56 TENANT-11a (F-7): THE AUCTIONED LISTING, MOVED INSIDE THE AUCTION'S OWN TRANSACTION -------------------------
+  // The auction module calls these with ITS transaction so the listing and the auction can never disagree (a listing
+  // reserved for an auction that rolled back, or an auction settled over a listing still on sale). Each re-checks the row
+  // under its lock; the caller invalidates the cache AFTER commit (`invalidate`), so a read never repopulates it with the
+  // pre-commit row.
+
+  /** published → reserved_auction, for THIS seller's listing. Returns the lot the auction copies (quantity + unit). */
+  async reserveForAuctionInTx(tx: TxContext, tenantId: string, id: string, sellerUserId: string): Promise<{ quantity: string; unitCode: string; title: string; productId: string; currencyCode: string }> {
+    const listing = await this.repo.getForUpdate(tx, tenantId, id);
+    const p = listing.toProps();
+    if (p.sellerUserId !== sellerUserId) throw new ForbiddenError('Only the listing seller\'s produce can be auctioned', { listingId: id });
+    listing.reserveForAuction();                          // published only (the state machine refuses anything else)
+    await this.repo.update(tx, listing);
+    await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+    return { quantity: String(p.quantityAvailable), unitCode: p.unitCode, title: p.title, productId: p.productId, currencyCode: p.currencyCode };
+  }
+  /** reserved_auction → published (cancel / lapse / failed reserve). A no-op for a listing that is not reserved. */
+  async releaseFromAuctionInTx(tx: TxContext, tenantId: string, id: string): Promise<void> {
+    const listing = await this.repo.getForUpdate(tx, tenantId, id);
+    listing.releaseFromAuction();
+    await this.repo.update(tx, listing);
+    await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+  }
+  /** Settlement consumes the lot (reserved_auction → sold_out, or published with what remains). */
+  async consumeForAuctionInTx(tx: TxContext, tenantId: string, id: string, qty: number): Promise<void> {
+    const listing = await this.repo.getForUpdate(tx, tenantId, id);
+    listing.consumeForAuction(qty);
+    await this.repo.update(tx, listing);
+    await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+  }
+  /** A defaulted sale puts the lot back on sale (sold_out → published via restock's own rule). */
+  async restockInTx(tx: TxContext, tenantId: string, id: string, qty: number): Promise<void> {
+    const listing = await this.repo.getForUpdate(tx, tenantId, id);
+    listing.restock(qty);
+    await this.repo.update(tx, listing);
+    await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+  }
+  /** Drop the cached copy after the caller's commit. */
+  async invalidate(tenantId: string, id: string): Promise<void> { await this.cache.del(cacheKey(tenantId, id)); }
+
   /** READ — single listing, cache-aside off a replica. INTERNAL (no visibility gate). */
   async getById(tenantId: string, id: string) {
     return this.cache.wrap(cacheKey(tenantId, id), 300, async () => {

@@ -108,6 +108,12 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- [PC-56 TENANT-10a] THE PAYOUT GETS ITS OWN VERB (F-3). `ambassador.manage` is held by support_agent too, and a payout moves
  -- platform money to a village agent; the verb that moves it is tenant_admin's only. Also in migration 0184.
  ('ambassador.payout','Run ambassador commission payouts','M-AMB'),
+ -- [PC-56 TENANT-11a] THE AUCTION DESK'S VERBS (F-10). Staff schedule FOR a seller and record a seller's decision only with
+ -- the seller's recorded consent (auction_consents); a live auction is stopped by tenant_admin only, with a reason. Also in 0186.
+ ('auction.read','Read an auction''s bid stream (bidders masked as B1…Bn)','M04'),
+ ('auction.schedule_on_behalf','Schedule an auction for a seller, and record the seller''s decision, each with the seller''s recorded consent','M04'),
+ ('auction.cancel_live','Cancel a live auction (reason mandatory; every bidder notified, every EMD released)','M04'),
+ ('auction.pause_entry','Pause / resume NEW bidders entering a live auction (existing bidders continue; reason recorded)','M04'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -216,4 +222,9 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin') AND p.code IN ('esg.disclose'))
    -- [PC-56 TENANT-10a] the ambassador payout's own money verb (0184). `ambassador.manage` keeps enrol/suspend/activate.
    OR (r.code IN ('tenant_admin') AND p.code IN ('ambassador.payout'))
+   -- [PC-56 TENANT-11a] the auction desk (0186). `auction.read` is broad (the bid stream is masked server-side).
+   OR (r.code IN ('farmer','vyapari','customer','dairy_farmer','pashupalak','organic_store','pharma_store','fpo_coordinator','tenant_admin',
+                  'tenant_staff','ambassador','sardar','support_agent','ai_ops') AND p.code IN ('auction.read'))
+   OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('auction.schedule_on_behalf'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('auction.cancel_live','auction.pause_entry'))
 ON CONFLICT DO NOTHING;

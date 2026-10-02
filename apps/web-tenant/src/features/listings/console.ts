@@ -5,7 +5,9 @@
  *  mock happened to draw with a count of zero and omit: a platform-held listing that no tab can reach would be
  *  invisible exactly when it most needs an owner's eyes. */
 export const CONSOLE_TABS = [
-  'all', 'published', 'pending_approval', 'draft', 'paused', 'sold_out', 'expired', 'rejected', 'hidden', 'held', 'archived',
+  'all', 'published', 'pending_approval', 'draft', 'paused', 'sold_out', 'expired', 'rejected', 'hidden', 'held',
+  // PC-56 TENANT-11a (F-7, 0186): the listing an auction is selling — not buyable directly until the auction ends.
+  'reserved_auction', 'archived',
 ] as const;
 export type ConsoleTab = (typeof CONSOLE_TABS)[number];
 

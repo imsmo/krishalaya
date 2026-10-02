@@ -1,34 +1,26 @@
-// modules/orders/events/handlers/auction-won.handler.ts · PC-54 W54-6 `auction-settle`: the missing bridge.
-// Consumes auctions.auction_won (outbox relay). The WINNING BID becomes a real order: source='auction',
-// buyer = the winning bidder, ONE line at the hammer price for the WHOLE LOT (quantity 1 × amountMinor —
-// an auction sells the lot, so the hammer price IS the line total; no client-side division, Law 2).
-// Mirrors offer-accepted.handler: listing facts via ListingService (Law 11), IDEMPOTENT via orders.auction_id
-// (0005 shipped the column awaiting this handler), atomic inside the relay tx.
-import { Inject, Injectable } from '@nestjs/common';
-import { OUTBOX_WRITER, OutboxWriter } from '../../../../core/outbox/outbox.writer';
+// modules/orders/events/handlers/auction-won.handler.ts · PC-54 W54-6 `auction-settle`, re-cut by PC-56 TENANT-11a.
+// Consumes auctions.auction_won (outbox relay).
+//
+// TENANT-11a (F-16, F-12): the order is now created INSIDE the auction's settlement transaction by
+// `AuctionOrderService.createInTx` (status settled, settled_order_id set, EMD applied — one commit). So for every auction
+// settled by this code the order already exists when this event is delivered, and the handler is a no-op (idempotent on
+// `orders.auction_id`). It stays registered for ONE reason: an `auctions.auction_won` written BEFORE this wave may still be
+// waiting in the outbox, and its auction has no order yet. Such an event carries no `quantity` — under the old meaning its
+// `amountMinor` WAS the lot total — so it is honoured as exactly that (`1 × lot`), never re-read as a per-unit price; an
+// event that carries `quantity` / `unitCode` (this wave's shape) is `quantity × unitPriceMinor` in the listing's unit.
+import { Injectable } from '@nestjs/common';
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
 import { TxContext } from '../../../../core/database/unit-of-work';
-import { FlagsService } from '../../../../core/feature-flags/flags.service';
-import { uuidv7 } from '../../../../core/database/uuid.util';
-import { Metrics, METRICS } from '../../../../core/observability/metrics';
 import { ListingService } from '../../../listings/services/listing.service';
-import { OrderRepository } from '../../repositories/order.repository';
-import { Order } from '../../domain/order.entity';
-import { OrderItem } from '../../domain/order-item.entity';
-import { DomainEvent } from '../../domain/orders.events';
+import { AuctionOrderService } from '../../services/auction-order.service';
 
-function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.slice(0, 8).toUpperCase()}`; }
+const QTY = /^\d{1,15}(\.\d{1,3})?$/;
+function milli(q: string): bigint { const [w, f = ''] = q.split('.'); return BigInt(w) * 1000n + BigInt((f + '000').slice(0, 3)); }
 
 @Injectable()
 export class AuctionWonHandler implements OutboxHandler {
   readonly eventType = 'auctions.auction_won';
-  constructor(
-    private readonly repo: OrderRepository,
-    private readonly listings: ListingService,
-    private readonly flags: FlagsService,
-    @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
-    @Inject(METRICS) private readonly metrics: Metrics,
-  ) {}
+  constructor(private readonly listings: ListingService, private readonly auctionOrders: AuctionOrderService) {}
 
   async handle(event: OutboxEvent, tx: TxContext): Promise<void> {
     const tenantId = event.tenantId;
@@ -36,36 +28,21 @@ export class AuctionWonHandler implements OutboxHandler {
     const auctionId = p.auctionId as string | undefined;
     const listingId = p.listingId as string | undefined;
     const bidderUserId = p.bidderUserId as string | undefined;
-    const amountMinor = p.amountMinor as string | undefined;
+    const amountMinor = (p.unitPriceMinor ?? p.amountMinor) as string | undefined;
     if (!tenantId || !auctionId || !listingId || !bidderUserId || !amountMinor || !/^\d+$/.test(amountMinor)) return; // malformed/legacy (pre-enrichment events lack bidderUserId) → ignore
-
-    if (await this.repo.existsForAuction(tx, tenantId, auctionId)) return;              // idempotent (re-delivery)
 
     const l: any = await this.listings.getById(tenantId, listingId);                    // Law 11
     if (!l) return;
-    const sellerUserId = l.sellerUserId as string;
-    if (sellerUserId === bidderUserId) return;                                          // defensive: no self-deal
+    if (l.sellerUserId === bidderUserId) return;                                        // defensive: no self-deal
 
-    const requiresPayment = await this.flags.isEnabled('online_payments', { tenantId, userId: bidderUserId });
-    const now = new Date();
-    const orderId = uuidv7();
-    const item = OrderItem.of({
-      id: uuidv7(), orderId, orderCreatedAt: now, tenantId, listingId, productId: l.productId,
-      titleSnapshot: `${l.title} (auction lot)`, quantity: 1, unitCode: 'lot',
-      unitPriceMinor: BigInt(amountMinor), gstRatePct: null, hsnCode: null, batchId: null,
+    const hasLot = typeof p.quantity === 'string' && QTY.test(p.quantity) && typeof p.unitCode === 'string' && p.unitCode.length > 0;
+    const quantity = hasLot ? (p.quantity as string) : '1.000';
+    const unitCode = hasLot ? (p.unitCode as string) : 'lot';
+    const unit = BigInt(amountMinor);
+    await this.auctionOrders.createInTx(tx, {
+      tenantId, auctionId, listingId, productId: l.productId, title: l.title, currencyCode: l.currencyCode ?? 'INR',
+      sellerUserId: l.sellerUserId, buyerUserId: bidderUserId, quantity, unitCode, unitPriceMinor: unit,
+      expectedLotValueMinor: (unit * milli(quantity)) / 1000n,
     });
-    const order = Order.place({
-      id: orderId, tenantId, orderNo: orderNo(orderId), checkoutGroupId: null, buyerUserId: bidderUserId,
-      sellerUserId, source: 'auction', currencyCode: l.currencyCode ?? 'INR', items: [item],
-      deliveryMethodId: null, deliveryAddressId: null, requiresPayment, now,
-    });
-    await this.repo.insertGraph(tx, order, [item]);
-    await this.repo.linkAuction(tx, tenantId, orderId, auctionId);                      // the idempotency anchor
-    await this.flush(tx, tenantId, orderId, order.pullEvents());
-    this.metrics.inc('orders.from_auction', { tenant: tenantId });
-  }
-
-  private async flush(tx: TxContext, tenantId: string, orderId: string, events: DomainEvent[]) {
-    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'order', aggregateId: orderId, eventType: e.type, payload: { v: 1, ...e.payload } });
   }
 }

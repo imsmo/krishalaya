@@ -12,8 +12,7 @@ import { AuctionRepository } from '../repositories/auction.repository';
 import { AuctionWatcherRepository } from '../repositories/auction-watcher.repository';
 import { AuctionsPublisher } from '../events/auctions.publisher';
 
-const enc = (s: string) => Buffer.from(s).toString('base64url');
-const dec = (s: string) => Buffer.from(s, 'base64url').toString('utf8');
+import { decodeCursor, encodeCursor } from '../domain/cursor';
 
 @Injectable()
 export class AuctionWatcherService {
@@ -39,6 +38,8 @@ export class AuctionWatcherService {
   }
 
   async unwatch(tenantId: string, userId: string, auctionId: string) {
+    const a = await this.auctions.getVisible(tenantId, auctionId);
+    if (!a) throw new AuctionNotFoundError(auctionId);           // the watch row has no tenant_id: resolve the auction in-tenant first
     await this.uow.run(tenantId, async (tx) => { await this.watchers.unwatch(tx, auctionId, userId); }, { userId });
     return { ok: true, auctionId, watching: false };
   }
@@ -51,14 +52,13 @@ export class AuctionWatcherService {
   }
 
   async listMine(tenantId: string, userId: string, q: { cursor?: string; limit: number }) {
-    let cursor: { c: string; id: string } | undefined;
-    if (q.cursor) { try { cursor = JSON.parse(dec(q.cursor)); } catch { /* first page */ } }
+    const cursor = decodeCursor(q.cursor);                                  // F-25: µs (created_at::text), not a JS Date
     const rows = await this.watchers.listForUser(tenantId, userId, { cursor, limit: q.limit + 1 });
     const hasMore = rows.length > q.limit;
     const page = hasMore ? rows.slice(0, q.limit) : rows;
     const items = page.map((r) => ({ auctionId: r.auctionId, status: r.status, endsAt: r.endsAt, watchedAt: r.createdAt }));
     const last = page[page.length - 1];
-    const nextCursor = hasMore && last ? enc(JSON.stringify({ c: new Date(last.createdAt).toISOString(), id: last.auctionId })) : null;
+    const nextCursor = hasMore && last ? encodeCursor(last.createdAtRaw, last.auctionId) : null;
     return { items, nextCursor };
   }
 }

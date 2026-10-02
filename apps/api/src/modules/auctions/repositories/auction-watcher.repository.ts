@@ -8,7 +8,7 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { AuctionWatcher } from '../domain/auction-watcher.entity';
 
-export interface WatchedRow { auctionId: string; status: string; endsAt: Date; createdAt: Date; }
+export interface WatchedRow { auctionId: string; status: string; endsAt: Date; createdAt: Date; createdAtRaw: string; }
 
 @Injectable()
 export class AuctionWatcherRepository {
@@ -18,8 +18,10 @@ export class AuctionWatcherRepository {
   async watch(tx: TxContext, w: AuctionWatcher): Promise<void> {
     await tx.query(`INSERT INTO auction_watchers (auction_id, user_id) VALUES ($1,$2) ON CONFLICT (auction_id, user_id) DO NOTHING`, [w.props.auctionId, w.props.userId]);
   }
-  async unwatch(tx: TxContext, auctionId: string, userId: string): Promise<void> {
-    await tx.query(`DELETE FROM auction_watchers WHERE auction_id=$1 AND user_id=$2`, [auctionId, userId]);
+  /** F-21: kv_app holds DELETE on auction_watchers since 0186 (it did not, so every unwatch was a 42501 → 500). */
+  async unwatch(tx: TxContext, auctionId: string, userId: string): Promise<boolean> {
+    const r = await tx.query(`DELETE FROM auction_watchers WHERE auction_id=$1 AND user_id=$2`, [auctionId, userId]);
+    return (r.rowCount ?? 0) > 0;
   }
   async isWatching(tenantId: string, auctionId: string, userId: string): Promise<boolean> {
     const r = await this.replica.forTenant(tenantId).query(
@@ -49,12 +51,12 @@ export class AuctionWatcherRepository {
     const params: unknown[] = [tenantId, userId];
     let where = `a.tenant_id=$1 AND w.user_id=$2`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
-    if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where += ` AND (w.created_at < ${cc} OR (w.created_at=${cc} AND w.auction_id < ${ci}))`; }
+    if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where += ` AND (w.created_at < ${cc}::timestamptz OR (w.created_at = ${cc}::timestamptz AND w.auction_id < ${ci}::uuid))`; }
     const lp = p(opts.limit);
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT w.auction_id, a.status, a.ends_at, w.created_at
+      `SELECT w.auction_id, a.status, a.ends_at, w.created_at, w.created_at::text AS created_at_raw
          FROM auction_watchers w JOIN auctions a ON a.id=w.auction_id AND a.tenant_id=$1
         WHERE ${where} ORDER BY w.created_at DESC, w.auction_id DESC LIMIT ${lp}`, params);
-    return r.rows.map((x) => ({ auctionId: x.auction_id, status: x.status, endsAt: x.ends_at, createdAt: x.created_at }));
+    return r.rows.map((x) => ({ auctionId: x.auction_id, status: x.status, endsAt: x.ends_at, createdAt: x.created_at, createdAtRaw: x.created_at_raw }));
   }
 }

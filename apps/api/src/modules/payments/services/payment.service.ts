@@ -118,7 +118,10 @@ export class PaymentService {
     const p = order.toProps();
     if (p.status !== 'payment_pending') throw new OrderNotAwaitingPaymentError(p.id, p.status);   // already paid / cancelled / etc.
     if (p.currencyCode.toUpperCase() !== dto.currencyCode.toUpperCase()) throw new BadRequestError('Payment currency does not match the order currency');
-    if (BigInt(dto.amountMinor) !== p.totalMinor) throw new OrderPaymentAmountMismatchError(p.totalMinor, BigInt(dto.amountMinor));  // exact match only — no partial pay at pilot
+    // PC-56 TENANT-11a (F-2): an auction order is paid by its BALANCE — the winner's EMD was applied to it in escrow at
+    // settlement. Exact match on what is DUE (total − credit; credit 0 for every other order), never a partial pay.
+    const due = p.totalMinor - (await this.repo.orderEmdCreditMinor(tenantId, p.id));
+    if (BigInt(dto.amountMinor) !== due) throw new OrderPaymentAmountMismatchError(due, BigInt(dto.amountMinor));  // exact match only — no partial pay at pilot
   }
 
   /** Gateway webhook (unauthenticated). Verify signature → idempotent on the event id → move money.
@@ -251,6 +254,12 @@ export class PaymentService {
    *  order — exactly like the gateway path. Runs inside the CALLER'S tx (the orders service owns the
    *  order load/verify + caller-key idempotency). Fails CLOSED when the wallet can't cover it in full.
    *  Money is idempotent on the order (ledger key `walletpay:<orderId>`) so a retry never double-debits. */
+  /** PC-56 TENANT-11a (F-2): what an order still needs paid, in the caller's tx — its total less any auction deposit already
+   *  credited to it in escrow (`emd_apply`). The wallet-pay door asks this; the gateway door applies the same rule above. */
+  async amountDueForOrderInTx(tx: TxContext, tenantId: string, orderId: string, totalMinor: bigint): Promise<bigint> {
+    return totalMinor - (await this.repo.orderEmdCreditMinor(tenantId, orderId, tx));
+  }
+
   async captureOrderFromWalletInTx(tx: TxContext, input: { tenantId: string; buyerUserId: string; orderId: string; amountMinor: bigint; currencyCode: string }): Promise<{ paymentId: string; ledgerTxnId: string }> {
     const purposeId = await this.repo.resolvePurposeId(input.tenantId, 'direct_order');
     if (!purposeId) throw new BadRequestError("Unknown payment purpose 'direct_order'");

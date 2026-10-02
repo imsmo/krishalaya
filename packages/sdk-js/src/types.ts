@@ -438,25 +438,64 @@ export interface Message {
  * is ever returned to the client. */
 export interface MaskedCall { id: string; callerUserId: string; calleeUserId: string; contextType: string | null; contextId: string | null; durationSecs?: number | null; createdAt?: string; }
 
-// --- auctions (module 3) — money is bigint minor-unit STRINGS (Law 2); EMD held/refunded server-side ---
+// --- auctions (module 3) — money is bigint minor-unit STRINGS (Law 2); EMD held/applied/refunded server-side ---
+// PC-56 TENANT-11a: every price is PER UNIT of `unitCode` (founder decision F-12); the lot is `quantity` (3-place text)
+// and its value is quantity × price (`*LotValueMinor`, computed by the server — never on the client). The EMD is PER LOT.
 export type AuctionKind = 'english_open' | 'sealed';
-export interface Auction {
-  auctionId: string; listingId: string; kind: string; status: string;
-  startPriceMinor: string; reservePriceMinor: string | null; minIncrementMinor: string;
-  /** EMD (earnest-money deposit) the bidder must have held to bid: a flat `emdMinor` (bigint minor-unit string)
-   * when > "0", else a percentage of the bid via `emdPctBps` (basis points). Both can be "0"/null (no EMD). */
-  emdMinor: string; emdPctBps: number | null;
-  startsAt: string; endsAt: string; winningBidId: string | null; createdAt?: string;
+export type AuctionGroup = 'live' | 'scheduled' | 'awaiting_approval' | 'ended' | 'cancelled';
+export type AuctionConsentChannel = 'voice' | 'otp' | 'written';
+/** The seller's recorded consent for an act staff perform on their behalf (schedule · approve · decline). A voice or
+ *  written consent carries its evidence media; an otp consent is the verification itself. */
+export interface AuctionConsent { channel: AuctionConsentChannel; mediaId?: string; note?: string }
+export interface AuctionSettlement {
+  orderId: string; quantity: string; unitCode: string; hammerUnitMinor: string; orderValueMinor: string; emdAppliedMinor: string;
+  balanceDueMinor: string; balanceDueAt: string; collection: 'online' | 'offline'; settledAt: string;
+  outcome: 'open' | 'paid' | 'defaulted' | 'returned'; outcomeAt: string | null;
 }
-/** One bid in the history. `amountMinor` is null when a sealed auction masks another bidder's amount
- * (server-side) until close — a bidder always sees their own. */
-export interface BidHistoryItem { id: string; bidderUserId: string; amountMinor: string | null; createdAt?: string; }
+export interface Auction {
+  auctionId: string; auctionNo?: string | null; listingId: string; kind: string; status: string;
+  quantity?: string; unitCode?: string;
+  /** Per unit. `reservePriceMinor` is null for everyone but the seller and the auction desk (`reserveHidden` says so). */
+  startPriceMinor: string; reservePriceMinor: string | null; reserveHidden?: boolean; hasReserve?: boolean; minIncrementMinor: string;
+  /** EMD (earnest-money deposit) the bidder must have held to bid, per LOT: a flat `emdMinor` (bigint minor-unit string)
+   * when > "0", else a percentage of the lot value via `emdPctBps` (basis points). Both can be "0"/null (no EMD). */
+  emdMinor: string; emdPctBps: number | null;
+  autoExtendSecs?: number; extendTriggerSecs?: number; minBidders?: number | null; requiresSellerApproval?: boolean;
+  decisionWindowHours?: number; decisionDueAt?: string | null; entryPaused?: boolean;
+  startsAt: string; endsAt: string; endedAt?: string | null; settledAt?: string | null; lapsedAt?: string | null; defaultedAt?: string | null;
+  cancelledAt?: string | null; cancelReason?: string | null;
+  winningBidId: string | null; settledOrderId?: string | null; createdAt?: string;
+  // list + detail read facts (server-computed)
+  listingTitle?: string | null; highBidMinor?: string | null; highLotValueMinor?: string | null; sealedHidden?: boolean; bidderCount?: number;
+  reserveMet?: boolean | null;
+}
+/** GET /auctions/:id — the detail the live monitor (W138) and the settlement (W139) read. */
+export interface AuctionDetail extends Auction {
+  listingStatus: string | null; sellerIsViewer: boolean; extensionCount: number;
+  /** The EMD this auction holds right now, from the ledger — seller / desk only (null otherwise). */
+  emdHeldMinor: string | null;
+  settlement: AuctionSettlement | null;
+  /** While the seller decides: what approval would write (server-computed) — seller / desk only. */
+  settlementPreview: { hammerUnitMinor: string; orderValueMinor: string; emdAppliedMinor: string; balanceDueMinor: string } | null;
+  consents: Array<{ act: 'schedule' | 'approve' | 'decline'; channel: AuctionConsentChannel; hasEvidence: boolean; recordedAt: string }>;
+  viewerCan: { cancel: boolean; decide: boolean; decideNeedsConsent: boolean; pauseEntry: boolean } | null;
+}
+export interface AuctionPage extends Page<Auction> { counts: Record<AuctionGroup, number> | null }
+/** One bid in the stream. Bidders are B1…Bn (entry order, stable); `bidderUserId` is the caller's OWN id on their own
+ * rows and null on everyone else's (F-17). `amountMinor` is null when a sealed auction masks another bidder's amount
+ * until close. The seller and the desk see `emdMinor`, and after close the masked phone + short name. */
+export interface BidHistoryItem {
+  id: string; bidderUserId: string | null; amountMinor: string | null; createdAt?: string;
+  bidderLabel?: string; isMine?: boolean; lotValueMinor?: string | null; reserveMet?: boolean | null; isHighest?: boolean;
+  emdMinor?: string | null; bidderPhoneMasked?: string | null; bidderShortName?: string | null;
+}
+export interface BidStreamPage extends Page<BidHistoryItem> { bidders: number | null; sealedHidden: boolean | null; identitiesRevealed: boolean | null }
 /** Result of placing a bid. `extended` = the soft-close auto-extended the end time. */
-export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor: string; extended: boolean; endsAt: string; }
+export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor: string; lotValueMinor?: string; quantity?: string; unitCode?: string; extended: boolean; endsAt: string; }
 /** One of the caller's bids across auctions ("my bids"), with the EMD hold + winning flag. Money minor-unit strings. */
 export interface MyBid {
   bidId: string; auctionId: string; listingId: string; amountMinor: string; emdHeldMinor: string;
-  auctionStatus: string; endsAt: string; isWinning: boolean; createdAt: string;
+  auctionStatus: string; endsAt: string; isWinning: boolean; createdAt: string; quantity?: string; unitCode?: string;
 }
 /** An auction the caller is WATCHING (follow). `status`/`endsAt` are the live auction's, `watchedAt` is when the
  * caller started watching. No money lives here. */

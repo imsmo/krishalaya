@@ -15,9 +15,16 @@ auto-extend, reserve price, min-bidders, and optional seller approval. Built to 
   the **immutable** bid is appended, and **anti-snipe** extends the end time if the bid lands inside
   `extend_trigger_secs`. Sealed auctions hide other bidders' amounts until the auction ends.
 - **Resolution** — at close the highest valid bid wins iff it meets the reserve and min-bidders,
-  else `failed_reserve`; `requires_seller_approval` routes to `awaiting_approval`. EMD is RELEASED
-  (hold → main) for EVERY bidder at close. The winner is announced via the outbox
-  (`auctions.auction_won`) — order creation is downstream (orders), not here (Law 11).
+  else `failed_reserve`; `requires_seller_approval` routes to `awaiting_approval` with a decision clock
+  (`decision_due_at`, 1–72 h). **PC-56 TENANT-11a (founder decisions F-12 per unit, F-2 apply + forfeit):** every
+  price is PER UNIT of the lot (`quantity` + `unit_code`, copied from the listing at create); the close returns the
+  LOSERS' EMD and keeps the winner's; settlement — in ONE transaction — writes `settled` + `settled_order_id`, creates
+  the order (quantity × hammer) through `AuctionOrderService`, APPLIES the winner's EMD to it (hold → escrow,
+  `emd-apply:<auction>`) and records `auction_settlements` (balance due in 48 h). A balance still unpaid at that time
+  (online collection) — or a winner who cancels the order — FORFEITS the EMD to the seller (`emd-forfeit:`), the
+  auction is `defaulted`, the order cancelled, the listing re-published; a seller / system cancel returns it
+  (`emd-return:`). The listing is `reserved_auction` while it is auctioned. Five sweeps (open, close, lapse, default,
+  EMD-release backstop) run through `SCHEDULED_JOB_REGISTRY`, claiming per tenant in kv_app's unit of work.
 
 ## Security properties (threats considered)
 - **Tenant isolation (Law 1)** — `tenant_id` in every query + RLS; proven by the integration test
@@ -64,19 +71,14 @@ too-low rejected) → close (winner + all EMD released) → cross-tenant RLS den
 - **Edit a scheduled auction** — `update-auction.dto` + `AuctionService.updateScheduled` (+ `Auction.editSchedule`):
   seller/moderator may change reserve/min-increment/window WHILE scheduled (invariants re-validated,
   optimistic-locked, audited, emits `auctions.auction_updated`). `PATCH /v1/auctions/:id`.
-- **EMD-release glue** — `releaseLosingEmd` + `jobs/release-losing-emd.job.ts` (worker, cross-tenant,
-  SKIP LOCKED, bounded) release LOSING bidders' EMD (hold → main) for recently-closed auctions while the
-  WINNER keeps their hold; the winner's hold is returned by `events/handlers/payment-succeeded.handler.ts`
-  when they pay (`payments.payment_succeeded`, referenceType `auction`). Both idempotent on the shared
-  `emd-release:<auction>:<bidder>` wallet key (decoupling release from the close tx is the scale path).
-  `AuctionsPublisher` is the typed outbox façade (versioned, no PII; sealed amounts never emitted).
-  Tests: `auction-watchers.spec.ts` (watcher VO + editSchedule invariants) +
-  `auction-watchers.integration.spec.ts` (watch idempotency + 404 for non-member, losers-only EMD release
-  + winner-keeps-hold, winner release on payment, cross-tenant RLS on `auction_watchers`).
+- **EMD-release sweeper** — `releaseLosingEmd` (registered as `auctions-release-losing-emd`) is a BACKSTOP since
+  TENANT-11a: the close itself returns the losers' EMD. It never touches a winner whose hold is kept
+  (awaiting_approval) or applied (settled / defaulted). `payments.payment_succeeded` no longer releases the winner's EMD
+  (it is applied to the order at settlement); for an auction ORDER it records the settlement `paid`, through kv_app.
+  Tests: `auction-watchers.integration.spec.ts`, `tenant11a-auction-truth.integration.spec.ts`.
 
 ## Deferred (flagged, not faked) — next wave
-- **Order creation from a won auction** — emitted as `auctions.auction_won`; the orders-side handler
-  (create the winner's order at the winning price, source='auction') is the integration point.
+- **Offer to the next bidder after a default** — not built (TENANT-11a names it on W139).
 - **reverse / dutch** auction kinds (rejected at creation) + **bidder qualification** enforcement
   (roles/regions/KYC in `bidder_qualification`) + a Redis live read-model. English-open + sealed +
   the EMD/anti-snipe + watch-list/outbid core are complete.
