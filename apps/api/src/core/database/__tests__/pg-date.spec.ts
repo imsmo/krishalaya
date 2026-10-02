@@ -101,7 +101,7 @@ const REMAINING_DISPLAY_ONLY = [
   'modules/exports/repositories/compliance-requirement.repository.ts',        // effective_from/to; window filtered in SQL
   'modules/fintech/repositories/loan-repayment.repository.ts',                // due_date → toJSON only
   'modules/insurance/repositories/insurance-claim.repository.ts',             // event_date; 72h test uses the DTO
-  'modules/labour/repositories/labour-booking.repository.ts',                 // start/end_date; wage floor uses the DTO
+  // [PC-56 TENANT-11b] labour-booking.repository.ts left this list: it now reads start/end_date with pgDate (the escrow's planned days are built on them).
   'modules/land-soil-weather/repositories/soil-test.repository.ts',           // sampled_on/valid_until; append-only
   'modules/payments/repositories/commission-rule.repository.ts',              // effective_from/to; rate resolution is in SQL
   'modules/schemes/repositories/dbt-transfer.repository.ts',                  // credited_on; insert is from the DTO
@@ -185,7 +185,9 @@ describe('core/pg-date · the sweep (this list may shrink, never grow)', () => {
     // a bill a `cycle_id`, so its (period_start, period_end) stopped being a label and became the window a cycle's
     // close instant is compared against and its bills are grouped by. The list can only ever SHRINK — a wave that
     // needs to add a site to it is a wave that reintroduced the defect.
-    expect(REMAINING_DISPLAY_ONLY.length).toBe(14);
+    // [PC-56 TENANT-11b] 14 → 13. `modules/labour/repositories/labour-booking.repository.ts` came off the list: its
+    // start/end dates became the planned days the wage escrow is computed on (a day early under IST was a day's wage).
+    expect(REMAINING_DISPLAY_ONLY.length).toBe(13);
     expect(REMAINING_STRINGIFIED.length).toBe(0);
   });
 });

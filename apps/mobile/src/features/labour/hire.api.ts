@@ -59,5 +59,10 @@ export function assignWorker(bookingId: string, workerId: string, wageMinor?: st
 }
 export function startBooking(bookingId: string): Promise<LabourBooking> { return apiClient().labour.startBooking(bookingId); }
 export function completeBooking(bookingId: string): Promise<LabourBooking> { return apiClient().labour.completeBooking(bookingId); }
-export function cancelBooking(bookingId: string, reason?: string): Promise<LabourBooking> { return apiClient().labour.cancelBooking(bookingId, reason); }
+/** PC-56 TENANT-11b — cancel with a reason CODE from the API's list (the workers are told the reason; any escrow comes back,
+ *  the platform fee is kept). The old free-text `reason` is gone: the API records a lookup reason. */
+export function cancelBooking(bookingId: string, reasonCode: string, reasonText?: string): Promise<LabourBooking> { return apiClient().labour.cancelBooking(bookingId, { reasonCode, ...(reasonText ? { reasonText } : {}) }); }
 export function payWages(bookingId: string): Promise<LabourBooking> { return apiClient().labour.payWages(bookingId, newId()); }
+/** PC-56 TENANT-11b — confirm the roster: the accepted workers' wages + the platform fee move from the employer's wallet into
+ *  escrow (an unfunded wallet is refused with EMPLOYER_FUNDS_UNAVAILABLE and nothing moves). Idempotent (Law 3). */
+export function confirmRoster(bookingId: string): Promise<LabourBooking> { return apiClient().labour.confirmRoster(bookingId, newId()); }

@@ -42,12 +42,14 @@ export default function BookingSent() {
 
   const cancel = () => {
     if (!id) return;
+    // PC-56 TENANT-11b: withdrawing a just-sent booking IS "work no longer needed" — the reason the API records and the
+    // invited worker is told; the button says so rather than recording a reason nobody chose.
     Alert.alert(t('hire.sent.cancelTitle'), t('hire.sent.cancelConfirm'), [
       { text: t('common.no'), style: 'cancel' },
       {
-        text: t('hire.sent.cancelYes'), style: 'destructive', onPress: async () => {
+        text: t('hire.sent.cancelYesNotNeeded'), style: 'destructive', onPress: async () => {
           setBusy(true);
-          try { await cancelBooking(id); router.replace({ pathname: '/(farmer)/hire/bookings', params: { notice: t('hire.sent.cancelled') } }); }
+          try { await cancelBooking(id, 'not_needed'); router.replace({ pathname: '/(farmer)/hire/bookings', params: { notice: t('hire.sent.cancelled') } }); }
           catch { Alert.alert(t('hire.sent.cancelTitle'), t('common.error.generic')); }
           finally { setBusy(false); }
         },

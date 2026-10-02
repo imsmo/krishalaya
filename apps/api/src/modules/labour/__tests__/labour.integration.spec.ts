@@ -3,8 +3,9 @@
 //   1. a worker self-registers; an admin age-verifies them (the HARD 18+ gate);
 //   2. an employer POSTS a booking — an offer BELOW the statutory minimum (minimum_wages, seeded) is
 //      REJECTED (the dignity floor); an offer at/above the floor is accepted (open);
-//   3. assign worker → worker ACCEPTS → start → complete → PAY WAGES: the wallet is moved employer
-//      userMain → worker userMain (zero-sum, txnType wage_payout) and the booking goes paid;
+//   3. assign worker → worker ACCEPTS → CONFIRM ROSTER (wages escrowed, PC-56 TENANT-11b) → start → two days worked and
+//      confirmed → complete → PAY WAGES: 2 days × rate moved employer HOLD → worker main (zero-sum, txnType wage_payout),
+//      the unused remainder returned, and the booking goes paid;
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's booking.
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 import { randomUUID } from 'node:crypto';
@@ -29,6 +30,10 @@ import { WorkerProfileRepository } from '../repositories/worker-profile.reposito
 import { LabourBookingRepository } from '../repositories/labour-booking.repository';
 import { BookingAssignmentRepository } from '../repositories/booking-assignment.repository';
 import { MinimumWageRepository } from '../repositories/minimum-wage.repository';
+import { AttendanceRepository } from '../repositories/attendance.repository';
+import { LabourMoneyRepository } from '../repositories/labour-money.repository';
+import { LabourMoneyService } from '../services/labour-money.service';
+import { AttendanceService } from '../services/attendance.service';
 import { WorkerProfileService } from '../services/worker-profile.service';
 import { MinimumWageService } from '../services/minimum-wage.service';
 import { LabourBookingService } from '../services/labour-booking.service';
@@ -43,6 +48,11 @@ const run = APP_URL ? describe : describe.skip;
 class AllowAllQuota extends QuotaService { async assertWithinLimit(): Promise<void> {} async increment(): Promise<void> {} }
 
 const GJ_REGION = '11111111-0000-7000-8000-000000000001';   // seeded admin_regions (Gujarat)
+// PC-56 TENANT-11b: the seeded minimum wages are effective from the day the seeds ran (db/seeds/rules: CURRENT_DATE), so a
+// fixed July-2026 start date found NO floor once that day passed (this spec was red before the wave for that reason alone).
+// Dates are now relative to now.
+const plusDays = (n: number) => { const d = new Date(Date.now() + n * 86_400_000 + 330 * 60_000); return d.toISOString().slice(0, 10); };
+const DAY1 = plusDays(30), DAY2 = plusDays(31);
 const GJ_UNSKILLED_FLOOR = 38000n;                          // seeded minimum_wages (db/seeds/rules/0206)
 
 run('labour spine (integration, real Postgres + RLS + wallet wage payout)', () => {
@@ -54,7 +64,8 @@ run('labour spine (integration, real Postgres + RLS + wallet wage payout)', () =
   const employer = randomUUID();
   const workerUser = randomUUID();
   let skillId = ''; let workerId = ''; let bookingId = ''; let assignmentId = '';
-  const empActor = { userId: employer, canBook: true, canManage: true };
+  const empActor = { userId: employer, canBook: true, canDesk: false, canApproveWages: false, canManage: true };
+  let attendance: AttendanceService;
 
   const bal = async (userId: string) =>
     BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [userId])).rows[0]?.b ?? '0');
@@ -81,7 +92,11 @@ run('labour spine (integration, real Postgres + RLS + wallet wage payout)', () =
     const assignRepo = new BookingAssignmentRepository(replica as any);
     const minWage = new MinimumWageService(new MinimumWageRepository(replica as any));
     workers = new WorkerProfileService(uow, outbox, idem, metrics, workerRepo);
-    svc = new LabourBookingService(uow, outbox, idem, new AllowAllQuota(), metrics, wallet, audit, bookingRepo, assignRepo, workerRepo, minWage);
+    const attendanceRepo = new AttendanceRepository(replica as any);
+    const moneyRepo = new LabourMoneyRepository(replica as any);
+    const money = new LabourMoneyService(wallet, audit, moneyRepo, attendanceRepo, workerRepo);
+    svc = new LabourBookingService(uow, outbox, idem, new AllowAllQuota(), metrics, money, audit, bookingRepo, assignRepo, workerRepo, minWage, attendanceRepo, moneyRepo);
+    attendance = new AttendanceService(uow, outbox, idem, metrics, assignRepo, workerRepo, bookingRepo, attendanceRepo, audit);
 
     await fund(employer, 1_000_000n);   // employer holds enough to pay wages
     inspect = new Pool({ connectionString: APP_URL });
@@ -98,7 +113,7 @@ run('labour spine (integration, real Postgres + RLS + wallet wage payout)', () =
   it('rejects a booking offered BELOW the statutory minimum (the dignity floor)', async () => {
     await expect(svc.create(tenantA, empActor, `idem-${randomUUID()}`, {
       demandTypeCode: 'daily_single', taskSkillId: skillId, regionId: GJ_REGION, skillLevel: 'unskilled',
-      workersNeeded: 1, startDate: '2026-07-01', endDate: '2026-07-02', dailyHours: 8, wageKind: 'per_day',
+      workersNeeded: 1, startDate: DAY1, endDate: DAY2, dailyHours: 8, wageKind: 'per_day',
       wageOfferedMinor: (GJ_UNSKILLED_FLOOR - 1n).toString(), womenOnly: false, farmLat: 22.3, farmLng: 71.1,
     } as any)).rejects.toBeInstanceOf(WageBelowMinimumError);
   });
@@ -106,33 +121,42 @@ run('labour spine (integration, real Postgres + RLS + wallet wage payout)', () =
   it('posts a booking at/above the floor (open), snapshotting min_wage', async () => {
     const b = await svc.create(tenantA, empActor, `idem-${randomUUID()}`, {
       demandTypeCode: 'daily_single', taskSkillId: skillId, regionId: GJ_REGION, skillLevel: 'unskilled',
-      workersNeeded: 1, startDate: '2026-07-01', endDate: '2026-07-02', dailyHours: 8, wageKind: 'per_day',
+      workersNeeded: 1, startDate: DAY1, endDate: DAY2, dailyHours: 8, wageKind: 'per_day',
       wageOfferedMinor: '50000', womenOnly: false, farmLat: 22.3, farmLng: 71.1,
     } as any);
     bookingId = b.id; expect(b.status).toBe('open'); expect(b.minWageMinor).toBe(GJ_UNSKILLED_FLOOR.toString());
   });
 
-  it('assigns the (verified) worker; worker accepts; employer starts + completes', async () => {
+  it('assigns the (verified) worker; worker accepts; employer confirms the roster, starts, two days are worked + confirmed, completes', async () => {
     const a = await svc.assign(tenantA, empActor, bookingId, `idem-${randomUUID()}`, { workerId });
     assignmentId = a.id; expect(a.status).toBe('pending_worker'); expect(a.wageMinor).toBe('50000');
     const accepted = await svc.respond(tenantA, workerUser, assignmentId, { decision: 'accept' });
     expect(accepted.status).toBe('accepted');
+    await expect(svc.start(tenantA, empActor, bookingId)).rejects.toMatchObject({ code: 'ROSTER_NOT_CONFIRMED' });
+    const before = await bal(employer);
+    const c = await svc.confirmRoster(tenantA, empActor, bookingId, `idem-${randomUUID()}`, {});
+    expect(c.escrowedMinor).toBe('100000');                          // 1 worker × 2 days × ₹500
+    expect(before - await bal(employer)).toBe(102000n);              // + the ₹20 platform fee
     expect((await svc.start(tenantA, empActor, bookingId)).status).toBe('in_progress');
+    for (const d of [DAY1, DAY2]) {
+      await admin.query(`INSERT INTO attendance_records (id, tenant_id, assignment_id, work_date, clock_in_at, clock_out_at, break_minutes, hours_regular, hours_overtime)
+                         VALUES ($1,$2,$3,$4::date, now() - interval '9 hours', now(), 60, 8, 0)`, [randomUUID(), tenantA, assignmentId, d]);
+      await attendance.confirmDay(tenantA, { userId: employer, canManage: false }, assignmentId, d, `idem-${randomUUID()}`, null);
+    }
     expect((await svc.complete(tenantA, empActor, bookingId)).status).toBe('completed');
   });
 
-  it('PAYS WAGES: wallet moves employer → worker (zero-sum), booking → paid', async () => {
-    const empBefore = await bal(employer); const wkrBefore = await bal(workerUser);
+  it('PAYS WAGES: 2 confirmed days × ₹500 move employer HOLD → worker (zero-sum), booking → paid', async () => {
+    const wkrBefore = await bal(workerUser);
     const res = await svc.payWages(tenantA, empActor, bookingId, `idem-${randomUUID()}`);
-    expect(res.status).toBe('paid'); expect(res.totalPaidMinor).toBe('50000'); expect(res.workersPaid).toBe(1);
-    const empAfter = await bal(employer); const wkrAfter = await bal(workerUser);
-    expect(empBefore - empAfter).toBe(50000n);     // debited
-    expect(wkrAfter - wkrBefore).toBe(50000n);     // credited
-    expect((empAfter - empBefore) + (wkrAfter - wkrBefore)).toBe(0n);   // ZERO-SUM
+    expect(res.status).toBe('paid'); expect(res.totalPaidMinor).toBe('100000'); expect(res.workersPaid).toBe(1);
+    expect(await bal(workerUser) - wkrBefore).toBe(100000n);     // credited from the escrow
   });
 
-  it('refuses to age-unverified-assign + double-pay (idempotent state guard)', async () => {
-    await expect(svc.payWages(tenantA, empActor, bookingId, `idem-${randomUUID()}`)).rejects.toThrow();  // already paid
+  it('a second pay run on a paid booking moves nothing (idempotent state guard)', async () => {
+    const wkrBefore = await bal(workerUser);
+    expect((await svc.payWages(tenantA, empActor, bookingId, `idem-${randomUUID()}`)).movedMinor).toBe('0');
+    expect(await bal(workerUser)).toBe(wkrBefore);
   });
 
   it('RLS: tenant B cannot see tenant A\'s booking', async () => {

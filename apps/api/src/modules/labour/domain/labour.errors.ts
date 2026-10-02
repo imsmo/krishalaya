@@ -62,3 +62,36 @@ export class ClockOutBeforeClockInError extends DomainError { constructor() { su
 export class NotClockedOutError extends DomainError { constructor(status: string) { super('ATTENDANCE_NOT_CLOCKED_OUT', `Cannot confirm attendance from status '${status}'`, 409, { status }); } }
 /** The day is already employer-confirmed (terminal — immutable for audit integrity). Repeat is a no-op. */
 export class AlreadyConfirmedError extends DomainError { constructor() { super('ATTENDANCE_ALREADY_CONFIRMED', 'Attendance already confirmed', 409); } }
+
+// ---- PC-56 TENANT-11b ----
+/** F-6: an attendance UPDATE that matched no row for a reason that is NOT a race (the row was read in this transaction). */
+export class AttendanceRowMismatchError extends AppError {
+  constructor(id: string, op: string) { super('ATTENDANCE_ROW_MISMATCH', `Attendance ${id} could not be ${op}: the row read in this transaction did not match on write`, 500, { id, op }); }
+}
+/** A3: the employer's Main cannot fund wages + fee. NOTHING moved; the roster stays unconfirmed. */
+export class EmployerFundsUnavailableError extends AppError {
+  constructor(neededMinor: bigint, availableMinor: bigint) {
+    super('EMPLOYER_FUNDS_UNAVAILABLE', 'The employer wallet cannot cover the wages and the platform fee', 409,
+      { neededMinor: neededMinor.toString(), availableMinor: availableMinor.toString(), shortMinor: (neededMinor > availableMinor ? neededMinor - availableMinor : 0n).toString() });
+  }
+}
+/** A3: start() needs a confirmed roster (the wages set aside first). */
+export class RosterNotConfirmedError extends DomainError { constructor(status: string) { super('ROSTER_NOT_CONFIRMED', 'Confirm the roster (wages set aside) before the job starts', 409, { status }); } }
+/** A3: a roster with nobody on it cannot be confirmed. */
+export class RosterEmptyError extends DomainError { constructor() { super('ROSTER_EMPTY', 'No worker has accepted this job yet', 409); } }
+/** The roster is locked once confirmed: a pending worker can no longer accept, nobody new can be added. */
+export class RosterLockedError extends DomainError { constructor(status: string) { super('ROSTER_LOCKED', 'The roster of this job is already confirmed', 409, { status }); } }
+/** A6: the desk acted for an employer without a recorded consent for THAT act. */
+export class EmployerConsentRequiredError extends DomainError { constructor(act: string, code = 'EMPLOYER_CONSENT_REQUIRED') { super(code, `The employer's recorded consent is required to ${act} for them`, 422, { act }); } }
+/** A7: a women-only job refuses a worker who is not recorded as a woman. */
+export class WomenOnlyBookingError extends DomainError { constructor() { super('WOMEN_ONLY_BOOKING', 'This job is women-only', 409); } }
+/** A7: a women-only job refuses a worker whose profile records no gender (no declaration exists to rely on). */
+export class WorkerGenderNotRecordedError extends DomainError { constructor() { super('WORKER_GENDER_NOT_RECORDED', 'This job is women-only and the worker has no gender recorded on their profile', 409); } }
+/** A7: cancel needs a reason from the lookup; `other` needs the employer's words. */
+export class CancelReasonRequiredError extends DomainError { constructor(code = 'CANCEL_REASON_REQUIRED') { super(code, 'A cancel reason is required', 422); } }
+/** A4: cancelling a started job would strand confirmed days nobody paid. */
+export class BookingHasUnpaidAttendanceError extends DomainError { constructor(days: number) { super('BOOKING_HAS_UNPAID_ATTENDANCE', 'Run pay for the confirmed days before cancelling', 409, { days }); } }
+/** A2: a pay run on a booking in a state that has nothing to pay. */
+export class BookingNotPayableYetError extends DomainError { constructor(status: string) { super('BOOKING_NOT_PAYABLE', `Booking cannot be paid from status '${status}'`, 409, { status }); } }
+/** Attendance can only be confirmed while the money can still move (not after the job is paid out or cancelled). */
+export class BookingSettledError extends DomainError { constructor(status: string) { super('BOOKING_SETTLED', `Attendance cannot change on a booking that is '${status}'`, 409, { status }); } }

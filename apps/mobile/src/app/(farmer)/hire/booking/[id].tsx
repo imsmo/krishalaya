@@ -20,8 +20,8 @@ import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, Skelet
 import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
-import { getBooking, bookingAssignments, labourLookups, startBooking, completeBooking, cancelBooking, payWages } from '../../../../features/labour/hire.api';
-import { bookingLifecycleActions, bookingStatusTone, tallyAssignments, type EmployerAction } from '../../../../features/labour/booking-flow';
+import { getBooking, bookingAssignments, labourLookups, startBooking, completeBooking, cancelBooking, payWages, confirmRoster } from '../../../../features/labour/hire.api';
+import { MOBILE_CANCEL_REASONS, bookingLifecycleActions, bookingStatusTone, tallyAssignments, type EmployerAction } from '../../../../features/labour/booking-flow';
 import { bookingProgressStage, progressStepIndex, assignedWorkerId, workerAvatarInitials, PROGRESS_STEPS } from '../../../../features/labour/booking-progress';
 import { skillLabel, taskEmoji } from '../../../../features/labour/worker-home';
 
@@ -50,7 +50,9 @@ export default function BookingDetail() {
     setBusy(action);
     try { await fn(); await load(); }
     catch (e) {
-      const msg = e instanceof SdkError && e.isForbidden ? t('hire.action.notAllowed')
+      const msg = e instanceof SdkError && e.code === 'EMPLOYER_FUNDS_UNAVAILABLE' ? t('hire.escrow.short')
+        : e instanceof SdkError && e.code === 'ROSTER_NOT_CONFIRMED' ? t('hire.escrow.confirmFirst')
+        : e instanceof SdkError && e.isForbidden ? t('hire.action.notAllowed')
         : e instanceof SdkError && (e.status === 409 || e.status === 422) ? t('hire.action.illegal')
         : t('common.error.generic');
       Alert.alert(t('hire.action.failed'), msg);
@@ -61,10 +63,21 @@ export default function BookingDetail() {
     if (!id || !booking) return;
     switch (action) {
       case 'assign': router.push({ pathname: '/(farmer)/hire/workers', params: { assignBookingId: id } }); break;
+      case 'confirmRoster': Alert.alert(t('hire.action.confirmRoster'), t('hire.action.confirmRosterConfirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('hire.action.confirmRoster'), onPress: () => run('confirmRoster', () => confirmRoster(id)) }]); break;
       case 'start': run('start', () => startBooking(id)); break;
       case 'complete': Alert.alert(t('hire.action.complete'), t('hire.action.completeConfirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('hire.action.complete'), onPress: () => run('complete', () => completeBooking(id)) }]); break;
       case 'pay': Alert.alert(t('hire.action.pay'), t('hire.action.payConfirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('hire.action.pay'), onPress: () => run('pay', () => payWages(id)) }]); break;
-      case 'cancel': Alert.alert(t('hire.action.cancel'), t('hire.action.cancelConfirm'), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('hire.action.cancel'), style: 'destructive', onPress: () => run('cancel', () => cancelBooking(id)) }]); break;
+      // PC-56 TENANT-11b: the reason is chosen from the API's list (the workers are told it); Android shows at most three
+      // buttons, so "Back" + the three reasons is offered as Back + two, then "More reasons…" for the third.
+      case 'cancel': Alert.alert(t('hire.action.cancel'), t('hire.cancel.reasonPrompt'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t(`hire.cancel.reason.${MOBILE_CANCEL_REASONS[0]}`), style: 'destructive', onPress: () => run('cancel', () => cancelBooking(id, MOBILE_CANCEL_REASONS[0])) },
+        { text: t('hire.cancel.more'), onPress: () => Alert.alert(t('hire.action.cancel'), t('hire.cancel.reasonPrompt'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t(`hire.cancel.reason.${MOBILE_CANCEL_REASONS[1]}`), style: 'destructive', onPress: () => run('cancel', () => cancelBooking(id, MOBILE_CANCEL_REASONS[1])) },
+          { text: t(`hire.cancel.reason.${MOBILE_CANCEL_REASONS[2]}`), style: 'destructive', onPress: () => run('cancel', () => cancelBooking(id, MOBILE_CANCEL_REASONS[2])) },
+        ]) },
+      ]); break;
     }
   };
 
@@ -158,7 +171,14 @@ export default function BookingDetail() {
               <Text style={styles.k}>{t('hireBookingDetail.totalWage')}</Text>
               <MoneyText minor={booking.wageOfferedMinor} currencyCode={booking.currencyCode} langCode={lang} size="md" tone="positive" />
             </View>
-            <Text style={styles.escrow}>{t('hireBookingDetail.escrowNote')}</Text>
+            {/* PC-56 TENANT-11b: the escrow is REAL once the roster is confirmed — the server's figure, never computed here. */}
+            {booking.escrowedMinor && booking.escrowedMinor !== '0' ? (
+              <View style={styles.row}>
+                <Text style={styles.k}>{t('hire.escrow.held')}</Text>
+                <MoneyText minor={booking.escrowedMinor} currencyCode={booking.currencyCode} langCode={lang} size="md" />
+              </View>
+            ) : null}
+            <Text style={styles.escrow}>{t(booking.escrow ? 'hire.escrow.note' : 'hire.escrow.notYet')}</Text>
           </Card>
 
           {/* Lifecycle actions (real, server-authorized) */}

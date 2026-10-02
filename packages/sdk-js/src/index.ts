@@ -6,7 +6,7 @@ export type { HttpMethod, RequestOptions, Envelope } from './http';
 export type { CreateListingInput } from './resources/listings';
 export type { OrderRole } from './resources/orders';
 export type { OfferBox } from './resources/offers';
-export type { WorkerPrefsInput, CreateBookingInput } from './resources/labour';
+export type { WorkerPrefsInput, CreateBookingInput, CancelBookingInput } from './resources/labour';
 export type { CreateAuctionInput, CreateAuctionResult, ApproveAuctionResult } from './resources/auctions';   // PC-56 TENANT-11a
 export { nameById } from './resources/lookups';
 export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ViewsByDayPoint, ProductCard, TraceProvenance, AuthTokens, UserProfile,
@@ -22,6 +22,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   Auction, AuctionKind, BidHistoryItem, PlaceBidResult, MyBid, WatchedAuction,
   AuctionGroup, AuctionConsent, AuctionConsentChannel, AuctionSettlement, AuctionDetail, AuctionPage, BidStreamPage,
   WorkerProfile, WorkerCard, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups,
+  LabourDeclarations, LabourEscrow, LabourCostPreview, LabourViewerCan, EmployerConsentInput, LabourBookingPage, LabourPayRun, LabourPayRunLine, LabourSummary, LabourDay,
   AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, SuggestedListingDraft,
   AmbassadorTargetMetric, EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput, AmbassadorPayoutResult,
   AmbassadorRosterRow, AmbassadorRosterSort, AmbassadorSummary, AmbassadorCandidate, AmbassadorReview, AmbassadorReviewInput,

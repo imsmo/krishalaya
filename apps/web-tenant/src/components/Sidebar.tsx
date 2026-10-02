@@ -42,7 +42,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'wallet', href: '/wallet', label: t.t('nav.wallet') },
         ...(env.featureAuctions ? [{ key: 'auctions', href: '/marketplace/auctions', label: t.t('nav.auctions') }] : []),
         ...(env.featureDairy ? [{ key: 'dairy', href: '/dairy', label: t.t('nav.dairy') }] : []),
-        ...(env.featureLabour ? [{ key: 'labour', href: '/labour', label: t.t('nav.labour') }] : []),
+        ...(env.featureLabour ? [{ key: 'labour', href: '/ops/labour', label: t.t('nav.labour') }] : []),
         ...(env.featureAmbassadors ? [{ key: 'ambassadors', href: '/ambassadors', label: t.t('nav.ambassadors') }] : []),
         ...(env.featureSchemes ? [{ key: 'schemes', href: '/schemes', label: t.t('nav.schemes') }] : []),
         ...(env.featureGroupLots ? [{ key: 'group-lots', href: '/group-lots', label: t.t('nav.groupLots') }] : []),

@@ -22,6 +22,12 @@ import { PgIdempotencyService } from '../../../core/idempotency/idempotency.serv
 import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { QuotaService } from '../../../core/quota/quota.service';
+import { LedgerRepository } from '../../../core/wallet/ledger.repository';
+import { InProcessWalletClient } from '../../../core/wallet/wallet.client.inprocess';
+import { userMain, platform, PlatformAccount } from '../../../core/wallet/account-codes';
+import { LabourMoneyRepository } from '../repositories/labour-money.repository';
+import { LabourMoneyService } from '../services/labour-money.service';
+import { indiaDay } from '../domain/display';
 
 import { WorkerProfileRepository } from '../repositories/worker-profile.repository';
 import { LabourBookingRepository } from '../repositories/labour-booking.repository';
@@ -41,8 +47,14 @@ const run = APP_URL ? describe : describe.skip;
 class AllowAllQuota extends QuotaService { async assertWithinLimit(): Promise<void> {} async increment(): Promise<void> {} }
 
 const GJ_REGION = '11111111-0000-7000-8000-000000000001';   // seeded admin_regions (Gujarat)
+// PC-56 TENANT-11b: the seeded minimum wages are effective from the day the seeds ran (db/seeds/rules: CURRENT_DATE), so a
+// fixed July-2026 start date found NO floor once that day passed (this spec was red before the wave for that reason alone).
+// Dates are now relative to now.
+const plusDays = (n: number) => { const d = new Date(Date.now() + n * 86_400_000 + 330 * 60_000); return d.toISOString().slice(0, 10); };
+const DAY1 = plusDays(30), DAY2 = plusDays(31);
 const FARM_LAT = 22.3, FARM_LNG = 71.1;
-const today = () => new Date().toISOString().slice(0, 10);
+// PC-56 TENANT-11b: the work date is the INDIA calendar day (the UTC day put a 05:00 IST clock-in on yesterday).
+const today = () => indiaDay(new Date());
 
 run('labour attendance lifecycle (integration, real Postgres + RLS)', () => {
   let pools: PgPoolProvider; let admin: Pool; let inspect: Pool;
@@ -50,7 +62,7 @@ run('labour attendance lifecycle (integration, real Postgres + RLS)', () => {
 
   const tenantA = randomUUID(); const tenantB = randomUUID();
   const employer = randomUUID(); const workerUser = randomUUID(); const otherWorkerUser = randomUUID();
-  const empActor = { userId: employer, canBook: true, canManage: true };
+  const empActor = { userId: employer, canBook: true, canDesk: false, canApproveWages: false, canManage: true };
   let workerId = ''; let bookingId = ''; let assignmentId = ''; let attendanceId = '';
 
   beforeAll(async () => {
@@ -74,7 +86,12 @@ run('labour attendance lifecycle (integration, real Postgres + RLS)', () => {
     const attendanceRepo = new AttendanceRepository(replica as any);
     const minWage = new MinimumWageService(new MinimumWageRepository(replica as any));
     workers = new WorkerProfileService(uow, outbox, idem, metrics, workerRepo);
-    svc = new LabourBookingService(uow, outbox, idem, new AllowAllQuota(), metrics, {} as any, audit, bookingRepo, assignRepo, workerRepo, minWage);
+    const wallet = new InProcessWalletClient(new LedgerRepository());
+    const moneyRepo = new LabourMoneyRepository(replica as any);
+    const money = new LabourMoneyService(wallet, audit, moneyRepo, attendanceRepo, workerRepo);
+    svc = new LabourBookingService(uow, outbox, idem, new AllowAllQuota(), metrics, money, audit, bookingRepo, assignRepo, workerRepo, minWage, attendanceRepo, moneyRepo);
+    await uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'order_payment', idempotencyKey: `fund:${randomUUID()}`, initiatedBy: 'system',
+      legs: [{ account: userMain(employer), amountMinor: 1_000_000n }, { account: platform(PlatformAccount.Gateway), amountMinor: -1_000_000n }] }), { userId: 'system' });
     attendance = new AttendanceService(uow, outbox, idem, metrics, assignRepo, workerRepo, bookingRepo, attendanceRepo, audit);
 
     // worker registered + age-verified; a SECOND worker for the anti-IDOR check
@@ -85,13 +102,16 @@ run('labour attendance lifecycle (integration, real Postgres + RLS)', () => {
 
     const b = await svc.create(tenantA, empActor, `idem-${randomUUID()}`, {
       demandTypeCode: 'daily_single', taskSkillId: skillId, regionId: GJ_REGION, skillLevel: 'unskilled',
-      workersNeeded: 1, startDate: '2026-07-01', endDate: '2026-07-02', dailyHours: 8, wageKind: 'per_day',
+      workersNeeded: 1, startDate: DAY1, endDate: DAY2, dailyHours: 8, wageKind: 'per_day',
       wageOfferedMinor: '50000', womenOnly: false, farmLat: FARM_LAT, farmLng: FARM_LNG,
     } as any);
     bookingId = b.id;
     const a = await svc.assign(tenantA, empActor, bookingId, `idem-${randomUUID()}`, { workerId });
     assignmentId = a.id;
     await svc.respond(tenantA, workerUser, assignmentId, { decision: 'accept' });
+    // PC-56 TENANT-11b: a day is worked on a STARTED job — the roster confirmed and the wages escrowed first.
+    await svc.confirmRoster(tenantA, empActor, bookingId, `idem-${randomUUID()}`, {});
+    await svc.start(tenantA, empActor, bookingId);
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
 

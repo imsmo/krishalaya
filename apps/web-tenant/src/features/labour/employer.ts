@@ -6,7 +6,8 @@
 
 export const SKILL_LEVELS = ['unskilled', 'semi_skilled', 'skilled', 'highly_skilled'] as const;
 export const WAGE_KINDS = ['per_day', 'per_hour', 'per_task'] as const;
-export const BOOKING_STATUSES = ['open', 'in_progress', 'completed', 'paid', 'cancelled', 'expired'] as const;
+// PC-56 TENANT-11b: `accepted` = roster confirmed (the wages escrowed); a job no longer starts straight from `open`.
+export const BOOKING_STATUSES = ['open', 'accepted', 'in_progress', 'completed', 'paid', 'cancelled', 'expired'] as const;
 export const ASSIGNMENT_STATUSES = ['applied', 'pending_worker', 'accepted', 'rejected', 'expired', 'paid'] as const;
 
 const MINOR = /^\d{1,15}$/;                 // positive integer minor units
@@ -47,10 +48,11 @@ export function validateAssignWage(wageMinor?: string): string | null {
 }
 
 /** Which lifecycle actions the operator may take on a booking next (mirrors labour-booking.state, Law 5). */
-export function bookingActions(status: string): Array<'assign' | 'start' | 'complete' | 'pay' | 'cancel'> {
+export function bookingActions(status: string): Array<'assign' | 'confirmRoster' | 'start' | 'complete' | 'pay' | 'cancel'> {
   switch (status) {
-    case 'open': return ['assign', 'start', 'cancel'];
-    case 'in_progress': return ['complete', 'cancel'];
+    case 'open': return ['assign', 'confirmRoster', 'cancel'];
+    case 'accepted': return ['start', 'cancel'];
+    case 'in_progress': return ['complete', 'pay', 'cancel'];
     case 'completed': return ['pay'];
     default: return [];   // paid / cancelled / expired are terminal for the operator
   }
@@ -61,9 +63,13 @@ export function canConfirmAttendance(a: { status?: string; confirmedByEmployer?:
   return a.status === 'clocked_out' && !a.confirmedByEmployer;
 }
 
-/** Sum the wage of accepted assignments — a payout PREVIEW only (server computes the real total at pay). */
-export function previewPayrollMinor(assignments: Array<{ status: string; wageMinor: string }>): string {
+/** The PLANNED wages of the accepted assignments — a PREVIEW (the server escrows the real figure at roster confirm and pays
+ *  confirmed attendance at the pay run). PC-56 TENANT-11b (survey W164 #11): this used to sum ONE wage unit per worker —
+ *  the same under-count the server paid; it now multiplies by the planned units (days for per_day; days × hours for per_hour;
+ *  1 for per_task), in hundredths, half-up once. `plannedUnitsHundredths` defaults to one unit. */
+export function previewPayrollMinor(assignments: Array<{ status: string; wageMinor: string }>, plannedUnitsHundredths = 100): string {
   let total = 0n;
-  for (const a of assignments) if (a.status === 'accepted' && MINOR.test(a.wageMinor)) total += BigInt(a.wageMinor);
+  const u = BigInt(Math.max(0, Math.round(plannedUnitsHundredths)));
+  for (const a of assignments) if (a.status === 'accepted' && MINOR.test(a.wageMinor)) total += (BigInt(a.wageMinor) * u * 2n + 100n) / 200n;
   return total.toString();
 }

@@ -5,7 +5,7 @@
 // hard-gates accepting work on it. register carries an Idempotency-Key (Law 3). Money is bigint minor strings
 // (Law 2). Gated server-side by the `labour` flag.
 import { HttpClient } from '../http';
-import { WorkerProfile, WorkerCard, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups, Page } from '../types';
+import { WorkerProfile, WorkerCard, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups, Page, EmployerConsentInput, LabourBookingPage, LabourPayRun, LabourSummary, LabourDay } from '../types';
 
 export interface WorkerPrefsInput {
   villageRegionId?: string; travelKm?: number; stayAwayOk?: 'same_day' | 'overnight' | 'weekly' | 'monthly';
@@ -28,7 +28,15 @@ export interface CreateBookingInput {
   womenOnly?: boolean; farmLat: number; farmLng: number; respondByHours?: number;
   /** P0-2 booking details (optional): HH:MM work start time-of-day + free-text special instructions (≤300 chars). */
   startTime?: string; notes?: string;
+  /** PC-56 TENANT-11b · A7 — the worker-visible declarations. A pickup time needs a pickup point; a point needs transport. */
+  transportProvided?: boolean; transportPickupPoint?: string; transportPickupTime?: string;
+  mealsProvided?: boolean; toiletConfirmed?: boolean; drinkingWater?: boolean; womanSupervisor?: boolean; villageLabel?: string;
+  /** PC-56 TENANT-11b · A6 — the labour desk posting FOR an employer, with the employer's recorded consent to `post`. */
+  onBehalf?: { employerUserId: string; consent: EmployerConsentInput };
 }
+
+/** PC-56 TENANT-11b · A7 — cancel with a reason from `lookups().cancelReasons` (`other` needs `reasonText`); the desk adds consent. */
+export interface CancelBookingInput { reasonCode: string; reasonText?: string; consent?: EmployerConsentInput }
 
 export class LabourResource {
   constructor(private readonly http: HttpClient) {}
@@ -116,23 +124,51 @@ export class LabourResource {
     return (await this.http.request<LabourBooking>('POST', 'labour/bookings', { idempotencyKey, body: input })).data;
   }
   /** Assign a worker to an OPEN booking (per-worker wage optional, still floor-checked). Idempotent. */
-  async assignWorker(bookingId: string, input: { workerId: string; wageMinor?: string }, idempotencyKey: string): Promise<LabourAssignment> {
+  async assignWorker(bookingId: string, input: { workerId: string; wageMinor?: string; consent?: EmployerConsentInput }, idempotencyKey: string): Promise<LabourAssignment> {
     return (await this.http.request<LabourAssignment>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/assignments`, { idempotencyKey, body: input })).data;
   }
-  async startBooking(bookingId: string): Promise<LabourBooking> {
-    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/start`, {})).data;
+  /** PC-56 TENANT-11b · A3 — CONFIRM THE ROSTER: the wages (Σ accepted × planned days × rate) + the platform fee are moved
+   *  employer Main → Hold / platform Fees in this call. An unfunded employer gets EMPLOYER_FUNDS_UNAVAILABLE with
+   *  `details.shortMinor` and nothing moves. The desk adds the employer's consent. Idempotent (Law 3). */
+  async confirmRoster(bookingId: string, idempotencyKey: string, input: { reason?: string; consent?: EmployerConsentInput } = {}): Promise<LabourBooking & { escrowedMinor: string; platformFeeMinor: string; employerTotalMinor: string }> {
+    return (await this.http.request<LabourBooking & { escrowedMinor: string; platformFeeMinor: string; employerTotalMinor: string }>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/confirm-roster`, { idempotencyKey, body: input })).data;
   }
-  async completeBooking(bookingId: string): Promise<LabourBooking> {
-    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/complete`, {})).data;
+  /** Start the job — refused (ROSTER_NOT_CONFIRMED) until the roster is confirmed and the money is held. */
+  async startBooking(bookingId: string, reason?: string): Promise<LabourBooking> {
+    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/start`, { body: reason ? { reason } : {} })).data;
   }
-  async cancelBooking(bookingId: string, reason?: string): Promise<LabourBooking> {
-    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/cancel`, { body: { reason } })).data;
+  async completeBooking(bookingId: string, reason?: string): Promise<LabourBooking> {
+    return (await this.http.request<LabourBooking>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/complete`, { body: reason ? { reason } : {} })).data;
   }
-  /** Settle wages on a COMPLETED booking — server moves money (the app never does, Law 11). Idempotent. */
-  async payWages(bookingId: string, idempotencyKey: string): Promise<LabourBooking & { totalPaidMinor?: string; workersPaid?: number }> {
-    return (await this.http.request<LabourBooking & { totalPaidMinor?: string; workersPaid?: number }>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/pay`, { idempotencyKey })).data;
+  /** Cancel with a reason code (workers are told the reason); any escrow comes back, the platform fee is kept. */
+  async cancelBooking(bookingId: string, input: CancelBookingInput): Promise<LabourBooking & { releasedMinor: string; feeKeptMinor: string; workersNotified: number }> {
+    return (await this.http.request<LabourBooking & { releasedMinor: string; feeKeptMinor: string; workersNotified: number }>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/cancel`, { body: input })).data;
   }
-  /** Assignments for a booking the caller owns (the employer's view: who accepted/declined). Keyset. */
+  /** THE PAY RUN (A2 / A4) — confirmed attendance × rate (+ OT) from the escrow; on a completed booking the remainder goes
+   *  back to the employer and the booking is paid. Server moves money (the app never does, Law 11). Idempotent. */
+  async payWages(bookingId: string, idempotencyKey: string, reason?: string): Promise<LabourPayRun> {
+    return (await this.http.request<LabourPayRun>('POST', `labour/bookings/${encodeURIComponent(bookingId)}/pay`, { idempotencyKey, body: reason ? { reason } : {} })).data;
+  }
+  /** The console list: a page with the per-status tab counts and the statuses a booking never reaches. */
+  async consoleBookings(params: { box?: 'mine' | 'all'; status?: string; sort?: 'recent' | 'starts'; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<LabourBookingPage> {
+    const r = await this.http.request<LabourBooking[]>('GET', 'labour/bookings', { query: { box: params.box ?? 'all', status: params.status, sort: params.sort, counts: '1', cursor: params.cursor, limit: params.limit ?? 25 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, counts: (r.meta?.counts as Record<string, number> | null) ?? null, unreachableStatuses: (r.meta?.unreachableStatuses as string[] | undefined) ?? [] };
+  }
+  /** A11 — the tenant-wide labour KPIs (labour.desk / booking.manage). */
+  async summary(signal?: AbortSignal): Promise<LabourSummary> {
+    return (await this.http.request<LabourSummary>('GET', 'labour/summary', { signal })).data;
+  }
+  /** The statutory floor for the post-job form's live "offered vs floor"; `minWageMinor` null + reason when none is configured. */
+  async floor(params: { regionId: string; skillLevel: string; wageKind: string; onDate: string }, signal?: AbortSignal): Promise<{ minWageMinor: string | null; reason: string | null }> {
+    return (await this.http.request<{ minWageMinor: string | null; reason: string | null }>('GET', 'labour/lookups/floor', { query: params, signal })).data;
+  }
+  /** One assignment's attendance days (employer / desk) — the per-day confirm list. */
+  async assignmentDays(assignmentId: string, signal?: AbortSignal): Promise<LabourDay[]> {
+    return (await this.http.request<LabourDay[]>('GET', `labour/assignments/${encodeURIComponent(assignmentId)}/days`, { signal })).data;
+  }
+  /** Assignments for a booking the caller owns (the employer's view: who accepted/declined) — PC-56 TENANT-11b: the roster read
+   *  for the employer / desk carries a short name + masked phone and the attendance / pay facts; an assigned worker gets their
+   *  own row only; anyone else 404. Keyset. */
   async bookingAssignments(bookingId: string, params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<LabourAssignment>> {
     const r = await this.http.request<LabourAssignment[]>('GET', 'labour/assignments', { query: { box: 'booking', bookingId, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };

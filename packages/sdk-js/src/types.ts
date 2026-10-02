@@ -531,9 +531,71 @@ export interface LabourBooking {
   workersNeeded: number; startDate: string; endDate: string | null; wageKind: string; wageOfferedMinor: string;
   minWageMinor: string; currencyCode: string; womenOnly: boolean; status: string; respondBy: string | null; version?: number; createdAt?: string;
   startTime?: string | null; notes?: string | null; employerName?: string | null;
+  // ---- PC-56 TENANT-11b (A11) ----
+  /** The task's name ("groundnut weeding") and the village label the employer wrote. */
+  taskName?: string | null; villageLabel?: string | null;
+  /** Seats: needed and filled (accepted / paid). `filledCount` null on reads that did not count. */
+  neededCount?: number; filledCount?: number | null;
+  dailyHours?: number; overtimeRateMultiplier?: number;
+  /** The worker-visible dignity declarations (A7). */
+  declarations?: LabourDeclarations;
+  /** Only for the booking's parties and the desk: the farm (clock-in fence) and who posted it. */
+  farmLat?: number; farmLng?: number; onBehalf?: boolean;
+  /** "Money already set aside": what the escrow still holds for this booking (null = never escrowed; "0" = released). */
+  escrowedMinor?: string | null; platformFeeMinor?: string | null; escrow?: LabourEscrow | null;
+  rosterConfirmedAt?: string | null; startedAt?: string | null; completedAt?: string | null;
+  cancel?: { reasonCode: string | null; reasonText: string | null; at: string } | null;
+  /** Detail read (parties / desk): the cost preview the escrow is built on, the payouts so far, recorded consents, and the acts the viewer may take. */
+  costPreview?: LabourCostPreview; payoutsSummary?: { rows: number; paidMinor: string; awaitingTopup: number } | null;
+  consents?: Array<{ act: string; channel: string; mediaId: string | null; recordedAt: string }>;
+  viewerCan?: LabourViewerCan | null;
+  /** The same-day fairness fee — REFUSED BY NAME (the founder has not set its rule): always `{ built: false }`. */
+  fairnessFee?: { built: false };
 }
+export interface LabourDeclarations { transport: boolean; meals: boolean; toilet: boolean; drinkingWater: boolean; womanSupervisor: boolean; pickupPoint: string | null; pickupTime: string | null }
+export interface LabourEscrow { status: 'held' | 'released'; expectedMinor: string; feeMinor: string; toppedUpMinor: string; paidMinor: string; releasedMinor: string; heldMinor: string; releaseReason: 'completed' | 'cancelled' | null; releasedAt: string | null; confirmedAt: string }
+export interface LabourCostPreview {
+  workers: number; days: number; units: string; rateMinor: string; wagesMinor: string; platformFeeMinor: string; employerTotalMinor: string;
+  /** The fee rule in effect. `capMinor` null = the canon's "₹100 cap rule" is NOT SET (no amount was ever stated). */
+  feeRule: { kind: string; amountMinor: string; capMinor: string | null; capRuleNote: string } | null;
+}
+export interface LabourViewerCan {
+  assign: boolean; confirmRoster: boolean; start: boolean; complete: boolean; cancel: boolean; pay: boolean; confirmAttendance: boolean;
+  /** The viewer is the desk acting FOR the employer: the act needs the employer's recorded consent. */
+  needsConsent: boolean; payNeedsApprove: boolean;
+}
+/** A desk act FOR an employer carries the employer's recorded consent (voice / written need evidence media; otp is the check). */
+export interface EmployerConsentInput { channel: 'voice' | 'otp' | 'written'; mediaId?: string; note?: string }
+/** GET /labour/bookings page with the per-status tab counts (counts=1) and the statuses a booking can never reach. */
+export interface LabourBookingPage { items: LabourBooking[]; nextCursor: string | null; counts: Record<string, number> | null; unreachableStatuses: string[] }
+/** A2 / A4 — one pay run. `movedMinor` is what moved THIS run; a re-run over the same days is "0". */
+export interface LabourPayRunLine {
+  assignmentId: string; workerId: string; daysConfirmed: number; baseMinor: string; otMinor: string; paidThisRunMinor: string;
+  status: 'paid' | 'partial' | 'awaiting_topup' | 'zero' | 'nothing_new' | 'task_on_completion';
+  otStatus: 'none' | 'paid' | 'awaiting_topup' | 'not_priced'; zeroReason: string | null; payoutId: string | null;
+}
+export interface LabourPayRun extends LabourBooking {
+  movedMinor: string; totalPaidMinor: string; workersPaid: number; lines: LabourPayRunLine[]; outstanding: number;
+  daysAwaitingConfirm?: number; releasedMinor: string; toppedUpMinor: string; source: 'escrow' | 'employer_main'; markedPaid?: boolean;
+}
+/** A11 — GET /labour/summary (desk / booking.manage). Null figures carry the reason. */
+export interface LabourSummary {
+  asOfDay: string; openJobs: number; workersNeeded: number; inProgressToday: number; clockedInNow: number;
+  awaitingConfirm: { bookings: number; days: number; wagesUnlockedMinor: string; perTaskDays: number };
+  fill30d: { rateBps: number | null; reason: string | null; posted: number; seatsNeeded: number; seatsFilled: number; medianHoursToFill: number | null; medianReason: string | null };
+}
+/** One attendance day of an assignment (employer / desk read, the per-day confirm list). */
+export interface LabourDay { id: string; workDate: string; clockInAt: string | null; clockOutAt: string | null; hoursRegular: number | null; hoursOvertime: number; status: 'clocked_in' | 'clocked_out' | 'confirmed'; paid: boolean }
 /** A worker's assignment to a booking (the "job offer"). The worker accepts/rejects within the booking's window. */
-export interface LabourAssignment { id: string; bookingId: string; workerId: string; status: string; wageMinor: string; acceptedAt: string | null; createdAt?: string; }
+export interface LabourAssignment {
+  id: string; bookingId: string; workerId: string; status: string; wageMinor: string; acceptedAt: string | null; createdAt?: string;
+  /** PC-56 TENANT-11b · the worker's own read (box=mine): what the escrow holds for the job — "money already set aside". */
+  escrowedMinor?: string;
+  /** PC-56 TENANT-11b · the roster read (employer / desk only): a SHORT name and the 1b MASK of the phone — never the raw phone. */
+  workerShortName?: string | null; workerPhoneMasked?: string | null;
+  confirmedDays?: number; awaitingConfirmDays?: number; clockedInNow?: number; paidDays?: number;
+  paidMinor?: string; awaitingTopupMinor?: string; zeroReason?: string | null; plannedMinor?: string;
+}
 /** A geo-fenced clock-in receipt. `distanceM` is the SERVER-computed metres from the farm (≤100m fence). */
 // An attendance day. clock-in carries distanceM/method; clock-out/confirm + work-history carry the lifecycle
 // (status clocked_in→clocked_out→confirmed) + SERVER-computed hours/overtime (P0-9). Fields are optional because
@@ -550,6 +612,9 @@ export interface LabourLookups {
   skills: { id: string; code: string; name: string; tier: number; parentId: string | null; hazardous: boolean }[];
   regions: { id: string; code: string | null; name: string }[];
   skillLevels: string[];
+  /** PC-56 TENANT-11b — the cancel reasons (`other` needs the employer's words) and the platform fee rule in effect. */
+  cancelReasons?: { code: string; name: string; textRequired: boolean }[];
+  feeRule?: { kind: string; amountMinor: string; capMinor: string | null; capRuleNote: string } | null;
 }
 
 // --- ambassadors (module 7 — village acquisition agents) — money is bigint minor STRINGS (Law 2) ---

@@ -108,6 +108,8 @@ function JobCard({ job, lookups, lang, t, onActive }: { job: ScheduledJob; looku
           <MoneyText minor={assignment.wageMinor} currencyCode={booking?.currencyCode ?? 'INR'} langCode={lang} size="lg" tone="positive" />
         </View>
       </View>
+      {/* PC-56 TENANT-11b: "money already set aside" — the escrow the server holds for this job (never computed here). */}
+      {assignment.escrowedMinor && assignment.escrowedMinor !== '0' ? <Text style={styles.meta}>{t('worker.escrow.setAside')}</Text> : null}
       {tags.length ? (
         <View style={styles.tagRow}>
           {tags.map((tg) => <View key={tg} style={styles.tag}><Text style={styles.tagTxt}>{tg === 'group' && booking ? t('worker.browse.tag.group', { n: booking.workersNeeded }) : t(`worker.browse.tag.${tg}`)}</Text></View>)}

@@ -41,8 +41,10 @@ describe('labour/employer — assign + state machine + payroll preview', () => {
     expect(validateAssignWage('60000')).toBeNull();
   });
   it('bookingActions follows the lifecycle', () => {
-    expect(bookingActions('open')).toEqual(['assign', 'start', 'cancel']);
-    expect(bookingActions('in_progress')).toEqual(['complete', 'cancel']);
+    // PC-56 TENANT-11b: open → confirm roster (escrow) → start; pay runs while in progress too (confirmed days).
+    expect(bookingActions('open')).toEqual(['assign', 'confirmRoster', 'cancel']);
+    expect(bookingActions('accepted')).toEqual(['start', 'cancel']);
+    expect(bookingActions('in_progress')).toEqual(['complete', 'pay', 'cancel']);
     expect(bookingActions('completed')).toEqual(['pay']);
     expect(bookingActions('paid')).toEqual([]);
     expect(bookingActions('cancelled')).toEqual([]);
@@ -61,5 +63,7 @@ describe('labour/employer — assign + state machine + payroll preview', () => {
       { status: 'rejected', wageMinor: '99999' },
     ])).toBe('110000');
     expect(previewPayrollMinor([])).toBe('0');
+    // three planned days × ₹420 per accepted worker (the canon's arithmetic), not one unit
+    expect(previewPayrollMinor([{ status: 'accepted', wageMinor: '42000' }, { status: 'accepted', wageMinor: '42000' }], 300)).toBe('252000');
   });
 });

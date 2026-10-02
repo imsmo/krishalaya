@@ -29,6 +29,10 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'auctions.auction_failed_reserve', eventCode: 'auction.failed_reserve', recipientKeys: ['recipientUserIds'] },
   { outboxType: 'auctions.auction_defaulted',      eventCode: 'auction.defaulted',      recipientKeys: ['recipientUserIds'] },
   { outboxType: 'auctions.auction_lapsed',         eventCode: 'auction.lapsed',         recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-11b (F-24 / W164 #19): a worker is told when the job is confirmed — and that the wages are already set
+  // aside — and when it is cancelled, with the reason the employer or the desk recorded (catalogue 0187, copy in seed 0007).
+  { outboxType: 'labour.roster_confirmed',         eventCode: 'labour.roster_confirmed',  recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'labour.booking_cancelled',        eventCode: 'labour.booking_cancelled', recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

@@ -27,17 +27,23 @@ import { WorkerProfileRepository } from '../repositories/worker-profile.reposito
 import { LabourBookingRepository } from '../repositories/labour-booking.repository';
 import { AttendanceRepository } from '../repositories/attendance.repository';
 import {
-  AssignmentNotFoundError, WorkerProfileNotFoundError, LabourForbiddenError,
+  AssignmentNotFoundError, LabourForbiddenError,
   BookingNotFoundError, AssignmentNotAcceptedError, OutOfFenceError, AlreadyClockedInError,
   NotClockedInError, AlreadyClockedOutError, ClockOutBeforeClockInError, NotClockedOutError, AlreadyConfirmedError,
+  AttendanceRowMismatchError, BookingSettledError,
 } from '../domain/labour.errors';
+import { indiaDay } from '../domain/display';
+import { Cursor, encodeCursor } from '../domain/cursor';
 
-const workDateOf = (d: Date) => d.toISOString().slice(0, 10);
+// PC-56 TENANT-11b: the work date is the INDIA calendar day of the clock-in (a 05:00 IST clock-in was stamped YESTERDAY by
+// `toISOString().slice(0,10)`, the UTC day), and the attendance row is matched on its µs `created_at` TEXT (F-6) — a write
+// that then matches 0 rows is a named mismatch, never "lost the race".
+const workDateOf = (d: Date) => indiaDay(d);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const isYmd = (s: string) => DATE_RE.test(s);
 
-/** The actor for an EMPLOYER-side confirm: the caller's userId + whether they hold booking.manage (Law 11). */
-export interface ConfirmActor { userId: string; canManage: boolean; }
+/** The actor for an EMPLOYER-side confirm: the caller's userId + whether they oversee labour (booking.manage / labour.desk). */
+export interface ConfirmActor { userId: string; canManage: boolean; canDesk?: boolean; }
 
 @Injectable()
 export class AttendanceService {
@@ -66,6 +72,8 @@ export class AttendanceService {
 
           const booking = await this.bookings.getById(tenantId, assignment.bookingId, tx);
           if (!booking) throw new BookingNotFoundError(assignment.bookingId);
+          // PC-56 TENANT-11b: a day is worked on a STARTED job — the roster confirmed and the wages escrowed first (A3).
+          if (booking.status !== 'in_progress') throw new BookingSettledError(booking.status);
           const b = booking.toProps();
           const distanceM = distanceMeters(fix.lat, fix.lng, b.farmLat, b.farmLng);             // SERVER-computed fence proof
           if (distanceM > ATTENDANCE_FENCE_M) throw new OutOfFenceError(distanceM, ATTENDANCE_FENCE_M);
@@ -110,10 +118,11 @@ export class AttendanceService {
 
           const hrs = computeHours({ clockInAt: day.clockInAt, clockOutAt: now, breakMinutes: input.breakMinutes });
           const changed = await this.attendance.updateClockOut(tx, {
-            id: day.id, createdAt: day.createdAt, tenantId, clockOutAt: now,
+            id: day.id, createdAtRaw: day.createdAtRaw, tenantId, clockOutAt: now,
             breakMinutes: input.breakMinutes, hoursRegular: hrs.hoursRegular, hoursOvertime: hrs.hoursOvertime,
           });
-          if (changed === 0) throw new AlreadyClockedOutError();                                 // lost the race — clocked out already
+          // The row was read in THIS transaction under the assignment lock, so 0 is not a race — it is a named defect.
+          if (changed !== 1) throw new AttendanceRowMismatchError(day.id, 'clocked out');
           await this.outbox.write(tx, {
             tenantId, aggregateType: 'attendance_record', aggregateId: day.id, eventType: LabourEventType.AttendanceClockedOut,
             payload: { v: 1, attendanceId: day.id, assignmentId, bookingId: assignment.bookingId, workerId: mine.id, workDate, hoursRegular: hrs.hoursRegular, hoursOvertime: hrs.hoursOvertime, workedMinutes: hrs.workedMinutes },
@@ -134,8 +143,10 @@ export class AttendanceService {
           if (!assignment) throw new AssignmentNotFoundError(assignmentId);
           const booking = await this.bookings.getById(tenantId, assignment.bookingId, tx);
           if (!booking) throw new BookingNotFoundError(assignment.bookingId);
-          // authz: the booking's employer, or a tenant booking-manager. A non-owner sees 404 (no enumeration).
-          if (booking.employerUserId !== actor.userId && !actor.canManage) throw new AssignmentNotFoundError(assignmentId);
+          // authz: the booking's employer, or the tenant's labour oversight (booking.manage / labour.desk). Others see 404.
+          if (booking.employerUserId !== actor.userId && !actor.canManage && !actor.canDesk) throw new AssignmentNotFoundError(assignmentId);
+          // The money can still move only while the job runs or awaits its pay run (not once paid out or cancelled).
+          if (booking.status !== 'in_progress' && booking.status !== 'completed') throw new BookingSettledError(booking.status);
 
           const day = await this.attendance.getDay(tx, tenantId, assignmentId, workDate);
           if (!day || !day.clockInAt) throw new NotClockedInError();
@@ -144,9 +155,10 @@ export class AttendanceService {
           if (status !== 'clocked_out') throw new NotClockedOutError(status);                    // can't confirm an open day
           assertTransition(status, 'confirmed');
 
-          const changed = await this.attendance.updateConfirm(tx, { id: day.id, createdAt: day.createdAt, tenantId });
-          if (changed === 0) throw new AlreadyConfirmedError();
-          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'labour.attendance_confirmed', entityType: 'attendance_record', entityId: day.id, newValue: { assignmentId, workDate, hoursRegular: day.hoursRegular, hoursOvertime: day.hoursOvertime }, ip });
+          const changed = await this.attendance.updateConfirm(tx, { id: day.id, createdAtRaw: day.createdAtRaw, tenantId });
+          if (changed !== 1) throw new AttendanceRowMismatchError(day.id, 'confirmed');
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'labour.attendance_confirmed', entityType: 'attendance_record', entityId: day.id,
+            oldValue: { status: 'clocked_out' }, newValue: { status: 'confirmed', bookingId: assignment.bookingId, assignmentId, workDate, hoursRegular: day.hoursRegular, hoursOvertime: day.hoursOvertime }, ip });
           await this.outbox.write(tx, {
             tenantId, aggregateType: 'attendance_record', aggregateId: day.id, eventType: LabourEventType.AttendanceConfirmed,
             payload: { v: 1, attendanceId: day.id, assignmentId, bookingId: assignment.bookingId, workerId: assignment.workerId, workDate, confirmedBy: actor.userId },
@@ -157,7 +169,7 @@ export class AttendanceService {
 
   /** The caller's OWN work-history (attendance days, newest first). Resolves the worker profile from the token
    *  (anti-IDOR) — a caller with no worker profile gets an empty page, never another worker's history. */
-  async workHistory(tenantId: string, userId: string, q: { cursor?: { c: string; id: string }; limit: number }) {
+  async workHistory(tenantId: string, userId: string, q: { cursor?: Cursor; limit: number }) {
     const mine = await this.workers.findByUser(tenantId, userId);
     if (!mine) return { items: [], nextCursor: null };
     const rows = await this.attendance.listForWorker(tenantId, mine.id, q);
@@ -168,6 +180,6 @@ export class AttendanceService {
       status: deriveStatus(r), confirmedByEmployer: r.confirmedByEmployer, paid: r.wagePayoutId !== null, createdAt: r.createdAt.toISOString(),
     }));
     const last = rows[rows.length - 1];
-    return { items, nextCursor: items.length === q.limit && last ? Buffer.from(`${last.createdAt.toISOString()}|${last.id}`).toString('base64') : null };
+    return { items, nextCursor: items.length === q.limit && last ? encodeCursor(last.createdAtRaw, last.id) : null };
   }
 }

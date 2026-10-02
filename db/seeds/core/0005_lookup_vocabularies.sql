@@ -221,3 +221,30 @@ SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
  ('ledger_txn_type','emd_return','Auction winner''s applied EMD returned when the order is cancelled by the seller or system (escrow -> winner main)','{}',26)
   ) AS v(type_code, code, default_name, meta, sort_order)
  WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-11b · 0187] The labour escrow vocabulary — founder decision: wages are escrowed at roster confirm with a flat
+-- ₹20 platform fee. ALSO INSERTED BY MIGRATION 0187, identically and idempotently. escrow = employer main -> employer hold
+-- (+ fee -> platform fees); topup = employer main -> employer hold for wages beyond the escrow; release = what is left of the
+-- escrow back to the employer on completion or a cancel before start (the fee is kept).
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('ledger_txn_type','labour_escrow','Labour wages escrowed at roster confirm (employer main -> employer hold) + platform fee (-> platform fees)','{}',27),
+ ('ledger_txn_type','labour_escrow_topup','Labour escrow top-up for wages beyond the escrow (employer main -> employer hold)','{}',28),
+ ('ledger_txn_type','labour_escrow_release','Labour escrow remainder returned on completion or cancel (employer hold -> employer main)','{}',29)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-11b · 0187] Why a labour job was cancelled — canon W164's three reasons + `other` (the employer's own words,
+-- required by the API). Workers are told the reason. ALSO INSERTED BY MIGRATION 0187.
+INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES ('labour_cancel_reason','Labour job cancel reason',false)
+ON CONFLICT (code) DO NOTHING;
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('labour_cancel_reason','rain_reschedule','Rain forecast — rescheduling','{}',1),
+ ('labour_cancel_reason','not_needed','Work no longer needed','{}',2),
+ ('labour_cancel_reason','filled_offline','Filled offline','{}',3),
+ ('labour_cancel_reason','other','Other (reason written by the employer)','{"textRequired": true}',4)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);

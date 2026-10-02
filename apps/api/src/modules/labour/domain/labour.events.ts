@@ -9,6 +9,7 @@ export const LabourEventType = {
   AssignmentAccepted: 'labour.assignment_accepted',
   AssignmentRejected: 'labour.assignment_rejected',
   AssignmentExpired:  'labour.assignment_expired',
+  RosterConfirmed:    'labour.roster_confirmed',        // PC-56 TENANT-11b: the roster is confirmed and the wages are escrowed
   BookingStarted:     'labour.booking_started',
   BookingCompleted:   'labour.booking_completed',
   WagesPaid:          'labour.wages_paid',

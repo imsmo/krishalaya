@@ -20,7 +20,11 @@ const post = (over: any = {}) => LabourBooking.post({
 
 describe('booking.state machine', () => {
   it('allows documented transitions, forbids illegal ones', () => {
-    expect(bCan('open', 'in_progress')).toBe(true);
+    // PC-56 TENANT-11b: a job starts only once the roster is confirmed and the wages are escrowed (open → accepted → in_progress).
+    expect(bCan('open', 'in_progress')).toBe(false);
+    expect(bCan('open', 'accepted')).toBe(true);
+    expect(bCan('accepted', 'in_progress')).toBe(true);
+    expect(bCan('accepted', 'cancelled')).toBe(true);
     expect(bCan('in_progress', 'completed')).toBe(true);
     expect(bCan('completed', 'paid')).toBe(true);
     expect(bCan('open', 'paid')).toBe(false);
@@ -59,12 +63,15 @@ describe('LabourBooking.post — THE DIGNITY FLOOR', () => {
 });
 
 describe('booking lifecycle + wage settlement', () => {
-  it('open → in_progress → completed → paid, emitting the right events', () => {
+  it('open → accepted (roster confirmed) → in_progress → completed → paid, emitting the right events', () => {
     const b = post(); b.pullEvents();
+    expect(() => b.start()).toThrow();
+    b.confirmRoster(new Date(), 'emp1', { escrowedMinor: '300000' }); expect(b.status).toBe('accepted');
+    expect(b.toProps().rosterConfirmedBy).toBe('emp1');
     b.start(); expect(b.status).toBe('in_progress');
     b.complete(); expect(b.status).toBe('completed');
     b.markPaid(100000n, 2); expect(b.status).toBe('paid');
-    expect(b.pullEvents().map((e) => e.type)).toEqual([LabourEventType.BookingStarted, LabourEventType.BookingCompleted, LabourEventType.WagesPaid]);
+    expect(b.pullEvents().map((e) => e.type)).toEqual([LabourEventType.RosterConfirmed, LabourEventType.BookingStarted, LabourEventType.BookingCompleted, LabourEventType.WagesPaid]);
   });
   it('refuses to pay a booking that is not completed', () => {
     const b = post(); expect(() => b.markPaid(1n, 1)).toThrow(BookingNotPayableError);

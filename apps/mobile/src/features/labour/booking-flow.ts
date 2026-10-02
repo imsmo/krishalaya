@@ -5,13 +5,18 @@
 import type { PillTone } from '@krishalaya/ui-native';
 import type { LabourBooking, LabourAssignment, CreateBookingInput } from '@krishalaya/sdk-js';
 
-export type EmployerAction = 'assign' | 'start' | 'complete' | 'pay' | 'cancel';
+/** PC-56 TENANT-11b — the cancel reasons the API knows (GET /labour/lookups cancelReasons; `other` needs words, not offered here). */
+export const MOBILE_CANCEL_REASONS = ['rain_reschedule', 'not_needed', 'filled_offline'] as const;
+export type EmployerAction = 'assign' | 'confirmRoster' | 'start' | 'complete' | 'pay' | 'cancel';
 /** Which lifecycle actions the employer (booking owner) may attempt for a booking status. The server re-checks
- * (e.g. start needs ≥1 accepted worker, pay needs completed) and rejects anything illegal. */
+ * and rejects anything illegal. PC-56 TENANT-11b: the employer CONFIRMS THE ROSTER (the wages + the platform fee are set
+ * aside from their wallet) before the job can start (`accepted` = roster confirmed); pay runs while the job is in progress
+ * (confirmed days) and after it is completed (which also returns what is left of the escrow). */
 export function bookingLifecycleActions(status: string): EmployerAction[] {
   switch (status) {
-    case 'open': return ['assign', 'cancel'];
-    case 'in_progress': return ['complete', 'cancel'];
+    case 'open': return ['assign', 'confirmRoster', 'cancel'];
+    case 'accepted': return ['start', 'cancel'];
+    case 'in_progress': return ['complete', 'pay', 'cancel'];
     case 'completed': return ['pay'];
     default: return []; // paid / cancelled / expired — terminal
   }
@@ -21,7 +26,7 @@ export function bookingLifecycleActions(status: string): EmployerAction[] {
 export function bookingStatusTone(status: string): PillTone {
   switch (status) {
     case 'open': return 'info';
-    case 'in_progress': return 'accent';
+    case 'accepted': case 'in_progress': return 'accent';
     case 'completed': case 'paid': return 'success';
     case 'cancelled': case 'expired': return 'danger';
     default: return 'neutral';

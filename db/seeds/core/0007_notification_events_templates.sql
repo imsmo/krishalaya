@@ -680,6 +680,35 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('auction.lapsed',         'title',     'listings.title at lapse',                 'Ghee, buffalo', true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- ==================================================================================================================
+-- PC-56 TENANT-11b · **A WORKER IS TOLD WHEN THE JOB IS CONFIRMED AND WHEN IT IS CANCELLED.** Before this wave no `labour.*`
+-- outbox event reached anyone (survey F-24 / W164 #19 — "Cancel (workers notified with reason)" notified nobody). Migration
+-- 0187 catalogues two events; their copy lives HERE, above the version backfill below (0122's send-time gate). Variables
+-- come from the outbox payload: `jobNo` (JOB-…), `startDate` (DD/MM/YYYY, India), `reason` (the reason the employer or the
+-- desk recorded, verbatim — the workers' to read, not ours to paraphrase).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('labour.roster_confirmed','push','en',NULL,'{{jobNo}} is confirmed','Your job {{jobNo}} starting {{startDate}} is confirmed. Your wages are already set aside — they are paid after the employer confirms each day you work.',NULL,true),
+ ('labour.roster_confirmed','push','hi',NULL,'{{jobNo}} पक्का हुआ','{{startDate}} से शुरू होने वाला आपका काम {{jobNo}} पक्का हो गया है। आपकी मज़दूरी पहले से अलग रख दी गई है — मालिक हर दिन के काम की पुष्टि करे, उसके बाद भुगतान होता है।',NULL,true),
+ ('labour.roster_confirmed','push','gu',NULL,'{{jobNo}} પાકું થયું','{{startDate}} થી શરૂ થતું તમારું કામ {{jobNo}} પાકું થયું છે. તમારું વેતન પહેલેથી અલગ રાખવામાં આવ્યું છે — માલિક દરેક દિવસના કામની પુષ્ટિ કરે પછી ચુકવણી થાય છે.',NULL,true),
+ ('labour.roster_confirmed','inapp','en',NULL,'{{jobNo}} is confirmed','Your job {{jobNo}} starting {{startDate}} is confirmed. Your wages are already set aside — they are paid after the employer confirms each day you work.',NULL,true),
+ ('labour.roster_confirmed','inapp','hi',NULL,'{{jobNo}} पक्का हुआ','{{startDate}} से शुरू होने वाला आपका काम {{jobNo}} पक्का हो गया है। आपकी मज़दूरी पहले से अलग रख दी गई है — मालिक हर दिन के काम की पुष्टि करे, उसके बाद भुगतान होता है।',NULL,true),
+ ('labour.roster_confirmed','inapp','gu',NULL,'{{jobNo}} પાકું થયું','{{startDate}} થી શરૂ થતું તમારું કામ {{jobNo}} પાકું થયું છે. તમારું વેતન પહેલેથી અલગ રાખવામાં આવ્યું છે — માલિક દરેક દિવસના કામની પુષ્ટિ કરે પછી ચુકવણી થાય છે.',NULL,true),
+ ('labour.booking_cancelled','push','en',NULL,'{{jobNo}} was cancelled','The job {{jobNo}} starting {{startDate}} was cancelled: {{reason}}. Please do not travel for it.',NULL,true),
+ ('labour.booking_cancelled','push','hi',NULL,'{{jobNo}} रद्द हुआ','{{startDate}} से शुरू होने वाला काम {{jobNo}} रद्द कर दिया गया: {{reason}}। कृपया इसके लिए यात्रा न करें।',NULL,true),
+ ('labour.booking_cancelled','push','gu',NULL,'{{jobNo}} રદ થયું','{{startDate}} થી શરૂ થતું કામ {{jobNo}} રદ કરવામાં આવ્યું: {{reason}}. કૃપા કરીને તેના માટે મુસાફરી કરશો નહીં.',NULL,true),
+ ('labour.booking_cancelled','inapp','en',NULL,'{{jobNo}} was cancelled','The job {{jobNo}} starting {{startDate}} was cancelled: {{reason}}. Please do not travel for it.',NULL,true),
+ ('labour.booking_cancelled','inapp','hi',NULL,'{{jobNo}} रद्द हुआ','{{startDate}} से शुरू होने वाला काम {{jobNo}} रद्द कर दिया गया: {{reason}}। कृपया इसके लिए यात्रा न करें।',NULL,true),
+ ('labour.booking_cancelled','inapp','gu',NULL,'{{jobNo}} રદ થયું','{{startDate}} થી શરૂ થતું કામ {{jobNo}} રદ કરવામાં આવ્યું: {{reason}}. કૃપા કરીને તેના માટે મુસાફરી કરશો નહીં.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('labour.roster_confirmed',  'jobNo',     'labour_bookings.booking_no',                                   'JOB-0713-04', true),
+ ('labour.roster_confirmed',  'startDate', 'labour_bookings.start_date (DD/MM/YYYY)',                      '14/07/2026', true),
+ ('labour.booking_cancelled', 'jobNo',     'labour_bookings.booking_no',                                   'JOB-0713-04', true),
+ ('labour.booking_cancelled', 'startDate', 'labour_bookings.start_date (DD/MM/YYYY)',                      '14/07/2026', true),
+ ('labour.booking_cancelled', 'reason',    'labour_cancel_reason default_name, or labour_bookings.cancel_reason_text for other (verbatim)', 'Rain forecast — rescheduling', true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

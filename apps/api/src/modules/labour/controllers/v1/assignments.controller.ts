@@ -16,9 +16,8 @@ import { AttendanceService } from '../../services/attendance.service';
 import { RespondAssignmentSchema, RespondAssignmentDto } from '../../dto/create-booking-assignment.dto';
 import { QueryAssignmentsSchema, QueryAssignmentsDto } from '../../dto/query-booking-assignment.dto';
 import { ClockInSchema, ClockInDto, ClockOutSchema, ClockOutDto, ConfirmAttendanceSchema, ConfirmAttendanceDto } from '../../dto/create-attendance.dto';
-import { canManageLabour } from '../../policies/labour.policies';
-
-const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+import { canManageLabour, canRunLabourDesk, labourActor } from '../../policies/labour.policies';
+import { decodeCursor } from '../../domain/cursor';
 const ipOf = (req: Request) => req.ip || null;
 
 @Controller({ path: 'labour/assignments', version: '1' })
@@ -29,7 +28,7 @@ export class AssignmentsController {
 
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryAssignmentsSchema) q: QueryAssignmentsDto) {
-    return this.svc.listAssignments(ctx.tenantId, ctx.userId, { box: q.box, bookingId: q.bookingId, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
+    return this.svc.listAssignments(ctx.tenantId, labourActor(ctx), { box: q.box, bookingId: q.bookingId, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
@@ -41,12 +40,17 @@ export class AssignmentsController {
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
+  /** F-19: the assigned worker, the booking's employer, or the labour desk / booking.manage — anyone else 404. */
   @Get(':id')
-  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getAssignment(ctx.tenantId, id).then((data) => ({ data })); }
+  get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getAssignment(ctx.tenantId, labourActor(ctx), id).then((data) => ({ data })); }
+
+  /** The attendance days of one assignment (employer / desk) — the per-day confirm list on the job detail. */
+  @Get(':id/days')
+  days(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.assignmentDays(ctx.tenantId, labourActor(ctx), id).then((data) => ({ data })); }
 
   @Post(':id/respond')
-  respond(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(RespondAssignmentSchema) dto: RespondAssignmentDto) {
-    return this.svc.respond(ctx.tenantId, ctx.userId, id, { decision: dto.decision, voiceConsentMediaId: dto.voiceConsentMediaId }).then((data) => ({ data }));
+  respond(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(RespondAssignmentSchema) dto: RespondAssignmentDto) {
+    return this.svc.respond(ctx.tenantId, ctx.userId, id, { decision: dto.decision, voiceConsentMediaId: dto.voiceConsentMediaId }, ipOf(r)).then((data) => ({ data }));
   }
 
   /** WORKER clocks in for today on their OWN accepted assignment. The device sends only its GPS fix; the
@@ -70,6 +74,6 @@ export class AssignmentsController {
   @Post(':id/attendance/confirm')
   confirm(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(ConfirmAttendanceSchema) dto: ConfirmAttendanceDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
-    return this.attendance.confirmDay(ctx.tenantId, { userId: ctx.userId, canManage: canManageLabour(ctx) }, id, dto.workDate, key, ipOf(r)).then((data) => ({ data }));
+    return this.attendance.confirmDay(ctx.tenantId, { userId: ctx.userId, canManage: canManageLabour(ctx), canDesk: canRunLabourDesk(ctx) }, id, dto.workDate, key, ipOf(r)).then((data) => ({ data }));
   }
 }

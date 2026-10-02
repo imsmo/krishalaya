@@ -114,6 +114,11 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('auction.schedule_on_behalf','Schedule an auction for a seller, and record the seller''s decision, each with the seller''s recorded consent','M04'),
  ('auction.cancel_live','Cancel a live auction (reason mandatory; every bidder notified, every EMD released)','M04'),
  ('auction.pause_entry','Pause / resume NEW bidders entering a live auction (existing bidders continue; reason recorded)','M04'),
+ -- [PC-56 TENANT-11b] THE LABOUR DESK'S VERBS (F-8 / F-20). The desk posts, fills, confirms the roster of (escrow) and cancels
+ -- a job FOR an employer only with the employer's recorded consent (labour_consents); paying a desk-run job is its own
+ -- money verb, tenant_admin's only. `worker.book` holders lose nothing. Also in migration 0187.
+ ('labour.desk','Labour desk: post, fill, confirm the roster of and cancel a job FOR an employer, each with the employer''s recorded consent','M28'),
+ ('labour.wages.approve','Run the wage pay for a desk-run labour job (moves escrowed wages to workers)','M28'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -227,4 +232,7 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
                   'tenant_staff','ambassador','sardar','support_agent','ai_ops') AND p.code IN ('auction.read'))
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('auction.schedule_on_behalf'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('auction.cancel_live','auction.pause_entry'))
+   -- [PC-56 TENANT-11b] the labour desk (0187): on-behalf acts with consent; the desk-run pay is tenant_admin's only.
+   OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('labour.desk'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('labour.wages.approve'))
 ON CONFLICT DO NOTHING;

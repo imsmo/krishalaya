@@ -6,8 +6,10 @@ const asg = (status: string): LabourAssignment => ({ id: Math.random().toString(
 
 describe('bookingLifecycleActions', () => {
   it('maps status → allowed employer actions', () => {
-    expect(bookingLifecycleActions('open')).toEqual(['assign', 'cancel']);
-    expect(bookingLifecycleActions('in_progress')).toEqual(['complete', 'cancel']);
+    // PC-56 TENANT-11b: confirm the roster (escrow) before start; pay runs while in progress too.
+    expect(bookingLifecycleActions('open')).toEqual(['assign', 'confirmRoster', 'cancel']);
+    expect(bookingLifecycleActions('accepted')).toEqual(['start', 'cancel']);
+    expect(bookingLifecycleActions('in_progress')).toEqual(['complete', 'pay', 'cancel']);
     expect(bookingLifecycleActions('completed')).toEqual(['pay']);
     expect(bookingLifecycleActions('paid')).toEqual([]);
     expect(bookingLifecycleActions('cancelled')).toEqual([]);

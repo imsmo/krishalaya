@@ -45,13 +45,16 @@ describe('labour_bookings isolation + optimistic lock', () => {
     await new LabourBookingRepository(fakeReplica().provider).update(tx as any, booking(), 3);
     const [sql, params] = tx.query.mock.calls[0];
     expect(sql).toMatch(/version=version\+1/); expect(sql).toMatch(/WHERE id=\$1 AND tenant_id=\$2 AND version=\$5/);
-    expect(params).toEqual(['b1', 'tenantA', 'open', null, 3]);
+    expect(params.slice(0, 5)).toEqual(['b1', 'tenantA', 'open', null, 3]);
   });
   it('insert binds tenant_id + carries version', async () => {
-    const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
-    await new LabourBookingRepository(fakeReplica().provider).insert(tx as any, booking());
+    const tx = { query: jest.fn().mockResolvedValue({ rows: [{ booking_no: 'JOB-0713-01', created_at: new Date(), created_at_raw: '2026-07-13 06:00:00.123456+00' }], rowCount: 1 }) };
+    const r = await new LabourBookingRepository(fakeReplica().provider).insert(tx as any, booking(), 'emp1');
     const [sql, params] = tx.query.mock.calls[0];
     expect(sql).toMatch(/INSERT INTO labour_bookings/); expect(params).toContain('tenantA');
+    // PC-56 TENANT-11b: the job number is the 0187 trigger's (NULL is sent) and the µs created_at is read back.
+    expect(sql).toMatch(/VALUES \(\$1,\$2,NULL,/); expect(sql).toMatch(/RETURNING booking_no, created_at, created_at::text/);
+    expect(r.bookingNo).toBe('JOB-0713-01');
   });
   it('listFor keyset (no OFFSET), open box filters status=open', async () => {
     const { provider, exec } = fakeReplica();
@@ -59,12 +62,12 @@ describe('labour_bookings isolation + optimistic lock', () => {
     const [sql] = exec.query.mock.calls[0];
     expect(sql).toMatch(/tenant_id=\$1/); expect(sql).toMatch(/status='open'/); expect(sql).not.toMatch(/OFFSET/i);
   });
-  it('findDueToExpire is bounded + SKIP LOCKED over open bookings', async () => {
+  it('dueToExpire is bounded, per tenant (kv_app unit of work — F-9), over open bookings past respond_by', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
-    await new LabourBookingRepository(fakeReplica().provider).findDueToExpire(tx as any, new Date(), 100);
-    const [sql] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/status='open' AND respond_by IS NOT NULL AND respond_by < \$1/);
-    expect(sql).toMatch(/FOR UPDATE SKIP LOCKED/);
+    await new LabourBookingRepository(fakeReplica().provider).dueToExpire(tx as any, 'tenantA', new Date(), 100);
+    const [sql, params] = tx.query.mock.calls[0];
+    expect(sql).toMatch(/tenant_id=\$1 AND status='open' AND respond_by IS NOT NULL AND respond_by < \$2/);
+    expect(sql).toMatch(/LIMIT \$3/); expect(params[0]).toBe('tenantA');
   });
   it('demand-type resolution is platform-scoped (tenant_id IS NULL), never client id', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'dt1' }], rowCount: 1 }) };
@@ -79,13 +82,13 @@ describe('booking_assignments isolation', () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
     await new BookingAssignmentRepository(fakeReplica().provider).listAcceptedForUpdate(tx as any, 'tenantA', 'b1');
     const [sql, params] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/tenant_id=\$1 AND booking_id=\$2 AND status='accepted'/); expect(sql).toMatch(/FOR UPDATE/);
+    expect(sql).toMatch(/ba.tenant_id=\$1 AND ba.booking_id=\$2 AND ba.status IN \('accepted','paid'\)/); expect(sql).toMatch(/FOR UPDATE/);
     expect(params).toEqual(['tenantA', 'b1']);
   });
   it('insert binds tenant_id', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const a = BookingAssignment.create({ id: 'a1', bookingId: 'b1', tenantId: 'tenantA', workerId: 'w1', wageMinor: 50000n });
-    await new BookingAssignmentRepository(fakeReplica().provider).insert(tx as any, a);
+    await new BookingAssignmentRepository(fakeReplica().provider).insert(tx as any, a, 'emp1');
     const [sql, params] = tx.query.mock.calls[0];
     expect(sql).toMatch(/INSERT INTO booking_assignments/); expect(params).toContain('tenantA');
   });
