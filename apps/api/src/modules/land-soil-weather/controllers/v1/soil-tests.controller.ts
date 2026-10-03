@@ -1,5 +1,7 @@
 // modules/land-soil-weather/controllers/v1/soil-tests.controller.ts · soil tests + weather advisory browse. `land_soil_weather` flag.
-import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Post, Put, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
+import { BadRequestError } from '../../../../shared/errors/app-error';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -22,10 +24,14 @@ import { LandPermissions, canManageLand, isLandAdmin } from '../../policies/land
 @FeatureFlag('land_soil_weather')
 export class SoilTestsController {
   constructor(private readonly soil: SoilTestService, private readonly weather: WeatherAlertService, private readonly forecast: ForecastService, private readonly prefs: WeatherPrefsService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageLand(ctx), isAdmin: isLandAdmin(ctx) }; }
+  private actor(ctx: RequestContext, req?: Request) { return { userId: ctx.userId, canManage: canManageLand(ctx), isAdmin: isLandAdmin(ctx), ip: req?.ip || null, requestId: ctx.requestId || null }; }
 
   @Post('soil-tests') @RequirePermissions(LandPermissions.Manage)
-  record(@CurrentContext() ctx: RequestContext, @ZodBody(RecordSoilTestSchema) dto: RecordSoilTestDto) { return this.soil.record(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data })); }
+  /** PC-56 TENANT-12 (F-11, Law 3): keyed — a retried lab entry is ONE row; audited. */
+  record(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Headers('idempotency-key') key: string, @ZodBody(RecordSoilTestSchema) dto: RecordSoilTestDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.soil.record(ctx.tenantId, this.actor(ctx, req), key, dto).then((data) => ({ data }));
+  }
   @Get('soil-tests')
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QuerySoilTestsSchema) q: QuerySoilTestsDto) { return this.soil.list(ctx.tenantId, this.actor(ctx), q.parcelId).then((data) => ({ data })); }
 

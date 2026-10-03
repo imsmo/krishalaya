@@ -49,6 +49,8 @@ import { AssistantResource } from './resources/assistant';
 import { SchemesResource } from './resources/schemes';
 import { SupportResource } from './resources/support';
 import { ParcelsResource } from './resources/parcels';
+import { CropSeasonsResource, SoilTestsResource } from './resources/land';
+import { TwinResource } from './resources/twin';
 import { PrivacyResource } from './resources/privacy';
 import { OnboardingResource } from './resources/onboarding';
 import { MembersResource } from './resources/members';
@@ -152,6 +154,10 @@ export class KrishalayaClient {
   readonly schemes: SchemesResource;
   readonly support: SupportResource;
   readonly parcels: ParcelsResource;
+  /** PC-56 TENANT-12 — crop seasons + soil tests (F-13) and the digital twin. */
+  readonly cropSeasons: CropSeasonsResource;
+  readonly soilTests: SoilTestsResource;
+  readonly twin: TwinResource;
   readonly privacy: PrivacyResource;
   readonly onboarding: OnboardingResource;
   /** PC-56 TENANT-8c · pages + FAQ (`cms/pages`, `cms/faq`); TENANT-8d · banners (`cms/banners`). */
@@ -236,6 +242,9 @@ export class KrishalayaClient {
     this.schemes = new SchemesResource(this.http);
     this.support = new SupportResource(this.http);
     this.parcels = new ParcelsResource(this.http);
+    this.cropSeasons = new CropSeasonsResource(this.http);
+    this.soilTests = new SoilTestsResource(this.http);
+    this.twin = new TwinResource(this.http);
     this.privacy = new PrivacyResource(this.http);
     this.onboarding = new OnboardingResource(this.http);
   }

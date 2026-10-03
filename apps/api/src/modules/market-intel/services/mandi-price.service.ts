@@ -8,7 +8,7 @@ import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer'
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { MandiPrice } from '../domain/mandi-price.entity';
-import { MarketEventType, PriceSource } from '../domain/market-intel.events';
+import { MarketEventType, TENANT_PRICE_SOURCE } from '../domain/market-intel.events';
 import { MandiPriceRepository } from '../repositories/mandi-price.repository';
 import { PriceAlertRepository } from '../repositories/price-alert.repository';
 import { MarketNamesReadModel, withNames } from '../read-models/market-names.read-model';
@@ -33,7 +33,7 @@ export class MandiPriceService {
     private readonly settings: MarketSettingsReadModel,
   ) {}
 
-  async ingest(tenantId: string, actor: MarketActor, idemKey: string, dto: { mandiId?: string | null; regionId?: string | null; productId: string; gradeOptionId?: string | null; priceDate: string; minMinor?: string | null; maxMinor?: string | null; modalMinor: string; unitCode: string; arrivalsQty?: string | null; source: string }) {
+  async ingest(tenantId: string, actor: MarketActor, idemKey: string, dto: { mandiId?: string | null; regionId?: string | null; productId: string; gradeOptionId?: string | null; priceDate: string; minMinor?: string | null; maxMinor?: string | null; modalMinor: string; unitCode: string; arrivalsQty?: string | null; source?: string }) {
     if (!actor.canManage) throw new MarketForbiddenError('requires market.manage');
     return this.idem.remember(idemKey, actor.userId, 'market.price.ingest', () =>
       timed(this.metrics, 'market.price.ingest', { tenant: tenantId }, () =>
@@ -42,15 +42,21 @@ export class MandiPriceService {
           // fired farmer alerts off it in this same transaction — so an ambassador who typed ₹64,200 instead of ₹6,420
           // sent "groundnut is above your threshold" to every subscribed farmer in the region, in Gujarati, and W109's
           // timeline shows what a farmer does next: "alerted in Gujarati, listed same day".
+          // PC-56 TENANT-12 (F-4): THE SOURCE IS FORCED. Whatever a caller sends, a price typed through the tenant API is a TENANT
+          // OBSERVATION — `tenant_manual`, this tenant's row, with who typed it. A platform row (tenant NULL, agmarknet / enam) is
+          // written only by kv_ingest or the admin realm; 0190's RLS refuses kv_app a NULL-tenant insert even if this line moved.
+          const source = TENANT_PRICE_SOURCE;
           const policy = await this.settings.anomalyPolicy();
           const price = MandiPrice.observe({ mandiId: dto.mandiId ?? null, regionId: dto.regionId ?? null, productId: dto.productId, gradeOptionId: dto.gradeOptionId ?? null, priceDate: dto.priceDate,
-            minMinor: dto.minMinor != null ? BigInt(dto.minMinor) : null, maxMinor: dto.maxMinor != null ? BigInt(dto.maxMinor) : null, modalMinor: BigInt(dto.modalMinor), unitCode: dto.unitCode, arrivalsQty: dto.arrivalsQty ?? null, source: dto.source as PriceSource, currencyCode: 'INR' });
+            minMinor: dto.minMinor != null ? BigInt(dto.minMinor) : null, maxMinor: dto.maxMinor != null ? BigInt(dto.maxMinor) : null, modalMinor: BigInt(dto.modalMinor), unitCode: dto.unitCode, arrivalsQty: dto.arrivalsQty ?? null, source, currencyCode: 'INR',
+            tenantId, enteredBy: actor.userId });
           // The reference is read INSIDE the transaction, on the writer, from accepted observations only: judging one
           // bad price against the last bad price is how a typo becomes the new normal.
           const reference = await this.prices.referenceModal(tx, price.productId, price.regionId, dto.priceDate);
+          // A tenant observation is ALWAYS gated (a typed price is the suspect, never the reference), whatever the setting lists.
           const verdict = gate({
-            source: dto.source, modalMinor: price.modalMinor, referenceModalMinor: reference,
-            thresholdBp: policy.thresholdBp, gatedSources: policy.gatedSources,
+            source, modalMinor: price.modalMinor, referenceModalMinor: reference,
+            thresholdBp: policy.thresholdBp, gatedSources: [...policy.gatedSources, TENANT_PRICE_SOURCE],
           });
 
           const written = await this.prices.insert(tx, price, verdict);
@@ -63,7 +69,7 @@ export class MandiPriceService {
             await this.prices.enqueueAnomalyReview(tx, {
               tenantId, priceId: written.id, priceDate: written.priceDate, deviationBp: verdict.deviationBp,
             });
-            this.metrics.inc('market.price.quarantined', { tenant: tenantId, source: dto.source });
+            this.metrics.inc('market.price.quarantined', { tenant: tenantId, source });
             // **AND THE ALERT LOOP IS NOT ENTERED.** This early return is the whole fix; everything else on this path is
             // the record of why.
             return { ...price.toJSON(), id: written.id, anomalyState: verdict.state, deviationBp: verdict.deviationBp, alertsFired: 0 };

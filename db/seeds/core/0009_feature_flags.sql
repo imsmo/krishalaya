@@ -19,6 +19,7 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('auctions','English/sealed auctions + bidding (EMD holds) — OFF until launch', false, 100, '{}'),
   ('offers','Buyer-seller price negotiation (offers/counters/accept) — OFF until launch', false, 100, '{}'),
   ('requirements','Reverse marketplace: demand posts + seller quotes — OFF until launch', false, 100, '{}'),
+  ('digital_twin','PC-56 TENANT-12. The digital twin (W420 overview, W421 scenarios, W422 results) — licensed per plan / tenant allowlist through rules.plans / rules.tenant_ids. OFF until enabled. No figure prints without a registered model and a recorded run.', false, 100, '{}'),
   ('logistics','Shipments + OTP-gated proof-of-delivery — OFF until launch', false, 100, '{}'),
   ('reviews','Verified-purchase ratings + moderation — OFF until launch', false, 100, '{}'),
   ('disputes','Order disputes + evidence + moderator resolution — OFF until launch', false, 100, '{}'),

@@ -40,6 +40,9 @@ export default async function ResolutionFormPage({ searchParams }: { searchParam
 
   let cat: ResolutionCatalogue | null = null; let state: string | null = null;
   let values = draftValues(searchParams);
+  // PC-56 TENANT-12 (F-14): the receipt a proposal came from (a DONE twin run), shown read-only when present — never editable here.
+  let sourceRef: { kind: 'twin_run'; id: string } | null = null;
+  if (id) { try { sourceRef = (await m.resolutionDraft(id)).sourceRef ?? null; } catch { sourceRef = null; } }
   if (step === 'edit') {
     try { cat = await m.resolutionCatalogue(); } catch (e) { const err = e instanceof SdkError ? e : null; state = govState(err?.code, err?.status, true); }
     // An edit with nothing carried yet starts from the draft as it stands — civil times in the cooperative's zone.
@@ -67,6 +70,7 @@ export default async function ResolutionFormPage({ searchParams }: { searchParam
       <p className="kv-field__hint"><Link href={RESOLUTIONS_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p>
 
       {state && <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert"><strong>{t.t(`res.state.${state}.title`)}</strong><p>{t.t(`res.state.${state}.body`)}</p></div>}
+      {sourceRef && <p className="kv-card kv-card--notice" role="note">{t.t('res.form.sourceRef', { id: sourceRef.id })}</p>}
 
       {step === 'edit' && !state && cat && (
         <>

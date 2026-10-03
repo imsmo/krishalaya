@@ -16,3 +16,10 @@ INSERT INTO setting_definitions (key,value_type,default_value,scope,description)
  ('languages.enabled','json','["en"]','tenant','Enabled storefront languages (codes; subset of platform-active, capped by plan max_languages)'),
  ('languages.default','string','"en"','tenant','Default storefront language code')
 ON CONFLICT (key) DO NOTHING;
+
+-- [PC-56 TENANT-12 · 0190] the floor under any member-level aggregate the digital twin prints (W422). Also in 0190.
+INSERT INTO setting_definitions (key, value_type, scope, risk_class, default_value, description, lock_note)
+VALUES ('twin.min_group_size', 'int', 'platform', 'security', '5'::jsonb,
+        'The smallest number of distinct members behind any member-level aggregate the digital twin prints (W422 "aggregate bands only — no member-level figures, ever"). Below it the twin says "fewer than N members — not shown".',
+        'Lowering this narrows the crowd a member hides in. Two administrators.')
+ON CONFLICT (key) DO NOTHING;

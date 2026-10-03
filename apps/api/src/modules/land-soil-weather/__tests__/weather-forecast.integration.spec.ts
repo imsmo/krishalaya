@@ -2,8 +2,9 @@
 // REAL Postgres proof for P0-12:
 //   1. the geocoded forecast DEGRADES to a region's real ingested advisories when the provider is down (a stub
 //      provider that throws) — proving "never fabricate, degrade to advisory" end-to-end against live data;
-//   2. the advisory-push job emits exactly ONE 'land.weather_advisory_active' outbox row per newly-active alert
-//      and is IDEMPOTENT (a second run emits nothing).
+//   2. the advisory-push job emits NOTHING for an alert no parcel owner of the tenant lies under (PC-56 TENANT-12: an event with no
+//      recipient was dropped by the fan-out; the job now resolves recipients and emits only with them — the positive path, with
+//      recipients, severe-only prefs and once-only, is proven live in twin/__tests__/tenant12-twin-truth.integration.spec.ts).
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
@@ -19,6 +20,8 @@ import { WeatherAlertRepository } from '../repositories/weather-alert.repository
 import { WeatherAlertService } from '../services/weather-alert.service';
 import { ForecastService } from '../services/forecast.service';
 import { WeatherAdvisoryPushJob } from '../jobs/weather-advisory-push.job';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { UiMessageRepository } from '../../../core/i18n/ui-message.repository';
 import { NoopWeatherForecastProvider } from '../gateway/noop-weather-forecast.provider';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -49,7 +52,7 @@ run('weather forecast + advisory push (integration, real Postgres)', () => {
     const advisories = new WeatherAlertService(new WeatherAlertRepository(replica as any));
     // a provider that is "down" → forces the degrade-to-advisory path (never fabricates)
     forecast = new ForecastService(new NoopWeatherForecastProvider() as any, { reverse: async () => null } as any, new InMemoryCacheService(), config, advisories);   // TENANT-2a sweep: ctor gained the geocoder; a null-geocode stub keeps the degrade path under test
-    pushJob = new WeatherAdvisoryPushJob(uow, new PgOutboxWriter());
+    pushJob = new WeatherAdvisoryPushJob(60_000, uow, new PgOutboxWriter(), new FlagsService(pools, new InMemoryCacheService()), new UiMessageRepository(replica as any));
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
@@ -66,15 +69,10 @@ run('weather forecast + advisory push (integration, real Postgres)', () => {
     await expect(forecast.forecast(tenant, { lat: 19.076, lng: 72.877 })).rejects.toMatchObject({ code: 'WEATHER_PROVIDER_UNAVAILABLE' });
   });
 
-  it('advisory-push job emits one outbox event per newly-active alert and is idempotent', async () => {
-    const first = await pushJob.runForTenant(tenant, 60);
-    expect(first).toBeGreaterThanOrEqual(1);
-    const cnt1 = await admin.query<{ n: string }>(`SELECT count(*)::int n FROM outbox_events WHERE tenant_id=$1 AND event_type='land.weather_advisory_active'`, [tenant]);
-    expect(Number(cnt1.rows[0].n)).toBe(first);
-    // second run must emit NOTHING (dedup against the already-written outbox row)
-    const second = await pushJob.runForTenant(tenant, 60);
-    expect(second).toBe(0);
-    const cnt2 = await admin.query<{ n: string }>(`SELECT count(*)::int n FROM outbox_events WHERE tenant_id=$1 AND event_type='land.weather_advisory_active'`, [tenant]);
-    expect(Number(cnt2.rows[0].n)).toBe(first);
+  it('advisory-push job emits nothing for an alert with no recipient in the tenant (and its SQL now parses — F-6)', async () => {
+    const first = await pushJob.runForTenant(tenant);
+    expect(first.emitted).toBe(0);
+    const cnt = await admin.query<{ n: string }>(`SELECT count(*)::int n FROM outbox_events WHERE tenant_id=$1 AND event_type IN ('land.weather_advisory_active','land.weather_advisory_severe')`, [tenant]);
+    expect(Number(cnt.rows[0].n)).toBe(0);
   });
 });

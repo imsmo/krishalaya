@@ -114,6 +114,8 @@ export class GovernanceService {
       votingOpens: await this.repo.instantToCivil(tenantId, clock.zone, r.votingOpens),
       votingCloses: await this.repo.instantToCivil(tenantId, clock.zone, r.votingCloses),
       payload: r.payload, zone: clock.zone, currency: clock.currency,
+      // PC-56 TENANT-12 (F-14): read-only — the twin run a proposal cites (none can exist yet: no run is ever done).
+      sourceRef: r.sourceRef,
     };
   }
 

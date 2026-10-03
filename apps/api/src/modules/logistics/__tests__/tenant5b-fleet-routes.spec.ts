@@ -776,7 +776,9 @@ describe('TENANT-5b · 0152 and the vocabulary that had no values', () => {
     // The reefer type carries the flag as a DEFAULT for the form; `is_refrigerated` stays the column the gate
     // reads, because a retrofitted insulated tempo is real.
     expect(s).toMatch(/'reefer_7mt','Reefer \(7 MT\)','\{"refrigerated":true/);
-    expect(s).toContain('ON CONFLICT (type_code,tenant_id,code) DO NOTHING');
+    // PC-56 TENANT-12 (F-16): `ON CONFLICT (type_code,tenant_id,code)` never fired for a platform row (NULLs are distinct), so this
+    // block duplicated the vocabulary on every seed run. It is now guarded by NOT EXISTS (+ a target-less ON CONFLICT).
+    expect(s).toContain('WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)');
     // Seeds own vocabularies (Law 6) — the migration says so rather than duplicating them.
     expect(migration()).toContain('does not seed the `vehicle_type` vocabulary');
   });

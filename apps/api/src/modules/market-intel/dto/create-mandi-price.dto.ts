@@ -1,4 +1,4 @@
-// modules/market-intel/dto/create-mandi-price.dto.ts · zod .strict() — ingest a price observation (minor-string).
+// modules/market-intel/dto/create-mandi-price.dto.ts · zod .strict() — record a TENANT price observation (minor-string).
 import { z } from 'zod';
 const minor = z.string().regex(/^\d{1,15}$/);
 export const IngestPriceSchema = z.object({
@@ -12,6 +12,8 @@ export const IngestPriceSchema = z.object({
   modalMinor: minor,
   unitCode: z.string().min(1).max(20).default('quintal'),
   arrivalsQty: z.string().regex(/^\d{1,12}(\.\d{1,2})?$/).nullish(),
-  source: z.enum(['agmarknet', 'enam', 'platform_txn', 'ambassador_manual']).default('ambassador_manual'),
+  // PC-56 TENANT-12 (F-4): the tenant API writes ONLY tenant observations. The source is FORCED to 'tenant_manual' by the service;
+  // a caller that names any other source is refused here (a typed price is never 'agmarknet').
+  source: z.literal('tenant_manual').optional(),
 }).strict();
 export type IngestPriceDto = z.infer<typeof IngestPriceSchema>;

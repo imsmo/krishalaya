@@ -71,10 +71,9 @@ run('market-intel spine (integration, real Postgres + RLS + alerts)', () => {
     const p: any = await pulse.pulse(tenantA, productId, region);
     expect(p.latest).toBeTruthy(); expect(p.history.length).toBeGreaterThanOrEqual(5);
   });
-  it('generates a baseline band', async () => {
-    const band: any = await predictions.generate(tenantA, opsActor, { productId, regionId: region, targetDate: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10), lookbackDays: 90 } as any);
-    expect(band.modelVersion).toBe('baseline-v1');
-    expect(BigInt(band.p10Minor) <= BigInt(band.p90Minor)).toBe(true);
+  it('PC-56 TENANT-12 (F-4 / F-1): REFUSES to type a band from the tenant API (409) — no registered model produces it', async () => {
+    await expect(predictions.generate(tenantA, opsActor, { productId, regionId: region, targetDate: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10), lookbackDays: 90 } as any))
+      .rejects.toMatchObject({ code: 'MARKET_PREDICTION_REFUSED' });
   });
   it('a farmer alert fires on a crossing ingest', async () => {
     alertId = (await alerts.create(tenantA, farmerActor, { productId, regionId: region, direction: 'above', thresholdMinor: '250000' } as any)).id;

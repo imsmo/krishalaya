@@ -44,6 +44,8 @@ const ORDER = [
   'core/0021_ui_messages_esg.sql',
   // PC-56 TENANT-11c · the reason words a group-lot cancellation notice is worded with (en/hi/gu).
   'core/0022_ui_messages_group_lots.sql',
+  // PC-56 TENANT-12 · the weather-alert type names a weather advisory notice is worded with (en/hi/gu).
+  'core/0023_ui_messages_weather.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

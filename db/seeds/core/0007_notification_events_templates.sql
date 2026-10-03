@@ -779,6 +779,37 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('requirement.group_quoted','members','count of linked responses the pooled quote sent','2',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-12 (F-5) · WEATHER ADVISORIES REACH THE MEMBERS WHOSE PARCELS ARE UNDER THEM. `weather.alert` and
+-- `weather.alert_severe` were catalogued (core/0007 line 14) and emitted by nothing, with no template in any language. The
+-- advisory push job (land-soil-weather, registered in 0190's wave) now emits one event per alert per tenant carrying
+-- `recipientUserIds` (parcel owners under the alert's region, minus those whose weather prefs ask for severe only). Copy lives
+-- HERE, above the version backfill (0122's send-time gate). Variables: `alertName` (a per-language map from ui_messages
+-- `weather.alert_type.*`, seed core/0023), `region` (the region's name), `validTo` (YYYY-MM-DD HH:MM in India time).
+-- SMS is NOT seeded: an SMS template needs a DLT registration this platform has not made; push + in-app only.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('weather.alert','push','en',NULL,'Weather advisory: {{alertName}}','{{alertName}} advisory for {{region}}, valid until {{validTo}}. Check your fields and follow your extension officer''s advice.',NULL,true),
+ ('weather.alert','push','hi',NULL,'मौसम सलाह: {{alertName}}','{{region}} के लिए {{alertName}} की सलाह, {{validTo}} तक मान्य। अपने खेत देखें और अपने कृषि विस्तार अधिकारी की सलाह मानें।',NULL,true),
+ ('weather.alert','push','gu',NULL,'હવામાન સલાહ: {{alertName}}','{{region}} માટે {{alertName}} ની સલાહ, {{validTo}} સુધી માન્ય. તમારા ખેતર તપાસો અને તમારા કૃષિ વિસ્તરણ અધિકારીની સલાહ માનો.',NULL,true),
+ ('weather.alert','inapp','en',NULL,'Weather advisory: {{alertName}}','{{alertName}} advisory for {{region}}, valid until {{validTo}}. Check your fields and follow your extension officer''s advice.',NULL,true),
+ ('weather.alert','inapp','hi',NULL,'मौसम सलाह: {{alertName}}','{{region}} के लिए {{alertName}} की सलाह, {{validTo}} तक मान्य। अपने खेत देखें और अपने कृषि विस्तार अधिकारी की सलाह मानें।',NULL,true),
+ ('weather.alert','inapp','gu',NULL,'હવામાન સલાહ: {{alertName}}','{{region}} માટે {{alertName}} ની સલાહ, {{validTo}} સુધી માન્ય. તમારા ખેતર તપાસો અને તમારા કૃષિ વિસ્તરણ અધિકારીની સલાહ માનો.',NULL,true),
+ ('weather.alert_severe','push','en',NULL,'SEVERE weather: {{alertName}}','Severe {{alertName}} warning for {{region}}, valid until {{validTo}}. Protect your crop, animals and family now.',NULL,true),
+ ('weather.alert_severe','push','hi',NULL,'गंभीर मौसम: {{alertName}}','{{region}} के लिए गंभीर {{alertName}} चेतावनी, {{validTo}} तक मान्य। अभी अपनी फसल, पशुओं और परिवार की सुरक्षा करें।',NULL,true),
+ ('weather.alert_severe','push','gu',NULL,'ગંભીર હવામાન: {{alertName}}','{{region}} માટે ગંભીર {{alertName}} ચેતવણી, {{validTo}} સુધી માન્ય. હમણાં જ તમારા પાક, પશુઓ અને પરિવારની સુરક્ષા કરો.',NULL,true),
+ ('weather.alert_severe','inapp','en',NULL,'SEVERE weather: {{alertName}}','Severe {{alertName}} warning for {{region}}, valid until {{validTo}}. Protect your crop, animals and family now.',NULL,true),
+ ('weather.alert_severe','inapp','hi',NULL,'गंभीर मौसम: {{alertName}}','{{region}} के लिए गंभीर {{alertName}} चेतावनी, {{validTo}} तक मान्य। अभी अपनी फसल, पशुओं और परिवार की सुरक्षा करें।',NULL,true),
+ ('weather.alert_severe','inapp','gu',NULL,'ગંભીર હવામાન: {{alertName}}','{{region}} માટે ગંભીર {{alertName}} ચેતવણી, {{validTo}} સુધી માન્ય. હમણાં જ તમારા પાક, પશુઓ અને પરિવારની સુરક્ષા કરો.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('weather.alert','alertName','ui_messages weather.alert_type.<code> (per language)','Heavy rain',true),
+ ('weather.alert','region','admin_regions.default_name of the alert''s region','Junagadh',true),
+ ('weather.alert','validTo','weather_alerts.valid_to in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-07-14 18:00',true),
+ ('weather.alert_severe','alertName','ui_messages weather.alert_type.<code> (per language)','Cyclone',true),
+ ('weather.alert_severe','region','admin_regions.default_name of the alert''s region','Junagadh',true),
+ ('weather.alert_severe','validTo','weather_alerts.valid_to in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-07-14 18:00',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

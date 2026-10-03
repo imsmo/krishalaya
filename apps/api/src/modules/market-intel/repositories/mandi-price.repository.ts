@@ -7,11 +7,11 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { MandiPrice } from '../domain/mandi-price.entity';
 import { PriceSource } from '../domain/market-intel.events';
 
-const COLS = `id, mandi_id, region_id, product_id, grade_option_id, price_date::text AS price_date, min_minor, max_minor, modal_minor, unit_code, arrivals_qty, source, currency_code`;
+const COLS = `id, mandi_id, region_id, product_id, grade_option_id, price_date::text AS price_date, min_minor, max_minor, modal_minor, unit_code, arrivals_qty, source, currency_code, tenant_id`;
 function toDomain(r: any): MandiPrice {
   return MandiPrice.rehydrate({ id: String(r.id), mandiId: r.mandi_id, regionId: r.region_id, productId: r.product_id, gradeOptionId: r.grade_option_id, priceDate: r.price_date,
     minMinor: r.min_minor != null ? BigInt(r.min_minor) : null, maxMinor: r.max_minor != null ? BigInt(r.max_minor) : null, modalMinor: BigInt(r.modal_minor),
-    unitCode: r.unit_code, arrivalsQty: r.arrivals_qty != null ? String(r.arrivals_qty) : null, source: r.source as PriceSource, currencyCode: r.currency_code });
+    unitCode: r.unit_code, arrivalsQty: r.arrivals_qty != null ? String(r.arrivals_qty) : null, source: r.source as PriceSource, currencyCode: r.currency_code, tenantId: r.tenant_id ?? null });
 }
 export interface PriceListQuery { productId: string; regionId?: string; mandiId?: string; fromDate?: string; cursor?: { c: string; id: string }; limit: number; }
 
@@ -34,11 +34,11 @@ export class MandiPriceRepository {
     const p = m.toProps();
     const r = await tx.query(
       `INSERT INTO mandi_prices (mandi_id, region_id, product_id, grade_option_id, price_date, min_minor, max_minor, modal_minor, unit_code, arrivals_qty, source, currency_code,
-                                 anomaly_state, deviation_bp, reference_modal_minor)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+                                 anomaly_state, deviation_bp, reference_modal_minor, tenant_id, entered_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        RETURNING id, price_date::text AS price_date`,
       [p.mandiId, p.regionId, p.productId, p.gradeOptionId, p.priceDate, p.minMinor?.toString() ?? null, p.maxMinor?.toString() ?? null, p.modalMinor.toString(), p.unitCode, p.arrivalsQty, p.source, p.currencyCode,
-        verdict?.state ?? 'accepted', verdict?.deviationBp ?? null, verdict?.referenceModalMinor?.toString() ?? null]);
+        verdict?.state ?? 'accepted', verdict?.deviationBp ?? null, verdict?.referenceModalMinor?.toString() ?? null, p.tenantId ?? null, p.enteredBy ?? null]);
     return { id: String(r.rows[0].id), priceDate: String(r.rows[0].price_date) };
   }
 

@@ -21,6 +21,9 @@ export type AssistantStatus = 'answered' | 'needs_review' | 'blocked';
 export interface AssistantResult {
   reply: string; sessionId: string; status: AssistantStatus;
   citations: Array<{ title: string; url?: string }>;
+  /** PC-56 TENANT-12 (F-7, additive): which registered model + version produced `reply` — so a client can print the AI disclosure
+   *  with the model beside the answer. NULL when no model answered (blocked, degraded, needs review): no badge on a non-answer. */
+  modelCode: string | null; modelVersion: string | null;
 }
 
 @Injectable()
@@ -49,7 +52,7 @@ export class AssistantService {
     if (!screen.ok) {
       this.metrics.inc('assistant.blocked', { tenant: tenantId, reason: screen.reasons[0] ?? 'empty' });
       await this.record(tenantId, actor, { status: 'blocked', lang, modelId: null, confidence: null, citations: 0, degraded: false, reasons: screen.reasons });
-      return { reply: safeFallbackReply(lang, 'blocked'), sessionId, status: 'blocked', citations: [] };
+      return { reply: safeFallbackReply(lang, 'blocked'), sessionId, status: 'blocked', citations: [], modelCode: null, modelVersion: null };
     }
 
     // 2) cost/rate caps — count this user's recent assistant turns on the replica, decide allow/deny.
@@ -74,7 +77,7 @@ export class AssistantService {
     // 4) record the governed decision (ai_inferences + audit) atomically — pointers only, never the message text.
     await this.record(tenantId, actor, { status, lang, modelId: governed.modelId, confidence: governed.confidence, citations: citations.length, degraded: governed.degraded, reasons: [] });
     this.metrics.inc('assistant.answered', { tenant: tenantId, status });
-    return { reply, sessionId, status, citations };
+    return { reply, sessionId, status, citations, modelCode: review ? null : governed.modelCode, modelVersion: review ? null : governed.modelVersion };
   }
 
   private async record(tenantId: string, actor: AssistantActor, m: { status: AssistantStatus; lang: string; modelId: string | null; confidence: number | null; citations: number; degraded: boolean; reasons: string[] }): Promise<void> {

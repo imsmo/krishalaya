@@ -18,7 +18,7 @@ import { CreateInferenceDto } from '../dto/create-ai-inference.dto';
 import { OverrideInferenceDto } from '../dto/override-ai-inference.dto';
 import { AiModelNotFoundError, InferenceNotFoundError, AiForbiddenError } from '../domain/ai-governance.errors';
 
-export interface AiActor { userId: string; canReview: boolean; canModerate: boolean; }
+export interface AiActor { userId: string; canReview: boolean; canModerate: boolean; canRead?: boolean }
 
 /** Map a subject type to the review queue kind it should land in. */
 function queueKindFor(subjectType: string, forced: boolean, belowThreshold: boolean): QueueKind {
@@ -84,13 +84,13 @@ export class AiInferenceService {
   }
 
   async getById(tenantId: string, actor: AiActor, id: string) {
-    if (!actor.canReview) throw new AiForbiddenError('requires ai.review');
+    if (!actor.canReview && !actor.canRead) throw new AiForbiddenError('requires ai.review or ai.inference.read');
     const inf = await this.inferences.getById(tenantId, id);
     if (!inf) throw new InferenceNotFoundError(id);
     return inf.toJSON();
   }
   async list(tenantId: string, actor: AiActor, q: { subjectType?: string; subjectId?: string; cursor?: { c: string; id: string }; limit: number }) {
-    if (!actor.canReview) throw new AiForbiddenError('requires ai.review');
+    if (!actor.canReview && !actor.canRead) throw new AiForbiddenError('requires ai.review or ai.inference.read');
     const rows = await this.inferences.listFor(tenantId, q);
     const items = rows.map((i) => i.toJSON());
     const last = items[items.length - 1] as any;

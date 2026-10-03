@@ -17,7 +17,7 @@ export class HttpAssistantInferenceProvider implements AssistantInferenceProvide
   constructor(private readonly cfg: HttpAssistantConfig, private readonly resilience: ResilienceService) {}
 
   async ask(q: AssistantQuery): Promise<GovernedReply> {
-    const degraded: GovernedReply = { reply: '', needsReview: true, confidence: null, citations: [], modelCode: 'farm_assistant', modelId: null, degraded: true };
+    const degraded: GovernedReply = { reply: '', needsReview: true, confidence: null, citations: [], modelCode: 'farm_assistant', modelId: null, modelVersion: null, degraded: true };
     return this.resilience.run<GovernedReply>(DEP, async () => {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), this.cfg.timeoutMs);
@@ -42,6 +42,7 @@ export class HttpAssistantInferenceProvider implements AssistantInferenceProvide
           citations,
           modelCode: typeof out.model_code === 'string' ? out.model_code : 'farm_assistant',
           modelId: typeof out.model_id === 'string' ? out.model_id : null,
+          modelVersion: typeof out.model_version === 'string' ? out.model_version : null,
           degraded: false,
         };
       } finally {

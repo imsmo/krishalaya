@@ -76,6 +76,10 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureMemberships ? [{ key: 'governance', href: '/governance', label: t.t('nav.governance') }] : []),
         // PC-56 TENANT-9d: ESG (W423) — its own switch; the API's `esg` flag stays the gate.
         ...(env.featureEsg ? [{ key: 'esg', href: '/esg', label: t.t('nav.esg') }] : []),
+        // PC-56 TENANT-12: the digital twin (W420 / W421). UNGATED in the console on purpose: the API's `digital_twin` flag decides —
+        // a tenant without it sees the Locked page (the canon's one honest pitch + the one ask), never a dead link.
+        { key: 'twin', href: '/twin', label: t.t('nav.twin') },
+        { key: 'twin-scenarios', href: '/twin/scenarios', label: t.t('nav.twinScenarios') },
         { key: 'notifications', href: '/notifications', label: t.t('nav.notifications') },
         { key: 'billing', href: '/billing', label: t.t('nav.billing') },
         { key: 'team', href: '/team', label: t.t('nav.team') },

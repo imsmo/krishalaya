@@ -6,6 +6,8 @@ import { InvalidPriceError } from './market-intel.errors';
 export interface MandiPriceProps {
   id?: string; mandiId: string | null; regionId: string | null; productId: string; gradeOptionId: string | null; priceDate: string;
   minMinor: bigint | null; maxMinor: bigint | null; modalMinor: bigint; unitCode: string; arrivalsQty: string | null; source: PriceSource; currencyCode: string;
+  /** PC-56 TENANT-12 (F-4): set = a TENANT OBSERVATION (source tenant_manual); null = a platform row. */
+  tenantId?: string | null; enteredBy?: string | null;
 }
 export class MandiPrice {
   private readonly events: DomainEvent[] = [];
@@ -29,6 +31,8 @@ export class MandiPrice {
   toJSON() {
     const v = this.props;
     return { id: v.id, mandiId: v.mandiId, regionId: v.regionId, productId: v.productId, gradeOptionId: v.gradeOptionId, priceDate: v.priceDate,
-      minMinor: v.minMinor?.toString() ?? null, maxMinor: v.maxMinor?.toString() ?? null, modalMinor: v.modalMinor.toString(), unitCode: v.unitCode, arrivalsQty: v.arrivalsQty, source: v.source };
+      minMinor: v.minMinor?.toString() ?? null, maxMinor: v.maxMinor?.toString() ?? null, modalMinor: v.modalMinor.toString(), unitCode: v.unitCode, arrivalsQty: v.arrivalsQty, source: v.source,
+      // PC-56 TENANT-12 (F-4): a page labels this cooperative's own typed entries as such — never as a platform feed.
+      tenantObservation: v.tenantId != null };
   }
 }

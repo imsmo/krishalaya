@@ -18,6 +18,7 @@ import { PgOutboxWriter } from '../../../core/outbox/outbox.writer.pg';
 import { PgIdempotencyService } from '../../../core/idempotency/idempotency.service.pg';
 import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { QuotaService } from '../../../core/quota/quota.service';
+import { AuditWriter } from '../../../core/audit/audit.writer';
 
 import { LandParcelRepository } from '../repositories/land-parcel.repository';
 import { CropSeasonRepository } from '../repositories/crop-season.repository';
@@ -60,9 +61,11 @@ run('land-soil-weather spine (integration, real Postgres + RLS)', () => {
     const replica = new PgReadReplicaProvider(pools, shards);
     const outbox = new PgOutboxWriter(); const idem = new PgIdempotencyService(pools); const metrics = new PromMetrics();
     const pRepo = new LandParcelRepository(replica as any); const cRepo = new CropSeasonRepository(replica as any); const sRepo = new SoilTestRepository(replica as any); const wRepo = new WeatherAlertRepository(replica as any);
-    parcels = new LandParcelService(uow, outbox, idem, new AllowAllQuota(), metrics, pRepo);
-    crops = new CropSeasonService(uow, outbox, idem, metrics, cRepo, pRepo);
-    soil = new SoilTestService(uow, outbox, metrics, sRepo, pRepo);
+    // PC-56 TENANT-12 (F-11): every land write is audited — the services take the AuditWriter; soil tests are keyed.
+    const audit = new AuditWriter(pools);
+    parcels = new LandParcelService(uow, outbox, idem, new AllowAllQuota(), metrics, pRepo, audit);
+    crops = new CropSeasonService(uow, outbox, idem, metrics, cRepo, pRepo, audit);
+    soil = new SoilTestService(uow, outbox, idem, metrics, sRepo, pRepo, audit);
     weather = new WeatherAlertService(wRepo);
 
     inspect = new Pool({ connectionString: APP_URL });
@@ -79,12 +82,12 @@ run('land-soil-weather spine (integration, real Postgres + RLS)', () => {
     const c = await crops.plan(tenantA, actor, `idem-${randomUUID()}`, { parcelId, productId, season: 'kharif', year: 2026, expectedYield: '30.000' } as any);
     cropId = c.id; expect(c.status).toBe('planned');
     expect((await crops.sow(tenantA, actor, cropId, { sownOn: '2026-06-15' } as any)).status).toBe('sown');
-    const harvested = await crops.harvest(tenantA, actor, cropId, { actualYield: '28.500' } as any);
+    const harvested = await crops.harvest(tenantA, actor, cropId, { actualYield: '28.500', yieldUnitCode: 'quintal' } as any);   // F-9: with its unit
     expect(harvested.status).toBe('harvested'); expect(harvested.actualYield).toBe('28.500');
   });
 
   it('records a soil test + reads the region weather advisory', async () => {
-    const t = await soil.record(tenantA, actor, { parcelId, labName: 'SHC Lab', shcCardNo: 'SHC-77', sampledOn: '2026-05-01', results: { ph: 6.8, n: 280, p: 22, k: 180 }, recommendations: { urea_kg_per_acre: 50 } } as any);
+    const t = await soil.record(tenantA, actor, `idem-${randomUUID()}`, { parcelId, labName: 'SHC Lab', shcCardNo: 'SHC-77', sampledOn: '2026-05-01', results: { ph: 6.8, n: 280, p: 22, k: 180 }, recommendations: { urea_kg_per_acre: 50 } } as any);
     expect(t.results.ph).toBe(6.8);
     const alerts = await weather.listForRegion(tenantA, region, true, 50);
     expect(alerts.length).toBeGreaterThanOrEqual(1); expect(alerts[0].severity).toBe('warning');

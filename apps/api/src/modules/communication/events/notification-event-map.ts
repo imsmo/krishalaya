@@ -43,6 +43,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // PC-56 TENANT-11d · the buyer hears a pooled quote from member stock arrived (catalogue 0189, copy in seed 0007). Each
   // member's share was consented before the send; the buyer is the one recipient (`recipientUserIds`).
   { outboxType: 'requirement.group_quoted',        eventCode: 'requirement.group_quoted',    recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-12 (F-5) · a regional weather advisory reaches the members whose parcels lie under it. The advisory push job
+  // (land-soil-weather, registered) resolves the recipients — parcel owners under the alert's region, honouring weather_prefs'
+  // severe-only — and the alert's name travels as a per-language map (seed core/0023). Copy in seed 0007 (push + in-app ×3).
+  { outboxType: 'land.weather_advisory_active',    eventCode: 'weather.alert',               recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'land.weather_advisory_severe',    eventCode: 'weather.alert_severe',        recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

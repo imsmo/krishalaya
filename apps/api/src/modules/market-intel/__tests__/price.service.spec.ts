@@ -1,6 +1,6 @@
 // modules/market-intel/__tests__/price.service.spec.ts · service unit tests with fakes.
 // Pins: ingest requires market.manage; ingest fires only the alerts CROSSED by the modal (emits one event each);
-// prediction.generate requires market.manage + uses the baseline band; alert toggle 404s a non-owner (no IDOR).
+// prediction.generate requires market.manage and is REFUSED (PC-56 TENANT-12); alert toggle 404s a non-owner (no IDOR).
 import { MandiPriceService } from '../services/mandi-price.service';
 import { PricePredictionService } from '../services/price-prediction.service';
 import { PriceAlertService } from '../services/price-alert.service';
@@ -90,16 +90,19 @@ describe('ADMIN-SWEEP · a quarantined price sends NO farmer alert', () => {
     expect(h.alerts.insertTrigger).toHaveBeenCalledTimes(1);
   });
 
-  it('never holds a government feed, however far it moves', async () => {
-    // Gating agmarknet would quarantine a whole day's ingest the first time a market moved, and nobody can review
-    // 48,000 rows — so the reference sources are never gated, and a real market crash still reaches farmers.
+  it('PC-56 TENANT-12 (F-4): a price typed through the tenant API is a TENANT OBSERVATION — calling it "agmarknet" changes nothing, and it is gated', async () => {
+    // Before 0190 a tenant desk could label a typed price 'agmarknet' and so skip the gate (government feeds are the reference,
+    // never gated). The source is now FORCED to 'tenant_manual' and a tenant observation is always gated: the 10× typo is held.
+    // (A real government feed arrives through kv_ingest, not this service — `gate()` itself still never holds agmarknet.)
     const h = priceHarness({ matching: crossed, reference: 642_000n });
     const out = await h.svc.ingest('t1', ops, 'idem-gov', {
       productId: 'p1', regionId: 'r1', priceDate: '2026-08-11', modalMinor: '6420000',
       unitCode: 'quintal', source: 'agmarknet',
     } as any);
-    expect(out.anomalyState).toBe('accepted');
-    expect(out.alertsFired).toBe(1);
+    expect(out.source).toBe('tenant_manual');
+    expect(out.tenantObservation).toBe(true);
+    expect(out.anomalyState).toBe('quarantined');
+    expect(out.alertsFired).toBe(0);
   });
 
   it('accepts a first-ever observation for a product and region', async () => {
@@ -175,10 +178,11 @@ describe('PricePredictionService.generate', () => {
     const h = predHarness([1n, 2n, 3n]);
     await expect(h.svc.generate('t1', learner, { productId: 'p1', regionId: 'r1', targetDate: '2026-06-25', lookbackDays: 90 } as any)).rejects.toBeInstanceOf(MarketForbiddenError);
   });
-  it('stores a baseline band from recent modals', async () => {
+  it('PC-56 TENANT-12 (F-4 / F-1): REFUSES to type a band from the tenant API (409) and writes nothing', async () => {
     const h = predHarness([100n, 200n, 300n, 400n, 500n]);
-    const out = await h.svc.generate('t1', ops, { productId: 'p1', regionId: 'r1', targetDate: '2026-06-25', lookbackDays: 90 } as any);
-    expect(out.modelVersion).toBe('baseline-v1'); expect(h.predictions.insert).toHaveBeenCalledTimes(1);
+    await expect(h.svc.generate('t1', ops, { productId: 'p1', regionId: 'r1', targetDate: '2026-06-25', lookbackDays: 90 } as any))
+      .rejects.toMatchObject({ code: 'MARKET_PREDICTION_REFUSED', httpStatus: 409 });
+    expect(h.predictions.insert).not.toHaveBeenCalled();
   });
 });
 

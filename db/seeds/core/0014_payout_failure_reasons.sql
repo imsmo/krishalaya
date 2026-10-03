@@ -35,10 +35,16 @@ INSERT INTO lookup_types (code, default_name, is_tenant_extendable) VALUES
   ('payout_failure_reason', 'Payout failure reason', false)
 ON CONFLICT (code) DO NOTHING;
 
-INSERT INTO lookup_values (type_code, tenant_id, code, default_name, meta, sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
   ('payout_failure_reason', NULL, 'insufficient_funds', 'Insufficient balance in the source account', '{}', 1),
   ('payout_failure_reason', NULL, 'invalid_account',    'Bank account details need to be corrected',    '{}', 2),
   ('payout_failure_reason', NULL, 'bank_declined',       'Your bank declined this transfer',             '{}', 3),
   ('payout_failure_reason', NULL, 'timeout',             'The transfer timed out — you can retry',       '{}', 4),
   ('payout_failure_reason', NULL, 'other',               'Payment could not be completed — contact support if this repeats', '{}', 99)
-ON CONFLICT (type_code, tenant_id, code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;

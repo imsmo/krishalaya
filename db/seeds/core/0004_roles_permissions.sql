@@ -127,6 +127,14 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- send). Posts a requirement FOR a named buyer and decides on their quotes only with the buyer's recorded consent; responds
  -- with member stock, each member's consent recorded before the pooled quote is sent (requirement_consents). Also in 0189.
  ('requirement.desk','Buyer desk: post for a named buyer and decide their quotes with their consent; respond with member stock after each member''s consent','M12'),
+ -- [PC-56 TENANT-12] THE DIGITAL TWIN (founder decision: honest frame, no model; device registry only). No `analyst` role
+ -- exists or is created — the canon's analyst is tenant_admin / fpo_coordinator. `land.admin` replaces the booking.manage ride
+ -- for the land registry's tenant-wide reach; `ai.inference.read` lets tenant_admin read its own tenant's inferences. Also in 0190.
+ ('twin.view','Digital twin: read the overview, feeds, scenarios and results (no figure without a registered model and a recorded run)','M24'),
+ ('twin.run','Digital twin: create scenarios, set cited assumptions, archive, and ask for a run (refused by name until a model is registered)','M24'),
+ ('twin.devices.manage','Digital twin: register and retire field devices (soil pods, weather masts) — registry only, no readings','M24'),
+ ('land.admin','Land registry desk: read every parcel of the tenant and correct another member''s parcel with a recorded reason','M24'),
+ ('ai.inference.read','Read this tenant''s own AI inference records (model, version, confidence) — the registry stays read-only',NULL),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -251,4 +259,9 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin') AND p.code IN ('group_lot.manage','group_lot.settle_approve'))
    -- [PC-56 TENANT-11d] the buyer desk (0189): on-behalf posts and decisions with the buyer's consent; member-stock quotes.
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('requirement.desk'))
+   -- [PC-56 TENANT-12] the digital twin (0190): view for the desk roles, run for the analyst roles, devices for tenant_admin;
+   -- the land registry desk; tenant_admin reads its own tenant's AI inference records.
+   OR (r.code IN ('tenant_admin','fpo_coordinator','tenant_staff') AND p.code IN ('twin.view'))
+   OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('twin.run','land.admin'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('twin.devices.manage','ai.inference.read'))
 ON CONFLICT DO NOTHING;

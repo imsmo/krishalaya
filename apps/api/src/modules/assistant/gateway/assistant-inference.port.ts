@@ -24,6 +24,8 @@ export interface GovernedReply {
   citations: Array<{ title: string; url?: string }>;
   modelCode: string;          // e.g. 'farm_assistant'
   modelId: string | null;     // registry model id (for the ai_inferences audit), null when degraded/unregistered
+  /** PC-56 TENANT-12 (F-7): the registered version that answered (ai-services `model_version`), null when degraded / unregistered. */
+  modelVersion: string | null;
   degraded: boolean;          // true ⇒ no real model ran (no provider / breaker open) — never a fabricated answer
 }
 

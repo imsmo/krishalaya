@@ -16,7 +16,11 @@ JOIN (VALUES
 ) AS b(species_code, code, name, indigenous) ON b.species_code = s.code
 ON CONFLICT (species_id, code) DO NOTHING;
 
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('vet_service',NULL,'consult','General consultation','{}',1),
  ('vet_service',NULL,'vaccination','Vaccination','{}',2),
  ('vet_service',NULL,'ai_insemination','Artificial insemination','{}',3),
@@ -24,4 +28,6 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('vet_service',NULL,'deworming','Deworming','{}',5),
  ('vet_service',NULL,'surgery','Surgery','{}',6),
  ('vet_service',NULL,'emergency','Emergency call-out','{}',7)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;

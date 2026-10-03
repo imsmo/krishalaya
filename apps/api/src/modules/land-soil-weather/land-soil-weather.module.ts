@@ -6,11 +6,18 @@
 //
 // SCOPE (this build): land parcels (farm registry) + crop seasons (lifecycle) + soil tests + read-only
 // regional weather-alert browse.
-// DEFERRED (schema in 0010 / platform surface): weather-alert INGESTION (IMD/Skymet pipeline, Law 11),
-// advisory push + bhulekh-verify jobs, parcel verification_status workflow (KYC/admin), PostGIS boundary
+// PC-56 TENANT-12: the advisory push job is REGISTERED (F-5/F-6); parcels carry a validated GeoJSON boundary (F-2); every land
+// write is audited (F-11); yields carry their unit (F-9); `land.admin` is the desk (F-12).
+// DEFERRED (schema in 0010 / platform surface): weather-alert INGESTION (IMD/Skymet pipeline, Law 11 — refused by name),
+// bhulekh-verify job, parcel verification_status workflow (KYC/admin), PostGIS boundary
 // geometry/area auto-calc, soil-test recommendation engine. (land_parcels.id is already the FK target for
 // contract_growers.land_parcel_id — cross-module reference only, no import.)
-import { Module } from '@nestjs/common';
+import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
+import { OUTBOX_WRITER, OutboxWriter } from '../../core/outbox/outbox.writer';
+import { FlagsService } from '../../core/feature-flags/flags.service';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
 import { ParcelsController } from './controllers/v1/parcels.controller';
 import { CropSeasonsController } from './controllers/v1/crop-seasons.controller';
 import { SoilTestsController } from './controllers/v1/soil-tests.controller';
@@ -33,9 +40,15 @@ import { WeatherPrefsRepository } from './repositories/weather-prefs.repository'
   controllers: [ParcelsController, CropSeasonsController, SoilTestsController],
   providers: [
     LandParcelService, CropSeasonService, SoilTestService, WeatherAlertService, ForecastService, WeatherPrefsService,
-    weatherForecastProvider, reverseGeocodeProvider, WeatherAdvisoryPushJob,
+    weatherForecastProvider, reverseGeocodeProvider, UiMessageRepository,
+    // PC-56 TENANT-12 (F-5 / F-6): the advisory push is a REGISTERED cadence job (every 15 minutes), per tenant as kv_app.
+    { provide: WeatherAdvisoryPushJob, inject: [UNIT_OF_WORK, OUTBOX_WRITER, FlagsService, UiMessageRepository],
+      useFactory: (u: UnitOfWork, o: OutboxWriter, f: FlagsService, ui: UiMessageRepository) => new WeatherAdvisoryPushJob(15 * 60_000, u, o, f, ui) },
     LandParcelRepository, CropSeasonRepository, SoilTestRepository, WeatherAlertRepository, WeatherPrefsRepository,
   ],
   exports: [LandParcelService, CropSeasonService, SoilTestService, WeatherAlertService, ForecastService, WeatherPrefsService, WeatherAdvisoryPushJob],
 })
-export class LandSoilWeatherModule {}
+export class LandSoilWeatherModule implements OnModuleInit {
+  constructor(@Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry, private readonly advisory: WeatherAdvisoryPushJob) {}
+  onModuleInit(): void { this.jobs.register(this.advisory); }
+}

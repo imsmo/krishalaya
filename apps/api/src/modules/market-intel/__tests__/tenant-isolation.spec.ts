@@ -40,14 +40,16 @@ describe('mandi_prices (global, partitioned)', () => {
     const [sql] = exec.query.mock.calls[0];
     expect(sql).toMatch(/product_id=\$1/); expect(sql).toMatch(/ORDER BY price_date DESC, id DESC/); expect(sql).not.toMatch(/OFFSET/i);
   });
-  it('insert targets mandi_prices (no tenant_id column — global) and stamps the anomaly verdict', async () => {
+  it('insert targets mandi_prices, carries the TENANT of a tenant observation (PC-56 TENANT-12, F-4) and stamps the anomaly verdict', async () => {
     // PC-56 ADMIN-SWEEP: `insert` now RETURNS the id + price_date, because the caller needs both to enqueue a review row
     // that points at a partitioned table (Law 8). The stub returns them.
     const tx = { query: jest.fn().mockResolvedValue({ rows: [{ id: '42', price_date: '2026-06-20' }], rowCount: 1 }) };
-    const m = MandiPrice.observe({ mandiId: null, regionId: 'r1', productId: 'p1', gradeOptionId: null, priceDate: '2026-06-20', minMinor: null, maxMinor: null, modalMinor: 250000n, unitCode: 'quintal', arrivalsQty: null, source: 'agmarknet', currencyCode: 'INR' });
+    const m = MandiPrice.observe({ mandiId: null, regionId: 'r1', productId: 'p1', gradeOptionId: null, priceDate: '2026-06-20', minMinor: null, maxMinor: null, modalMinor: 250000n, unitCode: 'quintal', arrivalsQty: null, source: 'tenant_manual', currencyCode: 'INR', tenantId: 't1', enteredBy: 'u1' });
     const out = await new MandiPriceRepository(fakeReplica().provider).insert(tx as any, m, { state: 'quarantined', deviationBp: 9_500, referenceModalMinor: 25_000n });
     const sql = tx.query.mock.calls[0][0];
-    expect(sql).toMatch(/INSERT INTO mandi_prices/); expect(sql).not.toMatch(/tenant_id/);
+    // 0190: a platform row (tenant NULL) is kv_ingest's; the tenant API writes its own observation — RLS refuses kv_app a NULL tenant.
+    expect(sql).toMatch(/INSERT INTO mandi_prices/); expect(sql).toMatch(/tenant_id, entered_by/);
+    expect(tx.query.mock.calls[0][1]).toEqual(expect.arrayContaining(['tenant_manual', 't1', 'u1']));
     // **THE VERDICT IS IN THE SAME STATEMENT AS THE PRICE, not a follow-up UPDATE.** A row that existed for even one
     // statement without its state would be a row the alert loop could read as accepted — and the alert loop runs a few
     // lines later, in the same transaction.

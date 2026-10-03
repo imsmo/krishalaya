@@ -56,7 +56,7 @@ export default async function MarketPage({ searchParams }: { searchParams: { pro
           <h2>{t.t('market.latest')}</h2>
           {pulse.latest ? (
             <dl className="kv-facts">
-              <div className="kv-facts__row"><dt>{t.t('market.modal')}</dt><dd><strong>{money(pulse.latest.modalMinor)}</strong> / {pulse.latest.unitCode}</dd></div>
+              <div className="kv-facts__row"><dt>{t.t('market.modal')}</dt><dd><strong>{money(pulse.latest.modalMinor)}</strong> / {pulse.latest.unitCode}{pulse.latest.tenantObservation && <> <span className="kv-badge kv-badge--muted">{t.t('market.tenantObservation')}</span></>}</dd></div>
               <div className="kv-facts__row"><dt>{t.t('market.range')}</dt><dd>{pulse.latest.minMinor ? money(pulse.latest.minMinor) : t.t('common.dash')} – {pulse.latest.maxMinor ? money(pulse.latest.maxMinor) : t.t('common.dash')}</dd></div>
               <div className="kv-facts__row"><dt>{t.t('market.date')}</dt><dd>{formatDate(pulse.latest.priceDate, lang)}</dd></div>
               {pulse.change && (
@@ -85,7 +85,7 @@ export default async function MarketPage({ searchParams }: { searchParams: { pro
                   <tr key={`${h.id}-${i}`}>
                     <td>{formatDate(h.priceDate, lang)}</td>
                     <td>{h.regionName ?? h.mandiId?.slice(0, 8) ?? t.t('common.dash')}</td>
-                    <td>{money(h.modalMinor)} / {h.unitCode}</td>
+                    <td>{money(h.modalMinor)} / {h.unitCode}{h.tenantObservation && <> <span className="kv-badge kv-badge--muted">{t.t('market.tenantObservation')}</span></>}</td>
                   </tr>
                 ))}
               </tbody>

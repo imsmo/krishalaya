@@ -1038,7 +1038,9 @@ export interface CropCalendar {
 /** One turn of the assistant's reply. `sessionId` threads a conversation; `citations` are optional source links
  * the server attaches (the app renders only what the server returns — never fabricates an answer). */
 export type AssistantStatus = 'answered' | 'needs_review' | 'blocked';
-export interface AssistantReply { reply: string; sessionId: string; status?: AssistantStatus; citations?: Array<{ title: string; url?: string }>; }
+export interface AssistantReply { reply: string; sessionId: string; status?: AssistantStatus; citations?: Array<{ title: string; url?: string }>;
+  /** PC-56 TENANT-12 (F-7, additive): the registered model + version that produced `reply` — print the AI disclosure with them; NULL when no model answered. */
+  modelCode?: string | null; modelVersion?: string | null; }
 
 // --- govt schemes (module — global scheme catalogue + the caller's applications + DBT) — money bigint STRINGS (Law 2) ---
 /** A government scheme (GLOBAL catalogue). `benefitSummary`/`eligibilityRules` are opaque JSON the app renders/
@@ -1441,6 +1443,8 @@ export interface Mandi { id: string; defaultName: string; regionId: string | nul
 export interface MandiPrice {
   id: string; mandiId: string | null; regionId: string | null; productId: string; gradeOptionId: string | null; priceDate: string;
   minMinor: string | null; maxMinor: string | null; modalMinor: string; unitCode: string; arrivalsQty: number | null; source: string | null;
+  /** PC-56 TENANT-12 (F-4): true = this cooperative's own typed entry (source tenant_manual) — label it so; never a platform feed. */
+  tenantObservation?: boolean;
   // API-W11 catalogue name-join + P1-3 commodity category (null if the id no longer resolves — degrade, never blank the row).
   productName?: string | null; gradeName?: string | null; regionName?: string | null; categoryId?: string | null; categoryName?: string | null;
 }

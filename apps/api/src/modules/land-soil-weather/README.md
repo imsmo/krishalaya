@@ -19,14 +19,18 @@ parcel area ×10000 (4 dp), crop yields ×1000 (3 dp); the JSON views format fro
 - No version columns → mutations lock **FOR UPDATE**.
 
 ## Endpoints
-- `POST /v1/land/parcels` (idempotent, `land.manage`) · `GET` (?box=mine|all) · `GET /:id` · `PATCH /:id`.
-- `POST /v1/land/crop-seasons` (plan, idempotent) · `GET ?parcelId=` · `POST /:id/{sow,harvest,abandon}`.
-- `POST /v1/land/soil-tests` (record) · `GET /soil-tests?parcelId=`.
+- `POST /v1/land/parcels` (idempotent, `land.manage`) · `GET` (?box=mine|all, µs keyset) · `GET /:id` · `PATCH /:id` (owner, or the
+  land desk `land.admin` with a `reason`). The boundary is a GeoJSON Polygon / MultiPolygon (`domain/geojson.ts`) — `{}` is refused.
+- `POST /v1/land/crop-seasons` (plan, idempotent; a yield needs `yieldUnitCode`) · `GET ?parcelId=` · `POST /:id/{sow,harvest,abandon}`
+  (abandon: `{ reason }` in the .strict() contract).
+- `POST /v1/land/soil-tests` (record, Idempotency-Key) · `GET /soil-tests?parcelId=`.
+- PC-56 TENANT-12: every write above is audited (actor · reason · before/after · ip); the advisory push job is a registered
+  `ScheduledJob` (per tenant as kv_app, recipients resolved from parcel regions + weather_prefs).
 - `GET /v1/land/weather-alerts?regionId=&activeOnly=` — read-only regional advisories.
 
 ## Threats considered
 - **No cross-owner IDOR**: parcels read 404 for non-owners; crop-season and soil-test writes/reads resolve
-  the parent parcel and verify ownership (`assertOwner`, admin-override only); `box=all` requires `booking.manage`.
+  the parent parcel and verify ownership (`assertOwner`, admin-override only); `box=all` requires `land.admin` (PC-56 TENANT-12 — it rode `booking.manage`, a labour permission, before).
 - **Weather alerts are read-only**: `weather_alerts` is GLOBAL, region-scoped reference data ingested by the
   IMD/Skymet pipeline on the platform surface (Law 11). The tenant API only browses it (active + region +
   a bounded `created_at` window that prunes the partitioned scan).
@@ -40,8 +44,8 @@ parcel area ×10000 (4 dp), crop yields ×1000 (3 dp); the JSON views format fro
 
 ## Scope & deferrals
 **In scope:** land parcels (farm registry), crop seasons (lifecycle), soil tests, read-only regional weather browse.
-**Deferred (schema in 0010 / platform surface):** weather-alert INGESTION (IMD/Skymet pipeline, Law 11),
-advisory-push + bhulekh-verify jobs, parcel `verification_status` workflow (KYC/admin), PostGIS boundary
+**Deferred (schema in 0010 / platform surface):** weather-alert INGESTION (IMD/Skymet pipeline, Law 11 — refused by name;
+`weather_alerts` is read-only to kv_app since 0190), bhulekh-verify job, parcel `verification_status` workflow (KYC/admin), PostGIS boundary
 geometry + auto-area, soil-test recommendation engine. (`land_parcels.id` is the FK target for
 `contract_growers.land_parcel_id` — cross-module reference only.)
 

@@ -16,7 +16,11 @@ INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
  ('claim_event','Insurance claim event type',false)
 ON CONFLICT (code) DO NOTHING;
 
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('tenant_type',NULL,'fpo','FPO','{}',1),('tenant_type',NULL,'cooperative','Cooperative','{}',2),
  ('tenant_type',NULL,'dairy_union','Dairy Union','{}',3),('tenant_type',NULL,'startup','Agri-Startup','{}',4),
  ('tenant_type',NULL,'government','Government','{}',5),
@@ -48,44 +52,70 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('weather_alert',NULL,'heavy_rain','Heavy rain','{}',1),('weather_alert',NULL,'drought','Drought','{}',2),('weather_alert',NULL,'frost','Frost','{}',3),('weather_alert',NULL,'hail','Hail','{}',4),('weather_alert',NULL,'heatwave','Heatwave','{}',5),('weather_alert',NULL,'cyclone','Cyclone','{}',6),('weather_alert',NULL,'pest_risk','Pest risk','{}',7),
  ('loan_kind',NULL,'kcc','Kisan Credit Card','{}',1),('loan_kind',NULL,'crop','Crop loan','{}',2),('loan_kind',NULL,'tractor','Tractor loan','{}',3),('loan_kind',NULL,'dairy','Dairy loan','{}',4),('loan_kind',NULL,'whr','Warehouse receipt loan','{}',5),('loan_kind',NULL,'gold','Gold loan','{}',6),('loan_kind',NULL,'bnpl','Buy-now-pay-later','{}',7),('loan_kind',NULL,'shg','SHG group loan','{}',8),('loan_kind',NULL,'tenant_wc','Tenant working capital','{}',9),
  ('scheme_category',NULL,'income_support','Income support','{}',1),('scheme_category',NULL,'insurance','Insurance','{}',2),('scheme_category',NULL,'credit','Credit','{}',3),('scheme_category',NULL,'mechanisation','Mechanisation','{}',4),('scheme_category',NULL,'irrigation','Irrigation','{}',5),('scheme_category',NULL,'livestock','Livestock','{}',6),('scheme_category',NULL,'subsidy','Input subsidy','{}',7),('scheme_category',NULL,'women','Women farmers','{}',8)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 
 -- M09 education: course topic vocabulary (global lookup_values)
 INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES ('course_topic','Course topic',false) ON CONFLICT (code) DO NOTHING;
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('course_topic',NULL,'crop_care','Crop care','{}',1),('course_topic',NULL,'soil','Soil health','{}',2),
  ('course_topic',NULL,'pest','Pest & disease','{}',3),('course_topic',NULL,'organic','Organic farming','{}',4),
  ('course_topic',NULL,'business','Agri-business','{}',5),('course_topic',NULL,'finlit','Financial literacy','{}',6),
  ('course_topic',NULL,'schemes','Govt schemes','{}',7),('course_topic',NULL,'digital','Digital skills','{}',8),
  ('course_topic',NULL,'safety','Farm safety','{}',9)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 
 -- ambassadors: tier vocabulary (global lookup_values)
 INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES ('ambassador_tier','Ambassador tier',false) ON CONFLICT (code) DO NOTHING;
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('ambassador_tier',NULL,'trainee','Trainee','{}',1),('ambassador_tier',NULL,'ambassador','Ambassador','{}',2),
  ('ambassador_tier',NULL,'senior','Senior ambassador','{}',3),('ambassador_tier',NULL,'cluster_lead','Cluster lead','{}',4),
  ('ambassador_tier',NULL,'district_coordinator','District coordinator','{}',5)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 
 -- support: ticket category vocabulary (type declared above; values here)
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('ticket_category',NULL,'payment','Payment','{}',1),('ticket_category',NULL,'kyc','KYC','{}',2),
  ('ticket_category',NULL,'order','Order','{}',3),('ticket_category',NULL,'dispute','Dispute','{}',4),
  ('ticket_category',NULL,'technical','Technical','{}',5),('ticket_category',NULL,'safety','Safety','{}',6),
  ('ticket_category',NULL,'emergency_vet','Emergency vet','{}',7),('ticket_category',NULL,'women_safety','Women safety','{}',8)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 -- ai-governance / moderation: report reason vocabulary (type 'report_reason' declared above; values here)
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('report_reason',NULL,'spam','Spam or repetitive content','{}',1),('report_reason',NULL,'fraud','Fraud or scam','{}',2),
  ('report_reason',NULL,'counterfeit','Counterfeit / misrepresented produce','{}',3),('report_reason',NULL,'inappropriate','Inappropriate or offensive content','{}',4),
  ('report_reason',NULL,'harassment','Harassment or abuse','{}',5),('report_reason',NULL,'prohibited','Prohibited / illegal item','{}',6),
  ('report_reason',NULL,'misinformation','Misinformation','{}',7),('report_reason',NULL,'other','Other','{}',99)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 -- logistics fleet: the vehicle_type vocabulary (PC-56 TENANT-5b). The TYPE was declared in this file's first
 -- statement from the beginning and NOT ONE VALUE was ever inserted — so `vehicles.vehicle_type_id` (0007, whose
@@ -97,13 +127,19 @@ ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
 -- honestly instead of leaving an operator to tick a box that contradicts the type they just chose. It is a
 -- default, not a constraint: a retrofitted insulated tempo is real, and `is_refrigerated` stays the column the
 -- cold-chain gate reads.
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('vehicle_type',NULL,'bike','Bike','{"refrigerated":false,"typicalCapacityKg":30}',1),
  ('vehicle_type',NULL,'tempo','Tempo','{"refrigerated":false,"typicalCapacityKg":1500}',2),
  ('vehicle_type',NULL,'truck','Truck','{"refrigerated":false,"typicalCapacityKg":7000}',3),
  ('vehicle_type',NULL,'reefer_7mt','Reefer (7 MT)','{"refrigerated":true,"typicalCapacityKg":7000}',4),
  ('vehicle_type',NULL,'tractor_trolley','Tractor + trolley','{"refrigerated":false,"typicalCapacityKg":3000}',5)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 -- logistics fleet · the RC as a DOCUMENT TYPE (PC-56 TENANT-5b). `vehicles.rc_doc_id` (0007) points at a
 -- `kyc_documents` row, and `kyc_documents.doc_type_id` points at this vocabulary — which held four values
@@ -116,9 +152,15 @@ ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
 -- rider's driving licence), `license_form20` (agri-input retail), `organic_cert` (organic listings) and
 -- `vet_degree` (livestock services) — are still missing and belong to the waves that own those planes; naming them
 -- here is the record, and adding values nobody reads would be its own defect.
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('doc_type',NULL,'rc','Vehicle registration certificate','{"subject":"vehicle"}',5)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 -- logistics · WHY A DELIVERY FAILED (PC-56 TENANT-5d). W244 draws five bars over 90 days of failed attempts —
 -- gate closed · reschedule · address · vehicle · weather — and starts a call-ahead policy pilot on what they say.
@@ -139,14 +181,20 @@ INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
  ('shipment_failure_reason','Failed-delivery reason',true)
 ON CONFLICT (code) DO NOTHING;
 
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('shipment_failure_reason',NULL,'gate_closed','Gate closed / nobody at the drop point','{"actionable":"call_ahead"}',1),
  ('shipment_failure_reason',NULL,'reschedule_requested','Buyer asked to reschedule','{"actionable":"slot_booking"}',2),
  ('shipment_failure_reason',NULL,'address_problem','Address wrong, incomplete or unreachable','{"actionable":"address_fix"}',3),
  ('shipment_failure_reason',NULL,'vehicle_problem','Vehicle breakdown or no vehicle available','{"actionable":"fleet"}',4),
  ('shipment_failure_reason',NULL,'weather','Weather or road conditions','{"actionable":"none"}',5),
  ('shipment_failure_reason',NULL,'other','Something else (see the note)','{"actionable":"read_note"}',6)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- PC-56 TENANT-6c-4 · MILK BILL DEDUCTION TYPES — W169's "each line itemised"
@@ -273,3 +321,30 @@ SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
  ('group_lot_cancel_reason','other','Other (reason written by the coordinator)','{"textRequired": true}',4)
   ) AS v(type_code, code, default_name, meta, sort_order)
  WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
+-- [PC-56 TENANT-12 · 0190] The digital twin's vocabularies — assumption keys (with the unit a value is typed in), field device
+-- kinds (registry only: no readings exist), and scenario templates (their keys and NO values: no platform source default
+-- exists for any of them). ALSO INSERTED BY MIGRATION 0190, identically and idempotently. Guarded by NOT EXISTS so this file —
+-- which both bootstraps run BEFORE 0190 creates the partial unique indexes — never duplicates them either.
+INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES
+ ('twin_assumption_key','Digital twin assumption key',false),
+ ('twin_device_kind','Digital twin field device kind',false),
+ ('twin_scenario_template','Digital twin scenario template',false)
+ON CONFLICT (code) DO NOTHING;
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('twin_assumption_key','rainfall_delta_pct','Rainfall change vs the cited baseline','{"unit":"pct","min":-100,"max":300}',1),
+ ('twin_assumption_key','price_delta_pct','Crop price change vs the cited baseline','{"unit":"pct","min":-100,"max":300}',2),
+ ('twin_assumption_key','input_cost_delta_pct','Input cost change vs the cited baseline','{"unit":"pct","min":-100,"max":300}',3),
+ ('twin_assumption_key','drip_adoption_pct','Share of member area under drip','{"unit":"pct","min":0,"max":100}',4),
+ ('twin_assumption_key','member_profile_area_ha','Area of the member profile the scenario describes','{"unit":"hectare","min":0.01,"max":1000}',5),
+ ('twin_device_kind','soil_pod','Soil pod (in-field soil sensor)','{}',1),
+ ('twin_device_kind','weather_mast','Weather mast (field weather station)','{}',2),
+ ('twin_scenario_template','rainfall_shock','Monsoon rainfall shock','{"keys":["rainfall_delta_pct","member_profile_area_ha"]}',1),
+ ('twin_scenario_template','price_shock','Crop price shock','{"keys":["price_delta_pct","member_profile_area_ha"]}',2),
+ ('twin_scenario_template','input_cost_shock','Input cost shock','{"keys":["input_cost_delta_pct","member_profile_area_ha"]}',3),
+ ('twin_scenario_template','drip_adoption','Drip adoption uptake','{"keys":["drip_adoption_pct","rainfall_delta_pct","member_profile_area_ha"]}',4)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NULL AND x.code = v.code)
+ON CONFLICT DO NOTHING;

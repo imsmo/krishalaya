@@ -259,6 +259,8 @@ export interface ResolutionDraftValues {
   id: string; status: string; title: string; body: string | null; resolutionType: string; majority: string;
   votingOpens: string | null; votingCloses: string | null; payload: Record<string, unknown>; zone: string;
   currency: { code: string; minorUnits: number } | null;
+  /** PC-56 TENANT-12 (F-14): the DONE twin run this proposal cites — read-only on the form; null today (no run to cite). */
+  sourceRef?: { kind: 'twin_run'; id: string } | null;
 }
 
 export interface ResolutionActPreview {

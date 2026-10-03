@@ -7,6 +7,6 @@ import { AssistantInferenceProvider, AssistantQuery, GovernedReply } from './ass
 
 export class NoopAssistantInferenceProvider implements AssistantInferenceProvider {
   async ask(_q: AssistantQuery): Promise<GovernedReply> {
-    return { reply: '', needsReview: true, confidence: null, citations: [], modelCode: 'farm_assistant', modelId: null, degraded: true };
+    return { reply: '', needsReview: true, confidence: null, citations: [], modelCode: 'farm_assistant', modelId: null, modelVersion: null, degraded: true };
   }
 }

@@ -9,7 +9,7 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { AiInferenceService } from '../../services/ai-inference.service';
-import { AiPermissions, canReviewAi, canModerateContent } from '../../policies/ai-governance.policies';
+import { AiPermissions, canReviewAi, canModerateContent, canReadInferences } from '../../policies/ai-governance.policies';
 import { CreateInferenceSchema, CreateInferenceDto } from '../../dto/create-ai-inference.dto';
 import { QueryInferencesSchema, QueryInferencesDto } from '../../dto/query-ai-inference.dto';
 import { OverrideInferenceSchema, OverrideInferenceDto } from '../../dto/override-ai-inference.dto';
@@ -21,18 +21,19 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('ai_governance')
 export class InferencesController {
   constructor(private readonly svc: AiInferenceService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canReview: canReviewAi(ctx), canModerate: canModerateContent(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canReview: canReviewAi(ctx), canModerate: canModerateContent(ctx), canRead: canReadInferences(ctx) }; }
 
   @Post() @RequirePermissions(AiPermissions.Review)
   record(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreateInferenceSchema) dto: CreateInferenceDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.svc.record(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
   }
-  @Get() @RequirePermissions(AiPermissions.Review)
+  /** PC-56 TENANT-12 (F-7): `ai.review` OR `ai.inference.read` (judged by the service); RLS confines either to this tenant. */
+  @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryInferencesSchema) q: QueryInferencesDto) {
     return this.svc.list(ctx.tenantId, this.actor(ctx), { subjectType: q.subjectType, subjectId: q.subjectId, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
-  @Get(':id') @RequirePermissions(AiPermissions.Review)
+  @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.svc.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
   }

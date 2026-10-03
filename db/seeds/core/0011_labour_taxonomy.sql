@@ -14,7 +14,11 @@ INSERT INTO skills (code, default_name, tier, is_hazardous) VALUES
  ('grafting','Grafting / nursery',4,false)
 ON CONFLICT (code) DO NOTHING;
 
-INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order) VALUES
+-- [PC-56 TENANT-12 · F-16] NOT EXISTS + a target-less ON CONFLICT: `(type_code,tenant_id,code)` can never fire for a platform
+-- row (NULLs are distinct), so every re-run used to DUPLICATE these values. Now a re-run inserts nothing.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, v.tenant_id::uuid, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
  ('labour_demand_type',NULL,'daily_single','Daily — single worker','{}',1),
  ('labour_demand_type',NULL,'daily_multi','Daily — multiple workers','{}',2),
  ('labour_demand_type',NULL,'skilled','Skilled task','{}',3),
@@ -23,4 +27,6 @@ INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order
  ('labour_demand_type',NULL,'seasonal','Seasonal','{}',6),
  ('labour_demand_type',NULL,'live_in','Live-in','{}',7),
  ('labour_demand_type',NULL,'sos','Urgent / SOS','{}',8)
-ON CONFLICT (type_code,tenant_id,code) DO NOTHING;
+  ) AS v(type_code, tenant_id, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code = v.type_code AND x.tenant_id IS NOT DISTINCT FROM v.tenant_id::uuid AND x.code = v.code)
+ON CONFLICT DO NOTHING;

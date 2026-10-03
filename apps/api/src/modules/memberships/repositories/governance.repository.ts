@@ -25,6 +25,8 @@ export interface Resolution {
   withdrawnAt: string | null; withdrawnBy: string | null; withdrawReason: string | null;
   eligibleAtClose: number | null; quorumBp: number | null; passNum: number | null; passDen: number | null; passStrict: boolean | null;
   ruleFixedAt: 'open' | 'close' | null; outcome: string | null;
+  /** PC-56 TENANT-12 (0190, F-14): the twin run a proposal came from — {kind:'twin_run', id} of a DONE run; NULL today (no run to cite). */
+  sourceRef: { kind: 'twin_run'; id: string } | null;
 }
 const iso = (v: unknown): string | null => (v ? new Date(v as string).toISOString() : null);
 const intOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
@@ -37,6 +39,7 @@ const toRes = (r: any): Resolution => ({
   eligibleAtClose: intOrNull(r.eligible_at_close), quorumBp: intOrNull(r.quorum_bp), passNum: intOrNull(r.pass_num), passDen: intOrNull(r.pass_den),
   passStrict: r.pass_strict === null || r.pass_strict === undefined ? null : Boolean(r.pass_strict),
   ruleFixedAt: r.rule_fixed_at ?? null, outcome: r.outcome ?? null,
+  sourceRef: r.source_ref && r.source_ref.kind === 'twin_run' && typeof r.source_ref.id === 'string' ? { kind: 'twin_run', id: r.source_ref.id } : null,
 });
 
 export interface ResolutionListRow extends Resolution { cast: number; cursorTs: string; votingOpensCivil: string | null; votingClosesCivil: string | null }
