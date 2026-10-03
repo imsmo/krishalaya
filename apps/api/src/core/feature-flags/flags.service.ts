@@ -70,11 +70,23 @@ export class FlagsService {
   private async subjectFor(ctx: FlagContext): Promise<{ tenantId?: string; userId?: string; planCode?: string; countryCode?: string }> {
     if (!ctx.tenantId) return { ...ctx };
     const row = await this.cache.wrap(`flagctx:${ctx.tenantId}`, TTL, async () => {
-      const r = await this.pools.replica(0).query<{ plan_code: string | null; country_code: string | null }>(
-        'SELECT plan_code, country_code FROM tenant_flag_context WHERE tenant_id = $1', [ctx.tenantId]);
-      // `null` rather than `undefined` in the cache: a JSON round-trip drops undefined keys, and a cached `{}` would be
-      // indistinguishable from "not cached" to the next reader.
-      return r.rows[0] ?? { plan_code: null, country_code: null };
+      // [PC-56 TENANT-13a · F-23] `tenant_flag_context` is security_invoker since 0191 (it used to run with its owner's rights,
+      // handing kv_app every tenant's plan code). Under invoker rights the subscriptions table's own RLS applies, so the read runs
+      // in a one-statement READ ONLY transaction with app.tenant_id set to the tenant being evaluated — it can see that tenant only.
+      const client = await this.pools.replica(0).connect();
+      try {
+        await client.query('BEGIN READ ONLY');
+        await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [ctx.tenantId]);
+        const r = await client.query<{ plan_code: string | null; country_code: string | null }>(
+          'SELECT plan_code, country_code FROM tenant_flag_context WHERE tenant_id = $1', [ctx.tenantId]);
+        await client.query('COMMIT');
+        // `null` rather than `undefined` in the cache: a JSON round-trip drops undefined keys, and a cached `{}` would be
+        // indistinguishable from "not cached" to the next reader.
+        return r.rows[0] ?? { plan_code: null, country_code: null };
+      } catch (e) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw e;
+      } finally { client.release(); }
     }).catch(() => ({ plan_code: null, country_code: null }));
     return {
       ...ctx,

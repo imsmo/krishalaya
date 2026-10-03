@@ -35,7 +35,7 @@ async function bootstrap() {
       }),
       run: async (name) => {
         const job = byName.get(name)!;
-        await withClient(pool, cfg.env.STATEMENT_TIMEOUT_MS, (client) => job.run({ client, metrics }));
+        await withClient(pool, cfg.env.STATEMENT_TIMEOUT_MS, (client) => job.run({ client, metrics, secrets: { webhookKek: cfg.webhookKek } }));
       },
       record: (name, ms, ok) => { metrics.observe('worker_job', ms, { job: name, ok: String(ok) }); if (!ok) metrics.inc('worker_job_failures', { job: name }); },
       log: (level, msg, meta) => console[level === 'error' ? 'error' : 'log'](`[worker] ${msg}`, meta ? JSON.stringify(meta) : ''),

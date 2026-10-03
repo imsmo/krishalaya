@@ -135,6 +135,9 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('twin.devices.manage','Digital twin: register and retire field devices (soil pods, weather masts) — registry only, no readings','M24'),
  ('land.admin','Land registry desk: read every parcel of the tenant and correct another member''s parcel with a recorded reason','M24'),
  ('ai.inference.read','Read this tenant''s own AI inference records (model, version, confidence) — the registry stays read-only',NULL),
+ -- [PC-56 TENANT-13a] DEVELOPER SETTINGS (F-12): webhook endpoints (URLs commonly embed tokens) and the delivery log (payloads) need
+ -- their own verb — `tenant.settings` alone no longer lists them. tenant_admin. Also in 0191.
+ ('api.manage','Developer settings: webhook endpoints (URLs, secrets, pause / resume / rotate / delete) and the delivery log with payloads — tenant_admin',NULL),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -264,4 +267,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','fpo_coordinator','tenant_staff') AND p.code IN ('twin.view'))
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('twin.run','land.admin'))
    OR (r.code IN ('tenant_admin') AND p.code IN ('twin.devices.manage','ai.inference.read'))
+   -- [PC-56 TENANT-13a] developer settings: webhook endpoints and the delivery log (0191).
+   OR (r.code IN ('tenant_admin') AND p.code IN ('api.manage'))
 ON CONFLICT DO NOTHING;

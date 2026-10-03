@@ -53,7 +53,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
   return (
     <section>
       <h1>{t.t('settings.title')}</h1>
-      <p className="kv-muted">{t.t('settings.subtitle')} · <Link href="/settings/integrations">{t.t('integrations.title')} →</Link> · <Link href="/settings/webhooks">{t.t('webhooks.title')} →</Link></p>
+      <p className="kv-muted">{t.t('settings.subtitle')} · <Link href="/settings/integrations">{t.t('integrations.title')} →</Link> · <Link href="/settings/developers/webhooks">{t.t('webhooks.title')} →</Link></p>
       {okKey && <p className="kv-success" role="status">{t.t('settings.ok')}</p>}
       {errorKey && <p className="kv-error" role="alert">{t.t('settings.error')}: {errorKey}</p>}
 

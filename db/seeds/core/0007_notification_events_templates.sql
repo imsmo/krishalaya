@@ -810,6 +810,30 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('weather.alert_severe','validTo','weather_alerts.valid_to in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-07-14 18:00',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-13a (§B) · A WEBHOOK ENDPOINT STOPPED — AND THE DEVELOPER IS TOLD. W188 promises "then paused with an email to your
+-- developer". Migration 0191 catalogues `webhooks.endpoint_paused`; the delivery worker emits it in the SAME transaction that pauses the
+-- endpoint (six failed attempts — the ladder 1m · 5m · 30m · 2h · 12h is exhausted) or disables it (the target guard refused it at send
+-- time). Recipients travel in the payload: the developer contact when that address belongs to an active member of the tenant, and
+-- whoever added the endpoint. Copy lives HERE, above the version backfill below (0122's send-time gate). Email + in-app; no SMS (a
+-- developer notice is not a DLT-registered template). Variables: `endpointHost` (the endpoint's host), `failures` (attempts that
+-- failed), `lastResult` (the last HTTP status, or the transport class — timeout, connect, tls, dns, redirect, refused),
+-- `queuedForResume` (deliveries that replay in order on resume).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('webhooks.endpoint_paused','email','en',NULL,'Webhook endpoint paused: {{endpointHost}}','Your webhook endpoint {{endpointHost}} has stopped receiving events: {{failures}} attempt(s) failed (last result: {{lastResult}}). {{queuedForResume}} event(s) are held — nothing is lost — and they replay in order, freshly signed, when you resume the endpoint under Settings › Developers › Webhooks.',NULL,true),
+ ('webhooks.endpoint_paused','email','hi',NULL,'वेबहुक एंडपॉइंट रोका गया: {{endpointHost}}','आपके वेबहुक एंडपॉइंट {{endpointHost}} पर इवेंट भेजना रुक गया है: {{failures}} प्रयास विफल रहे (अंतिम परिणाम: {{lastResult}})। {{queuedForResume}} इवेंट रोके गए हैं — कुछ भी खोया नहीं है — और सेटिंग्स › डेवलपर्स › वेबहुक में एंडपॉइंट फिर से चालू करने पर वे क्रम से, नए हस्ताक्षर के साथ भेजे जाएंगे।',NULL,true),
+ ('webhooks.endpoint_paused','email','gu',NULL,'વેબહુક એન્ડપોઇન્ટ અટકાવાયો: {{endpointHost}}','તમારા વેબહુક એન્ડપોઇન્ટ {{endpointHost}} પર ઇવેન્ટ મોકલવાનું અટકી ગયું છે: {{failures}} પ્રયાસ નિષ્ફળ ગયા (છેલ્લું પરિણામ: {{lastResult}}). {{queuedForResume}} ઇવેન્ટ રોકી રખાઈ છે — કંઈ ખોવાયું નથી — અને સેટિંગ્સ › ડેવલપર્સ › વેબહુકમાં એન્ડપોઇન્ટ ફરી ચાલુ કરતાં તે ક્રમમાં, નવી સહી સાથે મોકલાશે.',NULL,true),
+ ('webhooks.endpoint_paused','inapp','en',NULL,'Webhook endpoint paused: {{endpointHost}}','{{endpointHost}} has stopped receiving events after {{failures}} failed attempt(s) (last result: {{lastResult}}). {{queuedForResume}} event(s) are held and replay in order when you resume it.',NULL,true),
+ ('webhooks.endpoint_paused','inapp','hi',NULL,'वेबहुक एंडपॉइंट रोका गया: {{endpointHost}}','{{failures}} विफल प्रयासों के बाद {{endpointHost}} पर इवेंट भेजना रुक गया है (अंतिम परिणाम: {{lastResult}})। {{queuedForResume}} इवेंट रोके गए हैं और फिर से चालू करने पर क्रम से भेजे जाएंगे।',NULL,true),
+ ('webhooks.endpoint_paused','inapp','gu',NULL,'વેબહુક એન્ડપોઇન્ટ અટકાવાયો: {{endpointHost}}','{{failures}} નિષ્ફળ પ્રયાસો પછી {{endpointHost}} પર ઇવેન્ટ મોકલવાનું અટકી ગયું છે (છેલ્લું પરિણામ: {{lastResult}}). {{queuedForResume}} ઇવેન્ટ રોકી રખાઈ છે અને ફરી ચાલુ કરતાં ક્રમમાં મોકલાશે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('webhooks.endpoint_paused','endpointHost','webhook_endpoints.url (host part)','sheets-bridge.anandfpo.in',true),
+ ('webhooks.endpoint_paused','failures','attempts that failed in the cycle (6 when the ladder is exhausted; 1 when the guard refused)','6',true),
+ ('webhooks.endpoint_paused','lastResult','webhook_delivery_attempts.status_code, or the error class (timeout, connect, tls, dns, redirect, refused)','504',true),
+ ('webhooks.endpoint_paused','queuedForResume','deliveries held or exhausted on the endpoint — replayed in order on resume','12',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

@@ -85,6 +85,8 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'team', href: '/team', label: t.t('nav.team') },
         { key: 'kyc', href: '/kyc', label: t.t('nav.kyc') },
         { key: 'settings', href: '/settings', label: t.t('nav.settings') },
+        // PC-56 TENANT-13a: developer settings — webhooks (W188) at the canon path; the API's `tenancy` flag and `api.manage` decide what it shows.
+        { key: 'webhooks', href: '/settings/developers/webhooks', label: t.t('nav.webhooks') },
       ],
     },
   ];

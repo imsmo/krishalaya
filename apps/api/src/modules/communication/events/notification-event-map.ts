@@ -48,6 +48,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // severe-only — and the alert's name travels as a per-language map (seed core/0023). Copy in seed 0007 (push + in-app ×3).
   { outboxType: 'land.weather_advisory_active',    eventCode: 'weather.alert',               recipientKeys: ['recipientUserIds'] },
   { outboxType: 'land.weather_advisory_severe',    eventCode: 'weather.alert_severe',        recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-13a (§B) · a webhook endpoint the delivery worker PAUSED (six failed attempts — the ladder 1m · 5m · 30m · 2h · 12h is
+  // exhausted) or DISABLED (the target guard refused it at send time). The worker writes the event in the same transaction as the
+  // pause; recipients travel in the payload: the developer contact when that address belongs to an active member of the tenant, and
+  // whoever added the endpoint. Catalogue 0191, copy in seed core/0007 (email + in-app ×3).
+  { outboxType: 'webhooks.endpoint_paused',          eventCode: 'webhooks.endpoint_paused',    recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

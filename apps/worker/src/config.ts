@@ -1,6 +1,10 @@
 // apps/worker/src/config.ts · the ONLY place process.env is read in the worker. Fail-closed (§4): in production
 // the scheduler refuses to start without a kv_relay DB URL or with a dev/default password. The worker runs the
 // outbox relay + cross-tenant sweeps, so it connects as the BYPASSRLS `kv_relay` role (migration 0018) — NEVER kv_app.
+// PC-56 TENANT-13a (F-10): WEBHOOK_SIGNING_KEK is resolved HERE, once — production without it refuses to start (the old job quietly
+// set a "delivery disabled" gauge and returned, so a worker that could not sign looked healthy). Outside production the documented
+// development key (core/secrets envelope, identical in the API) stands in.
+import { resolveKek } from './jobs/webhook/secret-envelope';
 export interface WorkerEnv {
   NODE_ENV: 'development' | 'test' | 'staging' | 'production';
   DATABASE_URL: string;        // kv_relay
@@ -12,6 +16,8 @@ export interface WorkerEnv {
 
 export class WorkerConfig {
   readonly env: WorkerEnv;
+  /** The 32-byte KEK that opens webhook signing secrets (never logged). */
+  readonly webhookKek: Buffer;
   constructor(raw: Record<string, unknown> = process.env) {
     this.env = {
       NODE_ENV: (String(raw.NODE_ENV ?? 'development') as WorkerEnv['NODE_ENV']),
@@ -22,6 +28,8 @@ export class WorkerConfig {
       STATEMENT_TIMEOUT_MS: Number(raw.WORKER_STATEMENT_TIMEOUT_MS ?? 120000),
     };
     this.assertProductionSecurity();
+    try { this.webhookKek = resolveKek(raw.WEBHOOK_SIGNING_KEK as string | undefined, this.isProd); }
+    catch (e) { throw new Error(`FATAL: insecure worker config -> ${(e as Error).message}`); }
   }
   get isProd() { return this.env.NODE_ENV === 'production'; }
   private assertProductionSecurity(): void {

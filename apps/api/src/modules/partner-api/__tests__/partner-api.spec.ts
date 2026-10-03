@@ -319,11 +319,14 @@ describe('PartnerWebhookFanoutHandler', () => {
     expect(partners.resolveOwnerPartner).toHaveBeenCalledWith(tx, 'loan', 'loan-1');
     expect(partners.activeEndpointsForPartner).toHaveBeenCalledWith(tx, 'p-1');
     expect(webhooks.enqueue).toHaveBeenCalledTimes(1);
-    const [, tenantId, endpointId, eventType, body] = (webhooks.enqueue as jest.Mock).mock.calls[0];
-    expect(tenantId).toBe('t-1');                    // originating tenant is preserved (transparency)
-    expect(endpointId).toBe('e1');
-    expect(eventType).toBe(FintechEventType.LoanRepaid);
-    expect(body.partnerId).toBe('p-1');              // the RESOLVED owner, not the payload's claim
+    const [, d] = (webhooks.enqueue as jest.Mock).mock.calls[0] as any[];
+    expect(d.tenantId).toBe('t-1');                  // originating tenant is preserved (transparency)
+    expect(d.endpointId).toBe('e1');
+    expect(d.eventType).toBe(FintechEventType.LoanRepaid);
+    expect(d.payload.partnerId).toBe('p-1');         // the RESOLVED owner, not the payload's claim
+    // PC-56 TENANT-13a (F-19): marked as a PARTNER delivery — the tenant realm's RLS admits only endpoint_kind 'tenant' rows
+    expect(d.kind).toBe('partner');
+    expect(d.state).toBe('pending');
   });
 
   it('sends NOTHING when ownership cannot be resolved', async () => {

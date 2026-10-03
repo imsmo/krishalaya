@@ -4,6 +4,7 @@
 // `getLang()` already reads this cookie first) — purely additive, zero change for a request with no `lang` param.
 import { NextRequest, NextResponse } from 'next/server';
 import { pickUrlLang } from './lib/locale-url';
+import { secretPageHeaders } from './features/webhooks/headers';
 
 // NOT imported from `lib/i18n.ts` (that module is `import 'server-only'` + `next/headers`, RSC-only APIs that
 // Middleware's Edge runtime does not provide) — this is the same cookie name `lib/i18n.ts`'s own `LANG_COOKIE`
@@ -14,6 +15,8 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 export function middleware(req: NextRequest): NextResponse {
   const code = pickUrlLang(req.nextUrl);
   const res = NextResponse.next();
+  // PC-56 TENANT-13a (F-5): a developer page can hold a signing secret on screen — never cached, never a Referer (also next.config.js).
+  for (const [k, v] of Object.entries(secretPageHeaders(req.nextUrl.pathname))) res.headers.set(k, v);
   if (code) {
     res.cookies.set(LANG_COOKIE, code, {
       httpOnly: false, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: ONE_YEAR,

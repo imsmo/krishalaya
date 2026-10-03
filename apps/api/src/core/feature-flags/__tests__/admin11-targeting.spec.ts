@@ -16,7 +16,9 @@ function svc(row: any, ctxRow: { plan_code: string | null; country_code: string 
     if (opts.failLoad) throw new Error('replica down');
     return { rows: row ? [row] : [], rowCount: row ? 1 : 0 };
   });
-  const pools: any = { replica: () => ({ query }) };
+  // PC-56 TENANT-13a: the context read runs on a dedicated client inside a READ ONLY transaction with app.tenant_id set
+  // (tenant_flag_context is security_invoker since 0191); the stub client shares the dispatching `query`.
+  const pools: any = { replica: () => ({ query, connect: async () => ({ query, release: () => undefined }) }) };
   const cache: any = {
     wrap: async (_k: string, _t: number, load: any) => load(),
     set: async (k: string, v: unknown) => { store.set(k, v); },
@@ -38,6 +40,17 @@ describe('ADMIN-11 · the evaluator honours plan and country', () => {
   it('EXCLUDES a tenant outside a plan rule', async () => {
     const a = svc(flag({ plans: ['professional'] }), { plan_code: 'starter', country_code: 'IN' });
     expect(await a.svc.isEnabled('x', { tenantId: TEN })).toBe(false);
+  });
+
+  // PC-56 TENANT-13a (F-23): the invoker-rights view is read UNDER the evaluated tenant's own context, never context-free.
+  it('reads tenant_flag_context inside a READ ONLY transaction with app.tenant_id set to the tenant', async () => {
+    const a = svc(flag({ plans: ['professional'] }), { plan_code: 'professional', country_code: 'IN' });
+    expect(await a.svc.isEnabled('x', { tenantId: TEN })).toBe(true);
+    const sqls = a.query.mock.calls.map(([sql]: any[]) => String(sql));
+    const ctxAt = sqls.findIndex((q: string) => q.includes('tenant_flag_context'));
+    expect(sqls.slice(0, ctxAt)).toEqual(expect.arrayContaining(['BEGIN READ ONLY', expect.stringContaining("set_config('app.tenant_id'")]));
+    const setCall = a.query.mock.calls.find(([sql]: any[]) => String(sql).includes("set_config('app.tenant_id'")) as any[];
+    expect(setCall[1]).toEqual([TEN]);
   });
 
   // A tenant between subscriptions has no plan, and a flag limited to `professional` must not serve them.
@@ -77,7 +90,9 @@ describe('ADMIN-11 · the fail-safe W004 promises', () => {
       if (fail) throw new Error('replica down');
       return { rows: [{ is_enabled: true, rollout_pct: 100, rules: {} }], rowCount: 1 };
     });
-    const pools: any = { replica: () => ({ query }) };
+    // PC-56 TENANT-13a: the context read runs on a dedicated client inside a READ ONLY transaction with app.tenant_id set
+  // (tenant_flag_context is security_invoker since 0191); the stub client shares the dispatching `query`.
+  const pools: any = { replica: () => ({ query, connect: async () => ({ query, release: () => undefined }) }) };
     const cache: any = {
       // No caching of the hot key, so every call re-reads — which is what makes the second call hit the failure.
       wrap: async (_k: string, _t: number, load: any) => load(),

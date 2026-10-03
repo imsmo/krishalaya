@@ -44,6 +44,16 @@ const nextConfig = {
   // symlinks:false keeps the node_modules identity so they're consumed as ordinary (pre-built) deps.
   webpack: (config) => { config.resolve.symlinks = false; return config; },
   async headers() {
+    // PC-56 TENANT-13a (F-5): the developer pages can hold a signing secret on screen (shown once, in memory). They are never cached
+    // (no browser back-cache, no shared cache) and never send a Referer. Listed AFTER the catch-all so these values win for these
+    // paths; pinned by src/test/tenant13a-webhooks.spec.ts.
+    const secretBearing = ['/settings/developers/webhooks', '/settings/developers/webhooks/:path*'].map((source) => ({
+      source,
+      headers: [
+        { key: 'Cache-Control', value: 'no-store, max-age=0' },
+        { key: 'Referrer-Policy', value: 'no-referrer' },
+      ],
+    }));
     return [{
       source: '/:path*',
       headers: [
@@ -54,7 +64,7 @@ const nextConfig = {
         { key: 'Permissions-Policy', value: 'geolocation=(), camera=(), microphone=()' },
         { key: 'Content-Security-Policy', value: csp },
       ],
-    }];
+    }, ...secretBearing];
   },
 };
 module.exports = nextConfig;

@@ -3,5 +3,8 @@
 import { PoolClient } from 'pg';
 import { WorkerMetrics } from '../metrics';
 
-export interface JobCtx { client: PoolClient; metrics: WorkerMetrics }
+// PC-56 TENANT-13a: `secrets` carries key material a job needs, resolved ONCE at boot by WorkerConfig (which refuses to start in
+// production without it) — never read from process.env inside a job, never a silent "disabled".
+export interface JobSecrets { webhookKek: Buffer }
+export interface JobCtx { client: PoolClient; metrics: WorkerMetrics; secrets?: JobSecrets }
 export interface Job { name: string; intervalSec: number; run(ctx: JobCtx): Promise<void> }

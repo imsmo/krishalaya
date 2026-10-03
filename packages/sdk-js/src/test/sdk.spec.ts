@@ -936,31 +936,33 @@ describe('HttpClient via resources', () => {
     expect(calls[3].init.method).toBe('DELETE');
   });
 
-  it('webhooks: register returns the secret once; list masked; rotate/update/delete hit the right paths (P1-11)', async () => {
+  it('webhooks: register returns the secret once (keyed); list masked; rotate/update/delete are keyed + reasoned (P1-11 → TENANT-13a)', async () => {
     const ep = { id: 'w1', url: 'https://hooks.acme.in/kv', eventTypes: ['order.created'], isActive: true };
     const { fn, calls } = fakeFetch((_c, n) =>
-      n === 1 ? { body: { data: { ...ep, secret: 'whsec_ONCE' } } }
-      : n === 2 ? { body: { data: [ep] } }
-      : n === 3 ? { body: { data: { id: 'w1', secret: 'whsec_NEW' } } }
-      : n === 4 ? { body: { data: { id: 'w1', ok: true } } }
-      : { body: { data: { id: 'w1', ok: true } } });
+      n === 1 ? { body: { data: { ...ep, secret: 'whsec_ONCE', secretShown: true } } }
+      : n === 2 ? { body: { data: { items: [ep], total: 1, contract: { ladder: ['1m'] } } } }
+      : n === 3 ? { body: { data: { id: 'w1', secret: 'whsec_NEW', secretShown: true } } }
+      : n === 4 ? { body: { data: { id: 'w1', eventTypes: ['order.created'] } } }
+      : { body: { data: { id: 'w1', act: 'delete', moved: 0, status: 'deleted' } } });
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
-    const created = await c.webhooks.register({ url: 'https://hooks.acme.in/kv', eventTypes: ['order.created'] });
+    const created = await c.webhooks.register({ url: 'https://hooks.acme.in/kv', eventTypes: ['order.created'], developerEmail: 'dev@acme.in' }, 'idem-wh-1');
     expect(calls[0].url).toBe('https://api.test/v1/webhooks');
     expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-wh-1');
     expect(created.secret).toBe('whsec_ONCE');
     const list = await c.webhooks.list();
     expect(calls[1].url).toBe('https://api.test/v1/webhooks');
-    expect('secret' in (list[0] as unknown as Record<string, unknown>)).toBe(false); // masked on reads
-    const rot = await c.webhooks.rotateSecret('w1');
+    expect('secret' in (list.items[0] as unknown as Record<string, unknown>)).toBe(false); // masked on reads
+    const rot = await c.webhooks.rotateSecret('w1', 'quarterly', 'idem-wh-2');
     expect(calls[2].url).toBe('https://api.test/v1/webhooks/w1/rotate-secret');
     expect(rot.secret).toBe('whsec_NEW');
-    await c.webhooks.update('w1', { isActive: false });
+    await c.webhooks.update('w1', { eventTypes: ['order.created'], reason: 'narrow it' }, 'idem-wh-3');
     expect(calls[3].url).toBe('https://api.test/v1/webhooks/w1');
     expect(calls[3].init.method).toBe('PATCH');
-    await c.webhooks.remove('w1');
+    await c.webhooks.remove('w1', 'decommissioned', 'idem-wh-4');
     expect(calls[4].url).toBe('https://api.test/v1/webhooks/w1');
     expect(calls[4].init.method).toBe('DELETE');
+    expect(JSON.parse(calls[4].init.body as string)).toEqual({ reason: 'decommissioned' });
   });
 
   it('dairy: MCC create (idem) + collection record + bill generate→preview→approve→pay hit the right paths (P1-12)', async () => {

@@ -13,7 +13,9 @@
 //   support ticket, a misrouted one is a breach of a farmer's confidence.
 //
 // The HTTP POST itself is the existing worker's job (apps/worker webhook-delivery.job): same HMAC signature contract
-// (`X-KV-Signature: t=…,v1=…`), same AES-GCM secret at rest, same backoff/park policy. Deliveries carry the
+// (`Krishalaya-Signature: t=…,v1=…`, with `X-KV-Signature` carrying the identical value for 0090-era receivers), same secret at rest,
+// the same ladder (TENANT-13a). A partner endpoint is not paused by the worker on exhaustion (kv_relay holds no UPDATE on
+// partner_webhook_endpoints — partner onboarding is a human-run step); the delivery is marked exhausted. Deliveries carry the
 // ORIGINATING tenant_id so the platform can always answer "which of my events went to which partner?".
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
 import { TxContext } from '../../../../core/database/unit-of-work';
@@ -41,9 +43,12 @@ export class PartnerWebhookFanoutHandler implements OutboxHandler {
     const endpoints = await this.partners.activeEndpointsForPartner(tx, ownerPartnerId);
     for (const endpoint of endpoints) {
       if (!deliverable(endpoint, event.eventType, ownerPartnerId)) continue;
-      await this.webhooks.enqueue(tx, event.tenantId, endpoint.id, event.eventType, {
-        id: event.id, type: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId,
-        partnerId: ownerPartnerId, data: event.payload,
+      // PC-56 TENANT-13a (F-19): the delivery is marked as a PARTNER delivery. It still carries the originating tenant_id (the
+      // platform must be able to answer "which of my events went to which partner?"), and the tenant realm's RLS admits only
+      // endpoint_kind = 'tenant' rows — so a cooperative never reads what its bank or insurer was sent.
+      await this.webhooks.enqueue(tx, {
+        tenantId: event.tenantId, endpointId: endpoint.id, kind: 'partner', eventType: event.eventType, state: 'pending', internalType: event.eventType, sourceEventId: event.id,
+        payload: { id: event.id, type: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId, partnerId: ownerPartnerId, data: event.payload },
       });
     }
   }
