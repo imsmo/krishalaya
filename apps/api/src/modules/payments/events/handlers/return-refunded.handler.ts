@@ -45,6 +45,7 @@ import { InfraError } from '../../../../shared/errors/app-error';
 import { PaymentRepository } from '../../repositories/payment.repository';
 import { SettlementLineRepository } from '../../repositories/settlement-line.repository';
 import { SettlementPricingService } from '../../services/settlement-pricing.service';
+import { BuyerCommissionPartialRefundError } from '../../domain/commission.errors';
 
 @Injectable()
 export class ReturnRefundedHandler implements OutboxHandler {
@@ -90,7 +91,7 @@ export class ReturnRefundedHandler implements OutboxHandler {
       const reversal: LedgerLeg[] = [
         { account: userMain(line.sellerUserId), amountMinor: -line.netMinor },
         { account: tenantCommission(tenantId), amountMinor: -line.tenantCommissionMinor },
-        { account: platform(PlatformAccount.GstPayable), amountMinor: -line.gstMinor },
+        { account: platform(PlatformAccount.GstPayable), amountMinor: -(line.gstMinor + (line.buyerCommissionGstMinor ?? 0n)) },   // SW-a: + GST on a buyer-paid commission
         { account: platform(PlatformAccount.TdsPayable), amountMinor: -line.tdsMinor },
         { account: platform(PlatformAccount.Fees), amountMinor: -line.platformFeesMinor },
         { account: platform(PlatformAccount.Escrow), amountMinor: gross },
@@ -110,7 +111,10 @@ export class ReturnRefundedHandler implements OutboxHandler {
       if (!seller) throw new InfraError('RETURN_REFUND_NO_SELLER', 'cannot resolve the seller for the kept remainder', { returnId, orderId });
       const split = await this.flags.isEnabled('commission_split', { tenantId });
       if (split) {
-        const b = await this.uow.run(tenantId, (ruleTx) => this.pricing.quote(ruleTx, { tenantId, grossMinor: remainder, categoryId: (p.categoryId as string) ?? null, source: (p.source as string) ?? null, countryCode: 'IN' }), { userId: 'system' });
+        // PC-56 TENANT-SW-a · A2: the kept remainder is priced from the ORDER's FROZEN rule (placement day), never a rule resolved now.
+        const frozen = await this.uow.run(tenantId, (r) => this.pricing.frozenForOrder(r, tenantId, orderId, { categoryId: (p.categoryId as string) ?? null, source: (p.source as string) ?? null }), { userId: 'system' });
+        if (frozen.snapshot.chargedTo === 'buyer') throw new BuyerCommissionPartialRefundError({ orderId, returnId });
+        const b = await this.uow.run(tenantId, (ruleTx) => this.pricing.quoteFrozen(ruleTx, { tenantId, grossMinor: remainder, snapshot: frozen.snapshot, categoryId: (p.categoryId as string) ?? null, countryCode: 'IN' }), { userId: 'system' });
         legs.push(
           { account: userMain(seller), amountMinor: b.sellerNetMinor },
           { account: tenantCommission(tenantId), amountMinor: b.tenantCommissionMinor },

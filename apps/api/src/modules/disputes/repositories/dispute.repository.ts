@@ -59,6 +59,20 @@ export class DisputeRepository {
       [p.id, p.tenantId, p.orderId, p.raisedBy, p.againstUser, p.reasonId, p.description, p.status, p.sellerRespondBy, p.slaDueAt,
        p.disputedAmountMinor?.toString() ?? null, p.disputedQuantity]);
   }
+  /** PC-56 TENANT-SW-a · D1 — the in-transaction reads/writes a POD-review dispute needs (the caller is logistics' confirming tx). */
+  async eligibilityTx(tx: TxContext, tenantId: string, orderId: string): Promise<{ buyerUserId: string; sellerUserId: string } | null> {
+    const r = await tx.query(`SELECT buyer_user_id, seller_user_id FROM dispute_eligibility WHERE tenant_id=$1 AND order_id=$2`, [tenantId, orderId]);
+    return r.rows[0] ? { buyerUserId: r.rows[0].buyer_user_id, sellerUserId: r.rows[0].seller_user_id } : null;
+  }
+  async reasonIdTx(tx: TxContext, code: string): Promise<string | null> {
+    const r = await tx.query(`SELECT id FROM lookup_values WHERE type_code='dispute_reason' AND code=$1 AND tenant_id IS NULL ORDER BY id LIMIT 1`, [code]);
+    return r.rows[0]?.id ?? null;
+  }
+  /** Stamp the POD-review provenance on a dispute inserted in the same transaction (0196 ck_disputes_opened_via). */
+  async stampPodReviewTx(tx: TxContext, tenantId: string, id: string, podReviewId: string, staffUserId: string, evidenceMediaIds: string[]): Promise<void> {
+    await tx.query(`UPDATE disputes SET opened_via='pod_review', pod_review_id=$3, opened_by_staff=$4, evidence_media_ids=$5::uuid[], updated_at=now() WHERE id=$1 AND tenant_id=$2`,
+      [id, tenantId, podReviewId, staffUserId, evidenceMediaIds]);
+  }
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Dispute | null> {
     const r = await tx.query(`SELECT ${COLS} FROM disputes WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;

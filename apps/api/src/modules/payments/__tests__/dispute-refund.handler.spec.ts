@@ -14,7 +14,10 @@ function harness(opts: { flags?: Record<string, boolean>; payment?: any; line?: 
   const flags = { isEnabled: jest.fn((key: string) => Promise.resolve(flagMap[key] ?? false)) } as any;
   const repo = { findSuccessByOrder: jest.fn().mockResolvedValue('payment' in opts ? opts.payment : { userId: buyer, amountMinor: 100000n }) } as any;
   const lines = { findByOrder: jest.fn().mockResolvedValue(opts.line ?? null), deleteByOrder: jest.fn().mockResolvedValue(1), insert: jest.fn().mockResolvedValue(undefined) } as any;
-  const pricing = { quote: jest.fn().mockResolvedValue({ sellerNetMinor: 54000n, tenantCommissionMinor: 5000n, gstOnCommissionMinor: 900n, tdsMinor: 100n, platformShareMinor: 0n, commissionMinor: 5000n }) } as any;
+  // PC-56 TENANT-SW-a: the remainder is priced from the ORDER's FROZEN rule — `frozenForOrder` then `quoteFrozen`, never a live resolve
+  const snapshot = { v: 1, ruleId: 'rule-1', scope: 'platform', rateBps: 350, fixedMinor: '0', capMinor: null, platformShareBps: 1000, chargedTo: 'seller', resolvedOn: '2026-10-01' };
+  const pricing = { frozenForOrder: jest.fn().mockResolvedValue({ snapshot, buyerCommissionMinor: 0n, recordedNow: false }),
+    quoteFrozen: jest.fn().mockResolvedValue({ sellerNetMinor: 54000n, tenantCommissionMinor: 5000n, gstOnCommissionMinor: 900n, tdsMinor: 100n, platformShareMinor: 0n, commissionMinor: 5000n }) } as any;
   const outbox = { write: jest.fn().mockResolvedValue(undefined) } as any;
   const metrics = { inc: jest.fn() } as any;
   // HOTFIX-2: the payment + rule reads run in kv_app's unit of work; the fake hands them their own mocked executor
@@ -51,7 +54,8 @@ describe('DisputeResolvedHandler (wallet reversal + remainder + clawback)', () =
   it('refund_partial (split ON): remainder routed through the commission engine, zero-sum', async () => {
     const { h, wallet, pricing, tx } = harness({ flags: { dispute_refunds: true, commission_split: true } });
     await h.handle(evt({ resolutionType: 'refund_partial', resolutionAmountMinor: '40000' }) as any, tx);
-    expect(pricing.quote).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ grossMinor: 60000n }));
+    expect(pricing.quoteFrozen).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ grossMinor: 60000n }));
+    expect(pricing.frozenForOrder).toHaveBeenCalled();
     const legs = lastLegs(wallet);
     expect(sum(legs)).toBe(0n);
     expect(legs.find((l) => l.account.userId === buyer)!.amountMinor).toBe(40000n);

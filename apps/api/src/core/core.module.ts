@@ -29,6 +29,7 @@ import { OutboxHandlerRegistry } from './outbox/outbox.dispatcher';
 import { OUTBOX_HANDLER_REGISTRY } from './outbox/event-envelope';
 import { OutboxRelayRunner } from './outbox/relay.runner';
 import { ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY } from './jobs/scheduled-job.registry';
+import { ProposalApplierRegistry, PROPOSAL_APPLIER_REGISTRY } from './jobs/proposal-applier.registry';
 import { ScheduledJobsRunner } from './jobs/jobs.runner';
 import { QUOTA_SERVICE } from './quota/quota.service';
 import { PgQuotaService } from './quota/quota.service.pg';
@@ -102,6 +103,8 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     // runner starts OnApplicationBootstrap once every module has registered. Own dedicated kv_relay
     // pool; see core/jobs/jobs.runner.ts.
     ScheduledJobRegistry, { provide: SCHEDULED_JOB_REGISTRY, useExisting: ScheduledJobRegistry },
+    // PC-56 TENANT-SW-a: modules register the appliers of their maker-checker proposals; 13b's apply job drives them.
+    ProposalApplierRegistry, { provide: PROPOSAL_APPLIER_REGISTRY, useExisting: ProposalApplierRegistry },
     ScheduledJobsRunner,
     // realtime fan-out: bridge selected outbox events → Redis Pub/Sub for the realtime-gateway pods.
     // Redis-backed when REDIS_URL is set, else a no-op (Law 12: the platform runs fine without live fan-out).
@@ -149,7 +152,7 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     ResilienceService, RESILIENCE, CircuitEventRecorder, INBOUND_WEBHOOK_SINK,
     WALLET_SERVICE, InProcessWalletClient, LedgerRepository, ReconciliationService,
     OutboxHandlerRegistry, OUTBOX_HANDLER_REGISTRY,
-    ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY,
+    ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY, ProposalApplierRegistry, PROPOSAL_APPLIER_REGISTRY,
     AuthGuard, PermissionsGuard,
     ImpersonationGate, ImpersonationReadOnlyGuard, ImpersonationInterceptor, TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware,
     HttpLogMiddleware,

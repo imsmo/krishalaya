@@ -1,7 +1,8 @@
 // Unit tests for the PURE checkout-preview helpers. No money is computed here (the server owns totals); these
 // only normalize the coupon and choose the cheapest delivery method.
 import type { DeliveryMethod } from '@krishalaya/sdk-js';
-import { normalizeCoupon, pickDefaultMethod } from '../features/checkout/preview';
+import { PLACE_REFUSAL_KEYS, normalizeCoupon, pickDefaultMethod, placeRefusalStatus } from '../features/checkout/preview';
+import { en } from '../i18n/en';
 
 describe('normalizeCoupon', () => {
   it('trims + uppercases a valid code', () => {
@@ -57,5 +58,17 @@ describe('TENANT-10b · declined coupon notices', () => {
       const k = `coupon.notice.${o}`;
       for (const cat of [en10b, hi10b, gu10b]) { expect(typeof (cat as Record<string, string>)[k]).toBe('string'); expect((cat as Record<string, string>)[k]).not.toMatch(/[A-Z]{3,}_[A-Z]/); }
     }
+  });
+});
+
+describe('PC-56 TENANT-SW-a · placement delivery refusals are said kindly', () => {
+  it('a pincode in no active zone → "we don’t deliver here yet", never the raw code', () => {
+    expect(placeRefusalStatus('UNSERVICEABLE_PINCODE')).toBe('unserviceable');
+    expect(placeRefusalStatus('DELIVERY_ADDRESS_REQUIRED')).toBe('needAddress');
+    expect(placeRefusalStatus('DELIVERY_METHOD_NOT_SERVING')).toBe('method');
+    expect(placeRefusalStatus('DELIVERY_METHOD_REQUIRED')).toBe('method');
+    expect(placeRefusalStatus('INSUFFICIENT_STOCK')).toBe('err');
+    expect(placeRefusalStatus(null)).toBe('err');
+    for (const k of Object.values(PLACE_REFUSAL_KEYS)) expect((en as Record<string, string>)[k]).toBeTruthy();
   });
 });

@@ -7,12 +7,18 @@
 // 0192's `trg_tenant_settings_gate` admits the write only because the transaction cites the confirmed, due proposal.
 // `applyDue` / `expireDue` re-lock the row and re-check its status and instant, so a row two ticks claim is acted on once. One
 // failure never stops the rest.
+//
+// PC-56 TENANT-SW-a (brief A3 "applied at effective midnight by the 13b apply job (extend it)") — the same clock now also drives
+// every applier registered in PROPOSAL_APPLIER_REGISTRY (today: payments' commission-rule proposals, which take effect at an IST
+// midnight at least 7 days out, and logistics' zone proposals, which only expire here). Same discipline per applier: claims in
+// kv_app's unit of work per tenant, each act in its own transaction, one failure never stops the rest.
 import { Logger } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { ScheduledJob } from '../../../core/jobs/scheduled-job';
 import { UnitOfWork } from '../../../core/database/unit-of-work';
 import { SettingGovernanceRepository } from '../repositories/setting-governance.repository';
 import { TenantSettingsService } from '../services/tenant-settings.service';
+import { ProposalApplierRegistry } from '../../../core/jobs/proposal-applier.registry';
 
 export const SETTING_PROPOSALS_JOB = 'tenancy-setting-proposals';
 
@@ -20,11 +26,13 @@ export class SettingProposalsJob implements ScheduledJob {
   readonly name = SETTING_PROPOSALS_JOB;
   private readonly log = new Logger(SettingProposalsJob.name);
   constructor(readonly intervalMs: number, private readonly uow: UnitOfWork, private readonly repo: SettingGovernanceRepository,
-              private readonly svc: TenantSettingsService, private readonly limit = 200) {}
+              private readonly svc: TenantSettingsService, private readonly limit = 200,
+              private readonly appliers?: ProposalApplierRegistry) {}
 
   async sweep(pool: Pool): Promise<{ tenants: number; applied: number; notApplied: number; expired: number; failed: number }> {
     const tenants = await this.repo.activeTenants(pool);
     let applied = 0, notApplied = 0, expired = 0, failed = 0;
+    const appliers = this.appliers?.list() ?? [];
     for (const tenantId of tenants) {
       let due: string[] = []; let stale: string[] = [];
       try {
@@ -39,6 +47,22 @@ export class SettingProposalsJob implements ScheduledJob {
       for (const id of stale) {
         try { if (await this.svc.expireDue(tenantId, id)) expired++; }
         catch (e) { failed++; this.log.error(`${this.name}: expire ${id} failed: ${(e as Error).message}`); }
+      }
+      for (const a of appliers) {
+        let aDue: string[] = []; let aStale: string[] = [];
+        try {
+          [aDue, aStale] = await this.uow.run(tenantId, async (tx) => [
+            await a.dueToApplyTx(tx, tenantId, this.limit), await a.dueToExpireTx(tx, tenantId, this.limit),
+          ], { userId: undefined });
+        } catch (e) { failed++; this.log.error(`${this.name}: ${a.name} claim failed: ${(e as Error).message}`); continue; }
+        for (const id of aDue) {
+          try { if ((await a.applyDue(tenantId, id)) === 'applied') applied++; else notApplied++; }
+          catch (e) { failed++; this.log.error(`${this.name}: ${a.name} apply ${id} failed: ${(e as Error).message}`); }
+        }
+        for (const id of aStale) {
+          try { if (await a.expireDue(tenantId, id)) expired++; }
+          catch (e) { failed++; this.log.error(`${this.name}: ${a.name} expire ${id} failed: ${(e as Error).message}`); }
+        }
       }
     }
     return { tenants: tenants.length, applied, notApplied, expired, failed };

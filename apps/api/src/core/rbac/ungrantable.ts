@@ -23,6 +23,9 @@ export const UNGRANTABLE_PERMISSIONS: ReadonlySet<string> = new Set([
   '*', 'plan.manage', 'tenant.manage', 'user.impersonate', 'flag.toggle',
   'wallet.adjust', 'payout.approve', 'group_lot.settle_approve', 'labour.wages.approve', 'notification.templates.approve',
   'tenant.settings', 'desk.manage', 'user.approve', 'api.manage',
+  // PC-56 TENANT-SW-a: the owner-and-checker key of the tenant's commission rules (0196) — a desk carrying it could become the second
+  // signature on the price list.
+  'commission.manage',
 ]);
 
 export function isUngrantable(code: string): boolean { return UNGRANTABLE_PERMISSIONS.has(code); }

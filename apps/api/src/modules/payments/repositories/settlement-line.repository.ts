@@ -9,6 +9,8 @@ export interface SettlementLineInput {
   tenantId: string; sellerUserId: string; orderId: string;
   grossMinor: bigint; commissionMinor: bigint; gstMinor: bigint; tdsMinor: bigint; netMinor: bigint;
   tenantCommissionMinor?: bigint; platformFeesMinor?: bigint;   // breakdown for precise dispute-refund reversal
+  /** PC-56 TENANT-SW-a (F-10): commission the BUYER paid (charged_to=buyer) and its GST — never in commission_minor / gst_minor. */
+  buyerCommissionMinor?: bigint; buyerCommissionGstMinor?: bigint;
 }
 export interface SellerPeriodAggregate { grossMinor: bigint; commissionMinor: bigint; taxMinor: bigint; netMinor: bigint; lineCount: number; }
 
@@ -17,21 +19,25 @@ export class SettlementLineRepository {
   /** Idempotent insert (one line per order) within the caller's tx. */
   async insert(tx: TxContext, l: SettlementLineInput): Promise<void> {
     await tx.query(
-      `INSERT INTO settlement_lines (tenant_id, seller_user_id, order_id, gross_minor, commission_minor, gst_minor, tds_minor, net_minor, tenant_commission_minor, platform_fees_minor)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (tenant_id, order_id) DO NOTHING`,
-      [l.tenantId, l.sellerUserId, l.orderId, l.grossMinor.toString(), l.commissionMinor.toString(), l.gstMinor.toString(), l.tdsMinor.toString(), l.netMinor.toString(), (l.tenantCommissionMinor ?? 0n).toString(), (l.platformFeesMinor ?? 0n).toString()]);
+      `INSERT INTO settlement_lines (tenant_id, seller_user_id, order_id, gross_minor, commission_minor, gst_minor, tds_minor, net_minor, tenant_commission_minor, platform_fees_minor,
+                                     buyer_commission_minor, buyer_commission_gst_minor)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (tenant_id, order_id) DO NOTHING`,
+      [l.tenantId, l.sellerUserId, l.orderId, l.grossMinor.toString(), l.commissionMinor.toString(), l.gstMinor.toString(), l.tdsMinor.toString(), l.netMinor.toString(),
+       (l.tenantCommissionMinor ?? 0n).toString(), (l.platformFeesMinor ?? 0n).toString(), (l.buyerCommissionMinor ?? 0n).toString(), (l.buyerCommissionGstMinor ?? 0n).toString()]);
   }
 
   /** The settlement line for an order (or null) — the source for a precise dispute-refund reversal. */
-  async findByOrder(tx: TxContext, tenantId: string, orderId: string): Promise<{ sellerUserId: string; grossMinor: bigint; commissionMinor: bigint; gstMinor: bigint; tdsMinor: bigint; netMinor: bigint; tenantCommissionMinor: bigint; platformFeesMinor: bigint; statementId: string | null } | null> {
+  async findByOrder(tx: TxContext, tenantId: string, orderId: string): Promise<{ sellerUserId: string; grossMinor: bigint; commissionMinor: bigint; gstMinor: bigint; tdsMinor: bigint; netMinor: bigint; tenantCommissionMinor: bigint; platformFeesMinor: bigint; buyerCommissionMinor: bigint; buyerCommissionGstMinor: bigint; statementId: string | null } | null> {
     const r = await tx.query(
-      `SELECT seller_user_id, gross_minor, commission_minor, gst_minor, tds_minor, net_minor, tenant_commission_minor, platform_fees_minor, statement_id
+      `SELECT seller_user_id, gross_minor, commission_minor, gst_minor, tds_minor, net_minor, tenant_commission_minor, platform_fees_minor,
+              buyer_commission_minor, buyer_commission_gst_minor, statement_id
          FROM settlement_lines WHERE tenant_id=$1 AND order_id=$2`, [tenantId, orderId]);
     const x = r.rows[0];
     if (!x) return null;
     return { sellerUserId: x.seller_user_id, grossMinor: BigInt(x.gross_minor), commissionMinor: BigInt(x.commission_minor),
       gstMinor: BigInt(x.gst_minor), tdsMinor: BigInt(x.tds_minor), netMinor: BigInt(x.net_minor),
-      tenantCommissionMinor: BigInt(x.tenant_commission_minor), platformFeesMinor: BigInt(x.platform_fees_minor), statementId: x.statement_id ?? null };
+      tenantCommissionMinor: BigInt(x.tenant_commission_minor), platformFeesMinor: BigInt(x.platform_fees_minor),
+      buyerCommissionMinor: BigInt(x.buyer_commission_minor ?? 0), buyerCommissionGstMinor: BigInt(x.buyer_commission_gst_minor ?? 0), statementId: x.statement_id ?? null };
   }
   /** Remove an order's settlement line when reversing it (only while NOT yet rolled into a statement). */
   async deleteByOrder(tx: TxContext, tenantId: string, orderId: string): Promise<number> {

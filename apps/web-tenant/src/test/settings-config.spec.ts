@@ -19,9 +19,15 @@ describe('buildCommissionRule', () => {
   it('rejects out-of-range / non-integer / bad source / non-digit money', () => {
     expect(buildCommissionRule({ rateBps: 200001, platformShareBps: 0 }).ok).toBe(false);
     expect(buildCommissionRule({ rateBps: 'x', platformShareBps: 0 }).ok).toBe(false);
-    expect(buildCommissionRule({ rateBps: 1, platformShareBps: -1 }).ok).toBe(false);
-    expect(buildCommissionRule({ rateBps: 1, platformShareBps: 1, fixedMinor: '1.5' }).ok).toBe(false);
-    expect(buildCommissionRule({ rateBps: 1, platformShareBps: 1, source: 'bogus' }).ok).toBe(false);
+  });
+  it('PC-56 TENANT-SW-a (F-3): carries NO platform share — the plan sets it; a typed one is ignored, never sent', () => {
+    const r = buildCommissionRule({ rateBps: 1, platformShareBps: -1 });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect('platformShareBps' in r.value).toBe(false);
+  });
+  it('still rejects non-digit money and a bad source', () => {
+    expect(buildCommissionRule({ rateBps: 1, fixedMinor: '1.5' }).ok).toBe(false);
+    expect(buildCommissionRule({ rateBps: 1, source: 'bogus' }).ok).toBe(false);
   });
 });
 

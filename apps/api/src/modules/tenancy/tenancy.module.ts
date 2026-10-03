@@ -73,6 +73,7 @@ import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
 import { TenantSettingsService } from './services/tenant-settings.service';
 import { SettingGovernanceRepository } from './repositories/setting-governance.repository';
 import { SettingProposalsJob } from './jobs/setting-proposals.job';
+import { PROPOSAL_APPLIER_REGISTRY, ProposalApplierRegistry } from '../../core/jobs/proposal-applier.registry';
 // PC-56 TENANT-13d · white-label branding (W191) and domains (W192): the brand store + checker, the domain claims + verifier + checker,
 // the public logo / host reads, and the two clocks.
 import { MediaModule } from '../../core/media/media.module';
@@ -158,8 +159,9 @@ import { VERIFY_INTERVAL_MS } from './domain/domain-rules';
     // PC-56 TENANT-13b: W186's settings plane — the gate, the floors, proposals, history, languages — and the job that applies a
     // confirmed proposal at the next midnight IST (and expires one nobody confirmed in 7 days). Per tenant, as kv_app.
     TenantSettingsService, SettingGovernanceRepository, UiMessageRepository,
-    { provide: SettingProposalsJob, inject: [UNIT_OF_WORK, SettingGovernanceRepository, TenantSettingsService],
-      useFactory: (u: UnitOfWork, r: SettingGovernanceRepository, s: TenantSettingsService) => new SettingProposalsJob(5 * 60_000, u, r, s) },
+    // PC-56 TENANT-SW-a: the same clock drives every registered proposal applier (commission rules, delivery zones).
+    { provide: SettingProposalsJob, inject: [UNIT_OF_WORK, SettingGovernanceRepository, TenantSettingsService, PROPOSAL_APPLIER_REGISTRY],
+      useFactory: (u: UnitOfWork, r: SettingGovernanceRepository, s: TenantSettingsService, a: ProposalApplierRegistry) => new SettingProposalsJob(5 * 60_000, u, r, s, 200, a) },
     // PC-56 TENANT-13d
     TenantBrandingService, TenantBrandingRepository,
     { provide: DOMAIN_DNS, useFactory: () => new NodeDomainDns() },

@@ -1165,26 +1165,78 @@ export interface TenantAnalytics {
 // --- tenant self-config (P1-10): commission-rules / delivery-zones / settings (branding+languages) ---
 // Money rules stay SERVER-authoritative: the app never computes a fee — it only reads/edits the rule rows.
 // All *Minor are bigint minor STRINGS (Law 2). `scope:'platform'` rows are read-only inherited defaults (Law 11).
-/** A commission rule. Platform rows (scope 'platform') are god-mode defaults — read-only here. */
+/** A commission rule. Platform rows (scope 'platform') are the admin realm's defaults — read-only here. PC-56 TENANT-SW-a: a tenant row's
+ *  `platformShareBps` is the tenant's PLAN floor (never set by the tenant); `status` says whether it is in force today. */
 export interface CommissionRule {
   id: string; scope: 'platform' | 'tenant'; categoryId: string | null; source: string | null; sellerRoleId: string | null;
   rateBps: number; fixedMinor: string; capMinor: string | null; platformShareBps: number; chargedTo: 'seller' | 'buyer';
   priority: number; effectiveFrom: string | null; effectiveTo: string | null; isActive: boolean;
+  proposalId?: string | null; deactivationProposalId?: string | null; createdAt?: string; status?: 'in_force' | 'scheduled' | 'ended' | 'inactive';
 }
-/** Input to create a tenant commission rule. rateBps/platformShareBps in basis-points (0–100000). */
+/** PC-56 TENANT-SW-a · a PROPOSED tenant commission rule (owner + checker). There is NO platformShareBps: the platform's share is the
+ *  plan's (the API refuses the field by name). `effectiveFrom` must be ≥ the next IST midnight + 7 days (`commissionPolicy().earliestEffectiveFrom`). */
 export interface CreateCommissionRuleInput {
   categoryId?: string | null; source?: 'direct' | 'auction' | 'requirement' | 'subscription' | null; sellerRoleId?: string | null;
-  rateBps: number; fixedMinor?: string; capMinor?: string | null; platformShareBps: number;
-  chargedTo?: 'seller' | 'buyer'; priority?: number; effectiveFrom?: string; effectiveTo?: string | null;
+  rateBps: number; fixedMinor?: string; capMinor?: string | null;
+  chargedTo?: 'seller' | 'buyer'; priority?: number; effectiveFrom: string; effectiveTo?: string | null; reason: string;
 }
-/** A delivery zone (set of pincodes / regions, optional charge definition). */
+export type CommissionProposalStatus = 'proposed' | 'confirmed' | 'refused' | 'expired' | 'applied';
+export interface CommissionRuleProposal {
+  id: string; kind: 'create' | 'deactivate'; status: CommissionProposalStatus; targetRuleId: string | null; ruleId: string | null;
+  rule: { categoryId: string | null; source: string | null; sellerRoleId: string | null; rateBps: number | null; fixedMinor: string | null; capMinor: string | null;
+    chargedTo: 'seller' | 'buyer' | null; priority: number | null; effectiveTo: string | null; platformShareBps?: number } | null;
+  effectiveFrom: string; reason: string; proposedBy: string; proposedAt: string; expiresAt: string;
+  confirmedBy: string | null; confirmedAt: string | null; refusedBy: string | null; refusedAt: string | null; refuseReason: string | null;
+  expiredAt: string | null; appliedAt: string | null; createdAt: string; canConfirm: boolean; canRefuse: boolean; isMine: boolean;
+}
+export interface CommissionPolicy { platformShareBps: number; platformShareSource: 'plan_floor'; earliestEffectiveFrom: string; noticeDays: number; proposalTtlDays: number; today: string }
+export interface CommissionResolution {
+  facts: { categoryId: string | null; sellerRoleId: string | null; source: string | null }; onDate: string; winner: CommissionRule | null;
+  after: { onDate: string; proposed: boolean; winner: CommissionRule | null } | null;
+}
+/** A delivery zone. PC-56 TENANT-SW-a: `orders30d` is a real count of orders placed in it (orders.delivery_zone_id). */
 export interface DeliveryZone {
-  id: string; defaultName: string; pincodes: string[]; regionIds: string[]; chargeDefinitionId: string | null; isActive: boolean; createdAt?: string | null;
+  id: string; defaultName: string; pincodes: string[]; regionIds: string[]; chargeDefinitionId: string | null; isActive: boolean; createdAt?: string | null; orders30d?: number;
 }
-/** Input to create a delivery zone. */
-export interface CreateDeliveryZoneInput { defaultName: string; pincodes?: string[]; regionIds?: string[]; chargeDefinitionId?: string | null; }
-/** Patch to a delivery zone (all fields optional). */
-export interface UpdateDeliveryZoneInput { defaultName?: string; pincodes?: string[]; regionIds?: string[]; chargeDefinitionId?: string | null; }
+/** PC-56 TENANT-SW-a · zone changes are PROPOSED (lead) and CONFIRMED by a different tenant_admin. */
+export type ProposeZoneInput =
+  | { kind: 'create'; defaultName: string; pincodes?: string[]; regionIds?: string[]; chargeDefinitionId?: string | null; reason: string }
+  | { kind: 'repoint_fee'; zoneId: string; chargeDefinitionId: string | null; reason: string }
+  | { kind: 'deactivate' | 'activate'; zoneId: string; reason: string };
+export interface DeliveryZoneProposal {
+  id: string; kind: 'create' | 'repoint_fee' | 'deactivate' | 'activate'; zoneId: string; status: 'proposed' | 'confirmed' | 'refused' | 'expired';
+  defaultName: string | null; pincodes: string[] | null; regionIds: string[] | null; chargeDefinitionId: string | null; reason: string;
+  proposedBy: string; proposedAt: string; expiresAt: string; confirmedBy: string | null; confirmedAt: string | null; refusedBy: string | null;
+  refusedAt: string | null; refuseReason: string | null; expiredAt: string | null; createdAt: string; canConfirm: boolean; canRefuse: boolean; isMine: boolean;
+}
+/** Input to create a delivery zone — now a proposal of kind 'create'. */
+export interface CreateDeliveryZoneInput { defaultName: string; pincodes?: string[]; regionIds?: string[]; chargeDefinitionId?: string | null; reason: string; }
+/** The direct coverage edit: name / pincodes / regions with a reason. The fee and the active state move only by proposal. */
+export interface UpdateDeliveryZoneInput { defaultName?: string; pincodes?: string[]; regionIds?: string[]; reason: string; }
+export interface ZoneServiceability { pincode: string; serviceable: boolean; zones: Array<{ id: string; defaultName: string; chargeDefinitionId: string | null }> }
+export interface ZoneFeeDefinition { id: string; chargeCode: string; label: string | null; calcMethod: string; effectiveFrom: string; effectiveTo: string | null }
+/** PC-56 TENANT-SW-a · W243 — COD as a ledger fact. Tiles are computed from the ledger. */
+export interface CodBoard {
+  enabled: boolean; today: string;
+  tiles: { collectedTodayMinor: string; depositedTodayMinor: string; inRiderHandsMinor: string; unreconciledOver24hMinor: string; shortfallOpenMinor: string };
+  riderCapMinor: string; riders: Array<{ riderUserId: string; holdingMinor: string; overCap: boolean }>;
+  days: Array<{ id: string; businessDate: string; status: 'open' | 'closed'; openedBy: string; openedAt: string; closedBy: string | null; closedAt: string | null; closeNote: string | null }>;
+}
+export interface CodShortfall { id: string; orderId: string; shipmentId: string; buyerUserId: string; amountMinor: string; reason: string; status: 'open' | 'collected'; recordedBy: string; collectedBy: string | null; collectedAt: string | null; createdAt: string }
+/** PC-56 TENANT-SW-a · W237 / W238 — a POD review. `can*` are display hints; the API's walls decide. */
+export interface PodReview {
+  id: string; shipmentId: string; orderId: string; driverUserId: string | null; dispatcherUserId: string | null; podMediaId: string | null; otpVerified: boolean;
+  deliveredAt: string; timerDueAt: string; status: 'awaiting' | 'auto_cleared' | 'flagged' | 'approved' | 'rejected';
+  flagReason: 'mismatch' | 'no_photo' | 'wrong_recipient' | 'weight_variance' | 'other' | null; flagNote: string | null; varianceMinor: string | null;
+  flaggedBy: string | null; flaggedAt: string | null; reviewerUserId: string | null; claimedAt: string | null; decidedBy: string | null; decidedAt: string | null;
+  decisionNote: string | null; rejectProposedBy: string | null; rejectProposedAt: string | null; checkerUserId: string | null; disputeId: string | null;
+  autoClearedAt: string | null; createdAt: string; timerOpen: boolean; youDroveOrDispatched: boolean; canFlag: boolean; canApprove: boolean;
+  canProposeReject: boolean; canConfirmReject: boolean; dispatcherRecorded: boolean; weighbridge?: { recorded: false; why: string };
+}
+export interface PodBoard {
+  enabled: boolean; tiles: { awaiting: number; autoClearedToday: number; flagged: number; escrowReleasedTodayMinor: string };
+  items: PodReview[]; weighbridge: { recorded: false; why: string };
+}
 /** A tenant setting row (typed value validated server-side against its definition). Used for branding + languages. */
 export interface TenantSetting { key: string; value: unknown; }
 /** A read-only feature override the tenant inherits from its plan (cannot self-grant — Law 11). */

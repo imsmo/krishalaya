@@ -28,76 +28,23 @@
 // COMMITTED, where every statement already reads the latest committed rules — a separate read-only transaction sees the
 // same rows. The ledger legs, their amounts, the idempotency key and the settlement line are untouched and still commit
 // atomically with the event on the relay tx. No grant was added to kv_relay.
-import { Inject, Injectable } from '@nestjs/common';
+//
+// PC-56 TENANT-SW-a — THE SETTLEMENT ITSELF MOVED TO OrderSettlementService (shared with the hold-release handler, same key). This
+// handler is now the door: it hands the completion to the service, which (1) defers it while a settlement hold is open (a flagged POD
+// review, a COD shortfall), (2) prices the commission from the ORDER's frozen snapshot — never a rule resolved now (F-4), and (3) settles
+// a buyer-charged commission without touching the seller (F-10). The leg table is in the service's header.
+import { Injectable } from '@nestjs/common';
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
-import { TxContext, UNIT_OF_WORK, UnitOfWork } from '../../../../core/database/unit-of-work';
-import { WALLET_SERVICE, WalletPort, LedgerLeg } from '../../../../core/wallet/wallet.port';
-import { platform, userMain, tenantCommission, PlatformAccount } from '../../../../core/wallet/account-codes';
-import { FlagsService } from '../../../../core/feature-flags/flags.service';
-import { SettlementPricingService } from '../../services/settlement-pricing.service';
-import { SettlementLineRepository } from '../../repositories/settlement-line.repository';
-import { CouponMoneyService } from '../../../promotions/services/coupon-money.service';
+import { TxContext } from '../../../../core/database/unit-of-work';
+import { OrderSettlementService } from '../../services/order-settlement.service';
 
 @Injectable()
 export class OrderCompletedHandler implements OutboxHandler {
   readonly eventType = 'orders.order_completed';
-  constructor(
-    @Inject(WALLET_SERVICE) private readonly wallet: WalletPort,
-    private readonly flags: FlagsService,
-    private readonly pricing: SettlementPricingService,
-    private readonly lines: SettlementLineRepository,
-    private readonly couponMoney: CouponMoneyService,
-    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
-  ) {}
+  constructor(private readonly settlement: OrderSettlementService) {}
 
   async handle(event: OutboxEvent, tx: TxContext): Promise<void> {
-    const tenantId = event.tenantId;
-    const sellerUserId = event.payload.sellerUserId as string | undefined;
-    const totalRaw = event.payload.totalMinor as string | undefined;
-    if (!tenantId || !sellerUserId || !totalRaw) return;
-    const gross = BigInt(totalRaw);                 // total the buyer paid into escrow
-    if (gross < 0n) return;                         // malformed event — fail closed, don't settle
-    if (gross === 0n) {                             // nothing in escrow (a fully discounted order with no charges)
-      await this.couponMoney.settleOrderInTx(tx, { tenantId, orderId: event.aggregateId, sellerUserId });
-      return;
-    }
-
-    // BUYER-side charges (delivery + platform fee) are the PLATFORM's revenue, not the seller's —
-    // exclude them from the settleable gross and route them to the platform's fees account.
-    const buyerCharges = BigInt((event.payload.deliveryFeeMinor as string) ?? '0') + BigInt((event.payload.platformFeeMinor as string) ?? '0');
-    const settleable = gross - buyerCharges;        // the goods value the seller settles on
-    if (settleable < 0n) return;                    // malformed event — fail closed, don't settle
-
-    const split = await this.flags.isEnabled('commission_split', { tenantId });
-    const legs: LedgerLeg[] = [{ account: platform(PlatformAccount.Escrow), amountMinor: -gross }];
-    let line = { gross: settleable, commission: 0n, gst: 0n, tds: 0n, net: settleable, tenantCommission: 0n };
-    let platformFees = buyerCharges;                // platform keeps the buyer charges
-
-    if (split) {
-      // HOTFIX-2: the rule lookup reads as kv_app (read-only, committed config); the legs below stay on the relay tx
-      const b = await this.uow.run(tenantId, (ruleTx) => this.pricing.quote(ruleTx, {
-        tenantId, grossMinor: settleable,
-        categoryId: (event.payload.categoryId as string) ?? null,
-        source: (event.payload.source as string) ?? null,
-        countryCode: (event.payload.countryCode as string) ?? 'IN',
-      }), { userId: 'system' });
-      legs.push(
-        { account: userMain(sellerUserId), amountMinor: b.sellerNetMinor },
-        { account: tenantCommission(tenantId), amountMinor: b.tenantCommissionMinor },
-        { account: platform(PlatformAccount.GstPayable), amountMinor: b.gstOnCommissionMinor },
-        { account: platform(PlatformAccount.TdsPayable), amountMinor: b.tdsMinor },
-      );
-      platformFees += b.platformShareMinor;         // platform commission share + buyer charges
-      line = { gross: settleable, commission: b.commissionMinor, gst: b.gstOnCommissionMinor, tds: b.tdsMinor, net: b.sellerNetMinor, tenantCommission: b.tenantCommissionMinor };
-    } else {
-      legs.push({ account: userMain(sellerUserId), amountMinor: settleable });
-    }
-    if (platformFees > 0n) legs.push({ account: platform(PlatformAccount.Fees), amountMinor: platformFees });
-
-    await this.wallet.post(tx, { tenantId, txnType: 'escrow_release', idempotencyKey: `settle:${event.aggregateId}`, referenceType: 'order', referenceId: event.aggregateId, initiatedBy: 'system', legs: legs.filter((l) => l.amountMinor !== 0n) });
-    // record the per-order settlement line (source for the seller's statement) — idempotent per order
-    await this.lines.insert(tx, { tenantId, sellerUserId, orderId: event.aggregateId, grossMinor: line.gross, commissionMinor: line.commission, gstMinor: line.gst, tdsMinor: line.tds, netMinor: line.net, tenantCommissionMinor: line.tenantCommission, platformFeesMinor: platformFees });
-    // A2 — the promotion top-up: tenant Hold → seller Main for every discount reserved on this order (none → no-op).
-    await this.couponMoney.settleOrderInTx(tx, { tenantId, orderId: event.aggregateId, sellerUserId });
+    if (!event.tenantId) return;
+    await this.settlement.settle(tx, event.tenantId, event.aggregateId, event.payload as Record<string, unknown>);
   }
 }

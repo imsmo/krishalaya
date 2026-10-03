@@ -17,8 +17,11 @@ export interface ChargeSnapshot {
   /** Set by checkout when a membership benefit overrode a resolved amount — without it the frozen rules would
    *  disagree with what the buyer actually paid, and a snapshot that disagrees with the money is worse than none. */
   memberBenefit?: { freeDelivery: boolean; platformFeeBpsOverride: number | null; appliedDeliveryFeeMinor: string; appliedPlatformFeeMinor: string };
-  charges: Array<{ code: string; calcMethod: string; config: unknown; definitionId: string | null; effectiveFrom: string | null; tenantOverride: boolean; amountMinor: string }>;
+  charges: Array<{ code: string; calcMethod: string; config: unknown; definitionId: string | null; effectiveFrom: string | null; tenantOverride: boolean; amountMinor: string; zoneId?: string | null }>;
 }
+
+/** PC-56 TENANT-SW-a · B1 — the delivery fee comes from the CHOSEN ZONE's own definition (quote = charge), not the generic code. */
+export interface ZoneDelivery { zoneId: string; chargeDefinitionId: string | null }
 
 @Injectable()
 export class ChargePricingService {
@@ -53,10 +56,13 @@ export class ChargePricingService {
    *  edited or expired next month can no longer change what an FPO's accountant reads about last month's order.
    *  A charge with no active definition contributes 0 and is recorded as ABSENT rather than omitted — "no fee
    *  applied" and "no rule existed" are different facts about the same ₹0. */
-  async checkoutChargesWithSnapshot(tx: TxContext, tenantId: string, subtotalMinor: bigint, now: Date): Promise<CheckoutCharges & { snapshot: ChargeSnapshot }> {
+  async checkoutChargesWithSnapshot(tx: TxContext, tenantId: string, subtotalMinor: bigint, now: Date, zone?: ZoneDelivery | null): Promise<CheckoutCharges & { snapshot: ChargeSnapshot }> {
     const codes = ['delivery_fee', 'buyer_platform_fee'] as const;
     const resolved = await Promise.all(codes.map(async (code) => {
-      const def = await this.defs.resolve(tx, tenantId, code);
+      // B1 (F-5): with a chosen zone the delivery fee is THAT zone's definition — exactly what deliveryMethods quoted. A zone with no
+      // fee definition is free delivery (recorded as 'none' with the zone id), never a fall-back to the generic slab.
+      const fromZone = code === 'delivery_fee' && zone != null;
+      const def = fromZone ? (zone!.chargeDefinitionId ? await this.defs.resolveById(tx, tenantId, zone!.chargeDefinitionId) : null) : await this.defs.resolve(tx, tenantId, code);
       const amountMinor = def ? computeCharge(def.calcMethod, def.config, { amountMinor: subtotalMinor }) : 0n;
       return {
         code,
@@ -68,6 +74,7 @@ export class ChargePricingService {
         effectiveFrom: def?.effectiveFrom ?? null,
         tenantOverride: def?.isTenantOverride === true,
         amountMinor: amountMinor.toString(),
+        ...(fromZone ? { zoneId: zone!.zoneId } : {}),
       };
     }));
     const by = (code: string) => BigInt(resolved.find((r) => r.code === code)!.amountMinor);

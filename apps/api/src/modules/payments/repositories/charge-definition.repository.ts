@@ -36,13 +36,15 @@ export class ChargeDefinitionRepository {
    *  charge_definition_id). Tenant-scoped (tenant override or platform default) + active + effective-dated;
    *  returns null if absent/expired/inactive so the caller can fall back to 0 (no surprise fee). */
   async resolveById(tx: TxContext, tenantId: string, id: string, onDate?: string): Promise<ResolvedChargeDefinition | null> {
-    const r = await tx.query<{ calc_method: ChargeCalcMethod; config: Record<string, any> }>(
-      `SELECT calc_method, config FROM charge_definitions
+    // PC-56 TENANT-SW-a: + id / effective_from / override, so a ZONE's fee is frozen into the order's charge snapshot by its definition
+    const r = await tx.query<{ id: string; calc_method: ChargeCalcMethod; config: Record<string, any>; effective_from: string; is_override: boolean }>(
+      `SELECT id, calc_method, config, effective_from::text AS effective_from, (tenant_id IS NOT NULL) AS is_override FROM charge_definitions
         WHERE id = $2 AND is_active = true AND (tenant_id = $1 OR tenant_id IS NULL)
           AND effective_from <= COALESCE($3::date, CURRENT_DATE)
           AND (effective_to IS NULL OR effective_to >= COALESCE($3::date, CURRENT_DATE))
         LIMIT 1`,
       [tenantId, id, onDate ?? null]);
-    return r.rows[0] ? { calcMethod: r.rows[0].calc_method, config: r.rows[0].config } : null;
+    const x = r.rows[0];
+    return x ? { id: x.id, calcMethod: x.calc_method, config: x.config, effectiveFrom: x.effective_from, isTenantOverride: x.is_override } : null;
   }
 }

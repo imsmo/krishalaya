@@ -21,6 +21,14 @@ export interface OrderProps {
    *  recalculated" — an immutability promise over an empty column. Written at checkout (the one place the rules
    *  are resolved); NULL on every order placed before this wave, which the read says rather than guesses. */
   commissionRuleSnapshot?: Record<string, unknown> | null;
+  /** PC-56 TENANT-SW-a (0196). `commissionRuleSnapshot` above was always the CHARGE snapshot; it now lives under its true name
+   *  (`orders.charge_snapshot`) and the old column is deprecated — the prop keeps its name for TENANT-3a's readers, the repository
+   *  maps it to `charge_snapshot`. `commissionSnapshot` is the commission RULE frozen at placement (A2). */
+  commissionSnapshot?: Record<string, unknown> | null;
+  /** The delivery zone the buyer chose that served the pincode at placement (B1). */
+  deliveryZoneId?: string | null;
+  /** The commission + GST charged to the BUYER at placement when the frozen rule says charged_to=buyer (A4) — part of the total. */
+  buyerCommissionMinor?: bigint;
 }
 
 const ACCEPTANCE_WINDOW_MS = 24 * 3600_000;
@@ -36,15 +44,18 @@ export class Order {
     sellerUserId: string; source: string; offerId?: string | null; requirementId?: string | null; currencyCode: string; items: OrderItem[];
     deliveryFeeMinor?: bigint; platformFeeMinor?: bigint; discountMinor?: bigint; couponCode?: string | null; deliveryMethodId: string | null; deliveryAddressId: string | null;
     requiresPayment: boolean; now?: Date; commissionRuleSnapshot?: Record<string, unknown> | null;
+    commissionSnapshot?: Record<string, unknown> | null; deliveryZoneId?: string | null; buyerCommissionMinor?: bigint;
   }): Order {
     const now = input.now ?? new Date();
     const subtotal = input.items.reduce((s, it) => s + it.props.lineTotalMinor, 0n);
     const delivery = input.deliveryFeeMinor ?? 0n;
     const platformFee = input.platformFeeMinor ?? 0n;   // BUYER-side platform fee (charged at checkout)
     const discount = input.discountMinor ?? 0n;
-    // tax/commission/tds are settlement-time (0 here). The buyer platform fee + delivery are charged
-    // NOW and added to what the buyer pays; settlement routes them to the platform (not the seller).
-    const total = subtotal + delivery + platformFee - discount;
+    const buyerCommission = input.buyerCommissionMinor ?? 0n;   // PC-56 TENANT-SW-a A4: a buyer-charged commission (+GST), frozen
+    if (buyerCommission < 0n) throw new OrderForbiddenError('a buyer commission is never negative');
+    // tax/commission/tds are settlement-time (0 here). The buyer platform fee + delivery (+ a buyer-charged commission) are charged
+    // NOW and added to what the buyer pays; settlement routes them to the platform / tenant (not the seller).
+    const total = subtotal + delivery + platformFee + buyerCommission - discount;
     const o = new Order({
       id: input.id, tenantId: input.tenantId, orderNo: input.orderNo, checkoutGroupId: input.checkoutGroupId,
       buyerUserId: input.buyerUserId, sellerUserId: input.sellerUserId, source: input.source, offerId: input.offerId ?? null, requirementId: input.requirementId ?? null, currencyCode: input.currencyCode,
@@ -55,6 +66,7 @@ export class Order {
       acceptanceDeadline: new Date(now.getTime() + ACCEPTANCE_WINDOW_MS), qualityWindowEnds: null,
       cancelReasonId: null, cancelledBy: null, version: 1, createdAt: now, completedAt: null,
       commissionRuleSnapshot: input.commissionRuleSnapshot ?? null,
+      commissionSnapshot: input.commissionSnapshot ?? null, deliveryZoneId: input.deliveryZoneId ?? null, buyerCommissionMinor: buyerCommission,
     });
     // buyerUserId + discount + couponCode travel so the promotions module can record/back-stop the
     // coupon redemption from the event (decoupled — orders never imports promotions' repo; Law 11).
@@ -76,6 +88,16 @@ export class Order {
   get createdAt() { return this.props.createdAt; }
   toProps(): Readonly<OrderProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
+
+  /** What settlement needs, travelling in the event (Law 11). PC-56 TENANT-SW-a: + the buyer-charged commission and the frozen
+   *  commission snapshot (settlement re-reads the ORDER's snapshot as the source of truth; the payload copy is for consumers). */
+  private completionPayload(): Record<string, unknown> {
+    return { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(),
+      deliveryFeeMinor: this.props.deliveryFeeMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(),
+      buyerCommissionMinor: (this.props.buyerCommissionMinor ?? 0n).toString(), currencyCode: this.props.currencyCode, source: this.props.source,
+      placedAt: this.props.createdAt instanceof Date ? this.props.createdAt.toISOString() : String(this.props.createdAt),
+      ...(this.props.commissionSnapshot ? { commissionSnapshot: this.props.commissionSnapshot } : {}) };
+  }
 
   private to(status: OrderStatus, evt: string, payload: Record<string, unknown> = {}, by?: string): void {
     const from = this.props.status;
@@ -110,7 +132,7 @@ export class Order {
   complete(now: Date = new Date()): void {
     // carry seller + amount so the payments module can settle escrow→seller without reading orders'
     // tables (cross-module data travels in the event, not via a foreign repository).
-    this.to('completed', OrderEventType.Completed, { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(), deliveryFeeMinor: this.props.deliveryFeeMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(), currencyCode: this.props.currencyCode, source: this.props.source });
+    this.to('completed', OrderEventType.Completed, this.completionPayload());
     this.props.completedAt = now;
   }
   /** Carrier/logistics confirmed physical delivery (the ground truth). Walks the order through the
@@ -150,7 +172,7 @@ export class Order {
     if (resolutionType === 'refund_full') { this.to('refunded', OrderEventType.Refunded, { buyerUserId: this.props.buyerUserId, totalMinor: this.props.totalMinor.toString() }, 'system'); return true; }
     if (resolutionType === 'refund_partial') { this.to('partially_refunded', OrderEventType.PartiallyRefunded, { buyerUserId: this.props.buyerUserId }, 'system'); return true; }
     // 'rejected' (dispute denied) or 'replacement' → the order completes (escrow releases to the seller)
-    this.to('completed', OrderEventType.Completed, { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(), deliveryFeeMinor: this.props.deliveryFeeMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(), currencyCode: this.props.currencyCode, source: this.props.source }, 'system');
+    this.to('completed', OrderEventType.Completed, this.completionPayload(), 'system');
     this.props.completedAt = now;
     return true;
   }

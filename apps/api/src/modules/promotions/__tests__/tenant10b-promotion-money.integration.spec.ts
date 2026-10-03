@@ -19,6 +19,7 @@
 //   9. F-29 — the order-created backstop run with the relay's transaction AS kv_relay no longer dies 42501;
 //  10. B4 / F-10 — the festival scheduler opens a system-closed festival in its window and never re-opens a human pause;
 //      the budget watch closes a spent promotion, which reads `exhausted`, not `paused`.
+import { composeOrderSettlement } from '../../payments/services/order-settlement.service';
 import { randomUUID } from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
 import { makeTenant, makeUser, ensureUnitCurrency } from '../../../../test/helpers/fixtures';
@@ -78,6 +79,7 @@ import { OrderClosedHandler } from '../events/handlers/order-closed.handler';
 import { FestivalCampaignSchedulerJob } from '../jobs/festival-campaign-scheduler.job';
 import { PromoBudgetWatchJob } from '../jobs/promo-budget-watch.job';
 import { decodeCursor } from '../domain/cursor';
+import { CommissionSnapshotService } from '../../payments/services/commission-snapshot.service';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -166,14 +168,15 @@ run('PC-56 TENANT-10b · promotion money — the tenant wallet funds the discoun
     carts = new CartService(uow, metrics, listings, cartRepo, new CartItemService(uow, metrics, listings, cartRepo, new CartItemRepository(replica as never)));
     const memberships = new UserMembershipService(uow, outbox, idem, metrics, wallet, audit, new MembershipTierRepository(replica as never), new UserMembershipRepository(replica as never));
     checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, new OrderRepository(replica as never), new CheckoutGroupRepository(replica as never),
-      new ChargePricingService(new ChargeDefinitionRepository(replica as never)), coupons, memberships, new DeliveryZoneRepository(replica as never));
+      new ChargePricingService(new ChargeDefinitionRepository(replica as never)), coupons, memberships, new DeliveryZoneRepository(replica as never),
+      new CommissionSnapshotService(new CommissionRuleRepository(replica as never), new TaxRuleRepository(replica as never))); // SW-a: the rule frozen at placement
     // `commission_split` is a GLOBAL flag row other payments specs switch ON while they run. Until PC-56 HOTFIX-2 that turned this
     // handler onto its split path, where it read `commission_rules` as kv_relay and died 42501 (the 11b/11c "red only in parallel"
     // runs). The split path now reads the rules as kv_app and survives the flag (relay-handlers-as-kv-relay gate, B4). The pin stays
     // because THIS spec's figures are the unsplit settlement (seller Main = the FULL goods value) and its synthetic completion events
     // carry no `source` for a rule lookup — so the real handler runs with the flag pinned to its seeded default (OFF), as 11c does.
     const pinnedFlags = { isEnabled: async (key: string, c?: unknown) => (key === 'commission_split' ? false : flags.isEnabled(key, c as never)) } as unknown as FlagsService;
-    settle = new OrderCompletedHandler(wallet, pinnedFlags, new SettlementPricingService(new CommissionRuleRepository(replica as never), new TaxRuleRepository(replica as never)), new SettlementLineRepository(), money, uow);
+    settle = new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: pinnedFlags, replica, lines: new SettlementLineRepository(), couponMoney: money, uow: uow }));
 
     promoId = (await promotions.create(tenantA, mgr, `k-${randomUUID()}`, { promoType: 'discount', defaultName: 'Kharif input 10%', rules: { discountType: 'percent', percentOff: 10, maxDiscountMinor: '50000' }, budgetMinor: '40000', ...window() } as never)).id;
     couponId = (await coupons.createCoupon(tenantA, mgr, `k-${randomUUID()}`, { promotionId: promoId, code: CODE, maxUses: 1000, perUserLimit: 1 } as never)).id;

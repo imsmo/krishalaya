@@ -6,9 +6,11 @@
 //      the seller's settleable gross — the seller never pockets delivery/platform fees — and the
 //      whole transaction stays ZERO-SUM.
 // Schema/seeds (incl. rules/0204 charge_definitions) come from the REAL db/migrations + db/seeds.
+import { OrderRepository } from '../../orders/repositories/order.repository';
+import { composeOrderSettlement } from '../services/order-settlement.service';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser, makeCompletedOrder } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -46,6 +48,7 @@ run('buyer charges + settlement routing (integration, real Postgres)', () => {
 
   const tenantA = randomUUID();
   const seller = randomUUID();
+  const buyer = randomUUID();
   const SUBTOTAL = 1_000_000n;     // ₹10,000 (above the delivery free threshold)
   const PLATFORM_FEE = 25_000n;    // 2.5% of subtotal (seeded buyer_platform_fee)
   const TOTAL = SUBTOTAL + PLATFORM_FEE;
@@ -55,7 +58,7 @@ run('buyer charges + settlement routing (integration, real Postgres)', () => {
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
-    await makeTenant(admin, tenantA, 'A'); await makeUser(admin, seller);
+    await makeTenant(admin, tenantA, 'A'); await makeUser(admin, seller); await makeUser(admin, buyer);
     await admin.query(`UPDATE feature_flags SET is_enabled=true, rollout_pct=100 WHERE key='commission_split'`);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -65,8 +68,8 @@ run('buyer charges + settlement routing (integration, real Postgres)', () => {
     const replica = new PgReadReplicaProvider(pools, shards);
     wallet = new InProcessWalletClient(new LedgerRepository());
     charges = new ChargePricingService(new ChargeDefinitionRepository(replica as any));
-    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handler = new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow);
+    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any), new OrderRepository(replica as never));
+    handler = new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: new FlagsService(pools, new InMemoryCacheService()), replica, lines: new SettlementLineRepository(), couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow }));
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
@@ -87,13 +90,16 @@ run('buyer charges + settlement routing (integration, real Postgres)', () => {
         legs: [ { account: platform(PlatformAccount.Escrow), amountMinor: TOTAL }, { account: platform(PlatformAccount.Gateway), amountMinor: -TOTAL } ] });
     }, { userId: 'system' });
 
-    const order = randomUUID();
+    // PC-56 TENANT-SW-a: settlement prices from the ORDER's frozen snapshot (A2) — a real order row (pre-0196 shape: resolved once on
+    // its placement date and recorded).
+    const order = await makeCompletedOrder(admin, { tenantId: tenantA, buyerUserId: buyer, sellerUserId: seller, totalMinor: TOTAL });
+    const fees0 = await bal('platform', PlatformAccount.Fees);   // shared platform account — measure this settlement's movement
     await uow.run(tenantA, async (tx) => handler.handle({ id: '1', tenantId: tenantA, aggregateType: 'order', aggregateId: order, eventType: 'orders.order_completed',
       payload: { sellerUserId: seller, totalMinor: TOTAL.toString(), deliveryFeeMinor: '0', platformFeeMinor: PLATFORM_FEE.toString(), source: 'direct', currencyCode: 'INR' } }, tx), { userId: 'system' });
 
     // commission on settleable 1,000,000 @3.5%: commission 35,000 (share 3,500), gst 1,750, tds 10,000, sellerNet 953,250
     expect(await bal('user', 'main', seller)).toBe(953_250n);     // seller does NOT get the platform fee
-    expect(await bal('platform', PlatformAccount.Fees)).toBe(PLATFORM_FEE + 3_500n);   // buyer charge + commission share
+    expect(await bal('platform', PlatformAccount.Fees) - fees0).toBe(PLATFORM_FEE + 3_500n);   // buyer charge + commission share
     // the settlement line records the GOODS value, not the buyer-charge-inflated total
     const line = await admin.query(`SELECT gross_minor, net_minor FROM settlement_lines WHERE tenant_id=$1 AND order_id=$2`, [tenantA, order]);
     expect(String(line.rows[0].gross_minor)).toBe('1000000');

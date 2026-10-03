@@ -11,11 +11,7 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { getThemePreference, getSeniorMode } from '../../lib/mechanism';
 import { formatMoneyMinor } from '@krishalaya/i18n';
-import { formatBps, COMMISSION_SOURCES } from '../../features/settings/config';
-import {
-  createCommissionRuleAction, deactivateCommissionRuleAction, createDeliveryZoneAction,
-  setZoneActiveAction,
-} from './actions';
+import { formatBps } from '../../features/settings/config';
 import type { CommissionRule, DeliveryZone } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -110,41 +106,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
             { header: t.t('settings.commission.chargedTo'), cell: (r) => t.t(`settings.chargedTo.${r.chargedTo}`) },
             { header: t.t('settings.status'), cell: (r) => r.isActive ? t.t('settings.active') : t.t('settings.inactive') },
             { header: '', cell: (r) => (r.scope === 'tenant' && r.isActive)
-              ? <form action={deactivateCommissionRuleAction}><input type="hidden" name="id" value={r.id} /><button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">{t.t('settings.commission.deactivate')}</button></form>
+              ? <Link href={`/money/commission/act?act=deactivate&id=${r.id}`} className="kv-btn--link">{t.t('settings.commission.deactivate')}</Link>
               : <span className="kv-muted">{r.scope === 'platform' ? t.t('settings.commission.inherited') : t.t('common.dash')}</span> },
           ]}
         />
       )}
-      <details className="kv-disclosure">
-        <summary>{t.t('settings.commission.add')}</summary>
-        <form action={createCommissionRuleAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('settings.commission.rate')} ({t.t('settings.bps')})
-            <input className="kv-input" name="rateBps" type="number" min={0} max={100000} required inputMode="numeric" />
-          </label>
-          <label className="kv-label">{t.t('settings.commission.platformShare')} ({t.t('settings.bps')})
-            <input className="kv-input" name="platformShareBps" type="number" min={0} max={100000} required inputMode="numeric" />
-          </label>
-          <label className="kv-label">{t.t('settings.commission.fixed')} ({t.t('settings.minor')})
-            <input className="kv-input" name="fixedMinor" type="text" inputMode="numeric" pattern="[0-9]*" defaultValue="0" />
-          </label>
-          <label className="kv-label">{t.t('settings.commission.source')}
-            <select className="kv-input" name="source" defaultValue="">
-              <option value="">{t.t('settings.commission.anySource')}</option>
-              {COMMISSION_SOURCES.map((s) => <option key={s} value={s}>{t.t(`settings.source.${s}`)}</option>)}
-            </select>
-          </label>
-          <label className="kv-label">{t.t('settings.commission.chargedTo')}
-            <select className="kv-input" name="chargedTo" defaultValue="seller">
-              <option value="seller">{t.t('settings.chargedTo.seller')}</option>
-              <option value="buyer">{t.t('settings.chargedTo.buyer')}</option>
-            </select>
-          </label>
-          <label className="kv-label">{t.t('settings.commission.priority')}
-            <input className="kv-input" name="priority" type="number" min={0} max={1000} defaultValue={100} inputMode="numeric" />
-          </label>
-          <button type="submit" className="kv-btn">{t.t('settings.commission.create')}</button>
-        </form>
-      </details>
+      <p className="kv-card">{t.t('settings.commission.moved')} <Link href="/money/commission" className="kv-btn kv-btn--primary">{t.t('settings.commission.open')}</Link></p>
 
       {/* ---- delivery zones ---- */}
       <h2 className="kv-section-title">{t.t('settings.zone.title')}</h2>
@@ -158,28 +125,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
             { header: t.t('settings.zone.pincodes'), cell: (z) => z.pincodes.length ? `${z.pincodes.length}` : t.t('common.dash') },
             { header: t.t('settings.zone.regions'), cell: (z) => z.regionIds.length ? `${z.regionIds.length}` : t.t('common.dash') },
             { header: t.t('settings.status'), cell: (z) => z.isActive ? t.t('settings.active') : t.t('settings.inactive') },
-            { header: '', cell: (z) => (
-              <form action={setZoneActiveAction}>
-                <input type="hidden" name="id" value={z.id} />
-                <input type="hidden" name="isActive" value={z.isActive ? 'false' : 'true'} />
-                <button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">{z.isActive ? t.t('settings.zone.disable') : t.t('settings.zone.enable')}</button>
-              </form>
-            ) },
+            { header: '', cell: (z) => <Link href={`/ops/logistics/zones/act?act=${z.isActive ? 'deactivate' : 'activate'}&id=${z.id}`} className="kv-btn--link">{z.isActive ? t.t('settings.zone.disable') : t.t('settings.zone.enable')}</Link> },
           ]}
         />
       )}
-      <details className="kv-disclosure">
-        <summary>{t.t('settings.zone.add')}</summary>
-        <form action={createDeliveryZoneAction} className="kv-form">
-          <label className="kv-label">{t.t('settings.zone.name')}
-            <input className="kv-input" name="defaultName" type="text" maxLength={120} required />
-          </label>
-          <label className="kv-label">{t.t('settings.zone.pincodes')}
-            <textarea className="kv-input" name="pincodes" rows={3} placeholder={t.t('settings.zone.pincodesHint')} />
-          </label>
-          <button type="submit" className="kv-btn">{t.t('settings.zone.create')}</button>
-        </form>
-      </details>
+      <p className="kv-card">{t.t('settings.zone.moved')} <Link href="/ops/logistics/zones" className="kv-btn kv-btn--primary">{t.t('settings.zone.open')}</Link></p>
 
       {/* ---- branding (PC-56 TENANT-13d) ----
           The four `branding.*` settings this form wrote were read by nothing (F-13) and are deprecated by 0194; their values were copied

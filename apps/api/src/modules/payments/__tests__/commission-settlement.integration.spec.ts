@@ -7,9 +7,16 @@
 //   3. the seeded platform-default (3.5% / 5% GST / 1% TDS) drives tenant B's split.
 // Commission rules are tenant-scoped (RLS: own OR platform-default NULL); the engine runs in the
 // settlement tx. Schema/seeds from the REAL db/migrations + db/seeds.
+// PC-56 TENANT-SW-a: settlement now prices from the ORDER (its frozen snapshot, A2), so each case settles a real order row. These
+// orders carry no snapshot — the pre-0196 path: resolved ONCE on the placement date and recorded (the last case asserts the record).
+// Tenant A's 10% rule is a HISTORICAL fixture — a rule two administrators confirmed long ago — written with triggers bypassed
+// (session_replication_role = replica, superuser): 0196 lets a tenant rule be written today only through a confirmed proposal that
+// starts ≥ 7 days out, which is proven in tenant-swa-commission-zones-cod-pod.integration.spec.ts.
+import { OrderRepository } from '../../orders/repositories/order.repository';
+import { composeOrderSettlement } from '../services/order-settlement.service';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser, makeCompletedOrder } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -45,6 +52,7 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
   const tenantB = randomUUID();   // platform default (3.5%)
   const sellerA = randomUUID();
   const sellerB = randomUUID();
+  const buyer = randomUUID();
   const GROSS = 1_000_000n;       // ₹10,000
 
   const bal = async (kind: string, code: string, owner?: string) =>
@@ -58,18 +66,24 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
         legs: [ { account: platform(PlatformAccount.Escrow), amountMinor: amount }, { account: platform(PlatformAccount.Gateway), amountMinor: -amount } ] });
     }, { userId: 'system' });
   };
+  const placeOrder = (tenantId: string, sellerUserId: string) => makeCompletedOrder(admin, { tenantId, buyerUserId: buyer, sellerUserId, totalMinor: GROSS });
   const settle = async (tenantId: string, sellerUserId: string, orderId: string) =>
     uow.run(tenantId, async (tx) => handler.handle({ id: '1', tenantId, aggregateType: 'order', aggregateId: orderId, eventType: 'orders.order_completed', payload: { sellerUserId, totalMinor: GROSS.toString(), currencyCode: 'INR', source: 'direct' } }, tx), { userId: 'system' });
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
-    await makeUser(admin, sellerA); await makeUser(admin, sellerB);
+    await makeUser(admin, sellerA); await makeUser(admin, sellerB); await makeUser(admin, buyer);
     // commission_split ON for the test DB; tenant-A override = 10% commission (KV 10% share)
     await admin.query(`UPDATE feature_flags SET is_enabled=true, rollout_pct=100 WHERE key='commission_split'`);
-    await admin.query(
-      `INSERT INTO commission_rules (tenant_id, category_id, source, seller_role_id, rate_bps, fixed_minor, cap_minor, platform_share_bps, charged_to, priority, effective_from, is_active)
-       VALUES ($1, NULL, 'direct', NULL, 1000, 0, NULL, 1000, 'seller', 50, CURRENT_DATE, true)`, [tenantA]);
+    const c = await admin.connect();
+    try {
+      await c.query('BEGIN'); await c.query(`SET LOCAL session_replication_role = replica`);
+      await c.query(
+        `INSERT INTO commission_rules (tenant_id, category_id, source, seller_role_id, rate_bps, fixed_minor, cap_minor, platform_share_bps, charged_to, priority, effective_from, is_active)
+         VALUES ($1, NULL, 'direct', NULL, 1000, 0, NULL, 1000, 'seller', 50, CURRENT_DATE - 30, true)`, [tenantA]);
+      await c.query('COMMIT');
+    } finally { c.release(); }
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -78,23 +92,25 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
     const replica = new PgReadReplicaProvider(pools, shards);
     wallet = new InProcessWalletClient(new LedgerRepository());
     const flags = new FlagsService(pools, new InMemoryCacheService());
-    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handler = new OrderCompletedHandler(wallet, flags, pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow);
+    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any), new OrderRepository(replica as never));
+    handler = new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: flags, replica, lines: new SettlementLineRepository(), couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow }));
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
 
   it('tenant A (10% override): escrow splits zero-sum into seller/commission/fees/GST/TDS', async () => {
     await fundEscrow(tenantA, GROSS);
-    const order = randomUUID();
+    const order = await placeOrder(tenantA, sellerA);
+    // platform accounts are shared by every spec on this database — measure THIS settlement's movement, not the absolute balance
+    const [fees0, gst0, tds0] = [await bal('platform', PlatformAccount.Fees), await bal('platform', PlatformAccount.GstPayable), await bal('platform', PlatformAccount.TdsPayable)];
     await settle(tenantA, sellerA, order);
 
     // commission 100,000 (10%); platform share 10,000; tenant commission 90,000; GST 5,000; TDS 10,000
     expect(await bal('user', 'main', sellerA)).toBe(885_000n);          // residual seller net
     expect(await bal('tenant', 'commission', tenantA)).toBe(90_000n);
-    expect(await bal('platform', PlatformAccount.Fees)).toBe(10_000n);
-    expect(await bal('platform', PlatformAccount.GstPayable)).toBe(5_000n);
-    expect(await bal('platform', PlatformAccount.TdsPayable)).toBe(10_000n);
+    expect(await bal('platform', PlatformAccount.Fees) - fees0).toBe(10_000n);
+    expect(await bal('platform', PlatformAccount.GstPayable) - gst0).toBe(5_000n);
+    expect(await bal('platform', PlatformAccount.TdsPayable) - tds0).toBe(10_000n);
 
     // the settlement transaction is zero-sum
     const sum = await admin.query(`SELECT COALESCE(SUM(amount_minor),0)::text s FROM ledger_entries WHERE txn_id=(SELECT id FROM ledger_transactions WHERE idempotency_key=$1)`, [`settle:${order}`]);
@@ -103,7 +119,7 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
 
   it('tenant B (platform default 3.5%): different split — rule resolution is tenant-isolated', async () => {
     await fundEscrow(tenantB, GROSS);
-    const order = randomUUID();
+    const order = await placeOrder(tenantB, sellerB);
     await settle(tenantB, sellerB, order);
     // commission 35,000 (3.5%); tenant commission 31,500; seller net 953,250 — proves A's override didn't leak
     expect(await bal('user', 'main', sellerB)).toBe(953_250n);
@@ -112,10 +128,13 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
 
   it('settlement is idempotent — re-completing does not double-split', async () => {
     await fundEscrow(tenantB, GROSS);
-    const order = randomUUID();
+    const order = await placeOrder(tenantB, sellerB);
     await settle(tenantB, sellerB, order);
     const after1 = await bal('user', 'main', sellerB);
     await settle(tenantB, sellerB, order);              // replay same orderId
     expect(await bal('user', 'main', sellerB)).toBe(after1);   // unchanged — settled once
+    // SW-a (A2): the pre-0196 order was resolved once on its placement date and that resolution is now recorded on the order
+    const snap = (await admin.query(`SELECT commission_snapshot FROM orders WHERE id=$1`, [order])).rows[0].commission_snapshot;
+    expect(snap).toMatchObject({ v: 1, rateBps: 350, chargedTo: 'seller' });
   });
 });

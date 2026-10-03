@@ -14,7 +14,7 @@ import { OrderStatus } from '../domain/order.state';
 const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, requirement_id, currency_code,
   subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
   total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, quality_window_ends,
-  cancel_reason_id, cancelled_by, version, created_at, completed_at, commission_rule_snapshot`;
+  cancel_reason_id, cancelled_by, version, created_at, completed_at, charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor`;
 // partition-prune window around the v7 id's embedded time (clock skew tolerant)
 const PRUNE = `created_at >= uuid_v7_time($1) - interval '5 seconds' AND created_at < uuid_v7_time($1) + interval '5 seconds'`;
 const big = (v: any) => BigInt(v);
@@ -27,7 +27,8 @@ function toDomain(r: any): Order {
     deliveryMethodId: r.delivery_method_id, deliveryAddressId: r.delivery_address_id, acceptanceDeadline: r.acceptance_deadline,
     qualityWindowEnds: r.quality_window_ends, cancelReasonId: r.cancel_reason_id, cancelledBy: r.cancelled_by,
     version: r.version, createdAt: r.created_at, completedAt: r.completed_at,
-    commissionRuleSnapshot: r.commission_rule_snapshot ?? null });
+    commissionRuleSnapshot: r.charge_snapshot ?? null, commissionSnapshot: r.commission_snapshot ?? null,
+    deliveryZoneId: r.delivery_zone_id ?? null, buyerCommissionMinor: r.buyer_commission_minor != null ? big(r.buyer_commission_minor) : 0n });
 }
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -49,13 +50,14 @@ export class OrderRepository {
       `INSERT INTO orders (id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, currency_code,
         subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
         total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, version, created_at, offer_id, requirement_id,
-        commission_rule_snapshot)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb)`,
+        charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,$26::jsonb,$27,$28)`,
       [p.id, p.tenantId, p.orderNo, p.checkoutGroupId, p.buyerUserId, p.sellerUserId, p.source, p.currencyCode,
        p.subtotalMinor.toString(), p.deliveryFeeMinor.toString(), p.discountMinor.toString(), p.taxMinor.toString(),
        p.commissionMinor.toString(), p.platformFeeMinor.toString(), p.tdsMinor.toString(), p.totalMinor.toString(),
        p.status, p.deliveryMethodId, p.deliveryAddressId, p.acceptanceDeadline, p.version, p.createdAt, p.offerId, p.requirementId,
-       p.commissionRuleSnapshot ? JSON.stringify(p.commissionRuleSnapshot) : null]);
+       p.commissionRuleSnapshot ? JSON.stringify(p.commissionRuleSnapshot) : null,
+       p.commissionSnapshot ? JSON.stringify(p.commissionSnapshot) : null, p.deliveryZoneId ?? null, (p.buyerCommissionMinor ?? 0n).toString()]);
     for (const it of items) {
       const v = it.props;
       await tx.query(
@@ -66,6 +68,39 @@ export class OrderRepository {
          v.unitCode, v.unitPriceMinor.toString(), v.lineTotalMinor.toString(), v.gstRatePct, v.hsnCode, v.batchId]);
     }
     await this.recordEvent(tx, p.tenantId, p.id, null, p.status, p.buyerUserId, 'order placed');
+  }
+
+  /** PC-56 TENANT-SW-a · A2 — what settlement / dispute / return pricing need from the ORDER, read in the caller's (kv_app) tx: the
+   *  frozen commission snapshot, the buyer-charged commission, the placement instant and its IST date. Prunes on the v7 id; an order
+   *  whose id carries no v7 time (a v4 fixture) is found by the unpruned fallback rather than silently missed. */
+  async pricingFactsTx(tx: TxContext, tenantId: string, id: string): Promise<{ commissionSnapshot: Record<string, unknown> | null; buyerCommissionMinor: bigint; placedOn: string; source: string; buyerUserId: string; sellerUserId: string; totalMinor: bigint } | null> {
+    const sql = (prune: boolean) => `SELECT commission_snapshot, buyer_commission_minor, (created_at AT TIME ZONE 'Asia/Kolkata')::date::text placed_on, source, buyer_user_id, seller_user_id, total_minor
+      FROM orders WHERE id=$1 AND tenant_id=$2${prune ? ` AND ${PRUNE}` : ''} LIMIT 1`;
+    let r = await tx.query(sql(true), [id, tenantId]);
+    if (!r.rows[0]) r = await tx.query(sql(false), [id, tenantId]);
+    const x = r.rows[0];
+    return x ? { commissionSnapshot: x.commission_snapshot ?? null, buyerCommissionMinor: BigInt(x.buyer_commission_minor ?? 0), placedOn: x.placed_on, source: x.source,
+      buyerUserId: x.buyer_user_id, sellerUserId: x.seller_user_id, totalMinor: BigInt(x.total_minor) } : null;
+  }
+  /** PC-56 TENANT-SW-a · B2 — W233's "Orders 30d" per zone: a real count over orders.delivery_zone_id (idx_orders_zone). */
+  async countByZoneSince(tenantId: string, zoneIds: string[], days: number): Promise<Map<string, number>> {
+    if (zoneIds.length === 0) return new Map();
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT delivery_zone_id, count(*)::int n FROM orders WHERE tenant_id=$1 AND delivery_zone_id = ANY($2::uuid[]) AND created_at >= now() - make_interval(days => $3)
+        GROUP BY delivery_zone_id`, [tenantId, zoneIds, days]);
+    return new Map(r.rows.map((x: any) => [x.delivery_zone_id as string, Number(x.n)]));
+  }
+
+  /** PC-56 TENANT-SW-a · B1 — the buyer's OWN delivery address (pincode / region) for serviceability at placement. Another person's
+   *  address id resolves to nothing (anti-IDOR), exactly like an unknown one. */
+  async buyerAddressTx(tx: TxContext, tenantId: string, buyerUserId: string, addressId: string): Promise<{ pincode: string | null; regionId: string | null } | null> {
+    const r = await tx.query(`SELECT pincode, region_id FROM addresses WHERE id=$1 AND user_id=$2 AND (tenant_id IS NULL OR tenant_id=$3) AND deleted_at IS NULL`, [addressId, buyerUserId, tenantId]);
+    return r.rows[0] ? { pincode: r.rows[0].pincode ?? null, regionId: r.rows[0].region_id ?? null } : null;
+  }
+  /** Record a snapshot resolved at completion for an order placed before 0196 — ONCE (0196 trg_orders_frozen_once refuses a change). */
+  async recordCommissionSnapshotOnceTx(tx: TxContext, tenantId: string, id: string, snapshot: Record<string, unknown>): Promise<number> {
+    const r = await tx.query(`UPDATE orders SET commission_snapshot=$3::jsonb WHERE id=$1 AND tenant_id=$2 AND commission_snapshot IS NULL`, [id, tenantId, JSON.stringify(snapshot)]);
+    return r.rowCount ?? 0;
   }
 
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Order | null> {

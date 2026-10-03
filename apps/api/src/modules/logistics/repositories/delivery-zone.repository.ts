@@ -7,6 +7,7 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { DeliveryZone } from '../domain/delivery-zone.entity';
 import { UnknownZoneRouteReferenceError } from '../domain/logistics.errors';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 
 const COLS = `id, tenant_id, default_name, pincodes, region_ids, charge_definition_id, is_active, created_at`;
 const arr = (v: any): string[] => (Array.isArray(v) ? v.map(String) : []);
@@ -17,7 +18,7 @@ function toDomain(r: any): DeliveryZone {
     chargeDefinitionId: r.charge_definition_id, isActive: r.is_active, createdAt: r.created_at,
   });
 }
-export interface ZoneListQuery { pincode?: string; activeOnly: boolean; cursor?: { c: string; id: string }; limit: number; }
+export interface ZoneListQuery { pincode?: string; activeOnly: boolean; cursor?: { ts: string; id: string }; limit: number; }
 
 @Injectable()
 export class DeliveryZoneRepository {
@@ -70,15 +71,32 @@ export class DeliveryZoneRepository {
     return r.rows.map(toDomain);
   }
 
-  async list(tenantId: string, q: ZoneListQuery): Promise<DeliveryZone[]> {
+  /* ── PC-56 TENANT-SW-a · B1 — placement reads, in the checkout transaction ── */
+  /** Does this tenant deliver by zone at all? (≥ 1 active zone). A tenant with none keeps the generic delivery_fee. */
+  async activeCountTx(tx: TxContext, tenantId: string): Promise<number> {
+    const r = await tx.query<{ n: number }>(`SELECT count(*)::int n FROM delivery_zones WHERE tenant_id=$1 AND is_active AND deleted_at IS NULL`, [tenantId]);
+    return r.rows[0]?.n ?? 0;
+  }
+  /** Active zones serving the address's pincode or region. */
+  async serviceableTx(tx: TxContext, tenantId: string, q: { pincode: string | null; regionId: string | null }): Promise<DeliveryZone[]> {
+    const r = await tx.query(
+      `SELECT ${COLS} FROM delivery_zones WHERE tenant_id=$1 AND is_active AND deleted_at IS NULL
+          AND (($2::text IS NOT NULL AND pincodes @> jsonb_build_array($2::text)) OR ($3::text IS NOT NULL AND region_ids @> jsonb_build_array($3::text)))
+        ORDER BY created_at, id LIMIT 25`, [tenantId, q.pincode, q.regionId]);
+    return r.rows.map(toDomain);
+  }
+
+  /** Keyset over a MICROSECOND cursor (F-14): the instant travels as the database printed it, never through a JS Date. */
+  async list(tenantId: string, q: ZoneListQuery): Promise<Array<{ zone: DeliveryZone; createdUs: string }>> {
     const params: unknown[] = [tenantId];
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     let where = `tenant_id=$1`;
     if (q.pincode) where += ` AND pincodes @> ${p(JSON.stringify([q.pincode]))}::jsonb`;
     if (q.activeOnly) where += ` AND is_active = true`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.ts), ci = p(q.cursor.id); where += ` AND (created_at < ${cc}::timestamptz OR (created_at = ${cc}::timestamptz AND id < ${ci}::uuid))`; }
     const lp = p(q.limit);
-    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM delivery_zones WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
-    return r.rows.map(toDomain);
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS}, ${US_SQL('created_at')} AS created_us FROM delivery_zones WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    return r.rows.map((x: any) => ({ zone: toDomain(x), createdUs: x.created_us }));
   }
+
 }

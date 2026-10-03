@@ -7,7 +7,7 @@ import { AccountRef } from './account-codes';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export interface LockedAccount { id: string; balanceMinor: bigint; version: string; lastHash: string | null; isFrozen: boolean; kind: string; }
+export interface LockedAccount { id: string; balanceMinor: bigint; version: string; lastHash: string | null; isFrozen: boolean; kind: string; accountCode?: string; }
 
 @Injectable()
 export class LedgerRepository {
@@ -55,10 +55,10 @@ export class LedgerRepository {
   /** Lock an account row and read its balance (FOR UPDATE — serializes concurrent posts). */
   async lockAccount(tx: TxContext, id: string): Promise<LockedAccount> {
     const r = await tx.query<any>(
-      `SELECT id, cached_balance_minor, balance_version, last_entry_hash, is_frozen, owner_kind
+      `SELECT id, cached_balance_minor, balance_version, last_entry_hash, is_frozen, owner_kind, account_code
          FROM wallet_accounts WHERE id=$1 FOR UPDATE`, [id]);
     const row = r.rows[0];
-    return { id: row.id, balanceMinor: BigInt(row.cached_balance_minor), version: String(row.balance_version), lastHash: row.last_entry_hash, isFrozen: row.is_frozen, kind: row.owner_kind };
+    return { id: row.id, balanceMinor: BigInt(row.cached_balance_minor), version: String(row.balance_version), lastHash: row.last_entry_hash, isFrozen: row.is_frozen, kind: row.owner_kind, accountCode: row.account_code };
   }
 
   /** Claim the idempotency key by inserting the txn header. Returns the existing id if replayed. */

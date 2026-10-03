@@ -57,5 +57,9 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('wage_priority_payout','Wage priority lane: on labour.wages_paid, promote a worker''s queued payouts into the fast wage lane so their bank disbursement jumps the bulk settlement queue — OFF = normal priority (kill switch)', false, 100, '{}'),
   ('pmfby_sync','Insurance Wave 7 (DEV-25, KV-BL-057): PMFBY govt crop-insurance portal enrolment sync on policy proposal (subject_type=crop_season) — OFF until a named PMFBY portal integration is founder-reviewed (§8)', false, 100, '{}'),
   ('surveyor_dispatch','Insurance Wave 7 (DEV-25, KV-BL-057): external surveyor-network dispatch notification on claim survey_scheduled — OFF until a named surveyor-network partner is founder-reviewed (§8)', false, 100, '{}'),
-  ('vet_cert_verification','Insurance Wave 7 (DEV-25, KV-BL-057): veterinary-certificate verification for livestock claim evidence — OFF until a named vet-cert verification provider is founder-reviewed (§8)', false, 100, '{}')
+  ('vet_cert_verification','Insurance Wave 7 (DEV-25, KV-BL-057): veterinary-certificate verification for livestock claim evidence — OFF until a named vet-cert verification provider is founder-reviewed (§8)', false, 100, '{}'),
+  -- PC-56 TENANT-SW-a (0196 also inserts them — whichever runs first wins, ON CONFLICT DO NOTHING)
+  ('tenant_commission_rules','PC-56 TENANT-SW-a: tenant commission rule proposals (owner + checker, 7-day notice) — OFF = platform defaults govern, no tenant overrides', false, 100, '{}'),
+  ('cod_ledger','PC-56 TENANT-SW-a: COD cash as a ledger fact (collect at delivery → rider cash-in-hand; remit at reconcile; per-rider cap; cash day) — OFF = the off-ledger worksheet', false, 100, '{}'),
+  ('pod_review','PC-56 TENANT-SW-a: POD review on every delivered shipment (2h auto-clear; a flagged POD holds settlement) — OFF = no review rows, no holds', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

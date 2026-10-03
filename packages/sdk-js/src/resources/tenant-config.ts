@@ -5,33 +5,55 @@
 // rows (Law 2/11). Platform-default commission rows are read-only here. Creates are idempotent (Law 3).
 import { HttpClient } from '../http';
 import {
-  CommissionRule, CreateCommissionRuleInput,
-  DeliveryZone, CreateDeliveryZoneInput, UpdateDeliveryZoneInput,
+  CommissionRule, CreateCommissionRuleInput, CommissionRuleProposal, CommissionProposalStatus, CommissionPolicy, CommissionResolution,
+  DeliveryZone, CreateDeliveryZoneInput, UpdateDeliveryZoneInput, ProposeZoneInput, DeliveryZoneProposal, ZoneServiceability, ZoneFeeDefinition,
   TenantSetting, TenantFeature, Page,
 } from '../types';
 
 export class TenantConfigResource {
   constructor(private readonly http: HttpClient) {}
 
-  // ---- commission rules (server-authoritative money rules; platform rows read-only) ----
-  /** The tenant's commission rules (its own; optionally including inherited platform defaults, read-only). */
-  async commissionRules(params: { activeOnly?: boolean; includePlatformDefaults?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<CommissionRule>> {
+  // ---- commission rules (PC-56 TENANT-SW-a, W149): owner + checker proposals; the platform share is the plan's ----
+  /** The tenant's commission rules (its own; optionally the inherited platform defaults, read-only). Microsecond keyset.
+   *  `platformShareBps` = the plan floor every tenant rule carries ("set by your plan"). */
+  async commissionRules(params: { activeOnly?: boolean; includePlatformDefaults?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<CommissionRule> & { platformShareBps: number | null }> {
     const r = await this.http.request<CommissionRule[]>('GET', 'commission-rules', {
       query: { activeOnly: params.activeOnly, includePlatformDefaults: params.includePlatformDefaults, cursor: params.cursor, limit: params.limit }, signal,
     });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, platformShareBps: (r.meta?.platformShareBps as number | undefined) ?? null };
+  }
+  /** The plan floor + the earliest date a change may carry (next IST midnight + 7 days). */
+  async commissionPolicy(signal?: AbortSignal): Promise<CommissionPolicy> {
+    return (await this.http.request<CommissionPolicy>('GET', 'commission-rules/policy', { signal })).data;
+  }
+  /** W149's resolution example: which rule an order with these facts is charged under on a date (and after a proposal applies). */
+  async commissionResolution(q: { source?: string; categoryId?: string; sellerRoleId?: string; onDate?: string; proposalId?: string } = {}, signal?: AbortSignal): Promise<CommissionResolution> {
+    return (await this.http.request<CommissionResolution>('GET', 'commission-rules/resolution', { query: q, signal })).data;
+  }
+  async commissionProposals(params: { status?: CommissionProposalStatus; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<CommissionRuleProposal>> {
+    const r = await this.http.request<CommissionRuleProposal[]>('GET', 'commission-rules/proposals', { query: params, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  /** Create a tenant commission rule. Idempotent (Law 3). Needs `payout.approve` server-side. */
-  async createCommissionRule(input: CreateCommissionRuleInput, idempotencyKey: string): Promise<CommissionRule> {
-    return (await this.http.request<CommissionRule>('POST', 'commission-rules', { idempotencyKey, body: input })).data;
+  async commissionProposal(id: string, signal?: AbortSignal): Promise<CommissionRuleProposal> {
+    return (await this.http.request<CommissionRuleProposal>('GET', `commission-rules/proposals/${encodeURIComponent(id)}`, { signal })).data;
   }
-  /** Deactivate one of the tenant's own commission rules. Needs `payout.approve` server-side. */
-  async deactivateCommissionRule(id: string): Promise<CommissionRule> {
-    return (await this.http.request<CommissionRule>('POST', `commission-rules/${encodeURIComponent(id)}/deactivate`, {})).data;
+  /** Propose a NEW effective-dated rule. Needs `commission.manage`; a second tenant_admin confirms. Idempotent (Law 3). */
+  async proposeCommissionRule(input: CreateCommissionRuleInput, idempotencyKey: string): Promise<CommissionRuleProposal> {
+    return (await this.http.request<CommissionRuleProposal>('POST', 'commission-rules/proposals', { idempotencyKey, body: input })).data;
+  }
+  /** Propose ending one of the tenant's own rules from an IST midnight ≥ 7 days out. */
+  async proposeCommissionDeactivation(ruleId: string, input: { effectiveFrom: string; reason: string }, idempotencyKey: string): Promise<CommissionRuleProposal> {
+    return (await this.http.request<CommissionRuleProposal>('POST', `commission-rules/${encodeURIComponent(ruleId)}/deactivate`, { idempotencyKey, body: input })).data;
+  }
+  async confirmCommissionProposal(id: string, idempotencyKey: string): Promise<CommissionRuleProposal> {
+    return (await this.http.request<CommissionRuleProposal>('POST', `commission-rules/proposals/${encodeURIComponent(id)}/confirm`, { idempotencyKey, body: {} })).data;
+  }
+  async refuseCommissionProposal(id: string, reason: string, idempotencyKey: string): Promise<CommissionRuleProposal> {
+    return (await this.http.request<CommissionRuleProposal>('POST', `commission-rules/proposals/${encodeURIComponent(id)}/refuse`, { idempotencyKey, body: { reason } })).data;
   }
 
-  // ---- delivery zones (logistics flag, ShipmentPermissions.Manage) ----
-  /** The tenant's delivery zones (keyset). */
+  // ---- delivery zones (PC-56 TENANT-SW-a, W233): lead + checker; `logistics` flag ----
+  /** The tenant's delivery zones (microsecond keyset), each with its real "Orders 30d". */
   async deliveryZones(params: { pincode?: string; activeOnly?: boolean; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DeliveryZone>> {
     const r = await this.http.request<DeliveryZone[]>('GET', 'logistics/zones', {
       query: { pincode: params.pincode, activeOnly: params.activeOnly, cursor: params.cursor, limit: params.limit }, signal,
@@ -41,17 +63,38 @@ export class TenantConfigResource {
   async getDeliveryZone(id: string, signal?: AbortSignal): Promise<DeliveryZone> {
     return (await this.http.request<DeliveryZone>('GET', `logistics/zones/${encodeURIComponent(id)}`, { signal })).data;
   }
-  /** Create a delivery zone. Idempotent (Law 3). */
-  async createDeliveryZone(input: CreateDeliveryZoneInput, idempotencyKey: string): Promise<DeliveryZone> {
-    return (await this.http.request<DeliveryZone>('POST', 'logistics/zones', { idempotencyKey, body: input })).data;
+  /** "Does this pincode get delivery?" */
+  async zoneServiceability(pincode: string, signal?: AbortSignal): Promise<ZoneServiceability> {
+    return (await this.http.request<ZoneServiceability>('GET', 'logistics/zones/serviceability', { query: { pincode }, signal })).data;
   }
-  /** Patch a delivery zone (name / pincodes / regions / charge). */
+  /** The fee definitions a zone may point at (this tenant's, approved by a second person on W150). */
+  async zoneFeeDefinitions(signal?: AbortSignal): Promise<ZoneFeeDefinition[]> {
+    return (await this.http.request<ZoneFeeDefinition[]>('GET', 'logistics/zones/fee-definitions', { signal })).data;
+  }
+  async zoneProposals(params: { status?: 'proposed' | 'confirmed' | 'refused' | 'expired'; zoneId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DeliveryZoneProposal>> {
+    const r = await this.http.request<DeliveryZoneProposal[]>('GET', 'logistics/zones/proposals', { query: params, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async zoneProposal(id: string, signal?: AbortSignal): Promise<DeliveryZoneProposal> {
+    return (await this.http.request<DeliveryZoneProposal>('GET', `logistics/zones/proposals/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** Propose a zone create / fee re-point / (de)activation. Needs `logistics.zones.manage`; a different tenant_admin confirms. */
+  async proposeZone(input: ProposeZoneInput, idempotencyKey: string): Promise<DeliveryZoneProposal> {
+    return (await this.http.request<DeliveryZoneProposal>('POST', 'logistics/zones/proposals', { idempotencyKey, body: input })).data;
+  }
+  /** "New zone (checker)" — a create proposal (kept under its old name for existing callers). */
+  async createDeliveryZone(input: CreateDeliveryZoneInput, idempotencyKey: string): Promise<DeliveryZoneProposal> {
+    return this.proposeZone({ kind: 'create', ...input }, idempotencyKey);
+  }
+  async confirmZoneProposal(id: string, idempotencyKey: string): Promise<DeliveryZoneProposal> {
+    return (await this.http.request<DeliveryZoneProposal>('POST', `logistics/zones/proposals/${encodeURIComponent(id)}/confirm`, { idempotencyKey, body: {} })).data;
+  }
+  async refuseZoneProposal(id: string, reason: string, idempotencyKey: string): Promise<DeliveryZoneProposal> {
+    return (await this.http.request<DeliveryZoneProposal>('POST', `logistics/zones/proposals/${encodeURIComponent(id)}/refuse`, { idempotencyKey, body: { reason } })).data;
+  }
+  /** The direct coverage edit — name / pincodes / regions, with a reason. */
   async updateDeliveryZone(id: string, input: UpdateDeliveryZoneInput): Promise<DeliveryZone> {
     return (await this.http.request<DeliveryZone>('PATCH', `logistics/zones/${encodeURIComponent(id)}`, { body: input })).data;
-  }
-  /** Activate / deactivate a delivery zone. */
-  async setDeliveryZoneActive(id: string, isActive: boolean): Promise<DeliveryZone> {
-    return (await this.http.request<DeliveryZone>('POST', `logistics/zones/${encodeURIComponent(id)}/active`, { body: { isActive } })).data;
   }
 
   // ---- typed settings (branding + languages live here) + read-only feature overrides ----

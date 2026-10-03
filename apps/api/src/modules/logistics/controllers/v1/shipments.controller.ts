@@ -18,6 +18,7 @@ import { QueryShipmentsSchema, QueryShipmentsDto } from '../../dto/query-shipmen
 import { CodRemittanceService } from '../../services/cod-remittance.service';
 import { RiderPayoutService } from '../../services/rider-payout.service';
 import { z } from 'zod';
+import { encodeKeyset } from '../../../../shared/pagination/us-keyset';
 import { ShipmentPermissions, canManageLogistics } from '../../policies/logistics.policies';
 
 const ipOf = (r: Request) => r.ip || null;
@@ -41,6 +42,7 @@ const CreateRemittanceSchema = z.object({
   depositRef: z.string().trim().min(2).max(120).optional(),             // present ⇒ banked in the same breath
   depositMethod: z.enum(['bank_branch', 'cash_office', 'upi', 'other']).optional(),
   currencyCode: z.string().length(3).optional(),
+  reason: z.string().trim().min(3).max(500),                            // PC-56 TENANT-SW-a C2: audited with a reason
 }).strict();
 const DepositSchema = z.object({ depositRef: z.string().trim().min(2).max(120), depositMethod: z.enum(['bank_branch', 'cash_office', 'upi', 'other']) }).strict();
 const ReconcileSchema = z.object({ note: z.string().trim().max(1000).optional() }).strict();
@@ -112,8 +114,10 @@ export class ShipmentsController {
     return this.remittances.create(ctx.tenantId, this.actor(ctx), key, dto, ipOf(r)).then((data) => ({ data }));
   }
   @Get('cod/remittances') @RequirePermissions(ShipmentPermissions.Manage)
-  listRemittances(@CurrentContext() ctx: RequestContext, @Query('riderUserId') riderUserId?: string, @Query('status') status?: string, @Query('limit') limit?: string) {
-    return this.remittances.list(ctx.tenantId, this.actor(ctx), { riderUserId, status, limit: Number(limit) || 100 }).then((data) => ({ data }));
+  listRemittances(@CurrentContext() ctx: RequestContext, @Query('riderUserId') riderUserId?: string, @Query('status') status?: string, @Query('limit') limit?: string, @Query('cursor') cursor?: string) {
+    const lim = Math.min(Math.max(Number(limit) || 100, 1), 200);
+    return this.remittances.list(ctx.tenantId, this.actor(ctx), { riderUserId, status, limit: lim, cursor }).then((data) => ({
+      data, meta: { nextCursor: data.length === lim && data[data.length - 1] ? encodeKeyset(data[data.length - 1].createdAt, data[data.length - 1].id) : null } }));
   }
   @Get('cod/remittances/:id') @RequirePermissions(ShipmentPermissions.Manage)
   getRemittance(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {

@@ -7,6 +7,7 @@
 //      REVERSES the recorded settlement (seller → escrow, precise) then refunds escrow → buyer. Seller
 //      ends at 0, buyer made whole, escrow at 0.
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
+import { composeOrderSettlement } from '../services/order-settlement.service';
 import { randomUUID, createHmac } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -114,9 +115,9 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
 
     const flags = new FlagsService(pools, new InMemoryCacheService());
     const lines = new SettlementLineRepository();
-    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
+    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any), new OrderRepository(replica as never));
     const handlers = new OutboxHandlerRegistry();
-    handlers.register(new OrderCompletedHandler(wallet, flags, pricing, lines, new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow));                                          // settle escrow → seller
+    handlers.register(new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: flags, replica, lines: lines, couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow })));                                          // settle escrow → seller
     handlers.register(new DisputeResolvedHandler(wallet, flags, new PaymentRepository(replica as any), lines, pricing, outbox, metrics, uow));  // dispute refund / clawback
     handlers.register(new DisputeRefundedHandler(new DisputeRepository(replica as any)));                                 // stamp resolution_txn_id
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);

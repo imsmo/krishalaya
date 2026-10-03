@@ -6,12 +6,14 @@
 //   2. SINGLE CURRENCY per txn; ≥2 legs; no zero-amount leg.
 //   3. IDEMPOTENT: same idempotencyKey ⇒ the same txn, never double-posted (Law 3).
 //   4. CONCURRENCY-SAFE: each account row is locked FOR UPDATE before its balance changes.
-//   5. NO OVERDRAW of user/tenant accounts; frozen accounts reject debits.
+//   5. NO OVERDRAW of user/tenant accounts; frozen accounts reject debits. A LIABILITY account (PC-56 TENANT-SW-a: a rider's
+//      `cash_in_hand`) is the mirror image — it may go below zero (the rider owes the cash he holds) and may never go above it
+//      (nobody can remit more cash than they collected).
 //   6. TAMPER-EVIDENT: per-account hash chain (prev_hash → entry_hash).
 import { Injectable } from '@nestjs/common';
 import { TxContext } from '../database/unit-of-work';
 import { WalletPort, PostTxnInput, PostTxnResult } from './wallet.port';
-import { AccountRef } from './account-codes';
+import { AccountRef, LIABILITY_ACCOUNTS } from './account-codes';
 import { LedgerRepository } from './ledger.repository';
 import { LedgerNotBalancedError, InvalidLedgerTxnError, InsufficientWalletBalanceError, WalletFrozenError } from './wallet.errors';
 import { InfraError } from '../../shared/errors/app-error';
@@ -54,7 +56,10 @@ export class InProcessWalletClient implements WalletPort {
         const acct = await this.ledger.lockAccount(tx, accountId);
         const balanceAfter = acct.balanceMinor + leg.amountMinor;
         if (leg.amountMinor < 0n && acct.isFrozen) throw new WalletFrozenError(leg.account.accountCode);
-        if (balanceAfter < 0n && acct.kind !== 'platform') throw new InsufficientWalletBalanceError(leg.account.accountCode);
+        const liability = acct.kind === 'user' && LIABILITY_ACCOUNTS.has(acct.accountCode ?? leg.account.accountCode);
+        if (liability) {
+          if (balanceAfter > 0n) throw new InsufficientWalletBalanceError(leg.account.accountCode);   // remitting more than was collected
+        } else if (balanceAfter < 0n && acct.kind !== 'platform') throw new InsufficientWalletBalanceError(leg.account.accountCode);
         const hash = entryHash(acct.lastHash, claim.id, accountId, leg.amountMinor, balanceAfter);
         await this.ledger.appendEntry(tx, { txnId: claim.id, accountId, tenantId: input.tenantId, amountMinor: leg.amountMinor, currencyCode: currency, balanceAfter, prevHash: acct.lastHash, entryHash: hash });
       }

@@ -30,6 +30,8 @@ import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { FLEET_FITNESS_FLAG, REQUIRE_RC_FLAG, rcVerdict, vehicleFitness } from '../domain/fleet-fitness';
 import { VehicleUnfitError } from '../domain/logistics.errors';
 import { VehicleRepository } from '../repositories/vehicle.repository';
+import { CodLedgerService } from './cod-ledger.service';
+import { PodReviewService } from './pod-review.service';
 
 export interface ShipmentActor { userId: string; canManage: boolean; }
 
@@ -57,6 +59,10 @@ export class ShipmentService {
     /** PC-56 TENANT-5d · the failure-reason vocabulary, read on the WRITE path so an operator's coded reason cannot
      *  be a word nobody defined. Same module, same reasoning as `vehicleRepo` above. */
     private readonly desk: LogisticsDeskRepository,
+    /** PC-56 TENANT-SW-a · C1 — COD cash as a ledger fact, posted IN the delivery transaction (cod_ledger). */
+    private readonly cod: CodLedgerService,
+    /** PC-56 TENANT-SW-a · D1 — the POD review row, written IN the delivery transaction (pod_review). */
+    private readonly pod: PodReviewService,
   ) {}
 
   private hashOtp(code: string): string { return createHmac('sha256', this.config.auth.hashPepper).update(code).digest('hex'); }
@@ -196,6 +202,8 @@ export class ShipmentService {
         const from = s.status;
         s.markOutForDelivery(this.hashOtp(code));
         await this.repo.update(tx, s, from);
+        // PC-56 TENANT-SW-a · D1: the dispatcher is recorded — nobody who dispatched it may review its proof of delivery
+        await this.repo.setDispatchedByTx(tx, tenantId, id, actor.userId);
         // hand the raw OTP to the SMS relay (notifications module — deferred). Internal outbox row only.
         await this.outbox.write(tx, { tenantId, aggregateType: 'shipment', aggregateId: id, eventType: ShipmentEventType.DeliveryOtpIssued, payload: { v: 1, shipmentId: id, orderId: s.orderId, otp: code } });
         // The CODE never reaches the audit log — only the fact that one was issued. An audit row carrying a
@@ -206,17 +214,33 @@ export class ShipmentService {
       }, { userId: actor.userId }));
   }
 
-  /** Proof-of-delivery: verify the buyer's OTP (constant-time, in the entity) → delivered → orders. */
+  /** Proof-of-delivery: verify the buyer's OTP (constant-time, in the entity) → delivered → orders.
+   *
+   *  PC-56 TENANT-SW-a — two facts are now written IN this transaction, each behind its own flag (default OFF):
+   *   • `cod_ledger` + a COD shipment: the cash taken at the door is posted (escrow +, the rider's cash_in_hand −) — refused past the
+   *     rider's cap (the whole delivery rolls back: remit first); short cash records a shortfall against the ORDER and holds its settlement;
+   *   • `pod_review`: the shipment's POD review row (2-hour auto-clear unless flagged). */
   async markDelivered(tenantId: string, actor: ShipmentActor, id: string, dto: DeliverShipmentDto, ip: string | null) {
+    const [codOn, podOn] = await Promise.all([this.cod.enabled(tenantId), this.pod.enabled(tenantId)]);
     return timed(this.metrics, 'logistics.delivered', { tenant: tenantId }, () =>
       this.uow.run(tenantId, async (tx) => {
         const s = await this.repo.getForUpdate(tx, tenantId, id);
         if (!s) throw new ShipmentNotFoundError(id);
         this.assertManagerOrRider(actor, s);
         const from = s.status;
-        s.markDelivered(this.hashOtp(dto.otp), dto.podMediaId ?? null, new Date());
+        const deliveredAt = new Date();
+        s.markDelivered(this.hashOtp(dto.otp), dto.podMediaId ?? null, deliveredAt);
         await this.repo.update(tx, s, from);
         await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'shipment.delivered', entityType: 'shipment', entityId: id, newValue: { orderId: s.orderId, podMediaId: dto.podMediaId ?? null }, ip });
+        const p = s.toProps();
+        if (codOn && p.codMinor != null && p.codMinor > 0n) {
+          await this.cod.collectInTx(tx, { tenantId, shipmentId: id, orderId: p.orderId, riderUserId: p.riderUserId, expectedMinor: p.codMinor,
+            collectedMinor: dto.cashCollectedMinor != null ? BigInt(dto.cashCollectedMinor) : null, shortfallReason: dto.shortfallReason ?? null, actorUserId: actor.userId, ip });
+        }
+        if (podOn) {
+          await this.pod.createOnDeliveryInTx(tx, { tenantId, shipmentId: id, shipmentCreatedAt: p.createdAt, orderId: p.orderId, riderUserId: p.riderUserId,
+            dispatchedBy: await this.repo.dispatchedByTx(tx, tenantId, id), podMediaId: p.podMediaId, deliveredAt });
+        }
         await this.flush(tx, tenantId, id, s.pullEvents());
         return this.serialize(s.toProps());
       }, { userId: actor.userId }));

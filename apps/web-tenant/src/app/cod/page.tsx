@@ -98,6 +98,8 @@ export default async function CodPage({ searchParams }: { searchParams: { status
                     <input type="hidden" name="riderUserId" value={String(r.riderUserId)} />
                     {/* the figure the operator is looking at — the API refuses if the real total has moved */}
                     <input type="hidden" name="expectedAmountMinor" value={String(r.codMinor ?? '')} />
+                    <label htmlFor={`or-${r.riderUserId}`} className="kv-form__label">{t.t('cod.openReason')}</label>
+                    <input id={`or-${r.riderUserId}`} name="reason" className="kv-field__input" minLength={3} maxLength={500} required />
                     <button type="submit" className="kv-btn kv-btn--sm">{t.t('cod.openBtn')}</button>
                   </form>
                 ) : <span className="kv-detail__muted">{t.t('cod.unassignedNote')}</span>),
@@ -172,6 +174,7 @@ export default async function CodPage({ searchParams }: { searchParams: { status
         );
       })}
       <p className="kv-field__hint kv-note">{t.t('cod.footerNote')}</p>
+      <p className="kv-field__hint"><a href="/ops/logistics/cod" className="kv-btn--link">{t.t('cod.ledgerLink')}</a></p>
     </section>
   );
 }

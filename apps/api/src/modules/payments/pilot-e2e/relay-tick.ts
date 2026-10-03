@@ -24,6 +24,7 @@
 // (orders <-> payments settlement + the communication notification fan-out). Production wiring
 // (S1) must register the FULL OutboxHandlerRegistry used by every module, exactly as each module's
 // own `onModuleInit()` does today when the api boots.
+import { composeOrderSettlement } from '../services/order-settlement.service';
 import 'reflect-metadata';
 import { Pool } from 'pg';
 
@@ -103,9 +104,9 @@ async function main(): Promise<void> {
   const flags = new FlagsService(pools, cache);
   const commissionRuleRepo = new CommissionRuleRepository(replica as any);
   const taxRuleRepo = new TaxRuleRepository(replica as any);
-  const pricing = new SettlementPricingService(commissionRuleRepo, taxRuleRepo);
+  const pricing = new SettlementPricingService(commissionRuleRepo, taxRuleRepo, new OrderRepository(replica as never));
   const settlementLineRepo = new SettlementLineRepository();
-  const orderCompletedHandler = new OrderCompletedHandler(wallet, flags, pricing, settlementLineRepo, new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow);
+  const orderCompletedHandler = new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: flags, replica, lines: settlementLineRepo, couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow }));
 
   // --- communication fan-out (so "notification recorded" has something to prove) ---
   const gateway = new NoopNotificationGateway(config);

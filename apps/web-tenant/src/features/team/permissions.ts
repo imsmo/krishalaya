@@ -14,6 +14,7 @@ export const UNGRANTABLE_PERMISSIONS = new Set<string>([
   '*', 'plan.manage', 'tenant.manage', 'user.impersonate', 'flag.toggle',
   'wallet.adjust', 'payout.approve', 'group_lot.settle_approve', 'labour.wages.approve', 'notification.templates.approve',
   'tenant.settings', 'desk.manage', 'user.approve', 'api.manage',
+  'commission.manage',   // PC-56 TENANT-SW-a (mirror of core/rbac/ungrantable.ts)
 ]);
 
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;

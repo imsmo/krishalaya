@@ -18,7 +18,8 @@ import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { applyBpsFloor } from '../../../core/money/rounding';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
-import { ChargePricingService } from '../../payments/services/charge-pricing.service';
+import { ChargePricingService, ZoneDelivery } from '../../payments/services/charge-pricing.service';
+import { CommissionSnapshotService } from '../../payments/services/commission-snapshot.service';
 import { CouponService } from '../../promotions/services/coupon.service';
 import type { CouponNotice } from '../../promotions/domain/coupon-outcome';
 import { UserMembershipService } from '../../memberships/services/user-membership.service';
@@ -30,7 +31,8 @@ import { Order } from '../domain/order.entity';
 import { OrderItem } from '../domain/order-item.entity';
 import { CheckoutGroup } from '../domain/checkout-group.entity';
 import { DomainEvent } from '../domain/orders.events';
-import { CartEmptyError, CartNotFoundError, ListingNotPurchasableError, InsufficientListingStockError } from '../domain/orders.errors';
+import { CartEmptyError, CartNotFoundError, ListingNotPurchasableError, InsufficientListingStockError,
+  UnserviceablePincodeError, DeliveryAddressRequiredError, DeliveryMethodRequiredError, DeliveryMethodNotServingError } from '../domain/orders.errors';
 import { CheckoutDto, CheckoutPreviewDto } from '../dto/create-order.dto';
 import { DomainError } from '../../../shared/errors/app-error';
 
@@ -54,7 +56,33 @@ export class CheckoutService {
     private readonly coupons: CouponService,
     private readonly memberships: UserMembershipService,
     private readonly zones: DeliveryZoneRepository,
+    /** PC-56 TENANT-SW-a · A2 / A4 — payments' public service: freezes the commission rule (and a buyer-charged commission) at placement. */
+    private readonly commission: CommissionSnapshotService,
   ) {}
+
+  /**
+   * PC-56 TENANT-SW-a · B1 (F-5) — THE ZONE THE BUYER IS CHARGED IS THE ZONE THE BUYER WAS QUOTED.
+   *
+   * `deliveryMethods` quoted each serviceable zone's own fee, and placement then charged the generic `delivery_fee` and never looked at
+   * the chosen zone — or at whether ANY zone served the address. Now, when the tenant delivers by zone (≥ 1 active zone) and buyer
+   * charges are on: the buyer's own address must be given; a pincode / region no active zone serves is refused with the kind code
+   * UNSERVICEABLE_PINCODE ("we don't deliver here yet"); `deliveryMethodId` IS the zone id `deliveryMethods` returned (the field is now
+   * the zone reference — it was stored and read by nothing); with no choice and exactly one serving zone, that zone; with several and no
+   * choice, DELIVERY_METHOD_REQUIRED rather than a guessed fee. A tenant with no zones keeps the generic delivery fee (it never quoted a
+   * zone). Returns null when zones do not apply.
+   */
+  private async resolveZone(tx: TxContext, tenantId: string, buyerUserId: string, dto: { deliveryAddressId?: string; deliveryMethodId?: string }, required: boolean): Promise<ZoneDelivery | null> {
+    if ((await this.zones.activeCountTx(tx, tenantId)) === 0) return null;
+    if (!dto.deliveryAddressId) { if (required) throw new DeliveryAddressRequiredError(); return null; }
+    const addr = await this.orders.buyerAddressTx(tx, tenantId, buyerUserId, dto.deliveryAddressId);
+    if (!addr) throw new DeliveryAddressRequiredError();
+    const serving = await this.zones.serviceableTx(tx, tenantId, addr);
+    if (serving.length === 0) throw new UnserviceablePincodeError(addr.pincode);
+    const chosen = dto.deliveryMethodId ? serving.find((z) => z.id === dto.deliveryMethodId) : (serving.length === 1 ? serving[0] : undefined);
+    if (dto.deliveryMethodId && !chosen) throw new DeliveryMethodNotServingError(dto.deliveryMethodId);
+    if (!chosen) throw new DeliveryMethodRequiredError(serving.length);
+    return { zoneId: chosen.id, chargeDefinitionId: chosen.toProps().chargeDefinitionId };
+  }
 
   /** READ-ONLY delivery-methods lookup for the active cart + a destination (pincode and/or regionId). Returns
    *  the serviceable delivery zones with their REAL per-zone fee (resolved from each zone's charge_definition
@@ -98,6 +126,7 @@ export class CheckoutService {
         const applyCharges = await this.flags.isEnabled('buyer_charges', { tenantId, userId: buyerUserId });
         const applyCoupon = dto.couponCode ? await this.flags.isEnabled('promotions', { tenantId, userId: buyerUserId }) : false;
         const applyMemberBenefits = await this.flags.isEnabled('memberships', { tenantId, userId: buyerUserId });
+        const commissionSplit = await this.flags.isEnabled('commission_split', { tenantId });
         let couponApplied = false;   // a coupon is redeemed against the PRIMARY (first) order only
         let couponNotice: CouponNotice | null = null;
 
@@ -108,14 +137,15 @@ export class CheckoutService {
           if (cartItems.length === 0) throw new CartEmptyError();
 
           // resolve listings + group order items by seller
-          const bySeller = new Map<string, { items: OrderItem[]; createdAt: Date; orderId: string }>();
+          const bySeller = new Map<string, { items: OrderItem[]; createdAt: Date; orderId: string; categories: Set<string> }>();
           for (const ci of cartItems) {
             const l: any = await this.listings.getById(tenantId, ci.listing_id);
             if (!l || l.status !== 'published') throw new ListingNotPurchasableError(ci.listing_id);
             const qty = Number(ci.quantity);
             if (Number(l.quantityAvailable) < qty) throw new InsufficientListingStockError(ci.listing_id, qty, Number(l.quantityAvailable));
             let g = bySeller.get(l.sellerUserId);
-            if (!g) { const orderId = uuidv7(); g = { items: [], createdAt: new Date(), orderId }; bySeller.set(l.sellerUserId, g); }
+            if (!g) { const orderId = uuidv7(); g = { items: [], createdAt: new Date(), orderId, categories: new Set<string>() }; bySeller.set(l.sellerUserId, g); }
+            if (l.categoryId) g.categories.add(String(l.categoryId));
             g.items.push(OrderItem.of({ id: uuidv7(), orderId: g.orderId, orderCreatedAt: g.createdAt, tenantId, listingId: ci.listing_id,
               productId: l.productId, titleSnapshot: l.title, quantity: qty, unitCode: l.unitCode, unitPriceMinor: BigInt(l.priceMinor),
               gstRatePct: null, hsnCode: null, batchId: null }));
@@ -128,6 +158,9 @@ export class CheckoutService {
             await this.checkoutGroups.insert(tx, CheckoutGroup.of({ id: checkoutGroupId, tenantId, buyerUserId, totalMinor: total, currencyCode: 'INR' }));
           }
 
+          // B1: the chosen zone (when the tenant delivers by zone), resolved ONCE for the address, inside this transaction
+          const zone = applyCharges ? await this.resolveZone(tx, tenantId, buyerUserId, dto, true) : null;
+
           const created: Array<{ id: string; orderNo: string; totalMinor: string; status: string }> = [];
           for (const [sellerUserId, g] of bySeller) {
             await this.quota.assertWithinLimit(tenantId, QUOTA);
@@ -137,7 +170,7 @@ export class CheckoutService {
             // W133/W134's "snapshotted at order time, never recalculated" stops being a promise over a column
             // (commission_rule_snapshot) that nothing had ever written since 0005.
             const quoted = applyCharges
-              ? await this.charges.checkoutChargesWithSnapshot(tx, tenantId, subtotal, g.createdAt)
+              ? await this.charges.checkoutChargesWithSnapshot(tx, tenantId, subtotal, g.createdAt, zone)
               : { deliveryFeeMinor: 0n, platformFeeMinor: 0n, snapshot: null };
             let { deliveryFeeMinor, platformFeeMinor } = quoted;
             const chargeSnapshot = quoted.snapshot;
@@ -171,11 +204,22 @@ export class CheckoutService {
               else couponNotice = r.notice;
               couponApplied = true;
             }
+            // A2 · THE COMMISSION RULE IS FROZEN HERE (placement day, IST) — settlement reads this and never resolves again.
+            // A4 · a rule that charges the BUYER (with the split on) adds the commission + GST to this order as a buyer charge.
+            const frozen = await this.commission.freezeAtPlacement(tx, { tenantId, source: 'direct', categoryId: g.categories.size === 1 ? [...g.categories][0] : null,
+              goodsMinor: subtotal, splitOn: commissionSplit, now: g.createdAt });
+            let snapshotOut = chargeSnapshot as Record<string, unknown> | null;
+            if (frozen.chargeEntry) {
+              snapshotOut = snapshotOut
+                ? { ...snapshotOut, charges: [...((snapshotOut.charges as unknown[]) ?? []), frozen.chargeEntry] }
+                : { resolvedAt: g.createdAt.toISOString(), charges: [frozen.chargeEntry] };
+            }
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
               sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryFeeMinor, platformFeeMinor, discountMinor,
               couponCode: discountMinor > 0n ? (dto.couponCode ?? null) : null,
-              deliveryMethodId: dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt,
-              commissionRuleSnapshot: chargeSnapshot as Record<string, unknown> | null });
+              deliveryMethodId: zone?.zoneId ?? dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt,
+              commissionRuleSnapshot: snapshotOut,
+              commissionSnapshot: frozen.snapshot as unknown as Record<string, unknown>, deliveryZoneId: zone?.zoneId ?? null, buyerCommissionMinor: frozen.buyerCommissionMinor });
             await this.orders.insertGraph(tx, order, g.items);
             await this.quota.increment(tx, tenantId, QUOTA, 1);
             await this.flush(tx, tenantId, g.orderId, order.pullEvents());
@@ -204,7 +248,7 @@ export class CheckoutService {
     if (cartItems.length === 0) throw new CartEmptyError();
 
     // group by seller, snapshotting price/title exactly as checkout would (honest, server-truth).
-    const bySeller = new Map<string, { items: OrderItem[]; subtotalMinor: bigint }>();
+    const bySeller = new Map<string, { items: OrderItem[]; subtotalMinor: bigint; categoryIds: Set<string> }>();
     const order: string[] = [];
     for (const ci of cartItems) {
       const l: any = await this.listings.getById(tenantId, ci.listing_id);
@@ -212,7 +256,8 @@ export class CheckoutService {
       const qty = Number(ci.quantity);
       if (Number(l.quantityAvailable) < qty) throw new InsufficientListingStockError(ci.listing_id, qty, Number(l.quantityAvailable));
       let g = bySeller.get(l.sellerUserId);
-      if (!g) { g = { items: [], subtotalMinor: 0n }; bySeller.set(l.sellerUserId, g); order.push(l.sellerUserId); }
+      if (!g) { g = { items: [], subtotalMinor: 0n, categoryIds: new Set<string>() }; bySeller.set(l.sellerUserId, g); order.push(l.sellerUserId); }
+      if (l.categoryId) g.categoryIds.add(String(l.categoryId));
       const item = OrderItem.of({ id: uuidv7(), orderId: 'preview', orderCreatedAt: new Date(), tenantId, listingId: ci.listing_id,
         productId: l.productId, titleSnapshot: l.title, quantity: qty, unitCode: l.unitCode, unitPriceMinor: BigInt(l.priceMinor),
         gstRatePct: null, hsnCode: null, batchId: null });
@@ -220,13 +265,22 @@ export class CheckoutService {
       g.subtotalMinor += item.props.lineTotalMinor;
     }
 
+    const commissionSplit = await this.flags.isEnabled('commission_split', { tenantId });
+    let deliveryNeedsAddress = false;
     const sellers = await this.uow.run(tenantId, async (tx) => {
       let couponDone = false;
       const out: Array<Record<string, unknown>> = [];
+      // PC-56 TENANT-SW-a · B1: the same zone placement will charge (when an address is given); without an address a zone tenant's
+      // delivery fee is not knowable yet, and the preview says so (deliveryNeedsAddress) instead of showing the generic slab.
+      const zonesApply = applyCharges && (await this.zones.activeCountTx(tx, tenantId)) > 0;
+      const zone = zonesApply ? await this.resolveZone(tx, tenantId, buyerUserId, dto, false) : null;
+      deliveryNeedsAddress = zonesApply && !zone;
       for (const sellerUserId of order) {
         const g = bySeller.get(sellerUserId)!;
         let { deliveryFeeMinor, platformFeeMinor } = applyCharges
-          ? await this.charges.checkoutCharges(tx, tenantId, g.subtotalMinor)
+          ? (zonesApply
+            ? await this.charges.checkoutChargesWithSnapshot(tx, tenantId, g.subtotalMinor, new Date(), zone).then((c) => ({ deliveryFeeMinor: zone ? c.deliveryFeeMinor : 0n, platformFeeMinor: c.platformFeeMinor }))
+            : await this.charges.checkoutCharges(tx, tenantId, g.subtotalMinor))
           : { deliveryFeeMinor: 0n, platformFeeMinor: 0n };
         if (applyCharges && applyMemberBenefits) {
           const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
@@ -248,8 +302,12 @@ export class CheckoutService {
             else { couponNotice = v.notice; couponError = v.notice.code; }
           } catch (e) { couponError = e instanceof DomainError ? (e as any).code ?? 'COUPON_INVALID' : 'COUPON_INVALID'; }
         }
-        const total = g.subtotalMinor + deliveryFeeMinor + platformFeeMinor - discountMinor;
-        out.push({
+        // A4: a rule charging the buyer (split on) adds its commission + GST — the same figure placement freezes
+        const frozen = await this.commission.freezeAtPlacement(tx, { tenantId, source: 'direct', categoryId: g.categoryIds.size === 1 ? [...g.categoryIds][0] : null,
+          goodsMinor: g.subtotalMinor, splitOn: commissionSplit });
+        const buyerCommissionMinor = frozen.buyerCommissionMinor;
+        const total = g.subtotalMinor + deliveryFeeMinor + platformFeeMinor + buyerCommissionMinor - discountMinor;
+        out.push({ buyerCommissionMinor: buyerCommissionMinor.toString(),
           sellerUserId,
           items: g.items.map((it) => ({ listingId: it.props.listingId, title: it.props.titleSnapshot, quantity: it.props.quantity, unitCode: it.props.unitCode, unitPriceMinor: it.props.unitPriceMinor.toString(), lineTotalMinor: it.props.lineTotalMinor.toString() })),
           subtotalMinor: g.subtotalMinor.toString(), deliveryFeeMinor: deliveryFeeMinor.toString(), platformFeeMinor: platformFeeMinor.toString(),
@@ -271,6 +329,8 @@ export class CheckoutService {
       deliveryFeeMinor: sum('deliveryFeeMinor').toString(),
       platformFeeMinor: sum('platformFeeMinor').toString(),
       discountMinor: sum('discountMinor').toString(),
+      buyerCommissionMinor: sum('buyerCommissionMinor').toString(),
+      deliveryNeedsAddress,
       grandTotalMinor: grandTotal.toString(),
       couponCode: sellers.some((s) => BigInt((s.discountMinor as string)) > 0n) ? (dto.couponCode ?? null) : null,
     };

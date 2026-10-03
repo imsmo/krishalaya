@@ -115,3 +115,18 @@ export async function makePublishedListing(
      opts.unit ?? 'quintal', (opts.priceMinor ?? 50000n).toString()]);
   return { id, tenantId: opts.tenantId, sellerId: opts.sellerId, productId, categoryId };
 }
+
+/** PC-56 TENANT-SW-a: settlement prices an order from the ORDER's frozen commission snapshot (A2), so a settlement spec needs the order
+ *  row. A completed order header with a v7 id (partition pruning); `commissionSnapshot` omitted = an order placed before 0196 (settlement
+ *  resolves it once on the placement date and records it). Returns the order id. */
+export async function makeCompletedOrder(admin: Pool, o: { tenantId: string; buyerUserId: string; sellerUserId: string; totalMinor: bigint;
+  source?: string; commissionSnapshot?: Record<string, unknown> | null; buyerCommissionMinor?: bigint }): Promise<string> {
+  const id = (await admin.query(`SELECT uuid_generate_v7() AS id`)).rows[0].id as string;
+  await admin.query(
+    `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at,
+       commission_snapshot, buyer_commission_minor)
+     VALUES ($1,$2,$3,$4,$5,$6,'INR',$7,$7,'completed',1, uuid_v7_time($1), $8::jsonb, $9)`,
+    [id, o.tenantId, `KV-${id.slice(0, 8)}`, o.buyerUserId, o.sellerUserId, o.source ?? 'direct', o.totalMinor.toString(),
+     o.commissionSnapshot ? JSON.stringify(o.commissionSnapshot) : null, (o.buyerCommissionMinor ?? 0n).toString()]);
+  return id;
+}

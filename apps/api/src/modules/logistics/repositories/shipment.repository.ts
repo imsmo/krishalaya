@@ -50,6 +50,16 @@ export class ShipmentRepository {
     await this.recordEvent(tx, p.tenantId, p.id, p.status, 'shipment created');
   }
 
+  /** PC-56 TENANT-SW-a · D1 — who dispatched the shipment for final delivery (the POD review's "you cannot review a shipment you
+   *  dispatched"). Written once by the out-for-delivery act; pruned to the shipment's partition. */
+  async setDispatchedByTx(tx: TxContext, tenantId: string, id: string, userId: string): Promise<void> {
+    await tx.query(`UPDATE shipments SET dispatched_by=$3 WHERE id=$1 AND tenant_id=$2 AND ${PRUNE}`, [id, tenantId, userId]);
+  }
+  async dispatchedByTx(tx: TxContext, tenantId: string, id: string): Promise<string | null> {
+    const r = await tx.query(`SELECT dispatched_by FROM shipments WHERE id=$1 AND tenant_id=$2 AND ${PRUNE}`, [id, tenantId]);
+    return r.rows[0]?.dispatched_by ?? null;
+  }
+
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Shipment | null> {
     const r = await tx.query(`SELECT ${COLS} FROM shipments WHERE id=$1 AND tenant_id=$2 AND ${PRUNE} FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
@@ -214,7 +224,7 @@ export class ShipmentRepository {
   async codOutstanding(tenantId: string): Promise<CodOutstandingRow[]> {
     const r = await this.replica.forTenant(tenantId).query<{ rider_user_id: string | null; shipments: string; cod_minor: string; oldest: Date | null }>(
       `SELECT rider_user_id, COUNT(*)::text AS shipments, COALESCE(SUM(cod_minor),0)::text AS cod_minor, MIN(delivered_at) AS oldest
-         FROM shipments s WHERE s.tenant_id=$1 AND s.status='delivered' AND s.cod_minor > 0 AND s.deleted_at IS NULL
+         FROM shipments s WHERE s.tenant_id=$1 AND s.status='delivered' AND s.cod_minor > 0 /* PC-56 TENANT-SW-a: shipments has NO deleted_at column — the filter that stood here made this query fail (42703) on every call since PC-54/55 */
            AND NOT EXISTS (SELECT 1 FROM cod_remittance_shipments l WHERE l.shipment_id = s.id)
         GROUP BY rider_user_id ORDER BY cod_minor::numeric DESC LIMIT 200`, [tenantId]);
     return r.rows.map((row) => ({ riderUserId: row.rider_user_id, shipments: Number(row.shipments), codMinor: row.cod_minor, oldestDeliveredAt: row.oldest ? row.oldest.toISOString() : null }));

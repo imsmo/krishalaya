@@ -17,7 +17,7 @@ import type { Cart, Address, CheckoutPreview, DeliveryMethod } from '@krishalaya
 import { serverClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { couponNoticeKey, normalizeCoupon, pickDefaultMethod, previewCouponOutcome } from '../../features/checkout/preview';
+import { PLACE_REFUSAL_KEYS, couponNoticeKey, normalizeCoupon, pickDefaultMethod, previewCouponOutcome } from '../../features/checkout/preview';
 import { placeOrderAction } from './actions';
 
 const CURRENCY = 'INR'; // platform settlement currency (cart read-model carries no per-line currency code)
@@ -74,6 +74,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { s
     <section className="kv-checkout">
       <h1>{t.t('checkout.title')}</h1>
       {searchParams.status === 'err' && <p className="kv-form__error" role="alert">{t.t('checkout.placeError')}</p>}
+      {searchParams.status && searchParams.status in PLACE_REFUSAL_KEYS && (
+        <p className="kv-form__notice" role="alert">{t.t(PLACE_REFUSAL_KEYS[searchParams.status as keyof typeof PLACE_REFUSAL_KEYS])}</p>
+      )}
 
       {/* Coupon application is a GET re-preview (no JS needed): submitting reloads /checkout?coupon=CODE and the
           server re-computes the DRY-RUN bill below. The chosen code is carried into the place-order form as a

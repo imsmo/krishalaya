@@ -81,6 +81,36 @@ export class DisputeService {
       }));
   }
 
+  /**
+   * PC-56 TENANT-SW-a · D1 — A DISPUTE OPENED BY A REJECTED POD REVIEW (canon W238 "Open dispute (evidence attached) … qty_mismatch flow,
+   * freeze = variance value only"). Runs INSIDE logistics' confirming transaction, after a SECOND person confirmed the rejection. The
+   * dispute is the buyer's claim against the seller (raised_by = the buyer whose delivery it was — the claim is theirs), opened by the
+   * desk (opened_via = pod_review, opened_by_staff = the confirming reviewer), with the POD photo attached as evidence. Its recorded
+   * scope is the reviewer's variance when one was entered, else the whole order. NOTE (named, not hidden): this platform has no partial
+   * escrow freeze (dispute-money-state.ts, PARTIAL_FREEZE_BUILT = false) — the scope is recorded and bounds the refund; escrow keeps the
+   * whole order until resolution, and the money card says so. `disputes.dispute_opened` pauses the order exactly as a buyer's would.
+   */
+  async openFromPodReviewInTx(tx: TxContext, i: { tenantId: string; orderId: string; podReviewId: string; staffUserId: string; evidenceMediaIds: string[];
+    scopeMinor: bigint; description: string }): Promise<{ id: string }> {
+    const elig = await this.repo.eligibilityTx(tx, i.tenantId, i.orderId);
+    if (!elig) throw new NotEligibleToDisputeError();
+    const reasonId = await this.repo.reasonIdTx(tx, 'qty_mismatch');
+    if (!reasonId) throw new InvalidDisputeError('the qty_mismatch dispute reason is not configured');
+    if (await this.repo.hasActiveForOrderRaiser(tx, i.tenantId, i.orderId, elig.buyerUserId)) throw new DuplicateDisputeError();
+    const now = new Date();
+    const dispute = Dispute.raise({ id: uuidv7(), tenantId: i.tenantId, orderId: i.orderId, raisedBy: elig.buyerUserId, againstUser: elig.sellerUserId, reasonId,
+      description: i.description.slice(0, 4000), sellerRespondBy: new Date(now.getTime() + SELLER_RESPOND_MS), slaDueAt: new Date(now.getTime() + SLA_MS), now,
+      disputedAmountMinor: i.scopeMinor > 0n ? i.scopeMinor : null, disputedQuantity: null });
+    await this.repo.insert(tx, dispute);
+    const p = dispute.toProps();
+    await this.repo.stampPodReviewTx(tx, i.tenantId, p.id, i.podReviewId, i.staffUserId, i.evidenceMediaIds);
+    await this.audit.write(tx, { tenantId: i.tenantId, actorUserId: i.staffUserId, action: 'dispute.raised_from_pod_review', entityType: 'dispute', entityId: p.id,
+      newValue: { orderId: p.orderId, onBehalfOf: elig.buyerUserId, againstUser: elig.sellerUserId, reason: 'qty_mismatch', podReviewId: i.podReviewId,
+        evidenceMediaIds: i.evidenceMediaIds, disputedAmountMinor: i.scopeMinor.toString() }, reason: i.description });
+    await this.flush(tx, i.tenantId, p.id, dispute.pullEvents());
+    return { id: p.id };
+  }
+
   respond(t: string, a: DisputeActor, id: string) { return this.mutate(t, a, id, 'respond', {}, (d) => d.sellerRespond(a.userId)); }
   withdraw(t: string, a: DisputeActor, id: string) { return this.mutate(t, a, id, 'withdraw', {}, (d) => d.withdraw(a.userId)); }
   startReview(t: string, a: DisputeActor, id: string, ip: string | null) { return this.mutate(t, a, id, 'review', { moderator: true, audit: true }, (d) => d.startReview(), ip); }

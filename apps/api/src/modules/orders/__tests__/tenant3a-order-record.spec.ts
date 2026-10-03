@@ -97,7 +97,9 @@ describe('TENANT-3a · the console reads', () => {
     const pool = new StubPool();
     await rm(pool).money('t1', 'o-1');
     const { sql } = pool.calls[0];
-    expect(sql).toContain('commission_rule_snapshot');
+    // PC-56 TENANT-SW-a: the charge snapshot is read from its true column (0196); the old name is deprecated and unread
+    expect(sql).toContain('charge_snapshot');
+    expect(sql).not.toContain('commission_rule_snapshot');
     expect(sql).toContain('uuid_v7_time($2)');
     expect(sql).not.toMatch(/subtotal_minor\s*[+*]/);                  // no arithmetic: the row IS the answer
   });
@@ -123,9 +125,11 @@ describe('TENANT-3a · the dead column, and the promise it now keeps (comments s
   const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   const read = (...p: string[]) => strip(fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8'));
 
-  it('the order INSERT now writes commission_rule_snapshot — for 133 migrations nothing did', () => {
+  it('the order INSERT writes the charge snapshot (under its true name since 0196) and the frozen commission rule', () => {
     const repo = read('repositories', 'order.repository.ts');
-    expect(repo).toContain('commission_rule_snapshot');
+    expect(repo).toContain('charge_snapshot');
+    expect(repo).toContain('commission_snapshot');
+    expect(repo).not.toContain('commission_rule_snapshot');          // deprecated column: written and read by nothing (0196)
     expect(repo).toContain('$25::jsonb');
     expect(repo).toContain('commissionRuleSnapshot');
   });

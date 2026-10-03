@@ -58,6 +58,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // job writes the event in the same transaction that writes the value; recipients travel in the payload; the setting's name and both
   // values are per-language maps (seed core/0024). Catalogue 0192, copy in seed core/0007 (push + in-app ×3).
   { outboxType: 'tenancy.setting_effective',         eventCode: 'tenant.setting_effective',    recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-SW-a (A3) · a tenant commission rule change (proposed, confirmed by a SECOND tenant_admin, ≥ 7 days' notice) takes effect
+  // at its IST midnight; every active member is told — the apply job (13b's clock) writes the event in the transaction that marks the
+  // proposal applied. `change` / `payer` are per-language maps (seed core/0025); `rate` and `effectiveFrom` are language-neutral.
+  // Catalogue 0196, copy in seed core/0007 (push + in-app ×3).
+  { outboxType: 'tenancy.commission_rule_effective', eventCode: 'tenant.commission_rule_effective', recipientKeys: ['recipientUserIds'] },
   // PC-56 TENANT-13d (A4) · a second tenant_admin confirmed a brand publish (or rollback): every active member gets ONE in-app note in their
   // language — "same organisation, new look" — so a new name and colours never read as a different organisation. The publish transaction
   // writes the event; recipients travel in the payload; `displayName` is the tenant's own published name (not translated). Catalogue 0194,

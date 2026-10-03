@@ -64,14 +64,15 @@ export function totalOutstandingMinor(rows: readonly OutstandingRow[]): bigint {
   return total;
 }
 
-export type RemittanceInput = { riderUserId: string; expectedAmountMinor?: string; depositRef?: string; depositMethod?: DepositMethod };
-export type RemittanceError = 'rider' | 'expected' | 'depositRef' | 'depositMethod';
+export type RemittanceInput = { riderUserId: string; expectedAmountMinor?: string; depositRef?: string; depositMethod?: DepositMethod; reason?: string };
+export type RemittanceError = 'rider' | 'expected' | 'depositRef' | 'depositMethod' | 'reason';
 export type RemittanceResult = { ok: true; value: RemittanceInput } | { ok: false; error: RemittanceError };
 
 /** Open a remittance for a rider. `expectedAmountMinor` is deliberately the figure the operator was READING — it is
  *  sent so the API can REFUSE if the real total has changed since the page loaded. It is never used as the amount:
  *  the server computes that from the shipments themselves. */
-export function buildRemittance(raw: { riderUserId: string; expectedAmountMinor: string; depositRef: string; depositMethod: string }): RemittanceResult {
+/** PC-56 TENANT-SW-a C2: the API now audits a remittance with a reason (3–500); the worksheet passes one and it is checked here when present. */
+export function buildRemittance(raw: { riderUserId: string; expectedAmountMinor: string; depositRef: string; depositMethod: string; reason?: string }): RemittanceResult {
   const riderUserId = raw.riderUserId.trim();
   if (!/^[0-9a-fA-F-]{36}$/.test(riderUserId)) return { ok: false, error: 'rider' };
   const value: RemittanceInput = { riderUserId };
@@ -90,6 +91,11 @@ export function buildRemittance(raw: { riderUserId: string; expectedAmountMinor:
   if (method) {
     if (!isDepositMethod(method)) return { ok: false, error: 'depositMethod' };
     value.depositMethod = method;
+  }
+  if (raw.reason !== undefined) {
+    const reason = raw.reason.trim();
+    if (reason.length < 3 || reason.length > 500) return { ok: false, error: 'reason' };
+    value.reason = reason;
   }
   return { ok: true, value };
 }

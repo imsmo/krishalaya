@@ -25,21 +25,20 @@ function intInRange(raw: unknown, min: number, max: number): number | null {
 
 // ---- commission rule ----
 export interface CommissionRuleInput {
-  rateBps: number; platformShareBps: number; fixedMinor: string;
+  rateBps: number; fixedMinor: string;
   chargedTo: 'seller' | 'buyer'; priority: number; source?: CommissionSource;
 }
 export type CommissionResult =
   | { ok: true; value: CommissionRuleInput }
-  | { ok: false; error: 'rate' | 'share' | 'fixed' | 'priority' | 'source' };
+  | { ok: false; error: 'rate' | 'fixed' | 'priority' | 'source' };
 
-/** Validate the new-commission-rule form. Basis-points are 0–100000 (0–1000%). */
+/** Validate a commission rule's terms. Basis-points are 0–100000 (0–1000%). PC-56 TENANT-SW-a (F-3): there is no platform-share field —
+ *  the plan sets the platform's share and a tenant cannot type it; a stray `platformShareBps` is ignored. */
 export function buildCommissionRule(raw: {
   rateBps?: unknown; platformShareBps?: unknown; fixedMinor?: unknown; chargedTo?: unknown; priority?: unknown; source?: unknown;
 }): CommissionResult {
   const rateBps = intInRange(raw.rateBps, 0, 100000);
   if (rateBps === null) return { ok: false, error: 'rate' };
-  const platformShareBps = intInRange(raw.platformShareBps, 0, 100000);
-  if (platformShareBps === null) return { ok: false, error: 'share' };
   const fixedRaw = String(raw.fixedMinor ?? '0').trim() || '0';
   if (!DIGITS.test(fixedRaw)) return { ok: false, error: 'fixed' };
   const priority = intInRange(raw.priority ?? 100, 0, 1000);
@@ -51,7 +50,7 @@ export function buildCommissionRule(raw: {
     if (!(COMMISSION_SOURCES as readonly string[]).includes(s)) return { ok: false, error: 'source' };
     source = s as CommissionSource;
   }
-  return { ok: true, value: { rateBps, platformShareBps, fixedMinor: fixedRaw, chargedTo, priority, source } };
+  return { ok: true, value: { rateBps, fixedMinor: fixedRaw, chargedTo, priority, source } };
 }
 
 /** Present basis-points as a percentage string, e.g. 250 → "2.5%". Pure, locale-agnostic. */

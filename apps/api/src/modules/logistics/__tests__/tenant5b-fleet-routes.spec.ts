@@ -459,7 +459,7 @@ describe('TENANT-5b · the gate, and the job, run rather than read', () => {
     const audit = { write: jest.fn(async (a: unknown, b: unknown) => { void a; void b; }) };
     const metrics = { inc: jest.fn(), observe: jest.fn() };
     const idem = { remember: jest.fn(async (k: string, u: string, e: string, fn: () => Promise<unknown>) => { void k; void u; void e; return fn(); }) };
-    const repo = { getForUpdate: jest.fn(async () => s), update: jest.fn(async () => true) };
+    const repo = { getForUpdate: jest.fn(async () => s), setDispatchedByTx: jest.fn(async () => undefined), dispatchedByTx: jest.fn(async () => null), update: jest.fn(async () => true) };
     const vehicleRepo = {
       fitnessOf: jest.fn(async () => (opts.vehicle === undefined
         ? { id: 'veh-1', scope: 'tenant', isActive: true, isRefrigerated: false, capacityKg: 1500, rcStatus: 'verified', rcValidUntil: '2029-01-01' }
@@ -468,7 +468,9 @@ describe('TENANT-5b · the gate, and the job, run rather than read', () => {
     const svc = new ShipmentService(uow as never, orders as never, flags as never, outbox as never, idem as never,
       metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never, vehicleRepo as never,
       // PC-56 TENANT-5d · the failure-reason vocabulary read; unused by the fitness gate these tests drive.
-      { isFailureReason: jest.fn(async () => false) } as never);
+      { isFailureReason: jest.fn(async () => false) } as never,
+      // PC-56 TENANT-SW-a · COD ledger + POD review, both OFF here (their behaviour is proven live in tenant-swa-…integration)
+      { enabled: jest.fn(async () => false) } as never, { enabled: jest.fn(async () => false) } as never);
     return { svc, s, repo, metrics, flags, vehicleRepo };
   }
   const boss = { userId: 'ops-1', canManage: true };
@@ -662,18 +664,24 @@ describe('TENANT-5b · the cadence job that was built and never registered', () 
     const opsAlerts = { name: 'ops-alerts', intervalMs: 600_000, run: jest.fn() };
     const rcParking = { name: 'logistics-rc-expiry-parking', intervalMs: 86_400_000, run: jest.fn() };
     const orderConfirmed = { eventType: 'orders.order_confirmed', handle: jest.fn() };
-    new LogisticsModule(outbox as never, jobs as never, config as never, orderConfirmed as never, opsAlerts as never, rcParking as never).onModuleInit();
+    // PC-56 TENANT-SW-a: + the POD 2-hour auto-clear clock (registered unconditionally, like 13b's proposal clock) and the zone applier
+    const podAutoClear = { name: 'logistics-pod-auto-clear', intervalMs: 300_000, run: jest.fn() };
+    const appliers = { register: jest.fn() }; const zones = { name: 'logistics.delivery_zone_proposals' };
+    new LogisticsModule(outbox as never, jobs as never, config as never, orderConfirmed as never, opsAlerts as never, rcParking as never, podAutoClear as never, zones as never, appliers as never).onModuleInit();
     expect(outbox.register).toHaveBeenCalledWith(orderConfirmed);
     const registered = jobs.register.mock.calls.map((c) => (c[0] as { name: string }).name);
-    expect(registered).toEqual(['ops-alerts', 'logistics-rc-expiry-parking']);
+    expect(registered).toEqual(['logistics-pod-auto-clear', 'ops-alerts', 'logistics-rc-expiry-parking']);
+    expect(appliers.register).toHaveBeenCalledWith(zones);
   });
 
   it('honours the per-job env gate, like every other module\'s cadence job', () => {
     const jobs = { register: jest.fn() };
     const config = { jobs: { logisticsFleet: { enabled: false, rcParkingIntervalMs: 1, rcParkingBatchSize: 1 } } };
     new LogisticsModule({ register: jest.fn() } as never, jobs as never, config as never,
-      { eventType: 'x', handle: jest.fn() } as never, { name: 'a', intervalMs: 1, run: jest.fn() } as never, { name: 'b', intervalMs: 1, run: jest.fn() } as never).onModuleInit();
-    expect(jobs.register).not.toHaveBeenCalled();
+      { eventType: 'x', handle: jest.fn() } as never, { name: 'a', intervalMs: 1, run: jest.fn() } as never, { name: 'b', intervalMs: 1, run: jest.fn() } as never,
+      { name: 'logistics-pod-auto-clear', intervalMs: 1, run: jest.fn() } as never, {} as never, { register: jest.fn() } as never).onModuleInit();
+    // the env gate governs the fleet jobs only; the POD clock is unconditional (its rows exist only with pod_review ON)
+    expect(jobs.register.mock.calls.map((c) => (c[0] as { name: string }).name)).toEqual(['logistics-pod-auto-clear']);
   });
 });
 

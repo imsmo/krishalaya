@@ -296,10 +296,13 @@ describe('B4 / F-9 · the module registers both sweeps and the three lifecycle h
     expect(mod).toMatch(/new OrderClosedHandler\('orders\.order_refunded'/);
     expect(mod).toMatch(/this\.registry\.register\(this\.orderCreated\)/);
   });
-  it('the payments settlement handler calls the promotion top-up after the escrow leg (and on a zero-escrow order)', () => {
-    const h = fs.readFileSync(path.join(__dirname, '../../payments/events/handlers/order-completed.handler.ts'), 'utf8');
-    expect(h.match(/this\.couponMoney\.settleOrderInTx\(tx, \{ tenantId, orderId: event\.aggregateId, sellerUserId \}\)/g)).toHaveLength(2);
-    expect(h.indexOf("idempotencyKey: `settle:${event.aggregateId}`")).toBeLessThan(h.lastIndexOf('this.couponMoney.settleOrderInTx'));
+  it('the payments settlement calls the promotion top-up after the escrow leg (and on a zero-escrow order)', () => {
+    // PC-56 TENANT-SW-a: the settlement body moved from the handler to OrderSettlementService (shared with the hold release, same key)
+    const h = fs.readFileSync(path.join(__dirname, '../../payments/services/order-settlement.service.ts'), 'utf8');
+    expect(h.match(/this\.couponMoney\.settleOrderInTx\(tx, \{ tenantId, orderId, sellerUserId \}\)/g)).toHaveLength(2);
+    expect(h.indexOf("idempotencyKey: `settle:${orderId}`")).toBeLessThan(h.lastIndexOf('this.couponMoney.settleOrderInTx'));
+    const handler = fs.readFileSync(path.join(__dirname, '../../payments/events/handlers/order-completed.handler.ts'), 'utf8');
+    expect(handler).toContain('this.settlement.settle(tx, event.tenantId, event.aggregateId');
   });
 });
 

@@ -443,7 +443,7 @@ describe('TENANT-5a · the gate, run rather than read', () => {
     const metrics = { inc: jest.fn(), observe: jest.fn() };
     const idem = { remember: jest.fn(async (k: string, u: string, e: string, fn: () => Promise<unknown>) => { void k; void u; void e; return fn(); }) };
     const repo = {
-      getForUpdate: jest.fn(async () => s), getById: jest.fn(async () => s),
+      getForUpdate: jest.fn(async () => s), setDispatchedByTx: jest.fn(async () => undefined), dispatchedByTx: jest.fn(async () => null), getById: jest.fn(async () => s),
       update: jest.fn(async () => true), insert: jest.fn(async () => {}), existsForOrder: jest.fn(async () => false),
       trailFor: jest.fn(async () => opts.trail ?? []),
       explore: jest.fn(async (t: string, q: unknown) => { void t; void q; return [] as Array<{ id: string; at: Date; shipmentId: string; status: string; lat: number | null; lng: number | null; note: string | null }>; }),
@@ -458,7 +458,9 @@ describe('TENANT-5a · the gate, run rather than read', () => {
     const deskRepo = { isFailureReason: jest.fn(async () => false) };
     const svc = new ShipmentService(uow as never, orders as never, flags as never, outbox as never, idem as never,
       metrics as never, audit as never, { auth: { hashPepper: PEPPER } } as never, repo as never, vehicleRepo as never,
-      deskRepo as never);
+      deskRepo as never,
+      // PC-56 TENANT-SW-a · COD ledger + POD review, both OFF here (their behaviour is proven live in tenant-swa-…integration)
+      { enabled: jest.fn(async () => false) } as never, { enabled: jest.fn(async () => false) } as never);
     return { svc, s, repo, outbox, audit, metrics, orders, flags };
   }
   const boss = { userId: 'ops-1', canManage: true };

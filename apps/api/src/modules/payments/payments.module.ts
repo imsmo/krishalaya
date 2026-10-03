@@ -44,6 +44,14 @@ import { SettlementStatementsController } from './controllers/v1/settlement-stat
 import { InvoicesController } from './controllers/v1/invoices.controller';
 import { CommissionRulesController } from './controllers/v1/commission-rules.controller';
 import { CommissionRuleService } from './services/commission-rule.service';
+// PC-56 TENANT-SW-a · commission proposals, the frozen snapshot, settlement holds / deferrals, the shared settlement core
+import { CommissionRuleProposalRepository } from './repositories/commission-rule-proposal.repository';
+import { CommissionSnapshotService } from './services/commission-snapshot.service';
+import { SettlementHoldRepository } from './repositories/settlement-hold.repository';
+import { SettlementHoldService } from './services/settlement-hold.service';
+import { OrderSettlementService } from './services/order-settlement.service';
+import { SettlementHoldReleasedHandler } from './events/handlers/settlement-hold-released.handler';
+import { PROPOSAL_APPLIER_REGISTRY, ProposalApplierRegistry } from '../../core/jobs/proposal-applier.registry';
 import { gatewayRegistryProvider, payoutGatewayProvider, mandateGatewayProvider } from './gateway/payment-gateways.provider';
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
@@ -101,6 +109,7 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     PaymentService,
     PayoutService,
     CommissionRuleService,
+    CommissionRuleProposalRepository, CommissionSnapshotService, SettlementHoldRepository, SettlementHoldService, OrderSettlementService, SettlementHoldReleasedHandler,
     DocumentPdfService,
     PaymentRepository,
     OrderRepository,
@@ -178,13 +187,18 @@ import { AutopayController } from './controllers/v1/autopay.controller';
   // for the auto-debit THIN LINK (linkAutopayMandate reads a mandate's status/purpose/owner via
   // MandateService.getById — the SERVICE, never MandateRepository directly, per Law 11). No behavior change
   // to MandateService itself.
-  exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel, MandateService, AuditorLedgerReadModel],
+  exports: [PaymentService, PayoutService, PayoutBatchService, ChargePricingService, WalletBalanceReadModel, MandateService, AuditorLedgerReadModel,
+    // PC-56 TENANT-SW-a: checkout freezes the rule (orders); logistics holds / releases settlement (POD, COD shortfall)
+    CommissionSnapshotService, SettlementHoldService],
 })
 export class PaymentsModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobRegistry: ScheduledJobRegistry,
     private readonly orderCompleted: OrderCompletedHandler,
+    private readonly settlementHoldReleased: SettlementHoldReleasedHandler,
+    @Inject(PROPOSAL_APPLIER_REGISTRY) private readonly appliers: ProposalApplierRegistry,
+    private readonly commissionRules: CommissionRuleService,
     private readonly tradeInvoice: TradeInvoiceHandler,
     private readonly disputeResolved: DisputeResolvedHandler,
     private readonly returnRefunded: ReturnRefundedHandler,
@@ -196,6 +210,10 @@ export class PaymentsModule implements OnModuleInit {
   ) {}
   onModuleInit(): void {
     this.registry.register(this.orderCompleted);   // settlement split + settlement line
+    // PC-56 TENANT-SW-a: the last settlement hold released → settle the deferred completion (same settle:<order> key)
+    this.registry.register(this.settlementHoldReleased);
+    // PC-56 TENANT-SW-a · A3: confirmed commission proposals take effect at their IST midnight (+ member notice) on 13b's clock
+    this.appliers.register(this.commissionRules);
     this.registry.register(this.tradeInvoice);     // buyer GST invoice (fan-out to the same event)
     this.registry.register(this.disputeResolved);  // dispute refund: escrow → buyer wallet (flag dispute_refunds)
     // PC-56 TENANT-3b: return refund: escrow → buyer wallet (flag dispute_refunds). `disputes.return_refunded` had

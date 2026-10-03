@@ -1,11 +1,11 @@
 // modules/logistics/__tests__/zones-routing.integration.spec.ts
 // REAL Postgres proof of API-W3-04. Proves: (1) a zone/route persists with the caller tenant_id + an outbox event,
-// all in one tx; (2) cold-chain readings are appended and a breach is flagged + alerted by the worker job exactly
+// all in one tx — a zone now on the PC-56 TENANT-SW-a model: PROPOSED by a lead, live only once a DIFFERENT tenant_admin confirms; (2) cold-chain readings are appended and a breach is flagged + alerted by the worker job exactly
 // once (watermark dedup over a re-run); (3) the Village-Run job emits one due-event per active route scheduled for
 // the weekday and is idempotent per date; (4) ROW-LEVEL SECURITY: tenant B cannot see tenant A's zone.
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -18,6 +18,8 @@ import { PromMetrics } from '../../../core/observability/metrics.prom';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 
 import { DeliveryZoneRepository } from '../repositories/delivery-zone.repository';
+import { DeliveryZoneProposalRepository } from '../repositories/delivery-zone-proposal.repository';
+import type { OrderService } from '../../orders/services/order.service';
 import { DeliveryRouteRepository } from '../repositories/delivery-route.repository';
 import { ColdChainLogRepository } from '../repositories/cold-chain-log.repository';
 import { DeliveryZoneService } from '../services/delivery-zone.service';
@@ -44,6 +46,7 @@ run('logistics zones-routing (integration, real Postgres + RLS + jobs)', () => {
   const tenantA = randomUUID();
   const tenantB = randomUUID();
   const manager = () => ({ userId: randomUUID(), canManage: true });
+  const lead = randomUUID(); const checker = randomUUID();
   const key = () => randomUUID();
   const subjectId = randomUUID();
   let zoneId = '';
@@ -51,6 +54,10 @@ run('logistics zones-routing (integration, real Postgres + RLS + jobs)', () => {
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
+    for (const [u, role] of [[lead, 'fpo_coordinator'], [checker, 'tenant_admin']] as const) {
+      await makeUser(admin, u as ReturnType<typeof randomUUID>);
+      await admin.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) SELECT $1, $2, r.id, true FROM roles r WHERE r.code=$3 ON CONFLICT DO NOTHING`, [u, tenantA, role]);
+    }
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -64,7 +71,9 @@ run('logistics zones-routing (integration, real Postgres + RLS + jobs)', () => {
     const zoneRepo = new DeliveryZoneRepository(replica as any);
     const routeRepo = new DeliveryRouteRepository(replica as any);
     const coldRepo = new ColdChainLogRepository(replica as any);
-    zones = new DeliveryZoneService(uow, outbox, idem, metrics, audit, zoneRepo);
+    // the order read (Orders 30d) is only used by the list / detail reads, which this spec does not call
+    const orderCounts = { ordersByZoneSince: async () => new Map<string, number>() } as unknown as OrderService;
+    zones = new DeliveryZoneService(uow, outbox, idem, metrics, audit, zoneRepo, new DeliveryZoneProposalRepository(replica as any), orderCounts);
     routes = new DeliveryRouteService(uow, outbox, idem, metrics, audit, routeRepo);
     coldChain = new ColdChainService(uow, metrics, coldRepo);
     breachJob = new ColdChainBreachAlertsJob(admin, coldRepo);
@@ -76,13 +85,17 @@ run('logistics zones-routing (integration, real Postgres + RLS + jobs)', () => {
 
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
-  it('creates a zone with the caller tenant_id + an outbox event', async () => {
-    const z = await zones.create(tenantA, manager(), key(), { defaultName: 'Pune Metro', pincodes: ['411001', '411002'], regionIds: [] } as any, null);
-    zoneId = z.id;
+  it('a zone is proposed by a lead and lives only once a DIFFERENT tenant_admin confirms: caller tenant_id + an outbox event', async () => {
+    const p = await zones.propose(tenantA, { userId: lead, canPropose: true }, key(), { kind: 'create', defaultName: 'Pune Metro', pincodes: ['411001', '411002'], regionIds: [],
+      chargeDefinitionId: null, reason: 'Pune metro pincodes served by our vans' } as any, null);
+    zoneId = p.zoneId;
+    expect((await admin.query(`SELECT 1 FROM delivery_zones WHERE id=$1`, [zoneId])).rowCount).toBe(0);   // nothing live yet
+    await expect(zones.confirm(tenantA, { userId: lead, canPropose: true }, key(), p.id, null)).rejects.toBeTruthy();   // the proposer is not the checker
+    await zones.confirm(tenantA, { userId: checker, canPropose: true }, key(), p.id, null);
     const row = await admin.query(`SELECT tenant_id, pincodes FROM delivery_zones WHERE id=$1`, [zoneId]);
     expect(row.rows[0].tenant_id).toBe(tenantA);
     expect(row.rows[0].pincodes).toEqual(['411001', '411002']);
-    const ev = await admin.query(`SELECT count(*)::int c FROM outbox_events WHERE aggregate_id=$1 AND event_type='logistics.delivery_zone_created'`, [zoneId]);
+    const ev = await admin.query(`SELECT count(*)::int c FROM outbox_events WHERE aggregate_id=$1 AND event_type='logistics.delivery_zone_changed'`, [zoneId]);
     expect(ev.rows[0].c).toBe(1);
   });
 

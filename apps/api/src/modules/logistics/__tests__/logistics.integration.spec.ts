@@ -34,6 +34,10 @@ import { ShipmentRepository } from '../repositories/shipment.repository';
 import { LogisticsDeskRepository } from '../repositories/logistics-desk.repository';
 import { VehicleRepository } from '../repositories/vehicle.repository';
 import { ShipmentService } from '../services/shipment.service';
+import { CodLedgerService } from '../services/cod-ledger.service';
+import { PodReviewService } from '../services/pod-review.service';
+import { CodLedgerRepository } from '../repositories/cod-ledger.repository';
+import { PodReviewRepository } from '../repositories/pod-review.repository';
 import { OrderConfirmedHandler } from '../events/handlers/order-confirmed.handler';
 import { InvalidDeliveryOtpError } from '../domain/logistics.errors';
 
@@ -90,7 +94,12 @@ run('logistics slice (integration, real Postgres + RLS + outbox relay)', () => {
       new VehicleRepository(replica as any),
       // PC-56 TENANT-5d · the REAL vocabulary read, against the real database: a coded failure reason is validated
       // against `shipment_failure_reason` (Law 6, tenant-extendable), so this integration run proves the seed too.
-      new LogisticsDeskRepository(replica as any));
+      new LogisticsDeskRepository(replica as any),
+      // PC-56 TENANT-SW-a · COD ledger + POD review, wired REAL against the seeded flags (cod_ledger / pod_review are OFF by default):
+      // with both off, delivery behaves exactly as before this wave — the deps those paths would reach are therefore never touched here
+      // (the ON paths are proven end to end in payments/__tests__/tenant-swa-commission-zones-cod-pod.integration.spec.ts).
+      new CodLedgerService(uow, idem, null as never, flags, audit, new CodLedgerRepository(replica as any), null as never, orders),
+      new PodReviewService(uow, idem, flags, audit, new PodReviewRepository(replica as any), null as never, null as never, orders));
 
     const registry = new OutboxHandlerRegistry();
     registry.register(new OrderConfirmedHandler(shipRepo, outbox, metrics, uow));                  // orders.order_confirmed → shipment (kv_app UoW, HOTFIX-2)

@@ -103,7 +103,7 @@ const REMAINING_DISPLAY_ONLY = [
   'modules/insurance/repositories/insurance-claim.repository.ts',             // event_date; 72h test uses the DTO
   // [PC-56 TENANT-11b] labour-booking.repository.ts left this list: it now reads start/end_date with pgDate (the escrow's planned days are built on them).
   // [PC-56 TENANT-12] soil-test.repository.ts left this list: sampled_on / valid_until are read with pgDateOrNull (F-10b — the twin cites them as an as-of).
-  'modules/payments/repositories/commission-rule.repository.ts',              // effective_from/to; rate resolution is in SQL
+  // [PC-56 TENANT-SW-a] commission-rule.repository.ts left this list: effective_from/to are now read as ::text (the YYYY-MM-DD the database holds).
   'modules/schemes/repositories/dbt-transfer.repository.ts',                  // credited_on; insert is from the DTO
   'modules/tenancy/repositories/usage-counter.repository.ts',                 // period; read-only
   'modules/warehousing/repositories/assay-report.repository.ts',              // valid_until; no reader
@@ -189,7 +189,9 @@ describe('core/pg-date · the sweep (this list may shrink, never grow)', () => {
     // start/end dates became the planned days the wage escrow is computed on (a day early under IST was a day's wage).
     // [PC-56 TENANT-12] 13 → 12. `modules/land-soil-weather/repositories/soil-test.repository.ts` came off the list: a soil test's
     // sampled_on is the only soil as-of the digital twin cites (F-10b).
-    expect(REMAINING_DISPLAY_ONLY.length).toBe(12);
+    // [PC-56 TENANT-SW-a] 12 → 11. `modules/payments/repositories/commission-rule.repository.ts` came off the list: a rule's effective dates
+    // decide which rule an order FREEZES at placement (and the W149 resolution example), so they are now read as the database's own text.
+    expect(REMAINING_DISPLAY_ONLY.length).toBe(11);
     expect(REMAINING_STRINGIFIED.length).toBe(0);
   });
 });

@@ -58,13 +58,25 @@ import { AppConfig } from '../../core/config/app-config';
 import { FlagsService } from '../../core/feature-flags/flags.service';
 import { METRICS, Metrics } from '../../core/observability/metrics';
 import { ALERT_EVALUATION_INTERVAL_MS } from './domain/ops-alert.rules';
+import { PaymentsModule } from '../payments/payments.module';
+import { DisputesModule } from '../disputes/disputes.module';
+import { CodController } from './controllers/v1/cod.controller';
+import { PodController } from './controllers/v1/pod.controller';
+import { DeliveryZoneProposalRepository } from './repositories/delivery-zone-proposal.repository';
+import { CodLedgerRepository } from './repositories/cod-ledger.repository';
+import { CodLedgerService } from './services/cod-ledger.service';
+import { PodReviewRepository } from './repositories/pod-review.repository';
+import { PodReviewService, PodAutoClearJob } from './services/pod-review.service';
+import { PROPOSAL_APPLIER_REGISTRY, ProposalApplierRegistry } from '../../core/jobs/proposal-applier.registry';
 
 @Module({
   // PC-56 TENANT-5a · the money gate needs the ORDERS module's public service (OrderService.transportStatus)
   // so a shipment cannot be assigned, scheduled or picked up for an order nobody has paid for. The module
   // blueprint's rule holds: another module's PUBLIC SERVICE, never its repositories.
-  imports: [OrdersModule],
-  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController, FreightController, LogisticsDeskController],
+  // PC-56 TENANT-SW-a: PaymentsModule for SettlementHoldService (a flagged POD / a COD shortfall holds settlement) and DisputesModule for the
+  // POD-rejection dispute — both PUBLIC services. Neither imports logistics (no cycle).
+  imports: [OrdersModule, PaymentsModule, DisputesModule],
+  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController, FreightController, LogisticsDeskController, CodController, PodController],
   providers: [
     ShipmentService, ShipmentRepository, OrderConfirmedHandler,
     LogisticsPartnerService, VehicleService, PickupSlotService,
@@ -74,6 +86,9 @@ import { ALERT_EVALUATION_INTERVAL_MS } from './domain/ops-alert.rules';
     FleetRegisterReadModel, RouteBoardReadModel,
     FreightInvoiceService, FreightInvoiceRepository, FreightDeskReadModel,
     LogisticsDeskRepository, LogisticsDeskReadModel,
+    // PC-56 TENANT-SW-a · zones (proposals), COD ledger, POD review + its 2-hour clock
+    DeliveryZoneProposalRepository, CodLedgerRepository, CodLedgerService, PodReviewRepository, PodReviewService,
+    { provide: PodAutoClearJob, useFactory: (svc: PodReviewService) => new PodAutoClearJob(5 * 60_000, svc), inject: [PodReviewService] },
     { provide: RcExpiryParkingJob,
       useFactory: (vehicles: VehicleRepository, flags: FlagsService, metrics: Metrics) => new RcExpiryParkingJob(vehicles, flags, metrics),
       inject: [VehicleRepository, FlagsService, METRICS] },
@@ -98,8 +113,16 @@ export class LogisticsModule implements OnModuleInit {
     private readonly orderConfirmed: OrderConfirmedHandler,
     private readonly opsAlerts: OpsAlertsCadenceJob,
     private readonly rcParking: RcExpiryParkingCadenceJob,
+    private readonly podAutoClear: PodAutoClearJob,
+    private readonly zones: DeliveryZoneService,
+    @Inject(PROPOSAL_APPLIER_REGISTRY) private readonly appliers: ProposalApplierRegistry,
   ) {}
   onModuleInit(): void {
+    // PC-56 TENANT-SW-a · D1: the POD 2-hour auto-clear clock — registered unconditionally (each tenant's rows exist only with pod_review
+    // ON): without it a clean POD would sit "awaiting" forever and the console's "clears in 2 h" would be false.
+    this.jobRegistry.register(this.podAutoClear);
+    // B2: unconfirmed zone proposals expire after 7 days on 13b's proposal clock.
+    this.appliers.register(this.zones);
     // auto-create a shipment when an order is confirmed (orders.order_confirmed → pending shipment)
     this.registry.register(this.orderConfirmed);
     if (this.config.jobs.logisticsFleet.enabled) {

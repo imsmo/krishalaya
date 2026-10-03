@@ -103,7 +103,7 @@ export class OrderConsoleReadModel {
               discount_minor::text AS "discountMinor", tax_minor::text AS "taxMinor",
               commission_minor::text AS "commissionMinor", platform_fee_minor::text AS "platformFeeMinor",
               tds_minor::text AS "tdsMinor", total_minor::text AS "totalMinor",
-              commission_rule_snapshot AS "commissionRuleSnapshot", currency_code AS "currencyCode"
+              charge_snapshot AS "commissionRuleSnapshot", currency_code AS "currencyCode"
          FROM orders
         WHERE tenant_id = $1 AND id = $2
           -- Law 8: prune to the partition the v7 id's embedded time points at (clock-skew tolerant).

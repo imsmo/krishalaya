@@ -11,6 +11,7 @@ import {
   FreightCycleCount, FreightDeskPage, FreightInvoiceDetail, FreightInvoiceRow, FreightReconDetail,
   FreightReconStatus, FreightSourceKind,
   LogisticsInsights, LogisticsOverview,
+  CodBoard, CodShortfall, PodReview, PodBoard,
 } from '../types';
 
 export interface RiderPayoutStatement {
@@ -38,7 +39,9 @@ export class ShipmentsResource {
     return (await this.http.request<Shipment>('GET', `shipments/${encodeURIComponent(id)}`, { signal })).data;
   }
   /** Mark delivered with proof-of-delivery: the buyer's OTP (required) + an optional uploaded PoD photo. */
-  async deliver(id: string, input: { otp: string; podMediaId?: string }, idempotencyKey: string): Promise<Shipment> {
+  /** PC-56 TENANT-SW-a: a COD shipment (cod_ledger ON) also states the cash taken at the door; less than the COD figure needs a reason
+   *  (recorded against the ORDER). Past the rider's cash cap the delivery is refused (COD_RIDER_CAP) — remit first. */
+  async deliver(id: string, input: { otp: string; podMediaId?: string; cashCollectedMinor?: string; shortfallReason?: string }, idempotencyKey: string): Promise<Shipment> {
     return (await this.http.request<Shipment>('POST', `shipments/${encodeURIComponent(id)}/deliver`, { idempotencyKey, body: input })).data;
   }
   /** Assigned rider (or manager) posts a live GPS ping (lat/lng + optional note) → appends a tracking point
@@ -113,11 +116,59 @@ export class ShipmentsResource {
   // --- PC-55 A2 `cod-remittance-ledger` (Manage-gated). The TOTAL is server-computed: you may send
   // expectedAmountMinor from the worksheet you were reading, and a stale figure is REFUSED (409) — never
   // silently banked. Create is Idempotency-Keyed; reconcile enforces maker≠checker server-side. ---
-  async createCodRemittance(input: { riderUserId: string; shipmentIds?: string[]; expectedAmountMinor?: string; depositRef?: string; depositMethod?: 'bank_branch' | 'cash_office' | 'upi' | 'other'; currencyCode?: string }, idempotencyKey: string): Promise<{ id: string; status: string; amountMinor: string; shipmentCount: number }> {
+  async createCodRemittance(input: { riderUserId: string; shipmentIds?: string[]; expectedAmountMinor?: string; depositRef?: string; depositMethod?: 'bank_branch' | 'cash_office' | 'upi' | 'other'; currencyCode?: string; reason: string }, idempotencyKey: string): Promise<{ id: string; status: string; amountMinor: string; shipmentCount: number }> {
     return (await this.http.request<{ id: string; status: string; amountMinor: string; shipmentCount: number }>('POST', 'shipments/cod/remittances', { body: input, idempotencyKey })).data;
   }
-  async codRemittances(params: { riderUserId?: string; status?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
-    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'shipments/cod/remittances', { query: { riderUserId: params.riderUserId, status: params.status, limit: params.limit ?? 100 }, signal })).data;
+  /** Oldest first (the batch held longest on top), microsecond keyset (PC-56 TENANT-SW-a). */
+  async codRemittances(params: { riderUserId?: string; status?: string; limit?: number; cursor?: string } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
+    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'shipments/cod/remittances', { query: { riderUserId: params.riderUserId, status: params.status, limit: params.limit ?? 100, cursor: params.cursor }, signal })).data;
+  }
+  async codRemittancesPage(params: { riderUserId?: string; status?: string; limit?: number; cursor?: string } = {}, signal?: AbortSignal): Promise<Page<Record<string, unknown>>> {
+    const r = await this.http.request<Array<Record<string, unknown>>>('GET', 'shipments/cod/remittances', { query: { riderUserId: params.riderUserId, status: params.status, limit: params.limit ?? 100, cursor: params.cursor }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+
+  // --- PC-56 TENANT-SW-a · W243: COD as a ledger fact — tiles from the ledger, shortfalls against orders, the cash day (checker) ---
+  async codBoard(signal?: AbortSignal): Promise<CodBoard> {
+    return (await this.http.request<CodBoard>('GET', 'logistics/cod/board', { signal })).data;
+  }
+  async codShortfalls(params: { status?: 'open' | 'collected'; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<CodShortfall>> {
+    const r = await this.http.request<CodShortfall[]>('GET', 'logistics/cod/shortfalls', { query: params, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async collectCodShortfall(id: string, input: { depositRef: string; note?: string }, idempotencyKey: string): Promise<CodShortfall> {
+    return (await this.http.request<CodShortfall>('POST', `logistics/cod/shortfalls/${encodeURIComponent(id)}/collect`, { idempotencyKey, body: input })).data;
+  }
+  async openCashDay(idempotencyKey: string): Promise<CodBoard['days'][number]> {
+    return (await this.http.request<CodBoard['days'][number]>('POST', 'logistics/cod/cash-days', { idempotencyKey, body: {} })).data;
+  }
+  /** "Close today's cash day (checker)" — a different person from the opener; every open remittance reconciled or carried with a reason. */
+  async closeCashDay(date: string, input: { carries: Array<{ remittanceId: string; reason: string }>; note?: string }, idempotencyKey: string): Promise<{ day: CodBoard['days'][number]; carries: Array<{ remittanceId: string; reason: string; carriedBy: string }>; changed: boolean }> {
+    return (await this.http.request<{ day: CodBoard['days'][number]; carries: Array<{ remittanceId: string; reason: string; carriedBy: string }>; changed: boolean }>('POST', `logistics/cod/cash-days/${encodeURIComponent(date)}/close`, { idempotencyKey, body: input })).data;
+  }
+
+  // --- PC-56 TENANT-SW-a · W237 / W238: POD review (a flagged POD holds settlement; reject needs a second person) ---
+  async podBoard(params: { status?: PodReview['status']; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PodBoard & { nextCursor: string | null }> {
+    const r = await this.http.request<PodBoard>('GET', 'logistics/pod', { query: params, signal });
+    return { ...r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async podReview(id: string, signal?: AbortSignal): Promise<PodReview> {
+    return (await this.http.request<PodReview>('GET', `logistics/pod/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  async podTakeNext(): Promise<PodReview | null> {
+    return (await this.http.request<PodReview | null>('POST', 'logistics/pod/take-next', { body: {} })).data;
+  }
+  async podFlag(id: string, input: { reason: NonNullable<PodReview['flagReason']>; note?: string; varianceMinor?: string }, idempotencyKey: string): Promise<PodReview> {
+    return (await this.http.request<PodReview>('POST', `logistics/pod/${encodeURIComponent(id)}/flag`, { idempotencyKey, body: input })).data;
+  }
+  async podApprove(id: string, note: string | undefined, idempotencyKey: string): Promise<PodReview> {
+    return (await this.http.request<PodReview>('POST', `logistics/pod/${encodeURIComponent(id)}/approve`, { idempotencyKey, body: note ? { note } : {} })).data;
+  }
+  async podProposeReject(id: string, note: string, idempotencyKey: string): Promise<PodReview> {
+    return (await this.http.request<PodReview>('POST', `logistics/pod/${encodeURIComponent(id)}/reject`, { idempotencyKey, body: { note } })).data;
+  }
+  async podConfirmReject(id: string, idempotencyKey: string): Promise<PodReview> {
+    return (await this.http.request<PodReview>('POST', `logistics/pod/${encodeURIComponent(id)}/reject/confirm`, { idempotencyKey, body: {} })).data;
   }
   async codRemittance(id: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
     return (await this.http.request<Record<string, unknown>>('GET', `shipments/cod/remittances/${encodeURIComponent(id)}`, { signal })).data;
@@ -125,8 +176,8 @@ export class ShipmentsResource {
   async depositCodRemittance(id: string, input: { depositRef: string; depositMethod: 'bank_branch' | 'cash_office' | 'upi' | 'other' }): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/deposit`, { body: input })).data;
   }
-  async reconcileCodRemittance(id: string, note?: string): Promise<{ id: string; status: string }> {
-    return (await this.http.request<{ id: string; status: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/reconcile`, { body: note ? { note } : {} })).data;
+  async reconcileCodRemittance(id: string, note?: string): Promise<{ id: string; status: string; remitTxnId?: string | null; ledgerRemittedMinor?: string }> {
+    return (await this.http.request<{ id: string; status: string; remitTxnId?: string | null; ledgerRemittedMinor?: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/reconcile`, { body: note ? { note } : {} })).data;
   }
   async cancelCodRemittance(id: string, reason: string): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', `shipments/cod/remittances/${encodeURIComponent(id)}/cancel`, { body: { reason } })).data;

@@ -13,6 +13,7 @@
 //       stamps the pledges; a second confirm moves 0;
 //   A6  a member reads progress + only their own pledge (no other id, no phone); the coordinator reads the masked table + KYC;
 //   0188 as kv_app: the settlement's figures are not writable; maker ≠ checker probed directly on the table; tenant B sees nothing.
+import { composeOrderSettlement } from '../../payments/services/order-settlement.service';
 import { randomUUID } from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
 import { makeTenant, makeUser, ensureUnitCurrency } from '../../../../test/helpers/fixtures';
@@ -159,8 +160,7 @@ run('PC-56 TENANT-11c · group lots — settle pays farmers from the real sale, 
     // different reason: this spec's balances assert the UNSPLIT seller net (seller Main = gross), so the handler runs here with
     // the flag pinned to its seeded default instead of to whatever a neighbouring spec last wrote.
     const pinnedFlags = { isEnabled: async (key: string, c?: unknown) => (key === 'commission_split' ? false : flags.isEnabled(key, c as never)) } as unknown as FlagsService;
-    settle = new OrderCompletedHandler(wallet, pinnedFlags, new SettlementPricingService(new CommissionRuleRepository(replica as never), new TaxRuleRepository(replica as never)), new SettlementLineRepository(),
-      new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as never)), uow);
+    settle = new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: pinnedFlags, replica, lines: new SettlementLineRepository(), couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as never)), uow: uow }));
     hop1 = new GroupLotOrderCompletedHandler(svc);
     hop2 = new GroupLotSaleSettledHandler(svc);
   }, 120_000);

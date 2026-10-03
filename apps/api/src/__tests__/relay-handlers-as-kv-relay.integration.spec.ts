@@ -182,6 +182,24 @@ const CASES: Record<string, Case> = {
         } };
     },
   },
+  // PC-56 TENANT-SW-a · the last settlement hold of an order released (a flagged POD approved / a COD shortfall paid): the completion that
+  // arrived while it was held is settled now, through the SAME settle:<order> key — the deferral and the hold rows are read as kv_app.
+  'payments.settlement_hold_released → modules/payments/events/handlers/settlement-hold-released.handler#SettlementHoldReleasedHandler': {
+    depth: 'write',
+    build: async (w) => {
+      const orderId = await makeOrder(w, 'completed');
+      await fundEscrow(w, orderId, 452000n);
+      // the completion met an open POD hold (deferred, nothing settled); the hold has since been released
+      const holdId = randomUUID();
+      await w.admin.query(`INSERT INTO settlement_holds (tenant_id, order_id, reason, source_id, released_at, release_note) VALUES ($1,$2,'pod_review',$3, now(), 'POD approved on review')`, [w.tenant, orderId, holdId]);
+      await w.admin.query(`INSERT INTO settlement_deferrals (tenant_id, order_id, payload) VALUES ($1,$2,$3::jsonb)`, [w.tenant, orderId, JSON.stringify(orderPayload(w, orderId))]);
+      return { aggregateType: 'order', aggregateId: orderId, payload: { v: 1, orderId, reason: 'pod_review', sourceId: holdId },
+        verify: async () => {
+          expect(await count(w, `SELECT count(*) n FROM ledger_transactions WHERE idempotency_key=$1`, [`settle:${orderId}`])).toBe(1);
+          expect((await q1(w, `SELECT settled_at FROM settlement_deferrals WHERE tenant_id=$1 AND order_id=$2`, [w.tenant, orderId])).settled_at).not.toBeNull();
+        } };
+    },
+  },
   'disputes.dispute_resolved → modules/payments/events/handlers/dispute-resolved.handler#DisputeResolvedHandler': {
     depth: 'write',   // dispute_refunds + commission_split ON: payment read, partial refund, the kept remainder priced
     build: async (w) => {
@@ -631,7 +649,9 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
   }, 600_000);
   it('the UoW route widened nothing: kv_relay still holds no privilege on the tables its handlers now reach through kv_app; 0195 is SELECT-only', async () => {
     const priv = async (t: string, p: string) => (await admin.query(`SELECT has_table_privilege('kv_relay', $1, $2) AS v`, [t, p])).rows[0].v as boolean;
-    for (const t of ['shipments', 'trade_invoices', 'commission_rules', 'tax_rules', 'payments', 'user_memberships', 'listing_offers', 'loans']) {
+    // PC-56 TENANT-SW-a: the new money / review tables are reached through kv_app only — the relay holds nothing on them either
+    for (const t of ['shipments', 'trade_invoices', 'commission_rules', 'tax_rules', 'payments', 'user_memberships', 'listing_offers', 'loans',
+      'settlement_holds', 'settlement_deferrals', 'pod_reviews', 'cod_collections', 'cod_shortfalls', 'cod_cash_days', 'commission_rule_proposals', 'delivery_zone_proposals']) {
       for (const p of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) expect(`${t}:${p}:${await priv(t, p)}`).toBe(`${t}:${p}:false`);
     }
     expect(await priv('insurance_policies', 'UPDATE')).toBe(false);
@@ -643,6 +663,19 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     expect(await priv('notification_template_versions', 'SELECT')).toBe(true);
     for (const p of ['INSERT', 'UPDATE', 'DELETE']) expect(await priv('notification_template_versions', p)).toBe(false);
   });
+
+  // ── PC-56 TENANT-SW-a · D2: the wave's CADENCE JOBS run on the runner's kv_relay pool (as ScheduledJobsRunner hands it), reading only
+  //    `tenants` there and doing every table act per tenant in kv_app's unit of work — proven by running each sweep on the relay pool. ──
+  it('SW-a · the POD auto-clear clock and the proposal clock (commission rules + zones) sweep on the kv_relay pool without 42501', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { PodAutoClearJob } = require('../modules/logistics/services/pod-review.service') as typeof import('../modules/logistics/services/pod-review.service');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { SettingProposalsJob } = require('../modules/tenancy/jobs/setting-proposals.job') as typeof import('../modules/tenancy/jobs/setting-proposals.job');
+    const pod = await app.get(PodAutoClearJob).sweep(relayPool);
+    expect(pod.failed).toBe(0);
+    const props = await app.get(SettingProposalsJob).sweep(relayPool);
+    expect(props.failed).toBe(0);
+  }, 120_000);
 
   // ── B4 · END TO END: the REAL registry (every handler of the event, in boot order), the REAL dispatcher, LOGGED IN as kv_relay ──
   it('B4 · orders.order_confirmed through the FULL registry as kv_relay: published, ONE shipment AND ONE trade invoice; a redelivery adds nothing', async () => {

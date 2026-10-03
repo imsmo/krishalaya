@@ -45,3 +45,16 @@ export function couponNoticeKey(outcome: unknown): string | null {
 export function previewCouponOutcome(preview: { sellers: Array<{ couponNotice?: { outcome: string } }> } | null): string | null {
   return preview?.sellers.find((s) => s.couponNotice)?.couponNotice?.outcome ?? null;
 }
+
+/** PC-56 TENANT-SW-a (B): placement's delivery refusals → the kind status the checkout page prints (never the raw code). A pincode in no
+ *  active zone is "we don't deliver here yet"; everything else unknown stays the generic, non-leaky placeError. */
+export type PlaceRefusal = 'unserviceable' | 'needAddress' | 'method' | 'err';
+export function placeRefusalStatus(code: string | undefined | null): PlaceRefusal {
+  if (code === 'UNSERVICEABLE_PINCODE') return 'unserviceable';
+  if (code === 'DELIVERY_ADDRESS_REQUIRED') return 'needAddress';
+  if (code === 'DELIVERY_METHOD_REQUIRED' || code === 'DELIVERY_METHOD_NOT_SERVING') return 'method';
+  return 'err';
+}
+export const PLACE_REFUSAL_KEYS: Record<Exclude<PlaceRefusal, 'err'>, string> = {
+  unserviceable: 'checkout.unserviceable', needAddress: 'checkout.needAddress', method: 'checkout.methodNotServing',
+};

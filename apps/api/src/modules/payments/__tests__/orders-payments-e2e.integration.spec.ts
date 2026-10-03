@@ -11,6 +11,7 @@
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 // The relay runs on the ADMIN (privileged) pool — the production equivalent is the worker as the
 // BYPASSRLS kv_relay role (migration 0018).
+import { composeOrderSettlement } from '../services/order-settlement.service';
 import { randomUUID, createHmac } from 'node:crypto';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
@@ -114,8 +115,8 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
     const handlers = new OutboxHandlerRegistry();
     handlers.register(new PaymentSucceededHandler(new OrderRepository(replica as any), outbox));
     // commission_split defaults OFF → full escrow release to the seller (this spec asserts that path)
-    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handlers.register(new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow));
+    const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any), new OrderRepository(replica as never));
+    handlers.register(new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: new FlagsService(pools, new InMemoryCacheService()), replica, lines: new SettlementLineRepository(), couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow })));
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);
   }, 30000);
 

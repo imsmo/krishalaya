@@ -83,6 +83,13 @@ export class OrderService {
     return this.repo.statusOf(tx, tenantId, orderId);
   }
 
+  /** PC-56 TENANT-SW-a · B2 — orders placed per delivery zone in the last N days (W233 "Orders 30d"; the zone is frozen at placement). */
+  ordersByZoneSince(tenantId: string, zoneIds: string[], days: number): Promise<Map<string, number>> {
+    return this.repo.countByZoneSince(tenantId, zoneIds, days);
+  }
+  /** PC-56 TENANT-SW-a · D1 / C1 — the order's parties and money facts, read in the caller's transaction (POD review, COD shortfall). */
+  partiesInTx(tx: TxContext, tenantId: string, orderId: string) { return this.repo.pricingFactsTx(tx, tenantId, orderId); }
+
   private serialize(p: ReturnType<Order['toProps']>) {
     return { id: p.id, orderNo: p.orderNo, status: p.status, source: p.source, buyerUserId: p.buyerUserId, sellerUserId: p.sellerUserId,
       currencyCode: p.currencyCode, subtotalMinor: p.subtotalMinor.toString(), deliveryFeeMinor: p.deliveryFeeMinor.toString(),

@@ -830,7 +830,7 @@ describe('HttpClient via resources', () => {
     expect(page.items[0].isWinning).toBe(true);
   });
 
-  it('tenantConfig.commissionRules GETs /v1/commission-rules; create POSTs with idempotency key, money stays string (P1-10)', async () => {
+  it('tenantConfig.commissionRules GETs /v1/commission-rules; a proposal POSTs with idempotency key, money stays string (P1-10, SW-a)', async () => {
     const { fn, calls } = fakeFetch((_c, n) => n === 1
       ? { body: { data: [{ id: 'cr1', scope: 'tenant', categoryId: null, source: null, sellerRoleId: null, rateBps: 250, fixedMinor: '0', capMinor: null, platformShareBps: 100, chargedTo: 'seller', priority: 100, effectiveFrom: '2026-06-01', effectiveTo: null, isActive: true }], meta: { nextCursor: 'crc' } } }
       : { body: { data: { id: 'cr2', scope: 'tenant', categoryId: null, source: 'auction', sellerRoleId: null, rateBps: 300, fixedMinor: '0', capMinor: null, platformShareBps: 150, chargedTo: 'seller', priority: 100, effectiveFrom: null, effectiveTo: null, isActive: true } } });
@@ -840,28 +840,34 @@ describe('HttpClient via resources', () => {
     expect(calls[0].init.method).toBe('GET');
     expect(typeof page.items[0].fixedMinor).toBe('string');
     expect(page.nextCursor).toBe('crc');
-    const created = await c.tenantConfig.createCommissionRule({ rateBps: 300, platformShareBps: 150, source: 'auction' }, 'idem-cr-1');
-    expect(calls[1].url).toBe('https://api.test/v1/commission-rules');
+    // PC-56 TENANT-SW-a: a tenant rule is PROPOSED (no platform share — the plan sets it; reason + an IST start ≥ 7 days out).
+    const created = await c.tenantConfig.proposeCommissionRule({ rateBps: 300, source: 'auction', effectiveFrom: '2026-10-11', reason: 'Auction season rate for the mandi' }, 'idem-cr-1');
+    expect(calls[1].url).toBe('https://api.test/v1/commission-rules/proposals');
     expect(calls[1].init.method).toBe('POST');
     expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-cr-1');
-    expect(created.scope).toBe('tenant');
+    expect(JSON.parse(calls[1].init.body as string)).not.toHaveProperty('platformShareBps');
+    expect(created.id).toBe('cr2');
   });
 
-  it('tenantConfig delivery zones: list/create/update/setActive hit the right logistics/zones paths (P1-10)', async () => {
+  it('tenantConfig delivery zones: list / propose / update / confirm hit the right logistics/zones paths (P1-10, SW-a)', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'z1', defaultName: 'Pune metro', pincodes: ['411001'], regionIds: [], chargeDefinitionId: null, isActive: true } } }));
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
     await c.tenantConfig.deliveryZones({ activeOnly: true });
     expect(calls[0].url).toBe('https://api.test/v1/logistics/zones?activeOnly=true');
-    await c.tenantConfig.createDeliveryZone({ defaultName: 'Pune metro', pincodes: ['411001'] }, 'idem-z-1');
-    expect(calls[1].url).toBe('https://api.test/v1/logistics/zones');
+    // PC-56 TENANT-SW-a: "create" is a proposal a different tenant_admin confirms.
+    await c.tenantConfig.createDeliveryZone({ defaultName: 'Pune metro', pincodes: ['411001'], reason: 'Covers the Pune metro pincodes' }, 'idem-z-1');
+    expect(calls[1].url).toBe('https://api.test/v1/logistics/zones/proposals');
     expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-z-1');
-    await c.tenantConfig.updateDeliveryZone('z1', { defaultName: 'Pune greater' });
+    expect(JSON.parse(calls[1].init.body as string)).toMatchObject({ kind: 'create', defaultName: 'Pune metro' });
+    await c.tenantConfig.updateDeliveryZone('z1', { defaultName: 'Pune greater', reason: 'renamed by the FPO' });
     expect(calls[2].url).toBe('https://api.test/v1/logistics/zones/z1');
     expect(calls[2].init.method).toBe('PATCH');
-    await c.tenantConfig.setDeliveryZoneActive('z1', false);
-    expect(calls[3].url).toBe('https://api.test/v1/logistics/zones/z1/active');
+    await c.tenantConfig.proposeZone({ kind: 'deactivate', zoneId: 'z1', reason: 'Monsoon road closure on the route' }, 'idem-z-2');
+    expect(calls[3].url).toBe('https://api.test/v1/logistics/zones/proposals');
     expect(calls[3].init.method).toBe('POST');
-    expect(JSON.parse(calls[3].init.body as string)).toEqual({ isActive: false });
+    expect(JSON.parse(calls[3].init.body as string)).toEqual({ kind: 'deactivate', zoneId: 'z1', reason: 'Monsoon road closure on the route' });
+    await c.tenantConfig.confirmZoneProposal('zp1', 'idem-z-3');
+    expect(calls[4].url).toBe('https://api.test/v1/logistics/zones/proposals/zp1/confirm');
   });
 
   it('tenantConfig.putSetting PUTs /v1/tenant-settings with key/value + idempotency key (branding/languages) (P1-10)', async () => {
@@ -1774,7 +1780,7 @@ describe('cod-remittance-ledger', () => {
   it('creates idempotently, never types the total, and walks deposit→reconcile', async () => {
     const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'rm1', status: 'collected', amountMinor: '450000', shipmentCount: 3 } } }));
     const c = createClient({ ...base, fetchImpl: fn });
-    const r = await c.shipments.createCodRemittance({ riderUserId: 'u1', expectedAmountMinor: '450000' }, 'idem-cod-1');
+    const r = await c.shipments.createCodRemittance({ riderUserId: 'u1', expectedAmountMinor: '450000', reason: 'end of route banking' }, 'idem-cod-1'); // SW-a C2: audited with a reason
     expect(calls[0].url).toBe('https://api.test/v1/shipments/cod/remittances');
     expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-cod-1');
     const body = JSON.parse(String(calls[0].init.body));

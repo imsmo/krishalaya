@@ -23,6 +23,10 @@ export type SchedulePickupDto = z.infer<typeof SchedulePickupSchema>;
 export const DeliverShipmentSchema = z.object({
   otp: z.string().regex(/^\d{4,8}$/, 'otp must be 4–8 digits'),
   podMediaId: z.string().uuid().optional(),
+  // PC-56 TENANT-SW-a · C1 (cod_ledger ON): the cash taken at the door for a COD shipment (minor units). Less than the COD figure needs a
+  // reason — it is recorded against the ORDER (the buyer owes), never the rider.
+  cashCollectedMinor: z.string().regex(/^\d{1,15}$/).optional(),
+  shortfallReason: z.string().trim().min(10).max(500).optional(),
 }).strict();
 export type DeliverShipmentDto = z.infer<typeof DeliverShipmentSchema>;
 

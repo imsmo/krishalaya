@@ -565,7 +565,7 @@ describe('PC-56 TENANT-5d · recording WHY a delivery failed', () => {
       pickupOtpHash: null, deliveryOtpHash: null, podMediaId: null, chargeMinor: null, codMinor: null,
       requiresColdChain: false, createdAt: new Date(), deliveryAttempts: 0,
     } as never);
-    const repo = { getForUpdate: jest.fn(async () => s), update: jest.fn(async () => {}), recordEvent: jest.fn(async () => {}) };
+    const repo = { getForUpdate: jest.fn(async () => s), setDispatchedByTx: jest.fn(async () => undefined), dispatchedByTx: jest.fn(async () => null), update: jest.fn(async () => {}), recordEvent: jest.fn(async () => {}) };
     const orders = { transportStatus: jest.fn(async () => 'confirmed') };
     const flags = { isEnabled: jest.fn(async () => false) };
     const outbox = { write: jest.fn(async (a: unknown, b: unknown) => { void a; void b; }) };
@@ -575,7 +575,9 @@ describe('PC-56 TENANT-5d · recording WHY a delivery failed', () => {
     const desk = { isFailureReason: jest.fn(async () => o.codeKnown ?? true) };
     const svc = new ShipmentService(uow as never, orders as never, flags as never, outbox as never, idem as never,
       metrics as never, audit as never, { auth: { hashPepper: 'p' } } as never, repo as never,
-      { fitnessOf: jest.fn(async () => null) } as never, desk as never);
+      { fitnessOf: jest.fn(async () => null) } as never, desk as never,
+      // PC-56 TENANT-SW-a · COD ledger + POD review, both OFF here (their behaviour is proven live in tenant-swa-…integration)
+      { enabled: jest.fn(async () => false) } as never, { enabled: jest.fn(async () => false) } as never);
     return { svc, s, repo, audit, metrics, desk, outbox };
   }
   const rider = { userId: 'r1', canManage: false };

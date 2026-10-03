@@ -31,10 +31,12 @@ export async function openRemittanceAction(formData: FormData): Promise<void> {
     riderUserId: String(formData.get('riderUserId') ?? ''),
     expectedAmountMinor: String(formData.get('expectedAmountMinor') ?? ''),
     depositRef: '', depositMethod: '',
+    reason: String(formData.get('reason') ?? ''),
   });
   if (!built.ok) back(`error=cod_${built.error}`);
+  if (!built.value.reason) back('error=cod_reason');
   // A remittance is a money record a double-tap must never duplicate (Law 3).
-  try { await tenantClient().shipments.createCodRemittance(built.value, randomUUID()); }
+  try { await tenantClient().shipments.createCodRemittance({ ...built.value, reason: built.value.reason as string }, randomUUID()); }
   catch (e) { back(`error=${errKey(e)}`); }
   revalidatePath('/cod');
   back('ok=opened');

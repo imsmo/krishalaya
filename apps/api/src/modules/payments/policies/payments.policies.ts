@@ -12,9 +12,12 @@ export function canModeratePayment(ctx: RequestContext): boolean {
   return ctx.permissions.has('wallet.adjust') || ctx.permissions.has('payout.approve') || ctx.permissions.has('*');
 }
 
-/** Finance admin able to manage the tenant's OWN commission-rule overrides. Platform defaults stay god-mode. */
+/** PC-56 TENANT-SW-a · A3: proposing / confirming / refusing a tenant commission rule change is `commission.manage` (tenant_admin) — it no
+ *  longer rides `payout.approve` (a payout checker is not, by that fact, the owner of the tenant's price list). Platform defaults stay
+ *  the admin realm's. The confirmer must ALSO be a different active tenant_admin (0196 trg_crp_moves). */
+export const COMMISSION_MANAGE = 'commission.manage';
 export function canManageCommissionRules(ctx: RequestContext): boolean {
-  return ctx.permissions.has('payout.approve') || ctx.permissions.has('wallet.adjust') || ctx.permissions.has('*');
+  return ctx.permissions.has(COMMISSION_MANAGE) || ctx.permissions.has('*');
 }
 
 /**

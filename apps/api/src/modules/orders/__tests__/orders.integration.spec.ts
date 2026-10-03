@@ -62,6 +62,9 @@ import { CartItemService } from '../services/cart-item.service';
 import { CheckoutService } from '../services/checkout.service';
 import { OrderService, OrderActor } from '../services/order.service';
 import { DeliveryZoneRepository } from '../../logistics/repositories/delivery-zone.repository';
+import { CommissionSnapshotService } from '../../payments/services/commission-snapshot.service';
+import { CommissionRuleRepository } from '../../payments/repositories/commission-rule.repository';
+import { TaxRuleRepository } from '../../payments/repositories/tax-rule.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -131,7 +134,8 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     const membershipSvc = new UserMembershipService(uow, outbox, idem, metrics, new InProcessWalletClient(new LedgerRepository()), audit, new MembershipTierRepository(replica as any), new UserMembershipRepository(replica as any));
     checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, orderRepo, checkoutGroupRepo,
       new ChargePricingService(new ChargeDefinitionRepository(replica as any)), couponSvc, membershipSvc,
-      new DeliveryZoneRepository(replica as any)); // DEV-51: zones param (14th) — ctor drift fix
+      new DeliveryZoneRepository(replica as any), // DEV-51: zones param (14th) — ctor drift fix
+      new CommissionSnapshotService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any))); // SW-a: the rule frozen at placement
     orders = new OrderService(uow, outbox, metrics, audit, orderRepo);
 
     inspect = new Pool({ connectionString: APP_URL });

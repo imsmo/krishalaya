@@ -137,3 +137,27 @@ export class DuplicateFreightInvoiceError extends AppError {
 export class FreightReconClosedError extends AppError {
   constructor(status: string) { super('FREIGHT_RECON_CLOSED', `This invoice's recon is ${status} — it cannot be changed`, 409, { status }); }
 }
+
+// ---- PC-56 TENANT-SW-a · zones (B2), COD (C1), POD review (D1) — refused BY NAME; the 0196 triggers are the walls ----
+export class ZoneProposalNotFoundError extends NotFoundError { constructor(id: string) { super('Zone proposal not found'); (this as any).details = { id }; } }
+export class ZoneProposalStateError extends AppError { constructor(status: string) { super('ZONE_PROPOSAL_STATE', `This zone proposal is already ${status}`, 409, { status }); } }
+/** A zone fee may point only at a charge definition a second person approved (W150 charge_change_proposals). */
+export class ZoneFeeNotApprovedError extends AppError { constructor(defId: string) { super('ZONE_FEE_NOT_APPROVED', 'A zone fee may point only at one of your charge definitions that a second person approved (Charges)', 422, { chargeDefinitionId: defId }); } }
+/** A database wall refused the move — its bracketed code carried to the console (maker = checker, driver = reviewer, cash day …). */
+export class LogisticsGateError extends AppError { constructor(code: string, message: string) { super(code, message, 409, { code }); } }
+export class CodLedgerOffError extends AppError { constructor() { super('COD_LEDGER_OFF', 'COD cash is not kept on the ledger for this organisation (cod_ledger is off)', 409); } }
+/** Collecting this cash would take the rider past the per-rider cap — the rider must remit first (canon W243). */
+export class CodRiderCapError extends AppError {
+  constructor(capMinor: bigint, holdingMinor: bigint, collectMinor: bigint) {
+    super('COD_RIDER_CAP', 'This rider already holds as much cash as allowed — they need to deposit what they hold before collecting more', 409,
+      { capMinor: capMinor.toString(), holdingMinor: holdingMinor.toString(), collectMinor: collectMinor.toString() });
+  }
+}
+export class CodCollectionInvalidError extends AppError { constructor(reason: string, details: Record<string, unknown> = {}) { super('COD_COLLECTION_INVALID', reason, 422, details); } }
+export class CodShortfallNotFoundError extends NotFoundError { constructor(id: string) { super('COD shortfall not found'); (this as any).details = { id }; } }
+export class CodCashDayNotFoundError extends NotFoundError { constructor(date: string) { super('Cash day not found'); (this as any).details = { date }; } }
+/** Every remittance of the day must be reconciled or carried with a reason before the day closes. */
+export class CodCashDayOpenItemsError extends AppError { constructor(open: string[]) { super('COD_DAY_OPEN_ITEMS', 'Every remittance of the day must be reconciled or carried forward with a reason before the cash day closes', 409, { open }); } }
+export class PodReviewNotFoundError extends NotFoundError { constructor(id: string) { super('POD review not found'); (this as any).details = { id }; } }
+export class PodReviewStateError extends AppError { constructor(status: string, wanted: string) { super('POD_REVIEW_STATE', `A ${status} POD review cannot be ${wanted}`, 409, { status, wanted }); } }
+export class PodReviewOffError extends AppError { constructor() { super('POD_REVIEW_OFF', 'POD review is not on for this organisation (pod_review is off)', 409); } }

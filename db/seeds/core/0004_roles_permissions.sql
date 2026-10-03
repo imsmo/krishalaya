@@ -141,6 +141,9 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- [PC-56 TENANT-13b] DESKS (F-18): propose / confirm desk changes (a second tenant_admin confirms) and add / remove desk members.
  -- tenant_admin. Also in 0192.
  ('desk.manage','Desks: propose and confirm desk changes (a second tenant_admin confirms) and add / remove desk members — tenant_admin',NULL),
+ -- [PC-56 TENANT-SW-a] commission rules become owner + checker proposals (no longer riding payout.approve); zones become lead + checker (0196).
+ ('commission.manage','Commission rules: propose / confirm / refuse tenant commission rule changes (a second tenant_admin confirms) — tenant_admin',NULL),
+ ('logistics.zones.manage','Delivery zones: propose zone create / fee re-point / deactivate (tenant_admin or fpo_coordinator; a tenant_admin confirms)',NULL),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -274,4 +277,7 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin') AND p.code IN ('api.manage'))
    -- [PC-56 TENANT-13b] desks (0192).
    OR (r.code IN ('tenant_admin') AND p.code IN ('desk.manage'))
+   -- [PC-56 TENANT-SW-a] commission + zone proposals (0196).
+   OR (r.code IN ('tenant_admin') AND p.code IN ('commission.manage','logistics.zones.manage'))
+   OR (r.code IN ('fpo_coordinator') AND p.code IN ('logistics.zones.manage'))
 ON CONFLICT DO NOTHING;

@@ -6,3 +6,10 @@ export const ShipmentPermissions = { Manage: 'logistics.manage' } as const;
 export function canManageLogistics(ctx: RequestContext): boolean {
   return ctx.permissions.has('logistics.manage') || ctx.permissions.has('*');
 }
+
+/** PC-56 TENANT-SW-a · B2: proposing a zone create / fee re-point / (de)activation — tenant_admin or fpo_coordinator; the CONFIRMER must
+ *  be a different active tenant_admin (0196 trg_dzp_moves). */
+export const ZONES_MANAGE = 'logistics.zones.manage';
+export function canManageZones(ctx: RequestContext): boolean {
+  return ctx.permissions.has(ZONES_MANAGE) || ctx.permissions.has('*');
+}

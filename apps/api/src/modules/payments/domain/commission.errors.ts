@@ -28,3 +28,32 @@ export class CommissionRuleForbiddenError extends DomainError {
 export class CommissionRuleNotFoundError extends DomainError {
   constructor(id: string) { super('COMMISSION_RULE_NOT_FOUND', 'Commission rule not found', 404, { id }); }
 }
+
+// ── PC-56 TENANT-SW-a · A3 — commission rule proposals (refused BY NAME; the database trigger is the wall) ──
+export class CommissionProposalNotFoundError extends DomainError {
+  constructor(id: string) { super('COMMISSION_PROPOSAL_NOT_FOUND', 'Commission rule proposal not found', 404, { id }); }
+}
+/** effective_from earlier than the next IST midnight + 7 days (W149 "7-day notice enforced", never back-dated). */
+export class CommissionNoticeError extends DomainError {
+  constructor(earliest: string) { super('COMMISSION_NOTICE_7_DAYS', `A commission change takes effect at an IST midnight at least 7 days out — the earliest date is ${earliest}`, 422, { earliest }); }
+}
+/** A tenant with one administrator cannot get a second signature (13b's NEEDS_SECOND_ADMIN). */
+export class CommissionNeedsSecondAdminError extends DomainError {
+  constructor() { super('NEEDS_SECOND_ADMIN', 'This change needs a second administrator to confirm it — your organisation has one', 409); }
+}
+/** A move the proposal's state does not allow (already confirmed / refused / expired / applied). */
+export class CommissionProposalStateError extends DomainError {
+  constructor(status: string) { super('COMMISSION_PROPOSAL_STATE', `This proposal is already ${status}`, 409, { status }); }
+}
+/** The database refused a move (maker = checker, session, expiry, floor …) — its bracketed code, carried to the console. */
+export class CommissionGateError extends DomainError {
+  constructor(code: string, message: string) { super(code, message, 409, { code }); }
+}
+/** A partial dispute/return refund on an order whose commission the BUYER paid — not modelled (refused by name; full refunds work). */
+export class BuyerCommissionPartialRefundError extends DomainError {
+  constructor(details: Record<string, unknown>) { super('BUYER_COMMISSION_PARTIAL_REFUND_UNSUPPORTED', 'A partial refund of an order whose commission the buyer paid is not modelled on this platform — refund in full or resolve manually', 500, details); }
+}
+/** The completion payload's buyer commission disagrees with the order's frozen snapshot — fail closed, never guess. */
+export class FrozenSnapshotMismatchError extends DomainError {
+  constructor(details: Record<string, unknown>) { super('COMMISSION_SNAPSHOT_MISMATCH', 'The order total disagrees with its frozen commission snapshot', 500, details); }
+}
