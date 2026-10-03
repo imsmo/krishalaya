@@ -78,6 +78,9 @@ export async function saveBrandingAction(formData: FormData): Promise<void> {
   done('branding');
 }
 
+// PC-56 TENANT-13b (F-14): languages are written to `tenant_languages` — the store every consumer reads — through the API's languages
+// route, never to the `languages.enabled` / `languages.default` SETTINGS (deprecated by 0192 and refused by the database). The panel lives
+// on /settings/org; this action is kept for any caller and writes the same store.
 export async function saveLanguagesAction(formData: FormData): Promise<void> {
   await requireSession(PATH);
   const built = buildLanguages(
@@ -85,9 +88,9 @@ export async function saveLanguagesAction(formData: FormData): Promise<void> {
     PLATFORM_LANGUAGES,
   );
   if (!built.ok) fail(`languages.${built.error}`);
-  try {
-    const client = tenantClient();
-    for (const s of built.settings) await client.tenantConfig.putSetting(s.key, s.value, randomUUID());
-  } catch (e) { fail(sdkCode(e, 'languages.save')); }
+  const enabled = formData.getAll('enabled').map(String).filter((c) => (PLATFORM_LANGUAGES as readonly string[]).includes(c));
+  const primary = String(formData.get('default') ?? '');
+  try { await tenantClient().orgSettings.putLanguages({ enabled, primary }, randomUUID()); }
+  catch (e) { fail(sdkCode(e, 'languages.save')); }
   done('languages');
 }

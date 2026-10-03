@@ -11,10 +11,10 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { getThemePreference, getSeniorMode } from '../../lib/mechanism';
 import { formatMoneyMinor } from '@krishalaya/i18n';
-import { formatBps, settingString, settingList, PLATFORM_LANGUAGES, COMMISSION_SOURCES } from '../../features/settings/config';
+import { formatBps, settingString, COMMISSION_SOURCES } from '../../features/settings/config';
 import {
   createCommissionRuleAction, deactivateCommissionRuleAction, createDeliveryZoneAction,
-  setZoneActiveAction, saveBrandingAction, saveLanguagesAction,
+  setZoneActiveAction, saveBrandingAction,
 } from './actions';
 import type { CommissionRule, DeliveryZone, TenantSetting } from '@krishalaya/sdk-js';
 
@@ -45,8 +45,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errorKey = searchParams.error || null;
 
-  const enabledLangs = settingList(settings, 'languages.enabled', ['en']);
-  const defaultLang = settingString(settings, 'languages.default', 'en') || 'en';
   const themePref = getThemePreference();
   const seniorOn = getSeniorMode();
 
@@ -204,28 +202,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
         </form>
       )}
 
-      {/* ---- languages ---- */}
+      {/* ---- languages + organisation settings + desks (PC-56 TENANT-13b) ----
+          The languages panel moved to /settings/org: it writes tenant_languages, the store every consumer reads (F-14) — the old
+          form here wrote two settings nothing read. The typed registry (W186) and desks (W185) live on their canon routes. */}
       <h2 className="kv-section-title">{t.t('settings.languages.title')}</h2>
-      <p className="kv-muted">{t.t('settings.languages.help')}</p>
-      {settingsFailed ? <p className="kv-error" role="alert">{t.t('settings.loadError')}</p> : (
-        <form action={saveLanguagesAction} className="kv-form">
-          <fieldset className="kv-fieldset">
-            <legend>{t.t('settings.languages.enabled')}</legend>
-            {PLATFORM_LANGUAGES.map((code) => (
-              <label key={code} className="kv-check">
-                <input type="checkbox" name="enabled" value={code} defaultChecked={enabledLangs.includes(code)} />
-                {t.t(`settings.lang.${code}`)}
-              </label>
-            ))}
-          </fieldset>
-          <label className="kv-label">{t.t('settings.languages.default')}
-            <select className="kv-input" name="default" defaultValue={defaultLang}>
-              {PLATFORM_LANGUAGES.map((code) => <option key={code} value={code}>{t.t(`settings.lang.${code}`)}</option>)}
-            </select>
-          </label>
-          <button type="submit" className="kv-btn">{t.t('settings.save')}</button>
-        </form>
-      )}
+      <p className="kv-muted">{t.t('settings.moved.languages')} <Link href="/settings/org#languages">{t.t('os.title')} →</Link></p>
+      <p className="kv-muted">{t.t('settings.moved.org')} <Link href="/settings/org">{t.t('os.title')} →</Link> · <Link href="/settings/team/desks">{t.t('dk.title')} →</Link></p>
     </section>
   );
 }

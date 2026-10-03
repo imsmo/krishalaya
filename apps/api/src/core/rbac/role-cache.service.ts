@@ -1,7 +1,8 @@
 // core/rbac/role-cache.service.ts
 // DB-backed RBAC resolution — the AUTHORITY for what a user can do. Effective
 // permissions = (perms of the user's active roles in the tenant)  ∪ (per-staff
-// GRANT overrides)  −  (per-staff DENY overrides). super_admin additionally gets '*'.
+// GRANT overrides)  ∪ (the permissions of the ACTIVE desks they sit at — PC-56 TENANT-13b,
+// never an ungrantable code)  −  (per-staff DENY overrides). super_admin additionally gets '*'.
 // Resolved from the database (role_permissions + staff_permission_overrides), never
 // trusted from the client. Cached (default 5 min) and explicitly invalidated when a
 // user's roles/overrides change, so a token minted after a change reflects it.
@@ -11,6 +12,7 @@ import { ShardRouter } from '../sharding/shard-router';
 import { CACHE_SERVICE, CacheService } from '../cache/cache.service';
 import { CacheKeys } from '../cache/cache-keys';
 import { memberSuspendedSql } from '../../shared/sql/member-suspension.sql';
+import { UNGRANTABLE_PERMISSIONS } from './ungrantable';
 
 export interface EffectiveAccess { roles: string[]; permissions: string[]; }
 const TTL_SECONDS = 300;
@@ -84,11 +86,23 @@ export class RoleCacheService {
          denies AS (
            SELECT spo.permission_code AS code FROM staff_permission_overrides spo
            JOIN active a ON a.utr_id = spo.user_tenant_role_id WHERE NOT spo.is_granted
+         ),
+         -- PC-56 TENANT-13b (F-18, 0192): THE DESKS the person sits at. A desk grants only while it is ACTIVE and the person still
+         -- holds an active role in the tenant (EXISTS active) — a disabled desk, a removed member or a soft-removed permission grants
+         -- nothing — and NEVER a code on the one ungrantable list (core/rbac/ungrantable.ts), even if a row carried one.
+         desk AS (
+           SELECT dp.permission_code AS code
+             FROM desk_members dm
+             JOIN desks d ON d.id = dm.desk_id AND d.tenant_id = $2 AND d.status = 'active'
+             JOIN desk_permissions dp ON dp.desk_id = d.id AND dp.removed_at IS NULL
+            WHERE dm.user_id = $1 AND dm.tenant_id = $2 AND dm.removed_at IS NULL
+              AND EXISTS (SELECT 1 FROM active)
+              AND NOT (dp.permission_code = ANY($3::text[]))
          )
          SELECT DISTINCT code FROM (
-           SELECT code FROM base UNION SELECT code FROM grants
+           SELECT code FROM base UNION SELECT code FROM grants UNION SELECT code FROM desk
          ) u WHERE code NOT IN (SELECT code FROM denies)`,
-        [userId, tenantId],
+        [userId, tenantId, [...UNGRANTABLE_PERMISSIONS]],
       );
       await client.query('COMMIT');
 

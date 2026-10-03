@@ -15,4 +15,6 @@ export const IdentityPermissions = {
    *  grant." One page that assembles everything an organisation knows about one person: land, twelve months of realised
    *  income, scheme benefits, every season. It is not a bigger `report.view`; it is a different decision. */
   View360: 'member.view360',
+  /** PC-56 TENANT-13b · W185: propose / confirm desk changes (a second tenant_admin confirms — 0192) and add / remove desk members. */
+  DeskManage: 'desk.manage',
 } as const;

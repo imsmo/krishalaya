@@ -123,15 +123,17 @@ export class GroupLot {
     this.props.soldAt = input.now;
     this.event(GroupLotEventType.Sold, { orderId: input.orderId, grossProceedsMinor: input.grossMinor.toString() });
   }
-  /** Once, while pledging, by at most 48 h past the CURRENT deadline, and to a moment still in the future. */
-  extend(newDeadlineIso: string, now: Date): void {
+  /** Once, while pledging, by at most `maxExtensionMs` (the tenant's `group_lot.max_extension_hours`, default and ceiling 48 h —
+   *  PC-56 TENANT-13b) past the CURRENT deadline, and to a moment still in the future. */
+  extend(newDeadlineIso: string, now: Date, maxExtensionMs: number = MAX_EXTENSION_MS): void {
     if (this.props.status !== 'pledging') throw new PledgeClosedError();
     if (this.props.extendedOnce) throw new AlreadyExtendedError();
     const cur = new Date(this.props.pledgeDeadline).getTime();
     const next = new Date(newDeadlineIso).getTime();
-    const max = cur + MAX_EXTENSION_MS;
+    const allowed = Number.isFinite(maxExtensionMs) && maxExtensionMs > 0 ? Math.min(maxExtensionMs, MAX_EXTENSION_MS) : MAX_EXTENSION_MS;
+    const max = cur + allowed;
     if (!(next > cur) || !(next > now.getTime())) throw new InvalidGroupLotError('the new deadline must be later than the current one and in the future', 'GROUP_LOT_DEADLINE_INVALID');
-    if (next > max) throw new ExtensionTooLongError(new Date(max).toISOString());
+    if (next > max) throw new ExtensionTooLongError(new Date(max).toISOString(), Math.round(allowed / 3600_000));
     this.props.originalDeadline = this.props.pledgeDeadline;
     this.props.pledgeDeadline = new Date(next).toISOString();
     this.props.extendedOnce = true;

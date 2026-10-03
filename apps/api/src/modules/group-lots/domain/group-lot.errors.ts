@@ -33,7 +33,8 @@ export class AlreadyExtendedError extends DomainError {
   constructor() { super('GROUP_LOT_ALREADY_EXTENDED', 'The deadline was already extended once', 409); }
 }
 export class ExtensionTooLongError extends DomainError {
-  constructor(maxIso: string) { super('GROUP_LOT_EXTENSION_TOO_LONG', 'An extension is at most 48 hours past the current deadline', 422, { maxDeadline: maxIso }); }
+  // PC-56 TENANT-13b: the ceiling is the tenant's `group_lot.max_extension_hours` (≤ the platform's 48 h, 0192) — the message says which.
+  constructor(maxIso: string, maxHours = 48) { super('GROUP_LOT_EXTENSION_TOO_LONG', `An extension is at most ${maxHours} hours past the current deadline`, 422, { maxDeadline: maxIso, maxHours }); }
 }
 export class NudgeTooSoonError extends DomainError {
   constructor(nextAtIso: string) { super('GROUP_LOT_NUDGE_TOO_SOON', 'This lot was nudged in the last 24 hours', 429, { nextAt: nextAtIso }); }

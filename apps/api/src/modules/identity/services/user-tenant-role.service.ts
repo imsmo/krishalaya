@@ -2,6 +2,7 @@
 // Every mutation: validates the role, enforces age/approval gates, writes the change +
 // an audit row in ONE transaction, emits an outbox event, and INVALIDATES the role
 // cache so the user's next token reflects the new grants.
+import { isUngrantable } from '../../../core/rbac/ungrantable';
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -105,9 +106,9 @@ export class UserTenantRoleService {
   async setStaffOverride(tenantId: string, actorUserId: string, actorPerms: ReadonlySet<string>, dto: StaffOverrideDto, ip: string | null) {
     // SECURITY: a grant can never (a) hand out platform/money/god permissions, nor
     // (b) exceed what the granter themselves holds. Revokes (is_granted=false) are always allowed.
-    const UNGRANTABLE = new Set(['*', 'plan.manage', 'tenant.manage', 'user.impersonate', 'wallet.adjust', 'payout.approve', 'flag.toggle']);
+    // PC-56 TENANT-13b: ONE list, shared with desks and the resolver (core/rbac/ungrantable.ts) — this path held its own inline copy.
     if (dto.isGranted) {
-      if (UNGRANTABLE.has(dto.permissionCode)) throw new ForbiddenError('This permission cannot be granted via a staff override', { permission: dto.permissionCode });
+      if (isUngrantable(dto.permissionCode)) throw new ForbiddenError('This permission cannot be granted via a staff override', { permission: dto.permissionCode });
       if (!actorPerms.has(dto.permissionCode) && !actorPerms.has('*')) throw new ForbiddenError('You cannot grant a permission you do not hold', { permission: dto.permissionCode });
     }
     let userId = '';

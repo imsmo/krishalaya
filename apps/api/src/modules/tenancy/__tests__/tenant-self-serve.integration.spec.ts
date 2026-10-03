@@ -27,6 +27,9 @@ import { TenantFeatureRepository } from '../repositories/tenant-feature.reposito
 import { UsageCounterRepository } from '../repositories/usage-counter.repository';
 import { TenantService } from '../services/tenant.service';
 import { TenantDomainService } from '../services/tenant-domain.service';
+import { TenantSettingsService } from '../services/tenant-settings.service';
+import { SettingGovernanceRepository } from '../repositories/setting-governance.repository';
+import { UiMessageRepository } from '../../../core/i18n/ui-message.repository';
 import { SettingNotTenantScopedError, TenantForbiddenError } from '../domain/tenancy.errors';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -35,7 +38,7 @@ const run = APP_URL ? describe : describe.skip;
 
 run('tenancy self-serve (integration, real Postgres + RLS + Law 11)', () => {
   let pools: PgPoolProvider; let admin: Pool; let inspect: Pool;
-  let tenants: TenantService; let domains: TenantDomainService;
+  let tenants: TenantService; let domains: TenantDomainService; let settings: TenantSettingsService;
   let isSuperuser = false;
 
   const tenantA = randomUUID();
@@ -86,6 +89,8 @@ run('tenancy self-serve (integration, real Postgres + RLS + Law 11)', () => {
     const sRepo = new TenantSettingsRepository(replica as any);
     tenants = new TenantService(uow, outbox, idem, metrics, audit, tRepo, sRepo, new TenantFeatureRepository(replica as any), new UsageCounterRepository(replica as any));
     domains = new TenantDomainService(uow, outbox, idem, metrics, audit, dRepo);
+    // PC-56 TENANT-13b: tenant settings are written through TenantSettingsService (the risk_class gate); TenantService's ungated putSetting is closed.
+    settings = new TenantSettingsService(uow, outbox, idem, metrics, audit, sRepo, new SettingGovernanceRepository(replica as any), new UiMessageRepository(replica as any));
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
@@ -112,12 +117,18 @@ run('tenancy self-serve (integration, real Postgres + RLS + Law 11)', () => {
       .rejects.toBeInstanceOf(TenantForbiddenError);
   });
 
-  it('upserts a tenant-scoped setting; refuses a platform-scoped one (Law 11)', async () => {
-    const res = await tenants.putSetting(tenantA, manager(), key(), { key: 'order.auto_confirm_hours', value: 12 } as any, null);
-    expect(res.value).toBe(12);
-    const stored = await admin.query(`SELECT value FROM tenant_settings WHERE tenant_id=$1 AND key='order.auto_confirm_hours'`, [tenantA]);
-    expect(Number(stored.rows[0].value)).toBe(12);
-    await expect(tenants.putSetting(tenantA, manager(), key(), { key: 'platform.kill_switch', value: true } as any, null))
+  it('upserts an ordinary tenant-scoped setting; refuses a platform-scoped one (Law 11) and a trust-affecting one (PC-56 TENANT-13b)', async () => {
+    const res = await settings.put(tenantA, manager(), key(), { key: 'plans.usage_alert_threshold_pct', value: 75 } as any, null);
+    expect(res.value).toBe(75);
+    const stored = await admin.query(`SELECT value FROM tenant_settings WHERE tenant_id=$1 AND key='plans.usage_alert_threshold_pct'`, [tenantA]);
+    expect(Number(stored.rows[0].value)).toBe(75);
+    // 'order.auto_confirm_hours' was written here by one admin before 13b; it is trust-affecting now (0192) — never one person's.
+    await expect(settings.put(tenantA, manager(), key(), { key: 'order.auto_confirm_hours', value: 12 } as any, null))
+      .rejects.toMatchObject({ code: 'PROPOSAL_REQUIRED' });
+    // platform-scoped keys are refused by scope (Law 11)
+    await expect(settings.put(tenantA, manager(), key(), { key: 'billing.tax_bp', value: 0 } as any, null))
+      .rejects.toBeInstanceOf(SettingNotTenantScopedError);
+    await expect(settings.put(tenantA, manager(), key(), { key: 'platform.kill_switch', value: true } as any, null))
       .rejects.toBeInstanceOf(SettingNotTenantScopedError);
   });
 

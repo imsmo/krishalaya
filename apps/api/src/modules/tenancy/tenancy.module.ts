@@ -67,6 +67,12 @@ import { TrialExpiryCadenceJob, UsageLimitAlertsCadenceJob } from './jobs/tenant
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { FlagsService } from '../../core/feature-flags/flags.service';
 import { AppConfig } from '../../core/config/app-config';
+// PC-56 TENANT-13b · the settings maker-checker (F-4), its clock, and the one language store (F-14).
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
+import { TenantSettingsService } from './services/tenant-settings.service';
+import { SettingGovernanceRepository } from './repositories/setting-governance.repository';
+import { SettingProposalsJob } from './jobs/setting-proposals.job';
 
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
@@ -135,8 +141,14 @@ import { AppConfig } from '../../core/config/app-config';
       useFactory: (config: AppConfig, job: SaasBillingCycleJob) =>
         new SaasBillingCycleCadenceJob(config.jobs.saasBillingCycle.intervalMs, job, config.jobs.saasBillingCycle.batchSize),
       inject: [AppConfig, SaasBillingCycleJob],
-    }, TenantApplicationService, TenantApplicationRepository],
-  exports: [PlanUsageService, PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService],
+    }, TenantApplicationService, TenantApplicationRepository,
+    // PC-56 TENANT-13b: W186's settings plane — the gate, the floors, proposals, history, languages — and the job that applies a
+    // confirmed proposal at the next midnight IST (and expires one nobody confirmed in 7 days). Per tenant, as kv_app.
+    TenantSettingsService, SettingGovernanceRepository, UiMessageRepository,
+    { provide: SettingProposalsJob, inject: [UNIT_OF_WORK, SettingGovernanceRepository, TenantSettingsService],
+      useFactory: (u: UnitOfWork, r: SettingGovernanceRepository, s: TenantSettingsService) => new SettingProposalsJob(5 * 60_000, u, r, s) },
+  ],
+  exports: [PlanUsageService, PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService, TenantSettingsService],
 })
 export class TenancyModule implements OnModuleInit {
   constructor(
@@ -148,6 +160,7 @@ export class TenancyModule implements OnModuleInit {
     private readonly saasInvoicePayment: SaasInvoicePaymentHandler,
     private readonly trialExpiryCadenceJob: TrialExpiryCadenceJob,
     private readonly usageLimitAlertsCadenceJob: UsageLimitAlertsCadenceJob,
+    private readonly settingProposalsJob: SettingProposalsJob,
   ) {}
   // payments.payment_succeeded (referenceType='saas_invoice') → mark the SaaS invoice paid
   onModuleInit(): void {
@@ -155,6 +168,10 @@ export class TenancyModule implements OnModuleInit {
     // PC-56 TENANT-4d-4: `tenancy.saas_invoice_paid` had NO subscriber — it was emitted, relayed and dropped,
     // so the one event that should advance a subscription's billing period did nothing. This is the join.
     this.registry.register(this.saasInvoicePaid);
+    // PC-56 TENANT-13b · A1: a confirmed trust-affecting setting takes effect at the next 00:00 IST only because this clock runs. It is
+    // registered unconditionally (like 11b's respond-timeout): without it a confirmed proposal would sit "confirmed" forever and the
+    // console's "effective next midnight" would be false.
+    this.jobRegistry.register(this.settingProposalsJob);
     // …and the clock, on the api-side cadence host S4 built (per-job env gate, independent of the
     // runner-wide JOBS_ENABLED kill switch — the same convention payments and identity use).
     if (this.config.jobs.saasBillingCycle.enabled) this.jobRegistry.register(this.saasBillingCycleCadenceJob);

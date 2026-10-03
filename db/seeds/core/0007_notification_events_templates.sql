@@ -834,6 +834,28 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('webhooks.endpoint_paused','queuedForResume','deliveries held or exhausted on the endpoint — replayed in order on resume','12',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-13b (A1) · A TRUST-AFFECTING SETTING CHANGES — AND EVERY MEMBER IS TOLD BEFORE IT BITES. W186: "Settings that touch
+-- member money or trust (auto-confirm, approval) apply from next midnight with a member notice — never mid-order." Migration 0192
+-- catalogues `tenant.setting_effective`; the settings-apply job emits it in the SAME transaction that writes the confirmed value, for
+-- keys the registry flags `member_notice`. Recipients travel in the payload (every active member of the tenant). Variables:
+-- `settingName` (per-language map, seed core/0024 `setting.name.<key>`), `oldValue` / `newValue` (per-language maps — numbers are
+-- formatted, enum values named from seed core/0024 `setting.value.<v>`), `effectiveAt` (Asia/Kolkata, YYYY-MM-DD HH:MM). Push + in-app.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('tenant.setting_effective','push','en',NULL,'A cooperative rule changed: {{settingName}}','From {{effectiveAt}}, {{settingName}} is {{newValue}} (it was {{oldValue}}). Two administrators of your cooperative confirmed this change.',NULL,true),
+ ('tenant.setting_effective','push','hi',NULL,'सहकारी समिति का नियम बदला: {{settingName}}','{{effectiveAt}} से {{settingName}} {{newValue}} है (पहले {{oldValue}} था)। आपकी समिति के दो प्रशासकों ने इस बदलाव की पुष्टि की है।',NULL,true),
+ ('tenant.setting_effective','push','gu',NULL,'સહકારી મંડળીનો નિયમ બદલાયો: {{settingName}}','{{effectiveAt}} થી {{settingName}} {{newValue}} છે (પહેલાં {{oldValue}} હતું). તમારી મંડળીના બે વહીવટકર્તાઓએ આ ફેરફારની પુષ્ટિ કરી છે.',NULL,true),
+ ('tenant.setting_effective','inapp','en',NULL,'A cooperative rule changed: {{settingName}}','From {{effectiveAt}}, {{settingName}} is {{newValue}} (it was {{oldValue}}). Two administrators of your cooperative confirmed this change; it never applies to an order or a bill already in progress.',NULL,true),
+ ('tenant.setting_effective','inapp','hi',NULL,'सहकारी समिति का नियम बदला: {{settingName}}','{{effectiveAt}} से {{settingName}} {{newValue}} है (पहले {{oldValue}} था)। आपकी समिति के दो प्रशासकों ने इस बदलाव की पुष्टि की है; यह पहले से चल रहे किसी ऑर्डर या बिल पर लागू नहीं होता।',NULL,true),
+ ('tenant.setting_effective','inapp','gu',NULL,'સહકારી મંડળીનો નિયમ બદલાયો: {{settingName}}','{{effectiveAt}} થી {{settingName}} {{newValue}} છે (પહેલાં {{oldValue}} હતું). તમારી મંડળીના બે વહીવટકર્તાઓએ આ ફેરફારની પુષ્ટિ કરી છે; તે પહેલેથી ચાલુ કોઈ ઓર્ડર કે બિલ પર લાગુ થતો નથી.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('tenant.setting_effective','settingName','ui_messages setting.name.<key> (seed core/0024, per language)','Milk bill objection window (hours)',true),
+ ('tenant.setting_effective','oldValue','tenant_setting_proposals.old_value, formatted (enum values: ui_messages setting.value.<v>)','24',true),
+ ('tenant.setting_effective','newValue','tenant_setting_proposals.new_value, formatted (enum values: ui_messages setting.value.<v>)','48',true),
+ ('tenant.setting_effective','effectiveAt','tenant_setting_proposals.effective_at in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-10-04 00:00',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

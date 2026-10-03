@@ -110,6 +110,8 @@ export * from './resources/livestock';
 export * from './resources/auditor'; // PC-56 TENANT-9c
 export * from './resources/esg'; // PC-56 TENANT-9d
 export * from './resources/webhooks'; // PC-56 TENANT-13a
+export * from './resources/org-settings'; // PC-56 TENANT-13b
+export * from './resources/desks'; // PC-56 TENANT-13b
 export * from './resources/twin'; // PC-56 TENANT-12
 export * from './resources/land'; // PC-56 TENANT-12 (crop seasons + soil tests)
 export type { ParcelBoundary, ParcelUpdateInput } from './resources/parcels'; // PC-56 TENANT-12

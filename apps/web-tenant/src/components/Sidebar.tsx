@@ -85,6 +85,10 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'team', href: '/team', label: t.t('nav.team') },
         { key: 'kyc', href: '/kyc', label: t.t('nav.kyc') },
         { key: 'settings', href: '/settings', label: t.t('nav.settings') },
+        // PC-56 TENANT-13b: organisation settings (W186) and desks (W185) at the canon paths; the API's `tenancy` flag, tenant.settings and
+        // desk.manage decide what each shows.
+        { key: 'org-settings', href: '/settings/org', label: t.t('nav.orgSettings') },
+        { key: 'desks', href: '/settings/team/desks', label: t.t('nav.desks') },
         // PC-56 TENANT-13a: developer settings — webhooks (W188) at the canon path; the API's `tenancy` flag and `api.manage` decide what it shows.
         { key: 'webhooks', href: '/settings/developers/webhooks', label: t.t('nav.webhooks') },
       ],

@@ -4,26 +4,36 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { TenantSetting, SettingDefinition, SettingScope, SettingValueType } from '../domain/tenant-settings.entity';
+import { SettingDefinition, SettingRiskClass, SettingScope, SettingValueType } from '../domain/tenant-settings.entity';
+
+/** One registry row → the domain shape (0192 columns included). */
+export function definitionOf(x: any): SettingDefinition {
+  return {
+    key: x.key, valueType: x.value_type as SettingValueType, scope: x.scope as SettingScope,
+    riskClass: (x.risk_class ?? 'ordinary') as SettingRiskClass, memberNotice: x.member_notice === true,
+    tenantMin: x.tenant_min ?? null, tenantMax: x.tenant_max ?? null, floorNote: x.floor_note ?? null,
+    defaultValue: x.default_value, description: x.description ?? null, lockNote: x.lock_note ?? null, deprecatedAt: x.deprecated_at ?? null,
+  };
+}
 
 @Injectable()
 export class TenantSettingsRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
   /** Look up a setting definition (global registry). Read on the replica. */
-  async findDefinition(tenantId: string, key: string): Promise<SettingDefinition | null> {
-    const r = await this.replica.forTenant(tenantId).query(`SELECT key, value_type, scope FROM setting_definitions WHERE key=$1`, [key]);
+  // PC-56 TENANT-13b (F-4): `risk_class` is SELECTED and read on every tenant write — before this wave it was not even fetched, so
+  // the write path could not have refused a money key if it had wanted to. The floor, member notice and deprecation travel with it.
+  async findDefinition(tenantId: string, key: string, tx?: TxContext): Promise<SettingDefinition | null> {
+    const sql = `SELECT key, value_type, scope, risk_class, member_notice, tenant_min, tenant_max, floor_note, default_value, description, lock_note,
+                        to_char(deprecated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS deprecated_at
+                   FROM setting_definitions WHERE key=$1`;
+    const r = tx ? await tx.query(sql, [key]) : await this.replica.forTenant(tenantId).query(sql, [key]);
     const x = r.rows[0]; if (!x) return null;
-    return { key: x.key, valueType: x.value_type as SettingValueType, scope: x.scope as SettingScope };
+    return definitionOf(x);
   }
 
-  async upsert(tx: TxContext, s: TenantSetting): Promise<void> {
-    const p = s.toProps();
-    await tx.query(
-      `INSERT INTO tenant_settings (tenant_id, key, value, created_at) VALUES ($1,$2,$3::jsonb, now())
-       ON CONFLICT (tenant_id, key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`,
-      [p.tenantId, p.key, JSON.stringify(p.value)]);
-  }
+  // PC-56 TENANT-13b: the ungated `upsert` that lived here is gone — every tenant_settings write is in SettingGovernanceRepository,
+  // called only by TenantSettingsService (gate, floor, history, audit), and 0192's trg_tenant_settings_gate stands under it.
 
   /**
    * ONE effective setting value for a tenant: the tenant's override if it has one, the registry default

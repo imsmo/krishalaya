@@ -8,9 +8,12 @@
 
 import type { RoleDef } from '@krishalaya/sdk-js';
 
-// MUST stay in lockstep with UNGRANTABLE in apps/api/.../user-tenant-role.service.ts.
+// MUST stay in lockstep with apps/api/src/core/rbac/ungrantable.ts — the ONE list the override path, desks and the RBAC resolver read
+// (PC-56 TENANT-13b). apps/api's tenant13b-settings-desks.spec.ts opens this file and fails on any drift.
 export const UNGRANTABLE_PERMISSIONS = new Set<string>([
-  '*', 'plan.manage', 'tenant.manage', 'user.impersonate', 'wallet.adjust', 'payout.approve', 'flag.toggle',
+  '*', 'plan.manage', 'tenant.manage', 'user.impersonate', 'flag.toggle',
+  'wallet.adjust', 'payout.approve', 'group_lot.settle_approve', 'labour.wages.approve', 'notification.templates.approve',
+  'tenant.settings', 'desk.manage', 'user.approve', 'api.manage',
 ]);
 
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;

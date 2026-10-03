@@ -215,6 +215,20 @@ export class GroupLotRepository {
     const r = await tx.query(`SELECT ${PLEDGE_COLS} FROM group_lot_pledges p WHERE p.group_lot_id=$1 AND p.tenant_id=$2 AND p.status='active' AND p.deleted_at IS NULL ORDER BY p.id FOR UPDATE`, [groupLotId, tenantId]);
     return r.rows.map(toPledge);
   }
+  /**
+   * PC-56 TENANT-13b (A4): the tenant's effective extension ceiling, in hours — its `tenant_settings` value or the registry default
+   * (0192: 48, floor 1–48). A value that is missing, not an integer, or outside 1–48 falls back to 48: never a longer window than
+   * the platform's, never zero.
+   */
+  async maxExtensionHoursTx(tx: TxContext, tenantId: string, key: string): Promise<number> {
+    const r = await tx.query(
+      `SELECT COALESCE(ts.value, d.default_value) AS value FROM setting_definitions d
+         LEFT JOIN tenant_settings ts ON ts.key = d.key AND ts.tenant_id = $1 AND ts.deleted_at IS NULL
+        WHERE d.key = $2`, [tenantId, key]);
+    const n = Number(r.rows[0]?.value);
+    return Number.isInteger(n) && n >= 1 && n <= 48 ? n : 48;
+  }
+
   async activeFarmerIds(tx: TxContext, tenantId: string, groupLotId: string): Promise<string[]> {
     const r = await tx.query<{ farmer_user_id: string }>(`SELECT farmer_user_id FROM group_lot_pledges WHERE group_lot_id=$1 AND tenant_id=$2 AND status='active' AND deleted_at IS NULL`, [groupLotId, tenantId]);
     return r.rows.map((x) => x.farmer_user_id);

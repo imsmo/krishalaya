@@ -10,17 +10,15 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempoten
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { Tenant } from '../domain/tenant.entity';
-import { TenantSetting } from '../domain/tenant-settings.entity';
 import { allowsSelfServeWrites } from '../domain/tenant.state';
 import { DomainEvent } from '../domain/tenancy.events';
-import { TenantNotFoundError, TenantForbiddenError, TenantNotWritableError, UnknownSettingError , InvalidTenantProfileError } from '../domain/tenancy.errors';
+import { TenantNotFoundError, TenantForbiddenError, TenantNotWritableError, InvalidTenantProfileError } from '../domain/tenancy.errors';
 import { TenantRepository } from '../repositories/tenant.repository';
 import { TenantSettingsRepository } from '../repositories/tenant-settings.repository';
 import { TenantFeatureRepository } from '../repositories/tenant-feature.repository';
 import { UsageCounterRepository } from '../repositories/usage-counter.repository';
 import { CurrentIdentity, checksumSupported, diffOf, isNoOp, reasonProblem, reasonRequired, validateAll } from '../domain/tax-identity';
 import { UpdateTenantProfileDto } from '../dto/update-tenant.dto';
-import { PutTenantSettingDto } from '../dto/create-tenant-settings.dto';
 import { TenantActor } from '../policies/tenancy.policies';
 
 @Injectable()
@@ -142,25 +140,10 @@ export class TenantService {
         }, { userId: actor.userId })));
   }
 
-  // ---- settings (tenant-scoped, typed) ----
-  async listSettings(tenantId: string, limit: number) {
-    return { items: await this.settings.listEffective(tenantId, limit) };
-  }
-  async putSetting(tenantId: string, actor: TenantActor, idemKey: string, dto: PutTenantSettingDto, ip: string | null) {
-    this.assertManager(actor);
-    return this.idem.remember(idemKey, actor.userId, 'tenancy.tenant_setting_put', () =>
-      timed(this.metrics, 'tenancy.tenant_setting_put', { tenant: tenantId }, async () => {
-        const def = await this.settings.findDefinition(tenantId, dto.key);
-        if (!def) throw new UnknownSettingError(dto.key);
-        const setting = TenantSetting.of(tenantId, def, dto.value);   // validates value_type + tenant scope (throws)
-        return this.uow.run(tenantId, async (tx) => {
-          await this.settings.upsert(tx, setting);
-          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'tenancy.tenant_setting_changed', entityType: 'tenant_setting', entityId: dto.key, newValue: { key: dto.key }, ip });
-          await this.outbox.write(tx, { tenantId, aggregateType: 'tenant_setting', aggregateId: dto.key, eventType: 'tenancy.tenant_setting_changed', payload: { v: 1, tenantId, key: dto.key } });
-          return { key: dto.key, value: setting.toProps().value };
-        }, { userId: actor.userId });
-      }));
-  }
+  // ---- settings ----
+  // PC-56 TENANT-13b (F-4): the tenant setting READ and WRITE moved to TenantSettingsService, which reads `risk_class` on every write
+  // and routes a trust-affecting key through the maker-checker proposal. The old `putSetting` here was an UNGATED writer (scope + type
+  // only — one tenant_admin could lift the refund checker); it is closed, not kept beside the gate.
 
   // ---- read-only views (Law 11: overrides/usage are not self-settable) ----
   async listFeatures(tenantId: string) { return { items: (await this.features.listFor(tenantId)).map((f) => f.toJSON()) }; }

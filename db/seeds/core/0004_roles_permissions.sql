@@ -138,6 +138,9 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- [PC-56 TENANT-13a] DEVELOPER SETTINGS (F-12): webhook endpoints (URLs commonly embed tokens) and the delivery log (payloads) need
  -- their own verb — `tenant.settings` alone no longer lists them. tenant_admin. Also in 0191.
  ('api.manage','Developer settings: webhook endpoints (URLs, secrets, pause / resume / rotate / delete) and the delivery log with payloads — tenant_admin',NULL),
+ -- [PC-56 TENANT-13b] DESKS (F-18): propose / confirm desk changes (a second tenant_admin confirms) and add / remove desk members.
+ -- tenant_admin. Also in 0192.
+ ('desk.manage','Desks: propose and confirm desk changes (a second tenant_admin confirms) and add / remove desk members — tenant_admin',NULL),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -269,4 +272,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin') AND p.code IN ('twin.devices.manage','ai.inference.read'))
    -- [PC-56 TENANT-13a] developer settings: webhook endpoints and the delivery log (0191).
    OR (r.code IN ('tenant_admin') AND p.code IN ('api.manage'))
+   -- [PC-56 TENANT-13b] desks (0192).
+   OR (r.code IN ('tenant_admin') AND p.code IN ('desk.manage'))
 ON CONFLICT DO NOTHING;

@@ -53,3 +53,54 @@ export class InvalidSaasInvoiceError extends DomainError { constructor(message: 
 export class SaasInvoiceNotPayableError extends AppError { constructor(status: string) { super('SAAS_INVOICE_NOT_PAYABLE', `Invoice is not payable (status: ${status})`, 409, { status }); } }
 /** One invoice per (subscription, billing period) — the renewal run already raised this one. */
 export class SaasInvoiceExistsError extends AppError { constructor(period: string) { super('SAAS_INVOICE_EXISTS', `A SaaS invoice already exists for period ${period}`, 409, { period }); } }
+
+// ---- PC-56 TENANT-13b · settings maker-checker (F-4), floors, wiring, languages ----
+/** A trust-affecting key (money_path / security / member notice) is never written by one person: propose it. */
+export class SettingProposalRequiredError extends AppError {
+  constructor(key: string, riskClass: string) { super('PROPOSAL_REQUIRED', `${key} is trust-affecting (${riskClass}): propose the change; a second administrator confirms it and it applies from the next midnight IST`, 409, { key, riskClass }); }
+}
+/** The value is outside the platform floor (tenant_min / tenant_max, 0192). */
+export class SettingOutsideFloorError extends DomainError {
+  constructor(key: string, problem: Record<string, unknown>) { super('SETTING_OUTSIDE_FLOOR', `${key}: the value is outside the platform floor`, 422, { key, ...problem }); }
+}
+/** Defined in the registry, read by nothing (F-15) — not offered, not written. */
+export class SettingNotWiredError extends AppError {
+  constructor(key: string, reason: string) { super('SETTING_NOT_WIRED', `${key} is defined but nothing reads it yet — it is not editable`, 409, { key, reason }); }
+}
+export class SettingDeprecatedError extends AppError {
+  constructor(key: string) { super('SETTING_DEPRECATED', `${key} is deprecated — languages are written to tenant_languages (PUT /tenant-settings/languages)`, 409, { key }); }
+}
+/** Only trust-affecting keys take a proposal; an ordinary key is written directly. */
+export class SettingNotGatedError extends AppError {
+  constructor(key: string) { super('SETTING_NOT_GATED', `${key} is an ordinary setting — save it directly`, 409, { key }); }
+}
+export class SettingUnchangedError extends DomainError {
+  constructor(key: string) { super('SETTING_UNCHANGED', `${key} already has this value`, 422, { key }); }
+}
+export class SettingReasonError extends DomainError {
+  constructor(problem: string) { super('SETTING_REASON_INVALID', `reason is ${problem} (20–500 characters)`, 422, { field: 'reason', problem }); }
+}
+/** A tenant with ONE active tenant_admin cannot get a second signature — refused at proposal time, by name. */
+export class SettingNeedsSecondAdminError extends AppError {
+  constructor(admins: number) { super('NEEDS_SECOND_ADMIN', 'This change needs a second administrator to confirm it — your organisation has one', 409, { admins }); }
+}
+export class SettingProposalLiveError extends AppError {
+  constructor(key: string, proposalId: string) { super('SETTING_PROPOSAL_LIVE', `${key} already has a proposal waiting`, 409, { key, proposalId }); }
+}
+export class SettingProposalNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Setting proposal not found'); (this as any).code = 'SETTING_PROPOSAL_NOT_FOUND'; (this as any).details = { id }; }
+}
+/** Maker ≠ checker — raised when 0192's trigger refuses the confirmation (the trigger is the wall; this is its name). */
+export class SettingCheckerIsMakerError extends AppError {
+  constructor(id: string) { super('CHECKER_IS_MAKER', 'The person who proposed this change cannot also confirm it — a second administrator must', 409, { proposalId: id }); }
+}
+export class SettingProposalExpiredError extends AppError {
+  constructor(id: string, expiresAt: string) { super('SETTING_PROPOSAL_EXPIRED', 'This proposal expired unconfirmed after 7 days', 409, { proposalId: id, expiresAt }); }
+}
+export class LanguagesInvalidError extends DomainError {
+  constructor(problem: string, details: Record<string, unknown> = {}) { super('LANGUAGES_INVALID', `languages: ${problem}`, 422, { problem, ...details }); }
+}
+/** Removing a language something published still uses — refused by name, listing what uses it (A5). */
+export class LanguageInUseError extends AppError {
+  constructor(uses: Array<{ code: string; kind: string; count: number }>) { super('LANGUAGE_IN_USE', 'A language you are removing is still used by published content', 409, { uses }); }
+}

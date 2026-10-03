@@ -53,6 +53,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // pause; recipients travel in the payload: the developer contact when that address belongs to an active member of the tenant, and
   // whoever added the endpoint. Catalogue 0191, copy in seed core/0007 (email + in-app ×3).
   { outboxType: 'webhooks.endpoint_paused',          eventCode: 'webhooks.endpoint_paused',    recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-13b (A1) · a trust-affecting cooperative setting (auto-confirm, approval, dispute window, cycle length, quorum, majority)
+  // takes effect at the next midnight IST after a SECOND tenant_admin confirmed it, and every active member is told. The settings-apply
+  // job writes the event in the same transaction that writes the value; recipients travel in the payload; the setting's name and both
+  // values are per-language maps (seed core/0024). Catalogue 0192, copy in seed core/0007 (push + in-app ×3).
+  { outboxType: 'tenancy.setting_effective',         eventCode: 'tenant.setting_effective',    recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

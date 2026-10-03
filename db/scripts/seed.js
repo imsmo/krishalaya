@@ -46,6 +46,8 @@ const ORDER = [
   'core/0022_ui_messages_group_lots.sql',
   // PC-56 TENANT-12 · the weather-alert type names a weather advisory notice is worded with (en/hi/gu).
   'core/0023_ui_messages_weather.sql',
+  // PC-56 TENANT-13b · the names of the trust-affecting settings (and their enum values) a setting-change notice is worded with.
+  'core/0024_ui_messages_settings.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

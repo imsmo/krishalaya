@@ -79,6 +79,12 @@ import { KycExpiryRemindersJob } from './jobs/kyc-expiry-reminders.job';
 import { KycExpiryRemindersCadenceJob } from './jobs/kyc-expiry-reminders.cadence-job';
 import { DpdpErasureCoolingJob } from './jobs/dpdp-erasure-cooling.job';
 import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
+// PC-56 TENANT-13b · desks (F-18): the board, proposals (maker ≠ checker by trigger), members, and the 7-day expiry.
+import { DesksController } from './controllers/v1/desks.controller';
+import { DeskService } from './services/desk.service';
+import { DeskRepository } from './repositories/desk.repository';
+import { DeskProposalsExpiryJob } from './jobs/desk-proposals-expiry.job';
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
 
 @Module({
   // PC-56 TENANT-4d-1: UserTenantRoleService asks tenancy's PUBLIC PlanUsageService whether a seat is free
@@ -86,7 +92,7 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
   // another's public service, never its repositories. forwardRef because TenancyModule's signup path already
   // reaches back into identity's AuthService (see the note below), so the two are mutually dependent.
   imports: [forwardRef(() => TenancyModule), MediaModule],   // PC-56 TENANT-9a: the reveal mints core/media's signed read
-  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, KycDeskController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController],
+  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, KycDeskController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController, DesksController],
   providers: [
     AuthService, UserService, UserTenantRoleService, OnboardingService, RoleService, PermissionService,
     KycDocumentService, EkycService, BusinessKycService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
@@ -103,6 +109,9 @@ import { RiskScoreRecomputeJob } from './jobs/risk-score-recompute.job';
     KycExpiryRemindersJob, DpdpErasureCoolingJob, RiskScoreRecomputeJob,
     // PC-56 TENANT-9a · the KYC desk, its read model, the words its notices carry, and the expiry job (F-3).
     KycDeskService, KycDeskReadModel, UiMessageRepository, KycDocumentExpiryJob,
+    DeskService, DeskRepository,
+    { provide: DeskProposalsExpiryJob, inject: [UNIT_OF_WORK, DeskRepository, DeskService],
+      useFactory: (u: UnitOfWork, r: DeskRepository, s: DeskService) => new DeskProposalsExpiryJob(60 * 60_000, u, r, s) },
     {
       provide: KycDocumentExpiryCadenceJob,
       useFactory: (config: AppConfig, job: KycDocumentExpiryJob) => new KycDocumentExpiryCadenceJob(config.jobs.kycExpiryReminders.intervalMs, job),
@@ -136,6 +145,7 @@ export class IdentityModule implements OnModuleInit {
     private readonly kycDocumentExpiryCadenceJob: KycDocumentExpiryCadenceJob,
     @Inject(BULK_APPLIER_REGISTRY) private readonly bulkRegistry: BulkApplierRegistry,
     private readonly memberApplier: MemberBulkApplier,
+    private readonly deskExpiry: DeskProposalsExpiryJob,
   ) {}
   onModuleInit(): void {
     // per-job env gate (KYC_EXPIRY_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
@@ -146,5 +156,7 @@ export class IdentityModule implements OnModuleInit {
     // core/bulk stays generic plumbing and never learns what a member is (the same contract catalogue's 'products'
     // applier follows). Before this line, `importType: 'members'` was a 422 and the whole screen pointed at nothing.
     this.bulkRegistry.register(this.memberApplier);
+    // PC-56 TENANT-13b: a desk proposal nobody confirmed in 7 days expires (registered unconditionally, the 11b pattern).
+    this.jobRegistry.register(this.deskExpiry);
   }
 }

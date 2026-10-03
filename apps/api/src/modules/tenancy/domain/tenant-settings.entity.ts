@@ -8,7 +8,19 @@ export type SettingValueType = (typeof SETTING_VALUE_TYPES)[number];
 export const SETTING_SCOPES = ['platform', 'tenant', 'user'] as const;
 export type SettingScope = (typeof SETTING_SCOPES)[number];
 
-export interface SettingDefinition { key: string; valueType: SettingValueType; scope: SettingScope; }
+export const SETTING_RISK_CLASSES = ['ordinary', 'money_path', 'security'] as const;
+export type SettingRiskClass = (typeof SETTING_RISK_CLASSES)[number];
+
+/**
+ * A registry row. PC-56 TENANT-13b (0192): `riskClass` is READ on every tenant write (it was not even selected before — F-4);
+ * `memberNotice`, the platform floor (`tenantMin` / `tenantMax`, with `floorNote`) and deprecation travel with it.
+ */
+export interface SettingDefinition {
+  key: string; valueType: SettingValueType; scope: SettingScope;
+  riskClass?: SettingRiskClass; memberNotice?: boolean;
+  tenantMin?: number | string | null; tenantMax?: number | string | null; floorNote?: string | null;
+  defaultValue?: unknown; description?: string | null; lockNote?: string | null; deprecatedAt?: string | null;
+}
 
 /** Validate (and normalise) a value against its definition; throws on type/scope violation. Returns a JSON-safe value. */
 export function validateSettingValue(def: SettingDefinition, value: unknown): unknown {

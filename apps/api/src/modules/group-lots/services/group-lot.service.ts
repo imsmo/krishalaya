@@ -358,13 +358,15 @@ export class GroupLotService {
         }, { userId: actor.userId })));
   }
 
-  /** A5 — extend once, at most 48 h; every active pledger is told the new deadline. */
+  /** A5 — extend once, at most `group_lot.max_extension_hours` (≤ 48 h); every active pledger is told the new deadline. */
   async extend(tenantId: string, actor: GroupLotActor, id: string, dto: ExtendDto, ip: string | null = null) {
     return this.uow.run(tenantId, async (tx) => {
       const lot = await this.lockedLot(tx, tenantId, id);
       this.assertCoordinates(actor, lot);
       const before = lot.toProps().pledgeDeadline;
-      lot.extend(new Date(dto.pledgeDeadline).toISOString(), new Date());
+      // PC-56 TENANT-13b (A4): the ceiling is the tenant's `group_lot.max_extension_hours` (0192; registry default and platform ceiling 48).
+      const maxHours = await this.repo.maxExtensionHoursTx(tx, tenantId, 'group_lot.max_extension_hours');
+      lot.extend(new Date(dto.pledgeDeadline).toISOString(), new Date(), maxHours * 3600_000);
       await this.repo.update(tx, lot, actor.userId);
       const p = lot.toProps();
       await this.audited(tx, { tenantId, actorUserId: actor.userId, action: 'group_lot.deadline_extended', lotId: id, ip, reason: dto.reason,

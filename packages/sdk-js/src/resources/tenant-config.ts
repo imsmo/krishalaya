@@ -55,13 +55,16 @@ export class TenantConfigResource {
   }
 
   // ---- typed settings (branding + languages live here) + read-only feature overrides ----
-  /** All of the tenant's typed settings (key→value). Branding + language selections are stored here. */
+  /** All of the tenant's typed settings (key→value). Branding lives here. PC-56 TENANT-13b: GET /tenant-settings now answers W186's
+   *  registry (`orgSettings.registry()` has the full shape); this keeps the key→value view its existing callers read. Needs `tenant.settings`. */
   async settings(signal?: AbortSignal): Promise<TenantSetting[]> {
-    return (await this.http.request<TenantSetting[]>('GET', 'tenant-settings', { signal })).data;
+    const d = (await this.http.request<{ items: Array<{ key: string; value: unknown }> } | TenantSetting[]>('GET', 'tenant-settings', { signal })).data;
+    return Array.isArray(d) ? d : d.items.map((i) => ({ key: i.key, value: i.value }));
   }
-  /** Upsert one typed setting (validated server-side against its definition). Idempotent (Law 3). Needs `tenant.settings`. */
-  async putSetting(key: string, value: unknown, idempotencyKey: string): Promise<TenantSetting> {
-    return (await this.http.request<TenantSetting>('PUT', 'tenant-settings', { idempotencyKey, body: { key, value } })).data;
+  /** Upsert one ORDINARY typed setting (validated server-side). Idempotent (Law 3). Needs `tenant.settings`. A trust-affecting key
+   *  answers 409 PROPOSAL_REQUIRED (PC-56 TENANT-13b) — use `orgSettings.propose()`. */
+  async putSetting(key: string, value: unknown, idempotencyKey: string, reason?: string | null): Promise<TenantSetting> {
+    return (await this.http.request<TenantSetting>('PUT', 'tenant-settings', { idempotencyKey, body: reason ? { key, value, reason } : { key, value } })).data;
   }
   /** Read-only feature overrides the tenant inherits (cannot self-grant — Law 11). */
   async features(signal?: AbortSignal): Promise<TenantFeature[]> {
