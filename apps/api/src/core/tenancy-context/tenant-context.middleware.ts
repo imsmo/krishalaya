@@ -7,13 +7,14 @@
 //   • resolves the tenant→shard, locale, and request id,
 //   • runs the rest of the pipeline inside runWithContext so every layer (repo,
 //     service, guard) can read tenant/user without threading them through.
-import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Inject, Injectable, NestMiddleware, Optional } from '@nestjs/common';
 import type { Request, Response, NextFunction } from 'express';
 import { runWithContext, RequestContext } from './request-context';
 import { TenantResolver } from './tenant-resolver';
 import { TenantSlugResolver } from './tenant-slug-resolver';
 import { ShardRouter } from '../sharding/shard-router';
 import { RoleCacheService } from '../rbac/role-cache.service';
+import { API_KEY_AUTHENTICATOR, ApiKeyAuthenticator, looksLikeTenantApiKey } from '../auth/api-key.port';
 
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
@@ -22,12 +23,38 @@ export class TenantContextMiddleware implements NestMiddleware {
     private readonly slugs: TenantSlugResolver,
     private readonly shards: ShardRouter,
     private readonly roles: RoleCacheService,
+    @Optional() @Inject(API_KEY_AUTHENTICATOR) private readonly apiKeys?: ApiKeyAuthenticator,
   ) {}
 
   // async: anonymous storefront reads carry only an `X-Tenant-Slug`, which we resolve to the tenant uuid via a
   // cached registry lookup. Authoritative sources still win in order (JWT tenant → explicit X-Tenant-Id → slug),
   // so an authenticated request never pays for a slug lookup.
   async use(req: Request & { requestId?: string }, _res: Response, next: NextFunction): Promise<void> {
+    // PC-56 TENANT-13c (F-9) · THE KEY BRANCH, decided before anything else reads a tenant. A key-shaped bearer is a key: the
+    // tenant comes from the key row and `X-Tenant-Id` / `X-Tenant-Slug` are NEVER read on this branch. A refused key is not
+    // anonymous — the refusal rides the context and the global ApiKeyAuthGuard answers it on every route.
+    const bearer = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization ?? '').trim())?.[1]?.trim() ?? '';
+    if (bearer && looksLikeTenantApiKey(bearer)) {
+      const lang0 = ((req.headers['x-lang'] as string) || (req.headers['accept-language'] as string) || 'en-IN').split(',')[0];
+      const result = this.apiKeys ? await this.apiKeys.authenticate(bearer) : { ok: false as const, refusal: { code: 'API_KEY_INVALID' as const } };
+      const p = result.ok ? result.principal : null;
+      const keyCtx: RequestContext = {
+        tenantId: p?.tenantId ?? '',
+        userId: p?.onBehalfOf ?? '',
+        sessionId: '',
+        requestId: req.requestId ?? '',
+        lang: lang0,
+        roles: p?.roles ?? [],
+        permissions: new Set(p?.permissions ?? []),
+        shardId: p ? this.shards.shardFor(p.tenantId) : 0,
+        ...(p
+          ? { apiKey: { keyId: p.keyId, keyPrefix: p.keyPrefix, scopes: p.scopes, ratePerHour: p.ratePerHour, onBehalfOf: p.onBehalfOf } }
+          : { apiKeyRefusal: result.ok ? { code: 'API_KEY_INVALID' } : result.refusal }),
+      };
+      runWithContext(keyCtx, () => next());
+      return;
+    }
+
     const principal = this.resolver.fromAuthHeader(req.headers.authorization);
     const headerTenant = (req.headers['x-tenant-id'] as string | undefined) ?? '';
     let tenantId = principal?.tenantId || headerTenant;

@@ -24,6 +24,7 @@ import {
   QueryInvoicesSchema, QueryInvoicesDto, Gstr1ExportSchema, Gstr1ExportDto,
   IssueCreditNoteSchema, IssueCreditNoteDto, parseInvoiceCursor, buildInvoiceCursor,
 } from '../../dto/invoice-console.dto';
+import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const ipOf = (r: Request) => r.ip || null;
 
@@ -38,7 +39,7 @@ export class InvoicesController {
   ) {}
 
   /** W151's month view + its three KPI cards. Finance scope; keyset only. */
-  @Get()
+  @Get() @ApiScopes('invoices.read')
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryInvoicesSchema) q: QueryInvoicesDto) {
     if (!canReadFinance(ctx)) throw new NotFoundError('Not found');   // 404, not 403 — no enumeration of a finance surface
     const w = q.period ? periodWindow(q.period) : null;
@@ -72,7 +73,7 @@ export class InvoicesController {
       .then((data) => ({ data }));
   }
 
-  @Get('order/:orderId')
+  @Get('order/:orderId') @ApiScopes('invoices.read')
   byOrder(@CurrentContext() ctx: RequestContext, @Param('orderId') orderId: string) {
     return this.invoices.getByOrder(ctx.tenantId, { userId: ctx.userId, canModerate: canModeratePayment(ctx) }, orderId).then((data) => ({ data }));
   }
@@ -86,7 +87,7 @@ export class InvoicesController {
   /** W152: the document, its lines, and the corrections against it.
    *  **DECLARED AFTER the `order/:orderId` routes on purpose**: Nest matches in declaration order, so a ':id' route
    *  above them would swallow /invoices/order/<uuid> with id='order' — a 404 on the buyer's own invoice. */
-  @Get(':id')
+  @Get(':id') @ApiScopes('invoices.read')
   detail(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     if (!canReadFinance(ctx)) throw new NotFoundError('Not found');
     return Promise.all([this.console.detail(ctx.tenantId, id), this.console.creditNotesFor(ctx.tenantId, id)])

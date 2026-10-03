@@ -913,27 +913,19 @@ describe('HttpClient via resources', () => {
     expect(JSON.parse(calls[1].init.body as string)).toEqual({ atPeriodEnd: true });
   });
 
-  it('integrations: providers/list GET; connect POST (idem) sends the credential; disconnect DELETE (P1-11)', async () => {
+  it('integrations: providers/list GET return the 13c shapes — the one-call connect / disconnect are gone (proposals instead; see api-keys-integrations.spec)', async () => {
     const { fn, calls } = fakeFetch((_c, n) =>
-      n === 1 ? { body: { data: [{ code: 'razorpay', defaultName: 'Razorpay', category: 'payment', isActive: true }] } }
-      : n === 2 ? { body: { data: [{ id: 'i1', providerCode: 'razorpay', providerName: 'Razorpay', category: 'payment', config: {}, connected: true, isActive: true }] } }
-      : n === 3 ? { body: { data: { id: 'i2', providerCode: 'msg91', connected: true } } }
-      : { body: { data: { providerCode: 'msg91', connected: false } } });
+      n === 1 ? { body: { data: [{ code: 'razorpay', name: 'Razorpay', category: 'payment', ownable: true, managed: false, verifyMethod: 'account_fetch', verifiable: true, credentialFields: [], consumers: [] }] } }
+      : { body: { data: { items: [{ id: 'i1', providerCode: 'razorpay', status: 'verified', maskedRef: '…••41', consumers: [] }], providers: [], proposals: [], count: { providers: 1, ownable: 1, connected: 1 } } } });
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
-    await c.integrations.providers();
+    const providers = await c.integrations.providers();
     expect(calls[0].url).toBe('https://api.test/v1/integrations/providers');
+    expect(providers[0].ownable).toBe(true);
     const list = await c.integrations.list();
     expect(calls[1].url).toBe('https://api.test/v1/integrations');
-    expect(list[0].connected).toBe(true);
-    expect('secretRef' in (list[0] as unknown as Record<string, unknown>)).toBe(false);
-    await c.integrations.connect({ providerCode: 'msg91', credential: 'rzp_live_secret', config: { sandbox: false } }, 'idem-int-1');
-    expect(calls[2].url).toBe('https://api.test/v1/integrations');
-    expect(calls[2].init.method).toBe('POST');
-    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-int-1');
-    expect(JSON.parse(calls[2].init.body as string).credential).toBe('rzp_live_secret');
-    await c.integrations.disconnect('msg91');
-    expect(calls[3].url).toBe('https://api.test/v1/integrations/msg91');
-    expect(calls[3].init.method).toBe('DELETE');
+    expect(list.items[0].status).toBe('verified');
+    expect('secretRef' in (list.items[0] as unknown as Record<string, unknown>)).toBe(false);
+    expect('connected' in (list.items[0] as unknown as Record<string, unknown>)).toBe(false);
   });
 
   it('webhooks: register returns the secret once (keyed); list masked; rotate/update/delete are keyed + reasoned (P1-11 → TENANT-13a)', async () => {

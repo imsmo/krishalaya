@@ -27,6 +27,20 @@ export interface RequestContext {
     reason: string | null;
     expiresAt: Date;
   };
+  /**
+   * PC-56 TENANT-13c. Present ONLY when this request arrived with a tenant API key (`Bearer kv_live_…`). `tenantId` then came
+   * from the KEY ROW (never a header) and `userId` is the key's creator — the person the key acts on behalf of; the synthetic
+   * principal is `api_key:<keyId>`, which the audit writer records as the actor role. `refusal` is set instead when a
+   * key-shaped bearer was presented and refused: the global ApiKeyAuthGuard answers it on every route.
+   */
+  apiKey?: {
+    keyId: string;
+    keyPrefix: string;
+    scopes: string[];
+    ratePerHour: number;
+    onBehalfOf: string;
+  };
+  apiKeyRefusal?: { code: string; keyPrefix?: string; revokedReason?: string | null };
 }
 
 export abstract class RequestContextService { abstract get(): RequestContext; }

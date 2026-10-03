@@ -30,7 +30,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   Course, CourseLesson, Enrollment, LessonProgress,
   Plan, Subscription, TenantAnalytics, TenantBroadcast, RoleAssignment, RoleDef, PermissionDef, AssignRoleInput, StaffOverrideInput, Dispute,
   CommissionRule, CreateCommissionRuleInput, DeliveryZone, CreateDeliveryZoneInput, UpdateDeliveryZoneInput, TenantSetting, TenantFeature,
-  IntegrationProvider, TenantIntegration, WebhookEndpoint,
+  WebhookEndpoint,
   GroupLot, GroupLotPledge, GroupLotDetail, GroupLotStatus, CreateGroupLotInput, GroupLotPage, GroupLotSettlementLine, GroupLotSettlementView, GroupLotViewerCan,
   GroupLotConsentInput, GroupLotPledgeInput, GroupLotCancelReason, GroupLotNudgeResult, GroupLotPrepared, GroupLotConfirmed,
   AuditEntry, AuditWindow,
@@ -110,6 +110,8 @@ export * from './resources/livestock';
 export * from './resources/auditor'; // PC-56 TENANT-9c
 export * from './resources/esg'; // PC-56 TENANT-9d
 export * from './resources/webhooks'; // PC-56 TENANT-13a
+export * from './resources/integrations'; // PC-56 TENANT-13c
+export * from './resources/api-keys'; // PC-56 TENANT-13c
 export * from './resources/org-settings'; // PC-56 TENANT-13b
 export * from './resources/desks'; // PC-56 TENANT-13b
 export * from './resources/twin'; // PC-56 TENANT-12

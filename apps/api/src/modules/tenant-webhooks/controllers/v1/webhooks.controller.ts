@@ -23,6 +23,7 @@ import {
   CreateWebhookDto, CreateWebhookSchema, PreviewWebhookDto, PreviewWebhookSchema, QueryDeliveriesDto, QueryDeliveriesSchema, ReasonDto, ReasonSchema,
   UpdateWebhookDto, UpdateWebhookSchema,
 } from '../../dto/create-webhook.dto';
+import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const needKey = (k?: string) => { if (!k || !/^[A-Za-z0-9_-]{8,120}$/.test(k)) throw new BadRequestError('Idempotency-Key header required'); return k; };
 const idOf = (id: string) => { if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid'); return id; };
@@ -42,7 +43,7 @@ export class WebhooksController {
   events(@CurrentContext() ctx: RequestContext, @Req() r: Request) { return { data: this.webhooks.catalogue(this.actor(ctx, r)) }; }
 
   /** W188 — the endpoints (never a secret), their 7-day figures, the count, and the delivery contract as built. */
-  @Get()
+  @Get() @ApiScopes('webhooks.read')
   list(@CurrentContext() ctx: RequestContext, @Req() r: Request) { return this.webhooks.list(ctx.tenantId, this.actor(ctx, r)).then((data) => ({ data })); }
 
   /** W2833 — the registration review (live guard verdict). Writes nothing. */
@@ -58,13 +59,13 @@ export class WebhooksController {
   }
 
   // ---- the delivery log (W189) ----
-  @Get('deliveries')
+  @Get('deliveries') @ApiScopes('webhooks.read')
   deliveries(@CurrentContext() ctx: RequestContext, @Req() r: Request, @ZodQuery(QueryDeliveriesSchema) q: QueryDeliveriesDto) {
     return this.log.list(ctx.tenantId, this.actor(ctx, r), {
       filter: { endpointId: q.endpointId, status: q.status ?? 'all', since: q.since }, cursor: decodeKeyset(q.cursor, UUID_RE), limit: q.limit,
     }).then((data) => ({ data }));
   }
-  @Get('deliveries/:id')
+  @Get('deliveries/:id') @ApiScopes('webhooks.read')
   delivery(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) {
     return this.log.get(ctx.tenantId, this.actor(ctx, r), idOf(id)).then((data) => ({ data }));
   }

@@ -27,11 +27,14 @@ import { tryGetRequestContext, RequestContext } from '../tenancy-context/request
 const ROLE_MAX = 200;
 
 /** PURE: the role the trail records for this row (see the header). */
-export function actorRoleFor(entry: { actorUserId?: string | null; actorRole?: string | null }, rc: Pick<RequestContext, 'userId' | 'roles' | 'impersonation'> | undefined): string {
+export function actorRoleFor(entry: { actorUserId?: string | null; actorRole?: string | null }, rc: Pick<RequestContext, 'userId' | 'roles' | 'impersonation' | 'apiKey'> | undefined): string {
   if (entry.actorRole) return entry.actorRole.slice(0, ROLE_MAX);
   if (!rc || !rc.userId) return 'system';
   if (entry.actorUserId && entry.actorUserId !== rc.userId) return 'not_the_caller';
   const set = [...new Set(rc.roles ?? [])].sort().join('+') || 'no_role';
+  // PC-56 TENANT-13c: a key-authenticated act is recorded as the synthetic principal, ON BEHALF OF its creator (the row's
+  // actor_user_id) — `api_key:<id> on_behalf_of:<their roles>` — never as if the person had done it by hand.
+  if (rc.apiKey) return `api_key:${rc.apiKey.keyId} on_behalf_of:${set}`.slice(0, ROLE_MAX);
   return `${rc.impersonation ? 'act_as:' : ''}${set}`.slice(0, ROLE_MAX);
 }
 

@@ -1178,9 +1178,7 @@ export interface TenantFeature { key: string; isEnabled: boolean; }
 
 // --- tenant integrations (P1-11) — credentials are vaulted server-side; the SDK never sees a secret ---
 /** A connectable third-party provider (global catalogue). */
-export interface IntegrationProvider { code: string; defaultName: string; category: string; isActive: boolean; }
-/** A tenant's connection to a provider. `connected` = a vaulted credential exists; the secret ref is NEVER returned. */
-export interface TenantIntegration { id: string; providerCode: string; providerName: string | null; category: string | null; config: Record<string, unknown>; connected: boolean; isActive: boolean; createdAt?: string | null; }
+// PC-56 TENANT-13c: the integration types live with their resource (resources/integrations.ts) — the old shapes claimed `connected`.
 /** A tenant webhook endpoint (masked — the signing secret is returned ONLY on register/rotate, never on reads). */
 export interface WebhookEndpoint { id: string; url: string; eventTypes: string[]; isActive: boolean; createdAt?: string | null; }
 // --- dairy (MCC operator console, P1-12) — money is bigint minor STRINGS; weight/fat/snf are decimal STRINGS (Law 2) ---

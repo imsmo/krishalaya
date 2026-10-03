@@ -21,6 +21,7 @@ import { SearchResource } from './resources/search';
 import { TenantConfigResource } from './resources/tenant-config';
 import { IntegrationsResource } from './resources/integrations';
 import { WebhooksResource } from './resources/webhooks';
+import { ApiKeysResource } from './resources/api-keys';
 import { OrgSettingsResource } from './resources/org-settings';   // PC-56 TENANT-13b
 import { DesksResource } from './resources/desks';                 // PC-56 TENANT-13b
 import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
@@ -136,6 +137,8 @@ export class KrishalayaClient {
   readonly tenantConfig: TenantConfigResource;
   readonly integrations: IntegrationsResource;
   readonly webhooks: WebhooksResource;
+  /** PC-56 TENANT-13c — tenant API keys (W190). */
+  readonly apiKeys: ApiKeysResource;
   /** PC-56 TENANT-13b · W186 organisation settings: the registry, ordinary writes, maker-checker proposals, history, languages. */
   readonly orgSettings: OrgSettingsResource;
   /** PC-56 TENANT-13b · W185 desks: the board, proposals (a second tenant_admin confirms), members. */
@@ -233,6 +236,7 @@ export class KrishalayaClient {
     this.tenantConfig = new TenantConfigResource(this.http);
     this.integrations = new IntegrationsResource(this.http);
     this.webhooks = new WebhooksResource(this.http);
+    this.apiKeys = new ApiKeysResource(this.http);
     this.orgSettings = new OrgSettingsResource(this.http);
     this.desks = new DesksResource(this.http);
     this.rbac = new RbacResource(this.http);

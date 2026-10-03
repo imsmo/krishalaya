@@ -22,6 +22,7 @@ import { OrderPermissions, canModerateOrder } from '../../policies/orders.polici
 import { OrderConsoleReadModel } from '../../read-models/order-console.read-model';
 import { orderMoneyView } from '../../domain/order-money';
 import { ConsoleOrdersSchema, ConsoleOrdersDto, parseOrderCursor, buildOrderCursor } from '../../dto/order-console.dto';
+import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const ipOf = (req: Request) => req.ip || null;
 
@@ -67,7 +68,7 @@ export class OrdersController {
   }
 
   /** The staff worklist, one working view at a time, keyset (never OFFSET; no page numbers by decision). */
-  @Get('console/list')
+  @Get('console/list') @ApiScopes('orders.read')
   async consoleList(@CurrentContext() ctx: RequestContext, @ZodQuery(ConsoleOrdersSchema) q: ConsoleOrdersDto) {
     if (!canModerateOrder(ctx)) throw new ForbiddenError('the order console needs order moderation permission');
     const rows = await this.console.list(ctx.tenantId, { view: q.view, cursor: parseOrderCursor(q.cursor), limit: q.limit });
@@ -76,7 +77,7 @@ export class OrdersController {
 
   /** W134's timeline — order_events, recorded on every hop since 0005 and read by no tenant surface until now.
    *  Party-scoped: the buyer, the seller, or a moderator (the same rule the order detail read enforces). */
-  @Get(':id/events')
+  @Get(':id/events') @ApiScopes('orders.read')
   async events(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     const o = await this.orders.getById(ctx.tenantId, this.actor(ctx), id);
     return { data: await this.console.timeline(ctx.tenantId, id, new Date(o.createdAt)) };
@@ -103,10 +104,10 @@ export class OrdersController {
     return this.groups.getGroup(ctx.tenantId, this.actor(ctx), groupId).then((data) => ({ data }));
   }
 
-  @Get(':id') get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orders.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  @Get(':id') @ApiScopes('orders.read') get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orders.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
   /** An order's frozen line items (buyer/seller/moderator). */
-  @Get(':id/items') items(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orderItems.listForOrder(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  @Get(':id/items') @ApiScopes('orders.read') items(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orderItems.listForOrder(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   /** Order-tracking feed (buyer/seller/moderator): stamped order-status transitions + the shipment's
    *  status/location timeline (real per-step timestamps; lat/lng when a rider has posted one). */
   @Get(':id/tracking') trackingFeed(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.tracking.tracking(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
@@ -118,13 +119,13 @@ export class OrdersController {
     return this.orderItems.recordDelivered(ctx.tenantId, this.actor(ctx), id, listingId, dto.deliveredQuantity).then((data) => ({ data }));
   }
 
-  @Post(':id/confirm')  @RequirePermissions(OrderPermissions.Manage)
+  @Post(':id/confirm')  @RequirePermissions(OrderPermissions.Manage) @ApiScopes('orders.status.write')
   confirm(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.confirm(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
-  @Post(':id/packed')   @RequirePermissions(OrderPermissions.Manage)
+  @Post(':id/packed')   @RequirePermissions(OrderPermissions.Manage) @ApiScopes('orders.status.write')
   packed(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.markPacked(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
-  @Post(':id/ready')    @RequirePermissions(OrderPermissions.Manage)
+  @Post(':id/ready')    @RequirePermissions(OrderPermissions.Manage) @ApiScopes('orders.status.write')
   ready(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.markReady(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
-  @Post(':id/delivered') @RequirePermissions(OrderPermissions.Manage)
+  @Post(':id/delivered') @RequirePermissions(OrderPermissions.Manage) @ApiScopes('orders.status.write')
   delivered(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.markDelivered(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
 
   /** Buyer pays an awaiting-payment order from their OWN wallet balance (alternative to the gateway).

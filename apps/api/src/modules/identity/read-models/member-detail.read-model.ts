@@ -217,12 +217,13 @@ export class MemberDetailReadModel {
                   WHERE p2.tenant_id = $1 AND p2.user_id = $2 AND p2.status = 'success') AS paid_count,
                 -- W154 says "42 orders since Nov 2024". Orders the member SOLD, in this tenant. Cancelled orders are
                 -- excluded: a cancelled order is not a sale, and counting it would flatter the number the console
-                -- prints next to a money figure.
+                -- prints next to a money figure. (PC-56 TENANT-13c: the orders table has no deleted_at — the filter that named one made
+                -- every member detail read answer 500; removed. Orders are never soft-deleted; cancellation is the status.)
                 (SELECT COUNT(*)::int FROM orders o
-                  WHERE o.tenant_id = $1 AND o.seller_user_id = $2 AND o.deleted_at IS NULL
+                  WHERE o.tenant_id = $1 AND o.seller_user_id = $2
                     AND o.status NOT IN ('cancelled', 'created', 'payment_pending')) AS order_count,
                 (SELECT MIN(o2.created_at) FROM orders o2
-                  WHERE o2.tenant_id = $1 AND o2.seller_user_id = $2 AND o2.deleted_at IS NULL
+                  WHERE o2.tenant_id = $1 AND o2.seller_user_id = $2
                     AND o2.status NOT IN ('cancelled', 'created', 'payment_pending')) AS first_order_at`,
         [tenantId, userId]),
       // **THE DAIRY TILE GOES THROUGH dairy_memberships, BECAUSE milk_collections IS KEYED ON membership_id.** A join

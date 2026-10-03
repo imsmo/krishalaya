@@ -47,7 +47,10 @@ const nextConfig = {
     // PC-56 TENANT-13a (F-5): the developer pages can hold a signing secret on screen (shown once, in memory). They are never cached
     // (no browser back-cache, no shared cache) and never send a Referer. Listed AFTER the catch-all so these values win for these
     // paths; pinned by src/test/tenant13a-webhooks.spec.ts.
-    const secretBearing = ['/settings/developers/webhooks', '/settings/developers/webhooks/:path*'].map((source) => ({
+    // PC-56 TENANT-13c: the whole developer area (an API key is shown once there) and the integrations pages (a provider credential is typed
+    // there) carry the same pair.
+    const secretBearing = ['/settings/developers/webhooks', '/settings/developers/webhooks/:path*', '/settings/developers', '/settings/developers/:path*',
+      '/settings/integrations', '/settings/integrations/:path*'].map((source) => ({
       source,
       headers: [
         { key: 'Cache-Control', value: 'no-store, max-age=0' },

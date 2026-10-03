@@ -23,12 +23,22 @@ describe('TenantIntegration.serialize', () => {
   });
 });
 
-describe('LocalSecretWriter', () => {
-  it('returns a tenant+provider scoped ref and discards the plaintext', async () => {
+describe('LocalSecretWriter (PC-56 TENANT-13c: an in-process dev store — never on disk, never in the database)', () => {
+  it('returns a tenant+provider(+version) scoped ref that never carries the plaintext; reads it back in-process; delete forgets it', async () => {
     const w = new LocalSecretWriter();
-    const { secretRef } = await w.putTenantSecret('t1', 'razorpay', 'rzp_live_supersecret');
-    expect(secretRef.startsWith('local://krishi/t1/razorpay/')).toBe(true);
+    const { secretRef } = await w.putTenantSecret('t1', 'razorpay', 'rzp_live_supersecret', 'v-1');
+    expect(secretRef).toBe('local://krishi/t1/razorpay/v-1');
     expect(secretRef).not.toContain('supersecret');
+    await expect(w.readTenantSecret(secretRef)).resolves.toBe('rzp_live_supersecret');
     await expect(w.deleteTenantSecret(secretRef)).resolves.toBeUndefined();
+    await expect(w.readTenantSecret(secretRef)).resolves.toBeNull();
+  });
+  it('a second version is a second secret: retiring the old ref never deletes the new one (zero-downtime rotation)', async () => {
+    const w = new LocalSecretWriter();
+    const a = await w.putTenantSecret('t1', 'gupshup', 'old', 'p1');
+    const b = await w.putTenantSecret('t1', 'gupshup', 'new', 'p2');
+    expect(a.secretRef).not.toBe(b.secretRef);
+    await w.deleteTenantSecret(a.secretRef);
+    await expect(w.readTenantSecret(b.secretRef)).resolves.toBe('new');
   });
 });

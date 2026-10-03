@@ -70,7 +70,7 @@ describe('F-5 · the signing secret never travels in a URL', () => {
     }
     expect(secretPageHeaders('/settings/developers/webhooks')).toEqual(SECRET_PAGE_HEADERS);
     expect(secretPageHeaders('/settings/developers/webhooks/new')).toEqual(SECRET_PAGE_HEADERS);
-    expect(secretPageHeaders('/settings/developers/webhooksX')).toEqual({});
+    expect(secretPageHeaders('/settings/developersX')).toEqual({});   // 13c: the whole developer area is secret-bearing now
     expect(secretPageHeaders('/dashboard')).toEqual({});
     expect(read(join(SRC, 'middleware.ts'))).toContain('secretPageHeaders(req.nextUrl.pathname)');
   });

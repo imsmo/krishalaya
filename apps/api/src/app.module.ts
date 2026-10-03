@@ -56,12 +56,13 @@ import { LookupsModule } from './modules/lookups/lookups.module';
 import { TenantIntegrationsModule } from './modules/tenant-integrations/tenant-integrations.module';
 import { PartnerApiModule } from './modules/partner-api/partner-api.module';
 import { TenantWebhooksModule } from './modules/tenant-webhooks/tenant-webhooks.module';
+import { TenantApiKeysModule } from './modules/tenant-api-keys/tenant-api-keys.module';
 import { EsgModule } from './modules/esg/esg.module';
 // PC-56 TENANT-12 · the digital twin — the honest frame (no model), the device registry, the Locked page's one ask.
 import { TwinModule } from './modules/twin/twin.module';
 
 @Module({
-  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, ExportsPlaneModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, PartnerApiModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, InsuranceModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, EsgModule, TwinModule, AssistantModule, UnifiedSearchModule],
+  imports: [CoreModule, IdentityModule, CatalogueModule, LookupsModule, ListingsModule, OrdersModule, BuyerModule, PaymentsModule, MediaModule, BulkModule, ExportsPlaneModule, AuctionsModule, OffersModule, RequirementsModule, LogisticsModule, ReviewsModule, DisputesModule, PromotionsModule, MembershipsModule, TenancyModule, TenantIntegrationsModule, TenantWebhooksModule, TenantApiKeysModule, PartnerApiModule, LabourModule, LivestockModule, DairyModule, GroupLotsModule, EquipmentModule, WarehousingModule, ContractFarmingModule, ExportsModule, LandSoilWeatherModule, FintechModule, InsuranceModule, SchemesModule, ServicesMarketplaceModule, CommunicationModule, EducationModule, AmbassadorsModule, SupportModule, CmsModule, MarketIntelModule, TraceabilityModule, AiGovernanceModule, AuditTrailModule, EsgModule, TwinModule, AssistantModule, UnifiedSearchModule],
 })
 export class AppModule implements NestModule {
   // security-headers (every response, incl. error paths) THEN request-id THEN tenant-context (Law 1) on every route.

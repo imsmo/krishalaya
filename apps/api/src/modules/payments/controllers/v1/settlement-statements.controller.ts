@@ -11,6 +11,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { SettlementStatementService } from '../../services/settlement-statement.service';
 import { GenerateStatementSchema, GenerateStatementDto } from '../../dto/create-settlement-statement.dto';
 import { canModeratePayment } from '../../policies/payments.policies';
+import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const ipOf = (req: Request) => req.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -27,13 +28,13 @@ export class SettlementStatementsController {
   }
 
   // a seller lists their own statements
-  @Get()
+  @Get() @ApiScopes('statements.read')
   list(@CurrentContext() ctx: RequestContext, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
     const lim = Math.min(Math.max(Number(limit) || 20, 1), 100);
     return this.statements.listForSeller(ctx.tenantId, ctx.userId, { cursor: decodeCursor(cursor), limit: lim }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
-  @Get(':id')
+  @Get(':id') @ApiScopes('statements.read')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.statements.getById(ctx.tenantId, { userId: ctx.userId, canModerate: canModeratePayment(ctx) }, id).then((data) => ({ data }));
   }

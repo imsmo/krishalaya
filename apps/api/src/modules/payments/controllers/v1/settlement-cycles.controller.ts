@@ -13,6 +13,7 @@ import { SettlementCycleService } from '../../services/settlement-cycle.service'
 import { OrgStatementService } from '../../services/org-statement.service';
 import { SettlementConsoleReadModel } from '../../read-models/settlement-console.read-model';
 import { DecideCycleCloseSchema, DecideCycleCloseDto } from '../../dto/settlement-cycle.dto';
+import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const PERM = 'settlement.close';
 const ipOf = (r: Request) => r.ip || null;
@@ -33,7 +34,7 @@ export class SettlementCyclesController {
 
   /** W147 whole: the live cycle with its progress, the per-seller table, the basis for the deduction
    *  columns, and how many of this tenant's statements are still daily ones. */
-  @Get() @RequirePermissions(PERM)
+  @Get() @RequirePermissions(PERM) @ApiScopes('payments.summary.read')
   async overview(@CurrentContext() ctx: RequestContext) {
     const cycle = await this.cycles.ensureLive(ctx.tenantId, ctx.userId);
     return { data: await this.console.overview(ctx.tenantId, cycle) };
@@ -60,7 +61,7 @@ export class SettlementCyclesController {
 
   /** W148's list: every statement this tenant has issued, keyset, each row saying whether its period is a
    *  cycle or one of the pre-wave daily ones. */
-  @Get('statements') @RequirePermissions(PERM)
+  @Get('statements') @RequirePermissions(PERM) @ApiScopes('statements.read')
   statements(@CurrentContext() ctx: RequestContext, @Query('cycleId') cycleId?: string, @Query('cursor') cursor?: string, @Query('limit') limit?: string) {
     const lim = Math.min(Math.max(Number(limit) || 50, 1), 100);
     return this.console.statements(ctx.tenantId, { cycleId: cycleId || undefined, cursor: decodeCursor(cursor), limit: lim }).then((data) => ({ data }));
@@ -68,7 +69,7 @@ export class SettlementCyclesController {
 
   /** W148's "Download org statement — June": DERIVED from the tenant's own ledger, with a receipt, and
    *  refused by name for a month that has not ended or a statement that does not reconcile. */
-  @Get('org-statement') @RequirePermissions(PERM)
+  @Get('org-statement') @RequirePermissions(PERM) @ApiScopes('payments.summary.read')
   orgStatementFor(@CurrentContext() ctx: RequestContext, @Query('period') period: string) {
     return this.orgStatement.forMonth(ctx.tenantId, ctx.userId, period).then((data) => ({ data }));
   }

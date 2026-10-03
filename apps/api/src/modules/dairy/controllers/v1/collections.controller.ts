@@ -12,6 +12,7 @@ import { MilkCollectionService } from '../../services/milk-collection.service';
 import { RecordCollectionSchema, RecordCollectionDto } from '../../dto/create-milk-collection.dto';
 import { QueryCollectionsSchema, QueryCollectionsDto } from '../../dto/query-milk-collection.dto';
 import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 
@@ -27,7 +28,7 @@ export class CollectionsController {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.collections.record(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
   }
-  @Get()
+  @Get() @ApiScopes('dairy.collections.read')
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryCollectionsSchema) q: QueryCollectionsDto) {
     return this.collections.list(ctx.tenantId, this.actor(ctx), { membershipId: q.membershipId, from: q.from, to: q.to, cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));

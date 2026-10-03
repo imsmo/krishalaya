@@ -91,6 +91,9 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'desks', href: '/settings/team/desks', label: t.t('nav.desks') },
         // PC-56 TENANT-13a: developer settings — webhooks (W188) at the canon path; the API's `tenancy` flag and `api.manage` decide what it shows.
         { key: 'webhooks', href: '/settings/developers/webhooks', label: t.t('nav.webhooks') },
+        // PC-56 TENANT-13c: API keys (W190, the `tenant_api` flag + api.manage + the api_access plan feature) and integrations (W187).
+        { key: 'api-keys', href: '/settings/developers', label: t.t('nav.apiKeys') },
+        { key: 'integrations', href: '/settings/integrations', label: t.t('nav.integrations') },
       ],
     },
   ];

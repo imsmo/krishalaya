@@ -32,6 +32,7 @@ import { QueryListingDto, QueryListingSchema } from '../dto/query-listing.dto';
 import { QueryListingInquiriesDto, QueryListingInquiriesSchema } from '../dto/query-listing-inquiries.dto';
 import { ListingNotFoundError } from '../domain/listing.errors';
 import { ListingPermissions, canModerate } from '../listings.policies';
+import { ApiScopes } from '../../../core/auth/api-key.port';
 
 // Same opaque base64 "c|id" keyset cursor grammar as communication's ConversationsController — the inquiries
 // endpoint forwards straight into ConversationService's cursor, so it must decode/encode identically.
@@ -58,7 +59,7 @@ export class ListingsController {
    *  AuthGuard doesn't run on a @Public route, so ctx.userId is '' when no token was sent (RequestContext's
    *  documented anonymous convention) and we 401 explicitly rather than silently scoping to nothing / leaking
    *  another tenant's rows. */
-  @Public() @Get()
+  @Public() @Get() @ApiScopes('listings.read')
   async search(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryListingSchema) q: QueryListingDto) {
     if (q.mine && !ctx.userId) throw new UnauthorizedError('Sign in to view your own listings');
     const res = await this.searchRM.query(ctx.tenantId, q, q.mine ? { ownerUserId: ctx.userId } : {});
@@ -79,7 +80,7 @@ export class ListingsController {
     return { data: await this.bandRM.bandForPincode(ctx.tenantId, q.productId, q.pincode) };
   }
 
-  @Public() @Get(':id')
+  @Public() @Get(':id') @ApiScopes('listings.read')
   async getOne(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     // visibility-gated: non-owners only see published+public listings (no draft scraping)
     const l = await this.service.getPublicById(ctx.tenantId, id, { userId: ctx.userId, canModerate: canModerate(ctx) });
@@ -118,6 +119,7 @@ export class ListingsController {
 
   @Post()
   @RequirePermissions(ListingPermissions.Create)
+  @ApiScopes('listings.write')
   async create(
     @CurrentContext() ctx: RequestContext,
     @Headers('idempotency-key') idemKey: string,
@@ -172,6 +174,7 @@ export class ListingsController {
 
   @Patch(':id/price')
   @RequirePermissions(ListingPermissions.Update)
+  @ApiScopes('listings.write')
   async changePrice(
     @CurrentContext() ctx: RequestContext, @Param('id') id: string,
     @ZodBody(ChangePriceSchema) dto: ChangePriceDto,
@@ -237,7 +240,7 @@ export class ListingsController {
 
   /** The price trail 0005 recorded on every change and nothing ever read back. Owner-or-moderator (404 to
    *  anyone else — a competitor must not walk a seller's pricing story). */
-  @Get(':id/price-history')
+  @Get(':id/price-history') @ApiScopes('listings.read')
   async priceHistory(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return { data: await this.service.priceTrail(ctx.tenantId, { userId: ctx.userId, canModerate: canModerate(ctx) }, id) };
   }
@@ -256,6 +259,7 @@ export class ListingsController {
    *  permission minted. Idempotency-keyed (Law 3). */
   @Post('on-behalf')
   @RequirePermissions(ListingPermissions.Moderate)
+  @ApiScopes('listings.write')
   async createOnBehalf(
     @CurrentContext() ctx: RequestContext,
     @Headers('idempotency-key') idemKey: string,

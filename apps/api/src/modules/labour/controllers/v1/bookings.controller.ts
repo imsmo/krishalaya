@@ -19,6 +19,7 @@ import { AssignWorkerSchema, AssignWorkerDto } from '../../dto/create-booking-as
 import { BookingActDto, CancelBookingSchema, CancelBookingDto, ConfirmRosterDto, OptionalBookingActSchema, OptionalConfirmRosterSchema } from '../../dto/labour-act.dto';
 import { labourActor } from '../../policies/labour.policies';
 import { decodeCursor } from '../../domain/cursor';
+import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const ipOf = (req: Request) => req.ip || null;
 const needKey = (key: string | undefined) => { if (!key) throw new BadRequestError('Idempotency-Key header required'); return key; };
@@ -34,13 +35,13 @@ export class BookingsController {
     return this.svc.create(ctx.tenantId, labourActor(ctx), needKey(key), dto, ipOf(r)).then((data) => ({ data }));
   }
 
-  @Get()
+  @Get() @ApiScopes('labour.bookings.read')
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryBookingsSchema) q: QueryBookingsDto) {
     return this.svc.listBookings(ctx.tenantId, labourActor(ctx), { box: q.box, status: q.status, taskSkillId: q.taskSkillId, sort: q.sort, counts: q.counts === '1', cursor: decodeCursor(q.cursor), limit: q.limit })
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor, counts: res.counts, unreachableStatuses: res.unreachableStatuses } }));
   }
 
-  @Get(':id')
+  @Get(':id') @ApiScopes('labour.bookings.read')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getBooking(ctx.tenantId, labourActor(ctx), id).then((data) => ({ data })); }
 
   @Post(':id/assignments')

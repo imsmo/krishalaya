@@ -14,11 +14,12 @@ import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { MemberRosterReadModel } from '../../read-models/member-roster.read-model';
 import { MemberDetailReadModel } from '../../read-models/member-detail.read-model';
 import { MemberPiiService } from '../../services/member-pii.service';
-import { NotFoundError } from '../../../../shared/errors/app-error';
+import { BadRequestError, NotFoundError } from '../../../../shared/errors/app-error';
 import { IdentityPermissions } from '../../policies/identity.policies';
 import { QueryRosterSchema, QueryRosterDto, RevealPiiSchema, RevealPiiDto, SuspendMemberSchema, SuspendMemberDto } from '../../dto/member-roster.dto';
 import { MemberSuspensionService } from '../../services/member-suspension.service';
 import { Farmer360Service } from '../../services/farmer-360.service';
+import { ApiScopes, keyWithoutPii, shortName } from '../../../../core/auth/api-key.port';
 
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
 const reqIdOf = (req: Request) => (req.headers['x-request-id'] as string) || null;
@@ -37,7 +38,12 @@ export class MemberRosterController {
   /** The roster. Every phone on it is masked in the read model, so this response cannot leak one. */
   @Get()
   @RequirePermissions(IdentityPermissions.Report)
+  @ApiScopes('members.read')
   async list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryRosterSchema) q: QueryRosterDto) {
+    // PC-56 TENANT-13c: a `members.read` KEY sees short names, and may not search by digits — a phone-prefix search answers "is
+    // there a member whose phone starts 98250…", which walks the masked digits back one at a time.
+    const narrowed = keyWithoutPii(ctx);
+    if (narrowed && q.q && /\d/.test(q.q)) throw new BadRequestError('Searching members by phone needs the members.read.pii scope', { requiredScope: 'members.read.pii' });
     const cursor = q.cursor ? decodeCursor(q.cursor) : undefined;
     const [items, census] = await Promise.all([
       this.roster.list(ctx.tenantId, { ...q, cursor }),
@@ -45,7 +51,7 @@ export class MemberRosterController {
     ]);
     const last = items[items.length - 1];
     return {
-      data: items,
+      data: narrowed ? items.map((m) => ({ ...m, fullName: shortName(m.fullName) })) : items,
       meta: {
         ...census,
         // Keyset: the cursor carries the sort key, not a page number.
@@ -68,10 +74,11 @@ export class MemberRosterController {
    */
   @Get(':userId')
   @RequirePermissions(IdentityPermissions.Report)
+  @ApiScopes('members.read')
   async member(@CurrentContext() ctx: RequestContext, @Param('userId') userId: string) {
     const data = await this.detail.get(ctx.tenantId, userId);
     if (!data) throw new NotFoundError('member not found in this organisation');
-    return { data };
+    return { data: keyWithoutPii(ctx) ? { ...data, fullName: shortName(data.fullName) } : data };
   }
 
   /**
@@ -146,6 +153,7 @@ export class MemberRosterController {
    */
   @Post(':userId/reveal')
   @RequirePermissions(IdentityPermissions.RevealPii)
+  @ApiScopes('members.read.pii')
   async reveal(
     @CurrentContext() ctx: RequestContext,
     @Req() req: Request,

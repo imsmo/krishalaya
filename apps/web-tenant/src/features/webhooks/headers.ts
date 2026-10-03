@@ -8,7 +8,11 @@ export const SECRET_PAGE_HEADERS: Readonly<Record<string, string>> = Object.free
   'Referrer-Policy': 'no-referrer',
 });
 
+/** PC-56 TENANT-13c: the WHOLE developer area (an API key is shown once on /settings/developers) and the integrations pages (a provider
+ *  credential is typed there) carry the same pair. The webhook prefix stays listed for the 13a pin. */
+export const SECRET_PAGE_PREFIXES: readonly string[] = Object.freeze([SECRET_PAGE_PREFIX, '/settings/developers', '/settings/integrations']);
+
 export function secretPageHeaders(pathname: string): Record<string, string> {
   const p = String(pathname ?? '');
-  return p === SECRET_PAGE_PREFIX || p.startsWith(`${SECRET_PAGE_PREFIX}/`) ? { ...SECRET_PAGE_HEADERS } : {};
+  return SECRET_PAGE_PREFIXES.some((x) => p === x || p.startsWith(`${x}/`)) ? { ...SECRET_PAGE_HEADERS } : {};
 }

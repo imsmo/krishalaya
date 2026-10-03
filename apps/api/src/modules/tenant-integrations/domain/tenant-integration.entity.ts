@@ -1,3 +1,6 @@
+// PC-56 TENANT-13c: NO LONGER THE WIRE SHAPE. Its `connected` flag claimed a connection nothing read; the service now returns the honest
+// view (status verified / verify_failed / disconnected / unverified, masked ref, consumers). Kept (nothing deleted) with its spec, which
+// still pins that a ref never serialises.
 // modules/tenant-integrations/domain/tenant-integration.entity.ts · a tenant's connection to a third-party
 // provider (0002 tenant_integrations). The raw credential is NEVER stored here — only the opaque vault `secretRef`
 // (AWS Secrets Manager ARN). `serialize()` is the wire shape: it exposes `connected` + non-secret `config` but
