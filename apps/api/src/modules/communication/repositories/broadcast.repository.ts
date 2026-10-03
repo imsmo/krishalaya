@@ -68,6 +68,20 @@ export class BroadcastRepository {
       [p.id, p.tenantId, p.status, p.eligibleCount, p.sendRequestedBy, p.sendRequestedAt, p.queuedAt, fanOut,
         p.failedAt, p.failureReason, p.cancelledBy, p.cancelledAt, p.cancelReason, actor]);
   }
+  /** PC-56 HOTFIX-2 · the RELAY's state write (BroadcastRequestedHandler, on the relay transaction as kv_relay). 0179 granted kv_relay
+   *  UPDATE on exactly (status, queued_at, fanned_out_at, failed_at, failure_reason, updated_at, updated_by) — and `updateState` above
+   *  SETs every lifecycle column (eligible_count, send_requested_*, cancelled_*), so Postgres refused the whole statement 42501 and no
+   *  broadcast ever left `queued`. The fan-out changes only status / failed_at / failure_reason / fanned_out_at, so this writes only
+   *  those, inside 0179's column grant — no grant was widened. */
+  async updateRelayState(tx: TxContext, b: Broadcast, fanOut = false): Promise<void> {
+    const p = b.toProps();
+    await tx.query(
+      `UPDATE tenant_broadcasts SET status=$3,
+              fanned_out_at = CASE WHEN $4::boolean THEN now() ELSE fanned_out_at END,
+              failed_at=$5, failure_reason=$6, updated_at=now()
+        WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+      [p.id, p.tenantId, p.status, fanOut, p.failedAt, p.failureReason]);
+  }
   async get(tenantId: string, id: string, tx?: SqlExecutor): Promise<Broadcast | null> {
     const r = await this.x(tenantId, tx).query(`SELECT ${COLS} FROM tenant_broadcasts WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;

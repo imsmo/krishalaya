@@ -66,7 +66,7 @@ run('buyer charges + settlement routing (integration, real Postgres)', () => {
     wallet = new InProcessWalletClient(new LedgerRepository());
     charges = new ChargePricingService(new ChargeDefinitionRepository(replica as any));
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handler = new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)));
+    handler = new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow);
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });

@@ -20,8 +20,10 @@ function harness() {
   const outbox = { write: jest.fn() };
   const repo = { getForUpdate: jest.fn(), update: jest.fn() };
   const audit = { write: jest.fn() };
-  const handler = new PremiumPaymentSucceededHandler(outbox as any, repo as any, audit as any);
-  return { handler, outbox, repo, audit };
+  // HOTFIX-2: the lock + activation run in kv_app's unit of work (kv_relay holds no UPDATE on insurance_policies); the fake runs fn
+  const uow = { run: jest.fn(async (_t: string, fn: (x: any) => Promise<unknown>) => fn({} as any)) };
+  const handler = new PremiumPaymentSucceededHandler(outbox as any, repo as any, audit as any, uow as any);
+  return { handler, outbox, repo, audit, uow };
 }
 const tx = {} as any;
 const baseEvent = (payload: Record<string, unknown>) => ({ id: '1', tenantId: 't1', aggregateType: 'payment', aggregateId: 'pay-1', eventType: 'payments.payment_succeeded', payload });

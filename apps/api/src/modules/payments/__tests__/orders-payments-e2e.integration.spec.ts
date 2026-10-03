@@ -115,7 +115,7 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
     handlers.register(new PaymentSucceededHandler(new OrderRepository(replica as any), outbox));
     // commission_split defaults OFF → full escrow release to the seller (this spec asserts that path)
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handlers.register(new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any))));
+    handlers.register(new OrderCompletedHandler(wallet, new FlagsService(pools, new InMemoryCacheService()), pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow));
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);
   }, 30000);
 

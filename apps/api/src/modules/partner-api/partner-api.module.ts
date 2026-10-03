@@ -5,6 +5,7 @@
 // 404, so the realm is invisible until the S2 security review signs it on.
 // See ./README.md and PC55_A10_PARTNER_API_SECURITY_NOTES.md (Development_Program, outside this repo).
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { TenantWebhooksModule } from '../tenant-webhooks/tenant-webhooks.module';
@@ -30,13 +31,14 @@ export class PartnerApiModule implements OnModuleInit {
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     private readonly partners: PartnerApiRepository,
     private readonly webhooks: WebhookRepository,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
   ) {}
 
   onModuleInit(): void {
     // One handler per allow-listed event type. The registry holds a LIST per type, so these sit alongside the tenant
     // fanout handlers rather than displacing them.
     for (const eventType of PARTNER_WEBHOOK_EVENT_TYPES) {
-      this.registry.register(new PartnerWebhookFanoutHandler(eventType, this.partners, this.webhooks));
+      this.registry.register(new PartnerWebhookFanoutHandler(eventType, this.partners, this.webhooks, this.uow));
     }
   }
 }

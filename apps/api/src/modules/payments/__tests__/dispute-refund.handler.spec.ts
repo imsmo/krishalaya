@@ -17,7 +17,9 @@ function harness(opts: { flags?: Record<string, boolean>; payment?: any; line?: 
   const pricing = { quote: jest.fn().mockResolvedValue({ sellerNetMinor: 54000n, tenantCommissionMinor: 5000n, gstOnCommissionMinor: 900n, tdsMinor: 100n, platformShareMinor: 0n, commissionMinor: 5000n }) } as any;
   const outbox = { write: jest.fn().mockResolvedValue(undefined) } as any;
   const metrics = { inc: jest.fn() } as any;
-  return { h: new DisputeResolvedHandler(wallet, flags, repo, lines, pricing, outbox, metrics), wallet, flags, repo, lines, pricing, outbox, tx: { query: jest.fn() } as any };
+  // HOTFIX-2: the payment + rule reads run in kv_app's unit of work; the fake hands them their own mocked executor
+  const uow = { run: jest.fn((_t: string, fn: (tx: any) => Promise<unknown>) => fn({ query: jest.fn() })) } as any;
+  return { h: new DisputeResolvedHandler(wallet, flags, repo, lines, pricing, outbox, metrics, uow), wallet, flags, repo, lines, pricing, outbox, uow, tx: { query: jest.fn() } as any };
 }
 const lastLegs = (wallet: any) => wallet.post.mock.calls[wallet.post.mock.calls.length - 1][1].legs as Array<{ account: any; amountMinor: bigint }>;
 const sum = (legs: Array<{ amountMinor: bigint }>) => legs.reduce((s, l) => s + l.amountMinor, 0n);

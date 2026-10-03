@@ -1,0 +1,34 @@
+-- ==================================================================================================================
+-- MIGRATION 0195 — PC-56 HOTFIX-2 · THE RELAY'S HANDLERS RUN AS kv_relay — ONE READ-ONLY GRANT, AND WHY ONLY ONE
+-- Runner: db/scripts/migrate.js wraps this file in ONE transaction and records it in schema_migrations.
+-- NEVER edit an applied migration — add a new numbered one. (0122 and 0175 are applied; nothing here edits them.)
+-- ==================================================================================================================
+--
+-- THE CLASS (survey_sweep.md F-1 / F-2, then every handler the HOTFIX-2 gate enumerated). The outbox relay runs every registered
+-- handler INSIDE its own per-event transaction on a connection that logs in as `kv_relay` (assertProductionSecurity refuses any
+-- other role). A handler that touched a table kv_relay holds no privilege on died 42501, its event was quarantined `failed`, and
+-- every OTHER handler of that event rolled back with it. Dev never showed it: the relay falls back to DATABASE_URL (kv_app).
+--
+-- THE RULE APPLIED, PER HANDLER (decisions + reasons: /home/claude/wave_hotfix2_report.md §B1). A handler's table work moves into
+-- a request-tier unit of work (kv_app, RLS-bound to the event's tenant) — the 10a / 11c pattern — so kv_relay gains nothing:
+--   shipments (logistics order_confirmed), trade_invoices (both invoice handlers), commission_rules + tax_rules (settlement, dispute
+--   and return pricing — a READ of committed configuration; at READ COMMITTED a separate read-only transaction sees exactly the rows
+--   the relay statement would), payments (dispute / return refund lookups), user_memberships, insurance_policies, listing_offers,
+--   loans (partner ownership). `has_table_privilege('kv_relay', <each>, …)` stays FALSE — the gate spec pins it.
+--
+-- THE ONE EXCEPTION — notification_template_versions, SELECT only.
+--   • The notification spine (NotificationService.fanout, called by DomainEventFanoutHandler for 60+ event types and by the
+--     broadcast fan-out) is DESIGNED to record its rows on the relay transaction: a notification's id is derived from the outbox
+--     event id, and the record must commit atomically with the event being marked published (exactly-once-ish delivery). kv_relay
+--     already holds SELECT/INSERT/UPDATE on `notifications`, and kv_app deliberately holds NO UPDATE on it — so the spine cannot move
+--     to kv_app's unit of work without either a new kv_app write grant on notifications or splitting the record from the event.
+--   • 0122 created `notification_template_versions` (the words actually sent), REVOKEd ALL from kv_app AND kv_relay, then granted
+--     back "exactly the read the send path needs" — to kv_app only. The send path runs as kv_relay. Since 0122 every relayed event
+--     with a notification mapping (order confirmed, completed, delivered, payment succeeded, KYC verified, …) has died 42501 in
+--     production, taking its siblings with it — including the shipment and the trade invoice this hotfix exists to restore.
+--   • kv_relay already holds SELECT on the parent `notification_templates` (0175 kept it deliberately); the version rows are the
+--     same platform/tenant copy one join further. Read-only: no INSERT, UPDATE, DELETE — 0122's append-only law and its words-frozen
+--     trigger are untouched, and authoring stays in the admin realm (kv_admin).
+--
+-- NO BLANKET GRANT. Nothing else is granted; nothing is revoked; no table, column, policy or trigger changes.
+GRANT SELECT ON notification_template_versions TO kv_relay;

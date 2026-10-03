@@ -14,6 +14,13 @@
 // AND ONE RULE OF ITS OWN: a broadcast is never forced to SMS. The routine policy (G0-4) proposes an SMS fallback when a
 // promotional push fails — for a broadcast that would text every member without a push device, on an event with no
 // SMS template (`no_template` per member again). W429: *"marketing … never forced to SMS"*. `allowRoutineFallback: false`.
+//
+// PC-56 HOTFIX-2 — THIS HANDLER COULD NEVER MOVE A BROADCAST. It runs on the relay transaction as `kv_relay`, which 0179 granted
+// UPDATE on seven named columns of `tenant_broadcasts`; its state write (`updateState`) SET every lifecycle column, so the first
+// write died 42501 and every broadcast stayed `queued` with its event quarantined. It now writes through `updateRelayState`
+// (status / failed_at / failure_reason / fanned_out_at only — inside the grant). The fan-out stays on the relay transaction on
+// purpose: the notification rows (kv_relay S/I/U; kv_app holds no UPDATE on notifications) and the recipient log commit with the
+// event. No grant was widened.
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
 import { TxContext } from '../../../../core/database/unit-of-work';
 import { OutboxWriter } from '../../../../core/outbox/outbox.writer';
@@ -46,7 +53,7 @@ export class BroadcastRequestedHandler implements OutboxHandler {
 
     const fail = async (reason: BroadcastFailureReason, detail: Record<string, unknown> = {}) => {
       b.markFailed(reason, new Date());
-      await this.broadcasts.updateState(tx, b, null);
+      await this.broadcasts.updateRelayState(tx, b);
       await this.audit.write(tx, { tenantId, actorUserId: null, action: BroadcastEvents.Failed, entityType: 'tenant_broadcast', entityId: b.id, reason, newValue: { status: 'failed', failureReason: reason, ...detail } });
       await this.outbox.write(tx, { tenantId, aggregateType: 'tenant_broadcast', aggregateId: b.id, eventType: BroadcastEvents.Failed, payload: { v: 1, broadcastId: b.id, reason } });
     };
@@ -56,7 +63,7 @@ export class BroadcastRequestedHandler implements OutboxHandler {
     if (audienceRoleCode !== null && !(await this.broadcasts.roleKnown(tenantId, audienceRoleCode, tx))) return fail('role_retired', { role: audienceRoleCode });
 
     b.markSending();
-    await this.broadcasts.updateState(tx, b, null);
+    await this.broadcasts.updateRelayState(tx, b);
     const dedupeKey = broadcastDedupeKey(broadcastId);
     const payload = { title, body, broadcastId };
     let after: string | null = null;
@@ -72,7 +79,7 @@ export class BroadcastRequestedHandler implements OutboxHandler {
     }
     if (total === 0) return fail('no_recipients');
     b.markSent(new Date());
-    await this.broadcasts.updateState(tx, b, null, true);
+    await this.broadcasts.updateRelayState(tx, b, true);
     await this.audit.write(tx, { tenantId, actorUserId: null, action: BroadcastEvents.FannedOut, entityType: 'tenant_broadcast', entityId: b.id, newValue: { status: 'sent', recipients: total } });
     await this.outbox.write(tx, { tenantId, aggregateType: 'tenant_broadcast', aggregateId: b.id, eventType: BroadcastEvents.FannedOut, payload: { v: 1, broadcastId: b.id, recipients: total } });
   }

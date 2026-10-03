@@ -81,7 +81,7 @@ run('order-from-accepted-offer via outbox relay (integration, real Postgres)', (
     const orderRepo = new OrderRepository(replica as any);
     const registry = new OutboxHandlerRegistry();
     registry.register(new OfferAcceptedHandler(orderRepo, listings, flags, outbox, metrics));         // orders consumes offers.offer_accepted
-    registry.register(new OrderFromOfferCreatedHandler(offerRepo, outbox));                            // offers consumes orders.order_from_offer_created
+    registry.register(new OrderFromOfferCreatedHandler(offerRepo, outbox, uow));                       // offers consumes orders.order_from_offer_created (kv_app UoW, HOTFIX-2)
     dispatcher = new OutboxDispatcher(admin, registry, metrics);                                       // relay on the privileged (admin) pool
   }, 30000);
 

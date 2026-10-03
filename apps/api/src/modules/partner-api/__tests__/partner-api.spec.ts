@@ -298,6 +298,7 @@ describe('partner-webhook.rules', () => {
 
 describe('PartnerWebhookFanoutHandler', () => {
   const tx = {} as any;
+  const appTx = { kind: 'kv_app unit of work' } as any;
   const event = (over: Record<string, unknown> = {}) => ({
     id: '1', tenantId: 't-1', aggregateType: 'loan', aggregateId: 'loan-1',
     eventType: FintechEventType.LoanRepaid, payload: { v: 1, amountMinor: '5000' }, ...over,
@@ -309,14 +310,17 @@ describe('PartnerWebhookFanoutHandler', () => {
       activeEndpointsForPartner: jest.fn(async () => endpoints),
     };
     const webhooks = { enqueue: jest.fn(async () => undefined) };
-    return { handler: new PartnerWebhookFanoutHandler(FintechEventType.LoanRepaid, partners as any, webhooks as any), partners, webhooks };
+    // HOTFIX-2: question 1 (ownership) runs in kv_app's unit of work for the event's tenant; the fake hands it `appTx`
+    const uow = { run: jest.fn(async (_t: string, fn: (x: any) => Promise<unknown>) => fn(appTx)) };
+    return { handler: new PartnerWebhookFanoutHandler(FintechEventType.LoanRepaid, partners as any, webhooks as any, uow as any), partners, webhooks, uow };
   }
 
   it('resolves ownership from the aggregate row — NOT from the payload — before anything is enqueued', async () => {
     const { handler, partners, webhooks } = make('p-1');
     // A payload that LIES about the partner must not change the outcome.
     await handler.handle(event({ payload: { v: 1, partnerId: 'p-999' } }), tx);
-    expect(partners.resolveOwnerPartner).toHaveBeenCalledWith(tx, 'loan', 'loan-1');
+    // ownership is read as kv_app (RLS-bound to the emitting tenant), never on the relay tx (kv_relay holds no SELECT on loans)
+    expect(partners.resolveOwnerPartner).toHaveBeenCalledWith(appTx, 'loan', 'loan-1');
     expect(partners.activeEndpointsForPartner).toHaveBeenCalledWith(tx, 'p-1');
     expect(webhooks.enqueue).toHaveBeenCalledTimes(1);
     const [, d] = (webhooks.enqueue as jest.Mock).mock.calls[0] as any[];

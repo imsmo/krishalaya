@@ -18,9 +18,19 @@
 // transaction, so the two commit or roll back together. The redemption is read IN-TX by order id (the event does not
 // carry it) and locked, so a cancel racing this cannot spend the same reservation twice. Idempotent per order.
 // A fully discounted order with no buyer charges has `gross = 0` and no escrow to release; its top-up is still paid.
+//
+// PC-56 HOTFIX-2 (SWEEP F-2, MONEY) — THE SPLIT'S RULE LOOKUP RUNS IN kv_app's UNIT OF WORK, THE MONEY STAYS ON THE RELAY TX.
+// With `commission_split` ON, `SettlementPricingService.quote` read `commission_rules` + `tax_rules` on the relay transaction,
+// as `kv_relay`, which holds NO SELECT on either — the day the flag turned on, every settlement (and every other handler of
+// `order_completed`) would have died 42501. The rule lookup is a pure READ of committed platform/tenant configuration, so it
+// now runs in its own request-tier unit of work (kv_app, RLS-bound to the event's tenant: the tenant's rows + the platform
+// defaults, exactly what the request tier's own quote sees). Nothing about atomicity changes: the relay tx runs at READ
+// COMMITTED, where every statement already reads the latest committed rules — a separate read-only transaction sees the
+// same rows. The ledger legs, their amounts, the idempotency key and the settlement line are untouched and still commit
+// atomically with the event on the relay tx. No grant was added to kv_relay.
 import { Inject, Injectable } from '@nestjs/common';
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
-import { TxContext } from '../../../../core/database/unit-of-work';
+import { TxContext, UNIT_OF_WORK, UnitOfWork } from '../../../../core/database/unit-of-work';
 import { WALLET_SERVICE, WalletPort, LedgerLeg } from '../../../../core/wallet/wallet.port';
 import { platform, userMain, tenantCommission, PlatformAccount } from '../../../../core/wallet/account-codes';
 import { FlagsService } from '../../../../core/feature-flags/flags.service';
@@ -37,6 +47,7 @@ export class OrderCompletedHandler implements OutboxHandler {
     private readonly pricing: SettlementPricingService,
     private readonly lines: SettlementLineRepository,
     private readonly couponMoney: CouponMoneyService,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
   ) {}
 
   async handle(event: OutboxEvent, tx: TxContext): Promise<void> {
@@ -63,12 +74,13 @@ export class OrderCompletedHandler implements OutboxHandler {
     let platformFees = buyerCharges;                // platform keeps the buyer charges
 
     if (split) {
-      const b = await this.pricing.quote(tx, {
+      // HOTFIX-2: the rule lookup reads as kv_app (read-only, committed config); the legs below stay on the relay tx
+      const b = await this.uow.run(tenantId, (ruleTx) => this.pricing.quote(ruleTx, {
         tenantId, grossMinor: settleable,
         categoryId: (event.payload.categoryId as string) ?? null,
         source: (event.payload.source as string) ?? null,
         countryCode: (event.payload.countryCode as string) ?? 'IN',
-      });
+      }), { userId: 'system' });
       legs.push(
         { account: userMain(sellerUserId), amountMinor: b.sellerNetMinor },
         { account: tenantCommission(tenantId), amountMinor: b.tenantCommissionMinor },

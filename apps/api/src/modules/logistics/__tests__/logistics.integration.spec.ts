@@ -93,7 +93,7 @@ run('logistics slice (integration, real Postgres + RLS + outbox relay)', () => {
       new LogisticsDeskRepository(replica as any));
 
     const registry = new OutboxHandlerRegistry();
-    registry.register(new OrderConfirmedHandler(shipRepo, outbox, metrics));                       // orders.order_confirmed → shipment
+    registry.register(new OrderConfirmedHandler(shipRepo, outbox, metrics, uow));                  // orders.order_confirmed → shipment (kv_app UoW, HOTFIX-2)
     registry.register(new ShipmentDeliveredHandler(new OrderRepository(replica as any), outbox));  // logistics.shipment_delivered → order delivered
     dispatcher = new OutboxDispatcher(admin, registry, metrics);
 

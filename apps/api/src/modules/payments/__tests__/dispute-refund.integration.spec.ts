@@ -116,8 +116,8 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
     const lines = new SettlementLineRepository();
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
     const handlers = new OutboxHandlerRegistry();
-    handlers.register(new OrderCompletedHandler(wallet, flags, pricing, lines, new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any))));                                          // settle escrow → seller
-    handlers.register(new DisputeResolvedHandler(wallet, flags, new PaymentRepository(replica as any), lines, pricing, outbox, metrics));  // dispute refund / clawback
+    handlers.register(new OrderCompletedHandler(wallet, flags, pricing, lines, new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow));                                          // settle escrow → seller
+    handlers.register(new DisputeResolvedHandler(wallet, flags, new PaymentRepository(replica as any), lines, pricing, outbox, metrics, uow));  // dispute refund / clawback
     handlers.register(new DisputeRefundedHandler(new DisputeRepository(replica as any)));                                 // stamp resolution_txn_id
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);
   }, 30000);

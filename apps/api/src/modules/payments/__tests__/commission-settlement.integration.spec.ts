@@ -79,7 +79,7 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
     wallet = new InProcessWalletClient(new LedgerRepository());
     const flags = new FlagsService(pools, new InMemoryCacheService());
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
-    handler = new OrderCompletedHandler(wallet, flags, pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)));
+    handler = new OrderCompletedHandler(wallet, flags, pricing, new SettlementLineRepository(), new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow);
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });

@@ -154,12 +154,13 @@ run('PC-56 TENANT-11c · group lots — settle pays farmers from the real sale, 
     const listings = new ListingService(uow, outbox, new AllowAllQuota(), idem, cache, metrics, new ListingRepository(replica as never), new PriceHistoryRepository(replica as never), new ListingAttributeRepository(), new ListingMediaRepository(), audit);
     svc = new GroupLotService(uow, outbox, idem, metrics, wallet, audit, new GroupLotRepository(replica as never), new GroupLotSettlementRepository(replica as never), listings, new UiMessageRepository(replica as never));
     // `commission_split` is a GLOBAL flag row that two payments specs switch ON while they run; in a parallel run that turns
-    // this handler onto its split path, which reads `commission_rules` as kv_relay — a table kv_relay holds no grant on (a
-    // PRE-EXISTING payments defect, named in the 11c report, not this wave's to fix). The seeded default is OFF, so the real
-    // handler runs here with the flag pinned to its default instead of to whatever a neighbouring spec last wrote.
+    // this handler onto its split path. Until PC-56 HOTFIX-2 that path read `commission_rules` as kv_relay and died 42501; it now
+    // reads the rules in kv_app's unit of work and survives the flag (the relay-as-kv_relay gate proves it). The pin stays for a
+    // different reason: this spec's balances assert the UNSPLIT seller net (seller Main = gross), so the handler runs here with
+    // the flag pinned to its seeded default instead of to whatever a neighbouring spec last wrote.
     const pinnedFlags = { isEnabled: async (key: string, c?: unknown) => (key === 'commission_split' ? false : flags.isEnabled(key, c as never)) } as unknown as FlagsService;
     settle = new OrderCompletedHandler(wallet, pinnedFlags, new SettlementPricingService(new CommissionRuleRepository(replica as never), new TaxRuleRepository(replica as never)), new SettlementLineRepository(),
-      new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as never)));
+      new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as never)), uow);
     hop1 = new GroupLotOrderCompletedHandler(svc);
     hop2 = new GroupLotSaleSettledHandler(svc);
   }, 120_000);

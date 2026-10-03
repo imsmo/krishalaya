@@ -69,3 +69,50 @@ describe('OutboxDispatcher.relayOne', () => {
     expect(client.release).toHaveBeenCalled();
   });
 });
+
+// PC-56 HOTFIX-2 · the gate's two seams: the registry lists what boot wired; relayById relays ONE named event through the same path.
+describe('OutboxHandlerRegistry.entries (HOTFIX-2)', () => {
+  it('lists every (eventType, handler) pair in registration order, including several handlers per type', () => {
+    const r = new OutboxHandlerRegistry();
+    const a: OutboxHandler = { eventType: 'x.one', handle: jest.fn() };
+    const b: OutboxHandler = { eventType: 'x.one', handle: jest.fn() };
+    const c: OutboxHandler = { eventType: 'x.two', handle: jest.fn() };
+    r.register(a); r.register(b); r.register(c);
+    expect(r.entries()).toEqual([{ eventType: 'x.one', handler: a }, { eventType: 'x.one', handler: b }, { eventType: 'x.two', handler: c }]);
+  });
+});
+
+describe('OutboxDispatcher.relayById (HOTFIX-2)', () => {
+  it('claims ONLY the named pending event (by id, SKIP LOCKED), runs its handlers and publishes it', async () => {
+    const registry = new OutboxHandlerRegistry();
+    const seen: OutboxEvent[] = [];
+    registry.register({ eventType: 'payments.payment_succeeded', handle: async (e) => { seen.push(e); } });
+    const { pool, client, queries } = fakePool([evRow]);
+    const out = await new OutboxDispatcher(pool, registry, noMetrics).relayById('7');
+    expect(out).toEqual({ status: 'published', eventId: '7' });
+    expect(seen).toHaveLength(1);
+    const claim = (client.query.mock.calls as unknown as any[][]).find((c) => /SELECT id, tenant_id/.test(c[0])) as any[];
+    expect(claim[0]).toMatch(/WHERE id=\$1 AND status='pending' FOR UPDATE SKIP LOCKED/);
+    expect(claim[1]).toEqual(['7']);
+    expect(queries.some((q) => /status='published'/.test(q))).toBe(true);
+  });
+
+  it('returns not_pending (and rolls back) when the event is not pending', async () => {
+    const { pool, queries } = fakePool([]);
+    expect(await new OutboxDispatcher(pool, new OutboxHandlerRegistry(), noMetrics).relayById('99')).toEqual({ status: 'not_pending' });
+    expect(queries.some((q) => /ROLLBACK/.test(q))).toBe(true);
+  });
+
+  it('a throwing handler quarantines the event and the outcome carries the error (the gate names it)', async () => {
+    const registry = new OutboxHandlerRegistry();
+    const boom = Object.assign(new Error('permission denied for table shipments'), { code: '42501' });
+    registry.register({ eventType: 'payments.payment_succeeded', handle: async () => { throw boom; } });
+    const { pool, queries } = fakePool([evRow]);
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const out = await new OutboxDispatcher(pool, registry, noMetrics).relayById('7');
+    spy.mockRestore();
+    expect(out).toEqual({ status: 'failed', eventId: '7', error: boom });
+    expect(queries.some((q) => /status='published'/.test(q))).toBe(false);
+    expect(pool.query).toHaveBeenCalledWith(expect.stringMatching(/status='failed'/), [7]);
+  });
+});

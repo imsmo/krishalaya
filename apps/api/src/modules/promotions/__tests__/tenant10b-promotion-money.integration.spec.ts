@@ -167,7 +167,13 @@ run('PC-56 TENANT-10b · promotion money — the tenant wallet funds the discoun
     const memberships = new UserMembershipService(uow, outbox, idem, metrics, wallet, audit, new MembershipTierRepository(replica as never), new UserMembershipRepository(replica as never));
     checkout = new CheckoutService(uow, outbox, quota, idem, metrics, flags, listings, cartRepo, new OrderRepository(replica as never), new CheckoutGroupRepository(replica as never),
       new ChargePricingService(new ChargeDefinitionRepository(replica as never)), coupons, memberships, new DeliveryZoneRepository(replica as never));
-    settle = new OrderCompletedHandler(wallet, flags, new SettlementPricingService(new CommissionRuleRepository(replica as never), new TaxRuleRepository(replica as never)), new SettlementLineRepository(), money);
+    // `commission_split` is a GLOBAL flag row other payments specs switch ON while they run. Until PC-56 HOTFIX-2 that turned this
+    // handler onto its split path, where it read `commission_rules` as kv_relay and died 42501 (the 11b/11c "red only in parallel"
+    // runs). The split path now reads the rules as kv_app and survives the flag (relay-handlers-as-kv-relay gate, B4). The pin stays
+    // because THIS spec's figures are the unsplit settlement (seller Main = the FULL goods value) and its synthetic completion events
+    // carry no `source` for a rule lookup — so the real handler runs with the flag pinned to its seeded default (OFF), as 11c does.
+    const pinnedFlags = { isEnabled: async (key: string, c?: unknown) => (key === 'commission_split' ? false : flags.isEnabled(key, c as never)) } as unknown as FlagsService;
+    settle = new OrderCompletedHandler(wallet, pinnedFlags, new SettlementPricingService(new CommissionRuleRepository(replica as never), new TaxRuleRepository(replica as never)), new SettlementLineRepository(), money, uow);
 
     promoId = (await promotions.create(tenantA, mgr, `k-${randomUUID()}`, { promoType: 'discount', defaultName: 'Kharif input 10%', rules: { discountType: 'percent', percentOff: 10, maxDiscountMinor: '50000' }, budgetMinor: '40000', ...window() } as never)).id;
     couponId = (await coupons.createCoupon(tenantA, mgr, `k-${randomUUID()}`, { promotionId: promoId, code: CODE, maxUses: 1000, perUserLimit: 1 } as never)).id;

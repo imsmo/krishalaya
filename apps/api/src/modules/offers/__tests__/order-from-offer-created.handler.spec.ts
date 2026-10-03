@@ -11,7 +11,9 @@ const evt = () => ({ id: '1', tenantId, aggregateType: 'order', aggregateId: ord
 function harness(offer: ListingOffer | null) {
   const repo = { getForUpdate: jest.fn().mockResolvedValue(offer), update: jest.fn().mockResolvedValue(undefined) } as any;
   const outbox = { write: jest.fn().mockResolvedValue(undefined) } as any;
-  return { h: new OrderFromOfferCreatedHandler(repo, outbox), repo, outbox, tx: { query: jest.fn() } as any };
+  // HOTFIX-2: the lock + conversion run in kv_app's unit of work (kv_relay holds no privilege on listing_offers); the fake runs fn
+  const uow = { run: jest.fn(async (_t: string, fn: (x: any) => Promise<unknown>) => fn({ query: jest.fn() })) } as any;
+  return { h: new OrderFromOfferCreatedHandler(repo, outbox, uow), repo, outbox, uow, tx: { query: jest.fn() } as any };
 }
 
 describe('OrderFromOfferCreatedHandler', () => {
