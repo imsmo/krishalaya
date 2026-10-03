@@ -2,31 +2,27 @@
 // delegate). Everything is scoped to the CALLER'S tenant (ctx.tenantId) — there is no :tenantId path param, so a
 // tenant can only ever read/edit itself (no cross-tenant enumeration). Profile/domain writes need tenant.settings.
 // Gated by the `tenancy` feature flag. Creates require an Idempotency-Key.
-import { Controller, Delete, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
-import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
+import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { TenancyPermissions, tenantActorOf } from '../../policies/tenancy.policies';
 import { TenantService } from '../../services/tenant.service';
-import { TenantDomainService } from '../../services/tenant-domain.service';
 import { UpdateTenantProfileSchema, UpdateTenantProfileDto } from '../../dto/update-tenant.dto';
-import { CreateTenantDomainSchema, CreateTenantDomainDto } from '../../dto/create-tenant-domain.dto';
-import { QueryTenantDomainSchema, QueryTenantDomainDto } from '../../dto/query-tenant-domain.dto';
 
 const ipOf = (r: Request) => r.ip || null;
-const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
 const reqKey = (k: string) => { if (!k) throw new BadRequestError('Idempotency-Key header required'); return k; };
 
 @Controller({ path: 'tenants', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('tenancy')
 export class TenantsController {
-  constructor(private readonly tenants: TenantService, private readonly domains: TenantDomainService) {}
+  constructor(private readonly tenants: TenantService) {}
 
   @Get('me')
   me(@CurrentContext() ctx: RequestContext) { return this.tenants.getMine(ctx.tenantId).then((data) => ({ data })); }
@@ -65,21 +61,6 @@ export class TenantsController {
     return this.tenants.submitForReview(ctx.tenantId, tenantActorOf(ctx), reqKey(key), ipOf(r)).then((data) => ({ data }));
   }
 
-  // ---- custom domains (self-serve) ----
-  @Get('me/domains')
-  listDomains(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryTenantDomainSchema) q: QueryTenantDomainDto) {
-    return this.domains.list(ctx.tenantId, { cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
-  }
-  @Post('me/domains') @RequirePermissions(TenancyPermissions.ManageTenant)
-  addDomain(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateTenantDomainSchema) dto: CreateTenantDomainDto) {
-    return this.domains.add(ctx.tenantId, tenantActorOf(ctx), reqKey(key), dto, ipOf(r)).then((data) => ({ data }));
-  }
-  @Post('me/domains/:id/primary') @RequirePermissions(TenancyPermissions.ManageTenant)
-  primaryDomain(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) {
-    return this.domains.makePrimary(ctx.tenantId, tenantActorOf(ctx), id, ipOf(r)).then((data) => ({ data }));
-  }
-  @Delete('me/domains/:id') @RequirePermissions(TenancyPermissions.ManageTenant)
-  removeDomain(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) {
-    return this.domains.remove(ctx.tenantId, tenantActorOf(ctx), id, ipOf(r)).then((data) => ({ data }));
-  }
+  // ---- custom domains: PC-56 TENANT-13d moved them to TenantDomainsController (`/tenants/me/domains`, flag `tenant_domains`, every route
+  // tenant.settings — F-12). The one-person `/:id/primary` and the always-failing `DELETE /:id` (F-6) became proposals. ----
 }

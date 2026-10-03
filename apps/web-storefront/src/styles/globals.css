@@ -306,3 +306,6 @@ a { color: inherit; text-decoration: none; }
 .kv-prefs__list { list-style: none; padding: 0; margin: 0 0 var(--kv-space); display: flex; flex-direction: column; gap: 4px; }
 .kv-prefs__label { display: inline-flex; gap: 8px; align-items: center; min-height: 36px; }
 .kv-prefs__qhrow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* PC-56 TENANT-13d · the small, honest "Powered by Krishalaya" mark (brandable surfaces unless the plan allows hiding it; trust surfaces always) */
+.kv-powered-by { margin: var(--kv-space) 0 0; text-align: center; color: var(--kv-neutral-600); font-size: 0.8125rem; }

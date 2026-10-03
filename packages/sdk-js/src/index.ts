@@ -10,7 +10,7 @@ export type { WorkerPrefsInput, CreateBookingInput, CancelBookingInput } from '.
 export type { CreateAuctionInput, CreateAuctionResult, ApproveAuctionResult } from './resources/auctions';   // PC-56 TENANT-11a
 export { nameById } from './resources/lookups';
 export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ViewsByDayPoint, ProductCard, TraceProvenance, AuthTokens, UserProfile,
-  CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding,
+  CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding, PublishedBrand,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
   PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType, KycReviewItem,
   NotificationItem, NotificationPreference, QuietHours,
@@ -113,6 +113,8 @@ export * from './resources/webhooks'; // PC-56 TENANT-13a
 export * from './resources/integrations'; // PC-56 TENANT-13c
 export * from './resources/api-keys'; // PC-56 TENANT-13c
 export * from './resources/org-settings'; // PC-56 TENANT-13b
+export * from './resources/branding'; // PC-56 TENANT-13d
+export * from './resources/domains'; // PC-56 TENANT-13d
 export * from './resources/desks'; // PC-56 TENANT-13b
 export * from './resources/twin'; // PC-56 TENANT-12
 export * from './resources/land'; // PC-56 TENANT-12 (crop seasons + soil tests)

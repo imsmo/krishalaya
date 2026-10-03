@@ -4,7 +4,9 @@ INSERT INTO features (code,default_name,module_code,description) VALUES
  ('ai_grading','AI photo grading','M03',NULL),('whatsapp_commerce','WhatsApp commerce','M13',NULL),
  ('labour','Labour marketplace','M28',NULL),('dairy_mcc','Dairy MCC','M16',NULL),
  ('ambassador_network','Ambassador network',NULL,NULL),('custom_domain','Custom domain','M01',NULL),
- ('api_access','API access','M01',NULL)
+ ('api_access','API access','M01',NULL),
+ -- PC-56 TENANT-13d · removing the "Powered by Krishalaya" mark (trust surfaces keep it regardless). Branding itself is on every plan.
+ ('white_label_unbranded','Remove "Powered by Krishalaya"','M01',NULL)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO plans (id,code,version,default_name,country_code,currency_code,monthly_price_minor,annual_price_minor,setup_fee_minor,is_public,is_active) VALUES
@@ -25,5 +27,6 @@ ON CONFLICT (plan_id,limit_code) DO NOTHING;
 INSERT INTO plan_features (plan_id,feature_code,is_included,config) VALUES
  ('22222222-0000-7000-8000-000000000001','voice_listing',true,'{}'),('22222222-0000-7000-8000-000000000001','labour',true,'{}'),
  ('22222222-0000-7000-8000-000000000002','bidding',true,'{}'),('22222222-0000-7000-8000-000000000002','voice_listing',true,'{}'),('22222222-0000-7000-8000-000000000002','labour',true,'{}'),('22222222-0000-7000-8000-000000000002','whatsapp_commerce',true,'{}'),
- ('22222222-0000-7000-8000-000000000003','bidding',true,'{}'),('22222222-0000-7000-8000-000000000003','ai_grading',true,'{}'),('22222222-0000-7000-8000-000000000003','custom_domain',true,'{}'),('22222222-0000-7000-8000-000000000003','api_access',true,'{}'),('22222222-0000-7000-8000-000000000003','ambassador_network',true,'{}')
+ ('22222222-0000-7000-8000-000000000003','bidding',true,'{}'),('22222222-0000-7000-8000-000000000003','ai_grading',true,'{}'),('22222222-0000-7000-8000-000000000003','custom_domain',true,'{}'),('22222222-0000-7000-8000-000000000003','api_access',true,'{}'),('22222222-0000-7000-8000-000000000003','ambassador_network',true,'{}'),
+ ('22222222-0000-7000-8000-000000000003','white_label_unbranded',true,'{}')
 ON CONFLICT (plan_id,feature_code) DO NOTHING;

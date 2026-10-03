@@ -94,6 +94,9 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         // PC-56 TENANT-13c: API keys (W190, the `tenant_api` flag + api.manage + the api_access plan feature) and integrations (W187).
         { key: 'api-keys', href: '/settings/developers', label: t.t('nav.apiKeys') },
         { key: 'integrations', href: '/settings/integrations', label: t.t('nav.integrations') },
+        // PC-56 TENANT-13d: white-label branding (W191, flag `tenant_branding`, every plan) and domains (W192, flag `tenant_domains`).
+        { key: 'branding', href: '/settings/branding', label: t.t('nav.branding') },
+        { key: 'domains', href: '/settings/branding/domains', label: t.t('nav.domains') },
       ],
     },
   ];

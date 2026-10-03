@@ -104,3 +104,61 @@ export class LanguagesInvalidError extends DomainError {
 export class LanguageInUseError extends AppError {
   constructor(uses: Array<{ code: string; kind: string; count: number }>) { super('LANGUAGE_IN_USE', 'A language you are removing is still used by published content', 409, { uses }); }
 }
+
+// ---- PC-56 TENANT-13d · white-label branding (F-13) and domains (F-7) ----
+export class BrandRefusedError extends AppError {
+  /** A draft edit or a publish refused — EVERY refusal, each against its field (W2793 / W2797). */
+  constructor(code: string, message: string, refusals: Array<{ field: string | null; code: string; detail?: Record<string, unknown> }>, status = 422) {
+    super(code, message, status, { refusals });
+  }
+}
+export class BrandContrastError extends AppError {
+  constructor(failing: Array<{ pair: string; ratio: number; display: string }>) {
+    super('BRAND_CONTRAST_FAILED', `Contrast below 4.5:1 — ${failing.map((f) => `${f.pair} ${f.display}`).join(', ')}`, 422, { failing, min: 4.5 });
+  }
+}
+export class BrandLogoError extends AppError {
+  constructor(code: string, detail: Record<string, unknown>) { super(code, `The logo was refused (${code})`, code === 'LOGO_TOO_LARGE' ? 413 : 422, detail); }
+}
+export class BrandProposalNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Brand proposal not found'); (this as any).code = 'BRAND_PROPOSAL_NOT_FOUND'; (this as any).details = { id }; }
+}
+export class BrandVersionNotFoundError extends NotFoundError {
+  constructor(version: number) { super('Brand version not found'); (this as any).code = 'BRAND_VERSION_NOT_FOUND'; (this as any).details = { version }; }
+}
+export class BrandCheckerIsMakerError extends AppError {
+  constructor(id: string) { super('CHECKER_IS_MAKER', 'The person who proposed this brand cannot also confirm it — a second administrator must', 409, { proposalId: id }); }
+}
+export class BrandProposalLiveError extends AppError {
+  constructor(id: string) { super('BRAND_PROPOSAL_LIVE', 'A brand proposal is already waiting for a second administrator', 409, { proposalId: id }); }
+}
+export class BrandProposalClosedError extends AppError {
+  constructor(id: string, status: string) { super('BRAND_PROPOSAL_CLOSED', `This brand proposal is already ${status}`, 409, { proposalId: id, status }); }
+}
+export class BrandProposalStaleError extends AppError {
+  constructor(id: string) { super('BRAND_PROPOSAL_STALE', 'Another version was published since this was proposed — propose again', 409, { proposalId: id }); }
+}
+export class BrandNothingToPublishError extends AppError {
+  constructor() { super('BRAND_NOTHING_TO_PUBLISH', 'The draft is the published brand — there is nothing new to publish', 409); }
+}
+export class PoweredByPlanRequiredError extends AppError {
+  constructor(planCode: string | null) { super('POWERED_BY_PLAN_REQUIRED', 'Removing "Powered by Krishalaya" needs a plan with white_label_unbranded', 403, { feature: 'white_label_unbranded', planCode }); }
+}
+export class TenantNameIsBrandError extends AppError {
+  constructor() { super('TENANT_NAME_IS_BRAND', 'The name members see is set in Branding and published by two administrators', 409, { route: '/settings/branding' }); }
+}
+export class DomainPlanRequiredError extends AppError {
+  constructor(planCode: string | null) { super('PLAN_FEATURE_REQUIRED', 'Custom domains need a plan with custom_domain — your included subdomain works on every plan', 403, { feature: 'custom_domain', planCode }); }
+}
+export class DomainRefusedError extends AppError {
+  constructor(code: string, message: string, detail: Record<string, unknown> = {}, status = 422) { super(code, message, status, detail); }
+}
+export class DomainProposalNotFoundError extends NotFoundError {
+  constructor(id: string) { super('Domain proposal not found'); (this as any).code = 'DOMAIN_PROPOSAL_NOT_FOUND'; (this as any).details = { id }; }
+}
+export class DomainCheckerIsMakerError extends AppError {
+  constructor(id: string) { super('CHECKER_IS_MAKER', 'The person who proposed this domain change cannot also confirm it — a second administrator must', 409, { proposalId: id }); }
+}
+export class DomainRecheckTooSoonError extends AppError {
+  constructor(retryAfterSec: number) { super('DOMAIN_RECHECK_TOO_SOON', 'A domain can be re-checked once a minute', 429, { retryAfterSec }); }
+}

@@ -42,7 +42,7 @@ export const WIRED_SETTINGS: Readonly<Record<string, SettingConsumer>> = Object.
 });
 
 /** Why a defined key is not offered. Each code is an i18n sentence on the console (`os.unwired.<code>`). */
-export type UnwiredReason = 'no_consumer' | 'branding_13d' | 'deprecated_languages';
+export type UnwiredReason = 'no_consumer' | 'branding_13d' | 'deprecated_branding' | 'deprecated_languages';
 export const UNWIRED_SETTINGS: Readonly<Record<string, UnwiredReason>> = Object.freeze({
   // F-15 — refused by name in this wave; each is its module's own wave.
   'listing.approval_required': 'no_consumer',     // 4 publish paths + the canon default (true) would reroute every listing; see the 13b report
@@ -52,11 +52,12 @@ export const UNWIRED_SETTINGS: Readonly<Record<string, UnwiredReason>> = Object.
   'payout.min_threshold_minor': 'no_consumer',
   'delivery.free_above_minor': 'no_consumer',
   'payout.cycle': 'no_consumer',                  // the settlement cadence is settlements.cycle_length (0144); payout.cycle is read by nothing
-  // Branding is TENANT-13d's (W191): the console edits these under Branding; no storefront consumer reads them yet (survey F-13).
-  'branding.display_name': 'branding_13d',
-  'branding.logo_url': 'branding_13d',
-  'branding.primary_color': 'branding_13d',
-  'branding.support_email': 'branding_13d',
+  // PC-56 TENANT-13d (F-13) — deprecated by 0194: the brand's one store of record is tenant_branding (W191, /settings/branding); the values
+  // were backfilled into the draft. `branding_13d` stays in the vocabulary (nothing deleted) and is no longer assigned.
+  'branding.display_name': 'deprecated_branding',
+  'branding.logo_url': 'deprecated_branding',
+  'branding.primary_color': 'deprecated_branding',
+  'branding.support_email': 'deprecated_branding',
   // F-14 — deprecated by 0192: the store every consumer reads is tenant_languages (PUT /tenant-settings/languages).
   'languages.enabled': 'deprecated_languages',
   'languages.default': 'deprecated_languages',

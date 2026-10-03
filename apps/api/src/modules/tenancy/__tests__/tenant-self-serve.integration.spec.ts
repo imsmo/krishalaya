@@ -3,7 +3,8 @@
 //   1. a tenant admin reads + edits its OWN tenant profile (UPDATE touches only profile columns; status untouched)
 //      with an outbox event + audit row written in the same tx;
 //   2. a tenant-scoped setting upserts + is type-checked; a PLATFORM-scoped setting is REFUSED (Law 11);
-//   3. a custom domain is added (TLS pending), verified (platform path), then made primary;
+//   3. (PC-56 TENANT-13d) every tenant is born with its included subdomain — verified, primary, TLS honest — and a custom claim is
+//      refused on a plan without `custom_domain` (the full claim → verify → primary flow is tenant13d-brand-domains.integration.spec.ts);
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's domain.
 // Provisions a full tenants row directly (0002 columns) — provisioning itself is god-mode, not part of this plane.
 import { randomUUID } from 'node:crypto';
@@ -31,6 +32,8 @@ import { TenantSettingsService } from '../services/tenant-settings.service';
 import { SettingGovernanceRepository } from '../repositories/setting-governance.repository';
 import { UiMessageRepository } from '../../../core/i18n/ui-message.repository';
 import { SettingNotTenantScopedError, TenantForbiddenError } from '../domain/tenancy.errors';
+import { TenantBrandingRepository } from '../repositories/tenant-branding.repository';
+import { NotConfiguredAcme } from '../infra/domain-dns.port';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -88,7 +91,9 @@ run('tenancy self-serve (integration, real Postgres + RLS + Law 11)', () => {
     const dRepo = new TenantDomainRepository(replica as any);
     const sRepo = new TenantSettingsRepository(replica as any);
     tenants = new TenantService(uow, outbox, idem, metrics, audit, tRepo, sRepo, new TenantFeatureRepository(replica as any), new UsageCounterRepository(replica as any));
-    domains = new TenantDomainService(uow, outbox, idem, metrics, audit, dRepo);
+    // PC-56 TENANT-13d: the domain plane reads the plan (custom_domain), the admins, a DNS port and the ACME seam. No DNS is asked here.
+    const noDns = { observe: async () => ({ cname: { values: [], error: 'not asked in this suite' }, txt: { values: [], error: 'not asked in this suite' } }) };
+    domains = new TenantDomainService(uow, outbox, idem, metrics, audit, dRepo, new TenantBrandingRepository(replica as any), new SettingGovernanceRepository(replica as any), noDns, new NotConfiguredAcme());
     // PC-56 TENANT-13b: tenant settings are written through TenantSettingsService (the risk_class gate); TenantService's ungated putSetting is closed.
     settings = new TenantSettingsService(uow, outbox, idem, metrics, audit, sRepo, new SettingGovernanceRepository(replica as any), new UiMessageRepository(replica as any));
 
@@ -132,13 +137,18 @@ run('tenancy self-serve (integration, real Postgres + RLS + Law 11)', () => {
       .rejects.toBeInstanceOf(SettingNotTenantScopedError);
   });
 
-  it('adds a domain (pending), verifies (platform), makes it primary', async () => {
-    const d = await domains.add(tenantA, manager(), key(), { domain: 'mandi.acme.example' } as any, null);
-    domainId = d.id;
-    expect(d.tlsStatus).toBe('pending'); expect(d.isPrimary).toBe(false);
-    await admin.query(`UPDATE tenant_domains SET verified_at=now(), tls_status='active' WHERE id=$1`, [domainId]);   // platform/automation path
-    const primary = await domains.makePrimary(tenantA, manager(), domainId, null);
-    expect(primary.isPrimary).toBe(true);
+  it('PC-56 TENANT-13d: born with its included subdomain (verified, primary, TLS honest); a custom claim needs custom_domain', async () => {
+    const r = await admin.query(`SELECT id, domain, kind, is_primary, verification_status, tls_status, tls_note FROM tenant_domains WHERE tenant_id=$1 AND deleted_at IS NULL`, [tenantA]);
+    expect(r.rows).toHaveLength(1);
+    expect(r.rows[0]).toMatchObject({ kind: 'included', is_primary: true, verification_status: 'verified' });
+    expect(r.rows[0].domain).toMatch(/^acme-[0-9a-f]{8}\./);
+    // the platform wildcard certificate is not configured in this database: TLS says so — never a fake "issued"
+    expect(r.rows[0].tls_status).toBe('pending');
+    expect(r.rows[0].tls_note).toBe('platform wildcard certificate not yet configured');
+    domainId = r.rows[0].id;
+    // this tenant has no subscription → no custom_domain: the custom claim is refused by name (plan first)
+    await expect(domains.add(tenantA, manager(), key(), { domain: 'mandi.acme.example', reason: 'our own mandi web address' }, null))
+      .rejects.toMatchObject({ code: 'PLAN_FEATURE_REQUIRED' });
   });
 
   it('RLS: tenant B cannot see tenant A\'s domain', async () => {

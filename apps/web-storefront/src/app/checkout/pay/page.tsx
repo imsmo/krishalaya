@@ -16,6 +16,8 @@ import { getTranslator, getLang } from '../../../lib/i18n';
 import { env } from '../../../lib/env';
 import { paymentOutcome } from '../../../features/payments/status';
 import { PayButton, type PayLabels } from '../../../components/PayButton';
+import { PoweredByMark } from '../../../components/PoweredByMark';
+import { poweredByVisible, PLATFORM_BRAND } from '../../../features/branding/brand-theme';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
@@ -57,6 +59,9 @@ export default async function PayPage({ searchParams }: { searchParams: { o?: st
       <PayButton orderId={order.id} keyId={env.razorpayKeyId} labels={labels} />
       <p className="kv-cart__note">{t.t('checkout.payNote')}</p>
       <Link href="/cart" className="kv-btn--link">{t.t('checkout.backToCart')}</Link>
+      {/* PC-56 TENANT-13d: a TRUST surface (escrow / payment, and the order where disputes are raised) — the platform mark stays here
+          whatever the tenant's brand or plan (packages/tokens TRUST_SURFACES; `poweredByVisible('escrow', …)` is always true). */}
+      {poweredByVisible('escrow', null) && <PoweredByMark label={PLATFORM_BRAND.poweredByMark} />}
     </section>
   );
 }

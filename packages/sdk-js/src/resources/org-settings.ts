@@ -13,7 +13,7 @@ import { HttpClient } from '../http';
 
 export type SettingRiskClass = 'ordinary' | 'money_path' | 'security';
 export type SettingRoute = 'direct' | 'proposal' | 'none';
-export type SettingUnwiredReason = 'no_consumer' | 'branding_13d' | 'deprecated_languages';
+export type SettingUnwiredReason = 'no_consumer' | 'branding_13d' | 'deprecated_branding' | 'deprecated_languages';
 export type SettingProposalStatus = 'proposed' | 'confirmed' | 'refused' | 'expired' | 'applied';
 export interface SettingRefusal { field: string | null; code: string; detail?: Record<string, unknown> }
 

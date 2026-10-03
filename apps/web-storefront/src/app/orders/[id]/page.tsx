@@ -22,6 +22,8 @@ import { orderTimeline, ORDER_STEPS } from '../../../features/orders/timeline';
 import { invoiceFileName } from '../../../features/orders/invoice';
 import { canCancelOrder, canRequestReturn, returnAlreadyOpen, DISPUTE_REASONS } from '../../../features/orders/buyer-actions';
 import { cancelOrderAction, raiseDisputeAction, requestReturnAction } from './actions';
+import { PoweredByMark } from '../../../components/PoweredByMark';
+import { poweredByVisible, PLATFORM_BRAND } from '../../../features/branding/brand-theme';
 
 export async function generateMetadata(): Promise<Metadata> {   // the title is a static translation; the id is never in it (noindex page)
   const t = getTranslator();
@@ -185,6 +187,9 @@ export default async function OrderDetailPage({ params, searchParams }: { params
           <button type="submit" className="kv-btn">{t.t('order.disputeBtn')}</button>
         </form>
       </details>
+      {/* PC-56 TENANT-13d: a TRUST surface (escrow / payment, and the order where disputes are raised) — the platform mark stays here
+          whatever the tenant's brand or plan (packages/tokens TRUST_SURFACES; `poweredByVisible('escrow', …)` is always true). */}
+      {poweredByVisible('escrow', null) && <PoweredByMark label={PLATFORM_BRAND.poweredByMark} />}
     </section>
   );
 }

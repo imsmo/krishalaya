@@ -519,4 +519,8 @@ export const hi: Messages = {
   "coupon.notice.max_uses_reached": "यह ऑफ़र जितने लोगों के लिए था, उतने तक पहुँच गया है।",
   "coupon.notice.not_applicable": "यह ऑफ़र इस ऑर्डर पर लागू नहीं होता (शायद बड़ा ऑर्डर चाहिए)।",
   "coupon.notice.placedAtNormalPrice": "आपका ऑर्डर सामान्य दाम पर दिया गया है।",
+  // PC-56 TENANT-13d · the one-time note after a tenant publishes a new brand (BrandChangeNote).
+  'brand.note.title': 'वही संस्था, नया रूप',
+  'brand.note.body': '{name} का नया रूप है — नया नाम, लोगो या रंग। यह वही संस्था है: आपके ऑर्डर, भुगतान और संदेश जहाँ थे वहीं हैं।',
+  'brand.note.dismiss': 'ठीक है',
 };

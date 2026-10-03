@@ -11,12 +11,12 @@ import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { getThemePreference, getSeniorMode } from '../../lib/mechanism';
 import { formatMoneyMinor } from '@krishalaya/i18n';
-import { formatBps, settingString, COMMISSION_SOURCES } from '../../features/settings/config';
+import { formatBps, COMMISSION_SOURCES } from '../../features/settings/config';
 import {
   createCommissionRuleAction, deactivateCommissionRuleAction, createDeliveryZoneAction,
-  setZoneActiveAction, saveBrandingAction,
+  setZoneActiveAction,
 } from './actions';
-import type { CommissionRule, DeliveryZone, TenantSetting } from '@krishalaya/sdk-js';
+import type { CommissionRule, DeliveryZone } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,16 +31,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
   const t = getTranslator();
   const lang = getLang();
 
-  let rules: CommissionRule[] = []; let zones: DeliveryZone[] = []; let settings: TenantSetting[] = [];
-  let rulesFailed = false; let zonesFailed = false; let settingsFailed = false;
-  const [rRes, zRes, sRes] = await Promise.allSettled([
+  let rules: CommissionRule[] = []; let zones: DeliveryZone[] = [];
+  let rulesFailed = false; let zonesFailed = false;
+  // (PC-56 TENANT-13d: the settings read fed only the old branding form, which moved to /settings/branding)
+  const [rRes, zRes] = await Promise.allSettled([
     tenantClient().tenantConfig.commissionRules({ activeOnly: false, includePlatformDefaults: true, limit: 100 }),
     tenantClient().tenantConfig.deliveryZones({ activeOnly: false, limit: 100 }),
-    tenantClient().tenantConfig.settings(),
   ]);
   if (rRes.status === 'fulfilled') rules = rRes.value.items; else rulesFailed = true;
   if (zRes.status === 'fulfilled') zones = zRes.value.items; else zonesFailed = true;
-  if (sRes.status === 'fulfilled') settings = sRes.value; else settingsFailed = true;
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errorKey = searchParams.error || null;
@@ -182,25 +181,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
         </form>
       </details>
 
-      {/* ---- branding ---- */}
+      {/* ---- branding (PC-56 TENANT-13d) ----
+          The four `branding.*` settings this form wrote were read by nothing (F-13) and are deprecated by 0194; their values were copied
+          into the draft brand. The brand — name, short name, logo UPLOAD, four colours under the contrast law, publish with a second
+          administrator, history — lives at /settings/branding (W191), and domains at /settings/branding/domains (W192). */}
       <h2 className="kv-section-title">{t.t('settings.branding.title')}</h2>
-      {settingsFailed ? <p className="kv-error" role="alert">{t.t('settings.loadError')}</p> : (
-        <form action={saveBrandingAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('settings.branding.displayName')}
-            <input className="kv-input" name="displayName" type="text" maxLength={120} defaultValue={settingString(settings, 'branding.display_name')} />
-          </label>
-          <label className="kv-label">{t.t('settings.branding.logoUrl')}
-            <input className="kv-input" name="logoUrl" type="url" defaultValue={settingString(settings, 'branding.logo_url')} placeholder="https://…" />
-          </label>
-          <label className="kv-label">{t.t('settings.branding.primaryColor')}
-            <input className="kv-input" name="primaryColor" type="text" defaultValue={settingString(settings, 'branding.primary_color')} placeholder="#1B5E20" />
-          </label>
-          <label className="kv-label">{t.t('settings.branding.supportEmail')}
-            <input className="kv-input" name="supportEmail" type="email" defaultValue={settingString(settings, 'branding.support_email')} />
-          </label>
-          <button type="submit" className="kv-btn">{t.t('settings.save')}</button>
-        </form>
-      )}
+      <div className="kv-card">
+        <p>{t.t('settings.branding.moved')}</p>
+        <p><Link href="/settings/branding" className="kv-btn kv-btn--primary">{t.t('settings.branding.open')}</Link>{' · '}
+          <Link href="/settings/branding/domains" className="kv-btn--link">{t.t('settings.branding.domains')}</Link></p>
+      </div>
 
       {/* ---- languages + organisation settings + desks (PC-56 TENANT-13b) ----
           The languages panel moved to /settings/org: it writes tenant_languages, the store every consumer reads (F-14) — the old

@@ -27,6 +27,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 export interface RequestOptions {
   query?: Record<string, string | number | boolean | undefined | null>;
   body?: unknown;
+  /** PC-56 TENANT-13d: a raw (non-JSON) request body — the logo upload (image/png | image/svg+xml). Never combined with `body`. */
+  rawBody?: { bytes: Uint8Array; contentType: string };
   idempotencyKey?: string;       // required by the API for POSTs that mutate; passed through as a header
   signal?: AbortSignal;          // caller cancellation (composed with the timeout)
   anonymous?: boolean;           // skip attaching the bearer token (public endpoints)
@@ -141,7 +143,7 @@ export class HttpClient {
       const res = await this.config.fetchImpl(url, {
         method,
         headers: await this.headers(method, opts),
-        body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+        body: opts.rawBody ? (opts.rawBody.bytes as unknown as BodyInit) : opts.body === undefined ? undefined : JSON.stringify(opts.body),
         signal: controller.signal,
       });
       const text = await res.text();
@@ -196,7 +198,8 @@ export class HttpClient {
         }
       } catch { /* extra headers are best-effort; never block a request (degrade) */ }
     }
-    if (opts.body !== undefined) h['content-type'] = 'application/json';
+    if (opts.rawBody) h['content-type'] = opts.rawBody.contentType;
+    else if (opts.body !== undefined) h['content-type'] = 'application/json';
     if (this.config.tenantSlug) h['x-tenant-slug'] = this.config.tenantSlug;
     if (this.config.userAgent) h['user-agent'] = this.config.userAgent;
     if (opts.idempotencyKey && method !== 'GET') h['idempotency-key'] = opts.idempotencyKey;

@@ -10,7 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import {
-  buildCommissionRule, buildDeliveryZone, buildBranding, buildLanguages, PLATFORM_LANGUAGES,
+  buildCommissionRule, buildDeliveryZone, buildLanguages, PLATFORM_LANGUAGES,
 } from '../../features/settings/config';
 import { SdkError } from '@krishalaya/sdk-js';
 
@@ -64,18 +64,12 @@ export async function setZoneActiveAction(formData: FormData): Promise<void> {
   done(isActive ? 'zone.on' : 'zone.off');
 }
 
-export async function saveBrandingAction(formData: FormData): Promise<void> {
+export async function saveBrandingAction(_formData: FormData): Promise<void> {
+  // PC-56 TENANT-13d: the `branding.*` settings are deprecated (0194 — read by nothing, values copied into the draft brand; the API
+  // refuses SETTING_DEPRECATED). The brand is edited, checked and published at /settings/branding. Kept so an old bookmarked form
+  // lands somewhere true instead of failing.
   await requireSession(PATH);
-  const built = buildBranding({
-    displayName: formData.get('displayName'), logoUrl: formData.get('logoUrl'),
-    primaryColor: formData.get('primaryColor'), supportEmail: formData.get('supportEmail'),
-  });
-  if (!built.ok) fail(`branding.${built.error}`);
-  try {
-    const client = tenantClient();
-    for (const s of built.settings) await client.tenantConfig.putSetting(s.key, s.value, randomUUID());
-  } catch (e) { fail(sdkCode(e, 'branding.save')); }
-  done('branding');
+  redirect('/settings/branding');
 }
 
 // PC-56 TENANT-13b (F-14): languages are written to `tenant_languages` — the store every consumer reads — through the API's languages

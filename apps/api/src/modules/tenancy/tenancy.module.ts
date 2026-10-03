@@ -73,6 +73,18 @@ import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
 import { TenantSettingsService } from './services/tenant-settings.service';
 import { SettingGovernanceRepository } from './repositories/setting-governance.repository';
 import { SettingProposalsJob } from './jobs/setting-proposals.job';
+// PC-56 TENANT-13d · white-label branding (W191) and domains (W192): the brand store + checker, the domain claims + verifier + checker,
+// the public logo / host reads, and the two clocks.
+import { MediaModule } from '../../core/media/media.module';
+import { TenantBrandingController } from './controllers/v1/tenant-branding.controller';
+import { TenantDomainsController } from './controllers/v1/tenant-domains.controller';
+import { StorefrontBrandController } from './controllers/v1/storefront-brand.controller';
+import { TenantBrandingService } from './services/tenant-branding.service';
+import { TenantBrandingRepository } from './repositories/tenant-branding.repository';
+import { ACME_PORT, DOMAIN_DNS, NodeDomainDns, NotConfiguredAcme } from './infra/domain-dns.port';
+import { DomainVerificationJob } from './jobs/domain-verification.job';
+import { BrandDomainProposalsJob } from './jobs/brand-domain-proposals.job';
+import { VERIFY_INTERVAL_MS } from './domain/domain-rules';
 
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
@@ -82,8 +94,9 @@ import { SettingProposalsJob } from './jobs/setting-proposals.job';
   // PC-56 TENANT-4d-1: identity now also asks THIS module's PlanUsageService whether a member seat is free
   // (W118's pause), so the two modules are mutually dependent and both sides use forwardRef. That is the
   // module blueprint's allowance — public service, never a repository — not an exception to it.
-  imports: [forwardRef(() => IdentityModule)],
-  controllers: [SaasInvoicesController, PlanUsageController, PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController],
+  imports: [forwardRef(() => IdentityModule), MediaModule],
+  controllers: [SaasInvoicesController, PlanUsageController, PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController,
+    TenantBrandingController, TenantDomainsController, StorefrontBrandController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
@@ -147,8 +160,17 @@ import { SettingProposalsJob } from './jobs/setting-proposals.job';
     TenantSettingsService, SettingGovernanceRepository, UiMessageRepository,
     { provide: SettingProposalsJob, inject: [UNIT_OF_WORK, SettingGovernanceRepository, TenantSettingsService],
       useFactory: (u: UnitOfWork, r: SettingGovernanceRepository, s: TenantSettingsService) => new SettingProposalsJob(5 * 60_000, u, r, s) },
+    // PC-56 TENANT-13d
+    TenantBrandingService, TenantBrandingRepository,
+    { provide: DOMAIN_DNS, useFactory: () => new NodeDomainDns() },
+    { provide: ACME_PORT, useFactory: () => new NotConfiguredAcme() },
+    { provide: DomainVerificationJob, inject: [TenantDomainRepository, TenantDomainService],
+      useFactory: (r: TenantDomainRepository, s: TenantDomainService) => new DomainVerificationJob(VERIFY_INTERVAL_MS, r, s) },
+    { provide: BrandDomainProposalsJob, inject: [UNIT_OF_WORK, TenantBrandingRepository, TenantDomainRepository, TenantBrandingService, TenantDomainService],
+      useFactory: (u: UnitOfWork, br: TenantBrandingRepository, dr: TenantDomainRepository, b: TenantBrandingService, d: TenantDomainService) =>
+        new BrandDomainProposalsJob(10 * 60_000, u, br, dr, b, d) },
   ],
-  exports: [PlanUsageService, PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService, TenantSettingsService],
+  exports: [PlanUsageService, PlanService, SubscriptionService, TenantService, TenantDomainService, SaasInvoiceService, TenantSettingsService, TenantBrandingService],
 })
 export class TenancyModule implements OnModuleInit {
   constructor(
@@ -161,6 +183,8 @@ export class TenancyModule implements OnModuleInit {
     private readonly trialExpiryCadenceJob: TrialExpiryCadenceJob,
     private readonly usageLimitAlertsCadenceJob: UsageLimitAlertsCadenceJob,
     private readonly settingProposalsJob: SettingProposalsJob,
+    private readonly domainVerificationJob: DomainVerificationJob,
+    private readonly brandDomainProposalsJob: BrandDomainProposalsJob,
   ) {}
   // payments.payment_succeeded (referenceType='saas_invoice') → mark the SaaS invoice paid
   onModuleInit(): void {
@@ -172,6 +196,10 @@ export class TenancyModule implements OnModuleInit {
     // registered unconditionally (like 11b's respond-timeout): without it a confirmed proposal would sit "confirmed" forever and the
     // console's "effective next midnight" would be false.
     this.jobRegistry.register(this.settingProposalsJob);
+    // PC-56 TENANT-13d · B2: the domain verifier (every 5 minutes) and the brand / domain proposal clock — registered unconditionally:
+    // without the verifier no claim could ever be proven or released, and the console's "we check every 5 minutes" would be false.
+    this.jobRegistry.register(this.domainVerificationJob);
+    this.jobRegistry.register(this.brandDomainProposalsJob);
     // …and the clock, on the api-side cadence host S4 built (per-job env gate, independent of the
     // runner-wide JOBS_ENABLED kill switch — the same convention payments and identity use).
     if (this.config.jobs.saasBillingCycle.enabled) this.jobRegistry.register(this.saasBillingCycleCadenceJob);

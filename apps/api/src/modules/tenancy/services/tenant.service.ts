@@ -12,7 +12,7 @@ import { AuditWriter } from '../../../core/audit/audit.writer';
 import { Tenant } from '../domain/tenant.entity';
 import { allowsSelfServeWrites } from '../domain/tenant.state';
 import { DomainEvent } from '../domain/tenancy.events';
-import { TenantNotFoundError, TenantForbiddenError, TenantNotWritableError, InvalidTenantProfileError } from '../domain/tenancy.errors';
+import { TenantNotFoundError, TenantForbiddenError, TenantNotWritableError, InvalidTenantProfileError, TenantNameIsBrandError } from '../domain/tenancy.errors';
 import { TenantRepository } from '../repositories/tenant.repository';
 import { TenantSettingsRepository } from '../repositories/tenant-settings.repository';
 import { TenantFeatureRepository } from '../repositories/tenant-feature.repository';
@@ -65,7 +65,9 @@ export class TenantService {
           const rows = diffOf(before, diff.new as Partial<CurrentIdentity>);
           const problem = reasonProblem(reason, rows);
           if (problem) throw new InvalidTenantProfileError(`reason is ${problem}`, [{ field: 'reason', reason: problem }]);
-          await this.tenants.updateProfile(tx, t);
+          // PC-56 TENANT-13d: once a brand is published, the name members see has ONE writer — the brand publish (0194 trg_tenants_brand_sync)
+          try { await this.tenants.updateProfile(tx, t); }
+          catch (e) { if (String((e as Error)?.message ?? '').includes('[TENANT_NAME_IS_BRAND]')) throw new TenantNameIsBrandError(); throw e; }
           await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'tenancy.tenant_profile_updated', entityType: 'tenant', entityId: tenantId, oldValue: diff.old, newValue: diff.new, reason: reason?.trim() || null, ip });
           await this.flush(tx, tenantId, t.pullEvents());
           return this.serialize(t);

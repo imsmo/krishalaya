@@ -13,13 +13,18 @@ import { TenantBrandMark } from '../../components/TenantBrandMark';
 import { toListingQuery, loadMoreHref, hasActiveFilters, type RawSearchParams } from '../../features/discovery/query';
 import { flattenCategoryNav } from '../../features/discovery/categories';
 import { flattenRegionNav } from '../../features/discovery/regions';
+import { brandingForMark } from '../../features/branding/brand-theme';
+import { env } from '../../lib/env';
 
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: { tenantSlug: string } }): Promise<Metadata> {
   const t = getTranslator();
-  const title = t.t('storefront.title', { tenant: params.tenantSlug });
-  return { title, description: t.t('storefront.metaDescription', { tenant: params.tenantSlug }) };
+  // PC-56 TENANT-13d: the tenant's own (published) name, never its slug; the layout's template adds it to every page title
+  let name = params.tenantSlug;
+  try { const b = await publicClient(params.tenantSlug).lookups.tenantBranding(); name = (b?.brand?.displayName || b?.displayName || name).trim(); } catch { /* the slug */ }
+  const title = t.t('storefront.title', { tenant: name });
+  return { title: { absolute: title }, description: t.t('storefront.metaDescription', { tenant: name }) };
 }
 
 export default async function TenantStorefront(
@@ -65,7 +70,8 @@ export default async function TenantStorefront(
 
   return (
     <section>
-      <TenantBrandMark branding={branding} tenantSlug={params.tenantSlug} />
+      {/* PC-56 TENANT-13d: the PUBLISHED brand's name and version-pinned logo when there is one (the pre-13d fields otherwise) */}
+      <TenantBrandMark branding={brandingForMark(env.publicApiUrl, branding)} tenantSlug={params.tenantSlug} />
 
       <SearchFilters basePath={basePath} sp={searchParams} categories={categoryNav} regions={regionNav} />
 

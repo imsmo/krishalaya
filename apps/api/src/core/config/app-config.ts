@@ -183,6 +183,8 @@ export class AppConfig {
   /** CORS allowlist for the 4 Next.js web apps. Empty ⇒ CORS left off entirely (main.ts skips app.enableCors,
    *  matching today's no-CORS behavior byte-for-byte). Mobile apps + server-to-server webhooks send no Origin
    *  header, so they are never affected by this list either way. */
+  /** PC-56 TENANT-13d · B3: hosts the platform answers on itself (PLATFORM_HOSTS) — Host routing never looks them up. */
+  get platformHosts(): string[] { return (this.env.PLATFORM_HOSTS ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean); }
   get corsOrigins(): string[] { return this.env.WEB_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean); }
 
   get db() {

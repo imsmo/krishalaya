@@ -520,4 +520,8 @@ export const en: Messages = {
   "coupon.notice.max_uses_reached": "This offer has reached the number of people it was for.",
   "coupon.notice.not_applicable": "This offer doesn't apply to this order (it may need a larger order).",
   "coupon.notice.placedAtNormalPrice": "Your order was placed at the normal price.",
+  // PC-56 TENANT-13d · the one-time note after a tenant publishes a new brand (BrandChangeNote).
+  'brand.note.title': 'Same organisation, new look',
+  'brand.note.body': '{name} has a new look — new name, logo or colours. It is the same organisation: your orders, payments and messages are exactly where they were.',
+  'brand.note.dismiss': 'OK',
 };

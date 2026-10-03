@@ -2,6 +2,7 @@
 // in the client bundle: only NEXT_PUBLIC_* values (the API origin) are exposed to the browser; a server-only
 // internal API URL (for SSR fetches that stay inside the cluster) is read on the server and never shipped.
 // Fails closed: a missing API origin throws at module load rather than rendering a broken site.
+import { PLATFORM_BRAND } from '@krishalaya/tokens';
 const publicApiUrl = process.env.NEXT_PUBLIC_API_URL;
 if (!publicApiUrl) throw new Error('web-storefront: NEXT_PUBLIC_API_URL is required');
 
@@ -26,5 +27,7 @@ export const env = {
    *  canonical/OpenGraph URLs), robots.txt sitemap pointer, and sitemap.xml entries. Public, not a secret. Empty
    *  when unset → metadata stays relative and robots omits the sitemap line (still valid; set this in prod). */
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
-  appName: 'Krishalaya',
+  /** The PLATFORM's name — for the platform's own pages only (PC-56 TENANT-13d: from PLATFORM_BRAND, the one brand-mark list; a tenant's
+   *  storefront uses its own published name — [tenantSlug]/layout.tsx). */
+  appName: PLATFORM_BRAND.name,
 } as const;

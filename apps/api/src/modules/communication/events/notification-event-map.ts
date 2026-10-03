@@ -58,6 +58,11 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // job writes the event in the same transaction that writes the value; recipients travel in the payload; the setting's name and both
   // values are per-language maps (seed core/0024). Catalogue 0192, copy in seed core/0007 (push + in-app ×3).
   { outboxType: 'tenancy.setting_effective',         eventCode: 'tenant.setting_effective',    recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-13d (A4) · a second tenant_admin confirmed a brand publish (or rollback): every active member gets ONE in-app note in their
+  // language — "same organisation, new look" — so a new name and colours never read as a different organisation. The publish transaction
+  // writes the event; recipients travel in the payload; `displayName` is the tenant's own published name (not translated). Catalogue 0194,
+  // copy in seed core/0007 (in-app ×3).
+  { outboxType: 'tenancy.brand_published',           eventCode: 'tenant.brand_published',      recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

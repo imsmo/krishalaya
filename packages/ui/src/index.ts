@@ -104,3 +104,10 @@ export type { ThemePreference, ThemeHtmlAttrs } from './mechanisms/theme';
 
 export { isSeniorOn, seniorConsoleStyles } from './mechanisms/seniorMode';
 export { densityStyles } from './mechanisms/density';
+
+// --- PC-56 TENANT-13d · white-label: the contrast law and the brand-surface rule, re-exported from @krishalaya/tokens (one implementation) ---
+export {
+  brandContrast, contrastRatio, relativeLuminance, formatRatio, normaliseHex, BRAND_PAIRS, PLATFORM_BRAND_COLOURS, PUBLISH_MIN_RATIO,
+  showsPoweredBy, isTrustSurface, TRUST_SURFACES, PLATFORM_BRAND,
+} from '@krishalaya/tokens';
+export type { BrandColours, ContrastReport, PairVerdict, BrandPairCode, BrandSurface, TrustSurface } from '@krishalaya/tokens';

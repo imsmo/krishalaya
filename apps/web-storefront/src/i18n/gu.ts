@@ -518,4 +518,8 @@ export const gu: Messages = {
   "coupon.notice.max_uses_reached": "આ ઑફર જેટલા લોકો માટે હતી એટલે સુધી પહોંચી ગઈ છે.",
   "coupon.notice.not_applicable": "આ ઑફર આ ઑર્ડર પર લાગુ થતી નથી (કદાચ મોટો ઑર્ડર જોઈએ).",
   "coupon.notice.placedAtNormalPrice": "તમારો ઑર્ડર સામાન્ય કિંમતે મુકાયો છે.",
+  // PC-56 TENANT-13d · the one-time note after a tenant publishes a new brand (BrandChangeNote).
+  'brand.note.title': 'એ જ સંસ્થા, નવો દેખાવ',
+  'brand.note.body': '{name} નો નવો દેખાવ છે — નવું નામ, લોગો અથવા રંગો. આ એ જ સંસ્થા છે: તમારા ઓર્ડર, ચુકવણી અને સંદેશા જ્યાં હતા ત્યાં જ છે.',
+  'brand.note.dismiss': 'બરાબર',
 };

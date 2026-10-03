@@ -856,6 +856,20 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('tenant.setting_effective','effectiveAt','tenant_setting_proposals.effective_at in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-10-04 00:00',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-13d (A4) · SAME ORGANISATION, NEW LOOK. Migration 0194 catalogues `tenant.brand_published`; the brand-publish transaction
+-- emits it once a SECOND tenant_admin confirmed the brand (or a rollback). In-app only — "members see the new brand at next app open, with a
+-- one-time note in their language" (canon W191). Variables: `displayName` (the tenant's published name, as the tenant wrote it), `version`.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('tenant.brand_published','inapp','en',NULL,'Same organisation, new look','{{displayName}} has a new look in your app — new name, logo or colours. It is the same organisation you belong to: your orders, payments and messages are exactly where they were. Two administrators confirmed this change.',NULL,true),
+ ('tenant.brand_published','inapp','hi',NULL,'वही संस्था, नया रूप','{{displayName}} का आपके ऐप में नया रूप है — नया नाम, लोगो या रंग। यह वही संस्था है जिसके आप सदस्य हैं: आपके ऑर्डर, भुगतान और संदेश जहाँ थे वहीं हैं। दो प्रशासकों ने इस बदलाव की पुष्टि की है।',NULL,true),
+ ('tenant.brand_published','inapp','gu',NULL,'એ જ સંસ્થા, નવો દેખાવ','{{displayName}} નો તમારી એપમાં નવો દેખાવ છે — નવું નામ, લોગો અથવા રંગો. આ એ જ સંસ્થા છે જેના તમે સભ્ય છો: તમારા ઓર્ડર, ચુકવણી અને સંદેશા જ્યાં હતા ત્યાં જ છે. બે વહીવટકર્તાઓએ આ ફેરફારની પુષ્ટિ કરી છે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('tenant.brand_published','displayName','tenant_branding_history.display_name of the published version','Anand FPO Mandi',true),
+ ('tenant.brand_published','version','tenant_branding_history.version','2',false)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

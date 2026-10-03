@@ -15,11 +15,13 @@ export const metadata: Metadata = {
   // is configured; left unset (relative) otherwise.
   metadataBase: env.siteUrl ? new URL(env.siteUrl) : undefined,
   title: { default: `${env.appName} — fresh from the farm`, template: `%s · ${env.appName}` },
-  description: 'Krishalaya: a multi-tenant agri-commerce marketplace connecting farmers, traders and buyers.',
+  description: `${env.appName}: a multi-tenant agri-commerce marketplace connecting farmers, traders and buyers.`,
   robots: { index: true, follow: true },
   // PC-24c: installability (manifest served by app/manifest.ts; iOS uses the apple-touch icon).
   icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/icon-192.png', sizes: '192x192' }], apple: '/apple-touch-icon.png' },
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Krishalaya' },
+  // PC-56 TENANT-13d: the platform's own name from PLATFORM_BRAND (never a literal); a tenant's routes override all of this from their
+  // published brand ([tenantSlug]/layout.tsx — title, manifest, icon, theme colour).
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: env.appName },
 };
 
 export const viewport = { themeColor: '#15803d' };

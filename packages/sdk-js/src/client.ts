@@ -23,6 +23,8 @@ import { IntegrationsResource } from './resources/integrations';
 import { WebhooksResource } from './resources/webhooks';
 import { ApiKeysResource } from './resources/api-keys';
 import { OrgSettingsResource } from './resources/org-settings';   // PC-56 TENANT-13b
+import { BrandingResource } from './resources/branding';   // PC-56 TENANT-13d
+import { DomainsResource } from './resources/domains';     // PC-56 TENANT-13d
 import { DesksResource } from './resources/desks';                 // PC-56 TENANT-13b
 import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
@@ -141,6 +143,10 @@ export class KrishalayaClient {
   readonly apiKeys: ApiKeysResource;
   /** PC-56 TENANT-13b · W186 organisation settings: the registry, ordinary writes, maker-checker proposals, history, languages. */
   readonly orgSettings: OrgSettingsResource;
+  /** PC-56 TENANT-13d · W191 white-label branding (draft, contrast, publish with a checker, history). */
+  readonly branding: BrandingResource;
+  /** PC-56 TENANT-13d · W192 domains (included subdomain, custom claims, proposals). */
+  readonly domains: DomainsResource;
   /** PC-56 TENANT-13b · W185 desks: the board, proposals (a second tenant_admin confirms), members. */
   readonly desks: DesksResource;
   readonly rbac: RbacResource;
@@ -238,6 +244,8 @@ export class KrishalayaClient {
     this.webhooks = new WebhooksResource(this.http);
     this.apiKeys = new ApiKeysResource(this.http);
     this.orgSettings = new OrgSettingsResource(this.http);
+    this.branding = new BrandingResource(this.http);
+    this.domains = new DomainsResource(this.http);
     this.desks = new DesksResource(this.http);
     this.rbac = new RbacResource(this.http);
     this.disputes = new DisputesResource(this.http);

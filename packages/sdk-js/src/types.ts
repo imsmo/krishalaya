@@ -28,7 +28,21 @@ export interface RegionNode { id: string; code: string | null; level: number; pa
  *  `X-Tenant-Slug`, same as `categories()`/listings browse). `null` when no tenant context resolved OR the
  *  tenant hasn't configured a logo — `logoUrl: null` is a real absence, never a fabricated value (Law 12); the
  *  caller applies LOGO-4's own fallback (name-block / initial-tile), never the platform's own mark. */
-export interface TenantBranding { displayName: string; logoUrl: string | null; }
+export interface TenantBranding {
+  displayName: string; logoUrl: string | null;
+  /** PC-56 TENANT-13d: the PUBLISHED white-label brand, or null when the tenant has never published (the platform brand with its name). */
+  brand?: PublishedBrand | null;
+}
+/** PC-56 TENANT-13d (A5): what a storefront renders — the published version only, never a draft. */
+export interface PublishedBrand {
+  version: number; displayName: string; appShortName: string;
+  /** API path (prefix your API origin): version-pinned, content-type locked */
+  logoPath: string; logoMime: 'image/png' | 'image/svg+xml';
+  colours: { primary: string; accent: string; ink: string; surface: string };
+  /** hidden only when the tenant chose it AND its plan includes white_label_unbranded right now; trust surfaces keep the mark regardless */
+  poweredByHidden: boolean;
+  publishedAt: string;
+}
 
 export interface ListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;

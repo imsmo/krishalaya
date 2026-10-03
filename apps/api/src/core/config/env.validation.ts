@@ -15,6 +15,8 @@ export const EnvSchema = z.object({
   // Empty (default) ⇒ CORS is left OFF entirely — identical to today's (no-CORS) behavior. Required in
   // production (assertProductionSecurity) once real web-app origins exist.
   WEB_ORIGINS: z.string().default(''),
+  // PC-56 TENANT-13d · the hosts the API itself answers on (never a tenant Host lookup when `tenant_host_routing` is on); comma-separated.
+  PLATFORM_HOSTS: z.string().default(''),
 
   // --- data stores (required) ---
   DATABASE_URL: z.string().min(1),

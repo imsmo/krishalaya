@@ -106,6 +106,10 @@ export class DocumentPdfService {
    *  unexpectedly unreadable, the tenant-name line is honestly OMITTED (Law 12: never fabricate a
    *  placeholder name like "Tenant" or "Unknown") while the platform badge line still always renders,
    *  since it states a fixed platform fact that is never tenant-conditional. */
+  // PC-56 TENANT-13d (A5): the header's name IS the tenant's published brand — `tenants.display_name` is written, once a brand is published,
+  // only by the publish transaction (0194 trg_tenants_brand_sync), so this read is the brand's own name. The LOGO is not drawn: pdf-writer
+  // is text-only (WinAnsi Helvetica, no image objects) — named on W191's coverage list, not faked. Statements and invoices are trust
+  // surfaces (DEV-27: "never one without the other"), so the platform badge below stays whatever the tenant's plan.
   private async resolveBrand(tenantId: string, lang: string): Promise<DocumentBrand> {
     let tenantName: string | null = null;
     try {
