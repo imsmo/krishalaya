@@ -12,7 +12,7 @@ const ctx = { tenantId: 't-1', userId: 'u-1', sessionId: 's-1', requestId: REQUE
 describe('AmbassadorsController — audit ip is the client address or NULL, never the request id (HOTFIX-1)', () => {
   const build = () => {
     const svc = { enroll: jest.fn(async () => ({})), setActive: jest.fn(async () => ({})) };
-    const c = new AmbassadorsController(svc as never, {} as never, {} as never, {} as never);
+    const c = new AmbassadorsController(svc as never, {} as never, {} as never, {} as never, {} as never, {} as never);   // PC-56 TENANT-SW-b: + the run service, the message service
     return { c, svc };
   };
   const cases: Array<[string, (c: AmbassadorsController, r: { ip?: string }) => Promise<unknown>, string, number]> = [

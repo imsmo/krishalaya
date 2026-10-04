@@ -222,7 +222,12 @@ export class PaymentsModule implements OnModuleInit {
     // PC-56 TENANT-3c-1: the trade invoice is raised at CONFIRM (W151's own words, and the law's timing for goods).
     // `tradeInvoice` below stays registered on order_completed as the idempotent backstop.
     this.registry.register(this.orderConfirmedInvoice);
-    this.registry.register(this.bookingClockedOut); // labour.wages_paid → promote wage payouts (flag wage_priority_payout)
+    // PC-56 TENANT-SW-b · F-11 — RETIRED: BookingClockedOutHandler (`labour.wages_paid` → promote `payouts` with reference_type
+    // 'labour_booking') is no longer registered. Nothing ever wrote such a payout: labour wages are WALLET LEGS (escrow Hold → worker
+    // Main), paid by the daily 18:00 IST wage run (modules/labour, wage-run.service). The class stays for its repository spec; the
+    // HOTFIX-2 relay gate's case for it is removed with this line. (`this.bookingClockedOut` is kept injected only so the provider graph
+    // is unchanged; nothing calls it.)
+    void this.bookingClockedOut;
     // per-job env gate (SETTLEMENT_STATEMENTS_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
     if (this.config.jobs.settlementStatements.enabled) this.jobRegistry.register(this.settlementStatementsCadenceJob);
     // S5 REVIEW P0: PAYOUT_EXECUTION_JOB_ENABLED (default true) — without this, POST /v1/payouts queues

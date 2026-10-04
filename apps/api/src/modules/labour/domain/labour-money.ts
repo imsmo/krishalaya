@@ -26,6 +26,8 @@ import { WageKind } from './labour.events';
 
 export const LABOUR_TXN = {
   Escrow: 'labour_escrow', Topup: 'labour_escrow_topup', Release: 'labour_escrow_release', Wage: 'wage_payout',
+  // PC-56 TENANT-SW-b (0198): a worker's wage advance out of the booking escrow
+  Advance: 'wage_advance',
 } as const;
 export const LABOUR_REFERENCE_TYPE = 'labour_booking';
 
@@ -151,7 +153,51 @@ export function wageLegs(source: AccountRef, workerUserId: string, amountMinor: 
   return [{ account: source, amountMinor: -amountMinor }, { account: userMain(workerUserId), amountMinor }];
 }
 
-/** What the escrow still holds for this booking. */
-export function heldMinor(e: { expectedMinor: bigint; toppedUpMinor: bigint; paidMinor: bigint; releasedMinor: bigint }): bigint {
-  return e.expectedMinor + e.toppedUpMinor - e.paidMinor - e.releasedMinor;
+/** What the escrow still holds for this booking. PC-56 TENANT-SW-b: advances disbursed out of it are no longer in it. */
+export function heldMinor(e: { expectedMinor: bigint; toppedUpMinor: bigint; paidMinor: bigint; releasedMinor: bigint; advancedMinor?: bigint }): bigint {
+  return e.expectedMinor + e.toppedUpMinor - e.paidMinor - e.releasedMinor - (e.advancedMinor ?? 0n);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ * PC-56 TENANT-SW-b · C2 — WAGE ADVANCES (founder decision 2026-10-03: "advances recovered ≤ 25 %").
+ *
+ * THE LEG TABLE (every row one balanced, keyed WalletPort txn; E = escrow, A = an advance, Gᵢ = the gross of payout i, Rᵢ its recovery):
+ *   roster confirm   employer Main −(E+fee)  · employer Hold +E · platform Fees +fee           labour-escrow:<booking>
+ *   advance          employer Hold −A        · worker Main +A                                 wage-advance:<advance>
+ *   payout i         employer Hold −(Gᵢ−Rᵢ)  · worker Main +(Gᵢ−Rᵢ)                           wage:<assignment>:<sha(days)> (+ wage-ot)
+ *   completion       employer Hold −H        · employer Main +H   where H = E + T − Σ(Gᵢ−Rᵢ) − A   labour-escrow-release:<booking>
+ * The recovered part of a payout never moves: the advance ALREADY took it out of the Hold, so the Hold releases only Gᵢ − Rᵢ to the
+ * worker, and the completion release returns E + T − Σ(Gᵢ−Rᵢ) − A (labour_escrows.advanced_minor). Zero-sum over the booking:
+ *   Hold:          +E −A −Σ(Gᵢ−Rᵢ) +T −H                                  = 0
+ *   worker Main:   +A +Σ(Gᵢ−Rᵢ)            = ΣGᵢ + (A − ΣRᵢ)              (the unrecovered part of an advance stays with the worker)
+ *   employer Main: −(E+fee) −T +H          = −fee − ΣGᵢ − (A − ΣRᵢ)
+ *   platform Fees: +fee
+ * Write-off is REFUSED BY NAME (founder); an advance still outstanding when the job completes stays `recovering`, said on screen.
+ * ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
+/** Recovery at a payout: never more than a QUARTER of that payout's gross ("Advances recover gently — never more than 25%"). */
+export const ADVANCE_RECOVERY_PCT = 25n;
+/** All advances on one assignment together: at most HALF its expected wage (the database's cap, trg_wa_moves — mirrored for the form). */
+export const ADVANCE_CAP_PCT = 50n;
+export function recoveryFor(outstandingMinor: bigint, grossMinor: bigint, baseMinor: bigint): bigint {
+  if (outstandingMinor <= 0n || grossMinor <= 0n || baseMinor <= 0n) return 0n;
+  const cap = (grossMinor * ADVANCE_RECOVERY_PCT) / 100n;
+  let r = outstandingMinor < cap ? outstandingMinor : cap;
+  if (r > baseMinor) r = baseMinor;
+  return r;
+}
+export function advanceCap(expectedWageMinor: bigint): bigint { return (expectedWageMinor * ADVANCE_CAP_PCT) / 100n; }
+export const advanceKey = (advanceId: string) => `wage-advance:${advanceId}`;
+export function advanceLegs(employerUserId: string, workerUserId: string, amountMinor: bigint): LedgerLeg[] {
+  return [{ account: userHold(employerUserId), amountMinor: -amountMinor }, { account: userMain(workerUserId), amountMinor }];
+}
+/** Spread a payout's recovery over the outstanding advances, oldest first. */
+export function spreadRecovery(advances: Array<{ id: string; outstandingMinor: bigint }>, recoveryMinor: bigint): Array<{ id: string; amountMinor: bigint }> {
+  const out: Array<{ id: string; amountMinor: bigint }> = [];
+  let left = recoveryMinor;
+  for (const a of advances) {
+    if (left <= 0n) break;
+    const take = a.outstandingMinor < left ? a.outstandingMinor : left;
+    if (take > 0n) { out.push({ id: a.id, amountMinor: take }); left -= take; }
+  }
+  return out;
 }

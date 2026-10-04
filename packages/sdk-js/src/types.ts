@@ -3145,3 +3145,107 @@ export interface WhatsAppOptinPolicy { sources: string[]; consentStatement: stri
 export interface WhatsAppOptinView { policy: WhatsAppOptinPolicy | null; sources: Array<{ code: string; name: string }>; collectionState: 'not_collected'; canManage: boolean; providerConnected: boolean }
 export interface WhatsAppOptinInput { sources?: string[]; consentStatement?: string; expectVersion?: number }
 export interface WhatsAppOptinReview extends FormReview { stored: { sources: string[]; consentStatement: string | null }; mode: 'create' | 'update'; collectionState: 'not_collected' }
+
+/* ================================================================================================================= */
+/* PC-56 TENANT-SW-b · AMBASSADOR PAY RUNS (W160 / W161) · ATTENDANCE REVIEW (W165) · WAGE RUNS + ADVANCES (W166) ·     */
+/* SCHEMES DESK (W202 / W203). Money is minor-unit strings (Law 2); phones are masked; every null carries its reason.    */
+/* ================================================================================================================= */
+export type AmbassadorRunKind = 'weekly' | 'exception';
+export type AmbassadorRunStatus = 'prepared' | 'confirmed' | 'refused' | 'paid' | 'partially_paid' | 'unfunded';
+export type AmbassadorRunLineStatus = 'pending' | 'paid' | 'unfunded' | 'failed';
+/** The "Funding" line — a REAL read of the tenant Main balance against the run's total, with when it was read. */
+export interface AmbassadorRunFunding { mainBalanceMinor: string; totalMinor: string; covers: boolean; shortfallMinor: string; readAt: string }
+export interface AmbassadorRunPrepared { id: string; kind: AmbassadorRunKind; status: 'prepared'; periodEnd: string; payDate: string; lineCount: number; totalCommissionMinor: string; totalStipendMinor: string; fundingCheck: AmbassadorRunFunding }
+export interface AmbassadorRunLine {
+  id: string; ambassadorId: string; displayName: string | null; phoneMasked: string | null; commissionMinor: string; earningCount: number; stipendMinor: string;
+  stipendMonth: string | null; totalMinor: string; status: AmbassadorRunLineStatus; shortfallMinor: string | null; failureCode: string | null; attempts: number;
+  payoutId: string | null; txnId: string | null; paidAt: string | null;
+}
+export interface AmbassadorRun {
+  id: string; tenantId: string; kind: AmbassadorRunKind; ambassadorId: string | null; periodStart: string | null; periodEnd: string; payDate: string; status: AmbassadorRunStatus;
+  preparedBy: string | null; preparedAt: string; prepareReason: string; confirmedBy: string | null; confirmedAt: string | null; confirmReason: string | null;
+  refusedBy: string | null; refusedAt: string | null; refuseReason: string | null; totalCommissionMinor: string; totalStipendMinor: string; totalMinor: string; lineCount: number;
+  fundingCheck: AmbassadorRunFunding; lastPayCheck: AmbassadorRunFunding | null; paidMinor: string; lastPaidAt: string | null; createdAt: string;
+  /** `job` = prepared by the Thursday 23:00 IST job (any tenant_admin may confirm); `person` = prepared by `preparedBy` (who may not confirm). */
+  maker: 'job' | 'person';
+}
+export interface AmbassadorRunDetail extends AmbassadorRun { lines: AmbassadorRunLine[]; viewerIsMaker: boolean }
+export interface AmbassadorRunCurrent { run: AmbassadorRunDetail | null; nextAutoPrepareAt: string; nextPayDate: string }
+export interface AmbassadorRunPayOutcome { runId: string; confirmedBy?: string; paid: number; unfunded: number; failed: number; paidMinor: string; status: string }
+/** W160 "Owed this week … pays Friday": the open run's line + ITS date, or `noRunReason: 'no_run_prepared'` (never a promise). */
+export interface AmbassadorPay {
+  run: { runId: string; status: AmbassadorRunStatus; kind: AmbassadorRunKind; payDate: string; periodEnd: string; line: AmbassadorRunLine } | null;
+  noRunReason: 'no_run_prepared' | null;
+  stipendsPaid: Array<{ month: string; amountMinor: string; runId: string }>;
+}
+export interface AmbassadorDetail extends AmbassadorRosterRow { pay?: AmbassadorPay }
+
+export type AttendanceReviewFilter = 'all' | 'clean' | 'needs_review' | 'paper_backfill' | 'unconfirmed_24h' | 'confirmed' | 'refused';
+export interface AttendanceReviewRow {
+  id: string; assignmentId: string; bookingId: string; bookingNo: string | null; workDate: string; workerId: string; workerShortName: string | null; workerPhoneMasked: string;
+  clockInAt: string | null; clockOutAt: string | null; fenceDistanceM: number | null; outOfFence: boolean; hoursRegular: string | null; hoursOvertime: string | null;
+  method: 'self' | 'paper_backfill' | 'supervisor_vouch' | string; reviewStatus: 'none' | 'needs_review' | 'vouched' | 'refused'; status: string; confirmed: boolean;
+  confirmedBy: string | null; confirmedAt: string | null; vouchedBy: string | null; vouchReason: string | null; recordedBy: string | null; backfillMediaId: string | null;
+  backfillReason: string | null; paid: boolean; viewerIsWorker: boolean; viewerIsEmployer: boolean;
+}
+export interface AttendanceReviewSummary {
+  clean: number; needsReview: number; paperBackfill: number; unconfirmed24h: number; workersToday: number; activeJobs: number; fenceM: number;
+  offlineDeviceStore: { built: false; reason: string };
+}
+export interface AttendanceBackfillInput { assignmentId: string; workDate: string; hoursRegular: number; hoursOvertime?: number; mediaId: string; reason: string }
+
+export type WageLineStatus = 'paid' | 'retrying' | 'failed' | 'skipped_unfunded';
+export interface WageRun { id: string; runDate: string; status: string; preparedBy: string | null; bookingsConsidered: number; lineCount: number; grossMinor: string; advanceRecoveryMinor: string; netMinor: string; startedAt: string; finishedAt: string | null }
+export interface WageRunLine {
+  id: string; runId: string; bookingId: string; bookingNo: string | null; assignmentId: string; workerId: string; workerShortName: string | null; workerPhoneMasked: string | null;
+  payoutId: string | null; grossMinor: string; advanceRecoveryMinor: string; netMinor: string; daysConfirmed: number; status: WageLineStatus; attempts: number;
+  nextRetryAt: string | null; lastError: string | null; runDate?: string;
+}
+export interface WageManualPayout { id: string; bookingId: string; bookingNo: string | null; workerShortName: string | null; workerPhoneMasked: string; grossMinor: string; advanceRecoveryMinor: string; netMinor: string; status: string; paidBy: string | null; createdAt: string }
+export interface AdvanceTotals { outstandingMinor: string; workers: number; advances: number }
+export interface WageToday {
+  runDate: string; runAt: string; run: WageRun | null; lines: WageRunLine[]; manual: WageManualPayout[]; retryLadder: WageRunLine[];
+  paidLast7Days: { netMinor: string; workerDays: number }; advancesOutstanding: AdvanceTotals; lane: { built: false; reason: string };
+}
+export interface WageRunDetail { run: WageRun; lines: WageRunLine[]; manual: WageManualPayout[] }
+export type AdvanceStatus = 'requested' | 'approved' | 'disbursed' | 'recovering' | 'recovered' | 'rejected' | 'written_off';
+export interface WorkerAdvance {
+  id: string; assignmentId: string | null; bookingId: string | null; bookingNo: string | null; workerId: string; workerShortName: string | null; workerPhoneMasked: string | null;
+  amountMinor: string; recoveredMinor: string; outstandingMinor: string; expectedWageMinor: string | null; capMinor: string | null; status: AdvanceStatus | string;
+  requestedBy: string | null; requestReason: string | null; approvedBy: string | null; approvedAt: string | null; approveReason: string | null; rejectReason: string | null;
+  disbursalTxnId: string | null; createdAt: string; writeOff: { built: false; reason: string };
+}
+export interface AdvancePage extends Page<WorkerAdvance> { totals: AdvanceTotals | null }
+export interface AdvanceCap { assignmentId: string; expectedWageMinor: string; capMinor: string; rule: string }
+
+export type SchemePipelineGroup = 'under_verification' | 'clarification_needed' | 'submitted' | 'draft' | 'approved_disbursed_fy' | 'rejected_appealed';
+export interface SchemeDeskSummary {
+  fy: { start: string; end: string; label?: string };
+  openApplications: number; openSchemes: number;
+  rejectionRateFy: { rejected: number; decided: number; ratePct: number | null; reason?: string };
+  benefitsLandedFy: { minor: string | null; transfers: number; members: number; method: string; reason?: string };
+  eligibleNotApplied: { count: number | null; reason?: string; sweeps?: Array<{ schemeId: string; sweepId: string; runDate: string; eligibleNotApplied: number }> };
+  statusCounts: Record<string, number>;
+  campWorklist: { built: false; reason: string };
+}
+export interface SchemeDeskRow { schemeId: string; code: string; name: string; category: string | null; window: unknown; version: number; isActive: boolean; openApplications: number; allApplications: number; fyBenefitMinor: string | null; fyTransfers: number }
+export interface SchemeSweep {
+  id: string; schemeId: string; schemeVersion: number; runDate: string; status: 'queued' | 'running' | 'done' | 'failed' | string; requestedBy: string; reason: string;
+  membersEvaluated: number; eligibleCount: number; eligibleNotApplied: number; startedAt: string | null; finishedAt: string | null; failure: string | null; createdAt: string;
+}
+export interface SchemeBlocker { code: string; note: string | null; reasonCode: string | null }
+export interface SchemePipelineItem {
+  id: string; status: string; waitingDays: number | null; applicantShortName: string | null; applicantPhoneMasked: string; blocker: SchemeBlocker | null;
+  assistedBy: { userId: string; shortName: string | null } | null; selfFiled: boolean; govtAppRef: string | null;
+  rejection: { code: string; label: Record<string, string>; fix: Record<string, string> } | null; submittedAt: string | null; decidedAt: string | null; formFields: string[];
+}
+export interface SchemePipeline {
+  scheme: { id: string; code: string; name: string; benefitSummary: unknown; version: number; isActive: boolean };
+  fy: { start: string; end: string }; group: SchemePipelineGroup; counts: Record<string, number>; items: SchemePipelineItem[]; nextCursor: string | null;
+  sweeps: SchemeSweep[]; tabsAreFilters: { canonDefect: string; note: string }; campWorklist: { built: false; reason: string };
+}
+export interface SchemeSweepView {
+  sweep: SchemeSweep; output: 'call_list_only'; autoApply: { built: false; reason: string };
+  items: Array<{ id: string; userId: string; shortName: string | null; phoneMasked: string; eligible: boolean; reasons: string[]; inputs: Record<string, unknown>; alreadyApplied: boolean }>;
+  nextCursor: string | null;
+}

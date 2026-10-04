@@ -2,7 +2,8 @@
 // REAL end-to-end proof of the ambassador spine against a live Postgres (with the seeded commission plans 0207):
 //   1. admin enrolls an ambassador; the ambassador mints a referral code; a new farmer claims it;
 //   2. admin activates the referral → an onboarding commission accrues (₹25 farmer_onboarded);
-//   3. payout settles the unpaid earnings → a ZERO-SUM 'commission' transfer credits the ambassador's wallet;
+//   3. payout settles the unpaid earnings → PC-56 TENANT-SW-b: an exception run, a second tenant_admin confirms, a ZERO-SUM 'ambassador_run'
+//      transfer tenant Main → ambassador credits the ambassador's wallet;
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's earnings.
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
@@ -26,6 +27,8 @@ import { AmbassadorRosterReadModel } from '../read-models/ambassador-roster.read
 import { AmbassadorProfileService } from '../services/ambassador-profile.service';
 import { ReferralService } from '../services/referral.service';
 import { AmbassadorEarningService } from '../services/ambassador-earning.service';
+import { PayoutRunService } from '../services/payout-run.service';
+import { PayoutRunRepository } from '../repositories/payout-run.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -33,8 +36,8 @@ const run = APP_URL ? describe : describe.skip;
 
 run('ambassadors spine (integration, real Postgres + RLS + commission payout)', () => {
   let pools: PgPoolProvider; let admin: Pool; let inspect: Pool; let uow: PgUnitOfWork; let wallet: InProcessWalletClient;
-  let profiles: AmbassadorProfileService; let referrals: ReferralService; let earnings: AmbassadorEarningService;
-  const tenantA = randomUUID(); const tenantB = randomUUID(); const ambUser = randomUUID(); const adminUser = randomUUID(); const farmer = randomUUID();
+  let profiles: AmbassadorProfileService; let referrals: ReferralService; let earnings: AmbassadorEarningService; let runs: PayoutRunService;
+  const tenantA = randomUUID(); const tenantB = randomUUID(); const ambUser = randomUUID(); const adminUser = randomUUID(); const farmer = randomUUID(); const checkerUser = randomUUID();
   let ambassadorId = ''; let referralId = '';
   const adminActor = { userId: adminUser, canManage: true };
   const ambActor = { userId: ambUser, canManage: false };
@@ -45,7 +48,7 @@ run('ambassadors spine (integration, real Postgres + RLS + commission payout)', 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
-    await makeUser(admin, ambUser); await makeUser(admin, adminUser); await makeUser(admin, farmer);
+    await makeUser(admin, ambUser); await makeUser(admin, adminUser); await makeUser(admin, farmer); await makeUser(admin, checkerUser);
     // PC-56 TENANT-10a: a recruit must be an existing MEMBER of the cooperative (an active role in tenant A).
     await admin.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) SELECT $1, $2, r.id, true FROM roles r WHERE r.code = 'farmer' ON CONFLICT DO NOTHING`, [ambUser, tenantA]);
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -59,6 +62,7 @@ run('ambassadors spine (integration, real Postgres + RLS + commission payout)', 
     const eRepo = new AmbassadorEarningRepository(replica as any); const rRepo = new ReferralRepository(replica as any);
     profiles = new AmbassadorProfileService(uow, outbox, metrics, idem, audit, pRepo, new AmbassadorRosterReadModel(replica as any));
     earnings = new AmbassadorEarningService(uow, outbox, idem, metrics, wallet, audit, plRepo, eRepo, pRepo);
+    runs = new PayoutRunService(uow, outbox, idem, metrics, wallet, audit, new PayoutRunRepository(replica as any), eRepo, pRepo);
     referrals = new ReferralService(uow, outbox, idem, metrics, audit, rRepo, pRepo, earnings);
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
@@ -78,13 +82,19 @@ run('ambassadors spine (integration, real Postgres + RLS + commission payout)', 
     expect(onboard).toBeTruthy(); expect(onboard!.amountMinor).toBe('2500');   // ₹25 from seed 0207
   });
 
-  it('payout settles unpaid earnings to the ambassador wallet (zero-sum commission)', async () => {
+  // PC-56 TENANT-SW-b: the payout is an EXCEPTION RUN now — prepared by one person, confirmed by a DIFFERENT tenant_admin, paid from the
+  // TENANT Main wallet (the tenant is funded first; the platform Fees account no longer pays).
+  it('payout settles unpaid earnings to the ambassador wallet (zero-sum, tenant Main → ambassador, maker-checker)', async () => {
+    await admin.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) SELECT u, $2, r.id, true FROM roles r, unnest($1::uuid[]) u WHERE r.code='tenant_admin' ON CONFLICT DO NOTHING`, [[adminUser, checkerUser], tenantA]);
+    await uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'order_payment', idempotencyKey: `fund-tenant:${randomUUID()}`, initiatedBy: 'system',
+      legs: [{ account: { kind: 'tenant', tenantId: tenantA, accountCode: 'main' }, amountMinor: 10000n }, { account: { kind: 'platform', accountCode: 'gateway' }, amountMinor: -10000n }] }), { userId: 'system' });
     const before = await balUser(ambUser);
-    const out: any = await earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassadorId, `idem-${randomUUID()}`, 'weekly run');
-    expect(out.paidMinor).toBe('2500');
+    const prepared: any = await runs.prepareByPerson(tenantA, { userId: adminUser }, { kind: 'exception', ambassadorId, reason: 'weekly run' }, `idem-${randomUUID()}`);
+    const out: any = await runs.confirm(tenantA, { userId: checkerUser }, prepared.id, 'weekly run checked', `idem-${randomUUID()}`);
+    expect(out).toMatchObject({ paid: 1, paidMinor: '2500', status: 'paid' });
     expect((await balUser(ambUser)) - before).toBe(2500n);
-    // re-payout now finds nothing unpaid (red at 9743e8b: DEV-55 stamped zero rows and this second call paid again)
-    await expect(earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassadorId, `idem-${randomUUID()}`, 'weekly run')).rejects.toMatchObject({ code: 'NOTHING_TO_PAYOUT' });
+    // a second exception run now finds nothing owed (red at 9743e8b: DEV-55 stamped zero rows and this second call paid again)
+    await expect(runs.prepareByPerson(tenantA, { userId: adminUser }, { kind: 'exception', ambassadorId, reason: 'weekly run' }, `idem-${randomUUID()}`)).rejects.toMatchObject({ code: 'AMB_RUN_NOTHING_OWED' });
   });
 
   it('RLS: tenant B cannot see tenant A\'s earnings', async () => {

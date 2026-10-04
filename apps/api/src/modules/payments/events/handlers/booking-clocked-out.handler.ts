@@ -1,3 +1,6 @@
+// PC-56 TENANT-SW-b · F-11 — RETIRED (no longer registered in OUTBOX_HANDLER_REGISTRY; see payments.module.ts). The "wage priority lane"
+// promoted `payouts` rows with reference_type='labour_booking' that NOTHING writes: labour wages move as wallet legs (escrow Hold → worker
+// Main) through the daily 18:00 IST wage run, never as bank payouts. Kept as a class only for payout-batch.integration.spec's lane test.
 // modules/payments/events/handlers/booking-clocked-out.handler.ts
 // Consumes `labour.wages_paid` (a labour engagement "clocked out" + settled into worker wallets,
 // delivered by the outbox relay). Behind the `wage_priority_payout` flag (default OFF, kill-switch —

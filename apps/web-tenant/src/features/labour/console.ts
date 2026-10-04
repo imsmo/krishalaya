@@ -17,7 +17,7 @@ export const actHref = (id: string, act: JobAct, extra: Record<string, string> =
   const q = new URLSearchParams({ step: 'confirm', act, ...extra });
   return `${LABOUR_HREF}/${encodeURIComponent(id)}/act?${q.toString()}`;
 };
-/** W166 "Wage runs" is another wave's object — the link is drawn disabled with the wave that builds it. */
+/** W166 "Wage runs" — built by PC-56 TENANT-SW-b (/ops/labour/wages); kept for the record of which wave built it. */
 export const WAGE_RUNS_WAVE = 'TENANT-SWEEP/W166';
 
 /** The 7 of the enum's 12 values a booking reaches (API domain/labour-booking.state). Tabs draw only these. */

@@ -49,6 +49,13 @@ export class AmbassadorEarningRepository {
     const r = await tx.query(`SELECT ${COLS} FROM ambassador_earnings WHERE tenant_id=$1 AND ambassador_id=$2 AND payout_id IS NULL ORDER BY created_at, id LIMIT ${max} FOR UPDATE SKIP LOCKED`, [tenantId, ambassadorId]);
     return r.rows.map(toDomain);
   }
+  /** PC-56 TENANT-SW-b: the unpaid earnings a run line covers — created at or before the run's period end — locked (a run line
+   *  pays exactly these and nothing earned after its Thursday sweep: "events earned after Thursday roll to next Friday"). */
+  async lockUnpaidUpTo(tx: TxContext, tenantId: string, ambassadorId: string, periodEnd: Date, max = 5000): Promise<AmbassadorEarning[]> {
+    const r = await tx.query(`SELECT ${COLS} FROM ambassador_earnings WHERE tenant_id=$1 AND ambassador_id=$2 AND payout_id IS NULL AND created_at <= $3
+       ORDER BY created_at, id LIMIT ${max} FOR UPDATE`, [tenantId, ambassadorId, periodEnd]);
+    return r.rows.map(toDomain);
+  }
   /**
    * Stamp `payout_id` on exactly the locked set. Returns the number of rows stamped — the service compares it with the
    * number it locked and throws inside the transaction when they differ (the wallet leg rolls back with it).

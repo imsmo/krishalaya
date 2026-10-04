@@ -4,7 +4,8 @@
 // + DBT credits are owner-scoped server-side (no IDOR). Money is bigint minor strings (Law 2). Gated server-side
 // by the `schemes` flag.
 import { HttpClient } from '../http';
-import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, SchemeApplicationDocument, DbtTransfer, ApplicationStatus, Page , SchemeRejectionCode } from '../types';
+import { Scheme, SchemeAuthority, EligibilityResult, SchemeApplication, SchemeApplicationDocument, DbtTransfer, ApplicationStatus, Page , SchemeRejectionCode,
+  SchemeDeskSummary, SchemeDeskRow, SchemePipeline, SchemePipelineGroup, SchemeSweepView } from '../types';
 
 export class SchemesResource {
   constructor(private readonly http: HttpClient) {}
@@ -151,5 +152,29 @@ export class SchemesResource {
   }
   async applicationDbtBounces(applicationId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', `schemes/applications/${encodeURIComponent(applicationId)}/dbt-bounces`, { signal })).data;
+  }
+
+  // --- PC-56 TENANT-SW-b · W202 / W203 the tenant SCHEMES DESK (`scheme.desk`) ---
+  /** Tiles: open applications, rejection rate FY, benefits landed FY (a FACT with its method, else `no_transfers_recorded`), eligible-not-applied. */
+  async deskSummary(signal?: AbortSignal): Promise<SchemeDeskSummary> {
+    return (await this.http.request<SchemeDeskSummary>('GET', 'schemes/desk/summary', { signal })).data;
+  }
+  async deskSchemes(signal?: AbortSignal): Promise<SchemeDeskRow[]> {
+    return (await this.http.request<SchemeDeskRow[]>('GET', 'schemes/desk/schemes', { signal })).data;
+  }
+  /** One scheme's pipeline tab (real counts for every tab; masked applicant; derived blocker; rejection + its fix). */
+  async deskPipeline(code: string, params: { group?: SchemePipelineGroup; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<SchemePipeline> {
+    return (await this.http.request<SchemePipeline>('GET', `schemes/desk/pipeline/${encodeURIComponent(code)}`, { query: { group: params.group, cursor: params.cursor, limit: params.limit ?? 50 }, signal })).data;
+  }
+  /** "Run eligibility sweep" — queued; the job evaluates every member → a CALL LIST, never an application. Once per scheme per day. */
+  async runSweep(schemeCode: string, reason: string, idempotencyKey: string): Promise<{ id: string; schemeId: string; schemeCode: string; status: 'queued' }> {
+    return (await this.http.request<{ id: string; schemeId: string; schemeCode: string; status: 'queued' }>('POST', 'schemes/desk/sweeps', { body: { schemeCode, reason }, idempotencyKey })).data;
+  }
+  async sweep(id: string, params: { cursor?: string; all?: boolean; limit?: number } = {}, signal?: AbortSignal): Promise<SchemeSweepView> {
+    return (await this.http.request<SchemeSweepView>('GET', `schemes/desk/sweeps/${encodeURIComponent(id)}`, { query: { cursor: params.cursor, all: params.all ? 'true' : undefined, limit: params.limit ?? 50 }, signal })).data;
+  }
+  /** Reveal ONE form_data field (reason ≥ 20; the audit row names the field, never the value). */
+  async revealFormField(applicationId: string, field: string, reason: string): Promise<{ applicationId: string; field: string; value: unknown }> {
+    return (await this.http.request<{ applicationId: string; field: string; value: unknown }>('POST', `schemes/desk/applications/${encodeURIComponent(applicationId)}/reveal`, { body: { field, reason } })).data;
   }
 }

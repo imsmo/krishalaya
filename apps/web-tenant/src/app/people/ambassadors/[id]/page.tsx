@@ -5,10 +5,13 @@
 // earnings ledger (keyset, microsecond-exact since F-17), and the per-period target form. Every state change is a chain:
 // suspend / reinstate / pay out (mutate, reason required) and edit (form, review with the diff). "Reassignment" is printed
 // as not recorded — no reassignment act exists on this platform (F-15).
+// PC-56 TENANT-SW-b (W160): "Owed this week … pays Friday" is TRUE only when a run is prepared — the line prints THAT run's pay
+// date and status; otherwise "no run prepared" (never a promise). Stipends recorded paid are listed by month. "Message" is a
+// per-person notification act through communication (the mutate chain; reason audited).
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
-import type { AmbassadorEarning, AmbassadorRosterRow } from '@krishalaya/sdk-js';
+import type { AmbassadorEarning, AmbassadorDetail } from '@krishalaya/sdk-js';
 import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
@@ -16,8 +19,9 @@ import { getTranslator, getLang } from '../../../../lib/i18n';
 import { env } from '../../../../lib/env';
 import { TARGET_METRICS } from '../../../../features/ambassadors/admin';
 import {
-  AMBASSADORS_HREF, actHref, actKey, actsFor, consoleState, detailHref, editHref, isUuid, lastActive, minorToRupees, personKey, tierKey,
+  AMBASSADORS_HREF, EARNINGS_HREF, actHref, actKey, actsFor, consoleState, detailHref, editHref, isUuid, lastActive, minorToRupees, personKey, tierKey,
 } from '../../../../features/ambassadors/console';
+import { runLineStatusKey, runStatusKey } from '../../../../features/swb/console';
 import { setTargetAction } from '../../../ambassadors/actions';
 
 export const dynamic = 'force-dynamic';
@@ -38,7 +42,7 @@ export default async function AmbassadorDetailPage({ params, searchParams }: { p
   }
   const unpaidOnly = searchParams.unpaid === '1';
   const cursor = typeof searchParams.cursor === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(searchParams.cursor) ? searchParams.cursor : undefined;
-  let row: AmbassadorRosterRow | null = null; let state: string | null = null;
+  let row: AmbassadorDetail | null = null; let state: string | null = null;
   let ledger: { items: AmbassadorEarning[]; nextCursor: string | null } = { items: [], nextCursor: null };
   if (!isUuid(params.id)) state = 'notFound';
   else {
@@ -74,6 +78,20 @@ export default async function AmbassadorDetailPage({ params, searchParams }: { p
               <div className="kv-tile"><dt>{t.t('amb.col.onboarded')}</dt><dd><strong>{formatNumber(row.onboarded30d, lang)}</strong></dd></div>
               <div className="kv-tile"><dt>{t.t('amb.col.lastActive')}</dt><dd><strong>{t.t(la.key, la.vars)}</strong></dd><dd className="kv-field__hint">{t.t('amb.refused.reassignment')}</dd></div>
             </dl>
+            <div className="kv-card">
+              <h2>{t.t('swb.amb.pay.title')}</h2>
+              {row.pay?.run ? (
+                <>
+                  <p><strong>{t.t('swb.amb.pay.owed', { amount: money(row.pay.run.line.totalMinor), date: formatDate(`${row.pay.run.payDate}T00:00:00+05:30`, lang, { dateStyle: 'medium', timeZone: 'Asia/Kolkata' }) })}</strong></p>
+                  <p className="kv-field__hint">{t.t('swb.amb.pay.split', { commission: money(row.pay.run.line.commissionMinor), stipend: money(row.pay.run.line.stipendMinor) })} · {t.t(runStatusKey(row.pay.run.status))} · {t.t(runLineStatusKey(row.pay.run.line.status))}</p>
+                  <p className="kv-field__hint">{t.t('swb.amb.pay.rule')}</p>
+                </>
+              ) : <p>{t.t('swb.amb.pay.noRun')}</p>}
+              {row.pay && row.pay.stipendsPaid.length > 0 && (
+                <p className="kv-field__hint">{t.t('swb.amb.pay.stipends')} {row.pay.stipendsPaid.map((x) => `${x.month.slice(0, 7)} · ${money(x.amountMinor)}`).join(' — ')}</p>
+              )}
+              <p><Link href={EARNINGS_HREF} className="kv-btn--link">{t.t('swb.amb.pay.toRun')}</Link></p>
+            </div>
             <dl className="kv-detail">
               <dt>{t.t('amb.col.tier')}</dt><dd>{t.t(tierKey(row.tierCode))}</dd>
               <dt>{t.t('amb.col.cluster')}</dt><dd>{row.clusterRegionNames.length ? row.clusterRegionNames.join(', ') : t.t('amb.cluster.none')}</dd>

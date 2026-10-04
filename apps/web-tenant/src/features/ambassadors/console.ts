@@ -11,6 +11,8 @@
 export const AMBASSADORS_HREF = '/people/ambassadors';
 export const NEW_AMBASSADOR_HREF = '/people/ambassadors/new';
 export const RUN_HREF = '/people/ambassadors/run';
+/** PC-56 TENANT-SW-b · W161 — the run under maker-checker (features/swb/console.ts owns its helpers). */
+export const EARNINGS_HREF = '/people/ambassadors/earnings';
 export const REFERRALS_HREF = '/people/referrals';
 export const REWARD_RULE_HREF = '/people/referrals/reward-rule';
 export const MEMBERS_HREF = '/people';
@@ -19,7 +21,7 @@ export const MEMBERS_HREF = '/people';
 export const AMB_TIERS = ['trainee', 'ambassador', 'senior', 'cluster_lead', 'district_coordinator'] as const;
 export const ROSTER_SORTS = ['recent', 'owed'] as const;
 export const INACTIVE_DAYS = 60;
-export const AMB_ACTS = ['suspend', 'reinstate', 'payout'] as const;
+export const AMB_ACTS = ['suspend', 'reinstate', 'payout', 'message'] as const;
 export type AmbActCode = (typeof AMB_ACTS)[number];
 /** The API's recruit / edit refusals (domain/recruit.rules.ts RECRUIT_REFUSALS). */
 export const RECRUIT_REFUSALS = ['PHONE_REQUIRED', 'PHONE_INVALID', 'NO_ACCOUNT', 'NOT_A_MEMBER', 'ALREADY_AMBASSADOR', 'TIER_UNKNOWN',
@@ -27,7 +29,7 @@ export const RECRUIT_REFUSALS = ['PHONE_REQUIRED', 'PHONE_INVALID', 'NO_ACCOUNT'
 export const RECRUIT_FIELDS = ['phone', 'tierId', 'clusterRegionIds', 'mentorAmbassadorId', 'kioskEnabled', 'aepsEnabled', 'monthlyStipendMinor'] as const;
 export const EDIT_FIELDS = ['tierId', 'clusterRegionIds', 'mentorAmbassadorId', 'kioskEnabled', 'aepsEnabled', 'monthlyStipendMinor', 'trainingCompleted'] as const;
 /** The act / transport codes a mutate or a write can fail with (the API's typed errors), each a sentence. */
-export const ACT_CODES = ['REASON_REQUIRED', 'NOTHING_TO_PAYOUT', 'PAYOUT_MARK_MISMATCH', 'AMBASSADOR_NOT_FOUND', 'REFERRAL_NOT_FOUND',
+export const ACT_CODES = ['REASON_REQUIRED', 'NOTHING_TO_PAYOUT', 'PAYOUT_MARK_MISMATCH', 'AMB_RUN_NOTHING_OWED', 'AMB_RUN_ALREADY_OPEN', 'AMB_MESSAGE_INVALID', 'AMBASSADOR_NOT_FOUND', 'REFERRAL_NOT_FOUND',
   'REFERRAL_ILLEGAL_TRANSITION', 'AMBASSADORS_FORBIDDEN', 'FORBIDDEN', 'AMBASSADOR_REFUSED', 'IDEMPOTENCY_IN_PROGRESS', 'AUDITOR_READ_ONLY', 'VALIDATION_FAILED', 'unknown'] as const;
 export const REFERRAL_TABS = ['all', 'invited', 'signed_up', 'activated'] as const;
 export const REFERRAL_STATUSES = ['invited', 'signed_up', 'activated', 'rewarded'] as const;
@@ -119,10 +121,11 @@ export function codeKey(code: string): string {
 /* WHAT A ROW SAYS                                                                                            */
 /* ---------------------------------------------------------------------------------------------------------- */
 
-/** The acts a roster row offers: suspend or reinstate, and pay out only for an active ambassador who is owed something. */
+/** The acts a roster row offers: suspend or reinstate; pay out (PC-56 TENANT-SW-b: PREPARE a one-ambassador exception run, which a
+ *  second tenant admin confirms) only for an active ambassador who is owed something; message (W160 "Message") an active one. */
 export function actsFor(row: { isActive: boolean; owedMinor: string }): AmbActCode[] {
   const owed = /^\d+$/.test(row.owedMinor) && BigInt(row.owedMinor) > 0n;
-  return row.isActive ? (owed ? ['suspend', 'payout'] : ['suspend']) : ['reinstate'];
+  return row.isActive ? (owed ? ['suspend', 'payout', 'message'] : ['suspend', 'message']) : ['reinstate'];
 }
 
 /** "Last active" in words. `null` = no act was ever recorded (the writer exists since TENANT-10a). */

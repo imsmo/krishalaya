@@ -68,6 +68,9 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // writes the event; recipients travel in the payload; `displayName` is the tenant's own published name (not translated). Catalogue 0194,
   // copy in seed core/0007 (in-app ×3).
   { outboxType: 'tenancy.brand_published',           eventCode: 'tenant.brand_published',      recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-SW-b (A2) · W160 "Message (Gujarati)": the member desk's per-person message to ONE ambassador (the desk's words verbatim, the
+  // wrapper in the ambassador's language). Catalogue 0198, copy in seed core/0007 (push + in-app ×3). Recipients travel in the payload.
+  { outboxType: 'ambassadors.message',               eventCode: 'ambassador.message',          recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

@@ -856,6 +856,22 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('tenant.setting_effective','effectiveAt','tenant_setting_proposals.effective_at in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-10-04 00:00',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-SW-b (A2) · W160 "MESSAGE (GUJARATI)": THE MEMBER DESK WRITES TO ONE AMBASSADOR. Migration 0198 catalogues `ambassador.message`;
+-- the act writes the outbox event `ambassadors.message` and the audit row in one transaction. Variable: `message` — the desk's own words,
+-- delivered verbatim (never translated by the platform); the wrapper is in the ambassador's language. Push + in-app × en / hi / gu.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('ambassador.message','push','en',NULL,'A message from your cooperative','Your cooperative''s member desk writes: {{message}}',NULL,true),
+ ('ambassador.message','push','hi',NULL,'आपकी सहकारी समिति का संदेश','आपकी समिति के सदस्य डेस्क ने लिखा है: {{message}}',NULL,true),
+ ('ambassador.message','push','gu',NULL,'તમારી સહકારી મંડળીનો સંદેશ','તમારી મંડળીના સભ્ય ડેસ્કે લખ્યું છે: {{message}}',NULL,true),
+ ('ambassador.message','inapp','en',NULL,'A message from your cooperative','Your cooperative''s member desk writes: {{message}}',NULL,true),
+ ('ambassador.message','inapp','hi',NULL,'आपकी सहकारी समिति का संदेश','आपकी समिति के सदस्य डेस्क ने लिखा है: {{message}}',NULL,true),
+ ('ambassador.message','inapp','gu',NULL,'તમારી સહકારી મંડળીનો સંદેશ','તમારી મંડળીના સભ્ય ડેસ્કે લખ્યું છે: {{message}}',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('ambassador.message','message','the member desk''s message, verbatim (3–500 characters; audited ambassador.messaged)','Kal 10 baje Bhesan camp par aavjo — KYC kiosk saathe laavjo.',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- PC-56 TENANT-13d (A4) · SAME ORGANISATION, NEW LOOK. Migration 0194 catalogues `tenant.brand_published`; the brand-publish transaction
 -- emits it once a SECOND tenant_admin confirmed the brand (or a rollback). In-app only — "members see the new brand at next app open, with a
 -- one-time note in their language" (canon W191). Variables: `displayName` (the tenant's published name, as the tenant wrote it), `version`.

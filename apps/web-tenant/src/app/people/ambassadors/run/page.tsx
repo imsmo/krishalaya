@@ -1,11 +1,11 @@
 // apps/web-tenant/src/app/people/ambassadors/run/page.tsx · W159 "Weekly earnings run" — the mutate chain (W2485 confirm →
-// W2486 success → W2487 failure) over POST /ambassadors/payouts/run · PC-56 TENANT-10a (A13).
+// W2486 success → W2487 failure) over POST /ambassadors/payouts/run · PC-56 TENANT-10a (A13), re-cut by PC-56 TENANT-SW-b.
 //
-// THERE IS NO AUTOMATIC FRIDAY RUN, AND THIS PAGE SAYS SO. Every payout leg moves money from the PLATFORM's Fees account to
-// a village agent's wallet; whether a cooperative's ambassadors should instead be paid from its own wallet under its own
-// maker-checker is founder question F-23, open. Until it is answered a payout happens only when a tenant_admin runs it here
-// (`ambassador.payout`), with a reason, once per key. Each ambassador is paid in their own transaction (one failure never
-// stops or rolls back another); the run writes one `ambassador.payout.batch` audit row, which the success screen reads back.
+// FOUNDER DECISION (2026-10-03, closes F-23): ambassadors are paid from the COOPERATIVE'S OWN Main wallet under MAKER-CHECKER.
+// This page is now the MAKER's act: it PREPARES this week's run (nothing moves). The job prepares the same run every Thursday
+// 23:00 IST; a DIFFERENT tenant admin confirms it on the earnings run screen (W161, /people/ambassadors/earnings), and only then
+// does money move — tenant Main → each ambassador's wallet, one zero-sum transfer per ambassador. The platform's Fees account
+// no longer pays. The success screen reads the run's own audit row back.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
@@ -17,7 +17,7 @@ import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { env } from '../../../../lib/env';
 import { MAX_REASON, MIN_REASON, failureKey, mutateStep, mutateStepKey, reasonState, reasonStateKey, repeatedFailuresGapKey } from '../../../../features/mutate/chain';
-import { AMBASSADORS_HREF, RUN_HREF, codeKey, consoleState, isUuid, rosterHref } from '../../../../features/ambassadors/console';
+import { AMBASSADORS_HREF, EARNINGS_HREF, RUN_HREF, codeKey, consoleState, isUuid } from '../../../../features/ambassadors/console';
 import { AuditEntryCard } from '../AuditEntryCard';
 import { runPayoutsAction } from './actions';
 
@@ -45,7 +45,7 @@ export default async function WeeklyRunPage({ searchParams }: { searchParams: Re
     catch (e) { const err = e instanceof SdkError ? e : null; state = consoleState(err?.code, err?.status, true); }
   }
   const owed = sum ? /^\d+$/.test(sum.owedThisWeekMinor) && BigInt(sum.owedThisWeekMinor) > 0n : false;
-  const batchId = isUuid(searchParams.batchId) ? searchParams.batchId : null;
+  const runId = isUuid(searchParams.run) ? searchParams.run : null;
 
   return (
     <section>
@@ -88,13 +88,12 @@ export default async function WeeklyRunPage({ searchParams }: { searchParams: Re
       {step === 'success' && (
         <>
           <div className="kv-card kv-card--notice" role="status">
-            <p>{t.t('amb.run.done', { paid: formatNumber(num(searchParams.paid), lang), attempted: formatNumber(num(searchParams.attempted), lang), amount: money(searchParams.total ?? '0') })}</p>
-            {num(searchParams.nothing) > 0 && <p className="kv-field__hint">{t.t('amb.run.nothingToPay', { n: formatNumber(num(searchParams.nothing), lang) })}</p>}
-            {num(searchParams.failed) > 0 && <p className="kv-error">{t.t('amb.run.someFailed', { n: formatNumber(num(searchParams.failed), lang) })}</p>}
+            <p>{t.t('amb.run.done', { paid: formatNumber(num(searchParams.lines), lang), amount: money(searchParams.total ?? '0') })}</p>
+            <p className="kv-field__hint">{t.t(searchParams.covers === '1' ? 'swb.run.funding.coversShort' : 'swb.run.funding.shortShort', { amount: money(searchParams.short ?? '0') })}</p>
             <p className="kv-field__hint">{t.t('amb.act.zeroSum')}</p>
           </div>
-          {batchId && <AuditEntryCard t={t} lang={lang} entityType="ambassador_payout_batch" entityId={batchId} action="ambassador.payout.batch" />}
-          <p><Link href={rosterHref({ sort: 'owed' })} className="kv-btn--link">{t.t('amb.run.toEarnings')}</Link>{' · '}<Link href={AMBASSADORS_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p>
+          {runId && <AuditEntryCard t={t} lang={lang} entityType="ambassador_payout_run" entityId={runId} action="ambassador.payout_run.prepared" />}
+          <p><Link href={EARNINGS_HREF} className="kv-btn--link">{t.t('amb.run.toEarnings')}</Link>{' · '}<Link href={AMBASSADORS_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p>
         </>
       )}
 

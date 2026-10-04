@@ -50,6 +50,7 @@ const ORDER = [
   'core/0024_ui_messages_settings.sql',
   // PC-56 TENANT-SW-a · the words a commission-rule notice is worded with (en/hi/gu).
   'core/0025_ui_messages_commission.sql',
+  'core/0026_ui_messages_scheme_rejections.sql',   // PC-56 TENANT-SW-b: the eleven scheme rejection codes' label + fix, en / hi / gu
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

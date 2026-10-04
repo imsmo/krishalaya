@@ -3,6 +3,8 @@
 // TENANT-10a. Re-judged by the API on the locked row. THE KEY IS THE CONFIRM PAGE'S (a double click pays once — and the
 // wallet key is derived from the locked earning set besides, F-1). The reason never travels into a success URL (it is on
 // the audit row, which the success screen reads back); a payout's success carries the amount the server paid.
+// PC-56 TENANT-SW-b: a payout now PREPARES a one-ambassador exception run (its success carries the run id and its total — nothing
+// has moved yet; a second tenant admin confirms it); a message is sent through communication.
 import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -17,7 +19,7 @@ export async function ambassadorActAction(formData: FormData): Promise<void> {
   await requireSession(base);
   const actRaw = String(formData.get('act') ?? '');
   if (!isUuid(id) || !isAmbAct(actRaw)) redirect(AMBASSADORS_HREF);
-  const act = actRaw as 'suspend' | 'reinstate' | 'payout';
+  const act = actRaw as 'suspend' | 'reinstate' | 'payout' | 'message';
   const reason = String(formData.get('reason') ?? '').trim();
   const key = String(formData.get('idempotencyKey') ?? '').trim() || randomUUID();
   const a = tenantClient().ambassadors;
@@ -25,7 +27,8 @@ export async function ambassadorActAction(formData: FormData): Promise<void> {
   try {
     if (act === 'suspend') await a.suspend(id, reason);
     else if (act === 'reinstate') await a.reinstate(id, reason || undefined);
-    else { const r = await a.payout(id, reason, key); done.set('paid', r.paidMinor); done.set('count', String(r.earningCount)); }
+    else if (act === 'message') await a.message(id, { message: String(formData.get('message') ?? '').trim(), reason }, key);
+    else { const r = await a.payout(id, reason, key); done.set('paid', r.totalCommissionMinor); done.set('count', String(r.lineCount)); done.set('run', r.id); }
   } catch (e) { failed = e instanceof SdkError ? failureCodesFrom(e.details, e.status === 403 ? 'FORBIDDEN' : e.code) : ['unknown']; }
   if (failed) redirect(`${base}?step=failure&act=${act}&error=${encodeURIComponent(failed.join(','))}`);
   revalidatePath(AMBASSADORS_HREF); revalidatePath(detailHref(id));

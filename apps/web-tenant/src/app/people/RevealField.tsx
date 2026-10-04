@@ -10,6 +10,10 @@
 // **THE CONTROL IS CLOSED BY DEFAULT AND THE REASON FIELD IS PART OF IT, NOT A CONFIRMATION AFTERWARDS.** There is no
 // "show PII" toggle: a field is chosen, a reason is typed, and only then is anything requested. That ordering is what
 // makes the audit row meaningful — the reason exists before the value does.
+//
+// PC-56 TENANT-SW-b: reused by the schemes desk (W203) for ONE field of a scheme application's `form_data`. The caller may pass the
+// field list (the application's own keys, from the API), the server action that reveals (it audits the field, never the value)
+// and the minimum reason length; by default it is the member-PII reveal of TENANT-1b, unchanged.
 import { useState, useTransition } from 'react';
 import { REVEALABLE_MEMBER_FIELDS } from '@krishalaya/sdk-js';
 import { MIN_REVEAL_REASON } from '../../features/people/roster';
@@ -17,6 +21,12 @@ import { revealFieldAction, type RevealResult } from './actions';
 
 export interface RevealFieldProps {
   userId: string;
+  /** The fields this reveal offers — default: the SDK's member-PII list. */
+  fields?: readonly string[];
+  /** The server action that reveals — default: the member-PII reveal. */
+  reveal?: (id: string, field: string, reason: string) => Promise<RevealResult>;
+  /** The minimum reason length — default: the roster's MIN_REVEAL_REASON. */
+  minReason?: number;
   name: string;
   /** Translated strings, passed in: this is a client component and the console's translator is server-only. */
   labels: {
@@ -35,15 +45,18 @@ export interface RevealFieldProps {
   };
 }
 
-export function RevealField({ userId, name, labels }: RevealFieldProps) {
+export function RevealField({ userId, name, labels, fields, reveal, minReason }: RevealFieldProps) {
+  const options = fields ?? REVEALABLE_MEMBER_FIELDS;
+  const act = reveal ?? revealFieldAction;
+  const min = minReason ?? MIN_REVEAL_REASON;
   const [result, setResult] = useState<RevealResult | null>(null);
   const [pending, start] = useTransition();
-  const [field, setField] = useState<string>(REVEALABLE_MEMBER_FIELDS[0]);
+  const [field, setField] = useState<string>(options[0] ?? '');
   const [reason, setReason] = useState('');
 
   // Client-side length check only so the staff member learns the rule before losing their typing. The SERVER enforces
   // it — this branch disappearing would not open the control.
-  const reasonOk = reason.trim().length >= MIN_REVEAL_REASON;
+  const reasonOk = reason.trim().length >= min && field !== '';
 
   return (
     <details className="kv-disclosure">
@@ -55,7 +68,7 @@ export function RevealField({ userId, name, labels }: RevealFieldProps) {
           // Clear any previous value BEFORE the new request: leaving the last member's number on screen while a fresh
           // reveal is in flight is how the wrong number gets read out over the phone.
           setResult(null);
-          start(async () => setResult(await revealFieldAction(userId, field, reason)));
+          start(async () => setResult(await act(userId, field, reason)));
         }}
       >
         <p className="kv-fine">{labels.heading.replace('{name}', name)}</p>
@@ -64,7 +77,7 @@ export function RevealField({ userId, name, labels }: RevealFieldProps) {
         <select id={`f-${userId}`} className="kv-select" value={field} onChange={(e) => setField(e.target.value)}>
           {/* Rendered FROM the SDK's exported constant, so the picker cannot drift from the server's closed enum.
               `aadhaar_vault_ref` is not on that list and so cannot appear here. */}
-          {REVEALABLE_MEMBER_FIELDS.map((f) => (
+          {options.map((f) => (
             <option key={f} value={f}>{labels.fieldOption[f] ?? f}</option>
           ))}
         </select>
@@ -72,7 +85,7 @@ export function RevealField({ userId, name, labels }: RevealFieldProps) {
         <label htmlFor={`r-${userId}`} className="kv-field__label">{labels.reason}</label>
         <textarea
           id={`r-${userId}`} className="kv-textarea" rows={2} value={reason} required
-          minLength={MIN_REVEAL_REASON} onChange={(e) => setReason(e.target.value)}
+          minLength={min} onChange={(e) => setReason(e.target.value)}
           aria-describedby={`rh-${userId}`}
         />
         <p id={`rh-${userId}`} className="kv-field__hint">{labels.reasonHint}</p>

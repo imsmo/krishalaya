@@ -231,10 +231,8 @@ const CASES: Record<string, Case> = {
         verify: async () => expect(await count(w, `SELECT count(*) n FROM ledger_transactions WHERE idempotency_key=$1`, [`return-refund:${returnId}`])).toBe(1) };
     },
   },
-  'labour.wages_paid → modules/payments/events/handlers/booking-clocked-out.handler#BookingClockedOutHandler': {
-    depth: 'read',   // wage_priority_payout ON: its UPDATE on payouts runs as kv_relay (no booking payout row → 0 rows; the lane is dead, SWEEP F-11)
-    build: async () => { const id = randomUUID(); return { aggregateType: 'labour_booking', aggregateId: id, payload: { v: 1, bookingId: id } }; },
-  },
+  // PC-56 TENANT-SW-b · F-11 — `labour.wages_paid → BookingClockedOutHandler` is RETIRED (unregistered: it promoted `payouts` rows nothing
+  // writes; wages are wallet legs paid by the daily 18:00 IST wage run). Its case is removed with it — a case for an unregistered handler is stale.
 
   // ── orders ──
   'payments.payment_succeeded → modules/orders/events/handlers/payment-succeeded.handler#PaymentSucceededHandler': {
@@ -526,7 +524,8 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
   let app: INestApplication; let admin: Pool; let relayPool: Pool; let w: World;
   let entries: Array<{ eventType: string; handler: OutboxHandler; id: string; key: string }> = [];
   const flagBackup: Array<{ key: string; is_enabled: boolean; rollout_pct: number; rules: unknown }> = [];
-  const GATE_FLAGS = ['commission_split', 'dispute_refunds', 'wage_priority_payout', 'realtime_fanout', 'pmfby_sync', 'surveyor_dispatch'];
+  // PC-56 TENANT-SW-b: + the three module flags the wave's cadence jobs read per tenant (so the job sweeps below reach their table work)
+  const GATE_FLAGS = ['commission_split', 'dispute_refunds', 'wage_priority_payout', 'realtime_fanout', 'pmfby_sync', 'surveyor_dispatch', 'ambassadors', 'labour', 'schemes'];
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL });
@@ -651,7 +650,10 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     const priv = async (t: string, p: string) => (await admin.query(`SELECT has_table_privilege('kv_relay', $1, $2) AS v`, [t, p])).rows[0].v as boolean;
     // PC-56 TENANT-SW-a: the new money / review tables are reached through kv_app only — the relay holds nothing on them either
     for (const t of ['shipments', 'trade_invoices', 'commission_rules', 'tax_rules', 'payments', 'user_memberships', 'listing_offers', 'loans',
-      'settlement_holds', 'settlement_deferrals', 'pod_reviews', 'cod_collections', 'cod_shortfalls', 'cod_cash_days', 'commission_rule_proposals', 'delivery_zone_proposals']) {
+      'settlement_holds', 'settlement_deferrals', 'pod_reviews', 'cod_collections', 'cod_shortfalls', 'cod_cash_days', 'commission_rule_proposals', 'delivery_zone_proposals',
+      // PC-56 TENANT-SW-b (0198): the ambassador run, the wage run, advances and the eligibility sweep — kv_app only
+      'ambassador_payout_runs', 'ambassador_payout_run_lines', 'ambassador_stipend_payments', 'labour_wage_runs', 'labour_wage_run_lines', 'worker_advances',
+      'worker_advance_recoveries', 'scheme_eligibility_sweeps', 'scheme_eligibility_sweep_rows']) {
       for (const p of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) expect(`${t}:${p}:${await priv(t, p)}`).toBe(`${t}:${p}:false`);
     }
     expect(await priv('insurance_policies', 'UPDATE')).toBe(false);
@@ -675,6 +677,30 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     expect(pod.failed).toBe(0);
     const props = await app.get(SettingProposalsJob).sweep(relayPool);
     expect(props.failed).toBe(0);
+  }, 120_000);
+
+  // ── PC-56 TENANT-SW-b: the wave's three CADENCE JOBS run on the runner's kv_relay pool — the Thursday 23:00 IST ambassador-run preparer, the
+  //    daily 18:00 IST wage run (+ its 16:00 retry pass) and the eligibility sweep — each reading only `tenants` there and doing every table act
+  //    per tenant in kv_app's unit of work. Driven at an instant INSIDE each window, narrowed to the gate tenant (the world has an ambassador
+  //    with an accrued commission, so the preparer reaches its insert). No 42501; the relay still holds nothing on the tables (test above). ──
+  it('SW-b · the ambassador-run preparer, the wage run and the eligibility sweep sweep on the kv_relay pool without 42501', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { AmbassadorPayoutRunJob } = require('../modules/ambassadors/jobs/payout-run.job') as typeof import('../modules/ambassadors/jobs/payout-run.job');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { WageRunJob } = require('../modules/labour/jobs/wage-run.job') as typeof import('../modules/labour/jobs/wage-run.job');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { EligibilitySweepJob } = require('../modules/schemes/jobs/eligibility-sweep.job') as typeof import('../modules/schemes/jobs/eligibility-sweep.job');
+    // a Thursday 23:10 IST (17:40Z) next week; and 18:05 IST today
+    const now = new Date(); const thu = new Date(now.getTime() + ((4 - now.getUTCDay() + 7) % 7 + 7) * 86_400_000);
+    thu.setUTCHours(17, 40, 0, 0);
+    const amb = await app.get(AmbassadorPayoutRunJob).sweep(relayPool, thu, [w.tenant]);
+    expect(amb).toMatchObject({ inWindow: true, failed: 0, prepared: 1 });   // the world's ambassador has accrued commission: a run is prepared
+    expect(await count(w, `SELECT count(*) n FROM ambassador_payout_runs WHERE tenant_id=$1 AND prepared_by IS NULL AND status='prepared'`, [w.tenant])).toBe(1);
+    const ist1805 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 35));
+    const wage = await app.get(WageRunJob).sweep(relayPool, ist1805, [w.tenant]);
+    expect(wage.failed).toBe(0);
+    const sweep = await app.get(EligibilitySweepJob).sweep(relayPool, now, [w.tenant]);
+    expect(sweep.failed).toBe(0);
   }, 120_000);
 
   // ── B4 · END TO END: the REAL registry (every handler of the event, in boot order), the REAL dispatcher, LOGGED IN as kv_relay ──

@@ -44,7 +44,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureDairy ? [{ key: 'dairy', href: '/dairy', label: t.t('nav.dairy') }] : []),
         ...(env.featureLabour ? [{ key: 'labour', href: '/ops/labour', label: t.t('nav.labour') }] : []),
         ...(env.featureAmbassadors ? [{ key: 'ambassadors', href: '/ambassadors', label: t.t('nav.ambassadors') }] : []),
-        ...(env.featureSchemes ? [{ key: 'schemes', href: '/schemes', label: t.t('nav.schemes') }] : []),
+        ...(env.featureSchemes ? [{ key: 'schemes', href: '/schemes', label: t.t('nav.schemes') }, { key: 'schemes-desk', href: '/ops/schemes', label: t.t('nav.schemesDesk') }] : []),
         ...(env.featureGroupLots ? [{ key: 'group-lots', href: '/marketplace/group-lots', label: t.t('nav.groupLots') }] : []),
         ...(env.featureAuditor ? [{ key: 'auditor', href: '/auditor', label: t.t('nav.auditor') }] : []),
         ...(env.featureAiReview ? [{ key: 'ai-review', href: '/ai-review', label: t.t('nav.aiReview') }] : []),

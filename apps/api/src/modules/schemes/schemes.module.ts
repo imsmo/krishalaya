@@ -17,7 +17,13 @@
 import { DbtBounceService } from './services/dbt-bounce.service';
 import { DbtBounceRepository } from './repositories/dbt-bounce.repository';
 import { PFMS_PROVIDER, pfmsProviderFromEnv } from './providers/pfms.provider';
-import { Module } from '@nestjs/common';
+import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { FlagsService } from '../../core/feature-flags/flags.service';
+import { SchemeDeskController } from './controllers/v1/scheme-desk.controller';
+import { SchemeDeskService } from './services/scheme-desk.service';
+import { SchemeDeskRepository } from './repositories/scheme-desk.repository';
+import { EligibilitySweepJob } from './jobs/eligibility-sweep.job';
 import { SchemesController } from './controllers/v1/schemes.controller';
 import { EligibilityController } from './controllers/v1/eligibility.controller';
 import { ApplicationsController } from './controllers/v1/applications.controller';
@@ -36,9 +42,18 @@ import { GovExportService } from './services/gov-export.service';
 import { SchemeDocumentRepository } from './repositories/scheme-document.repository';
 
 @Module({
-  controllers: [SchemesController, EligibilityController, ApplicationsController],
+  // PC-56 TENANT-SW-b: CONTROLLER ORDER IS ROUTE ORDER. SchemesController owns `GET schemes/:id`; registered first (as it was), it
+  // swallowed `GET schemes/applications` (and would swallow `schemes/desk/...`): the static prefixes are registered BEFORE it now.
+  controllers: [SchemeDeskController, ApplicationsController, EligibilityController, SchemesController],
   providers: [SchemeService, SchemeApplicationService, DbtTransferService, SchemeDocumentService, SchemeRepository, SchemeVersionRepository, SchemeAuthorityRepository, SchemeApplicationRepository, DbtTransferRepository, SchemeDocumentRepository, FieldVerificationRepository, FieldVerificationService, GovExportService, DbtBounceService, DbtBounceRepository,
-    { provide: PFMS_PROVIDER, useFactory: () => pfmsProviderFromEnv(process.env) }],
+    { provide: PFMS_PROVIDER, useFactory: () => pfmsProviderFromEnv(process.env) },
+    // PC-56 TENANT-SW-b · D — the tenant schemes desk + the eligibility sweep job (a call list, never an application)
+    SchemeDeskService, SchemeDeskRepository,
+    { provide: EligibilitySweepJob, inject: [SchemeDeskService, FlagsService],
+      useFactory: (d: SchemeDeskService, flags: FlagsService) => new EligibilitySweepJob(60_000, d, (tenantId) => flags.isEnabled('schemes', { tenantId })) }],
   exports: [SchemeService, SchemeApplicationService, DbtTransferService],
 })
-export class SchemesModule {}
+export class SchemesModule implements OnModuleInit {
+  constructor(@Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry, private readonly sweepJob: EligibilitySweepJob) {}
+  onModuleInit(): void { this.jobs.register(this.sweepJob); }
+}

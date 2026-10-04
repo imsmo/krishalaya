@@ -20,9 +20,11 @@ export class IllegalAttendanceTransitionError extends DomainError {
 }
 
 /** Derive the lifecycle status from the persisted facts of a row. */
-export function deriveStatus(row: { clockInAt: Date | null; clockOutAt: Date | null; confirmedByEmployer: boolean }): AttendanceStatus {
+export function deriveStatus(row: { clockInAt: Date | null; clockOutAt: Date | null; confirmedByEmployer: boolean; clockInMethod?: string }): AttendanceStatus {
   if (row.confirmedByEmployer) return 'confirmed';
   if (row.clockOutAt) return 'clocked_out';
+  // PC-56 TENANT-SW-b: a PAPER BACKFILL carries no clock times (none exist) — its hours are the signed sheet's, final as recorded
+  if (row.clockInMethod === 'paper_backfill') return 'clocked_out';
   return 'clocked_in';     // a row only exists once clock-in happened
 }
 

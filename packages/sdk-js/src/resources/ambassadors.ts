@@ -7,9 +7,10 @@
 // Law 11). Gated server-side by the `ambassadors` flag.
 import { HttpClient } from '../http';
 import { AmbassadorProfile, Referral, AmbassadorEarning, CommissionPlan, AmbassadorVisit, AmbassadorTarget, LeaderboardEntry, AssistedOnboardingResult, SuggestedListingDraft, Page,
-  EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput, AmbassadorPayoutResult,
+  EnrollAmbassadorInput, UpdateAmbassadorInput, SetTargetInput,
   AmbassadorRosterRow, AmbassadorRosterSort, AmbassadorSummary, AmbassadorCandidate, AmbassadorReview, AmbassadorReviewInput,
-  AmbassadorPayoutBatchResult, ReferralDeskRow, ReferralDeskSummary } from '../types';
+  ReferralDeskRow, ReferralDeskSummary,
+  AmbassadorDetail, AmbassadorRunPrepared, AmbassadorRun, AmbassadorRunDetail, AmbassadorRunCurrent, AmbassadorRunPayOutcome } from '../types';
 import type { CreateListingInput } from './listings';
 
 /** Ambassador-assisted farmer onboarding (the farmer is created on-behalf; DPDP consent is mandatory). */
@@ -110,9 +111,10 @@ export class AmbassadorsResource {
   async summary(signal?: AbortSignal): Promise<AmbassadorSummary> {
     return (await this.http.request<AmbassadorSummary>('GET', 'ambassadors/summary', { signal })).data;
   }
-  /** One ambassador, named the way the roster names them. */
-  async get(id: string, signal?: AbortSignal): Promise<AmbassadorRosterRow> {
-    return (await this.http.request<AmbassadorRosterRow>('GET', `ambassadors/${encodeURIComponent(id)}`, { signal })).data;
+  /** One ambassador, named the way the roster names them — plus `pay` (PC-56 TENANT-SW-b): the open run's line and ITS pay date,
+   *  or `noRunReason: 'no_run_prepared'`, and the stipends recorded paid. */
+  async get(id: string, signal?: AbortSignal): Promise<AmbassadorDetail> {
+    return (await this.http.request<AmbassadorDetail>('GET', `ambassadors/${encodeURIComponent(id)}`, { signal })).data;
   }
   /** The edit form's review — the diff against the profile as it stands; nothing is written. */
   async reviewEdit(id: string, input: AmbassadorReviewInput): Promise<AmbassadorReview> {
@@ -135,15 +137,48 @@ export class AmbassadorsResource {
     const r = await this.http.request<AmbassadorEarning[]>('GET', `ambassadors/${encodeURIComponent(id)}/earnings`, { query: { unpaidOnly: params.unpaidOnly, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  /** Pay out an ambassador's unpaid commission (`ambassador.payout`, tenant_admin; reason REQUIRED). The server locks the
-   *  unpaid set, posts ONE zero-sum wallet transfer keyed on that set, and stamps every row or rolls back. Idempotent. */
-  async payout(id: string, reason: string, idempotencyKey: string): Promise<AmbassadorPayoutResult> {
-    return (await this.http.request<AmbassadorPayoutResult>('POST', `ambassadors/${encodeURIComponent(id)}/payout`, { body: { reason }, idempotencyKey })).data;
+  /** PC-56 TENANT-SW-b · the EXCEPTION act: PREPARES a one-ambassador run (commission only) from the TENANT Main wallet
+   *  (`ambassador.payout.prepare`; reason REQUIRED). Nothing moves until a DIFFERENT tenant_admin confirms the run. Idempotent. */
+  async payout(id: string, reason: string, idempotencyKey: string): Promise<AmbassadorRunPrepared> {
+    return (await this.http.request<AmbassadorRunPrepared>('POST', `ambassadors/${encodeURIComponent(id)}/payout`, { body: { reason }, idempotencyKey })).data;
   }
-  /** A13 · the weekly earnings run — every active ambassador with unpaid earnings, each in its own transaction
-   *  (`ambassador.payout`; reason REQUIRED; idempotent on the key). No automatic schedule exists (founder question F-23). */
-  async runPayouts(reason: string, idempotencyKey: string): Promise<AmbassadorPayoutBatchResult> {
-    return (await this.http.request<AmbassadorPayoutBatchResult>('POST', 'ambassadors/payouts/run', { body: { reason }, idempotencyKey })).data;
+  /** PC-56 TENANT-SW-b · PREPARE the weekly run now (the job also prepares it every Thursday 23:00 IST). Same as `prepareRun`. */
+  async runPayouts(reason: string, idempotencyKey: string): Promise<AmbassadorRunPrepared> {
+    return (await this.http.request<AmbassadorRunPrepared>('POST', 'ambassadors/payouts/run', { body: { reason }, idempotencyKey })).data;
+  }
+  /** W160 "Message (Gujarati)": one notification to that ambassador through communication (their language), reason audited. */
+  async message(id: string, input: { message: string; reason: string }, idempotencyKey: string): Promise<{ ambassadorId: string; queued: boolean }> {
+    return (await this.http.request<{ ambassadorId: string; queued: boolean }>('POST', `ambassadors/${encodeURIComponent(id)}/message`, { body: input, idempotencyKey })).data;
+  }
+
+  // --- W161 · the weekly earnings RUN under maker-checker (PC-56 TENANT-SW-b) ---
+  /** The open run (lines, the REAL funding read, the maker) or null — and when the job prepares the next one. */
+  async currentRun(signal?: AbortSignal): Promise<AmbassadorRunCurrent> {
+    return (await this.http.request<AmbassadorRunCurrent>('GET', 'ambassadors/payout-runs/current', { signal })).data;
+  }
+  /** Run history (µs keyset). */
+  async runs(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AmbassadorRun>> {
+    const r = await this.http.request<AmbassadorRun[]>('GET', 'ambassadors/payout-runs', { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  async run(runId: string, signal?: AbortSignal): Promise<AmbassadorRunDetail> {
+    return (await this.http.request<AmbassadorRunDetail>('GET', `ambassadors/payout-runs/${encodeURIComponent(runId)}`, { signal })).data;
+  }
+  /** Prepare a weekly run now (`ambassador.payout.prepare`; reason; Idempotency-Key). */
+  async prepareRun(reason: string, idempotencyKey: string): Promise<AmbassadorRunPrepared> {
+    return (await this.http.request<AmbassadorRunPrepared>('POST', 'ambassadors/payout-runs/prepare', { body: { reason }, idempotencyKey })).data;
+  }
+  /** The CHECKER confirms (`ambassador.payout`; the database refuses the preparer) — the run pays tenant Main → ambassador Main. */
+  async confirmRun(runId: string, reason: string, idempotencyKey: string): Promise<AmbassadorRunPayOutcome> {
+    return (await this.http.request<AmbassadorRunPayOutcome>('POST', `ambassadors/payout-runs/${encodeURIComponent(runId)}/confirm`, { body: { reason }, idempotencyKey })).data;
+  }
+  /** Re-run a partly paid / unfunded run's unpaid lines (never by its preparer). */
+  async payRun(runId: string, reason: string, idempotencyKey: string): Promise<AmbassadorRunPayOutcome> {
+    return (await this.http.request<AmbassadorRunPayOutcome>('POST', `ambassadors/payout-runs/${encodeURIComponent(runId)}/pay`, { body: { reason }, idempotencyKey })).data;
+  }
+  /** Refuse a prepared run (nothing moves). */
+  async refuseRun(runId: string, reason: string): Promise<{ runId: string; status: 'refused' }> {
+    return (await this.http.request<{ runId: string; status: 'refused' }>('POST', `ambassadors/payout-runs/${encodeURIComponent(runId)}/refuse`, { body: { reason } })).data;
   }
   /** Activate a referral (admin) — a reason is REQUIRED (audited `referral.activated`); accrues onboarding commission server-side. */
   async activateReferral(id: string, reason: string): Promise<Referral> {

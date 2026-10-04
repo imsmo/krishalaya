@@ -8,9 +8,11 @@
 // SCOPE (this build): worker profiles (+ self-declared skills) + bookings + assignments + worker self-apply
 // + GEO-FENCED clock-in / clock-out / employer dual-confirm attendance + lookups catalogue + ROSTER CONFIRM (escrow + fee,
 // PC-56 TENANT-11b) + the pay run (confirmed attendance × rate + OT) + the respond-timeout job + the labour desk (consent).
-// DEFERRED (named): worker advances/baki, insurance, migrant engagement, safety checklists, grievances, crews/sardars and
+// PC-56 TENANT-SW-b: + the attendance review desk (out-of-fence recorded and reviewed, paper backfill, dual-confirm in the DB), the DAILY
+// 18:00 IST wage run with its 16:00 retry ladder, worker advances (≤ 50 % cap, recovered ≤ 25 % per payout, approver ≠ requester).
+// DEFERRED (named): advance write-off (founder: refused), insurance, migrant engagement, safety checklists, grievances, crews/sardars and
 // crew broadcast, invite fan-out, worker availability, minimum-wage admin CRUD + gazette-sync job, auto-accept, the
-// same-day fairness fee (founder: rule not set), wage runs (W166, TENANT-SWEEP).
+// same-day fairness fee (founder: rule not set), the offline device clock store (mobile).
 import { STATE_LEDGER_PROVIDER, stateLedgerProviderFromEnv } from './providers/state-ledger.provider';
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
@@ -36,12 +38,21 @@ import { LabourBookingRepository } from './repositories/labour-booking.repositor
 import { BookingAssignmentRepository } from './repositories/booking-assignment.repository';
 import { MinimumWageRepository } from './repositories/minimum-wage.repository';
 import { AttendanceRepository } from './repositories/attendance.repository';
+import { FlagsService } from '../../core/feature-flags/flags.service';
+import { AttendanceReviewController } from './controllers/v1/attendance.controller';
+import { WageRunsController, AdvancesController } from './controllers/v1/wages.controller';
+import { WageRunService } from './services/wage-run.service';
+import { WageRunRepository } from './repositories/wage-run.repository';
+import { WorkerAdvanceService } from './services/worker-advance.service';
+import { WageRunJob } from './jobs/wage-run.job';
 
 // PC-56 TENANT-11b · F-1 / F-9: the respond-timeout job is REGISTERED in SCHEDULED_JOB_REGISTRY (it was instantiated nowhere)
 // and claims per tenant in kv_app's unit of work — never as kv_relay on labour_bookings, which kv_relay holds no grant on.
 // The labour money (escrow at roster confirm, the pay run, the release) lives in LabourMoneyService, through WalletPort.
 @Module({
-  controllers: [WorkersController, BookingsController, AssignmentsController, LookupsController, MgnregaController, LabourSummaryController],
+  controllers: [WorkersController, BookingsController, AssignmentsController, LookupsController, MgnregaController, LabourSummaryController,
+    // PC-56 TENANT-SW-b: W165 review desk, W166 wage runs + advances
+    AttendanceReviewController, WageRunsController, AdvancesController],
   providers: [
     WorkerProfileService, LabourBookingService, MinimumWageService, AttendanceService, LabourLookupsService, LabourMoneyService,
     WorkerProfileRepository, LabourBookingRepository, BookingAssignmentRepository, MinimumWageRepository, AttendanceRepository, LabourMoneyRepository,
@@ -49,10 +60,14 @@ import { AttendanceRepository } from './repositories/attendance.repository';
     { provide: STATE_LEDGER_PROVIDER, useFactory: () => stateLedgerProviderFromEnv(process.env) },
     { provide: BookingRespondTimeoutJob, inject: [UNIT_OF_WORK, LabourBookingRepository, LabourBookingService],
       useFactory: (u: UnitOfWork, r: LabourBookingRepository, s: LabourBookingService) => new BookingRespondTimeoutJob(5 * 60_000, u, r, s) },
+    // PC-56 TENANT-SW-b · C — the daily 18:00 IST wage run (+ its 16:00 retry ladder) and worker advances
+    WageRunService, WageRunRepository, WorkerAdvanceService,
+    { provide: WageRunJob, inject: [WageRunService, FlagsService],
+      useFactory: (w: WageRunService, flags: FlagsService) => new WageRunJob(5 * 60_000, w, (tenantId) => flags.isEnabled('labour', { tenantId })) },
   ],
   exports: [WorkerProfileService, LabourBookingService],
 })
 export class LabourModule implements OnModuleInit {
-  constructor(@Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry, private readonly respondTimeout: BookingRespondTimeoutJob) {}
-  onModuleInit(): void { this.jobs.register(this.respondTimeout); }
+  constructor(@Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry, private readonly respondTimeout: BookingRespondTimeoutJob, private readonly wageRun: WageRunJob) {}
+  onModuleInit(): void { this.jobs.register(this.respondTimeout); this.jobs.register(this.wageRun); }
 }

@@ -94,11 +94,11 @@ describe('the helpers', () => {
     expect([...REFERRAL_TABS]).toEqual(['all', 'invited', 'signed_up', 'activated']);
   });
   it('a row offers suspend (+ pay out when owed) or reinstate; Retry is a page load', () => {
-    expect(actsFor({ isActive: true, owedMinor: '684000' })).toEqual(['suspend', 'payout']);
-    expect(actsFor({ isActive: true, owedMinor: '0' })).toEqual(['suspend']);
+    expect(actsFor({ isActive: true, owedMinor: '684000' })).toEqual(['suspend', 'payout', 'message']);   // SW-b: + Message (W160)
+    expect(actsFor({ isActive: true, owedMinor: '0' })).toEqual(['suspend', 'message']);
     expect(actsFor({ isActive: false, owedMinor: '5000' })).toEqual(['reinstate']);
     expect(retryIsMutation()).toBe(false);
-    expect([...AMB_ACTS]).toEqual(['suspend', 'reinstate', 'payout']);
+    expect([...AMB_ACTS]).toEqual(['suspend', 'reinstate', 'payout', 'message']);
   });
   it('last active in words; never-recorded is its own sentence; 60 days is "inactive"', () => {
     const now = Date.parse('2026-10-02T12:00:00Z');

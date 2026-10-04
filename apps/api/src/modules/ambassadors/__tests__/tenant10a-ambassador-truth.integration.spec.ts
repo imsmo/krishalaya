@@ -1,7 +1,7 @@
 // modules/ambassadors/__tests__/tenant10a-ambassador-truth.integration.spec.ts · PC-56 TENANT-10a — real PG16, the harness's
 // database (the real migrations through 0184 + seeds), every tenant-realm query as `kv_app` under RLS.
-//   1. A1 / F-1 (DEV-55) — two earnings accrue → ONE payout stamps BOTH → a second payout is NOTHING_TO_PAYOUT and the
-//      wallet is unchanged; the audit row names the human and the reason;
+//   1. A1 / F-1 (DEV-55) — two earnings accrue → ONE run line stamps BOTH → a second run finds nothing owed and the
+//      wallet is unchanged; the audit row names the checker (PC-56 TENANT-SW-b: exception run, tenant Main, maker-checker);
 //   2. A1 — the stamp mismatch rolls the wallet leg back (a row stamped behind the payout's back);
 //   3. A8 / F-17 — two rows in the SAME millisecond, page size 1: page two is the second row (earnings, roster, referral desk);
 //   4. A5 / F-6 — kv_app under a tenant READS the platform plan and CANNOT insert or update a NULL-tenant plan; its own works;
@@ -28,6 +28,8 @@ import { CommissionPlanRepository } from '../repositories/commission-plan.reposi
 import { AmbassadorEarningRepository } from '../repositories/ambassador-earning.repository';
 import { ReferralRepository } from '../repositories/referral.repository';
 import { AmbassadorEarningService } from '../services/ambassador-earning.service';
+import { PayoutRunService } from '../services/payout-run.service';
+import { PayoutRunRepository } from '../repositories/payout-run.repository';
 import { AmbassadorProfileService } from '../services/ambassador-profile.service';
 import { AmbassadorRosterReadModel } from '../read-models/ambassador-roster.read-model';
 import { ReferralDeskReadModel } from '../read-models/referral-desk.read-model';
@@ -40,10 +42,10 @@ const run = APP_URL && ADMIN_URL ? describe : describe.skip;
 
 run('PC-56 TENANT-10a · ambassador truth (integration, real Postgres + RLS as kv_app)', () => {
   let pools: PgPoolProvider; let admin: Pool; let uow: PgUnitOfWork; let replica: PgReadReplicaProvider;
-  let earnings: AmbassadorEarningService; let profiles: AmbassadorProfileService; let roster: AmbassadorRosterReadModel; let desk: ReferralDeskReadModel;
+  let earnings: AmbassadorEarningService; let profiles: AmbassadorProfileService; let roster: AmbassadorRosterReadModel; let desk: ReferralDeskReadModel; let runs: PayoutRunService;
   let eRepo: AmbassadorEarningRepository; let pRepo: AmbassadorProfileRepository; let rRepo: ReferralRepository;
   const tenantA = randomUUID(); const tenantB = randomUUID();
-  const adminUser = randomUUID(); const ambUser = randomUUID(); const amb2User = randomUUID(); const farmer = randomUUID(); const buyer = randomUUID();
+  const adminUser = randomUUID(); const ambUser = randomUUID(); const amb2User = randomUUID(); const farmer = randomUUID(); const buyer = randomUUID(); const checkerUser = randomUUID();
   let ambassadorId = ''; let ambassador2Id = '';
   const mgr = { userId: adminUser, canManage: true };
 
@@ -64,7 +66,9 @@ run('PC-56 TENANT-10a · ambassador truth (integration, real Postgres + RLS as k
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
-    for (const u of [adminUser, ambUser, amb2User, farmer, buyer]) await makeUser(admin, u);
+    for (const u of [adminUser, ambUser, amb2User, farmer, buyer, checkerUser]) await makeUser(admin, u);
+    // PC-56 TENANT-SW-b: two tenant_admins (maker + checker) and a funded tenant Main (ambassador pay leaves the TENANT's wallet)
+    for (const u of [adminUser, checkerUser]) await admin.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) SELECT $1, $2, r.id, true FROM roles r WHERE r.code = 'tenant_admin' ON CONFLICT DO NOTHING`, [u, tenantA]);
     await admin.query(`UPDATE users SET full_name = 'Dinesh Bhai Makwana' WHERE id = $1`, [ambUser]);
     await admin.query(`UPDATE users SET full_name = 'Meera Ben Joshi' WHERE id = $1`, [farmer]);
     for (const u of [ambUser, amb2User, farmer]) await admin.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) SELECT $1, $2, r.id, true FROM roles r WHERE r.code = 'farmer' ON CONFLICT DO NOTHING`, [u, tenantA]);
@@ -78,45 +82,56 @@ run('PC-56 TENANT-10a · ambassador truth (integration, real Postgres + RLS as k
     pRepo = new AmbassadorProfileRepository(replica as any); eRepo = new AmbassadorEarningRepository(replica as any); rRepo = new ReferralRepository(replica as any);
     roster = new AmbassadorRosterReadModel(replica as any); desk = new ReferralDeskReadModel(replica as any);
     earnings = new AmbassadorEarningService(uow, outbox, idem, metrics, wallet, audit, new CommissionPlanRepository(replica as any), eRepo, pRepo);
+    runs = new PayoutRunService(uow, outbox, idem, metrics, wallet, audit, new PayoutRunRepository(replica as any), eRepo, pRepo);
+    await uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'order_payment', idempotencyKey: `fund-tenant:${randomUUID()}`, initiatedBy: 'system',
+      legs: [{ account: { kind: 'tenant', tenantId: tenantA, accountCode: 'main' }, amountMinor: 1_000_000n }, { account: { kind: 'platform', accountCode: 'gateway' }, amountMinor: -1_000_000n }] }), { userId: 'system' });
     profiles = new AmbassadorProfileService(uow, outbox, metrics, idem, audit, pRepo, roster);
     ambassadorId = (await profiles.enroll(tenantA, mgr, { userId: ambUser, clusterRegionIds: [], kioskEnabled: true, aepsEnabled: false, monthlyStipendMinor: '0' }, `k-${randomUUID()}`, null)).id;
     ambassador2Id = (await profiles.enroll(tenantA, mgr, { userId: amb2User, clusterRegionIds: [], kioskEnabled: false, aepsEnabled: true, monthlyStipendMinor: '0' }, `k-${randomUUID()}`, null)).id;
   }, 60000);
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
 
-  it('A1 · ambassador payout: two earnings → ONE payout stamps BOTH → a second payout pays nothing and the wallet is unchanged', async () => {
+  // PC-56 TENANT-SW-b: the 10a payout is an EXCEPTION RUN — prepared by one tenant_admin, confirmed (and paid) by ANOTHER, from the TENANT
+  // Main wallet. The 10a guarantees are re-proven through it: both earnings stamped by ONE line, nothing paid twice, the stamp mismatch rolls
+  // the line's wallet leg back.
+  it('A1 · ambassador payout: two earnings → ONE line stamps BOTH → a second run finds nothing owed and the wallet is unchanged', async () => {
     await earn(ambassadorId, 2500); await earn(ambassadorId, 5000);
     const before = await bal(ambUser);
-    const out = await earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassadorId, `idem-${randomUUID()}`, 'weekly earnings run');
-    expect(out).toMatchObject({ paidMinor: '7500', earningCount: 2 });
+    const prepared: any = await runs.prepareByPerson(tenantA, { userId: adminUser }, { kind: 'exception', ambassadorId, reason: 'weekly earnings run' }, `idem-${randomUUID()}`);
+    const out: any = await runs.confirm(tenantA, { userId: checkerUser }, prepared.id, 'weekly earnings run', `idem-${randomUUID()}`);
+    expect(out).toMatchObject({ paid: 1, paidMinor: '7500', status: 'paid' });
+    const lineId = (await admin.query(`SELECT id FROM ambassador_payout_run_lines WHERE run_id=$1`, [prepared.id])).rows[0].id;
     const rows = (await admin.query(`SELECT payout_id FROM ambassador_earnings WHERE ambassador_id=$1`, [ambassadorId])).rows;
     expect(rows).toHaveLength(2);
-    expect(rows.every((r) => r.payout_id === out.payoutId)).toBe(true);           // DEV-55: both were NULL here at 9743e8b
+    expect(rows.every((r) => r.payout_id === lineId)).toBe(true);                // DEV-55: both were NULL here at 9743e8b
     const afterFirst = await bal(ambUser);
     expect(afterFirst - before).toBe(7500n);
-    await expect(earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassadorId, `idem-${randomUUID()}`, 'weekly earnings run')).rejects.toMatchObject({ code: 'NOTHING_TO_PAYOUT' });
+    await expect(runs.prepareByPerson(tenantA, { userId: adminUser }, { kind: 'exception', ambassadorId, reason: 'weekly earnings run' }, `idem-${randomUUID()}`)).rejects.toMatchObject({ code: 'AMB_RUN_NOTHING_OWED' });
     expect(await bal(ambUser)).toBe(afterFirst);                                   // no double pay
     const a = (await admin.query(`SELECT actor_user_id, reason, new_value FROM audit_log WHERE action='ambassador.payout.run' AND entity_id=$1`, [ambassadorId])).rows;
     expect(a).toHaveLength(1);
-    expect(a[0]).toMatchObject({ actor_user_id: adminUser, reason: 'weekly earnings run' });
-    expect(a[0].new_value).toMatchObject({ payoutId: out.payoutId, totalMinor: '7500', count: 2 });
-    const txn = (await admin.query(`SELECT initiated_by, idempotency_key FROM ledger_transactions WHERE reference_id=$1`, [out.payoutId])).rows[0];
-    expect(txn.initiated_by).toBe(adminUser);
-    expect(txn.idempotency_key).toMatch(new RegExp(`^ambpayout:${ambassadorId}:[0-9a-f]{64}$`));
+    expect(a[0]).toMatchObject({ actor_user_id: checkerUser, reason: 'weekly earnings run' });
+    expect(a[0].new_value).toMatchObject({ payoutId: lineId, totalMinor: '7500', count: 2, source: 'tenant_main' });
+    const txn = (await admin.query(`SELECT initiated_by, idempotency_key FROM ledger_transactions WHERE reference_id=$1`, [lineId])).rows[0];
+    expect(txn.initiated_by).toBe(checkerUser);
+    expect(txn.idempotency_key).toBe(`ambrun:${prepared.id}:${ambassadorId}`);
   }, 30000);
 
-  it('A1 · ambassador payout mismatch: a stamp that misses a locked row rolls the WALLET LEG back (nothing paid)', async () => {
+  it('A1 · ambassador payout mismatch: a stamp that misses a locked row rolls the line\'s WALLET LEG back (nothing paid)', async () => {
     await earn(ambassador2Id, 1000);
     const before = await bal(amb2User);
+    const prepared: any = await runs.prepareByPerson(tenantA, { userId: adminUser }, { kind: 'exception', ambassadorId: ambassador2Id, reason: 'weekly earnings run' }, `idem-${randomUUID()}`);
     // Simulate the DEV-55 class: the repository stamps fewer rows than it locked.
     const real = eRepo.markPaid.bind(eRepo);
     const spy = jest.spyOn(eRepo, 'markPaid').mockImplementation(async (tx, t, keys, p) => { await real(tx, t, keys, p); return keys.length - 1; });
-    await expect(earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassador2Id, `idem-${randomUUID()}`, 'weekly earnings run')).rejects.toMatchObject({ code: 'PAYOUT_MARK_MISMATCH' });
+    const out: any = await runs.confirm(tenantA, { userId: checkerUser }, prepared.id, 'weekly earnings run', `idem-${randomUUID()}`);
     spy.mockRestore();
+    expect(out).toMatchObject({ paid: 0, failed: 1 });
+    expect((await admin.query(`SELECT status, failure_code FROM ambassador_payout_run_lines WHERE run_id=$1`, [prepared.id])).rows[0]).toEqual({ status: 'failed', failure_code: 'PAYOUT_MARK_MISMATCH' });
     expect(await bal(amb2User)).toBe(before);
     expect((await admin.query(`SELECT count(*)::int n FROM ambassador_earnings WHERE ambassador_id=$1 AND payout_id IS NULL`, [ambassador2Id])).rows[0].n).toBe(1);
-    const paid = await earnings.payoutAmbassador(tenantA, { userId: adminUser }, ambassador2Id, `idem-${randomUUID()}`, 'weekly earnings run');
-    expect(paid.paidMinor).toBe('1000');
+    const paid: any = await runs.payAgain(tenantA, { userId: checkerUser }, prepared.id, 'weekly earnings run (re-run)', `idem-${randomUUID()}`);
+    expect(paid).toMatchObject({ paid: 1, paidMinor: '1000', status: 'paid' });
   }, 30000);
 
   it('A8 · ambassador earnings: two rows in the SAME millisecond, page size 1 → page two is the second row', async () => {

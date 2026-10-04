@@ -1119,7 +1119,7 @@ describe('HttpClient via resources', () => {
       : n === 3 ? { body: { data: { id: 'amb1', isActive: false } } }
       : n === 4 ? { body: { data: { id: 'amb1', isActive: true } } }
       : n === 5 ? { body: { data: [{ id: 'e1', ambassadorId: 'amb1', amountMinor: '12000', payoutId: null }], meta: { nextCursor: null } } }
-      : n === 6 ? { body: { data: { payoutId: 'po1', ambassadorId: 'amb1', paidMinor: '12000', earningCount: 1 } } }
+      : n === 6 ? { body: { data: { id: 'run1', kind: 'exception', status: 'prepared', periodEnd: '2026-10-01T17:30:00.000Z', payDate: '2026-10-02', lineCount: 1, totalCommissionMinor: '12000', totalStipendMinor: '0', fundingCheck: { mainBalanceMinor: '50000', totalMinor: '12000', covers: true, shortfallMinor: '0', readAt: '2026-10-01T17:30:00.000Z' } } } }
       : n === 7 ? { body: { data: { id: 'r1', code: 'KV-ABC', status: 'activated' } } }
       : { body: { data: { id: 't1', ambassadorId: 'amb1', metric: 'onboardings', periodStart: '2026-07-01', periodEnd: '2026-07-31', targetValue: '25' } } });
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
@@ -1146,7 +1146,7 @@ describe('HttpClient via resources', () => {
     expect(calls[5].url).toBe('https://api.test/v1/ambassadors/amb1/payout');
     expect(hdr(5)['idempotency-key']).toBe('idem-po');
     expect(body(5)).toEqual({ reason: 'weekly run' });
-    expect(po.paidMinor).toBe('12000');
+    expect([po.kind, po.status, po.totalCommissionMinor]).toEqual(['exception', 'prepared', '12000']);   // SW-b: the exception act PREPARES a run
     await c.ambassadors.activateReferral('r1', 'first sale confirmed');
     expect(calls[6].url).toBe('https://api.test/v1/ambassadors/referrals/r1/activate');
     expect(body(6)).toEqual({ reason: 'first sale confirmed' });
@@ -1160,7 +1160,7 @@ describe('HttpClient via resources', () => {
       n === 1 ? { body: { data: { activeCount: 2, owedThisWeekMinor: '684000', uncoveredVillages: null, uncoveredReason: 'tenant_village_set_not_recorded' } } }
       : n === 2 ? { body: { data: { userId: 'u1', displayName: 'Dinesh Bhai M.', phoneMasked: '+91 99••• ••205', isMember: true, ambassadorId: null } } }
       : n === 3 || n === 4 ? { body: { data: { ready: true, fields: [], refusals: [], diff: null, entityType: 'ambassador_profile', member: null } } }
-      : n === 5 ? { body: { data: { batchId: 'b1', attempted: 1, paid: 1, nothingToPay: 0, failed: 0, totalPaidMinor: '12000', lines: [] } } }
+      : n === 5 ? { body: { data: { id: 'run1', kind: 'weekly', status: 'prepared', periodEnd: '2026-10-01T17:30:00.000Z', payDate: '2026-10-02', lineCount: 1, totalCommissionMinor: '12000', totalStipendMinor: '0', fundingCheck: { mainBalanceMinor: '0', totalMinor: '12000', covers: false, shortfallMinor: '12000', readAt: '2026-10-01T17:30:00.000Z' } } } }
       : n === 6 ? { body: { data: [{ id: 'r1', code: 'MEERA88', status: 'invited', referee: null, reward: { state: 'not_configured' } }], meta: { nextCursor: 'c2', total: 148 } } }
       : { body: { data: { invites30d: 148, rewardsPaid30dMinor: null, rewardsPaidReason: 'reward_rule_not_configured' } } });
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
@@ -1176,12 +1176,95 @@ describe('HttpClient via resources', () => {
     expect(calls[4].url).toBe('https://api.test/v1/ambassadors/payouts/run');
     expect((calls[4].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-run');
     expect(JSON.parse(String(calls[4].init.body))).toEqual({ reason: 'weekly run' });
-    expect(run.paid).toBe(1);
+    expect([run.status, run.fundingCheck.covers]).toEqual(['prepared', false]);
     const desk = await c.ambassadors.referralDesk({ status: 'invited' });
     expect(calls[5].url).toBe('https://api.test/v1/ambassadors/referrals/all?status=invited&limit=50');
     expect([desk.total, desk.nextCursor, desk.items[0].referee]).toEqual([148, 'c2', null]);
     expect((await c.ambassadors.referralSummary()).rewardsPaid30dMinor).toBeNull();
     expect(calls[6].url).toBe('https://api.test/v1/ambassadors/referrals/summary');
+  });
+
+  it('PC-56 TENANT-SW-b · ambassador runs (current · prepare · confirm · pay · refuse · message) — reason + idem on every money act', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: { run: null, nextAutoPrepareAt: '2026-10-08T17:30:00.000Z', nextPayDate: '2026-10-09' } } }
+      : n === 2 ? { body: { data: [{ id: 'run0', status: 'paid', maker: 'job' }], meta: { nextCursor: 'cx' } } }
+      : n === 3 ? { body: { data: { id: 'run1', kind: 'weekly', status: 'prepared', lineCount: 2, totalCommissionMinor: '10', totalStipendMinor: '5', fundingCheck: { covers: true } } } }
+      : n === 4 || n === 5 ? { body: { data: { runId: 'run1', paid: 2, unfunded: 0, failed: 0, paidMinor: '15', status: 'paid' } } }
+      : n === 6 ? { body: { data: { runId: 'run1', status: 'refused' } } }
+      : { body: { data: { ambassadorId: 'amb1', queued: true } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    expect((await c.ambassadors.currentRun()).run).toBeNull();
+    expect(calls[0].url).toBe('https://api.test/v1/ambassadors/payout-runs/current');
+    expect((await c.ambassadors.runs()).nextCursor).toBe('cx');
+    expect(calls[1].url).toBe('https://api.test/v1/ambassadors/payout-runs?limit=20');
+    await c.ambassadors.prepareRun('weekly run, Thursday', 'k-prep');
+    expect([calls[2].url, (calls[2].init.headers as Record<string, string>)['idempotency-key']]).toEqual(['https://api.test/v1/ambassadors/payout-runs/prepare', 'k-prep']);
+    expect((await c.ambassadors.confirmRun('run1', 'checked the lines', 'k-conf')).status).toBe('paid');
+    expect([calls[3].url, (calls[3].init.headers as Record<string, string>)['idempotency-key'], JSON.parse(String(calls[3].init.body))]).toEqual(['https://api.test/v1/ambassadors/payout-runs/run1/confirm', 'k-conf', { reason: 'checked the lines' }]);
+    await c.ambassadors.payRun('run1', 'tenant wallet topped up', 'k-pay');
+    expect(calls[4].url).toBe('https://api.test/v1/ambassadors/payout-runs/run1/pay');
+    await c.ambassadors.refuseRun('run1', 'wrong period');
+    expect([calls[5].url, JSON.parse(String(calls[5].init.body))]).toEqual(['https://api.test/v1/ambassadors/payout-runs/run1/refuse', { reason: 'wrong period' }]);
+    await c.ambassadors.message('amb1', { message: 'Meeting at 10', reason: 'camp tomorrow' }, 'k-msg');
+    expect([calls[6].url, (calls[6].init.headers as Record<string, string>)['idempotency-key']]).toEqual(['https://api.test/v1/ambassadors/amb1/message', 'k-msg']);
+  });
+
+  it('PC-56 TENANT-SW-b · attendance review desk, wage runs, advances — the right paths, keys and bodies', async () => {
+    const { fn, calls } = fakeFetch((_c, n) =>
+      n === 1 ? { body: { data: [{ id: 'd1', workerPhoneMasked: '+91 98••• ••412' }], meta: { nextCursor: 'c2' } } }
+      : n === 9 ? { body: { data: [{ id: 'w1', runDate: '2026-10-03' }], meta: { nextBefore: '2026-10-03' } } }
+      : n === 11 ? { body: { data: [{ id: 'a1', status: 'recovering' }], meta: { nextCursor: null, totals: { outstandingMinor: '5000', workers: 1, advances: 1 } } } }
+      : { body: { data: { ok: true } } });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const hdr = (i: number) => calls[i].init.headers as Record<string, string>;
+    const body = (i: number) => JSON.parse(String(calls[i].init.body));
+    expect((await c.labour.attendanceReview({ status: 'needs_review' })).nextCursor).toBe('c2');
+    expect(calls[0].url).toBe('https://api.test/v1/labour/attendance?status=needs_review&limit=50');
+    await c.labour.attendanceSummary();
+    expect(calls[1].url).toBe('https://api.test/v1/labour/attendance/summary');
+    await c.labour.confirmAllClean(undefined, 'k-clean');
+    expect([calls[2].url, hdr(2)['idempotency-key'], body(2)]).toEqual(['https://api.test/v1/labour/attendance/confirm-clean', 'k-clean', {}]);
+    await c.labour.backfillAttendance({ assignmentId: 'as1', workDate: '2026-10-01', hoursRegular: 8, mediaId: 'm1', reason: 'signed muster sheet' }, 'k-bf');
+    expect([calls[3].url, hdr(3)['idempotency-key']]).toEqual(['https://api.test/v1/labour/attendance/backfill', 'k-bf']);
+    await c.labour.reviewAttendance('d1', 'vouch', 'I saw her on the field');
+    expect([calls[4].url, body(4)]).toEqual(['https://api.test/v1/labour/attendance/d1/vouch', { reason: 'I saw her on the field' }]);
+    await c.labour.reviewAttendance('d1', 'refuse', 'nobody was on the field');
+    expect(calls[5].url).toBe('https://api.test/v1/labour/attendance/d1/refuse');
+    await c.labour.confirmAttendanceDay('d1', 'ok', 'k-c');
+    expect([calls[6].url, hdr(6)['idempotency-key']]).toEqual(['https://api.test/v1/labour/attendance/d1/confirm', 'k-c']);
+    await c.labour.wagesToday();
+    expect(calls[7].url).toBe('https://api.test/v1/labour/wages/today');
+    expect((await c.labour.wageRuns()).nextBefore).toBe('2026-10-03');
+    expect(calls[8].url).toBe('https://api.test/v1/labour/wages/runs?limit=14');
+    await c.labour.wageRun('w1');
+    expect(calls[9].url).toBe('https://api.test/v1/labour/wages/runs/w1');
+    expect((await c.labour.advances({ status: 'outstanding' })).totals?.outstandingMinor).toBe('5000');
+    expect(calls[10].url).toBe('https://api.test/v1/labour/advances?status=outstanding&limit=50');
+    await c.labour.advanceCap('as1');
+    expect(calls[11].url).toBe('https://api.test/v1/labour/advances/cap/as1');
+    await c.labour.requestAdvance({ assignmentId: 'as1', amountMinor: '20000', reason: 'school fees' }, 'k-adv');
+    expect([calls[12].url, hdr(12)['idempotency-key'], body(12).amountMinor]).toEqual(['https://api.test/v1/labour/advances', 'k-adv', '20000']);
+    await c.labour.approveAdvance('a1', { reason: 'employer agreed', consent: { channel: 'otp' } }, 'k-ap');
+    expect([calls[13].url, hdr(13)['idempotency-key'], body(13).consent]).toEqual(['https://api.test/v1/labour/advances/a1/approve', 'k-ap', { channel: 'otp' }]);
+    await c.labour.rejectAdvance('a1', 'over the cap');
+    expect(calls[14].url).toBe('https://api.test/v1/labour/advances/a1/reject');
+  });
+
+  it('PC-56 TENANT-SW-b · the schemes desk — summary, table, pipeline tab, sweep (keyed), call list, one-field reveal', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { ok: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.schemes.deskSummary();
+    expect(calls[0].url).toBe('https://api.test/v1/schemes/desk/summary');
+    await c.schemes.deskSchemes();
+    expect(calls[1].url).toBe('https://api.test/v1/schemes/desk/schemes');
+    await c.schemes.deskPipeline('PM-KISAN', { group: 'rejected_appealed' });
+    expect(calls[2].url).toBe('https://api.test/v1/schemes/desk/pipeline/PM-KISAN?group=rejected_appealed&limit=50');
+    await c.schemes.runSweep('PM-KISAN', 'camp call list', 'k-sw');
+    expect([calls[3].url, (calls[3].init.headers as Record<string, string>)['idempotency-key'], JSON.parse(String(calls[3].init.body))]).toEqual(['https://api.test/v1/schemes/desk/sweeps', 'k-sw', { schemeCode: 'PM-KISAN', reason: 'camp call list' }]);
+    await c.schemes.sweep('sw1', { all: true });
+    expect(calls[4].url).toBe('https://api.test/v1/schemes/desk/sweeps/sw1?all=true&limit=50');
+    await c.schemes.revealFormField('ap1', 'bank_ifsc', 'member asked to check the IFSC on file');
+    expect([calls[5].url, JSON.parse(String(calls[5].init.body))]).toEqual(['https://api.test/v1/schemes/desk/applications/ap1/reveal', { field: 'bank_ifsc', reason: 'member asked to check the IFSC on file' }]);
   });
 
   it('schemes operator: queue → verify → clarify → approve → recordDbt hit the right paths (P1-12)', async () => {

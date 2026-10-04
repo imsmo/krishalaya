@@ -27,6 +27,7 @@ import { AmbassadorsController } from '../controllers/v1/ambassadors.controller'
 import { ReferralsController } from '../controllers/v1/referrals.controller';
 import { EarningsController } from '../controllers/v1/earnings.controller';
 import { AepsController } from '../controllers/v1/aeps.controller';
+import { PayoutRunsController } from '../controllers/v1/payout-runs.controller';
 import { PERMISSIONS_KEY } from '../../../core/auth/permissions.guard';
 import { AUDITOR_READ_ACT_KEY, auditorVerdict } from '../../../core/auth/auditor-read-only.guard';
 
@@ -279,7 +280,7 @@ describe('the route-order gate — a parametric route never shadows a static one
   // The module's registration order, read from the module file itself (the order Express will match in).
   const moduleSrc = fs.readFileSync(path.join(__dirname, '../ambassadors.module.ts'), 'utf8');
   const order = /controllers:\s*\[([^\]]+)\]/.exec(moduleSrc)![1].split(',').map((s) => s.trim());
-  const classes: Record<string, any> = { AmbassadorsController, ReferralsController, EarningsController, FieldOpsController, AepsController };
+  const classes: Record<string, any> = { AmbassadorsController, ReferralsController, EarningsController, FieldOpsController, AepsController, PayoutRunsController };
   const routes: Array<{ m: string; segs: string[]; label: string; perms: string[] | undefined; act?: unknown }> = [];
   for (const name of order) {
     const cls = classes[name];
@@ -313,10 +314,14 @@ describe('the route-order gate — a parametric route never shadows a static one
     expect(writes.map((r) => r.label.split(' (')[0])).toEqual(expect.arrayContaining(['POST /ambassadors/review', 'POST /ambassadors/payouts/run', 'POST /ambassadors/:id/review', 'POST /ambassadors/:id/payout', 'POST /ambassadors/referrals/:id/activate']));
     for (const r of writes) { expect(r.act).toBeUndefined(); expect(auditorVerdict(['auditor'], r.m, r.act as never)).toBe('refused'); }
   });
-  it('A2 / A13 · the two payout routes read ambassador.payout and nothing else; the reads stay manage', () => {
+  it('A2 / A13 · PC-56 TENANT-SW-b: the two 10a payout routes now PREPARE a run (ambassador.payout.prepare); confirming reads ambassador.payout; the reads stay manage', () => {
     const by = (label: string) => routes.find((r) => r.label.startsWith(label))!;
-    expect(by('POST /ambassadors/:id/payout').perms).toEqual(['ambassador.payout']);
-    expect(by('POST /ambassadors/payouts/run').perms).toEqual(['ambassador.payout']);
+    expect(by('POST /ambassadors/:id/payout').perms).toEqual(['ambassador.payout.prepare']);
+    expect(by('POST /ambassadors/payouts/run').perms).toEqual(['ambassador.payout.prepare']);
+    expect(by('POST /ambassadors/payout-runs/prepare').perms).toEqual(['ambassador.payout.prepare']);
+    expect(by('POST /ambassadors/payout-runs/:runId/confirm').perms).toEqual(['ambassador.payout']);
+    expect(by('POST /ambassadors/payout-runs/:runId/pay').perms).toEqual(['ambassador.payout']);
+    expect(by('POST /ambassadors/:id/message').perms).toEqual(['ambassador.manage']);
     expect(by('GET /ambassadors/summary').perms).toEqual(['ambassador.manage']);
     expect(by('GET /ambassadors/referrals/all').perms).toEqual(['ambassador.manage']);
     expect(by('GET /ambassadors/referrals/summary').perms).toEqual(['ambassador.manage']);

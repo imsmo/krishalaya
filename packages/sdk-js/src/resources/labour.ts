@@ -5,7 +5,8 @@
 // hard-gates accepting work on it. register carries an Idempotency-Key (Law 3). Money is bigint minor strings
 // (Law 2). Gated server-side by the `labour` flag.
 import { HttpClient } from '../http';
-import { WorkerProfile, WorkerCard, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups, Page, EmployerConsentInput, LabourBookingPage, LabourPayRun, LabourSummary, LabourDay } from '../types';
+import { WorkerProfile, WorkerCard, LabourBooking, LabourAssignment, LabourAttendance, LabourLookups, Page, EmployerConsentInput, LabourBookingPage, LabourPayRun, LabourSummary, LabourDay,
+  AttendanceReviewFilter, AttendanceReviewRow, AttendanceReviewSummary, AttendanceBackfillInput, WageToday, WageRun, WageRunDetail, WorkerAdvance, AdvancePage, AdvanceCap } from '../types';
 
 export interface WorkerPrefsInput {
   villageRegionId?: string; travelKm?: number; stayAwayOk?: 'same_day' | 'overnight' | 'weekly' | 'monthly';
@@ -225,5 +226,61 @@ export class LabourResource {
   }
   async mgnregaCardLedger(jobCardId: string, signal?: AbortSignal): Promise<{ guaranteeDays: number; observedByPlatform: { days: number; musterCount: number }; daysRemaining: number; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; daysUsedFy: number | null } }> {
     return (await this.http.request<{ guaranteeDays: number; observedByPlatform: { days: number; musterCount: number }; daysRemaining: number; authoritative: string; stateLedger: { provider: string; available: boolean; note: string; daysUsedFy: number | null } }>('GET', `labour/mgnrega/job-cards/${encodeURIComponent(jobCardId)}/ledger`, { signal })).data;
+  }
+
+  // --- PC-56 TENANT-SW-b · W165 the attendance REVIEW desk (labour.desk / booking.manage; workers masked; µs keyset) ---
+  async attendanceReview(params: { status?: AttendanceReviewFilter; since?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<AttendanceReviewRow>> {
+    const r = await this.http.request<AttendanceReviewRow[]>('GET', 'labour/attendance', { query: { status: params.status, since: params.since, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** The four tiles (Clean · Needs review · paper_backfill · Unconfirmed > 24 h) — real counts. */
+  async attendanceSummary(signal?: AbortSignal): Promise<AttendanceReviewSummary> {
+    return (await this.http.request<AttendanceReviewSummary>('GET', 'labour/attendance/summary', { signal })).data;
+  }
+  /** "Confirm all clean records" — ONE keyed act; each day confirmed individually; the count comes back. */
+  async confirmAllClean(reason: string | undefined, idempotencyKey: string): Promise<{ confirmed: number; skippedOwn: number; considered: number; ids: string[] }> {
+    return (await this.http.request<{ confirmed: number; skippedOwn: number; considered: number; ids: string[] }>('POST', 'labour/attendance/confirm-clean', { body: reason ? { reason } : {}, idempotencyKey })).data;
+  }
+  /** The desk records a day from a signed paper sheet (evidence media + reason) → needs_review until the employer confirms. */
+  async backfillAttendance(input: AttendanceBackfillInput, idempotencyKey: string): Promise<{ id: string; assignmentId: string; workDate: string; method: 'paper_backfill'; reviewStatus: 'needs_review' }> {
+    return (await this.http.request<{ id: string; assignmentId: string; workDate: string; method: 'paper_backfill'; reviewStatus: 'needs_review' }>('POST', 'labour/attendance/backfill', { body: input, idempotencyKey })).data;
+  }
+  /** Vouch for / refuse a needs_review day (reason 10–500; never the worker; never a backfill's own recorder). */
+  async reviewAttendance(id: string, verdict: 'vouch' | 'refuse', reason: string): Promise<{ id: string; reviewStatus: 'vouched' | 'refused'; workDate: string }> {
+    return (await this.http.request<{ id: string; reviewStatus: 'vouched' | 'refused'; workDate: string }>('POST', `labour/attendance/${encodeURIComponent(id)}/${verdict}`, { body: { reason } })).data;
+  }
+  /** Confirm one day (never by the worker — the database compares the confirmer with the assigned worker). */
+  async confirmAttendanceDay(id: string, reason: string | undefined, idempotencyKey: string): Promise<{ id: string; status: 'confirmed'; workDate: string }> {
+    return (await this.http.request<{ id: string; status: 'confirmed'; workDate: string }>('POST', `labour/attendance/${encodeURIComponent(id)}/confirm`, { body: reason ? { reason } : {}, idempotencyKey })).data;
+  }
+
+  // --- W166 · the daily 18:00 IST wage run + worker advances ---
+  async wagesToday(signal?: AbortSignal): Promise<WageToday> {
+    return (await this.http.request<WageToday>('GET', 'labour/wages/today', { signal })).data;
+  }
+  async wageRuns(params: { before?: string; limit?: number } = {}, signal?: AbortSignal): Promise<{ items: WageRun[]; nextBefore: string | null }> {
+    const r = await this.http.request<WageRun[]>('GET', 'labour/wages/runs', { query: { before: params.before, limit: params.limit ?? 14 }, signal });
+    return { items: r.data, nextBefore: (r.meta?.nextBefore as string | null) ?? null };
+  }
+  async wageRun(id: string, signal?: AbortSignal): Promise<WageRunDetail> {
+    return (await this.http.request<WageRunDetail>('GET', `labour/wages/runs/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  async advances(params: { status?: 'requested' | 'outstanding' | 'disbursed' | 'recovering' | 'recovered' | 'rejected'; bookingId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<AdvancePage> {
+    const r = await this.http.request<WorkerAdvance[]>('GET', 'labour/advances', { query: { status: params.status, bookingId: params.bookingId, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, totals: (r.meta?.totals as AdvancePage['totals']) ?? null };
+  }
+  /** The form's cap preview (≤ 50 % of the expected wage; the database re-judges at the act). */
+  async advanceCap(assignmentId: string, signal?: AbortSignal): Promise<AdvanceCap> {
+    return (await this.http.request<AdvanceCap>('GET', `labour/advances/cap/${encodeURIComponent(assignmentId)}`, { signal })).data;
+  }
+  async requestAdvance(input: { assignmentId: string; amountMinor: string; reason: string }, idempotencyKey: string): Promise<{ id: string; status: 'requested'; amountMinor: string; assignmentId: string; bookingId: string }> {
+    return (await this.http.request<{ id: string; status: 'requested'; amountMinor: string; assignmentId: string; bookingId: string }>('POST', 'labour/advances', { body: input, idempotencyKey })).data;
+  }
+  /** Approve + disburse from the booking escrow (the employer, or `advance.approve` WITH the employer's consent). Never the requester. */
+  async approveAdvance(id: string, input: { reason: string; consent?: EmployerConsentInput }, idempotencyKey: string): Promise<{ id: string; status: 'disbursed'; amountMinor: string; txnId: string }> {
+    return (await this.http.request<{ id: string; status: 'disbursed'; amountMinor: string; txnId: string }>('POST', `labour/advances/${encodeURIComponent(id)}/approve`, { body: input, idempotencyKey })).data;
+  }
+  async rejectAdvance(id: string, reason: string): Promise<{ id: string; status: 'rejected' }> {
+    return (await this.http.request<{ id: string; status: 'rejected' }>('POST', `labour/advances/${encodeURIComponent(id)}/reject`, { body: { reason } })).data;
   }
 }

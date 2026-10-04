@@ -229,6 +229,12 @@ export type {
   BroadcastStatus, BroadcastAct, BroadcastFormInput, BroadcastCounts, BroadcastChannelCounts, BroadcastPage, BroadcastView, BroadcastRole, BroadcastImpact,
   BroadcastChannelImpact, BroadcastFormReview, BroadcastPreview, BroadcastActVerdict, BroadcastActs,
   WhatsAppRefusal, WhatsAppHub, WhatsAppOptinPolicy, WhatsAppOptinView, WhatsAppOptinInput, WhatsAppOptinReview,
+  // PC-56 TENANT-SW-b
+  AmbassadorRunKind, AmbassadorRunStatus, AmbassadorRunLineStatus, AmbassadorRunFunding, AmbassadorRunPrepared, AmbassadorRunLine, AmbassadorRun, AmbassadorRunDetail,
+  AmbassadorRunCurrent, AmbassadorRunPayOutcome, AmbassadorPay, AmbassadorDetail,
+  AttendanceReviewFilter, AttendanceReviewRow, AttendanceReviewSummary, AttendanceBackfillInput,
+  WageLineStatus, WageRun, WageRunLine, WageManualPayout, AdvanceTotals, WageToday, WageRunDetail, AdvanceStatus, WorkerAdvance, AdvancePage, AdvanceCap,
+  SchemePipelineGroup, SchemeDeskSummary, SchemeDeskRow, SchemeSweep, SchemeBlocker, SchemePipelineItem, SchemePipeline, SchemeSweepView,
 } from './types';
 
 // PC-56 TENANT-9a — the KYC desk.

@@ -7,8 +7,9 @@
 // (platform Fees → ambassador userMain, idempotent — Law 2/3/4). Gated by the `ambassadors` flag (default OFF).
 //
 // SCOPE: profiles + commission-plan resolution (7 seeded streams as data) + referrals (create/claim/activate) +
-// earning accrual (onboarding + sale, idempotent) + weekly payout. DEFERRED: milestone-bonus + 60-day
-// inactivity-reassignment jobs; AePS/kiosk operations; stipend disbursement; tier auto-promotion.
+// earning accrual (onboarding + sale, idempotent) + the WEEKLY RUN (PC-56 TENANT-SW-b: prepared Thursday 23:00 IST, confirmed by a
+// second tenant_admin, paid from the TENANT Main wallet, commission + the monthly stipend). DEFERRED: milestone-bonus + 60-day
+// inactivity-reassignment jobs; AePS/kiosk operations; tier auto-promotion; coupling the run to the dairy cycle (refused by name).
 //
 // PC-56 TENANT-10a — two module-level facts:
 //   • CONTROLLER ORDER IS ROUTE ORDER. Express matches in registration order, and AmbassadorsController owns the
@@ -50,15 +51,27 @@ import { ReferralRepository } from './repositories/referral.repository';
 import { AmbassadorVisitRepository } from './repositories/ambassador-visit.repository';
 import { AmbassadorTargetRepository } from './repositories/ambassador-target.repository';
 import { OrderCompletedHandler } from './events/handlers/order-completed.handler';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { FlagsService } from '../../core/feature-flags/flags.service';
+import { PayoutRunsController } from './controllers/v1/payout-runs.controller';
+import { PayoutRunService } from './services/payout-run.service';
+import { PayoutRunRepository } from './repositories/payout-run.repository';
+import { AmbassadorMessageService } from './services/ambassador-message.service';
+import { AmbassadorPayoutRunJob } from './jobs/payout-run.job';
 
 @Module({
   imports: [IdentityModule, ListingsModule],   // ConsentService + UserService (assisted onboarding) + ListingService (on-behalf listing) — Law 11 reuse
-  controllers: [ReferralsController, EarningsController, FieldOpsController, AepsController, AmbassadorsController],
+  // PC-56 TENANT-SW-b: PayoutRunsController (`ambassadors/payout-runs`) is a static prefix — registered BEFORE AmbassadorsController (`:id`).
+  controllers: [ReferralsController, EarningsController, FieldOpsController, AepsController, PayoutRunsController, AmbassadorsController],
   providers: [
     AmbassadorProfileService, CommissionPlanService, ReferralService, AmbassadorEarningService,
     AssistedOnboardingService, AmbassadorVisitService, AmbassadorTargetService, OnBehalfListingService, docExtractionProvider, LeaderboardReadModel, AmbassadorRosterReadModel, ReferralDeskReadModel,
     AmbassadorProfileRepository, CommissionPlanRepository, AmbassadorEarningRepository, ReferralRepository,
-    AmbassadorVisitRepository, AmbassadorTargetRepository, AepsService, AepsEventRepository],
+    AmbassadorVisitRepository, AmbassadorTargetRepository, AepsService, AepsEventRepository,
+    // PC-56 TENANT-SW-b · A — the weekly run (tenant wallet, maker-checker), its Thursday 23:00 IST preparer, the W160 message act
+    PayoutRunService, PayoutRunRepository, AmbassadorMessageService,
+    { provide: AmbassadorPayoutRunJob, inject: [PayoutRunService, FlagsService],
+      useFactory: (runs: PayoutRunService, flags: FlagsService) => new AmbassadorPayoutRunJob(15 * 60_000, runs, (tenantId) => flags.isEnabled('ambassadors', { tenantId })) }],
   exports: [AmbassadorEarningService],
 })
 export class AmbassadorsModule implements OnModuleInit {
@@ -68,9 +81,13 @@ export class AmbassadorsModule implements OnModuleInit {
     private readonly referrals: ReferralRepository,
     private readonly profiles: AmbassadorProfileRepository,
     private readonly earnings: AmbassadorEarningService,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    private readonly runJob: AmbassadorPayoutRunJob,
   ) {}
   // Referred-seller sale commission: consume orders.order_completed and accrue to the referring ambassador.
   onModuleInit(): void {
     this.registry.register(new OrderCompletedHandler(this.uow, this.referrals, this.profiles, this.earnings));
+    // PC-56 TENANT-SW-b: the Thursday 23:00 IST weekly-run PREPARER (kv_app UoW per tenant; it never pays — a checker confirms)
+    this.jobs.register(this.runJob);
   }
 }

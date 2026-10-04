@@ -143,6 +143,10 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('desk.manage','Desks: propose and confirm desk changes (a second tenant_admin confirms) and add / remove desk members — tenant_admin',NULL),
  -- [PC-56 TENANT-SW-a] commission rules become owner + checker proposals (no longer riding payout.approve); zones become lead + checker (0196).
  ('commission.manage','Commission rules: propose / confirm / refuse tenant commission rule changes (a second tenant_admin confirms) — tenant_admin',NULL),
+ -- [PC-56 TENANT-SW-b] ambassador pay from the tenant wallet under maker-checker; worker advances; the tenant schemes desk (0198).
+ ('ambassador.payout.prepare','Ambassador pay: prepare a weekly (or one-ambassador exception) run for a second tenant_admin to confirm',NULL),
+ ('advance.approve','Labour: approve a worker wage advance from the booking escrow (never the requester; the desk needs employer consent)','M28'),
+ ('scheme.desk','Schemes desk: pipeline, eligibility sweep (a call list, never an application), per-field form reveal',NULL),
  ('logistics.zones.manage','Delivery zones: propose zone create / fee re-point / deactivate (tenant_admin or fpo_coordinator; a tenant_admin confirms)',NULL),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
@@ -280,4 +284,6 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- [PC-56 TENANT-SW-a] commission + zone proposals (0196).
    OR (r.code IN ('tenant_admin') AND p.code IN ('commission.manage','logistics.zones.manage'))
    OR (r.code IN ('fpo_coordinator') AND p.code IN ('logistics.zones.manage'))
+   -- [PC-56 TENANT-SW-b] ambassador run maker, advance approver, schemes desk (0198).
+   OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('ambassador.payout.prepare','advance.approve','scheme.desk'))
 ON CONFLICT DO NOTHING;

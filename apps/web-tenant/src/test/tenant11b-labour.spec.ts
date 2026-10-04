@@ -116,7 +116,8 @@ describe('the pages say what is true', () => {
     expect(read('labour/page.tsx')).toMatch(/redirect\(/);
     const detail = read('ops/labour/[id]/page.tsx');
     for (const k of ['lab.broadcast.refused', 'lab.roster.matchRefused', 'lab.fairnessFee.refused', 'lab.retention.refused', 'lab.dignity.payRule', 'lab.cost.capNotSet']) expect(detail).toContain(k);
-    expect(read('ops/labour/page.tsx')).toContain("aria-disabled=\"true\"");
+    // PC-56 TENANT-SW-b built W166 / W165: the jobs screen now LINKS Wage runs and Attendance (it drew them disabled before)
+    expect(read('ops/labour/page.tsx')).toMatch(/<Link href=\{WAGES_HREF\}/);
   });
   it('the canon\'s same-day fairness fee is refused, never computed; the escrow figures are the API\'s', () => {
     expect(en['lab.fairnessFee.refused']).toMatch(/no fairness fee today/);

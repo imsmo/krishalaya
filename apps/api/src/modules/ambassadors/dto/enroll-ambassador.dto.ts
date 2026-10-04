@@ -46,3 +46,11 @@ export const ReinstateSchema = z.object({ reason: reason.optional() }).strict();
 export const PayoutSchema = z.object({ reason }).strict();
 /** Activating a referral accrues commission — a reason is required (F-12). */
 export const ActivateReferralSchema = z.object({ reason }).strict();
+
+/** PC-56 TENANT-SW-b — W160 "Message (Gujarati)": the desk's words (3–500, delivered verbatim) + a reason for the audit trail. */
+export const MessageAmbassadorSchema = z.object({ message: z.string().trim().min(3).max(500), reason }).strict();
+export type MessageAmbassadorDto = z.infer<typeof MessageAmbassadorSchema>;
+/** PC-56 TENANT-SW-b — a run act (prepare / confirm / refuse / pay) always carries a reason. */
+export const RunActSchema = z.object({ reason }).strict();
+export const RunListSchema = z.object({ cursor: z.string().max(200).optional(), limit: z.coerce.number().int().min(1).max(100).default(20) }).strict();
+export type RunListDto = z.infer<typeof RunListSchema>;

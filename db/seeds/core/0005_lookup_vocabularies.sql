@@ -283,6 +283,16 @@ SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
   ) AS v(type_code, code, default_name, meta, sort_order)
  WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
 
+-- [PC-56 TENANT-SW-b · 0198] ambassador weekly run line (tenant main -> ambassador main) and a worker's wage advance from the booking escrow.
+-- ALSO INSERTED BY MIGRATION 0198.
+INSERT INTO lookup_values (type_code,tenant_id,code,default_name,meta,sort_order)
+SELECT v.type_code, NULL, v.code, v.default_name, v.meta::jsonb, v.sort_order
+  FROM (VALUES
+ ('ledger_txn_type','ambassador_run','Ambassador weekly run line: commission + stipend (tenant main -> ambassador main), confirmed by a second tenant_admin','{}',210),
+ ('ledger_txn_type','wage_advance','Worker wage advance from the booking escrow (employer hold -> worker main), recovered from later wages','{}',211)
+  ) AS v(type_code, code, default_name, meta, sort_order)
+ WHERE NOT EXISTS (SELECT 1 FROM lookup_values x WHERE x.type_code=v.type_code AND x.tenant_id IS NULL AND x.code=v.code);
+
 -- [PC-56 TENANT-11b · 0187] Why a labour job was cancelled — canon W164's three reasons + `other` (the employer's own words,
 -- required by the API). Workers are told the reason. ALSO INSERTED BY MIGRATION 0187.
 INSERT INTO lookup_types (code,default_name,is_tenant_extendable) VALUES ('labour_cancel_reason','Labour job cancel reason',false)

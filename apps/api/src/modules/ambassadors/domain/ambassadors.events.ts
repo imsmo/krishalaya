@@ -15,3 +15,5 @@ export type DomainEvent = { type: string; payload: Record<string, unknown> };
 
 export const REFERRAL_STATUSES = ['invited', 'signed_up', 'activated', 'rewarded'] as const;
 export type ReferralStatus = (typeof REFERRAL_STATUSES)[number];
+/** PC-56 TENANT-SW-b: the member desk's per-person message (mapped to the `ambassador.message` notification, en/hi/gu). */
+export const AMBASSADOR_MESSAGE_EVENT = 'ambassadors.message';

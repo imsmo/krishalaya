@@ -11,8 +11,10 @@
 //   POST /ambassadors/:id/review      the edit form's review (diff against the profile as it stands)
 //   PATCH /ambassadors/:id            edit (audited before → after)
 //   POST /ambassadors/:id/suspend     reason REQUIRED · /reinstate reason optional
-//   POST /ambassadors/:id/payout      ambassador.payout · reason REQUIRED · Idempotency-Key
-//   POST /ambassadors/payouts/run     ambassador.payout · reason REQUIRED · Idempotency-Key — the weekly earnings run (A13)
+//   POST /ambassadors/:id/payout      PC-56 TENANT-SW-b: PREPARES a one-ambassador EXCEPTION run (ambassador.payout.prepare; reason;
+//                                     Idempotency-Key) — a DIFFERENT tenant_admin confirms it on W161; the money leaves the TENANT Main
+//   POST /ambassadors/payouts/run     PC-56 TENANT-SW-b: PREPARES this week's run now (ambassador.payout.prepare) — confirmed by a checker
+//   POST /ambassadors/:id/message     PC-56 TENANT-SW-b · W160 "Message (Gujarati)": a per-person notification (ambassador.manage; reason)
 // STATIC ROUTES ARE DECLARED BEFORE `:id` (Express matches in order), and this controller is registered LAST in the module.
 import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
@@ -27,13 +29,15 @@ import { normalizePhoneE164 } from '../../../../shared/utils/phone';
 import { AmbassadorProfileService } from '../../services/ambassador-profile.service';
 import { CommissionPlanService } from '../../services/commission-plan.service';
 import { AmbassadorEarningService } from '../../services/ambassador-earning.service';
+import { PayoutRunService } from '../../services/payout-run.service';
+import { AmbassadorMessageService } from '../../services/ambassador-message.service';
 import { AmbassadorRosterReadModel, RosterSort } from '../../read-models/ambassador-roster.read-model';
 import { AmbassadorsPermissions, canManageAmbassadors } from '../../policies/ambassadors.policies';
 import { decodeCursor } from '../../domain/cursor';
 import { AmbassadorNotFoundError } from '../../domain/ambassadors.errors';
 import {
   EnrollAmbassadorSchema, EnrollAmbassadorDto, UpdateAmbassadorSchema, UpdateAmbassadorDto, ReviewRecruitSchema, ReviewRecruitDto,
-  ReviewEditSchema, ReviewEditDto, SuspendSchema, ReinstateSchema, PayoutSchema,
+  ReviewEditSchema, ReviewEditDto, SuspendSchema, ReinstateSchema, PayoutSchema, MessageAmbassadorSchema, MessageAmbassadorDto,
 } from '../../dto/enroll-ambassador.dto';
 import { QueryAmbassadorsSchema, QueryAmbassadorsDto, CandidateQuerySchema, CandidateQueryDto } from '../../dto/query-ambassador.dto';
 import { QueryEarningsSchema, QueryEarningsDto } from '../../dto/query-earning.dto';
@@ -55,6 +59,8 @@ export class AmbassadorsController {
     private readonly plans: CommissionPlanService,
     private readonly earnings: AmbassadorEarningService,
     private readonly roster: AmbassadorRosterReadModel,
+    private readonly runs: PayoutRunService,
+    private readonly messages: AmbassadorMessageService,
   ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageAmbassadors(ctx) }; }
 
@@ -84,9 +90,10 @@ export class AmbassadorsController {
   reviewRecruit(@CurrentContext() ctx: RequestContext, @ZodBody(ReviewRecruitSchema) dto: ReviewRecruitDto) {
     return this.profiles.reviewRecruit(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
   }
-  @Post('payouts/run') @RequirePermissions(AmbassadorsPermissions.Payout)
+  @Post('payouts/run') @RequirePermissions(AmbassadorsPermissions.PayoutPrepare)
   runPayouts(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(PayoutSchema) dto: { reason: string }) {
-    return this.earnings.runPayouts(ctx.tenantId, { userId: ctx.userId }, `ambbatch:${ctx.tenantId}:${requireKey(key)}`, dto.reason).then((data) => ({ data }));
+    // PC-56 TENANT-SW-b: the 10a "weekly run" route now PREPARES the run; a different tenant_admin confirms it (W161)
+    return this.runs.prepareByPerson(ctx.tenantId, { userId: ctx.userId }, { kind: 'weekly', reason: dto.reason }, `ambbatch:${ctx.tenantId}:${requireKey(key)}`).then((data) => ({ data }));
   }
   @Get('me')
   mine(@CurrentContext() ctx: RequestContext) { return this.profiles.getMine(ctx.tenantId, this.actor(ctx)).then((data) => ({ data })); }
@@ -99,7 +106,8 @@ export class AmbassadorsController {
     // the detail page names the person exactly as the roster does (short name, masked phone, tier code, clusters, owed)
     const row = await this.roster.row(ctx.tenantId, uuidParam(id));
     if (!row) throw new AmbassadorNotFoundError(id);
-    return { data: row };
+    // PC-56 TENANT-SW-b · W160 "Owed this week … pays Friday": the open run's line + its date, or "no run prepared" (never a promise)
+    return { data: { ...row, pay: await this.runs.forAmbassador(ctx.tenantId, row.id) } };
   }
   @Post(':id/review') @RequirePermissions(AmbassadorsPermissions.Manage)
   reviewEdit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ReviewEditSchema) dto: ReviewEditDto) {
@@ -123,8 +131,13 @@ export class AmbassadorsController {
   earningsList(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodQuery(QueryEarningsSchema) q: QueryEarningsDto) {
     return this.earnings.listForAmbassador(ctx.tenantId, uuidParam(id), { unpaidOnly: q.unpaidOnly, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
-  @Post(':id/payout') @RequirePermissions(AmbassadorsPermissions.Payout)
+  @Post(':id/payout') @RequirePermissions(AmbassadorsPermissions.PayoutPrepare)
   payout(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(PayoutSchema) dto: { reason: string }) {
-    return this.earnings.payoutAmbassador(ctx.tenantId, { userId: ctx.userId }, uuidParam(id), `ambpayout:${id}:${requireKey(key)}`, dto.reason).then((data) => ({ data }));
+    // PC-56 TENANT-SW-b: the 10a manual payout stays as an EXCEPTION act — a one-ambassador run, from the tenant Main, under a checker
+    return this.runs.prepareByPerson(ctx.tenantId, { userId: ctx.userId }, { kind: 'exception', ambassadorId: uuidParam(id), reason: dto.reason }, `ambpayout:${id}:${requireKey(key)}`).then((data) => ({ data }));
+  }
+  @Post(':id/message') @RequirePermissions(AmbassadorsPermissions.Manage)
+  message(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(MessageAmbassadorSchema) dto: MessageAmbassadorDto) {
+    return this.messages.send(ctx.tenantId, { userId: ctx.userId }, uuidParam(id), dto, `ambmsg:${id}:${requireKey(key)}`, ipOf(r)).then((data) => ({ data }));
   }
 }

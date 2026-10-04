@@ -81,7 +81,7 @@ describe('A1 · THE ATTENDANCE ROW IS MATCHED ON ITS µs TEXT', () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const repo = new AttendanceRepository(fakeReplica().provider);
     await repo.updateClockOut(tx as any, { id: 'r', createdAtRaw: '2026-10-02 10:55:22.473406+00', tenantId: 't', clockOutAt: new Date(), breakMinutes: 0, hoursRegular: 8, hoursOvertime: 0 });
-    await repo.updateConfirm(tx as any, { id: 'r', createdAtRaw: '2026-10-02 10:55:22.473406+00', tenantId: 't' });
+    await repo.updateConfirm(tx as any, { id: 'r', createdAtRaw: '2026-10-02 10:55:22.473406+00', tenantId: 't', confirmedBy: 'u' });   // PC-56 TENANT-SW-b: the confirmer is recorded
     for (const [sql, params] of tx.query.mock.calls) { expect(sql).toMatch(/created_at=\$2::timestamptz/); expect(params[1]).toBe('2026-10-02 10:55:22.473406+00'); }
   });
   it('the day read selects created_at::text', async () => {

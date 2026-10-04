@@ -9,7 +9,10 @@
 // Registering a worker profile and a worker RESPONDING to their own assignment is any authenticated user.
 import { RequestContext } from '../../../core/tenancy-context/request-context';
 
-export const LabourPermissions = { Book: 'worker.book', Manage: 'booking.manage', Desk: 'labour.desk', WagesApprove: 'labour.wages.approve' } as const;
+//   advance.approve       — PC-56 TENANT-SW-b (0198): approve a worker's wage advance from the booking escrow (tenant_admin, fpo_coordinator).
+//                           The employer may approve an advance on their own booking; the desk needs the employer's recorded consent.
+//                           The approver is never the requester nor the worker — the database refuses both (trg_wa_moves).
+export const LabourPermissions = { Book: 'worker.book', Manage: 'booking.manage', Desk: 'labour.desk', WagesApprove: 'labour.wages.approve', AdvanceApprove: 'advance.approve' } as const;
 
 const has = (ctx: Pick<RequestContext, 'permissions'>, p: string) => ctx.permissions.has(p) || ctx.permissions.has('*');
 
@@ -19,9 +22,11 @@ export function canRunLabourDesk(ctx: Pick<RequestContext, 'permissions'>): bool
 export function canApproveLabourWages(ctx: Pick<RequestContext, 'permissions'>): boolean { return has(ctx, LabourPermissions.WagesApprove); }
 
 /** Who is acting, as the labour services judge it. `canBook` / `canDesk` gate posting; the per-booking check is in the service. */
-export interface LabourActor { userId: string; canBook: boolean; canDesk: boolean; canApproveWages: boolean; canManage: boolean; }
+export interface LabourActor { userId: string; canBook: boolean; canDesk: boolean; canApproveWages: boolean; canManage: boolean; canApproveAdvance?: boolean }
+export function canApproveAdvance(ctx: Pick<RequestContext, 'permissions'>): boolean { return has(ctx, LabourPermissions.AdvanceApprove); }
 export function labourActor(ctx: Pick<RequestContext, 'userId' | 'permissions'>): LabourActor {
-  return { userId: ctx.userId, canBook: canBookLabour(ctx), canDesk: canRunLabourDesk(ctx), canApproveWages: canApproveLabourWages(ctx), canManage: canManageLabour(ctx) };
+  return { userId: ctx.userId, canBook: canBookLabour(ctx), canDesk: canRunLabourDesk(ctx), canApproveWages: canApproveLabourWages(ctx), canManage: canManageLabour(ctx),
+    canApproveAdvance: canApproveAdvance(ctx) };
 }
 /** May this caller read tenant-wide labour facts (box=all, any roster, the summary)? */
 export function canOverseeLabour(a: Pick<LabourActor, 'canDesk' | 'canManage'>): boolean { return a.canDesk || a.canManage; }

@@ -95,3 +95,38 @@ export class BookingHasUnpaidAttendanceError extends DomainError { constructor(d
 export class BookingNotPayableYetError extends DomainError { constructor(status: string) { super('BOOKING_NOT_PAYABLE', `Booking cannot be paid from status '${status}'`, 409, { status }); } }
 /** Attendance can only be confirmed while the money can still move (not after the job is paid out or cancelled). */
 export class BookingSettledError extends DomainError { constructor(status: string) { super('BOOKING_SETTLED', `Attendance cannot change on a booking that is '${status}'`, 409, { status }); } }
+
+// ---- PC-56 TENANT-SW-b (0198) — attendance review, the daily wage run, advances ----
+/** A refusal the DATABASE makes by name (`[ATTENDANCE_SELF_CONFIRM] …`, `[ADVANCE_APPROVER_IS_REQUESTER] …`): the service names it. */
+export class LabourRefusedError extends DomainError { constructor(code: string, message: string, status = 409, details: Record<string, unknown> = {}) { super(code, message, status, details); } }
+export class AttendanceRecordNotFoundError extends DomainError { constructor(id: string) { super('ATTENDANCE_NOT_FOUND', `Attendance record ${id} not found`, 404, { id }); } }
+export class AttendanceReasonRequiredError extends DomainError { constructor(act: string) { super('ATTENDANCE_REASON_REQUIRED', `A reason (10–500 characters) is required to ${act}`, 422, { act }); } }
+export class AdvanceNotFoundError extends DomainError { constructor(id: string) { super('ADVANCE_NOT_FOUND', `Advance ${id} not found`, 404, { id }); } }
+export class AdvanceEscrowShortError extends DomainError { constructor(neededMinor: bigint, heldMinor: bigint) { super('ADVANCE_ESCROW_SHORT', 'The booking escrow cannot cover this advance — nothing moved', 409, { neededMinor: neededMinor.toString(), heldMinor: heldMinor.toString(), shortMinor: (neededMinor > heldMinor ? neededMinor - heldMinor : 0n).toString() }); } }
+export class AdvanceNotAllowedError extends DomainError { constructor(detail: string) { super('ADVANCE_NOT_ALLOWED', detail, 409, {}); } }
+export class WageRunNotFoundError extends DomainError { constructor(id: string) { super('WAGE_RUN_NOT_FOUND', `Wage run ${id} not found`, 404, { id }); } }
+
+const LABOUR_TRIGGER_CODES: Record<string, { status: number; message: string }> = {
+  ATTENDANCE_SELF_CONFIRM: { status: 403, message: 'You cannot confirm your own attendance (dual-confirm law).' },
+  ATTENDANCE_SELF_VOUCH: { status: 403, message: 'You cannot vouch for your own attendance (dual-confirm law).' },
+  ATTENDANCE_NEEDS_VOUCH: { status: 409, message: 'This day was recorded for review (outside the fence, or from paper) — it is confirmed only after someone other than the worker vouches for it.' },
+  ATTENDANCE_REFUSED: { status: 409, message: 'This day was refused on review and will not be confirmed.' },
+  ATTENDANCE_BACKFILL_VOUCH_IS_RECORDER: { status: 403, message: 'The person who recorded a paper day cannot also vouch for it.' },
+  ATTENDANCE_SELF_BACKFILL: { status: 403, message: 'Nobody records their own day from paper.' },
+  ATTENDANCE_REVIEW_MOVE: { status: 409, message: 'This day is not waiting for review.' },
+  ATTENDANCE_CONFIRMED_FINAL: { status: 409, message: 'A confirmed day is final.' },
+  ATTENDANCE_NOT_YOURS: { status: 403, message: 'An act on attendance is made in your own session.' },
+  ADVANCE_APPROVER_IS_REQUESTER: { status: 409, message: 'The person who requested this advance cannot also approve it — someone else must.' },
+  ADVANCE_APPROVER_IS_WORKER: { status: 403, message: 'A worker never approves their own advance.' },
+  ADVANCE_OVER_CAP: { status: 422, message: 'Advances on one job may total at most half of the expected wage.' },
+  ADVANCE_WRITE_OFF_REFUSED: { status: 409, message: 'Writing an advance off is not a recorded act on this platform.' },
+  ADVANCE_CLOSED: { status: 409, message: 'This advance is already decided.' },
+  ADVANCE_NO_EXPECTED_WAGE: { status: 422, message: 'This job has no expected wage to advance against.' },
+  ADVANCE_NOT_YOURS: { status: 403, message: 'An act on an advance is made in your own session.' },
+};
+/** `[CODE] …` from a 0198 trigger → LabourRefusedError(CODE); anything else unchanged. */
+export function namedLabourRefusal(e: unknown): unknown {
+  const m = /\[([A-Z_]+)\]/.exec(String((e as Error)?.message ?? ''));
+  const t = m ? LABOUR_TRIGGER_CODES[m[1]] : undefined;
+  return t && m ? new LabourRefusedError(m[1], t.message, t.status) : e;
+}

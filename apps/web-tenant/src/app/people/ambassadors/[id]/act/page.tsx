@@ -7,6 +7,9 @@
 // platform's Fees account pays — founder question F-23 — and the server stamps every locked earning or rolls the wallet leg
 // back, F-1). THE IDEMPOTENCY KEY IS MINTED ON THIS PAGE, so a double click pays once. The success screen shows the audit
 // entry the act wrote, read back from the trail.
+// PC-56 TENANT-SW-b: PAY OUT now PREPARES a one-ambassador exception run (commission only) from the TENANT Main wallet — the
+// platform's Fees account no longer pays — and a DIFFERENT tenant admin confirms it on the earnings run screen (W161).
+// MESSAGE (W160) sends one notification to this ambassador through communication, in their language; reason audited.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
@@ -18,7 +21,7 @@ import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { env } from '../../../../../lib/env';
 import { MAX_REASON, MIN_REASON, failureKey, mutateStep, mutateStepKey, reasonState, reasonStateKey, repeatedFailuresGapKey } from '../../../../../features/mutate/chain';
-import { AMBASSADORS_HREF, actKey, actsFor, codeKey, consoleState, detailHref, isAmbAct, isUuid, personKey } from '../../../../../features/ambassadors/console';
+import { AMBASSADORS_HREF, EARNINGS_HREF, actKey, actsFor, codeKey, consoleState, detailHref, isAmbAct, isUuid, personKey } from '../../../../../features/ambassadors/console';
 import { AuditEntryCard } from '../../AuditEntryCard';
 import { ambassadorActAction } from './actions';
 
@@ -26,7 +29,8 @@ export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('amb.actTitle'), robots: { index: false, follow: false } };
 }
-const AUDIT_ACTION = { suspend: 'ambassador.suspended', reinstate: 'ambassador.reinstated', payout: 'ambassador.payout.run' } as const;
+const AUDIT_ACTION = { suspend: 'ambassador.suspended', reinstate: 'ambassador.reinstated', payout: 'ambassador.payout_run.prepared', message: 'ambassador.messaged' } as const;
+const MIN_MESSAGE = 3; const MAX_MESSAGE = 500;
 
 export default async function AmbassadorActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
   const base = `${detailHref(params.id)}/act`;
@@ -39,6 +43,9 @@ export default async function AmbassadorActPage({ params, searchParams }: { para
   const rs = reasonState(reason);
   const reasonRequired = act !== 'reinstate';
   const failed = (searchParams.error ?? '').split(',').filter((x) => /^[A-Za-z_]{2,40}$/.test(x));
+  const message = (searchParams.message ?? '').trim().slice(0, MAX_MESSAGE);
+  const messageOk = act !== 'message' || message.length >= MIN_MESSAGE;
+  const runId = isUuid(searchParams.run) ? searchParams.run : null;
   if (!env.featureAmbassadors) {
     return <section><h1>{t.t('amb.actTitle')}</h1><div className="kv-card kv-card--notice" role="status"><strong>{t.t('amb.state.flaggedOff.title')}</strong><p>{t.t('amb.state.flaggedOff.body')}</p></div></section>;
   }
@@ -68,22 +75,28 @@ export default async function AmbassadorActPage({ params, searchParams }: { para
                 <p className="kv-field__hint">{t.t(row.isActive ? 'amb.active' : 'amb.suspended')} · {t.t('amb.col.owed')}: {formatMoneyMinor(row.owedMinor, 'INR', lang)}</p>
                 <p>{t.t(`amb.act.rule.${act}`)}</p>
                 {act === 'payout' && <p className="kv-field__hint">{t.t('amb.act.payoutFunding')} {t.t('amb.act.payoutVerb')}</p>}
+                {act === 'message' && <p className="kv-field__hint">{t.t('swb.amb.message.channel')}</p>}
                 <p className="kv-field__hint">{t.t('mutate.reason.recorded')}</p>
               </div>
               {!offered && <div className="kv-error" role="alert"><p>{t.t(`amb.act.notOffered.${act}`)}</p></div>}
               <form action={base} method="get" className="kv-card kv-form">
                 <input type="hidden" name="step" value="confirm" />
                 <input type="hidden" name="act" value={act} />
+                {act === 'message' && (
+                  <label className="kv-field" htmlFor="a-message"><span>{t.t('swb.amb.message.field')}</span>
+                    <textarea id="a-message" name="message" className="kv-textarea" rows={3} defaultValue={message} maxLength={MAX_MESSAGE} minLength={MIN_MESSAGE} required /></label>
+                )}
                 <label className="kv-field" htmlFor="a-reason"><span>{t.t(reasonRequired ? 'amb.act.reason' : 'amb.act.reasonOptional')}</span>
                   <textarea id="a-reason" name="reason" className="kv-textarea" rows={3} defaultValue={reason} maxLength={MAX_REASON} minLength={reasonRequired ? MIN_REASON : undefined} required={reasonRequired} /></label>
                 {(reason.length > 0 || reasonRequired) && reasonStateKey(rs) && !(rs === 'empty' && !reasonRequired) && <p className="kv-field__hint">{t.t(reasonStateKey(rs)!)}</p>}
                 <button type="submit" className="kv-btn--link">{t.t('mutate.reason.check')}</button>
               </form>
-              {offered && reasonOk ? (
+              {offered && reasonOk && messageOk ? (
                 <form action={ambassadorActAction} className="kv-actions">
                   <input type="hidden" name="id" value={params.id} />
                   <input type="hidden" name="act" value={act} />
                   <input type="hidden" name="reason" value={reason} />
+                  {act === 'message' && <input type="hidden" name="message" value={message} />}
                   <input type="hidden" name="idempotencyKey" value={randomUUID()} />
                   <button type="submit" className="kv-btn kv-btn--primary">{t.t('mutate.confirm')}</button>{' '}
                   <Link href={detailHref(params.id)} className="kv-btn--link">{t.t('mutate.cancel')}</Link>
@@ -100,8 +113,9 @@ export default async function AmbassadorActPage({ params, searchParams }: { para
             <p>{t.t(`amb.act.done.${act}`, act === 'payout' ? { amount: formatMoneyMinor(/^\d+$/.test(searchParams.paid ?? '') ? searchParams.paid! : '0', 'INR', lang), n: /^\d+$/.test(searchParams.count ?? '') ? searchParams.count! : '0' } : {})}</p>
             {act === 'payout' && <p className="kv-field__hint">{t.t('amb.act.zeroSum')}</p>}
           </div>
-          {isUuid(params.id) && <AuditEntryCard t={t} lang={lang} entityType="ambassador_profile" entityId={params.id} action={AUDIT_ACTION[act]} />}
-          <p><Link href={detailHref(params.id)} className="kv-btn--link">{t.t('form.backToScreen')}</Link>{act === 'payout' && <>{' · '}<Link href={`${detailHref(params.id)}?unpaid=0`} className="kv-btn--link">{t.t('amb.act.toEarnings')}</Link></>}</p>
+          {act === 'payout' && runId && <AuditEntryCard t={t} lang={lang} entityType="ambassador_payout_run" entityId={runId} action={AUDIT_ACTION.payout} />}
+          {act !== 'payout' && isUuid(params.id) && <AuditEntryCard t={t} lang={lang} entityType="ambassador_profile" entityId={params.id} action={AUDIT_ACTION[act]} />}
+          <p><Link href={detailHref(params.id)} className="kv-btn--link">{t.t('form.backToScreen')}</Link>{act === 'payout' && <>{' · '}<Link href={EARNINGS_HREF} className="kv-btn--link">{t.t('amb.act.toEarnings')}</Link></>}</p>
         </>
       )}
 

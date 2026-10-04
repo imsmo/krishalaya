@@ -279,32 +279,44 @@ export class LabourBookingService {
             throw new LabourForbiddenError(booking.toProps().onBehalf ? 'paying a desk-run booking requires labour.wages.approve' : 'only the employer may pay this booking');
           }
           if (!acceptsPayRun(booking.status)) throw new BookingNotPayableYetError(booking.status);
-          const before = booking.status;
-          if (booking.status === 'paid') {
-            return { ...this.serializeBooking(booking, { full: true }), movedMinor: '0', totalPaidMinor: '0', workersPaid: 0, lines: [], outstanding: 0, releasedMinor: '0', toppedUpMinor: '0', source: 'escrow' };
-          }
-          const version = booking.version;
-          const accepted = await this.assignments.listAcceptedForUpdate(tx, tenantId, bookingId);
-          if (accepted.length === 0) throw new BookingNotPayableError('no accepted workers to pay');
-          // A completed booking is settled only when no clocked-out day still waits for the employer's confirm.
-          const waiting = booking.status === 'completed' ? await this.attendance.countAwaitingConfirmForBooking(tx, tenantId, bookingId) : 0;
-          const run = await this.money.payRunInTx(tx, { tenantId, booking, accepted, actorUserId: actor.userId, ip, reason, mayRelease: waiting === 0 });
-          // Completed + nothing outstanding + no day still waiting for the employer → the booking is paid and the escrow is home.
-          let markedPaid = false;
-          if (booking.status === 'completed' && run.outstanding === 0 && waiting === 0 && run.released) {
-            for (const a of accepted) { if (a.status === 'accepted') { a.markPaid(); await this.assignments.update(tx, a); await this.flush(tx, tenantId, 'booking_assignment', a.id, a.pullEvents()); } }
-            booking.markPaid(run.movedMinor, accepted.length);
-            await this.bookings.update(tx, booking, version);
-            markedPaid = true;
-          }
-          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'labour.pay_run', entityType: 'labour_booking', entityId: bookingId, ip, reason,
-            oldValue: { status: before }, newValue: { status: booking.status, movedMinor: run.movedMinor.toString(), toppedUpMinor: run.toppedUpMinor.toString(), releasedMinor: run.releasedMinor.toString(),
-              outstanding: run.outstanding, daysAwaitingConfirm: waiting, source: run.source, lines: run.lines.map((l) => ({ assignmentId: l.assignmentId, paidMinor: l.paidThisRunMinor, status: l.status })) } });
-          await this.flush(tx, tenantId, 'labour_booking', booking.id, booking.pullEvents());
-          return { ...this.serializeBooking(booking, { full: true }), movedMinor: run.movedMinor.toString(), totalPaidMinor: run.movedMinor.toString(),
-            workersPaid: run.lines.filter((l) => BigInt(l.paidThisRunMinor) > 0n).length, lines: run.lines, outstanding: run.outstanding,
-            daysAwaitingConfirm: waiting, releasedMinor: run.releasedMinor.toString(), toppedUpMinor: run.toppedUpMinor.toString(), source: run.source, markedPaid };
+          return this.payBookingInTx(tx, tenantId, booking, { actorUserId: actor.userId, ip, reason, wageRunId: null });
         }, { userId: actor.userId })));
+  }
+
+  /**
+   * The pay run's body, shared by the manual act above (the 11b exception act, `wageRunId` NULL → "manual" in W166) and the DAILY 18:00
+   * WAGE RUN (PC-56 TENANT-SW-b · C1: actor NULL — the job; `wageRunId` stamps the payouts it made). The caller holds the booking row
+   * lock (getForWrite) and has judged who may pay. Money: 11b's legs exactly (escrow Hold → worker Main, wage:<assignment>:<sha(days)>),
+   * plus the C2 advance recovery inside LabourMoneyService.
+   */
+  async payBookingInTx(tx: TxContext, tenantId: string, booking: LabourBooking, opts: { actorUserId: string | null; ip: string | null; reason: string | null; wageRunId: string | null }) {
+    const bookingId = booking.id;
+    const before = booking.status;
+    if (booking.status === 'paid') {
+      return { ...this.serializeBooking(booking, { full: true }), movedMinor: '0', totalPaidMinor: '0', workersPaid: 0, lines: [] as Awaited<ReturnType<LabourMoneyService['payRunInTx']>>['lines'], outstanding: 0, releasedMinor: '0', toppedUpMinor: '0', source: 'escrow' as const, daysAwaitingConfirm: 0, markedPaid: false };
+    }
+    const version = booking.version;
+    const accepted = await this.assignments.listAcceptedForUpdate(tx, tenantId, bookingId);
+    if (accepted.length === 0) throw new BookingNotPayableError('no accepted workers to pay');
+    // A completed booking is settled only when no clocked-out day still waits for the employer's confirm.
+    const waiting = booking.status === 'completed' ? await this.attendance.countAwaitingConfirmForBooking(tx, tenantId, bookingId) : 0;
+    const run = await this.money.payRunInTx(tx, { tenantId, booking, accepted, actorUserId: opts.actorUserId, ip: opts.ip, reason: opts.reason, mayRelease: waiting === 0, wageRunId: opts.wageRunId });
+    // Completed + nothing outstanding + no day still waiting for the employer → the booking is paid and the escrow is home.
+    let markedPaid = false;
+    if (booking.status === 'completed' && run.outstanding === 0 && waiting === 0 && run.released) {
+      for (const a of accepted) { if (a.status === 'accepted') { a.markPaid(); await this.assignments.update(tx, a); await this.flush(tx, tenantId, 'booking_assignment', a.id, a.pullEvents()); } }
+      booking.markPaid(run.movedMinor, accepted.length);
+      await this.bookings.update(tx, booking, version);
+      markedPaid = true;
+    }
+    await this.audit.write(tx, { tenantId, actorUserId: opts.actorUserId, action: 'labour.pay_run', entityType: 'labour_booking', entityId: bookingId, ip: opts.ip, reason: opts.reason,
+      oldValue: { status: before }, newValue: { status: booking.status, movedMinor: run.movedMinor.toString(), toppedUpMinor: run.toppedUpMinor.toString(), releasedMinor: run.releasedMinor.toString(),
+        outstanding: run.outstanding, daysAwaitingConfirm: waiting, source: run.source, wageRunId: opts.wageRunId, by: opts.actorUserId ? 'person' : 'daily_wage_run',
+        lines: run.lines.map((l) => ({ assignmentId: l.assignmentId, paidMinor: l.paidThisRunMinor, recoveryMinor: l.recoveryMinor, status: l.status })) } });
+    await this.flush(tx, tenantId, 'labour_booking', booking.id, booking.pullEvents());
+    return { ...this.serializeBooking(booking, { full: true }), movedMinor: run.movedMinor.toString(), totalPaidMinor: run.movedMinor.toString(),
+      workersPaid: run.lines.filter((l) => BigInt(l.paidThisRunMinor) > 0n).length, lines: run.lines, outstanding: run.outstanding,
+      daysAwaitingConfirm: waiting, releasedMinor: run.releasedMinor.toString(), toppedUpMinor: run.toppedUpMinor.toString(), source: run.source, markedPaid };
   }
 
   /** The respond-timeout job: expire an OPEN booking past respond_by + lapse its pending assignments. Idempotent. */

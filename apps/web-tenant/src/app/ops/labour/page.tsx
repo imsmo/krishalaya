@@ -4,7 +4,7 @@
 // WHAT THE CANON DRAWS, AND WHAT THIS PAGE DOES WITH IT
 //   • breadcrumb Operations › Labour; the lede says only what is TRUE: 7 of the booking machine's 12 states are in use (named),
 //     the dignity floor is physics (the database refuses a wage below the statutory minimum), and the declarations are fields;
-//   • "Wage runs" (W166) is another wave's object — drawn disabled, with the wave that builds it;
+//   • "Wage runs" (W166) and "Attendance" (W165) are live since PC-56 TENANT-SW-b — links to /ops/labour/wages and /ops/labour/attendance;
 //   • "Post job" → the form chain W2657–W2660;
 //   • KPIs from GET /labour/summary (desk / booking.manage): open jobs + workers needed, in_progress today + clocked in now,
 //     awaiting the employer's confirm + the wages it unlocks, fill rate 30 d + median time-to-fill (or the reason there is none);
@@ -23,8 +23,9 @@ import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { env } from '../../../lib/env';
 import {
-  LABOUR_HREF, NEW_JOB_HREF, UNREACHABLE_STATUSES, WAGE_RUNS_WAVE, consoleState, cursorFrom, isStatus, jobHref, pageHref, perKey, statusKey, tabHref, tabs, typeKeys, wageKindKey,
+  LABOUR_HREF, NEW_JOB_HREF, UNREACHABLE_STATUSES, consoleState, cursorFrom, isStatus, jobHref, pageHref, perKey, statusKey, tabHref, tabs, typeKeys, wageKindKey,
 } from '../../../features/labour/console';
+import { ATTENDANCE_HREF, WAGES_HREF } from '../../../features/swb/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -74,12 +75,12 @@ export default async function LabourJobsPage({ searchParams }: { searchParams: R
       <div className="kv-page-head">
         <h1>{t.t('lab.title')}</h1>
         <p className="kv-actions">
-          <span className="kv-btn kv-btn--muted" aria-disabled="true" title={t.t('lab.wageRuns.notBuilt', { wave: WAGE_RUNS_WAVE })}>{t.t('lab.wageRuns')}</span>{' '}
+          <Link href={WAGES_HREF} className="kv-btn kv-btn--muted">{t.t('lab.wageRuns')}</Link>{' '}
+          <Link href={ATTENDANCE_HREF} className="kv-btn kv-btn--muted">{t.t('swb.att.title')}</Link>{' '}
           <Link href={`${NEW_JOB_HREF}?step=edit`} className="kv-btn kv-btn--primary">{t.t('lab.postJob')}</Link>
         </p>
       </div>
       <p className="kv-field__hint">{t.t('lab.lede', { unreachable: UNREACHABLE_STATUSES.join(' · ') })}</p>
-      <p className="kv-field__hint">{t.t('lab.wageRuns.notBuilt', { wave: WAGE_RUNS_WAVE })}</p>
 
       {summary ? (
         <div className="kv-kpis">
