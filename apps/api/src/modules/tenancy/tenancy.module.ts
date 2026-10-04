@@ -86,6 +86,15 @@ import { ACME_PORT, DOMAIN_DNS, NodeDomainDns, NotConfiguredAcme } from './infra
 import { DomainVerificationJob } from './jobs/domain-verification.job';
 import { BrandDomainProposalsJob } from './jobs/brand-domain-proposals.job';
 import { VERIFY_INTERVAL_MS } from './domain/domain-rules';
+// PC-56 TENANT-SW-d · signup step 2 (the organisation profile, W114) and "Book a setup call" (W2619–W2625): the onboarding read / draft /
+// complete, the setup-call request object, and the handler that puts a request in front of the Krishalaya team (admin-realm notice).
+import { OnboardingController } from './controllers/v1/onboarding.controller';
+import { SetupCallsController } from './controllers/v1/setup-calls.controller';
+import { OnboardingService } from './services/onboarding.service';
+import { OnboardingRepository } from './repositories/onboarding.repository';
+import { SetupCallService } from './services/setup-call.service';
+import { SetupCallRepository } from './repositories/setup-call.repository';
+import { SetupCallRequestedHandler } from './events/handlers/setup-call-requested.handler';
 
 // Worker jobs (grace-period, renewal-invoices, trial-expiry, usage-limit-alerts) are instantiated by apps/worker
 // with the privileged kv_relay Pool — not DI providers (they take a Pool / DI service), mirroring the other jobs.
@@ -97,7 +106,7 @@ import { VERIFY_INTERVAL_MS } from './domain/domain-rules';
   // module blueprint's allowance — public service, never a repository — not an exception to it.
   imports: [forwardRef(() => IdentityModule), MediaModule],
   controllers: [SaasInvoicesController, PlanUsageController, PlansController, SubscriptionsController, TenantsController, TenantSettingsController, AnalyticsController, TenantApplicationsController, ConsoleHomeController, TenantSignupController,
-    TenantBrandingController, TenantDomainsController, StorefrontBrandController],
+    TenantBrandingController, TenantDomainsController, StorefrontBrandController, OnboardingController, SetupCallsController],
   providers: [
     PlanService, SubscriptionService, PlanRepository, SubscriptionRepository,
     TenantService, TenantDomainService, TenantAnalyticsService, TenantAnalyticsReadModel,
@@ -164,6 +173,8 @@ import { VERIFY_INTERVAL_MS } from './domain/domain-rules';
       useFactory: (u: UnitOfWork, r: SettingGovernanceRepository, s: TenantSettingsService, a: ProposalApplierRegistry) => new SettingProposalsJob(5 * 60_000, u, r, s, 200, a) },
     // PC-56 TENANT-13d
     TenantBrandingService, TenantBrandingRepository,
+    // PC-56 TENANT-SW-d
+    OnboardingService, OnboardingRepository, SetupCallService, SetupCallRepository,
     { provide: DOMAIN_DNS, useFactory: () => new NodeDomainDns() },
     { provide: ACME_PORT, useFactory: () => new NotConfiguredAcme() },
     { provide: DomainVerificationJob, inject: [TenantDomainRepository, TenantDomainService],
@@ -187,6 +198,8 @@ export class TenancyModule implements OnModuleInit {
     private readonly settingProposalsJob: SettingProposalsJob,
     private readonly domainVerificationJob: DomainVerificationJob,
     private readonly brandDomainProposalsJob: BrandDomainProposalsJob,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
+    private readonly setupCalls: SetupCallRepository,
   ) {}
   // payments.payment_succeeded (referenceType='saas_invoice') → mark the SaaS invoice paid
   onModuleInit(): void {
@@ -198,6 +211,8 @@ export class TenancyModule implements OnModuleInit {
     // registered unconditionally (like 11b's respond-timeout): without it a confirmed proposal would sit "confirmed" forever and the
     // console's "effective next midnight" would be false.
     this.jobRegistry.register(this.settingProposalsJob);
+    // PC-56 TENANT-SW-d · C1: a setup-call request reaches the Krishalaya team as an admin-realm in-app notice (kv_app UoW; HOTFIX-2 gate)
+    this.registry.register(new SetupCallRequestedHandler(this.uow, this.setupCalls));
     // PC-56 TENANT-13d · B2: the domain verifier (every 5 minutes) and the brand / domain proposal clock — registered unconditionally:
     // without the verifier no claim could ever be proven or released, and the console's "we check every 5 minutes" would be false.
     this.jobRegistry.register(this.domainVerificationJob);

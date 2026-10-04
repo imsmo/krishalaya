@@ -57,7 +57,7 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
 
   const bal = async (kind: string, code: string, owner?: string) =>
     BigInt((await admin.query(
-      `SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND (($3::uuid IS NULL) OR owner_user_id=$3 OR owner_tenant_id=$3)`,
+      `SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND currency_code='INR' AND (($3::uuid IS NULL) OR owner_user_id=$3 OR owner_tenant_id=$3)`,
       [kind, code, owner ?? null])).rows[0]?.b ?? '0');
 
   const fundEscrow = async (tenantId: string, amount: bigint) => {

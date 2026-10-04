@@ -16,6 +16,7 @@ import 'reflect-metadata';
 
 import { Logger, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { json } from 'express';
 import { AppModule } from './app.module';
 import { AppConfig } from './core/config/app-config';
 
@@ -31,6 +32,10 @@ async function bootstrap(): Promise<void> {
   // Stop announcing "Express" (ZAP: X-Powered-By information disclosure). Zero-dep — Express's own disable(),
   // no helmet needed. security-headers.middleware.ts covers everything else (HSTS, X-Frame-Options, ...).
   expressInstance.disable('x-powered-by');
+  // [PC-56 TENANT-SW-d] the share-register import carries its CSV in the JSON body (≤ 5,000 rows, ≤ 1 MB — the service refuses more);
+  // Nest's default JSON limit is 100 KB. A parser scoped to THAT ONE PATH, registered before Nest's own (which runs at init and skips a
+  // body already parsed), lifts the limit for the import alone — every other route keeps the default.
+  expressInstance.use('/v1/governance/register/imports', json({ limit: '1200kb' }));
   // CORS: mobile apps and server-to-server webhooks (payment/SMS/AV-scan callbacks) never send an Origin
   // header and are completely unaffected by this either way. Only the 4 Next.js web apps read responses
   // cross-origin from a browser. Empty allowlist (today's default) ⇒ skip enableCors entirely, so no

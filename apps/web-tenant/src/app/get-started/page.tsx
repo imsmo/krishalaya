@@ -83,6 +83,8 @@ export default async function GetStartedPage() {
           {t.t('golive.progress', { done: s.progress.done, total: s.progress.total })}
           {' · '}{t.t('golive.notBillable')}
         </p>
+        {/* PC-56 TENANT-SW-d · W2619: the free setup call — a request the Krishalaya team staffs (no calendar). */}
+        <p className="kv-fine"><Link href="/go" className="kv-link">{t.t('swd.go.cta')}</Link></p>
       </div>
 
       {/* **THE COMPLETED STATE IS A REAL STATE, NOT AN EMPTY LIST.** W116: "Your federation is live. This page becomes your

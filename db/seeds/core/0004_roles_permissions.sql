@@ -148,6 +148,9 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('advance.approve','Labour: approve a worker wage advance from the booking escrow (never the requester; the desk needs employer consent)','M28'),
  ('scheme.desk','Schemes desk: pipeline, eligibility sweep (a call list, never an application), per-field form reveal',NULL),
  ('logistics.zones.manage','Delivery zones: propose zone create / fee re-point / deactivate (tenant_admin or fpo_coordinator; a tenant_admin confirms)',NULL),
+ -- [PC-56 TENANT-SW-d] the AGM pack (maker + a second tenant_admin) and the share-register import (consent evidence + checker) (0200).
+ ('governance.agm.issue','AGM pack: draft, request issue, confirm issue (a second tenant_admin), addendum, auditor annexure',NULL),
+ ('governance.register.import','Share register: import a CSV of existing shareholders with consent evidence, for a second tenant_admin to confirm',NULL),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -286,6 +289,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('fpo_coordinator') AND p.code IN ('logistics.zones.manage'))
    -- [PC-56 TENANT-SW-b] ambassador run maker, advance approver, schemes desk (0198).
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('ambassador.payout.prepare','advance.approve','scheme.desk'))
+   -- [PC-56 TENANT-SW-d] AGM pack + register import (0200): tenant_admin only (the checker is a second tenant_admin).
+   OR (r.code IN ('tenant_admin') AND p.code IN ('governance.agm.issue','governance.register.import'))
 ON CONFLICT DO NOTHING;
 
 -- [PC-56 TENANT-SW-c] the STAFF roles — each holds a staff seat of the plan (0199 adds roles.is_staff and sets the same five).

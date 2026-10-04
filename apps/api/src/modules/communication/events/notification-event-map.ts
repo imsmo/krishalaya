@@ -71,6 +71,10 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // PC-56 TENANT-SW-b (A2) · W160 "Message (Gujarati)": the member desk's per-person message to ONE ambassador (the desk's words verbatim, the
   // wrapper in the ambassador's language). Catalogue 0198, copy in seed core/0007 (push + in-app ×3). Recipients travel in the payload.
   { outboxType: 'ambassadors.message',               eventCode: 'ambassador.message',          recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-SW-d (C1) · W2619–W2625 "Book a setup call (free)": the requester's confirmation that the Krishalaya team has the request
+  // and will call in the slot they chose (no calendar integration — said). `slotStart` / `slotEnd` are IST civil strings ("2026-10-12
+  // 10:30"). Catalogue 0200, copy in seed core/0007 (push + in-app ×3). The admin realm's queue notice is SetupCallRequestedHandler.
+  { outboxType: 'tenancy.setup_call_requested',      eventCode: 'tenant.setup_call_requested', recipientKeys: ['requestedBy'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

@@ -50,7 +50,7 @@ run('memberships slice (integration, real Postgres + RLS + wallet)', () => {
   let paidTierId = ''; let freeTierId = ''; let membershipId = '';
 
   const bal = async (kind: string, code: string, userId?: string) =>
-    BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND ($3::uuid IS NULL OR owner_user_id=$3)`, [kind, code, userId ?? null])).rows[0]?.b ?? '0');
+    BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND currency_code='INR' AND ($3::uuid IS NULL OR owner_user_id=$3)`, [kind, code, userId ?? null])).rows[0]?.b ?? '0');
   const fund = (u: string, amount: bigint) => uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'order_payment', idempotencyKey: `fund:${randomUUID()}`, initiatedBy: 'system', legs: [{ account: userMain(u), amountMinor: amount }, { account: platform(PlatformAccount.Gateway), amountMinor: -amount }] }), { userId: 'system' });
 
   beforeAll(async () => {

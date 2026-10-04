@@ -137,6 +137,31 @@ export class ExportPlaneService {
         }, { userId: actor.userId })));
   }
 
+  /**
+   * [PC-56 TENANT-SW-d] ENQUEUE INSIDE THE CALLER'S TRANSACTION, for a dataset whose job is born of ANOTHER act — the AGM pack's
+   * dataset is queued in the same transaction that issues the pack, so the issued row can carry its export job id and the two can
+   * never disagree. Same validations as `enqueue` (plane flag, registered producer, strict params, the open twin), no idempotency
+   * key of its own (the caller's act is the idempotent one). Returns `{ kind: 'off' }` — never a throw — when the plane is off for
+   * the tenant, so the caller can record that as a fact ("exports plane is off for this cooperative") instead of failing its act.
+   */
+  async enqueueInTx(tx: TxContext, tenantId: string, requestedBy: string, input: { datasetCode: string; params: unknown }, ip: string | null = null): Promise<{ kind: 'queued'; jobId: string } | { kind: 'off' }> {
+    const on = await this.flags.isEnabled(EXPORT_PLANE_FLAG, { tenantId }).catch(() => false);
+    if (!on) return { kind: 'off' };
+    const producer = this.registry.get(input.datasetCode);
+    if (!producer) throw new UnknownDatasetError(input.datasetCode);
+    const parsed = producer.params.safeParse(input.params ?? {});
+    if (!parsed.success) throw new ExportParamsInvalidError(parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; '));
+    const params = parsed.data as Record<string, unknown>;
+    const hash = paramsSha256(params);
+    const twin = await this.jobs.findOpenTwin(tx, tenantId, producer.code, hash, requestedBy);
+    if (twin) return { kind: 'queued', jobId: twin.id };
+    const job = ExportJob.create({ id: uuidv7(), tenantId, datasetCode: producer.code, params, paramsSha256: hash, requestedBy });
+    await this.jobs.insert(tx, job);
+    await this.audit.write(tx, { tenantId, actorUserId: requestedBy, action: 'exports.enqueued', entityType: 'tenant_export_job', entityId: job.id, newValue: { dataset: producer.code, params }, ip });
+    await this.flush(tx, tenantId, job.id, job.pullEvents());
+    return { kind: 'queued', jobId: job.id };
+  }
+
   /** W2553 / W2554: one read, the state decides which page it is. */
   async view(tenantId: string, actor: ExportActor, id: string): Promise<ExportJobView> {
     await this.assertPlaneOn(tenantId);

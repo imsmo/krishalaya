@@ -43,6 +43,17 @@ export interface DashboardTiles {
   openDisputes: number;
   /** Hours since the OLDEST open dispute was raised — W117's "both under 24h old". null when there are none. */
   oldestDisputeHours: number | null;
+  // [PC-56 TENANT-SW-d · B1] the tiles' audit: every figure READ, none typed.
+  /** The currency the money tiles are IN — the tenant country's (countries.currency_code), never a literal "INR" in the console. */
+  currencyCode: string | null;
+  /** True when this month's orders carry a currency other than the country's: the GMV tile then refuses to print one sum. */
+  currencyMixed: boolean;
+  /** Orders placed TODAY in the tenant's own zone (cancelled / unpaid excluded — the GMV tile's rule). */
+  ordersToday: number;
+  /** Member KYC documents waiting for a decision (the verification desk's queue). */
+  kycPending: number;
+  /** The organisation's own Main wallet balance (wallet_accounts.cached_balance_minor) — null when it has no Main wallet yet. */
+  walletMainMinor: string | null;
 }
 
 export type ActionKind = 'qc_queue' | 'payout_batch' | 'dispute';
@@ -86,7 +97,7 @@ export class TenantDashboardReadModel {
   async get(tenantId: string): Promise<TenantDashboard> {
     const db = this.replica.forTenant(tenantId);
 
-    const [gmv, payouts, listings, disputes, plan] = await Promise.all([
+    const [gmv, payouts, listings, disputes, plan, more] = await Promise.all([
       /**
        * **THE SAME-DAY COMPARISON, WHICH IS THE ONLY HONEST MONTH-ON-MONTH NUMBER MID-MONTH.**
        *
@@ -163,6 +174,21 @@ export class TenantDashboardReadModel {
           WHERE s.tenant_id = $1 AND s.deleted_at IS NULL
           ORDER BY s.created_at DESC LIMIT 1`,
         [tenantId]),
+
+      // [PC-56 TENANT-SW-d · B1] the dashboard's remaining figures, each READ: the money tiles' currency (the country's), whether this
+      // month's orders mix currencies, today's orders in the tenant's own zone, the KYC queue, and the organisation's Main wallet.
+      db.query<{ currency: string | null; mixed: boolean; orders_today: number; kyc_pending: number; main_minor: string | null }>(
+        `SELECT c.currency_code AS currency,
+                EXISTS (SELECT 1 FROM orders o WHERE o.tenant_id = $1 AND o.deleted_at IS NULL AND o.created_at >= date_trunc('month', now())
+                           AND o.status NOT IN ('cancelled', 'created', 'payment_pending') AND o.currency_code <> c.currency_code) AS mixed,
+                (SELECT COUNT(*)::int FROM orders o WHERE o.tenant_id = $1 AND o.deleted_at IS NULL
+                    AND o.created_at >= (date_trunc('day', now() AT TIME ZONE c.timezone) AT TIME ZONE c.timezone)
+                    AND o.status NOT IN ('cancelled', 'created', 'payment_pending')) AS orders_today,
+                (SELECT COUNT(*)::int FROM kyc_documents k WHERE k.tenant_id = $1 AND k.status = 'pending' AND k.deleted_at IS NULL) AS kyc_pending,
+                (SELECT w.cached_balance_minor::text FROM wallet_accounts w
+                  WHERE w.owner_kind = 'tenant' AND w.owner_tenant_id = $1 AND w.account_code = 'main' AND w.currency_code = c.currency_code AND w.deleted_at IS NULL) AS main_minor
+           FROM tenants t JOIN countries c ON c.code = t.country_code WHERE t.id = $1`,
+        [tenantId]),
     ]);
 
     const g = gmv.rows[0];
@@ -185,6 +211,11 @@ export class TenantDashboardReadModel {
       listingsInQc: num(l?.in_qc),
       openDisputes: num(d?.open),
       oldestDisputeHours: d?.oldest_hours === null || d?.oldest_hours === undefined ? null : Number(d.oldest_hours),
+      currencyCode: more.rows[0]?.currency ? String(more.rows[0].currency).trim() : null,
+      currencyMixed: more.rows[0]?.mixed === true,
+      ordersToday: num(more.rows[0]?.orders_today),
+      kycPending: num(more.rows[0]?.kyc_pending),
+      walletMainMinor: more.rows[0]?.main_minor ?? null,
     };
 
     // **THE LIST IS BUILT FROM WORK THAT EXISTS, IN NO FIXED LENGTH.** Three items is what the canon happens to show, not a

@@ -52,6 +52,7 @@ const ORDER = [
   'core/0025_ui_messages_commission.sql',
   'core/0026_ui_messages_scheme_rejections.sql',   // PC-56 TENANT-SW-b: the eleven scheme rejection codes' label + fix, en / hi / gu
   'core/0027_ui_messages_team.sql',                // PC-56 TENANT-SW-c: the staff-invite SMS words and staff role names, en / hi / gu
+  'core/0028_ui_messages_governance_pack.sql',     // PC-56 TENANT-SW-d: the AGM pack's methods in hi / gu (the PDF cannot draw them) + its dataset name
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',

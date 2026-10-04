@@ -38,6 +38,9 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // PC-56 TENANT-SW-d: the share-register import posts a CSV of up to 1 MiB (5,000 rows) through a server action; Next's 1 MB default
+  // would refuse the largest legal file with its multipart overhead. The API's own scoped limit on that path is 1200 kB (main.ts).
+  experimental: { serverActions: { bodySizeLimit: '1200kb' } },
   // pnpm symlinks workspace packages into node_modules; without this, webpack canonicalizes them to their real
   // path under packages/, classifies them as app SOURCE, and applies dev Fast-Refresh (injecting
   // `import.meta.webpackHot`) to their pre-compiled CJS dist → "Cannot use 'import.meta' outside a module".

@@ -10,6 +10,12 @@
 // a dispute has a clock the platform will judge the tenant against.
 //
 // Server component. Every figure is a real count; the two the canon prints that have no source are named on the screen.
+//
+// [PC-56 TENANT-SW-d · B1] W2562–W2568: the dashboard's one sharing action is "New listing" — it opens the EXISTING 2b listing chain
+// (`/listings/new`, W2357/W2358), which IS W2562 (form-error) → W2563 (review) → W2564 (success) → W2565 (failure); there is no second
+// listing form. W2566–W2568 ("Retry") are this page re-read. The tile audit: the money tiles printed a literal 'INR' — the currency is
+// now READ (the tenant country's), a month whose orders mix currencies refuses one GMV sum, and orders today / pending KYC / the Main
+// wallet are read facts, not typed numbers.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireSession } from '../../lib/session';
@@ -20,6 +26,7 @@ import type { TenantDashboard, GoLiveState } from '@krishalaya/sdk-js';
 import {
   gmvTrend, isQuietDay, orderedActions, ageLabel, planUsagePct, planNearLimit, showChecklistFirst,
 } from '../../features/console/home';
+import { NEW_LISTING_HREF } from '../../features/swd/console';
 
 export const dynamic = 'force-dynamic'; // per-request (session-scoped); never statically cached
 
@@ -80,6 +87,9 @@ export default async function DashboardPage() {
   }
 
   const trend = gmvTrend(d.tiles);
+  // the currency is READ (the tenant country's) — never a literal; with none recorded the money tiles say so instead of guessing
+  const cur = d.tiles.currencyCode;
+  const money = (minor: string) => (cur ? formatMoneyMinor(minor, cur, lang) : t.t('swd.home.noCurrency'));
   const actions = orderedActions(d.needsYouToday);
   const quiet = isQuietDay(actions);
   const usage = planUsagePct(d.planHealth);
@@ -88,6 +98,8 @@ export default async function DashboardPage() {
     <section>
       <div className="kv-page-head">
         <h1>{t.t('dashboard.title')}</h1>
+        {/* W2562's one sharing action: the EXISTING 2b listing chain (W2357/W2358 form → review → success / failure). */}
+        <p><Link href={NEW_LISTING_HREF} className="kv-btn kv-btn--primary">{t.t('swd.home.newListing')}</Link></p>
         {/* The subtitle's count is the LENGTH OF THE LIST BELOW IT, so the two can never disagree. */}
         <p className="kv-muted">
           {quiet ? t.t('home.subtitleQuiet') : t.t('home.subtitle', { n: actions.length })}
@@ -106,7 +118,7 @@ export default async function DashboardPage() {
       <div className="kv-cards">
         <div className="kv-card">
           <span className="kv-card__title">{t.t('home.tile.gmv')}</span>
-          <strong>{formatMoneyMinor(d.tiles.gmvThisMonthMinor, 'INR', lang)}</strong>
+          <strong>{d.tiles.currencyMixed ? t.t('swd.home.currencyMixed') : money(d.tiles.gmvThisMonthMinor)}</strong>
           {/* **A COMPARISON AGAINST THE SAME ELAPSED INTERVAL, OR NO COMPARISON AT ALL.** A first month has no previous
               window, and "▲ 0%" would read as flat trade rather than as new trade. */}
           <span className="kv-fine">
@@ -118,7 +130,7 @@ export default async function DashboardPage() {
 
         <div className="kv-card">
           <span className="kv-card__title">{t.t('home.tile.payouts')}</span>
-          <strong>{formatMoneyMinor(d.tiles.payoutsPendingMinor, 'INR', lang)}</strong>
+          <strong>{money(d.tiles.payoutsPendingMinor)}</strong>
           <span className="kv-fine">{t.t('home.tile.payoutsNote', { n: d.tiles.payoutsPendingFarmers })}</span>
           {/* The canon prints "next batch 18:00". Nothing schedules a run at a fixed hour — no cadence row, no cron the
               console can read — so the tile says what it knows and not what it would like to. */}
@@ -144,6 +156,25 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* --- [SW-d · B1] three more READ facts: today's orders (the tenant's own day), the KYC queue, the organisation's Main wallet --- */}
+      <div className="kv-cards">
+        <Link href="/orders" className="kv-card">
+          <span className="kv-card__title">{t.t('swd.home.tile.ordersToday')}</span>
+          <strong>{d.tiles.ordersToday.toLocaleString(lang)}</strong>
+          <span className="kv-fine">{t.t('swd.home.tile.ordersTodayNote')}</span>
+        </Link>
+        <Link href="/people/verification" className="kv-card">
+          <span className="kv-card__title">{t.t('swd.home.tile.kyc')}</span>
+          <strong>{d.tiles.kycPending.toLocaleString(lang)}</strong>
+          <span className="kv-fine">{t.t('swd.home.tile.kycNote')}</span>
+        </Link>
+        <Link href="/wallet" className="kv-card">
+          <span className="kv-card__title">{t.t('swd.home.tile.wallet')}</span>
+          <strong>{d.tiles.walletMainMinor === null ? t.t('swd.home.tile.walletNone') : money(d.tiles.walletMainMinor)}</strong>
+          <span className="kv-fine">{t.t('swd.home.tile.walletNote')}</span>
+        </Link>
+      </div>
+
       {/* --- "Needs you today" --- */}
       <h2 className="kv-section-title">{t.t('home.needsYou')}</h2>
       {quiet ? (
@@ -159,7 +190,7 @@ export default async function DashboardPage() {
                 <span className="kv-notif-title">{t.t(`home.action.${a.kind}`, { n: a.count })}</span>
                 <span className="kv-notif-meta">
                   {age ? `${t.t('home.oldest', { age })} · ` : ''}
-                  {a.amountMinor ? `${formatMoneyMinor(a.amountMinor, 'INR', lang)} · ` : ''}
+                  {a.amountMinor ? `${money(a.amountMinor)} · ` : ''}
                   <Link href={a.href} className="kv-link">{t.t(`home.actionCta.${a.kind}`)}</Link>
                 </span>
               </li>

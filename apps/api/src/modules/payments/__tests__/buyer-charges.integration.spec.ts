@@ -54,7 +54,7 @@ run('buyer charges + settlement routing (integration, real Postgres)', () => {
   const TOTAL = SUBTOTAL + PLATFORM_FEE;
 
   const bal = async (kind: string, code: string, owner?: string) =>
-    BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND (($3::uuid IS NULL) OR owner_user_id=$3)`, [kind, code, owner ?? null])).rows[0]?.b ?? '0');
+    BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND currency_code='INR' AND (($3::uuid IS NULL) OR owner_user_id=$3)`, [kind, code, owner ?? null])).rows[0]?.b ?? '0');
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });

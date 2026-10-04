@@ -25,22 +25,53 @@ import { MembershipTierRepository } from './repositories/membership-tier.reposit
 import { UserMembershipRepository } from './repositories/user-membership.repository';
 import { MembershipPaymentSucceededHandler } from './events/handlers/payment-succeeded.handler';
 import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
+// PC-56 TENANT-SW-d · the AGM pack (W199 + W2473–W2477: immutable, from facts, maker-checker, PDF + dataset, public verify) and the
+// share-register import (W2626–W2628: consent evidence + checker + an idempotent apply job).
+import { MediaModule } from '../../core/media/media.module';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { DATASET_REGISTRY, DatasetRegistry } from '../../core/exports-plane/dataset.registry';
+import { AgmPacksController, VerifyAgmController } from './controllers/v1/agm-packs.controller';
+import { RegisterImportsController } from './controllers/v1/register-imports.controller';
+import { AgmPackService } from './services/agm-pack.service';
+import { AgmPackRepository } from './repositories/agm-pack.repository';
+import { RegisterImportService } from './services/register-import.service';
+import { RegisterImportRepository } from './repositories/register-import.repository';
+import { AgmPackDataset } from './exports/agm-pack.dataset';
+import { AgmPackRenderJob } from './jobs/agm-pack-render.job';
+import { RegisterImportApplyJob } from './jobs/register-import-apply.job';
 
 // The expiry worker job (jobs/membership-renewals.job.ts) is instantiated by apps/worker with a
 // privileged kv_relay Pool — not a DI provider (it takes a Pool), mirroring the other expiry jobs.
 @Module({
-  controllers: [MembershipTiersController, MembershipsController, GovernanceController],
+  imports: [MediaModule],
+  controllers: [MembershipTiersController, MembershipsController, GovernanceController, AgmPacksController, VerifyAgmController, RegisterImportsController],
   providers: [MembershipTierService, UserMembershipService, MembershipTierRepository, UserMembershipRepository,
     MembershipPaymentSucceededHandler, GovernanceService, GovernanceRepository, ShareRegisterReadModel, CoopPayoutService, CoopPayoutRepository,
     // [PC-56 TENANT-9b] the outcome words a resolution notice is worded with (ui_messages, seed 0020).
-    UiMessageRepository],
+    UiMessageRepository,
+    // PC-56 TENANT-SW-d
+    AgmPackService, AgmPackRepository, RegisterImportService, RegisterImportRepository, AgmPackDataset,
+    { provide: AgmPackRenderJob, inject: [AgmPackService], useFactory: (s: AgmPackService) => new AgmPackRenderJob(60_000, s) },
+    { provide: RegisterImportApplyJob, inject: [RegisterImportService], useFactory: (s: RegisterImportService) => new RegisterImportApplyJob(60_000, s) }],
   exports: [MembershipTierService, UserMembershipService],
 })
 export class MembershipsModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
     private readonly paymentSucceeded: MembershipPaymentSucceededHandler,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    @Inject(DATASET_REGISTRY) private readonly datasets: DatasetRegistry,
+    private readonly agmRender: AgmPackRenderJob,
+    private readonly importApply: RegisterImportApplyJob,
+    private readonly agmDataset: AgmPackDataset,
   ) {}
   // activate/confirm a gateway-paid subscription when its payment settles (payments.payment_succeeded)
-  onModuleInit(): void { this.registry.register(this.paymentSucceeded); }
+  onModuleInit(): void {
+    this.registry.register(this.paymentSucceeded);
+    // PC-56 TENANT-SW-d: the confirmed pack is issued (PDF, sha256, dataset) and the confirmed import is applied ONLY because these run;
+    // registered unconditionally (a confirmed pack sitting "issuing" for ever would make the console's "being issued" false).
+    this.jobs.register(this.agmRender);
+    this.jobs.register(this.importApply);
+    this.datasets.register(this.agmDataset);
+  }
 }

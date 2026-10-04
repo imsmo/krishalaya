@@ -252,17 +252,23 @@ describe('TENANT-1d-3a · one active organisation per verified phone', () => {
   const svc = () => stripComments(read('services/tenant-signup.service.ts'));
   const repo = () => stripComments(read('repositories/tenant-signup.repository.ts'));
 
+  // [PC-56 TENANT-SW-d] the resume query moved INTO 0200's SECURITY DEFINER `kv_signup_administered_tenant` (the `tenants` wall hides
+  // every row from a context-free signup); the repository calls it, and the rule is asserted where it now lives.
+  const resumeFn = () => {
+    const m = require('node:fs').readFileSync(require('node:path').join(__dirname, '../../../../../../db/migrations/0200_onboarding_governance_pack.sql'), 'utf8') as string;
+    return m.slice(m.indexOf('CREATE OR REPLACE FUNCTION kv_signup_administered_tenant'), m.indexOf('REVOKE ALL ON FUNCTION resolve_tenant_slug'));
+  };
   it('the rule is decided from the tenant_admin GRANT, not from tenants.owner_phone', () => {
     // `owner_phone` is a contact field: editable, sometimes a shared office line, never kept in step with who administers
     // the console. The grant is the same fact that decides what the person can DO.
     const fn = repo().slice(repo().indexOf('async findAdministeredTenant('), repo().indexOf('async signupSettings('));
-    expect(fn).toContain("r.code = 'tenant_admin'");
-    expect(fn).not.toContain('owner_phone');
+    expect(fn).toContain('kv_signup_administered_tenant(');
+    expect(resumeFn()).toContain("r.code = 'tenant_admin'");
+    expect(resumeFn()).not.toContain('owner_phone');
   });
 
   it('an archived or terminated organisation does NOT block a fresh start', () => {
-    const fn = repo().slice(repo().indexOf('async findAdministeredTenant('), repo().indexOf('async signupSettings('));
-    expect(fn).toMatch(/status NOT IN \('archived', 'terminated'\)/);
+    expect(resumeFn()).toMatch(/status NOT IN \('archived', 'terminated'\)/);
   });
 
   it('the resume check runs on the WRITER inside the transaction, so two taps cannot both create', () => {

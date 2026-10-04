@@ -36,7 +36,7 @@ function code(rel: string[]): string {
 
 describe('TENANT-1d-3b · the step lives in the URL', () => {
   it('W113ʼs four steps, and "Step 1 of 4" counts from one', () => {
-    expect(SIGNUP_STEPS).toEqual(['you', 'verify', 'org', 'done']);
+    expect(SIGNUP_STEPS).toEqual(['you', 'verify', 'profile', 'done']);
     expect(TOTAL_STEPS).toBe(4);
     expect(stepNumber('you')).toBe(1);
     expect(stepNumber('done')).toBe(4);
@@ -50,16 +50,19 @@ describe('TENANT-1d-3b · the step lives in the URL', () => {
   });
 
   it('a step cannot be reached past its prerequisite', () => {
-    // `?step=org` with no verified phone would render a form whose submit is guaranteed to fail, which teaches a farmer
+    // `?step=profile` (W114, signup step 2 — PC-56 TENANT-SW-d) with no verified phone would render a form whose submit is guaranteed to fail, which teaches a farmer
     // that the platform is broken.
-    expect(resolveStep({ step: 'org' })).toBe('you');
-    expect(resolveStep({ step: 'org', phone: '+919876543210' })).toBe('verify');
+    expect(resolveStep({ step: 'profile' })).toBe('you');
+    expect(resolveStep({ step: 'profile', phone: '+919876543210' })).toBe('verify');
     expect(resolveStep({ step: 'verify' })).toBe('you');
   });
 
   it('the prerequisites being met lets the step through', () => {
     expect(resolveStep({ step: 'verify', phone: '+919876543210' })).toBe('verify');
-    expect(resolveStep({ step: 'org', phone: '+919876543210', code: '123456' })).toBe('org');
+    expect(resolveStep({ step: 'profile', phone: '+919876543210', code: '123456' })).toBe('profile');
+    // PC-56 TENANT-SW-d: "resume later by OTP" lands on the saved step — a session alone reaches the profile step, and only it.
+    expect(resolveStep({ step: 'profile' }, true)).toBe('profile');
+    expect(resolveStep({ step: 'verify' }, true)).toBe('you');
   });
 
   it('a blank phone is not a phone', () => {

@@ -49,6 +49,9 @@ export default async function ShareRegisterPage({ searchParams }: { searchParams
       <nav className="kv-tabs" aria-label={t.t('reg.tabs')}>
         <span className="kv-tab kv-tab--active" aria-current="page">{t.t('reg.tab.register')}</span>
         <a href="/governance/resolutions" className="kv-tab">{t.t('reg.tab.resolutions')}</a>
+        {/* PC-56 TENANT-SW-d · W2626 the import (proposed by one tenant_admin, confirmed by another) and W199 the AGM pack */}
+        <a href="/governance/register/import" className="kv-tab">{t.t('swd.import.tab')}</a>
+        <a href="/insights/governance/agm" className="kv-tab">{t.t('swd.agm.tab')}</a>
       </nav>
 
       {failed ? (

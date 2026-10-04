@@ -521,6 +521,22 @@ const CASES: Record<string, Case> = {
     },
   },
 
+  // ── tenancy (PC-56 TENANT-SW-d) ──
+  'tenancy.setup_call_requested → modules/tenancy/events/handlers/setup-call-requested.handler#SetupCallRequestedHandler': {
+    depth: 'write',   // a requested setup call: the admin realm's in-app notice is written (kv_app UoW) and the request stamped notified
+    build: async (w) => {
+      const id = randomUUID();
+      await w.admin.query(
+        `INSERT INTO setup_call_requests (id, tenant_id, requested_by, preferred_slot_start, preferred_slot_end, language_code, phone_masked)
+         VALUES ($1, $2, $3, now() + interval '2 days', now() + interval '2 days 1 hour', 'gu', '••••4321')`, [id, w.tenant, w.seller]);
+      return { aggregateType: 'setup_call_request', aggregateId: id, payload: { v: 1, requestId: id, requestedBy: w.seller, slotStart: '2026-10-12 10:30', slotEnd: '2026-10-12 11:30', language: 'gu' },
+        verify: async () => {
+          expect(await count(w, `SELECT count(*) n FROM platform_ops_notices WHERE kind='setup_call_requested' AND ref_id=$1`, [id])).toBe(1);
+          expect(await q1(w, `SELECT ops_notified_at IS NOT NULL AS n FROM setup_call_requests WHERE id=$1`, [id])).toEqual({ n: true });
+        } };
+    },
+  },
+
   // ── tenant webhooks ──
   '* → modules/tenant-webhooks/events/handlers/webhook-fanout.handler#WebhookFanoutHandler': {
     depth: 'write',   // the world's endpoint subscribes to every public name: one delivery per name, enqueued on the relay tx
@@ -677,7 +693,9 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
       'ambassador_payout_runs', 'ambassador_payout_run_lines', 'ambassador_stipend_payments', 'labour_wage_runs', 'labour_wage_run_lines', 'worker_advances',
       'worker_advance_recoveries', 'scheme_eligibility_sweeps', 'scheme_eligibility_sweep_rows',
       // PC-56 TENANT-SW-c (0199): claims, conflicts, invites, 2FA, per-tenant session cut-offs, override proposals — kv_app only
-      'kyc_claims', 'staff_conflict_declarations', 'staff_invites', 'user_totp', 'user_recovery_codes', 'tenant_session_revocations', 'staff_override_proposals']) {
+      'kyc_claims', 'staff_conflict_declarations', 'staff_invites', 'user_totp', 'user_recovery_codes', 'tenant_session_revocations', 'staff_override_proposals',
+      // PC-56 TENANT-SW-d (0200): drafts, setup calls, the ops queue, AGM packs + sections, register imports + lines — kv_app only
+      'tenant_onboarding_drafts', 'setup_call_requests', 'platform_ops_notices', 'agm_packs', 'agm_pack_sections', 'share_register_imports', 'share_register_import_rows']) {
       for (const p of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) expect(`${t}:${p}:${await priv(t, p)}`).toBe(`${t}:${p}:false`);
     }
     expect(await priv('insurance_policies', 'UPDATE')).toBe(false);
@@ -733,6 +751,20 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     const { KycClaimsExpiryJob } = require('../modules/identity/jobs/kyc-claims-expiry.job') as typeof import('../modules/identity/jobs/kyc-claims-expiry.job');
     const out = await app.get(KycClaimsExpiryJob).sweep(relayPool, [w.tenant]);
     expect(out).toMatchObject({ tenants: 1, failed: 0 });
+  }, 60_000);
+
+  // ── PC-56 TENANT-SW-d: the AGM render job and the register-import apply job sweep on the kv_relay pool (tenants only) and work per tenant
+  //    in kv_app's UoW; and `tenants` itself — the relay keeps SELECT (its sweeps), and holds no write on it any more (0200). ──
+  it('SW-d · the AGM render and register-import apply jobs sweep on the kv_relay pool without 42501; kv_relay reads tenants and cannot write them', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { AgmPackRenderJob } = require('../modules/memberships/jobs/agm-pack-render.job') as typeof import('../modules/memberships/jobs/agm-pack-render.job');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { RegisterImportApplyJob } = require('../modules/memberships/jobs/register-import-apply.job') as typeof import('../modules/memberships/jobs/register-import-apply.job');
+    expect(await app.get(AgmPackRenderJob).sweep(relayPool, [w.tenant])).toMatchObject({ tenants: 1, failed: 0 });
+    expect(await app.get(RegisterImportApplyJob).sweep(relayPool, [w.tenant])).toMatchObject({ tenants: 1, failed: 0 });
+    const priv = async (p: string) => (await admin.query(`SELECT has_table_privilege('kv_relay', 'tenants', $1) AS v`, [p])).rows[0].v as boolean;
+    expect(await priv('SELECT')).toBe(true);
+    for (const p of ['INSERT', 'UPDATE', 'DELETE']) expect(`${p}:${await priv(p)}`).toBe(`${p}:false`);
   }, 60_000);
 
   // ── B4 · END TO END: the REAL registry (every handler of the event, in boot order), the REAL dispatcher, LOGGED IN as kv_relay ──

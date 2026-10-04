@@ -61,7 +61,7 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
 
   const bal = async (kind: string, code: string, userId?: string) =>
     BigInt((await admin.query(
-      `SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND ($3::uuid IS NULL OR owner_user_id=$3)`,
+      `SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND currency_code='INR' AND ($3::uuid IS NULL OR owner_user_id=$3)`,
       [kind, code, userId ?? null])).rows[0]?.b ?? '0');
 
   // S6 device-test P0 fix: createIntent now validates the order reference (existence, buyer,

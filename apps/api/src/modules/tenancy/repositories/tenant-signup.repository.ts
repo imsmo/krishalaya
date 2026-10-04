@@ -6,7 +6,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 
-export interface OwnedTenant { tenantId: string; slug: string; displayName: string; status: string }
+export interface OwnedTenant { tenantId: string; slug: string; displayName: string; status: string; onboardingStep: string | null }
 
 @Injectable()
 export class TenantSignupRepository {
@@ -28,20 +28,23 @@ export class TenantSignupRepository {
    * cannot straddle replica lag: two taps on a slow connection would otherwise both see "no tenant" and create two.
    */
   async findAdministeredTenant(tx: TxContext | null, userId: string): Promise<OwnedTenant | null> {
-    const sql = `SELECT t.id, t.slug, t.display_name, t.status::text AS status
-                   FROM user_tenant_roles utr
-                   JOIN roles r ON r.id = utr.role_id
-                   JOIN tenants t ON t.id = utr.tenant_id
-                  WHERE utr.user_id = $1
-                    AND r.code = 'tenant_admin'
-                    AND utr.is_active = true AND utr.deleted_at IS NULL
-                    AND t.deleted_at IS NULL
-                    AND t.status NOT IN ('archived', 'terminated')
-                  ORDER BY t.created_at
-                  LIMIT 1`;
+    // [PC-56 TENANT-SW-d, 0200] `tenants` is behind RLS now and a signup has NO tenant context yet, so the join that used to live
+    // here would see nothing. The same query, unchanged in meaning, runs inside 0200's SECURITY DEFINER
+    // `kv_signup_administered_tenant(user)` — one row: the organisation this verified phone's user administers.
+    const sql = `SELECT id, slug, display_name, status, onboarding_step FROM kv_signup_administered_tenant($1::uuid)`;
     const r = tx ? await tx.query(sql, [userId]) : await this.replica.forTenant(null as never).query(sql, [userId]);
     const x = r.rows[0];
-    return x ? { tenantId: x.id, slug: x.slug, displayName: x.display_name, status: x.status } : null;
+    return x ? { tenantId: x.id, slug: x.slug, displayName: x.display_name, status: x.status, onboardingStep: x.onboarding_step ?? null } : null;
+  }
+
+  /**
+   * [PC-56 TENANT-SW-d] Enter the tenant context of an organisation THIS VERIFIED PHONE administers, for the rest of the signup
+   * transaction. A resume writes its audit row under that organisation (audit_log's RLS: `tenant_id = current_tenant_id()`); with no
+   * context the row was refused and every resume failed (found on the way — no integration test had driven a resume). Only ever called
+   * with the id `findAdministeredTenant` just returned for the verified user.
+   */
+  async enterTenantContext(tx: TxContext, tenantId: string): Promise<void> {
+    await tx.query(`SELECT set_config('app.tenant_id', $1, true)`, [tenantId]);
   }
 
   /** The trial policy from platform settings (0131). Same two-column resolve as every other platform setting. */
@@ -85,9 +88,11 @@ export class TenantSignupRepository {
   /** The `tenant_type` lookup value the applicant chose. Validated, because a bad id would fail the FK mid-transaction. */
   async tenantTypeExists(tx: TxContext, lookupValueId: string): Promise<boolean> {
     const r = await tx.query(
+      // [PC-56 TENANT-SW-d · found on the way] this joined `lookup_types lt ON lt.id = lv.lookup_type_id` — neither column exists
+      // (lookup_types is keyed by `code`; a value carries `type_code`), so EVERY self-serve signup failed here with 42703 "column lt.id
+      // does not exist" before any row was written. No integration test had ever driven a signup; SW-d's does.
       `SELECT 1 FROM lookup_values lv
-         JOIN lookup_types lt ON lt.id = lv.lookup_type_id
-        WHERE lv.id = $1 AND lt.code = 'tenant_type' AND lv.is_active = true AND lv.deleted_at IS NULL`, [lookupValueId]);
+        WHERE lv.id = $1 AND lv.type_code = 'tenant_type' AND lv.is_active = true AND lv.deleted_at IS NULL`, [lookupValueId]);
     return (r.rowCount ?? 0) > 0;
   }
 
@@ -104,10 +109,15 @@ export class TenantSignupRepository {
     id: string; slugCandidates: string[]; legalName: string; displayName: string;
     tenantTypeId: string; countryCode: string; ownerName: string | null; ownerPhone: string;
   }): Promise<{ id: string; slug: string } | null> {
+    // [PC-56 TENANT-SW-d, 0200] THE `tenants` WALL: kv_app may insert a tenant row only under that row's own context
+    // (`tenants_self_insert`), and only as a `trial` (trg_tenants_app_insert). The context is set HERE, for the rest of this
+    // transaction, to the id about to be inserted — so the role grant, the trial subscription, the audit row and the outbox event
+    // that follow are written under the new organisation's context too. `onboarding_step = 'profile'`: signup step 2 is open.
+    await tx.query(`SELECT set_config('app.tenant_id', $1, true)`, [input.id]);
     for (const slug of input.slugCandidates) {
       const r = await tx.query(
-        `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, owner_name, owner_phone, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'trial')
+        `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, owner_name, owner_phone, status, onboarding_step)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'trial','profile')
          ON CONFLICT (slug) DO NOTHING
          RETURNING id, slug`,
         [input.id, slug, input.legalName, input.displayName, input.tenantTypeId, input.countryCode, input.ownerName, input.ownerPhone]);

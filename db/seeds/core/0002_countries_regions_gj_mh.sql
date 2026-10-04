@@ -15,6 +15,18 @@ INSERT INTO admin_regions (id,country_code,parent_id,level,code,default_name,pat
  ('11111111-0000-7000-8000-000000000002','IN',NULL,1,'MH','Maharashtra','in.mh',19.7515,75.7139,true)
 ON CONFLICT (id) DO NOTHING;
 
+-- [PC-56 TENANT-SW-d · found on the way] the GST state codes of the two seeded states. 0140 set them by UPDATE at migration time —
+-- which on a database built FROM EMPTY runs before this seed has inserted the states, so a fresh build had NO state code and W114's
+-- GSTIN state advisory could never compare. The codes are data (0140's column), written here for the states this file creates;
+-- guarded, because the column is 0140's.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'admin_regions' AND column_name = 'gst_state_code') THEN
+    EXECUTE $u$UPDATE admin_regions SET gst_state_code = '24' WHERE level = 1 AND country_code = 'IN' AND path::text = 'in.gj' AND gst_state_code IS NULL$u$;
+    EXECUTE $u$UPDATE admin_regions SET gst_state_code = '27' WHERE level = 1 AND country_code = 'IN' AND path::text = 'in.mh' AND gst_state_code IS NULL$u$;
+  END IF;
+END $$;
+
 -- Sample districts (Junagadh = founder's base; expand via admin UI later)
 INSERT INTO admin_regions (id,country_code,parent_id,level,code,default_name,path,is_active) VALUES
  ('11111111-0000-7000-8000-000000000101','IN','11111111-0000-7000-8000-000000000001',2,'GJ-JUN','Junagadh','in.gj.junagadh',true),

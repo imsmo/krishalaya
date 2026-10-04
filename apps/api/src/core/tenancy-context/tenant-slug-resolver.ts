@@ -3,10 +3,11 @@
 // `X-Tenant-Slug` header) to the tenant's internal uuid, so the request pipeline can establish tenant context for
 // unauthenticated public reads (browse, listing detail, public reviews, trace scan landing).
 //
-// WHY this is safe without a tenant context: `tenants` is a GLOBAL registry table — it has no `tenant_id` column,
-// so the blanket RLS pass (migrations 0014/0020/…) skips it and it carries NO row-level policy. A lookup by slug
-// therefore needs no `app.tenant_id` GUC. We resolve ONLY tenants in a browsable lifecycle status; pending/
-// suspended/archived/terminated tenants do not expose a storefront.
+// WHY this works without a tenant context: [PC-56 TENANT-SW-d, 0200] `tenants` is now behind RLS (`id = current_tenant_id()`, F-7),
+// so a context-free `SELECT … FROM tenants` sees NOTHING. The three anonymous reads here go through 0200's SECURITY DEFINER
+// functions — `resolve_tenant_slug(slug)`, `resolve_live_tenant(id)`, `public_tenant_card(id)` — each returning the smallest
+// answer (an id, or a display name + logo) for a LIVE tenant only (trial / active / grace). Pending / suspended / archived /
+// terminated tenants do not expose a storefront. No blanket bypass: kv_app holds EXECUTE on exactly these functions.
 //
 // HOT PATH: this runs (at most) once per anonymous request, so results are cached in-process with a short TTL —
 // positive hits for 60s, negative (unknown slug) for 10s — bounding DB load to ~1 query per slug per minute per
@@ -44,10 +45,7 @@ export class TenantSlugResolver {
     let tenantId: string | null = null;
     try {
       // shard 0 = the global registry shard; in single-DB deployments every shard shares one writer URL.
-      const res = await this.pools.writer(0).query(
-        `SELECT id FROM tenants WHERE slug = $1 AND status IN ('trial','active','grace') LIMIT 1`,
-        [key],
-      );
+      const res = await this.pools.writer(0).query(`SELECT resolve_tenant_slug($1) AS id`, [key]);
       tenantId = (res.rows[0]?.id as string | undefined) ?? null;
     } catch (e) {
       // Degrade, do not cache: a transient DB error must not pin a slug to "unresolved" for the whole TTL.
@@ -72,7 +70,7 @@ export class TenantSlugResolver {
     if (hit && hit.expiresAt > now) return hit.tenantId;
     let tenantId: string | null = null;
     try {
-      const res = await this.pools.writer(0).query(`SELECT id FROM tenants WHERE id = $1 AND status IN ('trial','active','grace') AND deleted_at IS NULL LIMIT 1`, [id]);
+      const res = await this.pools.writer(0).query(`SELECT resolve_live_tenant($1::uuid) AS id`, [id]);
       tenantId = (res.rows[0]?.id as string | undefined) ?? null;
     } catch (e) {
       this.log.error(`tenant id resolve failed: ${(e as Error).message}`);
@@ -109,7 +107,7 @@ export class TenantSlugResolver {
   }
 
   /** DEV-26/Q20: the public white-label branding for an already-resolved tenant (display_name + logo_url,
-   *  migration 0075). Read-only, same "no RLS needed" reasoning as `resolve()` above (`tenants` has no
+   *  migration 0075). Read-only, through 0200's `public_tenant_card` (SECURITY DEFINER — the `tenants` wall hides every row without a context; was "no RLS needed": `tenants` had no
    *  `tenant_id` column). Cached alongside the slug cache (same TTL discipline: a positive hit for
    *  `POSITIVE_TTL_MS`, a miss for `NEGATIVE_TTL_MS`; a DB error degrades to `null` WITHOUT caching, so the next
    *  request retries) — a SEPARATE cache map from `resolve()`'s own (keyed by tenantId, not slug; the two never
@@ -123,10 +121,7 @@ export class TenantSlugResolver {
 
     let branding: TenantBranding | null = null;
     try {
-      const res = await this.pools.writer(0).query(
-        `SELECT display_name, logo_url FROM tenants WHERE id = $1 AND status IN ('trial','active','grace') LIMIT 1`,
-        [tenantId],
-      );
+      const res = await this.pools.writer(0).query(`SELECT display_name, logo_url FROM public_tenant_card($1::uuid)`, [tenantId]);
       const row = res.rows[0] as { display_name?: string; logo_url?: string | null } | undefined;
       // PC-56 TENANT-13d: the published brand (SECURITY DEFINER — `tenant_branding*` are RLS-forced and this path has no tenant GUC)
       const pb = row ? await this.pools.writer(0).query(`SELECT * FROM public_tenant_brand($1)`, [tenantId]) : { rows: [] };

@@ -35,7 +35,13 @@ describe('TenantSlugResolver', () => {
     const r = new TenantSlugResolver(p.provider);
     expect(await r.resolve('demo-fpo')).toBe(TENANT);
     expect(seenParams).toEqual(['demo-fpo']);
-    expect(seenSql).toMatch(/status IN \('trial','active','grace'\)/);
+    // [PC-56 TENANT-SW-d] `tenants` is behind RLS (0200): the read goes through the SECURITY DEFINER `resolve_tenant_slug`, and the
+    // browsable-status filter lives in that function — asserted where it now is.
+    expect(seenSql).toMatch(/resolve_tenant_slug\(\$1\)/);
+    const mig = require('node:fs').readFileSync(require('node:path').join(__dirname, '../../../../../../db/migrations/0200_onboarding_governance_pack.sql'), 'utf8') as string;
+    const fn = mig.slice(mig.indexOf('CREATE OR REPLACE FUNCTION resolve_tenant_slug'), mig.indexOf('CREATE OR REPLACE FUNCTION resolve_live_tenant'));
+    expect(fn).toMatch(/status IN \('trial', 'active', 'grace'\)/);
+    expect(fn).toMatch(/SECURITY DEFINER SET search_path = public/);
   });
 
   it('lower-cases the slug and caches positive hits (one DB call per slug)', async () => {

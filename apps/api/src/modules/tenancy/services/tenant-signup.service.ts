@@ -53,6 +53,9 @@ export interface SignupResult {
   displayName: string;
   /** True when this phone already administered an organisation and was returned to it (W113's one-per-number rule). */
   resumed: boolean;
+  /** PC-56 TENANT-SW-d (W114): where signup step 2 stands — `profile` (open: land on it), `done`, or null (not tracked: a
+   *  tenant created before 0200 or by the admin realm). A resume lands on the saved step. */
+  onboardingStep: 'profile' | 'done' | null;
   trialEndsOn: string | null;
   tokens: AuthTokens;
 }
@@ -110,6 +113,7 @@ export class TenantSignupService {
       if (existing) {
         // W113: "a second attempt from the same number resumes the first, it never starts a duplicate". Nothing is created
         // and nothing is changed — but it is RECORDED, because a resume is also how a stolen phone would be used.
+        await this.repo.enterTenantContext(tx, existing.tenantId);
         await this.audit.write(tx, {
           tenantId: existing.tenantId, actorUserId: user.id, action: 'tenancy.signup_resumed',
           entityType: 'tenant', entityId: existing.tenantId, newValue: { resumed: true }, ip,
@@ -199,14 +203,15 @@ export class TenantSignupService {
     const tokens = await this.auth.openSessionFor(out.user, tenantId, ip, input.device);
 
     if (out.kind === 'resumed') {
+      const step = out.existing.onboardingStep;
       return {
         tenantId: out.existing.tenantId, slug: out.existing.slug, displayName: out.existing.displayName,
-        resumed: true, trialEndsOn: null, tokens,
+        resumed: true, trialEndsOn: null, tokens, onboardingStep: step === 'profile' || step === 'done' ? step : null,
       };
     }
     return {
       tenantId: out.tenant.id, slug: out.tenant.slug, displayName: out.tenant.slug,
-      resumed: false, trialEndsOn: out.trialEndsOn, tokens,
+      resumed: false, trialEndsOn: out.trialEndsOn, tokens, onboardingStep: 'profile',
     };
   }
 }

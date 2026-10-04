@@ -84,14 +84,36 @@ async function main() {
     const moneyLeaks = moneyLeaksRaw.filter(
       (r) => !ALLOWED_WRITE_GRANTS.has(`${r.table_name}|${r.grantee}|${r.privilege_type}`),
     );
-    return { gaps, notForced, policyCount, moneyLeaks };
+    // [PC-56 TENANT-SW-d, 0200 — F-7] THE `tenants` WALL. `tenants` IS the tenant (no tenant_id column), so the generic checks above
+    // never saw it: no RLS, and kv_app could UPDATE any tenant's status / risk_score. Asserted here by name: RLS enabled AND forced,
+    // and the request tier holds no write on the lifecycle columns (kv_relay holds no write at all).
+    const tw = (await client.query(`
+      SELECT c.relrowsecurity AS rls, c.relforcerowsecurity AS forced,
+             (SELECT count(*)::int FROM pg_policies p WHERE p.schemaname = 'public' AND p.tablename = 'tenants') AS policies,
+             has_column_privilege('kv_app', 'tenants', 'status', 'UPDATE') AS app_status,
+             has_column_privilege('kv_app', 'tenants', 'risk_score', 'UPDATE') AS app_risk,
+             has_column_privilege('kv_app', 'tenants', 'slug', 'UPDATE') AS app_slug,
+             has_table_privilege('kv_relay', 'tenants', 'UPDATE') AS relay_update,
+             has_table_privilege('kv_app', 'tenants', 'DELETE') AS app_delete
+        FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public' WHERE c.relname = 'tenants'`)).rows[0] || {};
+    const tenantsWall = [];
+    if (!tw.rls) tenantsWall.push('tenants: RLS not enabled');
+    if (!tw.forced) tenantsWall.push('tenants: RLS not forced');
+    if (!(tw.policies > 0)) tenantsWall.push('tenants: no policy');
+    if (tw.app_status) tenantsWall.push('tenants: kv_app may UPDATE status');
+    if (tw.app_risk) tenantsWall.push('tenants: kv_app may UPDATE risk_score');
+    if (tw.app_slug) tenantsWall.push('tenants: kv_app may UPDATE slug');
+    if (tw.relay_update) tenantsWall.push('tenants: kv_relay may UPDATE');
+    if (tw.app_delete) tenantsWall.push('tenants: kv_app may DELETE');
+    return { gaps, notForced, policyCount, moneyLeaks, tenantsWall };
   });
 
   let ok = true;
   if (report.gaps.length) { ok = false; log.error('tenant tables WITHOUT an RLS policy', { tables: report.gaps }); }
   if (report.notForced.length) { ok = false; log.error('RLS enabled but NOT forced (owner can bypass)', { tables: report.notForced }); }
   if (report.moneyLeaks.length) { ok = false; log.error('kv_app/kv_relay hold a WRITE grant on a money table or partition (Law 2 violation)', { leaks: report.moneyLeaks }); }
-  if (ok) log.info('RLS coverage complete', { policies: report.policyCount });
+  if (report.tenantsWall.length) { ok = false; log.error('the tenants wall is open (F-7, 0200)', { problems: report.tenantsWall }); }
+  if (ok) log.info('RLS coverage complete', { policies: report.policyCount, tenantsWall: 'closed' });
 
   if (args.has('json')) process.stdout.write(JSON.stringify({ ok, ...report }, null, 2) + '\n');
   process.exitCode = ok ? 0 : 1;

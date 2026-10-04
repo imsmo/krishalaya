@@ -63,5 +63,9 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('cod_ledger','PC-56 TENANT-SW-a: COD cash as a ledger fact (collect at delivery → rider cash-in-hand; remit at reconcile; per-rider cap; cash day) — OFF = the off-ledger worksheet', false, 100, '{}'),
   ('pod_review','PC-56 TENANT-SW-a: POD review on every delivered shipment (2h auto-clear; a flagged POD holds settlement) — OFF = no review rows, no holds', false, 100, '{}'),
   -- PC-56 TENANT-SW-c (0199 also inserts it — ON CONFLICT DO NOTHING)
-  ('staff_invites','PC-56 TENANT-SW-c: staff invites by SMS token + OTP on the invited phone (W183) — OFF = "Add staff directly" (with a reason) only', false, 100, '{}')
+  ('staff_invites','PC-56 TENANT-SW-c: staff invites by SMS token + OTP on the invited phone (W183) — OFF = "Add staff directly" (with a reason) only', false, 100, '{}'),
+  -- PC-56 TENANT-SW-d (each composes with its module flag: tenancy / memberships)
+  ('setup_calls','PC-56 TENANT-SW-d: "Book a setup call (free)" — a request the Krishalaya team works in the admin realm (W2619) — OFF = the /go card says the team is not taking requests', false, 100, '{}'),
+  ('agm_packs','PC-56 TENANT-SW-d: the AGM pack — assembled from facts, issued by a maker + a second tenant_admin, immutable, PDF + dataset + public verify (W199) — OFF = the screen says so', false, 100, '{}'),
+  ('share_register_import','PC-56 TENANT-SW-d: import the share register from a CSV with consent evidence, under a checker (W2626) — OFF = the register is read-only', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

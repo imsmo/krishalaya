@@ -7,8 +7,9 @@ import type { TenantSignupInput } from '@krishalaya/sdk-js';
 
 export interface T { t(key: string, vars?: Record<string, string | number>): string }
 
-/** W113's own sequence: who you are → verify the number → what the organisation is → done. */
-export const SIGNUP_STEPS = ['you', 'verify', 'org', 'done'] as const;
+/** W113's own sequence: who you are → verify the number → the ORGANISATION PROFILE (W114, PC-56 TENANT-SW-d: signup step 2 of the
+ *  organisation — name, type, home district, registration and tax numbers, with save-and-exit) → done. */
+export const SIGNUP_STEPS = ['you', 'verify', 'profile', 'done'] as const;
 export type SignupStep = (typeof SIGNUP_STEPS)[number];
 
 export function isStep(v: string | undefined | null): v is SignupStep {
@@ -30,12 +31,14 @@ export const TOTAL_STEPS = SIGNUP_STEPS.length;
  * broken. The prerequisites are the data itself — a phone for verify, a phone AND a code for org — so this cannot drift
  * from what the API requires.
  */
-export function resolveStep(q: { step?: string; phone?: string; code?: string }): SignupStep {
+export function resolveStep(q: { step?: string; phone?: string; code?: string }, hasSession = false): SignupStep {
   const wanted: SignupStep = isStep(q.step) ? q.step : 'you';
   const hasPhone = Boolean((q.phone ?? '').trim());
   const hasCode = Boolean((q.code ?? '').trim());
   if (wanted === 'verify' && !hasPhone) return 'you';
-  if (wanted === 'org' && !(hasPhone && hasCode)) return hasPhone ? 'verify' : 'you';
+  // [PC-56 TENANT-SW-d] the profile step is reached with a verified-phone pair (the organisation is created on its first submit) OR
+  // with the session that creation (or a resume by OTP) opened — "resume later by OTP" lands HERE, on the saved step.
+  if (wanted === 'profile' && !(hasPhone && hasCode) && !hasSession) return hasPhone ? 'verify' : 'you';
   // `done` is only ever reached by the action redirecting to it, and it carries no form — so a hand-typed one is harmless
   // and shows the "what happens next" copy rather than a false success. It says nothing about an organisation being made.
   return wanted;

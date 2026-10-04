@@ -27,6 +27,7 @@ import { BrandingResource } from './resources/branding';   // PC-56 TENANT-13d
 import { DomainsResource } from './resources/domains';     // PC-56 TENANT-13d
 import { DesksResource } from './resources/desks';
 import { TeamResource, MeSecurityResource } from './resources/team';   // PC-56 TENANT-SW-c                 // PC-56 TENANT-13b
+import { OrgOnboardingResource, SetupCallsResource, AgmPacksResource, RegisterImportsResource } from './resources/onboarding-governance';   // PC-56 TENANT-SW-d
 import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { CmsResource } from './resources/cms';
@@ -154,6 +155,14 @@ export class KrishalayaClient {
   readonly team: TeamResource;
   /** PC-56 TENANT-SW-c · `/me/security`: the signed-in person's own 2FA and conflict declarations. */
   readonly meSecurity: MeSecurityResource;
+  /** PC-56 TENANT-SW-d · W114 signup step 2 (the organisation profile, save-and-exit, the GSTIN state advisory). */
+  readonly orgOnboarding: OrgOnboardingResource;
+  /** PC-56 TENANT-SW-d · W2619 "Book a setup call (free)" — one open request per organisation. */
+  readonly setupCalls: SetupCallsResource;
+  /** PC-56 TENANT-SW-d · W199 the AGM pack (facts + methods, maker-checker, immutable, addendum, public verify). */
+  readonly agmPacks: AgmPacksResource;
+  /** PC-56 TENANT-SW-d · W2626 the share-register import (consent evidence + a second administrator). */
+  readonly registerImports: RegisterImportsResource;
   readonly rbac: RbacResource;
   readonly disputes: DisputesResource;
   /** PC-56 TENANT-3b: the refund maker-checker plane (propose → decide → applied by the refund itself). */
@@ -254,6 +263,10 @@ export class KrishalayaClient {
     this.desks = new DesksResource(this.http);
     this.team = new TeamResource(this.http);
     this.meSecurity = new MeSecurityResource(this.http);
+    this.orgOnboarding = new OrgOnboardingResource(this.http);
+    this.setupCalls = new SetupCallsResource(this.http);
+    this.agmPacks = new AgmPacksResource(this.http);
+    this.registerImports = new RegisterImportsResource(this.http);
     this.rbac = new RbacResource(this.http);
     this.disputes = new DisputesResource(this.http);
     this.refundApprovals = new RefundApprovalsResource(this.http);

@@ -19,7 +19,7 @@ export class MediaRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
   /** Create the asset row in 'pending' (bytes/sha filled on confirm; scan_status set by the AV webhook). */
-  async insertPending(tx: TxContext, m: { id: string; tenantId: string | null; uploaderUserId: string; kind: MediaKind; s3Key: string; mimeType: string }): Promise<void> {
+  async insertPending(tx: TxContext, m: { id: string; tenantId: string | null; uploaderUserId: string | null; kind: MediaKind; s3Key: string; mimeType: string }): Promise<void> {
     await tx.query(
       `INSERT INTO media_assets (id, tenant_id, uploader_user_id, kind, s3_key, mime_type, bytes, sha256, scan_status)
        VALUES ($1,$2,$3,$4,$5,$6,0,'','pending')`,

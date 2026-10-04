@@ -910,6 +910,24 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('tenant.commission_rule_effective','effectiveFrom','commission_rule_proposals.effective_from (IST date)','2026-10-12',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-SW-d (C1) · "BOOK A SETUP CALL (FREE)": THE REQUESTER HEARS THE TEAM HAS IT. Migration 0200 catalogues
+-- `tenant.setup_call_requested`; the request writes the outbox event `tenancy.setup_call_requested` in its own transaction. Variables:
+-- `slotStart`, `slotEnd` (IST, "YYYY-MM-DD HH:MM"). No calendar integration — the copy says the team calls in the slot chosen.
+-- Above the version backfill below (0122's send-time gate) — SW-c's lesson.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('tenant.setup_call_requested','push','en',NULL,'Setup call requested','The Krishalaya team has your request and will call you between {{slotStart}} and {{slotEnd}} (IST). There is no calendar invite — keep your phone with you.',NULL,true),
+ ('tenant.setup_call_requested','push','hi',NULL,'सेटअप कॉल का अनुरोध मिला','Krishalaya टीम को आपका अनुरोध मिल गया है और वह {{slotStart}} से {{slotEnd}} (IST) के बीच आपको कॉल करेगी। कोई कैलेंडर निमंत्रण नहीं है — अपना फ़ोन साथ रखें।',NULL,true),
+ ('tenant.setup_call_requested','push','gu',NULL,'સેટઅપ કૉલની વિનંતી મળી','Krishalaya ટીમને તમારી વિનંતી મળી છે અને તે {{slotStart}} થી {{slotEnd}} (IST) વચ્ચે તમને કૉલ કરશે. કોઈ કેલેન્ડર આમંત્રણ નથી — તમારો ફોન સાથે રાખો.',NULL,true),
+ ('tenant.setup_call_requested','inapp','en',NULL,'Setup call requested','The Krishalaya team has your request and will call you between {{slotStart}} and {{slotEnd}} (IST). There is no calendar invite — keep your phone with you.',NULL,true),
+ ('tenant.setup_call_requested','inapp','hi',NULL,'सेटअप कॉल का अनुरोध मिला','Krishalaya टीम को आपका अनुरोध मिल गया है और वह {{slotStart}} से {{slotEnd}} (IST) के बीच आपको कॉल करेगी। कोई कैलेंडर निमंत्रण नहीं है — अपना फ़ोन साथ रखें।',NULL,true),
+ ('tenant.setup_call_requested','inapp','gu',NULL,'સેટઅપ કૉલની વિનંતી મળી','Krishalaya ટીમને તમારી વિનંતી મળી છે અને તે {{slotStart}} થી {{slotEnd}} (IST) વચ્ચે તમને કૉલ કરશે. કોઈ કેલેન્ડર આમંત્રણ નથી — તમારો ફોન સાથે રાખો.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('tenant.setup_call_requested','slotStart','setup_call_requests.preferred_slot_start in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-10-12 10:30',true),
+ ('tenant.setup_call_requested','slotEnd','setup_call_requests.preferred_slot_end in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-10-12 11:30',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

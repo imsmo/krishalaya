@@ -159,6 +159,14 @@ export interface DashboardTiles {
   openDisputes: number;
   /** Age of the oldest open dispute in hours — what makes it urgent rather than merely present. */
   oldestDisputeHours: number | null;
+  /** PC-56 TENANT-SW-d · the money tiles' currency (the country's), read — never typed in the console. */
+  currencyCode: string | null;
+  /** This month's orders carry more than one currency: the GMV tile refuses one sum. */
+  currencyMixed: boolean;
+  ordersToday: number;
+  kycPending: number;
+  /** The organisation's Main wallet; null = no Main wallet yet. */
+  walletMainMinor: string | null;
 }
 
 export type DashboardActionKind = 'qc_queue' | 'payout_batch' | 'dispute';
@@ -340,6 +348,8 @@ export interface TenantSignupResult {
   resumed: boolean;
   /** null on a resume — the existing organisation's trial, if any, is its own business. */
   trialEndsOn: string | null;
+  /** PC-56 TENANT-SW-d · where signup step 2 stands: `profile` (open — a resume lands on it), `done`, or null (not tracked). */
+  onboardingStep: 'profile' | 'done' | null;
   tokens: { accessToken: string; refreshToken: string; expiresInSec: number };
 }
 
