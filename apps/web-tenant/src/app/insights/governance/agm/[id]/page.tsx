@@ -15,6 +15,8 @@ import {
   AGM_HREF, agmActHref, agmActsFor, agmExportHref, agmFigure, agmItemKey, agmMethodKey, agmPackHref, agmRefusalKey, agmSectionKey, agmStatusKey,
   istLabel, refusedItems, swdPageState, verifyAgmHref,
 } from '../../../../../features/swd/console';
+import { AsOf } from '../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -40,6 +42,8 @@ export default async function AgmPackPage({ params }: { params: { id: string } }
       {pack && (
         <>
           <h1>{t.t('swd.agm.packTitle', { fy: pack.fiscalYearLabel })}{pack.addendumNo > 0 && <> · {t.t('swd.agm.addendumNo', { n: pack.addendumNo })}</>}</h1>
+          {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+          <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
           <p><strong>{t.t(agmStatusKey(pack.status))}</strong> · {t.t('swd.agm.fyRange', { start: pack.fyStart, end: pack.fyEnd })} · {t.t(pack.fyBasisSource === 'tenant_setting' ? 'swd.agm.basis.ownShort' : 'swd.agm.basis.countryShort')}</p>
           <dl className="kv-dl">
             <dt>{t.t('swd.agm.draftedBy')}</dt><dd>{pack.draftedByName ?? '—'} · {istLabel(pack.assembledAt)}</dd>

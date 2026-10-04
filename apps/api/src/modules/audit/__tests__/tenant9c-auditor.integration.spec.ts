@@ -166,8 +166,10 @@ run('PC-56 TENANT-9c · the auditor realm (live, kv_app under RLS)', () => {
     await pools?.onModuleDestroy(); await app?.end(); await admin?.end();
   });
 
-  it('F-8/F-18 · the auditor\'s permission set in the database is EXACTLY five reads; the credit-note verb is tenant_admin\'s', async () => {
-    expect([...(await permsOf('auditor'))].sort()).toEqual(['audit.read', 'governance.read', 'kyc.read', 'ledger.read', 'report.view']);
+  // PC-56 TENANT-SW-f (0202): + `report.run` — the auditor runs its realm's report datasets (orders, settlements) through the NAMED export
+  // exception (`@AuditorReadAct('export.enqueue')`, enumerated in auditor-read-only.guard.spec); every other write stays AUDITOR_READ_ONLY.
+  it('F-8/F-18 · the auditor\'s permission set in the database is EXACTLY five reads + report.run (SW-f); the credit-note verb is tenant_admin\'s', async () => {
+    expect([...(await permsOf('auditor'))].sort()).toEqual(['audit.read', 'governance.read', 'kyc.read', 'ledger.read', 'report.run', 'report.view']);
     const holders = (await admin.query(`SELECT r.code FROM role_permissions rp JOIN roles r ON r.id = rp.role_id WHERE rp.permission_code = 'payments.credit_note.issue' ORDER BY 1`)).rows.map((x) => x.code);
     expect(holders).toEqual(['tenant_admin']);
   });

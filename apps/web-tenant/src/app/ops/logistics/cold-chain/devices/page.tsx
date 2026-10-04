@@ -13,6 +13,8 @@ import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { DataTable } from '../../../../../components/DataTable';
 import { COLD_HREF, DEVICES_HREF, coldSubjectHref, failedCodes, swePageState, sweCodeKey } from '../../../../../features/swe/console';
 import { registerLoggerAction, revokeKeyAction } from './actions';
+import { AsOf } from '../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.devices'), robots: { index: false, follow: false } }; }
@@ -29,6 +31,8 @@ export default async function DevicesPage({ searchParams }: { searchParams: { er
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swe.cold.title')}><Link href={COLD_HREF}>{t.t('swe.cold.title')}</Link> / <span aria-current="page">{t.t('swe.cold.devices')}</span></nav>
       <h1>{t.t('swe.cold.devices')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('swe.devices.subtitle')}</p>
       {errors.length > 0 && <div className="kv-error" role="alert"><ul>{errors.map((c) => <li key={c}>{t.t(sweCodeKey(c))} <code>{c}</code></li>)}</ul></div>}
       {searchParams.registered === '1' && <div className="kv-card kv-card--notice" role="status"><p>{t.t('swe.devices.registered')}</p></div>}

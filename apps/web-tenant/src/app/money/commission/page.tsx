@@ -16,6 +16,8 @@ import { tenantHasPerm } from '../../../lib/auth';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { DataTable } from '../../../components/DataTable';
 import { COMMISSION_HREF, COMMISSION_SOURCES, bpsPercent, pageState } from '../../../features/swa/console';
+import { AsOf } from '../../../components/AsOf';
+import { asOfLabels } from '../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.com.title'), robots: { index: false, follow: false } }; }
@@ -54,6 +56,8 @@ export default async function CommissionPage({ searchParams }: { searchParams: {
       <nav className="kv-breadcrumb" aria-label={t.t('swa.com.title')}><span>{t.t('swa.money')}</span> / <span aria-current="page">{t.t('swa.com.title')}</span></nav>
       <div className="kv-page-head">
         <h1>{t.t('swa.com.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         {canManage && !state && <Link href={`${COMMISSION_HREF}/propose`} className="kv-btn kv-btn--primary">{t.t('swa.com.propose')}</Link>}
       </div>
       <p className="kv-field__hint">{t.t('swa.com.subtitle')}</p>

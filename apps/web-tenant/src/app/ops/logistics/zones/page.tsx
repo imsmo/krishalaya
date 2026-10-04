@@ -15,6 +15,8 @@ import { tenantHasPerm } from '../../../../lib/auth';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { DataTable } from '../../../../components/DataTable';
 import { ZONES_HREF, isPincode, pageState } from '../../../../features/swa/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.zone.title'), robots: { index: false, follow: false } }; }
@@ -47,6 +49,8 @@ export default async function ZonesPage({ searchParams }: { searchParams: { pinc
       <nav className="kv-breadcrumb" aria-label={t.t('swa.zone.title')}><span>{t.t('swa.ops')}</span> / <span>{t.t('swa.logistics')}</span> / <span aria-current="page">{t.t('swa.zone.title')}</span></nav>
       <div className="kv-page-head">
         <h1>{t.t('swa.zone.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         {canPropose && !state && <Link href={`${ZONES_HREF}/new`} className="kv-btn kv-btn--primary">{t.t('swa.zone.new')}</Link>}
       </div>
       <p className="kv-field__hint">{t.t('swa.zone.subtitle')}</p>

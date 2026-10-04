@@ -50,7 +50,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureAiReview ? [{ key: 'ai-review', href: '/ai-review', label: t.t('nav.aiReview') }] : []),
         // PC-56 TENANT-7a: the desk's library (W178) beside the instructor's studio, both under the same console switch.
         // PC-56 TENANT-7c: the live class (W414) beside them — scheduled here, held elsewhere.
-        ...(env.featureEducation ? [{ key: 'courses', href: '/courses', label: t.t('nav.courses') }, { key: 'live', href: '/live', label: t.t('nav.live') }, { key: 'studio', href: '/studio', label: t.t('nav.studio') }, { key: 'earnings', href: '/studio/earnings', label: t.t('nav.earnings') }] : []),
+        ...(env.featureEducation ? [{ key: 'courses', href: '/courses', label: t.t('nav.courses') }, { key: 'live', href: '/live', label: t.t('nav.live') }, { key: 'studio', href: '/studio', label: t.t('nav.studio') }, { key: 'earnings', href: '/studio/earnings', label: t.t('nav.earnings') }, { key: 'learner-insights', href: '/studio/insights', label: t.t('nav.learnerInsights') }] : []),
         // PC-56 TENANT-8a: the tenant's template overrides (W180) beside the comms hub, under the same console switch.
         ...(env.featureComms ? [{ key: 'comms', href: '/comms', label: t.t('nav.comms') }, { key: 'templates', href: '/content/templates', label: t.t('nav.templates') }] : []),
         // PC-56 TENANT-8e: WhatsApp, declared by name (no provider) — the hub says what exists instead. Same switch.
@@ -64,6 +64,8 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         ...(env.featureMemberships ? [{ key: 'members', href: '/members', label: t.t('nav.members') }] : []),
         ...(env.featurePromotions ? [{ key: 'promotions', href: '/marketplace/offers', label: t.t('nav.promotions') }] : []),   // PC-56 TENANT-10b: W129's canon route; '/offers' above is LISTING offers (F-20)
         ...(env.featureMarket ? [{ key: 'market', href: '/market', label: t.t('nav.market') }] : []),
+        // PC-56 TENANT-SW-f · W193–W196: Insights (Mandi Pulse · Demand map · Wastage · Reports); each screen states its own flag when off
+        { key: 'insights', href: '/insights/mandi-pulse', label: t.t('nav.insights') },
         ...(env.featureInbox ? [{ key: 'inbox', href: '/inbox', label: t.t('nav.inbox') }] : []),
         ...(env.featureRequirements ? [{ key: 'requirements', href: '/marketplace/requirements', label: t.t('nav.requirements') }] : []),
         { key: 'disputes', href: '/disputes', label: t.t('nav.disputes') },

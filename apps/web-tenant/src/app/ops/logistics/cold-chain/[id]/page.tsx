@@ -17,6 +17,8 @@ import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { DataTable } from '../../../../../components/DataTable';
 import { BREACHES_HREF, COLD_HREF, bandLabel, coldSubjectHref, durationParts, failedCodes, isColdSubjectType, isUuid, refusedKey, swePageState, sweCodeKey } from '../../../../../features/swe/console';
 import { exportTrailAction, recordManualReadingAction } from './actions';
+import { AsOf } from '../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.subjectTitle'), robots: { index: false, follow: false } }; }
@@ -38,6 +40,8 @@ export default async function ColdSubjectPage({ params, searchParams }: { params
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swe.cold.title')}><Link href={COLD_HREF}>{t.t('swe.cold.title')}</Link> / <span aria-current="page">{s?.label ?? t.t('swe.cold.subjectTitle')}</span></nav>
       <h1>{s?.label ?? t.t('swe.cold.subjectTitle')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       {errors.length > 0 && <div className="kv-error" role="alert"><ul>{errors.map((c) => <li key={c}>{t.t(sweCodeKey(c))} <code>{c}</code></li>)}</ul></div>}
       {searchParams.recorded === '1' && <div className="kv-card kv-card--notice" role="status"><p>{t.t('swe.cold.manualRecorded')}</p></div>}
       {state && <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert"><strong>{t.t(`swe.state.${state}.title`)}</strong><p>{t.t(`swe.state.${state}.body`)}</p>

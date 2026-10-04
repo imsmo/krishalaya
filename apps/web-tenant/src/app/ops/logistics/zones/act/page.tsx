@@ -15,6 +15,10 @@ import { mutateStep, mutateStepKey, failureKey } from '../../../../../features/m
 import { ZONES_HREF, codeKey, isUuid, isZoneAct, pageState } from '../../../../../features/swa/console';
 import { AuditEntryCard } from '../../../../people/ambassadors/AuditEntryCard';
 import { zoneActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.zone.actTitle'), robots: { index: false, follow: false } }; }
@@ -97,6 +101,8 @@ export default async function ZoneActPage({ searchParams }: { searchParams: Reco
           )}
           {offered && reasonOk && defOk ? (
             <form action={zoneActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((onProposal ? p : zone) as never, onProposal ? VERIFY_FIELDS.zoneProposal : VERIFY_FIELDS.deliveryZone)} />
               {Object.entries(carry).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
               {reason && <input type="hidden" name="reason" value={reason} />}
               {act === 'repoint' && <input type="hidden" name="chargeDefinitionId" value={def} />}
@@ -114,7 +120,8 @@ export default async function ZoneActPage({ searchParams }: { searchParams: Reco
           <p><Link href={ZONES_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p>
         </>
       )}
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', ...carry, ...(reason ? { reason } : {}), ...(def ? { chargeDefinitionId: def } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('mutate.failure.title')}</p>
           <ul>{failed.map((c) => <li key={c}>{t.t(codeKey(c))} <code>{c}</code></li>)}</ul>

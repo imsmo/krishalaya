@@ -18,6 +18,10 @@ import { MAX_REASON, MIN_REASON, failureKey, mutateStep, mutateStepKey, reasonSt
 import { SCHEMES_DESK_HREF, codesFromUrl, isSchemeCode, isUuid, schemeHref, swbCodeKey, swbState } from '../../../../../features/swb/console';
 import { AuditEntryCard } from '../../../../people/ambassadors/AuditEntryCard';
 import { schemeActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -73,6 +77,8 @@ export default async function SchemeActPage({ params, searchParams }: { params: 
               </form>
               {offered && rs === 'ok' ? (
                 <form action={schemeActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((p) as never, VERIFY_FIELDS.schemeSweep)} />
                   <input type="hidden" name="code" value={code} />
                   <input type="hidden" name="reason" value={reason} />
                   <input type="hidden" name="idempotencyKey" value={randomUUID()} />
@@ -93,7 +99,8 @@ export default async function SchemeActPage({ params, searchParams }: { params: 
         </>
       )}
 
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', act: 'sweep', ...(reason ? { reason } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('form.failure.title')}</p>
           <ul>{failed.map((c) => <li key={c}>{t.t(swbCodeKey('scm', c))} <code>{c}</code></li>)}</ul>

@@ -25,6 +25,8 @@ import {
   ADVANCE_CAP_PCT, ADVANCE_RECOVERY_PCT, ADV_FILTERS, ATTENDANCE_HREF, WAGES_HREF, WAGE_REFUSED_BY_NAME, advActHref, advActsFor, advFilterFrom, advStatusKey, cursorFrom,
   swbState, wageLineKey, wageRunStatusKey, ymdFrom,
 } from '../../../../features/swb/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -72,6 +74,8 @@ export default async function WageRunsPage({ searchParams }: { searchParams: Rec
       {crumbs}
       <div className="kv-page-head">
         <h1>{t.t('swb.wage.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         <p className="kv-actions"><Link href={advActHref('request')} className="kv-btn kv-btn--muted">{t.t('swb.adv.act.request')}</Link>{' '}<Link href={ATTENDANCE_HREF} className="kv-btn--link">{t.t('swb.att.title')}</Link></p>
       </div>
       <p className="kv-field__hint">{t.t('swb.wage.lede')}</p>

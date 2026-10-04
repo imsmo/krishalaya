@@ -15,6 +15,8 @@ import { getTranslator, getLang } from '../../../../lib/i18n';
 import { DataTable } from '../../../../components/DataTable';
 import { POD_HREF, codeKey, pageState, podTimerLeftMinutes } from '../../../../features/swa/console';
 import { podTakeNextAction } from './actions';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.pod.title'), robots: { index: false, follow: false } }; }
@@ -40,6 +42,8 @@ export default async function PodQueuePage({ searchParams }: { searchParams: { s
       <nav className="kv-breadcrumb" aria-label={t.t('swa.pod.title')}><span>{t.t('swa.ops')}</span> / <span>{t.t('swa.logistics')}</span> / <span aria-current="page">{t.t('swa.pod.title')}</span></nav>
       <div className="kv-page-head">
         <h1>{t.t('swa.pod.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         {board?.enabled && (
           <form action={podTakeNextAction}><button type="submit" className="kv-btn kv-btn--primary">{t.t('swa.pod.takeNext')}</button></form>
         )}

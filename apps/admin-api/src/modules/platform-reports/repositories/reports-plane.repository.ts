@@ -122,8 +122,9 @@ export class ReportsPlaneRepository {
 
   async listSaved(includeArchived = false): Promise<SavedReportRow[]> {
     const r = await this.db.query(
+      // [PC-56 TENANT-SW-f] 0202 opened this table to tenants (tenant_id set); the platform builder reads PLATFORM rows only
       `SELECT ${SR_COLS} FROM saved_report_definitions
-        WHERE deleted_at IS NULL ${includeArchived ? '' : 'AND archived_at IS NULL'}
+        WHERE tenant_id IS NULL AND deleted_at IS NULL ${includeArchived ? '' : 'AND archived_at IS NULL'}
         ORDER BY created_at DESC, id DESC LIMIT 200`);
     return r.rows.map(toSaved);
   }
@@ -131,7 +132,7 @@ export class ReportsPlaneRepository {
   async getSaved(slug: string): Promise<SavedReportRow | null> {
     const r = await this.db.query(
       `SELECT ${SR_COLS} FROM saved_report_definitions
-        WHERE slug = $1 AND archived_at IS NULL AND deleted_at IS NULL`, [slug]);
+        WHERE slug = $1 AND tenant_id IS NULL AND archived_at IS NULL AND deleted_at IS NULL`, [slug]);
     return r.rows[0] ? toSaved(r.rows[0]) : null;
   }
 
@@ -154,7 +155,7 @@ export class ReportsPlaneRepository {
   async archiveSaved(c: PoolClient, slug: string, byAdminId: string): Promise<boolean> {
     const r = await c.query(
       `UPDATE saved_report_definitions SET archived_at = now(), updated_at = now(), updated_by = $2
-        WHERE slug = $1 AND archived_at IS NULL AND deleted_at IS NULL`, [slug, byAdminId]);
+        WHERE slug = $1 AND tenant_id IS NULL AND archived_at IS NULL AND deleted_at IS NULL`, [slug, byAdminId]);
     return (r.rowCount ?? 0) > 0;
   }
 

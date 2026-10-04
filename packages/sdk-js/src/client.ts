@@ -34,6 +34,7 @@ import { CmsResource } from './resources/cms';
 import { OrdersResource } from './resources/orders';
 import { ShipmentsResource, FleetResource, RoutesResource, FreightResource, LogisticsDeskResource } from './resources/logistics';
 import { CarriersResource, PickupSlotsResource, VillageRunResource, ColdChainResource } from './resources/logistics-ops';   // PC-56 TENANT-SW-e
+import { InsightsResource, ReportsResource, StudioInsightsResource } from './resources/insights';   // PC-56 TENANT-SW-f
 import { ReviewsResource } from './resources/reviews';
 import { CartResource, CheckoutResource } from './resources/commerce';
 import { BuyerResource } from './resources/buyer';
@@ -101,6 +102,10 @@ export class KrishalayaClient {
   readonly pickupSlots: PickupSlotsResource;
   readonly villageRun: VillageRunResource;
   readonly coldChain: ColdChainResource;
+  /** PC-56 TENANT-SW-f · W193–W196 insights, the report builder, W417 learner insights. */
+  readonly insights: InsightsResource;
+  readonly reports: ReportsResource;
+  readonly studioInsights: StudioInsightsResource;
   readonly reviews: ReviewsResource;
   readonly addresses: AddressesResource;
   readonly cart: CartResource;
@@ -227,6 +232,9 @@ export class KrishalayaClient {
     this.pickupSlots = new PickupSlotsResource(this.http);
     this.villageRun = new VillageRunResource(this.http);
     this.coldChain = new ColdChainResource(this.http);
+    this.insights = new InsightsResource(this.http);
+    this.reports = new ReportsResource(this.http);
+    this.studioInsights = new StudioInsightsResource(this.http);
     this.reviews = new ReviewsResource(this.http);
     this.addresses = new AddressesResource(this.http);
     this.cart = new CartResource(this.http);

@@ -23,6 +23,10 @@ import {
 } from '../../../../../features/swb/console';
 import { AuditEntryCard } from '../../AuditEntryCard';
 import { runActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -91,6 +95,8 @@ export default async function RunActPage({ searchParams }: { searchParams: Recor
               </form>
               {offered && rs === 'ok' ? (
                 <form action={runActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((run ?? {}) as never, VERIFY_FIELDS.ambassadorRun)} />
                   <input type="hidden" name="act" value={act} />
                   {runId && <input type="hidden" name="run" value={runId} />}
                   <input type="hidden" name="reason" value={reason} />
@@ -116,7 +122,8 @@ export default async function RunActPage({ searchParams }: { searchParams: Recor
         </>
       )}
 
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${EARNINGS_ACT_HREF}?${new URLSearchParams({ step: 'confirm', act, ...hidden, ...(reason ? { reason } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('form.failure.title')}</p>
           <ul>{failed.map((code) => <li key={code}>{t.t(swbCodeKey('run', code))} <code>{code}</code></li>)}</ul>

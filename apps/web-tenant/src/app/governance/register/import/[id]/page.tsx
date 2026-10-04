@@ -12,6 +12,8 @@ import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { LINE_STATUSES, REGISTER_HREF, REGISTER_IMPORT_HREF, importActHref, importHref, importStatusKey, istLabel, lineStatusKey, rowErrorKey, swdPageState } from '../../../../../features/swd/console';
 import type { ImportAct } from '../../../../../features/swd/console';
+import { AsOf } from '../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -36,6 +38,8 @@ export default async function RegisterImportPreviewPage({ params, searchParams }
     <section>
       <nav className="kv-field__hint"><Link href={REGISTER_HREF} className="kv-btn--link">{t.t('reg.title')}</Link> › <Link href={REGISTER_IMPORT_HREF} className="kv-btn--link">{t.t('swd.import.title')}</Link></nav>
       <h1>{t.t('swd.import.previewTitle')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       {state && <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert"><strong>{t.t(`swd.state.${state}.title`)}</strong><p>{t.t(`swd.state.${state}.body`)}</p>
         {state === 'error' && <p><Link href={importHref(params.id)} className="kv-btn--link">{t.t('swd.chain.retry')}</Link> <span className="kv-field__hint">{t.t('swd.refused.retry')}</span></p>}</div>}
       {imp && (

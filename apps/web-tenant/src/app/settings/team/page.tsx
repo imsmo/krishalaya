@@ -19,6 +19,8 @@ import { getLang, getTranslator } from '../../../lib/i18n';
 import {
   DESKS_HREF, TEAM_HREF, TEAM_INVITE_HREF, inviteStatusKey, pairKey, seatTile, sessionBoundVars, staffHref, swcPageState, teamActHref, twoFactorKey,
 } from '../../../features/swc/console';
+import { AsOf } from '../../../components/AsOf';
+import { asOfLabels } from '../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -54,6 +56,8 @@ export default async function TeamPage({ searchParams }: { searchParams: Record<
     <section>
       <nav aria-label={t.t('swc.breadcrumb.label')} className="kv-field__hint">{t.t('dk.breadcrumb.settings')} › {t.t('swc.team.title')}</nav>
       <h1>{t.t('swc.team.title')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('swc.team.restrictedNote')}</p>
       <dl className="kv-tiles">
         <div className="kv-tile"><dt>{t.t('swc.seats.title')}</dt><dd><strong>{t.t(seats.key, Object.fromEntries(Object.entries(seats.vars).map(([k, v]) => [k, typeof v === 'number' ? n(v) : v])))}</strong></dd>

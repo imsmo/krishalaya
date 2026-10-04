@@ -26,6 +26,8 @@ import {
   LABOUR_HREF, NEW_JOB_HREF, UNREACHABLE_STATUSES, consoleState, cursorFrom, isStatus, jobHref, pageHref, perKey, statusKey, tabHref, tabs, typeKeys, wageKindKey,
 } from '../../../features/labour/console';
 import { ATTENDANCE_HREF, WAGES_HREF } from '../../../features/swb/console';
+import { AsOf } from '../../../components/AsOf';
+import { asOfLabels } from '../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -74,6 +76,8 @@ export default async function LabourJobsPage({ searchParams }: { searchParams: R
       {crumbs}
       <div className="kv-page-head">
         <h1>{t.t('lab.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         <p className="kv-actions">
           <Link href={WAGES_HREF} className="kv-btn kv-btn--muted">{t.t('lab.wageRuns')}</Link>{' '}
           <Link href={ATTENDANCE_HREF} className="kv-btn kv-btn--muted">{t.t('swb.att.title')}</Link>{' '}

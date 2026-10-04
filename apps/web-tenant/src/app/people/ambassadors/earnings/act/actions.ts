@@ -10,6 +10,8 @@ import { SdkError } from '@krishalaya/sdk-js';
 import { tenantClient } from '../../../../../lib/api-client';
 import { requireSession } from '../../../../../lib/session';
 import { EARNINGS_ACT_HREF, EARNINGS_HREF, failureCodes, isRunAct, isUuid } from '../../../../../features/swb/console';
+import { SEEN_FIELD, staleHref, verifyBeforeWrite } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
 
 export async function runActAction(formData: FormData): Promise<void> {
   await requireSession(EARNINGS_ACT_HREF);
@@ -21,6 +23,11 @@ export async function runActAction(formData: FormData): Promise<void> {
   const a = tenantClient().ambassadors;
   const done = new URLSearchParams({ step: 'success', act });
   let failed: string[] | null = null;
+  // [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE: the row this act's confirm step showed, re-read now — a row that moved since is
+  // refused STALE_ROW with the diff (field · was · now) and nothing is written; the operator re-checks on today's row.
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (act === 'prepare' ? (await a.currentRun()).run ?? {} : await a.run(runId)) as never);
+  void VERIFY_FIELDS.ambassadorRun;
+  if (!seen.ok) redirect(staleHref(EARNINGS_ACT_HREF, { act, run: isUuid(runId) ? runId : '', reason }, seen));
   try {
     if (act === 'prepare') { const r = await a.prepareRun(reason, key); done.set('run', r.id); done.set('lines', String(r.lineCount)); }
     else if (act === 'refuse') { await a.refuseRun(runId, reason); done.set('run', runId); }

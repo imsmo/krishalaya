@@ -976,6 +976,23 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('logistics.cold_chain_device_silent','minutes','COLD_CHAIN_SILENCE_MINUTES (15, canon W234)','15',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-SW-f · INSIGHTS (catalogue 0202). A SCHEDULED report run is ready — push + in-app × en/hi/gu; recipients (tenant users holding the
+-- schedule's roles) travel in the payload. The notice carries no figure and no link: the file stays behind the plane's permission and its
+-- 15-minute signed link. Above the version backfill (SW-c's lesson).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('insights.report_ready','push','en',NULL,'Your scheduled report is ready','Your scheduled {{dataset}} report is ready ({{rows}} rows). Open Insights → Reports to download it; the file is watermarked and every fetch is logged.',NULL,true),
+ ('insights.report_ready','push','hi',NULL,'आपकी नियत रिपोर्ट तैयार है','आपकी नियत {{dataset}} रिपोर्ट तैयार है ({{rows}} पंक्तियाँ)। डाउनलोड करने के लिए Insights → Reports खोलें; फ़ाइल पर वॉटरमार्क है और हर डाउनलोड दर्ज होता है।',NULL,true),
+ ('insights.report_ready','push','gu',NULL,'તમારો નિર્ધારિત રિપોર્ટ તૈયાર છે','તમારો નિર્ધારિત {{dataset}} રિપોર્ટ તૈયાર છે ({{rows}} પંક્તિઓ). ડાઉનલોડ કરવા Insights → Reports ખોલો; ફાઇલ પર વૉટરમાર્ક છે અને દરેક ડાઉનલોડ નોંધાય છે.',NULL,true),
+ ('insights.report_ready','inapp','en',NULL,'Your scheduled report is ready','Your scheduled {{dataset}} report is ready ({{rows}} rows). Open Insights → Reports to download it; the file is watermarked and every fetch is logged.',NULL,true),
+ ('insights.report_ready','inapp','hi',NULL,'आपकी नियत रिपोर्ट तैयार है','आपकी नियत {{dataset}} रिपोर्ट तैयार है ({{rows}} पंक्तियाँ)। डाउनलोड करने के लिए Insights → Reports खोलें; फ़ाइल पर वॉटरमार्क है और हर डाउनलोड दर्ज होता है।',NULL,true),
+ ('insights.report_ready','inapp','gu',NULL,'તમારો નિર્ધારિત રિપોર્ટ તૈયાર છે','તમારો નિર્ધારિત {{dataset}} રિપોર્ટ તૈયાર છે ({{rows}} પંક્તિઓ). ડાઉનલોડ કરવા Insights → Reports ખોલો; ફાઇલ પર વૉટરમાર્ક છે અને દરેક ડાઉનલોડ નોંધાય છે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('insights.report_ready','dataset','report_runs.dataset_code (the allow-listed dataset key)','orders',true),
+ ('insights.report_ready','rows','report_runs.row_count','214',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

@@ -13,7 +13,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
-import type { AdvanceCap } from '@krishalaya/sdk-js';
+import type { AdvanceCap, WorkerAdvance } from '@krishalaya/sdk-js';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
@@ -26,6 +26,10 @@ import {
 } from '../../../../../features/swb/console';
 import { AuditEntryCard } from '../../../../people/ambassadors/AuditEntryCard';
 import { advanceActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -53,10 +57,14 @@ export default async function AdvanceActPage({ searchParams }: { searchParams: R
     return <section>{crumbs}<h1>{t.t('swb.adv.actTitle')}</h1><div className="kv-card kv-card--notice" role="status"><strong>{t.t('lab.state.flaggedOff.title')}</strong><p>{t.t('lab.state.flaggedOff.body')}</p></div></section>;
   }
   let cap: AdvanceCap | null = null; let state: string | null = null;
+  // PC-56 TENANT-SW-f · W318 §3: the approve / reject confirm reads the advance it decides (verify-before-write carries its status + amount)
+  let adv: WorkerAdvance | null = null;
   if (step === 'confirm') {
     if (act !== 'request' && !id) state = 'notFound';
     else if (act === 'request' && isUuid(assignmentId)) {
       try { cap = await tenantClient().labour.advanceCap(assignmentId); } catch (e) { const err = e instanceof SdkError ? e : null; state = swbState(err?.code, err?.status); }
+    } else if (act !== 'request' && id) {
+      try { adv = (await tenantClient().labour.advances({ status: 'requested', limit: 100 })).items.find((x) => x.id === id) ?? null; } catch (e) { const err = e instanceof SdkError ? e : null; state = swbState(err?.code, err?.status); }
     }
   }
   const overCap = cap !== null && amountMinor !== null && BigInt(amountMinor) > BigInt(cap.capMinor);
@@ -111,6 +119,8 @@ export default async function AdvanceActPage({ searchParams }: { searchParams: R
           </form>
           {!state && rs === 'ok' && fieldsOk && !overCap ? (
             <form action={advanceActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((act === 'request' ? cap : adv) as never, act === 'request' ? VERIFY_FIELDS.advanceCap : VERIFY_FIELDS.wageAdvance)} />
               <input type="hidden" name="act" value={act} />
               {id && <input type="hidden" name="id" value={id} />}
               {act === 'request' && <><input type="hidden" name="assignmentId" value={assignmentId} /><input type="hidden" name="amount" value={amountRaw} /></>}
@@ -133,7 +143,8 @@ export default async function AdvanceActPage({ searchParams }: { searchParams: R
         </>
       )}
 
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${WAGES_ACT_HREF}?${new URLSearchParams({ ...carried, ...(reason ? { reason } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('form.failure.title')}</p>
           <ul>{failed.map((code) => <li key={code}>{t.t(swbCodeKey('adv', code))} <code>{code}</code></li>)}</ul>

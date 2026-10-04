@@ -14,6 +14,8 @@ import { AGM_HREF, agmExportHref, agmPackHref, agmStatusKey, istLabel, swdCodeKe
 import { parseCodes } from '../../../../features/swc/console';
 import { MediaUploader } from '../../../../components/MediaUploader';
 import { draftAgmPackAction } from './actions';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -34,6 +36,8 @@ export default async function AgmOverviewPage({ searchParams }: { searchParams: 
     <section>
       <nav className="kv-field__hint"><Link href="/governance/register" className="kv-btn--link">{t.t('swd.agm.breadcrumb')}</Link> › {t.t('swd.agm.title')}</nav>
       <h1>{t.t('swd.agm.title')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('swd.agm.lede')}</p>
       {state && <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert"><strong>{t.t(`swd.state.${state}.title`)}</strong><p>{t.t(`swd.state.${state}.body`)}</p>
         {state === 'error' && <p><Link href={AGM_HREF} className="kv-btn--link">{t.t('swd.chain.retry')}</Link> <span className="kv-field__hint">{t.t('swd.refused.retry')}</span></p>}</div>}

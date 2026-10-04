@@ -17,6 +17,8 @@ import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { DataTable } from '../../../../../components/DataTable';
 import { BREACHES_HREF, COLD_HREF, bandLabel, coldSubjectHref, durationParts, failedCodes, refusedKey, swePageState, sweCodeKey } from '../../../../../features/swe/console';
 import { exportBreachesAction } from './actions';
+import { AsOf } from '../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.breaches'), robots: { index: false, follow: false } }; }
@@ -36,6 +38,8 @@ export default async function BreachesPage({ searchParams }: { searchParams: { c
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swe.cold.title')}><Link href={COLD_HREF}>{t.t('swe.cold.title')}</Link> / <span aria-current="page">{t.t('swe.cold.breaches')}</span></nav>
       <h1>{t.t('swe.cold.breaches')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       {errors.length > 0 && <div className="kv-error" role="alert"><ul>{errors.map((c) => <li key={c}>{t.t(sweCodeKey(c))} <code>{c}</code></li>)}</ul></div>}
       {state ? (
         <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert"><strong>{t.t(`swe.state.${state}.title`)}</strong><p>{t.t(`swe.state.${state}.body`)}</p>

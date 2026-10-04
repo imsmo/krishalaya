@@ -26,6 +26,8 @@ import {
 } from '../../../../features/swb/console';
 import { RevealField } from '../../../people/RevealField';
 import { revealSchemeFieldAction } from '../actions';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -69,6 +71,8 @@ export default async function SchemePipelinePage({ params, searchParams }: { par
       {crumbs}
       <div className="kv-page-head">
         <h1>{p ? p.scheme.name : t.t('swb.scm.pipeline')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         {p && <p className="kv-actions"><Link href={sweepActHref(p.scheme.code)} className="kv-btn kv-btn--primary">{t.t('swb.scm.act.sweep')}</Link></p>}
       </div>
       {state && (

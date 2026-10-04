@@ -19,6 +19,8 @@ import {
   DESKS_HREF, TEAM_HREF, isPrivilegedAction, isUuid, memberHref, relationKey, sessionBoundVars, staffActHref, staffHref, swcPageState, twoFactorKey,
 } from '../../../../features/swc/console';
 import { auditHref } from '../../../../features/forms/chain';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -52,6 +54,8 @@ export default async function StaffDetailPage({ params }: { params: { id: string
     <section>
       <nav aria-label={t.t('swc.breadcrumb.label')} className="kv-field__hint">{t.t('dk.breadcrumb.settings')} › <Link href={TEAM_HREF} className="kv-btn--link">{t.t('swc.team.title')}</Link> › {s.name ?? t.t('swc.unnamed')}</nav>
       <h1>{s.name ?? t.t('swc.unnamed')} <span className={`kv-badge kv-badge--${s.twoFactor === 'confirmed' ? 'ok' : 'muted'}`}>{t.t(twoFactorKey(s.twoFactor))}</span></h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('swc.staff.lastActive', { at: at(s.lastActiveAt) })} · <Link href={memberHref(s.userId)} className="kv-btn--link">{t.t('swc.staff.memberView')}</Link></p>
       {s.suspended && <p className="kv-card kv-card--notice">{t.t('swc.suspended')}</p>}
 

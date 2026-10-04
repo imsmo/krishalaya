@@ -24,6 +24,8 @@ import {
 // PC-56 TENANT-SW-c (W157): the median verify time (read), Take next (FOR UPDATE SKIP LOCKED, 15 minutes), claimed rows, recusal printed.
 import { ME_SECURITY_HREF, VERIFICATION_REFUSED_BY_NAME, medianLabel, parseCodes, swcCodeKey } from '../../../features/swc/console';
 import { takeNextAction } from './actions';
+import { AsOf } from '../../../components/AsOf';
+import { asOfLabels } from '../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +72,8 @@ export default async function KycDeskPage({ searchParams }: { searchParams: Reco
   return (
     <section>
       <h1>{t.t('kyc.desk.title')} <span className={`kv-badge kv-badge--${org.verified ? 'ok' : 'warn'}`}>{t.t(org.verified ? 'kyc.desk.org.verified' : 'kyc.desk.org.notVerified')}</span></h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('kyc.desk.subtitle')}</p>
       <p>
         {ov.can.manage && <Link href={submitHref({ subjectKind: 'organisation' })} className="kv-btn kv-btn--primary">{t.t('kyc.desk.upload')}</Link>}{' '}

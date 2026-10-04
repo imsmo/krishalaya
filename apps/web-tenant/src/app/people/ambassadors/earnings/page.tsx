@@ -25,6 +25,8 @@ import { AMBASSADORS_HREF, detailHref } from '../../../../features/ambassadors/c
 import {
   EARNINGS_HREF, RUN_REFUSED_BY_NAME, cursorFrom, fundingKey, runActHref, runActsFor, runLineStatusKey, runStatusKey, swbState,
 } from '../../../../features/swb/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -55,6 +57,8 @@ export default async function AmbassadorEarningsPage({ searchParams }: { searchP
     <section>
       {crumbs}
       <h1>{t.t('swb.run.title')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('swb.run.lede')}</p>
       {state && (
         <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role={state === 'error' ? 'alert' : 'status'}>

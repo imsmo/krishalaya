@@ -19,6 +19,9 @@
 // Gated by the `education` flag (default OFF); the split by `course_royalty_split`, W418 by `instructor_earnings` (both OFF).
 // DEFERRED: certificate (PDF) issuance on completion; online payment-intent enrol path (wallet is the path);
 // instructor payout aggregation jobs; quiz auto-grading; external-metadata fetch + recording retrieval.
+import { StudioInsightsController } from './controllers/v1/studio-insights.controller';
+import { LearnerInsightsService } from './services/learner-insights.service';
+import { LearnerInsightsRepository } from './repositories/learner-insights.repository';
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
 import { FlagsService } from '../../core/feature-flags/flags.service';
@@ -58,10 +61,10 @@ import { InstructorEarningsDataset } from './exports/instructor-earnings.dataset
 
 @Module({
   imports: [PaymentsModule],
-  controllers: [InstructorsController, InstructorEarningsController, CoursesController, LessonsController, EnrollmentsController, ChannelsController, ResourcesController, LiveSessionsController],
+  controllers: [StudioInsightsController, InstructorsController, InstructorEarningsController, CoursesController, LessonsController, EnrollmentsController, ChannelsController, ResourcesController, LiveSessionsController],
   providers: [
     InstructorEarningsService, InstructorEarningsRepository, InstructorEarningsDataset, UiMessageRepository,
-    InstructorService, CourseService, LessonService, EnrollmentService, LessonProgressService,
+    InstructorService, CourseService, LessonService, EnrollmentService, LessonProgressService, LearnerInsightsService, LearnerInsightsRepository,
     LearningChannelService, LearningResourceService, LiveSessionService,
     InstructorRepository, CourseRepository, CourseLessonRepository, EnrollmentRepository, LessonProgressRepository,
     LearningChannelRepository, LearningResourceRepository, LiveSessionRepository,

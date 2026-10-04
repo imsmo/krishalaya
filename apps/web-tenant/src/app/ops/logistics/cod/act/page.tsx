@@ -15,6 +15,10 @@ import { mutateStep, mutateStepKey, failureKey } from '../../../../../features/m
 import { COD_HREF, COD_WORKSHEET_HREF, closeCarries, codeKey, isCodAct, isUuid, isYmd, istDateOf, pageState } from '../../../../../features/swa/console';
 import { AuditEntryCard } from '../../../../people/ambassadors/AuditEntryCard';
 import { codActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.cod.actTitle'), robots: { index: false, follow: false } }; }
@@ -100,6 +104,8 @@ export default async function CodActPage({ searchParams }: { searchParams: Recor
           )}
           {offered && ready ? (
             <form action={codActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((act === 'collectShortfall' ? sf : (day ?? {})) as never, act === 'collectShortfall' ? VERIFY_FIELDS.codShortfall : VERIFY_FIELDS.cashDay)} />
               {Object.entries(carry).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
               {carries.map((c) => <input key={c.remittanceId} type="hidden" name={`carry_${c.remittanceId}`} value={c.reason} />)}
               <input type="hidden" name="carryIds" value={carries.map((c) => c.remittanceId).join(',')} />
@@ -119,7 +125,8 @@ export default async function CodActPage({ searchParams }: { searchParams: Recor
           <p><Link href={COD_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p>
         </>
       )}
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', ...carry, ...(note ? { note } : {}), ...(depositRef ? { depositRef } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('mutate.failure.title')}</p>
           <ul>{failed.map((c) => <li key={c}>{t.t(codeKey(c))} <code>{c}</code></li>)}</ul>

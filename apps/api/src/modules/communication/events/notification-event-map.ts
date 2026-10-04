@@ -85,6 +85,9 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'logistics.cold_chain_breach',         eventCode: 'logistics.cold_chain_breach',         recipientKeys: ['recipientUserIds'] },
   { outboxType: 'logistics.cold_chain_buyer_offer',    eventCode: 'logistics.cold_chain_buyer_offer',    recipientKeys: ['recipientUserIds'] },
   { outboxType: 'logistics.cold_chain_device_silent',  eventCode: 'logistics.cold_chain_device_silent',  recipientKeys: ['recipientUserIds'] },
+  // PC-56 TENANT-SW-f · a SCHEDULED report run is ready: the schedule's recipients (tenant users holding its roles, resolved at run time) are
+  // told; the file itself stays behind the plane's permission and its 15-minute link (the notice carries no figure and no link).
+  { outboxType: 'insights.report_ready',               eventCode: 'insights.report_ready',               recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

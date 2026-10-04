@@ -15,7 +15,8 @@
 // Nobody who drove (shipments.rider_user_id) or dispatched (shipments.dispatched_by, written from 0196 on) the shipment may flag,
 // review, decide or check it — the trigger is the wall; shipments dispatched before 0196 carry no dispatcher, so for them only the
 // driver is checked (named in the report). Weighbridge slips: REFUSED BY NAME — no weighbridge object exists on this platform.
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import type { Pool } from 'pg';
 import { TxContext, UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
@@ -31,6 +32,8 @@ import { OrderService } from '../../orders/services/order.service';
 import { LogisticsGateError, PodReviewNotFoundError, PodReviewStateError, PodReviewOffError, ShipmentForbiddenError, InvalidShipmentError } from '../domain/logistics.errors';
 
 export const POD_REVIEW_FLAG = 'pod_review';
+/** [PC-56 TENANT-SW-f] told on the outbox when a POD rejection is confirmed (the wastage handler records it as a fact). */
+export const POD_REJECTED_EVENT = 'logistics.pod_rejected';
 export const POD_FLAG_REASONS: readonly PodFlagReason[] = ['mismatch', 'no_photo', 'wrong_recipient', 'weight_variance', 'other'];
 export const WEIGHBRIDGE_SLIPS = { recorded: false, why: 'weighbridge slips: not recorded on this platform (no weighbridge object exists)' } as const;
 export interface PodActor { userId: string; canManage: boolean }
@@ -53,6 +56,9 @@ export class PodReviewService {
     private readonly holds: SettlementHoldService,
     private readonly disputes: DisputeService,
     private readonly orders: OrderService,
+    // [PC-56 TENANT-SW-f] the rejection is told on the outbox (`logistics.pod_rejected`) so the wastage handler records it as a fact.
+    // Optional + last so the older positional constructions in the logistics specs keep compiling; Nest always injects it.
+    @Optional() @Inject(OUTBOX_WRITER) private readonly outbox?: OutboxWriter,
   ) {}
 
   private assert(a: PodActor) { if (!a.canManage) throw new ShipmentForbiddenError('POD review requires logistics.manage'); }
@@ -117,6 +123,8 @@ export class PodReviewService {
         description: `POD rejected on review (${r.flagReason}${r.flagNote ? `: ${r.flagNote}` : ''}) — ${r.decisionNote ?? ''}`.trim() });
       await this.repo.confirmRejectTx(tx, tenantId, id, a.userId, d.id);
       await this.holds.releaseInTx(tx, { tenantId, orderId: r.orderId, reason: 'pod_review', sourceId: id, releasedBy: a.userId, note: 'superseded by the dispute opened from this POD review' });
+      await this.outbox?.write(tx, { tenantId, aggregateType: 'pod_review', aggregateId: id, eventType: POD_REJECTED_EVENT,
+        payload: { v: 1, podReviewId: id, orderId: r.orderId, disputeId: d.id, varianceMinor: r.varianceMinor ?? null } });
       await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.pod_rejected', entityType: 'pod_review', entityId: id,
         oldValue: { status: 'flagged', rejectProposedBy: r.rejectProposedBy }, newValue: { status: 'rejected', checker: a.userId, disputeId: d.id, disputedScopeMinor: scope.toString(),
           scopeBasis: r.varianceMinor ? 'variance' : 'whole_order', evidenceMediaIds: evidence, buyerUserId: facts?.buyerUserId ?? null }, reason: r.decisionNote ?? 'POD rejected', ip });

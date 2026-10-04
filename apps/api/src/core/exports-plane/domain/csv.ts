@@ -35,6 +35,7 @@ export class CsvSink {
   private rows = 0;
   private bytes = 0;
   private headerWritten = false;
+  private bomWritten = false;
   private finished = false;
 
   constructor(private readonly write: (chunk: Buffer) => Promise<void> | void) {}
@@ -51,10 +52,24 @@ export class CsvSink {
     await this.write(b);
   }
 
+  /**
+   * [PC-56 TENANT-SW-f] THE WATERMARK. Lines written BEFORE the header (the report builder's "who, when, which run, how many rows"),
+   * each a CSV line of its own. They are not DATA rows — the receipt's row count is unchanged — and they are inside the bytes the
+   * sha256 covers, so a file whose watermark was edited no longer matches its receipt. Optional: every other dataset writes none.
+   */
+  async preamble(lines: ReadonlyArray<ReadonlyArray<string>>): Promise<void> {
+    if (this.headerWritten) throw new Error('CsvSink: preamble after header');
+    if (lines.length === 0) return;
+    const text = lines.map((l) => csvLine(l)).join('');
+    await this.emit((this.bomWritten ? '' : CSV_BOM) + text);
+    this.bomWritten = true;
+  }
+
   async header(cells: readonly string[]): Promise<void> {
     if (this.headerWritten) throw new Error('CsvSink: header written twice');
     this.headerWritten = true;
-    await this.emit(CSV_BOM + csvLine(cells));
+    await this.emit((this.bomWritten ? '' : CSV_BOM) + csvLine(cells));
+    this.bomWritten = true;
   }
 
   async row(cells: ReadonlyArray<string | number | bigint | boolean | null | undefined>): Promise<void> {

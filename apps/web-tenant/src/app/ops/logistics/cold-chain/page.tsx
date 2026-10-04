@@ -15,6 +15,8 @@ import { tenantHasPerm } from '../../../../lib/auth';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { DataTable } from '../../../../components/DataTable';
 import { BREACHES_HREF, COLD_HREF, DEVICES_HREF, bandLabel, coldSubjectHref, refusedKey, swePageState } from '../../../../features/swe/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.title'), robots: { index: false, follow: false } }; }
@@ -30,6 +32,8 @@ export default async function ColdChainPage() {
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swe.cold.title')}><span>{t.t('swa.ops')}</span> / <span>{t.t('swa.logistics')}</span> / <span aria-current="page">{t.t('swe.cold.title')}</span></nav>
       <h1>{t.t('swe.cold.title')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('swe.cold.subtitle')}</p>
       <p><Link href={BREACHES_HREF} className="kv-btn--link">{t.t('swe.cold.breaches')}</Link>{' · '}<Link href={DEVICES_HREF} className="kv-btn--link">{t.t('swe.cold.devices')}</Link>
         {canManage && <>{' · '}<Link href={`${COLD_HREF}/threshold`} className="kv-btn--link">{t.t('swe.cold.setBand')}</Link></>}</p>

@@ -13,6 +13,10 @@ import { mutateStep, mutateStepKey, failureKey } from '../../../../../../feature
 import { BREACHES_HREF, BREACH_OUTCOMES, bandLabel, breachActRefusal, failedCodes, isBreachAct, isUuid, readBreachActDraft, swePageState, sweCodeKey } from '../../../../../../features/swe/console';
 import { AuditEntryCard } from '../../../../../people/ambassadors/AuditEntryCard';
 import { breachActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.breaches'), robots: { index: false, follow: false } }; }
@@ -64,6 +68,8 @@ export default async function BreachActPage({ searchParams }: { searchParams: Re
           )}
           {offered && !refusal ? (
             <form action={breachActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((b) as never, VERIFY_FIELDS.breach)} />
               {Object.entries(carry).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
               <input type="hidden" name="idempotencyKey" value={randomUUID()} />
               <button type="submit" className="kv-btn kv-btn--primary">{t.t('mutate.confirm')}</button>{' '}<Link href={BREACHES_HREF} className="kv-btn--link">{t.t('mutate.cancel')}</Link>
@@ -76,7 +82,8 @@ export default async function BreachActPage({ searchParams }: { searchParams: Re
           <AuditEntryCard t={t} lang={lang} entityType="cold_chain_breach" entityId={id} action={`logistics.cold_chain_breach_${act}`} />
           <p><Link href={BREACHES_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p></>
       )}
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', ...carry }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('mutate.failure.title')}</p>
           <ul>{failedCodes(searchParams.error).map((x) => <li key={x}>{t.t(sweCodeKey(x))} <code>{x}</code></li>)}</ul>

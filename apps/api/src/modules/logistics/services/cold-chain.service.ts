@@ -45,6 +45,9 @@ export interface ColdActor { userId: string; canManage: boolean; canManageDevice
 const DAY = 86_400_000;
 const subjectRef = (id: string) => id.replace(/-/g, '').slice(0, 8).toUpperCase();
 
+/** [PC-56 TENANT-SW-f] every recorded breach outcome, on the outbox. */
+export const COLD_CHAIN_OUTCOME_EVENT = 'logistics.cold_chain_outcome_recorded';
+
 function rethrowGate(e: unknown): never {
   const g = gateRefusal(e);
   if (g) throw new LogisticsOpsRefusedError(g.code, g.message, g.code === 'BREACH_DECISION_NOT_BUYER' ? 403 : 409);
@@ -254,6 +257,9 @@ export class ColdChainService {
           }
           if (dto.outcome !== 'loss_recorded' && dto.lossMinor) throw new LogisticsOpsRefusedError('LOSS_ONLY_WITH_LOSS_OUTCOME', 'A loss is recorded only with the loss outcome', 422);
           await this.ops.recordOutcome(tx, tenantId, id, { by: a.userId, outcome: dto.outcome, reason, lossMinor: dto.outcome === 'loss_recorded' ? dto.lossMinor ?? null : null, lossCurrency: dto.outcome === 'loss_recorded' ? dto.lossCurrency ?? null : null });
+          // [PC-56 TENANT-SW-f] the outcome is told on the outbox; a `loss_recorded` one becomes a wastage fact (WastageSourceHandler)
+          await this.outbox.write(tx, { tenantId, aggregateType: 'cold_chain_breach', aggregateId: id, eventType: COLD_CHAIN_OUTCOME_EVENT,
+            payload: { v: 1, breachId: id, outcome: dto.outcome, lossMinor: dto.outcome === 'loss_recorded' ? dto.lossMinor ?? null : null, lossCurrency: dto.outcome === 'loss_recorded' ? dto.lossCurrency ?? null : null } });
         }
       } catch (e) { if (e instanceof LogisticsOpsRefusedError) throw e; rethrowGate(e); }
       await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: `logistics.cold_chain_breach_${act}`, entityType: 'cold_chain_breach', entityId: id,

@@ -10,6 +10,8 @@ import { SdkError } from '@krishalaya/sdk-js';
 import { tenantClient } from '../../../../../lib/api-client';
 import { requireSession } from '../../../../../lib/session';
 import { KYC_DESK_HREF, docHref, isDeskAct, refusalCodesFrom } from '../../../../../features/kyc/desk';
+import { SEEN_FIELD, staleHref, verifyBeforeWrite } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
 
 const opt = (v: FormDataEntryValue | null) => { const s = String(v ?? '').trim(); return s.length ? s : undefined; };
 
@@ -24,6 +26,11 @@ export async function kycActAction(formData: FormData): Promise<void> {
   const reasonCode = opt(formData.get('reasonCode'));
   const note = opt(formData.get('note'));
   let url: string | null = null; let failed: string[] | null = null;
+  // [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE: the row this act's confirm step showed, re-read now — a row that moved since is
+  // refused STALE_ROW with the diff (field · was · now) and nothing is written; the operator re-checks on today's row.
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (await tenantClient().kyc.deskActPreview(id, act, { reasonCode, note })) as never);
+  void VERIFY_FIELDS.kycDoc;
+  if (!seen.ok) redirect(staleHref(base, { act, reasonCode, note }, seen));
   try {
     url = (await tenantClient().kyc.deskAct(id, act, { reasonCode, note }, key)).url;
   } catch (e) { failed = e instanceof SdkError ? refusalCodesFrom(e.details, e.code || 'act') : ['act']; }

@@ -104,6 +104,7 @@ export class ExportWorker {
         const sink = new CsvSink((chunk) => new Promise<void>((resolve, reject) => {
           if (out.write(chunk)) resolve(); else { out.once('drain', resolve); out.once('error', reject); }
         }));
+        if (outcome.file.preamble?.length) await sink.preamble(outcome.file.preamble);
         await sink.header(outcome.file.header);
         let tooLarge = false;
         for await (const row of outcome.file.rows) {

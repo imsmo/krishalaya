@@ -23,6 +23,8 @@ import { LABOUR_HREF, jobHref } from '../../../../features/labour/console';
 import {
   ATTENDANCE_HREF, ATT_FILTERS, ATT_REFUSED_BY_NAME, WAGES_HREF, attActHref, attActsFor, attFilterFrom, attHref, cursorFrom, methodKey, reviewStatusKey, swbState,
 } from '../../../../features/swb/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -54,6 +56,8 @@ export default async function AttendanceReviewPage({ searchParams }: { searchPar
       {crumbs}
       <div className="kv-page-head">
         <h1>{t.t('swb.att.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         <p className="kv-actions">
           <Link href={attActHref('confirm_clean')} className="kv-btn kv-btn--primary">{t.t('swb.att.act.confirm_clean')}</Link>{' '}
           <Link href={attActHref('backfill')} className="kv-btn kv-btn--muted">{t.t('swb.att.act.backfill')}</Link>{' '}

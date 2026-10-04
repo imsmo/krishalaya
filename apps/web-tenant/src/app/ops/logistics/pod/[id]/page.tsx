@@ -13,6 +13,8 @@ import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { POD_HREF, isUuid, pageState, podTimerLeftMinutes } from '../../../../../features/swa/console';
+import { AsOf } from '../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.pod.detailTitle'), robots: { index: false, follow: false } }; }
@@ -34,6 +36,8 @@ export default async function PodDetailPage({ params }: { params: { id: string }
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swa.pod.title')}><Link href={POD_HREF}>{t.t('swa.pod.title')}</Link> / <span aria-current="page">{t.t('swa.pod.detailTitle')}</span></nav>
       <h1>{t.t('swa.pod.detailTitle')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       {state || !r ? (
         <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert">
           <strong>{t.t(`swa.pod.state.${state ?? 'error'}.title`)}</strong><p>{t.t(`swa.pod.state.${state ?? 'error'}.body`)}</p>

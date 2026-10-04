@@ -23,6 +23,8 @@ import {
 } from '../../../../features/ambassadors/console';
 import { runLineStatusKey, runStatusKey } from '../../../../features/swb/console';
 import { setTargetAction } from '../../../ambassadors/actions';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -71,6 +73,8 @@ export default async function AmbassadorDetailPage({ params, searchParams }: { p
         return (
           <>
             <h1>{t.t(who.key, who.vars)} <span className="kv-field__hint">· {row.phoneMasked}</span></h1>
+            {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+            <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
             {!row.isActive && <p className="kv-badge">{t.t('amb.suspended')}</p>}
             {okTarget && <p className="kv-success" role="status">{t.t('amb.ok.target')}</p>}
             <dl className="kv-tiles">

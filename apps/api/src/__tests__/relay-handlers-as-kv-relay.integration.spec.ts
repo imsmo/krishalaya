@@ -537,6 +537,42 @@ const CASES: Record<string, Case> = {
     },
   },
 
+  // ── insights (PC-56 TENANT-SW-f) ── one class registered per SOURCE event: a recorded loss (returns refunded · pours rejected · a POD
+  //    dispute resolved with a refund · a cold-chain loss · a POD rejection) becomes ONE wastage event, written in kv_app's unit of work
+  //    (kv_relay holds nothing on wastage_events); the database derives the facts from the source row.
+  '* → modules/insights/events/handlers/wastage-source.handler#WastageSourceHandler': {
+    depth: 'write',
+    build: async (w, eventType) => {
+      const id = randomUUID(); const orderId = await makeOrder(w, 'delivered'); const other = randomUUID();
+      const c = await w.admin.connect();
+      try {
+        // the source row in its loss state, as its own service leaves it (triggers off for the fixture — its born-state rules are not this gate's subject)
+        await c.query('BEGIN'); await c.query('SET LOCAL session_replication_role = replica');
+        if (eventType === 'disputes.return_refunded') {
+          await c.query(`INSERT INTO returns (id, tenant_id, order_id, status, refund_amount_minor, inspected_at, inspected_by, inspection_note) VALUES ($1,$2,$3,'refunded',5000, now(), $4, 'relay gate: inspected and refunded')`, [id, w.tenant, orderId, w.seller]);
+        } else if (eventType === 'dairy.quality_flag_decided') {
+          await c.query(`INSERT INTO milk_quality_reviews (id, tenant_id, collection_id, collected_on, membership_id, mcc_id, shift, amount_withheld_minor, currency_code, status, decided_at, decided_by)
+                         VALUES ($1,$2,$3, current_date, $4, $5, 'evening', 2500, 'INR', 'rejected', now(), $6)`, [id, w.tenant, randomUUID(), randomUUID(), randomUUID(), w.seller]);
+        } else if (eventType === 'disputes.dispute_resolved') {
+          await c.query(`INSERT INTO disputes (id, tenant_id, order_id, raised_by, against_user, reason_id, status, resolution_type, resolution_amount_minor, resolved_by, resolved_at, opened_via, pod_review_id, opened_by_staff)
+                         VALUES ($1,$2,$3,$4,$5,$6,'resolved','refund_partial',7000,$5, now(),'pod_review',$7,$5)`, [id, w.tenant, orderId, w.buyer, w.seller, w.disputeReasonId, other]);
+        } else if (eventType === 'logistics.cold_chain_outcome_recorded') {
+          await c.query(`INSERT INTO cold_chain_breaches (id, tenant_id, subject_type, subject_id, band_min_c, band_max_c, direction, first_out_at, first_log_id, opened_log_id, peak_c, last_out_at, alert_state, closed_at, closed_log_id, duration_seconds, outcome, outcome_at, outcome_by, outcome_reason, loss_minor, loss_currency)
+                         VALUES ($1,$2,'shipment',$3,2,8,'above', now(), 1, 2, 9, now(), 'alerted', now(), 3, 60, 'loss_recorded', now(), $4, 'relay gate: cargo spoiled', 9000, 'INR')`, [id, w.tenant, randomUUID(), w.seller]);
+        } else {
+          await c.query(`INSERT INTO pod_reviews (id, tenant_id, shipment_id, shipment_created_at, order_id, otp_verified, delivered_at, timer_due_at, status, flag_reason, flagged_by, flagged_at, variance_minor,
+                           decided_by, decided_at, reject_proposed_by, reject_proposed_at, checker_user_id, dispute_id)
+                         VALUES ($1,$2,$3, now(), $4, true, now(), now(), 'rejected', 'weight_variance', $5, now(), 3000, $6, now(), $5, now(), $6, $7)`, [id, w.tenant, randomUUID(), orderId, w.seller, w.buyer, other]);
+        }
+        await c.query('COMMIT');
+      } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
+      const key = eventType === 'disputes.return_refunded' ? 'returnId' : eventType === 'dairy.quality_flag_decided' ? 'reviewId' : eventType === 'disputes.dispute_resolved' ? 'disputeId'
+        : eventType === 'logistics.cold_chain_outcome_recorded' ? 'breachId' : 'podReviewId';
+      return { aggregateType: eventType.split('.')[0], aggregateId: id, payload: { v: 1, [key]: id },
+        verify: async () => expect(await count(w, `SELECT count(*) n FROM wastage_events WHERE tenant_id=$1 AND source_id=$2`, [w.tenant, id])).toBe(1) };
+    },
+  },
+
   // ── tenant webhooks ──
   '* → modules/tenant-webhooks/events/handlers/webhook-fanout.handler#WebhookFanoutHandler': {
     depth: 'write',   // the world's endpoint subscribes to every public name: one delivery per name, enqueued on the relay tx
@@ -699,7 +735,10 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
       // PC-56 TENANT-SW-e (0201): slot proposals, the Village Run, the parcel fee, the cold-chain store / keys / nonces / breaches / silences —
       // kv_app only (the breach and the fee are written by SECURITY DEFINER triggers, so the relay needs nothing on them either)
       'pickup_slot_proposals', 'route_drop_points', 'route_runs', 'parcel_handovers', 'parcel_handover_fees', 'cold_chain_thresholds', 'device_keys',
-      'cold_chain_ingest_nonces', 'cold_chain_breaches', 'cold_chain_device_silences']) {
+      'cold_chain_ingest_nonces', 'cold_chain_breaches', 'cold_chain_device_silences',
+      // PC-56 TENANT-SW-f (0202): wastage events, the report store (definitions opened to tenants, runs, frozen results, schedules), the
+      // learner capture — kv_app only (the wastage handlers and both insights jobs work in kv_app's unit of work)
+      'wastage_events', 'saved_report_definitions', 'report_runs', 'report_run_results', 'report_schedules', 'quiz_answers', 'watch_events']) {
       for (const p of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) expect(`${t}:${p}:${await priv(t, p)}`).toBe(`${t}:${p}:false`);
     }
     expect(await priv('insurance_policies', 'UPDATE')).toBe(false);
@@ -797,6 +836,28 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     const exp = await app.get(SlotProposalExpiryJob).sweep(relayPool, [w.tenant]);
     expect(exp).toMatchObject({ tenants: 1, failed: 0 });
     expect(await q1(w, `SELECT status FROM pickup_slot_proposals WHERE id=$1`, [proposalId])).toEqual({ status: 'expired' });
+  }, 120_000);
+
+  // ── PC-56 TENANT-SW-f: the report clock (due schedules → runs → the 60 s read → the plane) and the wastage sweep (every source fact through
+  //    kv_wastage_backfill) sweep on the kv_relay pool (tenants only) and work per tenant in kv_app's UoW. The world gets a refunded return
+  //    whose event never came: the sweep records it ONCE (a second sweep writes nothing). ──
+  it('SW-f · the report clock and the wastage sweep sweep on the kv_relay pool without 42501, and the sweep reaches its write once', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ReportsCadenceJob, WastageSweepJob } = require('../modules/insights/jobs/insights.jobs') as typeof import('../modules/insights/jobs/insights.jobs');
+    const retId = randomUUID(); const orderId = await makeOrder(w, 'delivered');
+    const c = await admin.connect();
+    try {
+      await c.query('BEGIN'); await c.query('SET LOCAL session_replication_role = replica');
+      await c.query(`INSERT INTO returns (id, tenant_id, order_id, status, refund_amount_minor, inspected_at, inspected_by, inspection_note) VALUES ($1,$2,$3,'refunded',4000, now(), $4, 'relay gate: the event never came')`, [retId, w.tenant, orderId, w.seller]);
+      await c.query('COMMIT');
+    } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
+    expect(await app.get(ReportsCadenceJob).sweep(relayPool, [w.tenant])).toMatchObject({ tenants: 1, errors: 0 });
+    const first = await app.get(WastageSweepJob).sweep(relayPool, [w.tenant]);
+    expect(first).toMatchObject({ tenants: 1, failed: 0 });
+    expect(first.written).toBeGreaterThanOrEqual(1);
+    expect(await count(w, `SELECT count(*) n FROM wastage_events WHERE source_id=$1`, [retId])).toBe(1);
+    expect(await app.get(WastageSweepJob).sweep(relayPool, [w.tenant])).toMatchObject({ written: 0, failed: 0 });
+    expect(await count(w, `SELECT count(*) n FROM wastage_events WHERE source_id=$1 AND method_code='sweep'`, [retId])).toBe(1);
   }, 120_000);
 
   // ── B4 · END TO END: the REAL registry (every handler of the event, in boot order), the REAL dispatcher, LOGGED IN as kv_relay ──

@@ -23,6 +23,9 @@ export interface DatasetFile {
   notes: readonly string[];
   /** The stamp after the dataset code in the file name (`90d` → `dairy-insights-90d-<day>.csv`). */
   fileSuffix: string;
+  /** [PC-56 TENANT-SW-f] Lines written BEFORE the header — the report builder's watermark (tenant, user, generated-at IST, run, definition,
+   *  row count). Not data rows; covered by the sha256. Absent for every other dataset. */
+  preamble?: ReadonlyArray<ReadonlyArray<string>>;
 }
 
 /** A producer that CANNOT honestly make the file says which of the plane's failure codes describes why. */

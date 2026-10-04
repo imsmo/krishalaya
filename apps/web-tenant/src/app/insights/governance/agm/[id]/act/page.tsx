@@ -14,6 +14,10 @@ import { REASON_MAX, REASON_MIN, agmActHref, agmItemKey, agmPackHref, isAgmAct, 
 import { parseCodes } from '../../../../../../features/swc/console';
 import { MediaUploader } from '../../../../../../components/MediaUploader';
 import { agmActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -44,6 +48,8 @@ export default async function AgmActPage({ params, searchParams }: { params: { i
 
       {pack && act !== 'retry' && step === 'confirm' && (
         <form action={agmActAction} className="kv-form kv-form__card">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((pack) as never, VERIFY_FIELDS.agmPack)} />
           <input type="hidden" name="id" value={pack.id} /><input type="hidden" name="act" value={act} /><input type="hidden" name="key" value={randomUUID()} />
           <p>{t.t(`swd.agm.confirm.${act}`, { fy: pack.fiscalYearLabel, document: pack.documentId ?? '—' })}</p>
           {act === 'issue' && refused.length > 0 && (
@@ -66,7 +72,8 @@ export default async function AgmActPage({ params, searchParams }: { params: { i
         <p className="kv-card kv-success" role="status">{t.t(`swd.agm.done.${act}`)}{' '}
           <Link href={agmPackHref(searchParams.landed ?? params.id)} className="kv-btn--link">{t.t('swd.chain.back')}</Link></p>
       )}
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${agmPackHref(params.id)}/act?${new URLSearchParams({ step: 'confirm', act }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert"><strong>{t.t('swd.chain.failure')}</strong>
           <ul className="kv-list">{(codes.length ? codes : ['unknown']).map((c) => <li key={c}>{t.t(swdCodeKey(c))}</li>)}</ul>
           <p>{t.t('swd.chain.untouched')} <Link href={agmActHref(params.id, act)} className="kv-btn--link">{t.t('swd.chain.retry')}</Link> · <Link href={agmPackHref(params.id)} className="kv-btn--link">{t.t('swd.chain.back')}</Link></p>

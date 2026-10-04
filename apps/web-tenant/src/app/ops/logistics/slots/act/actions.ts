@@ -7,6 +7,8 @@ import { SdkError } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { SLOTS_HREF, isUuid } from '../../../../../features/swe/console';
+import { SEEN_FIELD, staleHref, verifyBeforeWrite } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
 
 export async function withdrawProposalAction(formData: FormData): Promise<void> {
   const base = `${SLOTS_HREF}/act`;
@@ -15,6 +17,11 @@ export async function withdrawProposalAction(formData: FormData): Promise<void> 
   const key = String(formData.get('idempotencyKey') ?? '');
   if (!isUuid(id)) redirect(SLOTS_HREF);
   const carry = new URLSearchParams({ act: 'withdraw', id, reason });
+  // [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE: the row this act's confirm step showed, re-read now — a row that moved since is
+  // refused STALE_ROW with the diff (field · was · now) and nothing is written; the operator re-checks on today's row.
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (await tenantClient().pickupSlots.proposal(id)) as never);
+  void VERIFY_FIELDS.slotProposal;
+  if (!seen.ok) redirect(staleHref(base, Object.fromEntries(carry), seen));
   try { await tenantClient().pickupSlots.withdraw(id, reason, key); }
   catch (e) { carry.set('step', 'failure'); carry.set('error', e instanceof SdkError ? (e.code || 'unknown') : 'unknown'); redirect(`${base}?${carry.toString()}`); }
   revalidatePath(SLOTS_HREF);

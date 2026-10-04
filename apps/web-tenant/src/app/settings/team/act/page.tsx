@@ -13,6 +13,10 @@ import { mutateStep, mutateStepKey } from '../../../../features/mutate/chain';
 import { REASON_MAX, REASON_MIN, TEAM_HREF, isTeamAct, isUuid, parseCodes, staffHref, swcCodeKey, swcPageState } from '../../../../features/swc/console';
 import { AuditEntryCard } from '../../../people/ambassadors/AuditEntryCard';
 import { addDirectlyAction, revokeInviteAction } from '../team-actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -46,6 +50,8 @@ export default async function TeamActPage({ searchParams }: { searchParams: Reco
           {invite && (
             <form action={revokeInviteAction} className="kv-form">
               <input type="hidden" name="inviteId" value={inviteId} />
+              {/* PC-56 TENANT-SW-f · W318 §3: the invite this confirm step showed — re-read before the revoke (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken(invite as never, VERIFY_FIELDS.invite)} />
               <label className="kv-field" htmlFor="rv-reason"><span>{t.t('swc.field.reason')}</span>
                 <textarea id="rv-reason" name="reason" className="kv-textarea" rows={2} minLength={REASON_MIN} maxLength={REASON_MAX} required /></label>
               <p className="kv-field__hint">{t.t('swc.teamAct.revoke_invite.rule')}</p>
@@ -85,7 +91,8 @@ export default async function TeamActPage({ searchParams }: { searchParams: Reco
         </>
       )}
 
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${TEAM_HREF}/act?${new URLSearchParams({ act, step: 'confirm', ...(inviteId ? { inviteId } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <strong>{t.t('swc.chain.failure')}</strong>
           <ul className="kv-list">{(parseCodes(searchParams.error).length ? parseCodes(searchParams.error) : ['unknown']).map((c) => <li key={c}>{t.t(swcCodeKey(c))}</li>)}</ul>

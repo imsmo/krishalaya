@@ -15,6 +15,8 @@ import { tenantHasPerm } from '../../../../lib/auth';
 import { getTranslator } from '../../../../lib/i18n';
 import { DataTable } from '../../../../components/DataTable';
 import { CARRIERS_HREF, PARTNER_KINDS, isPartnerKind, refusedKey, swePageState } from '../../../../features/swe/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.carriers.title'), robots: { index: false, follow: false } }; }
@@ -37,6 +39,8 @@ export default async function CarriersPage({ searchParams }: { searchParams: { k
       <nav className="kv-breadcrumb" aria-label={t.t('swe.carriers.title')}><span>{t.t('swa.ops')}</span> / <span>{t.t('swa.logistics')}</span> / <span aria-current="page">{t.t('swe.carriers.title')}</span></nav>
       <div className="kv-page-head">
         <h1>{t.t('swe.carriers.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         {canManage && !state && <Link href={`${CARRIERS_HREF}/new`} className="kv-btn kv-btn--primary">{t.t('swe.carriers.new')}</Link>}
       </div>
       <p className="kv-field__hint">{t.t('swe.carriers.subtitle')}</p>

@@ -24,6 +24,10 @@ import { MAX_REASON, MIN_REASON, failureKey, mutateStep, mutateStepKey, reasonSt
 import { AMBASSADORS_HREF, EARNINGS_HREF, actKey, actsFor, codeKey, consoleState, detailHref, isAmbAct, isUuid, personKey } from '../../../../../features/ambassadors/console';
 import { AuditEntryCard } from '../../AuditEntryCard';
 import { ambassadorActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -93,6 +97,8 @@ export default async function AmbassadorActPage({ params, searchParams }: { para
               </form>
               {offered && reasonOk && messageOk ? (
                 <form action={ambassadorActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((row) as never, VERIFY_FIELDS.ambassador)} />
                   <input type="hidden" name="id" value={params.id} />
                   <input type="hidden" name="act" value={act} />
                   <input type="hidden" name="reason" value={reason} />
@@ -119,7 +125,8 @@ export default async function AmbassadorActPage({ params, searchParams }: { para
         </>
       )}
 
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', act, ...(reason ? { reason } : {}), ...(message ? { message } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('form.failure.title')}</p>
           <ul>{failed.map((code) => <li key={code}>{t.t(codeKey(code))} <code>{code}</code></li>)}</ul>

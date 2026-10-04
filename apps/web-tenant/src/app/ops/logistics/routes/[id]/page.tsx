@@ -16,6 +16,8 @@ import { tenantHasPerm } from '../../../../../lib/auth';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { DataTable } from '../../../../../components/DataTable';
 import { ROUTES_BOARD_HREF, isUuid, ratioLabel, refusedKey, routeHref, swePageState, weekdayKey } from '../../../../../features/swe/console';
+import { AsOf } from '../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.run.title'), robots: { index: false, follow: false } }; }
@@ -39,6 +41,8 @@ export default async function VillageRunRoutePage({ params, searchParams }: { pa
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swe.run.title')}><Link href={ROUTES_BOARD_HREF}>{t.t('swe.run.routes')}</Link> / <span aria-current="page">{page?.route.name ?? t.t('swe.run.title')}</span></nav>
       <h1>{page ? page.route.name : t.t('swe.run.title')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       {state && <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert"><strong>{t.t(`swe.state.${state}.title`)}</strong><p>{t.t(`swe.state.${state}.body`)}</p>
         {state === 'error' && <p><Link href={base} className="kv-btn--link">{t.t('swe.retry')}</Link></p>}</div>}
       {page && (

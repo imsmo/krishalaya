@@ -25,6 +25,9 @@ import { AppShell, KvUiGlobalStyles } from '@krishalaya/ui';
 import { Sidebar } from '../components/Sidebar';
 import { ConsoleTopbar, type BellState } from '../components/ConsoleTopbar';
 import { SdkError } from '@krishalaya/sdk-js';
+// PC-56 TENANT-SW-f · W318 §2: read-only degraded mode for the whole console (navigator.onLine + a heartbeat to /api/ping)
+import { OnlineGuard } from '../components/OnlineGuard';
+import { signalLabels } from '../features/swf/console';
 
 export const metadata: Metadata = {
   title: { default: env.appName, template: `%s · ${env.appName}` },
@@ -60,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="kv-skip">{t.t('common.skipToContent')}</a>
         {authed ? (
           <AppShell sidebar={<Sidebar me={me} />} topbar={<ConsoleTopbar me={me} bell={bell} />}>
-            <div id="main">{children}</div>
+            <div id="main"><OnlineGuard labels={signalLabels(t)} />{children}</div>
           </AppShell>
         ) : (
           <main className="kv-content kv-content--bare" id="main">{children}</main>

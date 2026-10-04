@@ -15,6 +15,8 @@ import { tenantHasPerm } from '../../../../lib/auth';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { DataTable } from '../../../../components/DataTable';
 import { SLOTS_HREF, isUuid, ratioLabel, refusedKey, swePageState, weekdayKey } from '../../../../features/swe/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.slots.title'), robots: { index: false, follow: false } }; }
@@ -39,6 +41,8 @@ export default async function SlotsPage({ searchParams }: { searchParams: { curs
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swe.slots.title')}><span>{t.t('swa.ops')}</span> / <span>{t.t('swa.logistics')}</span> / <span aria-current="page">{t.t('swe.slots.title')}</span></nav>
       <h1>{t.t('swe.slots.title')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t('swe.slots.subtitle')}</p>
       {state ? (
         <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role="alert">

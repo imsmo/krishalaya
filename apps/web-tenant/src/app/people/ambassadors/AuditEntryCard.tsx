@@ -9,9 +9,10 @@ import { formatDate } from '@krishalaya/i18n';
 import { tenantClient } from '../../../lib/api-client';
 import { auditHref } from '../../../features/forms/chain';
 
-export async function AuditEntryCard({ t, lang, entityType, entityId, action }: { t: Translator; lang: string; entityType: string; entityId: string; action: string }) {
+export async function AuditEntryCard({ t, lang, entityType, entityId, action }: { t: Translator; lang: string; entityType: string; entityId: string | null; action: string }) {
   let entry: AuditEntry | null = null; let unreadable = false;
-  try { entry = (await tenantClient().audit.list({ entityType, entityId, action, limit: 1 })).items[0] ?? null; } catch { unreadable = true; }
+  // [PC-56 TENANT-SW-f] a tenant-wide act (the wastage re-run) has no single entity: the latest entry of the action, newest first
+  try { entry = (await tenantClient().audit.list({ entityType, ...(entityId ? { entityId } : {}), action, limit: 1 })).items[0] ?? null; } catch { unreadable = true; }
   const json = (v: unknown) => (v === null || v === undefined ? t.t('form.nothingStored') : JSON.stringify(v));
   return (
     <div className="kv-card">
@@ -26,7 +27,7 @@ export async function AuditEntryCard({ t, lang, entityType, entityId, action }: 
           <dt>{t.t('amb.audit.after')}</dt><dd><code>{json(entry.newValue)}</code></dd>
         </dl>
       ) : <p className="kv-field__hint">{t.t(unreadable ? 'amb.audit.unreadable' : 'amb.audit.notYet')}</p>}
-      <p><Link href={auditHref(entityType, entityId)} className="kv-btn--link">{t.t('form.viewAudit')}</Link></p>
+      {entityId && <p><Link href={auditHref(entityType, entityId)} className="kv-btn--link">{t.t('form.viewAudit')}</Link></p>}
     </div>
   );
 }

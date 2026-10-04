@@ -10,6 +10,8 @@ import { tenantClient } from '../../../../../../lib/api-client';
 import { requireSession } from '../../../../../../lib/session';
 import { AGM_HREF, agmPackHref, isAgmAct, isIdemKey, isUuid } from '../../../../../../features/swd/console';
 import { codesFrom } from '../../../../../../features/swc/console';
+import { SEEN_FIELD, staleHref, verifyBeforeWrite } from '../../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../../features/mutate/verify-fields';
 
 const codesOf = (e: unknown) => { const err = e instanceof SdkError ? e : null; return codesFrom(err?.code, err?.status, err?.details); };
 
@@ -25,6 +27,11 @@ export async function agmActAction(formData: FormData): Promise<void> {
   if (media && !isUuid(media)) redirect(back({ step: 'failure', error: 'VALIDATION_FAILED' }));
   const c = tenantClient().agmPacks;
   let landed = id;
+  // [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE: the row this act's confirm step showed, re-read now — a row that moved since is
+  // refused STALE_ROW with the diff (field · was · now) and nothing is written; the operator re-checks on today's row.
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (await c.get(id)) as never);
+  void VERIFY_FIELDS.agmPack;
+  if (!seen.ok) redirect(staleHref(`${agmPackHref(id)}/act`, { act, reason }, seen));
   try {
     switch (act) {
       case 'issue': await c.issue(id, key); break;

@@ -105,13 +105,16 @@ describe('PC-56 TENANT-9c · AuditorReadOnlyGuard — every mutating route in th
       'POST /v1/auditor/exports [export.enqueue]',
       'POST /v1/auth/logout [session.logout]',
       'POST /v1/exports/:id/link [export.link]',
+      // PC-56 TENANT-SW-f: the report builder's run is the same exception as the auditor's own export (a queue row, an audit row, a file —
+      // no business data); the service narrows the auditor to the 9c realm's datasets (orders, settlements)
+      'POST /v1/insights/reports/runs [export.enqueue]',
       // PC-56 TENANT-SW-c: the auditor's OWN second factor (the auditor is staff; 2FA may be required of staff)
       'POST /v1/me/2fa/confirm [two_factor.self]',
       'POST /v1/me/2fa/disable [two_factor.self]',
       'POST /v1/me/2fa/enrol [two_factor.self]',
     ]);
-    expect(passed.length).toBe(6);
-    expect(refused.length).toBe(mutating.length - 6);
+    expect(passed.length).toBe(7);
+    expect(refused.length).toBe(mutating.length - 7);
     // Every refusal was RECORDED before it was thrown.
     expect(recorded.length).toBe(refused.length);
     expect(new Set(recorded.map((x) => x.action))).toEqual(new Set(['auditor.write_refused']));

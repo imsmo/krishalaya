@@ -241,7 +241,9 @@ export class EnrollmentsResource {
   }
   /** Record progress on a lesson (seconds watched / quiz score / completed). The server recomputes the
    * enrollment's overall progress + completion (the client never sets progressPct directly). */
-  async markProgress(enrollmentId: string, lessonId: string, input: { secondsWatched?: number; quizScore?: number | null; completed?: boolean }): Promise<LessonProgress> {
+  // [PC-56 TENANT-SW-f · W417] two ADDITIVE optional fields: `answers` (chosen option per question, null = unanswered — the server scores a
+  // quiz lesson and captures each answer) and `watch` (the interval the app played). A caller that sends neither is unchanged.
+  async markProgress(enrollmentId: string, lessonId: string, input: { secondsWatched?: number; quizScore?: number | null; completed?: boolean; answers?: Array<number | null>; watch?: { startedAt: string; endedAt: string } }): Promise<LessonProgress> {
     return (await this.http.request<LessonProgress>('POST', `education/enrollments/${encodeURIComponent(enrollmentId)}/lessons/${encodeURIComponent(lessonId)}/progress`, { body: input })).data;
   }
 }

@@ -152,6 +152,10 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('governance.agm.issue','AGM pack: draft, request issue, confirm issue (a second tenant_admin), addendum, auditor annexure',NULL),
  ('governance.register.import','Share register: import a CSV of existing shareholders with consent evidence, for a second tenant_admin to confirm',NULL),
  ('logistics.devices.manage','Cold-chain loggers: register a logger and issue / revoke its signing key (shown once)','M07'),
+ -- [PC-56 TENANT-SW-f] the tenant report builder (tenant_admin, fpo_coordinator; the auditor runs its realm's datasets only, read-only) and the
+ -- wastage re-run from recorded facts (tenant_admin). Also in 0202.
+ ('report.run','Report builder: run allow-listed datasets (92 days, 50,000 rows, 60 s), save and schedule (auditor: its datasets, runs only)',NULL),
+ ('insights.manage','Insights: re-run the wastage backfill from recorded facts (idempotent; never a manual loss)',NULL),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -294,6 +298,9 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin') AND p.code IN ('governance.agm.issue','governance.register.import'))
    -- [PC-56 TENANT-SW-e] cold-chain loggers + their signing keys (0201): tenant_admin only.
    OR (r.code IN ('tenant_admin') AND p.code IN ('logistics.devices.manage'))
+   -- [PC-56 TENANT-SW-f] the report builder and the wastage re-run (0202).
+   OR (r.code IN ('tenant_admin','fpo_coordinator','auditor') AND p.code IN ('report.run'))
+   OR (r.code IN ('tenant_admin') AND p.code IN ('insights.manage'))
 ON CONFLICT DO NOTHING;
 
 -- [PC-56 TENANT-SW-c] the STAFF roles — each holds a staff seat of the plan (0199 adds roles.is_staff and sets the same five).

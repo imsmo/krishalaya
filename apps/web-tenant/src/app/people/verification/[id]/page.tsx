@@ -24,6 +24,8 @@ import { auditHref } from '../../../../features/forms/chain';
 import { randomUUID } from 'node:crypto';
 import { ME_SECURITY_HREF, SKIP_REASONS, knownPurposeKey, parseCodes, recusalKey, skipReasonKey, swcCodeKey } from '../../../../features/swc/console';
 import { releaseClaimAction, skipClaimAction } from './claim-actions';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +65,8 @@ export default async function KycDocumentPage({ params, searchParams = {} }: { p
     <section>
       <p><Link href={KYC_DESK_HREF} className="kv-btn--link">{t.t('kyc.doc.back')}</Link></p>
       <h1>{d.docTypeName} <span className={`kv-badge kv-badge--${statusTone(d.status)}`}>{t.t(statusKey(d.status))}</span>{soon && <span className="kv-field__hint"> · {t.t('kyc.desk.renewingSoon')}</span>}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">
         {t.t(subjectKindKey(d.subjectKind))}{d.subjectKind === 'user' && d.subjectName ? ` · ${d.subjectName}` : ''}
         {' · '}{t.t('kyc.doc.uploaded', { at: at(d.createdAt) ?? '', by: d.submittedByName ?? t.t('common.dash') })}

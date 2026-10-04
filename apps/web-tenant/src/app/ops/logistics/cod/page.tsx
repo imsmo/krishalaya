@@ -15,6 +15,8 @@ import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { DataTable } from '../../../../components/DataTable';
 import { COD_HREF, COD_WORKSHEET_HREF, pageState } from '../../../../features/swa/console';
+import { AsOf } from '../../../../components/AsOf';
+import { asOfLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.cod.title'), robots: { index: false, follow: false } }; }
@@ -40,6 +42,8 @@ export default async function CodLedgerPage({ searchParams }: { searchParams: { 
       <nav className="kv-breadcrumb" aria-label={t.t('swa.cod.title')}><span>{t.t('swa.ops')}</span> / <span>{t.t('swa.logistics')}</span> / <span aria-current="page">{t.t('swa.cod.title')}</span></nav>
       <div className="kv-page-head">
         <h1>{t.t('swa.cod.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         <Link href={COD_WORKSHEET_HREF} className="kv-btn--link">{t.t('swa.cod.worksheet')}</Link>
       </div>
       <p className="kv-field__hint">{t.t('swa.cod.subtitle')}</p>

@@ -11,6 +11,8 @@ import { tenantClient } from '../../../../../lib/api-client';
 import { requireSession } from '../../../../../lib/session';
 import { consentFrom } from '../../../../../features/labour/console';
 import { WAGES_ACT_HREF, WAGES_HREF, failureCodes, isAdvAct, isUuid, rupeesToPaise } from '../../../../../features/swb/console';
+import { SEEN_FIELD, staleHref, verifyBeforeWrite } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
 
 export async function advanceActAction(formData: FormData): Promise<void> {
   await requireSession(WAGES_ACT_HREF);
@@ -22,6 +24,11 @@ export async function advanceActAction(formData: FormData): Promise<void> {
   const c = tenantClient().labour;
   const done = new URLSearchParams({ step: 'success', act });
   let failed: string[] | null = null;
+  // [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE: the row this act's confirm step showed, re-read now — a row that moved since is
+  // refused STALE_ROW with the diff (field · was · now) and nothing is written; the operator re-checks on today's row.
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (act === 'request' ? await c.advanceCap(String(formData.get('assignmentId') ?? '')) : (await c.advances({ status: 'requested', limit: 100 })).items.find((x) => x.id === id) ?? null) as never);
+  void VERIFY_FIELDS.wageAdvance;
+  if (!seen.ok) redirect(staleHref(WAGES_ACT_HREF, { act, id: isUuid(id) ? id : '', reason, assignmentId: String(formData.get('assignmentId') ?? ''), amount: String(formData.get('amount') ?? '') }, seen));
   try {
     if (act === 'request') {
       const assignmentId = String(formData.get('assignmentId') ?? ''); const amountMinor = rupeesToPaise(String(formData.get('amount') ?? ''));

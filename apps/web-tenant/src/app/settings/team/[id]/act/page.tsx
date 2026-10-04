@@ -18,6 +18,10 @@ import {
   CONFLICT_RELATIONS, REASON_MAX, REASON_MIN, isStaffAct, isUuid, parseCodes, relationKey, sessionBoundVars, staffActHref, staffHref, swcCodeKey, swcPageState,
 } from '../../../../../features/swc/console';
 import { AuditEntryCard } from '../../../../people/ambassadors/AuditEntryCard';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 import { declareConflictForAction, liftConflictAction, overrideAction, proposalAction, removeAction, revokeOverrideAction } from '../../team-actions';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +40,8 @@ export default async function StaffActPage({ params, searchParams }: { params: {
   const q = (searchParams.q ?? '').slice(0, 60);
   if (s && act === 'declare_conflict') { try { members = (await tenantClient().team.members(q)).filter((m) => m.userId !== s!.userId).slice(0, 20); } catch { members = []; } }
   const back = staffHref(params.id);
-  const hidden = <input type="hidden" name="userId" value={params.id} />;
+  // PC-56 TENANT-SW-f · W318 §3: every act form carries the staff record this confirm step showed — re-read before the write (verify-before-write)
+  const hidden = <><input type="hidden" name="userId" value={params.id} /><input type="hidden" name={SEEN_FIELD} value={seenToken(s as never, VERIFY_FIELDS.staff)} /></>;
   const reasonField = (id: string) => (
     <label className="kv-field" htmlFor={id}><span>{t.t('swc.field.reason')}</span>
       <textarea id={id} name="reason" className="kv-textarea" rows={2} minLength={REASON_MIN} maxLength={REASON_MAX} required /></label>);
@@ -144,7 +149,8 @@ export default async function StaffActPage({ params, searchParams }: { params: {
         </>
       )}
 
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={staffActHref(params.id, act, Object.fromEntries(['userTenantRoleId', 'permissionCode', 'assignmentId', 'conflictId', 'proposalId'].filter((k) => !!searchParams[k]).map((k) => [k, String(searchParams[k])])))} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <strong>{t.t('swc.chain.failure')}</strong>
           <ul className="kv-list">{(parseCodes(searchParams.error).length ? parseCodes(searchParams.error) : ['unknown']).map((c) => <li key={c}>{t.t(swcCodeKey(c))}</li>)}</ul>

@@ -12,6 +12,10 @@ import { mutateStep, mutateStepKey, failureKey } from '../../../../../features/m
 import { SLOTS_HREF, failedCodes, isUuid, swePageState, sweCodeKey, weekdayKey } from '../../../../../features/swe/console';
 import { AuditEntryCard } from '../../../../people/ambassadors/AuditEntryCard';
 import { withdrawProposalAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.slots.withdraw'), robots: { index: false, follow: false } }; }
@@ -49,6 +53,8 @@ export default async function SlotActPage({ searchParams }: { searchParams: Reco
           )}
           {offered && reasonOk ? (
             <form action={withdrawProposalAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((p) as never, VERIFY_FIELDS.slotProposal)} />
               <input type="hidden" name="id" value={p.id} /><input type="hidden" name="reason" value={reason} /><input type="hidden" name="idempotencyKey" value={randomUUID()} />
               <button type="submit" className="kv-btn kv-btn--primary">{t.t('mutate.confirm')}</button>{' '}<Link href={SLOTS_HREF} className="kv-btn--link">{t.t('mutate.cancel')}</Link>
             </form>
@@ -60,7 +66,8 @@ export default async function SlotActPage({ searchParams }: { searchParams: Reco
           <AuditEntryCard t={t} lang={lang} entityType="pickup_slot_proposal" entityId={id} action="logistics.slot_proposal_withdrawn" />
           <p><Link href={SLOTS_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p></>
       )}
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${SLOTS_HREF}/act?${new URLSearchParams({ step: 'confirm', act: 'withdraw', id: id ?? '', ...(reason ? { reason } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('mutate.failure.title')}</p>
           <ul>{failedCodes(searchParams.error).map((x) => <li key={x}>{t.t(sweCodeKey(x))} <code>{x}</code></li>)}</ul>

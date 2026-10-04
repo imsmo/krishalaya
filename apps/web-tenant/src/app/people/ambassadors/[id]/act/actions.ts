@@ -12,6 +12,8 @@ import { SdkError } from '@krishalaya/sdk-js';
 import { tenantClient } from '../../../../../lib/api-client';
 import { requireSession } from '../../../../../lib/session';
 import { AMBASSADORS_HREF, detailHref, failureCodesFrom, isAmbAct, isUuid } from '../../../../../features/ambassadors/console';
+import { SEEN_FIELD, staleHref, verifyBeforeWrite } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
 
 export async function ambassadorActAction(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '');
@@ -24,6 +26,11 @@ export async function ambassadorActAction(formData: FormData): Promise<void> {
   const key = String(formData.get('idempotencyKey') ?? '').trim() || randomUUID();
   const a = tenantClient().ambassadors;
   let failed: string[] | null = null; const done = new URLSearchParams({ step: 'success', act });
+  // [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE: the row this act's confirm step showed, re-read now — a row that moved since is
+  // refused STALE_ROW with the diff (field · was · now) and nothing is written; the operator re-checks on today's row.
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (await a.get(id)) as never);
+  void VERIFY_FIELDS.ambassador;
+  if (!seen.ok) redirect(staleHref(base, { act, reason, message: String(formData.get('message') ?? '') }, seen));
   try {
     if (act === 'suspend') await a.suspend(id, reason);
     else if (act === 'reinstate') await a.reinstate(id, reason || undefined);

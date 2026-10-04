@@ -16,6 +16,8 @@ import { requireSession } from '../../../lib/session';
 import {
   INVITE_LANGUAGES, TEAM_ACT_HREF, TEAM_HREF, TEAM_INVITE_HREF, codesFrom, isConflictRelation, isIdemKey, isPermCode, isUuid, staffHref,
 } from '../../../features/swc/console';
+import { DIFF_PARAM, SEEN_FIELD, diffToken, verifyBeforeWrite } from '../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../features/mutate/verify-fields';
 
 const codesOf = (e: unknown) => { const err = e instanceof SdkError ? e : null; return codesFrom(err?.code, err?.status, err?.details); };
 const str = (f: FormData, k: string, max = 500) => String(f.get(k) ?? '').trim().slice(0, max);
@@ -41,6 +43,10 @@ export async function revokeInviteAction(formData: FormData): Promise<void> {
   const id = str(formData, 'inviteId', 40);
   const base = `${TEAM_ACT_HREF}?act=revoke_invite&inviteId=${encodeURIComponent(id)}`;
   if (!isUuid(id)) fail(base, ['INVITE_NOT_FOUND']);
+  // [PC-56 TENANT-SW-f · W318 §3] verify-before-write: the invite the confirm step showed, re-read — gone or changed → STALE_ROW, nothing written
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => ((await tenantClient().team.overview({ limit: 1 })).invites.find((i) => i.id === id) ?? null) as never);
+  void VERIFY_FIELDS.invite;
+  if (!seen.ok) redirect(`${base}&${new URLSearchParams({ step: 'failure', error: seen.code, ...(seen.diffs.length ? { [DIFF_PARAM]: diffToken(seen.diffs) } : {}) }).toString()}`);
   try { await tenantClient().team.revokeInvite(id, str(formData, 'reason')); } catch (e) { fail(base, codesOf(e)); }
   revalidatePath(TEAM_HREF);
   redirect(`${base}&step=success`);
@@ -61,6 +67,15 @@ export async function addDirectlyAction(formData: FormData): Promise<void> {
 // ─────────────────────────────── one staff member (W2768–W2774)
 const staffBase = (userId: string, act: string) => `${staffHref(userId)}/act?act=${act}`;
 
+// [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE for every act on one staff member: the confirm step carried the staff record it showed
+// (`kv_seen`: suspended, the role assignments, overrides, proposals, conflicts); it is re-read here before the write — a record that moved
+// since is refused STALE_ROW with the diff and nothing is written; "re-check" re-opens the confirm step on today's record.
+async function verifyStaff(formData: FormData, userId: string, base: string): Promise<void> {
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (await tenantClient().team.staff(userId)) as never);
+  void VERIFY_FIELDS.staff;
+  if (!seen.ok) redirect(`${base}&${new URLSearchParams({ step: 'failure', error: seen.code, ...(seen.diffs.length ? { [DIFF_PARAM]: diffToken(seen.diffs) } : {}) }).toString()}`);
+}
+
 export async function overrideAction(formData: FormData): Promise<void> {
   const userId = str(formData, 'userId', 40); await requireSession(staffHref(userId));
   const base = staffBase(userId, 'override');
@@ -68,6 +83,7 @@ export async function overrideAction(formData: FormData): Promise<void> {
   const exp = str(formData, 'expiresAt', 40);
   if (!isUuid(utr) || !isPermCode(code)) fail(base, ['VALIDATION_FAILED']);
   let status = 'applied';
+  await verifyStaff(formData, userId, base);
   try {
     status = (await tenantClient().rbac.setOverride({ userTenantRoleId: utr, permissionCode: code, isGranted: str(formData, 'isGranted', 5) !== 'false', reason: str(formData, 'reason'),
       ...(exp ? { expiresAt: new Date(exp).toISOString() } : {}) })).status;
@@ -80,6 +96,7 @@ export async function revokeOverrideAction(formData: FormData): Promise<void> {
   const userId = str(formData, 'userId', 40); await requireSession(staffHref(userId));
   const utr = str(formData, 'userTenantRoleId', 40); const code = str(formData, 'permissionCode', 80);
   const base = `${staffBase(userId, 'revoke_override')}&userTenantRoleId=${encodeURIComponent(utr)}&permissionCode=${encodeURIComponent(code)}`;
+  await verifyStaff(formData, userId, base);
   try { await tenantClient().rbac.revokeOverride({ userTenantRoleId: utr, permissionCode: code, reason: str(formData, 'reason') }); } catch (e) { fail(base, codesOf(e)); }
   revalidatePath(staffHref(userId));
   redirect(`${base}&step=success`);
@@ -91,6 +108,7 @@ export async function removeAction(formData: FormData): Promise<void> {
   const base = `${staffBase(userId, 'remove')}&assignmentId=${encodeURIComponent(utr)}`;
   if (!isUuid(utr)) fail(base, ['ROLE_NOT_FOUND']);
   let bound = 0;
+  await verifyStaff(formData, userId, base);
   try { bound = (await tenantClient().rbac.revoke(utr, str(formData, 'reason'))).sessionEndBoundSec ?? 0; } catch (e) { fail(base, codesOf(e)); }
   revalidatePath(staffHref(userId)); revalidatePath(TEAM_HREF);
   redirect(`${base}&step=success&bound=${bound}`);
@@ -101,6 +119,7 @@ export async function declareConflictForAction(formData: FormData): Promise<void
   const base = staffBase(userId, 'declare_conflict');
   const relation = str(formData, 'relation', 12); const member = str(formData, 'memberUserId', 40);
   if (!isUuid(member) || !isConflictRelation(relation)) fail(base, ['CONFLICT_INVALID']);
+  await verifyStaff(formData, userId, base);
   try {
     await tenantClient().team.declareConflictFor(userId, { memberUserId: member, relation: relation as 'family', relationNote: str(formData, 'relationNote', 200) || undefined, reason: str(formData, 'reason') }, keyOf(formData));
   } catch (e) { fail(base, codesOf(e)); }
@@ -112,6 +131,7 @@ export async function liftConflictAction(formData: FormData): Promise<void> {
   const userId = str(formData, 'userId', 40); await requireSession(staffHref(userId));
   const id = str(formData, 'conflictId', 40);
   const base = `${staffBase(userId, 'lift_conflict')}&conflictId=${encodeURIComponent(id)}`;
+  await verifyStaff(formData, userId, base);
   try { await tenantClient().team.liftConflict(id, str(formData, 'reason')); } catch (e) { fail(base, codesOf(e)); }
   revalidatePath(staffHref(userId));
   redirect(`${base}&step=success`);
@@ -121,6 +141,7 @@ export async function proposalAction(formData: FormData): Promise<void> {
   const userId = str(formData, 'userId', 40); await requireSession(staffHref(userId));
   const id = str(formData, 'proposalId', 40); const act = str(formData, 'act', 20) === 'refuse_proposal' ? 'refuse_proposal' : 'confirm_proposal';
   const base = `${staffBase(userId, act)}&proposalId=${encodeURIComponent(id)}`;
+  await verifyStaff(formData, userId, base);
   try {
     if (act === 'confirm_proposal') await tenantClient().rbac.confirmOverrideProposal(id);
     else await tenantClient().rbac.refuseOverrideProposal(id, str(formData, 'reason'));

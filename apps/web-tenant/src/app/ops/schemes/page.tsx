@@ -18,6 +18,8 @@ import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { env } from '../../../lib/env';
 import { SCHEMES_DESK_HREF, schemeHref, swbState } from '../../../features/swb/console';
+import { AsOf } from '../../../components/AsOf';
+import { asOfLabels } from '../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -45,6 +47,8 @@ export default async function SchemesDeskPage() {
       {crumbs}
       <div className="kv-page-head">
         <h1>{t.t('swb.scm.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         <p className="kv-actions"><Link href="/schemes" className="kv-btn--link">{t.t('swb.scm.toOfficer')}</Link></p>
       </div>
       <p className="kv-field__hint">{t.t('swb.scm.lede')}</p>

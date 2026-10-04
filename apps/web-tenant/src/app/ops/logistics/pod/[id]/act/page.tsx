@@ -14,6 +14,10 @@ import { mutateStep, mutateStepKey, failureKey } from '../../../../../../feature
 import { POD_FLAG_REASONS, POD_HREF, codeKey, isPodAct, isUuid, pageState, podFlagRefusal } from '../../../../../../features/swa/console';
 import { AuditEntryCard } from '../../../../../people/ambassadors/AuditEntryCard';
 import { podActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.pod.actTitle'), robots: { index: false, follow: false } }; }
@@ -81,6 +85,8 @@ export default async function PodActPage({ params, searchParams }: { params: { i
           )}
           {offered && ready ? (
             <form action={podActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((r) as never, VERIFY_FIELDS.podReview)} />
               <input type="hidden" name="id" value={params.id} />
               <input type="hidden" name="act" value={act} />
               {reason && <input type="hidden" name="reason" value={reason} />}
@@ -101,7 +107,8 @@ export default async function PodActPage({ params, searchParams }: { params: { i
           <p><Link href={detail} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p>
         </>
       )}
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', act, ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(variance ? { varianceMinor: variance } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('mutate.failure.title')}</p>
           <ul>{failed.map((c) => <li key={c}>{t.t(codeKey(c))} <code>{c}</code></li>)}</ul>

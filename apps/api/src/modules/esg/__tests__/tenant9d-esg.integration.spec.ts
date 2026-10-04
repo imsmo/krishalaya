@@ -119,7 +119,7 @@ run('TENANT-9d · ESG (integration, real Postgres + RLS as kv_app)', () => {
     expect([adminPerms.has('esg.read'), adminPerms.has('esg.disclose')]).toEqual([true, true]);
     expect([coordPerms.has('esg.read'), coordPerms.has('esg.disclose')]).toEqual([true, false]);
     expect([...auditorPerms].filter((p) => p.startsWith('esg.'))).toEqual([]);
-    expect(auditorPerms.size).toBe(5);
+    expect(auditorPerms.size).toBe(6);   // 9c's five reads + report.run (PC-56 TENANT-SW-f, 0202: the auditor runs its realm's report datasets)
   });
 
   it('NO METHOD, NO METRIC · source rows exist and no published method → no figure (gender, a grievance, a carbon project)', async () => {

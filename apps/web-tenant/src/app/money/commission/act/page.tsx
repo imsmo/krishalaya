@@ -15,6 +15,10 @@ import { mutateStep, mutateStepKey, failureKey } from '../../../../features/muta
 import { COMMISSION_HREF, bpsPercent, codeKey, isCommissionAct, isUuid, isYmd, pageState } from '../../../../features/swa/console';
 import { AuditEntryCard } from '../../../people/ambassadors/AuditEntryCard';
 import { commissionActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.com.actTitle'), robots: { index: false, follow: false } }; }
@@ -76,6 +80,8 @@ export default async function CommissionActPage({ searchParams }: { searchParams
           )}
           {offered && reasonOk && dateOk ? (
             <form action={commissionActAction} className="kv-actions">
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((act === 'deactivate' ? policy : p) as never, act === 'deactivate' ? VERIFY_FIELDS.commissionPolicy : VERIFY_FIELDS.commissionProposal)} />
               {Object.entries(carry).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
               {reason && <input type="hidden" name="reason" value={reason} />}
               {effectiveFrom && <input type="hidden" name="effectiveFrom" value={effectiveFrom} />}
@@ -93,7 +99,8 @@ export default async function CommissionActPage({ searchParams }: { searchParams
           <p><Link href={COMMISSION_HREF} className="kv-btn--link">{t.t('form.backToScreen')}</Link></p>
         </>
       )}
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', ...carry, ...(reason ? { reason } : {}), ...(effectiveFrom ? { effectiveFrom } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('mutate.failure.title')}</p>
           <ul>{failed.map((c) => <li key={c}>{t.t(codeKey(c))} <code>{c}</code></li>)}</ul>

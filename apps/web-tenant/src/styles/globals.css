@@ -232,3 +232,18 @@ details.kv-card > summary { cursor: pointer; }
 .kv-banner-words { max-inline-size: 360px; margin-block: 8px; padding-block: 10px; padding-inline: 14px; border: 1px solid var(--kv-neutral-200, #e5e5e5); border-inline-start: 4px solid var(--kv-brand-500, #16a34a); border-radius: 8px; overflow-wrap: anywhere; }
 .kv-banner-words--missing { border-style: dashed; border-inline-start-color: var(--kv-neutral-400, #a3a3a3); }
 .kv-banner-words__cta { display: inline-block; margin-block-start: 6px; font-weight: 600; }
+
+/* ── PC-56 TENANT-SW-f · W318 offline & stale canon ────────────────────────────────────────────────────────────────────
+   The "as of" banner sits above the table it describes; past one hour the region is stale: the banner says so in WORDS, and
+   every money cell under it is tinted AND carries the word (AsOf appends it) — never colour alone. Degraded mode: the banner
+   names it; write buttons are disabled and read "— needs signal" (OnlineGuard). The diff chip of verify-before-write. */
+.kv-asof { color: var(--kv-neutral-600); font-size: 13px; margin: 4px 0 8px; }
+.kv-asof--stale { color: var(--kv-neutral-900); }
+.kv-asof__stale { color: var(--kv-danger); }
+[data-kv-stale="true"] .kv-money { background: repeating-linear-gradient(135deg, transparent 0 6px, var(--kv-neutral-100) 6px 12px); }
+.kv-money__stale { font-size: 12px; color: var(--kv-danger); }
+.kv-signal { border: 1px solid var(--kv-danger); border-radius: var(--kv-radius); padding: 10px 12px; margin: 0 0 12px; background: var(--kv-neutral-0); }
+.kv-signal__word { font-weight: 600; }
+button[data-kv-signal="held"] { opacity: 0.6; cursor: not-allowed; }
+.kv-diffchip { border: 1px solid var(--kv-danger); border-radius: var(--kv-radius); padding: 10px 12px; }
+.kv-refused { display: inline; }

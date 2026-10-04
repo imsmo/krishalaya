@@ -10,6 +10,8 @@ import { SdkError } from '@krishalaya/sdk-js';
 import { tenantClient } from '../../../../../lib/api-client';
 import { requireSession } from '../../../../../lib/session';
 import { ATTENDANCE_ACT_HREF, ATTENDANCE_HREF, failureCodes, hoursFrom, isAttAct, isUuid, ymdFrom } from '../../../../../features/swb/console';
+import { SEEN_FIELD, staleHref, verifyBeforeWrite } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
 
 export async function attendanceActAction(formData: FormData): Promise<void> {
   await requireSession(ATTENDANCE_ACT_HREF);
@@ -21,6 +23,11 @@ export async function attendanceActAction(formData: FormData): Promise<void> {
   const c = tenantClient().labour;
   const done = new URLSearchParams({ step: 'success', act });
   let failed: string[] | null = null;
+  // [PC-56 TENANT-SW-f · W318 §3] VERIFY BEFORE WRITE: the row this act's confirm step showed, re-read now — a row that moved since is
+  // refused STALE_ROW with the diff (field · was · now) and nothing is written; the operator re-checks on today's row.
+  const seen = await verifyBeforeWrite(formData.get(SEEN_FIELD), async () => (act === 'backfill' ? {} : await c.attendanceSummary()) as never);
+  void VERIFY_FIELDS.attendanceTiles;
+  if (!seen.ok) redirect(staleHref(ATTENDANCE_ACT_HREF, { act, id: isUuid(id) ? id : '', reason }, seen));
   try {
     if ((act === 'vouch' || act === 'refuse' || act === 'confirm') && !isUuid(id)) failed = ['ATTENDANCE_NOT_FOUND'];
     else if (act === 'vouch' || act === 'refuse') { await c.reviewAttendance(id, act, reason); done.set('id', id); }

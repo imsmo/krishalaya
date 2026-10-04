@@ -71,5 +71,8 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   -- PC-56 TENANT-SW-e (0201 also inserts them — ON CONFLICT DO NOTHING; each composes with the `logistics` module flag)
   ('logistics_slot_proposals', 'PC-56 TENANT-SW-e: the pickup desk proposes slots, the member accepts in the app or through an OTP link (W230) — OFF = members set their own slots only', false, 100, '{}'),
   ('logistics_village_run', 'PC-56 TENANT-SW-e: Village Run drop points, loading plans (checker), OTP handovers and the ambassador per-parcel fee (W232) — OFF = routes only', false, 100, '{}'),
-  ('cold_chain_device_ingest', 'PC-56 TENANT-SW-e: cold-chain logger readings over the device-signed ingest route, server bands, breach = 2 consecutive (W234) — OFF = the ingest route answers 404', false, 100, '{}')
+  ('cold_chain_device_ingest', 'PC-56 TENANT-SW-e: cold-chain logger readings over the device-signed ingest route, server bands, breach = 2 consecutive (W234) — OFF = the ingest route answers 404', false, 100, '{}'),
+  -- PC-56 TENANT-SW-f (0202 also inserts them — ON CONFLICT DO NOTHING)
+  ('insights_wastage', 'PC-56 TENANT-SW-f: measured loss from recorded facts only (returns, rejected pours, POD disputes, cold-chain losses, POD rejections) (W195) — OFF = the wastage screen says it is off', false, 100, '{}'),
+  ('insights_reports', 'PC-56 TENANT-SW-f: the tenant report builder — allow-listed datasets, ≤ 92 days, 50,000 rows, 60 s statement timeout, watermarked + audited CSV on the export plane (W196) — OFF = the builder says it is off', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

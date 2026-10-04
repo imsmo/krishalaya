@@ -18,6 +18,10 @@ import { getTranslator } from '../../../../../lib/i18n';
 import { auditHref, failureKey, mutateStep, mutateStepKey, repeatedFailuresGapKey } from '../../../../../features/mutate/chain';
 import { MAX_NOTE, MIN_REVEAL_REASON, actKey, deskState, docHref, failureCodeKey, isDeskAct, reasonKey, refusalKey, statusKey } from '../../../../../features/kyc/desk';
 import { kycActAction } from './actions';
+import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../features/mutate/verify';
+import { VERIFY_FIELDS } from '../../../../../features/mutate/verify-fields';
+import { StaleDiffChip } from '../../../../../components/StaleDiffChip';
+import { staleLabels } from '../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +86,8 @@ export default async function KycActPage({ params, searchParams }: { params: { i
               </form>
               {pv.allowed && (typed || act === 'verify') ? (
                 <form action={kycActAction}>
+              {/* PC-56 TENANT-SW-f · W318 §3: what this confirm step showed — re-read before the write (verify-before-write) */}
+              <input type="hidden" name={SEEN_FIELD} value={seenToken((pv) as never, VERIFY_FIELDS.kycDoc)} />
                   <input type="hidden" name="id" value={params.id} />
                   <input type="hidden" name="act" value={act} />
                   <input type="hidden" name="reasonCode" value={reasonCode} />
@@ -105,7 +111,8 @@ export default async function KycActPage({ params, searchParams }: { params: { i
         </div>
       )}
 
-      {step === 'failure' && (
+      {step === 'failure' && isStaleFailure(searchParams.error) && <StaleDiffChip code={String(searchParams.error)} diffs={readDiff(searchParams.kv_diff)} labels={staleLabels(t)} recheckHref={`${base}?${new URLSearchParams({ step: 'confirm', act, ...(reasonCode ? { reasonCode } : {}), ...(note ? { note } : {}) }).toString()}`} />}
+      {step === 'failure' && !isStaleFailure(searchParams.error) && (
         <div className="kv-error" role="alert">
           <p>{t.t('form.failure.title')}</p>
           <ul>{failed.map((code) => <li key={code}>{t.t(failureCodeKey(code))} <code>{code}</code></li>)}</ul>

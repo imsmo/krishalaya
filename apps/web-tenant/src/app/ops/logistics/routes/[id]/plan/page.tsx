@@ -14,6 +14,8 @@ import { chainStep, chainStepKey } from '../../../../../../features/forms/chain'
 import { failedCodes, isUuid, istToday, nextRunDate, planCarry, planRefusals, readPlanDraft, routeHref, swePageState, sweCodeKey, weekdayKey } from '../../../../../../features/swe/console';
 import { AuditEntryCard } from '../../../../../people/ambassadors/AuditEntryCard';
 import { draftRunAction } from './actions';
+import { AsOf } from '../../../../../../components/AsOf';
+import { asOfLabels } from '../../../../../../features/swf/console';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.run.planTitle'), robots: { index: false, follow: false } }; }
@@ -46,6 +48,8 @@ export default async function PlanRunPage({ params, searchParams }: { params: { 
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swe.run.title')}><Link href={back}>{page?.route.name ?? t.t('swe.run.title')}</Link> / <span aria-current="page">{t.t('swe.run.planTitle')}</span></nav>
       <h1>{t.t('swe.run.planTitle')}</h1>
+      {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+      <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
       <p className="kv-field__hint">{t.t(chainStepKey(step, refusals.length > 0))}</p>
       {state && <div className="kv-error" role="alert"><strong>{t.t(`swe.state.${state}.title`)}</strong><p>{t.t(`swe.state.${state}.body`)}</p></div>}
       {page && (step === 'edit' || step === 'review') && (

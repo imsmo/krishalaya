@@ -27,6 +27,8 @@ import {
   gmvTrend, isQuietDay, orderedActions, ageLabel, planUsagePct, planNearLimit, showChecklistFirst,
 } from '../../features/console/home';
 import { NEW_LISTING_HREF } from '../../features/swd/console';
+import { AsOf } from '../../components/AsOf';
+import { asOfLabels } from '../../features/swf/console';
 
 export const dynamic = 'force-dynamic'; // per-request (session-scoped); never statically cached
 
@@ -98,6 +100,8 @@ export default async function DashboardPage() {
     <section>
       <div className="kv-page-head">
         <h1>{t.t('dashboard.title')}</h1>
+        {/* PC-56 TENANT-SW-f · W318 §1: when this page's data was read — absolute IST + relative; stale past 1 h */}
+        <AsOf at={new Date().toISOString()} labels={asOfLabels(t)} />
         {/* W2562's one sharing action: the EXISTING 2b listing chain (W2357/W2358 form → review → success / failure). */}
         <p><Link href={NEW_LISTING_HREF} className="kv-btn kv-btn--primary">{t.t('swd.home.newListing')}</Link></p>
         {/* The subtitle's count is the LENGTH OF THE LIST BELOW IT, so the two can never disagree. */}
