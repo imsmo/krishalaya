@@ -398,9 +398,10 @@ describe('TENANT-5d · states and the way in', () => {
   });
 
   it('keeps every canon entry in the canon\'s order, and only two sections still have no screen', () => {
-    expect(LOGISTICS_NAV.filter((i) => !['freight', 'insights'].includes(i.key)).map((i) => i.key))
+    expect(LOGISTICS_NAV.filter((i) => !['freight', 'insights', 'slots'].includes(i.key)).map((i) => i.key))
       .toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'zones', 'coldChain']);
-    expect(LOGISTICS_NAV.filter((i) => !i.built).map((i) => i.key)).toEqual(['carriers', 'zones', 'coldChain']);
-    expect(unbuiltCount()).toBe(3);
+    // SW-e built the last three
+    expect(LOGISTICS_NAV.filter((i) => !i.built).map((i) => i.key)).toEqual([]);
+    expect(unbuiltCount()).toBe(0);
   });
 });

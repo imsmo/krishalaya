@@ -15,6 +15,14 @@
 //     resolves the band and calls `ColdChainService.appendForOwner`, the public seam that exists for exactly this
 //     (CLAUDE.md: no module imports another module's repositories).
 //
+// PC-56 TENANT-SW-e · F-13 — THE BAND NOW COMES FROM THE THRESHOLD STORE, NOT FROM THIS SERVICE. `cold_chain_thresholds` is the ONLY
+// source of a band: the cooler's band set on its bmc_units row IS its threshold (0201's trg_bmc_units_threshold appends one every
+// time it is set; 0201 backfilled every existing cooler), the database copies it onto each reading, and this service reads it BACK
+// from the written row to give its verdict. What changed here: (1) no band is handed across the seam; (2) the reading is MANUAL —
+// a desk or a gateway with the desk's credentials, not a device-signed reading — so it is recorded at the SERVER's time and never
+// opens a breach (a buffered sensor uses the signed device ingest route, which keeps the device's own time beside the server's);
+// (3) `recordedAt` is no longer accepted (the strict DTO refuses it by name). A cooler with no threshold is refused, never guessed.
+//
 // AND IT REFUSES RATHER THAN GUESSES. A reading for an unknown sensor, or for a cooler that was retired, is REFUSED
 // with the reason — because the alternative is a table quietly filling with numbers about a tank that was sold, which
 // looks exactly like a working cooler until somebody's milk spoils.
@@ -34,8 +42,6 @@ export interface BmcReadingInput {
   unitId?: string | null;
   tempC: string;
   humidityPct?: string | null;
-  /** The sensor's own timestamp. Buffered readings arrive late and must keep the time they were TAKEN. */
-  recordedAt?: string | null;
 }
 
 @Injectable()
@@ -69,36 +75,34 @@ export class BmcReadingService {
       }
 
       const tempDeci = deciOfC(input.tempC);
-      const band = bandOf(p);
-      const recordedAt = input.recordedAt ? new Date(input.recordedAt) : new Date();
-      if (Number.isNaN(recordedAt.getTime())) throw new BmcReadingRefusedError('unreadable reading timestamp');
+      const tankBand = bandOf(p);
 
-      // THE ONE PLACE THIS PATH TOUCHES A FLOAT, and it is at the boundary of another module's decision.
-      // `ColdChainLog.record` has taken JS numbers since PC-54 (its column is `numeric(5,2)`), so the seam speaks
-      // numbers. Converting HERE, from tenths, is the safe direction: a one-decimal value and its band both convert to
-      // the same nearest double, so `tempC < min || tempC > max` compares exactly at the boundary — 4.5 against a band
-      // ending at 4.5 is in range, which is the case W170's own numbers land on. Everything before this line and the
-      // verdict after it are integers.
+      // THE ONE PLACE THIS PATH TOUCHES A FLOAT, and it is at the boundary of another module's decision: `cold_chain_logs.temp_c` is
+      // numeric(5,2) and the seam speaks numbers. Converting HERE, from tenths, is the safe direction (one decimal converts to the
+      // nearest double both sides of the comparison agree on). Everything before this line and the verdict after it are integers.
       const written = await this.coldChain.appendForOwner(tenantId, {
         subjectType: 'bmc_unit', subjectId: p.id,
         tempC: tempDeci / 10,
         humidityPct: input.humidityPct == null ? null : Number(input.humidityPct),
         deviceRef: p.iotDeviceRef,
-        recordedAt,
-        // THE TANK'S BAND, at each end, so the row records what it was judged against — a later change to the
-        // cooperative's band cannot retro-judge a reading an operator already acted on.
-        allowedMinC: band.minDeci / 10,
-        allowedMaxC: band.maxDeci / 10,
         byUserId: actor.userId,
       });
-
+      if (!written.band) {
+        // the store had no threshold for this cooler — the reading is kept (it is a measurement) but no verdict can be given
+        throw new BmcReadingRefusedError('no threshold is recorded for this cooler — set its band on the cooler first', { unitId: p.id, readingId: written.id });
+      }
+      // THE STORE'S band, as the database copied it onto the row — back to tenths for this module's integer arithmetic
+      const band = { minDeci: Math.round(written.band.minC * 10), targetDeci: tankBand.targetDeci, maxDeci: Math.round(written.band.maxC * 10) };
       const verdict = readingVerdict(tempDeci, band);
-      // The two must agree: logistics computed `is_breach` from the band we passed, and this module's own arithmetic
-      // says the same thing. If they ever disagree, the reading is stored and the disagreement is LOUD rather than
-      // averaged away — two implementations of one rule is how a screen and an alert come to contradict each other.
+      // The database decided the excursion from the band it copied; this module's arithmetic on that same band must agree. If they
+      // ever disagree the reading is stored and the disagreement is LOUD rather than averaged away.
       if (written.isBreach !== isBreach(tempDeci, band)) {
         this.log.error(`bmc reading ${written.id} on unit ${p.id}: is_breach=${written.isBreach} from the ledger but ${isBreach(tempDeci, band)} from the band ${band.minDeci}..${band.maxDeci} (deci) — the two breach rules have drifted`);
         this.metrics.inc('dairy.bmc_breach_rule_drift', { tenant: tenantId });
+      }
+      // and the store's band should be the tank's own (the trigger keeps them one) — said, not silently trusted
+      if (band.minDeci !== tankBand.minDeci || band.maxDeci !== tankBand.maxDeci) {
+        this.log.warn(`bmc unit ${p.id}: threshold store band ${band.minDeci}..${band.maxDeci} differs from the cooler row ${tankBand.minDeci}..${tankBand.maxDeci} (deci) — the store governs`);
       }
 
       return {

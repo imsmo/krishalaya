@@ -191,7 +191,7 @@ export class FreightInvoiceService {
     const last = rows[rows.length - 1];
     return {
       items: rows,
-      nextCursor: rows.length === q.limit && last ? encodeFleetCursor(last.header.receivedAt, last.header.id) : null,
+      nextCursor: rows.length === q.limit && last ? encodeFleetCursor(last.header.receivedUs, last.header.id) : null,
     };
   }
 

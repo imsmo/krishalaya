@@ -1,6 +1,9 @@
 // core/i18n/locales/gu.ts · Gujarati. Missing keys fall back to English.
 const gu: Record<string, string> = {
   'sms.otp': 'Krishalaya કોડ: {code} ({minutes} મિનિટ માટે માન્ય). કોઈને કહેશો નહીં.',
+  'sms.otp_slots': 'Krishalaya કોડ: {code} — તમારી મંડળીએ સૂચવેલા પિકઅપ સમયનો જવાબ આપવા માટે ({minutes} મિનિટ માટે માન્ય). કોઈને કહેશો નહીં.',
+  'sms.otp_handover': 'Krishalaya કોડ: {code}. ડ્રોપ પોઇન્ટ પર પાર્સલ તમારા હાથમાં આવે પછી જ ડ્રાઇવરને કહો ({minutes} મિનિટ માટે માન્ય).',
+  'sms.otp_collect': 'Krishalaya કોડ: {code}. તમારું પાર્સલ લેતી વખતે જ ડ્રોપ પોઇન્ટને કહો ({minutes} મિનિટ માટે માન્ય).',
   'error.BAD_REQUEST': 'ખોટી વિનંતી',
   'error.VALIDATION_FAILED': 'કેટલીક વિગતો માન્ય નથી. કૃપા કરી તપાસીને ફરી પ્રયાસ કરો.',
   'error.UNAUTHORIZED': 'ચાલુ રાખવા માટે કૃપા કરી સાઇન ઇન કરો.',

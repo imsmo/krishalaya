@@ -108,7 +108,7 @@ export class FleetRegisterReadModel {
       const last = rows[rows.length - 1];
       return {
         items,
-        nextCursor: rows.length === q.limit && last ? encodeFleetCursor(last.createdAt, last.id) : null,
+        nextCursor: rows.length === q.limit && last ? encodeFleetCursor(last.createdUs, last.id) : null,
         split: fleetSplit(items),
         mechanisms: { fitnessGate, rcParking, requireRc },
       };

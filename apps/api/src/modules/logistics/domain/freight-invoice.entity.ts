@@ -44,6 +44,8 @@ export interface FreightInvoiceProps {
   reconStatus: ReconStatus; invoiceMediaId: string | null;
   receivedAt: Date; reconciledAt: Date | null; paymentHold: boolean; payoutId: string | null;
   createdAt?: Date | null;
+  /** F-14 (PC-56 TENANT-SW-e): the list cursor's instant, microsecond-exact (list reads only). */
+  receivedUs?: string;
 }
 
 function assertInvoiceNo(v: string): string {

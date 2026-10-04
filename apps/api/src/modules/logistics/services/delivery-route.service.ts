@@ -123,8 +123,8 @@ export class DeliveryRouteService {
   async list(tenantId: string, q: Omit<QueryDeliveryRouteDto, 'cursor'> & { cursor?: { c: string; id: string } }) {
     const rows = await this.repo.list(tenantId, { runWeekday: q.runWeekday, activeOnly: q.activeOnly, cursor: q.cursor, limit: q.limit });
     const items = rows.map((r) => this.serialize(r.toProps()));
-    const last = items[items.length - 1];
-    const nextCursor = items.length === q.limit && last ? encodeFleetCursor(last.createdAt, last.id) : null;
+    const last = rows[rows.length - 1]?.toProps();
+    const nextCursor = rows.length === q.limit && last ? encodeFleetCursor(last.createdUs, last.id) : null;
     return { items, nextCursor };
   }
 

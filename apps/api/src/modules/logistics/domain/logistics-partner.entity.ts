@@ -12,8 +12,11 @@ const CONTROL_RE = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/;
 export interface LogisticsPartnerProps {
   id: string; tenantId: string; partnerKind: PartnerKind | string; providerCode: string | null; defaultName: string;
   riderUserId: string | null; supportsColdChain: boolean; isActive: boolean; createdAt?: Date | null;
+  /** PC-56 TENANT-SW-e: the carrier's business contact (E.164; printed masked), the reason of the last (de)activation, and the
+   *  microsecond instant the list cursor is minted from (F-14). */
+  contactPhone?: string | null; statusReason?: string | null; createdUs?: string | null;
 }
-export type PartnerPatch = { defaultName?: string; providerCode?: string | null; supportsColdChain?: boolean };
+export type PartnerPatch = { defaultName?: string; providerCode?: string | null; supportsColdChain?: boolean; contactPhone?: string | null };
 
 function assertName(v: string): string {
   const s = v.trim();
@@ -47,13 +50,16 @@ export class LogisticsPartner {
     if (patch.defaultName !== undefined) { const v = assertName(patch.defaultName); if (v !== this.p.defaultName) { old.defaultName = this.p.defaultName; next.defaultName = v; this.p.defaultName = v; } }
     if (patch.providerCode !== undefined && patch.providerCode !== this.p.providerCode) { old.providerCode = this.p.providerCode; next.providerCode = patch.providerCode; this.p.providerCode = patch.providerCode; }
     if (patch.supportsColdChain !== undefined && patch.supportsColdChain !== this.p.supportsColdChain) { old.supportsColdChain = this.p.supportsColdChain; next.supportsColdChain = patch.supportsColdChain; this.p.supportsColdChain = patch.supportsColdChain; }
+    // the contact is audited by its LAST FOUR only (a phone number never lands in the audit trail whole)
+    if (patch.contactPhone !== undefined && patch.contactPhone !== (this.p.contactPhone ?? null)) { old.contactPhoneTail = this.p.contactPhone ? this.p.contactPhone.slice(-4) : null; next.contactPhoneTail = patch.contactPhone ? patch.contactPhone.slice(-4) : null; this.p.contactPhone = patch.contactPhone; }
     if (Object.keys(next).length === 0) throw new FleetAlreadyInStateError('partner');
     return { old, new: next };
   }
 
-  setActive(to: boolean): { action: 'activated' | 'deactivated'; old: { isActive: boolean }; new: { isActive: boolean } } {
+  setActive(to: boolean, reason?: string | null): { action: 'activated' | 'deactivated'; old: { isActive: boolean }; new: { isActive: boolean } } {
     if (this.p.isActive === to) throw new FleetAlreadyInStateError('partner');
     const from = this.p.isActive; this.p.isActive = to;
+    if (reason !== undefined) this.p.statusReason = reason;
     return { action: to ? 'activated' : 'deactivated', old: { isActive: from }, new: { isActive: to } };
   }
 }

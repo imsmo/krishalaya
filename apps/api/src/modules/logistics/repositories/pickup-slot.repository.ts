@@ -6,12 +6,12 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { PickupSlot } from '../domain/pickup-slot.entity';
 
-const COLS = `id, tenant_id, seller_user_id, weekday, to_char(start_time,'HH24:MI') AS start_time, to_char(end_time,'HH24:MI') AS end_time, is_active, created_at`;
+const COLS = `id, tenant_id, seller_user_id, weekday, to_char(start_time,'HH24:MI') AS start_time, to_char(end_time,'HH24:MI') AS end_time, is_active, created_at, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_us`;
 
 function toDomain(r: any): PickupSlot {
   return PickupSlot.rehydrate({
     id: r.id, tenantId: r.tenant_id, sellerUserId: r.seller_user_id, weekday: r.weekday,
-    startTime: r.start_time, endTime: r.end_time, isActive: r.is_active, createdAt: r.created_at,
+    startTime: r.start_time, endTime: r.end_time, isActive: r.is_active, createdAt: r.created_at, createdUs: r.created_us ?? null,
   });
 }
 
@@ -56,7 +56,7 @@ export class PickupSlotRepository {
     let where = `tenant_id=$1 AND seller_user_id=$2`;
     if (q.weekday !== undefined) where += ` AND weekday=${p(q.weekday)}`;
     if (q.activeOnly) where += ` AND is_active = true`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc}::timestamptz OR (created_at=${cc}::timestamptz AND id < ${ci}::uuid))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT ${COLS} FROM pickup_slots WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);

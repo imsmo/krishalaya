@@ -17,5 +17,7 @@ import { TwinFactsReadModel } from './read-models/twin-facts.read-model';
 @Module({
   controllers: [TwinAccessController, TwinController],
   providers: [TwinService, TwinDevicesService, TwinAccessService, TwinRepository, TwinFactsReadModel],
+  // PC-56 TENANT-SW-e: logistics registers its cold-chain loggers into 12's registry through this public service (never the repository).
+  exports: [TwinDevicesService],
 })
 export class TwinModule {}

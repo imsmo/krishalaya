@@ -128,7 +128,9 @@ export class OpsAlertService {
         subjectType: r.subjectType, subjectRef: r.deviceRef ?? r.subjectId,
         severity: severityFor('cold_chain_breach', { breaches: r.breaches }),
         detail: { breaches: r.breaches, windowHours, lastTempC: r.lastTempC, lastAt: r.lastAt, subjectId: r.subjectId },
-        body: `${r.breaches} temperature breach(es) in the last ${windowHours}h on ${r.subjectType} ${r.deviceRef ?? r.subjectId} (last ${r.lastTempC ?? '?'}°C).`,
+        // PC-56 TENANT-SW-e: a RULE counts OUT-OF-BAND READINGS (the rows' own excursion flag, against the band copied at write) — the
+        // operator chose the count. A BREACH is a different object (two consecutive DEVICE readings, opened and alerted by the database).
+        body: `${r.breaches} out-of-band reading(s) in the last ${windowHours}h on ${r.subjectType} ${r.deviceRef ?? r.subjectId} (last ${r.lastTempC ?? '?'}°C).`,
       }));
     }
     if (rule.kind === 'device_silent') {

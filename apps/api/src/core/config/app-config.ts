@@ -144,6 +144,17 @@ export class AppConfig {
       }
     }
 
+    // --- PC-56 TENANT-SW-e · the device ingest route: when configured, it connects as kv_ingest and nothing else ---
+    if (env.INGEST_DATABASE_URL && env.INGEST_DATABASE_URL.length > 0) {
+      const u = AppConfig.tryParsePg(env.INGEST_DATABASE_URL);
+      if (!u) p.push('INGEST_DATABASE_URL is not a valid postgres URL');
+      else {
+        if (u.user !== 'kv_ingest') p.push('INGEST_DATABASE_URL must connect as kv_ingest (the ingestion role, 0014/0201), not kv_app/superuser');
+        if (!u.password || /^(postgres|password|dev|changeme|admin|secret)$/i.test(u.password) || u.password.length < 12) p.push('INGEST_DATABASE_URL must use a strong, non-default password (from Secrets Manager)');
+        if (u.sslDisabled) p.push('INGEST_DATABASE_URL must require TLS (sslmode=require), not disable it');
+      }
+    }
+
     // --- P0-13 decommission dev affordances: catch these at BOOT, not at the first upload/intent ---
     // Media downloads are gated on a CLEAN AV scan; the scan-result webhook is HMAC-verified with MEDIA_SCAN_SECRET.
     // An empty/weak secret means the webhook rejects every scan (no media ever clears) — fail at boot, not silently.
@@ -181,6 +192,8 @@ export class AppConfig {
   get webhookSigningKek() { return this.env.WEBHOOK_SIGNING_KEK; }
   /** PC-56 TENANT-SW-c: the console base URL a staff invite links to ('' = no link; the SMS carries the code). */
   get tenantConsoleBaseUrl() { return this.env.TENANT_CONSOLE_BASE_URL; }
+  /** PC-56 TENANT-SW-e: the cold-chain device ingest connection (kv_ingest) — '' = not configured (the route answers 503). */
+  get ingest() { return { databaseUrl: this.env.INGEST_DATABASE_URL ?? '', poolMax: this.env.INGEST_POOL_MAX }; }
   get trustProxyHops() { return this.env.TRUST_PROXY_HOPS; }
   /** CORS allowlist for the 4 Next.js web apps. Empty ⇒ CORS left off entirely (main.ts skips app.enableCors,
    *  matching today's no-CORS behavior byte-for-byte). Mobile apps + server-to-server webhooks send no Origin

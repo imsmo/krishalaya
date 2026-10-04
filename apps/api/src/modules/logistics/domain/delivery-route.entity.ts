@@ -23,6 +23,8 @@ export interface DeliveryRouteProps {
   /** The evidence of the commitment. Both or neither — 0152's `ck_delivery_routes_approval_pair`. */
   approvedBy: string | null; approvedAt: Date | null;
   createdAt?: Date | null;
+  /** F-14 (PC-56 TENANT-SW-e): the cursor instant, microsecond-exact. */
+  createdUs?: string | null;
 }
 export type DeliveryRoutePatch = { defaultName?: string; runWeekday?: number | null; villageRegionIds?: string[]; vehicleId?: string | null; consolidationUserId?: string | null };
 

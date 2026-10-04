@@ -12,14 +12,14 @@ import { pgDate } from '../../../core/database/pg-date';
 // (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
 // `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
-const COLS = `id, tenant_id, partner_id, reg_no, vehicle_type_id, capacity_kg, is_refrigerated, rc_doc_id, is_active, created_at`;
+const COLS = `id, tenant_id, partner_id, reg_no, vehicle_type_id, capacity_kg, is_refrigerated, rc_doc_id, is_active, created_at, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_us`;
 const num = (v: any) => (v == null ? null : Number(v));
 
 function toDomain(r: any): Vehicle {
   return Vehicle.rehydrate({
     id: r.id, tenantId: r.tenant_id, partnerId: r.partner_id, regNo: r.reg_no, vehicleTypeId: r.vehicle_type_id,
     capacityKg: num(r.capacity_kg), isRefrigerated: r.is_refrigerated, rcDocId: r.rc_doc_id,
-    isActive: r.is_active, createdAt: r.created_at,
+    isActive: r.is_active, createdAt: r.created_at, createdUs: r.created_us ?? null,
   });
 }
 
@@ -32,6 +32,8 @@ export interface RegisterRow {
   id: string; scope: 'tenant' | 'platform'; partnerId: string; partnerName: string | null; partnerKind: string | null;
   regNo: string; typeCode: string | null; capacityKg: number | null; isRefrigerated: boolean; isActive: boolean;
   rcDocId: string | null; rcStatus: string | null; rcValidUntil: string | null; createdAt: Date | null;
+  /** F-14: the cursor instant, microsecond-exact (PC-56 TENANT-SW-e). */
+  createdUs: string | null;
 }
 export interface VehicleTodayRow { vehicleId: string; onRoad: number; deliveredToday: number; assignedToday: number }
 export interface VehicleRunRow { vehicleId: string; routeName: string; weekday: number }
@@ -93,10 +95,10 @@ export class VehicleRepository {
     let where = `(v.tenant_id=$1 OR v.tenant_id IS NULL) AND v.deleted_at IS NULL`;
     if (q.partnerId) where += ` AND v.partner_id=${p(q.partnerId)}`;
     if (q.activeOnly) where += ` AND v.is_active = true`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (v.created_at < ${cc} OR (v.created_at=${cc} AND v.id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (v.created_at < ${cc}::timestamptz OR (v.created_at=${cc}::timestamptz AND v.id < ${ci}::uuid))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT v.id, v.tenant_id, v.partner_id, v.reg_no, v.capacity_kg, v.is_refrigerated, v.is_active, v.created_at,
+      `SELECT v.id, v.tenant_id, v.partner_id, v.reg_no, v.capacity_kg, v.is_refrigerated, v.is_active, v.created_at, to_char(v.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_us,
               v.rc_doc_id, lv.code AS type_code, d.status AS rc_status, d.valid_until AS rc_valid_until,
               lp2.default_name AS partner_name, lp2.partner_kind
          FROM vehicles v
@@ -112,7 +114,7 @@ export class VehicleRepository {
       isRefrigerated: x.is_refrigerated, isActive: x.is_active, rcDocId: x.rc_doc_id ?? null,
       rcStatus: x.rc_status ?? null,
       rcValidUntil: x.rc_valid_until ? pgDate(x.rc_valid_until) : null,
-      createdAt: x.created_at ?? null,
+      createdAt: x.created_at ?? null, createdUs: x.created_us ?? null,
     }));
   }
 
@@ -226,7 +228,7 @@ export class VehicleRepository {
     let where = `(tenant_id=$1 OR tenant_id IS NULL)`;
     if (q.partnerId) where += ` AND partner_id=${p(q.partnerId)}`;
     if (q.activeOnly) where += ` AND is_active = true`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc}::timestamptz OR (created_at=${cc}::timestamptz AND id < ${ci}::uuid))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT ${COLS} FROM vehicles WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);

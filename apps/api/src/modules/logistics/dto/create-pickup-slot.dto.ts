@@ -2,6 +2,9 @@
 // start_time < end_time (HH:MM, 24h) — enforced in the domain. The slot is owned by the calling seller.
 import { z } from 'zod';
 
+/** A query-string boolean: the words 'true' / 'false' (and 1 / 0) — never JavaScript truthiness of a string. */
+const QueryBool = z.union([z.boolean(), z.enum(['true', 'false', '1', '0'])]).transform((v) => v === true || v === 'true' || v === '1');
+
 const Time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 
 export const CreatePickupSlotSchema = z.object({
@@ -20,7 +23,7 @@ export type UpdatePickupSlotDto = z.infer<typeof UpdatePickupSlotSchema>;
 
 export const QueryPickupSlotSchema = z.object({
   weekday: z.coerce.number().int().min(0).max(6).optional(),
-  activeOnly: z.coerce.boolean().default(true),
+  activeOnly: QueryBool.default('true'),   // PC-56 TENANT-SW-e: 'false' means false (z.coerce.boolean read it as true)
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 }).strict();

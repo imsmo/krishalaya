@@ -75,6 +75,16 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // and will call in the slot they chose (no calendar integration — said). `slotStart` / `slotEnd` are IST civil strings ("2026-10-12
   // 10:30"). Catalogue 0200, copy in seed core/0007 (push + in-app ×3). The admin realm's queue notice is SetupCallRequestedHandler.
   { outboxType: 'tenancy.setup_call_requested',      eventCode: 'tenant.setup_call_requested', recipientKeys: ['requestedBy'] },
+  // PC-56 TENANT-SW-e · logistics ops (catalogue 0201, copy in seed core/0007: push + in-app × en/hi/gu, above the backfill). Recipients
+  // travel in the payload. `logistics.slot_proposed`: the member is told the desk proposed windows (accept in the app, or via the link —
+  // the code goes to their own phone). `logistics.cold_chain_breach`: written BY THE DATABASE when a breach opens (two consecutive device
+  // readings out of band) to the operators on the cold-chain rules + the shipment's driver. `logistics.cold_chain_buyer_offer`: a shipment
+  // breach out of range ≥ 15 minutes — the buyer's accept / accept-with-test / reject. `logistics.cold_chain_device_silent`: a logger
+  // silent > 15 minutes — alerted, not called (no voice channel).
+  { outboxType: 'logistics.slot_proposed',             eventCode: 'logistics.slot_proposed',             recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'logistics.cold_chain_breach',         eventCode: 'logistics.cold_chain_breach',         recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'logistics.cold_chain_buyer_offer',    eventCode: 'logistics.cold_chain_buyer_offer',    recipientKeys: ['recipientUserIds'] },
+  { outboxType: 'logistics.cold_chain_device_silent',  eventCode: 'logistics.cold_chain_device_silent',  recipientKeys: ['recipientUserIds'] },
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },

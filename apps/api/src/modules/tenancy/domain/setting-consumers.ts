@@ -34,6 +34,8 @@ export const WIRED_SETTINGS: Readonly<Record<string, SettingConsumer>> = Object.
   'governance.special_majority_den':        { file: 'modules/memberships/domain/resolution-rules.ts', marker: "'governance.special_majority_den'" },
   'governance.special_majority_num':        { file: 'modules/memberships/domain/resolution-rules.ts', marker: "'governance.special_majority_num'" },
   'group_lot.max_extension_hours':          { file: 'modules/group-lots/services/group-lot.service.ts', marker: "'group_lot.max_extension_hours'" },
+  // PC-56 TENANT-SW-e: the Village Run per-parcel fee (MONEY) — resolved in SQL by kv_parcel_handover_fee_minor at accrual (0201) and read here for W232.
+  'logistics.parcel_handover_fee_minor':    { file: 'modules/logistics/repositories/village-run.repository.ts', marker: "'logistics.parcel_handover_fee_minor'" },
   'notification.quiet_hours_default':       { file: 'modules/communication/repositories/quiet-hours.repository.ts', marker: 'notification.quiet_hours_default' },
   'payouts.batch_checker_threshold_minor':  { file: 'modules/payments/services/payout-approval.service.ts', marker: "'payouts.batch_checker_threshold_minor'" },
   'payouts.batch_cut_off_minutes':          { file: 'modules/payments/services/payout-approval.service.ts', marker: "'payouts.batch_cut_off_minutes'" },

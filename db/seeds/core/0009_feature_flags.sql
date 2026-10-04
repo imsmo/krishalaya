@@ -67,5 +67,9 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   -- PC-56 TENANT-SW-d (each composes with its module flag: tenancy / memberships)
   ('setup_calls','PC-56 TENANT-SW-d: "Book a setup call (free)" — a request the Krishalaya team works in the admin realm (W2619) — OFF = the /go card says the team is not taking requests', false, 100, '{}'),
   ('agm_packs','PC-56 TENANT-SW-d: the AGM pack — assembled from facts, issued by a maker + a second tenant_admin, immutable, PDF + dataset + public verify (W199) — OFF = the screen says so', false, 100, '{}'),
-  ('share_register_import','PC-56 TENANT-SW-d: import the share register from a CSV with consent evidence, under a checker (W2626) — OFF = the register is read-only', false, 100, '{}')
+  ('share_register_import','PC-56 TENANT-SW-d: import the share register from a CSV with consent evidence, under a checker (W2626) — OFF = the register is read-only', false, 100, '{}'),
+  -- PC-56 TENANT-SW-e (0201 also inserts them — ON CONFLICT DO NOTHING; each composes with the `logistics` module flag)
+  ('logistics_slot_proposals', 'PC-56 TENANT-SW-e: the pickup desk proposes slots, the member accepts in the app or through an OTP link (W230) — OFF = members set their own slots only', false, 100, '{}'),
+  ('logistics_village_run', 'PC-56 TENANT-SW-e: Village Run drop points, loading plans (checker), OTP handovers and the ambassador per-parcel fee (W232) — OFF = routes only', false, 100, '{}'),
+  ('cold_chain_device_ingest', 'PC-56 TENANT-SW-e: cold-chain logger readings over the device-signed ingest route, server bands, breach = 2 consecutive (W234) — OFF = the ingest route answers 404', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

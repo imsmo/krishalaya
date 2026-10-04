@@ -33,6 +33,7 @@ import { NotificationsResource } from './resources/notifications';
 import { CmsResource } from './resources/cms';
 import { OrdersResource } from './resources/orders';
 import { ShipmentsResource, FleetResource, RoutesResource, FreightResource, LogisticsDeskResource } from './resources/logistics';
+import { CarriersResource, PickupSlotsResource, VillageRunResource, ColdChainResource } from './resources/logistics-ops';   // PC-56 TENANT-SW-e
 import { ReviewsResource } from './resources/reviews';
 import { CartResource, CheckoutResource } from './resources/commerce';
 import { BuyerResource } from './resources/buyer';
@@ -95,6 +96,11 @@ export class KrishalayaClient {
   readonly freight: FreightResource;
   /** PC-56 TENANT-5d · W225's overview + W244's insights (reads only; every figure is a verdict). */
   readonly logisticsDesk: LogisticsDeskResource;
+  // PC-56 TENANT-SW-e · carriers, pickup-slot proposals, Village Run, cold chain
+  readonly carriers: CarriersResource;
+  readonly pickupSlots: PickupSlotsResource;
+  readonly villageRun: VillageRunResource;
+  readonly coldChain: ColdChainResource;
   readonly reviews: ReviewsResource;
   readonly addresses: AddressesResource;
   readonly cart: CartResource;
@@ -217,6 +223,10 @@ export class KrishalayaClient {
     this.routes = new RoutesResource(this.http);
     this.freight = new FreightResource(this.http);
     this.logisticsDesk = new LogisticsDeskResource(this.http);
+    this.carriers = new CarriersResource(this.http);
+    this.pickupSlots = new PickupSlotsResource(this.http);
+    this.villageRun = new VillageRunResource(this.http);
+    this.coldChain = new ColdChainResource(this.http);
     this.reviews = new ReviewsResource(this.http);
     this.addresses = new AddressesResource(this.http);
     this.cart = new CartResource(this.http);

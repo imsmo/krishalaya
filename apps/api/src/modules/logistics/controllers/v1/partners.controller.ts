@@ -15,7 +15,7 @@ import { ShipmentPermissions, canManageLogistics } from '../../policies/logistic
 import { LogisticsPartnerService } from '../../services/logistics-partner.service';
 import { VehicleService } from '../../services/vehicle.service';
 import { PickupSlotService } from '../../services/pickup-slot.service';
-import { CreateLogisticsPartnerSchema, CreateLogisticsPartnerDto, UpdateLogisticsPartnerSchema, UpdateLogisticsPartnerDto, SetActiveSchema, SetActiveDto } from '../../dto/create-logistics-partner.dto';
+import { CreateLogisticsPartnerSchema, CreateLogisticsPartnerDto, UpdateLogisticsPartnerSchema, UpdateLogisticsPartnerDto, SetActiveSchema, SetActiveDto, SetPartnerActiveSchema, SetPartnerActiveDto } from '../../dto/create-logistics-partner.dto';
 import { QueryLogisticsPartnerSchema, QueryLogisticsPartnerDto } from '../../dto/query-logistics-partner.dto';
 import { CreateVehicleSchema, CreateVehicleDto, UpdateVehicleSchema, UpdateVehicleDto } from '../../dto/create-vehicle.dto';
 import { QueryVehicleSchema, QueryVehicleDto, QueryFleetRegisterSchema, QueryFleetRegisterDto } from '../../dto/query-vehicle.dto';
@@ -39,7 +39,8 @@ export class PartnersController {
   }
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryLogisticsPartnerSchema) q: QueryLogisticsPartnerDto) {
-    return this.partners.list(ctx.tenantId, { ...q, cursor: decodeCursor(q.cursor) }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    // PC-56 TENANT-SW-e · W228: each row carries its facts (Shipments 30d, capability, rider KYC / wage terms) and On-time refused by name
+    return this.partners.list(ctx.tenantId, { ...q, cursor: decodeCursor(q.cursor) }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor, onTime: res.onTime } }));
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.partners.getById(ctx.tenantId, id).then((data) => ({ data })); }
@@ -47,9 +48,10 @@ export class PartnersController {
   update(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(UpdateLogisticsPartnerSchema) dto: UpdateLogisticsPartnerDto) {
     return this.partners.update(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
   }
+  /** W2382–W2384: activate / deactivate a carrier WITH A REASON (≥ 10), audited with it. */
   @Post(':id/active') @RequirePermissions(ShipmentPermissions.Manage)
-  setActive(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(SetActiveSchema) dto: SetActiveDto) {
-    return this.partners.setActive(ctx.tenantId, this.actor(ctx), id, dto.isActive, ipOf(r)).then((data) => ({ data }));
+  setActive(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(SetPartnerActiveSchema) dto: SetPartnerActiveDto) {
+    return this.partners.setActive(ctx.tenantId, this.actor(ctx), id, dto.isActive, ipOf(r), dto.reason).then((data) => ({ data }));
   }
 }
 

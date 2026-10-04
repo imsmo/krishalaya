@@ -161,3 +161,20 @@ export class CodCashDayOpenItemsError extends AppError { constructor(open: strin
 export class PodReviewNotFoundError extends NotFoundError { constructor(id: string) { super('POD review not found'); (this as any).details = { id }; } }
 export class PodReviewStateError extends AppError { constructor(status: string, wanted: string) { super('POD_REVIEW_STATE', `A ${status} POD review cannot be ${wanted}`, 409, { status, wanted }); } }
 export class PodReviewOffError extends AppError { constructor() { super('POD_REVIEW_OFF', 'POD review is not on for this organisation (pod_review is off)', 409); } }
+
+/* ---- PC-56 TENANT-SW-e · logistics ops (carriers, slot proposals, Village Run, cold chain) ---- */
+/** A refusal by name — from the service (field-level) or from a 0201 trigger (`[CODE]`, carried through `gateRefusal`). */
+export class LogisticsOpsRefusedError extends AppError {
+  constructor(code: string, message: string, status = 409, details: Record<string, unknown> = {}) { super(code, message, status, { code, ...details }); }
+}
+export class SlotProposalNotFoundError extends NotFoundError { constructor(id: string) { super('Pickup slot proposal not found'); (this as any).code = 'SLOT_PROPOSAL_NOT_FOUND'; (this as any).details = { id }; } }
+export class RouteRunNotFoundError extends NotFoundError { constructor(id: string) { super('Village Run not found'); (this as any).code = 'RUN_NOT_FOUND'; (this as any).details = { id }; } }
+export class DropPointNotFoundError extends NotFoundError { constructor(id: string) { super('Drop point not found'); (this as any).code = 'DROP_POINT_NOT_FOUND'; (this as any).details = { id }; } }
+export class HandoverNotFoundError extends NotFoundError { constructor(id: string) { super('Parcel handover not found'); (this as any).code = 'HANDOVER_NOT_FOUND'; (this as any).details = { id }; } }
+export class BreachNotFoundError extends NotFoundError { constructor(id: string) { super('Cold-chain breach not found'); (this as any).code = 'BREACH_NOT_FOUND'; (this as any).details = { id }; } }
+export class ColdChainDeviceNotFoundError extends NotFoundError { constructor(id: string) { super('Cold-chain logger not found'); (this as any).code = 'COLD_CHAIN_DEVICE_NOT_FOUND'; (this as any).details = { id }; } }
+/** The device ingest route refused a request — the code says why (signature, replay, stale, unknown device …). 401 for an
+ *  authentication failure, 409 for a replay, 422 for a reading the database refused, 503 when the route is not configured. */
+export class ColdChainIngestRefusedError extends AppError {
+  constructor(code: string, status: number, message: string) { super(code, message, status, { code }); }
+}

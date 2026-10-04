@@ -341,11 +341,12 @@ describe('TENANT-5b · W225\'s sub-nav, all seven entries', () => {
     // the desk also gave it a way in. Every canon entry is still here, in place; nothing was hidden.
     // TENANT-5d closed `overview` (W225) and added `insights` (W244, which the canon links from nowhere), so the
     // canon's seven are still all here in order and two of this wave's four unbuilt entries have since been built.
-    expect(LOGISTICS_NAV.filter((i) => !['freight', 'insights'].includes(i.key)).map((i) => i.key))
+    expect(LOGISTICS_NAV.filter((i) => !['freight', 'insights', 'slots'].includes(i.key)).map((i) => i.key))
       .toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'zones', 'coldChain']);
+    // SW-e built the last three (carriers, zones at SW-a's path, cold chain) and added slots (W230)
     expect(LOGISTICS_NAV.filter((i) => i.built).map((i) => i.key))
-      .toEqual(['overview', 'shipments', 'vehicles', 'routes', 'freight', 'insights']);
-    expect(unbuiltCount()).toBe(3);
+      .toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'freight', 'insights', 'zones', 'coldChain', 'slots']);
+    expect(unbuiltCount()).toBe(0);
     // Shipped as unbuilt rather than hidden: an FPO who was shown the canon cannot otherwise tell "not built" from
     // "hidden from me by a permission".
     for (const i of LOGISTICS_NAV) expect(i.built === (i.href !== null)).toBe(true);

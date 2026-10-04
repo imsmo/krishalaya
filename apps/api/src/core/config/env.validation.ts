@@ -170,6 +170,11 @@ export const EnvSchema = z.object({
   // falls back to RELAY_DATABASE_URL, then DATABASE_URL (local dev convenience only).
   JOBS_DATABASE_URL: z.string().optional(),
   JOBS_POOL_MAX: z.coerce.number().int().min(1).max(20).default(2),
+  // --- PC-56 TENANT-SW-e · the cold-chain DEVICE INGEST route's own connection: MUST be the kv_ingest role (0014's ingestion role;
+  // 0201 grants it exactly its device lookup, the nonce and the device columns of cold_chain_logs). Empty ⇒ the ingest route
+  // answers 503 COLD_CHAIN_INGEST_NOT_CONFIGURED — it never falls back to kv_app (fail closed).
+  INGEST_DATABASE_URL: z.string().optional(),
+  INGEST_POOL_MAX: z.coerce.number().int().min(1).max(20).default(2),
   // --- settlement-statements cadence job ---
   SETTLEMENT_STATEMENTS_JOB_ENABLED: z.enum(['true', 'false']).default('true'),
   SETTLEMENT_STATEMENTS_JOB_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(86_400_000), // default: once/day

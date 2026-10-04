@@ -174,7 +174,8 @@ export default async function RoutesPage({ searchParams }: {
                 header: t.t('route.colRoute'),
                 cell: (r) => (
                   <>
-                    <strong>{r.name}</strong>
+                    {/* PC-56 TENANT-SW-e: the route opens its Village Run page (W232) */}
+                    <Link href={`/ops/logistics/routes/${encodeURIComponent(r.id)}`} className="kv-link"><strong>{r.name}</strong></Link>
                     {isProposal(r.status) && <> <span className="kv-badge kv-badge--warn">{t.t(statusKey(r.status))}</span></>}
                     {r.status === 'inactive' && <> <span className="kv-badge kv-badge--muted">{t.t(statusKey(r.status))}</span></>}
                   </>

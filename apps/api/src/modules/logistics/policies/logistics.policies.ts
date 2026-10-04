@@ -13,3 +13,9 @@ export const ZONES_MANAGE = 'logistics.zones.manage';
 export function canManageZones(ctx: RequestContext): boolean {
   return ctx.permissions.has(ZONES_MANAGE) || ctx.permissions.has('*');
 }
+
+/** PC-56 TENANT-SW-e · cold-chain loggers: registering one and issuing / revoking its signing key (shown once) — tenant_admin (0201). */
+export const DEVICES_MANAGE = 'logistics.devices.manage';
+export function canManageColdChainDevices(ctx: RequestContext): boolean {
+  return ctx.permissions.has(DEVICES_MANAGE) || ctx.permissions.has('*');
+}

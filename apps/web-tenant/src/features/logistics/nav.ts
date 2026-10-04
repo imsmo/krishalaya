@@ -22,6 +22,9 @@ export interface LogisticsNavItem { key: string; href: string | null; built: boo
 // next quarter's routes and rates" cannot be reached from anywhere in the design at all. Same defect as W241's in
 // 5c, one degree worse.
 //
+// PC-56 TENANT-SW-e closed the last three (carriers W228, zones W233 — built by SW-a at /ops/logistics/zones — and cold chain
+// W234) and added `slots` (W230) after the canon's entries.
+//
 // PC-56 TENANT-5c ADDED AN EIGHTH ENTRY THE CANON'S SUB-NAV DOES NOT HAVE, and the reason is a finding:
 //
 // **W241 (Freight invoices) HAS NO INBOUND LINK ANYWHERE IN THE CANON.** Its own chain screens (W2612–W2618) carry
@@ -36,13 +39,16 @@ export interface LogisticsNavItem { key: string; href: string | null; built: boo
 export const LOGISTICS_NAV: readonly LogisticsNavItem[] = [
   { key: 'overview',  href: '/logistics/overview', built: true },
   { key: 'shipments', href: '/logistics',          built: true },
-  { key: 'carriers',  href: null,                  built: false },
+  { key: 'carriers',  href: '/ops/logistics/carriers', built: true },
   { key: 'vehicles',  href: '/logistics/vehicles', built: true },
   { key: 'routes',    href: '/logistics/routes',   built: true },
   { key: 'freight',   href: '/logistics/freight',  built: true },
   { key: 'insights',  href: '/logistics/insights', built: true },
-  { key: 'zones',     href: null,                  built: false },
-  { key: 'coldChain', href: null,                  built: false },
+  { key: 'zones',     href: '/ops/logistics/zones',  built: true },
+  { key: 'coldChain', href: '/ops/logistics/cold-chain', built: true },
+  // PC-56 TENANT-SW-e: W230 (pickup slots) has no entry in the canon's sub-nav; it is added after the canon's own, the same way 5c/5d
+  // added freight and insights — a way in, never a hidden one.
+  { key: 'slots',     href: '/ops/logistics/slots',  built: true },
 ];
 
 export function navLabelKey(item: LogisticsNavItem): string { return `logistics.nav.${item.key}`; }

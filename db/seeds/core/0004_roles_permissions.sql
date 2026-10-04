@@ -151,6 +151,7 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- [PC-56 TENANT-SW-d] the AGM pack (maker + a second tenant_admin) and the share-register import (consent evidence + checker) (0200).
  ('governance.agm.issue','AGM pack: draft, request issue, confirm issue (a second tenant_admin), addendum, auditor annexure',NULL),
  ('governance.register.import','Share register: import a CSV of existing shareholders with consent evidence, for a second tenant_admin to confirm',NULL),
+ ('logistics.devices.manage','Cold-chain loggers: register a logger and issue / revoke its signing key (shown once)','M07'),
  ('support.handle','Handle support tickets: assign/respond/transition/resolve','M50'),
  ('cms.manage','Retired in TENANT-8d — no route checks it (pages: cms.pages.*; banners: cms.banners.manage)','M50'),
  -- [PC-56 TENANT-8d] THE BANNERS GET THEIR OWN VERB. A banner reaches EVERY member's home screen (and the canon links offers
@@ -291,6 +292,8 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('ambassador.payout.prepare','advance.approve','scheme.desk'))
    -- [PC-56 TENANT-SW-d] AGM pack + register import (0200): tenant_admin only (the checker is a second tenant_admin).
    OR (r.code IN ('tenant_admin') AND p.code IN ('governance.agm.issue','governance.register.import'))
+   -- [PC-56 TENANT-SW-e] cold-chain loggers + their signing keys (0201): tenant_admin only.
+   OR (r.code IN ('tenant_admin') AND p.code IN ('logistics.devices.manage'))
 ON CONFLICT DO NOTHING;
 
 -- [PC-56 TENANT-SW-c] the STAFF roles — each holds a staff seat of the plan (0199 adds roles.is_staff and sets the same five).

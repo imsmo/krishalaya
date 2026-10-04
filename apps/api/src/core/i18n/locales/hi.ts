@@ -1,6 +1,9 @@
 // core/i18n/locales/hi.ts · Hindi (Devanagari). Missing keys fall back to English.
 const hi: Record<string, string> = {
   'sms.otp': 'Krishalaya कोड: {code} ({minutes} मिनट के लिए वैध)। किसी को न बताएं।',
+  'sms.otp_slots': 'Krishalaya कोड: {code} — आपकी समिति के प्रस्तावित पिकअप समय का जवाब देने के लिए ({minutes} मिनट के लिए वैध)। किसी को न बताएं।',
+  'sms.otp_handover': 'Krishalaya कोड: {code}। ड्रॉप पॉइंट पर पार्सल आपके हाथ में आने के बाद ही ड्राइवर को बताएं ({minutes} मिनट के लिए वैध)।',
+  'sms.otp_collect': 'Krishalaya कोड: {code}। अपना पार्सल लेते समय ही ड्रॉप पॉइंट को बताएं ({minutes} मिनट के लिए वैध)।',
   'error.BAD_REQUEST': 'गलत अनुरोध',
   'error.VALIDATION_FAILED': 'कुछ जानकारी सही नहीं है। कृपया जाँचकर पुनः प्रयास करें।',
   'error.UNAUTHORIZED': 'जारी रखने के लिए कृपया साइन इन करें।',

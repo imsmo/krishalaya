@@ -14,14 +14,14 @@ export interface DueRouteRow { id: string; tenantId: string; defaultName: string
 // nothing here on purpose: it is a GENERATED column now, so reading it would be reading the same fact twice, and
 // WRITING it is an error PostgreSQL raises ("cannot insert a non-DEFAULT value into column is_active") — which
 // is exactly the protection this wave wanted.
-const COLS = `id, tenant_id, default_name, run_weekday, village_region_ids, vehicle_id, consolidation_user_id, status, approved_by, approved_at, created_at`;
+const COLS = `id, tenant_id, default_name, run_weekday, village_region_ids, vehicle_id, consolidation_user_id, status, approved_by, approved_at, created_at, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_us`;
 const arr = (v: any): string[] => (Array.isArray(v) ? v.map(String) : []);
 
 function toDomain(r: any): DeliveryRoute {
   return DeliveryRoute.rehydrate({
     id: r.id, tenantId: r.tenant_id, defaultName: r.default_name, runWeekday: r.run_weekday, villageRegionIds: arr(r.village_region_ids),
     vehicleId: r.vehicle_id, consolidationUserId: r.consolidation_user_id,
-    status: r.status, approvedBy: r.approved_by, approvedAt: r.approved_at, createdAt: r.created_at,
+    status: r.status, approvedBy: r.approved_by, approvedAt: r.approved_at, createdAt: r.created_at, createdUs: r.created_us ?? null,
   });
 }
 export interface RouteListQuery { runWeekday?: number; activeOnly: boolean; status?: string; cursor?: { c: string; id: string }; limit: number; }
@@ -89,7 +89,7 @@ export class DeliveryRouteRepository {
     if (q.runWeekday !== undefined) where += ` AND run_weekday=${p(q.runWeekday)}`;
     if (q.activeOnly) where += ` AND status = 'active'`;
     if (q.status) where += ` AND status=${p(q.status)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc}::timestamptz OR (created_at=${cc}::timestamptz AND id < ${ci}::uuid))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM delivery_routes WHERE ${where} AND deleted_at IS NULL ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);

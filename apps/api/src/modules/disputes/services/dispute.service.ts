@@ -111,6 +111,31 @@ export class DisputeService {
     return { id: p.id };
   }
 
+  /**
+   * PC-56 TENANT-SW-e · W239 "> 15 min above → buyer offered accept-with-test / reject-before-unload": the BUYER chose REJECT on a
+   * cold-chain breach offer. The dispute is the buyer's own (raised_by = the buyer, opened_via = party — the buyer acted, not the
+   * desk), reason `poor_quality`, the breach cited in the description. Runs INSIDE logistics' decision transaction. The EXISTING
+   * dispute path decides who may dispute: an order with no eligibility yet (disputes open after delivery) returns NULL — the
+   * buyer's rejection is still recorded on the breach, and the console says the dispute opens through the dispute path after delivery.
+   */
+  async openFromColdChainBreachInTx(tx: TxContext, i: { tenantId: string; orderId: string; buyerUserId: string; breachId: string; description: string }): Promise<{ id: string } | null> {
+    const elig = await this.repo.eligibilityTx(tx, i.tenantId, i.orderId);
+    if (!elig || elig.buyerUserId !== i.buyerUserId) return null;
+    const reasonId = await this.repo.reasonIdTx(tx, 'poor_quality');
+    if (!reasonId) throw new InvalidDisputeError('the poor_quality dispute reason is not configured');
+    if (await this.repo.hasActiveForOrderRaiser(tx, i.tenantId, i.orderId, elig.buyerUserId)) throw new DuplicateDisputeError();
+    const now = new Date();
+    const dispute = Dispute.raise({ id: uuidv7(), tenantId: i.tenantId, orderId: i.orderId, raisedBy: elig.buyerUserId, againstUser: elig.sellerUserId, reasonId,
+      description: i.description.slice(0, 4000), sellerRespondBy: new Date(now.getTime() + SELLER_RESPOND_MS), slaDueAt: new Date(now.getTime() + SLA_MS), now,
+      disputedAmountMinor: null, disputedQuantity: null });
+    await this.repo.insert(tx, dispute);
+    const p = dispute.toProps();
+    await this.audit.write(tx, { tenantId: i.tenantId, actorUserId: i.buyerUserId, action: 'dispute.raised_from_cold_chain_breach', entityType: 'dispute', entityId: p.id,
+      newValue: { orderId: p.orderId, againstUser: elig.sellerUserId, reason: 'poor_quality', breachId: i.breachId }, reason: i.description });
+    await this.flush(tx, i.tenantId, p.id, dispute.pullEvents());
+    return { id: p.id };
+  }
+
   respond(t: string, a: DisputeActor, id: string) { return this.mutate(t, a, id, 'respond', {}, (d) => d.sellerRespond(a.userId)); }
   withdraw(t: string, a: DisputeActor, id: string) { return this.mutate(t, a, id, 'withdraw', {}, (d) => d.withdraw(a.userId)); }
   startReview(t: string, a: DisputeActor, id: string, ip: string | null) { return this.mutate(t, a, id, 'review', { moderator: true, audit: true }, (d) => d.startReview(), ip); }

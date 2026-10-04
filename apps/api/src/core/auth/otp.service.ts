@@ -82,7 +82,7 @@ export class OtpService {
 export const OTP_SERVICE = Symbol('OTP_SERVICE');
 
 /** Context for an OTP send — real (DLT) providers template on `code`; never log it. */
-export interface SmsOtpContext { code: string; ttlMin: number; purpose: 'login' | 'change_phone'; locale?: string }
+export interface SmsOtpContext { code: string; ttlMin: number; purpose: 'login' | 'change_phone' | 'slot_proposal' | 'parcel_handover' | 'parcel_collect'; locale?: string }
 
 /**
  * A pluggable SMS sender. `send` delivers a pre-rendered message (used for dev/noop and free-text providers).

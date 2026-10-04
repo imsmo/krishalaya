@@ -73,15 +73,21 @@ The ops-planning layer on top of the fleet. Backed by `0007` (`delivery_zones`, 
   served by a vehicle and dropped at a `consolidation_user_id` (often an ambassador).
 - **Cold-chain logs** (`domain/cold-chain-log.entity.ts`) — **append-only** reefer/vaccine temperature
   telemetry (DB REVOKEs UPDATE/DELETE; partitioned by `recorded_at`, bigserial id). `is_breach` is
-  computed at record time from the subject's allowed band and is immutable thereafter. Temperatures are
+  computed at record time from the band COPIED from `cold_chain_thresholds` (never from the body — SW-e) and is
+  immutable thereafter; `source` is device (signed ingest, kv_ingest) or manual (server time). Temperatures are
   decimals, never money.
 
 Zone/route writes run in one ACID tx (UoW) with the outbox event + audit row in the SAME tx and require
 `logistics.manage`. Cold-chain readings are appended (one INSERT, no per-reading outbox — telemetry
 volume). Two worker jobs (apps/worker, system pool):
-- **cold-chain-breach-alerts** — scans new `is_breach` rows across tenants and emits one
-  `logistics.cold_chain_breach` per breach; dedup via an `ops_job_runs` `(recorded_at,id)` high-water-mark
-  so each breach alerts exactly once even across re-runs. Bounded per tick.
+- ~~cold-chain-breach-alerts~~ — REMOVED in PC-56 TENANT-SW-e (it was never registered, and alerted per manual
+  excursion). A breach is now opened IN THE DATABASE by the AFTER INSERT trigger on `cold_chain_logs` when two
+  consecutive DEVICE readings fall outside the band copied from `cold_chain_thresholds`; the same transaction writes
+  the `cold_chain_breaches` row, the `ops_fired_alerts` row and the `logistics.cold_chain_breach` outbox event. A manual
+  reading is labelled and never opens one. The registered `logistics-cold-chain-watch` job (every minute, per tenant in
+  kv_app's unit of work) flags a logger silent > 15 min ("alerted, not called") and offers the buyer accept /
+  accept-with-test / reject on a shipment breach out of band ≥ 15 min; `logistics-slot-proposal-expiry` expires pickup-
+  slot proposals unanswered for 7 days.
 - **village-run-consolidation** — once per calendar date, emits one `logistics.village_run_due` per active
   route scheduled for today's weekday (→ notifications for the driver/consolidation point); idempotent per
   date via an `ops_job_runs` date-guard.

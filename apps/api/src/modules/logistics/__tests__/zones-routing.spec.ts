@@ -3,7 +3,7 @@
 // computation + sensor-envelope validation). Service-level UoW/outbox/audit/RLS is covered by the integration spec.
 import { DeliveryZone } from '../domain/delivery-zone.entity';
 import { DeliveryRoute } from '../domain/delivery-route.entity';
-import { ColdChainLog, COLD_CHAIN_SUBJECTS } from '../domain/cold-chain-log.entity';
+import { ColdChainLog, COLD_CHAIN_SUBJECTS, excursion } from '../domain/cold-chain-log.entity';
 import { InvalidDeliveryZoneError, InvalidDeliveryRouteError, InvalidColdChainReadingError, FleetAlreadyInStateError } from '../domain/logistics.errors';
 import { ZoneRouteEventType } from '../domain/logistics.events';
 
@@ -56,26 +56,29 @@ describe('DeliveryRoute', () => {
   });
 });
 
-describe('ColdChainLog', () => {
-  const base = { tenantId: 't1', subjectType: 'vaccine_box' as const, subjectId: REGION, recordedAt: new Date('2026-06-20T10:00:00Z') };
+describe('ColdChainLog (PC-56 TENANT-SW-e: the band and the time are the SERVER\'s)', () => {
+  const base = { tenantId: 't1', subjectType: 'vaccine_box' as const, subjectId: REGION };
 
-  it('flags a breach when temp is outside the allowed band', () => {
-    const cold = ColdChainLog.record({ ...base, tempC: 12, allowedMinC: 2, allowedMaxC: 8 });
-    expect(cold.isBreach).toBe(true);
-    const ok = ColdChainLog.record({ ...base, tempC: 5, allowedMinC: 2, allowedMaxC: 8 });
-    expect(ok.isBreach).toBe(false);
-    const low = ColdChainLog.record({ ...base, tempC: -1, allowedMinC: 2, allowedMaxC: 8 });
-    expect(low.isBreach).toBe(true);
+  it('a manual reading carries no band and no time — the database copies the band and stamps its own clock', () => {
+    const p = ColdChainLog.manual({ ...base, tempC: 12 }).toProps();
+    expect(p).toMatchObject({ source: 'manual', recordedAt: null, isBreach: false, deviceId: null });
+    expect('allowedMinC' in p).toBe(false);
   });
-  it('rejects an unknown subject type and impossible band', () => {
-    expect(() => ColdChainLog.record({ ...base, subjectType: 'fridge' as any, tempC: 5, allowedMinC: 2, allowedMaxC: 8 })).toThrow(InvalidColdChainReadingError);
-    expect(() => ColdChainLog.record({ ...base, tempC: 5, allowedMinC: 8, allowedMaxC: 2 })).toThrow(InvalidColdChainReadingError);
+  it('mirrors the database\'s excursion rule for display, and cannot judge without a band', () => {
+    expect(excursion(12, { minC: 2, maxC: 8 })).toBe(true);
+    expect(excursion(5, { minC: 2, maxC: 8 })).toBe(false);
+    expect(excursion(-1, { minC: 2, maxC: 8 })).toBe(true);
+    expect(excursion(8, { minC: 2, maxC: 8 })).toBe(false);
+    expect(excursion(5, null)).toBeNull();
+  });
+  it('rejects an unknown subject type', () => {
+    expect(() => ColdChainLog.manual({ ...base, subjectType: 'fridge' as any, tempC: 5 })).toThrow(InvalidColdChainReadingError);
   });
   it('rejects out-of-envelope temperatures', () => {
-    expect(() => ColdChainLog.record({ ...base, tempC: 200, allowedMinC: 2, allowedMaxC: 8 })).toThrow(InvalidColdChainReadingError);
+    expect(() => ColdChainLog.manual({ ...base, tempC: 200 })).toThrow(InvalidColdChainReadingError);
   });
   it('has no id until persisted (DB bigserial assigns it)', () => {
-    expect(ColdChainLog.record({ ...base, tempC: 5, allowedMinC: 2, allowedMaxC: 8 }).toProps().id).toBeNull();
+    expect(ColdChainLog.manual({ ...base, tempC: 5 }).toProps().id).toBeNull();
   });
   it('exposes the documented subject types', () => { expect(COLD_CHAIN_SUBJECTS).toEqual(['shipment', 'bmc_unit', 'warehouse_chamber', 'vaccine_box']); });
 });

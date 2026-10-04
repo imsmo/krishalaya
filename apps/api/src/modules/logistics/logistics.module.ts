@@ -68,6 +68,21 @@ import { CodLedgerService } from './services/cod-ledger.service';
 import { PodReviewRepository } from './repositories/pod-review.repository';
 import { PodReviewService, PodAutoClearJob } from './services/pod-review.service';
 import { PROPOSAL_APPLIER_REGISTRY, ProposalApplierRegistry } from '../../core/jobs/proposal-applier.registry';
+// PC-56 TENANT-SW-e · logistics ops: carriers (W228), the pickup desk + proposals (W230), the Village Run (W232), the cold chain (W234/239/240)
+import { TwinModule } from '../twin/twin.module';
+import { DATASET_REGISTRY, DatasetRegistry } from '../../core/exports-plane/dataset.registry';
+import { PickupSlotDeskController, MyPickupSlotProposalsController, PickupSlotProposalLinkController, VillageRunController, MyColdChainOffersController, ColdChainIngestController } from './controllers/v1/logistics-ops.controller';
+import { SlotProposalRepository } from './repositories/slot-proposal.repository';
+import { SlotProposalService } from './services/slot-proposal.service';
+import { VillageRunRepository } from './repositories/village-run.repository';
+import { VillageRunService } from './services/village-run.service';
+import { ColdChainOpsRepository } from './repositories/cold-chain-ops.repository';
+import { OpsOtpService } from './services/ops-otp.service';
+import { COLD_CHAIN_INGEST_POOL, ColdChainIngestService, ingestPoolFactory } from './services/cold-chain-ingest.service';
+import { ColdChainWatchJob, SlotProposalExpiryJob } from './jobs/logistics-ops.jobs';
+import { ColdChainBreachesDataset, ColdChainTrailDataset } from './exports/cold-chain.datasets';
+import { ColdChainService as ColdChainSvc } from './services/cold-chain.service';
+import { UiMessageRepository } from '../../core/i18n/ui-message.repository';
 
 @Module({
   // PC-56 TENANT-5a · the money gate needs the ORDERS module's public service (OrderService.transportStatus)
@@ -75,8 +90,9 @@ import { PROPOSAL_APPLIER_REGISTRY, ProposalApplierRegistry } from '../../core/j
   // blueprint's rule holds: another module's PUBLIC SERVICE, never its repositories.
   // PC-56 TENANT-SW-a: PaymentsModule for SettlementHoldService (a flagged POD / a COD shortfall holds settlement) and DisputesModule for the
   // POD-rejection dispute — both PUBLIC services. Neither imports logistics (no cycle).
-  imports: [OrdersModule, PaymentsModule, DisputesModule],
-  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController, FreightController, LogisticsDeskController, CodController, PodController],
+  imports: [OrdersModule, PaymentsModule, DisputesModule, TwinModule],
+  controllers: [ShipmentsController, PartnersController, VehiclesController, PickupSlotsController, ZonesController, RoutesController, ColdChainController, FreightController, LogisticsDeskController, CodController, PodController,
+    PickupSlotDeskController, MyPickupSlotProposalsController, PickupSlotProposalLinkController, VillageRunController, MyColdChainOffersController, ColdChainIngestController],
   providers: [
     ShipmentService, ShipmentRepository, OrderConfirmedHandler,
     LogisticsPartnerService, VehicleService, PickupSlotService,
@@ -89,6 +105,12 @@ import { PROPOSAL_APPLIER_REGISTRY, ProposalApplierRegistry } from '../../core/j
     // PC-56 TENANT-SW-a · zones (proposals), COD ledger, POD review + its 2-hour clock
     DeliveryZoneProposalRepository, CodLedgerRepository, CodLedgerService, PodReviewRepository, PodReviewService,
     { provide: PodAutoClearJob, useFactory: (svc: PodReviewService) => new PodAutoClearJob(5 * 60_000, svc), inject: [PodReviewService] },
+    // PC-56 TENANT-SW-e
+    SlotProposalRepository, SlotProposalService, VillageRunRepository, VillageRunService, ColdChainOpsRepository, OpsOtpService,
+    { provide: COLD_CHAIN_INGEST_POOL, useFactory: (config: AppConfig) => ingestPoolFactory(config), inject: [AppConfig] },
+    ColdChainIngestService, ColdChainTrailDataset, ColdChainBreachesDataset, UiMessageRepository,
+    { provide: ColdChainWatchJob, useFactory: (svc: ColdChainSvc) => new ColdChainWatchJob(60_000, svc), inject: [ColdChainSvc] },
+    { provide: SlotProposalExpiryJob, useFactory: (svc: SlotProposalService) => new SlotProposalExpiryJob(15 * 60_000, svc), inject: [SlotProposalService] },
     { provide: RcExpiryParkingJob,
       useFactory: (vehicles: VehicleRepository, flags: FlagsService, metrics: Metrics) => new RcExpiryParkingJob(vehicles, flags, metrics),
       inject: [VehicleRepository, FlagsService, METRICS] },
@@ -116,8 +138,19 @@ export class LogisticsModule implements OnModuleInit {
     private readonly podAutoClear: PodAutoClearJob,
     private readonly zones: DeliveryZoneService,
     @Inject(PROPOSAL_APPLIER_REGISTRY) private readonly appliers: ProposalApplierRegistry,
+    private readonly coldWatch: ColdChainWatchJob,
+    private readonly slotExpiry: SlotProposalExpiryJob,
+    @Inject(DATASET_REGISTRY) private readonly datasets: DatasetRegistry,
+    private readonly trailDataset: ColdChainTrailDataset,
+    private readonly breachesDataset: ColdChainBreachesDataset,
   ) {}
   onModuleInit(): void {
+    // PC-56 TENANT-SW-e: the cold-chain watch (silence > 15 min, the buyer's 15-minute offer) and the 7-day slot-proposal clock —
+    // registered unconditionally (each tenant's rows exist only with its flags on); and the cold chain on the export plane (unsigned).
+    this.jobRegistry.register(this.coldWatch);
+    this.jobRegistry.register(this.slotExpiry);
+    this.datasets.register(this.trailDataset);
+    this.datasets.register(this.breachesDataset);
     // PC-56 TENANT-SW-a · D1: the POD 2-hour auto-clear clock — registered unconditionally (each tenant's rows exist only with pod_review
     // ON): without it a clean POD would sit "awaiting" forever and the console's "clears in 2 h" would be false.
     this.jobRegistry.register(this.podAutoClear);

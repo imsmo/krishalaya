@@ -42,9 +42,23 @@ export class TwinDevicesService {
   }
 
   async register(tenantId: string, actor: TwinActor, key: string, input: DeviceInput) {
-    return this.idem.remember(key, actor.userId, 'twin.device.register', async () => {
+    return this.registerAs(tenantId, actor, key, input, { authorised: canManageDevices(actor), scope: 'twin.device.register' });
+  }
+
+  /**
+   * PC-56 TENANT-SW-e · the cold-chain LOGGER enters THIS registry (one registry, one serial space per tenant), registered from the
+   * logistics desk. The CALLER has judged its own permission (`logistics.devices.manage`) — this method is the public seam the
+   * module rule allows (a service, never the repository) and it registers only the `cold_chain_logger` kind.
+   */
+  async registerColdChainLogger(tenantId: string, actor: { userId: string; ip: string | null; requestId?: string | null }, key: string, input: { serial: string; label?: string | null }) {
+    return this.registerAs(tenantId, { userId: actor.userId, permissions: new Set<string>(), ip: actor.ip, requestId: actor.requestId ?? null }, key,
+      { kind: 'cold_chain_logger', serial: input.serial, label: input.label ?? null, parcelId: null }, { authorised: true, scope: 'logistics.cold_chain_logger.register' });
+  }
+
+  private async registerAs(tenantId: string, actor: TwinActor, key: string, input: DeviceInput, o: { authorised: boolean; scope: string }) {
+    return this.idem.remember(key, actor.userId, o.scope, async () => {
       const refusals: Array<{ field: string | null; code: string }> = [];
-      if (!canManageDevices(actor)) refusals.push({ field: null, code: 'NO_PERMISSION' });
+      if (!o.authorised) refusals.push({ field: null, code: 'NO_PERMISSION' });
       const cat = await this.repo.catalogue(tenantId);
       const kind = (input.kind ?? '').trim();
       if (!cat.deviceKinds.includes(kind)) refusals.push({ field: 'kind', code: 'KIND_UNKNOWN' });

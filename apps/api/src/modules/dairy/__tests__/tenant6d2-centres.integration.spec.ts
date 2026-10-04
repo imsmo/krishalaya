@@ -34,6 +34,7 @@ import { AuditWriter } from '../../../core/audit/audit.writer';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { ColdChainLogRepository } from '../../logistics/repositories/cold-chain-log.repository';
+import { ColdChainOpsRepository } from '../../logistics/repositories/cold-chain-ops.repository';   // PC-56 TENANT-SW-e
 import { ColdChainService } from '../../logistics/services/cold-chain.service';
 
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
@@ -96,7 +97,7 @@ run('PC-56 TENANT-6d-2 · W171 the centres (integration, real Postgres)', () => 
     const mccRepo = new MccCentreRepository(replica as never);
     const unitRepo = new BmcUnitRepository(replica as never);
     custody = new MccOperatorAssignmentRepository(replica as never);
-    const coldChain = new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never));
+    const coldChain = new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never), new ColdChainOpsRepository(replica as never), idem, outbox, audit, config, {} as never, {} as never);
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, custody);
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, new DairyMembershipRepository(replica as never), mccRepo, new DairyMembershipRouteRepository(replica as never));

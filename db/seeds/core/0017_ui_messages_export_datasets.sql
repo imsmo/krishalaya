@@ -53,3 +53,14 @@ INSERT INTO ui_messages (key, language_code, text) VALUES
   ('exports.dataset.esg.metrics', 'hi', 'ESG आँकड़े (बिना हस्ताक्षर)'),
   ('exports.dataset.esg.metrics', 'gu', 'ESG આંકડા (સહી વગર)')
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 TENANT-SW-e] W2534 / W2535: the cold chain on the export plane — one subject's trail and the breaches. UNSIGNED (founder-physical
+-- signing key); the name says so, as ESG's does.
+INSERT INTO ui_messages (key, language_code, text) VALUES
+  ('exports.dataset.logistics.cold_chain_trail', 'en', 'cold-chain trail (unsigned)'),
+  ('exports.dataset.logistics.cold_chain_trail', 'hi', 'कोल्ड-चेन तापमान रिकॉर्ड (बिना हस्ताक्षर)'),
+  ('exports.dataset.logistics.cold_chain_trail', 'gu', 'કોલ્ડ-ચેઇન તાપમાન રેકોર્ડ (સહી વગર)'),
+  ('exports.dataset.logistics.cold_chain_breaches', 'en', 'cold-chain breaches (unsigned)'),
+  ('exports.dataset.logistics.cold_chain_breaches', 'hi', 'कोल्ड-चेन उल्लंघन (बिना हस्ताक्षर)'),
+  ('exports.dataset.logistics.cold_chain_breaches', 'gu', 'કોલ્ડ-ચેઇન ભંગ (સહી વગર)')
+ON CONFLICT DO NOTHING;

@@ -7,7 +7,7 @@ import type { DomainEvent } from './logistics.events';
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;   // HH:MM or HH:MM:SS, 24h
 
 export interface PickupSlotProps {
-  id: string; tenantId: string; sellerUserId: string; weekday: number; startTime: string; endTime: string; isActive: boolean; createdAt?: Date | null;
+  id: string; tenantId: string; sellerUserId: string; weekday: number; startTime: string; endTime: string; isActive: boolean; createdAt?: Date | null; createdUs?: string | null;
 }
 export type PickupSlotPatch = { weekday?: number; startTime?: string; endTime?: string };
 

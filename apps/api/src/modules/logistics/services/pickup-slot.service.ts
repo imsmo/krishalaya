@@ -74,8 +74,8 @@ export class PickupSlotService {
   async list(tenantId: string, sellerUserId: string, q: Omit<QueryPickupSlotDto, 'cursor'> & { cursor?: { c: string; id: string } }) {
     const rows = await this.repo.list(tenantId, { sellerUserId, weekday: q.weekday, activeOnly: q.activeOnly, cursor: q.cursor, limit: q.limit });
     const items = rows.map((s) => this.serialize(s.toProps()));
-    const last = items[items.length - 1];
-    const nextCursor = items.length === q.limit && last ? encodeFleetCursor(last.createdAt, last.id) : null;
+    const last = rows[rows.length - 1]?.toProps();
+    const nextCursor = rows.length === q.limit && last ? encodeFleetCursor(last.createdUs, last.id) : null;
     return { items, nextCursor };
   }
 

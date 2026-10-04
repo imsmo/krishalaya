@@ -36,6 +36,7 @@ import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memor
 import { OpsAlertRepository } from '../../logistics/repositories/ops-alert.repository';
 import { OpsAlertService } from '../../logistics/services/ops-alert.service';
 import { ColdChainLogRepository } from '../../logistics/repositories/cold-chain-log.repository';
+import { ColdChainOpsRepository } from '../../logistics/repositories/cold-chain-ops.repository';   // PC-56 TENANT-SW-e
 import { ColdChainService } from '../../logistics/services/cold-chain.service';
 import { MaskedCallRepository } from '../../communication/repositories/masked-call.repository';
 import { MaskedCallService } from '../../communication/services/masked-call.service';
@@ -99,7 +100,7 @@ run('PC-56 TENANT-6d-5 · the call and the fifteen minutes (integration, real Po
     alerts = new OpsAlertService(uow, outbox, alertRepo);
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, custody);
     units = new BmcUnitService(uow, outbox, idem, metrics, audit, unitRepo, mccRepo);
-    readings = new BmcReadingService(uow, metrics, unitRepo, new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never)));
+    readings = new BmcReadingService(uow, metrics, unitRepo, new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never), new ColdChainOpsRepository(replica as never), idem, outbox, audit, config, {} as never, {} as never));
     // The NOOP masking provider: in a non-production config it returns a synthetic call ref, which is exactly what
     // makes the whole path exercisable without a telco. In production it returns ok:false and nothing is recorded.
     const masked = new MaskedCallService(uow, outbox, idem, metrics, new NoopMaskingGateway(config), new MaskedCallRepository(replica as never));

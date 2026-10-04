@@ -25,8 +25,12 @@ ALTER ROLE kv_relay  WITH LOGIN PASSWORD 'dev';   -- outbox relay / ai-services 
 -- cannot open a DB connection at all. Same weak-dev-password pattern as the three roles above, on purpose.
 ALTER ROLE kv_admin  WITH LOGIN PASSWORD 'dev';   -- admin-api connects as this (BYPASSRLS, god-mode realm)
 
+-- [PC-56 TENANT-SW-e] kv_ingest: the cold-chain device ingest route's role (INGEST_DATABASE_URL). Without it the route answers 503
+-- COLD_CHAIN_INGEST_NOT_CONFIGURED locally. Same weak-dev-password pattern.
+ALTER ROLE kv_ingest WITH LOGIN PASSWORD 'dev';   -- the API's device ingest pool connects as this (0201's grants only)
+
 -- Sanity print: confirm all four can now log in (rolcanlogin = t).
 SELECT rolname, rolcanlogin, rolbypassrls
 FROM pg_roles
-WHERE rolname IN ('kv_app','kv_wallet','kv_relay','kv_admin')
+WHERE rolname IN ('kv_app','kv_wallet','kv_relay','kv_admin','kv_ingest')
 ORDER BY rolname;

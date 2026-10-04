@@ -54,8 +54,8 @@ export const RecordBmcReadingSchema = z.object({
   unitId: z.string().uuid().optional(),
   tempC,
   humidityPct: z.string().regex(/^\d{1,3}(\.\d{1,2})?$/).optional(),
-  /** The sensor's OWN time. Buffered readings arrive late and must keep the moment they were taken (W170's gap card). */
-  recordedAt: z.string().datetime().optional(),
+  // PC-56 TENANT-SW-e: NO `recordedAt` — a reading on the desk route is MANUAL and recorded at the server's time (.strict() refuses the
+  // key by name). A buffered sensor keeps its own time on the signed device ingest route.
 }).strict().refine((v) => (v.deviceRef ? 1 : 0) + (v.unitId ? 1 : 0) === 1, {
   message: 'a reading must name exactly one of deviceRef or unitId',
 });

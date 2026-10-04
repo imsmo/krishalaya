@@ -504,11 +504,11 @@ describe('TENANT-5c · navigation, the chain and the refusals', () => {
     // TENANT-5d added `insights` after `freight`, for the same reason and with the same finding (W244 is linked from
     // nowhere in the canon at all), and closed `overview`.
     const keys = LOGISTICS_NAV.map((i) => i.key);
-    expect(keys).toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'freight', 'insights', 'zones', 'coldChain']);
+    expect(keys).toEqual(['overview', 'shipments', 'carriers', 'vehicles', 'routes', 'freight', 'insights', 'zones', 'coldChain', 'slots']);
     expect(LOGISTICS_NAV.find((i) => i.key === 'freight')).toEqual({ key: 'freight', href: '/logistics/freight', built: true });
     expect(hasKey('logistics.nav.freight')).toBe(true);
-    // this wave added a way in, not a promise; the count later fell to three when 5d built the overview
-    expect(unbuiltCount()).toBe(3);
+    // this wave added a way in, not a promise; the count fell to three when 5d built the overview and to zero in SW-e
+    expect(unbuiltCount()).toBe(0);
   });
 
   it('lights the freight tab on the desk and on the recon detail, and not `/logistics`', () => {

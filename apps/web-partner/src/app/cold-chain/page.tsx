@@ -93,16 +93,10 @@ export default async function ColdChainPage({ searchParams }: { searchParams: { 
               <input type="hidden" name="subjectId" value={scope.subjectId} />
               <label htmlFor="rr-temp" className="kv-field__label">{t.t('net.tempC')}</label>
               <input id="rr-temp" name="tempC" className="kv-input" inputMode="decimal" required placeholder={t.t('net.tempHint')} />
-              <label htmlFor="rr-min" className="kv-field__label">{t.t('net.allowedMinC')}</label>
-              <input id="rr-min" name="allowedMinC" className="kv-input" inputMode="decimal" required />
-              <label htmlFor="rr-max" className="kv-field__label">{t.t('net.allowedMaxC')}</label>
-              <input id="rr-max" name="allowedMaxC" className="kv-input" inputMode="decimal" required />
               <label htmlFor="rr-hum" className="kv-field__label">{t.t('net.humidity')}</label>
               <input id="rr-hum" name="humidityPct" className="kv-input" inputMode="decimal" placeholder={t.t('net.optionalHint')} />
               <label htmlFor="rr-dev" className="kv-field__label">{t.t('net.deviceRef')}</label>
               <input id="rr-dev" name="deviceRef" className="kv-input" maxLength={100} placeholder={t.t('net.optionalHint')} />
-              <label htmlFor="rr-at" className="kv-field__label">{t.t('net.recordedAt')}</label>
-              <input id="rr-at" name="recordedAt" className="kv-input" type="datetime-local" required />
               <button type="submit" className="kv-btn">{t.t('net.recordReadingSubmit')}</button>
             </form>
           </details>

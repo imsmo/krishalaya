@@ -14,14 +14,23 @@ import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
-import { ShipmentPermissions, canManageLogistics } from '../../policies/logistics.policies';
+import { ShipmentPermissions, canManageLogistics, canManageColdChainDevices, DEVICES_MANAGE } from '../../policies/logistics.policies';
+import { decodeKeyset, UUID_RE } from '../../../../shared/pagination/us-keyset';
+import { ExportPlaneService } from '../../../../core/exports-plane/export-plane.service';
+import { COLD_BREACHES_DATASET, COLD_TRAIL_DATASET } from '../../exports/cold-chain.datasets';
+import { BREACH_ACTS } from '../../domain/logistics-ops';
+import { COLD_CHAIN_SUBJECTS } from '../../domain/cold-chain-log.entity';
 import { DeliveryRouteService } from '../../services/delivery-route.service';
 import { ColdChainService } from '../../services/cold-chain.service';
 import { ApproveDeliveryRouteSchema, ApproveDeliveryRouteDto, CreateDeliveryRouteSchema, CreateDeliveryRouteDto, UpdateDeliveryRouteSchema, UpdateDeliveryRouteDto } from '../../dto/create-delivery-route.dto';
 import { QueryDeliveryRouteSchema, QueryDeliveryRouteDto, QueryRouteBoardSchema, QueryRouteBoardDto } from '../../dto/query-delivery-route.dto';
 import { RouteBoardReadModel } from '../../read-models/route-board.read-model';
 import { ZoneSetActiveSchema, ZoneSetActiveDto } from '../../dto/create-delivery-zone.dto';
-import { RecordColdChainSchema, RecordColdChainDto, QueryColdChainSchema, QueryColdChainDto } from '../../dto/cold-chain.dto';
+import {
+  RecordColdChainSchema, RecordColdChainDto, QueryColdChainSchema, QueryColdChainDto, ThresholdSchema, ThresholdDto, SubjectQuerySchema, SubjectQueryDto,
+  BreachListSchema, BreachListDto, BreachActSchema, BreachActDto, RegisterLoggerSchema, RegisterLoggerDto, IssueKeySchema, IssueKeyDto, RevokeKeySchema,
+  ColdExportTrailSchema, ColdExportTrailParams, ColdExportBreachesSchema, ColdExportBreachesParams,
+} from '../../dto/cold-chain.dto';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -109,12 +118,64 @@ const UpdateAlertRuleSchema = z.object({
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('logistics')
 export class ColdChainController {
-  constructor(private readonly coldChain: ColdChainService, private readonly alerts: OpsAlertService) {}
+  constructor(private readonly coldChain: ColdChainService, private readonly alerts: OpsAlertService, private readonly exportsPlane: ExportPlaneService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageLogistics(ctx) }; }
+  private coldActor(ctx: RequestContext, r: Request) { return { userId: ctx.userId, canManage: canManageLogistics(ctx), canManageDevices: canManageColdChainDevices(ctx), ip: ipOf(r) }; }
 
+  /** A MANUAL reading — PC-56 TENANT-SW-e: no band, no time in the body (the strict DTO refuses `allowedMinC/MaxC/recordedAt`); the
+   *  band is copied from the threshold store and the time is the server's; labelled manual; never opens a breach. */
   @Post('readings') @RequirePermissions(ShipmentPermissions.Manage)
   record(@CurrentContext() ctx: RequestContext, @ZodBody(RecordColdChainSchema) dto: RecordColdChainDto) {
     return this.coldChain.record(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
+  }
+
+  // ── PC-56 TENANT-SW-e · W234 / W239 / W240 / W2534–W2538 ──
+  @Post('thresholds') @RequirePermissions(ShipmentPermissions.Manage)
+  setThreshold(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(ThresholdSchema) dto: ThresholdDto) {
+    return this.coldChain.setThreshold(ctx.tenantId, this.coldActor(ctx, r), reqKey(key), dto).then((data) => ({ data }));
+  }
+  @Get('subjects') @RequirePermissions(ShipmentPermissions.Manage)
+  subjects(@CurrentContext() ctx: RequestContext, @Req() r: Request) { return this.coldChain.overview(ctx.tenantId, this.coldActor(ctx, r)).then((data) => ({ data })); }
+  @Get('subjects/:type/:id') @RequirePermissions(ShipmentPermissions.Manage)
+  subject(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('type') type: string, @Param('id') id: string, @ZodQuery(SubjectQuerySchema) q: SubjectQueryDto) {
+    if (!(COLD_CHAIN_SUBJECTS as readonly string[]).includes(type) || !UUID_RE.test(id)) throw new BadRequestError('subject type and id');
+    return this.coldChain.subject(ctx.tenantId, this.coldActor(ctx, r), type as (typeof COLD_CHAIN_SUBJECTS)[number], id, { hours: q.hours, cursor: decodeCursor(q.cursor), limit: q.limit }).then((data) => ({ data }));
+  }
+  @Get('breaches/:id') @RequirePermissions(ShipmentPermissions.Manage)
+  breach(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.coldChain.breach(ctx.tenantId, this.coldActor(ctx, r), id).then((data) => ({ data }));
+  }
+  @Post('breaches/:id/acts/:act') @RequirePermissions(ShipmentPermissions.Manage)
+  breachAct(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Param('act') act: string, @Headers('idempotency-key') key: string, @ZodBody(BreachActSchema) dto: BreachActDto) {
+    if (!UUID_RE.test(id) || !(BREACH_ACTS as readonly string[]).includes(act)) throw new BadRequestError(`act must be one of ${BREACH_ACTS.join(', ')}`);
+    return this.coldChain.act(ctx.tenantId, this.coldActor(ctx, r), id, reqKey(key), act as (typeof BREACH_ACTS)[number], dto).then((data) => ({ data }));
+  }
+  @Get('loggers') @RequirePermissions(ShipmentPermissions.Manage)
+  loggers(@CurrentContext() ctx: RequestContext, @Req() r: Request) { return this.coldChain.loggers(ctx.tenantId, this.coldActor(ctx, r)).then((data) => ({ data })); }
+  @Post('loggers') @RequirePermissions(DEVICES_MANAGE)
+  registerLogger(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(RegisterLoggerSchema) dto: RegisterLoggerDto) {
+    return this.coldChain.registerLogger(ctx.tenantId, this.coldActor(ctx, r), reqKey(key), dto).then((data) => ({ data }));
+  }
+  /** The signing key, SHOWN ONCE in this response (a replay answers `key: null`). */
+  @Post('loggers/:id/keys') @RequirePermissions(DEVICES_MANAGE)
+  issueKey(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(IssueKeySchema) dto: IssueKeyDto) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.coldChain.issueKey(ctx.tenantId, this.coldActor(ctx, r), id, reqKey(key), dto).then((data) => ({ data }));
+  }
+  @Post('loggers/:id/keys/revoke') @RequirePermissions(DEVICES_MANAGE)
+  revokeKey(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(RevokeKeySchema) dto: { reason: string }) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.coldChain.revokeKey(ctx.tenantId, this.coldActor(ctx, r), id, reqKey(key), dto.reason).then((data) => ({ data }));
+  }
+  /** W2534: the trail of one subject on the 6e-2 export plane — UNSIGNED, and the receipt says so. */
+  @Post('exports/trail') @RequirePermissions(ShipmentPermissions.Manage)
+  exportTrail(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(ColdExportTrailSchema) body: ColdExportTrailParams) {
+    return this.exportsPlane.enqueue(ctx.tenantId, { userId: ctx.userId, permissions: ctx.permissions }, reqKey(key), { datasetCode: COLD_TRAIL_DATASET, params: body }, ipOf(r)).then((data) => ({ data }));
+  }
+  @Post('exports/breaches') @RequirePermissions(ShipmentPermissions.Manage)
+  exportBreaches(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(ColdExportBreachesSchema) body: ColdExportBreachesParams) {
+    return this.exportsPlane.enqueue(ctx.tenantId, { userId: ctx.userId, permissions: ctx.permissions }, reqKey(key), { datasetCode: COLD_BREACHES_DATASET, params: body }, ipOf(r)).then((data) => ({ data }));
   }
   // --- PC-55 A6 `ops-alert-rules`: rules CRUD + fired feed. Firing goes through the EXISTING notification
   // spine (one outbox event) — this module adds no delivery channel and cannot bypass quiet hours. ---
@@ -147,9 +208,12 @@ export class ColdChainController {
   // PC-54 W54-12: iot-device-fleet + ops-alerting v1 (read-models over the ledgered readings).
   @Get('devices') @RequirePermissions(ShipmentPermissions.Manage)
   devices(@CurrentContext() ctx: RequestContext) { return this.coldChain.deviceFleet(ctx.tenantId).then((data) => ({ data })); }
+  /** W240 (PC-56 TENANT-SW-e): every BREACH (two consecutive device readings out of band) for 12 months, µs keyset; `hours` kept for
+   *  the older reader and narrows the window. `meta.window` carries the counts, the median alert → action (or refused), the recorded loss. */
   @Get('breaches') @RequirePermissions(ShipmentPermissions.Manage)
-  breaches(@CurrentContext() ctx: RequestContext, @Query('hours') hours?: string, @Query('limit') limit?: string) {
-    return this.coldChain.breaches(ctx.tenantId, Number(hours) || 24, Number(limit) || 100).then((data) => ({ data }));
+  breaches(@CurrentContext() ctx: RequestContext, @Req() r: Request, @ZodQuery(BreachListSchema) q: BreachListDto) {
+    return this.coldChain.breaches(ctx.tenantId, this.coldActor(ctx, r), { hours: q.hours, cursor: decodeKeyset(q.cursor, UUID_RE), limit: q.limit })
+      .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor, window: res.window, refused: res.refused } }));
   }
 
   @Get('readings') @RequirePermissions(ShipmentPermissions.Manage)

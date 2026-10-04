@@ -56,6 +56,7 @@ function toHeader(r: any): FreightInvoiceProps {
     reconStatus: r.recon_status as ReconStatus, invoiceMediaId: r.invoice_media_id ?? null,
     receivedAt: r.received_at, reconciledAt: r.reconciled_at ?? null,
     paymentHold: r.payment_hold === true, payoutId: r.payout_id ?? null, createdAt: r.created_at ?? null,
+    ...(r.received_us ? { receivedUs: r.received_us as string } : {}),
   };
 }
 function toLine(r: any): FreightLineProps {
@@ -161,10 +162,10 @@ export class FreightInvoiceRepository {
     if (q.reconStatus) where += ` AND f.recon_status=${p(q.reconStatus)}`;
     if (q.carrierId) where += ` AND f.carrier_id=${p(q.carrierId)}`;
     if (q.sourceKind) where += ` AND f.source_kind=${p(q.sourceKind)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (f.received_at < ${cc} OR (f.received_at=${cc} AND f.id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (f.received_at < ${cc}::timestamptz OR (f.received_at=${cc}::timestamptz AND f.id < ${ci}::uuid))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT ${H_COLS.split(', ').map((c) => `f.${c.trim()}`).join(', ')},
+      `SELECT ${H_COLS.split(', ').map((c) => `f.${c.trim()}`).join(', ')}, to_char(f.received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS received_us,
               lp2.default_name AS carrier_name, lp2.partner_kind AS carrier_kind,
               (SELECT count(*) FROM freight_invoice_lines l
                 WHERE l.invoice_id = f.id AND l.tenant_id = f.tenant_id AND l.dispute_status = 'disputed' AND l.deleted_at IS NULL)::int AS disputed_lines

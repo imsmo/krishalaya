@@ -217,11 +217,13 @@ describe('PC-56 TENANT-6d-1 · W170 the BMC monitor', () => {
 
   const readingHarness = (over: { unit?: BmcUnit | null; byId?: BmcUnit | null } = {}) => {
     const found = over.unit === undefined ? unit() : over.unit;
+    // PC-56 TENANT-SW-e: the seam no longer takes a band — the DATABASE copies the threshold store's band (for a cooler: the band set
+    // on its bmc_units row, 0.0 … 4.5 here) onto the row and returns it. This mock is that database.
+    const STORE = { minC: 0, maxC: 4.5 };
     const appendForOwner = jest.fn(async (_t: string, input: any) => ({
       id: 'log-1', subjectType: input.subjectType, subjectId: input.subjectId, tempC: input.tempC,
-      // The seam's own arithmetic, mirrored: this is what logistics computes from the band we hand it.
-      isBreach: input.tempC < input.allowedMinC || input.tempC > input.allowedMaxC,
-      recordedAt: input.recordedAt,
+      isBreach: input.tempC < STORE.minC || input.tempC > STORE.maxC, band: STORE, source: 'manual',
+      recordedAt: new Date('2026-08-20T10:00:00Z'),
     }));
     const units = {
       byDeviceRef: jest.fn(async () => found),
@@ -234,14 +236,15 @@ describe('PC-56 TENANT-6d-1 · W170 the BMC monitor', () => {
 
   const dairyActor = { userId: 'desk-1', canManage: true };
 
-  it('hands logistics the TANK\'s band, never one the caller chose', async () => {
+  it('hands logistics NO band at all — the threshold store\'s band comes back from the written row (PC-56 TENANT-SW-e)', async () => {
     const h = readingHarness();
     const r = await h.svc.record('t1', dairyActor as never, { deviceRef: 'dev-1', tempC: '6.9' });
     expect(h.appendForOwner).toHaveBeenCalledTimes(1);
     const [, input] = h.appendForOwner.mock.calls[0];
-    // 0.0 … 4.5 — min_temp_c and target + tolerance, from the unit row (0162).
-    expect(input.allowedMinC).toBe(0);
-    expect(input.allowedMaxC).toBe(4.5);
+    // no band and no time cross the seam: the database copies the store's band (the cooler's own, 0.0 … 4.5) and stamps its clock
+    expect(input.allowedMinC).toBeUndefined();
+    expect(input.allowedMaxC).toBeUndefined();
+    expect(input.recordedAt).toBeUndefined();
     expect(input.subjectType).toBe('bmc_unit');
     expect(input.deviceRef).toBe('dev-1');
     expect(r.isBreach).toBe(true);

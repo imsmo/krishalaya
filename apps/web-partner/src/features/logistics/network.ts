@@ -172,28 +172,23 @@ export function toIsoTimestamp(raw: string | undefined): string {
   return d.toISOString();
 }
 
+// PC-56 TENANT-SW-e (F-13): a reading sent from a session is MANUAL — temperature, humidity, an optional device label and nothing
+// else. The band is copied by the server from the threshold store and the time is the server's; the API's strict DTO refuses
+// allowedMinC / allowedMaxC / recordedAt by name, so this builder no longer sends them. A manual reading never opens a breach.
 export interface RecordReadingBody {
-  subjectType: ColdChainSubject; subjectId: string; tempC: number; humidityPct: number | null;
-  deviceRef: string | null; recordedAt: string; allowedMinC: number; allowedMaxC: number;
+  subjectType: ColdChainSubject; subjectId: string; tempC: number; humidityPct: number | null; deviceRef: string | null;
 }
 export function buildRecordReading(f: {
   subjectType: string; subjectId: string; tempC: string; humidityPct?: string; deviceRef?: string;
-  recordedAt: string; allowedMinC: string; allowedMaxC: string;
 }): RecordReadingBody {
   if (!isColdSubject(f.subjectType)) throw new NetworkError('subjectType');
   if (!UUID_RE.test((f.subjectId ?? '').trim())) throw new NetworkError('subjectId');
-  const allowedMinC = parseTempC(f.allowedMinC, 'allowedMinC');
-  const allowedMaxC = parseTempC(f.allowedMaxC, 'allowedMaxC');
-  if (allowedMinC > allowedMaxC) throw new NetworkError('bandOrder');
   return {
     subjectType: f.subjectType,
     subjectId: f.subjectId.trim(),
     tempC: parseTempC(f.tempC, 'tempC'),
     humidityPct: parseHumidity(f.humidityPct),
     deviceRef: parseDeviceRef(f.deviceRef),
-    recordedAt: toIsoTimestamp(f.recordedAt),
-    allowedMinC,
-    allowedMaxC,
   };
 }
 

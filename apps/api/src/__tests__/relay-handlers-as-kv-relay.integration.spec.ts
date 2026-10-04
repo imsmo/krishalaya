@@ -695,7 +695,11 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
       // PC-56 TENANT-SW-c (0199): claims, conflicts, invites, 2FA, per-tenant session cut-offs, override proposals — kv_app only
       'kyc_claims', 'staff_conflict_declarations', 'staff_invites', 'user_totp', 'user_recovery_codes', 'tenant_session_revocations', 'staff_override_proposals',
       // PC-56 TENANT-SW-d (0200): drafts, setup calls, the ops queue, AGM packs + sections, register imports + lines — kv_app only
-      'tenant_onboarding_drafts', 'setup_call_requests', 'platform_ops_notices', 'agm_packs', 'agm_pack_sections', 'share_register_imports', 'share_register_import_rows']) {
+      'tenant_onboarding_drafts', 'setup_call_requests', 'platform_ops_notices', 'agm_packs', 'agm_pack_sections', 'share_register_imports', 'share_register_import_rows',
+      // PC-56 TENANT-SW-e (0201): slot proposals, the Village Run, the parcel fee, the cold-chain store / keys / nonces / breaches / silences —
+      // kv_app only (the breach and the fee are written by SECURITY DEFINER triggers, so the relay needs nothing on them either)
+      'pickup_slot_proposals', 'route_drop_points', 'route_runs', 'parcel_handovers', 'parcel_handover_fees', 'cold_chain_thresholds', 'device_keys',
+      'cold_chain_ingest_nonces', 'cold_chain_breaches', 'cold_chain_device_silences']) {
       for (const p of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) expect(`${t}:${p}:${await priv(t, p)}`).toBe(`${t}:${p}:false`);
     }
     expect(await priv('insurance_policies', 'UPDATE')).toBe(false);
@@ -766,6 +770,34 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     expect(await priv('SELECT')).toBe(true);
     for (const p of ['INSERT', 'UPDATE', 'DELETE']) expect(`${p}:${await priv(p)}`).toBe(`${p}:false`);
   }, 60_000);
+
+  // ── PC-56 TENANT-SW-e: the cold-chain watch (silence > 15 min · buyer offer ≥ 15 min) and the slot-proposal expiry clock sweep on the kv_relay
+  //    pool (tenants only) and work per tenant in kv_app's UoW. The world gets a registered logger with an active key that last spoke 20 minutes
+  //    ago and a proposal 8 days old, so each sweep reaches its write: one silence flagged (once — a second sweep adds nothing), one expired. ──
+  it('SW-e · the cold-chain watch and the slot-proposal expiry sweep on the kv_relay pool without 42501, and reach their writes', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ColdChainWatchJob, SlotProposalExpiryJob } = require('../modules/logistics/jobs/logistics-ops.jobs') as typeof import('../modules/logistics/jobs/logistics-ops.jobs');
+    const deviceId = randomUUID(); const subjectId = randomUUID(); const proposalId = randomUUID();
+    const c = await admin.connect();
+    try {
+      // fixtures as the services write them (triggers off for these inserts — the born-state rules are not this gate's subject)
+      await c.query('BEGIN'); await c.query('SET LOCAL session_replication_role = replica');
+      await c.query(`INSERT INTO twin_devices (id, tenant_id, kind_code, serial, status, registered_by, last_reading_at) VALUES ($1,$2,'cold_chain_logger',$3,'registered',$4, now() - interval '20 minutes')`, [deviceId, w.tenant, `GATE-${deviceId.slice(0, 8)}`, w.seller]);
+      await c.query(`INSERT INTO device_keys (tenant_id, device_id, key_enc, key_hint, subject_type, subject_id, issued_by, issue_reason, status)
+                     VALUES ($1,$2,'v2.gate','gate','vaccine_box',$3,$4,'relay gate logger key','active')`, [w.tenant, deviceId, subjectId, w.seller]);
+      await c.query(`INSERT INTO pickup_slot_proposals (id, tenant_id, seller_user_id, proposed_by, slots, reason, status, created_at, expires_at)
+                     VALUES ($1,$2,$3,$4,'[{"weekday":2,"start":"09:00","end":"11:00"}]'::jsonb,'relay gate proposal','proposed', now() - interval '8 days', now() - interval '1 day')`, [proposalId, w.tenant, w.seller, w.buyer]);
+      await c.query('COMMIT');
+    } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
+    const watch = await app.get(ColdChainWatchJob).sweep(relayPool, [w.tenant]);
+    expect(watch).toMatchObject({ tenants: 1, failed: 0 });
+    expect(await count(w, `SELECT count(*) n FROM cold_chain_device_silences WHERE device_id=$1 AND resolved_at IS NULL`, [deviceId])).toBe(1);
+    expect((await app.get(ColdChainWatchJob).sweep(relayPool, [w.tenant])).failed).toBe(0);
+    expect(await count(w, `SELECT count(*) n FROM cold_chain_device_silences WHERE device_id=$1`, [deviceId])).toBe(1);   // flagged once
+    const exp = await app.get(SlotProposalExpiryJob).sweep(relayPool, [w.tenant]);
+    expect(exp).toMatchObject({ tenants: 1, failed: 0 });
+    expect(await q1(w, `SELECT status FROM pickup_slot_proposals WHERE id=$1`, [proposalId])).toEqual({ status: 'expired' });
+  }, 120_000);
 
   // ── B4 · END TO END: the REAL registry (every handler of the event, in boot order), the REAL dispatcher, LOGGED IN as kv_relay ──
   it('B4 · orders.order_confirmed through the FULL registry as kv_relay: published, ONE shipment AND ONE trade invoice; a redelivery adds nothing', async () => {

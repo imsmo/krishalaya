@@ -9,7 +9,7 @@ const MAX_CAPACITY_KG = 100000;        // 100 t sanity cap
 
 export interface VehicleProps {
   id: string; tenantId: string; partnerId: string; regNo: string; vehicleTypeId: string | null;
-  capacityKg: number | null; isRefrigerated: boolean; rcDocId: string | null; isActive: boolean; createdAt?: Date | null;
+  capacityKg: number | null; isRefrigerated: boolean; rcDocId: string | null; isActive: boolean; createdAt?: Date | null; createdUs?: string | null;
 }
 export type VehiclePatch = { vehicleTypeId?: string | null; capacityKg?: number | null; isRefrigerated?: boolean; rcDocId?: string | null };
 

@@ -667,10 +667,16 @@ describe('TENANT-5b · the cadence job that was built and never registered', () 
     // PC-56 TENANT-SW-a: + the POD 2-hour auto-clear clock (registered unconditionally, like 13b's proposal clock) and the zone applier
     const podAutoClear = { name: 'logistics-pod-auto-clear', intervalMs: 300_000, run: jest.fn() };
     const appliers = { register: jest.fn() }; const zones = { name: 'logistics.delivery_zone_proposals' };
-    new LogisticsModule(outbox as never, jobs as never, config as never, orderConfirmed as never, opsAlerts as never, rcParking as never, podAutoClear as never, zones as never, appliers as never).onModuleInit();
+    // PC-56 TENANT-SW-e: + the cold-chain watch and the slot-proposal clock (unconditional), + the two cold-chain export datasets
+    const coldWatch = { name: 'logistics-cold-chain-watch', intervalMs: 60_000, run: jest.fn() };
+    const slotExpiry = { name: 'logistics-slot-proposal-expiry', intervalMs: 900_000, run: jest.fn() };
+    const datasets = { register: jest.fn() }; const trail = { code: 'logistics.cold_chain_trail' }; const breaches = { code: 'logistics.cold_chain_breaches' };
+    new LogisticsModule(outbox as never, jobs as never, config as never, orderConfirmed as never, opsAlerts as never, rcParking as never, podAutoClear as never, zones as never, appliers as never,
+      coldWatch as never, slotExpiry as never, datasets as never, trail as never, breaches as never).onModuleInit();
     expect(outbox.register).toHaveBeenCalledWith(orderConfirmed);
     const registered = jobs.register.mock.calls.map((c) => (c[0] as { name: string }).name);
-    expect(registered).toEqual(['logistics-pod-auto-clear', 'ops-alerts', 'logistics-rc-expiry-parking']);
+    expect(registered).toEqual(['logistics-cold-chain-watch', 'logistics-slot-proposal-expiry', 'logistics-pod-auto-clear', 'ops-alerts', 'logistics-rc-expiry-parking']);
+    expect(datasets.register.mock.calls.map((c) => (c[0] as { code: string }).code)).toEqual(['logistics.cold_chain_trail', 'logistics.cold_chain_breaches']);
     expect(appliers.register).toHaveBeenCalledWith(zones);
   });
 
@@ -679,9 +685,11 @@ describe('TENANT-5b · the cadence job that was built and never registered', () 
     const config = { jobs: { logisticsFleet: { enabled: false, rcParkingIntervalMs: 1, rcParkingBatchSize: 1 } } };
     new LogisticsModule({ register: jest.fn() } as never, jobs as never, config as never,
       { eventType: 'x', handle: jest.fn() } as never, { name: 'a', intervalMs: 1, run: jest.fn() } as never, { name: 'b', intervalMs: 1, run: jest.fn() } as never,
-      { name: 'logistics-pod-auto-clear', intervalMs: 1, run: jest.fn() } as never, {} as never, { register: jest.fn() } as never).onModuleInit();
-    // the env gate governs the fleet jobs only; the POD clock is unconditional (its rows exist only with pod_review ON)
-    expect(jobs.register.mock.calls.map((c) => (c[0] as { name: string }).name)).toEqual(['logistics-pod-auto-clear']);
+      { name: 'logistics-pod-auto-clear', intervalMs: 1, run: jest.fn() } as never, {} as never, { register: jest.fn() } as never,
+      { name: 'logistics-cold-chain-watch', intervalMs: 1, run: jest.fn() } as never, { name: 'logistics-slot-proposal-expiry', intervalMs: 1, run: jest.fn() } as never,
+      { register: jest.fn() } as never, {} as never, {} as never).onModuleInit();
+    // the env gate governs the fleet jobs only; the POD clock and SW-e's two clocks are unconditional (their rows exist only with their flags ON)
+    expect(jobs.register.mock.calls.map((c) => (c[0] as { name: string }).name)).toEqual(['logistics-cold-chain-watch', 'logistics-slot-proposal-expiry', 'logistics-pod-auto-clear']);
   });
 });
 

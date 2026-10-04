@@ -88,8 +88,8 @@ export class VehicleService {
   async list(tenantId: string, q: Omit<QueryVehicleDto, 'cursor'> & { cursor?: { c: string; id: string } }) {
     const rows = await this.repo.list(tenantId, { partnerId: q.partnerId, activeOnly: q.activeOnly, cursor: q.cursor, limit: q.limit });
     const items = rows.map((v) => this.serialize(v.toProps()));
-    const last = items[items.length - 1];
-    const nextCursor = items.length === q.limit && last ? encodeFleetCursor(last.createdAt, last.id) : null;
+    const last = rows[rows.length - 1];
+    const nextCursor = rows.length === q.limit && last ? encodeFleetCursor(last.toProps().createdUs, last.toProps().id) : null;
     return { items, nextCursor };
   }
 

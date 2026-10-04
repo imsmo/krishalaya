@@ -928,6 +928,54 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('tenant.setup_call_requested','slotEnd','setup_call_requests.preferred_slot_end in Asia/Kolkata, YYYY-MM-DD HH:MM','2026-10-12 11:30',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 TENANT-SW-e · LOGISTICS OPS (catalogue 0201). Push + in-app × en/hi/gu. Recipients travel in the payload (`recipientUserIds`).
+-- slot_proposed: the member is told the desk proposed windows — nothing changes until they accept (app or the OTP link). cold_chain_breach:
+-- written by the DATABASE when a breach opens (two consecutive device readings out of band). buyer_offer: a shipment breach out of range
+-- ≥ 15 min. device_silent: a logger silent > 15 min — an alert, never a call (no voice channel). Above the version backfill (SW-c's lesson).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('logistics.slot_proposed','push','en',NULL,'Pickup windows proposed for you','Your cooperative''s pickup desk proposed {{count}} pickup window(s) for you. Nothing changes until you accept: answer in the app, or open {{link}} — a code is sent to your phone.',NULL,true),
+ ('logistics.slot_proposed','push','hi',NULL,'आपके लिए पिकअप समय प्रस्तावित','आपकी समिति के पिकअप डेस्क ने आपके लिए {{count}} पिकअप समय प्रस्तावित किए हैं। आपकी स्वीकृति तक कुछ नहीं बदलेगा: ऐप में जवाब दें, या {{link}} खोलें — आपके फ़ोन पर एक कोड भेजा जाएगा।',NULL,true),
+ ('logistics.slot_proposed','push','gu',NULL,'તમારા માટે પિકઅપ સમય સૂચવાયા','તમારી મંડળીના પિકઅપ ડેસ્કે તમારા માટે {{count}} પિકઅપ સમય સૂચવ્યા છે. તમે સ્વીકારો નહીં ત્યાં સુધી કંઈ બદલાશે નહીં: એપમાં જવાબ આપો, અથવા {{link}} ખોલો — તમારા ફોન પર કોડ મોકલાશે.',NULL,true),
+ ('logistics.slot_proposed','inapp','en',NULL,'Pickup windows proposed for you','Your cooperative''s pickup desk proposed {{count}} pickup window(s) for you. Nothing changes until you accept: answer in the app, or open {{link}} — a code is sent to your phone.',NULL,true),
+ ('logistics.slot_proposed','inapp','hi',NULL,'आपके लिए पिकअप समय प्रस्तावित','आपकी समिति के पिकअप डेस्क ने आपके लिए {{count}} पिकअप समय प्रस्तावित किए हैं। आपकी स्वीकृति तक कुछ नहीं बदलेगा: ऐप में जवाब दें, या {{link}} खोलें — आपके फ़ोन पर एक कोड भेजा जाएगा।',NULL,true),
+ ('logistics.slot_proposed','inapp','gu',NULL,'તમારા માટે પિકઅપ સમય સૂચવાયા','તમારી મંડળીના પિકઅપ ડેસ્કે તમારા માટે {{count}} પિકઅપ સમય સૂચવ્યા છે. તમે સ્વીકારો નહીં ત્યાં સુધી કંઈ બદલાશે નહીં: એપમાં જવાબ આપો, અથવા {{link}} ખોલો — તમારા ફોન પર કોડ મોકલાશે.',NULL,true),
+ ('logistics.cold_chain_breach','push','en',NULL,'Cold-chain breach on {{subjectRef}}','Two readings in a row were out of range on {{subjectRef}}: {{peakC}} °C against {{bandMinC}}–{{bandMaxC}} °C. Act now and record what you did.',NULL,true),
+ ('logistics.cold_chain_breach','push','hi',NULL,'{{subjectRef}} पर कोल्ड-चेन उल्लंघन','{{subjectRef}} पर लगातार दो रीडिंग सीमा से बाहर रहीं: {{peakC}} °C, सीमा {{bandMinC}}–{{bandMaxC}} °C। तुरंत कार्रवाई करें और जो किया उसे दर्ज करें।',NULL,true),
+ ('logistics.cold_chain_breach','push','gu',NULL,'{{subjectRef}} પર કોલ્ડ-ચેઇન ભંગ','{{subjectRef}} પર સતત બે રીડિંગ મર્યાદાની બહાર રહ્યા: {{peakC}} °C, મર્યાદા {{bandMinC}}–{{bandMaxC}} °C. તરત પગલાં લો અને શું કર્યું તે નોંધો.',NULL,true),
+ ('logistics.cold_chain_breach','inapp','en',NULL,'Cold-chain breach on {{subjectRef}}','Two readings in a row were out of range on {{subjectRef}}: {{peakC}} °C against {{bandMinC}}–{{bandMaxC}} °C. Act now and record what you did.',NULL,true),
+ ('logistics.cold_chain_breach','inapp','hi',NULL,'{{subjectRef}} पर कोल्ड-चेन उल्लंघन','{{subjectRef}} पर लगातार दो रीडिंग सीमा से बाहर रहीं: {{peakC}} °C, सीमा {{bandMinC}}–{{bandMaxC}} °C। तुरंत कार्रवाई करें और जो किया उसे दर्ज करें।',NULL,true),
+ ('logistics.cold_chain_breach','inapp','gu',NULL,'{{subjectRef}} પર કોલ્ડ-ચેઇન ભંગ','{{subjectRef}} પર સતત બે રીડિંગ મર્યાદાની બહાર રહ્યા: {{peakC}} °C, મર્યાદા {{bandMinC}}–{{bandMaxC}} °C. તરત પગલાં લો અને શું કર્યું તે નોંધો.',NULL,true),
+ ('logistics.cold_chain_buyer_offer','push','en',NULL,'Your shipment {{subjectRef}} left its temperature range','Your shipment {{subjectRef}} was out of its {{bandMinC}}–{{bandMaxC}} °C range for over {{minutes}} minutes (peak {{peakC}} °C). Your call: accept, accept with a test, or reject — answer in the app.',NULL,true),
+ ('logistics.cold_chain_buyer_offer','push','hi',NULL,'आपका शिपमेंट {{subjectRef}} तापमान सीमा से बाहर गया','आपका शिपमेंट {{subjectRef}} {{minutes}} मिनट से अधिक समय तक {{bandMinC}}–{{bandMaxC}} °C सीमा से बाहर रहा (अधिकतम {{peakC}} °C)। निर्णय आपका: स्वीकार करें, जाँच के साथ स्वीकार करें, या अस्वीकार करें — ऐप में जवाब दें।',NULL,true),
+ ('logistics.cold_chain_buyer_offer','push','gu',NULL,'તમારું શિપમેન્ટ {{subjectRef}} તાપમાન મર્યાદાની બહાર ગયું','તમારું શિપમેન્ટ {{subjectRef}} {{minutes}} મિનિટથી વધુ સમય {{bandMinC}}–{{bandMaxC}} °C મર્યાદાની બહાર રહ્યું (મહત્તમ {{peakC}} °C). નિર્ણય તમારો: સ્વીકારો, તપાસ સાથે સ્વીકારો, અથવા નકારો — એપમાં જવાબ આપો.',NULL,true),
+ ('logistics.cold_chain_buyer_offer','inapp','en',NULL,'Your shipment {{subjectRef}} left its temperature range','Your shipment {{subjectRef}} was out of its {{bandMinC}}–{{bandMaxC}} °C range for over {{minutes}} minutes (peak {{peakC}} °C). Your call: accept, accept with a test, or reject — answer in the app.',NULL,true),
+ ('logistics.cold_chain_buyer_offer','inapp','hi',NULL,'आपका शिपमेंट {{subjectRef}} तापमान सीमा से बाहर गया','आपका शिपमेंट {{subjectRef}} {{minutes}} मिनट से अधिक समय तक {{bandMinC}}–{{bandMaxC}} °C सीमा से बाहर रहा (अधिकतम {{peakC}} °C)। निर्णय आपका: स्वीकार करें, जाँच के साथ स्वीकार करें, या अस्वीकार करें — ऐप में जवाब दें।',NULL,true),
+ ('logistics.cold_chain_buyer_offer','inapp','gu',NULL,'તમારું શિપમેન્ટ {{subjectRef}} તાપમાન મર્યાદાની બહાર ગયું','તમારું શિપમેન્ટ {{subjectRef}} {{minutes}} મિનિટથી વધુ સમય {{bandMinC}}–{{bandMaxC}} °C મર્યાદાની બહાર રહ્યું (મહત્તમ {{peakC}} °C). નિર્ણય તમારો: સ્વીકારો, તપાસ સાથે સ્વીકારો, અથવા નકારો — એપમાં જવાબ આપો.',NULL,true),
+ ('logistics.cold_chain_device_silent','push','en',NULL,'Logger {{deviceSerial}} stopped reporting','Cold-chain logger {{deviceSerial}} on {{subjectRef}} has not reported for over {{minutes}} minutes. Check the device and the cargo. (This is an alert — the platform does not place calls.)',NULL,true),
+ ('logistics.cold_chain_device_silent','push','hi',NULL,'लॉगर {{deviceSerial}} ने रिपोर्ट करना बंद किया','{{subjectRef}} पर कोल्ड-चेन लॉगर {{deviceSerial}} ने {{minutes}} मिनट से अधिक समय से रिपोर्ट नहीं की है। डिवाइस और माल जाँचें। (यह एक सूचना है — प्लेटफ़ॉर्म कॉल नहीं करता।)',NULL,true),
+ ('logistics.cold_chain_device_silent','push','gu',NULL,'લોગર {{deviceSerial}} એ રિપોર્ટ કરવાનું બંધ કર્યું','{{subjectRef}} પરના કોલ્ડ-ચેઇન લોગર {{deviceSerial}} એ {{minutes}} મિનિટથી વધુ સમયથી રિપોર્ટ કર્યું નથી. ઉપકરણ અને માલ તપાસો. (આ એક સૂચના છે — પ્લેટફોર્મ કૉલ કરતું નથી.)',NULL,true),
+ ('logistics.cold_chain_device_silent','inapp','en',NULL,'Logger {{deviceSerial}} stopped reporting','Cold-chain logger {{deviceSerial}} on {{subjectRef}} has not reported for over {{minutes}} minutes. Check the device and the cargo. (This is an alert — the platform does not place calls.)',NULL,true),
+ ('logistics.cold_chain_device_silent','inapp','hi',NULL,'लॉगर {{deviceSerial}} ने रिपोर्ट करना बंद किया','{{subjectRef}} पर कोल्ड-चेन लॉगर {{deviceSerial}} ने {{minutes}} मिनट से अधिक समय से रिपोर्ट नहीं की है। डिवाइस और माल जाँचें। (यह एक सूचना है — प्लेटफ़ॉर्म कॉल नहीं करता।)',NULL,true),
+ ('logistics.cold_chain_device_silent','inapp','gu',NULL,'લોગર {{deviceSerial}} એ રિપોર્ટ કરવાનું બંધ કર્યું','{{subjectRef}} પરના કોલ્ડ-ચેઇન લોગર {{deviceSerial}} એ {{minutes}} મિનિટથી વધુ સમયથી રિપોર્ટ કર્યું નથી. ઉપકરણ અને માલ તપાસો. (આ એક સૂચના છે — પ્લેટફોર્મ કૉલ કરતું નથી.)',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('logistics.slot_proposed','count','jsonb_array_length(pickup_slot_proposals.slots)','2',true),
+ ('logistics.slot_proposed','link','<console>/slot-proposal/<id> (TENANT_CONSOLE_BASE_URL)','https://console.example/slot-proposal/0190…',true),
+ ('logistics.cold_chain_breach','subjectRef','the subject id, first 8 hex upper-case','01A2B3C4',true),
+ ('logistics.cold_chain_breach','peakC','cold_chain_breaches.peak_c','7.80',true),
+ ('logistics.cold_chain_breach','bandMinC','cold_chain_breaches.band_min_c (copied at write)','2.00',true),
+ ('logistics.cold_chain_breach','bandMaxC','cold_chain_breaches.band_max_c (copied at write)','8.00',true),
+ ('logistics.cold_chain_buyer_offer','subjectRef','the shipment id, first 8 hex upper-case','01A2B3C4',true),
+ ('logistics.cold_chain_buyer_offer','peakC','cold_chain_breaches.peak_c','7.80',true),
+ ('logistics.cold_chain_buyer_offer','bandMinC','cold_chain_breaches.band_min_c','2.00',true),
+ ('logistics.cold_chain_buyer_offer','bandMaxC','cold_chain_breaches.band_max_c','8.00',true),
+ ('logistics.cold_chain_buyer_offer','minutes','BUYER_OFFER_AFTER_MINUTES (15, canon W239)','15',true),
+ ('logistics.cold_chain_device_silent','deviceSerial','twin_devices.serial','LOG-0042',true),
+ ('logistics.cold_chain_device_silent','subjectRef','the subject id, first 8 hex upper-case','01A2B3C4',true),
+ ('logistics.cold_chain_device_silent','minutes','COLD_CHAIN_SILENCE_MINUTES (15, canon W234)','15',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

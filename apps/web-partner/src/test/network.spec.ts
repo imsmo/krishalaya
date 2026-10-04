@@ -81,12 +81,14 @@ const tests: Array<[string, () => void]> = [
   ['toIsoTimestamp bad → throws', () => throws(() => toIsoTimestamp('24/06/2026'), 'recordedAt', 'dt')],
   // record reading
   ['buildRecordReading full', () => {
-    const b = buildRecordReading({ subjectType: 'shipment', subjectId: UUID, tempC: '-18', humidityPct: '40', deviceRef: 'probe-1', recordedAt: '2026-06-24T10:00', allowedMinC: '-20', allowedMaxC: '-15' });
-    if (b.subjectType !== 'shipment' || b.tempC !== -18 || b.humidityPct !== 40 || b.deviceRef !== 'probe-1' || b.allowedMinC !== -20 || b.allowedMaxC !== -15 || !b.recordedAt.endsWith('Z')) throw new Error(JSON.stringify(b));
+    const b = buildRecordReading({ subjectType: 'shipment', subjectId: UUID, tempC: '-18', humidityPct: '40', deviceRef: 'probe-1' });
+    if (b.subjectType !== 'shipment' || b.tempC !== -18 || b.humidityPct !== 40 || b.deviceRef !== 'probe-1') throw new Error(JSON.stringify(b));
+    // PC-56 TENANT-SW-e: no band and no time leave the form — the server owns both
+    if ('allowedMinC' in b || 'allowedMaxC' in b || 'recordedAt' in b) throw new Error(JSON.stringify(b));
   }],
-  ['buildRecordReading bad subject → throws', () => throws(() => buildRecordReading({ subjectType: 'truck', subjectId: UUID, tempC: '4', recordedAt: '2026-06-24T10:00', allowedMinC: '2', allowedMaxC: '8' }), 'subjectType', 'recSubj')],
-  ['buildRecordReading bad subjectId → throws', () => throws(() => buildRecordReading({ subjectType: 'shipment', subjectId: 'x', tempC: '4', recordedAt: '2026-06-24T10:00', allowedMinC: '2', allowedMaxC: '8' }), 'subjectId', 'recSid')],
-  ['buildRecordReading band inverted → throws', () => throws(() => buildRecordReading({ subjectType: 'shipment', subjectId: UUID, tempC: '4', recordedAt: '2026-06-24T10:00', allowedMinC: '8', allowedMaxC: '2' }), 'bandOrder', 'recBand')],
+  ['buildRecordReading bad subject → throws', () => throws(() => buildRecordReading({ subjectType: 'truck', subjectId: UUID, tempC: '4' }), 'subjectType', 'recSubj')],
+  ['buildRecordReading bad subjectId → throws', () => throws(() => buildRecordReading({ subjectType: 'shipment', subjectId: 'x', tempC: '4' }), 'subjectId', 'recSid')],
+  ['buildRecordReading bad temperature → throws', () => throws(() => buildRecordReading({ subjectType: 'shipment', subjectId: UUID, tempC: 'warm' }), 'tempC', 'recTemp')],
   // cold-chain query
   ['buildColdChainQuery nothing → null', () => { if (buildColdChainQuery({}) !== null) throw new Error('x'); }],
   ['buildColdChainQuery valid', () => { const q = buildColdChainQuery({ subjectType: 'bmc_unit', subjectId: UUID, breachOnly: 'true' }); if (!q || q.subjectType !== 'bmc_unit' || q.breachOnly !== true) throw new Error(JSON.stringify(q)); }],

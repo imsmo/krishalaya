@@ -110,7 +110,7 @@ export class RouteBoardReadModel {
       const last = rows[rows.length - 1];
       return {
         items,
-        nextCursor: rows.length === q.limit && last ? encodeFleetCursor(last.createdAt ?? null, last.id) : null,
+        nextCursor: rows.length === q.limit && last ? encodeFleetCursor(last.createdUs, last.id) : null,
         counts, windowDays: TRAFFIC_WINDOW_DAYS,
       };
     });

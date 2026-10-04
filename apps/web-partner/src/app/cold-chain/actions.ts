@@ -1,8 +1,8 @@
 'use server';
 // apps/web-partner/src/app/cold-chain/actions.ts · record a reefer/vaccine temperature reading — the ONLY place the
 // partner session writes for the logistics/cold-chain path. Readings are APPEND-ONLY telemetry (each is a distinct
-// timestamped fact), so NO Idempotency-Key (mirrors the controller). The API recomputes is_breach from the allowed
-// band. SdkError → localized token. 'use server' files export ONLY async functions.
+// timestamped fact), so NO Idempotency-Key (mirrors the controller). PC-56 TENANT-SW-e: the reading is MANUAL — no band and no
+// time leave this form (the server copies the band from the threshold store and stamps its own time). SdkError → localized token. 'use server' files export ONLY async functions.
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requirePartner } from '../../lib/session';
@@ -32,8 +32,7 @@ export async function recordReadingAction(formData: FormData): Promise<void> {
   try {
     body = buildRecordReading({
       subjectType, subjectId, tempC: str(formData, 'tempC'), humidityPct: opt(formData, 'humidityPct'),
-      deviceRef: opt(formData, 'deviceRef'), recordedAt: str(formData, 'recordedAt'),
-      allowedMinC: str(formData, 'allowedMinC'), allowedMaxC: str(formData, 'allowedMaxC'),
+      deviceRef: opt(formData, 'deviceRef'),
     });
   } catch (e) { redirect(`/cold-chain?${scope}&error=${inputErrorKey(e)}`); }
   try { await partnerClient().request('POST', 'logistics/cold-chain/readings', { body }); }

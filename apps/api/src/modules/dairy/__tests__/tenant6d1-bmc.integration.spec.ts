@@ -34,6 +34,7 @@ import { AuditWriter } from '../../../core/audit/audit.writer';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { ColdChainLogRepository } from '../../logistics/repositories/cold-chain-log.repository';
+import { ColdChainOpsRepository } from '../../logistics/repositories/cold-chain-ops.repository';   // PC-56 TENANT-SW-e
 import { ColdChainService } from '../../logistics/services/cold-chain.service';
 import { OpsAlertRepository } from '../../logistics/repositories/ops-alert.repository';
 import { OpsAlertService } from '../../logistics/services/ops-alert.service';
@@ -79,7 +80,7 @@ run('PC-56 TENANT-6d-1 · W170 the tank (integration, real Postgres)', () => {
 
     const mccRepo = new MccCentreRepository(replica as never);
     unitRepo = new BmcUnitRepository(replica as never);
-    const coldChain = new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never));
+    const coldChain = new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never), new ColdChainOpsRepository(replica as never), idem, outbox, audit, config, {} as never, {} as never);
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     units = new BmcUnitService(uow, outbox, idem, metrics, audit, unitRepo, mccRepo);
