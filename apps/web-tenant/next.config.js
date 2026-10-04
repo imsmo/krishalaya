@@ -50,7 +50,9 @@ const nextConfig = {
     // PC-56 TENANT-13c: the whole developer area (an API key is shown once there) and the integrations pages (a provider credential is typed
     // there) carry the same pair.
     const secretBearing = ['/settings/developers/webhooks', '/settings/developers/webhooks/:path*', '/settings/developers', '/settings/developers/:path*',
-      '/settings/integrations', '/settings/integrations/:path*'].map((source) => ({
+      '/settings/integrations', '/settings/integrations/:path*',
+      // PC-56 TENANT-SW-c: the 2FA secret / recovery codes (shown once) and the invite token in /invite's address
+      '/me/security', '/me/security/:path*', '/invite', '/invite/:path*'].map((source) => ({
       source,
       headers: [
         { key: 'Cache-Control', value: 'no-store, max-age=0' },

@@ -62,6 +62,8 @@ import { ImpersonationGate } from './auth/impersonation.gate';
 import { ImpersonationReadOnlyGuard } from './auth/impersonation-read-only.guard';
 import { AuditorReadOnlyGuard } from './auth/auditor-read-only.guard';
 import { ImpersonationInterceptor } from './auth/impersonation.interceptor';
+// PC-56 TENANT-SW-c: the per-tenant session cut-off (removed from the team) and the staff-2FA requirement, on every request.
+import { SessionPostureGuard, SessionPostureService } from './auth/session-posture.guard';
 import { RequestIdMiddleware } from './http/request-id.middleware';
 import { SecurityHeadersMiddleware } from './http/security-headers.middleware';
 import { HttpLogMiddleware } from './http/http-log.middleware';
@@ -145,6 +147,10 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     // three carve-outs are named on their routes (`@AuditorReadAct`) and enumerated by a spec over the real router.
     { provide: APP_GUARD, useClass: AuditorReadOnlyGuard },
     { provide: APP_INTERCEPTOR, useClass: ImpersonationInterceptor },
+    // PC-56 TENANT-SW-c. GLOBAL: a removed staff member's old access token (SESSION_REVOKED) and a staff session without the 2FA
+    // its organisation requires (TWO_FACTOR_REQUIRED) are refused on every route; the exemptions are named on their routes.
+    SessionPostureService,
+    { provide: APP_GUARD, useClass: SessionPostureGuard },
   ],
   exports: [
     OUTBOX_WRITER, QUOTA_SERVICE, IDEMPOTENCY_SERVICE, METRICS, PromMetrics,
@@ -158,6 +164,7 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     HttpLogMiddleware,
     TokenService, TOKEN_SERVICE, OtpService, OTP_SERVICE, RefreshTokenService,
     RoleCacheService, ROLE_CACHE_SERVICE, SMS_SENDER,
+    SessionPostureService,
     ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule, FeatureFlagsModule, I18nModule,
   ],
 })

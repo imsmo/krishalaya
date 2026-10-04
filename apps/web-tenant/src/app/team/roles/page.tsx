@@ -78,7 +78,7 @@ export default async function RolesPage({ searchParams }: { searchParams: { ok?:
             { header: t.t('roles.assignments.role'), cell: (a) => a.roleCode },
             { header: t.t('roles.assignments.status'), cell: (a) => a.approvedAt ? <span className="kv-badge">{t.t('roles.active')}</span> : <span className="kv-badge">{t.t('roles.pending')}</span> },
             { header: '', cell: (a) => (
-              <form action={revokeRoleAction}><input type="hidden" name="id" value={a.id} /><button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">{t.t('roles.revoke')}</button></form>
+              <form action={revokeRoleAction}><input type="hidden" name="id" value={a.id} /><input className="kv-input" name="reason" required minLength={10} maxLength={500} aria-label={t.t('roles.reason')} placeholder={t.t('roles.reason')} /><button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">{t.t('roles.revoke')}</button></form>
             ) },
           ]}
         />
@@ -105,6 +105,9 @@ export default async function RolesPage({ searchParams }: { searchParams: { ok?:
               <option value="true">{t.t('roles.override.grant')}</option>
               <option value="false">{t.t('roles.override.deny')}</option>
             </select>
+          </label>
+          <label className="kv-label">{t.t('roles.reason')}
+            <textarea className="kv-input" name="reason" required minLength={10} maxLength={500} rows={2} />
           </label>
           <button type="submit" className="kv-btn">{t.t('roles.override.submit')}</button>
         </form>

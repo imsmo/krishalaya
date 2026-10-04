@@ -14,7 +14,7 @@ import { PermissionService } from '../../services/permission.service';
 import { UserTenantRoleService } from '../../services/user-tenant-role.service';
 import { QueryRoleSchema, QueryRoleDto } from '../../dto/query-role.dto';
 import { QueryUserTenantRoleSchema, QueryUserTenantRoleDto } from '../../dto/query-user-tenant-role.dto';
-import { AssignRoleSchema, AssignRoleDto, StaffOverrideSchema, StaffOverrideDto } from '../../dto/create-user-tenant-role.dto';
+import { AssignRoleSchema, AssignRoleDto, StaffOverrideSchema, StaffOverrideDto, RevokeAssignmentSchema, RevokeAssignmentDto, RevokeOverrideSchema, RevokeOverrideDto, ReasonOnlySchema, ReasonOnlyDto } from '../../dto/create-user-tenant-role.dto';
 import { IdentityPermissions } from '../../policies/identity.policies';
 
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
@@ -58,15 +58,43 @@ export class RolesController {
     return this.utr.approve(ctx.tenantId, ctx.userId, id, ipOf(req)).then((data) => ({ data }));
   }
 
+  /** W184 "Remove from team" (F-15): the reason is REQUIRED (≥ 10) — revokes the role, its overrides, the desk seats and this tenant's
+   *  sessions (PC-56 TENANT-SW-c). The last tenant_admin and yourself are refused by name. */
   @Delete('assignments/:id')
   @RequirePermissions(IdentityPermissions.Approve)
-  revoke(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string) {
-    return this.utr.revoke(ctx.tenantId, ctx.userId, id, null, ipOf(req)).then((data) => ({ data }));
+  revoke(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string, @ZodBody(RevokeAssignmentSchema) dto: RevokeAssignmentDto) {
+    return this.utr.revoke(ctx.tenantId, ctx.userId, id, dto.reason, req.ip || null).then((data) => ({ data }));
   }
 
+  /** Per-staff override WITH a reason (F-15) and an optional expiry; a money / PII GRANT becomes a proposal a second admin confirms. */
   @Post('overrides')
   @RequirePermissions(IdentityPermissions.Approve)
   override(@CurrentContext() ctx: RequestContext, @Req() req: Request, @ZodBody(StaffOverrideSchema) dto: StaffOverrideDto) {
-    return this.utr.setStaffOverride(ctx.tenantId, ctx.userId, ctx.permissions, dto, ipOf(req)).then((data) => ({ data }));
+    return this.utr.setStaffOverride(ctx.tenantId, ctx.userId, ctx.permissions, dto, req.ip || null).then((data) => ({ data }));
+  }
+
+  @Post('overrides/revoke')
+  @RequirePermissions(IdentityPermissions.Approve)
+  revokeOverride(@CurrentContext() ctx: RequestContext, @Req() req: Request, @ZodBody(RevokeOverrideSchema) dto: RevokeOverrideDto) {
+    return this.utr.revokeOverride(ctx.tenantId, ctx.userId, dto, req.ip || null).then((data) => ({ data }));
+  }
+
+  @Get('overrides/proposals')
+  @RequirePermissions(IdentityPermissions.Approve)
+  proposals(@CurrentContext() ctx: RequestContext, @Query('status') status?: string) {
+    const st = status && ['proposed', 'confirmed', 'refused', 'expired'].includes(status) ? status : undefined;
+    return this.utr.overrideProposals(ctx.tenantId, { status: st, limit: 50 }).then((data) => ({ data }));
+  }
+
+  @Post('overrides/proposals/:id/confirm')
+  @RequirePermissions(IdentityPermissions.Approve)
+  confirmProposal(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string) {
+    return this.utr.confirmOverrideProposal(ctx.tenantId, ctx.userId, id, req.ip || null).then((data) => ({ data }));
+  }
+
+  @Post('overrides/proposals/:id/refuse')
+  @RequirePermissions(IdentityPermissions.Approve)
+  refuseProposal(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Param('id') id: string, @ZodBody(ReasonOnlySchema) dto: ReasonOnlyDto) {
+    return this.utr.refuseOverrideProposal(ctx.tenantId, ctx.userId, id, dto.reason, req.ip || null).then((data) => ({ data }));
   }
 }

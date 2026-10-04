@@ -20,6 +20,8 @@ export interface AccessTokenClaims {
   roles: string[];
   perms: string[];      // flattened permission codes; '*' = platform god-mode
   typ: 'access';
+  /** PC-56 TENANT-SW-c: when the token was issued (seconds) — the per-tenant session cut-off compares it (SessionPostureGuard). */
+  iat?: number;
 }
 
 @Injectable()
@@ -45,6 +47,7 @@ export class TokenService {
         roles: Array.isArray((c as any).roles) ? (c as any).roles : [],
         perms: Array.isArray((c as any).perms) ? (c as any).perms : [],
         typ: 'access',
+        ...(typeof c.iat === 'number' ? { iat: c.iat } : {}),
       };
     } catch { return null; }
   }

@@ -22,6 +22,9 @@
 //     without it the file the exception produced cannot be fetched. Audited with its jti.
 //   • `session.logout` — ending one's own session (`POST /v1/auth/logout`). Not business data; refusing it would keep a
 //     revoked auditor's refresh token alive, the opposite of the canon's "revocable".
+//   • `two_factor.self` — PC-56 TENANT-SW-c: the auditor's OWN second factor (`POST /v1/me/2fa/enrol|confirm|disable`). Not business
+//     data; the auditor holds a staff seat, so when the organisation requires 2FA for staff (`security.require_staff_2fa`) refusing
+//     these would lock the auditor out of the realm entirely instead of letting them comply.
 //
 // THE REFUSAL IS RECORDED BEFORE IT IS THROWN (ADMIN-9b's rule): an auditor's attempted write is the most interesting row
 // the trail could hold. If the record fails, the request is still refused — fail closed.
@@ -33,7 +36,7 @@ import { AuditWriter } from '../audit/audit.writer';
 
 export const AUDITOR_ROLE = 'auditor';
 export const AUDITOR_READ_ACT_KEY = 'auditor_read_act';
-export const AUDITOR_READ_ACTS = ['export.enqueue', 'export.link', 'session.logout'] as const;
+export const AUDITOR_READ_ACTS = ['export.enqueue', 'export.link', 'session.logout', 'two_factor.self'] as const;
 export type AuditorReadActCode = (typeof AUDITOR_READ_ACTS)[number];
 
 /** Marks the ONE route-level carve-out a handler is. Never a class decorator: an exception is one route, read by a person. */

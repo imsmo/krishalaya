@@ -119,7 +119,7 @@ describe('TENANT-13b · F-18 — one ungrantable list, real template codes', () 
   it('the override path refuses exactly the one list (checker codes and the keys of the house included)', async () => {
     const svc = new UserTenantRoleService({} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never);
     for (const code of UNGRANTABLE_PERMISSIONS) {
-      await expect(svc.setStaffOverride('t', 'a', new Set(['*', code]), { userTenantRoleId: 'x', permissionCode: code, isGranted: true }, null))
+      await expect(svc.setStaffOverride('t', 'a', new Set(['*', code]), { userTenantRoleId: 'x', permissionCode: code, isGranted: true, reason: 'PC-56 SW-c: a reason is required (F-15)' }, null))
         .rejects.toMatchObject({ httpStatus: 403 });
     }
     for (const c of ['payout.approve', 'group_lot.settle_approve', 'labour.wages.approve', 'notification.templates.approve', 'tenant.settings', 'desk.manage']) expect(UNGRANTABLE_PERMISSIONS.has(c)).toBe(true);

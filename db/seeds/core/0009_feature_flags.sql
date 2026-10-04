@@ -61,5 +61,7 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   -- PC-56 TENANT-SW-a (0196 also inserts them — whichever runs first wins, ON CONFLICT DO NOTHING)
   ('tenant_commission_rules','PC-56 TENANT-SW-a: tenant commission rule proposals (owner + checker, 7-day notice) — OFF = platform defaults govern, no tenant overrides', false, 100, '{}'),
   ('cod_ledger','PC-56 TENANT-SW-a: COD cash as a ledger fact (collect at delivery → rider cash-in-hand; remit at reconcile; per-rider cap; cash day) — OFF = the off-ledger worksheet', false, 100, '{}'),
-  ('pod_review','PC-56 TENANT-SW-a: POD review on every delivered shipment (2h auto-clear; a flagged POD holds settlement) — OFF = no review rows, no holds', false, 100, '{}')
+  ('pod_review','PC-56 TENANT-SW-a: POD review on every delivered shipment (2h auto-clear; a flagged POD holds settlement) — OFF = no review rows, no holds', false, 100, '{}'),
+  -- PC-56 TENANT-SW-c (0199 also inserts it — ON CONFLICT DO NOTHING)
+  ('staff_invites','PC-56 TENANT-SW-c: staff invites by SMS token + OTP on the invited phone (W183) — OFF = "Add staff directly" (with a reason) only', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

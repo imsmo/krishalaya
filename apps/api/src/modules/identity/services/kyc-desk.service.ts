@@ -30,6 +30,10 @@ import { KycDocumentRepository } from '../repositories/kyc-document.repository';
 import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
 import { KycDeskReadModel, QueueFilter } from '../read-models/kyc-desk.read-model';
 import { projectRoleKyc } from './kyc-role-projector';
+// PC-56 TENANT-SW-c: recusal (declared conflicts + the onboarder rule), claims, the median, unlocks, evidence reuse.
+import { VerificationTeamRepository } from '../repositories/verification-team.repository';
+import { MEDIAN_WINDOW_DAYS, maskName } from '../domain/verification-team';
+import { namedSwcRefusal } from '../domain/swc.errors';
 
 export interface DeskActor { userId: string; permissions: ReadonlySet<string>; ip: string | null; requestId: string | null }
 const can = (a: DeskActor, p: string) => a.permissions.has(p) || a.permissions.has('*');
@@ -51,6 +55,7 @@ export class KycDeskService {
     private readonly desk: KycDeskReadModel,
     private readonly ui: UiMessageRepository,
     private readonly media: MediaService,
+    private readonly team: VerificationTeamRepository,
   ) {}
 
   private assertDesk(a: DeskActor) { if (!can(a, KYC_REVIEW) && !can(a, KYC_MANAGE) && !can(a, KYC_READ)) throw new KycDeskRestrictedError(); }
@@ -59,7 +64,8 @@ export class KycDeskService {
 
   async overview(tenantId: string, actor: DeskActor) {
     this.assertDesk(actor);
-    const [org, tiles] = await Promise.all([this.desk.organisation(tenantId), this.desk.memberTiles(tenantId)]);
+    const [org, tiles, median, claimed] = await Promise.all([this.desk.organisation(tenantId), this.desk.memberTiles(tenantId),
+      this.team.medianDecisionSeconds(tenantId, MEDIAN_WINDOW_DAYS), this.team.pendingClaimedCount(tenantId)]);
     const verdict = organisationVerdict(org.requirements, org.docs, org.today);
     // One row per declared type, plus any organisation document of a type the country does not list (still shown).
     const listed = new Set(org.requirements.map((r) => r.docTypeCode));
@@ -75,6 +81,10 @@ export class KycDeskService {
         unlisted: extra.map((d) => ({ id: d.id, docTypeCode: d.docTypeCode, docTypeName: d.docTypeName, status: d.status, validUntil: d.validUntil, docNoMasked: d.docNoMasked })),
         documentCount: org.docs.length },
       members: tiles,
+      // PC-56 TENANT-SW-c (W157): "Median verify time (7d)" — median(decided_at − submitted_at) over the desk's decisions of the last 7
+      // days, or `seconds: null` = "no decisions in 7 days". Under review now = live claims.
+      median: { seconds: median.seconds, decisions: median.decisions, windowDays: MEDIAN_WINDOW_DAYS },
+      underReview: claimed,
       can: { manage: can(actor, KYC_MANAGE), review: can(actor, KYC_REVIEW), reveal: can(actor, PII_REVEAL) },
     };
   }
@@ -83,7 +93,9 @@ export class KycDeskService {
     this.assertDesk(actor);
     const rows = await this.desk.queue(tenantId, f);
     const last = rows[rows.length - 1];
-    return { items: rows, nextCursor: rows.length === f.limit && last ? encodeKeyset(last.cursorTs, last.id) : null };
+    // PC-56 TENANT-SW-c: a claimed row says "being reviewed by <masked>" — the holder sees "you".
+    const items = rows.map(({ claimedByName, ...r }) => ({ ...r, claim: r.claimedBy ? { mine: r.claimedBy === actor.userId, byMasked: r.claimedBy === actor.userId ? null : maskName(claimedByName), expiresAt: r.claimExpiresAt } : null }));
+    return { items, nextCursor: rows.length === f.limit && last ? encodeKeyset(last.cursorTs, last.id) : null };
   }
 
   async record(tenantId: string, actor: DeskActor, id: string) {
@@ -92,7 +104,25 @@ export class KycDeskService {
     // A member may read their OWN document's record; anyone else needs the desk.
     if (!(rec.doc.userId === actor.userId) && !can(actor, KYC_REVIEW) && !can(actor, KYC_MANAGE) && !can(actor, KYC_READ)) throw new KycDeskRestrictedError();
     const acts = await this.uow.run(tenantId, (tx) => this.verdicts(tx, tenantId, actor, id), { userId: actor.userId });
-    return { ...rec, acts, can: { manage: can(actor, KYC_MANAGE), review: can(actor, KYC_REVIEW), reveal: can(actor, PII_REVEAL) } };
+    // PC-56 TENANT-SW-c (W158): the recusal banner (the DATABASE's verdict — nothing inferred from names), who holds the document,
+    // what verifying it would unlock (the 0125 gate, read), and the evidence already verified for the same roles (read).
+    const subject = rec.doc.subjectKind === 'user' ? rec.doc.userId : null;
+    const [recusal, claim, unlocks, reuse, onboarders] = await Promise.all([
+      subject ? this.team.recusal(tenantId, actor.userId, subject) : Promise.resolve(null),
+      this.team.liveClaimOnDoc(tenantId, id),
+      subject ? this.team.unlocks(tenantId, subject, rec.doc.docTypeCode) : Promise.resolve([]),
+      subject ? this.team.evidenceReuse(tenantId, subject, id, rec.doc.docTypeCode) : Promise.resolve([]),
+      subject ? this.team.onboarders(tenantId, subject) : Promise.resolve([]),
+    ]);
+    const { claimedByName: _claimer, ...doc } = rec.doc;   // the holder's name never leaves unmasked (see `claim` below)
+    void _claimer;
+    return {
+      ...rec, doc, acts, can: { manage: can(actor, KYC_MANAGE), review: can(actor, KYC_REVIEW), reveal: can(actor, PII_REVEAL) },
+      recusal: { code: recusal, onboarderRecorded: onboarders.length > 0 },
+      claim: claim ? { id: claim.id, mine: claim.claimedBy === actor.userId, byMasked: claim.claimedBy === actor.userId ? null : maskName(claim.claimedByName), expiresAt: claim.expiresAt } : null,
+      unlocks: unlocks.map((u) => ({ ...u, unlocksOnVerify: u.effective !== 'verified' })),
+      evidenceReuse: reuse,
+    };
   }
 
   async catalogue(tenantId: string, actor: DeskActor, userId: string | null) {
@@ -178,10 +208,12 @@ export class KycDeskService {
     const media = p.mediaId ? await this.kyc.mediaFacts(tx, tenantId, p.mediaId) : null;
     const reasons = await this.kyc.reasonRules(tx);
     const today = await this.kyc.today(tx, tenantId);
+    const recusal = act === 'reveal' ? null : await this.team.recusal(tenantId, actor.userId, p.subjectKind === 'user' ? p.userId : null, tx);
+    const claim = act === 'reveal' ? null : await this.team.liveClaimOnDoc(tenantId, p.id, tx);
     return actVerdict(act,
       { status: p.status, subjectKind: p.subjectKind, userId: p.userId, submittedBy: p.submittedBy, hasMedia: p.mediaId !== null, scanStatus: media?.scanStatus ?? null, validUntil: p.validUntil },
       { userId: actor.userId, canReview: can(actor, KYC_REVIEW), canReveal: can(actor, PII_REVEAL), isTenantAdmin: isAdmin },
-      { revealedByActor: revealed, reasonCode: input.reasonCode, note: input.note, reasons, today, judgeWords });
+      { revealedByActor: revealed, reasonCode: input.reasonCode, note: input.note, reasons, today, judgeWords, recusal, claimedByOther: Boolean(claim && claim.claimedBy !== actor.userId) });
   }
 
   /** Every act's verdict on a document, as the record page prints them (without judging words not typed yet). */
@@ -215,8 +247,10 @@ export class KycDeskService {
       const words = await this.words(tx, doc.toProps().docTypeCode, input.reasonCode ?? null);
       if (act === 'verify') doc.verify(actor.userId, new Date(), { document: words.document });
       else doc.reject(actor.userId, note ?? words.reasonName ?? 'rejected', new Date(), { reasonCode: input.reasonCode!, decision: act, extra: { document: words.document, reason: words.reason } });
-      await this.kyc.update(tx, doc, actor.userId);
+      // PC-56 TENANT-SW-c: 0199's trg_kyc_recusal refuses a recused decider here even if the verdict above were bypassed.
+      try { await this.kyc.update(tx, doc, actor.userId); } catch (e) { throw namedSwcRefusal(e); }
       await this.kyc.insertDecision(tx, { tenantId, documentId: doc.id, act, fromStatus: before, toStatus: doc.status, reasonCode: act === 'verify' ? null : input.reasonCode, note, decidedBy: actor.userId, via: 'desk', idempotencyKey: key });
+      await this.team.releaseForDecisionTx(tx, tenantId, doc.id, actor.userId);
       const roleWrites = doc.userId ? await projectRoleKyc(tx, tenantId, doc.userId, this.kyc, this.utr) : [];
       await this.flush(tx, tenantId, doc.id, doc.pullEvents());
       await this.audit.write(tx, {

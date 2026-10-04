@@ -179,6 +179,8 @@ export class AppConfig {
   get integrationSecrets() { return { backend: this.env.INTEGRATION_SECRETS_BACKEND, region: this.env.AWS_REGION, prefix: this.env.INTEGRATION_SECRET_PREFIX }; }
   /** Tenant-webhook signing-secret encryption key (P1-11). Empty = unset (fail-closed in prod). */
   get webhookSigningKek() { return this.env.WEBHOOK_SIGNING_KEK; }
+  /** PC-56 TENANT-SW-c: the console base URL a staff invite links to ('' = no link; the SMS carries the code). */
+  get tenantConsoleBaseUrl() { return this.env.TENANT_CONSOLE_BASE_URL; }
   get trustProxyHops() { return this.env.TRUST_PROXY_HOPS; }
   /** CORS allowlist for the 4 Next.js web apps. Empty ⇒ CORS left off entirely (main.ts skips app.enableCors,
    *  matching today's no-CORS behavior byte-for-byte). Mobile apps + server-to-server webhooks send no Origin

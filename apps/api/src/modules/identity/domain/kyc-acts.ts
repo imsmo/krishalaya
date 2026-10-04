@@ -22,7 +22,10 @@ export function isKycAct(v: string): v is KycAct { return (KYC_ACTS as readonly 
 export type ActRefusal =
   | 'NO_PERMISSION' | 'NOT_PENDING' | 'MAKER_IS_CHECKER' | 'OWN_DOCUMENT' | 'SELF_CERTIFICATION' | 'EVIDENCE_NOT_REVEALED'
   | 'EVIDENCE_NOT_CLEAN' | 'ALREADY_LAPSED' | 'REASON_REQUIRED' | 'REASON_UNKNOWN' | 'REASON_NOT_FOR_ACT' | 'NOTE_REQUIRED'
-  | 'NOTE_TOO_LONG' | 'NO_EVIDENCE' | 'REVEAL_REASON_TOO_SHORT';
+  | 'NOTE_TOO_LONG' | 'NO_EVIDENCE' | 'REVEAL_REASON_TOO_SHORT'
+  // PC-56 TENANT-SW-c (A3): the two recusal rules the founder decided — judged by the DATABASE (`kv_kyc_recusal`, the same function
+  // the 0199 trigger raises from) and printed here so the record page says why — and a document another reviewer holds a live claim on.
+  | 'KYC_RECUSED_DECLARED' | 'KYC_RECUSED_ONBOARDER' | 'CLAIMED_BY_OTHER';
 
 export interface ActDoc {
   status: string; subjectKind: string; userId: string | null; submittedBy: string;
@@ -38,7 +41,9 @@ export interface ActVerdict { act: KycAct; allowed: boolean; refusals: ActRefusa
 
 export function actVerdict(
   act: KycAct, doc: ActDoc, actor: ActActor,
-  opts: { revealedByActor: boolean; reasonCode?: string | null; note?: string | null; reasons: ReadonlyMap<string, ReasonRule>; today: string; judgeWords?: boolean },
+  opts: { revealedByActor: boolean; reasonCode?: string | null; note?: string | null; reasons: ReadonlyMap<string, ReasonRule>; today: string; judgeWords?: boolean;
+    /** PC-56 TENANT-SW-c: the database's recusal verdict for (actor, subject), and whether someone else holds a live claim. */
+    recusal?: string | null; claimedByOther?: boolean },
 ): ActVerdict {
   const r: ActRefusal[] = [];
   const note = (opts.note ?? '').replace(/\s+/g, ' ').trim();
@@ -56,6 +61,8 @@ export function actVerdict(
   if (actor.userId === doc.submittedBy) r.push('MAKER_IS_CHECKER');
   if (doc.subjectKind === 'user' && actor.userId === doc.userId) r.push('OWN_DOCUMENT');
   if (doc.subjectKind === 'organisation' && actor.isTenantAdmin) r.push('SELF_CERTIFICATION');
+  if (doc.subjectKind === 'user' && (opts.recusal === 'KYC_RECUSED_DECLARED' || opts.recusal === 'KYC_RECUSED_ONBOARDER')) r.push(opts.recusal);
+  if (opts.claimedByOther) r.push('CLAIMED_BY_OTHER');
   if (doc.hasMedia && !opts.revealedByActor) r.push('EVIDENCE_NOT_REVEALED');
   if (act === 'verify') {
     if (doc.hasMedia && doc.scanStatus !== 'clean') r.push('EVIDENCE_NOT_CLEAN');

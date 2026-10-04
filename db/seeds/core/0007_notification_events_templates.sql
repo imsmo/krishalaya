@@ -886,6 +886,30 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('tenant.brand_published','version','tenant_branding_history.version','2',false)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- NOTE (QA, TENANT-SW-c): SW-a's `tenant.commission_rule_effective` block had been appended BELOW the backfill — its six rows
+-- shipped with `serving_version_id = NULL` and the 6c-2 gate caught it; moved up here, so re-seeding repairs any deployed environment.
+
+-- PC-56 TENANT-SW-a (A3) · A COMMISSION RULE OF THE COOPERATIVE TAKES EFFECT — AFTER TWO ADMINISTRATORS AND SEVEN DAYS' NOTICE. W149: "new
+-- effective-dated rows … takes effect at midnight … 7-day notice enforced"; "Rate is snapshotted onto the order — later rule changes never
+-- touch past orders". Migration 0196 catalogues `tenant.commission_rule_effective`; the proposal clock (13b's apply job) emits it in the
+-- transaction that marks the confirmed proposal applied, at its IST midnight. Recipients travel in the payload (every active member).
+-- Variables: `change` and `payer` (per-language maps, seed core/0025), `rate` (e.g. 3.50%), `effectiveFrom` (YYYY-MM-DD, IST).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('tenant.commission_rule_effective','push','en',NULL,'{{change}} from {{effectiveFrom}}','{{change}} from {{effectiveFrom}}: {{rate}} commission, {{payer}}. Two administrators of your cooperative confirmed it with seven days'' notice.',NULL,true),
+ ('tenant.commission_rule_effective','push','hi',NULL,'{{effectiveFrom}} से {{change}}','{{effectiveFrom}} से {{change}}: {{rate}} कमीशन, {{payer}}। आपकी समिति के दो प्रशासकों ने सात दिन पहले सूचना देकर इसकी पुष्टि की है।',NULL,true),
+ ('tenant.commission_rule_effective','push','gu',NULL,'{{effectiveFrom}} થી {{change}}','{{effectiveFrom}} થી {{change}}: {{rate}} કમિશન, {{payer}}. તમારી મંડળીના બે વહીવટકર્તાઓએ સાત દિવસ અગાઉ જાણ કરીને તેની પુષ્ટિ કરી છે.',NULL,true),
+ ('tenant.commission_rule_effective','inapp','en',NULL,'{{change}} from {{effectiveFrom}}','{{change}} from {{effectiveFrom}}: {{rate}} commission, {{payer}}. Two administrators of your cooperative confirmed it with seven days'' notice. Orders already placed keep the rate they were placed at.',NULL,true),
+ ('tenant.commission_rule_effective','inapp','hi',NULL,'{{effectiveFrom}} से {{change}}','{{effectiveFrom}} से {{change}}: {{rate}} कमीशन, {{payer}}। आपकी समिति के दो प्रशासकों ने सात दिन पहले सूचना देकर इसकी पुष्टि की है। पहले से दिए गए ऑर्डर उसी दर पर रहेंगे जिस पर वे दिए गए थे।',NULL,true),
+ ('tenant.commission_rule_effective','inapp','gu',NULL,'{{effectiveFrom}} થી {{change}}','{{effectiveFrom}} થી {{change}}: {{rate}} કમિશન, {{payer}}. તમારી મંડળીના બે વહીવટકર્તાઓએ સાત દિવસ અગાઉ જાણ કરીને તેની પુષ્ટિ કરી છે. પહેલેથી આપેલા ઓર્ડર જે દરે આપ્યા હતા તે જ દરે રહેશે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('tenant.commission_rule_effective','change','ui_messages commission.change.create|deactivate (seed core/0025, per language)','A new commission rule',true),
+ ('tenant.commission_rule_effective','payer','ui_messages commission.payer.seller|buyer (seed core/0025, per language)','paid by the seller',true),
+ ('tenant.commission_rule_effective','rate','commission_rules.rate_bps as a percentage','3.50%',true),
+ ('tenant.commission_rule_effective','effectiveFrom','commission_rule_proposals.effective_from (IST date)','2026-10-12',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to
@@ -948,24 +972,3 @@ UPDATE notification_templates t
   FROM notification_template_versions v
  WHERE v.template_id = t.id AND v.version_no = 1 AND v.lifecycle = 'approved'
    AND t.tenant_id IS NULL AND t.serving_version_id IS NULL;
-
--- PC-56 TENANT-SW-a (A3) · A COMMISSION RULE OF THE COOPERATIVE TAKES EFFECT — AFTER TWO ADMINISTRATORS AND SEVEN DAYS' NOTICE. W149: "new
--- effective-dated rows … takes effect at midnight … 7-day notice enforced"; "Rate is snapshotted onto the order — later rule changes never
--- touch past orders". Migration 0196 catalogues `tenant.commission_rule_effective`; the proposal clock (13b's apply job) emits it in the
--- transaction that marks the confirmed proposal applied, at its IST midnight. Recipients travel in the payload (every active member).
--- Variables: `change` and `payer` (per-language maps, seed core/0025), `rate` (e.g. 3.50%), `effectiveFrom` (YYYY-MM-DD, IST).
-INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
- ('tenant.commission_rule_effective','push','en',NULL,'{{change}} from {{effectiveFrom}}','{{change}} from {{effectiveFrom}}: {{rate}} commission, {{payer}}. Two administrators of your cooperative confirmed it with seven days'' notice.',NULL,true),
- ('tenant.commission_rule_effective','push','hi',NULL,'{{effectiveFrom}} से {{change}}','{{effectiveFrom}} से {{change}}: {{rate}} कमीशन, {{payer}}। आपकी समिति के दो प्रशासकों ने सात दिन पहले सूचना देकर इसकी पुष्टि की है।',NULL,true),
- ('tenant.commission_rule_effective','push','gu',NULL,'{{effectiveFrom}} થી {{change}}','{{effectiveFrom}} થી {{change}}: {{rate}} કમિશન, {{payer}}. તમારી મંડળીના બે વહીવટકર્તાઓએ સાત દિવસ અગાઉ જાણ કરીને તેની પુષ્ટિ કરી છે.',NULL,true),
- ('tenant.commission_rule_effective','inapp','en',NULL,'{{change}} from {{effectiveFrom}}','{{change}} from {{effectiveFrom}}: {{rate}} commission, {{payer}}. Two administrators of your cooperative confirmed it with seven days'' notice. Orders already placed keep the rate they were placed at.',NULL,true),
- ('tenant.commission_rule_effective','inapp','hi',NULL,'{{effectiveFrom}} से {{change}}','{{effectiveFrom}} से {{change}}: {{rate}} कमीशन, {{payer}}। आपकी समिति के दो प्रशासकों ने सात दिन पहले सूचना देकर इसकी पुष्टि की है। पहले से दिए गए ऑर्डर उसी दर पर रहेंगे जिस पर वे दिए गए थे।',NULL,true),
- ('tenant.commission_rule_effective','inapp','gu',NULL,'{{effectiveFrom}} થી {{change}}','{{effectiveFrom}} થી {{change}}: {{rate}} કમિશન, {{payer}}. તમારી મંડળીના બે વહીવટકર્તાઓએ સાત દિવસ અગાઉ જાણ કરીને તેની પુષ્ટિ કરી છે. પહેલેથી આપેલા ઓર્ડર જે દરે આપ્યા હતા તે જ દરે રહેશે.',NULL,true)
-ON CONFLICT DO NOTHING;
-
-INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
- ('tenant.commission_rule_effective','change','ui_messages commission.change.create|deactivate (seed core/0025, per language)','A new commission rule',true),
- ('tenant.commission_rule_effective','payer','ui_messages commission.payer.seller|buyer (seed core/0025, per language)','paid by the seller',true),
- ('tenant.commission_rule_effective','rate','commission_rules.rate_bps as a percentage','3.50%',true),
- ('tenant.commission_rule_effective','effectiveFrom','commission_rule_proposals.effective_from (IST date)','2026-10-12',true)
-ON CONFLICT (event_code, name) DO NOTHING;

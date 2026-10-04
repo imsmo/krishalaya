@@ -6,6 +6,8 @@
 // Resolved from the database (role_permissions + staff_permission_overrides), never
 // trusted from the client. Cached (default 5 min) and explicitly invalidated when a
 // user's roles/overrides change, so a token minted after a change reflects it.
+// PC-56 TENANT-SW-c (0199): a REVOKED or EXPIRED override grants (and denies) nothing — overrides now carry why, by whom and
+// until when, and are revoked with a reason instead of being overwritten.
 import { Inject, Injectable } from '@nestjs/common';
 import { PgPoolProvider } from '../database/pg-pool.provider';
 import { ShardRouter } from '../sharding/shard-router';
@@ -81,11 +83,13 @@ export class RoleCacheService {
          ),
          grants AS (
            SELECT spo.permission_code AS code FROM staff_permission_overrides spo
-           JOIN active a ON a.utr_id = spo.user_tenant_role_id WHERE spo.is_granted
+           JOIN active a ON a.utr_id = spo.user_tenant_role_id
+          WHERE spo.is_granted AND spo.revoked_at IS NULL AND (spo.expires_at IS NULL OR spo.expires_at > now())
          ),
          denies AS (
            SELECT spo.permission_code AS code FROM staff_permission_overrides spo
-           JOIN active a ON a.utr_id = spo.user_tenant_role_id WHERE NOT spo.is_granted
+           JOIN active a ON a.utr_id = spo.user_tenant_role_id
+          WHERE NOT spo.is_granted AND spo.revoked_at IS NULL AND (spo.expires_at IS NULL OR spo.expires_at > now())
          ),
          -- PC-56 TENANT-13b (F-18, 0192): THE DESKS the person sits at. A desk grants only while it is ACTIVE and the person still
          -- holds an active role in the tenant (EXISTS active) — a disabled desk, a removed member or a soft-removed permission grants

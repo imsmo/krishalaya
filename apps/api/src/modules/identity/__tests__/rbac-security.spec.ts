@@ -26,11 +26,11 @@ describe('RBAC escalation guards', () => {
       .rejects.toBeInstanceOf(ForbiddenError);
   });
   it('staff override cannot grant an ungrantable (money/god) permission', async () => {
-    await expect(svc(null).setStaffOverride('t1', 'admin', new Set(['user.approve']), { userTenantRoleId: 'x', permissionCode: 'wallet.adjust', isGranted: true }, null))
+    await expect(svc(null).setStaffOverride('t1', 'admin', new Set(['user.approve']), { userTenantRoleId: 'x', permissionCode: 'wallet.adjust', isGranted: true, reason: 'covering the finance desk this week' }, null))
       .rejects.toBeInstanceOf(ForbiddenError);
   });
   it('staff override cannot grant a permission the actor does not hold', async () => {
-    await expect(svc(null).setStaffOverride('t1', 'admin', new Set(['report.view']), { userTenantRoleId: 'x', permissionCode: 'listing.create', isGranted: true }, null))
+    await expect(svc(null).setStaffOverride('t1', 'admin', new Set(['report.view']), { userTenantRoleId: 'x', permissionCode: 'listing.create', isGranted: true, reason: 'covering the listing desk this week' }, null))
       .rejects.toBeInstanceOf(ForbiddenError);
   });
 });

@@ -119,6 +119,7 @@ export * from './resources/org-settings'; // PC-56 TENANT-13b
 export * from './resources/branding'; // PC-56 TENANT-13d
 export * from './resources/domains'; // PC-56 TENANT-13d
 export * from './resources/desks'; // PC-56 TENANT-13b
+export * from './resources/team'; // PC-56 TENANT-SW-c
 export * from './resources/twin'; // PC-56 TENANT-12
 export * from './resources/land'; // PC-56 TENANT-12 (crop seasons + soil tests)
 export type { ParcelBoundary, ParcelUpdateInput } from './resources/parcels'; // PC-56 TENANT-12

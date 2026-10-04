@@ -4,7 +4,7 @@
 // Builds the real AppModule (the HOTFIX-1 boot gate's shape — `NestFactory.create`, no database dialled), walks EVERY
 // controller method Nest registered (the same PATH / METHOD metadata Nest's RouterExplorer reads), and for every mutating
 // route runs the GLOBAL AuditorReadOnlyGuard as an auditor session would reach it: refused, recorded, unless the route
-// carries `@AuditorReadAct` — and the set that does is asserted to be EXACTLY the three named carve-outs. A new POST added
+// carries `@AuditorReadAct` — and the set that does is asserted to be EXACTLY the named carve-outs (three in 9c; the auditor's own 2FA added by SW-c). A new POST added
 // tomorrow by somebody who never heard of this wave is refused for the auditor without them doing anything, and this spec
 // prints it in the refused count.
 import 'reflect-metadata';
@@ -84,7 +84,7 @@ describe('PC-56 TENANT-9c · AuditorReadOnlyGuard — every mutating route in th
     expect(providers.some((p) => p && p.provide === APP_GUARD && p.useClass === AuditorReadOnlyGuard)).toBe(true);
   });
 
-  it('EVERY mutating route refuses an auditor session — except exactly the three named carve-outs', async () => {
+  it('EVERY mutating route refuses an auditor session — except exactly the named carve-outs (9c three + SW-c own 2FA)', async () => {
     const recorded: Array<{ action: string; newValue: unknown }> = [];
     const guard = new AuditorReadOnlyGuard(new Reflector(), { log: async (e: { action: string; newValue: unknown }) => { recorded.push(e); } } as never);
     const mutating = routes.filter((r) => !['GET', 'HEAD', 'OPTIONS'].includes(r.method));
@@ -105,9 +105,13 @@ describe('PC-56 TENANT-9c · AuditorReadOnlyGuard — every mutating route in th
       'POST /v1/auditor/exports [export.enqueue]',
       'POST /v1/auth/logout [session.logout]',
       'POST /v1/exports/:id/link [export.link]',
+      // PC-56 TENANT-SW-c: the auditor's OWN second factor (the auditor is staff; 2FA may be required of staff)
+      'POST /v1/me/2fa/confirm [two_factor.self]',
+      'POST /v1/me/2fa/disable [two_factor.self]',
+      'POST /v1/me/2fa/enrol [two_factor.self]',
     ]);
-    expect(passed.length).toBe(3);
-    expect(refused.length).toBe(mutating.length - 3);
+    expect(passed.length).toBe(6);
+    expect(refused.length).toBe(mutating.length - 6);
     // Every refusal was RECORDED before it was thrown.
     expect(recorded.length).toBe(refused.length);
     expect(new Set(recorded.map((x) => x.action))).toEqual(new Set(['auditor.write_refused']));

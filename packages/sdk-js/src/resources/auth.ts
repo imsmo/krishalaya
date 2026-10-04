@@ -27,6 +27,21 @@ export class AuthResource {
       anonymous: true, body: { refreshToken, ...(tenantId ? { tenantId } : {}) },
     })).data;
   }
+  /**
+   * PC-56 TENANT-SW-c · B3 — a person with confirmed 2FA gets `SdkError` code `TWO_FACTOR_PENDING` from `verifyOtp` (or an invite
+   * accept), its `details.challengeToken` naming the pending session (5 minutes). Finish here with a 6-digit TOTP or ONE recovery code.
+   */
+  async verifyTwoFactor(input: { tenantId: string; challengeToken: string; code?: string; recoveryCode?: string }): Promise<AuthTokens> {
+    return (await this.http.request<AuthTokens>('POST', 'auth/2fa/verify', { anonymous: true, body: input })).data;
+  }
+  /** PC-56 TENANT-SW-c · B2 — what a staff invite is (organisation, role, masked phone, status), for the accept page. */
+  async lookupInvite(tenantId: string, token: string): Promise<{ organisation: string; roleCode: string; phoneMasked: string; status: string; expiresAt: string }> {
+    return (await this.http.request<{ organisation: string; roleCode: string; phoneMasked: string; status: string; expiresAt: string }>('POST', 'auth/invites/lookup', { anonymous: true, body: { tenantId, token } })).data;
+  }
+  /** PC-56 TENANT-SW-c · B2 — accept: the token AND the OTP sent to the invited phone (request it with `requestOtp`). Signs the person in. */
+  async acceptInvite(input: { tenantId: string; token: string; phone: string; code: string; fullName?: string }): Promise<AuthTokens & { invite: { id: string; roleCode: string } }> {
+    return (await this.http.request<AuthTokens & { invite: { id: string; roleCode: string } }>('POST', 'auth/invites/accept', { anonymous: true, body: input })).data;
+  }
   /** The authenticated caller's profile (uses the bearer token). */
   async me(signal?: AbortSignal): Promise<UserProfile> {
     return (await this.http.request<UserProfile>('GET', 'users/me', { signal })).data;

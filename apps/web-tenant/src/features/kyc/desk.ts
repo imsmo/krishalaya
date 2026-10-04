@@ -5,7 +5,10 @@
 // `/kyc/me`. Every list here mirrors the API's own (the console spec reads them from the API source), every figure the
 // pages print is the API's, and the canon elements this platform cannot back are refused by NAME (`KYC_REFUSED_BY_NAME`).
 
-export const KYC_DESK_HREF = '/kyc';
+/** PC-56 TENANT-SW-c: the desk lives at its CANON path (W157 `/people/verification`, W158 `/people/verification/[id]`); `/kyc`,
+ *  `/kyc/[docId]` and `/kyc/[docId]/act` redirect here. The staff member's own page and the submit form keep their /kyc paths. */
+export const VERIFICATION_HREF = '/people/verification';
+export const KYC_DESK_HREF = VERIFICATION_HREF;
 export const KYC_ME_HREF = '/kyc/me';
 export const KYC_SUBMIT_HREF = '/kyc/submit';
 
@@ -24,8 +27,8 @@ export const RENEWING_SOON_DAYS = 90;
 /** Canon promises this platform has no backend for — each a sentence on the page, never a fake. */
 export const KYC_REFUSED_BY_NAME = ['kycCamp', 'categoryPause', 'maskedPreview', 'platformDesk', 'orgPayoutLink', 'retry', 'kebab'] as const;
 
-export const docHref = (id: string) => `/kyc/${encodeURIComponent(id)}`;
-export const actHref = (id: string, act: DeskActKey) => `/kyc/${encodeURIComponent(id)}/act?step=confirm&act=${act}`;
+export const docHref = (id: string) => `${VERIFICATION_HREF}/${encodeURIComponent(id)}`;
+export const actHref = (id: string, act: DeskActKey) => `${VERIFICATION_HREF}/${encodeURIComponent(id)}/act?step=confirm&act=${act}`;
 /** *Upload renewal* (W122) and *Upload document* (W121) open the form, the renewal with its type and subject chosen. */
 export function submitHref(prefill: { subjectKind?: string; docTypeCode?: string; userId?: string | null } = {}): string {
   const q = new URLSearchParams({ step: 'edit' });
@@ -126,6 +129,8 @@ export const ACT_REFUSALS = [
   'NO_PERMISSION', 'NOT_PENDING', 'MAKER_IS_CHECKER', 'OWN_DOCUMENT', 'SELF_CERTIFICATION', 'EVIDENCE_NOT_REVEALED',
   'EVIDENCE_NOT_CLEAN', 'ALREADY_LAPSED', 'REASON_REQUIRED', 'REASON_UNKNOWN', 'REASON_NOT_FOR_ACT', 'NOTE_REQUIRED',
   'NOTE_TOO_LONG', 'NO_EVIDENCE', 'REVEAL_REASON_TOO_SHORT',
+  // PC-56 TENANT-SW-c (A3): the two recusal rules (judged by the database) and a document someone else holds a live claim on
+  'KYC_RECUSED_DECLARED', 'KYC_RECUSED_ONBOARDER', 'CLAIMED_BY_OTHER',
 ] as const;
 const KNOWN = new Set<string>([...SUBMIT_REFUSALS, ...ACT_REFUSALS, 'KYC_DESK_RESTRICTED', 'KYC_NOT_FOUND']);
 /** A failure code → its sentence, or the generic one for a code the console does not know (never a raw key on screen). */

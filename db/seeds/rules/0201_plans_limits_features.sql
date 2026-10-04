@@ -30,3 +30,16 @@ INSERT INTO plan_features (plan_id,feature_code,is_included,config) VALUES
  ('22222222-0000-7000-8000-000000000003','bidding',true,'{}'),('22222222-0000-7000-8000-000000000003','ai_grading',true,'{}'),('22222222-0000-7000-8000-000000000003','custom_domain',true,'{}'),('22222222-0000-7000-8000-000000000003','api_access',true,'{}'),('22222222-0000-7000-8000-000000000003','ambassador_network',true,'{}'),
  ('22222222-0000-7000-8000-000000000003','white_label_unbranded',true,'{}')
 ON CONFLICT (plan_id,feature_code) DO NOTHING;
+
+-- PC-56 TENANT-SW-c · staff seats per plan (0199 inserts the same rows into a database whose plans already exist). config {"seats": N};
+-- {"seats": null} = unlimited. Defaults: starter 3 · growth 10 · professional 25 · enterprise + government unlimited (private plans).
+INSERT INTO features (code,default_name,module_code,description) VALUES
+ ('staff_seats','Staff seats','M01','PC-56 TENANT-SW-c: how many people may hold a staff role (tenant_admin, tenant_staff, support_agent, auditor, fpo_coordinator). plan_features.config {"seats": N}; {"seats": null} = unlimited.')
+ON CONFLICT (code) DO NOTHING;
+INSERT INTO plan_features (plan_id,feature_code,is_included,config) VALUES
+ ('22222222-0000-7000-8000-000000000001','staff_seats',true,'{"seats": 3}'),
+ ('22222222-0000-7000-8000-000000000002','staff_seats',true,'{"seats": 10}'),
+ ('22222222-0000-7000-8000-000000000003','staff_seats',true,'{"seats": 25}'),
+ ('22222222-0000-7000-8000-000000000004','staff_seats',true,'{"seats": null}'),
+ ('22222222-0000-7000-8000-000000000005','staff_seats',true,'{"seats": null}')
+ON CONFLICT (plan_id,feature_code) DO NOTHING;

@@ -18,14 +18,16 @@ const three = (k: string) => { for (const [n, cat] of [['en', en], ['hi', hi], [
 const src = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 const api = (rel: string) => fs.readFileSync(path.join(__dirname, '../../../api/src/modules/identity', rel), 'utf8');
 const listOf = (s: string, start: string, end: string) => { const i = s.indexOf(start); if (i < 0) throw new Error(start); return [...s.slice(i, s.indexOf(end, i)).matchAll(/'([A-Za-z_]+)'/g)].map((m) => m[1]); };
-const PAGES = ['app/kyc/page.tsx', 'app/kyc/loading.tsx', 'app/kyc/[docId]/page.tsx', 'app/kyc/submit/page.tsx', 'app/kyc/submit/actions.ts', 'app/kyc/[docId]/act/page.tsx', 'app/kyc/[docId]/act/actions.ts', 'app/kyc/me/page.tsx', 'app/kyc/me/actions.ts', 'app/kyc/me/loading.tsx'];
+// PC-56 TENANT-SW-c: the desk moved to the canon path /people/verification (W157/W158); /kyc, /kyc/[docId] and /kyc/[docId]/act redirect there.
+const PAGES = ['app/people/verification/page.tsx', 'app/people/verification/loading.tsx', 'app/people/verification/[id]/page.tsx', 'app/kyc/submit/page.tsx', 'app/kyc/submit/actions.ts', 'app/people/verification/[id]/act/page.tsx', 'app/people/verification/[id]/act/actions.ts', 'app/kyc/me/page.tsx', 'app/kyc/me/actions.ts', 'app/kyc/me/loading.tsx'];
 
 describe('routes (W121, W122, W2319–W2322, W2323–W2325) and the staff member\'s own page', () => {
   it('every canon screen has a route; the old self page lives at /kyc/me', () => {
     for (const p of PAGES) expect(fs.existsSync(path.join(__dirname, '..', p))).toBe(true);
-    expect([KYC_DESK_HREF, KYC_ME_HREF, KYC_SUBMIT_HREF]).toEqual(['/kyc', '/kyc/me', '/kyc/submit']);
-    expect(docHref('a b')).toBe('/kyc/a%20b');
-    expect(actHref('d1', 'reveal')).toBe('/kyc/d1/act?step=confirm&act=reveal');
+    expect([KYC_DESK_HREF, KYC_ME_HREF, KYC_SUBMIT_HREF]).toEqual(['/people/verification', '/kyc/me', '/kyc/submit']);
+    for (const r of ['app/kyc/page.tsx', 'app/kyc/[docId]/page.tsx', 'app/kyc/[docId]/act/page.tsx']) expect(src(r)).toMatch(/redirect\(/);
+    expect(docHref('a b')).toBe('/people/verification/a%20b');
+    expect(actHref('d1', 'reveal')).toBe('/people/verification/d1/act?step=confirm&act=reveal');
     expect(submitHref()).toBe('/kyc/submit?step=edit');
     expect(submitHref({ subjectKind: 'organisation', docTypeCode: 'fssai_licence' })).toBe('/kyc/submit?step=edit&subjectKind=organisation&docTypeCode=fssai_licence');
     expect(submitHref({ subjectKind: 'user', userId: 'u1', docTypeCode: 'aadhaar' })).toBe('/kyc/submit?step=edit&subjectKind=user&userId=u1&docTypeCode=aadhaar');
@@ -36,9 +38,9 @@ describe('routes (W121, W122, W2319–W2322, W2323–W2325) and the staff member
       .toEqual({ subjectKind: 'organisation', status: 'pending', docTypeCode: 'pan_org', roleCode: 'farmer', expiringWithin: 30, cursor: 'c1' });
     expect(queueFilters({ subjectKind: 'cow', status: 'approved', docTypeCode: 'DROP TABLE', roleCode: 'x;y', expiringWithin: '45', cursor: 'x'.repeat(401) })).toEqual({});
     expect(queueFilters({ status: ['pending', 'verified'] })).toEqual({});
-    expect(queueHref({})).toBe('/kyc');
-    expect(queueHref({ status: 'expired', expiringWithin: 60 }, 'n1')).toBe('/kyc?status=expired&expiringWithin=60&cursor=n1');
-    expect(queueHref({ subjectKind: 'user', docTypeCode: 'aadhaar', roleCode: 'worker' })).toBe('/kyc?subjectKind=user&docTypeCode=aadhaar&roleCode=worker');
+    expect(queueHref({})).toBe('/people/verification');
+    expect(queueHref({ status: 'expired', expiringWithin: 60 }, 'n1')).toBe('/people/verification?status=expired&expiringWithin=60&cursor=n1');
+    expect(queueHref({ subjectKind: 'user', docTypeCode: 'aadhaar', roleCode: 'worker' })).toBe('/people/verification?subjectKind=user&docTypeCode=aadhaar&roleCode=worker');
     expect(EXPIRING_WINDOWS).toEqual([30, 60, 90]);
   });
 });
@@ -102,14 +104,14 @@ describe('the pages keep their promises', () => {
   });
   it('every write carries the key the page minted (the review page, the confirm page, the self form)', () => {
     expect(src('app/kyc/submit/page.tsx')).toMatch(/name="idempotencyKey" value=\{randomUUID\(\)\}/);
-    expect(src('app/kyc/[docId]/act/page.tsx')).toMatch(/name="idempotencyKey" value=\{randomUUID\(\)\}/);
+    expect(src('app/people/verification/[id]/act/page.tsx')).toMatch(/name="idempotencyKey" value=\{randomUUID\(\)\}/);
     expect(src('app/kyc/me/page.tsx')).toMatch(/name="idempotencyKey" value=\{randomUUID\(\)\}/);
-    for (const a of ['app/kyc/submit/actions.ts', 'app/kyc/[docId]/act/actions.ts', 'app/kyc/me/actions.ts']) expect(src(a)).toMatch(/formData\.get\('idempotencyKey'\)/);
+    for (const a of ['app/kyc/submit/actions.ts', 'app/people/verification/[id]/act/actions.ts', 'app/kyc/me/actions.ts']) expect(src(a)).toMatch(/formData\.get\('idempotencyKey'\)/);
   });
   it('the reviewer\'s words never travel in a success URL; Retry is a page load, never the chain', () => {
-    expect(src('app/kyc/[docId]/act/actions.ts')).not.toMatch(/done\.set\('note'/);
-    expect(src('app/kyc/page.tsx')).toMatch(/kyc\.desk\.refused\.retry/);
-    expect(src('app/kyc/page.tsx')).not.toMatch(/act\?step=confirm&act=retry/);
+    expect(src('app/people/verification/[id]/act/actions.ts')).not.toMatch(/done\.set\('note'/);
+    expect(src('app/people/verification/page.tsx')).toMatch(/kyc\.desk\.refused\.retry/);
+    expect(src('app/people/verification/page.tsx')).not.toMatch(/act\?step=confirm&act=retry/);
   });
   it('the canon\'s unbacked promises are refused by name, each on the page that draws it', () => {
     for (const r of KYC_REFUSED_BY_NAME) three(`kyc.desk.refused.${r}`);

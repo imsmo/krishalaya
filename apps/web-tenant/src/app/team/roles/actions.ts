@@ -36,8 +36,10 @@ export async function assignRoleAction(formData: FormData): Promise<void> {
 export async function revokeRoleAction(formData: FormData): Promise<void> {
   await requireSession(PATH);
   const id = String(formData.get('id') ?? '').trim();
+  // PC-56 TENANT-SW-c (C2): a removal carries a reason (10–500 characters); the API refuses REASON_REQUIRED without one.
+  const reason = String(formData.get('reason') ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
   if (!id) fail('assign.save');
-  try { await tenantClient().rbac.revoke(id); }
+  try { await tenantClient().rbac.revoke(id, reason); }
   catch (e) { fail(code(e, 'assign.save')); }
   ok('revoked');
 }
@@ -50,7 +52,9 @@ export async function setOverrideAction(formData: FormData): Promise<void> {
     isGranted: formData.get('isGranted'),
   });
   if (!built.ok) fail(`override.${built.error}`);
-  try { await tenantClient().rbac.setOverride(built.value); }
+  // PC-56 TENANT-SW-c (C1): every override carries a reason; a money / personal-data grant becomes a proposal a second admin confirms.
+  const reason = String(formData.get('reason') ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
+  try { await tenantClient().rbac.setOverride({ ...built.value, reason }); }
   catch (e) { fail(code(e, 'override.save')); }
   ok('override');
 }

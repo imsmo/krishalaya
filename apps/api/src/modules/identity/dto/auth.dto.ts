@@ -33,3 +33,12 @@ export const ChangePhoneStartSchema = z.object({ newPhone: phone }).strict();
 export type ChangePhoneStartDto = z.infer<typeof ChangePhoneStartSchema>;
 export const ChangePhoneConfirmSchema = z.object({ newPhone: phone, code: z.string().regex(/^\d{4,8}$/) }).strict();
 export type ChangePhoneConfirmDto = z.infer<typeof ChangePhoneConfirmSchema>;
+
+/** PC-56 TENANT-SW-c · B3: finish a sign-in that is waiting for its second factor — a TOTP or ONE recovery code, never both. */
+export const VerifyTwoFactorSchema = z.object({
+  tenantId: z.string().uuid(),
+  challengeToken: z.string().min(20).max(200),
+  code: z.string().regex(/^\d{6}$/).optional(),
+  recoveryCode: z.string().min(10).max(20).optional(),
+}).strict().refine((v) => Boolean(v.code) !== Boolean(v.recoveryCode), { message: 'send a 6-digit code OR a recovery code', path: ['code'] });
+export type VerifyTwoFactorDto = z.infer<typeof VerifyTwoFactorSchema>;

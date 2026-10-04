@@ -14,6 +14,8 @@ export interface RequestContext {
   roles: string[];           // role codes granted to the caller in this tenant
   permissions: Set<string>;  // flattened permission keys (role grants + overrides). '*' = god mode
   shardId: number;           // tenant→shard resolution for write routing
+  /** PC-56 TENANT-SW-c: the access token's issue time (seconds), when the bearer was an access token. */
+  issuedAtSec?: number;
   /**
    * PC-56 ADMIN-9b. Present ONLY when this request arrived on an admin-realm act-as token. `userId` is still the
    * IMPERSONATED user, because the reads are made on their behalf and a trail that recorded the operator as the actor of

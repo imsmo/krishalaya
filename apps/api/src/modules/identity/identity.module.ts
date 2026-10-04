@@ -85,6 +85,21 @@ import { DeskService } from './services/desk.service';
 import { DeskRepository } from './repositories/desk.repository';
 import { DeskProposalsExpiryJob } from './jobs/desk-proposals-expiry.job';
 import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
+// PC-56 TENANT-SW-c · the verification desk's take-next + recusal, the team (seats, invites, overrides, removal), 2FA for staff.
+import { KycQueueController } from './controllers/v1/kyc-queue.controller';
+import { MeSecurityController } from './controllers/v1/me-security.controller';
+import { TeamController } from './controllers/v1/team.controller';
+import { VerificationTeamRepository } from './repositories/verification-team.repository';
+import { KycQueueService } from './services/kyc-queue.service';
+import { ConflictService } from './services/conflict.service';
+import { TeamService } from './services/team.service';
+import { TwoFactorService } from './services/two-factor.service';
+import { KycClaimsExpiryJob } from './jobs/kyc-claims-expiry.job';
+import { StaffInvitedHandler } from './events/handlers/staff-invited.handler';
+import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
+import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
+import { SMS_SENDER, SmsSender } from '../../core/auth/otp.service';
+import { resolveKek } from '../../core/secrets/secret-envelope';
 
 @Module({
   // PC-56 TENANT-4d-1: UserTenantRoleService asks tenancy's PUBLIC PlanUsageService whether a seat is free
@@ -92,7 +107,8 @@ import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
   // another's public service, never its repositories. forwardRef because TenancyModule's signup path already
   // reaches back into identity's AuthService (see the note below), so the two are mutually dependent.
   imports: [forwardRef(() => TenancyModule), MediaModule],   // PC-56 TENANT-9a: the reveal mints core/media's signed read
-  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, KycDeskController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController, DesksController],
+  controllers: [AuthController, UsersController, RolesController, OnboardingController, KycController, KycDeskController, AddressesController, BankAccountsController, ConsentsController, PrivacyController, MemberRosterController, DesksController,
+    KycQueueController, MeSecurityController, TeamController],
   providers: [
     AuthService, UserService, UserTenantRoleService, OnboardingService, RoleService, PermissionService,
     KycDocumentService, EkycService, BusinessKycService, AddressService, BankAccountService, ConsentService, SessionService, PrivacyService, ChangePhoneService,
@@ -110,6 +126,8 @@ import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
     // PC-56 TENANT-9a · the KYC desk, its read model, the words its notices carry, and the expiry job (F-3).
     KycDeskService, KycDeskReadModel, UiMessageRepository, KycDocumentExpiryJob,
     DeskService, DeskRepository,
+    VerificationTeamRepository, KycQueueService, ConflictService, TeamService, TwoFactorService,
+    { provide: KycClaimsExpiryJob, inject: [KycQueueService], useFactory: (q: KycQueueService) => new KycClaimsExpiryJob(60_000, q) },
     { provide: DeskProposalsExpiryJob, inject: [UNIT_OF_WORK, DeskRepository, DeskService],
       useFactory: (u: UnitOfWork, r: DeskRepository, s: DeskService) => new DeskProposalsExpiryJob(60 * 60_000, u, r, s) },
     {
@@ -146,6 +164,12 @@ export class IdentityModule implements OnModuleInit {
     @Inject(BULK_APPLIER_REGISTRY) private readonly bulkRegistry: BulkApplierRegistry,
     private readonly memberApplier: MemberBulkApplier,
     private readonly deskExpiry: DeskProposalsExpiryJob,
+    private readonly claimsExpiry: KycClaimsExpiryJob,
+    @Inject(OUTBOX_HANDLER_REGISTRY) private readonly outboxHandlers: OutboxHandlerRegistry,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
+    private readonly teamRepo: VerificationTeamRepository,
+    private readonly ui: UiMessageRepository,
+    @Inject(SMS_SENDER) private readonly sms: SmsSender,
   ) {}
   onModuleInit(): void {
     // per-job env gate (KYC_EXPIRY_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
@@ -158,5 +182,10 @@ export class IdentityModule implements OnModuleInit {
     this.bulkRegistry.register(this.memberApplier);
     // PC-56 TENANT-13b: a desk proposal nobody confirmed in 7 days expires (registered unconditionally, the 11b pattern).
     this.jobRegistry.register(this.deskExpiry);
+    // PC-56 TENANT-SW-c (A2): a take-next claim left past its 15 minutes goes back to the queue (registered unconditionally, every minute).
+    this.jobRegistry.register(this.claimsExpiry);
+    // PC-56 TENANT-SW-c (B2): the staff-invite SMS (tenancy.staff_invited) — its table work in a kv_app UoW (HOTFIX-2 gate case).
+    this.outboxHandlers.register(new StaffInvitedHandler(this.uow, this.teamRepo, this.ui, this.sms,
+      resolveKek(this.config.webhookSigningKek, this.config.isProd), this.config.tenantConsoleBaseUrl));
   }
 }

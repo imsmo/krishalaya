@@ -17,23 +17,29 @@ export interface QueueRow {
   id: string; subjectKind: string; userId: string | null; subjectName: string | null; docTypeCode: string; docTypeName: string;
   docNoMasked: string | null; status: string; lastDecision: string; reasonCode: string | null; validUntil: string | null;
   submittedBy: string; submittedByName: string | null; createdAt: string; cursorTs: string; hasMedia: boolean; scanStatus: string | null;
+  /** PC-56 TENANT-SW-c: the live take-next claim (unreleased, unexpired), if any — the service masks the name for anyone but the holder. */
+  claimedBy: string | null; claimedByName: string | null; claimExpiresAt: string | null;
 }
 
 const ROW_SQL = `k.id, k.subject_kind, k.user_id, u.full_name AS subject_name, k.doc_type_code,
   COALESCE((SELECT lv.default_name FROM lookup_values lv WHERE lv.id = k.doc_type_id), k.doc_type_code) AS doc_type_name,
   k.doc_no_masked, k.status::text AS status, k.last_decision, k.reason_code, k.valid_until::text AS valid_until,
   k.submitted_by, sb.full_name AS submitted_by_name, k.created_at, ${US_SQL('k.created_at')} AS cursor_ts,
-  (k.media_id IS NOT NULL) AS has_media, m.scan_status`;
+  (k.media_id IS NOT NULL) AS has_media, m.scan_status,
+  lc.claimed_by AS claim_by, lcu.full_name AS claim_by_name, to_char(lc.expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS claim_expires_at`;
 const FROM_SQL = `FROM kyc_documents k
   LEFT JOIN users u ON u.id = k.user_id
   LEFT JOIN users sb ON sb.id = k.submitted_by
-  LEFT JOIN media_assets m ON m.id = k.media_id AND m.tenant_id = k.tenant_id`;
+  LEFT JOIN media_assets m ON m.id = k.media_id AND m.tenant_id = k.tenant_id
+  LEFT JOIN LATERAL (SELECT c.claimed_by, c.expires_at FROM kyc_claims c WHERE c.document_id = k.id AND c.tenant_id = k.tenant_id AND c.released_at IS NULL AND c.expires_at > now() LIMIT 1) lc ON true
+  LEFT JOIN users lcu ON lcu.id = lc.claimed_by`;
 
 const toQueueRow = (x: any): QueueRow => ({
   id: x.id, subjectKind: x.subject_kind, userId: x.user_id ?? null, subjectName: x.subject_name ?? null, docTypeCode: x.doc_type_code,
   docTypeName: x.doc_type_name, docNoMasked: x.doc_no_masked ?? null, status: x.status, lastDecision: x.last_decision, reasonCode: x.reason_code ?? null,
   validUntil: x.valid_until ?? null, submittedBy: x.submitted_by, submittedByName: x.submitted_by_name ?? null,
   createdAt: new Date(x.created_at).toISOString(), cursorTs: x.cursor_ts, hasMedia: Boolean(x.has_media), scanStatus: x.scan_status ?? null,
+  claimedBy: x.claim_by ?? null, claimedByName: x.claim_by_name ?? null, claimExpiresAt: x.claim_expires_at ?? null,
 });
 
 @Injectable()

@@ -29,7 +29,27 @@ import { UserRepository } from '../repositories/user.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { DeviceRepository } from '../repositories/device.repository';
 import { LoginEventRepository } from '../repositories/login-event.repository';
-import { VerifyOtpDto, RefreshDto } from '../dto/auth.dto';
+import { VerifyOtpDto, RefreshDto, VerifyTwoFactorDto } from '../dto/auth.dto';
+// PC-56 TENANT-SW-c: the second factor at sign-in, and the per-tenant session cut-off on refresh.
+import { VerificationTeamRepository } from '../repositories/verification-team.repository';
+import { TwoFactorService } from './two-factor.service';
+import { SessionRevokedError } from '../../../core/auth/session-posture.guard';
+import { swcRefused } from '../domain/swc.errors';
+import { AppError } from '../../../shared/errors/app-error';
+import { TWO_FACTOR_CHALLENGE_SECONDS } from '../domain/verification-team';
+
+/**
+ * PC-56 TENANT-SW-c · B3 — the OTP step succeeded for a person with CONFIRMED TOTP: the session exists but is PENDING, and no access
+ * token is minted until `POST /auth/2fa/verify` answers with a code (within TWO_FACTOR_CHALLENGE_SECONDS). The challenge is the
+ * pending session's opaque refresh token, carried in `details` (never in the message, which is logged). Answered as a 403 so every
+ * client that does not know 2FA fails closed ("login failed") instead of reading a token shape that is not there.
+ */
+export class TwoFactorPendingError extends AppError {
+  constructor(challengeToken: string) {
+    super('TWO_FACTOR_PENDING', 'Enter the 6-digit code from your authenticator app (or a recovery code) to finish signing in.', 403,
+      { challengeToken, expiresInSec: TWO_FACTOR_CHALLENGE_SECONDS });
+  }
+}
 
 /** What `openSessionIn` accepts for a device — the same shape `DeviceSchema` validates on the login route. */
 export interface DeviceInput { fingerprint: string; platform?: string; model?: string; osVersion?: string; appVersion?: string; pushToken?: string }
@@ -53,6 +73,8 @@ export class AuthService {
     private readonly sessions: SessionRepository,
     private readonly devices: DeviceRepository,
     private readonly loginEvents: LoginEventRepository,
+    private readonly team: VerificationTeamRepository,
+    private readonly twoFactor: TwoFactorService,
   ) {}
 
   /** Step 1: send an OTP. Enumeration-safe (same response whether or not the user exists). */
@@ -109,9 +131,13 @@ export class AuthService {
       }
       const { sessionId, refreshToken } = await this.openSessionIn(tx, user.id, { ip, device: dto.device, phone, method: 'otp' });
       const r = { token: refreshToken };
-      await this.outbox.write(tx, { tenantId: dto.tenantId, aggregateType: 'user', aggregateId: user.id, eventType: 'identity.logged_in', payload: { v: 1, userId: user.id, sessionId } });
-      return { user, sessionId, refreshToken: r.token };
+      // PC-56 TENANT-SW-c: a person with confirmed TOTP gets a PENDING session — no token until the second factor answers.
+      const pending = await this.team.hasConfirmedTotpTx(tx, user.id);
+      if (pending) await this.team.markSessionPendingTx(tx, sessionId);
+      await this.outbox.write(tx, { tenantId: dto.tenantId, aggregateType: 'user', aggregateId: user.id, eventType: 'identity.logged_in', payload: { v: 1, userId: user.id, sessionId, twoFactorPending: pending } });
+      return { user, sessionId, refreshToken: r.token, pending };
     }, { userId: undefined }));
+    if (out.pending) { this.metrics.inc('auth.two_factor_pending'); throw new TwoFactorPendingError(out.refreshToken); }
 
     const tokens = await this.mint(out.user, dto.tenantId, out.sessionId, out.refreshToken);
     this.metrics.inc('auth.login_success', { method: 'otp' });
@@ -124,6 +150,11 @@ export class AuthService {
     const out = await this.uow.run(dto.tenantId, async (tx) => {
       const session = await this.sessions.getByRefreshHashForUpdate(tx, hash);
       if (!session || !session.isValid()) return null;
+      // PC-56 TENANT-SW-c: a session still waiting for its second factor cannot refresh; a session born at or before this tenant's
+      // cut-off (the person was removed from the team) never refreshes into this tenant again.
+      const posture = await this.team.sessionPostureTx(tx, session.id, dto.tenantId);
+      if (posture.pending) return null;
+      if (posture.cutOff) throw new SessionRevokedError();
       const user = await this.users.getForUpdate(tx, session.userId);
       if (!user || !user.isLoginable) return null;
       // A live refresh token must not survive a suspension for THIS tenant — otherwise the member keeps renewing access
@@ -145,6 +176,36 @@ export class AuthService {
     }
     this.metrics.inc('auth.refresh_success');
     return this.mint(out.user, dto.tenantId, out.sessionId, out.refreshToken);
+  }
+
+  /**
+   * PC-56 TENANT-SW-c · B3 — THE SECOND FACTOR. The pending session named by its challenge (its opaque refresh token), younger than
+   * TWO_FACTOR_CHALLENGE_SECONDS, answers with a TOTP (replay-guarded by the database) or one recovery code; the session stops being
+   * pending, its refresh token rotates (the challenge is dead), and tokens are minted. Every failure is named; nothing is minted.
+   */
+  async verifyTwoFactor(dto: VerifyTwoFactorDto, ip: string | null): Promise<AuthTokens> {
+    const hash = this.tokens.hashRefreshToken(dto.challengeToken);
+    let out: { user: User; sessionId: string; refreshToken: string } | null = null;
+    try {
+      out = await this.uow.run(dto.tenantId, async (tx) => {
+        const s = await this.team.sessionByRefreshHashForUpdate(tx, hash);
+        if (!s || !s.pending || s.revoked || s.expired || s.ageSec > TWO_FACTOR_CHALLENGE_SECONDS) throw swcRefused('TWO_FACTOR_CHALLENGE_INVALID');
+        const user = await this.users.getForUpdate(tx, s.userId);
+        if (!user || !user.isLoginable) throw swcRefused('TWO_FACTOR_CHALLENGE_INVALID');
+        await this.assertNotSuspended(tx, dto.tenantId, user.id);
+        const via = await this.twoFactor.verifyInTx(tx, user.id, { code: dto.code ?? null, recoveryCode: dto.recoveryCode ?? null });
+        const r = this.refresh.issue();
+        await this.team.completeTwoFactorTx(tx, s.id, r.hash, r.expiresAt);
+        await this.loginEvents.record(tx, { userId: user.id, phone: null, succeeded: true, method: via === 'recovery' ? 'recovery_code' : 'totp', ip, deviceFingerprint: null });
+        return { user, sessionId: s.id, refreshToken: r.token };
+      }, { userId: undefined });
+    } catch (e) {
+      await this.uow.run(dto.tenantId, (tx) => this.loginEvents.record(tx, { userId: null, phone: null, succeeded: false, method: 'totp', ip, deviceFingerprint: null })).catch(() => undefined);
+      this.metrics.inc('auth.two_factor_failed');
+      throw e;
+    }
+    this.metrics.inc('auth.two_factor_success');
+    return this.mint(out!.user, dto.tenantId, out!.sessionId, out!.refreshToken);
   }
 
   /** Revoke the current session (or all sessions for the user). */
@@ -191,6 +252,22 @@ export class AuthService {
   async openSessionFor(user: User, tenantId: string, ip: string | null, device?: DeviceInput): Promise<AuthTokens> {
     const out = await this.uow.run(tenantId, (tx) => this.openSessionIn(tx, user.id, { ip, device, method: 'signup' }));
     return this.mint(user, tenantId, out.sessionId, out.refreshToken);
+  }
+
+  /**
+   * PC-56 TENANT-SW-c: open a session for a person who has just proven their phone by another route (an accepted staff invite), inside
+   * the caller's transaction — PENDING when they have confirmed TOTP, exactly like the OTP sign-in. Call `finishSignIn` after commit.
+   */
+  async openProvenSessionIn(tx: TxContext, userId: string, ctx: { ip: string | null; device?: DeviceInput; phone?: string | null }): Promise<{ sessionId: string; refreshToken: string; pending: boolean }> {
+    const { sessionId, refreshToken } = await this.openSessionIn(tx, userId, { ...ctx, method: 'otp' });
+    const pending = await this.team.hasConfirmedTotpTx(tx, userId);
+    if (pending) await this.team.markSessionPendingTx(tx, sessionId);
+    return { sessionId, refreshToken, pending };
+  }
+  /** After commit: a pending session answers TWO_FACTOR_PENDING (with its challenge); otherwise tokens are minted. */
+  async finishSignIn(user: User, tenantId: string, s: { sessionId: string; refreshToken: string; pending: boolean }): Promise<AuthTokens> {
+    if (s.pending) throw new TwoFactorPendingError(s.refreshToken);
+    return this.mint(user, tenantId, s.sessionId, s.refreshToken);
   }
 
   private async mint(user: User, tenantId: string, sessionId: string, refreshToken: string): Promise<AuthTokens> {

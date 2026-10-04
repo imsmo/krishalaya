@@ -126,6 +126,7 @@ export class TenantContextMiddleware implements NestMiddleware {
       roles,
       permissions,
       shardId: tenantId ? this.shards.shardFor(tenantId) : 0,
+      ...(principal?.issuedAtSec !== undefined ? { issuedAtSec: principal.issuedAtSec } : {}),
       ...(principal?.impersonation
         ? {
           impersonation: {

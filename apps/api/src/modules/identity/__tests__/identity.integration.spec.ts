@@ -39,6 +39,7 @@ import { LoginEventRepository } from '../repositories/login-event.repository';
 import { RoleRepository } from '../repositories/role.repository';
 import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repository';
 import { AuthService } from '../services/auth.service';
+import { VerificationTeamRepository } from '../repositories/verification-team.repository';
 import { UserTenantRoleService } from '../services/user-tenant-role.service';
 
 const APP_URL = process.env.DATABASE_URL;
@@ -81,7 +82,9 @@ run('identity slice (integration, real Postgres + RLS)', () => {
 
     auth = new AuthService(uow, outbox, metrics, otp, new CaptureSms(), tokens, refresh, roleCache, new TranslationService(), config,
       new UserRepository(replica as any), new SessionRepository(replica as any), new DeviceRepository(),
-      new LoginEventRepository());
+      new LoginEventRepository(),
+      // PC-56 TENANT-SW-c: the second factor at sign-in (nobody in this suite has 2FA, so sign-in is never pending here)
+      new VerificationTeamRepository(replica as any), { verifyInTx: async () => 'totp' } as never);
     rbac = new UserTenantRoleService(uow, outbox, audit, roleCache, new UserTenantRoleRepository(replica as any),
       new RoleRepository(replica as any), new UserRepository(replica as any),
       // PC-56 TENANT-4d-1: the member-seat gate (W118's pause). `plan_limit_enforcement` is OFF by default,

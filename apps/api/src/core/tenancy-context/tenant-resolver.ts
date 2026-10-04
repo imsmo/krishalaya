@@ -13,6 +13,8 @@ import {
 
 export interface ResolvedPrincipal {
   userId: string; tenantId: string; sessionId: string; roles: string[]; permissions: string[];
+  /** PC-56 TENANT-SW-c: the access token's `iat` (seconds) — compared with the per-tenant session cut-off. */
+  issuedAtSec?: number;
   /** PC-56 ADMIN-9b: set when the bearer was an act-as token. The middleware turns this into
    *  `RequestContext.impersonation` AFTER the grant gate has confirmed the session is still live — the resolver only
    *  establishes WHO the token claims to be, never that the session is permitted. */
@@ -63,6 +65,6 @@ export class TenantResolver {
 
     const c = this.tokens.verifyAccessToken(raw);
     if (!c || !c.sub) return null;
-    return { userId: c.sub, tenantId: c.tid, sessionId: c.sid, roles: c.roles, permissions: c.perms };
+    return { userId: c.sub, tenantId: c.tid, sessionId: c.sid, roles: c.roles, permissions: c.perms, ...(c.iat !== undefined ? { issuedAtSec: c.iat } : {}) };
   }
 }

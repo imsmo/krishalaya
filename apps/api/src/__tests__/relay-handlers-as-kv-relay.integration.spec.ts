@@ -499,6 +499,28 @@ const CASES: Record<string, Case> = {
     },
   },
 
+  // ── identity (PC-56 TENANT-SW-c) ──
+  'tenancy.staff_invited → modules/identity/events/handlers/staff-invited.handler#StaffInvitedHandler': {
+    depth: 'write',   // a pending invite with a KEK-sealed token: the SMS leaves (noop sender) and the invite is marked sent, the sealed copy cleared
+    build: async (w) => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { sealEnvelope, resolveKek } = require('../core/secrets/secret-envelope') as typeof import('../core/secrets/secret-envelope');
+      const id = randomUUID(); const token = randomUUID().replace(/-/g, '') + 'abcdefghijk';
+      const c = await w.admin.connect();
+      try {
+        // the invite as TeamService writes it (fixture: triggers off for this one insert — the inviter-session rule is not this gate's subject)
+        await c.query('BEGIN'); await c.query('SET LOCAL session_replication_role = replica');
+        await c.query(
+          `INSERT INTO staff_invites (id, tenant_id, phone, role_id, invited_by, language_code, channel, token_hash, token_sealed, expires_at)
+           SELECT $1, $2, '+919812345678', r.id, $3, 'hi', 'sms', encode(sha256(convert_to($4, 'UTF8')), 'hex'), $5, now() + interval '7 days' FROM roles r WHERE r.code = 'tenant_staff'`,
+          [id, w.tenant, w.seller, token, sealEnvelope(resolveKek('', false), token, `staff_invite:${id}`)]);
+        await c.query('COMMIT');
+      } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
+      return { aggregateType: 'staff_invite', aggregateId: id, payload: { v: 1, inviteId: id },
+        verify: async () => expect(await q1(w, `SELECT sent_at IS NOT NULL AS sent, token_sealed IS NULL AS cleared FROM staff_invites WHERE id=$1`, [id])).toEqual({ sent: true, cleared: true }) };
+    },
+  },
+
   // ── tenant webhooks ──
   '* → modules/tenant-webhooks/events/handlers/webhook-fanout.handler#WebhookFanoutHandler': {
     depth: 'write',   // the world's endpoint subscribes to every public name: one delivery per name, enqueued on the relay tx
@@ -653,7 +675,9 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
       'settlement_holds', 'settlement_deferrals', 'pod_reviews', 'cod_collections', 'cod_shortfalls', 'cod_cash_days', 'commission_rule_proposals', 'delivery_zone_proposals',
       // PC-56 TENANT-SW-b (0198): the ambassador run, the wage run, advances and the eligibility sweep — kv_app only
       'ambassador_payout_runs', 'ambassador_payout_run_lines', 'ambassador_stipend_payments', 'labour_wage_runs', 'labour_wage_run_lines', 'worker_advances',
-      'worker_advance_recoveries', 'scheme_eligibility_sweeps', 'scheme_eligibility_sweep_rows']) {
+      'worker_advance_recoveries', 'scheme_eligibility_sweeps', 'scheme_eligibility_sweep_rows',
+      // PC-56 TENANT-SW-c (0199): claims, conflicts, invites, 2FA, per-tenant session cut-offs, override proposals — kv_app only
+      'kyc_claims', 'staff_conflict_declarations', 'staff_invites', 'user_totp', 'user_recovery_codes', 'tenant_session_revocations', 'staff_override_proposals']) {
       for (const p of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) expect(`${t}:${p}:${await priv(t, p)}`).toBe(`${t}:${p}:false`);
     }
     expect(await priv('insurance_policies', 'UPDATE')).toBe(false);
@@ -702,6 +726,14 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     const sweep = await app.get(EligibilitySweepJob).sweep(relayPool, now, [w.tenant]);
     expect(sweep.failed).toBe(0);
   }, 120_000);
+
+  // ── PC-56 TENANT-SW-c: the take-next claim-expiry job sweeps on the kv_relay pool (tenants only), releasing per tenant in kv_app's UoW ──
+  it('SW-c · the KYC claim-expiry job sweeps on the kv_relay pool without 42501', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { KycClaimsExpiryJob } = require('../modules/identity/jobs/kyc-claims-expiry.job') as typeof import('../modules/identity/jobs/kyc-claims-expiry.job');
+    const out = await app.get(KycClaimsExpiryJob).sweep(relayPool, [w.tenant]);
+    expect(out).toMatchObject({ tenants: 1, failed: 0 });
+  }, 60_000);
 
   // ── B4 · END TO END: the REAL registry (every handler of the event, in boot order), the REAL dispatcher, LOGGED IN as kv_relay ──
   it('B4 · orders.order_confirmed through the FULL registry as kv_relay: published, ONE shipment AND ONE trade invoice; a redelivery adds nothing', async () => {

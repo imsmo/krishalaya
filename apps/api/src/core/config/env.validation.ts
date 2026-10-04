@@ -64,6 +64,9 @@ export const EnvSchema = z.object({
   INTEGRATION_SECRET_PREFIX: z.string().default('krishi/tenant-integrations'),
   // tenant-webhooks signing-secret encryption key (P1-11). 32 bytes (hex or base64); fail-closed in prod if unset.
   WEBHOOK_SIGNING_KEK: z.string().default(''),
+  // PC-56 TENANT-SW-c: the tenant console's public base URL — a staff invite SMS carries `<base>/invite?t=<token>`; empty ⇒ the SMS
+  // carries the code to type on the console's invite page instead (no link is invented).
+  TENANT_CONSOLE_BASE_URL: z.string().default(''),
   S3_ACCESS_KEY_ID: z.string().default(''),             // empty ⇒ use the instance IAM role (no static keys)
   S3_SECRET_ACCESS_KEY: z.string().default(''),
   S3_ENDPOINT: z.string().optional(),                   // set for MinIO/LocalStack; absent ⇒ AWS S3

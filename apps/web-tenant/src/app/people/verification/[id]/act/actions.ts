@@ -1,5 +1,5 @@
 'use server';
-// apps/web-tenant/src/app/kyc/[docId]/act/actions.ts · W2324 / W2325 · the KYC mutate chain's act — PC-56 TENANT-9a.
+// apps/web-tenant/src/app/people/verification/[id]/act/actions.ts (was /kyc/[docId]/act) · W2339 / W2340 · the verification mutate chain's act — PC-56 TENANT-9a / SW-c.
 // verify · reject · request_more · reveal, re-judged by the API on the locked row. THE KEY IS THE CONFIRM PAGE'S. The
 // reviewer's words never travel into a success URL; a reveal's success carries the 15-minute signed link the API minted
 // AFTER it recorded the reveal (decision row + audit row).
@@ -7,9 +7,9 @@ import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { SdkError } from '@krishalaya/sdk-js';
-import { tenantClient } from '../../../../lib/api-client';
-import { requireSession } from '../../../../lib/session';
-import { KYC_DESK_HREF, docHref, isDeskAct, refusalCodesFrom } from '../../../../features/kyc/desk';
+import { tenantClient } from '../../../../../lib/api-client';
+import { requireSession } from '../../../../../lib/session';
+import { KYC_DESK_HREF, docHref, isDeskAct, refusalCodesFrom } from '../../../../../features/kyc/desk';
 
 const opt = (v: FormDataEntryValue | null) => { const s = String(v ?? '').trim(); return s.length ? s : undefined; };
 

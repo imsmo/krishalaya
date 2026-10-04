@@ -3,7 +3,7 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycDeskOverview, KycDeskRow, KycDeskQueueQuery, KycDeskRecord, KycDeskCatalogue, KycSubmitInput, KycSubmitReview, KycSubmitResult, KycActPreview, KycActResult, KycDeskAct, KycDocument, KycReviewItem, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
+import { KycClaim, KycClaimResult, KycSkipReason, KycDeskOverview, KycDeskRow, KycDeskQueueQuery, KycDeskRecord, KycDeskCatalogue, KycSubmitInput, KycSubmitReview, KycSubmitResult, KycActPreview, KycActResult, KycDeskAct, KycDocument, KycReviewItem, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
@@ -60,6 +60,24 @@ export class KycResource {
   /** W2324: the act — keyed by the confirm page. A reveal answers a 15-minute signed link (recorded first). */
   async deskAct(id: string, act: KycDeskAct, input: { reasonCode?: string; note?: string }, idempotencyKey: string): Promise<KycActResult> {
     return (await this.http.request<KycActResult>('POST', `kyc/desk/documents/${encodeURIComponent(id)}/acts/${encodeURIComponent(act)}`, { idempotencyKey, body: input })).data;
+  }
+
+  // --- PC-56 TENANT-SW-c · W157 "Take next" / W158 "Skip (take next)" ---
+  /** Claim the oldest pending member document you may decide (15 minutes). Keyed. */
+  async claimNext(idempotencyKey: string): Promise<KycClaimResult> {
+    return (await this.http.request<KycClaimResult>('POST', 'kyc/queue/claim', { idempotencyKey })).data;
+  }
+  /** Your live claim, or null. */
+  async myClaim(signal?: AbortSignal): Promise<KycClaim | null> {
+    return (await this.http.request<KycClaim | null>('GET', 'kyc/queue/claims/mine', { signal })).data;
+  }
+  /** Skip with a coded reason (`other` needs a note ≥ 10) and take the next one. Keyed. */
+  async skipClaim(claimId: string, input: { reasonCode: KycSkipReason; note?: string }, idempotencyKey: string): Promise<KycClaimResult> {
+    return (await this.http.request<KycClaimResult>('POST', `kyc/queue/claims/${encodeURIComponent(claimId)}/skip`, { idempotencyKey, body: input })).data;
+  }
+  /** Give the document back to the queue. */
+  async releaseClaim(claimId: string): Promise<{ released: true; documentId: string }> {
+    return (await this.http.request<{ released: true; documentId: string }>('POST', `kyc/queue/claims/${encodeURIComponent(claimId)}/release`, {})).data;
   }
 
   // --- eKYC (Aadhaar/PAN provider verification). The RAW id is sent ONLY to start(); the server validates it,

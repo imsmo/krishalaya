@@ -25,7 +25,8 @@ import { ApiKeysResource } from './resources/api-keys';
 import { OrgSettingsResource } from './resources/org-settings';   // PC-56 TENANT-13b
 import { BrandingResource } from './resources/branding';   // PC-56 TENANT-13d
 import { DomainsResource } from './resources/domains';     // PC-56 TENANT-13d
-import { DesksResource } from './resources/desks';                 // PC-56 TENANT-13b
+import { DesksResource } from './resources/desks';
+import { TeamResource, MeSecurityResource } from './resources/team';   // PC-56 TENANT-SW-c                 // PC-56 TENANT-13b
 import { RbacResource, DisputesResource, UsersResource, RefundApprovalsResource } from './resources/admin';
 import { NotificationsResource } from './resources/notifications';
 import { CmsResource } from './resources/cms';
@@ -149,6 +150,10 @@ export class KrishalayaClient {
   readonly domains: DomainsResource;
   /** PC-56 TENANT-13b · W185 desks: the board, proposals (a second tenant_admin confirms), members. */
   readonly desks: DesksResource;
+  /** PC-56 TENANT-SW-c · W183 / W184 the team: seats, staff, maker-checker pairs, invites, conflicts. */
+  readonly team: TeamResource;
+  /** PC-56 TENANT-SW-c · `/me/security`: the signed-in person's own 2FA and conflict declarations. */
+  readonly meSecurity: MeSecurityResource;
   readonly rbac: RbacResource;
   readonly disputes: DisputesResource;
   /** PC-56 TENANT-3b: the refund maker-checker plane (propose → decide → applied by the refund itself). */
@@ -247,6 +252,8 @@ export class KrishalayaClient {
     this.branding = new BrandingResource(this.http);
     this.domains = new DomainsResource(this.http);
     this.desks = new DesksResource(this.http);
+    this.team = new TeamResource(this.http);
+    this.meSecurity = new MeSecurityResource(this.http);
     this.rbac = new RbacResource(this.http);
     this.disputes = new DisputesResource(this.http);
     this.refundApprovals = new RefundApprovalsResource(this.http);

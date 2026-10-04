@@ -5,7 +5,7 @@
 // their own tenant, the server re-checks tenant membership + permission on each call. Mutations carry an
 // Idempotency-Key (Law 3). Money is bigint minor strings (Law 2).
 import { HttpClient } from '../http';
-import { RoleAssignment, RoleDef, PermissionDef, AssignRoleInput, StaffOverrideInput, Dispute, DisputeMessage, UserProfile, Page } from '../types';
+import { RoleAssignment, RoleDef, PermissionDef, AssignRoleInput, StaffOverrideInput, StaffOverrideResult, Dispute, DisputeMessage, UserProfile, Page } from '../types';
 
 export class RbacResource {
   constructor(private readonly http: HttpClient) {}
@@ -34,13 +34,26 @@ export class RbacResource {
   async assign(input: AssignRoleInput, idempotencyKey: string): Promise<{ id: string }> {
     return (await this.http.request<{ id: string }>('POST', 'rbac/assignments', { idempotencyKey, body: input })).data;
   }
-  /** Revoke a role assignment. Needs identity.approve. */
-  async revoke(assignmentId: string): Promise<{ ok: boolean }> {
-    return (await this.http.request<{ ok: boolean }>('DELETE', `rbac/assignments/${encodeURIComponent(assignmentId)}`, {})).data;
+  /** Revoke a role assignment ("Remove from team", W184). Needs identity.approve. PC-56 TENANT-SW-c (F-15): the API REQUIRES a reason
+   *  (10–500) and refuses `REASON_REQUIRED` without one; it also revokes the overrides, the desk seats and this tenant's sessions.
+   *  `reason` is optional in this signature only so existing callers keep compiling — they now get the named refusal. */
+  async revoke(assignmentId: string, reason?: string): Promise<{ ok: boolean; roleCode?: string; desksRemoved?: number; overridesRevoked?: string[]; sessionsCutOffAt?: string | null; sessionEndBoundSec?: number }> {
+    return (await this.http.request<{ ok: boolean }>('DELETE', `rbac/assignments/${encodeURIComponent(assignmentId)}`, { body: { reason: reason ?? '' } })).data;
   }
-  /** Grant/deny a single permission on one assignment (a staff override). Server enforces the no-escalation rules. */
-  async setOverride(input: StaffOverrideInput): Promise<{ ok: boolean }> {
-    return (await this.http.request<{ ok: boolean }>('POST', 'rbac/overrides', { body: input })).data;
+  /** Grant/deny a single permission on one assignment (a staff override) WITH a reason. A money / PII grant becomes a proposal. */
+  async setOverride(input: StaffOverrideInput): Promise<StaffOverrideResult> {
+    return (await this.http.request<StaffOverrideResult>('POST', 'rbac/overrides', { body: input })).data;
+  }
+  /** Revoke one override with a reason (recorded on the row — never a delete). */
+  async revokeOverride(input: { userTenantRoleId: string; permissionCode: string; reason: string }): Promise<{ ok: boolean }> {
+    return (await this.http.request<{ ok: boolean }>('POST', 'rbac/overrides/revoke', { body: input })).data;
+  }
+  /** A second tenant_admin confirms (or refuses, with a reason) a privileged override proposal. */
+  async confirmOverrideProposal(id: string): Promise<{ id: string; status: 'confirmed'; permission: string }> {
+    return (await this.http.request<{ id: string; status: 'confirmed'; permission: string }>('POST', `rbac/overrides/proposals/${encodeURIComponent(id)}/confirm`, {})).data;
+  }
+  async refuseOverrideProposal(id: string, reason: string): Promise<{ id: string; status: 'refused' }> {
+    return (await this.http.request<{ id: string; status: 'refused' }>('POST', `rbac/overrides/proposals/${encodeURIComponent(id)}/refuse`, { body: { reason } })).data;
   }
 }
 

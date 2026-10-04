@@ -34,6 +34,7 @@ import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repos
 import { EkycSessionRepository } from '../repositories/ekyc-session.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { KycDeskReadModel } from '../read-models/kyc-desk.read-model';
+import { VerificationTeamRepository } from '../repositories/verification-team.repository';
 import { KycDeskService, DeskActor } from '../services/kyc-desk.service';
 import { EkycService } from '../services/ekyc.service';
 import { SandboxEkycProvider, SANDBOX_EKYC_OTP } from '../gateway/sandbox-ekyc.provider';
@@ -128,7 +129,7 @@ run('TENANT-9a · the KYC desk (integration, real Postgres + RLS as kv_app)', ()
       revealCalls.push({ mediaId, auditRowsAtCall: n });
       return { mediaId, url: `https://signed.example/${mediaId}`, expiresInSec: 900 };
     } };
-    desk = new KycDeskService(uow, outbox, audit, idem, kycRepo, utrRepo, readModel, ui, fakeMedia as any);
+    desk = new KycDeskService(uow, outbox, audit, idem, kycRepo, utrRepo, readModel, ui, fakeMedia as any, new VerificationTeamRepository(replica as any));   // PC-56 SW-c: recusal + claims
     ekyc = new EkycService(uow, outbox, new SandboxEkycProvider(), audit, new EkycSessionRepository(replica as any), new UserRepository(replica as any), kycRepo, utrRepo);
     expiry = new KycDocumentExpiryJob(uow, outbox, audit, kycRepo, utrRepo, ui);
     reminders = new KycExpiryRemindersJob(uow, outbox, kycRepo, ui);

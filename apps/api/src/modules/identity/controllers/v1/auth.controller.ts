@@ -15,13 +15,36 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { AuthService } from '../../services/auth.service';
 import { SessionService } from '../../services/session.service';
 import { ChangePhoneService } from '../../services/change-phone.service';
-import { RequestOtpSchema, RequestOtpDto, VerifyOtpSchema, VerifyOtpDto, RefreshSchema, RefreshDto, LogoutSchema, LogoutDto, ChangePhoneStartSchema, ChangePhoneStartDto, ChangePhoneConfirmSchema, ChangePhoneConfirmDto } from '../../dto/auth.dto';
+import { RequestOtpSchema, RequestOtpDto, VerifyOtpSchema, VerifyOtpDto, RefreshSchema, RefreshDto, LogoutSchema, LogoutDto, ChangePhoneStartSchema, ChangePhoneStartDto, ChangePhoneConfirmSchema, ChangePhoneConfirmDto, VerifyTwoFactorSchema, VerifyTwoFactorDto } from '../../dto/auth.dto';
+// PC-56 TENANT-SW-c: the second factor at sign-in, and the staff invite (lookup + accept: token + OTP on the invited phone).
+import { TwoFactorExempt } from '../../../../core/auth/session-posture.guard';
+import { TeamService } from '../../services/team.service';
+import { AcceptInviteSchema, AcceptInviteDto, InviteLookupSchema, InviteLookupDto } from '../../dto/verification-team.dto';
 
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
 
 @Controller({ path: 'auth', version: '1' })
+@TwoFactorExempt()   // PC-56 TENANT-SW-c: signing in, out and the session list stay reachable for a staff member still setting up 2FA
 export class AuthController {
-  constructor(private readonly auth: AuthService, private readonly sessions: SessionService, private readonly changePhone: ChangePhoneService) {}
+  constructor(private readonly auth: AuthService, private readonly sessions: SessionService, private readonly changePhone: ChangePhoneService, private readonly team: TeamService) {}
+
+  /** PC-56 TENANT-SW-c · B3: finish a sign-in waiting for its second factor (TOTP or one recovery code). */
+  @Public() @RateLimit({ limit: 10, windowSec: 60, by: 'ip' }) @Post('2fa/verify')
+  async verifyTwoFactor(@Req() req: Request, @ZodBody(VerifyTwoFactorSchema) dto: VerifyTwoFactorDto) {
+    return { data: await this.auth.verifyTwoFactor(dto, req.ip || null) };
+  }
+
+  /** PC-56 TENANT-SW-c · B2: what an invite is (organisation, role, masked phone, status) — for the accept page. */
+  @Public() @RateLimit({ limit: 20, windowSec: 60, by: 'ip' }) @Post('invites/lookup')
+  async lookupInvite(@ZodBody(InviteLookupSchema) dto: InviteLookupDto) {
+    return { data: await this.team.lookup(dto.tenantId, dto.token) };
+  }
+
+  /** PC-56 TENANT-SW-c · B2: accept a staff invite — the token AND the OTP on the invited phone; signs the person in. */
+  @Public() @RateLimit({ limit: 10, windowSec: 60, by: 'ip' }) @Post('invites/accept')
+  async acceptInvite(@Req() req: Request, @ZodBody(AcceptInviteSchema) dto: AcceptInviteDto) {
+    return { data: await this.team.accept(dto, req.ip || null) };
+  }
 
   @Public() @RateLimit({ limit: 5, windowSec: 60, by: 'ip' }) @Post('otp')
   requestOtp(@ZodBody(RequestOtpSchema) dto: RequestOtpDto) {

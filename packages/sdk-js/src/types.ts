@@ -184,12 +184,20 @@ export interface KycDeskOverview {
   organisation: { verified: boolean; reason: 'all_required_verified' | 'no_requirement_declared' | 'required_types_missing'; missingRequired: string[]; verifiedAt: string | null; lines: KycOrgLine[];
     unlisted: Array<{ id: string; docTypeCode: string; docTypeName: string; status: string; validUntil: string | null; docNoMasked: string | null }>; documentCount: number };
   members: { people: number; fullyVerified: number; pending: number; oldestPendingDays: number | null; rejectedOpen: number; topRejectReason: string | null; expiredOpen: number; expiringSoon: number; remindersSent: number };
+  /** PC-56 TENANT-SW-c (W157): median(decided_at − submitted_at) of the desk's decisions over `windowDays`; `seconds: null` = none in the window. */
+  median: { seconds: number | null; decisions: number; windowDays: number };
+  /** Live take-next claims right now. */
+  underReview: number;
   can: { manage: boolean; review: boolean; reveal: boolean };
 }
+/** PC-56 TENANT-SW-c: a live take-next claim on a queue row / a record — "being reviewed by <masked>", or yours. */
+export interface KycClaimView { id?: string; mine: boolean; byMasked: string | null; expiresAt: string | null }
 export interface KycDeskRow {
   id: string; subjectKind: KycSubjectKind; userId: string | null; subjectName: string | null; docTypeCode: string; docTypeName: string; docNoMasked: string | null;
   status: KycStatus; lastDecision: string; reasonCode: string | null; validUntil: string | null; submittedBy: string; submittedByName: string | null; createdAt: string;
   cursorTs: string; hasMedia: boolean; scanStatus: string | null;
+  /** PC-56 TENANT-SW-c: on a queue row, the live claim (masked for anyone but the holder). */
+  claim?: KycClaimView | null;
 }
 export interface KycDeskQueueQuery { subjectKind?: KycSubjectKind; roleCode?: string; status?: KycStatus; docTypeCode?: string; expiringWithin?: number; cursor?: string; limit?: number }
 export interface KycActVerdict { act: KycDeskAct; allowed: boolean; refusals: string[]; to: 'verified' | 'rejected' | null }
@@ -199,7 +207,18 @@ export interface KycDeskRecord {
   roles: Array<{ roleCode: string; recorded: string; effective: string; evidenced: boolean }>;
   history: Array<{ act: string; fromStatus: string | null; toStatus: string; reasonCode: string | null; note: string | null; decidedBy: string | null; decidedByName: string | null; via: string; decidedAt: string }>;
   today: string; acts: KycActVerdict[]; can: { manage: boolean; review: boolean; reveal: boolean };
+  /** PC-56 TENANT-SW-c (W158): the database's recusal verdict for YOU on this member — `KYC_RECUSED_ONBOARDER` / `KYC_RECUSED_DECLARED` / null. */
+  recusal?: { code: 'KYC_RECUSED_DECLARED' | 'KYC_RECUSED_ONBOARDER' | null; onboarderRecorded: boolean };
+  claim?: KycClaimView | null;
+  /** "What unlocks on verify": the 0125 money gate, READ — per role this document type evidences, its effective KYC and the payout purposes it governs. */
+  unlocks?: Array<{ roleCode: string; effective: string; purposes: string[]; unlocksOnVerify: boolean }>;
+  /** "already verified … — reused": the subject's other verified, in-date documents evidencing the same roles. */
+  evidenceReuse?: Array<{ documentId: string; docTypeCode: string; roles: string[]; viaProvider: boolean; verifiedAt: string | null }>;
 }
+/** PC-56 TENANT-SW-c · W157 "Take next" / W158 "Skip (take next)". */
+export interface KycClaim { id: string; documentId: string; claimedBy: string; claimedAt: string; expiresAt: string; releasedAt: string | null; releaseKind: string | null }
+export interface KycClaimResult { claim: KycClaim | null; documentId: string | null; reason: 'claimed' | 'already_holding' | 'queue_empty'; minutes: number; skipped?: string }
+export type KycSkipReason = 'needs_specialist' | 'evidence_unclear' | 'language' | 'conflict_to_declare' | 'other';
 export interface KycDeskCatalogue {
   docTypes: Array<{ code: string; name: string; subjectKind: KycSubjectKind; validity: 'required' | 'optional'; evidences: string[] }>;
   heldRoles: string[] | null; subjectName: string | null;
@@ -1147,7 +1166,9 @@ export interface PermissionDef { code: string; defaultName: string; moduleCode: 
 /** Assign a role to a member. `roleData` carries role-specific config (e.g. region scoping). */
 export interface AssignRoleInput { userId: string; roleCode: string; roleData?: Record<string, unknown>; }
 /** A per-assignment permission override (grant or deny one permission). */
-export interface StaffOverrideInput { userTenantRoleId: string; permissionCode: string; isGranted: boolean; }
+/** PC-56 TENANT-SW-c (F-15): `reason` (10–500) is REQUIRED; `expiresAt` optional. A money / PII GRANT answers `status: 'proposed'`. */
+export interface StaffOverrideInput { userTenantRoleId: string; permissionCode: string; isGranted: boolean; reason: string; expiresAt?: string }
+export interface StaffOverrideResult { ok: boolean; status: 'applied' | 'proposed'; proposalId: string | null }
 /** The tenant's own analytics dashboard over a window. All money is bigint minor STRINGS (Law 2). */
 export interface TenantAnalytics {
   windowFrom: string; windowTo: string; currencyCode: string;

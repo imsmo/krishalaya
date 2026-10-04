@@ -37,6 +37,8 @@ export const WIRED_SETTINGS: Readonly<Record<string, SettingConsumer>> = Object.
   'notification.quiet_hours_default':       { file: 'modules/communication/repositories/quiet-hours.repository.ts', marker: 'notification.quiet_hours_default' },
   'payouts.batch_checker_threshold_minor':  { file: 'modules/payments/services/payout-approval.service.ts', marker: "'payouts.batch_checker_threshold_minor'" },
   'payouts.batch_cut_off_minutes':          { file: 'modules/payments/services/payout-approval.service.ts', marker: "'payouts.batch_cut_off_minutes'" },
+  // PC-56 TENANT-SW-c (B3): staff 2FA required — read by the global SessionPostureGuard (risk_class security → 13b proposal + second admin).
+  'security.require_staff_2fa':             { file: 'core/auth/session-posture.guard.ts', marker: "'security.require_staff_2fa'" },
   'plans.usage_alert_threshold_pct':        { file: 'modules/tenancy/repositories/plan-usage.repository.ts', marker: 'plans.usage_alert_threshold_pct' },
   'settlements.cycle_length':               { file: 'modules/payments/services/settlement-cycle.service.ts', marker: "'settlements.cycle_length'" },
 });

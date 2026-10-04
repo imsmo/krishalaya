@@ -899,12 +899,13 @@ describe('HttpClient via resources', () => {
     expect(calls[2].init.method).toBe('POST');
     expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-rbac-1');
     expect(a.id).toBe('utr1');
-    await c.rbac.revoke('utr1');
+    await c.rbac.revoke('utr1', 'left the cooperative this season');
     expect(calls[3].url).toBe('https://api.test/v1/rbac/assignments/utr1');
     expect(calls[3].init.method).toBe('DELETE');
-    await c.rbac.setOverride({ userTenantRoleId: 'utr1', permissionCode: 'listing.publish', isGranted: true });
+    expect(JSON.parse(calls[3].init.body as string)).toEqual({ reason: 'left the cooperative this season' });   // PC-56 SW-c: the reason travels (F-15)
+    await c.rbac.setOverride({ userTenantRoleId: 'utr1', permissionCode: 'listing.publish', isGranted: true, reason: 'covers the listing desk' });
     expect(calls[4].url).toBe('https://api.test/v1/rbac/overrides');
-    expect(JSON.parse(calls[4].init.body as string)).toEqual({ userTenantRoleId: 'utr1', permissionCode: 'listing.publish', isGranted: true });
+    expect(JSON.parse(calls[4].init.body as string)).toEqual({ userTenantRoleId: 'utr1', permissionCode: 'listing.publish', isGranted: true, reason: 'covers the listing desk' });
   });
 
   it('tenancy.changePlan / cancelSubscription hit the subscription sub-routes (P1-11 billing-config)', async () => {

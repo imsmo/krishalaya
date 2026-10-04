@@ -287,3 +287,14 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- [PC-56 TENANT-SW-b] ambassador run maker, advance approver, schemes desk (0198).
    OR (r.code IN ('tenant_admin','fpo_coordinator') AND p.code IN ('ambassador.payout.prepare','advance.approve','scheme.desk'))
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 TENANT-SW-c] the STAFF roles — each holds a staff seat of the plan (0199 adds roles.is_staff and sets the same five).
+-- Members (farmer, customer, worker, ambassador …) are not seats. Guarded: migrate.js runs THIS seed as a pre-apply fixup
+-- before 0125 (long before 0199 adds the column), so on a from-empty build the column does not exist yet — 0199's own UPDATE
+-- then sets the five, and the normal seed step after migrations re-asserts them here.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'roles' AND column_name = 'is_staff') THEN
+    EXECUTE $u$UPDATE roles SET is_staff = true WHERE code IN ('tenant_admin','tenant_staff','support_agent','auditor','fpo_coordinator') AND NOT is_staff$u$;
+  END IF;
+END $$;

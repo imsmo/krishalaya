@@ -10,7 +10,9 @@ export const SECRET_PAGE_HEADERS: Readonly<Record<string, string>> = Object.free
 
 /** PC-56 TENANT-13c: the WHOLE developer area (an API key is shown once on /settings/developers) and the integrations pages (a provider
  *  credential is typed there) carry the same pair. The webhook prefix stays listed for the 13a pin. */
-export const SECRET_PAGE_PREFIXES: readonly string[] = Object.freeze([SECRET_PAGE_PREFIX, '/settings/developers', '/settings/integrations']);
+export const SECRET_PAGE_PREFIXES: readonly string[] = Object.freeze([SECRET_PAGE_PREFIX, '/settings/developers', '/settings/integrations',
+  // PC-56 TENANT-SW-c: the 2FA secret and recovery codes are shown once on /me/security; an invite token rides /invite's address
+  '/me/security', '/invite']);
 
 export function secretPageHeaders(pathname: string): Record<string, string> {
   const p = String(pathname ?? '');

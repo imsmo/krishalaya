@@ -83,12 +83,15 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
         { key: 'notifications', href: '/notifications', label: t.t('nav.notifications') },
         { key: 'billing', href: '/billing', label: t.t('nav.billing') },
         { key: 'team', href: '/team', label: t.t('nav.team') },
-        { key: 'kyc', href: '/kyc', label: t.t('nav.kyc') },
+        { key: 'kyc', href: '/people/verification', label: t.t('nav.kyc') },   // PC-56 TENANT-SW-c: the canon path (W157); /kyc redirects
         { key: 'settings', href: '/settings', label: t.t('nav.settings') },
         // PC-56 TENANT-13b: organisation settings (W186) and desks (W185) at the canon paths; the API's `tenancy` flag, tenant.settings and
         // desk.manage decide what each shows.
         { key: 'org-settings', href: '/settings/org', label: t.t('nav.orgSettings') },
+        // PC-56 TENANT-SW-c: the team (W183 — seats, staff, invites, maker-checker pairs) and the person's own security (2FA, conflicts)
+        { key: 'staff-team', href: '/settings/team', label: t.t('nav.staffTeam') },
         { key: 'desks', href: '/settings/team/desks', label: t.t('nav.desks') },
+        { key: 'my-security', href: '/me/security', label: t.t('nav.mySecurity') },
         // PC-56 TENANT-13a: developer settings — webhooks (W188) at the canon path; the API's `tenancy` flag and `api.manage` decide what it shows.
         { key: 'webhooks', href: '/settings/developers/webhooks', label: t.t('nav.webhooks') },
         // PC-56 TENANT-13c: API keys (W190, the `tenant_api` flag + api.manage + the api_access plan feature) and integrations (W187).
