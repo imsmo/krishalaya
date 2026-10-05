@@ -18,6 +18,7 @@ import { DataTable } from '../../../components/DataTable';
 import { COMMISSION_HREF, COMMISSION_SOURCES, bpsPercent, pageState } from '../../../features/swa/console';
 import { AsOf } from '../../../components/AsOf';
 import { asOfLabels } from '../../../features/swf/console';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 TENANT-CLOSE · RTL: the range arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.com.title'), robots: { index: false, follow: false } }; }
@@ -85,7 +86,7 @@ export default async function CommissionPage({ searchParams }: { searchParams: {
               { header: t.t('swa.com.col.rate'), cell: rateCell },
               { header: t.t('swa.com.col.cap'), cell: (r) => money(r.capMinor) },
               { header: t.t('swa.com.col.chargedTo'), cell: (r) => t.t(`swa.com.charged.${r.chargedTo}`) },
-              { header: t.t('swa.com.col.effective'), cell: (r) => `${day(r.effectiveFrom)} → ${r.effectiveTo ? day(r.effectiveTo) : ''}` },
+              { header: t.t('swa.com.col.effective'), cell: (r) => <>{day(r.effectiveFrom)} <DirArrow /> {r.effectiveTo ? day(r.effectiveTo) : ''}</> },
               { header: t.t('swa.com.col.priority'), cell: (r) => String(r.priority) },
               { header: t.t('swa.com.col.share'), cell: (r) => t.t(r.scope === 'tenant' ? 'swa.com.shareByPlan' : 'swa.com.sharePlatform', { n: String(r.platformShareBps) }) },
               { header: t.t('swa.com.col.status'), cell: (r) => t.t(`swa.com.status.${r.status ?? (r.isActive ? 'in_force' : 'inactive')}`) },

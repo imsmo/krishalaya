@@ -22,6 +22,7 @@ import { REPORTS_HREF, RETRY_HREF, CADENCES, asOfLabels, istDaysAgo, istToday, k
 import { istClock } from '../../../features/offline/stale';
 import { InsightsNav } from '../InsightsNav';
 import { RefusedLine } from '../RefusedLine';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 TENANT-CLOSE · RTL: the range arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.reports.title'), robots: { index: false, follow: false } }; }
@@ -110,7 +111,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Reco
           <DataTable rows={runs} empty={t.t('swf.reports.noRuns')} columns={[
             { header: t.t('swf.reports.col.when'), cell: (r) => <Link href={`${REPORTS_HREF}/runs/${r.id}`} className="kv-btn--link">{when(r.queuedAt)}</Link> },
             { header: t.t('swf.reports.col.dataset'), cell: (r) => `${t.t(`swf.reports.ds.${r.datasetCode}`)} · ${defTitle(r.definitionId)}` },
-            { header: t.t('swf.reports.col.range'), cell: (r) => `${r.fromDay} → ${r.toDay}` },
+            { header: t.t('swf.reports.col.range'), cell: (r) => <>{r.fromDay} <DirArrow /> {r.toDay}</> },
             { header: t.t('swf.reports.col.status'), cell: (r) => <span><span className="kv-badge">{t.t(`swf.reports.status.${r.status}`)}</span>{r.errorCode ? <> {t.t(swfCodeKey(r.errorCode))} <code>{r.errorCode}</code></> : null}</span> },
             { header: t.t('swf.reports.col.rows'), cell: (r) => (r.rowCount === null ? t.t('common.dash') : String(r.rowCount)) },
           ]} />

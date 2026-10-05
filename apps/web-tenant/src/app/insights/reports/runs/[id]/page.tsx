@@ -12,6 +12,7 @@ import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
 import { AsOf } from '../../../../../components/AsOf';
 import { REPORTS_HREF, asOfLabels, insightExportHref, isUuid, swfCodeKey, swfPageState, watermarkPairs } from '../../../../../features/swf/console';
+import { DirArrow } from '../../../../../components/DirArrow'; // PC-56 TENANT-CLOSE · RTL: the range arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.reports.runTitle'), robots: { index: false, follow: false } }; }
@@ -33,11 +34,11 @@ export default async function ReportRunPage({ params }: { params: { id: string }
           <div className="kv-card">
             <dl className="kv-dl">
               <dt>{t.t('swf.reports.col.dataset')}</dt><dd>{t.t(`swf.reports.ds.${r.datasetCode}`)} · {r.dimensions.join(', ') || t.t('common.dash')} · {r.measures.join(', ')}</dd>
-              <dt>{t.t('swf.reports.col.range')}</dt><dd>{r.fromDay} → {r.toDay}</dd>
+              <dt>{t.t('swf.reports.col.range')}</dt><dd>{r.fromDay} <DirArrow /> {r.toDay}</dd>
               <dt>{t.t('swf.reports.col.status')}</dt><dd><span className="kv-badge">{t.t(`swf.reports.status.${r.status}`)}</span>{r.errorCode && <> {t.t(swfCodeKey(r.errorCode))} <code>{r.errorCode}</code></>}</dd>
               <dt>{t.t('swf.reports.col.rows')}</dt><dd>{r.rowCount === null ? t.t('common.dash') : String(r.rowCount)}</dd>
               <dt>{t.t('swf.reports.timeoutObserved')}</dt><dd>{r.statementTimeout ? <code>{r.statementTimeout}</code> : t.t('common.dash')} {r.statementMs !== null && <span className="kv-detail__muted">· {t.t('swf.reports.took', { ms: String(r.statementMs) })}</span>}</dd>
-              <dt>{t.t('swf.reports.col.when')}</dt><dd>{when(r.queuedAt)} → {when(r.finishedAt)}</dd>
+              <dt>{t.t('swf.reports.col.when')}</dt><dd>{when(r.queuedAt)} <DirArrow /> {when(r.finishedAt)}</dd>
             </dl>
             {r.exportJobId && <p><Link href={insightExportHref(r.exportJobId, 'reports')} className="kv-btn kv-btn--primary">{t.t('swf.reports.openFile')}</Link></p>}
             {(r.status === 'failed' || r.status === 'refused') && <p><Link href={retry} className="kv-btn--link">{t.t('swf.retry')}</Link> <span className="kv-field__hint">{t.t('swf.reports.retryIsNew')}</span></p>}

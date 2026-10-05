@@ -17,6 +17,7 @@ import { SEEN_FIELD, seenToken, isStaleFailure, readDiff } from '../../../../../
 import { VERIFY_FIELDS } from '../../../../../../features/mutate/verify-fields';
 import { StaleDiffChip } from '../../../../../../components/StaleDiffChip';
 import { staleLabels } from '../../../../../../features/swf/console';
+import { DirArrow } from '../../../../../../components/DirArrow'; // PC-56 TENANT-CLOSE · RTL: the range arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.breaches'), robots: { index: false, follow: false } }; }
@@ -46,7 +47,7 @@ export default async function BreachActPage({ searchParams }: { searchParams: Re
       ) : b && (
         <>
           <div className="kv-card">
-            <p><strong>{b.subjectRef}</strong> · {bandLabel(b.band)} · {b.peakC} °C · {when(b.openedAt)}{b.closedAt ? ` → ${when(b.closedAt)}` : ` · ${t.t('swe.cold.ongoing')}`}</p>
+            <p><strong>{b.subjectRef}</strong> · {bandLabel(b.band)} · {b.peakC} °C · {when(b.openedAt)}{b.closedAt ? <> <DirArrow /> {when(b.closedAt)}</> : ` · ${t.t('swe.cold.ongoing')}`}</p>
             <p>{t.t(`swe.cold.act.rule.${act}`)}</p><p className="kv-field__hint">{t.t('mutate.auditNote')}</p>
           </div>
           {!offered && <div className="kv-error" role="alert"><p>{t.t('swe.cold.act.notOffered')}</p></div>}

@@ -247,3 +247,8 @@ details.kv-card > summary { cursor: pointer; }
 button[data-kv-signal="held"] { opacity: 0.6; cursor: not-allowed; }
 .kv-diffchip { border: 1px solid var(--kv-danger); border-radius: var(--kv-radius); padding: 10px 12px; }
 .kv-refused { display: inline; }
+
+/* ── PC-56 TENANT-CLOSE · RTL spot-check ───────────────────────────────────────────────────────────────────────────
+   A range arrow (components/DirArrow) points the reading direction: U+2192 is not Bidi_Mirrored, so it is flipped here
+   under an ancestor dir="rtl". No effect under ltr. */
+[dir="rtl"] .kv-dir-flip { display: inline-block; transform: scaleX(-1); }

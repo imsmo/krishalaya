@@ -18,6 +18,7 @@ import { chainStep, chainStepKey } from '../../../../features/forms/chain';
 import { COMMISSION_HREF, COMMISSION_SOURCES, bpsPercent, codeKey, isUuid, proposalRefusals, readProposalDraft } from '../../../../features/swa/console';
 import { AuditEntryCard } from '../../../people/ambassadors/AuditEntryCard';
 import { proposeCommissionAction } from './actions';
+import { DirArrow } from '../../../../components/DirArrow'; // PC-56 TENANT-CLOSE · RTL: the range arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.com.propose'), robots: { index: false, follow: false } }; }
@@ -90,7 +91,7 @@ export default async function ProposeCommissionPage({ searchParams }: { searchPa
             <dt>{t.t('swa.com.col.rate')}</dt><dd>{t.t('swa.com.bps', { n: d.rateBps })} ({bpsPercent(Number(d.rateBps))}){d.fixedMinor && d.fixedMinor !== '0' ? ` + ${formatMoneyMinor(d.fixedMinor, 'INR', lang)}` : ''}</dd>
             <dt>{t.t('swa.com.col.cap')}</dt><dd>{d.capMinor ? formatMoneyMinor(d.capMinor, 'INR', lang) : t.t('common.dash')}</dd>
             <dt>{t.t('swa.com.col.chargedTo')}</dt><dd>{t.t(`swa.com.charged.${d.chargedTo}`)}</dd>
-            <dt>{t.t('swa.com.col.effective')}</dt><dd>{day(d.effectiveFrom)}{d.effectiveTo ? ` → ${day(d.effectiveTo)}` : ''}</dd>
+            <dt>{t.t('swa.com.col.effective')}</dt><dd>{day(d.effectiveFrom)}{d.effectiveTo ? <> <DirArrow /> {day(d.effectiveTo)}</> : ''}</dd>
             <dt>{t.t('swa.com.col.share')}</dt><dd>{policy ? t.t('swa.com.shareByPlan', { n: String(policy.platformShareBps) }) : '—'}</dd>
           </dl>
           <p>{today?.winner ? t.t('swa.com.form.todayWinner', { scope: t.t(`swa.com.scope.${today.winner.scope}`), rate: bpsPercent(today.winner.rateBps), priority: String(today.winner.priority) }) : t.t('swa.com.example.none')}</p>

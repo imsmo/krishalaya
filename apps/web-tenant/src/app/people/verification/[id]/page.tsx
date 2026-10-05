@@ -26,6 +26,7 @@ import { ME_SECURITY_HREF, SKIP_REASONS, knownPurposeKey, parseCodes, recusalKey
 import { releaseClaimAction, skipClaimAction } from './claim-actions';
 import { AsOf } from '../../../../components/AsOf';
 import { asOfLabels } from '../../../../features/swf/console';
+import { DirArrow } from '../../../../components/DirArrow'; // PC-56 TENANT-CLOSE · RTL: the range arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +108,7 @@ export default async function KycDocumentPage({ params, searchParams = {} }: { p
       <dl className="kv-facts">
         <dt>{t.t('kyc.desk.col.number')}</dt><dd>{d.docNoMasked ?? t.t('common.dash')}</dd>
         <dt>{t.t('kyc.doc.issuedBy')}</dt><dd>{d.issuedBy ?? t.t('common.dash')}</dd>
-        <dt>{t.t('kyc.doc.validity')}</dt><dd>{d.validUntil ? `${day(d.validFrom) ?? t.t('common.dash')} → ${day(d.validUntil)}${daysLeft !== null ? ` · ${daysLeft >= 0 ? t.t('kyc.desk.daysLeft', { n: formatNumber(daysLeft, lang) }) : t.t('kyc.doc.lapsed')}` : ''}` : t.t('kyc.desk.perpetual')}</dd>
+        <dt>{t.t('kyc.doc.validity')}</dt><dd>{d.validUntil ? <>{day(d.validFrom) ?? t.t('common.dash')} <DirArrow /> {day(d.validUntil)}{daysLeft !== null ? ` · ${daysLeft >= 0 ? t.t('kyc.desk.daysLeft', { n: formatNumber(daysLeft, lang) }) : t.t('kyc.doc.lapsed')}` : ''}</> : t.t('kyc.desk.perpetual')}</dd>
         {d.status === 'rejected' && <><dt>{t.t('kyc.doc.why')}</dt><dd>{d.reasonCode ? t.t(reasonKey(d.reasonCode)) : t.t('common.dash')}{d.rejectReason && d.rejectReason !== d.reasonCode ? <span className="kv-field__hint"> · {d.rejectReason}</span> : null}</dd></>}
         {d.supersedesId && <><dt>{t.t('kyc.doc.renews')}</dt><dd><Link href={docHref(d.supersedesId)} className="kv-btn--link">{t.t('kyc.desk.openDoc')}</Link></dd></>}
         {d.supersededById && <><dt>{t.t('kyc.doc.renewedBy')}</dt><dd><Link href={docHref(d.supersededById)} className="kv-btn--link">{t.t('kyc.desk.openDoc')}</Link></dd></>}
