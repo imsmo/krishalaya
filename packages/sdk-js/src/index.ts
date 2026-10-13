@@ -10,6 +10,7 @@ export type { WorkerPrefsInput, CreateBookingInput, CancelBookingInput } from '.
 export type { CreateAuctionInput, CreateAuctionResult, ApproveAuctionResult } from './resources/auctions';   // PC-56 TENANT-11a
 export { nameById } from './resources/lookups';
 export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ViewsByDayPoint, ProductCard, TraceProvenance, AuthTokens, UserProfile,
+  OtpRequestResult, OtpChannel, OtpInvalidDetails, AuthSessionSummary, StorefrontTenant,   // PC-56 STORE-1a
   CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding, PublishedBrand,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
   PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType, KycReviewItem,
@@ -127,6 +128,7 @@ export * from './resources/twin'; // PC-56 TENANT-12
 export * from './resources/land'; // PC-56 TENANT-12 (crop seasons + soil tests)
 export type { ParcelBoundary, ParcelUpdateInput } from './resources/parcels'; // PC-56 TENANT-12
 export * from './resources/returns';
+export { StorefrontResource } from './resources/storefront'; // PC-56 STORE-1a
 // PC-56 TENANT-3b: the dispute console reads + the refund maker-checker plane live in resources/admin.ts.
 export type { DisputeKpis, DisputeQueueRow, DisputeMoneyState, RefundGateState, RefundApproval } from './resources/admin';
 export { RefundApprovalsResource } from './resources/admin';

@@ -8,6 +8,7 @@
 //   • the delivery routes are declared before the `:id` routes so `deliveries` is never read as an endpoint id.
 import { Controller, Delete, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -28,7 +29,8 @@ import { ApiScopes } from '../../../../core/auth/api-key.port';
 const needKey = (k?: string) => { if (!k || !/^[A-Za-z0-9_-]{8,120}$/.test(k)) throw new BadRequestError('Idempotency-Key header required'); return k; };
 const idOf = (id: string) => { if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid'); return id; };
 const actOf = (a: string): EndpointAct => { if (!isEndpointAct(a)) throw new BadRequestError(`'${a}' is not an endpoint act (pause, resume, rotate, delete, replay-failed)`); return a; };
-const ipOf = (r: Request) => (r.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || r.ip || null;
+// PC-56 STORE-1a · A1: the audit IP is the one the rate limit counted (core/http/client-ip), never the raw, spoofable X-Forwarded-For.
+const ipOf = (r: Request) => clientIpOf(r);
 
 @Controller({ path: 'webhooks', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)

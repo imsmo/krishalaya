@@ -21,7 +21,7 @@ import { tryGetRequestContext } from '../../../core/tenancy-context/request-cont
 import { AppConfig } from '../../../core/config/app-config';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
-import { InvalidPhoneError, InvalidOtpError, InvalidRefreshError, UserNotActiveError, TenantMembershipSuspendedError } from '../domain/identity.errors';
+import { InvalidPhoneError, InvalidOtpError, InvalidRefreshError, UserNotActiveError, TenantMembershipSuspendedError, OtpChannelUnavailableError } from '../domain/identity.errors';
 import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { User } from '../domain/user.entity';
 import { Session } from '../domain/session.entity';
@@ -77,14 +77,19 @@ export class AuthService {
     private readonly twoFactor: TwoFactorService,
   ) {}
 
-  /** Step 1: send an OTP. Enumeration-safe (same response whether or not the user exists). */
-  // The channel is part of the public contract (callers pass 'sms' | 'whatsapp') and is chosen inside the OTP
-  // provider today; dropping the parameter would silently change every call site's arity.
+  /**
+   * Step 1: send an OTP. Enumeration-safe (same response whether or not the user exists).
+   * PC-56 STORE-1a · A2: (a) the answer carries `ttlSec` — how long the code lives — so no screen prints a canon literal ("valid 10
+   * minutes") over the server's real TTL; (d) the channel is HONOURED or REFUSED BY NAME, never silently swapped: SMS is the only
+   * channel with a sender. `ivr` (voice — the IVR gateway is an unimplemented placeholder) and `whatsapp` (no OTP sender exists in
+   * code; a provider row alone could not deliver a code) answer 409 OTP_CHANNEL_UNAVAILABLE BEFORE a code is issued — nothing is sent
+   * and no per-phone budget is spent.
+   */
   async requestOtp(
     rawPhone: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _channel: string,
-  ): Promise<{ sent: true; resendInSec: number; devCode?: string }> {
+    channel: string = 'sms',
+  ): Promise<{ sent: true; resendInSec: number; ttlSec: number; devCode?: string }> {
+    if (channel !== 'sms') { this.metrics.inc('auth.otp_channel_refused', { channel }); throw new OtpChannelUnavailableError(channel); }
     const phone = normalizePhoneE164(rawPhone);
     if (!phone) throw new InvalidPhoneError();
     return timed(this.metrics, 'auth.request_otp', {}, async () => {
@@ -95,19 +100,21 @@ export class AuthService {
       await this.sms.sendOtp(phone, { code, ttlMin, purpose: 'login', locale: lang }, message);
       this.metrics.inc('auth.otp_requested');
       // dev affordance ONLY outside production, so integration tests/local can complete login.
-      return { sent: true, resendInSec: this.config.auth.otp.resendCooldownSec, ...(this.config.auth.exposeOtp ? { devCode: code } : {}) };
+      return { sent: true, resendInSec: this.config.auth.otp.resendCooldownSec, ttlSec, ...(this.config.auth.exposeOtp ? { devCode: code } : {}) };
     });
   }
 
   /** Step 2: verify OTP → register-or-login, open a session, mint tokens. */
-  async verifyOtp(dto: VerifyOtpDto, ip: string | null): Promise<AuthTokens> {
+  // PC-56 STORE-1a · A3: the controller resolves the tenant (body, else the request's LIVE context tenant) before this runs.
+  async verifyOtp(dto: VerifyOtpDto & { tenantId: string }, ip: string | null): Promise<AuthTokens> {
     const phone = normalizePhoneE164(dto.phone);
     if (!phone) throw new InvalidPhoneError();
-    const ok = await this.otp.verify(phone, dto.code);
-    if (!ok) {
+    // PC-56 STORE-1a · A2(c): WHY it failed rides the error (wrong + tries left / expired / locked + wait) — same 401 OTP_INVALID.
+    const v = await this.otp.verifyDetailed(phone, dto.code);
+    if (!v.ok) {
       await this.uow.run(dto.tenantId, (tx) => this.loginEvents.record(tx, { userId: null, phone, succeeded: false, method: 'otp', ip, deviceFingerprint: dto.device?.fingerprint ?? null }));
       this.metrics.inc('auth.login_failed', { method: 'otp' });
-      throw new InvalidOtpError();
+      throw new InvalidOtpError(v.reason === 'locked' ? { reason: v.reason, attemptsLeft: 0, retryAfterSec: v.retryAfterSec } : { reason: v.reason, attemptsLeft: v.attemptsLeft });
     }
 
     const out = await timed(this.metrics, 'auth.verify_otp', {}, () => this.uow.run(dto.tenantId, async (tx) => {
@@ -145,7 +152,7 @@ export class AuthService {
   }
 
   /** Step 3: rotate the refresh token → new access+refresh (theft-resistant rotation). */
-  async refreshSession(dto: RefreshDto, ip: string | null): Promise<AuthTokens> {
+  async refreshSession(dto: RefreshDto & { tenantId: string }, ip: string | null): Promise<AuthTokens> {
     const hash = this.tokens.hashRefreshToken(dto.refreshToken);
     const out = await this.uow.run(dto.tenantId, async (tx) => {
       const session = await this.sessions.getByRefreshHashForUpdate(tx, hash);

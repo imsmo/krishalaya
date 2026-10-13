@@ -49,6 +49,12 @@ export class AppConfig {
       }
     }
     if (env.AUTH_EXPOSE_OTP === 'true') p.push('AUTH_EXPOSE_OTP must be false in production');
+    // PC-56 STORE-1a · A1 (D3): without the storefront caller secret every buyer behind the storefront server shares ONE rate-limit
+    // bucket (the OTP route's 5/min becomes site-wide) — a real launch blocker, so it fails boot like a weak auth secret does.
+    if (weak(env.STOREFRONT_CALLER_SECRET)) p.push('STOREFRONT_CALLER_SECRET (unique random >=32 chars, shared with web-storefront) — without it every storefront buyer shares one rate-limit bucket');
+    else if ([env.JWT_ACCESS_SECRET, env.JWT_REFRESH_SECRET, env.AUTH_HASH_PEPPER, env.IMPERSONATION_TOKEN_SECRET].includes(env.STOREFRONT_CALLER_SECRET as string)) {
+      p.push('STOREFRONT_CALLER_SECRET must differ from every auth secret (the storefront holds it)');
+    }
 
     // --- CORS: the 4 Next.js web apps call this API from the browser and NEED an explicit allowlist in
     // production (mobile apps + server-to-server webhooks are unaffected either way — they send no Origin
@@ -225,6 +231,8 @@ export class AppConfig {
       audience: this.env.IMPERSONATION_TOKEN_AUDIENCE,
     };
   }
+  /** PC-56 STORE-1a · A1: the storefront's client-IP signing secret ('' = forwarded addresses are never honoured). */
+  get storefrontCallerSecret(): string { return this.env.STOREFRONT_CALLER_SECRET ?? ''; }
   get auth() {
     return {
       accessSecret: this.env.JWT_ACCESS_SECRET,

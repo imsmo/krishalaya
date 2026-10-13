@@ -1,8 +1,10 @@
 // modules/identity/controllers/v1/auth.controller.ts · phone-OTP login, refresh, logout, sessions.
 // Login endpoints are @Public (anonymous can authenticate); tenant is taken from the body
-// for login/refresh and from the token context for session management.
+// for login/refresh (PC-56 STORE-1a: else from the request's LIVE context tenant — `tenantFor` below)
+// and from the token context for session management.
 import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { Public } from '../../../../core/auth/public.decorator';
@@ -12,6 +14,7 @@ import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
+import { TenantRequiredForAuthError } from '../../domain/identity.errors';
 import { AuthService } from '../../services/auth.service';
 import { SessionService } from '../../services/session.service';
 import { ChangePhoneService } from '../../services/change-phone.service';
@@ -21,7 +24,20 @@ import { TwoFactorExempt } from '../../../../core/auth/session-posture.guard';
 import { TeamService } from '../../services/team.service';
 import { AcceptInviteSchema, AcceptInviteDto, InviteLookupSchema, InviteLookupDto } from '../../dto/verification-team.dto';
 
-const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+// PC-56 STORE-1a · A1: the audit IP is the SAME answer the rate limit counted (core/http/client-ip — the storefront's signed address when it
+// verifies, else Express's trust-proxy `req.ip`). The raw, client-supplied X-Forwarded-For this used to read was spoofable.
+const ipOf = (req: Request) => clientIpOf(req);
+/**
+ * PC-56 STORE-1a · A3 (founder D1) — which organisation a sign-in / refresh belongs to: the body's `tenantId` when sent (every existing
+ * client), else the request context's tenant — which TenantContextMiddleware only ever sets, on an anonymous call, to a LIVE tenant
+ * (X-Tenant-Slug → `resolve_tenant_slug`, X-Tenant-Id → `resolve_live_tenant`, a verified host → `resolve_tenant_host`). No tenant at all
+ * is 422 TENANT_REQUIRED — never a default one.
+ */
+const tenantFor = (bodyTenant: string | undefined, ctx: RequestContext): string => {
+  const t = bodyTenant || ctx.tenantId;
+  if (!t) throw new TenantRequiredForAuthError();
+  return t;
+};
 
 @Controller({ path: 'auth', version: '1' })
 @TwoFactorExempt()   // PC-56 TENANT-SW-c: signing in, out and the session list stay reachable for a staff member still setting up 2FA
@@ -31,7 +47,7 @@ export class AuthController {
   /** PC-56 TENANT-SW-c · B3: finish a sign-in waiting for its second factor (TOTP or one recovery code). */
   @Public() @RateLimit({ limit: 10, windowSec: 60, by: 'ip' }) @Post('2fa/verify')
   async verifyTwoFactor(@Req() req: Request, @ZodBody(VerifyTwoFactorSchema) dto: VerifyTwoFactorDto) {
-    return { data: await this.auth.verifyTwoFactor(dto, req.ip || null) };
+    return { data: await this.auth.verifyTwoFactor(dto, ipOf(req)) };
   }
 
   /** PC-56 TENANT-SW-c · B2: what an invite is (organisation, role, masked phone, status) — for the accept page. */
@@ -43,7 +59,7 @@ export class AuthController {
   /** PC-56 TENANT-SW-c · B2: accept a staff invite — the token AND the OTP on the invited phone; signs the person in. */
   @Public() @RateLimit({ limit: 10, windowSec: 60, by: 'ip' }) @Post('invites/accept')
   async acceptInvite(@Req() req: Request, @ZodBody(AcceptInviteSchema) dto: AcceptInviteDto) {
-    return { data: await this.team.accept(dto, req.ip || null) };
+    return { data: await this.team.accept(dto, ipOf(req)) };
   }
 
   @Public() @RateLimit({ limit: 5, windowSec: 60, by: 'ip' }) @Post('otp')
@@ -52,13 +68,13 @@ export class AuthController {
   }
 
   @Public() @RateLimit({ limit: 10, windowSec: 60, by: 'ip' }) @Post('verify')
-  async verify(@Req() req: Request, @ZodBody(VerifyOtpSchema) dto: VerifyOtpDto) {
-    return { data: await this.auth.verifyOtp(dto, ipOf(req)) };
+  async verify(@Req() req: Request, @CurrentContext() ctx: RequestContext, @ZodBody(VerifyOtpSchema) dto: VerifyOtpDto) {
+    return { data: await this.auth.verifyOtp({ ...dto, tenantId: tenantFor(dto.tenantId, ctx) }, ipOf(req)) };
   }
 
   @Public() @RateLimit({ limit: 30, windowSec: 60, by: 'ip' }) @Post('refresh')
-  async refresh(@Req() req: Request, @ZodBody(RefreshSchema) dto: RefreshDto) {
-    return { data: await this.auth.refreshSession(dto, ipOf(req)) };
+  async refresh(@Req() req: Request, @CurrentContext() ctx: RequestContext, @ZodBody(RefreshSchema) dto: RefreshDto) {
+    return { data: await this.auth.refreshSession({ ...dto, tenantId: tenantFor(dto.tenantId, ctx) }, ipOf(req)) };
   }
 
   // PC-56 TENANT-9c: ending one's own session is not business data — the auditor's named carve-out (`session.logout`).
@@ -69,7 +85,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard, PermissionsGuard) @Get('sessions')
   async list(@CurrentContext() ctx: RequestContext) {
-    return { data: await this.sessions.list(ctx.tenantId, ctx.userId) };
+    return { data: await this.sessions.list(ctx.tenantId, ctx.userId, ctx.sessionId) };
   }
 
   @UseGuards(AuthGuard, PermissionsGuard) @Delete('sessions/:id')

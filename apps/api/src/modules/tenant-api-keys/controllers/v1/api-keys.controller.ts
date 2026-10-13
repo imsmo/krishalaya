@@ -8,6 +8,7 @@
 //   • the static `proposals` routes are declared before `:id` so they are never read as a key id.
 import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -24,7 +25,8 @@ import {
 
 const needKey = (k?: string) => { if (!k || !/^[A-Za-z0-9_-]{8,120}$/.test(k)) throw new BadRequestError('Idempotency-Key header required'); return k; };
 const idOf = (id: string) => { if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid'); return id; };
-const ipOf = (r: Request) => (r.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || r.ip || null;
+// PC-56 STORE-1a · A1: the audit IP is the one the rate limit counted (core/http/client-ip), never the raw, spoofable X-Forwarded-For.
+const ipOf = (r: Request) => clientIpOf(r);
 
 @Controller({ path: 'api-keys', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)

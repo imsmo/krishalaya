@@ -17,13 +17,16 @@ const DeviceSchema = z.object({
 export const VerifyOtpSchema = z.object({
   phone,
   code: z.string().regex(/^\d{4,8}$/),
-  tenantId: z.string().uuid(),
+  // PC-56 STORE-1a · A3: optional — omitted, the API signs in to the request's LIVE context tenant (X-Tenant-Slug / verified host),
+  // else 422 TENANT_REQUIRED. Every existing caller that sends it is unchanged.
+  tenantId: z.string().uuid().optional(),
   fullName: z.string().trim().min(1).max(200).optional(),  // captured on first-time registration
   device: DeviceSchema.optional(),
 }).strict();
 export type VerifyOtpDto = z.infer<typeof VerifyOtpSchema>;
 
-export const RefreshSchema = z.object({ refreshToken: z.string().min(20).max(200), tenantId: z.string().uuid() }).strict();
+// PC-56 STORE-1a · A3: tenantId optional, the same context fallback as verify.
+export const RefreshSchema = z.object({ refreshToken: z.string().min(20).max(200), tenantId: z.string().uuid().optional() }).strict();
 export type RefreshDto = z.infer<typeof RefreshSchema>;
 
 export const LogoutSchema = z.object({ allDevices: z.coerce.boolean().default(false) }).strict();

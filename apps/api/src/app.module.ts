@@ -9,6 +9,7 @@ import { RequestIdMiddleware } from './core/http/request-id.middleware';
 import { SecurityHeadersMiddleware } from './core/http/security-headers.middleware';
 import { HttpLogMiddleware } from './core/http/http-log.middleware';
 import { TenantContextMiddleware } from './core/tenancy-context/tenant-context.middleware';
+import { ClientIpMiddleware } from './core/http/client-ip';   // PC-56 STORE-1a · A1
 import { ListingsModule } from './modules/listings/listings.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { BuyerModule } from './modules/buyer/buyer.module';
@@ -67,7 +68,8 @@ import { TwinModule } from './modules/twin/twin.module';
 })
 export class AppModule implements NestModule {
   // security-headers (every response, incl. error paths) THEN request-id THEN tenant-context (Law 1) on every route.
+  // PC-56 STORE-1a · A1: the client address (verified signed storefront header, else req.ip) is fixed BEFORE tenant context and guards.
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(SecurityHeadersMiddleware, RequestIdMiddleware, HttpLogMiddleware, TenantContextMiddleware).forRoutes('*');
+    consumer.apply(SecurityHeadersMiddleware, RequestIdMiddleware, HttpLogMiddleware, ClientIpMiddleware, TenantContextMiddleware).forRoutes('*');
   }
 }

@@ -12,6 +12,8 @@ const SECURE_RAW: Record<string, string> = {
   JWT_REFRESH_SECRET: 'Rt4Yh8Uj2Ik6Ol0Pa5Sd9Fg3Hj7Kl1Zx5Cv9Bn', // distinct
   AUTH_HASH_PEPPER: 'Pa5Sd9Fg3Hj7Kl1Zx5Cv9BnMq2Wr6Et8Yu4Io0', // 39 chars
   AUTH_EXPOSE_OTP: 'false',
+  // PC-56 STORE-1a · A1: the storefront server's client-IP signing secret (required in production).
+  STOREFRONT_CALLER_SECRET: 'Sf7Kc2Lr9Qp4Wm8Xn1Bv6Hj3Td5Gy0Ze2Ua7Io',
   REDIS_URL: 'rediss://:tok3nXyz@redis.cluster.ap-south-1.cache.amazonaws.com:6379',
   S3_MEDIA_BUCKET: 'krishalaya-prod-media-123456789012',
   RAZORPAY_KEY_ID: 'rzp_live_abc123',
@@ -58,6 +60,9 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
     ['weak JWT access secret', { JWT_ACCESS_SECRET: 'dev-secret-change-me-32-characters' }, /JWT_ACCESS_SECRET/],
     ['access === refresh', { JWT_REFRESH_SECRET: SECURE_RAW.JWT_ACCESS_SECRET }, /must differ/],
     ['OTP exposure on', { AUTH_EXPOSE_OTP: 'true' }, /AUTH_EXPOSE_OTP/],
+    ['storefront caller secret missing (STORE-1a)', { STOREFRONT_CALLER_SECRET: undefined }, /STOREFRONT_CALLER_SECRET/],
+    ['storefront caller secret dev-shaped (STORE-1a)', { STOREFRONT_CALLER_SECRET: 'dev-storefront-caller-secret-0123456789' }, /STOREFRONT_CALLER_SECRET/],
+    ['storefront caller secret reuses an auth secret (STORE-1a)', { STOREFRONT_CALLER_SECRET: SECURE_RAW.AUTH_HASH_PEPPER }, /must differ from every auth secret/],
     ['DB on localhost', { DATABASE_URL: 'postgresql://kv_app:Str0ng-Db-Passw0rd-9x@localhost:5432/krishalaya' }, /localhost/],
     ['DB as superuser', { DATABASE_URL: 'postgresql://postgres:Str0ng-Db-Passw0rd-9x@db.rds.amazonaws.com:5432/k' }, /least-privilege/],
     ['DB dev password', { DATABASE_URL: 'postgresql://kv_app:dev@db.rds.amazonaws.com:5432/krishalaya' }, /strong, non-default password/],

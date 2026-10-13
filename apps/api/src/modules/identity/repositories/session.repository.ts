@@ -31,10 +31,31 @@ export class SessionRepository {
   async revokeAllForUser(tx: TxContext, userId: string): Promise<void> {
     await tx.query(`UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL`, [userId]);
   }
-  async listForUser(tenantId: string, userId: string): Promise<any[]> {
+  /**
+   * PC-56 STORE-1a · A4 — the caller's sessions as a PERSON may see them: a coarse device family (from the bound device row's
+   * platform — sessions store no user-agent), whether it is THIS session, and when it was last active. Never the IP (it used to be
+   * returned) and never a place: the founder refused a city on the "new device" notice (D5) and no geolocation provider exists.
+   */
+  async listForUser(tenantId: string, userId: string, currentSessionId = ''): Promise<SessionSummary[]> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT id, device_id, host(ip) AS ip, expires_at, revoked_at, last_seen_at, created_at
-         FROM sessions WHERE user_id=$1 ORDER BY last_seen_at DESC LIMIT 50`, [userId]);
-    return r.rows;
+      `SELECT s.id, d.platform, s.expires_at, s.revoked_at, s.last_seen_at, s.created_at
+         FROM sessions s LEFT JOIN devices d ON d.id = s.device_id
+        WHERE s.user_id=$1 ORDER BY s.last_seen_at DESC LIMIT 50`, [userId]);
+    return r.rows.map((x: any) => ({
+      id: x.id, deviceFamily: deviceFamilyOf(x.platform), current: !!currentSessionId && x.id === currentSessionId,
+      lastSeenAt: new Date(x.last_seen_at).toISOString(), createdAt: new Date(x.created_at).toISOString(),
+      expiresAt: new Date(x.expires_at).toISOString(), revokedAt: x.revoked_at ? new Date(x.revoked_at).toISOString() : null,
+    }));
   }
+}
+
+/** PC-56 STORE-1a · A4: what a session list may say about a device. */
+export interface SessionSummary {
+  id: string; deviceFamily: DeviceFamily; current: boolean; lastSeenAt: string; createdAt: string; expiresAt: string; revokedAt: string | null;
+}
+export type DeviceFamily = 'android' | 'ios' | 'web' | null;
+/** Coarse family from the device row's platform (DeviceSchema: android|ios|web). Anything else — or no device — is null ("another session"). */
+export function deviceFamilyOf(platform: unknown): DeviceFamily {
+  const p = typeof platform === 'string' ? platform.trim().toLowerCase() : '';
+  return p === 'android' || p === 'ios' || p === 'web' ? p : null;
 }

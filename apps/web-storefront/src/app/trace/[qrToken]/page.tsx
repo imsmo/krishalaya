@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: { qrToken: string }
   const t = getTranslator();
   const p = await load(params.qrToken);
   return p
-    ? { title: t.t('trace.title'), description: t.t('trace.metaDescription') }
+    ? { title: t.t('trace.title'), description: t.t('trace.metaDescription', { platform: t.t('brand.platform') }) }
     : { title: t.t('trace.notFoundTitle'), robots: { index: false } };
 }
 

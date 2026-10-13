@@ -28,8 +28,27 @@ export class TenantMembershipSuspendedError extends DomainError {
 export class IllegalUserTransitionError extends DomainError {
   constructor(from: string, to: string) { super('USER_ILLEGAL_TRANSITION', `Cannot move user ${from}→${to}`, 409, { from, to }); }
 }
+/**
+ * PC-56 STORE-1a · A2(c) — the code did not sign the person in, and WHICH of the three it was rides `details` (the code and status are
+ * unchanged, so every existing client still reads OTP_INVALID/401): `wrong` (with `attemptsLeft` on this code), `expired` (no live code —
+ * it timed out, was consumed, or was never sent), `locked` (the attempt cap was reached; `retryAfterSec` until a new code can be tried).
+ * None of the three says whether the number has an account: every number gets a code (enumeration-safe), so none can.
+ */
+export interface OtpFailureDetails { reason: 'wrong' | 'expired' | 'locked'; attemptsLeft: number; retryAfterSec?: number }
 export class InvalidOtpError extends DomainError {
-  constructor() { super('OTP_INVALID', 'Invalid or expired verification code', 401); }
+  constructor(details?: OtpFailureDetails) { super('OTP_INVALID', 'Invalid or expired verification code', 401, details ? { ...details } : undefined); }
+}
+/**
+ * PC-56 STORE-1a · A2(d) (founder D6) — a channel this platform cannot deliver a code on. `ivr` (voice) has no gateway
+ * (apps/ivr-ussd-gateway is an intentionally unimplemented placeholder) and `whatsapp` has no OTP sender; before this the DTO accepted
+ * both and the service silently sent an SMS. Refused BY NAME, before any code is issued (no rate-limit budget spent, nothing sent).
+ */
+export class OtpChannelUnavailableError extends DomainError {
+  constructor(channel: string) { super('OTP_CHANNEL_UNAVAILABLE', `Codes cannot be sent by ${channel} — only by SMS`, 409, { channel, available: ['sms'] }); }
+}
+/** PC-56 STORE-1a · A3 — sign-in needs a tenant: the body named none and the request's context resolved no LIVE tenant. */
+export class TenantRequiredForAuthError extends DomainError {
+  constructor() { super('TENANT_REQUIRED', 'Name the organisation to sign in to (tenantId), or call from a storefront that resolves one', 422); }
 }
 export class PhoneAlreadyInUseError extends DomainError {
   constructor() { super('PHONE_IN_USE', 'That phone number is already registered to another account', 409); }

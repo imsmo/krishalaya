@@ -32,12 +32,13 @@ export async function SiteHeader() {
           {nav.map((n) => <Link key={n.href} href={n.href} className="kv-header__link">{n.label}</Link>)}
         </nav>
         <div className="kv-header__actions">
-          <LocaleSwitcher active={lang} label={t.t('lang.label')} />
+          <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
           {signedIn && <Link href="/offers" className="kv-header__link">{t.t('nav.offers')}</Link>}
           {signedIn && <Link href="/messages" className="kv-header__link">{t.t('nav.messages')}</Link>}
           {signedIn && <Link href="/notifications" className="kv-header__link">{t.t('nav.notifications')}</Link>}
           {signedIn && <Link href="/account" className="kv-header__link">{t.t('nav.account')}</Link>}
-          <Link href="/cart" className="kv-header__cart" aria-label={t.t('nav.cart')}>
+          {/* PC-56 STORE-1a (survey F-19): the count is IN the accessible name ("Cart, 3 items"), not a hidden badge only sighted people see. */}
+          <Link href="/cart" className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}
           </Link>
           {signedIn ? (

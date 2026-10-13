@@ -16,6 +16,6 @@ export async function GET(_req: Request, { params }: { params: { tenantSlug: str
   try { b = await publicClient(slug).lookups.tenantBranding(); } catch { b = null; }
   if (!b) return new Response(null, { status: 404 });
   const t = getTranslator();
-  const m = tenantManifest(b, slug, `/${slug}`, env.publicApiUrl, t.t('storefront.metaDescription', { tenant: b.brand?.displayName || b.displayName }));
+  const m = tenantManifest(b, slug, `/${slug}`, env.publicApiUrl, t.t('storefront.metaDescription', { tenant: b.brand?.displayName || b.displayName, platform: t.t('brand.platform') }));
   return new Response(JSON.stringify(m), { status: 200, headers: { 'content-type': 'application/manifest+json; charset=utf-8', 'cache-control': 'public, max-age=60' } });
 }

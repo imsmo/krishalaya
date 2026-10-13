@@ -176,7 +176,7 @@ export default async function ListingDetail(
 
       <section className="kv-detail__section" aria-labelledby="trace-h">
         <h2 id="trace-h">{t.t('listing.traceTitle')}</h2>
-        <p className="kv-detail__muted">{t.t('listing.traceNote')}</p>
+        <p className="kv-detail__muted">{t.t('listing.traceNote', { platform: t.t('brand.platform') })}</p>
         {traceLink
           ? <Link href={traceLink} className="kv-link">{t.t('listing.traceScanLink')}</Link>
           : <Link href="/help" className="kv-link">{t.t('listing.traceLink')}</Link>}

@@ -40,6 +40,10 @@ export const EnvSchema = z.object({
   IMPERSONATION_TOKEN_SECRET: z.string().default(''),
   IMPERSONATION_TOKEN_ISSUER: z.string().default('krishalaya-admin'),
   IMPERSONATION_TOKEN_AUDIENCE: z.string().default('krishalaya-api'),
+  // --- PC-56 STORE-1a · A1 (founder D3): the storefront server's signed client-IP header (core/http/client-ip.ts) ---
+  // Shared with apps/web-storefront (its server env, never NEXT_PUBLIC). Unset = the forwarded address is never honoured (every
+  // request is accounted to req.ip, the pre-STORE-1a behaviour). Production REQUIRES it (AppConfig.collectProductionProblems).
+  STOREFRONT_CALLER_SECRET: z.union([z.literal(''), z.string().min(32)]).optional(),   // '' (an empty .env line) = unset
   OTP_TTL_SEC: z.coerce.number().int().positive().default(300),               // 5 min
   OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
   OTP_MAX_VERIFY_ATTEMPTS: z.coerce.number().int().positive().default(5),

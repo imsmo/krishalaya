@@ -2,6 +2,7 @@
 import { Controller, Delete, Get, Headers, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import type { Request } from 'express';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
@@ -17,7 +18,9 @@ import { QueryUserTenantRoleSchema, QueryUserTenantRoleDto } from '../../dto/que
 import { AssignRoleSchema, AssignRoleDto, StaffOverrideSchema, StaffOverrideDto, RevokeAssignmentSchema, RevokeAssignmentDto, RevokeOverrideSchema, RevokeOverrideDto, ReasonOnlySchema, ReasonOnlyDto } from '../../dto/create-user-tenant-role.dto';
 import { IdentityPermissions } from '../../policies/identity.policies';
 
-const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+// PC-56 STORE-1a · A1: the audit IP is the SAME answer the rate limit counted (core/http/client-ip — the storefront's signed address when it
+// verifies, else Express's trust-proxy `req.ip`). The raw, client-supplied X-Forwarded-For this used to read was spoofable.
+const ipOf = (req: Request) => clientIpOf(req);
 
 @Controller({ path: 'rbac', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard)

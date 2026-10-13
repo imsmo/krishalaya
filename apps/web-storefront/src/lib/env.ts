@@ -11,9 +11,11 @@ export const env = {
   publicApiUrl,
   /** Server-side API origin for SSR (internal DNS if set, else the public one). Never sent to the browser. */
   serverApiUrl: process.env.API_URL_INTERNAL || publicApiUrl,
-  /** The tenant a buyer signs into from this storefront. The API scopes OTP verify/refresh to a tenant, so it must
-   *  be sent. Locally set via NEXT_PUBLIC_TENANT_ID (demo-fpo); in prod derive from the storefront's host/slug. */
-  tenantId: process.env.NEXT_PUBLIC_TENANT_ID,
+  /** PC-56 STORE-1a · C4 (founder D1): the PLATFORM bazaar's tenant — the organisation a buyer signs in to from a platform page (`/login`).
+   *  A tenant store's page signs in to ITS tenant (the `/[tenantSlug]` path, or a verified storefront host). Public (a slug, not a secret).
+   *  Null when unset → the platform sign-in states that it is not configured (never a guessed tenant). The build-time
+   *  NEXT_PUBLIC_TENANT_ID this replaces is retired. */
+  platformTenantSlug: process.env.NEXT_PUBLIC_PLATFORM_TENANT_SLUG?.trim() || null,
   /** Origin of the seller/tenant console (web-tenant); the "Sell on Krishalaya" CTA links here. An origin,
    *  not a secret — safe to expose. Null when unset → the CTA falls back to in-app sign-in. */
   tenantAppUrl: process.env.NEXT_PUBLIC_TENANT_APP_URL || null,

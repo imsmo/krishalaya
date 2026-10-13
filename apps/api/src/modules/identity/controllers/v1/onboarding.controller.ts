@@ -6,6 +6,7 @@
 // (Law 12 — this isn't a "call repeatedly" endpoint).
 import { Controller, Headers, Inject, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -18,7 +19,9 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { OnboardingService } from '../../services/onboarding.service';
 import { OnboardRoleSchema, OnboardRoleDto } from '../../dto/onboard-role.dto';
 
-const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+// PC-56 STORE-1a · A1: the audit IP is the SAME answer the rate limit counted (core/http/client-ip — the storefront's signed address when it
+// verifies, else Express's trust-proxy `req.ip`). The raw, client-supplied X-Forwarded-For this used to read was spoofable.
+const ipOf = (req: Request) => clientIpOf(req);
 
 @Controller({ path: 'onboarding', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)

@@ -11,6 +11,7 @@ import type { Request, Response } from 'express';
 import { CACHE_SERVICE, CacheService } from '../cache/cache.service';
 import { tryGetRequestContext } from '../tenancy-context/request-context';
 import { TooManyRequestsError } from '../../shared/errors/app-error';
+import { clientIpOf } from './client-ip';
 
 export interface RateLimitOpts { limit: number; windowSec: number; by?: 'ip' | 'user' | 'tenant' }
 export const RATE_LIMIT_KEY = 'rate_limit';
@@ -22,7 +23,9 @@ function clientIp(req: Request): string {
   // req.ip is derived by Express from X-Forwarded-For ONLY for the configured number of
   // trusted proxy hops (see main.ts `trust proxy`), so a client cannot spoof it by adding
   // its own X-Forwarded-For. Never read the raw header here.
-  return req.ip || (req.socket && (req.socket as any).remoteAddress) || 'unknown';
+  // PC-56 STORE-1a · A1 (D3): the subject is `clientIpOf(req)` — the storefront's SIGNED client address when it verifies
+  // (core/http/client-ip.ts), else exactly that req.ip. Every buyer behind the storefront server now has their own bucket.
+  return clientIpOf(req) || 'unknown';
 }
 
 @Injectable()

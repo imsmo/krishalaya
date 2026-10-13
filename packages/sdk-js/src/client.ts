@@ -62,6 +62,7 @@ import { CropSeasonsResource, SoilTestsResource } from './resources/land';
 import { TwinResource } from './resources/twin';
 import { PrivacyResource } from './resources/privacy';
 import { OnboardingResource } from './resources/onboarding';
+import { StorefrontResource } from './resources/storefront';   // PC-56 STORE-1a
 import { MembersResource } from './resources/members';
 import { BulkImportsResource } from './resources/bulk-imports';
 import { ExportsPlaneResource } from './resources/exports-plane';
@@ -200,6 +201,8 @@ export class KrishalayaClient {
   readonly twin: TwinResource;
   readonly privacy: PrivacyResource;
   readonly onboarding: OnboardingResource;
+  /** PC-56 STORE-1a · the anonymous storefront's resolved tenant (`storefront/tenant`). */
+  readonly storefront: StorefrontResource;
   /** PC-56 TENANT-8c · pages + FAQ (`cms/pages`, `cms/faq`); TENANT-8d · banners (`cms/banners`). */
   readonly cms: CmsResource;
 
@@ -305,6 +308,7 @@ export class KrishalayaClient {
     this.twin = new TwinResource(this.http);
     this.privacy = new PrivacyResource(this.http);
     this.onboarding = new OnboardingResource(this.http);
+    this.storefront = new StorefrontResource(this.http);
   }
   /** Escape hatch for endpoints without a dedicated resource method yet. Same envelope + resilience. */
   request<T>(method: HttpMethod, path: string, opts?: RequestOptions): Promise<Envelope<T>> {

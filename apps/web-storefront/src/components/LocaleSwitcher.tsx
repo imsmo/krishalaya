@@ -11,7 +11,8 @@
 import { usePathname, useSearchParams } from 'next/navigation';
 import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishalaya/i18n';
 
-export function LocaleSwitcher({ active, label, comingSoonLabel }: { active: string; label: string; comingSoonLabel?: string }) {
+// PC-56 STORE-1a (survey F-16): the "coming soon" label is REQUIRED and localized by the caller — the English literal fallback is gone.
+export function LocaleSwitcher({ active, label, comingSoonLabel }: { active: string; label: string; comingSoonLabel: string }) {
   const pathname = usePathname() || '/';
   const qs = useSearchParams()?.toString();
   const from = qs ? `${pathname}?${qs}` : pathname;
@@ -33,9 +34,9 @@ export function LocaleSwitcher({ active, label, comingSoonLabel }: { active: str
         </button>
       ))}
       {COMING_SOON_LANGUAGES.length > 0 && (
-        <span className="kv-locale__soon-group" aria-label={comingSoonLabel ?? 'Coming soon'}>
+        <span className="kv-locale__soon-group" aria-label={comingSoonLabel}>
           {COMING_SOON_LANGUAGES.map((l) => (
-            <span key={l.code} lang={l.code} dir={l.dir} className="kv-locale__soon" aria-disabled="true" title={comingSoonLabel ?? 'Coming soon'}>
+            <span key={l.code} lang={l.code} dir={l.dir} className="kv-locale__soon" aria-disabled="true" title={comingSoonLabel}>
               {l.nameNative}
             </span>
           ))}

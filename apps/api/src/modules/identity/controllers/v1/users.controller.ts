@@ -1,6 +1,7 @@
 // modules/identity/controllers/v1/users.controller.ts · self profile + admin user management.
 import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { Inject } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -13,7 +14,9 @@ import { UserService } from '../../services/user.service';
 import { UpdateUserSchema, UpdateUserDto } from '../../dto/update-user.dto';
 import { CreateUserSchema, CreateUserDto } from '../../dto/create-user.dto';
 import { IdentityPermissions } from '../../policies/identity.policies';
-const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+// PC-56 STORE-1a · A1: the audit IP is the SAME answer the rate limit counted (core/http/client-ip — the storefront's signed address when it
+// verifies, else Express's trust-proxy `req.ip`). The raw, client-supplied X-Forwarded-For this used to read was spoofable.
+const ipOf = (req: Request) => clientIpOf(req);
 
 @Controller({ path: 'users', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard)

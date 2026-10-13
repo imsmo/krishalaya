@@ -67,6 +67,7 @@ import { SessionPostureGuard, SessionPostureService } from './auth/session-postu
 import { RequestIdMiddleware } from './http/request-id.middleware';
 import { SecurityHeadersMiddleware } from './http/security-headers.middleware';
 import { HttpLogMiddleware } from './http/http-log.middleware';
+import { ClientIpMiddleware } from './http/client-ip';   // PC-56 STORE-1a · A1
 import { AllExceptionsFilter } from './http/exception.filter';
 import { ResponseInterceptor } from './http/response.interceptor';
 import { BackpressureInterceptor } from './backpressure/backpressure.interceptor';
@@ -124,7 +125,7 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     AuthGuard, PermissionsGuard,
     ImpersonationGate, ImpersonationReadOnlyGuard, ImpersonationInterceptor,
     TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware,
-    HttpLogMiddleware,
+    HttpLogMiddleware, ClientIpMiddleware,
     // auth + RBAC platform services (used by the identity module's auth flow)
     TokenService, { provide: TOKEN_SERVICE, useExisting: TokenService },
     OtpService, { provide: OTP_SERVICE, useExisting: OtpService },
@@ -161,7 +162,7 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     ScheduledJobRegistry, SCHEDULED_JOB_REGISTRY, ProposalApplierRegistry, PROPOSAL_APPLIER_REGISTRY,
     AuthGuard, PermissionsGuard,
     ImpersonationGate, ImpersonationReadOnlyGuard, ImpersonationInterceptor, TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware,
-    HttpLogMiddleware,
+    HttpLogMiddleware, ClientIpMiddleware,
     TokenService, TOKEN_SERVICE, OtpService, OTP_SERVICE, RefreshTokenService,
     RoleCacheService, ROLE_CACHE_SERVICE, SMS_SENDER,
     SessionPostureService,

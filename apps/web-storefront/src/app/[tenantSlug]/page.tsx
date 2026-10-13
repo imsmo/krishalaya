@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
   let name = params.tenantSlug;
   try { const b = await publicClient(params.tenantSlug).lookups.tenantBranding(); name = (b?.brand?.displayName || b?.displayName || name).trim(); } catch { /* the slug */ }
   const title = t.t('storefront.title', { tenant: name });
-  return { title: { absolute: title }, description: t.t('storefront.metaDescription', { tenant: name }) };
+  return { title: { absolute: title }, description: t.t('storefront.metaDescription', { tenant: name, platform: t.t('brand.platform') }) };
 }
 
 export default async function TenantStorefront(

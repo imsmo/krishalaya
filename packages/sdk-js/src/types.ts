@@ -130,6 +130,27 @@ export interface TraceProvenance {
 }
 
 export interface AuthTokens { accessToken: string; refreshToken: string; expiresInSec: number; }
+/** PC-56 STORE-1a · B1/B4 — what `POST /v1/auth/otp` really answers: a code was sent, how long until a resend is accepted (the
+ *  server's cooldown), and how long the code lives (the server's OTP TTL — the screen prints this, never a canon literal). `devCode`
+ *  only outside production (AUTH_EXPOSE_OTP). */
+export interface OtpRequestResult { sent: true; resendInSec: number; ttlSec: number; devCode?: string }
+/** The channels the API's DTO names. `ivr` (voice) and `whatsapp` are REFUSED BY NAME today (409 OTP_CHANNEL_UNAVAILABLE). */
+export type OtpChannel = 'sms' | 'whatsapp' | 'ivr';
+/** PC-56 STORE-1a · B2 — `details` of a 401 OTP_INVALID: which of the three it was, and how many tries this code has left. */
+export interface OtpInvalidDetails { reason: 'wrong' | 'expired' | 'locked'; attemptsLeft: number; retryAfterSec?: number }
+/** PC-56 STORE-1a · A4 — one of the caller's sessions, as the API exposes it: a coarse device FAMILY code (never a user-agent string,
+ *  never an IP, never a place), whether it is the session making the call, and when it was last active. */
+export interface AuthSessionSummary {
+  id: string; deviceFamily: 'android' | 'ios' | 'web' | null; current: boolean;
+  lastSeenAt: string; createdAt: string; expiresAt: string; revokedAt: string | null;
+}
+/** PC-56 STORE-1a · A3 — the storefront's resolved LIVE tenant (anonymous; from the request's slug / host context). `countryCode` and
+ *  `defaultLang` are null until a SECURITY DEFINER read exposes them (no migration in STORE-1a); `phoneDefaultCountry` is the country a
+ *  bare national number is read as by the API's own normaliser. */
+export interface StorefrontTenant {
+  tenantId: string; slug: string | null; displayName: string;
+  countryCode: string | null; defaultLang: string | null; phoneDefaultCountry: string;
+}
 export interface UserProfile { id: string; displayName: string | null; roles: string[]; locale: string; }
 
 // --- payments (module 4) — money is bigint minor-unit STRINGS (Law 2) ---

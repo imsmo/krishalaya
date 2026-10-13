@@ -46,8 +46,8 @@ export function BuyerActions({ listing, tenantSlug }: { listing: ListingCard; te
         </form>
       )}
 
-      {listing.saleType === 'auction' && <p className="kv-actions__note">{t.t('listing.auctionNote')}</p>}
-      {listing.saleType === 'service' && <p className="kv-actions__note">{t.t('listing.serviceNote')}</p>}
+      {listing.saleType === 'auction' && <p className="kv-actions__note">{t.t('listing.auctionNote', { platform: t.t('brand.platform') })}</p>}
+      {listing.saleType === 'service' && <p className="kv-actions__note">{t.t('listing.serviceNote', { platform: t.t('brand.platform') })}</p>}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 // shared/utils/phone.ts · E.164 phone normalisation/validation (India-first, intl-ready).
 // Phone is the primary identity key, so normalisation must be deterministic.
 const E164 = /^\+[1-9]\d{7,14}$/;
+/** PC-56 STORE-1a · A3: the country a bare national number is read as by `normalizePhoneE164`'s default (`+91`). Exposed by
+ *  `GET /v1/storefront/tenant` so a storefront can state the digit rule the API will apply — the API's own truth, not a client literal. */
+export const PHONE_DEFAULT_COUNTRY = 'IN';
 
 /** Normalise common Indian inputs to E.164 (+91…). Returns null if not normalisable. */
 export function normalizePhoneE164(raw: string, defaultCountry = '+91'): string | null {

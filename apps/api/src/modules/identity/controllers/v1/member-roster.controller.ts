@@ -6,6 +6,7 @@
 // would make the masking a formality.
 import { Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
@@ -21,7 +22,9 @@ import { MemberSuspensionService } from '../../services/member-suspension.servic
 import { Farmer360Service } from '../../services/farmer-360.service';
 import { ApiScopes, keyWithoutPii, shortName } from '../../../../core/auth/api-key.port';
 
-const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+// PC-56 STORE-1a · A1: the audit IP is the SAME answer the rate limit counted (core/http/client-ip — the storefront's signed address when it
+// verifies, else Express's trust-proxy `req.ip`). The raw, client-supplied X-Forwarded-For this used to read was spoofable.
+const ipOf = (req: Request) => clientIpOf(req);
 const reqIdOf = (req: Request) => (req.headers['x-request-id'] as string) || null;
 
 @Controller({ path: 'members/roster', version: '1' })
