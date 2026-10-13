@@ -1,26 +1,55 @@
+# .github/workflows/ci.yml · the monorepo gate: structure → install → package dists → typecheck → unit tests; plus a dependency audit.
+# PC-56 HOTFIX-3 (2026-10-13): this file used to call scripts that do not exist (`test:tenant-isolation`, `test:ledger-invariants`,
+# `migrate.js --env ci`) and an audit with no package manager on PATH, so it could never have gone green. Every command below was
+# run locally on the HOTFIX-3 tree before it was written here. Where the real gates live instead:
+#   • schema builds, migrations idempotent, partition runway, RLS coverage (tenant isolation), seeds ×2 → db-migrate.yml
+#   • tenant-isolation / ledger / partition-RLS specs against a real Postgres → api-ci.yml (the api `integration` jest project)
+# NOT RUN HERE, ON PURPOSE (named, not hidden):
+#   • lint — 4 Next.js apps have no ESLint config (founder decision pending since DEV-01); api lint is EMFILE-env-gated.
+#   • mobile typecheck — @krishalaya/mobile carries a known pre-existing tsc baseline (89 errors at the HOTFIX-3 brief; none added
+#     by any wave); mobile-ci.yml is its own workflow.
 name: CI
 on: { pull_request: {}, push: { branches: [main, dev] } }
 jobs:
   build-test:
     runs-on: ubuntu-latest
-    services:
-      postgres: { image: postgres:16, env: { POSTGRES_PASSWORD: ci }, ports: ["5432:5432"] }
-      redis: { image: redis:7, ports: ["6379:6379"] }
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      # Before install: the structure gate fails on ANY empty directory, and an installed node_modules can contain some.
+      - run: bash tools/scripts/verify-structure.sh
+      - uses: pnpm/action-setup@v4            # version from package.json "packageManager" (pnpm@9.15.9)
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: bash tools/scripts/verify-structure.sh
-      - run: pnpm lint                      # includes tenant-guard custom rule
-      - run: pnpm build
-      - run: node db/scripts/migrate.js --env ci
-      - run: pnpm test                      # unit + integration
-      - run: pnpm --filter api test:tenant-isolation   # cross-tenant attempts MUST fail
-      - run: pnpm --filter api test:ledger-invariants  # zero-sum + append-only checks
+      # 7 tsconfig*.tsbuildinfo files are TRACKED in git (sdk-js, tokens, worker, admin-api, wallet-service). On a fresh checkout
+      # with no dist/ they tell `tsc` (composite) the outputs are current, so sdk-js emitted only 3 of its 6 modules and the api
+      # typecheck failed on SdkError (proven on a clean `git archive` tree, HOTFIX-3). Untracking them is a separate change.
+      - name: Drop tracked incremental-build state (fresh build)
+        run: git ls-files -z "*.tsbuildinfo" | xargs -0 rm -f
+      # Package dists are git-ignored and every app typechecks against them (main/types = dist/). Every package with a
+      # build script, in dependency order (tokens, i18n → ui; contracts, storage, sdk-js, testing, ui-native).
+      - name: Build workspace package dists
+        run: pnpm -r --filter "./packages/**" build
+      - name: Typecheck (every workspace except mobile — see header)
+        run: pnpm -r --filter '!@krishalaya/mobile' typecheck
+      - name: Unit tests — api (unit project; integration runs in api-ci.yml)
+        run: pnpm --filter @krishalaya/api test:unit
+      - name: Unit tests — web-tenant
+        run: pnpm --filter @krishalaya/web-tenant test
+      - name: Unit tests — web-storefront
+        run: pnpm --filter @krishalaya/web-storefront test
+      - name: Unit tests — sdk-js
+        run: pnpm --filter @krishalaya/sdk-js test
   security:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npx audit-ci --high
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }   # no `cache: pnpm` — nothing is installed, so there is no store to cache
+      # Reads pnpm-lock.yaml; no install needed. Fails on a high/critical advisory.
+      # KNOWN RED, LEFT RUNNING ON PURPOSE (a security gate is not removed to make a badge green): on the HOTFIX-3 tree this
+      # reports 176 advisories — 103 high, 7 critical — e.g. next@14.2.35 (critical, every Next app), multer + @nestjs/microservices
+      # (Nest 10.4.22), axios@1.18.1 (whatsapp-bot), @grpc/grpc-js, and react-native 0.74 transitive (mobile). Upgrades are a
+      # founder-scheduled dependency wave; this job goes green when they land, not before.
+      - run: pnpm audit --audit-level high

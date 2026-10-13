@@ -16,18 +16,18 @@ cd /Users/sanjayodedra/Documents/Personal/farmer/krishalaya
 ```bash
 # Your local Postgres must be running and your role must be a superuser (or have CREATEROLE+CREATEDB),
 # because migrations create the kv_app / kv_wallet / kv_relay roles + RLS policies.
-psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/postgres" -c "select rolsuper from pg_roles where rolname=current_user;"
+psql "postgres://sanjayodedra:<owner-password>@localhost:5432/postgres" -c "select rolsuper from pg_roles where rolname=current_user;"
 #   rolsuper = t  → good.   (If 'f', grant: ALTER ROLE sanjayodedra SUPERUSER;  as a superuser.)
 
 # Create the database (skip if it already exists):
 createdb -U sanjayodedra krishalaya 2>/dev/null || \
-  psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/postgres" -c "CREATE DATABASE krishalaya;"
+  psql "postgres://sanjayodedra:<owner-password>@localhost:5432/postgres" -c "CREATE DATABASE krishalaya;"
 
 # Redis must be running on localhost:6379 (Homebrew: `brew services start redis`, or `docker compose up -d redis`).
 redis-cli ping   # → PONG
 ```
 
-> ⚠️ The `@` in your password MUST be written as `%40` inside any connection URL (it already is, everywhere here).
+> ⚠️ The `@` in your password MUST be written as `%40` inside any connection URL (substitute your own `<owner-password>`, URL-encoded, wherever it appears here).
 
 ---
 
@@ -47,12 +47,12 @@ pnpm --filter @krishalaya/sdk-js --filter @krishalaya/tokens --filter @krishalay
 ```bash
 # (a) migrations run as the OWNER (your superuser). This is already in root .env as MIGRATION_DATABASE_URL,
 #     but export it explicitly so the runner picks it up:
-export MIGRATION_DATABASE_URL="postgres://sanjayodedra:Postgres%404958@localhost:5432/krishalaya"
+export MIGRATION_DATABASE_URL="postgres://sanjayodedra:<owner-password>@localhost:5432/krishalaya"
 pnpm migrate
 pnpm migrate:status        # everything should be "applied" (0001 … 0048)
 
 # (b) give the app roles a LOGIN (password 'dev' — matches every app .env). Run as your owner:
-psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishalaya" -f db/local/local-login-roles.sql
+psql "postgres://sanjayodedra:<owner-password>@localhost:5432/krishalaya" -f db/local/local-login-roles.sql
 #   confirm rolcanlogin = t for kv_app, kv_relay, kv_wallet
 
 # (c) seed reference + demo data:
@@ -93,7 +93,7 @@ Created (gitignored — your secrets stay local):
 `apps/realtime-gateway/.env`, `apps/ai-services/.env`, `apps/web-{storefront,tenant,admin,partner}/.env.local`,
 `apps/mobile/.env`.
 
-- DB owner (migrations/seeds): `sanjayodedra` / `Postgres@4958` (encoded `%40`), database `krishalaya`.
+- DB owner (migrations/seeds): `sanjayodedra` / `<owner-password>` (URL-encode any `@` in it as `%40`), database `krishalaya`.
 - Apps connect as `kv_app` / `kv_wallet` / `kv_relay`, password `dev` (set in step 2b).
 - `JWT_ACCESS_SECRET` and the ai-services `AI_SERVICES_SHARED_SECRET` are strong random dev values, shared across the
   services that must agree (API ↔ realtime-gateway ↔ ai-services).

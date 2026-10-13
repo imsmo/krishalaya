@@ -42,7 +42,7 @@
 -- RUN IT as the DB OWNER / superuser (bypasses tenant RLS so explicit tenant_id inserts go through):
 --   psql "postgres://<owner>:<pw>@localhost:5432/krishalaya" -f db/local/demo-design-data.sql
 -- e.g.
---   psql "postgres://sanjayodedra:Postgres%404958@localhost:5432/krishalaya" -f db/local/demo-design-data.sql
+--   psql "postgres://sanjayodedra:<owner-password>@localhost:5432/krishalaya" -f db/local/demo-design-data.sql
 --
 -- NEVER run in staging/production. Re-runnable any time.
 -- ============================================================================

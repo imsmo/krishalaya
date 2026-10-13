@@ -662,10 +662,17 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     // close them so a neighbouring spec's relayBatch() never processes this spec's leftovers (the 11c afterAll does the same)
     if (w) await admin?.query(`UPDATE outbox_events SET status='published', published_at=now() WHERE status='pending' AND tenant_id=$1`, [w.tenant]).catch(() => undefined);
     for (const f of flagBackup) await admin?.query(`UPDATE feature_flags SET is_enabled=$2, rollout_pct=$3, rules=$4::jsonb WHERE key=$1`, [f.key, f.is_enabled, f.rollout_pct, JSON.stringify(f.rules ?? {})]).catch(() => undefined);
-    await app?.close().catch(() => undefined);
-    await relayPool?.end().catch(() => undefined);
-    await admin?.end().catch(() => undefined);
-  });
+    // PC-56 HOTFIX-3 (lead QA, 2026-10-13): on the founder's Mac the close below never resolved (11/11 tests green, 168/168 handlers
+    // exercised, then Jest's 5 s hook default — and a 60 s one — expired with NO Postgres activity in pg_stat_activity during the wait:
+    // a JavaScript-side wait on a pool/app handle, not a lock). The ritual runs this gate under --forceExit, which already accepts leaked
+    // handles once the tests are done; this teardown is therefore BOUNDED and LOUD rather than infinite and silent — the gate's verdict
+    // is its tests, never its cleanup. The cause (which handle stays open) is named in the records, not hidden here.
+    const teardown = (async () => { await app?.close().catch(() => undefined); await relayPool?.end().catch(() => undefined); await admin?.end().catch(() => undefined); })();
+    let timer: NodeJS.Timeout | undefined;
+    const forced = await Promise.race([teardown.then(() => false), new Promise<boolean>((r) => { timer = setTimeout(() => r(true), 20_000); })]);
+    if (timer) clearTimeout(timer);
+    if (forced) console.warn('[relay-gate] teardown exceeded 20 s and was forced (app/pool close did not resolve) — PC-56 HOTFIX-3 names this; --forceExit closes the handles');
+  }, 60_000);
 
   const caseFor = (e: { key: string; id: string }): Case | undefined => CASES[e.key] ?? CASES[`* → ${e.id}`];
 

@@ -45,6 +45,11 @@ jobs:
         run: node db/scripts/archive-partitions.js --json
       - name: Load core/rules/catalogue seeds
         run: node db/scripts/seed.js
+      # PC-56 HOTFIX-3: the ritual is "seeds ×2" — a second run must apply nothing (every seed file is tracked and idempotent).
+      - name: Seeds idempotency — re-run must apply 0
+        run: |
+          out=$(node db/scripts/seed.js); echo "$out" | tail -1
+          echo "$out" | grep -q "Done — applied 0 seed file(s)." || { echo "FATAL: the second seed run applied files"; exit 1; }
       # PC-56 TENANT-4d-5: this step printed a count and ASSERTED NOTHING, so it could not fail — a gate with
       # the word "sanity" in its name that was decoration. It now enforces a floor. The figure is deliberately a
       # floor and not an equality: partition children are real tables and their number grows every month as
