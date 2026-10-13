@@ -38,10 +38,13 @@ describe('PC-56 TENANT-13d · manifest and metadata are tenant-aware', () => {
     expect(layout).toMatch(/title: \{ default: name/); expect(layout).toMatch(/themeColor: brandColours\(b\?\.brand\)\?\.primary/);
     expect(readFileSync(join(SRC, 'app', 'manifest.ts'), 'utf8')).toMatch(/TENANT_SLUG_HEADER/);
   });
-  it('the hard-coded "Krishalaya Store" literal is gone from every storefront source file (grep)', () => {
-    const offenders = walk(SRC).filter((f) => /\.(ts|tsx|js)$/.test(f) && !f.includes(`${join('src', 'test')}`)).filter((f) => readFileSync(f, 'utf8').includes('Krishalaya Store'));
+  // PC-56 STORE-1b · founder decision D2 (2026-10-13): the platform store is "Krishalaya Bazaar" (it was "Krishalaya Store"). Neither the old
+  // nor the new name is a literal in any storefront source — both come from packages/tokens' one brand-mark list.
+  it('no storefront source hard-codes the platform store name (old "Krishalaya Store" or D2\'s "Krishalaya Bazaar") — it comes from tokens', () => {
+    const offenders = walk(SRC).filter((f) => /\.(ts|tsx|js)$/.test(f) && !f.includes(`${join('src', 'test')}`))
+      .filter((f) => { const x = readFileSync(f, 'utf8'); return x.includes('Krishalaya Store') || x.includes('Krishalaya Bazaar'); });
     expect(offenders).toEqual([]);
-    expect(PLATFORM_BRAND.platformStoreName).toBe('Krishalaya Store');   // kept in the brand-mark list, not deleted
+    expect(PLATFORM_BRAND.platformStoreName).toBe('Krishalaya Bazaar');   // founder D2; kept in the brand-mark list
   });
 });
 
@@ -64,7 +67,7 @@ describe('PC-56 TENANT-13d · colours, logo, mark, note', () => {
     expect(poweredByVisible('escrow', brand({ poweredByHidden: true }))).toBe(true);
     expect(poweredByVisible('kyc', brand({ poweredByHidden: true }))).toBe(true);
     expect(poweredByVisible('storefront', null)).toBe(true);
-    for (const page of [['app', 'checkout', 'pay', 'page.tsx'], ['app', 'orders', '[id]', 'page.tsx']]) expect(readFileSync(join(SRC, ...page), 'utf8')).toMatch(/poweredByVisible\('escrow'/);
+    for (const page of [['app', '(platform)', 'checkout', 'pay', 'page.tsx'], ['app', '(platform)', 'orders', '[id]', 'page.tsx']]) expect(readFileSync(join(SRC, ...page), 'utf8')).toMatch(/poweredByVisible\('escrow'/);
   });
   it('the one-time note: never on a first visit; once for someone who saw an earlier version; never twice', () => {
     expect(brandNoteDecision(undefined, 3)).toEqual({ show: false, remember: 3 });

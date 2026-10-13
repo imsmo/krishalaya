@@ -2,12 +2,39 @@
 // page?" answered by the API from the request's own tenant context (the client's `tenantSlug` → `X-Tenant-Slug`, or a verified
 // storefront host). A 404 TENANT_NOT_FOUND means no LIVE tenant resolved — never a default one.
 import { HttpClient } from '../http';
-import { StorefrontTenant } from '../types';
+import { DiscoveryCard, OrganisationCard, Page, StorefrontFlags, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
 
 export class StorefrontResource {
   constructor(private readonly http: HttpClient) {}
   /** The context-resolved live tenant: id, slug, display name (no PII). Anonymous. */
   async tenant(signal?: AbortSignal): Promise<StorefrontTenant> {
     return (await this.http.request<StorefrontTenant>('GET', 'storefront/tenant', { anonymous: true, signal })).data;
+  }
+
+  // PC-56 STORE-1b · the two homes' public reads (all anonymous GETs; every one goes through a 0204 SECURITY DEFINER read on the API).
+
+  /** D4 — the context tenant's public profile. 404 TENANT_NOT_FOUND for an unknown, non-live or (anonymously) trial organisation. */
+  async profile(signal?: AbortSignal): Promise<StorefrontProfile> {
+    return (await this.http.request<StorefrontProfile>('GET', 'storefront/profile', { anonymous: true, signal })).data;
+  }
+  /** D3 — the platform's precomputed public counts and when they were computed. */
+  async stats(signal?: AbortSignal): Promise<StorefrontStats> {
+    return (await this.http.request<StorefrontStats>('GET', 'storefront/stats', { anonymous: true, signal })).data;
+  }
+  /** D1 — one keyset page of the cross-tenant discovery feed (`after` = the previous page's nextCursor). */
+  async discover(q: { after?: string; limit?: number; category?: string; q?: string } = {}, signal?: AbortSignal): Promise<Page<DiscoveryCard>> {
+    const r = await this.http.request<DiscoveryCard[]>('GET', 'storefront/discover', {
+      anonymous: true, signal, query: { after: q.after, limit: q.limit, category: q.category, q: q.q },
+    });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** D1 — one keyset page of the verified-organisation directory. */
+  async organisations(q: { after?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<OrganisationCard>> {
+    const r = await this.http.request<OrganisationCard[]>('GET', 'storefront/organisations', { anonymous: true, signal, query: { after: q.after, limit: q.limit } });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** B2 — the context tenant's allow-listed public flags (`group_lots`). */
+  async flags(signal?: AbortSignal): Promise<StorefrontFlags> {
+    return (await this.http.request<StorefrontFlags>('GET', 'storefront/flags', { anonymous: true, signal })).data;
   }
 }

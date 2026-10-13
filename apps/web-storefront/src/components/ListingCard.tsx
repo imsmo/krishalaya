@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { ListingCard as ListingCardData } from '@krishalaya/sdk-js';
 
-export type ListingCardLabels = { organic: string; available: string };
+// PC-56 STORE-1b (founder D4): `soldBy` names the ORGANISATION on the card ("Sold by Anand FPO") — never a farmer or a member number.
+export type ListingCardLabels = { organic: string; available: string; soldBy?: string };
 
 export function ListingCard(
   { listing, tenantSlug, lang = 'en', labels }:
@@ -20,6 +21,7 @@ export function ListingCard(
         {listing.organicClaim && <span className="kv-badge kv-badge--organic">{labels.organic}</span>}
         <span className="kv-card__qty">{listing.quantityAvailable} {listing.unitCode} {labels.available}</span>
       </div>
+      {labels.soldBy && <p className="kv-card__org">{labels.soldBy}</p>}
     </Link>
   );
 }

@@ -7,7 +7,9 @@ import { join } from 'node:path';
 
 const SF = join(__dirname, '..');
 const WT = join(__dirname, '..', '..', '..', 'web-tenant', 'src');
-const PORTED = ['features/forms/chain.ts', 'features/mutate/chain.ts', 'features/mutate/verify.ts', 'features/offline/signal.ts', 'components/OnlineGuard.tsx', 'components/DirArrow.tsx'];
+const PORTED = ['features/forms/chain.ts', 'features/mutate/chain.ts', 'features/mutate/verify.ts', 'features/offline/signal.ts', 'components/OnlineGuard.tsx', 'components/DirArrow.tsx',
+  // PC-56 STORE-1b · the "as of" law (W318 §1) for the home's precomputed counts
+  'components/AsOf.tsx', 'features/offline/stale.ts'];
 
 /** The file with its first `// apps/` provenance line removed (the only line allowed to differ). */
 function body(path: string): { rest: string; provenance: string } {

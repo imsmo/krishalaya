@@ -11,7 +11,7 @@
 // Fail-closed: with no publishable key configured, the button is disabled with a clear message (never a fake pay).
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createOrderIntentAction, pollOrderPaymentStatus } from '../app/checkout/pay/actions';
+import { createOrderIntentAction, pollOrderPaymentStatus } from '../app/(platform)/checkout/pay/actions';
 
 type RzpOptions = {
   key: string; order_id: string; name: string; description: string; prefill?: { name?: string; contact?: string };

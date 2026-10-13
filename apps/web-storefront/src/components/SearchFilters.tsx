@@ -4,11 +4,14 @@
 // The cursor is intentionally NOT a field, so changing a filter restarts paging from the first page. categoryId/
 // regionId, if present in the URL, ride along as hidden inputs so they survive a filter change. All copy via i18n.
 import { getTranslator } from '../lib/i18n';
-import { SALE_TYPES, SORTS, minorToMajor, parseMajorToMinor, type RawSearchParams } from '../features/discovery/query';
+import { SALE_TYPES, SORTS, LEGACY_DEFAULT_EXPONENT, minorToMajor, parseMajorToMinor, type RawSearchParams } from '../features/discovery/query';
 import type { CategoryOption } from '../features/discovery/categories';
 import type { RegionOption } from '../features/discovery/regions';
 
-export function SearchFilters({ basePath, sp, categories = [], regions = [] }: { basePath: string; sp: RawSearchParams; categories?: CategoryOption[]; regions?: RegionOption[] }) {
+// PC-56 STORE-1b: `exponent` = the store currency's minor-unit exponent (features/discovery/money.ts); null = unknown → nothing is guessed:
+// the price fields start empty and the band is not applied, rather than re-read with a guessed two decimals.
+// `hideSaleTypes` (PC-56 STORE-1b): a sale type the store has switched off (group lots, from storefront.flags()) is not offered as a facet.
+export function SearchFilters({ basePath, sp, categories = [], regions = [], exponent = LEGACY_DEFAULT_EXPONENT, hideSaleTypes = [] }: { basePath: string; sp: RawSearchParams; categories?: CategoryOption[]; regions?: RegionOption[]; exponent?: number | null; hideSaleTypes?: readonly string[] }) {
   const t = getTranslator();
   const cur = (k: string) => (Array.isArray(sp[k]) ? (sp[k] as string[])[0] : (sp[k] as string | undefined)) ?? '';
   const saleType = cur('saleType');
@@ -28,7 +31,7 @@ export function SearchFilters({ basePath, sp, categories = [], regions = [] }: {
           <label htmlFor="f-sale" className="kv-filters__label">{t.t('discover.saleType')}</label>
           <select id="f-sale" name="saleType" defaultValue={saleType} className="kv-field__input">
             <option value="">{t.t('discover.saleType.any')}</option>
-            {SALE_TYPES.map((s) => <option key={s} value={s}>{t.t(`discover.saleType.${s}`)}</option>)}
+            {SALE_TYPES.filter((s) => !hideSaleTypes.includes(s)).map((s) => <option key={s} value={s}>{t.t(`discover.saleType.${s}`)}</option>)}
           </select>
         </div>
 
@@ -63,11 +66,11 @@ export function SearchFilters({ basePath, sp, categories = [], regions = [] }: {
       <div className="kv-filters__row">
         <div className="kv-filters__field">
           <label htmlFor="f-min" className="kv-filters__label">{t.t('discover.priceMin')}</label>
-          <input id="f-min" name="priceMin" type="text" inputMode="decimal" defaultValue={minorToMajor(parseMajorToMinor(cur('priceMin')))} className="kv-field__input" />
+          <input id="f-min" name="priceMin" type="text" inputMode="decimal" defaultValue={exponent === null ? '' : minorToMajor(parseMajorToMinor(cur('priceMin'), exponent), exponent)} className="kv-field__input" />
         </div>
         <div className="kv-filters__field">
           <label htmlFor="f-max" className="kv-filters__label">{t.t('discover.priceMax')}</label>
-          <input id="f-max" name="priceMax" type="text" inputMode="decimal" defaultValue={minorToMajor(parseMajorToMinor(cur('priceMax')))} className="kv-field__input" />
+          <input id="f-max" name="priceMax" type="text" inputMode="decimal" defaultValue={exponent === null ? '' : minorToMajor(parseMajorToMinor(cur('priceMax'), exponent), exponent)} className="kv-field__input" />
         </div>
         <div className="kv-filters__field kv-filters__field--check">
           <label htmlFor="f-organic" className="kv-filters__check">

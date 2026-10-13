@@ -31,7 +31,7 @@ import { AuthService, AuthTokens } from '../../identity/services/auth.service';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
 import { TenantSignupRepository } from '../repositories/tenant-signup.repository';
 import {
-  SignupRefusedError, languageOf, signupPolicyFrom, slugCandidates, trialPeriodEnd, validateOrgName,
+  SignupRefusedError, isReservedSlugViolation, languageOf, signupPolicyFrom, slugCandidates, trialPeriodEnd, validateOrgName,
 } from '../domain/signup';
 
 export interface SignupInput {
@@ -155,13 +155,23 @@ export class TenantSignupService {
       }
 
       const tenantId = uuidv7();
-      const tenant = await this.repo.insertTenant(tx, {
-        id: tenantId, slugCandidates: slugCandidates(org.value),
-        // Both names start as what the applicant typed. A legal name differing from a display name is a real distinction
-        // (W113 asks for one name) and belongs on the profile screen, not in a guess made here.
-        legalName: org.value, displayName: org.value,
-        tenantTypeId: input.orgTypeId, countryCode, ownerName: name, ownerPhone: phone,
-      });
+      let tenant: { id: string; slug: string } | null;
+      try {
+        tenant = await this.repo.insertTenant(tx, {
+          id: tenantId, slugCandidates: slugCandidates(org.value),
+          // Both names start as what the applicant typed. A legal name differing from a display name is a real distinction
+          // (W113 asks for one name) and belongs on the profile screen, not in a guess made here.
+          legalName: org.value, displayName: org.value,
+          tenantTypeId: input.orgTypeId, countryCode, ownerName: name, ownerPhone: phone,
+        });
+      } catch (e) {
+        // PC-56 STORE-1b (GAP-B20): the database's reserved-name wall (0204) refused a candidate the code list did not know — answered by
+        // name; the transaction rolls back, nothing was created.
+        if (isReservedSlugViolation(e)) {
+          throw new SignupRefusedError('SIGNUP_SLUG_RESERVED', 'that name is a storefront address the platform keeps for itself — please add your district or a distinguishing word');
+        }
+        throw e;
+      }
       if (!tenant) throw new SignupRefusedError('SIGNUP_SLUG_UNAVAILABLE', 'that organisation name is taken — please add your district or a distinguishing word');
 
       const roleId = await this.repo.roleIdByCode(tx, 'tenant_admin');

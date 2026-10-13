@@ -1,6 +1,12 @@
 // @krishalaya/sdk-js · response types mirroring the API read-models. MONEY IS ALWAYS A STRING of bigint minor
 // units (Law 2) — never a JS number, so a large balance/price never loses precision in a browser.
-export interface Page<T> { items: T[]; nextCursor: string | null; total?: number | null; }
+export interface Page<T> {
+  items: T[]; nextCursor: string | null; total?: number | null;
+  /** PC-56 STORE-1b: the cap behind `total` on the public listing feed — `total > totalCap` means "more than totalCap" ("1,000+"). */
+  totalCap?: number | null;
+  /** PC-56 STORE-1b: the tenant's published MEMBERS-ONLY listings (left off the public feed); null where the read does not say. */
+  membersOnlyCount?: number | null;
+}
 
 // --- lookups / taxonomy (P1-9) — reference data for rendering pickers/facets with REAL names. ---
 /** A global taxonomy node (category tree). `defaultName` is the canonical label; server-side reads of name-resolved
@@ -151,6 +157,26 @@ export interface StorefrontTenant {
   tenantId: string; slug: string | null; displayName: string;
   countryCode: string | null; defaultLang: string | null; phoneDefaultCountry: string;
 }
+/** PC-56 STORE-1b · D4 — a LIVE organisation's public profile (`GET /v1/storefront/profile`). No person, no PII. `verified` is the
+ *  platform's own approval (the admin realm's `approved_at`); `legalName` is the only other name a column holds (no vernacular-name column
+ *  exists). `logoPath` (published brand, version-pinned) wins over `logoUrl`. `currencyCode` = the organisation's country currency. */
+export interface StorefrontProfile {
+  displayName: string; legalName: string; verified: boolean; sinceYear: number; district: string | null; memberFarmers: number;
+  logoUrl: string | null; logoPath: string | null; currencyCode: string;
+}
+/** PC-56 STORE-1b · D3 — the platform home's PRECOMPUTED counts; `computedAt` null = never computed (say so, never print zeros as fact). */
+export interface StorefrontStats { liveListings: number; verifiedOrganisations: number; districts: number; computedAt: string | null }
+/** PC-56 STORE-1b · D1 — a discovery-feed card: names the ORGANISATION (never a seller, user or farmer); money = bigint minor string. */
+export interface DiscoveryCard {
+  listingId: string; tenantSlug: string; organisation: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;
+  organic: boolean; grade: string | null; district: string | null;
+}
+/** PC-56 STORE-1b · D1 — a verified organisation in the public directory. */
+export interface OrganisationCard {
+  slug: string; displayName: string; district: string | null; logoUrl: string | null; logoPath: string | null; memberFarmers: number;
+}
+/** PC-56 STORE-1b · B2 — the ALLOW-LISTED public flags of the context tenant. */
+export interface StorefrontFlags { group_lots: boolean }
 export interface UserProfile { id: string; displayName: string | null; roles: string[]; locale: string; }
 
 // --- payments (module 4) — money is bigint minor-unit STRINGS (Law 2) ---

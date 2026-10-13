@@ -9,12 +9,15 @@ export function safeNext(next: string | undefined | null): string {
 }
 
 /**
- * The storefront's own top-level routes — every directory directly under `src/app` that is not `[tenantSlug]` (a test compares this
- * list with the directory, so a new route cannot be forgotten). A first path segment NOT in this list is a tenant store's slug.
+ * The storefront's own top-level routes — every directory directly under `src/app` (or under a route group such as `(platform)`, which adds
+ * no URL segment — PC-56 STORE-1b) that is not `[tenantSlug]` (a test compares this list with the directory, so a new route cannot be
+ * forgotten). A first path segment NOT in this list is a tenant store's slug.
  */
 export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'about', 'account', 'api', 'auctions', 'blog', 'cart', 'checkout', 'help', 'login', 'messages', 'notifications', 'offers', 'offline',
   'orders', 'press', 'pricing', 'tenants-signup', 'trace',
+  // PC-56 STORE-1b: the platform home's discovery feed and organisation directory (both reserved as tenant slugs in migration 0204)
+  'discover', 'organisations',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

@@ -63,7 +63,9 @@ export class ListingsController {
   async search(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryListingSchema) q: QueryListingDto) {
     if (q.mine && !ctx.userId) throw new UnauthorizedError('Sign in to view your own listings');
     const res = await this.searchRM.query(ctx.tenantId, q, q.mine ? { ownerUserId: ctx.userId } : {});
-    return { data: res.items, meta: { total: res.total, nextCursor: res.nextCursor } };
+    // PC-56 STORE-1b: the public feed also carries its capped total (+ the cap) and the members-only count (W274 "N published" /
+    // "some lots are members-only") — both null on the owner view.
+    return { data: res.items, meta: { total: res.total, nextCursor: res.nextCursor, totalCap: res.totalCap ?? null, membersOnlyCount: res.membersOnlyCount ?? null } };
   }
 
   // Static routes BEFORE ':id' so they aren't captured as a listing id.

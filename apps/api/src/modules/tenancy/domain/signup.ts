@@ -73,7 +73,31 @@ export function slugCandidates(orgName: string, attempts = 6): string[] {
   // The last resort is random rather than sequential: two simultaneous signups of the same name would otherwise both walk
   // the same list and race on every entry.
   out.push(`${base.slice(0, 40)}-${Math.random().toString(36).slice(2, 6)}`);
-  return out;
+  // PC-56 STORE-1b (GAP-B20): a storefront route name is never offered. "Login Farmers" starts at `login-farmers` (fine); an organisation
+  // literally named "Cart" starts at `cart-2`. The database trigger (0204 trg_tenants_slug_reserved) is the wall; this keeps a signup
+  // from walking into it.
+  return out.filter((c) => !isReservedSlug(c));
+}
+
+/**
+ * PC-56 STORE-1b (GAP-B20) · the names no organisation may take as its storefront address: every top-level storefront route (Next's
+ * static segments win over `/[tenantSlug]`, so a tenant slugged `login` would be unreachable) plus the STORE-2..6 canon routes and the
+ * platform names a look-alike store would want. **A MIRROR of migration 0204's `reserved_tenant_slugs` seed** — a unit spec reads the
+ * migration and compares the two; the trigger refuses whatever this list misses (the service then answers SIGNUP_SLUG_RESERVED).
+ */
+export const RESERVED_TENANT_SLUGS: readonly string[] = Object.freeze([
+  'about', 'account', 'api', 'auctions', 'blog', 'cart', 'checkout', 'help', 'login', 'messages', 'notifications', 'offers', 'offline',
+  'orders', 'organisations', 'press', 'pricing', 'tenants-signup', 'trace', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml',
+  'discover', 'search', 'browse', 'seller', 'inputs', 'group-lots', 'addresses', 'preferences', 'contact', 'quality-promise', 'trust-data',
+  'language', 'accessibility', 'sync', 'queued', 'pwa-install', 'admin', 'api-docs', 'status', 'www', 'mail', 'app', 'store', 'bazaar',
+]);
+const RESERVED = new Set(RESERVED_TENANT_SLUGS);
+export function isReservedSlug(slug: string): boolean { return RESERVED.has(String(slug ?? '').trim().toLowerCase()); }
+
+/** The database's refusal (0204 `[TENANT_SLUG_RESERVED]`, SQLSTATE 23514) — recognised so the service can answer it by name. */
+export function isReservedSlugViolation(e: unknown): boolean {
+  const err = e as { code?: unknown; message?: unknown } | null;
+  return err?.code === '23514' && typeof err?.message === 'string' && err.message.includes('[TENANT_SLUG_RESERVED]');
 }
 
 /** The trial's period end. Days, not months: W113 promises fourteen days and a month is not fourteen days. */

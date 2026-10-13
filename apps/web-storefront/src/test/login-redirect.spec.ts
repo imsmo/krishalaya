@@ -16,7 +16,10 @@ describe('STORE-1a · sign-in redirects', () => {
     expect(tenantSlugOfPath('/offers/1')).toBeNull();
   });
   it('the static top-level list IS the app directory (a new route cannot be mistaken for a tenant slug)', () => {
-    const dirs = readdirSync(join(__dirname, '..', 'app'), { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith('[') && !d.name.startsWith('(')).map((d) => d.name).sort();
+    // PC-56 STORE-1b: a route group `(name)` adds no URL segment — its children are top-level routes too
+    const top = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith('['))
+      .flatMap((d) => (d.name.startsWith('(') ? top(join(dir, d.name)) : [d.name]));
+    const dirs = top(join(__dirname, '..', 'app')).sort();
     expect([...STATIC_TOP_SEGMENTS].sort()).toEqual(dirs);
   });
   it('which tenant a sign-in belongs to: route param, then the host header, then the platform slug', () => {

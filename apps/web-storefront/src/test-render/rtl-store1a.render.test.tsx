@@ -22,7 +22,7 @@ jest.mock('../lib/session', () => ({ resolveSessionToken: async () => null }));
 jest.mock('../lib/api-client', () => ({ serverClient: () => ({ auth: { sessions: async () => mockState.sessions } }) }));
 jest.mock('../lib/login-flow', () => ({ readPendingLogin: () => mockState.pending, readPendingTwoFactor: () => mockState.twoFa }));
 jest.mock('../lib/tenant-context', () => ({ resolveStorefrontTenant: async () => mockState.tenant }));
-jest.mock('../app/login/actions', () => ({
+jest.mock('../app/(platform)/login/actions', () => ({
   requestCodeAction: async () => undefined, verifyCodeAction: async () => undefined, verifyTwoFactorAction: async () => undefined,
   resendCodeAction: async () => undefined, resetLoginAction: async () => undefined, logoutAction: async () => undefined,
 }));

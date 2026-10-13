@@ -13,7 +13,11 @@ export class ListingsResource {
         organic: query.organic, priceMinMinor: query.priceMinMinor, priceMaxMinor: query.priceMaxMinor,
         sort: query.sort, cursor: query.cursor, limit: query.limit },
     });
-    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, total: (r.meta?.total as number | null) ?? null };
+    return {
+      items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, total: (r.meta?.total as number | null) ?? null,
+      // PC-56 STORE-1b: the public feed's cap and members-only count (null on reads that do not say)
+      totalCap: (r.meta?.totalCap as number | null) ?? null, membersOnlyCount: (r.meta?.membersOnlyCount as number | null) ?? null,
+    };
   }
   /** A single published listing by id (public/visibility-gated). */
   async get(id: string, signal?: AbortSignal): Promise<ListingCard> {

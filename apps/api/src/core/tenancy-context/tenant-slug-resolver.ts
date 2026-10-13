@@ -106,6 +106,29 @@ export class TenantSlugResolver {
     return { value, error: false };
   }
 
+  /**
+   * PC-56 STORE-1b · A2 (founder D4): may an ANONYMOUS caller see this already-resolved tenant? 0204's SECURITY DEFINER
+   * `public_tenant_live` — true only for status active | grace (a TRIAL organisation is not live to buyers). Same cache discipline as the
+   * resolutions above (60 s / 10 s); a DB error is reported as `error` (never cached) so the middleware can answer 503 rather than a
+   * false 404 or — worse — a trial store shown to the public.
+   */
+  private readonly liveCache = new Map<string, { live: boolean; expiresAt: number }>();
+  async isPublicLive(tenantId: string): Promise<{ live: boolean; error: boolean }> {
+    const now = Date.now();
+    const hit = this.liveCache.get(tenantId);
+    if (hit && hit.expiresAt > now) return { live: hit.live, error: false };
+    let live = false;
+    try {
+      const res = await this.pools.writer(0).query(`SELECT public_tenant_live($1::uuid) AS live`, [tenantId]);
+      live = res.rows[0]?.live === true;
+    } catch (e) {
+      this.log.error(`tenant public-live read failed for "${tenantId}": ${(e as Error).message}`);
+      return { live: false, error: true };
+    }
+    this.liveCache.set(tenantId, { live, expiresAt: now + (live ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS) });
+    return { live, error: false };
+  }
+
   /** DEV-26/Q20: the public white-label branding for an already-resolved tenant (display_name + logo_url,
    *  migration 0075). Read-only, through 0200's `public_tenant_card` (SECURITY DEFINER — the `tenants` wall hides every row without a context; was "no RLS needed": `tenants` had no
    *  `tenant_id` column). Cached alongside the slug cache (same TTL discipline: a positive hit for

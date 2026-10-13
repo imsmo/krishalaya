@@ -30,7 +30,26 @@ export interface ListingCard {
    *  instead of defaulting every row to "live". */
   status: string;
 }
-export interface SearchResult { items: ListingCard[]; total: number | null; nextCursor: string | null; }
+export interface SearchResult {
+  items: ListingCard[];
+  /** PC-56 STORE-1b (GAP-B15): the PUBLIC feed's listing count, CAPPED — exact up to `totalCap`, `totalCap + 1` = "more than totalCap".
+   *  Null on the owner view and whenever a narrowing filter is active (an unfiltered total printed as "N results" would be false). */
+  total: number | null;
+  nextCursor: string | null;
+  /** PC-56 STORE-1b: the cap behind `total` (0204 `public_tenant_listing_count(tenant, cap)`). */
+  totalCap?: number;
+  /** PC-56 STORE-1b: how many of the tenant's published listings are MEMBERS-ONLY (visibility tenant) — the storefront says "some lots
+   *  are members-only" only when this is > 0. Null on the owner view. Capped at 1001. */
+  membersOnlyCount?: number | null;
+}
+
+/** PC-56 STORE-1b: the storefront's "N published" cap ("1,000+"). */
+export const PUBLIC_LISTING_COUNT_CAP = 1000;
+
+/** True when the query narrows the public feed (then an unfiltered total would not be "the results"). The cursor and sort do not narrow. */
+export function narrowsFeed(q: QueryListingDto): boolean {
+  return Boolean(q.q || q.categoryId || q.regionId || q.saleType || q.organic || q.priceMinMinor || q.priceMaxMinor || q.pincode);
+}
 
 const encode = (s: string) => Buffer.from(s).toString('base64url');
 const decode = (s: string) => Buffer.from(s, 'base64url').toString('utf8');
@@ -119,7 +138,21 @@ export class ListingSearchReadModel {
         ? encode(JSON.stringify({ c: new Date(last.created_at).toISOString(), id: last.id }))
         : null;
 
-      return { items, total: null, nextCursor };
+      if (opts.ownerUserId) return { items, total: null, nextCursor };
+
+      // PC-56 STORE-1b (GAP-B15 + the members-only state): two 0204 SECURITY DEFINER counters, each CAPPED (they stop counting at the cap
+      // + 1 — never an unbounded count on the public feed). The total is only stated when nothing narrows the feed.
+      const counts = await exec.query<{ total: number | null; members_only: number | null }>(
+        `SELECT CASE WHEN $3::boolean THEN NULL ELSE public_tenant_listing_count($1::uuid, $2::int) END AS total,
+                public_tenant_members_only_count($1::uuid) AS members_only`,
+        [tenantId, PUBLIC_LISTING_COUNT_CAP, narrowsFeed(q)]);
+      const c = counts.rows[0];
+      return {
+        items, nextCursor,
+        total: c && c.total !== null && c.total !== undefined ? Number(c.total) : null,
+        totalCap: PUBLIC_LISTING_COUNT_CAP,
+        membersOnlyCount: c && c.members_only !== null && c.members_only !== undefined ? Number(c.members_only) : null,
+      };
     });
   }
 }

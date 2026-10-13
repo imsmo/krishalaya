@@ -15,8 +15,11 @@
 /** The platform's own words for the mark. A brand literal kept in ONE place (not deleted — brief: "the brand mark list"). */
 export const PLATFORM_BRAND = Object.freeze({
   name: 'Krishalaya',
-  /** The storefront's platform-level app name, shown ONLY when no tenant is resolved (the platform's own pages). */
-  platformStoreName: 'Krishalaya Store',
+  /** The storefront's platform-level app name, shown ONLY when no tenant is resolved (the platform's own pages). PC-56 STORE-1b, FOUNDER
+   *  DECISION D2 (2026-10-13): "Platform store name = Krishalaya Bazaar" (canon W273) — it was "Krishalaya Store". The vernacular sub-line
+   *  ("ખેડૂતથી સીધું · straight from the farmer") is copy, so it lives in the i18n catalogues, not here. A TENANT store still carries only
+   *  "Powered by Krishalaya" (13d rule, unchanged). */
+  platformStoreName: 'Krishalaya Bazaar',
   poweredByMark: 'Powered by Krishalaya',
 });
 

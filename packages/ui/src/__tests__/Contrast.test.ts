@@ -3,9 +3,9 @@
 // the monorepo's ts-jest config for design-system code runs.
 import {
   brandContrast, contrastRatio, formatRatio, relativeLuminance, normaliseHex, PLATFORM_BRAND_COLOURS, BRAND_PAIRS,
-  showsPoweredBy, TRUST_SURFACES, isTrustSurface, seniorModeTypeScaleMultiplier,
+  showsPoweredBy, TRUST_SURFACES, isTrustSurface, seniorModeTypeScaleMultiplier, PLATFORM_BRAND,
 } from '@krishalaya/tokens';
-import { brandContrast as reExported, showsPoweredBy as reShows } from '../index';
+import { brandContrast as reExported, showsPoweredBy as reShows, PLATFORM_BRAND as reBrand } from '../index';
 
 describe('contrast law (WCAG 2.x)', () => {
   it('luminance endpoints: black 0, white 1', () => {
@@ -73,6 +73,13 @@ describe('brand surfaces — Powered by Krishalaya', () => {
       expect(isTrustSurface(s)).toBe(true);
       expect(showsPoweredBy(s, true, true)).toBe(true);
     }
+  });
+  // PC-56 STORE-1b · founder decision D2 (2026-10-13): the platform store is "Krishalaya Bazaar" (canon W273) — it was "Krishalaya Store".
+  // The platform's own name and the tenant-store mark are unchanged (13d rule: a tenant store carries only "Powered by Krishalaya").
+  it('the brand-mark list: Krishalaya · Krishalaya Bazaar (D2) · Powered by Krishalaya — one frozen object, re-exported', () => {
+    expect(PLATFORM_BRAND).toEqual({ name: 'Krishalaya', platformStoreName: 'Krishalaya Bazaar', poweredByMark: 'Powered by Krishalaya' });
+    expect(Object.isFrozen(PLATFORM_BRAND)).toBe(true);
+    expect(reBrand).toBe(PLATFORM_BRAND);
   });
   it('a brandable surface hides it only with the choice AND the plan feature', () => {
     expect(showsPoweredBy('storefront', false, false)).toBe(true);

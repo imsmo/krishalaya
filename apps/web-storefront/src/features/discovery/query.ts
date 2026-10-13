@@ -17,8 +17,13 @@ export type SortFacet = (typeof SORTS)[number];
 /** Page size for the storefront grid. */
 export const PAGE_LIMIT = 24;
 
-/** The currency minor-unit scale we render against (INR paise = 2). Catalogue is INR; kept explicit, not magic. */
-const MINOR_DIGITS = 2;
+/**
+ * PC-56 STORE-1b (survey F-15): this was `MINOR_DIGITS = 2` for every caller. The TENANT HOME now passes its currency's own exponent
+ * (`currencyExponent`, features/discovery/money.ts — the formatter's Intl source) into `toListingQuery` / `SearchFilters`. The default
+ * below remains ONLY for the three callers outside this wave (offer counter, auction bid, listing offer — STORE-2/3 surfaces), which
+ * still owe the listing's / auction's currency; named in the STORE-1b report.
+ */
+export const LEGACY_DEFAULT_EXPONENT = 2;
 
 /** Raw, already-decoded searchParams as Next hands them to a page (values may be string | string[] | undefined). */
 export type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -33,27 +38,30 @@ function one(v: string | string[] | undefined): string | undefined {
  * Major-unit decimal string → minor-unit integer string (e.g. "123.4" → "12340", "99" → "9900"). Returns
  * undefined for empty/invalid input so a bad filter is simply ignored rather than throwing. Pure string math.
  */
-export function parseMajorToMinor(input: string | string[] | undefined): string | undefined {
+export function parseMajorToMinor(input: string | string[] | undefined, exponent: number = LEGACY_DEFAULT_EXPONENT): string | undefined {
   const s = one(input);
   if (!s) return undefined;
-  if (!new RegExp(`^\\d{1,12}(\\.\\d{1,${MINOR_DIGITS}})?$`).test(s)) return undefined;
+  const d = Number.isInteger(exponent) && exponent >= 0 && exponent <= 4 ? exponent : LEGACY_DEFAULT_EXPONENT;
+  if (!new RegExp(d > 0 ? `^\\d{1,12}(\\.\\d{1,${d}})?$` : '^\\d{1,12}$').test(s)) return undefined;
   const [intPart, fracRaw = ''] = s.split('.');
-  const frac = (fracRaw + '0'.repeat(MINOR_DIGITS)).slice(0, MINOR_DIGITS);
+  const frac = (fracRaw + '0'.repeat(d)).slice(0, d);
   const joined = (intPart + frac).replace(/^0+(?=\d)/, '');
   return joined === '' ? '0' : joined;
 }
 
 /** Minor-unit integer string → major-unit display string for pre-filling the form (e.g. "12340" → "123.40"). */
-export function minorToMajor(minor: string | undefined): string {
+export function minorToMajor(minor: string | undefined, exponent: number = LEGACY_DEFAULT_EXPONENT): string {
   if (!minor || !/^\d+$/.test(minor)) return '';
-  const padded = minor.padStart(MINOR_DIGITS + 1, '0');
-  const int = padded.slice(0, -MINOR_DIGITS).replace(/^0+(?=\d)/, '');
-  const frac = padded.slice(-MINOR_DIGITS);
+  const d = Number.isInteger(exponent) && exponent >= 0 && exponent <= 4 ? exponent : LEGACY_DEFAULT_EXPONENT;
+  if (d === 0) return minor.replace(/^0+(?=\d)/, '');
+  const padded = minor.padStart(d + 1, '0');
+  const int = padded.slice(0, -d).replace(/^0+(?=\d)/, '');
+  const frac = padded.slice(-d);
   return /^0+$/.test(frac) ? int : `${int}.${frac}`;
 }
 
 /** Build the typed SDK query from the URL. Enums are validated (anything unrecognised is dropped, not trusted). */
-export function toListingQuery(sp: RawSearchParams): ListingQuery {
+export function toListingQuery(sp: RawSearchParams, exponent: number | null = LEGACY_DEFAULT_EXPONENT): ListingQuery {
   const saleTypeRaw = one(sp.saleType);
   const sortRaw = one(sp.sort);
   return {
@@ -65,8 +73,9 @@ export function toListingQuery(sp: RawSearchParams): ListingQuery {
     regionId: one(sp.regionId),
     saleType: (SALE_TYPES as readonly string[]).includes(saleTypeRaw ?? '') ? saleTypeRaw : undefined,
     organic: one(sp.organic) === '1' ? true : undefined,
-    priceMinMinor: parseMajorToMinor(sp.priceMin),
-    priceMaxMinor: parseMajorToMinor(sp.priceMax),
+    // PC-56 STORE-1b: the store's currency exponent; an UNKNOWN currency (null) drops the price band rather than guessing two decimals
+    priceMinMinor: exponent === null ? undefined : parseMajorToMinor(sp.priceMin, exponent),
+    priceMaxMinor: exponent === null ? undefined : parseMajorToMinor(sp.priceMax, exponent),
     sort: (SORTS as readonly string[]).includes(sortRaw ?? '') ? (sortRaw as SortFacet) : undefined,
     cursor: one(sp.cursor),
     limit: PAGE_LIMIT,

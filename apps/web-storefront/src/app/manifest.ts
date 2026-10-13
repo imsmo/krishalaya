@@ -10,10 +10,12 @@ import { publicClient } from '../lib/api-client';
 import { env } from '../lib/env';
 import { platformManifest, tenantManifest } from '../features/branding/brand-theme';
 import { TENANT_SLUG_HEADER } from '../lib/host-routing';
+import { getTranslator } from '../lib/i18n';
 
-const PLATFORM_DESCRIPTION = 'Buy directly from farmer collectives — fresh produce, dairy, and farm inputs.';
-
+// PC-56 STORE-1b · C5 (survey F-16): the description is a catalogue key (it was an English literal); the platform's manifest name is the
+// platform store name from packages/tokens (founder D2 — platformManifest); a tenant's stays its own (13d).
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const PLATFORM_DESCRIPTION = getTranslator().t('meta.manifestDescription');
   const slug = headers().get(TENANT_SLUG_HEADER);
   if (slug && /^[a-z0-9][a-z0-9-]{0,49}$/i.test(slug)) {
     let b: TenantBranding | null = null;

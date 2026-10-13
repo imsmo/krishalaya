@@ -4,7 +4,7 @@
 // business modules depend only on tokens (UNIT_OF_WORK, OUTBOX_WRITER, …) and
 // never on `pg`, Redis, etc. Swapping an implementation (e.g. OpenSearch search,
 // Kafka outbox) is a one-line change here — no module rewrites.
-import { Global, Module, OnModuleInit } from '@nestjs/common';
+import { Global, Inject, Module, OnModuleInit } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import Redis from 'ioredis';
 
@@ -76,11 +76,16 @@ import { CellGuard } from './cells/cell.guard';
 import { HealthController } from './health/health.controller';
 import { MetricsController } from './observability/metrics.controller';
 import { StorefrontBrandingController } from './tenancy-context/storefront-branding.controller';
+// PC-56 STORE-1b · B2/B3: the platform home's and tenant home's public reads, and the clock behind the precomputed public counts.
+import { StorefrontPublicController } from './tenancy-context/storefront-public.controller';
+import { StorefrontPublicReadModel } from './tenancy-context/storefront-public.read-model';
+import { StorefrontPublicStatsJob, STOREFRONT_PUBLIC_STATS_MS } from './tenancy-context/storefront-public-stats.job';
+import { PgPoolProvider } from './database/pg-pool.provider';
 
 @Global()
 @Module({
   imports: [ConfigModule, DatabaseModule, CacheModule, SearchModule, AuditModule, FeatureFlagsModule, I18nModule],
-  controllers: [HealthController, MetricsController, StorefrontBrandingController],
+  controllers: [HealthController, MetricsController, StorefrontBrandingController, StorefrontPublicController],
   providers: [
     { provide: OUTBOX_WRITER, useClass: PgOutboxWriter },
     { provide: QUOTA_SERVICE, useClass: PgQuotaService },
@@ -126,6 +131,8 @@ import { StorefrontBrandingController } from './tenancy-context/storefront-brand
     ImpersonationGate, ImpersonationReadOnlyGuard, ImpersonationInterceptor,
     TenantResolver, TenantSlugResolver, TenantContextMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware,
     HttpLogMiddleware, ClientIpMiddleware,
+    StorefrontPublicReadModel,
+    { provide: StorefrontPublicStatsJob, useFactory: (pools: PgPoolProvider) => new StorefrontPublicStatsJob(STOREFRONT_PUBLIC_STATS_MS, pools), inject: [PgPoolProvider] },
     // auth + RBAC platform services (used by the identity module's auth flow)
     TokenService, { provide: TOKEN_SERVICE, useExisting: TokenService },
     OtpService, { provide: OTP_SERVICE, useExisting: OtpService },
@@ -173,6 +180,8 @@ export class CoreModule implements OnModuleInit {
   constructor(
     private readonly resilience: ResilienceService,
     private readonly circuitEvents: CircuitEventRecorder,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    private readonly publicStats: StorefrontPublicStatsJob,
   ) {}
 
   /**
@@ -186,5 +195,7 @@ export class CoreModule implements OnModuleInit {
    */
   onModuleInit(): void {
     this.resilience.useCircuitObserver(this.circuitEvents);
+    // PC-56 STORE-1b · B3 (founder D3): "Today at a glance" is precomputed every 15 min — never counted on a request.
+    this.jobs.register(this.publicStats);
   }
 }

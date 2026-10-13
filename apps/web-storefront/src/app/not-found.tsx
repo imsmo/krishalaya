@@ -7,10 +7,14 @@ import { getTranslator } from '../lib/i18n';
 export default function NotFound() {
   const t = getTranslator();
   return (
-    <section className="kv-empty-state">
-      <h1>{t.t('common.notFoundTitle')}</h1>
-      <p>{t.t('common.notFoundBody')}</p>
-      <Link href="/" className="kv-btn">{t.t('common.backHome')}</Link>
-    </section>
+    // PC-56 STORE-1b: the root layout no longer wraps pages in <main> (each route group does), so the 404 carries its own landmark — it is
+    // also what an unknown, non-live or (to an anonymous visitor) trial organisation's /<slug> renders (the tenant layout's notFound()).
+    <main className="kv-container" id="main">
+      <section className="kv-empty-state">
+        <h1>{t.t('common.notFoundTitle')}</h1>
+        <p>{t.t('common.notFoundBody')}</p>
+        <Link href="/" className="kv-btn">{t.t('common.backHome')}</Link>
+      </section>
+    </main>
   );
 }

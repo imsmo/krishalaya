@@ -19,12 +19,26 @@ describe('STORE-1a · brand guard', () => {
     }
   });
   it.each(Object.entries(CATS))('%s: tenant-route sentences interpolate {platform}, never the literal name', (_l, cat) => {
-    const scoped = [...SURVEY_KEYS, ...Object.keys(cat).filter((k) => k.startsWith('auth.'))];
+    // PC-56 STORE-1b · C1: the two homes' new keys too (the tenant home, the platform home, the headers / footers, /discover, /organisations,
+    // /trace, the as-of stamp) — the platform's name only ever arrives as {platform} / {store}.
+    const STORE1B = /^(meta\.|header\.|footer\.(about|col\.help|col\.farmers|help|returns|contact|soon|openStorefront|traceHow)$|home\.(hero|cta|glance|refusal|categories|fresh|orgs|trace)\.|home\.retry$|card\.soldBy$|discover\.(title|lead|empty|error|showMore|clearSearch)$|orgs\.|trace\.(how|code)\.|asOf\.|tenant\.)/;
+    const scoped = [...SURVEY_KEYS, ...Object.keys(cat).filter((k) => k.startsWith('auth.') || STORE1B.test(k))];
+    expect(scoped.filter((k) => STORE1B.test(k)).length).toBe(91);   // every key STORE-1b added
     for (const k of scoped) {
       const v = (cat as Record<string, string>)[k];
       for (const lit of PLATFORM_LITERALS) expect([k, v.includes(lit)]).toEqual([k, false]);
     }
     for (const k of SURVEY_KEYS) expect([k, (cat as Record<string, string>)[k].includes('{platform}')]).toEqual([k, true]);
+  });
+  it('STORE-1b: the vernacular sub-line is catalogue copy (founder D2) — "किसान से सीधे" / "ખેડૂતથી સીધું"; the store name itself is the token', () => {
+    expect(hi['header.subline']).toBe('किसान से सीधे');
+    expect(gu['header.subline']).toBe('ખેડૂતથી સીધું');
+    for (const cat of Object.values(CATS)) {
+      expect(cat['meta.platformTitle']).toContain('{store}');
+      expect(cat['tenant.since']).toContain('{platform}');
+      expect(cat['meta.platformDescription']).toContain('{platform}');
+      for (const v of Object.values(cat)) expect(v.includes(PLATFORM_BRAND.platformStoreName)).toBe(false);
+    }
   });
   it('the one brand entry: the token name in English, the decided vernacular spellings in hi / gu', () => {
     expect(en['brand.platform']).toBe(PLATFORM_BRAND.name);

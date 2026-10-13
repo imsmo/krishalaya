@@ -22,7 +22,7 @@ import { readLoginParams, type LoginParams, type LoginError } from '../features/
 import { phoneRuleFor } from '../features/auth/phone';
 import { otherSessionNotice, type OtherSessionNotice } from '../features/auth/sessions-notice';
 import { maskForDisplay } from '../features/chain/mask';
-import { requestCodeAction, verifyCodeAction, verifyTwoFactorAction, resendCodeAction, resetLoginAction } from '../app/login/actions';
+import { requestCodeAction, verifyCodeAction, verifyTwoFactorAction, resendCodeAction, resetLoginAction } from '../app/(platform)/login/actions';
 import { SubmitButton } from './SubmitButton';
 import { ResendButton } from './ResendButton';
 import { OnlineGuard } from './OnlineGuard';

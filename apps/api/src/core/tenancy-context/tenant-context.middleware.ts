@@ -21,6 +21,8 @@ import { hostOnly, isPlatformHost } from './host-routing';
 
 /** PC-56 TENANT-13d · B3: the flag that turns Host → tenant resolution on (default OFF; seed 0009 / migration 0194). */
 export const HOST_ROUTING_FLAG = 'tenant_host_routing';
+/** PC-56 STORE-1b · A2 (founder D4): ON = canon-contrary demo mode (trial stores answer anonymously). Seeded OFF by migration 0204. */
+export const STOREFRONT_TRIAL_VISIBLE_FLAG = 'storefront_trial_visible';
 
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
@@ -38,6 +40,12 @@ export class TenantContextMiddleware implements NestMiddleware {
   private async hostRoutingOn(): Promise<boolean> {
     if (!this.flags) return false;
     try { return await this.flags.isEnabled(HOST_ROUTING_FLAG); } catch { return false; }
+  }
+
+  /** PC-56 STORE-1b · A2: the demo-mode kill-switch. A flag-store failure (or no flag service) reads as OFF — trial stays hidden. */
+  private async trialVisible(): Promise<boolean> {
+    if (!this.flags) return false;
+    try { return await this.flags.isEnabled(STOREFRONT_TRIAL_VISIBLE_FLAG); } catch { return false; }
   }
 
   private static refuse(res: Response, status: number, code: string, message: string, requestId: string): void {
@@ -97,6 +105,21 @@ export class TenantContextMiddleware implements NestMiddleware {
     if (!tenantId) {
       const slug = req.headers['x-tenant-slug'] as string | undefined;
       if (slug) tenantId = (await this.slugs.resolve(slug)) ?? '';
+    }
+    // PC-56 STORE-1b · A2 (founder D4) — TRIAL IS HIDDEN FROM ANONYMOUS CALLERS, decided HERE and nowhere else. A request with no
+    // principal whose tenant came from a Host / X-Tenant-Id / X-Tenant-Slug (the three branches above — a JWT tenant never reaches this)
+    // is let through only for a tenant `public_tenant_live` calls live (active | grace). Every anonymous read inherits it:
+    // storefront/tenant, storefront/branding, the listing feed, the lookups. Kill-switch `storefront_trial_visible` ON = demo mode.
+    //   • no bearer at all (a truly anonymous caller) → 404 TENANT_NOT_FOUND, exactly as for an unknown organisation;
+    //   • a bearer that did not verify (expired / forged) → the request continues with NO tenant context, so a protected route still
+    //     answers 401 (a trial member's expired session must reach the refresh path, not a 404) and a public route sees no tenant.
+    if (tenantId && !principal && !(await this.trialVisible())) {
+      const r = await this.slugs.isPublicLive(tenantId);
+      if (r.error) { TenantContextMiddleware.refuse(res, 503, 'TENANT_RESOLUTION_UNAVAILABLE', 'The organisation could not be looked up — try again', req.requestId ?? ''); return; }
+      if (!r.live) {
+        if (!bearer) { TenantContextMiddleware.refuse(res, 404, 'TENANT_NOT_FOUND', 'No organisation is served here', req.requestId ?? ''); return; }
+        tenantId = '';
+      }
     }
     const lang = ((req.headers['x-lang'] as string) || (req.headers['accept-language'] as string) || 'en-IN').split(',')[0];
 
