@@ -2,6 +2,7 @@
 export { KrishalayaClient, createClient } from './client';
 export type { SdkConfig } from './config';
 export { SdkError, SdkNetworkError, SdkTimeoutError } from './errors';
+export { CART_REFUSAL_CODES } from './types';   // PC-56 STORE-2b · B6
 export type { HttpMethod, RequestOptions, Envelope } from './http';
 export type { CreateListingInput } from './resources/listings';
 export type { OrderRole } from './resources/orders';
@@ -20,7 +21,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType, KycReviewItem,
   NotificationItem, NotificationPreference, QuietHours,
   OrderListItem, OrderItemLine, OrderDetail, OrderBuyerSummary, Shipment, OrderTracking, OrderEventPoint, ShipmentEventPoint, TrackingShipment, ReviewSummary, PublicReview, ReviewItem,
-  CartItem, Cart, CheckoutResult, CheckoutPreview, CheckoutPreviewSeller, DeliveryMethod, DeliveryMethodsResult, WalletPaymentResult, Address,
+  CartItem, Cart, CartLineReason, AcceptPriceResult, CartRefusalCode, CheckoutResult, CheckoutPreview, CheckoutPreviewSeller, DeliveryMethod, DeliveryMethodsResult, WalletPaymentResult, Address,
   WalletBalance, WalletLedgerEntry, WalletInsights, InsightBucket,
   SavedItem, SavedSearch, SavedEntityType, SellerPublicProfile, GalleryItem,
   ListingOffer, Conversation, ConversationContext, Message, MaskedCall,

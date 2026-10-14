@@ -119,7 +119,8 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
       // the storefront's own read says the same thing BEFORE its form
       const f = await request(http).get('/v1/storefront/flags');
       // PC-56 STORE-2a (0207): + storefront_browse, the second platform-scoped switch (seeded ON)
-      expect(f.body.data).toEqual({ org_self_signup: false, storefront_browse: true });
+      // PC-56 STORE-2b (0208): + storefront_cart, the third platform-scoped switch (seeded ON)
+      expect(f.body.data).toEqual({ org_self_signup: false, storefront_browse: true, storefront_cart: true });
     } finally {
       await setSignup(true);
     }
@@ -178,12 +179,13 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
   it('(6) GET /v1/storefront/flags: no tenant → ONLY org_self_signup; a tenant → group_lots + org_self_signup; no rules leak', async () => {
     const platform = await request(http).get('/v1/storefront/flags');
     expect(platform.status).toBe(200);
-    expect(platform.body.data).toEqual({ org_self_signup: true, storefront_browse: true });   // PC-56 STORE-2a: + storefront_browse (platform)
+    expect(platform.body.data).toEqual({ org_self_signup: true, storefront_browse: true, storefront_cart: true });   // PC-56 STORE-2a: + storefront_browse; STORE-2b: + storefront_cart (platform)
     const store = await request(http).get('/v1/storefront/flags').set('x-tenant-slug', liveSlug);
     expect(store.status).toBe(200);
     // PC-56 HOTFIX-4 · A8: + the five tenant-scoped switches the STORE-2 surfaces read
     // PC-56 STORE-2a: + storefront_browse (the platform's catalogue kill-switch, answered with or without a tenant)
-    expect(Object.keys(store.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse']);
+    // PC-56 STORE-2b: + storefront_cart (buying's kill-switch, platform-scoped)
+    expect(Object.keys(store.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart']);
     expect(typeof store.body.data.group_lots).toBe('boolean');
     for (const b of [platform.body, store.body]) expect(JSON.stringify(b)).not.toMatch(/rollout|tenant_ids|rules|pct/);
   });

@@ -11,6 +11,7 @@ import { MembershipsModule } from '../memberships/memberships.module';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { CartsController } from './controllers/v1/carts.controller';
+import { StorefrontCartGate, StorefrontCartGuard } from './storefront-cart.guard';
 import { CheckoutController } from './controllers/v1/checkout.controller';
 import { OrdersController } from './controllers/v1/orders.controller';
 import { CartService } from './services/cart.service';
@@ -49,6 +50,8 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
   imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule, RequirementsModule],   // RequirementsModule (PC-56 TENANT-11d): RequirementOrderService — one order per accepted response   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
   controllers: [CartsController, CheckoutController, OrdersController],
   providers: [
+    // PC-56 STORE-2b: buying's one kill-switch (founder D2, 0208)
+    StorefrontCartGate, StorefrontCartGuard,
     CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService, AuctionOrderService,
     OrderTimelineReadModel, OrderTrackingReadModel, OrderBuyerSummaryReadModel, TenantOrderStatsReadModel, OrderConsoleReadModel, OrdersPublisher,
     CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository, DeliveryZoneRepository,

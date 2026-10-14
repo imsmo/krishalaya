@@ -14,6 +14,7 @@ import { isDeclinedOutcome, placeRefusalStatus } from '../../../features/checkou
 import { serverClient } from '../../../lib/api-client';
 import { afterPlacementHref } from '../../../features/orders/payment-state';
 import { requireSession } from '../../../lib/session';
+import { checkoutRefusalHref, refusalOf } from '../../../features/store2b/cart';
 
 function isUuidish(v: string): boolean {
   return /^[0-9a-fA-F-]{8,64}$/.test(v);
@@ -32,7 +33,7 @@ export async function placeOrderAction(formData: FormData): Promise<void> {
   const deliveryMethodId = isUuidish(methodRaw) ? methodRaw : undefined; // buyer's chosen serviceable method
   const couponCode = couponRaw ? couponRaw.slice(0, 40) : undefined;
 
-  let next: string | null = null; let refusal = 'err';
+  let next: string | null = null; let refusal = 'err'; let back: string | null = null;
   try {
     const result = await serverClient().checkout.checkout({ deliveryAddressId, deliveryMethodId, couponCode }, idempotencyKey);
     // PC-56 TENANT-10b: a coupon the server did not apply means the order was placed at the normal price — the next page
@@ -44,7 +45,15 @@ export async function placeOrderAction(formData: FormData): Promise<void> {
     // back to the cart-reviewed checkout with a generic, non-leaky error. PC-56 TENANT-SW-a: a delivery refusal (a pincode in no
     // active zone, no address, a method that does not serve it) is said kindly instead.
     refusal = placeRefusalStatus(e instanceof SdkError ? e.code : null);
+    // PC-56 STORE-2b · C6: the cart's named refusals — a line problem (PRICE_CHANGED with both numbers, BELOW_MIN_ORDER, LICENCE_REQUIRED, a
+    // line that cannot be bought) sends the buyer BACK TO THE CART, which shows that line; BANNED_IN_REGION stays here with the region named;
+    // buying paused stays here, said. Nothing was placed in any of them.
+    if (e instanceof SdkError) {
+      const r = refusalOf(e.code, e.details ?? null);
+      back = r === 'failed' || r === 'not_a_number' ? null : checkoutRefusalHref(r, { region: typeof e.details?.region === 'string' ? e.details.region : null });
+    }
   }
+  if (!next && back) redirect(back);
   if (!next && refusal !== 'err') redirect(`/checkout?status=${refusal}`);
 
   if (!next) redirect('/checkout?status=err'); // nothing was created

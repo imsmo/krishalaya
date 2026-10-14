@@ -15,6 +15,7 @@ import { getTranslator, getLang } from '../../../../lib/i18n';
 import { env } from '../../../../lib/env';
 import { paymentStateOf, payPageRoute, confirmHref } from '../../../../features/orders/payment-state';
 import { moneyText } from '../../../../features/discovery/money';
+import { reloadHref } from '../../../../features/home/load-result';
 import { PayButton, type PayLabels } from '../../../../components/PayButton';
 import { PoweredByMark } from '../../../../components/PoweredByMark';
 import { poweredByVisible, PLATFORM_BRAND } from '../../../../features/branding/brand-theme';
@@ -45,8 +46,12 @@ export default async function PayPage({ searchParams }: { searchParams: { o?: st
   catch (e) { if (e instanceof SdkError && e.isNotFound) notFound(); order = null; }
 
   if (!order) {
+    // PC-56 STORE-2b · C6 (survey F-19): the load error gets Retry — a reload of this URL (a read; the Pay act itself is never retried here)
     return <section className="kv-pay-page"><h1>{t.t('checkout.payTitle')}</h1>
-      <p className="kv-form__error" role="alert">{t.t('checkout.loadError')}</p></section>;
+      <div className="kv-state kv-state--error" role="alert" data-kv-state="error">
+        <p>{t.t('checkout.loadError')}</p>
+        <a href={reloadHref('/checkout/pay', searchParams)} className="kv-btn" data-kv-retry="reload">{t.t('home.retry')}</a>
+      </div></section>;
   }
 
   // Not awaiting an online payment (paid, placed for payment on delivery, closed)? Go to confirmation — never offer Pay.

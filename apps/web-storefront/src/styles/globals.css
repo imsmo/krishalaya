@@ -193,6 +193,11 @@ a { color: inherit; text-decoration: none; }
 .kv-cart__subtotal { display: flex; justify-content: space-between; font-size: 18px; max-width: 320px; }
 .kv-cart__note { color: var(--kv-neutral-600); font-size: 14px; }
 .kv-cart__actions { display: flex; gap: var(--kv-space); align-items: center; flex-wrap: wrap; margin-top: 12px; }
+/* PC-56 STORE-2b · the organisation's cart (W281): the line photo, the drift box with both prices, a reason, the inline confirm (logical properties only) */
+.kv-cart__photo { inline-size: 72px; block-size: 72px; object-fit: cover; border-radius: 8px; }
+.kv-cart__drift { border: 1px solid #f0c36d; background: #fff8e6; border-radius: 8px; padding: 8px 12px; margin-block-start: 6px; }
+.kv-cart__reason { border-inline-start: 3px solid #b71c1c; padding-inline-start: 8px; margin-block-start: 6px; }
+.kv-cart__confirm { border: 1px solid var(--kv-neutral-100); border-radius: 8px; padding: 8px 12px; margin-block-start: 6px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* ---- checkout / pay / confirm ---- */
 .kv-checkout, .kv-pay-page, .kv-confirm { max-width: 640px; }

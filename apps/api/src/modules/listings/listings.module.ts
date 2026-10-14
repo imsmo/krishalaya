@@ -35,6 +35,7 @@ import { ListingPublicFactsReadModel } from './read-models/listing-public-facts.
 import { SellerProfileReadModel } from './read-models/seller-profile.read-model';
 import { ListingGalleryReadModel } from './read-models/listing-gallery.read-model';
 import { ListingLinksReadModel } from './read-models/listing-links.read-model';
+import { ListingPurchaseReadModel } from './read-models/listing-purchase.read-model';
 import { ListingTombstoneReadModel } from './read-models/listing-tombstone.read-model';
 import { ListingRegulatedReadModel } from './read-models/listing-regulated.read-model';
 import { OrganisationPageReadModel } from './read-models/organisation-page.read-model';
@@ -72,6 +73,8 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
     ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel, ListingPublicFactsReadModel,
     // PC-56 STORE-2a: the tombstone, the regulated marker, the organisation page, the catalogue's kill-switch
     ListingTombstoneReadModel, ListingRegulatedReadModel, OrganisationPageReadModel, StorefrontBrowseGate, StorefrontBrowseGuard,
+    // PC-56 STORE-2b: what buying a lot depends on (read by orders through ListingService.purchaseFacts)
+    ListingPurchaseReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, ListingMediaRepository, ListingTrustDocumentRepository,
     OrderCompletedHandler,

@@ -45,6 +45,8 @@ export const licenceRequiredSql = (l: string, todayParam: string): string =>
                                            WHERE kva.path @> (SELECT kvc.path FROM categories kvc WHERE kvc.id = ${l}.category_id)
                                              AND kva.deleted_at IS NULL)))`;
 
-/** The day a rule's effective window is checked on: the UTC calendar day — the SAME day catalogue's RegulatedRuleRepository uses, so the
- *  marker and the (2b) enforcement can never disagree about whether a rule is in force. */
+/** PC-56 STORE-2b (lead fix-forward): the public reads no longer bind this — they compare `effective_from`/`effective_to` against the
+ *  DATABASE's `CURRENT_DATE`, the same clock that stamps `effective_from DEFAULT CURRENT_DATE`, so the marker, the feed lock and the (2b)
+ *  enforcement agree with the row at every hour (a JS UTC day was one day behind the IST database between 00:00 and 05:30). Kept only for
+ *  callers that still want a UTC day string (specs); catalogue's RegulatedRuleRepository still uses the UTC day — named, owed. */
 export const todayUtc = (now: Date = new Date()): string => now.toISOString().slice(0, 10);

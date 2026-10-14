@@ -54,6 +54,13 @@ describe('STORE-1a · brand guard', () => {
     }
   });
 
+  // PC-56 STORE-2b · C7: the cart is a TENANT route (/<slug>/cart under the organisation's header) — none of its sentences names the platform
+  it.each(Object.entries(CATS))('%s: no STORE-2b value carries the platform\'s name (the cart is the organisation\'s)', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store2b.') || /^cart\.(titleOrg|signin|otherStore|refused\.|reason\.|drift\.|confirm\.|done\.|status\.|line\.)/.test(k));
+    expect(keys.length).toBeGreaterThan(60);
+    for (const k of keys) for (const lit of PLATFORM_LITERALS) expect([k, (cat as Record<string, string>)[k].includes(lit)]).toEqual([k, false]);
+  });
+
   it('the one brand entry: the token name in English, the decided vernacular spellings in hi / gu', () => {
     expect(en['brand.platform']).toBe(PLATFORM_BRAND.name);
     expect(hi['brand.platform']).toBe('कृषालय');

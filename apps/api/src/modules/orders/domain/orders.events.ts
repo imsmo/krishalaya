@@ -1,4 +1,5 @@
 // modules/orders/domain/orders.events.ts · integration events (via outbox).
+import { lineTotalFromMilli, toMilli } from './cart-rules';
 export const OrderEventType = {
   Created: 'orders.order_created',
   PaymentRequired: 'orders.payment_required',
@@ -19,8 +20,8 @@ export const OrderEventType = {
 export type OrderEventType = typeof OrderEventType[keyof typeof OrderEventType];
 export type DomainEvent = { type: string; payload: Record<string, unknown> };
 
-/** Money math in bigint minor units. qty has ≤3 decimals (numeric(14,3)). Floors to the paisa. */
-export function lineTotalMinor(unitPriceMinor: bigint, qty: number): bigint {
-  const qtyMilli = BigInt(Math.round(qty * 1000));
-  return (unitPriceMinor * qtyMilli) / 1000n;
+/** Money math in bigint minor units. qty has ≤3 decimals (numeric(14,3)). Floors to the minor unit.
+ *  PC-56 STORE-2b · F-24: the quantity goes through cart-rules `toMilli` (decimal-string math) — never `Math.round(qty * 1000)` on a float. */
+export function lineTotalMinor(unitPriceMinor: bigint, qty: number | string): bigint {
+  return lineTotalFromMilli(unitPriceMinor, toMilli(qty));
 }

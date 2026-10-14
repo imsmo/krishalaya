@@ -4,16 +4,25 @@
 // (Law 3) so a retried "place order" can't double-create. Money is bigint minor-unit strings (Law 2); the final
 // charges/discount/tax are computed SERVER-SIDE and read back on the order.
 import { HttpClient } from '../http';
-import { Cart, CheckoutResult, CheckoutPreview, DeliveryMethodsResult } from '../types';
+import { AcceptPriceResult, Cart, CheckoutResult, CheckoutPreview, DeliveryMethodsResult } from '../types';
 
+// PC-56 STORE-2b · B6: quantities travel as DECIMAL STRINGS ("2.5" → stored "2.500"; numeric(14,3)) — a number is still accepted for the
+// older callers. Refusals arrive as SdkError with the named codes of `CART_REFUSAL_CODES` (types.ts) and their details.
 export class CartResource {
   constructor(private readonly http: HttpClient) {}
   async get(signal?: AbortSignal): Promise<Cart> { return (await this.http.request<Cart>('GET', 'cart', { signal })).data; }
-  async addItem(listingId: string, quantity: number): Promise<{ ok: boolean }> {
+  async addItem(listingId: string, quantity: number | string): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('POST', 'cart/items', { body: { listingId, quantity } })).data;
   }
-  async updateItem(listingId: string, quantity: number): Promise<{ ok: boolean }> {
+  async updateItem(listingId: string, quantity: number | string): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('PATCH', `cart/items/${encodeURIComponent(listingId)}`, { body: { quantity } })).data;
+  }
+  /** PC-56 STORE-2b · B2 — the buyer's explicit re-agree of a changed price: re-snapshots the agreed price to the CURRENT one. Pass the price
+   *  the buyer was SHOWN: if the price moved again since, the API refuses PRICE_CHANGED with the newest two numbers (nothing accepted unseen).
+   *  Idempotent (an unchanged price is a no-op). */
+  async acceptPrice(listingId: string, expectedPriceMinor?: string): Promise<AcceptPriceResult> {
+    return (await this.http.request<AcceptPriceResult>('POST', `cart/items/${encodeURIComponent(listingId)}/accept-price`,
+      { body: expectedPriceMinor ? { expectedPriceMinor } : {} })).data;
   }
   async removeItem(listingId: string): Promise<{ ok: boolean }> {
     return (await this.http.request<{ ok: boolean }>('DELETE', `cart/items/${encodeURIComponent(listingId)}`)).data;

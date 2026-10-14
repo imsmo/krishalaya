@@ -17,7 +17,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { sellerNotSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { UUID_RE } from '../../../shared/pagination/us-keyset';
-import { todayUtc } from './public-listing.sql';
 
 export interface RegulatedMarker {
   licenceRequired: boolean;
@@ -64,12 +63,12 @@ export class ListingRegulatedReadModel {
          LEFT JOIN admin_regions rg ON rg.id = q.region_id
         WHERE q.deleted_at IS NULL
           AND q.rule_type IN ('license_required', 'banned_state', 'safety_label')
-          AND q.effective_from <= $1::date AND (q.effective_to IS NULL OR q.effective_to >= $1::date)
-          AND (q.product_id = $2
+          AND q.effective_from <= CURRENT_DATE AND (q.effective_to IS NULL OR q.effective_to >= CURRENT_DATE)
+          AND (q.product_id = $1
                OR q.category_id IN (SELECT anc.id FROM categories anc
-                                     WHERE anc.path @> (SELECT c.path FROM categories c WHERE c.id = $3) AND anc.deleted_at IS NULL))
+                                     WHERE anc.path @> (SELECT c.path FROM categories c WHERE c.id = $2) AND anc.deleted_at IS NULL))
         ORDER BY q.rule_type, q.id
-        LIMIT ${MAX_RULES}`, [todayUtc(), row.product_id, row.category_id]);
+        LIMIT ${MAX_RULES}`, [row.product_id, row.category_id]);
     return markerFromRules(r.rows.map((x) => ({ ruleType: x.rule_type, regionName: x.region_name ?? null, regional: x.regional === true, label: x.label ?? null })));
   }
 }

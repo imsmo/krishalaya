@@ -16,15 +16,30 @@ export class CartItemRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
   /** Insert-or-update a line (idempotent on (cart_id, listing_id)); snapshots the price at add time. */
-  async upsert(tx: TxContext, cartId: string, listingId: string, quantity: number, addedPriceMinor: bigint): Promise<void> {
+  // PC-56 STORE-2b · F-24: quantities are DECIMAL STRINGS ("2.500", numeric(14,3)) end to end — a number is still accepted from the older callers.
+  async upsert(tx: TxContext, cartId: string, listingId: string, quantity: number | string, addedPriceMinor: bigint): Promise<void> {
     await tx.query(
       `INSERT INTO cart_items (id, cart_id, listing_id, quantity, added_price_minor) VALUES ($1,$2,$3,$4,$5)
        ON CONFLICT (cart_id, listing_id) DO UPDATE SET quantity = EXCLUDED.quantity, added_price_minor = EXCLUDED.added_price_minor`,
       [uuidv7(), cartId, listingId, quantity, addedPriceMinor.toString()]);
   }
-  async setQty(tx: TxContext, cartId: string, listingId: string, quantity: number): Promise<number> {
+  async setQty(tx: TxContext, cartId: string, listingId: string, quantity: number | string): Promise<number> {
     const r = await tx.query(`UPDATE cart_items SET quantity=$3 WHERE cart_id=$1 AND listing_id=$2`, [cartId, listingId, quantity]);
     return r.rowCount ?? 0;
+  }
+  /** PC-56 STORE-2b · B12: ONE line locked for the accept-price act (inside the active cart's row lock the caller already holds). */
+  async lineForUpdate(tx: TxContext, cartId: string, listingId: string): Promise<CartItemRow | null> {
+    const r = await tx.query<CartItemRow>(`SELECT id, listing_id, quantity, added_price_minor FROM cart_items WHERE cart_id=$1 AND listing_id=$2 FOR UPDATE`, [cartId, listingId]);
+    return r.rows[0] ?? null;
+  }
+  /** PC-56 STORE-2b · B12: re-snapshot the agreed price to the CURRENT one — the buyer's explicit act, stamped by `updated_at` (trigger) and
+   *  `updated_by`. Returns the instant it was recorded. */
+  async acceptPrice(tx: TxContext, cartId: string, listingId: string, currentPriceMinor: bigint, userId: string): Promise<string | null> {
+    const r = await tx.query<{ updated_at: Date | string }>(
+      `UPDATE cart_items SET added_price_minor = $3, updated_by = $4 WHERE cart_id = $1 AND listing_id = $2 RETURNING updated_at`,
+      [cartId, listingId, currentPriceMinor.toString(), userId]);
+    const at = r.rows[0]?.updated_at;
+    return at ? new Date(at).toISOString() : null;
   }
   async remove(tx: TxContext, cartId: string, listingId: string): Promise<void> {
     await tx.query(`DELETE FROM cart_items WHERE cart_id=$1 AND listing_id=$2`, [cartId, listingId]);

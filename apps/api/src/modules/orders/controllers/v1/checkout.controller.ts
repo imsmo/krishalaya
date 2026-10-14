@@ -9,9 +9,12 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { CheckoutService } from '../../services/checkout.service';
 import { CheckoutSchema, CheckoutDto, CheckoutPreviewSchema, CheckoutPreviewDto, DeliveryMethodsQuerySchema, DeliveryMethodsQueryDto } from '../../dto/create-order.dto';
 import { OrderPermissions } from '../../policies/orders.policies';
+import { StorefrontCartGuard } from '../../storefront-cart.guard';
 
 @Controller({ path: 'checkout', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+// PC-56 STORE-2b · B5 (founder D2): buying's one kill-switch on placement, the preview and the delivery-methods read (503 STOREFRONT_CART_OFF),
+// after the auth guards.
+@UseGuards(AuthGuard, PermissionsGuard, StorefrontCartGuard)
 export class CheckoutController {
   constructor(private readonly checkout: CheckoutService) {}
 

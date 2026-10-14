@@ -3,7 +3,8 @@
 //   • the organisation's mark: its published logo (13d, version-pinned) or its name → the store's own home (/<slug>);
 //   • "Powered by Krishalaya" IN THE HEADER, as canon W274 places it ("'powered by Krishalaya' stays in the header") — under the 13d rule
 //     (`poweredByVisible('storefront', brand)`: hidden only when the tenant chose to AND its plan allows it right now);
-//   • language switcher, the cart link with its count in the accessible name, and Sign in → THIS store's sign-in (/<slug>/login);
+//   • language switcher, the cart link with its count in the accessible name (PC-56 STORE-2b: → THIS store's cart, /<slug>/cart), and Sign in →
+//     THIS store's sign-in (/<slug>/login);
 //   • PC-56 STORE-2a · C2: the search box → THIS store's /<slug>/search (the tenant feed), not the platform's;
 //   • the breadcrumb back to the platform store (founder D1 allows it: "Tenant stores MAY link back to the bazaar").
 // Server component: the only client JS is the locale switcher.
@@ -48,7 +49,8 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
         </form>
         <div className="kv-header__actions">
           <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
-          <Link href="/cart" className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
+          {/* PC-56 STORE-2b · D3: THIS store's cart (/<slug>/cart), under this header */}
+          <Link href={`${home}/cart`} className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}
           </Link>
           {!signedIn && <Link href={`${home}/login`} className="kv-header__login">{t.t('nav.login')}</Link>}

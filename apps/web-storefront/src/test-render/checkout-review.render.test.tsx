@@ -8,6 +8,8 @@ const calls: { methods: unknown[]; preview: unknown[] } = { methods: [], preview
 const mock: { preview: Record<string, unknown> | null } = { preview: null };
 
 jest.mock('next/navigation', () => ({ redirect: (to: string) => { throw new Error(`REDIRECT ${to}`); } }));
+// PC-56 STORE-2b · C6: the Place button is the pending-lock SubmitButton — `useFormStatus` (Next's React canary) as the login test fakes it
+jest.mock('react-dom', () => ({ ...jest.requireActual('react-dom'), useFormStatus: () => ({ pending: false }) }));
 jest.mock('../lib/i18n', () => {
   const { Translator: T } = jest.requireActual('@krishalaya/i18n');
   const cat = (l: string) => jest.requireActual(`../i18n/${l}`)[l];

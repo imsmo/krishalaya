@@ -134,9 +134,10 @@ describe('STORE-1b · B2 — the public reads', () => {
     const ctl = new StorefrontPublicController({} as never, { isEnabled } as never);
     // PC-56 HOTFIX-4 · A8: + online_payments, buyer_charges, offers, auctions, reviews (tenant-scoped)
     // PC-56 STORE-2a · B4: + storefront_browse (platform-scoped, the catalogue's kill-switch)
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse']);
-    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false, storefront_browse: false } });
-    expect(isEnabled).toHaveBeenCalledTimes(8);   // one per allow-listed key (HOTFIX-4: 2 → 7; STORE-2a: 8)
+    // PC-56 STORE-2b · B5: + storefront_cart (platform-scoped, buying's kill-switch)
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart']);
+    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false, storefront_browse: false, storefront_cart: false } });
+    expect(isEnabled).toHaveBeenCalledTimes(9);   // one per allow-listed key (HOTFIX-4: 2 → 7; STORE-2a: 8; STORE-2b: 9)
     expect((await ctl.publicFlags({ tenantId: '' } as RequestContext)).data).not.toHaveProperty('group_lots');
     await expect(ctl.profile({ tenantId: '' } as RequestContext)).rejects.toMatchObject({ code: 'TENANT_NOT_FOUND' });
   });

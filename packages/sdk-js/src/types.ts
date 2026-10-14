@@ -276,6 +276,9 @@ export interface StorefrontFlags {
   /** PC-56 STORE-2a (founder D4, 0207) — the PLATFORM kill-switch for the public catalogue; always answered (a flag-store failure reads ON).
    *  OFF = browse, search, listing, seller and inputs pages say browsing is temporarily unavailable. */
   storefront_browse?: boolean;
+  /** PC-56 STORE-2b (founder D2, 0208) — the PLATFORM kill-switch for buying (cart + checkout); always answered (a flag-store failure reads ON).
+   *  OFF = the cart and checkout say buying is paused on this platform for now. */
+  storefront_cart?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {
@@ -552,13 +555,59 @@ export interface ReviewItem extends PublicReview {
 }
 
 // --- cart + checkout (module 3) — money is bigint minor-unit STRINGS (Law 2) ---
+/** PC-56 STORE-2b · B1 — why a cart line cannot be bought, BY NAME (never a bare boolean). */
+export type CartLineReason = 'sold_out' | 'paused' | 'expired' | 'withdrawn' | 'suspended' | 'licence_required' | 'not_found';
 export interface CartItem {
-  listingId: string; title: string | null; quantity: number; unitPriceMinor: string; lineTotalMinor: string;
-  priceChanged: boolean; available: number; purchasable: boolean;
+  listingId: string; title: string | null;
+  /** @deprecated a float — read `quantityDecimal` (STORE-2b). Kept for mobile's compiled baseline. */
+  quantity: number;
+  /** `currentPriceMinor` when the listing is readable, else the agreed price (kept for older clients). */
+  unitPriceMinor: string; lineTotalMinor: string;
+  priceChanged: boolean;
+  /** @deprecated a float — read `quantityAvailable` (STORE-2b). */
+  available: number;
+  /** derived: `reason === null` (kept for older clients) */
+  purchasable: boolean;
   /** PC-56 HOTFIX-4 · C4: the listing's currency (null when the listing is gone) — money is printed from the data, never an 'INR' literal.
    *  Always sent since HOTFIX-4; optional only so pre-HOTFIX-4 fixtures (mobile) compile — absent reads as "unknown", never as INR. */
   currencyCode?: string | null;
+  // ── PC-56 STORE-2b (founder D4; survey F-13 / F-14 / F-18 / F-24). Always sent since 2b; optional only so older fixtures (mobile) compile. ──
+  /** the quantity as a DECIMAL STRING to 3 places ("2.500") — never a float */
+  quantityDecimal?: string;
+  unitCode?: string | null;
+  /** the listing's minimum order, decimal string ("5.000"; "0.000" = none); null when the listing is gone */
+  minOrderQty?: string | null;
+  /** what is available now, decimal string; null when the listing is gone */
+  quantityAvailable?: string | null;
+  /** the price the buyer AGREED (added at, or explicitly accepted) and the listing's price NOW — both minor-unit strings */
+  addedPriceMinor?: string;
+  currentPriceMinor?: string | null;
+  /** current − added, signed minor-unit string, computed by the server; null when unchanged */
+  priceDeltaMinor?: string | null;
+  /** why the line cannot be bought; null when it can */
+  reason?: CartLineReason | null;
+  /** below the listing's minimum / above what is available (placement would refuse) */
+  belowMin?: boolean; overAvailable?: boolean;
+  /** who sells — the ORGANISATION, never a person — and the district */
+  organisation?: { slug: string; name: string } | null; district?: string | null;
 }
+/** PC-56 STORE-2b · B2 — the accept-price act's answer: what was accepted (a no-op when unchanged) and the re-read cart. */
+export interface AcceptPriceResult {
+  accepted: { listingId: string; changed: boolean; previousPriceMinor: string; acceptedPriceMinor: string; currencyCode: string | null; acceptedAt: string | null };
+  cart: Cart;
+}
+/** PC-56 STORE-2b · B6 — the cart / checkout refusal codes the API answers BY NAME (each with its details), for a client's code → message map. */
+export const CART_REFUSAL_CODES = Object.freeze([
+  'BELOW_MIN_ORDER',          // { listingId, minOrderQty, unitCode, requested }
+  'PRICE_CHANGED',            // { listingId, addedPriceMinor, currentPriceMinor, currencyCode }
+  'LICENCE_REQUIRED',         // { listingId }
+  'BANNED_IN_REGION',         // { listingId, region }
+  'WRONG_STORE',              // { listingId, listingTenantSlug, listingTenantName }
+  'LISTING_NOT_PURCHASABLE',  // { listingId, reason: CartLineReason }
+  'LISTING_INSUFFICIENT_STOCK', // { listingId, requested, available }
+  'STOREFRONT_CART_OFF',      // 503 — buying is paused on the platform
+] as const);
+export type CartRefusalCode = (typeof CART_REFUSAL_CODES)[number];
 /** `currencyCode`: the one currency every line shares; null when the cart is empty or mixes currencies (then no subtotal is printed). */
 export interface Cart { items: CartItem[]; subtotalMinor: string; currencyCode?: string | null; }
 /** Checkout converts the cart into one order per seller (+ a group if multi-seller). The authoritative totals

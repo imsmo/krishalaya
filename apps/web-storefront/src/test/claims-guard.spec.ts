@@ -108,3 +108,43 @@ describe('STORE-2a · claims guard (browse, search, the lot, the organisation, i
     }
   });
 });
+
+// PC-56 STORE-2b · brief §E / C7 — every canon claim the cart, its chains and the listing's add REFUSE stays out of every catalogue as an OFFER:
+// the phrases may appear ONLY inside `store2b.refusal.*` (which say no, by name). And no STORE-2b value carries a digit, a currency sign or a
+// person placeholder (every figure is interpolated — the minimum, the prices, the delta, the region; the seller is {org}).
+describe('STORE-2b · claims guard (the cart, its chains, add to cart)', () => {
+  const REFUSED = [
+    /you have \S+ more|more carts? at/i,                                                  // one store per session (founder D3)
+    /\/qtl\/100\s?km|per quintal per|estimate before slot/i,                              // the delivery estimate
+    /\b\S*50 slabs|minimum \S*450|billed in .*slabs/i,                                    // slabs and a per-shipment minimum
+    /plus 18% GST|\+18% GST|prices include GST|GST on delivery/i,                         // GST is extracted, never added
+    /same-day harvests|see alternatives/i,
+    /queued on your phone|pending sync/i, /changes stay saved on this phone|nothing is lost/i,
+    /guest cart lives|lives on this device only/i,
+    /upload yours once|upload renewal|licence pending|verified within a day/i,
+    /reconcile zero-sum|audit trail has the entry|audit-trail entry/i,
+    /repeated failures page|page the on-call/i,
+    /Checkout is 3 steps/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a store2b refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (k.startsWith('store2b.refusal.') || k.startsWith('store2a.refusal.')) continue;
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no digit, no currency sign, no person placeholder in a STORE-2b value', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => /^(store2b\.|cart\.(titleOrg|signin|otherStore|yourCartAt|loadErrorServer|emptyOrg|browseStore|fromCheckout|status\.|summaryTitle|itemsSubtotal|quotedAtCheckout|resolveN|neverCharges|done\.|line\.|perUnitOf|photoAlt|quantityOf|reason\.|drift\.|confirm\.|failure\.|doorError|refused\.)|listing\.(qtyLabelUnit|addN|signinToBuy)$|checkout\.(placing|resolveInCart|regionUnknown)$)/.test(k));
+    expect(keys.length).toBe(89);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|memberNo|fullName|owner)\}/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English STORE-2b refusal says no / not / never / nothing / nobody', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store2b.refusal.'));
+    expect(r.length).toBe(15);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnobody\b/i.test(v)]).toEqual([k, true]);
+  });
+});

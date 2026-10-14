@@ -20,5 +20,13 @@ export const ErrorCodes = {
   LISTING_INVALID_PRICE: 'LISTING_INVALID_PRICE',
   LISTING_CONCURRENCY_CONFLICT: 'LISTING_CONCURRENCY_CONFLICT',
   LISTING_NOT_EDITABLE: 'LISTING_NOT_EDITABLE',
+  // PC-56 STORE-2b · the cart and checkout refusals, each named (orders/domain/orders.errors.ts; orders/storefront-cart.guard.ts)
+  LISTING_NOT_PURCHASABLE: 'LISTING_NOT_PURCHASABLE',
+  BELOW_MIN_ORDER: 'BELOW_MIN_ORDER',
+  PRICE_CHANGED: 'PRICE_CHANGED',
+  LICENCE_REQUIRED: 'LICENCE_REQUIRED',
+  BANNED_IN_REGION: 'BANNED_IN_REGION',
+  WRONG_STORE: 'WRONG_STORE',
+  STOREFRONT_CART_OFF: 'STOREFRONT_CART_OFF',
 } as const;
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];

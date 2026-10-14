@@ -11,6 +11,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ListingPublicFactsReadModel } from '../read-models/listing-public-facts.read-model';
 import { toPublicListing, NO_PUBLIC_FACTS } from '../domain/listing-public.view';
 import { StorefrontBrowseGate } from '../storefront-browse.guard';
+import { ListingPurchaseReadModel, ListingPurchaseFacts } from '../read-models/listing-purchase.read-model';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { QUOTA_SERVICE, QuotaService } from '../../../core/quota/quota.service';
@@ -58,6 +59,9 @@ export class ListingService {
     /** PC-56 STORE-2a · B4 (founder D4): the public catalogue's kill-switch, checked on the NON-OWNER branch of the detail (an owner's own
      *  read is not the storefront). Optional for the same positional-constructor reason as `publicFacts`; Nest always injects it. */
     @Optional() private readonly browseGate?: StorefrontBrowseGate,
+    /** PC-56 STORE-2b · B1/B3/B4: what buying a lot depends on (suspension, the regulated rules, who sells) — read by the orders module through
+     *  `purchaseFacts`. Optional for the same positional-constructor reason; Nest always injects it. */
+    @Optional() private readonly purchase?: ListingPurchaseReadModel,
   ) {}
 
   /** Drain aggregate events into the outbox within the same transaction. */
@@ -406,6 +410,18 @@ export class ListingService {
   }
   /** Drop the cached copy after the caller's commit. */
   async invalidate(tenantId: string, id: string): Promise<void> { await this.cache.del(cacheKey(tenantId, id)); }
+
+  /**
+   * PC-56 STORE-2b — WHAT BUYING THESE LOTS DEPENDS ON, for the orders module (cart add / update / read, the checkout preview, placement): the
+   * seller's suspension, the national licence lock, the banned region holding `deliveryRegionId` (when given), the organisation and the
+   * district. Never cached (a suspension or a new rule bites at once) and never degraded: a failed read fails the buy. Ids of another
+   * organisation (or gone) are absent from the map. A hand-built service without the read model (the older hand-wired specs) answers
+   * null = "not wired" — the caller then applies no fact-based refusal (Nest always injects it, so production never sees null).
+   */
+  async purchaseFacts(tenantId: string, ids: readonly string[], deliveryRegionId?: string | null): Promise<Map<string, ListingPurchaseFacts> | null> {
+    if (!this.purchase) return null;
+    return this.purchase.forListings(tenantId, ids, deliveryRegionId ?? null);
+  }
 
   /** READ — single listing, cache-aside off a replica. INTERNAL (no visibility gate). */
   async getById(tenantId: string, id: string) {

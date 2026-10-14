@@ -12,6 +12,7 @@
 //                                     the platform's own /for-organisations page (no tenant in context) can ask it: with no tenant the answer
 //                                     carries ONLY the platform-scoped keys; a tenant-scoped key (`group_lots`) is answered only for a tenant.
 //                                     PC-56 STORE-2a (founder D4) adds `storefront_browse` — platform-scoped, fail-open (see FAIL_OPEN_FLAGS).
+//                                     PC-56 STORE-2b (founder D2) adds `storefront_cart` — platform-scoped, fail-open, buying's kill-switch.
 //   GET /v1/storefront/plans?country=XX  STORE-1c · D2 — the PUBLIC plan catalogue of a country (a platform table, no RLS — read model header)
 //
 // No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts), or — for
@@ -29,14 +30,15 @@ import { StorefrontPublicReadModel, countryParam } from './storefront-public.rea
  *  PC-56 HOTFIX-4 · A8 (survey B23 / F-11 / F-16): + `online_payments` (founder D2 — the storefront honours it: OFF = no Pay step),
  *  `buyer_charges`, `offers`, `auctions`, `reviews` — all TENANT-scoped (answered only with an organisation in context), booleans only:
  *  a flag's rules, percentages and tenant lists never leave the API. */
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse'] as const);
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
 /** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context).
  *  PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — a platform switch like org_self_signup. */
-export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup', 'storefront_browse']);
+// PC-56 STORE-2b · B5 (founder D2, 0208): + `storefront_cart`, buying's kill-switch (cart + checkout) — platform-scoped, fail-open like browse.
+export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup', 'storefront_browse', 'storefront_cart']);
 /** STORE-2a: the allow-listed flags whose flag-store FAILURE reads ON (fail open) — the same answer the API's own gate gives
  *  (modules/listings/storefront-browse.guard.ts): a read-only kill-switch for humans; a dead flag store must not dark every store. */
-export const FAIL_OPEN_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['storefront_browse']);
+export const FAIL_OPEN_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['storefront_browse', 'storefront_cart']);
 
 const notFound = () => new DomainError('TENANT_NOT_FOUND', 'No organisation is served here', 404);
 const one = (v: unknown): string | undefined => (typeof v === 'string' && v.length > 0 ? v : undefined);

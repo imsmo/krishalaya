@@ -25,12 +25,17 @@
 //     refused by name;
 //   • ERROR (not app/error.tsx any more) with Retry = a reload (W3103–W3105 PARITY-DECOR); the kill-switch OFF → temporarily unavailable;
 //   • the refusals of brief §E for this surface printed by name. Dynamic (no ISR): a Retry must read again.
+// PC-56 STORE-2b · C3 — the add-to-cart chain (W3099–W3102): a refused add returns HERE with the refusal named above the field and the typed
+// quantity kept (below the minimum · above available · not a number · LICENCE_REQUIRED · WRONG_STORE "you are signed in to <A>; sign in to <B>
+// to buy here" + this store's sign-in link · suspended · sold out · buying paused); success → "Added" + "View cart" → THIS store's cart.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
 import type { CategoryNode, GalleryItem, ListingTombstone, PublicListingDetail, RegulatedMarker, StorefrontFlags } from '@krishalaya/sdk-js';
-import { publicClient } from '../../../../lib/api-client';
+import { publicClient, sessionTenantClient } from '../../../../lib/api-client';
+import { hasSessionCookie } from '../../../../lib/auth';
+import { qtyText, readRefusal, refusalKey } from '../../../../features/store2b/cart';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { listingLinks } from '../../../../features/listing/links';
 import { publicListingView } from '../../../../features/listing/public-view';
@@ -66,7 +71,7 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
 }
 
 export default async function ListingDetail(
-  { params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: { status?: string } },
+  { params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: { status?: string; step?: string; refusal?: string; qty?: string } },
 ) {
   const t = getTranslator();
   const lang = getLang();
@@ -129,6 +134,20 @@ export default async function ListingDetail(
     status === 'added' ? { kind: 'ok', msg: t.t('listing.statusAdded'), cta: true } :
     status === 'offer_sent' ? { kind: 'ok', msg: t.t('listing.statusOfferSent'), cta: false } :
     status === 'err' ? { kind: 'err', msg: t.t('listing.statusError'), cta: false } : null;
+  // PC-56 STORE-2b · C3 (W3099 / W3102): a refused add — the refusal BY NAME above the field, the typed quantity kept in it
+  const refused = searchParams.step === 'error' ? readRefusal(searchParams.refusal) : null;
+  const keptQty = refused && typeof searchParams.qty === 'string' && searchParams.qty.length <= 20 ? searchParams.qty : null;
+  let current: string | null = null;
+  if (refused === 'wrong_store') { try { current = (await sessionTenantClient().storefront.tenant()).displayName; } catch { current = null; } }
+  const org = l.organisation?.name ?? slug;
+  const refusalLine = refused ? (
+    <p className="kv-form__error" role="alert" data-kv-add-refusal={refused}>
+      {refused === 'wrong_store'
+        ? (current ? t.t('cart.refused.wrong_store', { current, store: org }) : t.t('cart.refused.wrong_storeUnknown', { store: org }))
+        : t.t(refusalKey(refused), { min: qtyText(facts.minOrder), unit: facts.unit, available: qtyText(facts.available), store: org, org, region: '' })}
+      {refused === 'wrong_store' && <> <a href={`/${encodeURIComponent(slug)}/login?next=${encodeURIComponent(self)}`} className="kv-link" data-kv-signin="store">{t.t('cart.signinCta', { org })}</a></>}
+    </p>
+  ) : null;
 
   return (
     <article className="kv-detail">
@@ -142,7 +161,7 @@ export default async function ListingDetail(
 
       {notice && (
         <p className={notice.kind === 'ok' ? 'kv-form__notice' : 'kv-form__error'} role="status">
-          {notice.msg}{notice.cta && <> <Link href="/cart" className="kv-link">{t.t('listing.viewCart')}</Link></>}
+          {notice.msg}{notice.cta && <> <Link href={`/${encodeURIComponent(slug)}/cart`} className="kv-link" data-kv-view-cart="store">{t.t('listing.viewCart')}</Link></>}
         </p>
       )}
 
@@ -192,7 +211,7 @@ export default async function ListingDetail(
           {facts.minOrder > 0 && <li data-kv-min-order="lot">{t.t('lot.minOrder', { qty: qty(facts.minOrder), unit: facts.unit })}</li>}
           <li>{t.t('discover.saleType')}: {t.t(`discover.saleType.${l.saleType}`)}</li>
         </ul>
-        <BuyerActions listing={l} tenantSlug={slug} offers={panel.offers} />
+        <BuyerActions listing={l} tenantSlug={slug} offers={panel.offers} keptQty={keptQty} refusal={refusalLine} signedIn={hasSessionCookie()} />
         <p className="kv-detail__muted" data-kv-stock="not-reserved">{t.t('lot.noReserve')}</p>
         {panel.escrow && <p className="kv-detail__muted" data-kv-escrow="held">{t.t('lot.escrow')}</p>}
       </section>

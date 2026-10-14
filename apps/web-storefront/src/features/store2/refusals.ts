@@ -129,3 +129,83 @@ export const STORE2A_CHAIN_PAGES: readonly { file: string; flowmap: string; verd
 export function store2aRefusalKeys(surface: Store2aSurface): string[] {
   return STORE2A_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key);
 }
+
+/* ------------------------------------------------------------------------------------------------------------------------------------ */
+/* PC-56 STORE-2b · brief §E — what's in the cart is real: W281 cart (now /[tenantSlug]/cart) · its quantity chain W3041–W3044 · its      */
+/* Remove / Accept price / Resolve / Retry chain W3045–W3047 · the add-to-cart chain on the listing W3099–W3102 · the licence-upload     */
+/* chain W3092–W3095 (refused, founder D1)                                                                                              */
+/* ------------------------------------------------------------------------------------------------------------------------------------ */
+
+/** The STORE-2b surfaces. Each refusal names the surfaces it is PRINTED on (the render tests read this map). */
+export type Store2bSurface = 'cart' | 'checkout' | 'listing' | 'inputs';
+export interface Store2bRefusal { id: string; canon: string; surfaces: readonly Store2bSurface[]; key: string; why: string }
+
+/** Every canon claim STORE-2b does not make, BY NAME, and where it is printed (a refusal sentence — never an offer). */
+export const STORE2B_REFUSALS: readonly Store2bRefusal[] = Object.freeze([
+  { id: 'more_carts', canon: 'W281 H1 "(carts are per seller organisation — you have 1 more: Kisan Sathi FPC, 1 item)"', surfaces: ['cart'],
+    key: 'store2b.refusal.moreCarts', why: 'founder D3: ONE store per session (the JWT names one organisation); a cross-store cart is a later wave (B32)' },
+  { id: 'farmer_name', canon: 'W281 line "Ramesh Patel · Junagadh centre · …" / "Meera Ben · Anand centre · …"', surfaces: ['cart'],
+    key: 'store2b.refusal.farmerName', why: 'HOTFIX-4 D3: the seller is the ORGANISATION, everywhere — a cart line says the organisation and the district' },
+  { id: 'delivery_estimate', canon: 'W281 summary "Delivery — 2 shipments … (estimate)" + "Delivery = ₹80/qtl/100km: groundnut 10 qtl × 330 km = ₹2,640 …"', surfaces: ['cart'],
+    key: 'store2b.refusal.deliveryEstimate', why: 'survey F-22: per_km pricing is deferred (it throws); delivery comes only from checkout.preview for a chosen address' },
+  { id: 'slabs_minimum', canon: 'W281 "Final delivery — billed in ₹50 slabs, minimum ₹450 per shipment"', surfaces: ['cart'],
+    key: 'store2b.refusal.slabs', why: 'no ₹50 rounding and no per-shipment minimum exist outside an organisation\'s own configured charges' },
+  { id: 'gst_on_delivery', canon: 'W281 "plus 18% GST on delivery" · "Prices include GST where applicable"', surfaces: ['cart', 'checkout'],
+    key: 'store2b.refusal.gst', why: 'GST is EXTRACTED, never added (invoice-tax.ts "0140 DEFECT 3"); goods GST is unrecorded at placement (hsn null)' },
+  { id: 'alternatives', canon: 'W281 "3 same-day harvests are nearby" + "See alternatives"', surfaces: ['cart'],
+    key: 'store2b.refusal.alternatives', why: 'no nearby-alternatives read exists (and no location is asked for — STORE-2a D3)' },
+  { id: 'offline_cart', canon: 'W281 Offline "Cart changes made offline are queued on your phone … pending sync"', surfaces: ['cart'],
+    key: 'store2b.refusal.offlineQueue', why: 'no offline queue: a cart change either reaches the server or fails visibly (Contract Law 6)' },
+  { id: 'saved_on_phone', canon: 'W281 error "Couldn\'t sync your cart — Changes stay saved on this phone — nothing is lost"', surfaces: ['cart'],
+    key: 'store2b.refusal.savedOnPhone', why: 'nothing is saved on the phone; the cart lives on the server — the error says so, with a Retry' },
+  { id: 'guest_cart', canon: 'W281 "A guest cart lives on this device only — sign in to keep it saved across devices"', surfaces: ['cart'],
+    key: 'store2b.refusal.guestCart', why: 'no guest cart exists; a cart is a signed-in buyer\'s (sign in to see it)' },
+  { id: 'licence_upload', canon: 'W282 "upload yours once in Account" · "Licence pending / expired" + "Upload renewal" (W3092–W3095)', surfaces: ['cart', 'inputs', 'listing'],
+    key: 'store2b.refusal.licenceUpload', why: 'founder D1: no buyer licence document type or verification exists; a licence-required product is refused at the cart, by name' },
+  { id: 'age_check', canon: 'W282 "licence-gated and 18+"', surfaces: ['cart'],
+    key: 'store2b.refusal.age', why: 'founder D1: no age check (no date of birth is collected)' },
+  { id: 'cart_oncall', canon: 'W3044 / W3047 / W3102 "repeated failures page the on-call"', surfaces: ['cart'],
+    key: 'store2b.refusal.oncall', why: 'nothing pages anyone; the failure is said by name, with a retry' },
+  { id: 'audit_zero_sum', canon: 'W3043 / W3045 / W3046 / W3101 "the audit trail has the entry … Money-adjacent actions reconcile zero-sum"', surfaces: ['cart', 'listing'],
+    key: 'store2b.refusal.audit', why: 'a cart writes no audit row and moves no money — the price a buyer agreed is frozen on the ORDER at placement' },
+  { id: 'cart_flag_tenant_plan', canon: 'W281 "Flagged off — … switched off for this tenant/plan (feature flag) … See store settings"', surfaces: ['cart', 'checkout'],
+    key: 'store2b.refusal.flagTenantPlan', why: 'founder D2: storefront_cart is a PLATFORM switch — no tenant or plan, no store setting' },
+  { id: 'three_steps', canon: 'W281 "Checkout is 3 steps: address → payment → escrow confirmation"', surfaces: ['cart'],
+    key: 'store2b.refusal.threeSteps', why: 'checkout is one review page, then pay (only while online payments are on), then the confirmation — STORE-2c moves it' },
+]);
+
+/** The canon shapes STORE-2b builds differently — recorded DELTAs (Law 4), not refusals. */
+export const STORE2B_DELTAS: readonly { id: string; canon: string; built: string }[] = Object.freeze([
+  { id: 'cart_route', canon: 'W281 route `(marketplace)/cart` under the platform header', built: '`/[tenantSlug]/cart` under the organisation\'s header (founder D3); `/cart` redirects to the session\'s store' },
+  { id: 'quantity_review', canon: 'W3042 "Review before submitting" for a quantity edit', built: 'no review page: the re-rendered cart IS the review; checkout is the money review' },
+  { id: 'add_review', canon: 'W3100 "Review before submitting" for add-to-cart', built: 'no review page: the cart is the review' },
+  { id: 'add_button_total', canon: 'W277 the "+" stepper beside a live line total', built: 'the button says "Add N <unit> to cart" — no client-computed line total (the cart prints the server\'s)' },
+  { id: 'chain_back_links', canon: 'W3042–W3044 / W3046 / W3047 → W316; W3100–W3102 → W273', built: 'Back / Retry return to the cart or the listing itself (canon link defects, survey F-27)' },
+  { id: 'three_route_checkout', canon: 'W283 → W284 → W285 three-route checkout', built: 'unchanged this wave (one checkout page); STORE-2c moves it' },
+  { id: 'qty_stepper', canon: 'W281 "−" (data-decor) / "+" chain-form buttons', built: 'a decimal quantity field + Update (no client JS; the server re-validates)' },
+]);
+
+/** The 16 canon files of the wave and their verdicts — the four licence pages REFUSED (founder D1), not decor. */
+export const STORE2B_CHAIN_PAGES: readonly { file: string; flowmap: string; verdict: string }[] = Object.freeze([
+  { file: 'W281-store-cart.html', flowmap: 'the screen', verdict: 'BUILT — /[tenantSlug]/cart (D3); refusals printed (STORE2B_REFUSALS surface cart)' },
+  { file: 'W3041-store-cart-form-form-error.html', flowmap: 'W281 data-flowmap="chain-form:cart" ("+" ×2)', verdict: 'BUILT — the line re-rendered with its named refusal, the typed value kept (step=error)' },
+  { file: 'W3042-store-cart-form-review.html', flowmap: 'W3041 / W281', verdict: 'DELTA quantity_review — the re-rendered cart is the review' },
+  { file: 'W3043-store-cart-form-success.html', flowmap: 'W3042 Submit', verdict: 'BUILT — the recomputed line + a notice (done=updated); the audit / zero-sum sentence refused (audit_zero_sum)' },
+  { file: 'W3044-store-cart-form-failure.html', flowmap: 'W3042 Submit (failure)', verdict: 'BUILT — named failure, value kept; on-call refused (cart_oncall; the listing prints 2a\'s oncall_paging)' },
+  { file: 'W3045-store-cart-mutate-confirm.html', flowmap: 'W281 data-flowmap="chain-mutate:cart" ×5 (Remove ×2, Accept price, Resolve, Retry)', verdict: 'BUILT — Remove → confirm ("you can add it again"); Accept → confirm with BOTH numbers; Resolve = an anchor to the first problem line; Retry = reload (DECOR)' },
+  { file: 'W3046-store-cart-mutate-success.html', flowmap: 'W3045 Proceed', verdict: 'BUILT — the re-rendered cart + done=removed / accepted (the line at the new price); audit sentence refused' },
+  { file: 'W3047-store-cart-mutate-failure.html', flowmap: 'W3045 Proceed (failure)', verdict: 'BUILT — named: the price changed AGAIN (the newest two numbers) / the line became unavailable (its reason); on-call refused' },
+  { file: 'W3092-store-inputs-form-form-error.html', flowmap: 'W282 data-flowmap="chain-form:inputs" ("Upload renewal")', verdict: 'REFUSED — founder D1 (2026-10-15): no buyer licence flow; refused by name on W282 and on a licence_required cart line, NO upload form' },
+  { file: 'W3093-store-inputs-form-review.html', flowmap: 'W3092', verdict: 'REFUSED — founder D1 (no licence upload exists to review)' },
+  { file: 'W3094-store-inputs-form-success.html', flowmap: 'W3093 Submit', verdict: 'REFUSED — founder D1 (no licence is ever verified)' },
+  { file: 'W3095-store-inputs-form-failure.html', flowmap: 'W3093 Submit (failure)', verdict: 'REFUSED — founder D1' },
+  { file: 'W3099-store-listing-form-form-error.html', flowmap: 'W277 data-flowmap="chain-form:listing" ("+")', verdict: 'BUILT — named refusals on the listing (below minimum, above available, not a number, licence, wrong store + sign-in link, suspended, sold out, buying paused, sign-in), the typed quantity kept' },
+  { file: 'W3100-store-listing-form-review.html', flowmap: 'W3099', verdict: 'DELTA add_review — the cart is the review' },
+  { file: 'W3101-store-listing-form-success.html', flowmap: 'W3100 Submit', verdict: 'BUILT — ?status=added + "View cart" → /<slug>/cart; audit sentence refused' },
+  { file: 'W3102-store-listing-form-failure.html', flowmap: 'W3100 Submit (failure)', verdict: 'BUILT — named failure, the quantity kept; on-call refused' },
+]);
+
+/** The refusal keys a STORE-2b surface prints, in this list's order. */
+export function store2bRefusalKeys(surface: Store2bSurface): string[] {
+  return STORE2B_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key);
+}

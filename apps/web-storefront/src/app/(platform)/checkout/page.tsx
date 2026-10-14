@@ -15,6 +15,8 @@
 //   • the bill is features/checkout/bill-rows.ts — platform fee and buyer commission each their own row when > 0, rows that sum to the
 //     API's total (the buyer commission was inside the total with no row); "price includes platform fee" is said nowhere;
 //   • every amount in the DATA's currency (features/discovery/money.ts) — the `'INR'` constant is gone.
+// PC-56 STORE-2b · C6 (nothing else on checkout — STORE-2c moves it): buying paused (D2) said; a load error with Retry; the preview's and the
+// placement's named refusals (BANNED_IN_REGION with the region here; a cart line problem → back to the cart); the Place button's pending lock.
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { randomUUID } from 'crypto';
@@ -28,6 +30,11 @@ import { billRows } from '../../../features/checkout/bill-rows';
 import { moneyText } from '../../../features/discovery/money';
 import { BillRowsView } from '../../../components/BillRowsView';
 import { placeOrderAction } from './actions';
+import { SdkError } from '@krishalaya/sdk-js';
+import { SubmitButton } from '../../../components/SubmitButton';
+import { RefusalList, CartOff } from '../../../components/RefusalList';
+import { reloadHref } from '../../../features/home/load-result';
+import { refusalOf, type CartRefusal } from '../../../features/store2b/cart';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
@@ -38,23 +45,31 @@ function addressLine(a: Address): string {
   return [a.line1, a.line2, a.village, a.pincode].filter(Boolean).join(', ');
 }
 
-export default async function CheckoutPage({ searchParams }: { searchParams: { status?: string; coupon?: string; addr?: string; dm?: string } }) {
+export default async function CheckoutPage({ searchParams }: { searchParams: { status?: string; coupon?: string; addr?: string; dm?: string; region?: string } }) {
   await requireSession('/checkout');
   const t = getTranslator();
   const lang = getLang();
 
   let cart: Cart | null = null;
   let addresses: Address[] = [];
+  let off = searchParams.status === 'cart_off';
   try {
     [cart, addresses] = await Promise.all([serverClient().cart.get(), serverClient().addresses.list()]);
-  } catch {
+  } catch (e) {
+    off = off || (e instanceof SdkError && e.code === 'STOREFRONT_CART_OFF');
     cart = null;
   }
 
+  // PC-56 STORE-2b · C6 (founder D2): buying paused — said, platform-wide (never "for this tenant/plan")
+  if (off) return <section className="kv-checkout"><h1>{t.t('checkout.title')}</h1><CartOff /><RefusalList surface="checkout" /></section>;
   if (!cart) {
+    // PC-56 STORE-2b · C6 (survey F-19): a load error gets Retry (a reload of this URL — a read, never a mutation)
     return (
       <section className="kv-checkout"><h1>{t.t('checkout.title')}</h1>
-        <p className="kv-form__error" role="alert">{t.t('checkout.loadError')}</p>
+        <div className="kv-state kv-state--error" role="alert" data-kv-state="error">
+          <p>{t.t('checkout.loadError')}</p>
+          <a href={reloadHref('/checkout', searchParams)} className="kv-btn" data-kv-retry="reload">{t.t('home.retry')}</a>
+        </div>
       </section>
     );
   }
@@ -72,11 +87,22 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { s
   const deliveryMethods: DeliveryMethod[] = methodsResult?.methods ?? [];
   const chosenMethod = deliveryMethods.find((m) => m.id === searchParams.dm) ?? pickDefaultMethod(deliveryMethods);
   // the preview WITH the chosen address + option (survey F-5a) — the fee placement will charge
+  // PC-56 STORE-2b · C6: the preview applies the SAME rule as placement; its named refusal is kept (a region ban names the region; a line
+  // problem points back to the cart) and the Place button is withheld while it stands — never a bill the placement would refuse.
+  let previewRefusal: { r: CartRefusal; region: string | null } | null = null;
   const preview = await serverClient().checkout.preview({
     ...(appliedCoupon ? { couponCode: appliedCoupon } : {}),
     ...(chosenAddr ? { deliveryAddressId: chosenAddr.id } : {}),
     ...(chosenMethod ? { deliveryMethodId: chosenMethod.id } : {}),
-  }).catch((): CheckoutPreview | null => null);
+  }).catch((e: unknown): CheckoutPreview | null => {
+    if (e instanceof SdkError) {
+      const r = refusalOf(e.code, e.details ?? null);
+      if (r !== 'failed' && r !== 'not_a_number') previewRefusal = { r, region: typeof e.details?.region === 'string' ? e.details.region : null };
+    }
+    return null;
+  });
+  const refusalNow = previewRefusal as { r: CartRefusal; region: string | null } | null;
+  const bannedRegion = refusalNow?.r === 'banned' ? refusalNow.region : (searchParams.status === 'banned' ? (searchParams.region ?? '').slice(0, 80) : null);
 
   // A coupon was sent but the server applied no discount → surface the reason (the bill stays un-discounted).
   const couponRejected = !!appliedCoupon && !!preview && BigInt(preview.discountMinor) <= 0n;
@@ -88,6 +114,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { s
     <section className="kv-checkout">
       <h1>{t.t('checkout.title')}</h1>
       {searchParams.status === 'err' && <p className="kv-form__error" role="alert">{t.t('checkout.placeError')}</p>}
+      {/* PC-56 STORE-2b · C6: the named refusals of the one rule — a region ban (the region named), or a cart line to resolve first */}
+      {bannedRegion !== null && <p className="kv-form__error" role="alert" data-kv-checkout-refusal="banned">{t.t('cart.refused.banned', { region: bannedRegion || t.t('checkout.regionUnknown') })}</p>}
+      {refusalNow && refusalNow.r !== 'banned' && (
+        <p className="kv-form__error" role="alert" data-kv-checkout-refusal={refusalNow.r}>{t.t('checkout.resolveInCart')} <Link href="/cart" className="kv-link">{t.t('checkout.backToCart')}</Link></p>
+      )}
       {searchParams.status && searchParams.status in PLACE_REFUSAL_KEYS && (
         <p className="kv-form__notice" role="alert">{t.t(PLACE_REFUSAL_KEYS[searchParams.status as keyof typeof PLACE_REFUSAL_KEYS])}</p>
       )}
@@ -161,10 +192,13 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { s
             <p className="kv-cart__subtotal"><span>{t.t('cart.subtotal')}</span> <strong>{moneyText(cart.subtotalMinor, cart.currencyCode, lang) ?? unavailable}</strong></p>
           )}
           <p className="kv-cart__note">{t.t('checkout.totalsNote')}</p>
-          <button type="submit" className="kv-btn">{t.t('checkout.placeOrder')}</button>
+          {/* PC-56 STORE-2b · C6 (survey F-19): the Place button LOCKS while the action runs (a double tap sends one request; the Idempotency-Key
+              minted at render dedupes a resubmit server-side); withheld while the preview refuses by name */}
+          {!refusalNow && <SubmitButton idle={t.t('checkout.placeOrder')} busy={t.t('checkout.placing')} />}
           <Link href="/cart" className="kv-btn--link">{t.t('checkout.backToCart')}</Link>
         </div>
       </form>
+      <RefusalList surface="checkout" />
     </section>
   );
 }

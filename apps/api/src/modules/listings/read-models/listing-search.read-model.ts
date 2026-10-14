@@ -29,7 +29,7 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { QueryListingDto, ListingSort } from '../dto/query-listing.dto';
 import { DomainError } from '../../../shared/errors/app-error';
 import { US_SQL, UUID_RE } from '../../../shared/pagination/us-keyset';
-import { confirmedGradeIdSql, districtIdSql, districtNameSql, licenceRequiredSql, todayUtc } from './public-listing.sql';
+import { confirmedGradeIdSql, districtIdSql, districtNameSql, licenceRequiredSql } from './public-listing.sql';
 
 // Browse/search is tenant-scoped (a storefront belongs to a tenant). A blank/invalid tenant is a CLIENT error,
 // not a server fault: reject it with a clean 400 before it reaches the DB (where binding '' as a uuid would 500).
@@ -202,7 +202,7 @@ export class ListingSearchReadModel {
                t.slug AS org_slug, t.display_name AS org_name,
                (SELECT kvo.default_name FROM attribute_options kvo WHERE kvo.id = ${confirmedGradeIdSql('l')}) AS grade_name,
                ${districtNameSql('l')} AS district_name,
-               ${licenceRequiredSql('l', p(todayUtc()))} AS licence_required`;
+               ${licenceRequiredSql('l', 'CURRENT_DATE')} AS licence_required`;
       const sql = `
         SELECT l.id, l.title, l.price_minor, l.currency_code, l.unit_code, l.quantity_available,
                l.organic_claim, l.sale_type, l.region_id, l.seller_user_id, ${US_SQL('l.created_at')} AS created_us, l.status${publicCols}

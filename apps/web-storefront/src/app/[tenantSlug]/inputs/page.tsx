@@ -2,7 +2,8 @@
 // (`inputs` reserved in 0204). The tenant feed filtered to the inputs subtree of the PUBLIC category tree — the root(s) whose commerce kind is
 // `input_regulated` (master data, never a baked code); if the tree has none, the page says so plainly (never an invented aisle).
 //   • cards carry the regulated lock — "Licence required to buy" SHOWN, never hidden (B5; canon: "the lock is shown, not hidden");
-//     nothing about licences beyond the lock: licence states and the upload chain (W3092–W3095) are STORE-2b;
+//     nothing about licences beyond the lock: licence states and the upload chain (W3092–W3095) are STORE-2b — PC-56 STORE-2b (founder D1):
+//     REFUSED by name here ("a buyer licence flow does not exist yet; this product cannot be bought on the storefront"), no upload form;
 //   • refused by name: FIFO / expiry on the page / "MRP-capped" / 18+ / the label helpline (no batch allocation or expiry read exists —
 //     F-9 / C-2), and "This seller organisation hasn't switched on input sales" (no per-organisation inputs switch; the platform's browse
 //     switch is the only one);
@@ -60,6 +61,9 @@ export default async function FarmInputs({ params, searchParams }: { params: { t
       <h1 id="kv-inputs-title">{t.t('inputs.title')}</h1>
       <p className="kv-prose__lead">{t.t('inputs.lead', { org })}</p>
       <p className="kv-state" data-kv-lock-rule="shown">{t.t('inputs.lockShown')}</p>
+      {/* PC-56 STORE-2b · C5 (founder D1): the canon's licence states + "Upload renewal" chain (W3092–W3095) are REFUSED by name — a locked
+          product cannot be bought on the storefront and there is no licence upload form (the cart refuses it LICENCE_REQUIRED) */}
+      <p className="kv-state" data-kv-licence-flow="none">{t.t('store2b.licence.noFlow')}</p>
 
       {failed && (
         <div className="kv-state kv-state--error" role="alert" data-kv-state="error">

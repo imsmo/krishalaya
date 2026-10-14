@@ -5,9 +5,11 @@
 // auction CTA beside this; the old "no auctionId / WAVE 4" note here was stale). Both forms
 // carry the tenant slug + listing id + available qty as hidden fields so the action can validate server-side.
 // HOTFIX-4 · A6: the page's allow-listed view model (no seller person, no coordinates)
+import type { ReactNode } from 'react';
 import type { PublicListingView } from '../features/listing/public-view';
 import { getTranslator } from '../lib/i18n';
 import { addToCartAction, makeOfferAction } from '../app/[tenantSlug]/listings/[id]/actions';
+import { AddToCartControl } from './AddToCartControl';
 
 const PURCHASABLE = new Set(['direct', 'both', 'preorder', 'group_lot']);
 const OFFERABLE = new Set(['direct', 'both']);
@@ -16,25 +18,34 @@ const OFFERABLE = new Set(['direct', 'both']);
 // submit failed and the buyer was told to "check your entry"); the quantity inputs take DECIMALS (numeric(14,3) — up to 3 places, `step`
 // 0.001, parsed as a decimal string server-side by features/store2a/listing.ts parseQuantity; the API re-validates). The stepper's own
 // chain (W3099–W3102) is STORE-2b.
-export function BuyerActions({ listing, tenantSlug, offers = false }: { listing: PublicListingView; tenantSlug: string; offers?: boolean }) {
+// PC-56 STORE-2b · C3 (W3099–W3102): the add-to-cart field is a DECIMAL text field (3 places) whose first value is the listing's MINIMUM (or 1)
+// — or, after a refusal, the quantity the buyer typed (`keptQty`); the minimum travels as a hidden field so the action checks it before the
+// API does (the API re-validates); the button says "Add N <unit> to cart" (AddToCartControl — no line total); the refusal sentence (`refusal`)
+// sits right above the field, named. Anonymous visitors are told a cart needs a sign-in to this store (no guest cart).
+export function BuyerActions({ listing, tenantSlug, offers = false, keptQty = null, refusal = null, signedIn = true }: {
+  listing: PublicListingView; tenantSlug: string; offers?: boolean; keptQty?: string | null; refusal?: ReactNode; signedIn?: boolean;
+}) {
   const t = getTranslator();
   const soldOut = listing.quantityAvailable <= 0;
   const purchasable = PURCHASABLE.has(listing.saleType) && !soldOut;
   const offerable = offers && OFFERABLE.has(listing.saleType) && !soldOut;
   const maxQty = listing.quantityAvailable > 0 ? listing.quantityAvailable : 1;
+  const minQty = listing.minOrderQty > 0 ? String(listing.minOrderQty) : '1';
 
   return (
     <div className="kv-actions">
       {soldOut && <p className="kv-actions__note" role="status">{t.t('listing.soldOut')}</p>}
 
       {purchasable && (
-        <form action={addToCartAction} className="kv-actions__form">
+        <form action={addToCartAction} className="kv-actions__form" id="add" data-kv-form="add-to-cart">
           <input type="hidden" name="tenantSlug" value={tenantSlug} />
           <input type="hidden" name="listingId" value={listing.id} />
           <input type="hidden" name="available" value={String(listing.quantityAvailable)} />
-          <label htmlFor="qty-cart" className="kv-field__label">{t.t('listing.qtyLabel')}</label>
-          <input id="qty-cart" name="quantity" type="number" inputMode="decimal" min={0.001} max={maxQty} defaultValue={1} step={0.001} className="kv-field__input kv-actions__qty" />
-          <button type="submit" className="kv-btn">{t.t('listing.addToCart')}</button>
+          <input type="hidden" name="min" value={listing.minOrderQty > 0 ? String(listing.minOrderQty) : ''} />
+          {refusal}
+          <AddToCartControl id="qty-cart" label={t.t('listing.qtyLabelUnit', { unit: listing.unitCode })} defaultQty={keptQty ?? minQty}
+            template={t.t('listing.addN', { qty: '{qty}', unit: listing.unitCode })} plain={t.t('listing.addToCart')} />
+          {!signedIn && <p className="kv-actions__note" data-kv-signin-note="cart">{t.t('listing.signinToBuy')}</p>}
         </form>
       )}
 

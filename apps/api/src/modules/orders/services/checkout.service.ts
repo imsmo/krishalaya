@@ -33,7 +33,10 @@ import { OrderItem } from '../domain/order-item.entity';
 import { CheckoutGroup } from '../domain/checkout-group.entity';
 import { DomainEvent } from '../domain/orders.events';
 import { CartEmptyError, CartNotFoundError, ListingNotPurchasableError, InsufficientListingStockError,
-  UnserviceablePincodeError, DeliveryAddressRequiredError, DeliveryMethodRequiredError, DeliveryMethodNotServingError } from '../domain/orders.errors';
+  UnserviceablePincodeError, DeliveryAddressRequiredError, DeliveryMethodRequiredError, DeliveryMethodNotServingError,
+  LicenceRequiredError, BannedInRegionError, PriceChangedError } from '../domain/orders.errors';
+import { assertMinOrder, compareQty, lineReason, lineTotalFromMilli, milliToDecimal, normaliseQty, priceDrift, toMilli } from '../domain/cart-rules';
+import type { CartItemRow } from '../repositories/cart.repository';
 import { CheckoutDto, CheckoutPreviewDto } from '../dto/create-order.dto';
 import { DomainError } from '../../../shared/errors/app-error';
 
@@ -88,6 +91,53 @@ export class CheckoutService {
     return { zoneId: chosen.id, chargeDefinitionId: chosen.toProps().chargeDefinitionId };
   }
 
+  /**
+   * PC-56 STORE-2b · B1 / B3 / B11 (founder D1, D4) — THE ONE RULE, AT THE PREVIEW AND AT PLACEMENT. Every cart line is checked, in this order,
+   * against the LIVE listing and its purchase facts (ListingService — Law 11), and the first failure is refused BY NAME:
+   *   • the line's reason — LISTING_NOT_PURCHASABLE {reason} (sold_out · paused · expired · withdrawn · SUSPENDED seller · not_found), or
+   *     LICENCE_REQUIRED for a national `license_required` product (a rule added after the line was carted bites here too);
+   *   • BANNED_IN_REGION {region} — a `banned_state` rule whose region's subtree holds the DELIVERY ADDRESS's region (D1). Without an address
+   *     (or with an address that records no region) nothing lies in a banned region and nothing is refused — named in the wave report;
+   *   • BELOW_MIN_ORDER {minOrderQty, unitCode} (D4) and LISTING_INSUFFICIENT_STOCK — decimal strings, never a float;
+   *   • PRICE_CHANGED {addedPriceMinor, currentPriceMinor, currencyCode} — **THE PLACEMENT GUARD (B11):** the order is charged the ACCEPTED
+   *     price (`cart_items.added_price_minor` — added at, or explicitly accepted) ONLY when it equals the listing's current price; on any
+   *     difference placement refuses until the buyer accepts (POST /v1/cart/items/:id/accept-price) — never silently the current price,
+   *     never the old one.
+   * Returns each line with its decimal quantity and the unit price to charge (= the accepted price).
+   */
+  private async placeableLines(tenantId: string, cartItems: readonly CartItemRow[], deliveryRegionId: string | null) {
+    const facts = await this.listings.purchaseFacts(tenantId, cartItems.map((c) => c.listing_id), deliveryRegionId);
+    const out: Array<{ ci: CartItemRow; l: any; qty: string; unitPriceMinor: bigint }> = [];   // eslint-disable-line @typescript-eslint/no-explicit-any -- the internal listing projection
+    for (const ci of cartItems) {
+      const l: any = await this.listings.getById(tenantId, ci.listing_id);   // eslint-disable-line @typescript-eslint/no-explicit-any
+      const f = facts ? facts.get(ci.listing_id) : undefined;
+      const reason = !l || (facts && !f) ? 'not_found' : lineReason({
+        status: l.status, visibility: f?.visibility ?? l.visibility, quantityAvailable: l.quantityAvailable,
+        sellerSuspended: f?.sellerSuspended ?? false, licenceRequired: f?.licenceRequired ?? false,
+      });
+      if (reason === 'licence_required') throw new LicenceRequiredError(ci.listing_id);
+      if (reason) throw new ListingNotPurchasableError(ci.listing_id, reason);
+      if (f?.bannedRegion) throw new BannedInRegionError(ci.listing_id, f.bannedRegion);
+      const qty = normaliseQty(ci.quantity);
+      assertMinOrder(ci.listing_id, qty, l.minOrderQty, l.unitCode);
+      if (compareQty(qty, l.quantityAvailable) > 0) throw new InsufficientListingStockError(ci.listing_id, qty, milliToDecimal(toMilli(l.quantityAvailable)));
+      const drift = priceDrift(ci.added_price_minor, l.priceMinor);
+      if (drift.changed) {
+        this.metrics.inc('orders.checkout_refused', { tenant: tenantId, code: 'PRICE_CHANGED' });
+        throw new PriceChangedError(ci.listing_id, drift.addedPriceMinor, drift.currentPriceMinor, l.currencyCode ?? null);
+      }
+      out.push({ ci, l, qty, unitPriceMinor: BigInt(ci.added_price_minor) });
+    }
+    return out;
+  }
+
+  /** The delivery address's region (for the banned-region rule), or null when no address is given / it records none. */
+  private async addressRegionTx(tx: TxContext, tenantId: string, buyerUserId: string, addressId: string | undefined): Promise<string | null> {
+    if (!addressId) return null;
+    const a = await this.orders.buyerAddressTx(tx, tenantId, buyerUserId, addressId);
+    return a?.regionId ?? null;
+  }
+
   /** READ-ONLY delivery-methods lookup for the active cart + a destination (pincode and/or regionId). Returns
    *  the serviceable delivery zones with their REAL per-zone fee (resolved from each zone's charge_definition
    *  against the live cart subtotal, so slab fees are accurate). No order, no money moved. When no zone serves
@@ -104,7 +154,8 @@ export class CheckoutService {
     for (const ci of cartItems) {
       const l: any = await this.listings.getById(tenantId, ci.listing_id);
       if (!l || l.status !== 'published') throw new ListingNotPurchasableError(ci.listing_id);
-      subtotalMinor += BigInt(l.priceMinor) * BigInt(Number(ci.quantity));
+      // PC-56 STORE-2b · F-24: `BigInt(Number("2.500"))` threw a RangeError for every decimal quantity — the one money formula instead
+      subtotalMinor += lineTotalFromMilli(BigInt(l.priceMinor), toMilli(ci.quantity));
     }
 
     const serviceable = await this.zones.listServiceable(tenantId, { pincode: q.pincode, regionId: q.regionId, limit: 25 });
@@ -140,18 +191,17 @@ export class CheckoutService {
           const cartItems = await this.carts.itemsForUpdate(tx, cartId);
           if (cartItems.length === 0) throw new CartEmptyError();
 
-          // resolve listings + group order items by seller
+          // resolve listings + group order items by seller — PC-56 STORE-2b: every line through the ONE rule (placeableLines), the unit price
+          // charged = the ACCEPTED price, which the guard proved equal to the current one
+          const lines = await this.placeableLines(tenantId, cartItems, await this.addressRegionTx(tx, tenantId, buyerUserId, dto.deliveryAddressId));
           const bySeller = new Map<string, { items: OrderItem[]; createdAt: Date; orderId: string; categories: Set<string> }>();
-          for (const ci of cartItems) {
-            const l: any = await this.listings.getById(tenantId, ci.listing_id);
-            if (!l || l.status !== 'published') throw new ListingNotPurchasableError(ci.listing_id);
-            const qty = Number(ci.quantity);
-            if (Number(l.quantityAvailable) < qty) throw new InsufficientListingStockError(ci.listing_id, qty, Number(l.quantityAvailable));
+          for (const { ci, l, qty: qtyText, unitPriceMinor } of lines) {
+            const qty = Number(qtyText);
             let g = bySeller.get(l.sellerUserId);
             if (!g) { const orderId = uuidv7(); g = { items: [], createdAt: new Date(), orderId, categories: new Set<string>() }; bySeller.set(l.sellerUserId, g); }
             if (l.categoryId) g.categories.add(String(l.categoryId));
             g.items.push(OrderItem.of({ id: uuidv7(), orderId: g.orderId, orderCreatedAt: g.createdAt, tenantId, listingId: ci.listing_id,
-              productId: l.productId, titleSnapshot: l.title, quantity: qty, unitCode: l.unitCode, unitPriceMinor: BigInt(l.priceMinor),
+              productId: l.productId, titleSnapshot: l.title, quantity: qty, unitCode: l.unitCode, unitPriceMinor,
               gstRatePct: null, hsnCode: null, batchId: null }));
           }
 
@@ -253,19 +303,21 @@ export class CheckoutService {
     const cartItems = await this.carts.items(tenantId, cartId);
     if (cartItems.length === 0) throw new CartEmptyError();
 
-    // group by seller, snapshotting price/title exactly as checkout would (honest, server-truth).
+    // group by seller, snapshotting price/title exactly as checkout would (honest, server-truth). PC-56 STORE-2b: the SAME rule as placement
+    // (placeableLines) — what the buyer is shown is what placement will do: a refusal here is the refusal placement would give.
+    const region = dto.deliveryAddressId
+      ? await this.uow.run(tenantId, (tx) => this.addressRegionTx(tx, tenantId, buyerUserId, dto.deliveryAddressId), { userId: buyerUserId })
+      : null;
+    const lines = await this.placeableLines(tenantId, cartItems, region);
     const bySeller = new Map<string, { items: OrderItem[]; subtotalMinor: bigint; categoryIds: Set<string> }>();
     const order: string[] = [];
-    for (const ci of cartItems) {
-      const l: any = await this.listings.getById(tenantId, ci.listing_id);
-      if (!l || l.status !== 'published') throw new ListingNotPurchasableError(ci.listing_id);
-      const qty = Number(ci.quantity);
-      if (Number(l.quantityAvailable) < qty) throw new InsufficientListingStockError(ci.listing_id, qty, Number(l.quantityAvailable));
+    for (const { ci, l, qty: qtyText, unitPriceMinor } of lines) {
+      const qty = Number(qtyText);
       let g = bySeller.get(l.sellerUserId);
       if (!g) { g = { items: [], subtotalMinor: 0n, categoryIds: new Set<string>() }; bySeller.set(l.sellerUserId, g); order.push(l.sellerUserId); }
       if (l.categoryId) g.categoryIds.add(String(l.categoryId));
       const item = OrderItem.of({ id: uuidv7(), orderId: 'preview', orderCreatedAt: new Date(), tenantId, listingId: ci.listing_id,
-        productId: l.productId, titleSnapshot: l.title, quantity: qty, unitCode: l.unitCode, unitPriceMinor: BigInt(l.priceMinor),
+        productId: l.productId, titleSnapshot: l.title, quantity: qty, unitCode: l.unitCode, unitPriceMinor,
         gstRatePct: null, hsnCode: null, batchId: null });
       g.items.push(item);
       g.subtotalMinor += item.props.lineTotalMinor;

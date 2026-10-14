@@ -14,6 +14,9 @@ import { requireSession } from '../../../../lib/session';
 import { parseMajorToMinor } from '../../../../features/discovery/query';
 import { currencyExponent } from '../../../../features/discovery/money';
 import { parseQuantity } from '../../../../features/store2a/listing';
+import { SdkError } from '@krishalaya/sdk-js';
+import { carryValues } from '../../../../features/forms/chain';
+import { checkQuantity, refusalOf } from '../../../../features/store2b/cart';
 
 function listingPath(tenantSlug: string, id: string): string {
   return `/${encodeURIComponent(tenantSlug)}/listings/${encodeURIComponent(id)}`;
@@ -25,23 +28,35 @@ function parseQty(raw: string, available: number): string | null {
   return parseQuantity(raw, String(available));
 }
 
-/** Add the listing to the buyer's cart, then return to the listing with a status notice. */
+/**
+ * Add the listing to the buyer's cart, then return to the listing with a status notice.
+ *
+ * PC-56 STORE-2b · C3 — canon W3099–W3102 (the "+" on W277). The typed quantity is checked as a DECIMAL STRING first (not a number / below
+ * the minimum / above what is available — features/store2b/cart.ts `checkQuantity`) and sent AS A STRING (no float on the way); every API
+ * refusal comes back BY NAME (`refusalOf`: below the minimum, above available, LICENCE_REQUIRED, WRONG_STORE — the other store's sign-in
+ * link, a suspended seller, sold out, buying paused, …) with the typed quantity kept (`carryValues`, features/forms/chain.ts) — never "check
+ * your entry". No review page (W3100 is a DELTA: the cart is the review). An anonymous add goes to THIS store's sign-in (requireSession).
+ */
 export async function addToCartAction(formData: FormData): Promise<void> {
   const tenantSlug = String(formData.get('tenantSlug') ?? '');
   const listingId = String(formData.get('listingId') ?? '');
-  const available = Number(formData.get('available') ?? '0');
   const path = listingPath(tenantSlug, listingId);
-  const qty = parseQty(String(formData.get('quantity') ?? ''), Number.isFinite(available) ? available : 0);
-  if (!tenantSlug || !listingId || qty === null) redirect(`${path}?status=err`);
+  const raw = String(formData.get('quantity') ?? '').trim().slice(0, 20);
+  const refused = (refusal: string) => `${path}?${carryValues('error', { refusal, qty: raw }).query}#add`;
+  if (!tenantSlug || !listingId) redirect(`${path}?status=err`);
+  const check = checkQuantity(raw, { min: String(formData.get('min') ?? '') || null, available: String(formData.get('available') ?? '') || null });
+  if (!check.ok) redirect(refused(check.refusal));
 
   await requireSession(path);
+  let next: string;
   try {
-    // the SDK's cart contract takes a number: a ≤ 3-decimal string round-trips exactly through JSON's shortest-decimal form
-    await serverClient(tenantSlug).cart.addItem(listingId, Number(qty));
-  } catch {
-    redirect(`${path}?status=err`); // out of stock / price race / transient — never auto-retry a mutation
+    await serverClient(tenantSlug).cart.addItem(listingId, check.qty);   // a decimal STRING — never a float
+    next = `${path}?status=added`;
+  } catch (e) {
+    // never auto-retry a mutation; the refusal is named, the typed quantity kept
+    next = refused(refusalOf(e instanceof SdkError ? e.code : null, e instanceof SdkError ? (e.details ?? null) : null));
   }
-  redirect(`${path}?status=added`);
+  redirect(next);
 }
 
 /** Make a price offer on the listing (per-unit price + quantity), then return with a status notice. */

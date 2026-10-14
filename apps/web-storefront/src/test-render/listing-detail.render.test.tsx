@@ -85,7 +85,8 @@ describe('STORE-2a · W277 the lot — what is printed', () => {
     S.marker = { licenceRequired: true, licenceRequiredIn: [], bannedRegions: [], safetyLabel: null };
     const html = await lot();
     expect(html).toContain('data-kv-lock="licence"');
-    expect(html).toMatch(/id="qty-cart"[^>]*step="0.001"/);
+    // PC-56 STORE-2b · C3: a decimal TEXT field (3 places, string math in the action — the number spinner's float step is gone)
+    expect(html).toMatch(/id="qty-cart"[^>]*inputMode="decimal"/);
   });
   it('no person: no farmer name, no member number — the organisation sells; the breadcrumb is store › category › lot', async () => {
     const html = await lot();
