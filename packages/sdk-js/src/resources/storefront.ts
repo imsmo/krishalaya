@@ -29,8 +29,9 @@ export class StorefrontResource {
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   /** D1 — one keyset page of the verified-organisation directory. */
-  async organisations(q: { after?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<OrganisationCard>> {
-    const r = await this.http.request<OrganisationCard[]>('GET', 'storefront/organisations', { anonymous: true, signal, query: { after: q.after, limit: q.limit } });
+  /** PC-56 STORE-2a: `q` (≥ 2 characters) = a DISPLAY-NAME prefix search of the same verified directory (at most 24, no cursor). */
+  async organisations(q: { after?: string; limit?: number; q?: string } = {}, signal?: AbortSignal): Promise<Page<OrganisationCard>> {
+    const r = await this.http.request<OrganisationCard[]>('GET', 'storefront/organisations', { anonymous: true, signal, query: { after: q.after, limit: q.limit, q: q.q } });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   /** B2 — the allow-listed public flags: `group_lots` for the context tenant (absent with none); STORE-1c — `org_self_signup`, the

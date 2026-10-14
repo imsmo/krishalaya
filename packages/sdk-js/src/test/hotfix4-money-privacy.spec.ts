@@ -62,7 +62,8 @@ describe('PC-56 HOTFIX-4 · SDK', () => {
     const data: PublicListingDetail = { id: 'L1', title: 'Groundnut', description: null, categoryId: 'c', productId: 'p', grade: null, unitCode: 'quintal',
       priceMinor: '615000', currencyCode: 'INR', quantityAvailable: 34, minOrderQty: 5, harvestDate: '2026-07-08', organicClaim: 'natural', organic: true,
       saleType: 'direct', status: 'published', district: 'Junagadh', organisation: { slug: 'anand-fpo', name: 'Anand FPO' }, publishedAt: null,
-      qrToken: null, auctionId: null, auctionStatus: null, auctionEndsAt: null };
+      qrToken: null, auctionId: null, auctionStatus: null, auctionEndsAt: null,
+      quantityTotal: 40, gradeConfirmed: null, attributes: [] };   // PC-56 STORE-2a: the three keys the public view gained
     const { fn, calls } = fakeFetch(() => ({ body: { data } }));
     const l = await client(fn).listings.getPublic('L1');
     expect(hdr(calls[0]).authorization).toBeUndefined();

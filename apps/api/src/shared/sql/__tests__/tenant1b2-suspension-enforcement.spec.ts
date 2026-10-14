@@ -111,6 +111,14 @@ const ENFORCEMENT_SITES: { file: string; why: string; calls: RegExp; minCalls: n
     calls: /assertSellerNotSuspended\(/g, minCalls: 2 },     // the definition + the call inside make()
   { file: 'modules/listings/services/listing.service.ts', why: 'create, publish and repost',
     calls: /assertSellerNotSuspendedTx\(/g, minCalls: 4 },   // the definition + create + publish + repost
+  // PC-56 STORE-2a: three more public reads of one lot — each applies the shared predicate (the detail's suspension check is the facts
+  // read's `sellerSuspended`, which the service calls on the non-owner branch)
+  { file: 'modules/listings/read-models/listing-tombstone.read-model.ts', why: 'the tombstone of a lot no longer on sale',
+    calls: /sellerNotSuspendedSql\(/g, minCalls: 1 },
+  { file: 'modules/listings/read-models/listing-regulated.read-model.ts', why: 'the regulated marker of a public lot',
+    calls: /sellerNotSuspendedSql\(/g, minCalls: 1 },
+  { file: 'modules/listings/read-models/listing-public-facts.read-model.ts', why: 'the public detail\'s suspension check + the lot attributes',
+    calls: /sellerSuspendedExpr\(|sellerNotSuspendedSql\(/g, minCalls: 2 },
 ];
 
 describe('TENANT-1b-2 · every enforcement site imports the shared rule', () => {

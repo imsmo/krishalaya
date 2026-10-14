@@ -105,6 +105,8 @@ export const RESERVED_TENANT_SLUGS: readonly string[] = Object.freeze([
   'language', 'accessibility', 'sync', 'queued', 'pwa-install', 'admin', 'api-docs', 'status', 'www', 'mail', 'app', 'store', 'bazaar',
   // PC-56 STORE-1c · migration 0205: canon W307's route (`/for-organisations`); `tenants-signup` above stays (it now redirects there)
   'for-organisations',
+  // PC-56 STORE-2a · migration 0207: the organisation's seller page (`/<tenant>/sellers`, canon W280 collapsed to the organisation)
+  'sellers',
 ]);
 const RESERVED = new Set(RESERVED_TENANT_SLUGS);
 export function isReservedSlug(slug: string): boolean { return RESERVED.has(String(slug ?? '').trim().toLowerCase()); }

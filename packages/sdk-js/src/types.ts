@@ -50,6 +50,11 @@ export interface PublishedBrand {
   publishedAt: string;
 }
 
+/** The OWNER view's row (`browse({ mine: true })`) and the legacy detail type mobile still compiles against.
+ *  @deprecated as the PUBLIC feed's row — PC-56 STORE-2a (HOTFIX-4 Q3, decided as engineering): the public feed NO LONGER SENDS
+ *  `sellerUserId` or `regionId` (a buyer sees the ORGANISATION and a district name — `PublicListingCard`, read with `listings.search`).
+ *  The two keys stay NON-optional here only so the mobile app (another panel, tsc baseline 89) compiles until its own adaptation wave; on a
+ *  public `browse()` they are ABSENT at runtime. Named in the STORE-2a report §6/§8. */
 export interface ListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;
   quantityAvailable: number; organicClaim: boolean; saleType: string; regionId: string | null;
@@ -78,17 +83,74 @@ export interface ListingCard {
  *  version, AI flag or seller user id on this type — the API never sends them to a buyer, and a view built from it cannot print them. */
 export interface PublicListingDetail {
   id: string; title: string; description: string | null; categoryId: string; productId: string;
+  /** PC-56 STORE-2a (founder D2): the CONFIRMED grade's name only (null when no person confirmed one) — same as `gradeConfirmed.name` */
   grade: string | null; unitCode: string;
   /** bigint minor units as a STRING + its currency (Law 2) */
   priceMinor: string; currencyCode: string;
   quantityAvailable: number; minOrderQty: number; harvestDate: string | null;
+  /** PC-56 STORE-2a: the lot's size ("Available 34 of 40") */
+  quantityTotal: number;
   organicClaim: 'none' | 'natural' | 'certified' | null; organic: boolean;
   saleType: string; status: string;
   district: string | null;
   organisation: { slug: string; name: string } | null;
   publishedAt: string | null;
+  /** PC-56 STORE-2a (founder D2): the grade a PERSON confirmed and whose staff graded it; null otherwise. Never an AI suggestion. */
+  gradeConfirmed: { name: string; gradedBy: string | null } | null;
+  /** PC-56 STORE-2a (B30): the lot's measured attributes */
+  attributes: PublicLotAttribute[];
   /** NON-PII public links (trace QR token, the auction) — `null` = none. */
   qrToken: string | null; auctionId: string | null; auctionStatus: string | null; auctionEndsAt: string | null;
+}
+/** PC-56 STORE-2a (B30) — one measured attribute of a lot: master-data name, the DB's text of the value, its unit. */
+export interface PublicLotAttribute { code: string; name: string; kind: 'text' | 'number' | 'bool' | 'date' | 'option'; value: string; unit: string | null }
+/** PC-56 STORE-2a — the PUBLIC feed's row (`listings.search`): the ORGANISATION sells it, the place is a district name, the grade is the
+ *  CONFIRMED one, the lock says whether a licence is required to buy. No seller user id, no region uuid, no coordinates. */
+export interface PublicListingCard {
+  id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string; quantityAvailable: number;
+  /** either organic claim (legacy boolean) — `organic` is the split */
+  organicClaim: boolean; organic: 'certified' | 'natural' | null;
+  saleType: string; status: string; boosted: boolean;
+  grade: string | null; district: string | null;
+  organisation: { slug: string; name: string } | null;
+  licenceRequired: boolean;
+}
+/** PC-56 STORE-2a — one facet value under the active filters. */
+export interface FacetValue { id: string; name: string; count: number }
+export interface ListingFacets {
+  grade: FacetValue[]; ungraded: number;
+  organic: { certified: number; natural: number; none: number };
+  district: FacetValue[];
+  /** the sale types present under the filters (`id` = the sale type) */
+  saleType: Array<{ id: string; count: number }>;
+}
+/** PC-56 STORE-2a — a page of the public feed: `total` is the count UNDER THE FILTERS, capped (`total > totalCap` = "cap+"); `facets` are
+ *  null when the count is above the cap (withheld, never sampled). */
+export interface ListingSearchPage extends Page<PublicListingCard> { facets: ListingFacets | null }
+export interface ListingSearchQuery {
+  q?: string;
+  /** a category id whose whole subtree is browsed */
+  category?: string;
+  /** an admin-region id whose subtree is browsed */
+  district?: string;
+  /** a grade option id, or 'none' (no confirmed grade) */
+  grade?: string;
+  organic?: 'certified' | 'natural' | 'any';
+  saleType?: string; priceMinMinor?: string; priceMaxMinor?: string;
+  sort?: 'newest' | 'price_asc' | 'price_desc'; cursor?: string; limit?: number;
+}
+/** PC-56 STORE-2a (B16) — a lot no longer on sale: why, and what it was. NO price, NO quantity. */
+export interface ListingTombstone {
+  id: string; tombstone: true; status: 'sold_out' | 'paused' | 'expired' | 'withdrawn'; title: string;
+  organisation: { slug: string; name: string } | null; category: { id: string; name: string } | null;
+}
+/** PC-56 STORE-2a (B5 / B13 public half) — the regulated marker of a lot's product. Shown, never used to hide; enforcement is STORE-2b. */
+export interface RegulatedMarker { licenceRequired: boolean; licenceRequiredIn: string[]; bannedRegions: string[]; safetyLabel: string | null }
+/** PC-56 STORE-2a (B6) — the ORGANISATION's seller page (canon W280 collapsed to the organisation). `reviews` null = the reviews flag is OFF. */
+export interface OrganisationPage {
+  profile: { displayName: string; legalName: string; verified: boolean; sinceYear: number; district: string | null; memberFarmers: number; currencyCode: string };
+  listingCount: number; listingCountCap: number;
+  reviews: { avg: number; count: number; capped: boolean; cap: number } | null;
 }
 export interface ListingQuery {
   q?: string; categoryId?: string; regionId?: string; saleType?: string; organic?: boolean;
@@ -211,6 +273,9 @@ export interface StorefrontFlags {
   /** PC-56 HOTFIX-4 · A8 — tenant-scoped (absent with no organisation in context). `online_payments` OFF (the seed) = no Pay step: orders are
    *  placed, the seller confirms, payment happens on delivery (founder D2). */
   online_payments?: boolean; buyer_charges?: boolean; offers?: boolean; auctions?: boolean; reviews?: boolean;
+  /** PC-56 STORE-2a (founder D4, 0207) — the PLATFORM kill-switch for the public catalogue; always answered (a flag-store failure reads ON).
+   *  OFF = browse, search, listing, seller and inputs pages say browsing is temporarily unavailable. */
+  storefront_browse?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {

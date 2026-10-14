@@ -35,6 +35,10 @@ import { ListingPublicFactsReadModel } from './read-models/listing-public-facts.
 import { SellerProfileReadModel } from './read-models/seller-profile.read-model';
 import { ListingGalleryReadModel } from './read-models/listing-gallery.read-model';
 import { ListingLinksReadModel } from './read-models/listing-links.read-model';
+import { ListingTombstoneReadModel } from './read-models/listing-tombstone.read-model';
+import { ListingRegulatedReadModel } from './read-models/listing-regulated.read-model';
+import { OrganisationPageReadModel } from './read-models/organisation-page.read-model';
+import { StorefrontBrowseGate, StorefrontBrowseGuard } from './storefront-browse.guard';
 
 // Repositories (write/read SQL)
 import { ListingRepository } from './repositories/listing.repository';
@@ -66,6 +70,8 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
     ListingService, ListingBoostService, ListingViewService, ListingInquiryService, ListingTrustDocumentService,
     ListingAttributeService, OnBehalfConsoleService, ListingBulkApplier,
     ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel, ListingPublicFactsReadModel,
+    // PC-56 STORE-2a: the tombstone, the regulated marker, the organisation page, the catalogue's kill-switch
+    ListingTombstoneReadModel, ListingRegulatedReadModel, OrganisationPageReadModel, StorefrontBrowseGate, StorefrontBrowseGuard,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, ListingMediaRepository, ListingTrustDocumentRepository,
     OrderCompletedHandler,

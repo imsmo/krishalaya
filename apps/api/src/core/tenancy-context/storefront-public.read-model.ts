@@ -163,6 +163,22 @@ export class StorefrontPublicReadModel {
     };
   }
 
+  /** PC-56 STORE-2a (brief C2, 0207 `public_organisation_search`): verified live organisations whose DISPLAY NAME starts with `prefix`
+   *  (≥ 2 characters, else nothing), at most 24, by name — the platform search's "Organisations" tab. One page, no cursor: a name search
+   *  shows its best 24 and the page asks for a longer prefix when it is full. */
+  async searchOrganisations(prefix: string): Promise<KeysetPage<OrganisationCard>> {
+    const p = typeof prefix === 'string' ? prefix.trim().slice(0, 80) : '';
+    if (p.length < 2) return { items: [], nextCursor: null };
+    const r = await this.pools.replica(0).query(`SELECT * FROM public_organisation_search($1::text, $2::int)`, [p, PUBLIC_PAGE_DEFAULT]);
+    return {
+      items: (r.rows as Array<PgRow>).map((x) => ({
+        slug: x.slug, displayName: x.display_name, district: x.district_name ?? null, logoUrl: x.logo_url ?? null,
+        logoPath: logoPathOf(x.tenant_id, x.brand_version), memberFarmers: Number(x.member_count ?? 0),
+      })),
+      nextCursor: null,
+    };
+  }
+
   /** D1: one keyset page of the verified-organisation directory. */
   async organisations(q: { after?: string; limit?: unknown }): Promise<KeysetPage<OrganisationCard>> {
     const limit = pageSize(q.limit);

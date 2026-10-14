@@ -7,7 +7,8 @@ import { RESERVED_TENANT_SLUGS, isReservedSlug, isReservedSlugViolation, slugCan
 
 const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', '..', '..', '..', 'db', 'migrations');
 // PC-56 STORE-1c: migration 0205 adds ONE name (`for-organisations`, canon W307's route) — the code list mirrors BOTH seeds
-const MIGRATIONS = ['0204_storefront_home.sql', '0205_org_signup_flag_plans.sql'].map((f) => join(MIGRATIONS_DIR, f));
+// PC-56 STORE-2a: migration 0207 adds ONE more (`sellers`, the organisation's seller page under a tenant store) — all three seeds now
+const MIGRATIONS = ['0204_storefront_home.sql', '0205_org_signup_flag_plans.sql', '0207_storefront_browse.sql'].map((f) => join(MIGRATIONS_DIR, f));
 const STOREFRONT_APP = join(__dirname, '..', '..', '..', '..', '..', 'web-storefront', 'src', 'app');
 
 function seededSlugs(): string[] {
@@ -21,7 +22,7 @@ function seededSlugs(): string[] {
 describe('STORE-1b · reserved tenant slugs', () => {
   it('the code list IS the migration\'s seed (same names, no duplicates)', () => {
     const seeded = seededSlugs();
-    expect(seeded.length).toBe(47);   // 0204's 46 + 0205's for-organisations
+    expect(seeded.length).toBe(48);   // 0204's 46 + 0205's for-organisations + 0207's sellers
     expect([...seeded].sort()).toEqual([...RESERVED_TENANT_SLUGS].sort());
     expect(new Set(RESERVED_TENANT_SLUGS).size).toBe(RESERVED_TENANT_SLUGS.length);
   });

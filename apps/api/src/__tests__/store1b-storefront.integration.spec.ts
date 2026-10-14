@@ -280,7 +280,8 @@ run('PC-56 STORE-1b · storefront home & tenant home (integration, real AppModul
       const r = await request(http).get('/v1/storefront/flags').set('x-tenant-slug', liveSlug);
       expect(r.status).toBe(200);
       // PC-56 HOTFIX-4 · A8: + online_payments, buyer_charges, offers, auctions, reviews (tenant-scoped booleans)
-      expect(Object.keys(r.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews']);
+      // PC-56 STORE-2a: + storefront_browse (platform-scoped, 0207)
+      expect(Object.keys(r.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse']);
       expect(typeof r.body.data.group_lots).toBe('boolean');
       expect(JSON.stringify(r.body)).not.toMatch(/rollout|tenant_ids|rules|pct/);
       const platform = await request(http).get('/v1/storefront/flags');
@@ -288,12 +289,13 @@ run('PC-56 STORE-1b · storefront home & tenant home (integration, real AppModul
       expect(platform.body.data).not.toHaveProperty('group_lots');
     });
 
-    it('the tenant feed carries the capped total (public + cross_tenant published) and the members-only count; a filter drops the total', async () => {
+    // PC-56 STORE-2a · B1 changed the filtered half ON PURPOSE: the total is now the count UNDER the filter (it was null whenever one narrowed)
+    it('the tenant feed carries the capped total (public + cross_tenant published) and the members-only count; a filter is COUNTED under it (STORE-2a)', async () => {
       const r = await request(http).get('/v1/listings').set('x-tenant-slug', liveSlug);
       expect(r.status).toBe(200);
       expect(r.body.meta).toMatchObject({ total: 6, totalCap: 1000, membersOnlyCount: 1 });
       const filtered = await request(http).get('/v1/listings').query({ q: 'wheat' }).set('x-tenant-slug', liveSlug);
-      expect(filtered.body.meta.total).toBeNull();
+      expect(filtered.body.meta.total).toBe(1);   // "Public wheat" only — the members-only and the draft wheat are not public
       const empty = await request(http).get('/v1/listings').set('x-tenant-slug', emptySlug);
       expect(empty.body.meta).toMatchObject({ total: 0, membersOnlyCount: 0 });
     });

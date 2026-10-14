@@ -9,6 +9,8 @@ const DETAIL: PublicListingDetail = {
   priceMinor: '615000', currencyCode: 'INR', quantityAvailable: 34, minOrderQty: 5, harvestDate: '2026-07-08', organicClaim: 'none', organic: false,
   saleType: 'direct', status: 'published', district: 'Junagadh', organisation: { slug: 'anand-fpo', name: 'Anand FPO' }, publishedAt: null,
   qrToken: null, auctionId: null, auctionStatus: null, auctionEndsAt: null,
+  // PC-56 STORE-2a: the view's grade is the CONFIRMED grade (founder D2) — the fixture's grade is confirmed by the organisation's staff
+  quantityTotal: 40, gradeConfirmed: { name: 'Grade A', gradedBy: 'Anand FPO' }, attributes: [],
 };
 const LEAKY = { ...DETAIL, lat: 21.522222, lng: 70.457777, pincode: '362001', regionId: 'R-uuid', tenantId: 'T', version: 7, aiExtracted: true,
   sellerUserId: 'U-farmer', sellerName: 'Ramesh Patel' } as unknown as PublicListingDetail;

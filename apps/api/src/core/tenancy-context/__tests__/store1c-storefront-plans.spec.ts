@@ -71,17 +71,24 @@ describe('STORE-1c · D2 — the public plans read', () => {
 });
 
 describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', () => {
-  it('the allow-list is exactly group_lots + org_self_signup (+ HOTFIX-4 A8: online_payments, buyer_charges, offers, auctions, reviews); only org_self_signup is platform-scoped', () => {
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews']);
-    expect([...PLATFORM_SCOPED_FLAGS]).toEqual(['org_self_signup']);
+  // PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — the SECOND platform-scoped key
+  it('the allow-list is exactly group_lots + org_self_signup (+ HOTFIX-4 A8: online_payments, buyer_charges, offers, auctions, reviews; + STORE-2a: storefront_browse); org_self_signup and storefront_browse are platform-scoped', () => {
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse']);
+    expect([...PLATFORM_SCOPED_FLAGS]).toEqual(['org_self_signup', 'storefront_browse']);
   });
 
-  it('no tenant in context (the platform page) → ONLY org_self_signup, evaluated with `{}` (the signup gate\'s own context)', async () => {
-    const isEnabled = jest.fn(async (k: string) => k === 'org_self_signup');
+  it('no tenant in context (the platform page) → ONLY the platform switches, each evaluated with `{}` (the signup gate\'s own context)', async () => {
+    const isEnabled = jest.fn(async (k: string) => k === 'org_self_signup' || k === 'storefront_browse');
     const ctl = new StorefrontPublicController({} as never, { isEnabled } as never);
-    expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: true } });
-    expect(isEnabled).toHaveBeenCalledTimes(1);
+    expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: true, storefront_browse: true } });
+    expect(isEnabled).toHaveBeenCalledTimes(2);
     expect(isEnabled).toHaveBeenCalledWith('org_self_signup', {});
+    expect(isEnabled).toHaveBeenCalledWith('storefront_browse', {});
+  });
+
+  it('STORE-2a: a flag-store failure reads storefront_browse ON (fail open, as the API gate) and every other key OFF', async () => {
+    const ctl = new StorefrontPublicController({} as never, { isEnabled: async () => { throw new Error('flag store down'); } } as never);
+    expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: false, storefront_browse: true } });
   });
 
   it('a tenant in context → both keys; the platform switch still ignores the tenant; a flag-store failure reads OFF', async () => {

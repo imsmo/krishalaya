@@ -134,7 +134,8 @@ describe('STORE-1b · W273 the platform home', () => {
     expect(html).toContain('href="/discover?category=c-grain"');
     expect(html).not.toContain('href="/discover?category=c-wheat"');   // top level only
     expect(html).toMatch(/<form method="get" action="\/trace"[^>]*>/);
-    expect(html).toMatch(/<form method="get" action="\/discover" role="search"/);
+    // PC-56 STORE-2a · C2: the header search targets /search (canon W276) — it was /discover
+    expect(html).toMatch(/<form method="get" action="\/search" role="search"/);
     expect(text(html)).toContain(en['home.trace.noCamera']);
     expect(text(html)).toContain(en['home.trace.demoRefused']);
   });

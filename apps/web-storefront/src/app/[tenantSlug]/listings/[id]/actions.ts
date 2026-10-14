@@ -13,16 +13,16 @@ import { serverClient, publicClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { parseMajorToMinor } from '../../../../features/discovery/query';
 import { currencyExponent } from '../../../../features/discovery/money';
+import { parseQuantity } from '../../../../features/store2a/listing';
 
 function listingPath(tenantSlug: string, id: string): string {
   return `/${encodeURIComponent(tenantSlug)}/listings/${encodeURIComponent(id)}`;
 }
 
-/** Parse a positive integer quantity within [1, available]; null if invalid. */
-function parseQty(raw: string, available: number): number | null {
-  if (!/^\d{1,7}$/.test(raw)) return null;
-  const n = Number(raw);
-  return n >= 1 && n <= available ? n : null;
+/** PC-56 STORE-2a · C3: a DECIMAL quantity (numeric(14,3)) in (0, available] as a canonical decimal string — string math
+ *  (features/store2a/listing.ts parseQuantity), never a float comparison; the API re-validates. */
+function parseQty(raw: string, available: number): string | null {
+  return parseQuantity(raw, String(available));
 }
 
 /** Add the listing to the buyer's cart, then return to the listing with a status notice. */
@@ -36,7 +36,8 @@ export async function addToCartAction(formData: FormData): Promise<void> {
 
   await requireSession(path);
   try {
-    await serverClient(tenantSlug).cart.addItem(listingId, qty as number);
+    // the SDK's cart contract takes a number: a ≤ 3-decimal string round-trips exactly through JSON's shortest-decimal form
+    await serverClient(tenantSlug).cart.addItem(listingId, Number(qty));
   } catch {
     redirect(`${path}?status=err`); // out of stock / price race / transient — never auto-retry a mutation
   }
@@ -64,7 +65,7 @@ export async function makeOfferAction(formData: FormData): Promise<void> {
   await requireSession(path);
   try {
     await serverClient(tenantSlug).offers.make(
-      { listingId, quantity: String(qty), offeredPriceMinor: offeredPriceMinor as string },
+      { listingId, quantity: qty as string, offeredPriceMinor: offeredPriceMinor as string },
       randomUUID(),
     );
   } catch {

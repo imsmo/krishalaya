@@ -31,7 +31,9 @@ jest.mock('../lib/api-client', () => ({
       organisations: async () => ({ items: [{ slug: 'anand-fpo', displayName: 'Anand FPO', district: 'Anand', logoUrl: null, logoPath: null, memberFarmers: 12 }], nextCursor: 'C2' }),
       flags: async () => ({ group_lots: false }),
     },
-    listings: { browse: async () => ({ items: [LISTING], nextCursor: 'C2', total: 1, totalCap: 1000, membersOnlyCount: 2 }) },
+    // PC-56 STORE-2a: the tenant store reads its catalogue through `listings.search`
+    listings: { browse: async () => ({ items: [LISTING], nextCursor: 'C2', total: 1, totalCap: 1000, membersOnlyCount: 2 }),
+      search: async () => ({ items: [LISTING], nextCursor: 'C2', total: 1, totalCap: 1000, membersOnlyCount: 2, facets: null }) },
     lookups: { categories: async () => [], regions: async () => [] },
   }),
 }));

@@ -14,10 +14,12 @@ function ctx(userId: string) {
 
 function build() {
   const searchRM: any = { query: jest.fn().mockResolvedValue({ items: [], total: null, nextCursor: null }) };
+  const browse: any = { assertOpen: jest.fn().mockResolvedValue(undefined) };   // PC-56 STORE-2a: the catalogue's kill-switch (open)
   const controller = new ListingsController(
     {} as any, {} as any, {} as any, searchRM, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,   // TENANT-2b: + bandRM, onBehalf
+    browse, {} as any, {} as any, {} as any,                                                                       // STORE-2a: + gate, tombstone, facts, marker
   );
-  return { controller, searchRM };
+  return { controller, searchRM, browse };
 }
 
 describe('ListingsController.search — mine (owner view)', () => {
@@ -48,6 +50,7 @@ describe('ListingsController.archive — KV-MF-08 (screen 112 Remove cta)', () =
     const service: any = { archive: jest.fn().mockResolvedValue({ id: 'L1', status: 'archived' }) };
     const controller = new ListingsController(
       service, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,   // TENANT-2b: + bandRM, onBehalf
+      {} as any, {} as any, {} as any, {} as any,                                                                   // STORE-2a: + gate, tombstone, facts, marker
     );
     return { controller, service };
   }

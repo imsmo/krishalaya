@@ -133,9 +133,10 @@ describe('STORE-1b · B2 — the public reads', () => {
     const isEnabled = jest.fn(async (k: string, c: { tenantId?: string }) => k === 'group_lots' && c.tenantId === LIVE);
     const ctl = new StorefrontPublicController({} as never, { isEnabled } as never);
     // PC-56 HOTFIX-4 · A8: + online_payments, buyer_charges, offers, auctions, reviews (tenant-scoped)
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews']);
-    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false } });
-    expect(isEnabled).toHaveBeenCalledTimes(7);   // one per allow-listed key (HOTFIX-4: 2 → 7)
+    // PC-56 STORE-2a · B4: + storefront_browse (platform-scoped, the catalogue's kill-switch)
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse']);
+    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false, storefront_browse: false } });
+    expect(isEnabled).toHaveBeenCalledTimes(8);   // one per allow-listed key (HOTFIX-4: 2 → 7; STORE-2a: 8)
     expect((await ctl.publicFlags({ tenantId: '' } as RequestContext)).data).not.toHaveProperty('group_lots');
     await expect(ctl.profile({ tenantId: '' } as RequestContext)).rejects.toMatchObject({ code: 'TENANT_NOT_FOUND' });
   });
@@ -163,19 +164,26 @@ describe('STORE-1b · GAP-B15 — the listing feed counts', () => {
     const rm = new ListingSearchReadModel({ forTenant: () => ({ query }) } as never, { inc: jest.fn(), observe: jest.fn() } as never);
     return { rm, query };
   }
-  it('public feed: the capped total + cap + members-only count, through the two 0204 counters', async () => {
+  // PC-56 STORE-2a · B1 CHANGED THIS ON PURPOSE (survey F-17 / B17): the count used to be asked for only when nothing narrowed the feed
+  // (null otherwise — "an unfiltered count printed as 'N results' would be false"). It is now the count UNDER THE FILTERS, capped, from ONE
+  // bounded statement that also yields the facets (listing-search.read-model.ts header); the members-only count is still 0204's counter.
+  it('public feed: the capped total + cap + members-only count, from the one bounded count statement', async () => {
     const { rm, query } = build();
     const r = await rm.query(T, { limit: 20, sort: 'newest' } as never);
-    expect(r).toMatchObject({ total: 1001, totalCap: PUBLIC_LISTING_COUNT_CAP, membersOnlyCount: 3 });
+    expect(r).toMatchObject({ total: 1001, totalCap: PUBLIC_LISTING_COUNT_CAP, membersOnlyCount: 3, facets: null });
     const [sql, params] = query.mock.calls[1];
-    expect(sql).toMatch(/public_tenant_listing_count\(\$1::uuid, \$2::int\)/);
+    expect(sql).toMatch(/WITH f AS MATERIALIZED/);
+    expect(sql).toMatch(/LIMIT \$\d+::int \+ 1/);
     expect(sql).toMatch(/public_tenant_members_only_count\(\$1::uuid\)/);
-    expect(params).toEqual([T, 1000, false]);
+    expect(params[0]).toBe(T);
+    expect(params[params.length - 1]).toBe(1000);
   });
-  it('a narrowing filter asks for NO total (an unfiltered count printed as "N results" would be false)', async () => {
+  it('a narrowing filter is COUNTED under that filter (STORE-2a: a true count under every filter, not null)', async () => {
     const { rm, query } = build();
-    await rm.query(T, { limit: 20, sort: 'newest', categoryId: T } as never);
-    expect(query.mock.calls[1][1]).toEqual([T, 1000, true]);
+    const r = await rm.query(T, { limit: 20, sort: 'newest', categoryId: T } as never);
+    expect(query.mock.calls[1][0]).toMatch(/l\.category_id = \$2/);
+    expect(query.mock.calls[1][1]).toEqual([T, T, 1000]);
+    expect(r.total).toBe(1001);
     expect(narrowsFeed({ q: 'wheat' } as never)).toBe(true);
     expect(narrowsFeed({ cursor: 'x', sort: 'price_asc' } as never)).toBe(false);
   });

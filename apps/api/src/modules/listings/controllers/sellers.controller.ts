@@ -9,11 +9,24 @@ import { CurrentContext } from '../../../core/tenancy-context/current-context.de
 import { RequestContext } from '../../../core/tenancy-context/request-context';
 import { SellerProfileReadModel } from '../read-models/seller-profile.read-model';
 import { SellerNotFoundError } from '../domain/listing.errors';
+import { OrganisationPageReadModel } from '../read-models/organisation-page.read-model';
+import { StorefrontBrowseGuard } from '../storefront-browse.guard';
+import { DomainError } from '../../../shared/errors/app-error';
 
 @Controller({ path: 'sellers', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard)
 export class SellersController {
-  constructor(private readonly profiles: SellerProfileReadModel) {}
+  constructor(private readonly profiles: SellerProfileReadModel, private readonly orgPage: OrganisationPageReadModel) {}
+
+  /** PC-56 STORE-2a · B6 — the ORGANISATION's seller page (canon W280 collapsed to the organisation, HOTFIX-4 D3): its public profile, its
+   *  capped live-listing count and — only when the `reviews` flag is ON — its verified-purchase review aggregate (no identities, D1). 404 when
+   *  no live organisation is in context. Behind the catalogue's kill-switch (B4). Declared BEFORE `:id/public`. */
+  @Public() @Get('organisation') @UseGuards(StorefrontBrowseGuard)
+  async organisation(@CurrentContext() ctx: RequestContext) {
+    const data = await this.orgPage.forTenant(ctx.tenantId);
+    if (!data) throw new DomainError('TENANT_NOT_FOUND', 'No organisation is served here', 404);
+    return { data };
+  }
 
   @Public() @Get(':id/public')
   async publicProfile(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {

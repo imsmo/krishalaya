@@ -4,8 +4,10 @@
 import { toPublicListing, PUBLIC_LISTING_KEYS, NO_PUBLIC_FACTS } from '../domain/listing-public.view';
 import type { ListingProps } from '../domain/listing.entity';
 
+// PC-56 STORE-2a · B2 moves ONE key out of this list ON PURPOSE: `quantityTotal` (canon W277 "Available 34 of 40 qtl" — the lot's size is
+// a fact of the offer, not a private one). Every other key stays a leak.
 const LEAKS = ['lat', 'lng', 'pincode', 'regionId', 'tenantId', 'version', 'aiExtracted', 'aiMeta', 'sellerUserId', 'visibility',
-  'qcSubmittedAt', 'qcReviewedBy', 'qcReviewedAt', 'rejectReason', 'createdBy', 'quantityTotal', 'expiresAt', 'publishAt'];
+  'qcSubmittedAt', 'qcReviewedBy', 'qcReviewedAt', 'rejectReason', 'createdBy', 'expiresAt', 'publishAt'];
 
 const props = (over: Partial<ListingProps> = {}): ListingProps => ({
   id: 'L1', tenantId: 'T1', sellerUserId: 'U-farmer', productId: 'P1', categoryId: 'C1', title: 'Bold groundnut', description: 'Moisture 7.8%',

@@ -33,6 +33,11 @@ import { QueryListingInquiriesDto, QueryListingInquiriesSchema } from '../dto/qu
 import { ListingNotFoundError } from '../domain/listing.errors';
 import { ListingPermissions, canModerate } from '../listings.policies';
 import { ApiScopes } from '../../../core/auth/api-key.port';
+import { StorefrontBrowseGate, StorefrontBrowseGuard } from '../storefront-browse.guard';
+import { ListingTombstoneReadModel } from '../read-models/listing-tombstone.read-model';
+import { ListingPublicFactsReadModel } from '../read-models/listing-public-facts.read-model';
+import { ListingRegulatedReadModel } from '../read-models/listing-regulated.read-model';
+import { UUID_RE } from '../../../shared/pagination/us-keyset';
 
 // Same opaque base64 "c|id" keyset cursor grammar as communication's ConversationsController — the inquiries
 // endpoint forwards straight into ConversationService's cursor, so it must decode/encode identically.
@@ -52,6 +57,11 @@ export class ListingsController {
     private readonly boosts: ListingBoostService,
     private readonly bandRM: MandiBandReadModel,             // TENANT-2b: W125's fair-price guide
     private readonly onBehalf: OnBehalfConsoleService,       // TENANT-2b: W125's consent-gated staff create
+    // PC-56 STORE-2a: the catalogue's kill-switch, the tombstone, the lot attributes, the regulated marker
+    private readonly browse: StorefrontBrowseGate,
+    private readonly tombstones: ListingTombstoneReadModel,
+    private readonly lotFacts: ListingPublicFactsReadModel,
+    private readonly regulated: ListingRegulatedReadModel,
   ) {}
 
   /** Public browse/search — replica-backed read-model; tenant scoped + RLS. The route stays @Public for the
@@ -62,10 +72,13 @@ export class ListingsController {
   @Public() @Get() @ApiScopes('listings.read')
   async search(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryListingSchema) q: QueryListingDto) {
     if (q.mine && !ctx.userId) throw new UnauthorizedError('Sign in to view your own listings');
+    // PC-56 STORE-2a · B4: the PUBLIC feed is behind the catalogue's kill-switch; the owner's own catalogue (`mine`) is not the storefront
+    if (!q.mine) await this.browse.assertOpen();
     const res = await this.searchRM.query(ctx.tenantId, q, q.mine ? { ownerUserId: ctx.userId } : {});
     // PC-56 STORE-1b: the public feed also carries its capped total (+ the cap) and the members-only count (W274 "N published" /
-    // "some lots are members-only") — both null on the owner view.
-    return { data: res.items, meta: { total: res.total, nextCursor: res.nextCursor, totalCap: res.totalCap ?? null, membersOnlyCount: res.membersOnlyCount ?? null } };
+    // "some lots are members-only") — both null on the owner view. PC-56 STORE-2a: the total is now the count UNDER THE FILTERS (capped),
+    // and `facets` carries the grade / organic-split / district counts (null on the owner view and above the cap).
+    return { data: res.items, meta: { total: res.total, nextCursor: res.nextCursor, totalCap: res.totalCap ?? null, membersOnlyCount: res.membersOnlyCount ?? null, facets: res.facets ?? null } };
   }
 
   // Static routes BEFORE ':id' so they aren't captured as a listing id.
@@ -91,6 +104,33 @@ export class ListingsController {
     // the viewer for this listing; the links read-model independently re-checks public visibility.
     const links = await this.linksRM.forListing(ctx.tenantId, id);
     return { data: { ...l, ...links } };
+  }
+
+  // ---- PC-56 STORE-2a · the three PURELY public reads of one lot (each behind the catalogue's kill-switch, B4) ----
+
+  /** B16 — a lot no longer on sale: `{ id, tombstone: true, status: sold_out|paused|expired|withdrawn, title, organisation, category }` —
+   *  NO price, NO quantity. 404 for a published lot, an unpublished / held / members-only one, a suspended seller's (read-model header). */
+  @Public() @Get(':id/tombstone') @UseGuards(StorefrontBrowseGuard)
+  async tombstone(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    const t = await this.tombstones.forListing(ctx.tenantId, id);
+    if (!t) throw new ListingNotFoundError(id);
+    return { data: t };
+  }
+
+  /** B30 — the lot's measured attributes (moisture, foreign matter …): a published, public lot of the context organisation only (else []). */
+  @Public() @Get(':id/attributes') @UseGuards(StorefrontBrowseGuard)
+  async attributes(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    if (!UUID_RE.test(ctx.tenantId) || !UUID_RE.test(id)) throw new ListingNotFoundError(id);
+    return { data: await this.lotFacts.attributes(ctx.tenantId, id) };
+  }
+
+  /** B5 / B13 public half — the regulated marker of a public lot's product + category branch: `{ licenceRequired, licenceRequiredIn,
+   *  bannedRegions, safetyLabel }`. Shown, never used to hide a lot; enforcement is STORE-2b. */
+  @Public() @Get(':id/regulated') @UseGuards(StorefrontBrowseGuard)
+  async regulatedMarker(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    const m = await this.regulated.forListing(ctx.tenantId, id);
+    if (!m) throw new ListingNotFoundError(id);
+    return { data: m };
   }
 
   /** Signed photo gallery (short-lived presigned GET urls; clean assets only). Public route (anonymous

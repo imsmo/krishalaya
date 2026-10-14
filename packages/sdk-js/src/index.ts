@@ -13,6 +13,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   OtpRequestResult, OtpChannel, OtpInvalidDetails, AuthSessionSummary, StorefrontTenant,   // PC-56 STORE-1a
   StorefrontProfile, StorefrontStats, DiscoveryCard, OrganisationCard, StorefrontFlags,   // PC-56 STORE-1b
   PublicListingDetail, OrderPaymentState, CheckoutGroupDetail,   // PC-56 HOTFIX-4
+  PublicListingCard, PublicLotAttribute, FacetValue, ListingFacets, ListingSearchPage, ListingSearchQuery, ListingTombstone, RegulatedMarker, OrganisationPage,   // PC-56 STORE-2a
   StorefrontPlan, StorefrontPlans,   // PC-56 STORE-1c
   CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding, PublishedBrand,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,

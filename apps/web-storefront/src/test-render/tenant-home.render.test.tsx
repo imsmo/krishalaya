@@ -29,7 +29,8 @@ jest.mock('../lib/storefront-data', () => ({
 }));
 jest.mock('../lib/api-client', () => ({
   publicClient: () => ({
-    listings: { browse: async () => (mock.listings instanceof Error ? fail(503) : mock.listings) },
+    // PC-56 STORE-2a: the store's catalogue is read through `listings.search` (the public feed's own method); `browse` stays for old callers
+    listings: { browse: async () => (mock.listings instanceof Error ? fail(503) : mock.listings), search: async () => (mock.listings instanceof Error ? fail(503) : mock.listings) },
     lookups: { categories: async () => [], regions: async () => [] },
     storefront: { flags: async () => mock.flags },
   }),
@@ -168,9 +169,9 @@ describe('STORE-1b · W274 the tenant home — profile, states, counts', () => {
 
   it('the price band uses the store currency\'s exponent: a JPY store reads "1500" as 1500 minor units, never ×100', async () => {
     let seen: unknown = null;
-    const api = jest.requireMock('../lib/api-client') as { publicClient: () => { listings: { browse: (q: unknown) => Promise<unknown> } } };
+    const api = jest.requireMock('../lib/api-client') as { publicClient: () => { listings: { search: (q: unknown) => Promise<unknown> } } };
     const orig = api.publicClient;
-    api.publicClient = () => { const c = orig(); return { ...c, listings: { browse: async (q: unknown) => { seen = q; return mock.listings; } } }; };
+    api.publicClient = () => { const c = orig(); return { ...c, listings: { search: async (q: unknown) => { seen = q; return mock.listings; } } }; };
     try {
       mock.profile = { ...PROFILE, currencyCode: 'JPY' };
       await store({ priceMin: '1500' });

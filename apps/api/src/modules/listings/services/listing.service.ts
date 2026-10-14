@@ -10,6 +10,7 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ListingPublicFactsReadModel } from '../read-models/listing-public-facts.read-model';
 import { toPublicListing, NO_PUBLIC_FACTS } from '../domain/listing-public.view';
+import { StorefrontBrowseGate } from '../storefront-browse.guard';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { QUOTA_SERVICE, QuotaService } from '../../../core/quota/quota.service';
@@ -54,6 +55,9 @@ export class ListingService {
     /** PC-56 HOTFIX-4 · A6: who sells / where / the grade, for the PUBLIC projection. Optional only so the hand-built unit specs keep their
      *  positional constructor; Nest always injects it (a missing one = the public view without those three facts, never more keys). */
     @Optional() private readonly publicFacts?: ListingPublicFactsReadModel,
+    /** PC-56 STORE-2a · B4 (founder D4): the public catalogue's kill-switch, checked on the NON-OWNER branch of the detail (an owner's own
+     *  read is not the storefront). Optional for the same positional-constructor reason as `publicFacts`; Nest always injects it. */
+    @Optional() private readonly browseGate?: StorefrontBrowseGate,
   ) {}
 
   /** Drain aggregate events into the outbox within the same transaction. */
@@ -424,6 +428,12 @@ export class ListingService {
     const isOwnerOrAdmin = viewer.canModerate || l.sellerUserId === viewer.userId;
     if (!publiclyVisible && !isOwnerOrAdmin) throw new ListingNotFoundError(id);
     if (!isOwnerOrAdmin) {
+      // PC-56 STORE-2a · B4: the storefront's kill-switch (503 STOREFRONT_BROWSE_OFF) — checked AFTER visibility, so a draft id still 404s
+      // the same way whether browsing is on or off (no enumeration through the switch).
+      if (this.browseGate) await this.browseGate.assertOpen();
+      // PC-56 STORE-2a · B2 (survey F-15 / B10): a SUSPENDED seller's lot is not public — the feed hid it, the direct URL did not. The same
+      // predicate as every public path; a failure to read it fails the request (never shows the lot).
+      if (this.publicFacts && await this.publicFacts.sellerSuspended(tenantId, id)) throw new ListingNotFoundError(id);
       // PC-56 HOTFIX-4 · A6 (survey F-7): an ALLOW-LIST, never the entity's props with some deleted. TENANT-2b deleted five QC keys and
       // spread the rest — the farm's lat/lng, pincode, region uuid, tenantId, version, aiExtracted and the seller's user id all reached
       // anonymous callers. Now a key reaches a buyer only because domain/listing-public.view.ts names it; the seller is the ORGANISATION (D3).

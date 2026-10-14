@@ -6,11 +6,12 @@
 //   GET /v1/storefront/profile        D4 — the context tenant's public profile (404 TENANT_NOT_FOUND when none / not live)
 //   GET /v1/storefront/stats          D3 — the PRECOMPUTED platform counts + computedAt (never computed here)
 //   GET /v1/storefront/discover       D1 — the cross-tenant feed (cross_tenant listings of live tenants), keyset ?after=&limit=
-//   GET /v1/storefront/organisations  D1 — verified live organisations, keyset ?after=&limit=
+//   GET /v1/storefront/organisations  D1 — verified live organisations, keyset ?after=&limit=; STORE-2a: ?q= = a name-prefix search (0207)
 //   GET /v1/storefront/flags          B2 — ALLOW-LISTED booleans; never rules or percentages. PC-56 STORE-1c (founder D1) adds
 //                                     `org_self_signup`, a PLATFORM switch (evaluated with no tenant — the same `{}` the signup gate uses), so
 //                                     the platform's own /for-organisations page (no tenant in context) can ask it: with no tenant the answer
 //                                     carries ONLY the platform-scoped keys; a tenant-scoped key (`group_lots`) is answered only for a tenant.
+//                                     PC-56 STORE-2a (founder D4) adds `storefront_browse` — platform-scoped, fail-open (see FAIL_OPEN_FLAGS).
 //   GET /v1/storefront/plans?country=XX  STORE-1c · D2 — the PUBLIC plan catalogue of a country (a platform table, no RLS — read model header)
 //
 // No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts), or — for
@@ -28,10 +29,14 @@ import { StorefrontPublicReadModel, countryParam } from './storefront-public.rea
  *  PC-56 HOTFIX-4 · A8 (survey B23 / F-11 / F-16): + `online_payments` (founder D2 — the storefront honours it: OFF = no Pay step),
  *  `buyer_charges`, `offers`, `auctions`, `reviews` — all TENANT-scoped (answered only with an organisation in context), booleans only:
  *  a flag's rules, percentages and tenant lists never leave the API. */
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews'] as const);
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
-/** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context). */
-export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup']);
+/** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context).
+ *  PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — a platform switch like org_self_signup. */
+export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup', 'storefront_browse']);
+/** STORE-2a: the allow-listed flags whose flag-store FAILURE reads ON (fail open) — the same answer the API's own gate gives
+ *  (modules/listings/storefront-browse.guard.ts): a read-only kill-switch for humans; a dead flag store must not dark every store. */
+export const FAIL_OPEN_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['storefront_browse']);
 
 const notFound = () => new DomainError('TENANT_NOT_FOUND', 'No organisation is served here', 404);
 const one = (v: unknown): string | undefined => (typeof v === 'string' && v.length > 0 ? v : undefined);
@@ -61,7 +66,11 @@ export class StorefrontPublicController {
 
   @Public() @RateLimit({ limit: 120, windowSec: 60, by: 'ip' }) @Get('organisations')
   async organisations(@Query() q: Record<string, unknown>) {
-    const page = await this.reads.organisations({ after: one(q.after), limit: q.limit });
+    // PC-56 STORE-2a (brief C2): `?q=` (≥ 2 characters) = the name-prefix search of the same verified directory (0207); else the directory
+    const name = one(q.q);
+    const page = name !== undefined && name.trim().length >= 2
+      ? await this.reads.searchOrganisations(name)
+      : await this.reads.organisations({ after: one(q.after), limit: q.limit });
     return { data: page.items, meta: { nextCursor: page.nextCursor } };
   }
 
@@ -71,8 +80,9 @@ export class StorefrontPublicController {
     for (const key of STOREFRONT_PUBLIC_FLAGS) {
       const platform = PLATFORM_SCOPED_FLAGS.has(key);
       if (!platform && !ctx.tenantId) continue;            // a tenant-scoped flag with no organisation in context has nothing to be about
-      // a flag-store failure reads as OFF (the storefront then says the feature is off — never a 500 on a home page)
-      try { out[key] = await this.flags.isEnabled(key, platform ? {} : { tenantId: ctx.tenantId }); } catch { out[key] = false; }
+      // a flag-store failure reads as OFF (the storefront then says the feature is off — never a 500 on a home page) — except a fail-open
+      // kill-switch (storefront_browse), which reads ON exactly as the API's own gate does
+      try { out[key] = await this.flags.isEnabled(key, platform ? {} : { tenantId: ctx.tenantId }); } catch { out[key] = FAIL_OPEN_FLAGS.has(key); }
     }
     return { data: out };
   }

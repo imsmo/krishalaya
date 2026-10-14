@@ -2,7 +2,7 @@
 // the logout form's submit). PC-56 STORE-1b · C1: it wraps ONLY the platform's own pages (`app/(platform)/layout.tsx`); a tenant store
 // wears its own header (TenantHeader — survey F-6: the platform name no longer sits above a white-label store).
 //   • brand = the platform store name from packages/tokens (founder D2) + the catalogue's vernacular sub-line;
-//   • search = a plain GET form to /discover?q= (a title-prefix filter on the cross-tenant feed — works with no client JS);
+//   • search = a plain GET form to /search?q= (PC-56 STORE-2a: canon W276 — it was /discover; works with no client JS);
 //   • language switcher, cart link with its count IN the accessible name, Sign in / Sign out;
 //   • the category strip = top-level categories from lookups (master data, never a baked list) → /discover?category=<id>; a lookup
 //     failure hides the strip (degrade), it never invents categories.
@@ -43,7 +43,9 @@ export async function SiteHeader() {
             <small className="kv-header__subline">{t.t('header.subline')}</small>
           </span>
         </Link>
-        <form method="get" action="/discover" role="search" className="kv-header__search" aria-label={t.t('header.search.label')}>
+        {/* PC-56 STORE-2a · C2: the header search targets the platform's /search (canon W276) — the cross-tenant feed's title prefix +
+            the organisations whose name starts with the words; the honest matching sentence is printed there */}
+        <form method="get" action="/search" role="search" className="kv-header__search" aria-label={t.t('header.search.label')}>
           <input id="kv-header-q" name="q" type="search" className="kv-field__input" aria-label={t.t('header.search.label')} placeholder={t.t('header.search.placeholder')} />
           <button type="submit" className="kv-btn">{t.t('header.search.submit')}</button>
         </form>

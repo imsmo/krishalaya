@@ -69,3 +69,42 @@ describe('HOTFIX-4 · claims guard (money and privacy)', () => {
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b/i.test(v)]).toEqual([k, true]);
   });
 });
+
+// PC-56 STORE-2a · brief §E / C7 — every canon claim the five browse surfaces REFUSE stays out of every catalogue as an OFFER. The phrases
+// may appear ONLY inside `store2a.refusal.*` (which say no, by name); nowhere else in en / hi / gu. And no STORE-2a value carries a digit or
+// a person placeholder (every figure is interpolated; the seller is {org}).
+describe('STORE-2a · claims guard (browse, search, the lot, the organisation, inputs)', () => {
+  const REFUSED = [
+    /Tell me when|Tell me if it returns|Follow seller|hear when the next lot/i,              // no notifier
+    /three languages at once|spelling doesn.t have to be perfect|spoken search works|heard you as/i,
+    /closest matches|empty wall/i,
+    /nearest first|\b\d+\s?km\b|\/qtl\/100\s?km|per[- ]km/i,                                   // founder D3
+    /confidence 0|AI photo-grade|AI suggested/i,                                                // founder D2
+    /grade verified again at dispatch|verified again at dispatch/i,
+    /bulk[- ]tier|bulk pricing (is|unlocks)|verified-buyer-only/i,
+    /KYC verified|centre-graded seller|completed sales\b/i,
+    /read them translated|buyers read them translated/i,
+    /oldest stock first|oldest batch ships first|MRP-capped|\b18\+/i,
+    /hasn.t switched on input sales/i,
+    /for this tenant\/plan|See store settings/i,
+    /page(s)? the on-call/i,
+    /mandi reference today|below it \(|APMC today/i,
+    /it syncs when signal returns|listings saved from your last visit/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a store2a refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (k.startsWith('store2a.refusal.')) continue;
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no digit and no person placeholder in a STORE-2a value (figures are interpolated; the seller is {org})', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => /^(browse|search|lot|sellers|inputs|store2a)\./.test(k));
+    expect(keys.length).toBe(112);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|memberNo|fullName|owner)\}/i.test(v)]).toEqual([k, false]);
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+    }
+  });
+});

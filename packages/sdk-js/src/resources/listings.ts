@@ -1,11 +1,14 @@
 // @krishalaya/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
 import { HttpClient } from '../http';
+import { ListingSearchPage, ListingSearchQuery, ListingTombstone, PublicLotAttribute, RegulatedMarker, OrganisationPage, ListingFacets, PublicListingCard } from '../types';
 import { ListingCard, PublicListingDetail, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page, ConsoleListingRow, ConsoleCounts, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from '../types';
 
 export class ListingsResource {
   constructor(private readonly http: HttpClient) {}
 
-  /** Browse/search published listings (keyset cursor). Anonymous (public catalogue). */
+  /** Browse/search published listings (keyset cursor). Anonymous (public catalogue).
+   *  @deprecated for the public feed since PC-56 STORE-2a — use `search()` (the rows no longer carry `sellerUserId` / `regionId`; see
+   *  `ListingCard`). Kept for the owner view (`mine: true`) and for mobile (tsc baseline 89). */
   async browse(query: ListingQuery = {}, signal?: AbortSignal): Promise<Page<ListingCard>> {
     const r = await this.http.request<ListingCard[]>('GET', 'listings', {
       anonymous: true, signal,
@@ -18,6 +21,39 @@ export class ListingsResource {
       // PC-56 STORE-1b: the public feed's cap and members-only count (null on reads that do not say)
       totalCap: (r.meta?.totalCap as number | null) ?? null, membersOnlyCount: (r.meta?.membersOnlyCount as number | null) ?? null,
     };
+  }
+  /** PC-56 STORE-2a · B7 — the PUBLIC feed (anonymous): rows name the organisation, the confirmed grade, the district and the regulated lock;
+   *  `total` is the capped count UNDER THE FILTERS; `facets` carry grade / organic-split / district counts (null above the cap). The cursor
+   *  belongs to its sort (a cursor of another sort → 400 CURSOR_SORT_MISMATCH). 503 STOREFRONT_BROWSE_OFF while the catalogue is switched off. */
+  async search(query: ListingSearchQuery = {}, signal?: AbortSignal): Promise<ListingSearchPage> {
+    const r = await this.http.request<PublicListingCard[]>('GET', 'listings', {
+      anonymous: true, signal,
+      query: { q: query.q, category: query.category, district: query.district, grade: query.grade, organic: query.organic,
+        saleType: query.saleType, priceMinMinor: query.priceMinMinor, priceMaxMinor: query.priceMaxMinor,
+        sort: query.sort, cursor: query.cursor, limit: query.limit },
+    });
+    return {
+      items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null, total: (r.meta?.total as number | null) ?? null,
+      totalCap: (r.meta?.totalCap as number | null) ?? null, membersOnlyCount: (r.meta?.membersOnlyCount as number | null) ?? null,
+      facets: (r.meta?.facets as ListingFacets | null) ?? null,
+    };
+  }
+  /** PC-56 STORE-2a · B16 — a lot no longer on sale (sold_out · paused · expired · withdrawn): its title, organisation, category — NO price.
+   *  404 for anything else (a published lot, an unpublished one, a suspended seller's). Anonymous. */
+  async tombstone(id: string, signal?: AbortSignal): Promise<ListingTombstone> {
+    return (await this.http.request<ListingTombstone>('GET', `listings/${encodeURIComponent(id)}/tombstone`, { anonymous: true, signal })).data;
+  }
+  /** PC-56 STORE-2a · B30 — a public lot's measured attributes (moisture, foreign matter …). Anonymous. */
+  async attributes(id: string, signal?: AbortSignal): Promise<PublicLotAttribute[]> {
+    return (await this.http.request<PublicLotAttribute[]>('GET', `listings/${encodeURIComponent(id)}/attributes`, { anonymous: true, signal })).data;
+  }
+  /** PC-56 STORE-2a · B5 — a public lot's regulated marker (the "Licence required to buy" lock). Anonymous. */
+  async regulated(id: string, signal?: AbortSignal): Promise<RegulatedMarker> {
+    return (await this.http.request<RegulatedMarker>('GET', `listings/${encodeURIComponent(id)}/regulated`, { anonymous: true, signal })).data;
+  }
+  /** PC-56 STORE-2a · B6 — the context ORGANISATION's seller page (profile, capped listing count, reviews aggregate when the flag is ON). */
+  async organisationPage(signal?: AbortSignal): Promise<OrganisationPage> {
+    return (await this.http.request<OrganisationPage>('GET', 'sellers/organisation', { anonymous: true, signal })).data;
   }
   /** PC-56 HOTFIX-4 · A6 — a single published listing as ANY non-owner reads it: the ALLOW-LISTED public projection (the organisation
    *  sells it, the place is a district name; no coordinates, ids or seller person). Anonymous. `getOwn` is the owner's full record. */
