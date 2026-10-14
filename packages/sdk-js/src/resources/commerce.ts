@@ -24,8 +24,10 @@ export class CartResource {
 export class CheckoutResource {
   constructor(private readonly http: HttpClient) {}
   /** Read-only totals preview: server-computed subtotal + delivery + platform fee + member benefits +
-   *  coupon (DRY-RUN) for the active cart. No order is created and no money moves — show the bill first. */
-  async preview(input: { couponCode?: string } = {}): Promise<CheckoutPreview> {
+   *  coupon (DRY-RUN) for the active cart. No order is created and no money moves — show the bill first.
+   *  PC-56 HOTFIX-4 · A5 (survey F-5a/b): pass the address the buyer CHOSE (and the delivery option, the zone id `deliveryMethods` returned)
+   *  so a zone organisation's delivery fee is the one placement will charge; without it the result says `deliveryNeedsAddress`. */
+  async preview(input: { couponCode?: string; deliveryAddressId?: string; deliveryMethodId?: string } = {}): Promise<CheckoutPreview> {
     return (await this.http.request<CheckoutPreview>('POST', 'checkout/preview', { body: input })).data;
   }
   /** Read-only delivery-methods lookup for the active cart + destination (Indian pincode and/or region id).

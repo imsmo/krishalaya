@@ -132,9 +132,10 @@ describe('STORE-1b · B2 — the public reads', () => {
   it('flags: an ALLOW-LIST of booleans, group_lots evaluated for the context tenant; no tenant → no group_lots (never a guess)', async () => {
     const isEnabled = jest.fn(async (k: string, c: { tenantId?: string }) => k === 'group_lots' && c.tenantId === LIVE);
     const ctl = new StorefrontPublicController({} as never, { isEnabled } as never);
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup']);
-    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false } });
-    expect(isEnabled).toHaveBeenCalledTimes(2);
+    // PC-56 HOTFIX-4 · A8: + online_payments, buyer_charges, offers, auctions, reviews (tenant-scoped)
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews']);
+    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false } });
+    expect(isEnabled).toHaveBeenCalledTimes(7);   // one per allow-listed key (HOTFIX-4: 2 → 7)
     expect((await ctl.publicFlags({ tenantId: '' } as RequestContext)).data).not.toHaveProperty('group_lots');
     await expect(ctl.profile({ tenantId: '' } as RequestContext)).rejects.toMatchObject({ code: 'TENANT_NOT_FOUND' });
   });

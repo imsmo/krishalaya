@@ -16,7 +16,11 @@ const TRANSITIONS: Readonly<Record<PaymentStatus, readonly PaymentStatus[]>> = O
   refund_initiated:   ['refunded', 'partially_refunded', 'failed'],
   partially_refunded: ['refund_initiated', 'partially_refunded', 'refunded'],
   refunded:           [],
-  failed:             [],
+  // PC-56 HOTFIX-4 · A3 (survey F-4a / B6): a gateway order can carry SEVERAL payment attempts (a retry inside the same Razorpay sheet). A
+  // failed attempt followed by a CAPTURED one must be booked — before this, `failed` was terminal and the late capture rolled the whole
+  // webhook transaction back after posting the escrow legs: money taken at the gateway, never booked, the order auto-cancelled at 24 h.
+  // The entity (Payment.markCaptured) allows this edge ONLY for a capture whose gateway payment id differs from the failed attempt's.
+  failed:             ['success'],
   expired:            [],
 });
 

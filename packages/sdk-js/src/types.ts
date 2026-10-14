@@ -63,13 +63,32 @@ export interface ListingCard {
   auctionId?: string | null;
   auctionStatus?: string | null;
   auctionEndsAt?: string | null;
-  /** Owner/moderator reads only (TENANT-2b) — stripped from public detail reads server-side. */
+  /** Owner/moderator reads (`getOwn`). PC-56 HOTFIX-4 (survey C-1): the PUBLIC detail read (`get`) is NOT this shape — it is the
+   *  allow-listed `PublicListingDetail` below (the old comment claimed these were "stripped" while every other prop, lat/lng included, was
+   *  spread to anonymous callers). This card is the browse FEED's row and the owner's own record. */
   expiresAt?: string | null;
   publishedAt?: string | null;
   harvestDate?: string | null;
   qcSubmittedAt?: string | null;
   rejectReason?: string | null;
   createdBy?: string | null;
+}
+/** PC-56 HOTFIX-4 · A6 (survey F-7, founder D3) — what ANY non-owner reads from `GET /v1/listings/:id`: an ALLOW-LIST. The seller is the
+ *  ORGANISATION (slug + display name); the place is a district NAME. There is deliberately no lat/lng, pincode, region id, tenant id,
+ *  version, AI flag or seller user id on this type — the API never sends them to a buyer, and a view built from it cannot print them. */
+export interface PublicListingDetail {
+  id: string; title: string; description: string | null; categoryId: string; productId: string;
+  grade: string | null; unitCode: string;
+  /** bigint minor units as a STRING + its currency (Law 2) */
+  priceMinor: string; currencyCode: string;
+  quantityAvailable: number; minOrderQty: number; harvestDate: string | null;
+  organicClaim: 'none' | 'natural' | 'certified' | null; organic: boolean;
+  saleType: string; status: string;
+  district: string | null;
+  organisation: { slug: string; name: string } | null;
+  publishedAt: string | null;
+  /** NON-PII public links (trace QR token, the auction) — `null` = none. */
+  qrToken: string | null; auctionId: string | null; auctionStatus: string | null; auctionEndsAt: string | null;
 }
 export interface ListingQuery {
   q?: string; categoryId?: string; regionId?: string; saleType?: string; organic?: boolean;
@@ -121,10 +140,19 @@ export interface SavedItem { id: string; entityType: SavedEntityType; entityId: 
 export interface SavedSearch { id: string; name: string; query: Record<string, unknown>; notifyNewMatches: boolean; createdAt: string; }
 
 // --- public seller profile + listing gallery (discovery) ---
-/** Public seller storefront: SAFE fields + reputation only (NO phone/email/KYC). */
+/** Public seller storefront. PC-56 HOTFIX-4 · A7 (survey F-8, founder D3 "organisation only, everywhere"): a MEMBER SELLER of the context
+ *  organisation only (404 otherwise), named as the ORGANISATION — no person's name, no join date, no region id. */
 export interface SellerPublicProfile {
-  sellerId: string; displayName: string | null; regionId: string | null; memberSince: string | null;
+  sellerId: string;
+  organisation: { slug: string; name: string; district: string | null };
   rating: { count: number; avgStars: number }; listingsActive: number;
+  /** @deprecated HOTFIX-4 (D3): NEVER SENT — the API names the organisation, not the person. Optional only so the mobile app (tsc baseline
+   *  89) keeps compiling until its D3 wave; it reads `undefined` and already falls back to its generic label. */
+  displayName?: string | null;
+  /** @deprecated HOTFIX-4 (D3): never sent (no "since" date on a buyer surface). */
+  memberSince?: string | null;
+  /** @deprecated HOTFIX-4 (D3): never sent (no region id; the organisation's district name is in `organisation`). */
+  regionId?: string | null;
 }
 /** One signed gallery image for a public listing (short-lived presigned GET url). */
 export interface GalleryItem { mediaId: string; url: string; sortOrder: number; }
@@ -178,7 +206,12 @@ export interface OrganisationCard {
 /** PC-56 STORE-1b · B2 — the ALLOW-LISTED public flags. Keys are the flag keys verbatim (the API's allow-list loop).
  *  PC-56 STORE-1c (founder D1): `org_self_signup` — the PLATFORM switch for self-serve organisation signup — is always answered;
  *  `group_lots` is answered only when a tenant is in context (a tenant store), so it is absent on a platform page. */
-export interface StorefrontFlags { group_lots?: boolean; org_self_signup: boolean }
+export interface StorefrontFlags {
+  group_lots?: boolean; org_self_signup: boolean;
+  /** PC-56 HOTFIX-4 · A8 — tenant-scoped (absent with no organisation in context). `online_payments` OFF (the seed) = no Pay step: orders are
+   *  placed, the seller confirms, payment happens on delivery (founder D2). */
+  online_payments?: boolean; buyer_charges?: boolean; offers?: boolean; auctions?: boolean; reviews?: boolean;
+}
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {
   code: string; name: string; monthlyMinor: string; annualMinor: string; setupFeeMinor: string; currency: string; exponent: number;
@@ -400,10 +433,17 @@ export interface OrderItemLine {
   listing_id: string; product_id: string | null; title_snapshot: string; quantity: number; delivered_quantity: number | null;
   unit_code: string; unit_price_minor: string; line_total_minor: string; gst_rate_pct: number | null; batch_id: string | null;
 }
-/** Full order detail (server-serialized). Every *Minor is a bigint string (Law 2). */
+/** PC-56 HOTFIX-4 · A1 — the ORDER's own answer to "has the buyer paid?" (never a payment vocabulary guessed by a client):
+ *  none = placed with no online payment (the seller confirms; payment on delivery) · pending = awaiting the online payment ·
+ *  paid = captured into escrow · refunded · cancelled · expired (the unpaid order's window ran out). */
+export type OrderPaymentState = 'none' | 'pending' | 'paid' | 'refunded' | 'cancelled' | 'expired';
+/** Full order detail (server-serialized). Every *Minor is a bigint string (Law 2). HOTFIX-4 · A2: the rows sum to the total —
+ *  subtotal + delivery + tax − discount + platformFee + buyerCommission = total. */
 export interface OrderDetail {
-  id: string; orderNo: string; status: string; source: string; buyerUserId: string; sellerUserId: string; currencyCode: string;
-  subtotalMinor: string; deliveryFeeMinor: string; discountMinor: string; taxMinor: string; commissionMinor: string; totalMinor: string;
+  id: string; orderNo: string; status: string; paymentState: OrderPaymentState; source: string; buyerUserId: string; sellerUserId: string; currencyCode: string;
+  subtotalMinor: string; deliveryFeeMinor: string; discountMinor: string; taxMinor: string; commissionMinor: string;
+  platformFeeMinor: string; buyerCommissionMinor: string; totalMinor: string;
+  checkoutGroupId?: string | null;
   acceptanceDeadline?: string | null; qualityWindowEnds?: string | null; createdAt?: string; completedAt?: string | null;
   items: OrderItemLine[];
 }
@@ -450,12 +490,17 @@ export interface ReviewItem extends PublicReview {
 export interface CartItem {
   listingId: string; title: string | null; quantity: number; unitPriceMinor: string; lineTotalMinor: string;
   priceChanged: boolean; available: number; purchasable: boolean;
+  /** PC-56 HOTFIX-4 · C4: the listing's currency (null when the listing is gone) — money is printed from the data, never an 'INR' literal.
+   *  Always sent since HOTFIX-4; optional only so pre-HOTFIX-4 fixtures (mobile) compile — absent reads as "unknown", never as INR. */
+  currencyCode?: string | null;
 }
-export interface Cart { items: CartItem[]; subtotalMinor: string; }
+/** `currencyCode`: the one currency every line shares; null when the cart is empty or mixes currencies (then no subtotal is printed). */
+export interface Cart { items: CartItem[]; subtotalMinor: string; currencyCode?: string | null; }
 /** Checkout converts the cart into one order per seller (+ a group if multi-seller). The authoritative totals
  * (charges/discount/tax) live on each created order — read them back via orders.get. */
 export interface CheckoutResult {
-  orders: Array<{ id: string; orderNo: string; totalMinor: string; status: string }>; checkoutGroupId: string | null;
+  /** HOTFIX-4 · C2: `paymentState` says the next step — `pending` = the Pay step; `none` = placed, the seller confirms (no Pay step). */
+  orders: Array<{ id: string; orderNo: string; totalMinor: string; status: string; paymentState: OrderPaymentState }>; checkoutGroupId: string | null;
   /** PC-56 TENANT-10b: present when a coupon was entered but NOT applied — the order was placed at full price. Render
    *  `messageKey` (kind copy in the buyer's language), never `code`. */
   couponNotice?: { code: string; outcome: string; messageKey: string };
@@ -466,6 +511,9 @@ export interface CheckoutPreviewSeller {
   sellerUserId: string;
   items: Array<{ listingId: string; title: string; quantity: number; unitCode: string; unitPriceMinor: string; lineTotalMinor: string }>;
   subtotalMinor: string; deliveryFeeMinor: string; platformFeeMinor: string; discountMinor: string; totalMinor: string;
+  /** HOTFIX-4 · A5: a buyer-charged commission (+ GST) when the frozen rule charges the buyer — part of `totalMinor`, printed as its own row.
+   *  Always sent; optional only so older fixtures compile. */
+  buyerCommissionMinor?: string;
   /** @deprecated the machine code of a declined coupon — render `couponNotice.messageKey` instead (PC-56 TENANT-10b). */
   couponError?: string;
   /** PC-56 TENANT-10b: the same decision checkout will make (per-user limit, budget, the cooperative's funds). */
@@ -474,13 +522,25 @@ export interface CheckoutPreviewSeller {
 /** Server-authoritative bill BEFORE checkout (no order, no money moved). Totals = sum of the seller slices. */
 export interface CheckoutPreview {
   currencyCode: string; sellers: CheckoutPreviewSeller[];
-  subtotalMinor: string; deliveryFeeMinor: string; platformFeeMinor: string; discountMinor: string; grandTotalMinor: string;
+  subtotalMinor: string; deliveryFeeMinor: string; platformFeeMinor: string; discountMinor: string;
+  /** HOTFIX-4 · A5 (survey C-5 / F-5c): in `grandTotalMinor`, now carried — grand = subtotal + delivery + platformFee + buyerCommission − discount */
+  buyerCommissionMinor?: string;
+  /** HOTFIX-4 · A5: a zone organisation's delivery fee is not knowable without the buyer's address — the preview says so (delivery 0 here
+   *  is "not quoted yet", never "free"). Pass `deliveryAddressId` to quote the zone placement will charge. */
+  deliveryNeedsAddress?: boolean;
+  grandTotalMinor: string;
   couponCode: string | null;
+}
+/** HOTFIX-4 · A9: a multi-seller checkout's group — every order it created (one per seller), so no order is orphaned unnamed. */
+export interface CheckoutGroupDetail {
+  id: string; totalMinor: string; currencyCode: string; createdAt: string;
+  orders: Array<{ id: string; orderNo: string; status: string; totalMinor: string; createdAt: string }>;
 }
 /** One serviceable delivery option for the destination, with its server-computed fee (minor-unit string). */
 export interface DeliveryMethod { id: string; name: string; feeMinor: string; }
-/** Read-only delivery-methods lookup for the active cart + destination (no order, no money moved). When empty,
- *  no zone serves the destination — the storefront falls back to the preview's generic delivery fee. */
+/** Read-only delivery-methods lookup for the active cart + destination (no order, no money moved). When empty, no zone serves the
+ *  destination. HOTFIX-4 (survey C-5): for a ZONE organisation the preview without an address carries `deliveryNeedsAddress` and quotes
+ *  no delivery — pass the chosen `deliveryAddressId` to the preview; there is no "generic fee" fallback to print. */
 export interface DeliveryMethodsResult { currencyCode: string; subtotalMinor: string; methods: DeliveryMethod[]; }
 /** Result of paying an order from the buyer's wallet (the order confirms shortly after, async). */
 export interface WalletPaymentResult { orderId: string; paymentId: string; status: string; amountMinor: string; currencyCode: string; }

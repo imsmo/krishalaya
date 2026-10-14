@@ -279,7 +279,8 @@ run('PC-56 STORE-1b · storefront home & tenant home (integration, real AppModul
     it('GET /v1/storefront/flags → { group_lots: boolean, org_self_signup } and nothing else; no tenant → no group_lots', async () => {
       const r = await request(http).get('/v1/storefront/flags').set('x-tenant-slug', liveSlug);
       expect(r.status).toBe(200);
-      expect(Object.keys(r.body.data).sort()).toEqual(['group_lots', 'org_self_signup']);
+      // PC-56 HOTFIX-4 · A8: + online_payments, buyer_charges, offers, auctions, reviews (tenant-scoped booleans)
+      expect(Object.keys(r.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews']);
       expect(typeof r.body.data.group_lots).toBe('boolean');
       expect(JSON.stringify(r.body)).not.toMatch(/rollout|tenant_ids|rules|pct/);
       const platform = await request(http).get('/v1/storefront/flags');

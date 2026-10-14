@@ -180,7 +180,8 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
     expect(platform.body.data).toEqual({ org_self_signup: true });
     const store = await request(http).get('/v1/storefront/flags').set('x-tenant-slug', liveSlug);
     expect(store.status).toBe(200);
-    expect(Object.keys(store.body.data).sort()).toEqual(['group_lots', 'org_self_signup']);
+    // PC-56 HOTFIX-4 · A8: + the five tenant-scoped switches the STORE-2 surfaces read
+    expect(Object.keys(store.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews']);
     expect(typeof store.body.data.group_lots).toBe('boolean');
     for (const b of [platform.body, store.body]) expect(JSON.stringify(b)).not.toMatch(/rollout|tenant_ids|rules|pct/);
   });

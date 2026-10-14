@@ -7,14 +7,14 @@ import { couponNoticeKey } from '../../../../features/checkout/preview';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { OrderDetail } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';
-import { serverClient } from '../../../../lib/api-client';
+import { serverClient, sessionTenantClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { env } from '../../../../lib/env';
-import { paymentOutcome } from '../../../../features/payments/status';
+import { paymentStateOf, payPageRoute, confirmHref } from '../../../../features/orders/payment-state';
+import { moneyText } from '../../../../features/discovery/money';
 import { PayButton, type PayLabels } from '../../../../components/PayButton';
 import { PoweredByMark } from '../../../../components/PoweredByMark';
 import { poweredByVisible, PLATFORM_BRAND } from '../../../../features/branding/brand-theme';
@@ -24,7 +24,15 @@ export function generateMetadata(): Metadata {
   return { title: t.t('checkout.payTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PayPage({ searchParams }: { searchParams: { o?: string; cn?: string } }) {
+// PC-56 HOTFIX-4 · C1 (survey F-1, founder D2): the decision is the ORDER's own `paymentState` — only `pending` has a Pay step; `paid`,
+// `none` (no online payment: the seller confirms, payment on delivery), `cancelled`, `expired`, `refunded` go to the confirmation (the
+// checkout group kept via `g`). The store's `online_payments` switch is read too: OFF → no Pay button, said plainly (never a 404).
+/** The store's public `online_payments` switch (founder D2). A read failure is treated as OFF — never offer a Pay step that may 404. */
+async function onlinePaymentsOn(): Promise<boolean> {
+  try { return (await sessionTenantClient().storefront.flags()).online_payments === true; } catch { return false; }
+}
+
+export default async function PayPage({ searchParams }: { searchParams: { o?: string; g?: string; cn?: string } }) {
   await requireSession(`/checkout/pay?o=${encodeURIComponent(searchParams.o ?? '')}`);
   const orderId = searchParams.o;
   if (!orderId) notFound();
@@ -41,8 +49,10 @@ export default async function PayPage({ searchParams }: { searchParams: { o?: st
       <p className="kv-form__error" role="alert">{t.t('checkout.loadError')}</p></section>;
   }
 
-  // Already settled? Go to confirmation rather than offering to pay again.
-  if (paymentOutcome(order.status) === 'success') redirect(`/checkout/confirm?o=${encodeURIComponent(orderId)}`);
+  // Not awaiting an online payment (paid, placed for payment on delivery, closed)? Go to confirmation — never offer Pay.
+  const done = confirmHref(orderId, searchParams.g ?? null);
+  if (payPageRoute(paymentStateOf(order)) === 'confirm') redirect(done);
+  const payOn = await onlinePaymentsOn();
 
   const labels: PayLabels = {
     pay: t.t('checkout.payNow'), processing: t.t('checkout.processing'), unavailable: t.t('checkout.payUnavailable'),
@@ -55,8 +65,10 @@ export default async function PayPage({ searchParams }: { searchParams: { o?: st
       <h1>{t.t('checkout.payTitle')}</h1>
       <p className="kv-checkout__orderno">{t.t('checkout.orderNo', { no: order.orderNo })}</p>
       {couponNoticeKey(searchParams.cn) && <p className="kv-form__notice" role="status">{t.t(couponNoticeKey(searchParams.cn)!)} {t.t('coupon.notice.placedAtNormalPrice')}</p>}
-      <p className="kv-cart__subtotal"><span>{t.t('checkout.amountDue')}</span> <strong>{formatMoneyMinor(order.totalMinor, order.currencyCode, lang)}</strong></p>
-      <PayButton orderId={order.id} keyId={env.razorpayKeyId} labels={labels} />
+      <p className="kv-cart__subtotal"><span>{t.t('checkout.amountDue')}</span> <strong>{moneyText(order.totalMinor, order.currencyCode, lang) ?? t.t('money.unavailable')}</strong></p>
+      {payOn
+        ? <PayButton orderId={order.id} keyId={env.razorpayKeyId} labels={labels} confirmHref={done} />
+        : <p className="kv-form__notice" role="status" data-kv-pay="off">{t.t('checkout.payOff')}</p>}
       <p className="kv-cart__note">{t.t('checkout.payNote')}</p>
       <Link href="/cart" className="kv-btn--link">{t.t('checkout.backToCart')}</Link>
       {/* PC-56 TENANT-13d: a TRUST surface (escrow / payment, and the order where disputes are raised) — the platform mark stays here

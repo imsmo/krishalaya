@@ -67,6 +67,12 @@ class FakePaymentRepository {
     this.byId.set(v.id, p);
     if (v.gatewayOrderId) this.byGatewayOrder.set(v.gatewayOrderId, v.id);
   }
+  /** PC-56 HOTFIX-4 · A4: the webhook resolves its tenant from OUR payment row by the gateway order id (0206) — the fake answers the same. */
+  async contextForGatewayOrder(_provider: string, gatewayOrderId: string): Promise<{ tenantId: string; paymentId: string } | null> {
+    const id = this.byGatewayOrder.get(gatewayOrderId);
+    const p = id ? this.byId.get(id) : undefined;
+    return p ? { tenantId: p.tenantId, paymentId: p.id } : null;
+  }
   async getByGatewayOrderForUpdate(_tx: TxContext, _tenantId: string, gatewayOrderId: string): Promise<Payment | null> {
     const id = this.byGatewayOrder.get(gatewayOrderId);
     return id ? this.byId.get(id) ?? null : null;

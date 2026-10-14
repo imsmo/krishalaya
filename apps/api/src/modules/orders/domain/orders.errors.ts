@@ -9,6 +9,9 @@ export class InsufficientListingStockError extends DomainError { constructor(id:
 export class OrderForbiddenError extends DomainError { constructor(msg = 'Not allowed on this order') { super('ORDER_FORBIDDEN', msg, 403); } }
 export class InvalidQuantityError extends DomainError { constructor() { super('ORDER_INVALID_QUANTITY', 'Quantity must be positive', 422); } }
 export class OrderNotAwaitingPaymentError extends DomainError { constructor(id: string, status: string) { super('ORDER_NOT_AWAITING_PAYMENT', `Order ${id} is '${status}', not awaiting payment`, 409, { orderId: id, status }); } }
+/** PC-56 HOTFIX-4: a SELLER may not confirm an order that is still awaiting the buyer's online payment — only the payment's capture
+ *  (Order.markPaid) moves `payment_pending → confirmed`. Before this a seller confirm took the same edge, and an unpaid order read as paid. */
+export class OrderAwaitingPaymentError extends DomainError { constructor(id: string) { super('ORDER_AWAITING_PAYMENT', `Order ${id} is awaiting the buyer's online payment; it confirms when the payment is captured`, 409, { orderId: id }); } }
 
 // ── PC-56 TENANT-SW-a · B1 (F-5) — placement charges the CHOSEN zone, and an address no zone serves is refused kindly ──
 /** The buyer's delivery pincode is served by no active zone of this organisation. The storefront prints its own kind sentence for this

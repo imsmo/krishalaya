@@ -167,6 +167,27 @@ export class OrderRepository {
     return r.rows[0]?.status ?? null;
   }
 
+  /**
+   * PC-56 HOTFIX-4 · A1 — the two facts the order's payment state needs beyond its status (domain/order-payment-state.ts), from the order's
+   * own timeline (`order_events`, partitioned by created_at — pruned from BELOW by the v7 id's time: an order's events are never older than
+   * the order). At most 4 rows: the placement row (from_status NULL) and the cancellation row. An order with no placement row (written
+   * before order_events existed) reads as not placed awaiting payment — said by the caller, never guessed as paid.
+   */
+  async paymentFacts(tenantId: string, orderId: string): Promise<{ placedAwaitingPayment: boolean; cancelledFrom: OrderStatus | null; cancelledBySystem: boolean }> {
+    const r = await this.replica.forTenant(tenantId).query<{ from_status: OrderStatus | null; to_status: OrderStatus; actor_user_id: string | null; note: string | null }>(
+      `SELECT from_status, to_status, actor_user_id, note FROM order_events
+        WHERE tenant_id=$1 AND order_id=$2 AND created_at >= uuid_v7_time($2) - interval '5 seconds'
+          AND (from_status IS NULL OR to_status = 'cancelled')
+        ORDER BY created_at, id LIMIT 4`, [tenantId, orderId]);
+    const placed = r.rows.find((x) => x.from_status === null);
+    const cancel = r.rows.find((x) => x.to_status === 'cancelled');
+    return {
+      placedAwaitingPayment: placed?.to_status === 'payment_pending',
+      cancelledFrom: cancel?.from_status ?? null,
+      cancelledBySystem: !!cancel && cancel.actor_user_id === null && cancel.note === 'system',
+    };
+  }
+
   async getVisible(tenantId: string, id: string, viewerUserId: string, canModerate: boolean): Promise<Order | null> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT ${COLS} FROM orders WHERE id=$1 AND tenant_id=$2 AND ${PRUNE}

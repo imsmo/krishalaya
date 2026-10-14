@@ -50,7 +50,10 @@ export class RazorpayGateway implements PaymentGateway {
     return {
       eventId: p?.id ?? `${p?.event}:${entity?.id}`,
       kind: map[p?.event] ?? 'ignored',
-      tenantId: entity?.notes?.tenant_id,
+      // PC-56 HOTFIX-4 · A4: notes are a CROSS-CHECK (present only if the gateway copied them onto the payment); the context is resolved
+      // from our payment row by `order_id` (PaymentService.handleWebhook). A notes value that is not a plain string is treated as absent.
+      tenantId: typeof entity?.notes?.tenant_id === 'string' ? entity.notes.tenant_id : undefined,
+      notesPaymentId: typeof entity?.notes?.payment_id === 'string' ? entity.notes.payment_id : undefined,
       gatewayOrderId: entity?.order_id,
       gatewayPaymentId: entity?.id,
       amountMinor: entity?.amount != null ? BigInt(entity.amount) : undefined,

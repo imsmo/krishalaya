@@ -28,21 +28,26 @@ export class CartService {
   async getCart(tenantId: string, userId: string) {
     return timed(this.metrics, 'orders.cart_get', { tenant: tenantId }, async () => {
       const cartId = await this.carts.activeId(tenantId, userId);
-      if (!cartId) return { items: [], subtotalMinor: '0' };
+      // PC-56 HOTFIX-4 · C4 (survey C-7): the cart says its CURRENCY (each line's listing currency; the cart's = the one all lines share, null
+      // when empty or mixed) so the storefront prints money from the data, never an 'INR' literal.
+      if (!cartId) return { items: [], subtotalMinor: '0', currencyCode: null };
       const rows = await this.carts.items(tenantId, cartId);
       let subtotal = 0n;
       const items: Array<Record<string, unknown>> = [];
+      const currencies = new Set<string>();
       for (const r of rows) {
         const l: any = await this.listings.getById(tenantId, r.listing_id);
         const qty = Number(r.quantity);
         const current = l ? BigInt(l.priceMinor) : BigInt(r.added_price_minor);
         const line = (current * BigInt(Math.round(qty * 1000))) / 1000n;
         subtotal += line;
-        items.push({ listingId: r.listing_id, title: l?.title ?? null, quantity: qty, unitPriceMinor: current.toString(),
+        const currencyCode: string | null = l?.currencyCode ?? null;
+        if (currencyCode) currencies.add(currencyCode);
+        items.push({ listingId: r.listing_id, title: l?.title ?? null, quantity: qty, unitPriceMinor: current.toString(), currencyCode,
           lineTotalMinor: line.toString(), priceChanged: l ? BigInt(l.priceMinor) !== BigInt(r.added_price_minor) : false,
           available: l ? Number(l.quantityAvailable) : 0, purchasable: !!l && l.status === 'published' });
       }
-      return { items, subtotalMinor: subtotal.toString() };
+      return { items, subtotalMinor: subtotal.toString(), currencyCode: currencies.size === 1 ? [...currencies][0] : null };
     });
   }
 }

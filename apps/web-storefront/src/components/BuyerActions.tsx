@@ -1,17 +1,18 @@
 // apps/web-storefront/src/components/BuyerActions.tsx · the buyer CTAs on a listing, chosen by sale type. Server
 // component (the forms post to Server Actions — no client JS needed). PURCHASABLE listings (direct/both/preorder/
 // group_lot) get an Add-to-cart form; OFFER-capable listings (direct/both) also get a Make-an-offer form. Auctions
-// and services show a localized note (their buyer flows — live bidding / service contact — land in WAVE 4; and the
-// listing read-model exposes no auctionId to deep-link a bid from here, so we don't fake a bid button). Both forms
+// and services show a localized note (PC-56 HOTFIX-4, survey C-4: the detail read DOES carry the auction id now — the page renders the
+// auction CTA beside this; the old "no auctionId / WAVE 4" note here was stale). Both forms
 // carry the tenant slug + listing id + available qty as hidden fields so the action can validate server-side.
-import type { ListingCard } from '@krishalaya/sdk-js';
+// HOTFIX-4 · A6: the page's allow-listed view model (no seller person, no coordinates)
+import type { PublicListingView } from '../features/listing/public-view';
 import { getTranslator } from '../lib/i18n';
 import { addToCartAction, makeOfferAction } from '../app/[tenantSlug]/listings/[id]/actions';
 
 const PURCHASABLE = new Set(['direct', 'both', 'preorder', 'group_lot']);
 const OFFERABLE = new Set(['direct', 'both']);
 
-export function BuyerActions({ listing, tenantSlug }: { listing: ListingCard; tenantSlug: string }) {
+export function BuyerActions({ listing, tenantSlug }: { listing: PublicListingView; tenantSlug: string }) {
   const t = getTranslator();
   const soldOut = listing.quantityAvailable <= 0;
   const purchasable = PURCHASABLE.has(listing.saleType) && !soldOut;

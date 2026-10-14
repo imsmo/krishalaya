@@ -7,7 +7,9 @@
 //   • ENFORCED ownership/authorization (seller owns the listing, or admin moderates)
 //   • structured metrics/timing on every use-case (observability)
 // It never touches money tables directly — that is wallet-service's job (Law 2).
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ListingPublicFactsReadModel } from '../read-models/listing-public-facts.read-model';
+import { toPublicListing, NO_PUBLIC_FACTS } from '../domain/listing-public.view';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { QUOTA_SERVICE, QuotaService } from '../../../core/quota/quota.service';
@@ -49,6 +51,9 @@ export class ListingService {
     private readonly attrs: ListingAttributeRepository,
     private readonly media: ListingMediaRepository,
     private readonly audit: AuditWriter,
+    /** PC-56 HOTFIX-4 · A6: who sells / where / the grade, for the PUBLIC projection. Optional only so the hand-built unit specs keep their
+     *  positional constructor; Nest always injects it (a missing one = the public view without those three facts, never more keys). */
+    @Optional() private readonly publicFacts?: ListingPublicFactsReadModel,
   ) {}
 
   /** Drain aggregate events into the outbox within the same transaction. */
@@ -419,12 +424,11 @@ export class ListingService {
     const isOwnerOrAdmin = viewer.canModerate || l.sellerUserId === viewer.userId;
     if (!publiclyVisible && !isOwnerOrAdmin) throw new ListingNotFoundError(id);
     if (!isOwnerOrAdmin) {
-      // PC-56 TENANT-2b: the QC trail is the seller's and the reviewers' business, not the storefront's — a
-      // public read must not carry reviewer identities, staff creator ids or teaching reasons (fields the 2a
-      // wave added to the props this read spreads; caught and shaped here in the same program).
-      const pub = { ...(l as Record<string, unknown>) };
-      for (const k of ['qcSubmittedAt', 'qcReviewedBy', 'qcReviewedAt', 'rejectReason', 'createdBy']) delete pub[k];
-      return pub;
+      // PC-56 HOTFIX-4 · A6 (survey F-7): an ALLOW-LIST, never the entity's props with some deleted. TENANT-2b deleted five QC keys and
+      // spread the rest — the farm's lat/lng, pincode, region uuid, tenantId, version, aiExtracted and the seller's user id all reached
+      // anonymous callers. Now a key reaches a buyer only because domain/listing-public.view.ts names it; the seller is the ORGANISATION (D3).
+      const facts = this.publicFacts ? await this.publicFacts.forListing(tenantId, id) : NO_PUBLIC_FACTS;
+      return toPublicListing(l, facts);
     }
     return l;
   }

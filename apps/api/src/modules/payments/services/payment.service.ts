@@ -2,8 +2,8 @@
 // Money-IN use-cases. Every write: one ACID tx (UoW) → ledger move via the WALLET port (the only
 // money writer, Law 2) → status via the state machine (Law 5) → outbox event in the SAME tx
 // (Law 4) → audit. Idempotent (Law 3): create on the caller's key, webhook on the gateway event
-// id. The webhook is unauthenticated — verified by signature, tenant taken from the signed notes.
-import { Inject, Injectable } from '@nestjs/common';
+// id. The webhook is unauthenticated — verified by signature; the tenant comes from OUR payment row (HOTFIX-4 · A4), notes cross-check.
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
@@ -18,7 +18,7 @@ import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { SandboxGateway } from '../gateway/sandbox.gateway';
 import { CreatePaymentIntentDto, RefundPaymentDto } from '../dto/create-payment.dto';
-import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError, OrderPaymentAmountMismatchError, PaymentOrderReferenceInvalidError } from '../domain/payments.errors';
+import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError, OrderPaymentAmountMismatchError, PaymentOrderReferenceInvalidError, WebhookContextMismatchError, LateCaptureSameAttemptError } from '../domain/payments.errors';
 import { BadRequestError, InfraError } from '../../../shared/errors/app-error';
 // S6 device-test P0 (founder's device 201'd an intent against a demo-seed order that GET /v1/orders/:id
 // correctly 404s for him — payments accepted what orders rejects). createIntent must fail CLOSED before
@@ -35,6 +35,7 @@ export interface PaymentActor { userId: string; canModerate: boolean; }
 
 @Injectable()
 export class PaymentService {
+  private readonly log = new Logger(PaymentService.name);
   constructor(
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
@@ -132,16 +133,44 @@ export class PaymentService {
     if (!gateway.verifySignature(rawBody, signature)) throw new WebhookSignatureError();   // fail closed
     const event = gateway.parseEvent(rawBody);
     if (event.kind === 'ignored') return { ok: true, ignored: true };
-    if (!event.tenantId || !event.gatewayOrderId) throw new BadRequestError('webhook missing tenant/order context');
+    if (!event.gatewayOrderId) throw new BadRequestError('webhook missing gateway order');
+    // PC-56 HOTFIX-4 · A4 (survey F-4b): the CONTEXT comes from OUR payment row, found by the gateway ORDER id (0206 definer lookup) — not
+    // from `notes.tenant_id`, which the storefront's sheet never sets and the gateway may not copy from the order onto the payment. Notes
+    // stay a cross-check: present and disagreeing → refused and logged, never trusted. Real Razorpay test-mode proof is still owed.
+    const ctx = await this.repo.contextForGatewayOrder(providerCode, event.gatewayOrderId);
+    if (!ctx) return { ok: true, unknown: true };                   // not ours (or ambiguous) — nothing is booked
+    if (event.tenantId && event.tenantId !== ctx.tenantId) {
+      this.log.warn(`payments.webhook context mismatch (tenant) provider=${providerCode} payment=${ctx.paymentId}`);
+      throw new WebhookContextMismatchError('tenant_id');
+    }
+    if (event.notesPaymentId && event.notesPaymentId !== ctx.paymentId) {
+      this.log.warn(`payments.webhook context mismatch (payment) provider=${providerCode} payment=${ctx.paymentId}`);
+      throw new WebhookContextMismatchError('payment_id');
+    }
+    const tenantId = ctx.tenantId;
     const idemKey = deliveryEventId && deliveryEventId.length > 0 ? deliveryEventId : event.eventId;
 
     return this.idem.remember(idemKey, 'system', `payments.webhook.${providerCode}`, () =>
       timed(this.metrics, 'payments.webhook', { provider: providerCode, kind: event.kind }, async () =>
-        this.uow.run(event.tenantId!, async (tx) => {
-          const payment = await this.repo.getByGatewayOrderForUpdate(tx, event.tenantId!, event.gatewayOrderId!);
-          if (!payment) return { ok: true, unknown: true };          // not ours / already gone
+        this.uow.run(tenantId, async (tx) => {
+          const payment = await this.repo.getByGatewayOrderForUpdate(tx, tenantId, event.gatewayOrderId!);
+          if (!payment || payment.id !== ctx.paymentId) return { ok: true, unknown: true };   // not ours / already gone
 
           if (event.kind === 'payment_captured') {
+            // HOTFIX-4 · A3: a REPLAYED capture (same gateway payment id, already booked) is a no-op — before the order re-check below, which
+            // would otherwise refuse it as `wrong_state` (the order is `confirmed` by then) and make the gateway retry forever.
+            if (payment.isCaptureReplay(event.gatewayPaymentId)) return { ok: true, duplicate: true };
+            if (payment.status === 'success') {
+              // a DIFFERENT gateway payment captured on a gateway order already paid: not booked twice (the wallet key is per payment row),
+              // and not silently dropped either — logged for the money desk.
+              this.log.warn(`payments.webhook second capture on a paid gateway order provider=${providerCode} payment=${payment.id}`);
+              return { ok: true, duplicate: true };
+            }
+            // HOTFIX-4 · A3: after a recorded failure, only ANOTHER attempt's capture is booked — refused by name BEFORE any money call
+            if (payment.status === 'failed' && !payment.isLaterAttempt(event.gatewayPaymentId)) {
+              this.log.warn(`payments.webhook capture of the failed attempt itself refused provider=${providerCode} payment=${payment.id}`);
+              throw new LateCaptureSameAttemptError(payment.id);
+            }
             if (event.amountMinor !== undefined && event.amountMinor !== payment.amountMinor) {
               throw new PaymentAmountMismatchError(payment.amountMinor, event.amountMinor); // tamper guard
             }
@@ -179,7 +208,10 @@ export class PaymentService {
               await this.audit.write(tx, { tenantId: payment.tenantId, actorUserId: payment.userId, action: 'payment.captured', entityType: 'payment', entityId: payment.id, newValue: { status: 'success' }, ip: null });
             }
           } else if (event.kind === 'payment_failed') {
-            if (payment.markFailed(event.failureCode ?? null, event.failureReason ?? null)) {
+            // HOTFIX-4 · A3: an earlier attempt's failure delivered AFTER another attempt was captured changes nothing (no legal edge back)
+            if (payment.status === 'success') return { ok: true, superseded: true };
+            // HOTFIX-4 · A3: the failed ATTEMPT's gateway payment id is recorded, so a later capture of ANOTHER attempt can be told apart
+            if (payment.markFailed(event.failureCode ?? null, event.failureReason ?? null, event.gatewayPaymentId ?? null)) {
               await this.repo.update(tx, payment);
               await this.flush(tx, payment.tenantId, payment.id, payment.pullEvents());
             }

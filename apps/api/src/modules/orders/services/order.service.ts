@@ -11,6 +11,7 @@ import { Order } from '../domain/order.entity';
 import { DomainEvent } from '../domain/orders.events';
 import { OrderNotFoundError, OrderConcurrencyError, OrderForbiddenError } from '../domain/orders.errors';
 import { OrderRepository } from '../repositories/order.repository';
+import { orderPaymentState, OrderPaymentFacts } from '../domain/order-payment-state';
 
 export interface OrderActor { userId: string; canModerate: boolean; }
 
@@ -58,9 +59,9 @@ export class OrderService {
   async getById(tenantId: string, actor: OrderActor, id: string) {
     const order = await this.repo.getVisible(tenantId, id, actor.userId, actor.canModerate);
     if (!order) throw new OrderNotFoundError(id);
-    const items = await this.repo.itemsOf(tenantId, id);
+    const [items, facts] = await Promise.all([this.repo.itemsOf(tenantId, id), this.repo.paymentFacts(tenantId, id)]);
     const p = order.toProps();
-    return { ...this.serialize(p), items };
+    return { ...this.serialize(p, facts), items };
   }
 
   /**
@@ -90,12 +91,16 @@ export class OrderService {
   /** PC-56 TENANT-SW-a · D1 / C1 — the order's parties and money facts, read in the caller's transaction (POD review, COD shortfall). */
   partiesInTx(tx: TxContext, tenantId: string, orderId: string) { return this.repo.pricingFactsTx(tx, tenantId, orderId); }
 
-  private serialize(p: ReturnType<Order['toProps']>) {
-    return { id: p.id, orderNo: p.orderNo, status: p.status, source: p.source, buyerUserId: p.buyerUserId, sellerUserId: p.sellerUserId,
+  /** PC-56 HOTFIX-4 · A1/A2 (survey F-1, F-5d, C-11): + `paymentState` (the ORDER's own answer to "has the buyer paid?" — never a payment
+   *  vocabulary guessed by a client) and the two buyer-side charges that were inside `totalMinor` but nowhere else, so the rows a buyer
+   *  reads sum to the total: subtotal + delivery + tax − discount + platformFee + buyerCommission = total. Existing fields unchanged. */
+  private serialize(p: ReturnType<Order['toProps']>, facts: OrderPaymentFacts) {
+    return { id: p.id, orderNo: p.orderNo, status: p.status, paymentState: orderPaymentState(p.status, facts), source: p.source, buyerUserId: p.buyerUserId, sellerUserId: p.sellerUserId,
       currencyCode: p.currencyCode, subtotalMinor: p.subtotalMinor.toString(), deliveryFeeMinor: p.deliveryFeeMinor.toString(),
       discountMinor: p.discountMinor.toString(), taxMinor: p.taxMinor.toString(), commissionMinor: p.commissionMinor.toString(),
+      platformFeeMinor: p.platformFeeMinor.toString(), buyerCommissionMinor: (p.buyerCommissionMinor ?? 0n).toString(),
       totalMinor: p.totalMinor.toString(), acceptanceDeadline: p.acceptanceDeadline, qualityWindowEnds: p.qualityWindowEnds,
-      createdAt: p.createdAt, completedAt: p.completedAt };
+      checkoutGroupId: p.checkoutGroupId, createdAt: p.createdAt, completedAt: p.completedAt };
   }
 
   private async flush(tx: TxContext, tenantId: string, orderId: string, events: DomainEvent[]) {

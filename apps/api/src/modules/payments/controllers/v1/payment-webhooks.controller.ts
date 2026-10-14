@@ -1,7 +1,8 @@
 // modules/payments/controllers/v1/payment-webhooks.controller.ts
 // PUBLIC, UNAUTHENTICATED gateway webhook sink — there is no JWT here. Trust is established ONLY
-// by the HMAC signature over the raw body (verified in the gateway adapter); the tenant is read
-// from the signature-verified order notes. The raw bytes come from req.rawBody (main.ts sets
+// by the HMAC signature over the raw body (verified in the gateway adapter); the tenant is resolved
+// from OUR payment row by the gateway order id (PC-56 HOTFIX-4 · A4, 0206) — notes are a cross-check
+// only. The raw bytes come from req.rawBody (main.ts sets
 // rawBody:true) so the signature matches exactly. Processing is idempotent on the gateway event id.
 import { Controller, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';

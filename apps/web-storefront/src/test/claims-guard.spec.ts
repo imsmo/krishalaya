@@ -44,3 +44,28 @@ describe('STORE-1a · claims guard', () => {
     }
   });
 });
+
+// PC-56 HOTFIX-4 · brief §E / C5 (founder D2/D3/D4) — the money pages' refused claims stay out of every catalogue, and no STORE-2 value
+// names a PERSON: a seller is the organisation ({org}), never a farmer's name placeholder.
+describe('HOTFIX-4 · claims guard (money and privacy)', () => {
+  const STORE2 = /^(checkout\.|bill\.|cart\.|store2\.|listing\.|money\.)/;
+  it.each(Object.entries(CATS))('%s: no person-name placeholder in any STORE-2 value — {org}, never {name} / {seller} / {farmer} / {member}', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (!STORE2.test(k)) continue;
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|memberNo|fullName|owner)\}/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: "price includes platform fee" is said nowhere; no COD cap figure; the refunds / one-payment lines only as refusals', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      expect([k, /includes?\s+(grading\s*&\s*)?platform fee|प्लेटफ़ॉर्म शुल्क शामिल|પ્લેટફોર્મ ફી સામેલ/i.test(v)]).toEqual([k, false]);
+      expect([k, /20,000|20000|२०,०००|૨૦,૦૦૦/.test(v)]).toEqual([k, false]);
+      if (k.startsWith('store2.refusal.')) continue;
+      expect([k, /automatic refund|refund is automatic|one payment covers|escrow splits/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English HOTFIX-4 refusal says no / not', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store2.refusal.') && k !== 'store2.refusal.title');
+    expect(r.length).toBe(3);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b/i.test(v)]).toEqual([k, true]);
+  });
+});

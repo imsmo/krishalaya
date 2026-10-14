@@ -1,6 +1,6 @@
 // @krishalaya/sdk-js · listings resource (the marketplace browse surface, GET /v1/listings).
 import { HttpClient } from '../http';
-import { ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page, ConsoleListingRow, ConsoleCounts, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from '../types';
+import { ListingCard, PublicListingDetail, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ListingInquiry, ListingTrustDocument, SellerPublicProfile, GalleryItem, Page, ConsoleListingRow, ConsoleCounts, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from '../types';
 
 export class ListingsResource {
   constructor(private readonly http: HttpClient) {}
@@ -19,7 +19,15 @@ export class ListingsResource {
       totalCap: (r.meta?.totalCap as number | null) ?? null, membersOnlyCount: (r.meta?.membersOnlyCount as number | null) ?? null,
     };
   }
-  /** A single published listing by id (public/visibility-gated). */
+  /** PC-56 HOTFIX-4 · A6 — a single published listing as ANY non-owner reads it: the ALLOW-LISTED public projection (the organisation
+   *  sells it, the place is a district name; no coordinates, ids or seller person). Anonymous. `getOwn` is the owner's full record. */
+  async getPublic(id: string, signal?: AbortSignal): Promise<PublicListingDetail> {
+    return (await this.http.request<PublicListingDetail>('GET', `listings/${encodeURIComponent(id)}`, { anonymous: true, signal })).data;
+  }
+  /** @deprecated PC-56 HOTFIX-4 · A6 — use `getPublic` (a buyer) or `getOwn` (the owner). Same request as `getPublic`; since HOTFIX-4 the
+   *  API answers a non-owner with the `PublicListingDetail` allow-list, so `sellerUserId`, `regionId`, `boosted` and `version` are ABSENT at
+   *  runtime although this legacy `ListingCard` type names them. Kept only so the mobile app (another panel, tsc baseline 89) compiles
+   *  until its own D3 adaptation — named in the HOTFIX-4 report §6/§8. */
   async get(id: string, signal?: AbortSignal): Promise<ListingCard> {
     return (await this.http.request<ListingCard>('GET', `listings/${encodeURIComponent(id)}`, { anonymous: true, signal })).data;
   }
@@ -29,7 +37,8 @@ export class ListingsResource {
     return (await this.http.request<GalleryItem[]>('GET', `listings/${encodeURIComponent(id)}/media`, { anonymous: true, signal })).data;
   }
 
-  /** Public seller storefront profile (safe fields + rating + active-listing count; no PII). Public. */
+  /** Public seller storefront profile — HOTFIX-4 · A7: a member seller of the context organisation only (else 404), named as the
+   *  ORGANISATION (+ rating, live-listing count); no person's name, no join date. Public. */
   async sellerPublic(sellerId: string, signal?: AbortSignal): Promise<SellerPublicProfile> {
     return (await this.http.request<SellerPublicProfile>('GET', `sellers/${encodeURIComponent(sellerId)}/public`, { anonymous: true, signal })).data;
   }

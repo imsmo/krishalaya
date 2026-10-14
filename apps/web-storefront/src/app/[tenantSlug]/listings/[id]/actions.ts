@@ -9,9 +9,10 @@
 // listing with a ?status= flag the page renders as a localized notice (works with no client JS).
 import { randomUUID } from 'crypto';
 import { redirect } from 'next/navigation';
-import { serverClient } from '../../../../lib/api-client';
+import { serverClient, publicClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { parseMajorToMinor } from '../../../../features/discovery/query';
+import { currencyExponent } from '../../../../features/discovery/money';
 
 function listingPath(tenantSlug: string, id: string): string {
   return `/${encodeURIComponent(tenantSlug)}/listings/${encodeURIComponent(id)}`;
@@ -49,7 +50,13 @@ export async function makeOfferAction(formData: FormData): Promise<void> {
   const available = Number(formData.get('available') ?? '0');
   const path = listingPath(tenantSlug, listingId);
   const qty = parseQty(String(formData.get('quantity') ?? ''), Number.isFinite(available) ? available : 0);
-  const offeredPriceMinor = parseMajorToMinor(String(formData.get('offerPrice') ?? ''));
+  // PC-56 HOTFIX-4 · C4 (survey C-6): the typed offer is parsed with the LISTING's own currency exponent (read server-side, never the form's
+  // word for it, never the legacy two decimals); an unknown currency refuses the offer rather than guessing.
+  let exponent: number | null = null;
+  if (tenantSlug && listingId) {
+    try { exponent = currencyExponent((await publicClient(tenantSlug).listings.getPublic(listingId)).currencyCode); } catch { exponent = null; }
+  }
+  const offeredPriceMinor = exponent === null ? undefined : parseMajorToMinor(String(formData.get('offerPrice') ?? ''), exponent);
   if (!tenantSlug || !listingId || qty === null || !offeredPriceMinor || offeredPriceMinor === '0') {
     redirect(`${path}?status=err`);
   }

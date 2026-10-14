@@ -7,7 +7,7 @@
 import 'server-only';
 import { createClient, KrishalayaClient } from '@krishalaya/sdk-js';
 import { env } from './env';
-import { getSessionToken } from './auth';
+import { getSessionToken, getSessionTenant } from './auth';
 import { callerHeaders } from './caller';
 
 /** Authenticated server client (SSR with the caller's session). Pass a tenant slug for tenant-scoped storefronts. */
@@ -28,4 +28,16 @@ export function publicClient(tenantSlug?: string): KrishalayaClient {
 /** PC-56 STORE-1a · C7: a client holding a token that is not (yet) in a cookie — the sign-in action's buyer bootstrap. */
 export function tokenClient(accessToken: string, tenantSlug?: string): KrishalayaClient {
   return createClient({ baseUrl: env.serverApiUrl, tenantSlug, getToken: () => accessToken, getHeaders: callerHeaders, userAgent: 'kv-web-storefront', timeoutMs: 8000 });
+}
+
+/** PC-56 HOTFIX-4 · C1/C5: an ANONYMOUS client scoped to the tenant this browser's session was minted for (`kv_tid` → `X-Tenant-Id`). The
+ *  platform's cart / checkout / pay / confirm routes carry no tenant slug, yet the organisation that sells (D3) and its public switches
+ *  (`online_payments`, founder D2) are the SESSION tenant's — asked without the bearer, exactly as a tenant store page asks them. */
+export function sessionTenantClient(): KrishalayaClient {
+  const tid = getSessionTenant();
+  return createClient({
+    baseUrl: env.serverApiUrl,
+    getHeaders: () => ({ ...callerHeaders(), ...(tid ? { 'x-tenant-id': tid } : {}) }),
+    userAgent: 'kv-web-storefront', timeoutMs: 8000,
+  });
 }

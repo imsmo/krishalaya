@@ -28,6 +28,7 @@ import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { CheckoutGroupRepository } from '../repositories/checkout-group.repository';
 import { Order } from '../domain/order.entity';
+import { orderPaymentState } from '../domain/order-payment-state';
 import { OrderItem } from '../domain/order-item.entity';
 import { CheckoutGroup } from '../domain/checkout-group.entity';
 import { DomainEvent } from '../domain/orders.events';
@@ -37,7 +38,10 @@ import { CheckoutDto, CheckoutPreviewDto } from '../dto/create-order.dto';
 import { DomainError } from '../../../shared/errors/app-error';
 
 const QUOTA = 'max_orders_month';
-function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.slice(0, 8).toUpperCase()}`; }
+// PC-56 HOTFIX-4 (found proving A9): the number was the id's FIRST 8 hex — a v7 uuid's millisecond TIMESTAMP — so the two orders of a
+// two-seller checkout, minted in the same millisecond, got the SAME order_no and the insert died on the (tenant, order_no, created_at)
+// unique index: every multi-seller checkout failed with a 500 whenever the machine was fast enough. The id's last 8 hex are its RANDOM bits.
+function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.replace(/-/g, '').slice(-8).toUpperCase()}`; }
 
 @Injectable()
 export class CheckoutService {
@@ -161,7 +165,7 @@ export class CheckoutService {
           // B1: the chosen zone (when the tenant delivers by zone), resolved ONCE for the address, inside this transaction
           const zone = applyCharges ? await this.resolveZone(tx, tenantId, buyerUserId, dto, true) : null;
 
-          const created: Array<{ id: string; orderNo: string; totalMinor: string; status: string }> = [];
+          const created: Array<{ id: string; orderNo: string; totalMinor: string; status: string; paymentState: string }> = [];
           for (const [sellerUserId, g] of bySeller) {
             await this.quota.assertWithinLimit(tenantId, QUOTA);
             // buyer-side charges (delivery slab + platform fee) on this seller's subtotal — flagged
@@ -224,7 +228,9 @@ export class CheckoutService {
             await this.quota.increment(tx, tenantId, QUOTA, 1);
             await this.flush(tx, tenantId, g.orderId, order.pullEvents());
             const p = order.toProps();
-            created.push({ id: p.id, orderNo: p.orderNo, totalMinor: p.totalMinor.toString(), status: p.status });
+            // PC-56 HOTFIX-4 · C2: the storefront decides "pay now, or the seller confirms" from THIS (the order's own vocabulary)
+            created.push({ id: p.id, orderNo: p.orderNo, totalMinor: p.totalMinor.toString(), status: p.status,
+              paymentState: orderPaymentState(p.status, { placedAwaitingPayment: requiresPayment, cancelledFrom: null, cancelledBySystem: false }) });
           }
           await this.carts.markConverted(tx, cartId);
           this.metrics.inc('orders.checkout_done', { tenant: tenantId, orders: String(created.length) });

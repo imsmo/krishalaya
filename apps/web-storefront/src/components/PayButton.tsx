@@ -6,12 +6,12 @@
 // open the gateway sheet and then poll our authoritative status via a server action.
 //   1. createOrderIntent (server action, authed, stable Idempotency-Key) → { gatewayOrderId, paymentId }
 //   2. open Razorpay with the publishable key + gatewayOrderId
-//   3. on the sheet's success handler → poll pollOrderPaymentStatus(paymentId) until terminal
-//   4. success → confirmation; failed → retry; pending → "we'll confirm shortly" + link to orders
+//   3. on the sheet's success handler → poll the ORDER's paymentState (pollOrderPaid) — PC-56 HOTFIX-4 · C1: never a payment-status string
+//   4. paid → `confirmHref` (the order's confirmation, its checkout group kept); closed → the failure line; still pending → "we'll confirm shortly"
 // Fail-closed: with no publishable key configured, the button is disabled with a clear message (never a fake pay).
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createOrderIntentAction, pollOrderPaymentStatus } from '../app/(platform)/checkout/pay/actions';
+import { createOrderIntentAction, pollOrderPaid } from '../app/(platform)/checkout/pay/actions';
 
 type RzpOptions = {
   key: string; order_id: string; name: string; description: string; prefill?: { name?: string; contact?: string };
@@ -41,22 +41,22 @@ export type PayLabels = {
 };
 
 export function PayButton(
-  { orderId, keyId, prefillName, labels }:
-  { orderId: string; keyId: string | null; prefillName?: string | null; labels: PayLabels },
+  { orderId, keyId, prefillName, labels, confirmHref }:
+  { orderId: string; keyId: string | null; prefillName?: string | null; labels: PayLabels; confirmHref: string },
 ) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const pollUntilTerminal = useCallback(async (paymentId: string): Promise<'success' | 'failed' | 'pending'> => {
+  const pollUntilTerminal = useCallback(async (): Promise<'paid' | 'closed' | 'pending'> => {
     for (let i = 0; i < 5; i++) {
-      const outcome = await pollOrderPaymentStatus(paymentId);
+      const outcome = await pollOrderPaid(orderId);
       if (outcome !== 'pending') return outcome;
       await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
     }
     return 'pending';
-  }, []);
+  }, [orderId]);
 
   const onPay = useCallback(async () => {
     setError(null); setBusy(true);
@@ -74,10 +74,10 @@ export function PayButton(
         prefill: prefillName ? { name: prefillName } : undefined,
         modal: { ondismiss: () => { setBusy(false); setError(labels.cancelled); } },
         handler: async () => {
-          const outcome = await pollUntilTerminal(intent.paymentId);
-          if (outcome === 'success') { router.replace(`/checkout/confirm?o=${encodeURIComponent(orderId)}`); return; }
+          const outcome = await pollUntilTerminal();
+          if (outcome === 'paid') { router.replace(confirmHref); return; }
           setBusy(false);
-          if (outcome === 'failed') setError(labels.failed);
+          if (outcome === 'closed') setError(labels.failed);
           else { setPending(true); }
         },
       });
@@ -86,7 +86,7 @@ export function PayButton(
       setBusy(false);
       setError(labels.failed); // intent creation / gateway open failed — never auto-retry a payment
     }
-  }, [keyId, orderId, prefillName, labels, router, pollUntilTerminal]);
+  }, [keyId, orderId, prefillName, labels, router, pollUntilTerminal, confirmHref]);
 
   if (!keyId) return <p className="kv-form__error" role="alert">{labels.unavailable}</p>;
   if (pending) return <p className="kv-form__notice" role="status">{labels.pendingMsg}</p>;

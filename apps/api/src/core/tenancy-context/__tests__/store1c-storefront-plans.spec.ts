@@ -71,8 +71,8 @@ describe('STORE-1c · D2 — the public plans read', () => {
 });
 
 describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', () => {
-  it('the allow-list is exactly group_lots + org_self_signup; only org_self_signup is platform-scoped', () => {
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup']);
+  it('the allow-list is exactly group_lots + org_self_signup (+ HOTFIX-4 A8: online_payments, buyer_charges, offers, auctions, reviews); only org_self_signup is platform-scoped', () => {
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews']);
     expect([...PLATFORM_SCOPED_FLAGS]).toEqual(['org_self_signup']);
   });
 
@@ -90,7 +90,7 @@ describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', ()
       return c.tenantId === T;
     });
     const ctl = new StorefrontPublicController({} as never, { isEnabled } as never);
-    expect(await ctl.publicFlags({ tenantId: T } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false } });
+    expect(await ctl.publicFlags({ tenantId: T } as RequestContext)).toMatchObject({ data: { group_lots: true, org_self_signup: false } });
     expect(isEnabled).toHaveBeenCalledWith('group_lots', { tenantId: T });
     expect(isEnabled).toHaveBeenCalledWith('org_self_signup', {});
   });

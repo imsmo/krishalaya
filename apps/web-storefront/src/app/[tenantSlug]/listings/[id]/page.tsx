@@ -12,24 +12,30 @@
 // P1-2: the detail read (GET listings/:id) now exposes NON-PII public links — the farm-to-fork trace `qrToken`
 // and the `auctionId`/status — so this page deep-links to the real /trace/[qrToken] provenance page and shows a
 // place-bid CTA to the live auction. Both degrade to the prior copy when the listing has neither (no fabrication).
+// PC-56 HOTFIX-4 · A6/C5 (survey F-7, founder D3): the read is the API's ALLOW-LISTED public projection (`listings.getPublic`), turned into
+// a view model that names each field (features/listing/public-view.ts) — no coordinates, pincode, region id or seller person can reach the
+// page. The seller is the ORGANISATION (its name + the district). The per-SELLER review reads keyed by the farmer's user id are gone with
+// that id (the reviews flag is OFF by seed, so nothing visible changes today; seller/organisation ratings return with W280 in STORE-2a).
+// "Organic" is the claim's boolean (the old read sent the claim string and badged 'none' as organic).
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import type { ListingCard, ReviewSummary, GalleryItem, PublicReview } from '@krishalaya/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import type { GalleryItem } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';
 import { publicClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { env } from '../../../../lib/env';
 import { listingLinks } from '../../../../features/listing/links';
-import { starGlyphs } from '../../../../features/reviews/display';
+import { publicListingView, type PublicListingView } from '../../../../features/listing/public-view';
+import { moneyText } from '../../../../features/discovery/money';
 import { BuyerActions } from '../../../../components/BuyerActions';
 import { ListingGallery } from '../../../../components/ListingGallery';
 
 export const revalidate = 60;
 
-async function load(tenantSlug: string, id: string): Promise<ListingCard | null> {
-  try { return await publicClient(tenantSlug).listings.get(id); }
+async function load(tenantSlug: string, id: string): Promise<PublicListingView | null> {
+  try { return publicListingView(await publicClient(tenantSlug).listings.getPublic(id)); }
   catch (e) { if (e instanceof SdkError && e.isNotFound) return null; throw e; }
 }
 
@@ -38,15 +44,6 @@ async function safeGallery(tenantSlug: string, id: string): Promise<GalleryItem[
   try { return await publicClient(tenantSlug).listings.media(id); } catch { return []; }
 }
 
-/** Public review aggregates degrade to null — a flaky/optional reviews service never breaks the product page. */
-async function safeSummary(tenantSlug: string, q: { targetUserId?: string }): Promise<ReviewSummary | null> {
-  try { return await publicClient(tenantSlug).reviews.summary(q); } catch { return null; }
-}
-
-/** The seller's PUBLISHED individual reviews (PII-free public read). Degrades to [] — never breaks the page. */
-async function safeReviews(tenantSlug: string, sellerUserId: string): Promise<PublicReview[]> {
-  try { return (await publicClient(tenantSlug).reviews.publicReviews({ targetUserId: sellerUserId, limit: 10 })).items; } catch { return []; }
-}
 
 export async function generateMetadata({ params }: { params: { tenantSlug: string; id: string } }): Promise<Metadata> {
   const l = await load(params.tenantSlug, params.id);
@@ -63,18 +60,6 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
   };
 }
 
-function Stars({ summary, label, none }: { summary: ReviewSummary | null; label: string; none: string }) {
-  if (!summary || summary.count <= 0) return <p className="kv-rating kv-rating--none">{none}</p>;
-  const avg = Math.round(summary.averageStars * 10) / 10;
-  const full = Math.round(avg);
-  return (
-    <p className="kv-rating">
-      <span aria-hidden="true" className="kv-rating__stars">{'★'.repeat(full)}{'☆'.repeat(Math.max(0, 5 - full))}</span>
-      <span>{label}</span>
-    </p>
-  );
-}
-
 export default async function ListingDetail(
   { params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: { status?: string } },
 ) {
@@ -83,11 +68,7 @@ export default async function ListingDetail(
   const t = getTranslator();
   const lang = getLang();
 
-  const [sellerReviews, reviews, gallery] = await Promise.all([
-    safeSummary(params.tenantSlug, { targetUserId: l.sellerUserId }),
-    safeReviews(params.tenantSlug, l.sellerUserId),
-    safeGallery(params.tenantSlug, l.id),
-  ]);
+  const gallery = await safeGallery(params.tenantSlug, l.id);
 
   const { trace: traceLink, auction } = listingLinks(l);
   // The auction CTA is also gated by the storefront's auctions flag (kill-switch parity with /auctions).
@@ -116,13 +97,13 @@ export default async function ListingDetail(
       />
 
       <p className="kv-card__price kv-detail__price">
-        {formatMoneyMinor(l.priceMinor, l.currencyCode, lang)} <span className="kv-card__unit">/ {l.unitCode}</span>
+        {moneyText(l.priceMinor, l.currencyCode, lang) ?? t.t('money.unavailable')} <span className="kv-card__unit">/ {l.unitCode}</span>
       </p>
 
       <ul className="kv-detail__facts">
         <li>{l.quantityAvailable} {l.unitCode} {t.t('card.available')}</li>
         <li>{t.t('discover.saleType')}: {t.t(`discover.saleType.${l.saleType}`)}</li>
-        {l.organicClaim && <li><span className="kv-badge kv-badge--organic">{t.t('card.organic')}</span></li>}
+        {l.organic && <li><span className="kv-badge kv-badge--organic">{t.t('card.organic')}</span></li>}
       </ul>
 
       <BuyerActions listing={l} tenantSlug={params.tenantSlug} />
@@ -139,39 +120,11 @@ export default async function ListingDetail(
         </section>
       )}
 
-      <section className="kv-detail__section" aria-labelledby="seller-h">
+      <section className="kv-detail__section" aria-labelledby="seller-h" data-kv-seller="organisation">
         <h2 id="seller-h">{t.t('listing.sellerTitle')}</h2>
-        <Stars
-          summary={sellerReviews}
-          label={sellerReviews && sellerReviews.count > 0 ? t.t('listing.sellerRating', { avg: String(Math.round(sellerReviews.averageStars * 10) / 10), count: String(sellerReviews.count) }) : ''}
-          none={t.t('listing.sellerNoRatings')}
-        />
-      </section>
-
-      <section className="kv-detail__section" aria-labelledby="reviews-h">
-        <h2 id="reviews-h">{t.t('listing.reviewsTitle')}</h2>
-        {reviews.length === 0 ? (
-          <p className="kv-rating kv-rating--none">{t.t('listing.reviewsNone')}</p>
-        ) : (
-          <ul className="kv-reviews" role="list">
-            {reviews.map((rv) => (
-              <li key={rv.id} className="kv-review">
-                <p className="kv-review__head">
-                  <span className="kv-rating__stars" aria-label={t.t('listing.reviewStarsLabel', { stars: String(rv.stars) })}>{starGlyphs(rv.stars)}</span>
-                  {rv.isVerifiedPurchase && <span className="kv-badge kv-badge--verified">{t.t('listing.reviewVerified')}</span>}
-                  <span className="kv-detail__muted kv-review__date">{formatDate(rv.createdAt, lang)}</span>
-                </p>
-                {rv.body && <p className="kv-review__body">{rv.body}</p>}
-                {rv.sellerResponse && (
-                  <div className="kv-review__response">
-                    <p className="kv-review__response-label">{t.t('listing.reviewSellerResponse')}</p>
-                    <p>{rv.sellerResponse}</p>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        {l.organisation
+          ? <p>{t.t('listing.soldByOrg', { org: l.organisation.name })}{l.district ? <> · {t.t('listing.fromDistrict', { district: l.district })}</> : null}</p>
+          : <p className="kv-detail__muted">{t.t('listing.sellerUnknown')}</p>}
       </section>
 
       <section className="kv-detail__section" aria-labelledby="trace-h">

@@ -117,3 +117,14 @@ export class MandateAmountExceedsCapError extends DomainError {
 export class MandateExecutionDisabledError extends AppError {
   constructor() { super('MANDATE_EXECUTION_DISABLED', 'UPI AutoPay execution is not enabled', 403); }
 }
+
+/** PC-56 HOTFIX-4 · A3: a `payment.captured` carrying the SAME gateway payment id as the attempt already recorded as FAILED. A later capture
+ *  of ANOTHER attempt on the same gateway order is booked; this one is refused by name (logged by the webhook) — never silently booked. */
+export class LateCaptureSameAttemptError extends DomainError {
+  constructor(paymentId: string) { super('PAYMENT_CAPTURE_OF_FAILED_ATTEMPT', 'This gateway payment was recorded as failed; its capture is not booked automatically', 409, { paymentId }); }
+}
+/** PC-56 HOTFIX-4 · A4: the webhook's payment entity carried notes naming a tenant / payment OTHER than the payment row its gateway order
+ *  resolves to. The row is the truth; a disagreeing note is refused (logged), never trusted. */
+export class WebhookContextMismatchError extends DomainError {
+  constructor(field: 'tenant_id' | 'payment_id') { super('PAYMENT_WEBHOOK_CONTEXT_MISMATCH', `Webhook notes disagree with the payment row (${field})`, 409, { field }); }
+}

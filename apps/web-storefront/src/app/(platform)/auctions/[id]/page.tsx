@@ -4,10 +4,11 @@
 // any), and the bid history (bidder identity is NOT exposed — generic label; sealed amounts show as "sealed").
 // The authed bid form holds an EMD on the wallet SERVER-SIDE; we surface that + the anti-snipe (soft-close) note.
 // Money via formatMoneyMinor / BigInt math (Law 2); EMD movement is server-side only (Law 11).
+// PC-56 HOTFIX-4 · C4 (survey C-7): the auction carries no currency; its LISTING's currency is used for every amount (the seven 'INR'
+// literals are gone) through features/discovery/money.ts — unknown → "Not available", never rupees by default.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';
 import { publicClient, serverClient } from '../../../../lib/api-client';
@@ -17,6 +18,7 @@ import { getTranslator, getLang } from '../../../../lib/i18n';
 import { Countdown, type CountdownLabels } from '../../../../components/Countdown';
 import { currentHighMinor, minNextBidMinor, emdRequirement } from '../../../../features/auctions/bid';
 import { placeBidAction, toggleWatchAction } from './actions';
+import { moneyText } from '../../../../features/discovery/money';
 
 /** The caller's watch state for this auction — null when anonymous (no session), boolean when authed. Degrades
  * to null on any error so a flaky read never breaks the public product page (Law 12). */
@@ -48,8 +50,9 @@ export default async function AuctionDetailPage({ params, searchParams }: { para
 
   let bids: BidHistoryItem[] = [];
   try { bids = (await publicClient().auctions.listBids(auction.auctionId, { limit: 20 })).items; } catch { bids = []; }
-  let listingTitle = '';
-  try { listingTitle = (await publicClient().listings.get(auction.listingId)).title; } catch { listingTitle = ''; }
+  let listingTitle = ''; let currency: string | null = null;
+  try { const l = await publicClient().listings.getPublic(auction.listingId); listingTitle = l.title; currency = l.currencyCode; } catch { listingTitle = ''; }
+  const money = (minor: string) => moneyText(minor, currency, lang) ?? t.t('money.unavailable');
 
   const high = currentHighMinor(bids);
   const minNext = minNextBidMinor(auction, bids);
@@ -82,13 +85,13 @@ export default async function AuctionDetailPage({ params, searchParams }: { para
       )}
 
       <dl className="kv-offer__facts">
-        <div><dt>{t.t('auctions.currentBid')}</dt><dd>{high ? formatMoneyMinor(high, 'INR', lang) : t.t('auctions.noBids')}</dd></div>
-        <div><dt>{t.t('auctions.startPrice')}</dt><dd>{formatMoneyMinor(auction.startPriceMinor, 'INR', lang)}</dd></div>
-        <div><dt>{t.t('auctions.minNext')}</dt><dd>{formatMoneyMinor(minNext, 'INR', lang)}</dd></div>
-        {auction.reservePriceMinor && <div><dt>{t.t('auctions.reserve')}</dt><dd>{formatMoneyMinor(auction.reservePriceMinor, 'INR', lang)}</dd></div>}
+        <div><dt>{t.t('auctions.currentBid')}</dt><dd>{high ? money(high) : t.t('auctions.noBids')}</dd></div>
+        <div><dt>{t.t('auctions.startPrice')}</dt><dd>{money(auction.startPriceMinor)}</dd></div>
+        <div><dt>{t.t('auctions.minNext')}</dt><dd>{money(minNext)}</dd></div>
+        {auction.reservePriceMinor && <div><dt>{t.t('auctions.reserve')}</dt><dd>{money(auction.reservePriceMinor)}</dd></div>}
         {(() => {
           const emd = emdRequirement(auction);
-          if (emd.kind === 'flat') return <div><dt>{t.t('auctions.emd')}</dt><dd>{formatMoneyMinor(emd.minor, 'INR', lang)}</dd></div>;
+          if (emd.kind === 'flat') return <div><dt>{t.t('auctions.emd')}</dt><dd>{money(emd.minor)}</dd></div>;
           if (emd.kind === 'pct') return <div><dt>{t.t('auctions.emd')}</dt><dd>{t.t('auctions.emdPct', { pct: String(emd.pctBps / 100) })}</dd></div>;
           return null;
         })()}
@@ -98,7 +101,7 @@ export default async function AuctionDetailPage({ params, searchParams }: { para
         <form action={placeBidAction} className="kv-auction__bid">
           <input type="hidden" name="auctionId" value={auction.auctionId} />
           <label htmlFor="bid-amount" className="kv-field__label">{t.t('auctions.bidLabel')}</label>
-          <input id="bid-amount" name="amount" type="text" inputMode="decimal" className="kv-field__input kv-actions__qty" placeholder={formatMoneyMinor(minNext, 'INR', lang)} required />
+          <input id="bid-amount" name="amount" type="text" inputMode="decimal" className="kv-field__input kv-actions__qty" placeholder={money(minNext)} required />
           <button type="submit" className="kv-btn">{t.t('auctions.placeBid')}</button>
           <p className="kv-field__hint">{t.t('auctions.emdNote')}</p>
           <p className="kv-field__hint">{t.t('auctions.antiSnipe')}</p>
@@ -116,7 +119,7 @@ export default async function AuctionDetailPage({ params, searchParams }: { para
             {bids.map((b) => (
               <li key={b.id} className="kv-confirm__item">
                 <span>{t.t('auctions.bidder')}</span>
-                <span>{b.amountMinor ? formatMoneyMinor(b.amountMinor, 'INR', lang) : t.t('auctions.sealedBid')}</span>
+                <span>{b.amountMinor ? money(b.amountMinor) : t.t('auctions.sealedBid')}</span>
               </li>
             ))}
           </ul>

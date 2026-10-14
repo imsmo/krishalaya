@@ -15,14 +15,17 @@ describe('payment.state machine', () => {
     expect(canTransition('initiated', 'success')).toBe(true);
     expect(canTransition('authorized', 'success')).toBe(true);
     expect(canTransition('success', 'refunded')).toBe(true);
-    expect(canTransition('failed', 'success')).toBe(false);
+    // PC-56 HOTFIX-4 · A3: a LATER attempt's capture on a failed gateway order is booked (the entity allows only a different gateway payment id)
+    expect(canTransition('failed', 'success')).toBe(true);
     expect(() => assertTransition('refunded', 'success')).toThrow(IllegalPaymentTransitionError);
   });
   it('terminal states have no exits', () => {
     expect(isTerminal('refunded')).toBe(true);
     expect(isTerminal('failed')).toBe(true);
     expect(isTerminal('expired')).toBe(true);
-    expect(canTransition('failed', 'success')).toBe(false);
+    // HOTFIX-4 · A3: `failed` stays terminal for every other purpose; its one exit is another attempt's capture (hotfix4-late-capture.spec)
+    expect(canTransition('failed', 'refunded')).toBe(false);
+    expect(canTransition('expired', 'success')).toBe(false);
   });
   it('covers every status without throwing', () => {
     for (const s of PAYMENT_STATUSES) expect(() => canTransition(s, 'success' as PaymentStatus)).not.toThrow();

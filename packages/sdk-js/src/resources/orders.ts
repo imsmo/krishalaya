@@ -4,7 +4,7 @@
 // client only reflects what's allowed. Lifecycle POSTs carry an Idempotency-Key (Law 3): a retried "confirm" from a
 // flaky network can't double-apply. Money is bigint minor-unit strings (Law 2).
 import { HttpClient } from '../http';
-import { OrderListItem, OrderDetail, WalletPaymentResult, OrderTracking, OrderBuyerSummary, Page, OrderViewCounts, ConsoleOrderRow, OrderTimelineEvent, OrderMoneyBox } from '../types';
+import { CheckoutGroupDetail, OrderListItem, OrderDetail, WalletPaymentResult, OrderTracking, OrderBuyerSummary, Page, OrderViewCounts, ConsoleOrderRow, OrderTimelineEvent, OrderMoneyBox } from '../types';
 
 export type OrderRole = 'buyer' | 'seller';
 
@@ -20,6 +20,10 @@ export class OrdersResource {
   }
   async get(id: string, signal?: AbortSignal): Promise<OrderDetail> {
     return (await this.http.request<OrderDetail>('GET', `orders/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** PC-56 HOTFIX-4 · A9 — a multi-seller checkout's group and EVERY order it created (the owning buyer or a moderator; else 404). */
+  async checkoutGroup(groupId: string, signal?: AbortSignal): Promise<CheckoutGroupDetail> {
+    return (await this.http.request<CheckoutGroupDetail>('GET', `orders/checkout-groups/${encodeURIComponent(groupId)}`, { signal })).data;
   }
   /** Order-tracking feed (buyer/seller): stamped order-status transitions + the shipment's status/location
    *  timeline (real per-step timestamps; lat/lng when a rider has posted a ping). No ETA is returned — the

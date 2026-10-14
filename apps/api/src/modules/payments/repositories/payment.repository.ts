@@ -2,9 +2,10 @@
 // All SQL for the payments aggregate (tenant_id in EVERY query — Law 1; RLS is the net).
 // Concurrency on the webhook path uses SELECT … FOR UPDATE (the schema has no version column;
 // the row lock serializes concurrent webhook deliveries for the same payment).
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
-import { TxContext } from '../../../core/database/unit-of-work';
+import { SqlExecutor, TxContext } from '../../../core/database/unit-of-work';
 import { Payment } from '../domain/payment.entity';
 import { PaymentStatus } from '../domain/payment.state';
 
@@ -26,7 +27,26 @@ function toDomain(r: any): Payment {
 
 @Injectable()
 export class PaymentRepository {
-  constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
+  constructor(
+    @Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider,
+    /** PC-56 HOTFIX-4 · A4: the PRIMARY pool for the webhook's definer lookup (a capture can arrive seconds after the intent — a lagging replica
+     *  would answer "not ours" and the gateway would stop retrying). Optional only so the hand-built specs keep constructing `(replica)`;
+     *  without it the lookup runs on the replica executor (the specs' single database). Nest always injects it. */
+    @Optional() private readonly pools?: PgPoolProvider,
+  ) {}
+
+  /**
+   * PC-56 HOTFIX-4 · A4 (0206) — whose payment is this gateway order? The unauthenticated webhook asks this FIRST, through the definer
+   * `payment_context_for_gateway_order` (the tenant is exactly what it does not know yet). One payment → its tenant + id; none or several →
+   * null (the webhook then answers "not ours"). The row is then locked by the caller inside the tenant's RLS transaction.
+   */
+  async contextForGatewayOrder(providerCode: string, gatewayOrderId: string): Promise<{ tenantId: string; paymentId: string } | null> {
+    const sql = `SELECT tenant_id, payment_id FROM payment_context_for_gateway_order($1::varchar, $2::varchar)`;
+    const exec: SqlExecutor = this.pools ? (this.pools.writer(0) as unknown as SqlExecutor) : this.replica.forTenant('00000000-0000-0000-0000-000000000000');
+    const r = await exec.query<{ tenant_id: string; payment_id: string }>(sql, [providerCode, gatewayOrderId]);
+    const row = r.rows[0];
+    return row ? { tenantId: row.tenant_id, paymentId: row.payment_id } : null;
+  }
 
   /** PC-56 TENANT-11a (F-2): what this order has ALREADY been credited in escrow by an auction deposit — the net of the
    *  escrow legs of `emd_apply` / `emd_forfeit` / `emd_return` txns referenced to the order (apply +EMD; forfeit / return

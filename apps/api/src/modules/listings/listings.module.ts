@@ -31,6 +31,7 @@ import { ListingSearchReadModel } from './read-models/listing-search.read-model'
 import { MandiBandReadModel } from './read-models/mandi-band.read-model';
 import { ListingConsoleReadModel } from './read-models/listing-console.read-model';
 import { ListingAnalyticsReadModel } from './read-models/listing-analytics.read-model';
+import { ListingPublicFactsReadModel } from './read-models/listing-public-facts.read-model';
 import { SellerProfileReadModel } from './read-models/seller-profile.read-model';
 import { ListingGalleryReadModel } from './read-models/listing-gallery.read-model';
 import { ListingLinksReadModel } from './read-models/listing-links.read-model';
@@ -64,7 +65,7 @@ import { PublishScheduledJob } from './jobs/publish-scheduled.job';
   providers: [
     ListingService, ListingBoostService, ListingViewService, ListingInquiryService, ListingTrustDocumentService,
     ListingAttributeService, OnBehalfConsoleService, ListingBulkApplier,
-    ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel,
+    ListingSearchReadModel, MandiBandReadModel, ListingConsoleReadModel, ListingAnalyticsReadModel, SellerProfileReadModel, ListingGalleryReadModel, ListingLinksReadModel, ListingPublicFactsReadModel,
     ListingRepository, PriceHistoryRepository, ListingAttributeRepository,
     ListingBoostRepository, ListingMediaRepository, ListingTrustDocumentRepository,
     OrderCompletedHandler,

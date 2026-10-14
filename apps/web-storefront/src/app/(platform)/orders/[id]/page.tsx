@@ -23,6 +23,8 @@ import { invoiceFileName } from '../../../../features/orders/invoice';
 import { canCancelOrder, canRequestReturn, returnAlreadyOpen, DISPUTE_REASONS } from '../../../../features/orders/buyer-actions';
 import { cancelOrderAction, raiseDisputeAction, requestReturnAction } from './actions';
 import { PoweredByMark } from '../../../../components/PoweredByMark';
+import { BillRowsView } from '../../../../components/BillRowsView';
+import { billRows } from '../../../../features/checkout/bill-rows';
 import { poweredByVisible, PLATFORM_BRAND } from '../../../../features/branding/brand-theme';
 
 export async function generateMetadata(): Promise<Metadata> {   // the title is a static translation; the id is never in it (noindex page)
@@ -91,13 +93,9 @@ export default async function OrderDetailPage({ params, searchParams }: { params
             </li>
           ))}
         </ul>
-        <div className="kv-confirm__totals">
-          <p className="kv-confirm__row"><span>{t.t('cart.subtotal')}</span> <span>{formatMoneyMinor(order.subtotalMinor, cur, lang)}</span></p>
-          <p className="kv-confirm__row"><span>{t.t('checkout.delivery')}</span> <span>{formatMoneyMinor(order.deliveryFeeMinor, cur, lang)}</span></p>
-          {order.discountMinor !== '0' && <p className="kv-confirm__row"><span>{t.t('checkout.discount')}</span> <span>{formatMoneyMinor(order.discountMinor, cur, lang)}</span></p>}
-          <p className="kv-confirm__row"><span>{t.t('checkout.tax')}</span> <span>{formatMoneyMinor(order.taxMinor, cur, lang)}</span></p>
-          <p className="kv-confirm__row kv-confirm__row--total"><span>{t.t('checkout.total')}</span> <strong>{formatMoneyMinor(order.totalMinor, cur, lang)}</strong></p>
-        </div>
+        {/* PC-56 HOTFIX-4 · D4 (survey F-5d): the same bill rows as checkout and confirmation — platform fee and buyer commission as their
+            own rows when > 0, rows that sum to the total (they did not: both charges were inside the total with no row, and "Tax 0" printed) */}
+        <BillRowsView bill={billRows(order)} />
         {invoice && (
           <p className="kv-order__invoice">
             {/* Plain <a>: an external presigned S3 URL, not an app route. (Next's @next/next/* rules are not part of

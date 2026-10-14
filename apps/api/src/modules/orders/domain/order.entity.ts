@@ -4,7 +4,7 @@
 // or 'payment_pending' when online payment is required (the money step is owned by payments).
 import { OrderStatus, assertTransition, isCancellable } from './order.state';
 import { OrderItem } from './order-item.entity';
-import { OrderForbiddenError } from './orders.errors';
+import { OrderForbiddenError, OrderAwaitingPaymentError } from './orders.errors';
 import { OrderEventType, DomainEvent } from './orders.events';
 
 export interface OrderProps {
@@ -122,7 +122,13 @@ export class Order {
     };
   }
   markPaid(): void { if (this.props.status === 'payment_pending') this.to('confirmed', OrderEventType.Confirmed, this.confirmedPayload(), undefined); }
-  confirm(bySeller: string): void { this.assertSeller(bySeller); this.to('confirmed', OrderEventType.Confirmed, this.confirmedPayload(), bySeller); }
+  /** PC-56 HOTFIX-4: the SELLER's confirm is for an order placed with no online payment (`created`). An order awaiting the buyer's online
+   *  payment confirms ONLY through markPaid (the capture) — a seller confirm on it would ship an unpaid order and make "paid" a lie. */
+  confirm(bySeller: string): void {
+    this.assertSeller(bySeller);
+    if (this.props.status === 'payment_pending') throw new OrderAwaitingPaymentError(this.props.id);
+    this.to('confirmed', OrderEventType.Confirmed, this.confirmedPayload(), bySeller);
+  }
   markPacked(bySeller: string): void { this.assertSeller(bySeller); this.to('packed', OrderEventType.Packed, {}, bySeller); }
   markReady(bySeller: string): void { this.assertSeller(bySeller); this.to('ready', OrderEventType.Ready, {}, bySeller); }
   markDelivered(by: string, now: Date = new Date()): void {

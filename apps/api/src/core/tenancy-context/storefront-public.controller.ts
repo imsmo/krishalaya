@@ -24,8 +24,11 @@ import { CurrentContext } from './current-context.decorator';
 import { RequestContext } from './request-context';
 import { StorefrontPublicReadModel, countryParam } from './storefront-public.read-model';
 
-/** B2: the ONLY flags an anonymous storefront may ask about. Adding one is a reviewed code change, never a query parameter. */
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup'] as const);
+/** B2: the ONLY flags an anonymous storefront may ask about. Adding one is a reviewed code change, never a query parameter.
+ *  PC-56 HOTFIX-4 · A8 (survey B23 / F-11 / F-16): + `online_payments` (founder D2 — the storefront honours it: OFF = no Pay step),
+ *  `buyer_charges`, `offers`, `auctions`, `reviews` — all TENANT-scoped (answered only with an organisation in context), booleans only:
+ *  a flag's rules, percentages and tenant lists never leave the API. */
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
 /** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context). */
 export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup']);

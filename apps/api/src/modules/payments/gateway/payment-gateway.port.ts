@@ -15,6 +15,9 @@ export interface GatewayEvent {
   /** Tenant the payment belongs to, carried in the signature-verified order `notes` (the webhook
    *  is unauthenticated, so we trust this only because the whole body is HMAC-verified). */
   tenantId?: string;
+  /** PC-56 HOTFIX-4 · A4: OUR payment id when the gateway echoed it in the entity's notes — a CROSS-CHECK only. The webhook's context comes
+   *  from the payment row the gateway ORDER id resolves to (0206); `tenantId` above is likewise a cross-check now, never the source. */
+  notesPaymentId?: string;
   gatewayOrderId?: string;
   gatewayPaymentId?: string;
   amountMinor?: bigint;

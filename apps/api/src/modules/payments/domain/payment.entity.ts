@@ -5,7 +5,7 @@
 // governs the legal lifecycle and records what to emit.
 import { PaymentStatus, assertTransition } from './payment.state';
 import { PaymentEventType, DomainEvent } from './payments.events';
-import { RefundExceedsPaymentError } from './payments.errors';
+import { RefundExceedsPaymentError, LateCaptureSameAttemptError } from './payments.errors';
 
 export interface PaymentProps {
   id: string; tenantId: string; userId: string; purposeId: string;
@@ -59,8 +59,14 @@ export class Payment {
    * which is exactly how the SaaS-invoice consumer ended up typing a status instead of summing receipts.
    * Existing consumers (orders) read the same four keys and are unaffected.
    */
+  /**
+   * PC-56 HOTFIX-4 · A3: a capture after a recorded FAILURE is booked when — and only when — it is ANOTHER attempt on the same gateway order
+   * (its gateway payment id differs from the failed attempt's, which markFailed now records). The same id that failed cannot be "captured"
+   * into success here: refused by name, never silently booked.
+   */
   markCaptured(gatewayPaymentId: string, method: string | null, ledgerTxnId: string, at: Date = new Date()): boolean {
     if (this.props.status === 'success') return false;
+    if (this.props.status === 'failed' && !this.isLaterAttempt(gatewayPaymentId)) throw new LateCaptureSameAttemptError(this.props.id);
     assertTransition(this.props.status, 'success');
     this.props.status = 'success';
     this.props.gatewayPaymentId = gatewayPaymentId;
@@ -75,10 +81,21 @@ export class Payment {
     return true;
   }
 
-  markFailed(code: string | null, reason: string | null): boolean {
+  /** HOTFIX-4 · A3: is this capture a DIFFERENT attempt from the one that failed? (a non-empty gateway payment id ≠ the failed one's) */
+  isLaterAttempt(gatewayPaymentId: string | null | undefined): boolean {
+    return !!gatewayPaymentId && gatewayPaymentId !== this.props.gatewayPaymentId;
+  }
+  /** HOTFIX-4 · A3: the replay of a capture already booked — same gateway payment id, already `success`. A no-op for the caller. */
+  isCaptureReplay(gatewayPaymentId: string | null | undefined): boolean {
+    return this.props.status === 'success' && !!gatewayPaymentId && gatewayPaymentId === this.props.gatewayPaymentId;
+  }
+
+  /** HOTFIX-4 · A3: + the failed ATTEMPT's gateway payment id (when the gateway sent one), so a later capture can be told apart from it. */
+  markFailed(code: string | null, reason: string | null, gatewayPaymentId: string | null = null): boolean {
     if (this.props.status === 'failed') return false;
     assertTransition(this.props.status, 'failed');
     this.props.status = 'failed'; this.props.failureCode = code; this.props.failureReason = reason;
+    if (gatewayPaymentId) this.props.gatewayPaymentId = gatewayPaymentId;
     this.events.push({ type: PaymentEventType.Failed, payload: { paymentId: this.props.id, code } });
     return true;
   }

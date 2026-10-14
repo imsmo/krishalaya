@@ -11,6 +11,7 @@ import { revalidatePath } from 'next/cache';
 import { serverClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { parseMajorToMinor } from '../../../../features/discovery/query';
+import { currencyExponent } from '../../../../features/discovery/money';
 
 export async function placeBidAction(formData: FormData): Promise<void> {
   const auctionId = String(formData.get('auctionId') ?? '');
@@ -18,7 +19,15 @@ export async function placeBidAction(formData: FormData): Promise<void> {
   const path = `/auctions/${encodeURIComponent(auctionId)}`;
   await requireSession(path);
 
-  const amountMinor = parseMajorToMinor(String(formData.get('amount') ?? ''));
+  // PC-56 HOTFIX-4 · C4 (survey C-6): the typed bid is parsed with the auction's OWN currency exponent (its listing's currency) — never the
+  // legacy two decimals. An unknown currency refuses the bid rather than guessing.
+  let exponent: number | null = null;
+  try {
+    const a = await serverClient().auctions.get(auctionId);
+    exponent = currencyExponent((await serverClient().listings.getPublic(a.listingId)).currencyCode);
+  } catch { exponent = null; }
+  if (exponent === null) redirect(`${path}?status=err`);
+  const amountMinor = parseMajorToMinor(String(formData.get('amount') ?? ''), exponent as number);
   if (!amountMinor || amountMinor === '0') redirect(`${path}?status=err`);
 
   try {
