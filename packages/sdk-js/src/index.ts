@@ -12,6 +12,7 @@ export { nameById } from './resources/lookups';
 export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ViewsByDayPoint, ProductCard, TraceProvenance, AuthTokens, UserProfile,
   OtpRequestResult, OtpChannel, OtpInvalidDetails, AuthSessionSummary, StorefrontTenant,   // PC-56 STORE-1a
   StorefrontProfile, StorefrontStats, DiscoveryCard, OrganisationCard, StorefrontFlags,   // PC-56 STORE-1b
+  StorefrontPlan, StorefrontPlans,   // PC-56 STORE-1c
   CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding, PublishedBrand,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
   PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType, KycReviewItem,

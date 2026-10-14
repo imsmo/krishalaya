@@ -16,6 +16,15 @@ export const env = {
    *  Null when unset → the platform sign-in states that it is not configured (never a guessed tenant). The build-time
    *  NEXT_PUBLIC_TENANT_ID this replaces is retired. */
   platformTenantSlug: process.env.NEXT_PUBLIC_PLATFORM_TENANT_SLUG?.trim() || null,
+  /** PC-56 STORE-1c · C1/C4 (founder D2): the PLATFORM's own country (ISO 3166-1 alpha-2) — the country `/pricing` lists plans for when no
+   *  `?country=` is given, the digit rule the organisation-signup form applies to a bare national number, and the country a self-serve
+   *  organisation is created in. Default `IN` (Phase 1); a two-letter code only (anything else reads as unset → the pages say pricing is
+   *  not set up rather than guess). Ops owed: set it per deployment. The tenant's OWN country on a tenant store is a definer read still
+   *  owed (STORE-1a), so this is the platform's, never a tenant's. */
+  platformCountry: (() => {
+    const c = (process.env.NEXT_PUBLIC_PLATFORM_COUNTRY ?? 'IN').trim().toUpperCase();
+    return /^[A-Z]{2}$/.test(c) ? c : null;
+  })(),
   /** Origin of the seller/tenant console (web-tenant); the "Sell on Krishalaya" CTA links here. An origin,
    *  not a secret — safe to expose. Null when unset → the CTA falls back to in-app sign-in. */
   tenantAppUrl: process.env.NEXT_PUBLIC_TENANT_APP_URL || null,

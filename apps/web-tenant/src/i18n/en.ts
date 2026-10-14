@@ -1985,6 +1985,7 @@ export const en: Messages = {
   'signup.error.plan': 'We cannot set up a trial right now, so nothing was created. Please try again shortly.',
   'signup.error.unavailable': 'Sign-up is briefly unavailable. Nothing was created.',
   'signup.error.generic': 'Sign-up did not go through. Nothing was created and nothing was charged.',
+  'signup.error.disabled': 'Self-serve sign-up is switched off on the platform right now, so nothing was created. Nothing is broken and your code was not used — try again later.',
 
   /* ==================== PC-56 TENANT-2a · staff console + listing QC (W123/W126/W127) ==================== */
   'lc.sub': "Everything your members are selling — every seller, every status. Price changes stay per-listing and audited.",

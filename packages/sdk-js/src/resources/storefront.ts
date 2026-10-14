@@ -2,7 +2,7 @@
 // page?" answered by the API from the request's own tenant context (the client's `tenantSlug` → `X-Tenant-Slug`, or a verified
 // storefront host). A 404 TENANT_NOT_FOUND means no LIVE tenant resolved — never a default one.
 import { HttpClient } from '../http';
-import { DiscoveryCard, OrganisationCard, Page, StorefrontFlags, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
+import { DiscoveryCard, OrganisationCard, Page, StorefrontFlags, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
 
 export class StorefrontResource {
   constructor(private readonly http: HttpClient) {}
@@ -33,8 +33,14 @@ export class StorefrontResource {
     const r = await this.http.request<OrganisationCard[]>('GET', 'storefront/organisations', { anonymous: true, signal, query: { after: q.after, limit: q.limit } });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  /** B2 — the context tenant's allow-listed public flags (`group_lots`). */
+  /** B2 — the allow-listed public flags: `group_lots` for the context tenant (absent with none); STORE-1c — `org_self_signup`, the
+   *  platform's signup switch, always. */
   async flags(signal?: AbortSignal): Promise<StorefrontFlags> {
     return (await this.http.request<StorefrontFlags>('GET', 'storefront/flags', { anonymous: true, signal })).data;
+  }
+  /** PC-56 STORE-1c · D2 — the PUBLIC plans of a country (`?country=XX`, two letters; the API refuses a missing one by name —
+   *  400 COUNTRY_REQUIRED — rather than guess a country). Read-only. */
+  async plans(country?: string, signal?: AbortSignal): Promise<StorefrontPlans> {
+    return (await this.http.request<StorefrontPlans>('GET', 'storefront/plans', { anonymous: true, signal, query: { country } })).data;
   }
 }

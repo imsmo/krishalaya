@@ -4,7 +4,8 @@
 //   • the platform store (name from packages/tokens, founder D2) + a sentence that claims nothing it cannot back;
 //   • Help — "Help centre" → /help; "Returns & quality promise" and "Contact" are STORE-5 routes (W309 / W312), ANNOUNCED as coming,
 //     not dead links; the canon's phone / missed-call / USSD line is refused (the IVR/USSD gateway is unimplemented — STORE-1a C-2);
-//   • For farmers & organisations — "Open your organisation's storefront" → /tenants-signup, "How farm-to-fork trace works" → /trace.
+//   • For farmers & organisations — "Open your organisation's storefront" → /for-organisations (canon W307's route, PC-56 STORE-1c; the old
+//     /tenants-signup answers a permanent redirect there), "How farm-to-fork trace works" → /trace.
 // Company links (about / blog / press / pricing) stay as they were.
 import Link from 'next/link';
 import { getTranslator } from '../lib/i18n';
@@ -28,7 +29,7 @@ export function SiteFooter() {
           </nav>
           <nav className="kv-footer__col" aria-label={t.t('footer.col.farmers')}>
             <h2 className="kv-footer__heading">{t.t('footer.col.farmers')}</h2>
-            <Link href="/tenants-signup" className="kv-footer__link">{t.t('footer.openStorefront')}</Link>
+            <Link href="/for-organisations" className="kv-footer__link">{t.t('footer.openStorefront')}</Link>
             <Link href="/trace" className="kv-footer__link">{t.t('footer.traceHow')}</Link>
           </nav>
           <nav className="kv-footer__col" aria-label={t.t('footer.col.company')}>

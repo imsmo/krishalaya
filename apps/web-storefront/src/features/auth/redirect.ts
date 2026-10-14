@@ -18,6 +18,8 @@ export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'orders', 'press', 'pricing', 'tenants-signup', 'trace',
   // PC-56 STORE-1b: the platform home's discovery feed and organisation directory (both reserved as tenant slugs in migration 0204)
   'discover', 'organisations',
+  // PC-56 STORE-1c: canon W307's route (reserved as a tenant slug in migration 0205); `tenants-signup` above now redirects to it
+  'for-organisations',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

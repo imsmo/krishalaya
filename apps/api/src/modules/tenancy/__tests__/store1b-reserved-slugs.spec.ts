@@ -5,19 +5,23 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RESERVED_TENANT_SLUGS, isReservedSlug, isReservedSlugViolation, slugCandidates } from '../domain/signup';
 
-const MIGRATION = join(__dirname, '..', '..', '..', '..', '..', '..', 'db', 'migrations', '0204_storefront_home.sql');
+const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', '..', '..', '..', 'db', 'migrations');
+// PC-56 STORE-1c: migration 0205 adds ONE name (`for-organisations`, canon W307's route) — the code list mirrors BOTH seeds
+const MIGRATIONS = ['0204_storefront_home.sql', '0205_org_signup_flag_plans.sql'].map((f) => join(MIGRATIONS_DIR, f));
 const STOREFRONT_APP = join(__dirname, '..', '..', '..', '..', '..', 'web-storefront', 'src', 'app');
 
 function seededSlugs(): string[] {
-  const sql = readFileSync(MIGRATION, 'utf8');
-  const block = sql.slice(sql.indexOf('INSERT INTO reserved_tenant_slugs'), sql.indexOf('ON CONFLICT (slug) DO NOTHING;', sql.indexOf('INSERT INTO reserved_tenant_slugs')));
-  return [...block.matchAll(/\('([^']+)',\s*'/g)].map((m) => m[1]);
+  return MIGRATIONS.flatMap((file) => {
+    const sql = readFileSync(file, 'utf8');
+    const block = sql.slice(sql.indexOf('INSERT INTO reserved_tenant_slugs'), sql.indexOf('ON CONFLICT (slug) DO NOTHING;', sql.indexOf('INSERT INTO reserved_tenant_slugs')));
+    return [...block.matchAll(/\('([^']+)',\s*'/g)].map((m) => m[1]);
+  });
 }
 
 describe('STORE-1b · reserved tenant slugs', () => {
   it('the code list IS the migration\'s seed (same names, no duplicates)', () => {
     const seeded = seededSlugs();
-    expect(seeded.length).toBe(46);
+    expect(seeded.length).toBe(47);   // 0204's 46 + 0205's for-organisations
     expect([...seeded].sort()).toEqual([...RESERVED_TENANT_SLUGS].sort());
     expect(new Set(RESERVED_TENANT_SLUGS).size).toBe(RESERVED_TENANT_SLUGS.length);
   });

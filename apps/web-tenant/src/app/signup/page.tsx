@@ -47,7 +47,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('signup.title'), robots: { index: false, follow: false } };
 }
 
-const ERR = new Set(['phone', 'code', 'name', 'org', 'orgType', 'otp', 'taken', 'plan', 'generic', 'unavailable']);
+const ERR = new Set(['phone', 'code', 'name', 'org', 'orgType', 'otp', 'taken', 'plan', 'generic', 'unavailable', 'disabled']);
 const STAGES = ['form', 'confirm', 'failure'] as const;
 
 /** The NEW organisation's session — its token, no tenant header (the token carries the tenant; see the deployment caveat). */
@@ -113,7 +113,10 @@ async function createOrg(formData: FormData) {
   } catch (e) {
     const code2 = e instanceof SdkError ? (e.code ?? '') : '';
     const status = e instanceof SdkError ? e.status : 0;
-    const key = code2 === 'AUTH_INVALID_OTP' || status === 401 ? 'otp'
+    // PC-56 STORE-1c (founder D1): the platform switch `org_self_signup` is OFF — said as "switched off", never as a wrong code (the API
+    // checked the switch BEFORE the code, so the code the person typed is still good when the switch comes back on).
+    const key = code2 === 'SIGNUP_DISABLED' ? 'disabled'
+      : code2 === 'AUTH_INVALID_OTP' || status === 401 ? 'otp'
       : code2 === 'SIGNUP_SLUG_UNAVAILABLE' ? 'taken'
       : code2 === 'SIGNUP_TRIAL_PLAN_UNAVAILABLE' || code2 === 'SIGNUP_ROLE_MISSING' ? 'plan'
       : status === 503 ? 'unavailable'

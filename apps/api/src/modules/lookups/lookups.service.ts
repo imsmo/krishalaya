@@ -50,7 +50,7 @@ export class LookupsService {
           `WITH v AS (
              SELECT DISTINCT ON (lv.code) lv.id, lv.code, lv.default_name, lv.sort_order, lv.meta
                FROM lookup_values lv
-              WHERE lv.type_code = $1 AND lv.is_active = true AND (lv.tenant_id IS NULL OR lv.tenant_id = $2)
+              WHERE lv.type_code = $1 AND lv.is_active = true AND (lv.tenant_id IS NULL OR lv.tenant_id = $2::uuid)
               ORDER BY lv.code, (lv.tenant_id IS NULL)   -- a tenant (non-NULL) row wins over the platform row
            )
            SELECT v.id, v.code, COALESCE(t.text, v.default_name) AS name, v.sort_order, v.meta
@@ -60,7 +60,10 @@ export class LookupsService {
                AND ${servableTranslation('t')}
             ORDER BY v.sort_order, name
             LIMIT ${VALUE_LIMIT}`,
-          [typeCode, tenantId, lc]);
+          // [PC-56 STORE-1c · found on the way] an ANONYMOUS caller with no tenant in context (the platform's /for-organisations form
+          // reading the `tenant_type` registry — and web-tenant W113's profile step) passed '' here, which PostgreSQL refuses as a uuid
+          // (22P02 → a 500). No tenant means the platform's own values only: NULL matches no tenant row.
+          [typeCode, tenantId || null, lc]);
         return r.rows.map((x) => ({ id: x.id, code: x.code, name: x.name, sortOrder: x.sort_order, meta: x.meta ?? {} }));
       }));
   }

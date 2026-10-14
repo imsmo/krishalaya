@@ -7,9 +7,14 @@
 //   GET /v1/storefront/stats          D3 — the PRECOMPUTED platform counts + computedAt (never computed here)
 //   GET /v1/storefront/discover       D1 — the cross-tenant feed (cross_tenant listings of live tenants), keyset ?after=&limit=
 //   GET /v1/storefront/organisations  D1 — verified live organisations, keyset ?after=&limit=
-//   GET /v1/storefront/flags          B2 — ALLOW-LISTED booleans for the context tenant (`group_lots` only); never rules or percentages
+//   GET /v1/storefront/flags          B2 — ALLOW-LISTED booleans; never rules or percentages. PC-56 STORE-1c (founder D1) adds
+//                                     `org_self_signup`, a PLATFORM switch (evaluated with no tenant — the same `{}` the signup gate uses), so
+//                                     the platform's own /for-organisations page (no tenant in context) can ask it: with no tenant the answer
+//                                     carries ONLY the platform-scoped keys; a tenant-scoped key (`group_lots`) is answered only for a tenant.
+//   GET /v1/storefront/plans?country=XX  STORE-1c · D2 — the PUBLIC plan catalogue of a country (a platform table, no RLS — read model header)
 //
-// No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts).
+// No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts), or — for
+// the plans — a plain SELECT of the platform catalogue.
 import { Controller, Get, Query } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import { RateLimit } from '../http/rate-limit.guard';
@@ -17,10 +22,13 @@ import { DomainError } from '../../shared/errors/app-error';
 import { FlagsService } from '../feature-flags/flags.service';
 import { CurrentContext } from './current-context.decorator';
 import { RequestContext } from './request-context';
-import { StorefrontPublicReadModel } from './storefront-public.read-model';
+import { StorefrontPublicReadModel, countryParam } from './storefront-public.read-model';
 
 /** B2: the ONLY flags an anonymous storefront may ask about. Adding one is a reviewed code change, never a query parameter. */
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots'] as const);
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup'] as const);
+export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
+/** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context). */
+export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup']);
 
 const notFound = () => new DomainError('TENANT_NOT_FOUND', 'No organisation is served here', 404);
 const one = (v: unknown): string | undefined => (typeof v === 'string' && v.length > 0 ? v : undefined);
@@ -55,13 +63,22 @@ export class StorefrontPublicController {
   }
 
   @Public() @RateLimit({ limit: 120, windowSec: 60, by: 'ip' }) @Get('flags')
-  async publicFlags(@CurrentContext() ctx: RequestContext): Promise<{ data: Record<(typeof STOREFRONT_PUBLIC_FLAGS)[number], boolean> }> {
-    if (!ctx.tenantId) throw notFound();
-    const out = {} as Record<(typeof STOREFRONT_PUBLIC_FLAGS)[number], boolean>;
+  async publicFlags(@CurrentContext() ctx: RequestContext): Promise<{ data: Partial<Record<StorefrontPublicFlag, boolean>> }> {
+    const out: Partial<Record<StorefrontPublicFlag, boolean>> = {};
     for (const key of STOREFRONT_PUBLIC_FLAGS) {
+      const platform = PLATFORM_SCOPED_FLAGS.has(key);
+      if (!platform && !ctx.tenantId) continue;            // a tenant-scoped flag with no organisation in context has nothing to be about
       // a flag-store failure reads as OFF (the storefront then says the feature is off — never a 500 on a home page)
-      try { out[key] = await this.flags.isEnabled(key, { tenantId: ctx.tenantId }); } catch { out[key] = false; }
+      try { out[key] = await this.flags.isEnabled(key, platform ? {} : { tenantId: ctx.tenantId }); } catch { out[key] = false; }
     }
     return { data: out };
+  }
+
+  /** STORE-1c · D2: the public plans of `?country=XX` (two letters). A missing / malformed country is refused by name, never defaulted. */
+  @Public() @RateLimit({ limit: 120, windowSec: 60, by: 'ip' }) @Get('plans')
+  async plans(@Query() q: Record<string, unknown>) {
+    const country = countryParam(q.country);
+    if (!country) throw new DomainError('COUNTRY_REQUIRED', 'country must be a two-letter ISO 3166-1 code (?country=IN)', 400);
+    return { data: await this.reads.plans(country) };
   }
 }

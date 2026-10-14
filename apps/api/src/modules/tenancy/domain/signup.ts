@@ -11,6 +11,19 @@ export class SignupRefusedError extends DomainError {
   }
 }
 
+/**
+ * PC-56 STORE-1c (founder D1) · the platform switch for self-serve organisation signup — seeded ON by migration 0205 (a kill-switch: W113
+ * was already live on this route, so OFF would have darkened it). Evaluated platform-wide (`{}` — there is no tenant before signup).
+ */
+export const ORG_SELF_SIGNUP_FLAG = 'org_self_signup';
+
+/** PC-56 STORE-1c · the switch is OFF (or the flag store could not answer — fail closed). 403, named; nothing was read, spent or written. */
+export class SignupDisabledError extends DomainError {
+  constructor() {
+    super('SIGNUP_DISABLED', 'self-serve organisation signup is switched off on this platform right now — nothing was created and your code was not used', 403);
+  }
+}
+
 /** W113's default. Overridden by `signup.trial_days`; zero is refused, because a trial that ends on day one is dunning. */
 export const DEFAULT_TRIAL_DAYS = 14;
 export const DEFAULT_TRIAL_PLAN_CODE = 'starter';
@@ -82,14 +95,16 @@ export function slugCandidates(orgName: string, attempts = 6): string[] {
 /**
  * PC-56 STORE-1b (GAP-B20) · the names no organisation may take as its storefront address: every top-level storefront route (Next's
  * static segments win over `/[tenantSlug]`, so a tenant slugged `login` would be unreachable) plus the STORE-2..6 canon routes and the
- * platform names a look-alike store would want. **A MIRROR of migration 0204's `reserved_tenant_slugs` seed** — a unit spec reads the
- * migration and compares the two; the trigger refuses whatever this list misses (the service then answers SIGNUP_SLUG_RESERVED).
+ * platform names a look-alike store would want. **A MIRROR of migrations 0204 + 0205's `reserved_tenant_slugs` seeds** — a unit spec reads
+ * both migrations and compares; the trigger refuses whatever this list misses (the service then answers SIGNUP_SLUG_RESERVED).
  */
 export const RESERVED_TENANT_SLUGS: readonly string[] = Object.freeze([
   'about', 'account', 'api', 'auctions', 'blog', 'cart', 'checkout', 'help', 'login', 'messages', 'notifications', 'offers', 'offline',
   'orders', 'organisations', 'press', 'pricing', 'tenants-signup', 'trace', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml',
   'discover', 'search', 'browse', 'seller', 'inputs', 'group-lots', 'addresses', 'preferences', 'contact', 'quality-promise', 'trust-data',
   'language', 'accessibility', 'sync', 'queued', 'pwa-install', 'admin', 'api-docs', 'status', 'www', 'mail', 'app', 'store', 'bazaar',
+  // PC-56 STORE-1c · migration 0205: canon W307's route (`/for-organisations`); `tenants-signup` above stays (it now redirects there)
+  'for-organisations',
 ]);
 const RESERVED = new Set(RESERVED_TENANT_SLUGS);
 export function isReservedSlug(slug: string): boolean { return RESERVED.has(String(slug ?? '').trim().toLowerCase()); }

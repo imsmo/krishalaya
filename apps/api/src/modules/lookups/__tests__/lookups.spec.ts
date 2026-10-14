@@ -35,6 +35,16 @@ describe('LookupsService', () => {
     expect(cap.sql).toMatch(/translations/);                             // locale-resolved
   });
 
+  // PC-56 STORE-1c · found on the way: an anonymous, no-tenant caller (the storefront's /for-organisations reading `tenant_type`) sent ''
+  // as the tenant uuid and PostgreSQL refused it (a 500). No tenant = the platform's own values: the parameter is NULL, typed uuid.
+  it('values() with NO tenant in context: the tenant parameter is NULL (platform values only), never an empty-string uuid', async () => {
+    const cap: { sql?: string; params?: unknown[] } = {};
+    const svc = new LookupsService(makeReplica(cap) as any, passthroughCache, metrics);
+    await svc.values('', 'en', 'tenant_type');
+    expect(cap.params).toEqual(['tenant_type', null, 'en']);
+    expect(cap.sql).toMatch(/lv\.tenant_id = \$2::uuid/);
+  });
+
   it('regions(): defaults to level-1 states with the resolved locale, bounded + ordered by name', async () => {
     const cap: { sql?: string; params?: unknown[] } = {};
     const svc = new LookupsService(makeReplica(cap) as any, passthroughCache, metrics);

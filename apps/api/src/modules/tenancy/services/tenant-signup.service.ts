@@ -31,7 +31,8 @@ import { AuthService, AuthTokens } from '../../identity/services/auth.service';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
 import { TenantSignupRepository } from '../repositories/tenant-signup.repository';
 import {
-  SignupRefusedError, isReservedSlugViolation, languageOf, signupPolicyFrom, slugCandidates, trialPeriodEnd, validateOrgName,
+  ORG_SELF_SIGNUP_FLAG, SignupDisabledError, SignupRefusedError, isReservedSlugViolation, languageOf, signupPolicyFrom, slugCandidates,
+  trialPeriodEnd, validateOrgName,
 } from '../domain/signup';
 
 export interface SignupInput {
@@ -81,6 +82,13 @@ export class TenantSignupService {
    * attempt-capped, constant-time and single-use, and reusing it means a fix to either path fixes both.
    */
   async signUp(input: SignupInput, ip: string | null): Promise<SignupResult> {
+    // PC-56 STORE-1c (founder D1) · THE PLATFORM SWITCH, CHECKED FIRST — before the phone is read, before the code is touched. A switched-off
+    // signup must not BURN the one-time code (it is single-use: verifying it here would leave the person with a dead code when the switch
+    // comes back on), must not count against the verify throttle, and must not cost a database round trip. The ONE place this gate lives:
+    // web-tenant W113 and the storefront's /for-organisations both arrive here. A flag-store failure counts as OFF (fail closed).
+    const open = await this.flags.isEnabled(ORG_SELF_SIGNUP_FLAG, {}).catch(() => false);
+    if (!open) throw new SignupDisabledError();
+
     const phone = normalizePhoneE164(input.phone);
     if (!phone) throw new BadRequestError('a valid mobile number is required');
 
@@ -92,7 +100,14 @@ export class TenantSignupService {
 
     // **THE CODE IS CHECKED BEFORE ANYTHING IS READ OR WRITTEN.** Everything below this line is a consequence of a verified
     // phone; a failed code must not reveal whether a number is registered, cost a database round trip, or leave a row.
-    if (!(await this.otp.verify(phone, input.code))) throw new InvalidOtpError();
+    // PC-56 STORE-1c (C2): the same `verifyDetailed` the login path uses (STORE-1a A2c), so the refusal says WHY — a wrong code with the
+    // tries left, an expired / used code, or a lock with its wait — instead of one undifferentiated "invalid". Same 401 OTP_INVALID.
+    const v = await this.otp.verifyDetailed(phone, input.code);
+    if (!v.ok) {
+      throw new InvalidOtpError(v.reason === 'locked'
+        ? { reason: v.reason, attemptsLeft: 0, retryAfterSec: v.retryAfterSec }
+        : { reason: v.reason, attemptsLeft: v.attemptsLeft });
+    }
 
     const lang = languageOf(input.lang);
     const countryCode = (input.countryCode ?? 'IN').toUpperCase();
@@ -203,7 +218,7 @@ export class TenantSignupService {
         payload: { v: 1, tenantId, slug: tenant.slug, ownerUserId: user.id, trialEndsOn: periodEnd, lang },
       });
 
-      return { kind: 'created' as const, user, tenant, trialEndsOn: periodEnd };
+      return { kind: 'created' as const, user, tenant, displayName: org.value, trialEndsOn: periodEnd };
     }, { userId: undefined });
 
     // **THE SESSION IS OPENED THROUGH THE SAME PATH A LOGIN USES**, in its own transaction after the tenant exists — an
@@ -220,7 +235,9 @@ export class TenantSignupService {
       };
     }
     return {
-      tenantId: out.tenant.id, slug: out.tenant.slug, displayName: out.tenant.slug,
+      // [PC-56 STORE-1c · found on the way] this returned `out.tenant.slug` as the display name, so W113's and W307's done states printed
+      // "anand-fpo is ready" for an organisation that typed "Anand FPO". The name the organisation typed is the name it is called.
+      tenantId: out.tenant.id, slug: out.tenant.slug, displayName: out.displayName,
       resumed: false, trialEndsOn: out.trialEndsOn, tokens, onboardingStep: 'profile',
     };
   }

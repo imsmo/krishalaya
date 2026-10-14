@@ -185,14 +185,15 @@ describe('TENANT-1d-3a · what the service may and may not do', () => {
 
   it('verifies the OTP through the SHARED OtpService, not a second implementation', () => {
     const s = svc();
-    expect(s).toContain('this.otp.verify(');
+    // PC-56 STORE-1c: `verifyDetailed` — the SAME OtpService, answering why a code failed (STORE-1a A2c) — replaced the yes/no `verify`
+    expect(s).toContain('this.otp.verifyDetailed(');
     // No hand-rolled comparison on the one route that can create a tenant.
     expect(s).not.toMatch(/timingSafeEqual|createHmac|=== *input\.code/);
   });
 
   it('checks the code BEFORE any read or write', () => {
     const s = svc();
-    const verify = s.indexOf('this.otp.verify(');
+    const verify = s.indexOf('this.otp.verifyDetailed(');
     expect(verify).toBeGreaterThan(-1);
     expect(verify).toBeLessThan(s.indexOf('this.uow.run('));
     expect(verify).toBeLessThan(s.indexOf('this.repo.'));

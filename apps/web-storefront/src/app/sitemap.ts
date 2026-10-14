@@ -8,7 +8,7 @@ import { env } from '../lib/env';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = env.siteUrl; // '' when unset → relative paths
-  const paths = ['/', '/about', '/blog', '/help', '/pricing', '/press', '/tenants-signup', ...(env.featureAuctions ? ['/auctions'] : [])];
+  const paths = ['/', '/about', '/blog', '/help', '/pricing', '/press', '/for-organisations', ...(env.featureAuctions ? ['/auctions'] : [])];
   const now = new Date();
   return paths.map((p) => ({
     url: `${base}${p}`,

@@ -126,13 +126,16 @@ describe('STORE-1b · B2 — the public reads', () => {
     expect(query.mock.calls[0][0]).not.toMatch(/count\(|refresh_|FROM listings|FROM tenants/i);
   });
 
-  it('flags: an ALLOW-LIST of booleans (group_lots only), evaluated for the context tenant; no tenant → 404', async () => {
+  // PC-56 STORE-1c (founder D1) widened the allow-list by ONE platform switch, `org_self_signup`, and the no-tenant answer: it used to be a
+  // 404; it is now the platform-scoped keys only (the platform's /for-organisations page has no tenant). `group_lots` is still answered
+  // only for a tenant in context — store1c-storefront-plans.spec.ts pins the new key in full.
+  it('flags: an ALLOW-LIST of booleans, group_lots evaluated for the context tenant; no tenant → no group_lots (never a guess)', async () => {
     const isEnabled = jest.fn(async (k: string, c: { tenantId?: string }) => k === 'group_lots' && c.tenantId === LIVE);
     const ctl = new StorefrontPublicController({} as never, { isEnabled } as never);
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots']);
-    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true } });
-    expect(isEnabled).toHaveBeenCalledTimes(1);
-    await expect(ctl.publicFlags({ tenantId: '' } as RequestContext)).rejects.toMatchObject({ code: 'TENANT_NOT_FOUND' });
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup']);
+    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false } });
+    expect(isEnabled).toHaveBeenCalledTimes(2);
+    expect((await ctl.publicFlags({ tenantId: '' } as RequestContext)).data).not.toHaveProperty('group_lots');
     await expect(ctl.profile({ tenantId: '' } as RequestContext)).rejects.toMatchObject({ code: 'TENANT_NOT_FOUND' });
   });
 });

@@ -12,7 +12,7 @@
 //          trial tenant's listing are absent), keyset in microseconds — no row twice over three pages; the directory pages verified live
 //          organisations only;
 //   A4/B3  the stats job's refresh, then the read: counts equal a hand query, computedAt set, the job is registered;
-//   B2     the flags endpoint returns `group_lots` (a boolean) and nothing else; the listing feed's capped total + members-only count
+//   B2     the flags endpoint returns `group_lots` (a boolean) and — since STORE-1c — the platform switch `org_self_signup`, nothing else; the listing feed's capped total + members-only count
 //          (the cap proven PARAMETERISED — public_tenant_listing_count(tenant, 2) on three rows answers 3 = "more than 2" — because
 //          inserting 1,001 listings would only prove the same LIMIT at a slower speed).
 import 'reflect-metadata';
@@ -274,13 +274,17 @@ run('PC-56 STORE-1b · storefront home & tenant home (integration, real AppModul
   });
 
   describe('B2 · flags and the listing feed\'s counts', () => {
-    it('GET /v1/storefront/flags → { group_lots: boolean } and nothing else; no tenant → 404', async () => {
+    // PC-56 STORE-1c (founder D1) added ONE platform switch to the allow-list (`org_self_signup`) and changed the no-tenant answer from a
+    // 404 to the platform-scoped keys only — store1c-signup.integration.spec.ts (6) pins that half; this test keeps the tenant half.
+    it('GET /v1/storefront/flags → { group_lots: boolean, org_self_signup } and nothing else; no tenant → no group_lots', async () => {
       const r = await request(http).get('/v1/storefront/flags').set('x-tenant-slug', liveSlug);
       expect(r.status).toBe(200);
-      expect(Object.keys(r.body.data)).toEqual(['group_lots']);
+      expect(Object.keys(r.body.data).sort()).toEqual(['group_lots', 'org_self_signup']);
       expect(typeof r.body.data.group_lots).toBe('boolean');
       expect(JSON.stringify(r.body)).not.toMatch(/rollout|tenant_ids|rules|pct/);
-      expect((await request(http).get('/v1/storefront/flags')).status).toBe(404);
+      const platform = await request(http).get('/v1/storefront/flags');
+      expect(platform.status).toBe(200);
+      expect(platform.body.data).not.toHaveProperty('group_lots');
     });
 
     it('the tenant feed carries the capped total (public + cross_tenant published) and the members-only count; a filter drops the total', async () => {

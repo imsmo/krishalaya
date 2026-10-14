@@ -147,7 +147,7 @@ describe('STORE-1b · W273 the platform home', () => {
 
   it('the platform footer: Help; Returns and Contact ANNOUNCED (not dead links); storefront signup; how trace works', async () => {
     const html = await home();
-    expect(html).toContain('href="/help"'); expect(html).toContain('href="/tenants-signup"'); expect(html).toContain('href="/trace"');
+    expect(html).toContain('href="/help"'); expect(html).toContain('href="/for-organisations"'); /* STORE-1c: W307's route */ expect(html).toContain('href="/trace"');
     expect(html).not.toMatch(/href="#returns"|href="#contact"/);
     expect((html.match(/data-kv-soon="STORE-5"/g) ?? []).length).toBe(2);
   });

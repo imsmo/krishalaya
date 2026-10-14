@@ -175,8 +175,16 @@ export interface DiscoveryCard {
 export interface OrganisationCard {
   slug: string; displayName: string; district: string | null; logoUrl: string | null; logoPath: string | null; memberFarmers: number;
 }
-/** PC-56 STORE-1b · B2 — the ALLOW-LISTED public flags of the context tenant. */
-export interface StorefrontFlags { group_lots: boolean }
+/** PC-56 STORE-1b · B2 — the ALLOW-LISTED public flags. Keys are the flag keys verbatim (the API's allow-list loop).
+ *  PC-56 STORE-1c (founder D1): `org_self_signup` — the PLATFORM switch for self-serve organisation signup — is always answered;
+ *  `group_lots` is answered only when a tenant is in context (a tenant store), so it is absent on a platform page. */
+export interface StorefrontFlags { group_lots?: boolean; org_self_signup: boolean }
+/** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
+export interface StorefrontPlan {
+  code: string; name: string; monthlyMinor: string; annualMinor: string; setupFeeMinor: string; currency: string; exponent: number;
+}
+/** PC-56 STORE-1c · D2 — the public catalogue of one country, and the trial length the platform's signup policy states (null = not set). */
+export interface StorefrontPlans { country: string; plans: StorefrontPlan[]; trialDays: number | null }
 export interface UserProfile { id: string; displayName: string | null; roles: string[]; locale: string; }
 
 // --- payments (module 4) — money is bigint minor-unit STRINGS (Law 2) ---

@@ -40,6 +40,20 @@ describe('STORE-1a · brand guard', () => {
       for (const v of Object.values(cat)) expect(v.includes(PLATFORM_BRAND.platformStoreName)).toBe(false);
     }
   });
+  // PC-56 STORE-1c (Law 3, survey F-13): "₹0" / "From ₹999/mo" lived in all three catalogues as /pricing's tiers. Money is printed from the
+  // server's bigint minor units through the formatter — so NO catalogue value carries a currency sign, and no STORE-1c string (signup.*,
+  // pricing.*) carries a digit: every figure on W307 and /pricing is interpolated (plans, TTL, waits, trial days, the name-length rules).
+  it.each(Object.entries(CATS))('%s: no ₹ (or any currency sign) in any value; no digit in a STORE-1c value; {platform}, never the name', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+    const store1c = Object.keys(cat).filter((k) => k.startsWith('signup.') || k.startsWith('pricing.'));
+    expect(store1c.length).toBe(118);   // the 117 STORE-1c keys + pricing.title (kept)
+    for (const k of store1c) {
+      const v = (cat as Record<string, string>)[k].replace(/\{[a-z]+\}/gi, '');
+      expect([k, /[0-9०-९૦-૯]/.test(v)]).toEqual([k, false]);
+      for (const lit of PLATFORM_LITERALS) expect([k, (cat as Record<string, string>)[k].includes(lit)]).toEqual([k, false]);
+    }
+  });
+
   it('the one brand entry: the token name in English, the decided vernacular spellings in hi / gu', () => {
     expect(en['brand.platform']).toBe(PLATFORM_BRAND.name);
     expect(hi['brand.platform']).toBe('कृषालय');

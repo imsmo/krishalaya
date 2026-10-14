@@ -60,3 +60,63 @@ export function refusalKey(id: string): string {
   if (!r || r.answer !== 'rendered' || !r.key) throw new Error(`refusals: '${id}' is not a rendered refusal`);
   return r.key;
 }
+
+/* ------------------------------------------------------------------------------------------------------------------------------------ */
+/* PC-56 STORE-1c · brief §E — canon W307 "Open your organisation's storefront" and its 14 chain pages                                  */
+/* ------------------------------------------------------------------------------------------------------------------------------------ */
+
+/** Every W307 claim this build does not make, BY NAME. All `rendered` ones print in W307's `kv-refused` block (the render test reads this
+ *  list, so a refusal that silently disappears — or a refused claim that comes back as an offer — turns it red). */
+export const STORE1C_REFUSALS: readonly Refusal[] = Object.freeze([
+  { id: 'ussd_voice_languages', canon: 'W307 "12 languages, voice-first, USSD" + the chrome "Missed call to order … USSD"', answer: 'rendered', key: 'signup.refused.ussd',
+    why: 'three live console languages (en/hi/gu); the IVR/USSD gateway is an unimplemented placeholder (survey C-2)' },
+  { id: 'sandbox_money', canon: 'W307 "Start in trial mode — real features, sandbox money"', answer: 'rendered', key: 'signup.refused.sandbox',
+    why: 'no payments trial mode exists (GAP-B23)' },
+  { id: 'escrow_ledger', canon: 'W307 "Escrow-protected payments … The ledger balances to the rupee, always."', answer: 'rendered', key: 'signup.refused.payments',
+    why: 'wallet / online-payment flags are OFF — the page says nothing about escrow (brief §E), only that it makes no payment promise' },
+  { id: 'trace_every_lot', canon: 'W307 "Farm-to-fork trace on every lot"', answer: 'rendered', key: 'signup.refused.trace',
+    why: '`traceability` flag OFF — "every" would be false' },
+  { id: 'your_domain', canon: 'W307 "your logo, your colours, your domain"', answer: 'rendered', key: 'signup.refused.domain',
+    why: 'custom domains (`tenant_domains`) are OFF — the organisation gets its own address on the platform; custom domains later' },
+  { id: 'partnerships_desk', canon: 'W307 "Prefer a human? Our partnerships desk calls you back: 1800-419-0123 · partners@krishalaya.in"', answer: 'rendered', key: 'signup.refused.desk',
+    why: 'founder D3: no helpline, no partnerships desk, no callback desk exists; the footer Contact stays STORE-5' },
+  { id: 'resolution_desk', canon: 'W307 "names aren\'t first-come-first-served … the resolution desk sorts it with documents"', answer: 'rendered', key: 'signup.refused.names',
+    why: 'slugs ARE first come (SIGNUP_SLUG_UNAVAILABLE, tenant-signup.service.ts); no resolution desk (GAP-B21)' },
+  { id: 'otp_ten_minutes', canon: 'W307 "valid 10 minutes … no limits games"', answer: 'rendered', key: 'signup.refused.otp',
+    why: 'the TTL and the resend cooldown are the server\'s (ttlSec / resendInSec) and are printed from it' },
+  { id: 'member_count_field', canon: 'W307 form "Member farmers (rough count is fine)" + "No seat-counting for member farmers, ever"', answer: 'rendered', key: 'signup.refused.members',
+    why: 'founder D4: no column for a guess; and plans DO carry a member limit (`plan_limits.max_farmers`, enforced on member add) — "never" is false' },
+  { id: 'oncall_paging_signup', canon: 'W2469 / W3067 / W2472 / W3070 "repeated failures page the on-call"', answer: 'rendered', key: 'signup.refused.oncall',
+    why: 'nothing pages anyone on a failed signup; the failure is said, with a Retry' },
+  { id: 'flag_for_tenant_plan', canon: 'W307 state "switched off for this tenant/plan (feature flag) … See store settings"', answer: 'rendered', key: 'signup.refused.flag',
+    why: 'pre-tenant: `org_self_signup` is a PLATFORM switch (founder D1) — there is no tenant or plan for it to be about' },
+  { id: 'anand_proof', canon: 'W307 lead "Anand FPO\'s 1,240 members are the proof it works"', answer: 'recorded',
+    why: 'founder D4: replaced by the LIVE count of verified organisations (storefront.stats()), omitted while not counted yet' },
+  { id: 'chain_back_to_w316', canon: 'W2467 / W2468 / W2469 / W3064–W3067 "Back to the screen / Back to edit → W316"', answer: 'delta',
+    why: 'the chain pages point back at the error canon (STORE-SWEEP) — a defect: Back goes to W307\'s own form (?step=form)' },
+  { id: 'confirm_over_replay', canon: 'W2470 / W3068 "Confirm this action … Confirming writes an audit-trail entry"', answer: 'delta',
+    why: 'Retry is an idempotent REPLAY of the same request (same key): a confirm page over it would confirm nothing and write no second audit row' },
+]);
+
+/** The 14 chain pages and their verdicts (brief C2/C3). One implementation: features/signup/flow.ts steps on /for-organisations. */
+export const STORE1C_CHAIN_PAGES: readonly { file: string; verdict: string }[] = Object.freeze([
+  { file: 'W2466-store-storesignup-form-form-error.html', verdict: 'GAP-UI built — ?step=form re-rendered with every refusal against its field, values kept (cookie)' },
+  { file: 'W2467-store-storesignup-form-review.html', verdict: 'GAP-UI built — ?step=review, read-only, Idempotency-Key minted at render · "Back to edit → W316" DELTA chain_back_to_w316' },
+  { file: 'W2468-store-storesignup-form-success.html', verdict: 'GAP-UI built — ?step=done (created / resumed); audit tenancy.self_serve_signup is real' },
+  { file: 'W2469-store-storesignup-form-failure.html', verdict: 'GAP-UI built — ?step=failure, named refusal, Retry = same key · oncall refused (oncall_paging_signup)' },
+  { file: 'W3064-store-storesignup-form-form-error.html', verdict: 'GAP-UI built (WSX-40 duplicate of W2466 — one implementation)' },
+  { file: 'W3065-store-storesignup-form-review.html', verdict: 'GAP-UI built (duplicate of W2467 — one implementation)' },
+  { file: 'W3066-store-storesignup-form-success.html', verdict: 'GAP-UI built (duplicate of W2468 — one implementation)' },
+  { file: 'W3067-store-storesignup-form-failure.html', verdict: 'GAP-UI built (duplicate of W2469 — one implementation)' },
+  { file: 'W2470-store-storesignup-mutate-confirm.html', verdict: 'PARITY-DECOR — FLOWMAP_tenant:1011 decor-offline-retry; the Retry is the failure page\'s same-key replay · DELTA confirm_over_replay' },
+  { file: 'W2471-store-storesignup-mutate-success.html', verdict: 'PARITY-DECOR — the replay\'s success is ?step=done (W2468)' },
+  { file: 'W2472-store-storesignup-mutate-failure.html', verdict: 'PARITY-DECOR — the replay\'s failure is ?step=failure (W2469) · oncall refused' },
+  { file: 'W3068-store-storesignup-mutate-confirm.html', verdict: 'PARITY-DECOR (orphan duplicate of W2470) · DELTA confirm_over_replay' },
+  { file: 'W3069-store-storesignup-mutate-success.html', verdict: 'PARITY-DECOR (orphan duplicate of W2471)' },
+  { file: 'W3070-store-storesignup-mutate-failure.html', verdict: 'PARITY-DECOR (orphan duplicate of W2472) · oncall refused' },
+]);
+
+/** The keys of every W307 refusal that is printed, in order. */
+export function signupRefusalKeys(): string[] {
+  return STORE1C_REFUSALS.filter((r) => r.answer === 'rendered' && r.key).map((r) => r.key as string);
+}

@@ -1,5 +1,5 @@
 // core/tenancy-context/storefront-public.read-model.ts · PC-56 STORE-1b · B2 — the public reads behind the platform home (W273) and the
-// tenant home (W274). Every read goes through one of migration 0204's SECURITY DEFINER functions (the `tenants` wall, 0200, hides every row
+// tenant home (W274); PC-56 STORE-1c · B2 adds the public plan catalogue (`/pricing`, W307 — a PLATFORM table without RLS, see plans()). Every read goes through one of migration 0204's SECURITY DEFINER functions (the `tenants` wall, 0200, hides every row
 // from a context-free kv_app; `listings` is RLS-forced per tenant) — named functions with the smallest projection, never a blanket bypass.
 // All of them are on the read replica (Law 12: reads tolerate replica lag); the precomputed stats are refreshed by the job, never here.
 //
@@ -38,6 +38,20 @@ export interface OrganisationCard {
 }
 export interface KeysetPage<T> { items: T[]; nextCursor: string | null }
 
+/** PC-56 STORE-1c (founder D2) · one PUBLIC plan of a country: money as bigint minor STRINGS + the currency and its exponent (the DB's
+ *  `currencies.minor_units`) — never a float, never an assumed ₹. */
+export interface PublicPlan {
+  code: string; name: string; monthlyMinor: string; annualMinor: string; setupFeeMinor: string; currency: string; exponent: number;
+}
+export interface PublicPlans {
+  country: string;
+  plans: PublicPlan[];
+  /** The trial length the platform's signup policy states (`signup.trial_days`), or null when the setting is missing or malformed — the
+   *  page then says the length is shown at creation, rather than printing a number the service might not use (the service's own default
+   *  is NOT copied here: one place owns it, modules/tenancy/domain/signup.ts). */
+  trialDays: number | null;
+}
+
 /** A pg row as the driver hands it back: untyped (`any`) by the driver's own contract — every field is narrowed / converted below before it
  *  leaves this file (String(), Number(), === true), so no `any` reaches a caller. */
 type PgRow = Record<string, any>;   // eslint-disable-line @typescript-eslint/no-explicit-any -- justified above
@@ -50,6 +64,17 @@ export function pageSize(raw: unknown): number {
   const n = Number(raw);
   if (!Number.isFinite(n) || n < 1) return PUBLIC_PAGE_DEFAULT;
   return Math.min(Math.floor(n), PUBLIC_PAGE_MAX);
+}
+
+/** The `signup.trial_days` setting as a whole number of days in 1..365, else null (missing / malformed — said, never defaulted here). */
+export function trialDaysOf(raw: unknown): number | null {
+  const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : Number.NaN;
+  return Number.isInteger(n) && n >= 1 && n <= 365 ? n : null;
+}
+
+/** A query-string country: exactly two ASCII letters (ISO 3166-1 alpha-2), upper-cased; anything else is null (the route refuses it). */
+export function countryParam(raw: unknown): string | null {
+  return typeof raw === 'string' && /^[A-Za-z]{2}$/.test(raw.trim()) ? raw.trim().toUpperCase() : null;
 }
 
 @Injectable()
@@ -99,6 +124,42 @@ export class StorefrontPublicReadModel {
         organic: x.organic === true, grade: x.grade_name ?? null, district: x.district_name ?? null,
       })),
       nextCursor: more && last ? encodeKeyset(last.created_us, last.listing_id) : null,
+    };
+  }
+
+  /**
+   * PC-56 STORE-1c · D2 — the PUBLIC plan catalogue of one country, for `/pricing` and W307.
+   *
+   * `plans` is a PLATFORM table (0002 + 0037): no tenant_id and NO RLS — 0037's header says so, and kv_app holds SELECT on it (0205's header
+   * records the check). So this read needs no definer function; what keeps it public is the WHERE clause, and each exclusion is a spec:
+   * `is_public` (government / enterprise plans are quotes, never listed), `is_active` (the runtime sellability flag), `status = 'active'`
+   * (0037's lifecycle: a DRAFT was never published, an ARCHIVED one is retired), `deleted_at IS NULL`, and THIS country only. A price change
+   * is a new version row, so the newest version of each code wins (the same rule as the W115 compare read and the signup trial-plan read).
+   * Read-only, on the replica (Law 12) — no money moves here.
+   */
+  async plans(country: string): Promise<PublicPlans> {
+    const db = this.pools.replica(0);
+    const r = await db.query(
+      `SELECT * FROM (
+         SELECT DISTINCT ON (p.code) p.code, p.default_name, p.monthly_price_minor::text AS monthly, p.annual_price_minor::text AS annual,
+                p.setup_fee_minor::text AS setup_fee, p.currency_code, c.minor_units
+           FROM plans p
+           JOIN currencies c ON c.code = p.currency_code
+          WHERE p.is_public AND p.is_active AND p.status = 'active' AND p.deleted_at IS NULL AND p.country_code = $1
+          ORDER BY p.code, p.version DESC) latest
+        ORDER BY latest.monthly::bigint, latest.code`, [country]);
+    const s = await db.query(
+      `SELECT COALESCE(v.value, d.default_value) AS value
+         FROM setting_definitions d
+         LEFT JOIN platform_setting_values v ON v.key = d.key AND v.deleted_at IS NULL
+        WHERE d.key = 'signup.trial_days'`, []);
+    return {
+      country,
+      plans: (r.rows as PgRow[]).map((x) => ({
+        code: String(x.code), name: String(x.default_name), monthlyMinor: String(x.monthly), annualMinor: String(x.annual),
+        setupFeeMinor: String(x.setup_fee), currency: String(x.currency_code).trim(), exponent: Number(x.minor_units),
+      })),
+      trialDays: trialDaysOf((s.rows[0] as PgRow | undefined)?.value),
     };
   }
 

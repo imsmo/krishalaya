@@ -36,6 +36,9 @@ module.exports = {
         '<rootDir>/modules/promotions/__tests__/**/*.spec.ts',
         '<rootDir>/modules/memberships/__tests__/**/*.spec.ts',
         '<rootDir>/modules/tenancy/__tests__/**/*.spec.ts',
+        // PC-56 STORE-1c · lookups (its unit spec had been written and never run: the module was not listed — found when W307's registry
+        // read 500'd for an anonymous caller).
+        '<rootDir>/modules/lookups/__tests__/**/*.spec.ts',
         '<rootDir>/modules/labour/__tests__/**/*.spec.ts',
         // PC-56 TENANT-11c · group lots (its domain spec had been written and never run: the module was not listed).
         '<rootDir>/modules/group-lots/__tests__/**/*.spec.ts',
