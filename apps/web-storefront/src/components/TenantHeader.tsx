@@ -7,6 +7,8 @@
 //     THIS store's sign-in (/<slug>/login);
 //   • PC-56 STORE-2a · C2: the search box → THIS store's /<slug>/search (the tenant feed), not the platform's;
 //   • the breadcrumb back to the platform store (founder D1 allows it: "Tenant stores MAY link back to the bazaar").
+//   • PC-56 STORE-3b · C1 (survey F-11): "Offers" → THIS store's /<slug>/offers, ONLY for a signed-in buyer and ONLY when this store's `offers`
+//     flag is ON (its public flags read); OFF or unreadable → no link.
 // Server component: the only client JS is the locale switcher.
 import Link from 'next/link';
 import { getTranslator, getLang } from '../lib/i18n';
@@ -14,6 +16,7 @@ import { hasSessionCookie } from '../lib/auth';
 import { LocaleSwitcher } from './LocaleSwitcher';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
 import { getCartItemCount } from '../features/cart/summary';
+import { publicClient } from '../lib/api-client';
 
 export interface TenantHeaderProps {
   slug: string;
@@ -30,6 +33,8 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
   const signedIn = hasSessionCookie();
   const cartCount = await getCartItemCount();
   const home = `/${slug}`;
+  let offersOn = false;
+  if (signedIn) { try { offersOn = (await publicClient(slug).storefront.flags()).offers === true; } catch { offersOn = false; } }
   return (
     <header className="kv-header" data-kv-header="tenant">
       <div className="kv-container kv-header__bar">
@@ -49,6 +54,7 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
         </form>
         <div className="kv-header__actions">
           <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
+          {signedIn && offersOn && <Link href={`${home}/offers`} className="kv-header__link" data-kv-nav="offers">{t.t('nav.offers')}</Link>}
           {/* PC-56 STORE-2b · D3: THIS store's cart (/<slug>/cart), under this header */}
           <Link href={`${home}/cart`} className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}

@@ -561,6 +561,8 @@ export interface OrderDetail {
   cancelReasonCode?: string | null;
   /** PC-56 STORE-3a · B2: the buyer's own words for `other` — the SELLER's / staff's view only (absent from the buyer's). */
   cancelNote?: string | null;
+  /** PC-56 STORE-3b · B3: the offer / auction this order came from (an offer order links back to its thread). Optional in the type. */
+  offerId?: string | null; auctionId?: string | null;
 }
 /** PC-56 STORE-3a · B1 (founder D4) — the buyer's order tabs (apps/api orders/domain/order-groups.ts). */
 export const ORDER_GROUPS = Object.freeze(['all', 'active', 'attention', 'completed', 'cancelled'] as const);
@@ -747,7 +749,43 @@ export interface ListingOffer {
   expiresAt?: string | null; convertedOrderId?: string | null; createdAt?: string;
   /** PC-56 HOTFIX-5 · B4 (Rule Zero): the LISTING's currency (an offer has no currency of its own) — the minor units above are in it. */
   currencyCode: string | null;
+  // ---- PC-56 STORE-3b (all OPTIONAL in the type — web-tenant and mobile compile unchanged; the API sends every one on every read) ----
+  /** B6: the listing's title and unit, and the ORGANISATION the offer is with (the tenant — never a person). */
+  listingTitle?: string | null; unitCode?: string | null; organisation?: OrderOrganisation | null;
+  /** B6: the per-unit price on the table now (after an accept: the agreed price) and the SERVER's quantity × it (the order line's floor). */
+  currentPriceMinor?: string; offerValueMinor?: string;
+  /** B6: is it the CALLER's turn, and which acts the caller may take now (empty when not their turn, past the round's deadline, or over). */
+  yourTurn?: boolean; allowedActs?: OfferAct[];
+  /** B1 (founder D1): this round's deadline (= expiresAt), the platform's hours per round and when the whole negotiation ends. */
+  respondBy?: string | null; roundTtlHours?: number; maxLifeEndsAt?: string | null;
+  /** B4 (founder D3): the thread, oldest first (an offer made before 0211: round 1 synthesised from the offer). */
+  rounds?: OfferRound[];
+  /** B4 (founder D3): the decline reason's code (`OFFER_DECLINE_REASONS`) and which side declined. */
+  declineReasonCode?: string | null; declinedBy?: 'buyer' | 'seller' | null;
+  /** B5: an accepted offer's order is being created by the relay (`creating`) or exists (`converted`). */
+  conversion?: 'creating' | 'converted' | null;
+  /** B6: the converted order's status (the BUYER's read only). */
+  convertedOrderStatus?: string | null;
 }
+/** PC-56 STORE-3b — the offer state machine's six statuses (apps/api offers/domain/listing-offer.state.ts). */
+export const OFFER_STATUSES = Object.freeze(['open', 'countered', 'accepted', 'rejected', 'expired', 'converted'] as const);
+export type OfferStatus = (typeof OFFER_STATUSES)[number];
+export type OfferAct = 'accept' | 'counter' | 'decline';
+/** One act of the negotiation (0211 `listing_offer_rounds`): who, which round, the per-unit price (null for decline / expire), when. */
+export interface OfferRound { round: number; party: 'buyer' | 'seller' | 'system'; act: 'offer' | 'counter' | 'accept' | 'decline' | 'expire'; priceMinor: string | null; at: string }
+/** PC-56 STORE-3b · founder D3 — the decline reasons (0211 `offer_decline_reason`), usable by either side; `other` carries no note. */
+export const OFFER_DECLINE_REASONS = Object.freeze(['price', 'lot_committed', 'quantity', 'timing', 'changed_mind', 'other'] as const);
+export type OfferDeclineReason = (typeof OFFER_DECLINE_REASONS)[number];
+/** PC-56 STORE-3b · B7 — the caller's outgoing offers per status + all, each bounded (`capped`: more than the API's cap exist). */
+export type OfferCounts = Record<'all' | OfferStatus, { count: number; capped: boolean }>;
+/** PC-56 STORE-3b — the offer acts' refusals, BY NAME: OFFER_NOT_YOUR_TURN {party} · OFFER_EXPIRED · OFFER_NOT_NEGOTIABLE {status} (409) ·
+ *  OFFER_STOCK_SHORT {available} · OFFER_LISTING_UNAVAILABLE {status} · OFFER_SELLER_UNAVAILABLE · OFFER_MAX_LIFE {endsAt} (409) ·
+ *  OFFER_EXPIRY_TOO_LATE {max} · OFFER_DECLINE_REASON_UNKNOWN {reasonCode} (422) · OFFER_INVALID (400) · OFFER_FORBIDDEN (403). */
+export const OFFER_REFUSAL_CODES = Object.freeze([
+  'OFFER_NOT_YOUR_TURN', 'OFFER_EXPIRED', 'OFFER_NOT_NEGOTIABLE', 'OFFER_STOCK_SHORT', 'OFFER_LISTING_UNAVAILABLE', 'OFFER_SELLER_UNAVAILABLE',
+  'OFFER_MAX_LIFE', 'OFFER_EXPIRY_TOO_LATE', 'OFFER_DECLINE_REASON_UNKNOWN', 'OFFER_INVALID', 'OFFER_FORBIDDEN',
+] as const);
+export type OfferRefusalCode = (typeof OFFER_REFUSAL_CODES)[number];
 
 // --- messaging (communication) ---
 // 'listing' (KV-BL-031): a buyer-inquiry thread scoped to one listing — see 03_API_CONTRACT_DELTA.md.

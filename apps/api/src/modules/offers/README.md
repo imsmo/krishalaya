@@ -14,13 +14,19 @@ the `offers` feature flag (default OFF).
   the stale seller counter. Either party may reject/withdraw at any live moment.
 - **Make** — `POST /v1/offers` (`offer.create`, Idempotency-Key). Validates the listing is published,
   the buyer is **not** the seller (no self-deal), and the quantity is within `[min_order_qty,
-  quantity_available]`. Offers expire after 72h unless `expiresAt` is given.
+  quantity_available]`. PC-56 STORE-3b (founder D1, 0211): each round lasts `offers.round_ttl_hours` (a platform setting, seeded
+  48) — the first offer and every counter reset `expires_at` to now + it; the whole negotiation ends `offers.max_life_hours` (336)
+  after the first offer (a counter past it → `OFFER_MAX_LIFE`); a buyer's own `expiresAt` beyond one round → `OFFER_EXPIRY_TOO_LATE`.
+  Every act writes a `listing_offer_rounds` row (append-only); a decline may carry a reason from `offer_decline_reason`.
 - **Respond** — `POST /v1/offers/:id/counter|accept|reject`. The acting party is resolved server-side
   (the buyer is `buyer_user_id`; the seller is the listing's seller, via **ListingService** — Law 11,
   never the listings repo). Turn + state are enforced by the aggregate.
-- **Accept = a deal, not money** — accepting emits `offers.offer_accepted` (agreed per-unit price +
-  quantity + buyer) via the **outbox** in the same tx. The orders module's `OfferAcceptedHandler`
-  consumes it and creates the order (`source='offer'`, agreed price × qty), then emits
+- **Accept = a deal, not money — but it RESERVES (PC-56 STORE-3b, founder D2)** — in the accept tx the listing must still be
+  published, its seller not suspended, and the quantity is reserved through `ListingService.reserveInTx` (`OFFER_LISTING_UNAVAILABLE`
+  / `OFFER_SELLER_UNAVAILABLE` / `OFFER_STOCK_SHORT {available}`); counter / accept / reject honour Idempotency-Key. Accepting emits
+  `offers.offer_accepted` (agreed per-unit price + quantity + buyer + `stockReserved`) via the **outbox** in the same tx. The orders module's `OfferAcceptedHandler`
+  consumes it (in kv_app's unit of work) and creates the order (`source='offer'`, agreed price × qty, checkout's buyer charges via
+  `orders/domain/placement-charges.ts`, `stock_reserved_at` set — 2c's restock releases it on cancel), then emits
   `orders.order_from_offer_created`; this module's `OrderFromOfferCreatedHandler` consumes that and
   links back (`converted_order_id`, status → `converted`). Each handler is idempotent and touches only
   its own module's tables — the two steps are atomic per relay tx and decoupled via the outbox.

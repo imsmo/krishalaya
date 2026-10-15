@@ -212,7 +212,9 @@ export class OrderService {
       discountMinor: p.discountMinor.toString(), taxMinor: p.taxMinor.toString(), commissionMinor: p.commissionMinor.toString(),
       platformFeeMinor: p.platformFeeMinor.toString(), buyerCommissionMinor: (p.buyerCommissionMinor ?? 0n).toString(),
       totalMinor: p.totalMinor.toString(), acceptanceDeadline: p.acceptanceDeadline, qualityWindowEnds: p.qualityWindowEnds,
-      checkoutGroupId: p.checkoutGroupId, createdAt: p.createdAt, completedAt: p.completedAt };
+      checkoutGroupId: p.checkoutGroupId, createdAt: p.createdAt, completedAt: p.completedAt,
+      // PC-56 STORE-3b · B3 (survey F-14 / 1G "traceable back to it"): the offer / auction this order came from (both views; the buyer's own deal)
+      offerId: p.offerId ?? null, auctionId: p.auctionId ?? null };
   }
 
   private async flush(tx: TxContext, tenantId: string, orderId: string, events: DomainEvent[], extra: Record<string, unknown> = {}) {

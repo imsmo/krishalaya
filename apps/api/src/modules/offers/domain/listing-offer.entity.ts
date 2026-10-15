@@ -13,6 +13,7 @@
 import { OfferStatus, assertTransition, isNegotiable } from './listing-offer.state';
 import { OfferEventType, DomainEvent, OfferParty } from './offers.events';
 import { InvalidOfferError, OfferNotNegotiableError, NotYourTurnError, OfferExpiredError } from './offers.errors';
+import { assertWithinMaxLife } from './offer-clock';
 
 export interface ListingOfferProps {
   id: string; tenantId: string; listingId: string; buyerUserId: string;
@@ -23,6 +24,12 @@ export interface ListingOfferProps {
   convertedOrderId: string | null; createdAt: Date;
   /** PC-56 HOTFIX-5 · B4: the LISTING's currency, projected on read (listing_offers has no currency column — 0015). Never written. */
   currencyCode?: string | null;
+  /** PC-56 STORE-3b · B4 (founder D3, 0211): the decline reason's CODE (`offer_decline_reason`) and which side declined; null otherwise. */
+  declineReasonCode?: string | null;
+  declinedBy?: OfferParty | null;
+  /** PC-56 STORE-3b · B8 (survey F-20): `created_at` AS THE DATABASE PRINTED IT (six fractional digits, UTC — shared/pagination/us-keyset.ts),
+   *  projected on read for the keyset cursor; never a Date (a millisecond Date skipped rows written in one millisecond). Never written. */
+  createdAtUs?: string | null;
 }
 
 const QTY_RE = /^\d{1,11}(\.\d{1,3})?$/;
@@ -56,6 +63,14 @@ export class ListingOffer {
   get listingId() { return this.props.listingId; }
   get buyerUserId() { return this.props.buyerUserId; }
   get expiresAt() { return this.props.expiresAt; }
+  /** The FIRST offer's instant — the negotiation's ceiling (`offers.max_life_hours`) runs from here (founder D1). */
+  get firstOfferedAt(): Date { return this.props.createdAt; }
+  get quantity() { return this.props.quantity; }
+  /** The per-unit price on the table NOW, by round parity (odd: the buyer's offer awaits the seller; even: the seller's counter awaits the
+   *  buyer) — after an accept, the price that was agreed (the round does not move on accept). */
+  get currentPriceMinor(): bigint {
+    return this.props.round % 2 === 1 ? this.props.offeredPriceMinor : (this.props.counterPriceMinor ?? this.props.offeredPriceMinor);
+  }
   get agreedPriceMinor(): bigint | null { return this.acceptedPriceMinor; }
   toProps(): Readonly<ListingOfferProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
@@ -69,30 +84,45 @@ export class ListingOffer {
   }
 
   /** The responding party puts a new per-unit price on the table. Seller sets counter_price; a buyer
-   *  re-counter replaces offered_price and clears the stale seller counter. round++ flips the turn. */
-  counter(party: OfferParty, newPriceMinor: bigint, now: Date): void {
+   *  re-counter replaces offered_price and clears the stale seller counter. round++ flips the turn.
+   *  PC-56 STORE-3b · B1 (founder D1): every counter RESETS THE CLOCK — the other side gets a full round (`respondBy` = now + the
+   *  round TTL, computed by the service from the setting) — and a round that would end after the negotiation's ceiling is refused
+   *  OFFER_MAX_LIFE {endsAt} (the negotiation then lapses by its clock). */
+  counter(party: OfferParty, newPriceMinor: bigint, now: Date, clock: { respondBy: Date; maxLifeEndsAt: Date }): void {
     this.assertLive(now); this.assertTurn(party);
     if (newPriceMinor <= 0n) throw new InvalidOfferError('counter price must be positive');
+    assertWithinMaxLife(clock.respondBy, clock.maxLifeEndsAt);
+    this.props.expiresAt = clock.respondBy;
     if (party === 'seller') this.props.counterPriceMinor = newPriceMinor;
     else { this.props.offeredPriceMinor = newPriceMinor; this.props.counterPriceMinor = null; }
     this.props.round += 1;
-    this.to('countered', OfferEventType.Countered, { by: party, round: this.props.round, priceMinor: newPriceMinor.toString() });
+    this.to('countered', OfferEventType.Countered, { by: party, round: this.props.round, priceMinor: newPriceMinor.toString(), respondBy: clock.respondBy.toISOString() });
   }
 
-  /** The party whose turn it is accepts the price on the table → a deal (downstream order creation). */
-  accept(party: OfferParty, now: Date): void {
+  /** PC-56 STORE-3b · B2: may `party` accept right now? (live, not past its round's deadline, its turn) — the same two checks `accept` makes,
+   *  run FIRST so the service reserves stock only for an accept that will happen. Throws the entity's named refusals. */
+  assertCanAccept(party: OfferParty, now: Date): void { this.assertLive(now); this.assertTurn(party); }
+
+  /** The party whose turn it is accepts the price on the table → a deal (downstream order creation).
+   *  PC-56 STORE-3b · B2 (founder D2): `stockReserved` travels in `offers.offer_accepted` — the accept transaction reserved the quantity, so
+   *  the order the relay creates carries `stock_reserved_at` (2c's restock path then releases it once on cancel / decline / timeout). */
+  accept(party: OfferParty, now: Date, opts: { stockReserved?: boolean } = {}): void {
     this.assertLive(now); this.assertTurn(party);
     const agreed = this.priceOnTableFor(party);
     if (agreed <= 0n) throw new InvalidOfferError('no price to accept');
     this.acceptedPriceMinor = agreed;
-    this.to('accepted', OfferEventType.Accepted, { by: party, agreedPriceMinor: agreed.toString(), quantity: this.props.quantity, buyerUserId: this.props.buyerUserId });
+    this.to('accepted', OfferEventType.Accepted, { by: party, agreedPriceMinor: agreed.toString(), quantity: this.props.quantity, buyerUserId: this.props.buyerUserId,
+      stockReserved: opts.stockReserved === true });
   }
 
-  /** Either party may decline / withdraw while the negotiation is live (turn not enforced). */
-  reject(party: OfferParty, now: Date): void {
+  /** Either party may decline / withdraw while the negotiation is live (turn not enforced).
+   *  PC-56 STORE-3b · B4 (founder D3): with an optional reason CODE (validated against the vocabulary by the service, in the transaction). */
+  reject(party: OfferParty, now: Date, reasonCode: string | null = null): void {
     if (!isNegotiable(this.props.status)) throw new OfferNotNegotiableError(this.props.status);
     void now;
-    this.to('rejected', OfferEventType.Rejected, { by: party });
+    this.props.declineReasonCode = reasonCode;
+    this.props.declinedBy = party;
+    this.to('rejected', OfferEventType.Rejected, { by: party, ...(reasonCode ? { reasonCode } : {}) });
   }
 
   /** Worker job: lapse an offer past its expiry. Idempotent at the service layer (skips non-live). */

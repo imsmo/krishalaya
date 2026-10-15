@@ -177,3 +177,19 @@ describe('STORE-3a · W289 states and the door', () => {
     await expect(PlatformOrderDoor({ params: { id: OID.cod }, searchParams: { status: 'reviewed' } })).rejects.toThrow(`REDIRECT /${SLUG}/orders/${OID.cod}?status=reviewed`);
   });
 });
+
+// PC-56 STORE-3b · C4 (founder D2): an order made from an accepted offer says where it came from and the regime it runs under; a direct order
+// says neither.
+describe('STORE-3b · C4 the order page of an OFFER order', () => {
+  const OFFER_ID = '0211c000-0000-7000-8000-000000000004';
+  it('"from your offer" links the thread under this store; the regime is printed; a direct order shows neither', async () => {
+    C.orders[OID.cod] = DETAIL(OID.cod, { source: 'offer', offerId: OFFER_ID, deliveryFeeMinor: '0', platformFeeMinor: '0', totalMinor: '6150000' });
+    let h = renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id: OID.cod }, searchParams: {} }));
+    expect(h).toContain(`data-kv-offer-link="${OFFER_ID}" href="/${SLUG}/offers/${OFFER_ID}"`);
+    expect(h).toContain('data-kv-regime="offer"');
+    expect(text(h)).toContain(en['store3b.regime']);
+    C.orders[OID.cod] = DETAIL(OID.cod);
+    h = renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id: OID.cod }, searchParams: {} }));
+    expect(h).not.toContain('data-kv-regime="offer"');
+  });
+});

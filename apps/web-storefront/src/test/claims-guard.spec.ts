@@ -184,3 +184,41 @@ describe('STORE-3a · claims guard (the orders, the order, the cancel chain, the
     }
   });
 });
+
+// PC-56 STORE-3b · brief §E / C5 — every canon claim the offer pages REFUSE stays out of every catalogue as an OFFER: the phrases may appear
+// ONLY inside `store3b.refusal.*` (which say no, by name). And no STORE-3b value (store3b.*, the six offer statuses) carries a digit, a
+// currency sign or a person placeholder — every figure is interpolated, the counterpart is the organisation.
+describe('STORE-3b · claims guard (the offer list, the thread, the response chain)', () => {
+  const REFUSED = [
+    /both sides see the same mandi|mandi reference|Rajkot APMC/i,                              // no mandi figure
+    /accept \S*4× more often|counters within/i,                                               // no AI hint
+    /buying history/i,                                                                         // founder D5
+    /delivered to you verbatim/i,                                                              // founder D3: no notes
+    /message (the )?seller/i,                                                                  // founder D6
+    /checkout picks up from the address step|exactly as if you.d bought at list price/i,      // founder D2: the regime instead
+    /offers don.t reserve stock|stays live for direct buyers/i,                                // now false: accept reserves
+    /Showing \S+ of \S+/i,                                                                     // keyset
+    /Let it lapse/i,                                                                           // founder D4: copy, not an act
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a store3b refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (/\.refusal\./.test(k)) continue;   // every wave's refusal sentences (home.refusal.mandi, store2a/3a/3b.refusal.*) say no, by name
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no digit, no currency sign, no person placeholder in a STORE-3b value', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store3b.') || /^offers\.status\.(open|countered|accepted|rejected|expired|converted)$/.test(k));
+    expect(keys.length).toBe(115);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|memberNo|fullName|owner)\}/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English STORE-3b refusal says no / not / never / cannot', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store3b.refusal.'));
+    expect(r.length).toBe(12);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b/i.test(v)]).toEqual([k, true]);
+  });
+});

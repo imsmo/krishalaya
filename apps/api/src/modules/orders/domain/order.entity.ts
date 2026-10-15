@@ -30,11 +30,14 @@ export interface OrderProps {
   /** The commission + GST charged to the BUYER at placement when the frozen rule says charged_to=buyer (A4) — part of the total. */
   buyerCommissionMinor?: bigint;
   /** PC-56 STORE-2c · B1 (founder D1, 0209): when placement RESERVED this order's stock (each line's listing decremented under its row lock in
-   *  the checkout transaction). Null = reserved nothing (placed before 0209; an offer / auction / requirement order) or already released.
+   *  the checkout transaction; STORE-3b: an OFFER order — reserved in the accept transaction). Null = reserved nothing (placed before 0209; an
+   *  auction / requirement order; an offer accepted before STORE-3b) or already released.
    *  Cleared ONLY by the restock handler, in the transaction that puts the stock back (OrderRepository.releaseReservationTx). */
   stockReservedAt?: Date | null;
   /** PC-56 STORE-3a · B2 (0210 `orders.cancel_note`): the buyer's own words when the cancel reason's meta says textRequired (`other`). */
   cancelNote?: string | null;
+  /** PC-56 STORE-3b · B3: the auction an order settled (0005 `orders.auction_id`, linked by AuctionOrderService) — READ only, for the order read. */
+  auctionId?: string | null;
 }
 
 const ACCEPTANCE_WINDOW_MS = 24 * 3600_000;

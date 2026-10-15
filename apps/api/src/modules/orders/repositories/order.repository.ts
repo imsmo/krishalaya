@@ -16,7 +16,7 @@ const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_
   subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
   total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, quality_window_ends,
   cancel_reason_id, cancelled_by, version, created_at, completed_at, charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor,
-  stock_reserved_at, cancel_note`;
+  stock_reserved_at, cancel_note, auction_id`;
 /** PC-56 HOTFIX-5 · B1: the order was placed awaiting an online payment (its placement row in order_events, pruned from below by the order's own
  *  created_at). Used by the quality-window clock's claim — see domain/order-clocks.ts QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT. */
 const PLACED_AWAITING_PAYMENT = `EXISTS (SELECT 1 FROM order_events pe WHERE pe.tenant_id = orders.tenant_id AND pe.order_id = orders.id
@@ -35,7 +35,7 @@ function toDomain(r: any): Order {
     version: r.version, createdAt: r.created_at, completedAt: r.completed_at,
     commissionRuleSnapshot: r.charge_snapshot ?? null, commissionSnapshot: r.commission_snapshot ?? null,
     deliveryZoneId: r.delivery_zone_id ?? null, buyerCommissionMinor: r.buyer_commission_minor != null ? big(r.buyer_commission_minor) : 0n,
-    stockReservedAt: r.stock_reserved_at ?? null, cancelNote: r.cancel_note ?? null });
+    stockReservedAt: r.stock_reserved_at ?? null, cancelNote: r.cancel_note ?? null, auctionId: r.auction_id ?? null });
 }
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;

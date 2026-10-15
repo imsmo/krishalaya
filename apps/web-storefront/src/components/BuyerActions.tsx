@@ -22,8 +22,11 @@ const OFFERABLE = new Set(['direct', 'both']);
 // — or, after a refusal, the quantity the buyer typed (`keptQty`); the minimum travels as a hidden field so the action checks it before the
 // API does (the API re-validates); the button says "Add N <unit> to cart" (AddToCartControl — no line total); the refusal sentence (`refusal`)
 // sits right above the field, named. Anonymous visitors are told a cart needs a sign-in to this store (no guest cart).
-export function BuyerActions({ listing, tenantSlug, offers = false, keptQty = null, refusal = null, signedIn = true }: {
+// PC-56 STORE-3b · C2 ("Offer again" — a chain-form, DELTA vs the FM's "filter"): the offer form reads the old terms the buyer's offer list
+// links here with (`?qty=&price=`, shape-checked by features/store3b/offers.ts readOfferPrefill) as its first values; `#offer` is its anchor.
+export function BuyerActions({ listing, tenantSlug, offers = false, keptQty = null, refusal = null, signedIn = true, offerPrefill = null }: {
   listing: PublicListingView; tenantSlug: string; offers?: boolean; keptQty?: string | null; refusal?: ReactNode; signedIn?: boolean;
+  offerPrefill?: { qty: string | null; price: string | null } | null;
 }) {
   const t = getTranslator();
   const soldOut = listing.quantityAvailable <= 0;
@@ -50,14 +53,14 @@ export function BuyerActions({ listing, tenantSlug, offers = false, keptQty = nu
       )}
 
       {offerable && (
-        <form action={makeOfferAction} className="kv-actions__form" data-kv-offer="form">
+        <form action={makeOfferAction} className="kv-actions__form" id="offer" data-kv-offer="form" data-kv-prefill={offerPrefill?.qty || offerPrefill?.price ? 'offer-again' : undefined}>
           <input type="hidden" name="tenantSlug" value={tenantSlug} />
           <input type="hidden" name="listingId" value={listing.id} />
           <input type="hidden" name="available" value={String(listing.quantityAvailable)} />
           <label htmlFor="qty-offer" className="kv-field__label">{t.t('listing.qtyLabel')}</label>
-          <input id="qty-offer" name="quantity" type="number" inputMode="decimal" min={0.001} max={maxQty} defaultValue={1} step={0.001} className="kv-field__input kv-actions__qty" />
+          <input id="qty-offer" name="quantity" type="number" inputMode="decimal" min={0.001} max={maxQty} defaultValue={offerPrefill?.qty ?? 1} step={0.001} className="kv-field__input kv-actions__qty" />
           <label htmlFor="offer-price" className="kv-field__label">{t.t('listing.offerPriceLabel', { unit: listing.unitCode })}</label>
-          <input id="offer-price" name="offerPrice" type="text" inputMode="decimal" className="kv-field__input kv-actions__qty" />
+          <input id="offer-price" name="offerPrice" type="text" inputMode="decimal" className="kv-field__input kv-actions__qty" defaultValue={offerPrefill?.price ?? undefined} />
           <button type="submit" className="kv-btn kv-btn--ghost">{t.t('listing.makeOffer')}</button>
         </form>
       )}

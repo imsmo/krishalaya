@@ -8,6 +8,6 @@ export const CreateOfferSchema = z.object({
   listingId: z.string().uuid(),
   quantity: qty,
   offeredPriceMinor: minor,                 // buyer's per-unit price offer
-  expiresAt: z.string().datetime().optional(),  // default applied in the service (now + 72h)
+  expiresAt: z.string().datetime().optional(),  // PC-56 STORE-3b · B1: default now + `offers.round_ttl_hours`; later than that → OFFER_EXPIRY_TOO_LATE
 }).strict();
 export type CreateOfferDto = z.infer<typeof CreateOfferSchema>;

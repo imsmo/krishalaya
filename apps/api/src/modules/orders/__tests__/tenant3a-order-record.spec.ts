@@ -138,8 +138,10 @@ describe('TENANT-3a · the dead column, and the promise it now keeps (comments s
     const co = read('services', 'checkout.service.ts');
     expect(co).toContain('checkoutChargesWithSnapshot');
     expect(co).toContain('commissionRuleSnapshot');
-    // and a membership benefit that overrides an amount goes INTO the snapshot, or the snapshot disagrees with the money
-    expect(co).toContain('memberBenefit');
+    // and a membership benefit that overrides an amount goes INTO the snapshot, or the snapshot disagrees with the money.
+    // PC-56 STORE-3b · B3: that rule moved, byte for byte, into the ONE function checkout, its preview and the offer order share.
+    expect(co).toContain('placementCharges(');
+    expect(read('domain', 'placement-charges.ts')).toContain('memberBenefit');
   });
 
   it('the money route does not recompute anything (no charge service on the read path)', () => {

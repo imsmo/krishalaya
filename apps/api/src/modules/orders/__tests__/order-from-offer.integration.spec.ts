@@ -38,6 +38,9 @@ import { ListingOfferService } from '../../offers/services/listing-offer.service
 import { OrderFromOfferCreatedHandler } from '../../offers/events/handlers/order-from-offer-created.handler';
 import { OrderRepository } from '../repositories/order.repository';
 import { OfferAcceptedHandler } from '../events/handlers/offer-accepted.handler';
+import { CommissionSnapshotService } from '../../payments/services/commission-snapshot.service';
+import { CommissionRuleRepository } from '../../payments/repositories/commission-rule.repository';
+import { TaxRuleRepository } from '../../payments/repositories/tax-rule.repository';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -80,7 +83,9 @@ run('order-from-accepted-offer via outbox relay (integration, real Postgres)', (
     const flags = new FlagsService(pools, cache);
     const orderRepo = new OrderRepository(replica as any);
     const registry = new OutboxHandlerRegistry();
-    registry.register(new OfferAcceptedHandler(orderRepo, listings, flags, outbox, metrics));         // orders consumes offers.offer_accepted
+    // PC-56 STORE-3b · B3: + kv_app's unit of work, the member benefits (none here) and payments' commission freeze — the shared placement charges
+    const commission = new CommissionSnapshotService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any));
+    registry.register(new OfferAcceptedHandler(orderRepo, listings, flags, outbox, metrics, uow, { checkoutBenefits: async () => null } as any, commission, audit));   // orders consumes offers.offer_accepted
     registry.register(new OrderFromOfferCreatedHandler(offerRepo, outbox, uow));                       // offers consumes orders.order_from_offer_created (kv_app UoW, HOTFIX-2)
     dispatcher = new OutboxDispatcher(admin, registry, metrics);                                       // relay on the privileged (admin) pool
   }, 30000);

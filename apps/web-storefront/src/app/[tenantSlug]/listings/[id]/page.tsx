@@ -44,6 +44,7 @@ import { reloadHref } from '../../../../features/home/load-result';
 import { browseOff, categoryTrail, readState } from '../../../../features/store2a/browse';
 import { buyerPanel, dayAsDate, lotFacts, tombstoneView } from '../../../../features/store2a/listing';
 import { BuyerActions } from '../../../../components/BuyerActions';
+import { readOfferPrefill } from '../../../../features/store3b/offers';   // PC-56 STORE-3b · C2: "Offer again" pre-fills the offer form
 import { ListingGallery } from '../../../../components/ListingGallery';
 import { RefusalList, BrowseOff } from '../../../../components/RefusalList';
 
@@ -71,7 +72,7 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
 }
 
 export default async function ListingDetail(
-  { params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: { status?: string; step?: string; refusal?: string; qty?: string } },
+  { params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: { status?: string; step?: string; refusal?: string; qty?: string; price?: string } },
 ) {
   const t = getTranslator();
   const lang = getLang();
@@ -211,7 +212,8 @@ export default async function ListingDetail(
           {facts.minOrder > 0 && <li data-kv-min-order="lot">{t.t('lot.minOrder', { qty: qty(facts.minOrder), unit: facts.unit })}</li>}
           <li>{t.t('discover.saleType')}: {t.t(`discover.saleType.${l.saleType}`)}</li>
         </ul>
-        <BuyerActions listing={l} tenantSlug={slug} offers={panel.offers} keptQty={keptQty} refusal={refusalLine} signedIn={hasSessionCookie()} />
+        <BuyerActions listing={l} tenantSlug={slug} offers={panel.offers} keptQty={keptQty} refusal={refusalLine} signedIn={hasSessionCookie()}
+          offerPrefill={refused ? null : readOfferPrefill(searchParams)} />
         <p className="kv-detail__muted" data-kv-stock="not-reserved">{t.t('lot.noReserve')}</p>
         {panel.escrow && <p className="kv-detail__muted" data-kv-escrow="held">{t.t('lot.escrow')}</p>}
       </section>

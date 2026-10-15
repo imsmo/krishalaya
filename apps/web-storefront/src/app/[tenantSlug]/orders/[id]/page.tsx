@@ -12,6 +12,8 @@
 //     events) and what happened to the money (the refund read: nothing was paid / starting / requested / refunded with its reference);
 //   • the dispute door only when the store's `disputes` flag is ON (founder D2) — else "not available in this store"; the returns form is gone;
 //   • a load error is not a 404: said, with a Retry (a reload) and Back to the list; the refusals by name; the platform's trust mark.
+//   • PC-56 STORE-3b · C4: an OFFER order links back to its thread ("from your offer") and prints the offer regime (founder D2: collection or
+//     delivery arranged with the organisation; no delivery charge in this order). Nothing else changes here.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -110,6 +112,13 @@ export default async function TenantOrderPage({ params, searchParams }: { params
         {order.checkoutGroupId && <> · <Link href={confirmHref(slug, order.id, order.checkoutGroupId)} className="kv-link" data-kv-group-link="checkout">{t.t('store3a.detail.checkoutGroup')}</Link></>}
       </p>
       {order.organisation && <p className="kv-detail__muted" data-kv-seller="organisation">{t.t('checkout.soldBy', { org: order.organisation.name })}</p>}
+      {/* PC-56 STORE-3b · C4 (founder D2): an order made from an accepted offer says where it came from and the regime it runs under */}
+      {order.source === 'offer' && (
+        <div className="kv-detail__muted" data-kv-from-offer={order.offerId ?? 'unknown'}>
+          {order.offerId && <p><Link href={`/${encodeURIComponent(slug)}/offers/${encodeURIComponent(order.offerId)}`} className="kv-link" data-kv-offer-link={order.offerId}>{t.t('store3b.order.fromOffer')}</Link></p>}
+          <p data-kv-regime="offer">{t.t('store3b.regime')}</p>
+        </div>
+      )}
 
       {ok && <p className="kv-form__notice" role="status" data-kv-ok={ok}>{t.t(`store3a.ok.${ok}`)}</p>}
       {received && <p className="kv-form__error" role="alert" data-kv-received-error={received}>{t.t(`store3a.received.err.${received}`)}</p>}

@@ -4,7 +4,7 @@
 // the per-party authorization (buyer vs the listing's seller) + the legal transition are enforced server-side.
 // Gated server-side by the `offers` flag.
 import { HttpClient } from '../http';
-import { ListingOffer, Page } from '../types';
+import { ListingOffer, OfferCounts, Page } from '../types';
 
 export type OfferBox = 'outgoing' | 'incoming';
 
@@ -23,15 +23,22 @@ export class OffersResource {
   async get(id: string, signal?: AbortSignal): Promise<ListingOffer> {
     return (await this.http.request<ListingOffer>('GET', `offers/${encodeURIComponent(id)}`, { signal })).data;
   }
-  /** Counter with a new per-unit price (minor units). The other party then accepts/counters/rejects. */
-  async counter(id: string, priceMinor: string): Promise<ListingOffer> {
-    return (await this.http.request<ListingOffer>('POST', `offers/${encodeURIComponent(id)}/counter`, { body: { priceMinor } })).data;
+  /** PC-56 STORE-3b · B7: the caller's OUTGOING offers counted per status + all, each bounded (`capped` = more than the API's cap exist). */
+  async counts(signal?: AbortSignal): Promise<OfferCounts> {
+    return (await this.http.request<OfferCounts>('GET', 'offers/counts', { signal })).data;
   }
-  /** Accept the current (offered or countered) price → the server creates the order. */
-  async accept(id: string): Promise<ListingOffer> {
-    return (await this.http.request<ListingOffer>('POST', `offers/${encodeURIComponent(id)}/accept`, { body: {} })).data;
+  /** Counter with a new per-unit price (minor units). The other party then accepts/counters/rejects.
+   *  PC-56 STORE-3b · B5: an OPTIONAL Idempotency-Key (trailing — existing callers unchanged): a replay with the same key acts nothing. */
+  async counter(id: string, priceMinor: string, idempotencyKey?: string): Promise<ListingOffer> {
+    return (await this.http.request<ListingOffer>('POST', `offers/${encodeURIComponent(id)}/counter`, { body: { priceMinor }, ...(idempotencyKey ? { idempotencyKey } : {}) })).data;
   }
-  async reject(id: string): Promise<ListingOffer> {
-    return (await this.http.request<ListingOffer>('POST', `offers/${encodeURIComponent(id)}/reject`, { body: {} })).data;
+  /** Accept the current (offered or countered) price → the server RESERVES the quantity and the relay creates the order within seconds
+   *  (`conversion: 'creating'`, `convertedOrderId` null until then). PC-56 STORE-3b · B5: an optional Idempotency-Key. */
+  async accept(id: string, idempotencyKey?: string): Promise<ListingOffer> {
+    return (await this.http.request<ListingOffer>('POST', `offers/${encodeURIComponent(id)}/accept`, { body: {}, ...(idempotencyKey ? { idempotencyKey } : {}) })).data;
+  }
+  /** Decline. PC-56 STORE-3b · B4 / B5: an optional Idempotency-Key and an optional reason code (`OFFER_DECLINE_REASONS`; no free text). */
+  async reject(id: string, idempotencyKey?: string, reasonCode?: string): Promise<ListingOffer> {
+    return (await this.http.request<ListingOffer>('POST', `offers/${encodeURIComponent(id)}/reject`, { body: reasonCode ? { reasonCode } : {}, ...(idempotencyKey ? { idempotencyKey } : {}) })).data;
   }
 }

@@ -7,8 +7,10 @@
 //
 // EXACTLY ONCE, DURABLY: the marker is cleared and the lots are released in ONE kv_app transaction (OrderRepository.releaseReservationTx +
 // ListingService.releaseInTx, each lot under its row lock, in listing-id order). A replayed event, a relay retry after a crash, a second
-// handler run — each finds the marker NULL and releases nothing. An order that never reserved (placed before 0209, an offer / auction /
-// requirement order — the auction restocks its own lot on default) has NULL from the start: nothing is released.
+// handler run — each finds the marker NULL and releases nothing. An order that never reserved (placed before 0209, an auction / requirement
+// order — the auction restocks its own lot on default) has NULL from the start: nothing is released. PC-56 STORE-3b (founder D2): an OFFER
+// order now carries the marker — its quantity was reserved in the ACCEPT transaction (ListingOfferService.accept) — so its cancel, decline or
+// 24 h timeout releases it here exactly as a checkout order's.
 //
 // WHY kv_app's UNIT OF WORK, NOT THE RELAY TRANSACTION (the HOTFIX-2 house rule, relay gate): the relay logs in as `kv_relay`, which holds no
 // privilege it does not need; the stock lives in `listings` and the marker in `orders`, both reached here as kv_app, RLS-bound to the event's

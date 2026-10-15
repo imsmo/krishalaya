@@ -6,13 +6,15 @@
 //   • language switcher, cart link with its count IN the accessible name, Sign in / Sign out;
 //   • the category strip = top-level categories from lookups (master data, never a baked list) → /discover?category=<id>; a lookup
 //     failure hides the strip (degrade), it never invents categories.
+//   • PC-56 STORE-3b · C1 (survey F-11): "Offers" shows ONLY for a signed-in buyer whose session store has its `offers` flag ON (the store's
+//     public flags read, as the session's store — one store per session); OFF or unreadable → no link (the pages say the honest OFF state).
 import Link from 'next/link';
 import type { CategoryNode } from '@krishalaya/sdk-js';
 import { getTranslator, getLang } from '../lib/i18n';
 import { LocaleSwitcher } from './LocaleSwitcher';
 import { env } from '../lib/env';
 import { hasSessionCookie } from '../lib/auth';
-import { publicClient } from '../lib/api-client';
+import { publicClient, sessionTenantClient } from '../lib/api-client';
 import { getCartItemCount } from '../features/cart/summary';
 import { flattenCategoryNav } from '../features/discovery/categories';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
@@ -29,6 +31,8 @@ export async function SiteHeader() {
   let cats: ReturnType<typeof flattenCategoryNav> = [];
   try { cats = flattenCategoryNav((await publicClient().lookups.categories()) as CategoryNode[]).filter((c) => c.depth === 0).slice(0, STRIP_MAX); }
   catch { cats = []; }
+  let offersOn = false;
+  if (signedIn) { try { offersOn = (await sessionTenantClient().storefront.flags()).offers === true; } catch { offersOn = false; } }
   const nav = [
     ...(env.featureAuctions ? [{ href: '/auctions', label: t.t('nav.auctions') }] : []),
     { href: '/organisations', label: t.t('home.orgs.cta') },
@@ -54,7 +58,7 @@ export async function SiteHeader() {
         </nav>
         <div className="kv-header__actions">
           <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
-          {signedIn && <Link href="/offers" className="kv-header__link">{t.t('nav.offers')}</Link>}
+          {signedIn && offersOn && <Link href="/offers" className="kv-header__link" data-kv-nav="offers">{t.t('nav.offers')}</Link>}
           {signedIn && <Link href="/messages" className="kv-header__link">{t.t('nav.messages')}</Link>}
           {signedIn && <Link href="/notifications" className="kv-header__link">{t.t('nav.notifications')}</Link>}
           {signedIn && <Link href="/account" className="kv-header__link">{t.t('nav.account')}</Link>}

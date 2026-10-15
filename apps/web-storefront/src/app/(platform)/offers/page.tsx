@@ -1,62 +1,25 @@
-// apps/web-storefront/src/app/(platform)/offers/page.tsx · the buyer's offer inbox (offers I made). PROTECTED + dynamic.
-// offers.list({box:'outgoing'}) is keyset-paged through the shared DataTable; the API + RLS scope to the caller.
-// Money via formatMoneyMinor; dates via formatDate. Degrades to empty/error (Law 12). The listing read-model on an
-// offer carries only listingId (no title/tenant), so rows link to the offer detail, not back to the listing.
+// apps/web-storefront/src/app/(platform)/offers/page.tsx · PC-56 STORE-3b · C1 (the 3a C1 pattern) — THE PLATFORM'S /offers IS A DOOR.
+// A buyer's offers live under the organisation's chrome at /<slug>/offers (canon W293 — status chips with bounded counts, flag-aware); a signed-in
+// buyer is sent to the offers of the store their session was minted for (one store per session, 2b D3), carrying the status chip and the cursor;
+// an anonymous visitor signs in first (requireSession). If the session's store cannot be read: said, with a Retry — never a guessed store.
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import type { ListingOffer } from '@krishalaya/sdk-js';
-import { serverClient } from '../../../lib/api-client';
+import { redirect } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
-import { getTranslator, getLang } from '../../../lib/i18n';
-import { DataTable, type Column } from '../../../components/DataTable';
+import { getTranslator } from '../../../lib/i18n';
+import { sessionStoreSlug, carryQuery } from '../../../lib/store-door';
+import { StoreDoorError } from '../../../components/StoreDoorError';
+
+export const dynamic = 'force-dynamic';
+type SP = Record<string, string | string[] | undefined>;
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
   return { title: t.t('offers.title'), robots: { index: false, follow: false } };
 }
 
-export default async function OffersPage({ searchParams }: { searchParams: { cursor?: string } }) {
-  await requireSession('/offers');
-  const t = getTranslator();
-  const lang = getLang();
-
-  let items: ListingOffer[] = [];
-  let nextCursor: string | null = null;
-  let failed = false;
-  try {
-    const page = await serverClient().offers.list({ box: 'outgoing', cursor: searchParams.cursor, limit: 20 });
-    items = page.items; nextCursor = page.nextCursor;
-  } catch { failed = true; }
-
-  if (failed) {
-    return <section className="kv-offers"><h1>{t.t('offers.title')}</h1>
-      <p className="kv-form__error" role="alert">{t.t('offers.loadError')}</p></section>;
-  }
-
-  const statusLabel = (s: string) => { const k = `offers.status.${s.toLowerCase()}`; const l = t.t(k); return l === k ? s : l; };
-  const price = (o: ListingOffer) => formatMoneyMinor(o.counterPriceMinor ?? o.offeredPriceMinor, 'INR', lang);
-
-  const columns: Column<ListingOffer>[] = [
-    { key: 'offerId', header: t.t('offers.colRef'), render: (o) => <Link href={`/offers/${encodeURIComponent(o.offerId)}`} className="kv-link">#{o.round}</Link> },
-    { key: 'price', header: t.t('offers.colPrice'), align: 'right', render: price },
-    { key: 'quantity', header: t.t('offers.colQty'), render: (o) => o.quantity },
-    { key: 'status', header: t.t('offers.colStatus'), render: (o) => statusLabel(o.status) },
-    { key: 'createdAt', header: t.t('offers.colDate'), render: (o) => (o.createdAt ? formatDate(o.createdAt, lang) : '—') },
-  ];
-
-  return (
-    <section className="kv-offers">
-      <h1>{t.t('offers.title')}</h1>
-      <DataTable
-        columns={columns}
-        rows={items}
-        getRowKey={(o) => o.offerId}
-        caption={t.t('offers.listCaption')}
-        emptyText={t.t('offers.empty')}
-        nextHref={nextCursor ? `/offers?cursor=${encodeURIComponent(nextCursor)}` : undefined}
-        nextLabel={t.t('discover.nextPage')}
-      />
-    </section>
-  );
+export default async function PlatformOffersDoor({ searchParams }: { searchParams: SP }) {
+  await requireSession(`/offers${carryQuery(searchParams, ['status', 'cursor'])}`);
+  const slug = await sessionStoreSlug();
+  if (slug) redirect(`/${encodeURIComponent(slug)}/offers${carryQuery(searchParams, ['status', 'cursor'])}`);
+  return <StoreDoorError titleKey="offers.title" path="/offers" searchParams={searchParams} />;
 }

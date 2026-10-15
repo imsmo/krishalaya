@@ -9,6 +9,8 @@ import { InvalidOfferError, OfferNotNegotiableError, NotYourTurnError, OfferExpi
 
 const FUTURE = new Date('2030-01-01T00:00:00Z');
 const NOW = new Date('2026-06-01T00:00:00Z');
+// PC-56 STORE-3b · B1: a counter now carries the new round's deadline and the negotiation's ceiling (store3b-offer-rules.spec.ts pins the clock)
+const CLK = { respondBy: FUTURE, maxLifeEndsAt: FUTURE };
 const make = (over: any = {}) => ListingOffer.make({
   id: 'o1', tenantId: 't1', listingId: 'l1', buyerUserId: 'buyer1',
   quantity: '10', offeredPriceMinor: 100000n, expiresAt: FUTURE, now: NOW, ...over,
@@ -50,25 +52,25 @@ describe('ListingOffer.make', () => {
 describe('turn model + counter ping-pong', () => {
   it('seller counters → round 2, countered, now the buyer\'s turn; counter price is on the buyer\'s table', () => {
     const o = make(); o.pullEvents();
-    o.counter('seller', 90000n, NOW);
+    o.counter('seller', 90000n, NOW, CLK);
     expect(o.status).toBe('countered'); expect(o.round).toBe(2);
     expect(o.isBuyersTurn()).toBe(true); expect(o.isSellersTurn()).toBe(false);
     expect(o.priceOnTableFor('buyer')).toBe(90000n);
     expect(o.pullEvents().map((e) => e.type)).toContain(OfferEventType.Countered);
   });
   it('buyer re-counters → round 3, seller\'s turn, offered price replaced, stale seller counter cleared', () => {
-    const o = make(); o.counter('seller', 90000n, NOW);
-    o.counter('buyer', 95000n, NOW);
+    const o = make(); o.counter('seller', 90000n, NOW, CLK);
+    o.counter('buyer', 95000n, NOW, CLK);
     expect(o.round).toBe(3); expect(o.isSellersTurn()).toBe(true);
     expect(o.priceOnTableFor('seller')).toBe(95000n);          // buyer's new offered price
     expect(o.toProps().counterPriceMinor).toBeNull();
   });
   it('a party cannot act out of turn', () => {
     const o = make();                              // open, seller's turn
-    expect(() => o.counter('buyer', 80000n, NOW)).toThrow(NotYourTurnError);
+    expect(() => o.counter('buyer', 80000n, NOW, CLK)).toThrow(NotYourTurnError);
     expect(() => o.accept('buyer', NOW)).toThrow(NotYourTurnError);
-    o.counter('seller', 90000n, NOW);              // countered, buyer's turn
-    expect(() => o.counter('seller', 85000n, NOW)).toThrow(NotYourTurnError);
+    o.counter('seller', 90000n, NOW, CLK);              // countered, buyer's turn
+    expect(() => o.counter('seller', 85000n, NOW, CLK)).toThrow(NotYourTurnError);
   });
 });
 
@@ -81,7 +83,7 @@ describe('accept resolves the price on the table', () => {
     expect(ev.payload.agreedPriceMinor).toBe('100000');
   });
   it('buyer accepts the seller\'s counter → agreed = counter price', () => {
-    const o = make(); o.counter('seller', 90000n, NOW);
+    const o = make(); o.counter('seller', 90000n, NOW, CLK);
     o.accept('buyer', NOW);
     expect(o.agreedPriceMinor).toBe(90000n);
   });
@@ -91,7 +93,7 @@ describe('reject, expiry, conversion', () => {
   it('either party may withdraw/decline while live; not when terminal', () => {
     const a = make(); a.reject('buyer', NOW); expect(a.status).toBe('rejected');
     expect(() => a.reject('seller', NOW)).toThrow(OfferNotNegotiableError);
-    const b = make(); b.counter('seller', 90000n, NOW); b.reject('seller', NOW); expect(b.status).toBe('rejected');
+    const b = make(); b.counter('seller', 90000n, NOW, CLK); b.reject('seller', NOW); expect(b.status).toBe('rejected');
   });
   it('expire only fires after expires_at; rejects acting on an expired offer', () => {
     const o = make({ expiresAt: new Date(NOW.getTime() + 1000) });

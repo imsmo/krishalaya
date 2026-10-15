@@ -11,11 +11,9 @@ import { QUOTA_SERVICE, QuotaService } from '../../../core/quota/quota.service';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
-// [QA-FIX 2026-07-28] DEV-26/Q15: both `platformFeeBpsOverride` sites below inlined the identical
-// `(amount * BigInt(bps)) / 10000n` floor-division formula the batch's grep was supposed to find and
-// consolidate — missed here (2 call sites). Delegated to the one canonical helper; identical bigint math, zero
-// behavior change.
-import { applyBpsFloor } from '../../../core/money/rounding';
+// [QA-FIX 2026-07-28] DEV-26/Q15: both `platformFeeBpsOverride` sites inlined the identical `(amount * BigInt(bps)) / 10000n` formula —
+// delegated to the one canonical helper (`applyBpsFloor`). PC-56 STORE-3b · B3: both sites now live in ONE function,
+// domain/placement-charges.ts, which checkout, its preview and the offer order call.
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
 import { ChargePricingService, ZoneDelivery } from '../../payments/services/charge-pricing.service';
@@ -42,6 +40,7 @@ import type { CartItemRow } from '../repositories/cart.repository';
 import { CheckoutDto, CheckoutPreviewDto } from '../dto/create-order.dto';
 import { DomainError } from '../../../shared/errors/app-error';
 import { orderNoFor as orderNo } from '../domain/order-no';
+import { placementCharges, ChargeQuote } from '../domain/placement-charges';
 
 const QUOTA = 'max_orders_month';
 // PC-56 HOTFIX-4 (found proving A9): the number was the id's FIRST 8 hex — a v7 uuid's millisecond TIMESTAMP — so the two orders of a
@@ -239,27 +238,13 @@ export class CheckoutService {
             const quoted = applyCharges
               ? await this.charges.checkoutChargesWithSnapshot(tx, tenantId, subtotal, g.createdAt, zone)
               : { deliveryFeeMinor: 0n, platformFeeMinor: 0n, snapshot: null };
-            let { deliveryFeeMinor, platformFeeMinor } = quoted;
-            const chargeSnapshot = quoted.snapshot;
-            // membership benefits override the buyer-side charges (free delivery + sliding platform fee)
-            if (applyCharges && applyMemberBenefits) {
-              const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
-              if (ben) {
-                if (ben.freeDelivery) deliveryFeeMinor = 0n;
-                if (ben.platformFeeBpsOverride != null) platformFeeMinor = applyBpsFloor(subtotal, ben.platformFeeBpsOverride);
-                // **THE OVERRIDE GOES INTO THE SNAPSHOT TOO, OR THE SNAPSHOT LIES.** A membership benefit changes
-                // the amount AFTER the rules were resolved; freezing only the rules would leave an accountant
-                // reading a ₹340 delivery slab against a ₹0 charge and finding no explanation on the record.
-                if (chargeSnapshot) {
-                  chargeSnapshot.memberBenefit = {
-                    freeDelivery: ben.freeDelivery === true,
-                    platformFeeBpsOverride: ben.platformFeeBpsOverride ?? null,
-                    appliedDeliveryFeeMinor: deliveryFeeMinor.toString(),
-                    appliedPlatformFeeMinor: platformFeeMinor.toString(),
-                  };
-                }
-              }
-            }
+            // membership benefits override the buyer-side charges (free delivery + sliding platform fee), then THE COMMISSION RULE IS FROZEN
+            // (A2) and a buyer-charged commission added (A4) — PC-56 STORE-3b · B3: ONE function for checkout, its preview and the offer order
+            // (domain/placement-charges.ts; the rule moved there byte for byte — the offer order is priced by the same code, founder D2).
+            const charged = await placementCharges({ memberships: this.memberships, commission: this.commission }, tx, { tenantId, buyerUserId,
+              source: 'direct', categoryId: g.categories.size === 1 ? [...g.categories][0] : null, goodsMinor: subtotal, now: g.createdAt,
+              quote: quoted as ChargeQuote, applyCharges, applyMemberBenefits, splitOn: commissionSplit });
+            const { deliveryFeeMinor, platformFeeMinor } = charged;
             // coupon discount: redeemed atomically in THIS tx against the primary order (promotions flag).
             // PC-56 TENANT-10b · F-2 / F-21: the redemption RESERVES the discount from the tenant's wallet; a decline (no
             // tenant funds, spent budget, per-user limit, ended window, unknown code…) no longer aborts the checkout — the
@@ -271,22 +256,12 @@ export class CheckoutService {
               else couponNotice = r.notice;
               couponApplied = true;
             }
-            // A2 · THE COMMISSION RULE IS FROZEN HERE (placement day, IST) — settlement reads this and never resolves again.
-            // A4 · a rule that charges the BUYER (with the split on) adds the commission + GST to this order as a buyer charge.
-            const frozen = await this.commission.freezeAtPlacement(tx, { tenantId, source: 'direct', categoryId: g.categories.size === 1 ? [...g.categories][0] : null,
-              goodsMinor: subtotal, splitOn: commissionSplit, now: g.createdAt });
-            let snapshotOut = chargeSnapshot as Record<string, unknown> | null;
-            if (frozen.chargeEntry) {
-              snapshotOut = snapshotOut
-                ? { ...snapshotOut, charges: [...((snapshotOut.charges as unknown[]) ?? []), frozen.chargeEntry] }
-                : { resolvedAt: g.createdAt.toISOString(), charges: [frozen.chargeEntry] };
-            }
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
               sellerUserId, source: 'direct', currencyCode, items: g.items, deliveryFeeMinor, platformFeeMinor, discountMinor,
               couponCode: discountMinor > 0n ? (dto.couponCode ?? null) : null,
               deliveryMethodId: zone?.zoneId ?? dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt,
-              commissionRuleSnapshot: snapshotOut,
-              commissionSnapshot: frozen.snapshot as unknown as Record<string, unknown>, deliveryZoneId: zone?.zoneId ?? null, buyerCommissionMinor: frozen.buyerCommissionMinor,
+              commissionRuleSnapshot: charged.chargeSnapshot,
+              commissionSnapshot: charged.commissionSnapshot, deliveryZoneId: zone?.zoneId ?? null, buyerCommissionMinor: charged.buyerCommissionMinor,
               stockReserved: reserved.size > 0 });
             await this.orders.insertGraph(tx, order, g.items);
             await this.quota.increment(tx, tenantId, QUOTA, 1);
@@ -384,18 +359,17 @@ export class CheckoutService {
       deliveryNeedsAddress = zonesApply && !zone;
       for (const sellerUserId of order) {
         const g = bySeller.get(sellerUserId)!;
-        let { deliveryFeeMinor, platformFeeMinor } = applyCharges
+        const quoted = applyCharges
           ? (zonesApply
             ? await this.charges.checkoutChargesWithSnapshot(tx, tenantId, g.subtotalMinor, new Date(), zone).then((c) => ({ deliveryFeeMinor: zone ? c.deliveryFeeMinor : 0n, platformFeeMinor: c.platformFeeMinor }))
             : await this.charges.checkoutCharges(tx, tenantId, g.subtotalMinor))
           : { deliveryFeeMinor: 0n, platformFeeMinor: 0n };
-        if (applyCharges && applyMemberBenefits) {
-          const ben = await this.memberships.checkoutBenefits(tx, tenantId, buyerUserId);
-          if (ben) {
-            if (ben.freeDelivery) deliveryFeeMinor = 0n;
-            if (ben.platformFeeBpsOverride != null) platformFeeMinor = applyBpsFloor(g.subtotalMinor, ben.platformFeeBpsOverride);
-          }
-        }
+        // PC-56 STORE-3b · B3: the member override + the frozen commission through the ONE function placement uses (the preview passes no
+        // snapshot — it freezes nothing; `now` omitted = today, as before)
+        const charged = await placementCharges({ memberships: this.memberships, commission: this.commission }, tx, { tenantId, buyerUserId,
+          source: 'direct', categoryId: g.categoryIds.size === 1 ? [...g.categoryIds][0] : null, goodsMinor: g.subtotalMinor,
+          quote: { ...quoted, snapshot: null }, applyCharges, applyMemberBenefits, splitOn: commissionSplit });
+        const { deliveryFeeMinor, platformFeeMinor } = charged;
         // coupon DRY-RUN against the primary seller only (never redeemed here).
         // PC-56 TENANT-10b · A5 / F-22: the preview asks the SAME decision checkout makes (per-user limit, budget, the
         // tenant's funds), so what the buyer is shown is what checkout will do. A decline carries the kind notice;
@@ -409,10 +383,8 @@ export class CheckoutService {
             else { couponNotice = v.notice; couponError = v.notice.code; }
           } catch (e) { couponError = e instanceof DomainError ? (e as any).code ?? 'COUPON_INVALID' : 'COUPON_INVALID'; }
         }
-        // A4: a rule charging the buyer (split on) adds its commission + GST — the same figure placement freezes
-        const frozen = await this.commission.freezeAtPlacement(tx, { tenantId, source: 'direct', categoryId: g.categoryIds.size === 1 ? [...g.categoryIds][0] : null,
-          goodsMinor: g.subtotalMinor, splitOn: commissionSplit });
-        const buyerCommissionMinor = frozen.buyerCommissionMinor;
+        // A4: a rule charging the buyer (split on) adds its commission + GST — the same figure placement freezes (the shared function above)
+        const buyerCommissionMinor = charged.buyerCommissionMinor;
         const total = g.subtotalMinor + deliveryFeeMinor + platformFeeMinor + buyerCommissionMinor - discountMinor;
         out.push({ buyerCommissionMinor: buyerCommissionMinor.toString(),
           sellerUserId,
