@@ -14,7 +14,8 @@ import { OrderStatus } from '../domain/order.state';
 const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, offer_id, requirement_id, currency_code,
   subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
   total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, quality_window_ends,
-  cancel_reason_id, cancelled_by, version, created_at, completed_at, charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor`;
+  cancel_reason_id, cancelled_by, version, created_at, completed_at, charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor,
+  stock_reserved_at`;
 // partition-prune window around the v7 id's embedded time (clock skew tolerant)
 const PRUNE = `created_at >= uuid_v7_time($1) - interval '5 seconds' AND created_at < uuid_v7_time($1) + interval '5 seconds'`;
 const big = (v: any) => BigInt(v);
@@ -28,7 +29,8 @@ function toDomain(r: any): Order {
     qualityWindowEnds: r.quality_window_ends, cancelReasonId: r.cancel_reason_id, cancelledBy: r.cancelled_by,
     version: r.version, createdAt: r.created_at, completedAt: r.completed_at,
     commissionRuleSnapshot: r.charge_snapshot ?? null, commissionSnapshot: r.commission_snapshot ?? null,
-    deliveryZoneId: r.delivery_zone_id ?? null, buyerCommissionMinor: r.buyer_commission_minor != null ? big(r.buyer_commission_minor) : 0n });
+    deliveryZoneId: r.delivery_zone_id ?? null, buyerCommissionMinor: r.buyer_commission_minor != null ? big(r.buyer_commission_minor) : 0n,
+    stockReservedAt: r.stock_reserved_at ?? null });
 }
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -50,14 +52,15 @@ export class OrderRepository {
       `INSERT INTO orders (id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_user_id, source, currency_code,
         subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
         total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, version, created_at, offer_id, requirement_id,
-        charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,$26::jsonb,$27,$28)`,
+        charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor, stock_reserved_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,$26::jsonb,$27,$28,$29)`,
       [p.id, p.tenantId, p.orderNo, p.checkoutGroupId, p.buyerUserId, p.sellerUserId, p.source, p.currencyCode,
        p.subtotalMinor.toString(), p.deliveryFeeMinor.toString(), p.discountMinor.toString(), p.taxMinor.toString(),
        p.commissionMinor.toString(), p.platformFeeMinor.toString(), p.tdsMinor.toString(), p.totalMinor.toString(),
        p.status, p.deliveryMethodId, p.deliveryAddressId, p.acceptanceDeadline, p.version, p.createdAt, p.offerId, p.requirementId,
        p.commissionRuleSnapshot ? JSON.stringify(p.commissionRuleSnapshot) : null,
-       p.commissionSnapshot ? JSON.stringify(p.commissionSnapshot) : null, p.deliveryZoneId ?? null, (p.buyerCommissionMinor ?? 0n).toString()]);
+       p.commissionSnapshot ? JSON.stringify(p.commissionSnapshot) : null, p.deliveryZoneId ?? null, (p.buyerCommissionMinor ?? 0n).toString(),
+       p.stockReservedAt ?? null]);
     for (const it of items) {
       const v = it.props;
       await tx.query(
@@ -68,6 +71,24 @@ export class OrderRepository {
          v.unitCode, v.unitPriceMinor.toString(), v.lineTotalMinor.toString(), v.gstRatePct, v.hsnCode, v.batchId]);
     }
     await this.recordEvent(tx, p.tenantId, p.id, null, p.status, p.buyerUserId, 'order placed');
+  }
+
+  /**
+   * PC-56 STORE-2c · B1 (founder D1, 0209) — RELEASE THE RESERVATION, ONCE. Clears `stock_reserved_at` on a CANCELLED order that still carries
+   * it and returns its lines (listing + the 3-place quantity text); a second call — a replayed `orders.order_cancelled`, a relay retry after a
+   * crash — finds the marker NULL and returns null, so nothing is restocked twice. Runs in the caller's (kv_app) transaction together with the
+   * listing releases, so the marker and the stock commit or roll back as one. An order that never reserved (NULL from the start) → null.
+   */
+  async releaseReservationTx(tx: TxContext, tenantId: string, orderId: string): Promise<Array<{ listingId: string; quantity: string }> | null> {
+    const r = await tx.query<{ created_at: Date }>(
+      `UPDATE orders SET stock_reserved_at = NULL, updated_at = now()
+        WHERE id=$1 AND tenant_id=$2 AND ${PRUNE} AND status = 'cancelled' AND stock_reserved_at IS NOT NULL
+        RETURNING created_at`, [orderId, tenantId]);
+    if (!r.rowCount) return null;
+    const items = await tx.query<{ listing_id: string; quantity: string }>(
+      `SELECT listing_id, quantity::text AS quantity FROM order_items
+        WHERE order_id=$1 AND tenant_id=$2 AND order_created_at=$3 AND listing_id IS NOT NULL ORDER BY listing_id`, [orderId, tenantId, r.rows[0].created_at]);
+    return items.rows.map((x) => ({ listingId: x.listing_id, quantity: x.quantity }));
   }
 
   /** PC-56 TENANT-SW-a · A2 — what settlement / dispute / return pricing need from the ORDER, read in the caller's (kv_app) tx: the

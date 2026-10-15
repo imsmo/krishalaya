@@ -3,6 +3,7 @@ export { KrishalayaClient, createClient } from './client';
 export type { SdkConfig } from './config';
 export { SdkError, SdkNetworkError, SdkTimeoutError } from './errors';
 export { CART_REFUSAL_CODES } from './types';   // PC-56 STORE-2b · B6
+export { CHECKOUT_MONEY_REFUSAL_CODES, PAYMENT_FAILURE_REASONS } from './types';   // PC-56 STORE-2c · B9
 export type { HttpMethod, RequestOptions, Envelope } from './http';
 export type { CreateListingInput } from './resources/listings';
 export type { OrderRole } from './resources/orders';
@@ -16,6 +17,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   PublicListingDetail, OrderPaymentState, CheckoutGroupDetail,   // PC-56 HOTFIX-4
   PublicListingCard, PublicLotAttribute, FacetValue, ListingFacets, ListingSearchPage, ListingSearchQuery, ListingTombstone, RegulatedMarker, OrganisationPage,   // PC-56 STORE-2a
   StorefrontPlan, StorefrontPlans,   // PC-56 STORE-1c
+  PublicAuction, OrderPaymentAttempts, PaymentFailureReason, CheckoutMoneyRefusalCode,   // PC-56 STORE-2c
   CategoryNode, AttributeDef, AttributeOption, LookupValue, RegionNode, TenantBranding, PublishedBrand,
   MediaKind, MediaUploadTicket, MediaConfirmResult, MediaDownloadLink,
   PaymentPurpose, PaymentIntent, PaymentSummary, InvoiceSummary, InvoiceDownload, PayoutSummary, BankAccount, KycStatus, KycDocument, KycDocType, KycReviewItem,

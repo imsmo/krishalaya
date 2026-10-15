@@ -21,7 +21,10 @@ const TRANSITIONS: Readonly<Record<PaymentStatus, readonly PaymentStatus[]>> = O
   // webhook transaction back after posting the escrow legs: money taken at the gateway, never booked, the order auto-cancelled at 24 h.
   // The entity (Payment.markCaptured) allows this edge ONLY for a capture whose gateway payment id differs from the failed attempt's.
   failed:             ['success'],
-  expired:            [],
+  // PC-56 STORE-2c · B3: an attempt the platform LAPSED (the buyer sent a fresh request after `platform.payment_attempt_ttl_seconds`) can still be
+  // captured late at the gateway — a UPI collect approved at minute 16. That money is real: it is booked (once — the wallet key is per payment
+  // row), never dropped. The entity allows it for any gateway payment id (a lapsed attempt was never captured, so no id can be its own replay).
+  expired:            ['success'],
 });
 
 export class IllegalPaymentTransitionError extends DomainError {

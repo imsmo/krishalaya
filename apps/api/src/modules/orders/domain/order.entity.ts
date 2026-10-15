@@ -29,10 +29,18 @@ export interface OrderProps {
   deliveryZoneId?: string | null;
   /** The commission + GST charged to the BUYER at placement when the frozen rule says charged_to=buyer (A4) — part of the total. */
   buyerCommissionMinor?: bigint;
+  /** PC-56 STORE-2c · B1 (founder D1, 0209): when placement RESERVED this order's stock (each line's listing decremented under its row lock in
+   *  the checkout transaction). Null = reserved nothing (placed before 0209; an offer / auction / requirement order) or already released.
+   *  Cleared ONLY by the restock handler, in the transaction that puts the stock back (OrderRepository.releaseReservationTx). */
+  stockReservedAt?: Date | null;
 }
 
 const ACCEPTANCE_WINDOW_MS = 24 * 3600_000;
 const QUALITY_WINDOW_MS = 24 * 3600_000;
+/** PC-56 STORE-2c · C4 (founder D3): the quality window as the API states it to a buyer BEFORE placement (the checkout preview carries it) — the
+ *  one figure every category gets today (survey F-24, Law 6: a per-category setting is owed). The storefront prints this number; no catalogue
+ *  types it. */
+export const QUALITY_WINDOW_HOURS = QUALITY_WINDOW_MS / 3_600_000;
 
 export class Order {
   private readonly events: DomainEvent[] = [];
@@ -45,6 +53,8 @@ export class Order {
     deliveryFeeMinor?: bigint; platformFeeMinor?: bigint; discountMinor?: bigint; couponCode?: string | null; deliveryMethodId: string | null; deliveryAddressId: string | null;
     requiresPayment: boolean; now?: Date; commissionRuleSnapshot?: Record<string, unknown> | null;
     commissionSnapshot?: Record<string, unknown> | null; deliveryZoneId?: string | null; buyerCommissionMinor?: bigint;
+    /** STORE-2c · D1: the checkout reserved every line's stock in the placement transaction (the caller decremented under the row locks). */
+    stockReserved?: boolean;
   }): Order {
     const now = input.now ?? new Date();
     const subtotal = input.items.reduce((s, it) => s + it.props.lineTotalMinor, 0n);
@@ -67,6 +77,7 @@ export class Order {
       cancelReasonId: null, cancelledBy: null, version: 1, createdAt: now, completedAt: null,
       commissionRuleSnapshot: input.commissionRuleSnapshot ?? null,
       commissionSnapshot: input.commissionSnapshot ?? null, deliveryZoneId: input.deliveryZoneId ?? null, buyerCommissionMinor: buyerCommission,
+      stockReservedAt: input.stockReserved ? now : null,
     });
     // buyerUserId + discount + couponCode travel so the promotions module can record/back-stop the
     // coupon redemption from the event (decoupled — orders never imports promotions' repo; Law 11).
@@ -188,7 +199,14 @@ export class Order {
     if (isBuyer && this.props.buyerUserId !== by) throw new OrderForbiddenError();
     if (!isBuyer && this.props.sellerUserId !== by) throw new OrderForbiddenError();
     this.props.cancelReasonId = reasonId; this.props.cancelledBy = by;
-    this.to('cancelled', OrderEventType.Cancelled, { reasonId, by, role: isBuyer ? 'buyer' : 'seller' }, by);
+    this.to('cancelled', OrderEventType.Cancelled, { reasonId, by, role: isBuyer ? 'buyer' : 'seller', ...this.cancelFacts() }, by);
+  }
+
+  /** PC-56 STORE-2c · B1/B2 (founder D1, D3): what the cancel's consumers need, additively — the stock-release handler re-reads its own marker
+   *  and the refund handler its own payment (the payload is a hint, never the authority); the buyer travels for the notification map. */
+  private cancelFacts(): Record<string, unknown> {
+    return { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(),
+      currencyCode: this.props.currencyCode, stockReserved: !!this.props.stockReservedAt };
   }
 
   /** System/admin cancellation (jobs, moderation) — bypasses buyer/seller ownership but still
@@ -196,7 +214,7 @@ export class Order {
   systemCancel(reason: string): void {
     if (!isCancellable(this.props.status)) throw new OrderForbiddenError(`Order cannot be cancelled in status ${this.props.status}`);
     this.props.cancelledBy = 'system';
-    this.to('cancelled', OrderEventType.Cancelled, { reason, by: 'system', role: 'system' });
+    this.to('cancelled', OrderEventType.Cancelled, { reason, by: 'system', role: 'system', ...this.cancelFacts() });
   }
 
   private assertSeller(by: string): void { if (this.props.sellerUserId !== by) throw new OrderForbiddenError('Only the seller may do this'); }

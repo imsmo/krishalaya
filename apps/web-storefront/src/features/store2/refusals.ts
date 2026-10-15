@@ -9,8 +9,9 @@ export type RefusalAnswer = 'rendered' | 'recorded';
 export interface Refusal { id: string; canon: string; answer: RefusalAnswer; key?: string; why: string }
 
 export const STORE2_HOTFIX4_REFUSALS: readonly Refusal[] = Object.freeze([
-  { id: 'auto_refund', canon: 'W284 "Decline or failure → automatic refund, no forms"', answer: 'rendered', key: 'store2.refusal.autoRefund',
-    why: 'not built: no handler refunds a paid order on decline / cancel (survey F-3, founder Q8 — STORE-2c)' },
+  // PC-56 STORE-2c (founder D3): `auto_refund` is NO LONGER a refusal — a cancelled / declined / auto-cancelled PAID order is refunded to source
+  // automatically (apps/api payments/events/handlers/order-cancelled-refund.handler.ts). Its refusal key is retired from every catalogue; the
+  // true sentence (`store2c.refund.true`) is printed on the payment step and the confirmation instead.
   { id: 'cod_cap', canon: 'W284 "Cash on delivery … capped at ₹20,000 per order for rider safety"', answer: 'rendered', key: 'store2.refusal.codCap',
     why: 'founder D2: no per-order COD cap setting exists (the only cap is the per-rider cash-in-hand setting) — refused until a setting exists' },
   { id: 'one_payment_group', canon: 'W284 / W285 "One payment covers both orders; escrow splits it per order automatically"', answer: 'rendered', key: 'store2.refusal.onePayment',
@@ -21,11 +22,9 @@ export const STORE2_HOTFIX4_REFUSALS: readonly Refusal[] = Object.freeze([
 
 /** Named here, NOT fixed by HOTFIX-4 (each owed to the wave / founder question in brackets). */
 export const STORE2_HOTFIX4_OWED: readonly { id: string; what: string; owner: string }[] = Object.freeze([
-  { id: 'F-2', what: 'stock is not reserved at placement — two buyers can pay for the same lot', owner: 'founder Q4 · STORE-2c' },
-  { id: 'F-3', what: 'no automatic refund for a cancelled / declined paid order', owner: 'founder Q8 · STORE-2c' },
-  { id: 'F-6', what: 'no single payment for a multi-seller checkout (each order pays separately; all are named)', owner: 'founder Q5 · STORE-2c' },
+  // PC-56 STORE-2c: F-2 (stock reserved at placement, D1), F-3 (automatic refund, D3) and F-10 (currency from the data, B4) are BUILT; F-6 is
+  // decided (D2 — each order is paid on its own) and refused by name (`STORE2C_REFUSALS.one_payment`).
   { id: 'F-9', what: 'regulated inputs (licence / banned-state rules) are not enforced at cart or checkout', owner: 'founder Q12 · STORE-2b' },
-  { id: 'F-10', what: "the API checkout still writes 'INR' for orders / groups / preview / delivery methods (not a one-line read of the listing's currency)", owner: 'STORE-2c' },
 ]);
 
 export function store2RefusalKey(id: string): string {
@@ -181,7 +180,7 @@ export const STORE2B_DELTAS: readonly { id: string; canon: string; built: string
   { id: 'add_review', canon: 'W3100 "Review before submitting" for add-to-cart', built: 'no review page: the cart is the review' },
   { id: 'add_button_total', canon: 'W277 the "+" stepper beside a live line total', built: 'the button says "Add N <unit> to cart" — no client-computed line total (the cart prints the server\'s)' },
   { id: 'chain_back_links', canon: 'W3042–W3044 / W3046 / W3047 → W316; W3100–W3102 → W273', built: 'Back / Retry return to the cart or the listing itself (canon link defects, survey F-27)' },
-  { id: 'three_route_checkout', canon: 'W283 → W284 → W285 three-route checkout', built: 'unchanged this wave (one checkout page); STORE-2c moves it' },
+  { id: 'three_route_checkout', canon: 'W283 → W284 → W285 three-route checkout', built: 'STORE-2c: ONE route under the organisation with three steps (`/<slug>/checkout?step=address|payment|review`) — STORE2C_DELTAS.one_route' },
   { id: 'qty_stepper', canon: 'W281 "−" (data-decor) / "+" chain-form buttons', built: 'a decimal quantity field + Update (no client JS; the server re-validates)' },
 ]);
 
@@ -208,4 +207,115 @@ export const STORE2B_CHAIN_PAGES: readonly { file: string; flowmap: string; verd
 /** The refusal keys a STORE-2b surface prints, in this list's order. */
 export function store2bRefusalKeys(surface: Store2bSurface): string[] {
   return STORE2B_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------ */
+/* PC-56 STORE-2c · brief §E — THE MONEY WAVE: W283 address · W284 payment · W285 review · W286 payment processing · W278 auction, and     */
+/* their chains W3048–W3054 (the "+ Add address" form chain, the checkout Retry) and W3061–W3063 (the payment "Send again")              */
+/* ------------------------------------------------------------------------------------------------------------------------------------ */
+
+/** The STORE-2c surfaces. Each refusal names the surfaces it is PRINTED on (the render tests read this map). */
+export type Store2cSurface = 'checkout-address' | 'checkout-payment' | 'checkout-review' | 'processing' | 'auction';
+export interface Store2cRefusal { id: string; canon: string; surfaces: readonly Store2cSurface[]; key: string; why: string }
+
+/** Every canon claim STORE-2c does not make, BY NAME, and where it is printed (a refusal sentence — never an offer). */
+export const STORE2C_REFUSALS: readonly Store2cRefusal[] = Object.freeze([
+  { id: 'one_payment', canon: 'W284 "Total · one payment — One payment covers both orders; escrow splits it per order automatically" · W285 "One UPI payment ₹85,638"', surfaces: ['checkout-payment', 'checkout-review'],
+    key: 'store2c.refusal.onePayment', why: 'founder D2: one payment per order, kept — each seller\'s order is paid on its own' },
+  { id: 'slots', canon: 'W283 "Delivery slots — 2 shipments, chosen separately" + the slot radios · W285 "Delivery · Wed 15 Jul 09:00–13:00"', surfaces: ['checkout-address', 'checkout-review'],
+    key: 'store2c.refusal.slots', why: 'founder D7: no buyer delivery slot exists (pickup-slot is the seller side)' },
+  { id: 'self_pickup', canon: 'W283 "No slots — or choose self-pickup from the centre at no delivery charge" · "Self-pickup … offered instead"', surfaces: ['checkout-address'],
+    key: 'store2c.refusal.selfPickup', why: 'founder D7: no self-pickup method is modelled at checkout' },
+  { id: 'vehicle_note', canon: 'W283 "The vehicle-size note travels with the address to the driver"', surfaces: ['checkout-address'],
+    key: 'store2c.refusal.vehicleNote', why: 'no address column carries a vehicle note (0003 addresses) and nothing reaches a driver from checkout' },
+  { id: 'three_pl', canon: 'W283 serviceability gap "Self-pickup and 3PL quotes are offered instead of a fake promise"', surfaces: ['checkout-address'],
+    key: 'store2c.refusal.threePl', why: 'no third-party logistics quoting exists' },
+  { id: 'gstin', canon: 'W283 "Businesses can add GSTIN here for invoice matching" · "GST invoicing is business-buyer-only"', surfaces: ['checkout-address'],
+    key: 'store2c.refusal.gstin', why: 'founder D5: no buyer GSTIN at checkout' },
+  { id: 'per_km', canon: 'W283 "10 qtl × 330 km @ ₹80/qtl/100km = ₹2,640"', surfaces: ['checkout-address', 'checkout-review'],
+    key: 'store2c.refusal.perKm', why: 'founder D4: value slabs only — a per_km charge is refused where it is defined (CHARGE_METHOD_UNSUPPORTED)' },
+  { id: 'slab_50', canon: 'W283 "→ ₹50 slab ₹2,650" · W285 "slab-rounded"', surfaces: ['checkout-address', 'checkout-review'],
+    key: 'store2c.refusal.slab50', why: 'founder D4: no rounding to a fixed slab — the organisation\'s own value slabs only' },
+  { id: 'min_450', canon: 'W283 "below minimum, charged min/shipment ₹450" · W285 "minimum charge"', surfaces: ['checkout-address', 'checkout-review'],
+    key: 'store2c.refusal.min450', why: 'founder D4: no per-shipment minimum outside the organisation\'s configured charges' },
+  { id: 'gst_delivery', canon: 'W283 "GST 18% on delivery ₹558" · W285 "HSN 9967 · 18% = ₹477"', surfaces: ['checkout-address', 'checkout-review'],
+    key: 'store2c.refusal.gstDelivery', why: 'founder D5: GST is extracted (included), never added on top' },
+  { id: 'produce_gst', canon: 'W283 "produce 0% GST (unbranded whole lots)" · W285 the GST column "0%"', surfaces: ['checkout-review'],
+    key: 'store2c.refusal.produceGst', why: 'founder D5: the goods rate is not recorded at placement — no rate is printed' },
+  { id: 'hsn', canon: 'W285 the per-line HSN column (1202, 1001, 9967)', surfaces: ['checkout-review'],
+    key: 'store2c.refusal.hsn', why: 'founder D5: no HSN at placement (hsn null)' },
+  { id: 'partial_take', canon: 'W285 "Stock shrank at place — 4 qtl remain against your 10. Choose: take 4, or drop the line"', surfaces: ['checkout-review'],
+    key: 'store2c.refusal.partialTake', why: 'founder D1: reservation is all-or-nothing — placement refuses with the remainder; the buyer reduces or removes in the cart' },
+  { id: 'slot_hold', canon: 'W285 "Session expired — past the 30-minute slot hold" + "Re-check & continue"', surfaces: ['checkout-review'],
+    key: 'store2c.refusal.slotHold', why: 'founder D1/D7: no holds and no slots — nothing is held while you review' },
+  { id: 'quality_6h', canon: 'W285 "24h to raise issues on grains" (and the 0005 comment\'s "6h perishable")', surfaces: ['checkout-review'],
+    key: 'store2c.refusal.quality6h', why: 'founder D3: one quality window for every category (the API\'s figure) until a per-category setting exists' },
+  { id: 'cod', canon: 'W284 "Cash on delivery — capped at ₹20,000 per order for rider safety"', surfaces: ['checkout-payment'],
+    key: 'store2c.refusal.cod', why: 'HOTFIX-4 D2: no buyer COD choice and no per-order cap setting; with online payments off the organisation confirms and you pay on delivery' },
+  { id: 'neft', canon: 'W284 "Netbanking … NEFT/RTGS reference matching for amounts above UPI limits"', surfaces: ['checkout-payment'],
+    key: 'store2c.refusal.neft', why: 'no NEFT/RTGS reference matching exists' },
+  { id: 'gst_cards', canon: 'W284 "Business cards get GST-matched invoices automatically"', surfaces: ['checkout-payment'],
+    key: 'store2c.refusal.gstCards', why: 'founder D5: no buyer GSTIN, so nothing is GST-matched' },
+  { id: 'pay_later', canon: 'W284 "Flagged off — pay-later … approval is a partner-bank decision"', surfaces: ['checkout-payment'],
+    key: 'store2c.refusal.payLater', why: 'no buyer credit is integrated at checkout' },
+  { id: 'gateway_degraded', canon: 'W284 "UPI is slow right now … your cart and slots are held for 30 minutes"', surfaces: ['checkout-payment', 'processing'],
+    key: 'store2c.refusal.degraded', why: 'no payment-method health feed and no hold exist' },
+  { id: 'inpage_methods', canon: 'W284 the in-page UPI / Netbanking / Card choice ("collect request to nilesh@ok•••")', surfaces: ['checkout-payment'],
+    key: 'store2c.refusal.inpageMethods', why: 'DELTA: the gateway\'s secure sheet chooses the method — this page never asks for a UPI id or a card' },
+  { id: 'helpline', canon: 'W284 / W286 "the phone line can also take this order: 1800-419-0123, quote CHK-88213"', surfaces: ['checkout-payment', 'processing'],
+    key: 'store2c.refusal.helpline', why: 'the helpline is an unimplemented placeholder (STORE-1a C-2)' },
+  { id: 'message_failures', canon: 'W286 "We message you the result"', surfaces: ['processing'],
+    key: 'store2c.refusal.messageFailures', why: 'only a confirmed order is messaged (order.confirmed); a failed payment sends nothing — its template rows are owed (brief B3)' },
+  { id: 'oncall', canon: 'W3051 / W3054 / W3063 "repeated failures page the on-call"', surfaces: ['checkout-address', 'processing'],
+    key: 'store2c.refusal.oncall', why: 'nothing pages anyone; the failure is said by name, with a retry' },
+  { id: 'flag_tenant_plan', canon: 'W278 / W283–W286 "Flagged off — … switched off for this tenant/plan … See store settings"', surfaces: ['checkout-payment', 'processing', 'auction'],
+    key: 'store2c.refusal.flagTenantPlan', why: 'the switches are the platform\'s flags; there is no store setting for them' },
+  { id: 'pay_by_1800', canon: 'W278 won "Order created; escrow opens; pay by tomorrow 18:00"', surfaces: ['auction'],
+    key: 'store2c.refusal.payBy', why: 'the balance is due within the window the API states (the auction settlement\'s), never a fixed clock time' },
+  { id: 'shill', canon: 'W278 "Same-connection shill bidding is detected and voids bids (platform risk desk watches every auction)"', surfaces: ['auction'],
+    key: 'store2c.refusal.shill', why: 'no shill detection exists (`bid_manipulation` is only a dispute reason)' },
+  { id: 'outbid_sms', canon: 'W278 "Outbid? We notify you instantly on app + SMS"', surfaces: ['auction'],
+    key: 'store2c.refusal.outbidSms', why: 'the outbid event is mapped (push only) but no message template exists for it — nothing is sent, and never by SMS' },
+  { id: 'seller_rating', canon: 'W278 "Seller Girnar Agro FPO · 4.6★ (89 sales)" · "consolidated lot from 6 members"', surfaces: ['auction'],
+    key: 'store2c.refusal.sellerRating', why: 'founder 2a D1 / HOTFIX-4 D3: the organisation is named; no rating or sales count is published' },
+  { id: 'auction_mandi', canon: 'W278 "Mandi reference Junagadh APMC today: ₹6,240/qtl"', surfaces: ['auction'],
+    key: 'store2c.refusal.mandi', why: 'founder 1b D3: no licensed, attributed mandi source' },
+  { id: 'best_price', canon: 'W278 won "the FPO\'s 6 member farmers just got their best price this season"', surfaces: ['auction'],
+    key: 'store2c.refusal.bestPrice', why: 'no such comparison is computed (Contract Law 12 — no invented metric)' },
+  { id: 'masked_bidders', canon: 'W278 "Buyer R••• K (Rajkot)" — masked names and cities in the bid history', surfaces: ['auction'],
+    key: 'store2c.refusal.bidderNames', why: 'founder 2a D1: no buyer identity at all on a public surface — the time and the amount only' },
+]);
+
+/** The canon shapes STORE-2c builds differently — recorded DELTAs (Law 4), not refusals. */
+export const STORE2C_DELTAS: readonly { id: string; canon: string; built: string }[] = Object.freeze([
+  { id: 'one_route', canon: 'W283 / W284 / W285 — three routes `(marketplace)/checkout/{address,payment,review}`', built: 'ONE route under the organisation, `/<slug>/checkout?step=address|payment|review`; the choices are server-held (the `kv_checkout` cookie), never in the URL' },
+  { id: 'address_review', canon: 'W3049 "Review before submitting" for a new address', built: 'no review page: the address step itself shows the saved card (selected) — an address is not a money act' },
+  { id: 'resend_confirm', canon: 'W3061 "Confirm this action" before "Send again"', built: 'no confirm page: "Send again" re-requests payment (a new attempt); nothing is charged until the buyer approves in the gateway\'s sheet' },
+  { id: 'sheet_methods', canon: 'W284 the in-page UPI / Netbanking / Card radios', built: 'one "Pay online" method; the gateway\'s secure sheet offers UPI, card and netbanking' },
+  { id: 'chain_links', canon: 'W3049–W3051 / W3053 / W3054 / W3062 / W3063 → W316 · W286 success → W287', built: 'Back / Retry return to the step itself (W316 is the error canon — survey F-27); success → this organisation\'s confirmation (W287 is STORE-3)' },
+  { id: 'review_before_pay', canon: 'W284 payment → W285 review → pay', built: 'address → payment (how) → review & place → pay each order (the order must exist before a gateway order can be made for it)' },
+]);
+
+/** The 15 STORE-2c canon files and their verdicts (brief §C), with the FLOWMAP citations (the HTML `data-flowmap` hrefs are the truth). */
+export const STORE2C_CHAIN_PAGES: readonly { file: string; flowmap: string; verdict: string }[] = Object.freeze([
+  { file: 'W278-store-listing-auction.html', flowmap: 'route `(marketplace)/l/[id]/auction` (0 data-flowmap)', verdict: 'BUILT at `/<slug>/auctions/[id]` on the public read (B7); the platform route redirects' },
+  { file: 'W283-store-checkout-address.html', flowmap: 'data-flowmap="chain-form:checkout" ×2 ("+ Add address", "Add address") → W3048 · "chain-mutate:checkout" ("Retry") → W3052', verdict: 'BUILT — `?step=address`' },
+  { file: 'W284-store-checkout-payment.html', flowmap: 'data-flowmap="chain-mutate:checkout" ("Retry") → W3052', verdict: 'BUILT — `?step=payment`' },
+  { file: 'W285-store-checkout-review.html', flowmap: '0 data-flowmap; links W281 (cart) · W286 (pay)', verdict: 'BUILT — `?step=review`, per-seller blocks, each paid on its own after placement' },
+  { file: 'W286-store-payment-processing.html', flowmap: 'data-flowmap="chain-mutate:payment" ("Send again") → W3061; success → W287', verdict: 'BUILT — `/<slug>/checkout/pay` (the real attempt states)' },
+  { file: 'W3048-store-checkout-form-form-error.html', flowmap: 'W283 "+ Add address" (chain-form:checkout)', verdict: 'BUILT — the add-address form re-rendered with a refusal against each field, the values kept' },
+  { file: 'W3049-store-checkout-form-review.html', flowmap: 'W3048 Submit', verdict: 'DELTA address_review' },
+  { file: 'W3050-store-checkout-form-success.html', flowmap: 'W3049 Submit', verdict: 'BUILT — back to the address step with the new address SELECTED and the methods re-quoted for it' },
+  { file: 'W3051-store-checkout-form-failure.html', flowmap: 'W3049 Submit (failure)', verdict: 'BUILT — the named failure, "nothing was saved", the values kept · on-call refused' },
+  { file: 'W3052-store-checkout-mutate-confirm.html', flowmap: 'W283 / W284 "Retry" (chain-mutate:checkout)', verdict: 'PARITY-DECOR — Retry is a reload of the step (a read); no confirm over a read, no audit entry' },
+  { file: 'W3053-store-checkout-mutate-success.html', flowmap: 'W3052 Proceed', verdict: 'PARITY-DECOR — the re-rendered step' },
+  { file: 'W3054-store-checkout-mutate-failure.html', flowmap: 'W3052 Proceed (failure)', verdict: 'PARITY-DECOR — the load error again, with Retry · on-call refused' },
+  { file: 'W3061-store-payment-mutate-confirm.html', flowmap: 'W286 "Send again" (chain-mutate:payment)', verdict: 'DECOR — DELTA resend_confirm: the act is re-requesting payment, nothing is charged by asking' },
+  { file: 'W3062-store-payment-mutate-success.html', flowmap: 'W3061 Proceed', verdict: 'BUILT — the NEW attempt\'s processing state (attempt N + 1, its own gateway order and expiry)' },
+  { file: 'W3063-store-payment-mutate-failure.html', flowmap: 'W3061 Proceed (failure)', verdict: 'BUILT — the named failure: "a payment attempt is still open until <expiresAt>" / "this order is no longer awaiting payment"' },
+]);
+
+/** The refusal keys a STORE-2c surface prints, in this list's order. */
+export function store2cRefusalKeys(surface: Store2cSurface): string[] {
+  return STORE2C_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key);
 }

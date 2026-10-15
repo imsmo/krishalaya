@@ -48,6 +48,15 @@ export class PaymentsController {
     return this.payments.list(ctx.tenantId, ctx.userId, { cursor: decodeCursor(cursor), limit: lim }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
+  /** PC-56 STORE-2c · B3 / C5 — an order's payment attempts as its BUYER sees them: the newest attempt (state, failure reason code, expiry,
+   *  number), whether one is still live, and the number the next attempt carries (the storefront's key `order-pay:<orderId>:<attempt>`).
+   *  Declared before ':id' so 'order' is not captured as a payment id. */
+  @Get('order/:orderId/attempts')
+  attempts(@CurrentContext() ctx: RequestContext, @Param('orderId') orderId: string) {
+    if (!/^[0-9a-fA-F-]{36}$/.test(orderId)) throw new BadRequestError('orderId must be a uuid');
+    return this.payments.attemptsForOrder(ctx.tenantId, this.actor(ctx), orderId).then((data) => ({ data }));
+  }
+
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.payments.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 

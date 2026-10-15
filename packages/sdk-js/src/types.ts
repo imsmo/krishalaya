@@ -291,8 +291,20 @@ export interface UserProfile { id: string; displayName: string | null; roles: st
 // --- payments (module 4) — money is bigint minor-unit STRINGS (Law 2) ---
 export type PaymentPurpose = 'wallet_recharge' | 'direct_order' | 'subscription' | 'boost' | 'emd' | 'course';
 /** Returned by createIntent — feed gatewayOrderId into the gateway SDK (Razorpay), then poll status. */
-export interface PaymentIntent { paymentId: string; gatewayOrderId: string; provider: string; amountMinor: string; status: string; }
-export interface PaymentSummary { id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; provider?: string; gatewayOrderId?: string | null; }
+/** PC-56 STORE-2c · B3: for an ORDER, `attempt` (1-based) and `expiresAt` (when this attempt stops being live — `platform.payment_attempt_ttl_seconds`). */
+export interface PaymentIntent { paymentId: string; gatewayOrderId: string; provider: string; amountMinor: string; status: string; attempt?: number | null; expiresAt?: string | null; }
+/** PC-56 STORE-2c · B3 — the buyer-facing failure vocabulary (`failureReason` is one of these CODES; the page localizes it — never the gateway's
+ *  English). `chargedNothing` is true only for a failure before any debit (then "nothing was charged" may be said). */
+export const PAYMENT_FAILURE_REASONS = Object.freeze(['cancelled', 'timed_out', 'declined', 'insufficient_funds', 'authentication_failed', 'limit_exceeded', 'gateway_error', 'unknown'] as const);
+export type PaymentFailureReason = (typeof PAYMENT_FAILURE_REASONS)[number];
+export interface PaymentSummary {
+  id: string; status: string; amountMinor: string; currencyCode: string; purpose?: string; createdAt?: string; provider?: string; gatewayOrderId?: string | null;
+  refundedMinor?: string; referenceType?: string | null; referenceId?: string | null;
+  /** STORE-2c · B3 — present on every read (null when not failed / not an order payment). */
+  failureCode?: string | null; failureReason?: PaymentFailureReason | null; chargedNothing?: boolean | null; expiresAt?: string | null; attempt?: number | null;
+}
+/** PC-56 STORE-2c · B3 / C5 — an order's attempts as its buyer sees them; `nextAttempt` is the number the storefront's next key carries. */
+export interface OrderPaymentAttempts { latest: PaymentSummary | null; attempts: number; nextAttempt: number; liveAttempt: boolean; ttlSeconds: number | null; }
 /** A GST trade invoice for an order (totals minor-unit strings; tax split in taxBreakup). NON-PII. */
 export interface InvoiceSummary { id: string; invoiceNo: string; orderId: string; sellerGstin: string | null; buyerGstin: string | null; totalMinor: string; taxBreakup: Record<string, unknown>; pdfMediaId: string | null; createdAt: string; }
 /** A short-lived presigned PDF download URL for an invoice. */
@@ -608,6 +620,14 @@ export const CART_REFUSAL_CODES = Object.freeze([
   'STOREFRONT_CART_OFF',      // 503 — buying is paused on the platform
 ] as const);
 export type CartRefusalCode = (typeof CART_REFUSAL_CODES)[number];
+/** PC-56 STORE-2c — the money wave's refusals, BY NAME (each with its details), for a client's code → message map:
+ *   MIXED_CURRENCY {currencies} · LISTING_INSUFFICIENT_STOCK {listingId, requested, available} (the LOCKED remainder at placement) ·
+ *   PAYMENT_ATTEMPT_LIVE {paymentId, expiresAt} · WALLET_INSUFFICIENT_BALANCE {requiredMinor, availableMinor} ·
+ *   CHARGE_METHOD_UNSUPPORTED {chargeCode?, method, supported}. */
+export const CHECKOUT_MONEY_REFUSAL_CODES = Object.freeze([
+  'MIXED_CURRENCY', 'LISTING_INSUFFICIENT_STOCK', 'PAYMENT_ATTEMPT_LIVE', 'WALLET_INSUFFICIENT_BALANCE', 'CHARGE_METHOD_UNSUPPORTED',
+] as const);
+export type CheckoutMoneyRefusalCode = (typeof CHECKOUT_MONEY_REFUSAL_CODES)[number];
 /** `currencyCode`: the one currency every line shares; null when the cart is empty or mixes currencies (then no subtotal is printed). */
 export interface Cart { items: CartItem[]; subtotalMinor: string; currencyCode?: string | null; }
 /** Checkout converts the cart into one order per seller (+ a group if multi-seller). The authoritative totals
@@ -644,6 +664,8 @@ export interface CheckoutPreview {
   deliveryNeedsAddress?: boolean;
   grandTotalMinor: string;
   couponCode: string | null;
+  /** PC-56 STORE-2c · C4: the quality window (hours) the placed order will carry — the API's figure, printed by the review page. */
+  qualityWindowHours?: number;
 }
 /** HOTFIX-4 · A9: a multi-seller checkout's group — every order it created (one per seller), so no order is orphaned unnamed. */
 export interface CheckoutGroupDetail {
@@ -3498,4 +3520,21 @@ export interface SchemeSweepView {
   sweep: SchemeSweep; output: 'call_list_only'; autoApply: { built: false; reason: string };
   items: Array<{ id: string; userId: string; shortName: string | null; phoneMasked: string; eligible: boolean; reasons: string[]; inputs: Record<string, unknown>; alreadyApplied: boolean }>;
   nextCursor: string | null;
+}
+
+// --- PC-56 STORE-2c · B7 — the PUBLIC auction read (`GET /v1/storefront/auctions/:id`) — every figure the SERVER's; no bidder identity ---
+export interface PublicAuction {
+  auctionId: string; auctionNo: string | null; status: string; kind: string; isOpen: boolean;
+  lot: { title: string; unitCode: string; quantity: string; organisation: { slug: string; name: string } | null; district: string | null };
+  currencyCode: string; exponent: number | null;
+  /** founder 2a D1: met / not met only — the reserve amount is never sent. */
+  reserveMet: boolean; hasBids: boolean; bidCount: number; sealedHidden: boolean;
+  currentBidMinor: string | null; lotTotalMinor: string | null; minNextBidMinor: string; minNextLotTotalMinor: string;
+  startsAt: string; endsAt: string; antiSnipe: { triggerSec: number; extendSec: number };
+  emd: { flatMinor: string | null; pctBps: number | null };
+  balanceDueHours: number;
+  /** newest first; NO identity — the time and (unless a sealed auction is still open) the amount */
+  bids: Array<{ at: string; amountMinor: string | null }>;
+  /** only with a session of THIS organisation */
+  viewer: { bestBidMinor: string | null; leading: boolean; won: boolean; orderId: string | null } | null;
 }

@@ -3,7 +3,7 @@
 // the client only polls status. Both money-moving POSTs require an Idempotency-Key (Law 3). Money is bigint
 // minor-unit strings (Law 2). Gated server-side by the `online_payments` flag.
 import { HttpClient } from '../http';
-import { PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, WalletInsights, WalletStatementFile, AutopayMandate, MandateExecution, SavedInstruments, InvoiceSummary, InvoiceDownload, Page } from '../types';
+import { OrderPaymentAttempts, PaymentIntent, PaymentSummary, PayoutSummary, WalletBalance, WalletLedgerEntry, WalletInsights, WalletStatementFile, AutopayMandate, MandateExecution, SavedInstruments, InvoiceSummary, InvoiceDownload, Page } from '../types';
 
 /** Buyer-facing GST trade invoices for orders. Read-only + ownership-gated server-side (the order's buyer/seller
  *  or a finance moderator — a foreign order is 404, never enumerable). Hangs off `payments.invoices`. */
@@ -349,6 +349,18 @@ export class PaymentsResource {
   /** Poll a payment's status (authoritative server state). */
   async get(id: string, signal?: AbortSignal): Promise<PaymentSummary> {
     return (await this.http.request<PaymentSummary>('GET', `payments/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** PC-56 STORE-2c · B3 — ONE ATTEMPT to pay an order: the key is the attempt's (`order-pay:<orderId>:<attempt>`), so a refresh of the SAME
+   *  attempt replays it and "Send again" (attempt + 1) asks for a NEW gateway order. The API refuses a second LIVE attempt by name
+   *  (PAYMENT_ATTEMPT_LIVE {paymentId, expiresAt}). The amount is the order's own total (read it first — never typed). */
+  async createOrderAttempt(input: { orderId: string; attempt: number; amountMinor: string; currencyCode: string; purpose?: string }): Promise<PaymentIntent> {
+    if (!Number.isInteger(input.attempt) || input.attempt < 1) throw new Error('attempt must be a positive integer');
+    return this.createIntent({ purpose: input.purpose ?? 'direct_order', amountMinor: input.amountMinor, currencyCode: input.currencyCode, referenceType: 'order', referenceId: input.orderId },
+      `order-pay:${input.orderId}:${input.attempt}`);
+  }
+  /** PC-56 STORE-2c · B3 / C5 — the order's attempts as its buyer sees them (the newest, whether one is live, the next attempt's number). */
+  async orderAttempts(orderId: string, signal?: AbortSignal): Promise<OrderPaymentAttempts> {
+    return (await this.http.request<OrderPaymentAttempts>('GET', `payments/order/${encodeURIComponent(orderId)}/attempts`, { signal })).data;
   }
   /** DEV-ONLY: complete a payment that was created against the deterministic SANDBOX gateway (no real
    *  PSP configured server-side) by driving the server's own signed-webhook capture path — see

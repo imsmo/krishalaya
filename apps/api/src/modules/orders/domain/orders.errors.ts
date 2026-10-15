@@ -63,3 +63,10 @@ export class WrongStoreError extends DomainError {
     super('WRONG_STORE', `Listing ${listingId} is sold by another organisation's store — sign in to that store to buy it`, 409, { listingId, listingTenantSlug, listingTenantName });
   }
 }
+
+// ── PC-56 STORE-2c — THE MONEY WAVE (founder D1–D8). ──
+/** B4 (survey F-10 / B25, Rule Zero): one order — and one checkout — is in ONE currency, the LISTINGS' own (`listings.currency_code`). A cart
+ *  whose lines are priced in different currencies cannot be placed or previewed as one bill: refused by name with the currencies found. */
+export class MixedCurrencyError extends DomainError {
+  constructor(currencies: string[]) { super('MIXED_CURRENCY', `The cart holds lots priced in different currencies (${currencies.join(', ')}) — check them out separately`, 422, { currencies }); }
+}

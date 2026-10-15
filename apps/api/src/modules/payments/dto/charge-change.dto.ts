@@ -9,8 +9,10 @@ export const ProposeChargeSchema = z.object({
   chargeCode: z.string().min(2).max(60).regex(/^[a-z][a-z0-9_]*$/, 'a charge code is lower_snake_case'),
   action: z.enum(CHARGE_ACTIONS as unknown as [string, ...string[]]),
   label: z.string().max(120).optional(),
-  // `per_km` is deliberately absent: the column's CHECK allows it and the calculator throws on it (0141 DEFECT 4).
-  calcMethod: z.enum(SUPPORTED_CALC_METHODS as unknown as [string, ...string[]]).optional(),
+  // `per_km` is ACCEPTED HERE ONLY TO BE REFUSED BY NAME (PC-56 STORE-2c · B5, founder D4): the column's CHECK allows it and the calculator
+  // cannot price it (0141 DEFECT 4) — the service answers CHARGE_METHOD_UNSUPPORTED {method, supported} (a zod enum would have answered a bare
+  // VALIDATION_ERROR that names nothing). Any other string is still refused here.
+  calcMethod: z.enum([...SUPPORTED_CALC_METHODS, 'per_km'] as unknown as [string, ...string[]]).optional(),
   config: z.record(z.unknown()).optional(),
   currencyCode: z.string().length(3).optional(),
   effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'effective_from must be YYYY-MM-DD'),

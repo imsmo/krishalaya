@@ -83,6 +83,17 @@ class FakePaymentRepository {
   async listForUser(): Promise<Payment[]> { return []; }
   async findSuccessByOrder(): Promise<Payment | null> { return null; }
   async attachGatewayOrder(): Promise<void> {}
+  /** PC-56 STORE-2c · B3: the attempt rule reads the order's attempts + the TTL setting (the fake: by reference, newest first; 900 s). */
+  private forOrder(orderId: string): Payment[] {
+    return [...this.byId.values()].filter((p) => p.toProps().referenceType === 'order' && p.toProps().referenceId === orderId)
+      .sort((a, b) => b.toProps().createdAt.getTime() - a.toProps().createdAt.getTime());
+  }
+  async attemptsForOrder(_t: string, orderId: string): Promise<Payment[]> { return this.forOrder(orderId); }
+  async attemptsForOrderTx(_tx: TxContext, _t: string, orderId: string): Promise<Payment[]> { return this.forOrder(orderId); }
+  async capturedForOrderTx(_tx: TxContext, _t: string, orderId: string): Promise<Payment | null> {
+    return this.forOrder(orderId).find((p) => ['success', 'refund_initiated', 'partially_refunded', 'refunded'].includes(p.status)) ?? null;
+  }
+  async attemptTtlSeconds(): Promise<number | null> { return 900; }
 }
 
 /** In-memory stand-in for the real (SQL) OrderRepository — exactly the two read methods

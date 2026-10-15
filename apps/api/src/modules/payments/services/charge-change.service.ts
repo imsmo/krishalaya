@@ -160,6 +160,10 @@ export class ChargeChangeService {
       }
       let definitionId: string | null = null;
       if (row.action !== 'end') {
+        // PC-56 STORE-2c · B5 (founder D4): a proposal written before the method gate (or by hand) is re-checked at the door it becomes a price —
+        // an unpriceable method (per_km) is refused BY NAME here, never inserted for checkout to throw on.
+        const v = validateChargeConfig(String(row.calcMethod ?? ''), row.config);
+        if (!v.ok) throw new ChargeRefusedError(v.error, 'the approved fee configuration is not one the pricing engine can compute', v.detail);
         definitionId = uuidv7();
         await this.repo.insertDefinition(tx, {
           id: definitionId, tenantId, chargeCode: row.chargeCode, label: row.label,

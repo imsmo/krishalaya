@@ -22,6 +22,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { ForbiddenError } from '../../../shared/errors/app-error';
 import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 import { Listing, ListingDomainEvent } from '../domain/listing.entity';
+import { stockMilli, stockText } from '../domain/listing-stock';
 import { ListingConcurrencyError, ListingNotFoundError, PhotoMediaInvalidError, TooManyPhotosError, UnknownRejectReasonError, ArchiveReasonError, ListingInQcError } from '../domain/listing.errors';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { PriceHistory } from '../domain/price-history.entity';
@@ -345,6 +346,39 @@ export class ListingService {
     await this.repo.update(tx, listing);
     await this.flushEvents(tx, tenantId, id, listing.pullEvents());
   }
+  // ---- PC-56 STORE-2c · B1 (founder D1): STOCK IS RESERVED AT PLACEMENT, RELEASED ON CANCEL — inside the CALLER's transaction ----------------
+  // The orders module calls these with ITS transaction (checkout placement; the restock handler's unit of work), so the order and the lot can
+  // never disagree. Each LOCKS the listing row (FOR UPDATE) and works on the locked row — never the 300 s cache — and the caller drops the
+  // cached copy AFTER commit (`invalidate`). Thousandths as a bigint (domain/listing-stock.ts).
+  /** Decrement under the row lock; refuses LISTING_INSUFFICIENT_STOCK {requested, available} (the LOCKED remainder) or a lot no longer on sale. */
+  async reserveInTx(tx: TxContext, tenantId: string, id: string, qty: string): Promise<{ available: string; soldOut: boolean }> {
+    const listing = await this.repo.getForUpdate(tx, tenantId, id);
+    listing.reserve(qty);
+    await this.repo.update(tx, listing);
+    await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+    const p = listing.toProps();
+    return { available: stockText(stockMilli(p.quantityAvailable)), soldOut: p.status === 'sold_out' };
+  }
+  /** Put a reservation back under the row lock (never above the lot's total; a sold-out lot is back on sale). Called once per order. */
+  async releaseInTx(tx: TxContext, tenantId: string, id: string, qty: string): Promise<void> {
+    const listing = await this.repo.getForUpdate(tx, tenantId, id);
+    listing.release(qty);
+    await this.repo.update(tx, listing);
+    await this.flushEvents(tx, tenantId, id, listing.pullEvents());
+  }
+  /**
+   * PC-56 STORE-2c · B7 — what the PUBLIC auction page names about its lot: the title, the unit, the organisation (slug + display name — never a
+   * person) and the district name, and whether the seller is under a suspension (then the auction is not public either — the listing rule).
+   * The auctioned lot is `reserved_auction` (not published), so the public listing read 404s on it; this is the one read that may name it.
+   */
+  async auctionLotFacts(tenantId: string, id: string): Promise<{ title: string; unitCode: string; currencyCode: string; organisation: { slug: string; name: string } | null; district: string | null; sellerSuspended: boolean } | null> {
+    const l = await this.getById(tenantId, id);
+    if (!l) return null;
+    const suspended = this.publicFacts ? await this.publicFacts.sellerSuspended(tenantId, id) : false;
+    const facts = this.publicFacts ? await this.publicFacts.forListing(tenantId, id) : NO_PUBLIC_FACTS;
+    return { title: l.title, unitCode: l.unitCode, currencyCode: l.currencyCode, organisation: facts.organisation, district: facts.district, sellerSuspended: suspended };
+  }
+
   /** A defaulted sale puts the lot back on sale (sold_out → published via restock's own rule). */
   async restockInTx(tx: TxContext, tenantId: string, id: string, qty: number): Promise<void> {
     const listing = await this.repo.getForUpdate(tx, tenantId, id);

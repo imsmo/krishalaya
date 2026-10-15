@@ -152,7 +152,7 @@ export default async function TenantCart({ params, searchParams }: { params: { t
         <div className="kv-cart__actions">
           {resolve.blocked > 0
             ? <a href={`#${resolve.first}`} className="kv-btn" data-kv-resolve={String(resolve.blocked)}>{t.t('cart.resolveN', { count: String(resolve.blocked) })}</a>
-            : <Link href="/checkout" className="kv-btn" data-kv-checkout="go">{t.t('cart.checkout')}</Link>}
+            : <Link href={`/${encodeURIComponent(slug)}/checkout`} className="kv-btn" data-kv-checkout="go">{t.t('cart.checkout')}</Link>}
         </div>
         <p className="kv-cart__note" data-kv-never-charges="true">{t.t('cart.neverCharges')}</p>
       </aside>

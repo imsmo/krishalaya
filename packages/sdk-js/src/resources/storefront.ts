@@ -2,7 +2,7 @@
 // page?" answered by the API from the request's own tenant context (the client's `tenantSlug` → `X-Tenant-Slug`, or a verified
 // storefront host). A 404 TENANT_NOT_FOUND means no LIVE tenant resolved — never a default one.
 import { HttpClient } from '../http';
-import { DiscoveryCard, OrganisationCard, Page, StorefrontFlags, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
+import { DiscoveryCard, OrganisationCard, Page, PublicAuction, StorefrontFlags, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
 
 export class StorefrontResource {
   constructor(private readonly http: HttpClient) {}
@@ -38,6 +38,11 @@ export class StorefrontResource {
    *  platform's signup switch, always. */
   async flags(signal?: AbortSignal): Promise<StorefrontFlags> {
     return (await this.http.request<StorefrontFlags>('GET', 'storefront/flags', { anonymous: true, signal })).data;
+  }
+  /** PC-56 STORE-2c · B7 — the PUBLIC auction read of the context organisation (`auctions` flag OFF → 404). Anonymous by default; pass
+   *  `{ withSession: true }` on an authed client to receive the viewer's own facts (their best bid, leading, won + order). No bidder identity. */
+  async auction(id: string, opts: { withSession?: boolean } = {}, signal?: AbortSignal): Promise<PublicAuction> {
+    return (await this.http.request<PublicAuction>('GET', `storefront/auctions/${encodeURIComponent(id)}`, { anonymous: !opts.withSession, signal })).data;
   }
   /** PC-56 STORE-1c · D2 — the PUBLIC plans of a country (`?country=XX`, two letters; the API refuses a missing one by name —
    *  400 COUNTRY_REQUIRED — rather than guess a country). Read-only. */

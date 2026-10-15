@@ -19,6 +19,8 @@ import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/sc
 import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
 import { AuctionsController } from './controllers/v1/auctions.controller';
 import { BidsController } from './controllers/v1/bids.controller';
+import { StorefrontAuctionsController } from './controllers/v1/storefront-auctions.controller';
+import { AuctionPublicReadModel } from './read-models/auction-public.read-model';
 import { AuctionService } from './services/auction.service';
 import { BidService } from './services/bid.service';
 import { AuctionWatcherService } from './services/auction-watcher.service';
@@ -37,8 +39,9 @@ const JOB_DEPS = [UNIT_OF_WORK, AuctionRepository, AuctionService];
 
 @Module({
   imports: [ListingsModule, OrdersModule],
-  controllers: [AuctionsController, BidsController],
+  controllers: [AuctionsController, BidsController, StorefrontAuctionsController],   // PC-56 STORE-2c · B7: + the public auction read
   providers: [
+    AuctionPublicReadModel,
     AuctionService, BidService, AuctionWatcherService, AuctionsPublisher, AuctionPaymentSucceededHandler, AuctionOrderCancelledHandler,
     AuctionRepository, BidRepository, AuctionWatcherRepository, AuctionSettlementRepository, AuctionLiveReadModel, MyBidsReadModel,
     { provide: OpenScheduledAuctionsJob, inject: JOB_DEPS, useFactory: (u: UnitOfWork, r: AuctionRepository, s: AuctionService) => new OpenScheduledAuctionsJob(60_000, u, r, s) },

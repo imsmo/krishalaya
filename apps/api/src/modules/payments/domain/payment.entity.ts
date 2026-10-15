@@ -43,6 +43,10 @@ export class Payment {
   get currencyCode() { return this.props.currencyCode; }
   get refundableMinor() { return this.props.amountMinor - this.props.refundedMinor; }
   get userId() { return this.props.userId; }
+  get providerCode() { return this.props.providerCode; }
+  get refundedMinor() { return this.props.refundedMinor; }
+  get gatewayPaymentId() { return this.props.gatewayPaymentId; }
+  get createdAt() { return this.props.createdAt; }
   get tenantId() { return this.props.tenantId; }
   toProps(): Readonly<PaymentProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
@@ -66,6 +70,7 @@ export class Payment {
    */
   markCaptured(gatewayPaymentId: string, method: string | null, ledgerTxnId: string, at: Date = new Date()): boolean {
     if (this.props.status === 'success') return false;
+    // (STORE-2c · B3: `expired → success` is legal for any id — a lapsed attempt captured late at the gateway is booked, never dropped)
     if (this.props.status === 'failed' && !this.isLaterAttempt(gatewayPaymentId)) throw new LateCaptureSameAttemptError(this.props.id);
     assertTransition(this.props.status, 'success');
     this.props.status = 'success';
@@ -96,7 +101,45 @@ export class Payment {
     assertTransition(this.props.status, 'failed');
     this.props.status = 'failed'; this.props.failureCode = code; this.props.failureReason = reason;
     if (gatewayPaymentId) this.props.gatewayPaymentId = gatewayPaymentId;
-    this.events.push({ type: PaymentEventType.Failed, payload: { paymentId: this.props.id, code } });
+    // PC-56 STORE-2c · B3: + the payer and the reference (additive) — so the communication map CAN notify a failure once its template rows exist
+    // (owed: `order.payment_failed` is catalogued in 0068 with no template, so nothing is mapped or sent today)
+    this.events.push({ type: PaymentEventType.Failed, payload: { paymentId: this.props.id, code, reason: this.props.failureReason, payerUserId: this.props.userId,
+      referenceType: this.props.referenceType, referenceId: this.props.referenceId } });
+    return true;
+  }
+
+  /** PC-56 STORE-2c · B3: the platform LAPSES a live attempt the buyer replaced with a fresh one (initiated / pending only — an authorized
+   *  card hold is never lapsed by us). No event: nothing happened to money. Returns false when there was nothing to lapse. */
+  markExpired(): boolean {
+    if (this.props.status !== 'initiated' && this.props.status !== 'pending') return false;
+    assertTransition(this.props.status, 'expired');
+    this.props.status = 'expired';
+    return true;
+  }
+
+  /**
+   * PC-56 STORE-2c · B2 (founder D3) — THE AUTOMATIC REFUND OF A CANCELLED, PAID ORDER BEGINS: the ledger refund (escrow → source) is booked by
+   * the caller in the same transaction (`ledgerTxnId` is that refund's); the payment is `refund_initiated` until the source confirms. Only a
+   * captured payment that nothing has refunded yet (`success`, refunded 0) — anything else is not this method's to touch. The capture's ledger
+   * txn id stays on the row (the refund's is in the audit row and the event).
+   */
+  initiateRefund(amountMinor: bigint): void {
+    if (this.props.status !== 'success' || this.props.refundedMinor !== 0n) throw new RefundExceedsPaymentError();
+    if (amountMinor <= 0n || amountMinor > this.refundableMinor) throw new RefundExceedsPaymentError();
+    assertTransition(this.props.status, 'refund_initiated');
+    this.props.status = 'refund_initiated';
+    this.props.refundedMinor += amountMinor;
+  }
+  /** B2: the source confirmed the refund (the sandbox at once; Razorpay's `refund.processed` webhook later) → `refunded`. Emits
+   *  `payments.payment_refunded` with the buyer, for the communication map. Idempotent: false unless `refund_initiated`. */
+  completeRefund(reason: string, orderId: string | null, gatewayRefundId: string | null): boolean {
+    if (this.props.status !== 'refund_initiated') return false;
+    const next: PaymentStatus = this.props.refundedMinor >= this.props.amountMinor ? 'refunded' : 'partially_refunded';
+    assertTransition(this.props.status, next);
+    this.props.status = next;
+    this.events.push({ type: PaymentEventType.Refunded, payload: { paymentId: this.props.id, refundedMinor: this.props.refundedMinor.toString(),
+      totalRefundedMinor: this.props.refundedMinor.toString(), fully: next === 'refunded', reason, orderId, buyerUserId: this.props.userId,
+      currencyCode: this.props.currencyCode, gatewayRefundId, provider: this.props.providerCode } });
     return true;
   }
 

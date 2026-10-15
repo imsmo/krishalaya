@@ -7,6 +7,7 @@ import {
   InsufficientStockError, InvalidPriceError, ListingNotEditableError, InvalidRepostDurationError, InvalidExtendDurationError,
   ListingSelfReviewError, ListingRejectReasonError,
 } from './listing.errors';
+import { stockMilli, stockNumber } from './listing-stock';
 
 export interface ListingProps {
   id: string;
@@ -252,6 +253,47 @@ export class Listing {
       this.props.status = 'sold_out';
       this.events.push({ type: 'listing.sold_out', listingId: this.props.id });
     }
+  }
+
+  /**
+   * PC-56 STORE-2c · B1 (founder D1) — RESERVE AT PLACEMENT. The checkout transaction calls this under the listing's row lock (FOR UPDATE —
+   * ListingService.reserveInTx), with the LOCKED row's remainder, never the 300 s cache. THE NO-OVERSELL INVARIANT: the remainder never goes
+   * below zero — a request above it is refused with the exact remainder (all-or-nothing: the canon's "take 4, or drop" partial take is not
+   * done here, it is refused by name on the storefront). Only a PUBLISHED lot can be reserved (a lot paused, sold out or expired between the
+   * buyer's preview and placement is refused, not sold). Thousandths as a bigint (listing-stock.ts) — never a float subtraction. At zero the
+   * lot is sold out (reduceStock's own rule: the tombstone the storefront shows).
+   */
+  reserve(qty: string | number): void {
+    const want = stockMilli(qty);
+    if (want <= 0n) throw new InvalidPriceError('Quantity must be positive');
+    if (this.props.status !== 'published') throw new ListingNotEditableError(this.props.id, this.props.status);
+    const have = stockMilli(this.props.quantityAvailable);
+    if (want > have) throw new InsufficientStockError(stockNumber(want), stockNumber(have));
+    const left = have - want;
+    this.props.quantityAvailable = stockNumber(left);
+    this.events.push({ type: 'listing.stock_changed', listingId: this.props.id, available: this.props.quantityAvailable });
+    if (left === 0n) {
+      this.props.status = 'sold_out';
+      this.events.push({ type: 'listing.sold_out', listingId: this.props.id });
+    }
+  }
+
+  /**
+   * PC-56 STORE-2c · B1 (founder D1) — RELEASE A RESERVATION (the order was cancelled / declined / auto-cancelled). The caller guarantees it
+   * runs ONCE per order (the order's `stock_reserved_at` marker is cleared in the same transaction). Never above the lot's total; a sold-out lot
+   * is back on sale. A paused / expired / archived lot keeps its status (its stock comes back; it is not re-published by a cancellation).
+   */
+  release(qty: string | number): void {
+    const back = stockMilli(qty);
+    if (back <= 0n) throw new InvalidPriceError('Quantity must be positive');
+    const total = stockMilli(this.props.quantityTotal);
+    const next = stockMilli(this.props.quantityAvailable) + back;
+    this.props.quantityAvailable = stockNumber(next > total ? total : next);
+    if (this.props.status === 'sold_out' && this.props.quantityAvailable > 0) {
+      this.props.status = 'published';
+      this.events.push({ type: 'listing.status_changed', listingId: this.props.id, from: 'sold_out', to: 'published' });
+    }
+    this.events.push({ type: 'listing.stock_changed', listingId: this.props.id, available: this.props.quantityAvailable });
   }
 
   /** Return stock on cancellation/refund; re-publishes a sold-out listing. */

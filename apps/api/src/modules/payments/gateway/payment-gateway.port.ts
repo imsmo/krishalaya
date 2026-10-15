@@ -26,10 +26,22 @@ export interface GatewayEvent {
   method?: string;
   failureCode?: string;
   failureReason?: string;
+  /** PC-56 STORE-2c · B2: the gateway's refund id on a `refund_processed` event. */
+  gatewayRefundId?: string;
 }
+
+/** PC-56 STORE-2c · B2 (founder D3): refund a CAPTURED gateway payment back to its source (the buyer's card / UPI / bank). `receipt` is OUR
+ *  idempotency reference (`refund:<orderId>`), sent to the gateway so a retried call is recognisable on its side too. */
+export interface RefundInput { gatewayPaymentId: string; amountMinor: bigint; currencyCode: string; receipt: string; notes?: Record<string, string>; }
+/** `processed` = the money is on its way back now (the sandbox; an instant refund); `pending` = the gateway accepted it and confirms later
+ *  (Razorpay's `refund.processed` webhook) — the payment stays `refund_initiated` until then. */
+export interface RefundResult { gatewayRefundId: string; status: 'processed' | 'pending'; }
 
 export interface PaymentGateway {
   readonly providerCode: string;
+  /** PC-56 STORE-2c · B2: refund a captured payment to its source (resilience-wrapped for a real PSP). Throws on a refused / failed call — the
+   *  caller (the auto-refund handler) lets the relay retry it; the ledger refund is already booked and the payment `refund_initiated`. */
+  refund(input: RefundInput): Promise<RefundResult>;
   /** Create a gateway order for the given amount (resilience-wrapped). */
   createOrder(input: CreateOrderInput): Promise<CreateOrderResult>;
   /** Constant-time verify the webhook signature over the raw body. Returns false on any mismatch. */

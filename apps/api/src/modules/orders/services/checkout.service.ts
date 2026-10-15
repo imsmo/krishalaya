@@ -27,7 +27,7 @@ import { DeliveryZoneRepository } from '../../logistics/repositories/delivery-zo
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { CheckoutGroupRepository } from '../repositories/checkout-group.repository';
-import { Order } from '../domain/order.entity';
+import { Order, QUALITY_WINDOW_HOURS } from '../domain/order.entity';
 import { orderPaymentState } from '../domain/order-payment-state';
 import { OrderItem } from '../domain/order-item.entity';
 import { CheckoutGroup } from '../domain/checkout-group.entity';
@@ -35,7 +35,9 @@ import { DomainEvent } from '../domain/orders.events';
 import { CartEmptyError, CartNotFoundError, ListingNotPurchasableError, InsufficientListingStockError,
   UnserviceablePincodeError, DeliveryAddressRequiredError, DeliveryMethodRequiredError, DeliveryMethodNotServingError,
   LicenceRequiredError, BannedInRegionError, PriceChangedError } from '../domain/orders.errors';
-import { assertMinOrder, compareQty, lineReason, lineTotalFromMilli, milliToDecimal, normaliseQty, priceDrift, toMilli } from '../domain/cart-rules';
+import { assertMinOrder, compareQty, lineReason, lineTotalFromMilli, milliToDecimal, normaliseQty, oneCurrency, priceDrift, toMilli } from '../domain/cart-rules';
+import { InsufficientStockError } from '../../listings/domain/listing.errors';
+import { ListingNotEditableError } from '../../listings/domain/listing.errors';
 import type { CartItemRow } from '../repositories/cart.repository';
 import { CheckoutDto, CheckoutPreviewDto } from '../dto/create-order.dto';
 import { DomainError } from '../../../shared/errors/app-error';
@@ -151,12 +153,16 @@ export class CheckoutService {
 
     // server-truth subtotal (price snapshot exactly as checkout would), so slab delivery fees are accurate.
     let subtotalMinor = 0n;
+    const currencies: string[] = [];
     for (const ci of cartItems) {
       const l: any = await this.listings.getById(tenantId, ci.listing_id);
       if (!l || l.status !== 'published') throw new ListingNotPurchasableError(ci.listing_id);
       // PC-56 STORE-2b · F-24: `BigInt(Number("2.500"))` threw a RangeError for every decimal quantity — the one money formula instead
       subtotalMinor += lineTotalFromMilli(BigInt(l.priceMinor), toMilli(ci.quantity));
+      currencies.push(l.currencyCode);
     }
+    // PC-56 STORE-2c · B4 (survey F-10, Rule Zero): the fees are quoted in the LOTS' currency — never an assumed 'INR'; a mixed cart is refused
+    const currencyCode = oneCurrency(currencies);
 
     const serviceable = await this.zones.listServiceable(tenantId, { pincode: q.pincode, regionId: q.regionId, limit: 25 });
     const methods = await this.uow.run(tenantId, async (tx) => {
@@ -171,7 +177,7 @@ export class CheckoutService {
       return out;
     }, { userId: buyerUserId });
 
-    return { currencyCode: 'INR', subtotalMinor: subtotalMinor.toString(), methods };
+    return { currencyCode, subtotalMinor: subtotalMinor.toString(), methods };
   }
 
   async checkout(tenantId: string, buyerUserId: string, idemKey: string, dto: CheckoutDto) {
@@ -194,6 +200,12 @@ export class CheckoutService {
           // resolve listings + group order items by seller — PC-56 STORE-2b: every line through the ONE rule (placeableLines), the unit price
           // charged = the ACCEPTED price, which the guard proved equal to the current one
           const lines = await this.placeableLines(tenantId, cartItems, await this.addressRegionTx(tx, tenantId, buyerUserId, dto.deliveryAddressId));
+          // PC-56 STORE-2c · B4 (survey F-10, Rule Zero): the order, its group and every amount on them are in the LOTS' own currency
+          const currencyCode = oneCurrency(lines.map((x) => x.l.currencyCode));
+          // PC-56 STORE-2c · B1 (founder D1) — RESERVE AT PLACEMENT, in THIS transaction: each lot's row is LOCKED (FOR UPDATE), its remainder
+          // re-read from the locked row (never the 300 s cache placeableLines read), and decremented — or the whole placement is refused by name
+          // with the LOCKED remainder (all-or-nothing; no partial take). Locked in listing-id order so two checkouts sharing lots cannot deadlock.
+          const reserved = await this.reserveAll(tx, tenantId, lines);
           const bySeller = new Map<string, { items: OrderItem[]; createdAt: Date; orderId: string; categories: Set<string> }>();
           for (const { ci, l, qty: qtyText, unitPriceMinor } of lines) {
             const qty = Number(qtyText);
@@ -209,7 +221,7 @@ export class CheckoutService {
           const checkoutGroupId = bySeller.size > 1 ? uuidv7() : null;
           if (checkoutGroupId) {
             const total = [...bySeller.values()].reduce((s, g) => s + g.items.reduce((a, it) => a + it.props.lineTotalMinor, 0n), 0n);
-            await this.checkoutGroups.insert(tx, CheckoutGroup.of({ id: checkoutGroupId, tenantId, buyerUserId, totalMinor: total, currencyCode: 'INR' }));
+            await this.checkoutGroups.insert(tx, CheckoutGroup.of({ id: checkoutGroupId, tenantId, buyerUserId, totalMinor: total, currencyCode }));
           }
 
           // B1: the chosen zone (when the tenant delivers by zone), resolved ONCE for the address, inside this transaction
@@ -269,11 +281,12 @@ export class CheckoutService {
                 : { resolvedAt: g.createdAt.toISOString(), charges: [frozen.chargeEntry] };
             }
             const order = Order.place({ id: g.orderId, tenantId, orderNo: orderNo(g.orderId), checkoutGroupId, buyerUserId,
-              sellerUserId, source: 'direct', currencyCode: 'INR', items: g.items, deliveryFeeMinor, platformFeeMinor, discountMinor,
+              sellerUserId, source: 'direct', currencyCode, items: g.items, deliveryFeeMinor, platformFeeMinor, discountMinor,
               couponCode: discountMinor > 0n ? (dto.couponCode ?? null) : null,
               deliveryMethodId: zone?.zoneId ?? dto.deliveryMethodId ?? null, deliveryAddressId: dto.deliveryAddressId ?? null, requiresPayment, now: g.createdAt,
               commissionRuleSnapshot: snapshotOut,
-              commissionSnapshot: frozen.snapshot as unknown as Record<string, unknown>, deliveryZoneId: zone?.zoneId ?? null, buyerCommissionMinor: frozen.buyerCommissionMinor });
+              commissionSnapshot: frozen.snapshot as unknown as Record<string, unknown>, deliveryZoneId: zone?.zoneId ?? null, buyerCommissionMinor: frozen.buyerCommissionMinor,
+              stockReserved: reserved.size > 0 });
             await this.orders.insertGraph(tx, order, g.items);
             await this.quota.increment(tx, tenantId, QUOTA, 1);
             await this.flush(tx, tenantId, g.orderId, order.pullEvents());
@@ -284,9 +297,42 @@ export class CheckoutService {
           }
           await this.carts.markConverted(tx, cartId);
           this.metrics.inc('orders.checkout_done', { tenant: tenantId, orders: String(created.length) });
-          return { orders: created, checkoutGroupId, ...(couponNotice ? { couponNotice } : {}) };
-        }, { userId: buyerUserId });
+          return { orders: created, checkoutGroupId, ...(couponNotice ? { couponNotice } : {}), reservedListingIds: [...reserved.keys()] };
+        }, { userId: buyerUserId }).then(async (out) => {
+          // the reserved lots' cached copies are dropped AFTER commit (a read never repopulates the cache with the pre-commit row)
+          for (const id of out.reservedListingIds) await this.listings.invalidate(tenantId, id).catch(() => undefined);
+          const { reservedListingIds: _ids, ...rest } = out;   // eslint-disable-line @typescript-eslint/no-unused-vars
+          return rest;
+        });
       }));
+  }
+
+  /**
+   * PC-56 STORE-2c · B1 (founder D1) — the reservation, line by line, in the caller's transaction, in LISTING-ID order (a stable lock order).
+   * The listing aggregate's `reserve` holds the no-oversell invariant against the LOCKED row; its refusals are translated to the checkout's
+   * named codes: LISTING_INSUFFICIENT_STOCK {listingId, requested, available} (the locked remainder, 3-place text) and LISTING_NOT_PURCHASABLE
+   * {reason: the lot's status} for a lot that stopped being on sale since the preview. Returns listingId → the remainder left.
+   */
+  private async reserveAll(tx: TxContext, tenantId: string, lines: ReadonlyArray<{ ci: CartItemRow; qty: string }>): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    for (const { ci, qty } of [...lines].sort((a, b) => (a.ci.listing_id < b.ci.listing_id ? -1 : a.ci.listing_id > b.ci.listing_id ? 1 : 0))) {
+      try {
+        const r = await this.listings.reserveInTx(tx, tenantId, ci.listing_id, qty);
+        out.set(ci.listing_id, r.available);
+      } catch (e) {
+        if (e instanceof InsufficientStockError) {
+          const d = (e as unknown as { details?: { available?: number } }).details;
+          this.metrics.inc('orders.checkout_refused', { tenant: tenantId, code: 'LISTING_INSUFFICIENT_STOCK' });
+          throw new InsufficientListingStockError(ci.listing_id, qty, milliToDecimal(toMilli(d?.available ?? 0)));
+        }
+        if (e instanceof ListingNotEditableError) {
+          const d = (e as unknown as { details?: { status?: string } }).details;
+          throw new ListingNotPurchasableError(ci.listing_id, d?.status ?? 'not_found');
+        }
+        throw e;
+      }
+    }
+    return out;
   }
 
   /** READ-ONLY totals preview: the same money math as checkout (subtotal + buyer charges + member
@@ -309,6 +355,8 @@ export class CheckoutService {
       ? await this.uow.run(tenantId, (tx) => this.addressRegionTx(tx, tenantId, buyerUserId, dto.deliveryAddressId), { userId: buyerUserId })
       : null;
     const lines = await this.placeableLines(tenantId, cartItems, region);
+    // PC-56 STORE-2c · B4: the bill is in the LOTS' currency (a mixed cart refused by name — the same rule placement applies)
+    const currencyCode = oneCurrency(lines.map((x) => x.l.currencyCode));
     const bySeller = new Map<string, { items: OrderItem[]; subtotalMinor: bigint; categoryIds: Set<string> }>();
     const order: string[] = [];
     for (const { ci, l, qty: qtyText, unitPriceMinor } of lines) {
@@ -381,7 +429,7 @@ export class CheckoutService {
     const sum = (k: string) => sellers.reduce((a, s) => a + BigInt(s[k] as string), 0n);
     const grandTotal = sum('totalMinor');
     return {
-      currencyCode: 'INR',
+      currencyCode,
       sellers,
       subtotalMinor: sum('subtotalMinor').toString(),
       deliveryFeeMinor: sum('deliveryFeeMinor').toString(),
@@ -390,6 +438,8 @@ export class CheckoutService {
       buyerCommissionMinor: sum('buyerCommissionMinor').toString(),
       deliveryNeedsAddress,
       grandTotalMinor: grandTotal.toString(),
+      // PC-56 STORE-2c · C4: the quality window the order will carry (hours, the API's figure — the review page prints it, never a literal)
+      qualityWindowHours: QUALITY_WINDOW_HOURS,
       couponCode: sellers.some((s) => BigInt((s.discountMinor as string)) > 0n) ? (dto.couponCode ?? null) : null,
     };
   }

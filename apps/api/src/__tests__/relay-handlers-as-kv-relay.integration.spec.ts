@@ -371,6 +371,36 @@ const CASES: Record<string, Case> = {
     build: async (w) => { const orderId = await makeOrder(w, 'refunded'); return { aggregateType: 'order', aggregateId: orderId, payload: orderPayload(w, orderId) }; },
   },
 
+  // ── PC-56 STORE-2c (founder D1, D3): the two new consumers of orders.order_cancelled — both work in kv_app's unit of work (stock in
+  //    `listings`, the marker in `orders`; the payment in `payments`, which kv_relay holds nothing on — 0078), so nothing is granted to kv_relay ──
+  'orders.order_cancelled → modules/orders/events/handlers/order-cancelled-restock.handler#OrderCancelledRestockHandler': {
+    depth: 'write',   // an order that RESERVED (stock_reserved_at set at placement): its 8 quintal go back to the lot, once; the marker is cleared
+    build: async (w) => {
+      const orderId = await makeOrder(w, 'cancelled');
+      await w.admin.query(`UPDATE orders SET stock_reserved_at = now() WHERE id = $1`, [orderId]);
+      await w.admin.query(`UPDATE listings SET quantity_available = 50 WHERE id = $1`, [w.listing.id]);
+      return { aggregateType: 'order', aggregateId: orderId, payload: { ...orderPayload(w, orderId), role: 'buyer', stockReserved: true },
+        verify: async () => {
+          expect((await q1(w, `SELECT quantity_available::text q FROM listings WHERE id=$1`, [w.listing.id])).q).toBe('58.000');
+          expect((await q1(w, `SELECT stock_reserved_at FROM orders WHERE id=$1`, [orderId])).stock_reserved_at).toBeNull();
+        } };
+    },
+  },
+  'orders.order_cancelled → modules/payments/events/handlers/order-cancelled-refund.handler#OrderCancelledRefundHandler': {
+    depth: 'write',   // a PAID, cancelled order: the order_cancel_refund ledger txn (escrow −, gateway +), the sandbox refund, the payment refunded
+    build: async (w) => {
+      const orderId = await makeOrder(w, 'cancelled');
+      await fundEscrow(w, orderId, 452000n);
+      const paymentId = await makePayment(w, orderId, 452000n);
+      await w.admin.query(`UPDATE payments SET gateway_payment_id = $2, gateway_order_id = $3 WHERE id = $1`, [paymentId, `pay_gate_${paymentId.slice(0, 8)}`, `sbx_order_${paymentId}`]);
+      return { aggregateType: 'order', aggregateId: orderId, payload: { ...orderPayload(w, orderId), role: 'buyer' },
+        verify: async () => {
+          expect(await count(w, `SELECT count(*) n FROM ledger_transactions WHERE idempotency_key=$1`, [`refund:${orderId}`])).toBe(1);
+          expect((await q1(w, `SELECT status FROM payments WHERE id=$1`, [paymentId])).status).toBe('refunded');
+        } };
+    },
+  },
+
   // ── auctions (kv_app unit of work inside AuctionService; the relay tx is not used) ──
   'payments.payment_succeeded → modules/auctions/events/handlers/payment-succeeded.handler#AuctionPaymentSucceededHandler': {
     depth: 'read',

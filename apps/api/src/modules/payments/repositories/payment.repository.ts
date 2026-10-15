@@ -86,6 +86,36 @@ export class PaymentRepository {
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
 
+  // ---- PC-56 STORE-2c · B2 / B3 — the payments OF AN ORDER (idx_payments_reference, 0209) --------------------------------------------------
+  /** Every attempt for an order, newest first, read in the caller's tx — `lock` takes their row locks (FOR UPDATE) BEFORE the caller locks the
+   *  order (the webhook's order: payment, then order — so the two paths cannot deadlock). Bounded: an order has a handful of attempts. */
+  async attemptsForOrderTx(tx: TxContext, tenantId: string, orderId: string, lock: boolean): Promise<Payment[]> {
+    const r = await tx.query(`SELECT ${COLS} FROM payments WHERE tenant_id=$1 AND reference_type='order' AND reference_id=$2
+       ORDER BY created_at DESC, id DESC LIMIT 50${lock ? ' FOR UPDATE' : ''}`, [tenantId, orderId]);
+    return r.rows.map(toDomain);
+  }
+  /** The buyer's view of an order's attempts (replica), newest first — the storefront's "latest attempt" read and the attempt number. */
+  async attemptsForOrder(tenantId: string, orderId: string, viewerUserId: string, canModerate: boolean): Promise<Payment[]> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT ${COLS} FROM payments WHERE tenant_id=$1 AND reference_type='order' AND reference_id=$2 AND ($3=true OR user_id=$4)
+        ORDER BY created_at DESC, id DESC LIMIT 50`, [tenantId, orderId, canModerate, viewerUserId]);
+    return r.rows.map(toDomain);
+  }
+  /** The money that ARRIVED for an order and what has happened to it since (success / refund_initiated / partially_refunded / refunded), newest
+   *  first — the automatic refund's subject. In the caller's tx, no lock (the caller then locks the row by id). */
+  async capturedForOrderTx(tx: TxContext, tenantId: string, orderId: string): Promise<Payment | null> {
+    const r = await tx.query(`SELECT ${COLS} FROM payments WHERE tenant_id=$1 AND reference_type='order' AND reference_id=$2
+       AND status IN ('success','refund_initiated','partially_refunded','refunded') ORDER BY created_at DESC, id DESC LIMIT 1`, [tenantId, orderId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+  /** `platform.payment_attempt_ttl_seconds` (0209) — null when the setting is absent or not a positive integer (attempts then never lapse by time). */
+  async attemptTtlSeconds(tenantId: string, tx?: TxContext): Promise<number | null> {
+    const sql = `SELECT (kv_platform_setting('platform.payment_attempt_ttl_seconds') #>> '{}') AS v`;
+    const r = tx ? await tx.query<{ v: string | null }>(sql) : await this.replica.forTenant(tenantId).query<{ v: string | null }>(sql);
+    const n = Number(r.rows[0]?.v ?? NaN);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }
+
   async getForUpdate(tx: TxContext, tenantId: string, id: string): Promise<Payment | null> {
     const r = await tx.query(`SELECT ${COLS} FROM payments WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;

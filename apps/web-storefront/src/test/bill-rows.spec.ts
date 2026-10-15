@@ -51,9 +51,12 @@ describe('HOTFIX-4 · bill rows', () => {
 });
 
 describe('HOTFIX-4 · refusals by name (brief §E)', () => {
-  it('the four §E claims are named; three are rendered on the confirmation page with catalogue keys', () => {
-    expect(STORE2_HOTFIX4_REFUSALS.map((r) => r.id)).toEqual(['auto_refund', 'cod_cap', 'one_payment_group', 'price_includes_fee']);
-    expect(CONFIRM_REFUSAL_KEYS).toEqual(['store2.refusal.autoRefund', 'store2.refusal.codCap', 'store2.refusal.onePayment']);
+  // PC-56 STORE-2c (founder D3): `auto_refund` is no longer a refusal — the automatic refund to source is BUILT; its key is retired from every
+  // catalogue and the true sentence (`store2c.refund.true`) is printed instead
+  it('the three remaining §E claims are named; two are rendered on the confirmation page with catalogue keys; the auto-refund refusal is retired', () => {
+    expect(STORE2_HOTFIX4_REFUSALS.map((r) => r.id)).toEqual(['cod_cap', 'one_payment_group', 'price_includes_fee']);
+    expect(CONFIRM_REFUSAL_KEYS).toEqual(['store2.refusal.codCap', 'store2.refusal.onePayment']);
+    for (const cat of [en, hi, gu] as Record<string, string>[]) expect(cat['store2.refusal.autoRefund']).toBeUndefined();
     for (const cat of [en, hi, gu] as Record<string, string>[]) for (const k of CONFIRM_REFUSAL_KEYS) expect([k, typeof cat[k]]).toEqual([k, 'string']);
     expect(store2RefusalKey('cod_cap')).toBe('store2.refusal.codCap');
     expect(() => store2RefusalKey('price_includes_fee')).toThrow();

@@ -57,6 +57,7 @@ import { OrderCompletedHandler } from './events/handlers/order-completed.handler
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
 import { ReturnRefundedHandler } from './events/handlers/return-refunded.handler';
 import { OrderConfirmedInvoiceHandler } from './events/handlers/order-confirmed-invoice.handler';
+import { OrderCancelledRefundHandler } from './events/handlers/order-cancelled-refund.handler';
 import { InvoiceConsoleReadModel } from './read-models/invoice-console.read-model';
 import { CreditNoteRepository } from './repositories/credit-note.repository';
 import { CreditNoteService } from './services/credit-note.service';
@@ -129,6 +130,8 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     DisputeResolvedHandler,
     ReturnRefundedHandler,
     OrderConfirmedInvoiceHandler,
+    // PC-56 STORE-2c · B2 (founder D3): a cancelled, paid order is refunded to source automatically, once
+    OrderCancelledRefundHandler,
     InvoiceConsoleReadModel,
     CreditNoteRepository,
     CreditNoteService,
@@ -203,6 +206,7 @@ export class PaymentsModule implements OnModuleInit {
     private readonly disputeResolved: DisputeResolvedHandler,
     private readonly returnRefunded: ReturnRefundedHandler,
     private readonly orderConfirmedInvoice: OrderConfirmedInvoiceHandler,
+    private readonly orderCancelledRefund: OrderCancelledRefundHandler,
     private readonly bookingClockedOut: BookingClockedOutHandler,
     private readonly config: AppConfig,
     private readonly settlementStatementsCadenceJob: SettlementStatementsCadenceJob,
@@ -222,6 +226,8 @@ export class PaymentsModule implements OnModuleInit {
     // PC-56 TENANT-3c-1: the trade invoice is raised at CONFIRM (W151's own words, and the law's timing for goods).
     // `tradeInvoice` below stays registered on order_completed as the idempotent backstop.
     this.registry.register(this.orderConfirmedInvoice);
+    // PC-56 STORE-2c · B2 (founder D3): orders.order_cancelled → the automatic refund to source (kv_app unit of work; nothing granted to kv_relay)
+    this.registry.register(this.orderCancelledRefund);
     // PC-56 TENANT-SW-b · F-11 — RETIRED: BookingClockedOutHandler (`labour.wages_paid` → promote `payouts` with reference_type
     // 'labour_booking') is no longer registered. Nothing ever wrote such a payout: labour wages are WALLET LEGS (escrow Hold → worker
     // Main), paid by the daily 18:00 IST wage run (modules/labour, wage-run.service). The class stays for its repository spec; the

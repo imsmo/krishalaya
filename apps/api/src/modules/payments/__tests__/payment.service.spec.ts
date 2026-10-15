@@ -25,7 +25,9 @@ describe('payment.state machine', () => {
     expect(isTerminal('expired')).toBe(true);
     // HOTFIX-4 · A3: `failed` stays terminal for every other purpose; its one exit is another attempt's capture (hotfix4-late-capture.spec)
     expect(canTransition('failed', 'refunded')).toBe(false);
-    expect(canTransition('expired', 'success')).toBe(false);
+    // PC-56 STORE-2c · B3: a LAPSED attempt (`expired`, the buyer sent a fresh request) captured late at the gateway IS booked (never dropped)
+    expect(canTransition('expired', 'success')).toBe(true);
+    expect(canTransition('expired', 'refunded')).toBe(false);
   });
   it('covers every status without throwing', () => {
     for (const s of PAYMENT_STATUSES) expect(() => canTransition(s, 'success' as PaymentStatus)).not.toThrow();

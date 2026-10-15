@@ -2,14 +2,16 @@
 // (features/store2/refusals.ts `STORE2A_REFUSALS`): a refusal is a sentence that says no, never an offer and never a silent gap. One list per
 // surface; the render tests read the map, so a refusal that disappears from its page — or a refused claim that comes back — turns them red.
 // PC-56 STORE-2b: the same list reads `STORE2B_REFUSALS` too (the cart, checkout, and the 2b lines on the listing and inputs pages).
+// PC-56 STORE-2c: and `STORE2C_REFUSALS` (the checkout steps, payment processing, the confirmation and the auction).
 import { getTranslator } from '../lib/i18n';
-import { STORE2A_REFUSALS, STORE2B_REFUSALS, type Store2aSurface, type Store2bSurface } from '../features/store2/refusals';
+import { STORE2A_REFUSALS, STORE2B_REFUSALS, STORE2C_REFUSALS, type Store2aSurface, type Store2bSurface, type Store2cSurface } from '../features/store2/refusals';
 
-export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface }) {
+export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface }) {
   const t = getTranslator();
   const rows = [
     ...STORE2A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE2B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
+    ...STORE2C_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
   ];
   return (
     <section className="kv-refused" data-kv-refused={surface} aria-labelledby={`kv-refused-${surface}`}>

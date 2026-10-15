@@ -3,7 +3,7 @@
 // Razorpay (HMAC-SHA256 over the raw body) so the webhook-verification code path is exercised for
 // real. Used when provider_code='sandbox' or no real PSP is configured.
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { PaymentGateway, CreateOrderInput, CreateOrderResult, GatewayEvent } from './payment-gateway.port';
+import { PaymentGateway, CreateOrderInput, CreateOrderResult, GatewayEvent, RefundInput, RefundResult } from './payment-gateway.port';
 
 export class SandboxGateway implements PaymentGateway {
   readonly providerCode = 'sandbox';
@@ -11,6 +11,15 @@ export class SandboxGateway implements PaymentGateway {
 
   async createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
     return { gatewayOrderId: `sbx_order_${input.receipt}` };
+  }
+
+  /** PC-56 STORE-2c · B2: every refund this sandbox was asked for, in order (tests read it to prove the gateway call happened exactly once). */
+  readonly refunds: Array<RefundInput & { gatewayRefundId: string }> = [];
+  /** The sandbox refunds at once (`processed`) — the platform's own flow then marks the payment `refunded` synchronously. Deterministic id. */
+  async refund(input: RefundInput): Promise<RefundResult> {
+    const gatewayRefundId = `sbx_rfnd_${input.receipt.replace(/[^A-Za-z0-9]/g, '').slice(-24)}`;
+    this.refunds.push({ ...input, gatewayRefundId });
+    return { gatewayRefundId, status: 'processed' };
   }
 
   /** Sign a body the way the sandbox "gateway" would — used by tests to craft valid webhooks. */
@@ -32,6 +41,7 @@ export class SandboxGateway implements PaymentGateway {
       currencyCode: p.currency ? String(p.currency).toUpperCase() : undefined,
       method: p.method,
       failureCode: p.error_code, failureReason: p.error_reason,
+      gatewayRefundId: p.refund_id,
     };
   }
 }

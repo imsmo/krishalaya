@@ -88,7 +88,8 @@ describe('STORE-2b · W281 the cart (/[tenantSlug]/cart)', () => {
     expect(html).not.toContain('data-kv-checkout="go"');
     reset();
     html = await cart();
-    expect(html).toMatch(/<a class="kv-btn" data-kv-checkout="go" href="\/checkout">/);
+    // PC-56 STORE-2c · C1: checkout lives under the organisation too — the link is THIS store's checkout
+    expect(html).toMatch(/<a class="kv-btn" data-kv-checkout="go" href="\/anand-fpo\/checkout">/);
     expect(html).not.toContain('data-kv-resolve');
   });
 

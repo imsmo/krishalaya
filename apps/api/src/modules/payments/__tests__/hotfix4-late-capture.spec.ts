@@ -16,7 +16,8 @@ describe('HOTFIX-4 · A3 late capture after a recorded failure', () => {
   it('the state machine allows failed → success (the entity decides WHICH capture)', () => {
     expect(canTransition('failed', 'success')).toBe(true);
     expect(canTransition('failed', 'refunded')).toBe(false);
-    expect(canTransition('expired', 'success')).toBe(false);
+    // PC-56 STORE-2c · B3: a lapsed attempt's late capture is booked too (payment.state `expired → success`)
+    expect(canTransition('expired', 'success')).toBe(true);
   });
   it('failed (attempt pay_A) → captured (attempt pay_B) → success, booked with pay_B; one Succeeded event', () => {
     const p = pay();

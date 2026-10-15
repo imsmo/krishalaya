@@ -128,3 +128,25 @@ export class LateCaptureSameAttemptError extends DomainError {
 export class WebhookContextMismatchError extends DomainError {
   constructor(field: 'tenant_id' | 'payment_id') { super('PAYMENT_WEBHOOK_CONTEXT_MISMATCH', `Webhook notes disagree with the payment row (${field})`, 409, { field }); }
 }
+
+// ── PC-56 STORE-2c — THE MONEY WAVE (founder D3, brief B3/B5). ──
+/** B3: a payment ATTEMPT for this order is still LIVE (initiated / pending / authorized, not yet past `platform.payment_attempt_ttl_seconds`).
+ *  A second gateway order while one may still be paid would let the buyer pay twice — refused by name with the live attempt and when it lapses. */
+export class PaymentAttemptLiveError extends DomainError {
+  constructor(paymentId: string, expiresAt: string | null) {
+    super('PAYMENT_ATTEMPT_LIVE', 'A payment attempt for this order is still open — finish it in the payment sheet, or wait until it lapses', 409, { paymentId, expiresAt });
+  }
+}
+/** D3: the automatic refund cannot reach the gateway for this payment (no gateway payment id was ever recorded) — the ledger refund is booked and
+ *  the payment stays `refund_initiated`; the money desk completes it. Thrown so the relay retries and, failing that, quarantines it LOUDLY. */
+export class RefundGatewayReferenceMissingError extends DomainError {
+  constructor(paymentId: string) { super('PAYMENT_REFUND_NO_GATEWAY_REFERENCE', 'This payment has no gateway payment id to refund against', 409, { paymentId }); }
+}
+/** B5 (founder D4): a charge definition whose method the pricing engine cannot compute (`per_km` needs a resolved delivery distance — deferred).
+ *  Refused BY NAME where it is defined, and — for a row written before the gate (by SQL, or an old proposal) — REPORTED by name where it would
+ *  be priced: never silently priced at 0 and never a 500. */
+export class ChargeMethodUnsupportedError extends DomainError {
+  constructor(chargeCode: string, method: string) {
+    super('CHARGE_METHOD_UNSUPPORTED', `The charge '${chargeCode}' uses '${method}', which cannot be priced yet`, 422, { chargeCode, method, supported: ['flat', 'percent', 'slab', 'per_unit'] });
+  }
+}

@@ -5,7 +5,18 @@
 // unknown/unconfigured charge resolves to 0 (no surprise fees).
 import { Injectable } from '@nestjs/common';
 import { TxContext } from '../../../core/database/unit-of-work';
-import { computeCharge } from '../domain/charge.calculator';
+import { computeCharge, ChargeCalcMethod } from '../domain/charge.calculator';
+import { isSupportedCalcMethod } from '../domain/charge-change';
+import { ChargeMethodUnsupportedError } from '../domain/payments.errors';
+
+/** PC-56 STORE-2c · B5 (founder D4): a definition the engine cannot price (`per_km`, or any method outside the supported four) is REPORTED by
+ *  name (CHARGE_METHOD_UNSUPPORTED, 422 — the checkout / preview / delivery-methods answer) instead of the calculator's bare throw (a 500 at
+ *  every checkout of that tenant). The calculator keeps its throw as the last line of defence; the write path refuses the method at
+ *  definition (ChargeChangeService.propose / apply). */
+function priced(def: { chargeCode?: string; calcMethod: ChargeCalcMethod; config: Record<string, any> }, code: string, base: { amountMinor: bigint; qty?: number }): bigint {   // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (!isSupportedCalcMethod(def.calcMethod)) throw new ChargeMethodUnsupportedError(def.chargeCode ?? code, def.calcMethod);
+  return computeCharge(def.calcMethod, def.config, base);
+}
 import { ChargeDefinitionRepository } from '../repositories/charge-definition.repository';
 
 export interface CheckoutCharges { deliveryFeeMinor: bigint; platformFeeMinor: bigint; }
@@ -31,7 +42,7 @@ export class ChargePricingService {
   async quote(tx: TxContext, tenantId: string, chargeCode: string, base: { amountMinor: bigint; qty?: number }, onDate?: string): Promise<bigint> {
     const def = await this.defs.resolve(tx, tenantId, chargeCode, onDate);
     if (!def) return 0n;
-    return computeCharge(def.calcMethod, def.config, base);
+    return priced(def, chargeCode, base);
   }
 
   /** Quote a SPECIFIC charge definition by id (e.g. a delivery zone's charge_definition_id). Returns 0n when
@@ -39,7 +50,7 @@ export class ChargePricingService {
   async quoteByDefinitionId(tx: TxContext, tenantId: string, definitionId: string, base: { amountMinor: bigint; qty?: number }, onDate?: string): Promise<bigint> {
     const def = await this.defs.resolveById(tx, tenantId, definitionId, onDate);
     if (!def) return 0n;
-    return computeCharge(def.calcMethod, def.config, base);
+    return priced(def, definitionId, base);
   }
 
   /** The two buyer-side charges applied at checkout, computed on the order subtotal. */
@@ -63,7 +74,7 @@ export class ChargePricingService {
       // fee definition is free delivery (recorded as 'none' with the zone id), never a fall-back to the generic slab.
       const fromZone = code === 'delivery_fee' && zone != null;
       const def = fromZone ? (zone!.chargeDefinitionId ? await this.defs.resolveById(tx, tenantId, zone!.chargeDefinitionId) : null) : await this.defs.resolve(tx, tenantId, code);
-      const amountMinor = def ? computeCharge(def.calcMethod, def.config, { amountMinor: subtotalMinor }) : 0n;
+      const amountMinor = def ? priced(def, code, { amountMinor: subtotalMinor }) : 0n;
       return {
         code,
         // 'none' is a REAL value here: no active definition existed, which is a different fact from a rule that

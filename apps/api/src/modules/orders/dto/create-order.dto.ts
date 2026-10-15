@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { POSTAL_CODE_RE } from '../../../shared/utils/postal-code';
 // Checkout converts the buyer's active cart into one order per seller (+ a checkout group
 // if multi-seller). Money/payment step is owned by the payments module (feature-flagged).
 // PC-56 TENANT-SW-a · B1: `deliveryMethodId` IS THE DELIVERY ZONE's id — the `id` GET /checkout/delivery-methods returns. Placement
@@ -23,9 +24,10 @@ export const CheckoutPreviewSchema = z.object({
 export type CheckoutPreviewDto = z.infer<typeof CheckoutPreviewSchema>;
 
 // Read-only delivery-methods lookup: the serviceable delivery options + their fee for a destination
-// (Indian 6-digit pincode and/or a region id). At least one must be provided. No order, no money moved.
+// (a postal code and/or a region id). At least one must be provided. No order, no money moved.
+// PC-56 STORE-2c · B4 (survey F-10): the address book's own rule (shared/utils/postal-code.ts) — not an Indian-only six-digit PIN.
 export const DeliveryMethodsQuerySchema = z.object({
-  pincode: z.string().regex(/^[1-9][0-9]{5}$/).optional(),   // Indian PIN — fixed length, no ReDoS
+  pincode: z.string().regex(POSTAL_CODE_RE).optional(),
   regionId: z.string().uuid().optional(),
 }).strict().refine((v) => !!(v.pincode || v.regionId), { message: 'pincode or regionId required' });
 export type DeliveryMethodsQueryDto = z.infer<typeof DeliveryMethodsQuerySchema>;

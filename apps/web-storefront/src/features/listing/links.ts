@@ -20,21 +20,23 @@ export interface AuctionCta {
   live: boolean;
 }
 
-/** The auction CTA (href + live flag) for a listing, or null when the listing isn't auctioned. */
+/** The auction CTA (href + live flag) for a listing, or null when the listing isn't auctioned. PC-56 STORE-2c · C6: the auction lives under its
+ *  ORGANISATION (`/<slug>/auctions/<id>`); with no store slug the platform door (`/auctions/<id>`) is the fallback. */
 export function auctionCta(
   auctionId: string | null | undefined,
   auctionStatus: string | null | undefined,
+  slug?: string | null,
 ): AuctionCta | null {
   if (typeof auctionId !== 'string' || auctionId.trim().length === 0) return null;
   return {
-    href: `/auctions/${encodeURIComponent(auctionId)}`,
+    href: slug ? `/${encodeURIComponent(slug)}/auctions/${encodeURIComponent(auctionId)}` : `/auctions/${encodeURIComponent(auctionId)}`,
     live: typeof auctionStatus === 'string' && LIVE_AUCTION_STATUSES.has(auctionStatus),
   };
 }
 
 /** Convenience: derive both links straight off a detail-read ListingCard. */
-export function listingLinks(l: Pick<ListingCard, 'qrToken' | 'auctionId' | 'auctionStatus'>): {
+export function listingLinks(l: Pick<ListingCard, 'qrToken' | 'auctionId' | 'auctionStatus'>, slug?: string | null): {
   trace: string | null; auction: AuctionCta | null;
 } {
-  return { trace: traceHref(l.qrToken), auction: auctionCta(l.auctionId, l.auctionStatus) };
+  return { trace: traceHref(l.qrToken), auction: auctionCta(l.auctionId, l.auctionStatus, slug) };
 }

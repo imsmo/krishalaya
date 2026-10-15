@@ -31,9 +31,10 @@ export const env = {
   /** Razorpay PUBLISHABLE key id (rzp_*) — public by design (it's shown in the browser checkout). Null when
    *  unset → the pay step fails closed with a friendly "online payments unavailable" message (never a fake pay). */
   razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || null,
-  /** Client visibility switch for the auctions surface (hidden when 'false'). Enabled by default; the API's own
-   *  `auctions` flag is the authoritative gate (if it's off, the public reads simply degrade to an empty state). */
-  featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS !== 'false',
+  /** PC-56 STORE-2c · C6 (survey F-11): the build-time switch for the platform's auction NAVIGATION only — OFF unless set to 'true' (it
+   *  defaulted ON over a DB flag seeded OFF, advertising a surface that could only fail). The auction page itself reads the DB `auctions`
+   *  flag (`storefront.flags`) — the DB decides. */
+  featureAuctions: process.env.NEXT_PUBLIC_FEATURE_AUCTIONS === 'true',
   /** The storefront's OWN public origin (e.g. https://krishalaya.example) — used for metadataBase (absolute
    *  canonical/OpenGraph URLs), robots.txt sitemap pointer, and sitemap.xml entries. Public, not a secret. Empty
    *  when unset → metadata stays relative and robots omits the sitemap line (still valid; set this in prod). */

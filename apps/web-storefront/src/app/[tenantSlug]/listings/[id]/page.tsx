@@ -125,7 +125,7 @@ export default async function ListingDetail(
     readState<CategoryNode[]>(() => api.lookups.categories() as Promise<CategoryNode[]>),
   ]);
   const trail = cats.ok ? categoryTrail(cats.data, l.categoryId ?? undefined) : [];
-  const { trace: traceLink, auction } = listingLinks(l);
+  const { trace: traceLink, auction } = listingLinks(l, params.tenantSlug);   // PC-56 STORE-2c · C6: the auction under this organisation
   const panel = buyerPanel(flags.ok ? flags.data : null, auction !== null);
   const qty = (x: number) => String(x);
 

@@ -45,6 +45,7 @@ import { AuctionWonHandler } from './events/handlers/auction-won.handler';
 import { ShipmentDeliveredHandler } from './events/handlers/shipment-delivered.handler';
 import { DisputeOpenedHandler } from './events/handlers/dispute-opened.handler';
 import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handler';
+import { OrderCancelledRestockHandler } from './events/handlers/order-cancelled-restock.handler';
 
 @Module({
   imports: [ListingsModule, PaymentsModule, PromotionsModule, MembershipsModule, RequirementsModule],   // RequirementsModule (PC-56 TENANT-11d): RequirementOrderService — one order per accepted response   // PaymentsModule: ChargePricingService; PromotionsModule: CouponService; MembershipsModule: member checkout benefits
@@ -57,6 +58,8 @@ import { DisputeResolvedHandler } from './events/handlers/dispute-resolved.handl
     CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository, DeliveryZoneRepository,
     SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
     PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, AuctionWonHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
+    // PC-56 STORE-2c · B1 (founder D1): a cancelled order's reserved stock goes back to its lots, once (orders.stock_reserved_at, 0209)
+    OrderCancelledRestockHandler,
   ],
   exports: [OrderService, AuctionOrderService, SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob],
 })
@@ -70,6 +73,8 @@ export class OrdersModule implements OnModuleInit {
     private readonly shipmentDelivered: ShipmentDeliveredHandler,
     private readonly disputeOpened: DisputeOpenedHandler,
     private readonly disputeResolved: DisputeResolvedHandler,
+    private readonly cancelledRestock: OrderCancelledRestockHandler,
   ) {}
-  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.auctionWon); this.registry.register(this.quoteAccepted); this.registry.register(this.shipmentDelivered); this.registry.register(this.disputeOpened); this.registry.register(this.disputeResolved); }
+  onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.auctionWon); this.registry.register(this.quoteAccepted); this.registry.register(this.shipmentDelivered); this.registry.register(this.disputeOpened); this.registry.register(this.disputeResolved);
+    this.registry.register(this.cancelledRestock); }
 }

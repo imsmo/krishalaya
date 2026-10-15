@@ -12,7 +12,7 @@
 //     PRICE_CHANGED until the buyer accepts — the order is never charged a price the buyer has not seen.
 //   • WHY A LINE CANNOT BE BOUGHT, BY NAME (never a bare boolean): sold_out · paused · expired · withdrawn · suspended · licence_required ·
 //     not_found.
-import { BelowMinOrderError, InvalidQuantityError } from './orders.errors';
+import { BelowMinOrderError, InvalidQuantityError, MixedCurrencyError } from './orders.errors';
 
 const DECIMAL = /^(\d{1,9})(?:\.(\d+))?$/;
 
@@ -106,4 +106,12 @@ export function lineReason(f: LineListingFacts): LineReason | null {
   if (f.quantityAvailable !== null && f.quantityAvailable !== undefined && toMilli(f.quantityAvailable) <= 0n) return 'sold_out';
   if (f.licenceRequired) return 'licence_required';
   return null;
+}
+
+/** PC-56 STORE-2c · B4 (survey F-10, Rule Zero): the ONE currency a set of lines is priced in — the listings' own `currency_code` (upper-cased,
+ *  3 letters). Several → MIXED_CURRENCY with the codes found; none / a malformed code → MIXED_CURRENCY too (a bill is never assumed rupees). */
+export function oneCurrency(codes: ReadonlyArray<string | null | undefined>): string {
+  const set = [...new Set(codes.map((c) => String(c ?? '').trim().toUpperCase()))].sort();
+  if (set.length !== 1 || !/^[A-Z]{3}$/.test(set[0])) throw new MixedCurrencyError(set.filter((c) => c.length > 0));
+  return set[0];
 }

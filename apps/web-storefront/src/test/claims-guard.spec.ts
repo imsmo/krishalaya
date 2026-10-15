@@ -65,7 +65,7 @@ describe('HOTFIX-4 · claims guard (money and privacy)', () => {
   });
   it('every English HOTFIX-4 refusal says no / not', () => {
     const r = Object.entries(en).filter(([k]) => k.startsWith('store2.refusal.') && k !== 'store2.refusal.title');
-    expect(r.length).toBe(3);
+    expect(r.length).toBe(2);   // PC-56 STORE-2c (D3): the auto-refund refusal is retired — the refund is built
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b/i.test(v)]).toEqual([k, true]);
   });
 });

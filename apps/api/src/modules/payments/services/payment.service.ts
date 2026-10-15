@@ -18,7 +18,9 @@ import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { SandboxGateway } from '../gateway/sandbox.gateway';
 import { CreatePaymentIntentDto, RefundPaymentDto } from '../dto/create-payment.dto';
-import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError, OrderPaymentAmountMismatchError, PaymentOrderReferenceInvalidError, WebhookContextMismatchError, LateCaptureSameAttemptError } from '../domain/payments.errors';
+import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError, OrderPaymentAmountMismatchError, PaymentOrderReferenceInvalidError, WebhookContextMismatchError, LateCaptureSameAttemptError, PaymentAttemptLiveError, RefundGatewayReferenceMissingError } from '../domain/payments.errors';
+import { attemptExpiresAt, chargedNothing, failureReasonCode, isLapsedAttempt, isLiveAttempt } from '../domain/payment-attempt';
+import type { PostTxnResult } from '../../../core/wallet/wallet.port';
 import { BadRequestError, InfraError } from '../../../shared/errors/app-error';
 // S6 device-test P0 (founder's device 201'd an intent against a demo-seed order that GET /v1/orders/:id
 // correctly 404s for him — payments accepted what orders rejects). createIntent must fail CLOSED before
@@ -52,13 +54,25 @@ export class PaymentService {
     private readonly flags: FlagsService,
   ) {}
 
-  /** Create a payment intent: persist 'initiated' + create the gateway order, in one tx. */
+  /** Create a payment intent: persist 'initiated' + create the gateway order, in one tx.
+   *  PC-56 STORE-2c · B3 (survey B6 / F-4): for an ORDER, one LIVE attempt at a time — a second is refused PAYMENT_ATTEMPT_LIVE {paymentId,
+   *  expiresAt} (checked before the gateway call, and again under the order's row lock inside the insert tx, so two racing requests cannot both
+   *  pass); a previous attempt that FAILED or LAPSED (`platform.payment_attempt_ttl_seconds`) allows a NEW one — a new gateway order and a new
+   *  row; a lapsed one is marked `expired` (its late capture is still booked once: payment.state `expired → success`). The caller's key is the
+   *  attempt's (`order-pay:<orderId>:<attempt>` from the storefront): a replay returns the SAME attempt. */
   async createIntent(tenantId: string, userId: string, idemKey: string, dto: CreatePaymentIntentDto) {
     return this.idem.remember(idemKey, userId, 'payments.create_intent', () =>
       timed(this.metrics, 'payments.create_intent', { tenant: tenantId }, async () => {
         const purposeId = await this.repo.resolvePurposeId(tenantId, dto.purpose);
         if (!purposeId) throw new BadRequestError(`Unknown payment purpose '${dto.purpose}'`);
         await this.assertValidReference(tenantId, userId, dto);   // fail-closed BEFORE the external gateway call
+        const orderRef = dto.referenceType === 'order' && dto.referenceId ? dto.referenceId : null;
+        const ttl = orderRef ? await this.repo.attemptTtlSeconds(tenantId) : null;
+        if (orderRef) {
+          // the fast refusal (no gateway order is created for a request that would be refused below anyway)
+          const live = (await this.repo.attemptsForOrder(tenantId, orderRef, userId, false)).find((a) => isLiveAttempt(a.toProps(), ttl, new Date()));
+          if (live) throw new PaymentAttemptLiveError(live.id, attemptExpiresAt(live.createdAt, ttl)?.toISOString() ?? null);
+        }
         const gateway = this.gateways.default();
         const id = uuidv7();
         const payment = Payment.initiate({
@@ -73,9 +87,31 @@ export class PaymentService {
         payment.attachGatewayOrder(order.gatewayOrderId);
 
         return this.uow.run(tenantId, async (tx) => {
+          let attempt: number | null = null;
+          if (orderRef) {
+            // THE AUTHORITATIVE CHECK, serialised per order: the existing attempts' rows are locked FIRST (the webhook's lock order — payment,
+            // then order), then the order row; the attempts are re-read after the order lock (READ COMMITTED: a racing attempt that committed
+            // meanwhile is seen here) — a live one refuses, a lapsed one is marked `expired`. The gateway order created above for a refused
+            // request is never shown to the buyer and never paid (named in the wave report).
+            await this.repo.attemptsForOrderTx(tx, tenantId, orderRef, true);
+            await this.orders.getForUpdate(tx, tenantId, orderRef);
+            const prior = await this.repo.attemptsForOrderTx(tx, tenantId, orderRef, false);
+            const now = new Date();
+            const live = prior.find((a) => isLiveAttempt(a.toProps(), ttl, now));
+            if (live) throw new PaymentAttemptLiveError(live.id, attemptExpiresAt(live.createdAt, ttl)?.toISOString() ?? null);
+            for (const a of prior) {
+              if (isLapsedAttempt(a.toProps(), ttl, now) && a.markExpired()) {
+                await this.repo.update(tx, a);
+                await this.audit.write(tx, { tenantId, actorUserId: userId, action: 'payment.attempt_lapsed', entityType: 'payment', entityId: a.id,
+                  oldValue: { status: 'initiated' }, newValue: { status: 'expired', replacedBy: id, ttlSeconds: ttl }, ip: null });
+              }
+            }
+            attempt = prior.length + 1;
+          }
           await this.repo.insert(tx, payment);
           await this.flush(tx, tenantId, id, payment.pullEvents());
-          return { paymentId: id, gatewayOrderId: order.gatewayOrderId, provider: gateway.providerCode, amountMinor: dto.amountMinor, status: payment.status };
+          return { paymentId: id, gatewayOrderId: order.gatewayOrderId, provider: gateway.providerCode, amountMinor: dto.amountMinor, status: payment.status,
+            attempt, expiresAt: orderRef ? (attemptExpiresAt(payment.createdAt, ttl)?.toISOString() ?? null) : null };
         }, { userId });
       }));
   }
@@ -155,6 +191,24 @@ export class PaymentService {
         this.uow.run(tenantId, async (tx) => {
           const payment = await this.repo.getByGatewayOrderForUpdate(tx, tenantId, event.gatewayOrderId!);
           if (!payment || payment.id !== ctx.paymentId) return { ok: true, unknown: true };   // not ours / already gone
+
+          // PC-56 STORE-2c · B2 (founder D3): the gateway CONFIRMS a refund the platform asked for (Razorpay `refund.processed`) → `refunded`.
+          // Only a payment the platform put in `refund_initiated` moves; a replay, or a refund made elsewhere (the gateway dashboard), books
+          // nothing here — the ledger refund was booked when the platform asked (refundCancelledOrder), never on a webhook.
+          if (event.kind === 'refund_processed') {
+            if (payment.status !== 'refund_initiated') {
+              this.log.warn(`payments.webhook refund.processed for a payment in '${payment.status}' — nothing to complete provider=${providerCode} payment=${payment.id}`);
+              return { ok: true, duplicate: true };
+            }
+            const rp = payment.toProps();
+            if (payment.completeRefund('order_cancelled', rp.referenceType === 'order' ? rp.referenceId : null, event.gatewayRefundId ?? null)) {
+              await this.repo.update(tx, payment);
+              await this.flush(tx, payment.tenantId, payment.id, payment.pullEvents());
+              await this.audit.write(tx, { tenantId: payment.tenantId, actorUserId: null, action: 'payment.refund_processed', entityType: 'payment', entityId: payment.id,
+                oldValue: { status: 'refund_initiated' }, newValue: { status: payment.status, gatewayRefundId: event.gatewayRefundId ?? null, via: 'webhook' }, ip: null });
+            }
+            return { ok: true };
+          }
 
           if (event.kind === 'payment_captured') {
             // HOTFIX-4 · A3: a REPLAYED capture (same gateway payment id, already booked) is a no-op — before the order re-check below, which
@@ -263,20 +317,114 @@ export class PaymentService {
         const payment = await this.repo.getForUpdate(tx, tenantId, paymentId);
         if (!payment) throw new PaymentNotFoundError(paymentId);
         const amount = BigInt(dto.amountMinor);
-        const txn = await this.wallet.post(tx, {
-          tenantId, txnType: 'escrow_release', idempotencyKey: `refund:${paymentId}:${payment.refundableMinor}`,
-          referenceType: 'payment', referenceId: paymentId, initiatedBy: actor.userId,
-          legs: [
-            { account: platform(PlatformAccount.Gateway), amountMinor: amount },
-            { account: platform(PlatformAccount.Escrow), amountMinor: -amount },
-          ],
-        });
+        // PC-56 STORE-2c · B2: the ONE refund posting function (the automatic refund posts through it too)
+        const txn = await this.postRefundToSource(tx, { tenantId, payment, amountMinor: amount, txnType: 'escrow_release',
+          idempotencyKey: `refund:${paymentId}:${payment.refundableMinor}`, initiatedBy: actor.userId });
         payment.refund(amount, txn.txnId);
         await this.repo.update(tx, payment);
         await this.flush(tx, tenantId, paymentId, payment.pullEvents());
         await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'payment.refunded', entityType: 'payment', entityId: paymentId, newValue: { refundedMinor: amount.toString(), reason: dto.reason ?? null }, ip });
         return { paymentId, status: payment.status, refundedMinor: amount.toString() };
       }, { userId: actor.userId }));
+  }
+
+  /**
+   * PC-56 STORE-2c · B2 (founder D3) — THE ONE REFUND POSTING FUNCTION: escrow → the money's SOURCE, zero-sum, in the caller's tx.
+   *   • a GATEWAY payment (card / UPI / netbanking): `platform:gateway +amount · platform:escrow −amount` — byte-for-byte the legs the moderator
+   *     refund has always posted (the mirror of the capture's `escrow + · gateway −`, both in the capture's account currency);
+   *   • a WALLET payment (paid from the buyer's balance): `user:<buyer>:main +amount · platform:escrow −amount` in the payment's currency — the
+   *     mirror of `captureOrderFromWalletInTx`'s legs. Before this wave the moderator refund credited the GATEWAY account for a wallet payment
+   *     too — money that never came from the gateway (named in the wave report §9).
+   * Idempotent on `idempotencyKey` (the wallet's unique key): the moderator's `refund:<paymentId>:<refundable>`, the automatic
+   * `refund:<orderId>`.
+   */
+  private postRefundToSource(tx: TxContext, p: { tenantId: string; payment: Payment; amountMinor: bigint; txnType: 'escrow_release' | 'order_cancel_refund'; idempotencyKey: string; initiatedBy: string }): Promise<PostTxnResult> {
+    const fromWallet = p.payment.providerCode === 'wallet';
+    const source = fromWallet ? userMain(p.payment.userId, p.payment.currencyCode) : platform(PlatformAccount.Gateway);
+    const escrow = fromWallet ? platform(PlatformAccount.Escrow, p.payment.currencyCode) : platform(PlatformAccount.Escrow);
+    return this.wallet.post(tx, {
+      tenantId: p.tenantId, txnType: p.txnType, idempotencyKey: p.idempotencyKey, referenceType: 'payment', referenceId: p.payment.id, initiatedBy: p.initiatedBy,
+      legs: [{ account: source, amountMinor: p.amountMinor }, { account: escrow, amountMinor: -p.amountMinor }],
+    });
+  }
+
+  /**
+   * PC-56 STORE-2c · B2 (founder D3) — THE AUTOMATIC REFUND OF A CANCELLED, PAID ORDER, TO SOURCE (OrderCancelledRefundHandler calls this on
+   * `orders.order_cancelled` — the buyer's cancel, the seller's decline, the 24 h auto-cancel, a dispute that cancels).
+   *   1. ONE kv_app transaction: the order's captured payment is found, LOCKED (payment, then order — the webhook's lock order); only an order
+   *      that IS cancelled and a payment that is `success` with nothing refunded is refunded: the ledger `order_cancel_refund` (escrow −,
+   *      source +, key `refund:<orderId>`) through `postRefundToSource`; the payment → `refund_initiated`; audit `payment.auto_refunded`.
+   *      A wallet payment's refund lands in the wallet in that same transaction → `refunded` + `payments.payment_refunded` at once.
+   *   2. A gateway payment: the gateway's refund (the port), OUTSIDE any transaction (never a row lock across HTTP), behind the idempotency
+   *      service (`gateway-refund:<paymentId>`) so a retry never asks twice. `processed` (the sandbox; an instant refund) → `refunded` +
+   *      `payments.payment_refunded` now; `pending` (Razorpay's normal answer) → stays `refund_initiated` until `refund.processed` arrives on
+   *      the webhook (handleWebhook). A failed gateway call THROWS — the relay retries; the ledger refund already stands (escrow can no longer
+   *      be settled to the seller) and the payment says `refund_initiated` until the gateway answers.
+   * IDEMPOTENT end to end: a replayed event finds `refund_initiated` / `refunded` and books nothing (the ledger key would refuse a second post
+   * anyway). An UNPAID order (no captured payment — online payments off, or never paid) books nothing. A payment the money desk already refunded
+   * (wholly or partly) is left to the desk (logged).
+   */
+  async refundCancelledOrder(tenantId: string, orderId: string): Promise<{ outcome: 'unpaid' | 'not_cancelled' | 'refunded' | 'pending_gateway' | 'already'; paymentId?: string; ledgerTxnId?: string }> {
+    return timed(this.metrics, 'payments.auto_refund', { tenant: tenantId }, async () => {
+      const booked = await this.uow.run(tenantId, async (tx) => {
+        const found = await this.repo.capturedForOrderTx(tx, tenantId, orderId);
+        if (!found) return { outcome: 'unpaid' as const };
+        const payment = await this.repo.getForUpdate(tx, tenantId, found.id);
+        if (!payment) return { outcome: 'unpaid' as const };
+        const order = await this.orders.getForUpdate(tx, tenantId, orderId);
+        if (!order || order.status !== 'cancelled') return { outcome: 'not_cancelled' as const, paymentId: payment.id };
+        if (payment.status === 'refund_initiated') return { outcome: 'pending_gateway' as const, payment };
+        if (payment.status !== 'success' || payment.refundedMinor !== 0n) {
+          if (payment.status === 'partially_refunded') this.log.warn(`payments.auto_refund order=${orderId} payment=${payment.id} was partly refunded by the desk — the remainder is the desk's`);
+          return { outcome: 'already' as const, paymentId: payment.id };
+        }
+        const amount = payment.amountMinor;
+        const txn = await this.postRefundToSource(tx, { tenantId, payment, amountMinor: amount, txnType: 'order_cancel_refund', idempotencyKey: `refund:${orderId}`, initiatedBy: 'system' });
+        payment.initiateRefund(amount);
+        const fromWallet = payment.providerCode === 'wallet';
+        if (fromWallet) payment.completeRefund('order_cancelled', orderId, null);   // the money is already back in the buyer's wallet
+        await this.repo.update(tx, payment);
+        await this.flush(tx, tenantId, payment.id, payment.pullEvents());
+        await this.audit.write(tx, { tenantId, actorUserId: null, action: 'payment.auto_refunded', entityType: 'payment', entityId: payment.id,
+          oldValue: { status: 'success' }, newValue: { status: payment.status, orderId, refundedMinor: amount.toString(), currencyCode: payment.currencyCode,
+            ledgerTxnId: txn.txnId, idempotencyKey: `refund:${orderId}`, source: fromWallet ? 'wallet' : payment.providerCode, reason: 'order_cancelled' }, ip: null });
+        this.metrics.inc('payments.auto_refund_booked', { tenant: tenantId, source: fromWallet ? 'wallet' : 'gateway' });
+        return fromWallet
+          ? { outcome: 'refunded' as const, paymentId: payment.id, ledgerTxnId: txn.txnId }
+          : { outcome: 'pending_gateway' as const, payment, ledgerTxnId: txn.txnId };
+      }, { userId: 'system' });
+      if (booked.outcome !== 'pending_gateway') return booked;
+
+      // 2. the gateway's refund — outside any transaction, asked at most once
+      const p = booked.payment;
+      const gatewayPaymentId = p.gatewayPaymentId;
+      if (!gatewayPaymentId) throw new RefundGatewayReferenceMissingError(p.id);
+      const gateway = this.gateways.get(p.providerCode);
+      const res = await this.idem.remember(`gateway-refund:${p.id}`, 'system', 'payments.gateway_refund', () =>
+        gateway.refund({ gatewayPaymentId, amountMinor: p.refundedMinor, currencyCode: p.currencyCode, receipt: `refund:${orderId}`,
+          notes: { tenant_id: tenantId, payment_id: p.id, order_id: orderId } }));
+      if (res.status !== 'processed') return { outcome: 'pending_gateway', paymentId: p.id, ledgerTxnId: booked.ledgerTxnId };
+      await this.uow.run(tenantId, async (tx) => {
+        const locked = await this.repo.getForUpdate(tx, tenantId, p.id);
+        if (locked && locked.completeRefund('order_cancelled', orderId, res.gatewayRefundId)) {
+          await this.repo.update(tx, locked);
+          await this.flush(tx, tenantId, locked.id, locked.pullEvents());
+          await this.audit.write(tx, { tenantId, actorUserId: null, action: 'payment.refund_processed', entityType: 'payment', entityId: locked.id,
+            oldValue: { status: 'refund_initiated' }, newValue: { status: locked.status, gatewayRefundId: res.gatewayRefundId, via: 'gateway_response' }, ip: null });
+        }
+      }, { userId: 'system' });
+      return { outcome: 'refunded', paymentId: p.id, ledgerTxnId: booked.ledgerTxnId };
+    });
+  }
+
+  /** PC-56 STORE-2c · B3 / C5 — the storefront's read of an order's payment attempts: the newest (its state, failure reason code, expiry and
+   *  number) and the number the NEXT attempt would carry (the storefront's key `order-pay:<orderId>:<attempt>`). Buyer (or a moderator) only. */
+  async attemptsForOrder(tenantId: string, actor: PaymentActor, orderId: string) {
+    const all = await this.repo.attemptsForOrder(tenantId, orderId, actor.userId, actor.canModerate);
+    const ttl = await this.repo.attemptTtlSeconds(tenantId);
+    const latest = all[0] ? this.serialize(all[0].toProps(), { attempt: all.length, ttl }) : null;
+    const live = all.some((a) => isLiveAttempt(a.toProps(), ttl, new Date()));
+    return { latest, attempts: all.length, nextAttempt: all.length + 1, liveAttempt: live, ttlSeconds: ttl };
   }
 
   /** Pay an order from the buyer's OWN wallet balance (no gateway). Mirrors a gateway capture's money
@@ -322,7 +470,14 @@ export class PaymentService {
   async getById(tenantId: string, actor: PaymentActor, id: string) {
     const payment = await this.repo.getVisible(tenantId, id, actor.userId, actor.canModerate);
     if (!payment) throw new PaymentNotFoundError(id);
-    return this.serialize(payment.toProps());
+    const p = payment.toProps();
+    if (p.referenceType === 'order' && p.referenceId) {
+      // PC-56 STORE-2c · B3: which attempt this is (1-based, oldest first) and when it lapses
+      const all = await this.repo.attemptsForOrder(tenantId, p.referenceId, actor.userId, actor.canModerate);
+      const idx = all.findIndex((a) => a.id === p.id);
+      return this.serialize(p, { attempt: idx >= 0 ? all.length - idx : null, ttl: await this.repo.attemptTtlSeconds(tenantId) });
+    }
+    return this.serialize(p);
   }
 
   async list(tenantId: string, userId: string, q: { cursor?: { c: string; id: string }; limit: number }) {
@@ -331,10 +486,17 @@ export class PaymentService {
     return { items, nextCursor: items.length === q.limit && last ? Buffer.from(`${last.createdAt}|${last.id}`).toString('base64') : null };
   }
 
-  private serialize(p: ReturnType<Payment['toProps']>) {
+  /** PC-56 STORE-2c · B3: + `failureCode` (the gateway's, as recorded), `failureReason` (a CODE the buyer's page localizes — never the
+   *  provider's English), `chargedNothing` (only for failures before any debit), `expiresAt` (an order attempt's lapse time) and `attempt`. */
+  private serialize(p: ReturnType<Payment['toProps']>, a: { attempt: number | null; ttl: number | null } = { attempt: null, ttl: null }) {
+    const failed = p.status === 'failed';
+    const reason = failed ? failureReasonCode(p.failureReason, p.failureCode) : null;
+    const isOrder = p.referenceType === 'order';
     return { id: p.id, status: p.status, amountMinor: p.amountMinor.toString(), refundedMinor: p.refundedMinor.toString(),
       currencyCode: p.currencyCode, provider: p.providerCode, method: p.method, referenceType: p.referenceType,
-      referenceId: p.referenceId, gatewayOrderId: p.gatewayOrderId, createdAt: p.createdAt };
+      referenceId: p.referenceId, gatewayOrderId: p.gatewayOrderId, createdAt: p.createdAt,
+      failureCode: failed ? (p.failureCode ?? null) : null, failureReason: reason, chargedNothing: reason ? chargedNothing(reason) : null,
+      expiresAt: isOrder ? (attemptExpiresAt(new Date(p.createdAt), a.ttl)?.toISOString() ?? null) : null, attempt: isOrder ? a.attempt : null };
   }
 
   private async flush(tx: TxContext, tenantId: string, paymentId: string, events: DomainEvent[]) {
