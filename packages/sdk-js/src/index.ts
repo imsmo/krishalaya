@@ -4,6 +4,7 @@ export type { SdkConfig } from './config';
 export { SdkError, SdkNetworkError, SdkTimeoutError } from './errors';
 export { CART_REFUSAL_CODES } from './types';   // PC-56 STORE-2b · B6
 export { CHECKOUT_MONEY_REFUSAL_CODES, PAYMENT_FAILURE_REASONS } from './types';   // PC-56 STORE-2c · B9
+export { ORDER_GROUPS, ORDER_REFUSAL_CODES } from './types';   // PC-56 STORE-3a · B7
 export type { HttpMethod, RequestOptions, Envelope } from './http';
 export type { CreateListingInput } from './resources/listings';
 export type { OrderRole } from './resources/orders';
@@ -208,6 +209,7 @@ export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail,
 // PC-56 TENANT-2a · staff console + listing QC (W123/W126/W127)
 export { LISTING_IMPORT_COLUMNS, listingImportTemplateCsv } from './resources/bulk-imports';   // TENANT-2c
 export type { OrderWorkingView, OrderViewCounts, ConsoleOrderRow, OrderTimelineEvent, OrderMoneyBasis, OrderMoneyBox } from './types';   // TENANT-3a
+export type { OrderGroup, OrderGroupCount, OrderGroupCounts, OrderRefund, OrderRefusalCode } from './types';   // PC-56 STORE-3a · B7
 export type { OrderOrganisation, OrderActorRole } from './types';   // PC-56 HOTFIX-5 · B3
 export type { ConsoleListingRow, ConsoleCounts, QcQueueItem, QcKpis, QcRejectReason, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from './types';
 // PC-56 TENANT-4d-1: W118's meters and W115's plan cards.

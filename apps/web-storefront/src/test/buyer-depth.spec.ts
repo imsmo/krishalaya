@@ -3,8 +3,9 @@ import { buildProfilePatch, buildAddress } from '../features/account/form';
 
 describe('features/orders/buyer-actions (PC-24b)', () => {
   it('cancel legal only pre-fulfilment', () => {
-    for (const s of ['created', 'payment_pending', 'confirmed', 'packed']) expect(canCancelOrder(s)).toBe(true);
-    for (const s of ['ready', 'delivered', 'completed', 'cancelled', undefined, null]) expect(canCancelOrder(s as string)).toBe(false);
+    // PC-56 STORE-3a · C2 (survey F-9): `ready` IS cancellable — the API's isCancellable (this spec pinned the storefront's narrower set)
+    for (const s of ['created', 'payment_pending', 'confirmed', 'packed', 'ready']) expect(canCancelOrder(s)).toBe(true);
+    for (const s of ['picked_up', 'delivered', 'completed', 'cancelled', undefined, null]) expect(canCancelOrder(s as string)).toBe(false);
   });
   it('dispute raise requires a reason from the server enum; caps description', () => {
     expect(buildDisputeRaise({ orderId: 'o1', reasonCode: 'late', description: ' 3 days late ' }))

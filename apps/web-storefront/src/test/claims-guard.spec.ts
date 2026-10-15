@@ -148,3 +148,39 @@ describe('STORE-2b · claims guard (the cart, its chains, add to cart)', () => {
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnobody\b/i.test(v)]).toEqual([k, true]);
   });
 });
+
+// PC-56 STORE-3a · brief §E / C5 — every canon claim the order pages REFUSE stays out of every catalogue as an OFFER: the phrases may appear
+// ONLY inside `store3a.refusal.*` (which say no, by name). And no STORE-3a value (store3a.*, the order statuses, the cancel reasons) carries a
+// digit, a currency sign or a person placeholder — every figure is interpolated (the "99+" form is `{n}+`), the seller is the organisation.
+describe('STORE-3a · claims guard (the orders, the order, the cancel chain, the confirmation)', () => {
+  const REFUSED = [
+    /packing recovery|freight deduction|refuse (it )?at the gate/i,                         // founder D1: no fee ladder
+    /3[–-]5 bank days|bank days\b(?! is)/i,                                                  // no promised days
+    /we chase|chase daily/i,
+    /is notified with your reason|notified with your reason/i,                               // no notification row (B27)
+    /gap refunds automatically|refunds automatically at the line price/i,                    // founder D2: no partial-fulfilment refund
+    /first pick of equivalent|cancellation rate is visible/i,
+    /OTP handover|re-grade slip|grading slip photo/i,
+    /two farmers just heard|one SMS \+ app message/i,
+    /escrow freezes for the disputed value/i,
+    /My Orders disabled|order history disabled/i,
+    /Pay the balance by|Get help on this order/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a store3a refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (k.startsWith('store3a.refusal.') || k.startsWith('store2b.refusal.') || k.startsWith('store2a.refusal.') || k.startsWith('store2c.refusal.')) continue;
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no digit, no currency sign, no person placeholder in a STORE-3a value', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store3a.') || k.startsWith('order.cancelReason.')
+      || /^order\.(status\.(created|payment_pending|picked_up|in_transit|out_for_delivery|refunded|partially_refunded|partially_fulfilled|unknown)|terminal\.(refunded|partially_refunded))$/.test(k));
+    expect(keys.length).toBe(140);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|memberNo|fullName|owner)\}/i.test(v)]).toEqual([k, false]);
+    }
+  });
+});

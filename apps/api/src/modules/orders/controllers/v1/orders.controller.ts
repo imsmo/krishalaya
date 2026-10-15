@@ -47,6 +47,8 @@ export class OrdersController {
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateOrder(ctx) }; }
 
   @Get() list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryOrderSchema) q: QueryOrderDto) {
+    // PC-56 STORE-3a · B1: a tab (`group`) and an exact `status` are two answers to one question — asking both is refused, never guessed
+    if (q.group && q.status) throw new BadRequestError('ask by status or by group, not both');
     // DELTA-069 (DEV-50): explicit scope=tenant gives moderators the tenant-wide
     // per-order list (canon 547 worklist) — same actor rule stats() already uses.
     // Explicit deny beats silent fallback: a non-moderator asking for tenant scope
@@ -99,6 +101,14 @@ export class OrdersController {
     return { data: { ...orderMoneyView(row), currencyCode: row.currencyCode } };
   }
 
+  /** PC-56 STORE-3a · B1 (founder D4, survey B8): the BUYER's five tabs — All / Active / Needs attention / Completed / Cancelled — counted over
+   *  the caller's OWN orders as buyer in this organisation, each bounded (`{ count, capped }`, cap ORDER_GROUP_COUNT_CAP). STATIC: declared
+   *  before ':id'. Never a tenant-wide count (Law 11). */
+  @Get('groups')
+  async groupCounts(@CurrentContext() ctx: RequestContext) {
+    return { data: await this.timeline.groupCounts(ctx.tenantId, ctx.userId) };
+  }
+
   @Get('stats') statsFor(@CurrentContext() ctx: RequestContext) {
     const a = this.actor(ctx);
     return this.stats.stats(ctx.tenantId, { sellerUserId: a.canModerate ? null : ctx.userId }).then((data) => ({ data }));
@@ -111,7 +121,12 @@ export class OrdersController {
     return this.groups.getGroup(ctx.tenantId, this.actor(ctx), groupId).then((data) => ({ data }));
   }
 
-  @Get(':id') @ApiScopes('orders.read') get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orders.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  /** PC-56 STORE-3a · B4 (survey B3): + `amountDueMinor` / `depositAppliedMinor` — what the order still needs paid, by the payments module's ONE
+   *  rule (total − the auction deposit applied in escrow; 0 applied for every other order) — never a second formula, never client arithmetic. */
+  @Get(':id') @ApiScopes('orders.read') async get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    const data = await this.orders.getById(ctx.tenantId, this.actor(ctx), id);
+    return { data: { ...data, ...(await this.orderPay.amountDue(ctx.tenantId, data.id, data.source, BigInt(data.totalMinor))) } };
+  }
 
   /** An order's frozen line items (buyer/seller/moderator). */
   @Get(':id/items') @ApiScopes('orders.read') items(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orderItems.listForOrder(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
@@ -152,12 +167,20 @@ export class OrdersController {
   // second cancel is refused by the state machine, as before.
   @Post(':id/cancel')
   async cancel(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string | undefined, @Param('id') id: string, @ZodBody(CancelOrderSchema) dto: CancelOrderDto) {
-    const act = () => this.orders.cancel(ctx.tenantId, this.actor(ctx), id, dto.reasonId ?? null, ipOf(r)).then(() => ({ ok: true }));
+    // PC-56 STORE-3a · B2: + the buyer's note (a BUYER's cancel needs a reason — OrderService.cancel refuses by name)
+    const act = () => this.orders.cancel(ctx.tenantId, this.actor(ctx), id, { reasonId: dto.reasonId ?? null, note: dto.note ?? null }, ipOf(r)).then(() => ({ ok: true }));
     if (!key) return { data: await act() };
     return { data: await this.idem.remember(createHash('sha256').update(`${id}:${key}`).digest('base64url'), ctx.userId, 'orders.cancel', act) };
   }
+  /** PC-56 STORE-3a · B5 (D6): the buyer's "I received it" (and a moderator's completion). IDEMPOTENT on `Idempotency-Key` — the HOTFIX-5 cancel
+   *  pattern (sha256(orderId:key) under `orders.complete`, 43 chars inside varchar(120)): a replay returns the first answer and settles
+   *  nothing more. A buyer's completion of an order whose escrow was never funded is refused ORDER_COMPLETE_REQUIRES_ESCROW (Law 9). */
   @Post(':id/complete')
-  complete(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.complete(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
+  async complete(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string | undefined, @Param('id') id: string) {
+    const act = () => this.orders.complete(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ ok: true }));
+    if (!key) return { data: await act() };
+    return { data: await this.idem.remember(createHash('sha256').update(`${id}:${key}`).digest('base64url'), ctx.userId, 'orders.complete', act) };
+  }
   @Post(':id/dispute')
   dispute(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(DisputeOrderSchema) dto: DisputeOrderDto) { return this.orders.dispute(ctx.tenantId, this.actor(ctx), id, dto.note, ipOf(r)).then(() => ({ data: { ok: true } })); }
 }

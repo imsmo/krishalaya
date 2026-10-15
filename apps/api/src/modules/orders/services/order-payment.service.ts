@@ -24,6 +24,15 @@ export class OrderPaymentService {
     private readonly payments: PaymentService,
   ) {}
 
+  /** PC-56 STORE-3a · B4 (survey B3): what an order still needs paid, for the order read — the payments module's ONE rule (`PaymentService.
+   *  amountDueForOrder`: total − the auction deposit applied to it in escrow, the same `orderEmdCreditMinor` the gateway intent and the
+   *  wallet pay check against). Only an AUCTION order can carry a deposit, so every other order answers total / 0 without a ledger read. */
+  async amountDue(tenantId: string, orderId: string, source: string, totalMinor: bigint): Promise<{ amountDueMinor: string; depositAppliedMinor: string }> {
+    if (source !== 'auction') return { amountDueMinor: totalMinor.toString(), depositAppliedMinor: '0' };
+    const d = await this.payments.amountDueForOrder(tenantId, orderId, totalMinor);
+    return { amountDueMinor: d.dueMinor.toString(), depositAppliedMinor: d.depositAppliedMinor.toString() };
+  }
+
   /** Idempotent on the caller's key. The amount is the ORDER's server-side total (never trusted from
    *  the client); the subject (buyer) is re-resolved from the loaded order vs the token → zero IDOR. */
   async payFromWallet(tenantId: string, buyerUserId: string, idemKey: string, orderId: string) {

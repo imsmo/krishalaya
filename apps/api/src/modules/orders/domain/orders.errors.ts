@@ -75,3 +75,24 @@ export class MixedCurrencyError extends DomainError {
 export class OrderCurrencyUnknownError extends DomainError {
   constructor(source: string, ref: string) { super('ORDER_CURRENCY_UNKNOWN', `The ${source} order for ${ref} has no currency from its listing — refused rather than priced in an assumed currency`, 422, { source, ref }); }
 }
+
+// ── PC-56 STORE-3a — YOUR ORDERS TELL THE TRUTH (founder D1 / D5 / D6). Each refusal names what the buyer needs to act on it. ──
+/** D1 / D5: a BUYER's cancel carries a reason from the `cancel_reason` vocabulary (0210) — none was sent. */
+export class CancelReasonRequiredError extends DomainError {
+  constructor() { super('CANCEL_REASON_REQUIRED', 'Choose why you are cancelling this order', 422); }
+}
+/** D5: the reason is not an ACTIVE `cancel_reason` value visible to this organisation (a platform value, or the organisation's own). */
+export class CancelReasonUnknownError extends DomainError {
+  constructor(reasonId: string) { super('CANCEL_REASON_UNKNOWN', 'That cancel reason is not one this store offers', 422, { reasonId }); }
+}
+/** D5: the chosen reason's meta says textRequired (`other`) and no note came with it. */
+export class CancelNoteRequiredError extends DomainError {
+  constructor(reasonCode: string) { super('CANCEL_NOTE_REQUIRED', 'Say in a few words why you are cancelling', 422, { reasonCode }); }
+}
+/** D6 (Law 9 — HOTFIX-5 Q1 is still open): the BUYER's "I received it" completes — and so releases escrow to the organisation — ONLY an order
+ *  whose money reached escrow by an online capture (placed `payment_pending`; `QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT`, the clock's one
+ *  switch). A pay-on-delivery order is refused BY NAME and nothing moves: its settlement would credit the seller from an escrow that never
+ *  held the money (HOTFIX-5's live probe). The organisation (or a moderator) completes such an order. */
+export class OrderCompleteRequiresEscrowError extends DomainError {
+  constructor(id: string) { super('ORDER_COMPLETE_REQUIRES_ESCROW', `Order ${id} was not paid into escrow; the organisation completes it`, 409, { orderId: id }); }
+}

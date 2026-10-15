@@ -142,6 +142,9 @@ run('PC-56 HOTFIX-5 · the clocks, the order numbers, the names and the deposit 
     return r.body.data;
   }
   const pastDeadline = (orderId: string) => admin.query(`UPDATE orders SET acceptance_deadline = now() - interval '1 minute' WHERE id = $1`, [orderId]);
+  // PC-56 STORE-3a · B2 (founder D1 / D5): a BUYER's cancel now needs a reason from the seeded `cancel_reason` vocabulary (0210) — the buyer's
+  // cancels below send `changed_mind` (a seller's decline keeps sending none)
+  const REASON = async () => ({ reasonId: (await admin.query(`SELECT id FROM lookup_values WHERE type_code = 'cancel_reason' AND tenant_id IS NULL AND code = 'changed_mind'`)).rows[0].id as string });
 
   // --- auctions ---
   const auctions = () => app.get(AuctionService);
@@ -452,7 +455,7 @@ run('PC-56 HOTFIX-5 · the clocks, the order numbers, the names and the deposit 
         await app.get(AuctionPaymentSucceededHandler).handle(await outboxEvent('payments.payment_succeeded', paid.paymentId));
         expect((await settlement(auctionId)).outcome).toBe('paid');
         const before = await mainOf(b1);
-        const c = await request(http).post(`/v1/orders/${orderId}/cancel`).set({ ...H(T.b1), 'idempotency-key': randomUUID() }).send({});
+        const c = await request(http).post(`/v1/orders/${orderId}/cancel`).set({ ...H(T.b1), 'idempotency-key': randomUUID() }).send(await REASON());
         expect(c.status).toBe(201);
         const ev = await cancelSideEffects(orderId);
         expect(await ledgerKey(`refund:${orderId}`)).toBe(1);
@@ -502,7 +505,7 @@ run('PC-56 HOTFIX-5 · the clocks, the order numbers, the names and the deposit 
       try {
         const { auctionId, orderId } = await settledAuction(b3, '64500');
         const sellerBefore = await mainOf(seller); const winnerBefore = await mainOf(b3);
-        expect((await request(http).post(`/v1/orders/${orderId}/cancel`).set({ ...H(T.b3), 'idempotency-key': randomUUID() }).send({})).status).toBe(201);
+        expect((await request(http).post(`/v1/orders/${orderId}/cancel`).set({ ...H(T.b3), 'idempotency-key': randomUUID() }).send(await REASON())).status).toBe(201);
         const ev = await cancelSideEffects(orderId);
         expect(await ledgerKey(`emd-forfeit:${auctionId}`)).toBe(1);
         expect(await ledgerKey(`emd-return:${orderId}`)).toBe(0);
@@ -519,15 +522,18 @@ run('PC-56 HOTFIX-5 · the clocks, the order numbers, the names and the deposit 
     it('a replay with the same key returns the first answer and acts nothing; another key is refused by the state machine', async () => {
       const o = await placeOne(T.buyer, L.reads, '1');
       const k = randomUUID();
-      const a = await request(http).post(`/v1/orders/${o}/cancel`).set({ ...H(T.buyer), 'idempotency-key': k }).send({});
-      const b = await request(http).post(`/v1/orders/${o}/cancel`).set({ ...H(T.buyer), 'idempotency-key': k }).send({});
+      const body = await REASON();
+      const a = await request(http).post(`/v1/orders/${o}/cancel`).set({ ...H(T.buyer), 'idempotency-key': k }).send(body);
+      const b = await request(http).post(`/v1/orders/${o}/cancel`).set({ ...H(T.buyer), 'idempotency-key': k }).send(body);
       expect([a.status, b.status]).toEqual([201, 201]);
       expect(b.body.data).toEqual(a.body.data);
       expect(await count(`SELECT count(*)::int n FROM order_events WHERE order_id = $1 AND to_status = 'cancelled'`, [o])).toBe(1);
       expect(await cancelEvents(o)).toBe(1);
       expect(await count(`SELECT count(*)::int n FROM audit_log WHERE action = 'order.cancelled' AND entity_id = $1`, [o])).toBe(1);
-      const other = await request(http).post(`/v1/orders/${o}/cancel`).set({ ...H(T.buyer), 'idempotency-key': randomUUID() }).send({});
-      expect([other.status, other.body.error?.code]).toEqual([403, 'ORDER_FORBIDDEN']);
+      const other = await request(http).post(`/v1/orders/${o}/cancel`).set({ ...H(T.buyer), 'idempotency-key': randomUUID() }).send(body);
+      // PC-56 STORE-3a: a cancel of an order that has moved past `ready` (here: already cancelled) is the STATE MACHINE's refusal now
+      // (ORDER_ILLEGAL_TRANSITION, 409) — it answered ORDER_FORBIDDEN (403), the "not a party" code, before (order.entity.ts cancel)
+      expect([other.status, other.body.error?.code]).toEqual([409, 'ORDER_ILLEGAL_TRANSITION']);
       await cancelSideEffects(o);
     });
   });

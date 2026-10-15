@@ -14,6 +14,10 @@ export interface PaymentProps {
   status: PaymentStatus; providerCode: string; gatewayOrderId: string | null; gatewayPaymentId: string | null;
   method: string | null; idempotencyKey: string; failureCode: string | null; failureReason: string | null;
   ledgerTxnId: string | null; version: number; createdAt: Date;
+  /** PC-56 STORE-3a · B3 (0210, survey B11): the refund's facts, kept on the row where the refund is already audited — when the platform asked
+   *  for it (`initiateRefund`, the moderator's `refund`), when the source confirmed it (`completeRefund`, `refund`) and the provider's refund
+   *  reference (`rfnd_…`; null for a wallet refund). Optional: rows refunded before 0210 (and pre-0210 fixtures) carry none. */
+  gatewayRefundId?: string | null; refundInitiatedAt?: Date | null; refundedAt?: Date | null;
 }
 
 export class Payment {
@@ -123,20 +127,23 @@ export class Payment {
    * captured payment that nothing has refunded yet (`success`, refunded 0) — anything else is not this method's to touch. The capture's ledger
    * txn id stays on the row (the refund's is in the audit row and the event).
    */
-  initiateRefund(amountMinor: bigint): void {
+  initiateRefund(amountMinor: bigint, at: Date = new Date()): void {
     if (this.props.status !== 'success' || this.props.refundedMinor !== 0n) throw new RefundExceedsPaymentError();
     if (amountMinor <= 0n || amountMinor > this.refundableMinor) throw new RefundExceedsPaymentError();
     assertTransition(this.props.status, 'refund_initiated');
     this.props.status = 'refund_initiated';
     this.props.refundedMinor += amountMinor;
+    this.props.refundInitiatedAt = at;   // STORE-3a · B3: the instant the refund was asked for (the ledger refund is booked in the same tx)
   }
   /** B2: the source confirmed the refund (the sandbox at once; Razorpay's `refund.processed` webhook later) → `refunded`. Emits
    *  `payments.payment_refunded` with the buyer, for the communication map. Idempotent: false unless `refund_initiated`. */
-  completeRefund(reason: string, orderId: string | null, gatewayRefundId: string | null): boolean {
+  completeRefund(reason: string, orderId: string | null, gatewayRefundId: string | null, at: Date = new Date()): boolean {
     if (this.props.status !== 'refund_initiated') return false;
     const next: PaymentStatus = this.props.refundedMinor >= this.props.amountMinor ? 'refunded' : 'partially_refunded';
     assertTransition(this.props.status, next);
     this.props.status = next;
+    this.props.refundedAt = at;                                   // STORE-3a · B3: the instant the source confirmed it
+    this.props.gatewayRefundId = gatewayRefundId ?? null;          // the provider's reference (rfnd_…) — null for a wallet refund
     this.events.push({ type: PaymentEventType.Refunded, payload: { paymentId: this.props.id, refundedMinor: this.props.refundedMinor.toString(),
       totalRefundedMinor: this.props.refundedMinor.toString(), fully: next === 'refunded', reason, orderId, buyerUserId: this.props.userId,
       currencyCode: this.props.currencyCode, gatewayRefundId, provider: this.props.providerCode } });
@@ -144,13 +151,15 @@ export class Payment {
   }
 
   /** Record a refund of `amountMinor`; full vs partial decided by remaining balance. */
-  refund(amountMinor: bigint, ledgerTxnId: string): void {
+  refund(amountMinor: bigint, ledgerTxnId: string, at: Date = new Date()): void {
     if (amountMinor <= 0n || amountMinor > this.refundableMinor) throw new RefundExceedsPaymentError();
     this.props.refundedMinor += amountMinor;
     const next: PaymentStatus = this.props.refundedMinor >= this.props.amountMinor ? 'refunded' : 'partially_refunded';
     assertTransition(this.props.status, next);
     this.props.status = next;
     this.props.ledgerTxnId = ledgerTxnId;
+    // STORE-3a · B3: the moderator's refund IS the ledger reversal — asked and done in one act (the first ask is kept on a later partial)
+    this.props.refundInitiatedAt = this.props.refundInitiatedAt ?? at; this.props.refundedAt = at;
     this.events.push({ type: PaymentEventType.Refunded, payload: { paymentId: this.props.id, refundedMinor: amountMinor.toString(), totalRefundedMinor: this.props.refundedMinor.toString(), fully: next === 'refunded' } });
   }
 }

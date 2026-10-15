@@ -14,12 +14,18 @@ const ALIAS: Record<string, OrderStep> = {
   confirmed: 'confirmed', accepted: 'confirmed',
   packed: 'packed', packing: 'packed',
   ready: 'ready', ready_for_pickup: 'ready', shipped: 'ready', dispatched: 'ready', in_transit: 'ready',
+  // PC-56 STORE-3a · C2 (survey F-12): the API's own statuses on the way — mapped, never left off the bar (picked up and on the road are past
+  // `ready`, not yet `delivered`); a partially fulfilled order WAS delivered (its gap is not refunded — refused by name, founder D2)
+  payment_pending: 'placed', picked_up: 'ready', out_for_delivery: 'ready', partially_fulfilled: 'delivered',
   delivered: 'delivered',
   completed: 'completed', complete: 'completed', closed: 'completed',
 };
 
-const TERMINAL: Record<string, 'cancelled' | 'disputed'> = {
-  cancelled: 'cancelled', canceled: 'cancelled', refunded: 'cancelled',
+// PC-56 STORE-3a · C2 (survey F-12, mutation candidate 9): `refunded` and `partially_refunded` are their OWN terminal states — a refunded order
+// (a dispute's refund) is not "cancelled", and the buyer must be told the money came back, not that the order was called off.
+export type OrderTerminal = 'cancelled' | 'disputed' | 'refunded' | 'partially_refunded';
+const TERMINAL: Record<string, OrderTerminal> = {
+  cancelled: 'cancelled', canceled: 'cancelled', refunded: 'refunded', partially_refunded: 'partially_refunded',
   disputed: 'disputed', dispute: 'disputed', in_dispute: 'disputed',
 };
 
@@ -28,7 +34,7 @@ export interface OrderTimelineModel {
   /** Index into stepKeys of the furthest-reached step, or -1 if the status doesn't map onto the happy path. */
   currentIndex: number;
   /** Set when the order is off the happy path; the timeline should show this instead of progressing. */
-  terminal: 'cancelled' | 'disputed' | null;
+  terminal: OrderTerminal | null;
 }
 
 export function orderTimeline(status: string | null | undefined): OrderTimelineModel {

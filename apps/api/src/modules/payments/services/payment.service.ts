@@ -35,6 +35,25 @@ import { FlagsService } from '../../../core/feature-flags/flags.service';
 
 export interface PaymentActor { userId: string; canModerate: boolean; }
 
+/** PC-56 STORE-3a · B3 (survey B11) — THE BUYER'S REFUND READ for one order, from its captured payment (the payment row's own facts, 0210):
+ *    none      nothing was captured, or the capture stands unrefunded
+ *    initiated the refund was booked (escrow → source, `refund:<orderId>`) and asked of the provider; awaiting its confirmation
+ *    refunded  the source confirmed the whole amount         partial  the source confirmed part of it (a desk refund)
+ *  `gatewayRefundId` is the provider's reference the buyer may quote (`rfnd_…`) — nothing else about the gateway leaves the API. */
+export interface OrderRefundView {
+  state: 'none' | 'initiated' | 'refunded' | 'partial'; amountMinor: string; currencyCode: string | null;
+  initiatedAt: string | null; completedAt: string | null; gatewayRefundId: string | null;
+}
+export function refundView(p: Payment | null): OrderRefundView {
+  if (!p) return { state: 'none', amountMinor: '0', currencyCode: null, initiatedAt: null, completedAt: null, gatewayRefundId: null };
+  const v = p.toProps();
+  const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
+  const state: OrderRefundView['state'] = v.status === 'refund_initiated' ? 'initiated' : v.status === 'refunded' ? 'refunded' : v.status === 'partially_refunded' ? 'partial' : 'none';
+  return { state, amountMinor: state === 'none' ? '0' : v.refundedMinor.toString(), currencyCode: v.currencyCode,
+    initiatedAt: state === 'none' ? null : iso(v.refundInitiatedAt), completedAt: state === 'refunded' || state === 'partial' ? iso(v.refundedAt) : null,
+    gatewayRefundId: state === 'refunded' || state === 'partial' ? (v.gatewayRefundId ?? null) : null };
+}
+
 @Injectable()
 export class PaymentService {
   private readonly log = new Logger(PaymentService.name);
@@ -424,7 +443,16 @@ export class PaymentService {
     const ttl = await this.repo.attemptTtlSeconds(tenantId);
     const latest = all[0] ? this.serialize(all[0].toProps(), { attempt: all.length, ttl }) : null;
     const live = all.some((a) => isLiveAttempt(a.toProps(), ttl, new Date()));
-    return { latest, attempts: all.length, nextAttempt: all.length + 1, liveAttempt: live, ttlSeconds: ttl };
+    const captured = await this.repo.capturedForOrder(tenantId, orderId, actor.userId, actor.canModerate);
+    return { latest, attempts: all.length, nextAttempt: all.length + 1, liveAttempt: live, ttlSeconds: ttl, refund: refundView(captured) };
+  }
+
+  /** PC-56 STORE-3a · B4 (survey B3): what an order still needs paid and the auction deposit already applied to it — THE rule the gateway intent
+   *  (`assertValidReference`) and the wallet pay (`amountDueForOrderInTx`) apply: total − `orderEmdCreditMinor` (0 for every non-auction
+   *  order). A read for the order page (replica); never a second formula. */
+  async amountDueForOrder(tenantId: string, orderId: string, totalMinor: bigint): Promise<{ dueMinor: bigint; depositAppliedMinor: bigint }> {
+    const credit = await this.repo.orderEmdCreditMinor(tenantId, orderId);
+    return { dueMinor: totalMinor - credit, depositAppliedMinor: credit };
   }
 
   /** Pay an order from the buyer's OWN wallet balance (no gateway). Mirrors a gateway capture's money

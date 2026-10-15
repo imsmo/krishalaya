@@ -61,6 +61,13 @@ describe('STORE-1a · brand guard', () => {
     for (const k of keys) for (const lit of PLATFORM_LITERALS) expect([k, (cat as Record<string, string>)[k].includes(lit)]).toEqual([k, false]);
   });
 
+  // PC-56 STORE-3a · C5: the order pages are TENANT routes (/<slug>/orders…) — none of their sentences names the platform
+  it.each(Object.entries(CATS))('%s: no STORE-3a value carries the platform\'s name (the orders are the organisation\'s)', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store3a.') || k.startsWith('order.cancelReason.'));
+    expect(keys.length).toBeGreaterThan(110);
+    for (const k of keys) for (const lit of PLATFORM_LITERALS) expect([k, (cat as Record<string, string>)[k].includes(lit)]).toEqual([k, false]);
+  });
+
   it('the one brand entry: the token name in English, the decided vernacular spellings in hi / gu', () => {
     expect(en['brand.platform']).toBe(PLATFORM_BRAND.name);
     expect(hi['brand.platform']).toBe('कृषालय');

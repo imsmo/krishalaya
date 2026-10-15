@@ -9,13 +9,16 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { Order } from '../domain/order.entity';
 import { DomainEvent } from '../domain/orders.events';
-import { OrderNotFoundError, OrderConcurrencyError, OrderForbiddenError } from '../domain/orders.errors';
+import { OrderNotFoundError, OrderConcurrencyError, OrderForbiddenError, CancelReasonRequiredError, CancelReasonUnknownError, CancelNoteRequiredError, OrderCompleteRequiresEscrowError } from '../domain/orders.errors';
+import { isCancellable } from '../domain/order.state';
 import { OrderRepository } from '../repositories/order.repository';
 import { orderPaymentState, OrderPaymentFacts } from '../domain/order-payment-state';
 import { QUALITY_WINDOW_REASON, QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT, SELLER_CONFIRM_TIMEOUT_REASON, qualityWindowDue, sellerConfirmTimeoutDue } from '../domain/order-clocks';
 import { OrderViewerRole, viewerRoleOf } from '../domain/order-event-roles';
 
 export interface OrderActor { userId: string; canModerate: boolean; }
+/** What an in-transaction pre-check hands the act and the audit row (STORE-3a). */
+interface TransitionAudit { reason?: string; reasonCode?: string; note?: string | null; newValue?: Record<string, unknown> }
 
 @Injectable()
 export class OrderService {
@@ -27,18 +30,23 @@ export class OrderService {
     private readonly repo: OrderRepository,
   ) {}
 
-  private async transition(tenantId: string, actor: OrderActor, id: string, action: string, mutate: (o: Order) => void, opts: { auditIp?: string | null; preCheck?: (o: Order) => void } = {}) {
+  /** PC-56 STORE-3a: + `preCheckTx` — a check that READS inside the transition's own transaction, after the row lock and before the act (the
+   *  buyer's cancel reason; the buyer's completion's escrow fact) — whatever it returns is merged into the audit row (`reason`, `newValue`). */
+  private async transition(tenantId: string, actor: OrderActor, id: string, action: string, mutate: (o: Order, ctx: TransitionAudit) => void,
+    opts: { auditIp?: string | null; preCheck?: (o: Order) => void; preCheckTx?: (tx: TxContext, o: Order) => Promise<TransitionAudit | void> } = {}) {
     await timed(this.metrics, `orders.${action}`, { tenant: tenantId }, async () => {
       await this.uow.run(tenantId, async (tx) => {
         const order = await this.repo.getForUpdate(tx, tenantId, id);
         if (!order) throw new OrderNotFoundError(id);
         opts.preCheck?.(order);
+        const extra: TransitionAudit = (await opts.preCheckTx?.(tx, order)) ?? {};
         const from = order.status;
-        mutate(order);
+        mutate(order, extra);
         const ok = await this.repo.update(tx, order, from, actor.userId);   // HOTFIX-5 · B3: the hop records who made it
         if (!ok) throw new OrderConcurrencyError(id);
         await this.flush(tx, tenantId, id, order.pullEvents());
-        await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: `order.${action}`, entityType: 'order', entityId: id, oldValue: { status: from }, newValue: { status: order.status }, ip: opts.auditIp ?? null });
+        await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: `order.${action}`, entityType: 'order', entityId: id, oldValue: { status: from },
+          newValue: { status: order.status, ...(extra.newValue ?? {}) }, ...(extra.reason ? { reason: extra.reason } : {}), ip: opts.auditIp ?? null });
       }, { userId: actor.userId });
     });
   }
@@ -48,13 +56,49 @@ export class OrderService {
   markReady(t: string, a: OrderActor, id: string, ip: string | null) { return this.transition(t, a, id, 'ready', (o) => o.markReady(a.userId), { auditIp: ip }); }
   markDelivered(t: string, a: OrderActor, id: string, ip: string | null) { return this.transition(t, a, id, 'delivered', (o) => o.markDelivered(a.userId), { auditIp: ip }); }
   dispute(t: string, a: OrderActor, id: string, note: string | undefined, ip: string | null) { return this.transition(t, a, id, 'disputed', (o) => o.dispute(a.userId, note), { auditIp: ip }); }
-  cancel(t: string, a: OrderActor, id: string, reasonId: string | null, ip: string | null) {
-    return this.transition(t, a, id, 'cancelled', (o) => o.cancel(a.userId, reasonId, o.buyerUserId === a.userId), { auditIp: ip });
+  /**
+   * PC-56 STORE-3a · B2 (founder D1 / D5) — THE CANCEL, WITH ITS REASON. A BUYER's cancel of an order that can still be cancelled (through
+   * `ready` — `isCancellable`) needs a reason from the `cancel_reason` vocabulary (0210): none → CANCEL_REASON_REQUIRED; not an active value
+   * visible to this organisation → CANCEL_REASON_UNKNOWN (one lookup read, in this transaction); `other` (meta textRequired) without a note →
+   * CANCEL_NOTE_REQUIRED (422 each — the order is untouched). The note is kept only for a textRequired reason. The reason's CODE is audited
+   * (`reason`), the note too (`newValue.note`), and the code travels in `orders.order_cancelled` (`reasonCode`). An order already past `ready`
+   * is refused by the state machine first (ORDER_ILLEGAL_TRANSITION) — never asked for a reason it could not use. The SELLER's decline keeps
+   * today's optional, unvalidated reason (its vocabulary is a later wave). The cancel then triggers STORE-2c's refund to source and restock
+   * exactly as before (Law 9 — the wave report §9).
+   */
+  cancel(t: string, a: OrderActor, id: string, input: string | null | { reasonId?: string | null; note?: string | null }, ip: string | null) {
+    const req = typeof input === 'string' || input === null ? { reasonId: input, note: null } : { reasonId: input.reasonId ?? null, note: input.note ?? null };
+    const note = typeof req.note === 'string' && req.note.trim() !== '' ? req.note.trim().slice(0, 280) : null;
+    return this.transition(t, a, id, 'cancelled', (o, x) => o.cancel(a.userId, req.reasonId, o.buyerUserId === a.userId, { code: x.reasonCode ?? null, note: x.note ?? null }), {
+      auditIp: ip,
+      preCheckTx: async (tx, o) => {
+        if (o.buyerUserId !== a.userId || !isCancellable(o.status)) return;   // the seller's decline / a refused state: the entity decides
+        if (!req.reasonId) throw new CancelReasonRequiredError();
+        const reason = await this.repo.cancelReasonTx(tx, t, req.reasonId);
+        if (!reason) throw new CancelReasonUnknownError(req.reasonId);
+        if (reason.textRequired && !note) throw new CancelNoteRequiredError(reason.code);
+        const kept = reason.textRequired ? note : null;
+        return { reason: reason.code, reasonCode: reason.code, note: kept, newValue: { reasonCode: reason.code, note: kept } };
+      },
+    });
   }
-  /** Completion: only the buyer (receipt confirmation) or a moderator. */
+  /**
+   * Completion: only the buyer (receipt confirmation) or a moderator.
+   * PC-56 STORE-3a · B5 (lead's D6, Law 9 — HOTFIX-5 Q1 is still open): the BUYER's "I received it" is FAIL-CLOSED exactly like the clock —
+   * it completes (and so releases escrow to the organisation through payments' `OrderSettlementService.settle`, `settle:<orderId>`) ONLY an
+   * order that was placed awaiting an online payment (`placedAwaitingPaymentTx`, the test `autoComplete` makes, read in THIS transaction);
+   * a pay-on-delivery order is refused ORDER_COMPLETE_REQUIRES_ESCROW (409) and nothing moves. One switch, one meaning
+   * (`QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT`: "completion releases escrow only when escrow was funded"). A MODERATOR's completion is unchanged —
+   * named in the wave report §9 as the remaining door to HOTFIX-5's P0.
+   */
   complete(t: string, a: OrderActor, id: string, ip: string | null) {
     return this.transition(t, a, id, 'completed', (o) => o.complete(), {
       auditIp: ip, preCheck: (o) => { if (!a.canModerate && o.buyerUserId !== a.userId) throw new OrderForbiddenError('Only the buyer may complete the order'); },
+      preCheckTx: async (tx, o) => {
+        const byBuyer = !a.canModerate && o.buyerUserId === a.userId;
+        if (byBuyer && QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT && !(await this.repo.placedAwaitingPaymentTx(tx, t, id))) throw new OrderCompleteRequiresEscrowError(id);
+        return byBuyer ? { newValue: { by: 'buyer', escrowFunded: true } } : undefined;
+      },
     });
   }
 
@@ -122,12 +166,14 @@ export class OrderService {
     if (!order) throw new OrderNotFoundError(id);
     const p = order.toProps();
     const role = viewerRoleOf(actor, p);
-    const [items, facts, organisation] = await Promise.all([this.repo.itemsOf(tenantId, id), this.repo.paymentFacts(tenantId, id), this.repo.organisationOf(tenantId)]);
+    const [items, facts, organisation, cancelReasonCode] = await Promise.all([this.repo.itemsOf(tenantId, id), this.repo.paymentFacts(tenantId, id), this.repo.organisationOf(tenantId),
+      p.cancelReasonId ? this.repo.cancelReasonCodeOf(tenantId, p.cancelReasonId) : Promise.resolve(null)]);
     const all = this.serialize(p, facts);
     // PC-56 HOTFIX-5 · B3 (HOTFIX-4 D3, survey F-7): the BUYER's view names the ORGANISATION, never a person's id — the seller console and
     // moderation keep both parties (the HOTFIX-4 owner / non-owner precedent).
-    if (role === 'buyer') { const { buyerUserId: _b, sellerUserId: _s, ...safe } = all; void _b; void _s; return { ...safe, organisation, items }; }
-    return { ...all, organisation, items };
+    // PC-56 STORE-3a · B2: + `cancelReasonCode` (both views — the code of the recorded reason) and, for the seller / staff only, `cancelNote`.
+    if (role === 'buyer') { const { buyerUserId: _b, sellerUserId: _s, ...safe } = all; void _b; void _s; return { ...safe, cancelReasonCode, organisation, items }; }
+    return { ...all, cancelReasonCode, cancelNote: p.cancelNote ?? null, organisation, items };
   }
 
   /**

@@ -102,6 +102,9 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
   const sandboxHook = (body: Record<string, unknown>) => { const raw = JSON.stringify(body); return request(http).post('/v1/payments/webhooks/sandbox').set({ 'content-type': 'application/json', 'x-webhook-signature': sandbox.sign(raw) }).send(raw); };
   const captureVia = (gwOrder: string, payId: string, amount: string) => sandboxHook({ id: `evt_${randomUUID()}`, event: 'payment.captured', order_id: gwOrder, payment_id: payId, amount: Number(amount), currency: 'INR', method: 'upi' });
   const ledgerKey = (key: string) => count(`SELECT count(*)::int n FROM ledger_transactions WHERE idempotency_key = $1`, [key]);
+  // PC-56 STORE-3a · B2 (founder D1 / D5): a BUYER's cancel now needs a reason from the seeded `cancel_reason` vocabulary (0210) — the buyer's
+  // cancels below send `changed_mind` (a seller's decline keeps sending none)
+  const REASON = async () => ({ reasonId: (await admin.query(`SELECT id FROM lookup_values WHERE type_code = 'cancel_reason' AND tenant_id IS NULL AND code = 'changed_mind'`)).rows[0].id as string });
 
   beforeAll(async () => {
     process.env.JOBS_ENABLED = 'false'; process.env.RELAY_ENABLED = 'false';
@@ -170,7 +173,7 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
       expect([tomb.status, tomb.body.data?.status]).toEqual([200, 'sold_out']);
     });
     it('the buyer cancels → the restock handler gives the 7 back ONCE (the lot is on sale again); a replayed event moves nothing', async () => {
-      const c = await request(http).post(`/v1/orders/${orderA}/cancel`).set({ ...H(T.buyer), 'idempotency-key': randomUUID() }).send({});
+      const c = await request(http).post(`/v1/orders/${orderA}/cancel`).set({ ...H(T.buyer), 'idempotency-key': randomUUID() }).send(await REASON());
       expect(c.status).toBe(201);
       const ev = await cancelSideEffects(orderA);
       expect(ev.payload).toMatchObject({ role: 'buyer', stockReserved: true });
@@ -216,7 +219,7 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
     });
     it('(3) the buyer cancels a PAID order → ONE order_cancel_refund transaction, zero-sum (gateway +, escrow −), refund recorded once, payment refunded', async () => {
       const before = sandbox.refunds.length;
-      expect((await request(http).post(`/v1/orders/${o1.id}/cancel`).set({ ...H(T.buyer), 'idempotency-key': randomUUID() }).send({})).status).toBe(201);
+      expect((await request(http).post(`/v1/orders/${o1.id}/cancel`).set({ ...H(T.buyer), 'idempotency-key': randomUUID() }).send(await REASON())).status).toBe(201);
       const ev = await cancelSideEffects(o1.id);
       expect(await ledgerKey(`refund:${o1.id}`)).toBe(1);
       const legs = (await admin.query(
@@ -250,7 +253,7 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
       expect((await add(T.buyer3, L.c, '1')).status).toBe(201);
       const c = await place(T.buyer3);
       const id = c.body.data.orders[0].id;
-      expect((await request(http).post(`/v1/orders/${id}/cancel`).set({ ...H(T.buyer3), 'idempotency-key': randomUUID() }).send({})).status).toBe(201);
+      expect((await request(http).post(`/v1/orders/${id}/cancel`).set({ ...H(T.buyer3), 'idempotency-key': randomUUID() }).send(await REASON())).status).toBe(201);
       await cancelSideEffects(id);
       expect(await ledgerKey(`refund:${id}`)).toBe(0);
       expect(await count(`SELECT count(*)::int n FROM payments WHERE reference_id = $1`, [id])).toBe(0);

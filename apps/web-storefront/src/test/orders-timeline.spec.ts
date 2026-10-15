@@ -13,7 +13,9 @@ describe('orderTimeline', () => {
   });
   it('flags terminal off-path states', () => {
     expect(orderTimeline('cancelled').terminal).toBe('cancelled');
-    expect(orderTimeline('refunded').terminal).toBe('cancelled');
+    // PC-56 STORE-3a · C2 (survey F-12): a refunded order is its OWN terminal state (it used to read "cancelled")
+    expect(orderTimeline('refunded').terminal).toBe('refunded');
+    expect(orderTimeline('partially_refunded').terminal).toBe('partially_refunded');
     expect(orderTimeline('in_dispute').terminal).toBe('disputed');
   });
   it('unknown status → no invented progress', () => {

@@ -11,7 +11,7 @@ import { PaymentStatus } from '../domain/payment.state';
 
 const COLS = `id, tenant_id, user_id, purpose_id, reference_type, reference_id, amount_minor, refunded_minor,
   currency_code, status, provider_code, gateway_order_id, gateway_payment_id, method, idempotency_key,
-  failure_code, failure_reason, ledger_txn_id, created_at`;
+  failure_code, failure_reason, ledger_txn_id, created_at, gateway_refund_id, refund_initiated_at, refunded_at`;
 const big = (v: any) => BigInt(v);
 
 function toDomain(r: any): Payment {
@@ -22,6 +22,7 @@ function toDomain(r: any): Payment {
     gatewayOrderId: r.gateway_order_id, gatewayPaymentId: r.gateway_payment_id, method: r.method,
     idempotencyKey: r.idempotency_key, failureCode: r.failure_code, failureReason: r.failure_reason,
     ledgerTxnId: r.ledger_txn_id, version: 1, createdAt: r.created_at,
+    gatewayRefundId: r.gateway_refund_id ?? null, refundInitiatedAt: r.refund_initiated_at ?? null, refundedAt: r.refunded_at ?? null,   // STORE-3a · B3 (0210)
   });
 }
 
@@ -108,6 +109,14 @@ export class PaymentRepository {
        AND status IN ('success','refund_initiated','partially_refunded','refunded') ORDER BY created_at DESC, id DESC LIMIT 1`, [tenantId, orderId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
+  /** PC-56 STORE-3a · B3 — the buyer's view of the money that ARRIVED for an order and what happened to it since (the newest captured payment:
+   *  success / refund_initiated / partially_refunded / refunded), replica, scoped to the payer (or a moderator) like `attemptsForOrder`. */
+  async capturedForOrder(tenantId: string, orderId: string, viewerUserId: string, canModerate: boolean): Promise<Payment | null> {
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM payments WHERE tenant_id=$1 AND reference_type='order' AND reference_id=$2
+       AND status IN ('success','refund_initiated','partially_refunded','refunded') AND ($3=true OR user_id=$4) ORDER BY created_at DESC, id DESC LIMIT 1`,
+      [tenantId, orderId, canModerate, viewerUserId]);
+    return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
   /** `platform.payment_attempt_ttl_seconds` (0209) — null when the setting is absent or not a positive integer (attempts then never lapse by time). */
   async attemptTtlSeconds(tenantId: string, tx?: TxContext): Promise<number | null> {
     const sql = `SELECT (kv_platform_setting('platform.payment_attempt_ttl_seconds') #>> '{}') AS v`;
@@ -126,8 +135,9 @@ export class PaymentRepository {
     const v = p.toProps();
     await tx.query(
       `UPDATE payments SET status=$3, refunded_minor=$4, gateway_payment_id=$5, method=$6, failure_code=$7,
-         failure_reason=$8, ledger_txn_id=$9, updated_at=now() WHERE id=$1 AND tenant_id=$2`,
-      [v.id, v.tenantId, v.status, v.refundedMinor.toString(), v.gatewayPaymentId, v.method, v.failureCode, v.failureReason, v.ledgerTxnId]);
+         failure_reason=$8, ledger_txn_id=$9, gateway_refund_id=$10, refund_initiated_at=$11, refunded_at=$12, updated_at=now() WHERE id=$1 AND tenant_id=$2`,
+      [v.id, v.tenantId, v.status, v.refundedMinor.toString(), v.gatewayPaymentId, v.method, v.failureCode, v.failureReason, v.ledgerTxnId,
+       v.gatewayRefundId ?? null, v.refundInitiatedAt ?? null, v.refundedAt ?? null]);
   }
 
   async attachGatewayOrder(tx: TxContext, tenantId: string, id: string, gatewayOrderId: string): Promise<void> {

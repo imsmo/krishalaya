@@ -4,14 +4,17 @@
 // PC-56 STORE-2b: the same list reads `STORE2B_REFUSALS` too (the cart, checkout, and the 2b lines on the listing and inputs pages).
 // PC-56 STORE-2c: and `STORE2C_REFUSALS` (the checkout steps, payment processing, the confirmation and the auction).
 import { getTranslator } from '../lib/i18n';
+// PC-56 STORE-3a: and `STORE3A_REFUSALS` (the order list, the order, the cancel page and the confirmation).
 import { STORE2A_REFUSALS, STORE2B_REFUSALS, STORE2C_REFUSALS, type Store2aSurface, type Store2bSurface, type Store2cSurface } from '../features/store2/refusals';
+import { STORE3A_REFUSALS, type Store3aSurface } from '../features/store3a/refusals';
 
-export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface }) {
+export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface }) {
   const t = getTranslator();
   const rows = [
     ...STORE2A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE2B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE2C_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
+    ...STORE3A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
   ];
   return (
     <section className="kv-refused" data-kv-refused={surface} aria-labelledby={`kv-refused-${surface}`}>

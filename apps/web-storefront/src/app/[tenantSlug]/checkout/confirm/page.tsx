@@ -21,6 +21,9 @@ import { CONFIRM_REFUSAL_KEYS } from '../../../../features/store2/refusals';
 import { couponNoticeKey } from '../../../../features/checkout/preview';
 import { confirmHref, payHref, processingView } from '../../../../features/store2c/checkout';
 import { BillRowsView } from '../../../../components/BillRowsView';
+import { RefusalList } from '../../../../components/RefusalList';
+import { when } from '../../../../components/OrderTimeline';
+import { orderHref, ordersHref, showsDeadline } from '../../../../features/store3a/orders';
 
 /** A checkout group is at most one order per seller of one cart — bounded; the page never reads more than this. */
 const MAX_GROUP_ORDERS = 20;
@@ -93,19 +96,33 @@ export default async function TenantConfirmPage({ params, searchParams }: { para
             </ul>
             <BillRowsView bill={billRows(order)} />
             {showsPayStep(state) && <Link href={payHref(slug, order.id, groupId)} className="kv-btn" data-kv-pay={order.id}>{t.t('checkout.payThis')}</Link>}
+            {/* PC-56 STORE-3a · C4 (W287): the deadline the 24 h clock enforces since HOTFIX-5 (never for an auction order), and "Track this order" */}
+            {showsDeadline(order) && <p className="kv-detail__muted" data-kv-deadline={order.id}>{t.t('store3a.confirm.deadline', { date: when(String(order.acceptanceDeadline), lang) })}</p>}
+            <p><Link href={orderHref(slug, order.id)} className="kv-btn--link" data-kv-track={order.id}>{t.t('store3a.confirm.track')}</Link></p>
           </article>
         );
       })}
 
       <p className="kv-cart__note">{t.t('store2c.escrow')}</p>
       <p className="kv-cart__note">{t.t('store2c.refund.true')}</p>
+      {/* PC-56 STORE-3a · C4 (W287 "What happens next"): what the code does next — the release step only for a paid order (founder D6: a
+          pay-on-delivery order is completed by the organisation, never released from an escrow it never reached) */}
+      <section className="kv-detail__section" aria-labelledby="next-h" data-kv-next="steps">
+        <h2 id="next-h">{t.t('store3a.confirm.nextTitle')}</h2>
+        <ol>
+          <li>{t.t('store3a.confirm.next.confirm')}</li>
+          <li>{t.t('store3a.confirm.next.journey')}</li>
+          {orders.some((o) => paymentStateOf(o) === 'paid') && <li data-kv-next="release">{t.t('store3a.confirm.next.release')}</li>}
+        </ol>
+      </section>
       <section className="kv-detail__section" aria-labelledby="refusals-h" data-kv-refusals="store2">
         <h2 id="refusals-h">{t.t('store2.refusal.title')}</h2>
         <ul>{CONFIRM_REFUSAL_KEYS.map((k) => <li key={k} data-kv-refusal={k}>{t.t(k)}</li>)}</ul>
       </section>
+      <RefusalList surface="confirm" />
 
       <div className="kv-confirm__actions">
-        <Link href="/orders" className="kv-btn--link">{t.t('checkout.viewOrders')}</Link>
+        <Link href={ordersHref(slug)} className="kv-btn--link" data-kv-view-orders="store">{t.t('checkout.viewOrders')}</Link>
         <Link href={`/${encodeURIComponent(slug)}`} className="kv-btn--link">{t.t('cart.continueShopping')}</Link>
       </div>
     </section>

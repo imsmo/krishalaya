@@ -30,7 +30,10 @@ import { StorefrontPublicReadModel, countryParam } from './storefront-public.rea
  *  PC-56 HOTFIX-4 · A8 (survey B23 / F-11 / F-16): + `online_payments` (founder D2 — the storefront honours it: OFF = no Pay step),
  *  `buyer_charges`, `offers`, `auctions`, `reviews` — all TENANT-scoped (answered only with an organisation in context), booleans only:
  *  a flag's rules, percentages and tenant lists never leave the API. */
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart'] as const);
+// PC-56 STORE-3a · B6 (founder D2, survey B28): + `disputes` — TENANT-scoped and fail-closed like `offers` (a flag-store failure reads OFF): the
+// order page shows the dispute door only when the store's `disputes` flag is ON (seed 0009: OFF) and says "not available in this store"
+// otherwise — the form that always failed (survey F-11) is gone.
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
 /** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context).
  *  PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — a platform switch like org_self_signup. */

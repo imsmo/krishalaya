@@ -2,7 +2,7 @@
 // Order aggregate root. Pure domain: money in bigint minor units, status transitions ONLY via
 // the state machine (Law 5), optimistic-locked by `version`. Created in 'created' (COD-style)
 // or 'payment_pending' when online payment is required (the money step is owned by payments).
-import { OrderStatus, assertTransition, isCancellable } from './order.state';
+import { OrderStatus, assertTransition, isCancellable, IllegalOrderTransitionError } from './order.state';
 import { OrderItem } from './order-item.entity';
 import { OrderForbiddenError, OrderAwaitingPaymentError } from './orders.errors';
 import { OrderEventType, DomainEvent } from './orders.events';
@@ -33,6 +33,8 @@ export interface OrderProps {
    *  the checkout transaction). Null = reserved nothing (placed before 0209; an offer / auction / requirement order) or already released.
    *  Cleared ONLY by the restock handler, in the transaction that puts the stock back (OrderRepository.releaseReservationTx). */
   stockReservedAt?: Date | null;
+  /** PC-56 STORE-3a · B2 (0210 `orders.cancel_note`): the buyer's own words when the cancel reason's meta says textRequired (`other`). */
+  cancelNote?: string | null;
 }
 
 const ACCEPTANCE_WINDOW_MS = 24 * 3600_000;
@@ -194,12 +196,16 @@ export class Order {
     return true;
   }
 
-  cancel(by: string, reasonId: string | null, isBuyer: boolean): void {
-    if (!isCancellable(this.props.status)) throw new OrderForbiddenError(`Order cannot be cancelled in status ${this.props.status}`);
+  /** PC-56 STORE-3a · B2: + `reason` — the reason's CODE (carried in `orders.order_cancelled` as `reasonCode`, for consumers that must not read
+   *  the vocabulary) and the buyer's `note` (stored on the order). An order past `ready` refuses the cancel as the STATE MACHINE's refusal
+   *  (ORDER_ILLEGAL_TRANSITION, 409 — "it has moved forward"); it used to answer ORDER_FORBIDDEN (403), the code that also means "you are not a
+   *  party to this order", so a buyer could not be told which of the two had happened (found building W3085). */
+  cancel(by: string, reasonId: string | null, isBuyer: boolean, reason: { code?: string | null; note?: string | null } = {}): void {
+    if (!isCancellable(this.props.status)) throw new IllegalOrderTransitionError(this.props.status, 'cancelled');
     if (isBuyer && this.props.buyerUserId !== by) throw new OrderForbiddenError();
     if (!isBuyer && this.props.sellerUserId !== by) throw new OrderForbiddenError();
-    this.props.cancelReasonId = reasonId; this.props.cancelledBy = by;
-    this.to('cancelled', OrderEventType.Cancelled, { reasonId, by, role: isBuyer ? 'buyer' : 'seller', ...this.cancelFacts() }, by);
+    this.props.cancelReasonId = reasonId; this.props.cancelledBy = by; this.props.cancelNote = reason.note ?? null;
+    this.to('cancelled', OrderEventType.Cancelled, { reasonId, ...(reason.code ? { reasonCode: reason.code } : {}), by, role: isBuyer ? 'buyer' : 'seller', ...this.cancelFacts() }, by);
   }
 
   /** PC-56 STORE-2c · B1/B2 (founder D1, D3): what the cancel's consumers need, additively — the stock-release handler re-reads its own marker

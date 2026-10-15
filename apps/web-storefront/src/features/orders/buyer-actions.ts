@@ -3,8 +3,10 @@
 // reason enum (disputes/dto DISPUTE_REASON_CODES) — the server re-checks eligibility on every call; these
 // helpers reflect, never grant.
 
-/** Statuses from which the buyer may attempt a cancel (transitions to 'cancelled' in order_status). */
-const BUYER_CANCELABLE: ReadonlySet<string> = new Set(['created', 'payment_pending', 'confirmed', 'packed']);
+/** Statuses from which the buyer may attempt a cancel (transitions to 'cancelled' in order_status).
+ *  PC-56 STORE-3a · C2 (survey F-9): + `ready` — the API's `isCancellable` (apps/api orders/domain/order.state.ts) allows it, and the storefront
+ *  hid the cancel from a buyer who could still use it. Free, with a full refund to source, through `ready` (founder D1). */
+const BUYER_CANCELABLE: ReadonlySet<string> = new Set(['created', 'payment_pending', 'confirmed', 'packed', 'ready']);
 
 export function canCancelOrder(status: string | undefined | null): boolean {
   return !!status && BUYER_CANCELABLE.has(status);

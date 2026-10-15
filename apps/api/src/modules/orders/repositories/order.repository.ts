@@ -16,7 +16,7 @@ const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_
   subtotal_minor, delivery_fee_minor, discount_minor, tax_minor, commission_minor, platform_fee_minor, tds_minor,
   total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, quality_window_ends,
   cancel_reason_id, cancelled_by, version, created_at, completed_at, charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor,
-  stock_reserved_at`;
+  stock_reserved_at, cancel_note`;
 /** PC-56 HOTFIX-5 · B1: the order was placed awaiting an online payment (its placement row in order_events, pruned from below by the order's own
  *  created_at). Used by the quality-window clock's claim — see domain/order-clocks.ts QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT. */
 const PLACED_AWAITING_PAYMENT = `EXISTS (SELECT 1 FROM order_events pe WHERE pe.tenant_id = orders.tenant_id AND pe.order_id = orders.id
@@ -35,7 +35,7 @@ function toDomain(r: any): Order {
     version: r.version, createdAt: r.created_at, completedAt: r.completed_at,
     commissionRuleSnapshot: r.charge_snapshot ?? null, commissionSnapshot: r.commission_snapshot ?? null,
     deliveryZoneId: r.delivery_zone_id ?? null, buyerCommissionMinor: r.buyer_commission_minor != null ? big(r.buyer_commission_minor) : 0n,
-    stockReservedAt: r.stock_reserved_at ?? null });
+    stockReservedAt: r.stock_reserved_at ?? null, cancelNote: r.cancel_note ?? null });
 }
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -227,14 +227,14 @@ export class OrderRepository {
   async update(tx: TxContext, order: Order, fromStatus: OrderStatus, actorUserId?: string | null): Promise<boolean> {
     const p = order.toProps();
     const r = await tx.query(
-      `UPDATE orders SET status=$4, quality_window_ends=$5, cancel_reason_id=$6, cancelled_by=$7, completed_at=$8,
+      `UPDATE orders SET status=$4, quality_window_ends=$5, cancel_reason_id=$6, cancelled_by=$7, completed_at=$8, cancel_note=$10,
          version=version+1, updated_at=now()
        WHERE id=$1 AND tenant_id=$2 AND created_at=$3 AND version=$9`,
       // PC-56 TENANT-11a (found while proving the auction default): `Order.systemCancel` records `cancelledBy = 'system'`,
       // and `orders.cancelled_by` / `order_events.actor_user_id` are uuid columns — so EVERY system cancel (the seller-confirm
       // timeout job's included) died 22P02 "invalid input syntax for type uuid". A system act has no person: it is stored
       // as NULL, and the timeline note says it was the system.
-      [p.id, p.tenantId, p.createdAt, p.status, p.qualityWindowEnds, p.cancelReasonId, personOrNull(p.cancelledBy), p.completedAt, p.version]);
+      [p.id, p.tenantId, p.createdAt, p.status, p.qualityWindowEnds, p.cancelReasonId, personOrNull(p.cancelledBy), p.completedAt, p.version, p.cancelNote ?? null]);
     if (r.rowCount === 0) return false;
     if (fromStatus !== p.status) {
       const actor = actorUserId !== undefined ? personOrNull(actorUserId) : personOrNull(p.cancelledBy);
@@ -254,17 +254,60 @@ export class OrderRepository {
    *  tenant-owner worklist) — mirrors the pattern stats()/getById() already use
    *  (sellerUserId: canModerate ? null : ctx.userId). RLS still scopes to the tenant;
    *  the caller (controller) enforces canModerateOrder before ever passing null. */
-  async listFor(tenantId: string, party: 'buyer' | 'seller', userId: string | null, opts: { status?: string; cursor?: { c: string; id: string }; limit: number }): Promise<Order[]> {
+  /** PC-56 STORE-3a · B1: + `statuses` — a buyer's tab (domain/order-groups.ts `statusesOf`), `status = ANY(…)`; keyset unchanged. */
+  async listFor(tenantId: string, party: 'buyer' | 'seller', userId: string | null, opts: { status?: string; statuses?: readonly string[] | null; cursor?: { c: string; id: string }; limit: number }): Promise<Order[]> {
     const col = party === 'buyer' ? 'buyer_user_id' : 'seller_user_id';
     const params: unknown[] = userId === null ? [tenantId] : [tenantId, userId];
     let where = userId === null ? `tenant_id=$1` : `tenant_id=$1 AND ${col}=$2`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (opts.status) where += ` AND status=${p(opts.status)}`;
+    if (opts.statuses) where += ` AND status = ANY(${p([...opts.statuses])}::order_status[])`;
     if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
     const lp = p(opts.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM orders WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
   }
+  /**
+   * PC-56 STORE-3a · B1 (founder D4, Law 11) — THE BUYER'S TAB COUNTS, BOUNDED. One query per group, each a `LIMIT cap + 1` over the buyer's
+   * OWN orders in this organisation (`idx`-friendly: tenant + buyer), so no count ever walks a buyer's whole history: a group holding more than
+   * `cap` orders answers `capped` and the tab says "cap+". Never a tenant-wide count for a buyer. `groups` maps each tab to its statuses
+   * (null = every status). Replica (a read).
+   */
+  async countGroupsForBuyer(tenantId: string, buyerUserId: string, groups: ReadonlyArray<{ group: string; statuses: readonly string[] | null }>, cap: number): Promise<Record<string, { count: number; capped: boolean }>> {
+    const db = this.replica.forTenant(tenantId);
+    const rows = await Promise.all(groups.map(async (g) => {
+      const r = g.statuses
+        ? await db.query<{ n: number }>(`SELECT count(*)::int n FROM (SELECT 1 FROM orders WHERE tenant_id=$1 AND buyer_user_id=$2 AND status = ANY($3::order_status[]) LIMIT $4) x`,
+          [tenantId, buyerUserId, [...g.statuses], cap + 1])
+        : await db.query<{ n: number }>(`SELECT count(*)::int n FROM (SELECT 1 FROM orders WHERE tenant_id=$1 AND buyer_user_id=$2 LIMIT $3) x`, [tenantId, buyerUserId, cap + 1]);
+      const n = Number(r.rows[0]?.n ?? 0);
+      return [g.group, { count: Math.min(n, cap), capped: n > cap }] as const;
+    }));
+    return Object.fromEntries(rows);
+  }
+
+  /**
+   * PC-56 STORE-3a · B2 (founder D5) — THE BUYER'S CANCEL REASON, read IN the cancel's transaction: an ACTIVE `cancel_reason` value visible to
+   * this organisation — a platform value (tenant_id NULL) the organisation has not shadowed with its own value of the same code, or the
+   * organisation's own value (the lookups read's rule, `lookups.service.ts`: a tenant row wins over the platform row). null = unknown.
+   */
+  async cancelReasonTx(tx: TxContext, tenantId: string, reasonId: string): Promise<{ code: string; textRequired: boolean } | null> {
+    const r = await tx.query<{ code: string; meta: Record<string, unknown> | null }>(
+      `SELECT lv.code, lv.meta FROM lookup_values lv
+        WHERE lv.id = $1 AND lv.type_code = 'cancel_reason' AND lv.is_active = true AND (lv.tenant_id IS NULL OR lv.tenant_id = $2::uuid)
+          AND NOT (lv.tenant_id IS NULL AND EXISTS (SELECT 1 FROM lookup_values t WHERE t.type_code = 'cancel_reason' AND t.tenant_id = $2::uuid
+                                                     AND t.code = lv.code AND t.is_active = true))`, [reasonId, tenantId]);
+    const x = r.rows[0];
+    return x ? { code: x.code, textRequired: x.meta?.textRequired === true } : null;
+  }
+  /** PC-56 STORE-3a · B2 — the CODE of an order's recorded cancel reason (for the order read's `cancelReasonCode`); null when none / unknown. */
+  async cancelReasonCodeOf(tenantId: string, reasonId: string | null): Promise<string | null> {
+    if (!reasonId) return null;
+    const r = await this.replica.forTenant(tenantId).query<{ code: string }>(
+      `SELECT code FROM lookup_values WHERE id = $1 AND type_code = 'cancel_reason' AND (tenant_id IS NULL OR tenant_id = $2::uuid)`, [reasonId, tenantId]);
+    return r.rows[0]?.code ?? null;
+  }
+
   /** Worker finder: orders in `statuses` whose `deadlineCol` has passed. Bounds the scan to
    *  recent partitions (created_at > now - 60d) and locks rows for the worker (SKIP LOCKED).
    *  PC-56 HOTFIX-5 · B2: `excludedSources` — the seller-confirm timeout never claims an auction order (founder D2). */

@@ -279,6 +279,8 @@ export interface StorefrontFlags {
   /** PC-56 STORE-2b (founder D2, 0208) — the PLATFORM kill-switch for buying (cart + checkout); always answered (a flag-store failure reads ON).
    *  OFF = the cart and checkout say buying is paused on this platform for now. */
   storefront_cart?: boolean;
+  /** PC-56 STORE-3a · B6 (founder D2) — tenant-scoped, fail-closed: the order page's dispute door shows only when ON (seed: OFF). */
+  disputes?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {
@@ -303,8 +305,17 @@ export interface PaymentSummary {
   /** STORE-2c · B3 — present on every read (null when not failed / not an order payment). */
   failureCode?: string | null; failureReason?: PaymentFailureReason | null; chargedNothing?: boolean | null; expiresAt?: string | null; attempt?: number | null;
 }
-/** PC-56 STORE-2c · B3 / C5 — an order's attempts as its buyer sees them; `nextAttempt` is the number the storefront's next key carries. */
-export interface OrderPaymentAttempts { latest: PaymentSummary | null; attempts: number; nextAttempt: number; liveAttempt: boolean; ttlSeconds: number | null; }
+/** PC-56 STORE-3a · B3 (survey B11) — what happened to the money of an order's captured payment, as its buyer may read it:
+ *  `none` (nothing captured, or the capture stands) · `initiated` (the refund to source was booked and asked of the provider) · `refunded` ·
+ *  `partial`. Instants are null when not recorded (a refund made before 0210). `gatewayRefundId` is the provider's reference (`rfnd_…`) the buyer
+ *  may quote to their bank — present once the source confirmed it; null for a wallet refund. */
+export interface OrderRefund {
+  state: 'none' | 'initiated' | 'refunded' | 'partial'; amountMinor: string; currencyCode: string | null;
+  initiatedAt: string | null; completedAt: string | null; gatewayRefundId: string | null;
+}
+/** PC-56 STORE-2c · B3 / C5 — an order's attempts as its buyer sees them; `nextAttempt` is the number the storefront's next key carries.
+ *  STORE-3a · B3: + `refund` (optional in the TYPE only — the API sends it on every read since STORE-3a). */
+export interface OrderPaymentAttempts { latest: PaymentSummary | null; attempts: number; nextAttempt: number; liveAttempt: boolean; ttlSeconds: number | null; refund?: OrderRefund; }
 /** A GST trade invoice for an order (totals minor-unit strings; tax split in taxBreakup). NON-PII. */
 export interface InvoiceSummary { id: string; invoiceNo: string; orderId: string; sellerGstin: string | null; buyerGstin: string | null; totalMinor: string; taxBreakup: Record<string, unknown>; pdfMediaId: string | null; createdAt: string; }
 /** A short-lived presigned PDF download URL for an invoice. */
@@ -509,6 +520,8 @@ export interface OrderListItem {
   // The API sends these four on EVERY row since HOTFIX-5; they are optional in the TYPE only so pre-HOTFIX-5 object literals (mobile's
   // fixtures — the 89-error tsc baseline) still compile. Read them as present.
   currencyCode?: string; paymentState?: OrderPaymentState; acceptanceDeadline?: string | null; organisation?: OrderOrganisation | null;
+  /** PC-56 STORE-3a · C1: the order's source (`direct` · `auction` · `offer` · …) — an auction order's acceptance deadline is not its own. */
+  source?: string;
   /** @deprecated for buyer lists — absent there (HOTFIX-5 · B3). The seller's / moderator's list still carry it. */
   counterparty?: string | null; createdAt?: string;
   /** The order's primary (first) line item — crop title + qty for the list card (screen 56). null when no items. */
@@ -540,7 +553,30 @@ export interface OrderDetail {
   checkoutGroupId?: string | null;
   acceptanceDeadline?: string | null; qualityWindowEnds?: string | null; createdAt?: string; completedAt?: string | null;
   items: OrderItemLine[];
+  /** PC-56 STORE-3a · B4 (survey B3): what the order still needs paid and the auction deposit already applied to it — the payments module's ONE
+   *  rule (total − the deposit applied in escrow; '0' applied for every non-auction order). Server figures: never computed by a client.
+   *  Optional in the TYPE only (mobile's 89-error baseline); the API sends both on every read. */
+  amountDueMinor?: string; depositAppliedMinor?: string;
+  /** PC-56 STORE-3a · B2: the CODE of the recorded cancel reason (`cancel_reason` vocabulary, 0210) — both views. */
+  cancelReasonCode?: string | null;
+  /** PC-56 STORE-3a · B2: the buyer's own words for `other` — the SELLER's / staff's view only (absent from the buyer's). */
+  cancelNote?: string | null;
 }
+/** PC-56 STORE-3a · B1 (founder D4) — the buyer's order tabs (apps/api orders/domain/order-groups.ts). */
+export const ORDER_GROUPS = Object.freeze(['all', 'active', 'attention', 'completed', 'cancelled'] as const);
+export type OrderGroup = (typeof ORDER_GROUPS)[number];
+/** One tab's bounded count: `capped` = more than the API's cap exist (print "cap+", never a guessed number). */
+export interface OrderGroupCount { count: number; capped: boolean }
+export type OrderGroupCounts = Record<OrderGroup, OrderGroupCount>;
+/** PC-56 STORE-3a — the order acts' refusals, BY NAME, for a client's code → message map:
+ *  CANCEL_REASON_REQUIRED · CANCEL_REASON_UNKNOWN {reasonId} · CANCEL_NOTE_REQUIRED {reasonCode} (422) · ORDER_COMPLETE_REQUIRES_ESCROW {orderId}
+ *  (409 — the buyer's "received" on an order never paid into escrow; nothing moved) · ORDER_ILLEGAL_TRANSITION {from, to} (409 — it has moved
+ *  forward) · ORDER_FORBIDDEN (403 — not a party) · ORDER_CONCURRENCY_CONFLICT (409 — retry with the same key). */
+export const ORDER_REFUSAL_CODES = Object.freeze([
+  'CANCEL_REASON_REQUIRED', 'CANCEL_REASON_UNKNOWN', 'CANCEL_NOTE_REQUIRED', 'ORDER_COMPLETE_REQUIRES_ESCROW', 'ORDER_ILLEGAL_TRANSITION', 'ORDER_FORBIDDEN',
+  'ORDER_CONCURRENCY_CONFLICT',
+] as const);
+export type OrderRefusalCode = (typeof ORDER_REFUSAL_CODES)[number];
 
 // --- logistics (module 5) — shipment + proof-of-delivery ---
 export interface Shipment {

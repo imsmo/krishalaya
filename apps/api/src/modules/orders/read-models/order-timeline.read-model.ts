@@ -11,6 +11,7 @@ import { Injectable } from '@nestjs/common';
 import { OrderRepository } from '../repositories/order.repository';
 import { QueryOrderDto } from '../dto/query-order.dto';
 import { orderPaymentState } from '../domain/order-payment-state';
+import { ORDER_GROUPS, ORDER_GROUP_COUNT_CAP, OrderGroup, statusesOf } from '../domain/order-groups';
 
 const enc = (s: string) => Buffer.from(s).toString('base64url');
 const dec = (s: string) => Buffer.from(s, 'base64url').toString('utf8');
@@ -23,7 +24,8 @@ export class OrderTimelineReadModel {
   async list(tenantId: string, userId: string | null, q: QueryOrderDto) {
     let cursor: { c: string; id: string } | undefined;
     if (q.cursor) { try { cursor = JSON.parse(dec(q.cursor)); } catch { /* first page */ } }
-    const rows = await this.repo.listFor(tenantId, q.role, userId, { status: q.status, cursor, limit: q.limit + 1 });
+    // PC-56 STORE-3a · B1: `?group=` — the buyer's tab, as the statuses of ONE mapping (domain/order-groups.ts); keyset as before
+    const rows = await this.repo.listFor(tenantId, q.role, userId, { status: q.status, statuses: q.group ? statusesOf(q.group) : null, cursor, limit: q.limit + 1 });
     const hasMore = rows.length > q.limit;
     const page = hasMore ? rows.slice(0, q.limit) : rows;
     // Enrich each card with its PRIMARY line item (crop title + qty) + total item count (screen 56 seller list /
@@ -38,7 +40,8 @@ export class OrderTimelineReadModel {
       const pi = primary.get(p.id) ?? null;
       const f = facts.get(p.id) ?? { placedAwaitingPayment: false, cancelledFrom: null, cancelledBySystem: false };
       return {
-        id: p.id, orderNo: p.orderNo, status: p.status, totalMinor: p.totalMinor.toString(), currencyCode: p.currencyCode,
+        // PC-56 STORE-3a · C1: + `source` — an auction order's 24 h deadline is not its own (the clock excludes it; the balance window rules)
+        id: p.id, orderNo: p.orderNo, status: p.status, source: p.source, totalMinor: p.totalMinor.toString(), currencyCode: p.currencyCode,
         paymentState: orderPaymentState(p.status, f), acceptanceDeadline: p.acceptanceDeadline ?? null,
         organisation, createdAt: p.createdAt,
         ...(buyerView ? {} : { counterparty: q.role === 'buyer' ? p.sellerUserId : p.buyerUserId }),
@@ -50,5 +53,12 @@ export class OrderTimelineReadModel {
     const last = page[page.length - 1];
     const nextCursor = hasMore && last ? enc(JSON.stringify({ c: new Date(last.toProps().createdAt).toISOString(), id: last.id })) : null;
     return { items, nextCursor };
+  }
+
+  /** PC-56 STORE-3a · B1 (founder D4, Law 11): the five tabs' counts for THE CALLER AS BUYER — each bounded (`cap`, injectable so the live spec
+   *  proves capping with a small one); a tab past the cap says `capped`. Never a tenant-wide count. */
+  async groupCounts(tenantId: string, buyerUserId: string, cap: number = ORDER_GROUP_COUNT_CAP): Promise<Record<OrderGroup, { count: number; capped: boolean }>> {
+    const c = await this.repo.countGroupsForBuyer(tenantId, buyerUserId, ORDER_GROUPS.map((g) => ({ group: g, statuses: statusesOf(g) })), cap);
+    return Object.fromEntries(ORDER_GROUPS.map((g) => [g, c[g] ?? { count: 0, capped: false }])) as Record<OrderGroup, { count: number; capped: boolean }>;
   }
 }

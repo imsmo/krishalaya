@@ -4,19 +4,24 @@
 // client only reflects what's allowed. Lifecycle POSTs carry an Idempotency-Key (Law 3): a retried "confirm" from a
 // flaky network can't double-apply. Money is bigint minor-unit strings (Law 2).
 import { HttpClient } from '../http';
-import { CheckoutGroupDetail, OrderListItem, OrderDetail, WalletPaymentResult, OrderTracking, OrderBuyerSummary, Page, OrderViewCounts, ConsoleOrderRow, OrderTimelineEvent, OrderMoneyBox } from '../types';
+import { CheckoutGroupDetail, OrderListItem, OrderDetail, WalletPaymentResult, OrderTracking, OrderBuyerSummary, Page, OrderViewCounts, ConsoleOrderRow, OrderTimelineEvent, OrderMoneyBox, OrderGroup, OrderGroupCounts } from '../types';
 
 export type OrderRole = 'buyer' | 'seller';
 
 export class OrdersResource {
   constructor(private readonly http: HttpClient) {}
 
-  /** The caller's orders as buyer or seller, optionally filtered by status. Keyset-paged. */
-  async list(params: { role: OrderRole; status?: string; cursor?: string; limit?: number }, signal?: AbortSignal): Promise<Page<OrderListItem>> {
+  /** The caller's orders as buyer or seller, optionally filtered by status — or (PC-56 STORE-3a · B1) by the buyer's tab `group`
+   *  (all / active / attention / completed / cancelled; never both — the API refuses status + group). Keyset-paged. */
+  async list(params: { role: OrderRole; status?: string; group?: OrderGroup; cursor?: string; limit?: number }, signal?: AbortSignal): Promise<Page<OrderListItem>> {
     const r = await this.http.request<OrderListItem[]>('GET', 'orders', {
-      query: { role: params.role, status: params.status, cursor: params.cursor, limit: params.limit ?? 20 }, signal,
+      query: { role: params.role, status: params.status, group: params.group, cursor: params.cursor, limit: params.limit ?? 20 }, signal,
     });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** PC-56 STORE-3a · B1 (founder D4) — the caller's five tabs as BUYER, each `{ count, capped }` (bounded server-side; never tenant-wide). */
+  async groups(signal?: AbortSignal): Promise<OrderGroupCounts> {
+    return (await this.http.request<OrderGroupCounts>('GET', 'orders/groups', { signal })).data;
   }
   async get(id: string, signal?: AbortSignal): Promise<OrderDetail> {
     return (await this.http.request<OrderDetail>('GET', `orders/${encodeURIComponent(id)}`, { signal })).data;
@@ -43,9 +48,13 @@ export class OrdersResource {
   markPacked(id: string, idempotencyKey: string): Promise<{ ok: boolean }> { return this.transition(id, 'packed', idempotencyKey); }
   markReady(id: string, idempotencyKey: string): Promise<{ ok: boolean }> { return this.transition(id, 'ready', idempotencyKey); }
   markDelivered(id: string, idempotencyKey: string): Promise<{ ok: boolean }> { return this.transition(id, 'delivered', idempotencyKey); }
+  /** The buyer's "I received it" (or a moderator's completion). PC-56 STORE-3a · B5: idempotent on the key server-side; refused
+   *  ORDER_COMPLETE_REQUIRES_ESCROW for a buyer whose order was never paid into escrow (nothing moves). */
   complete(id: string, idempotencyKey: string): Promise<{ ok: boolean }> { return this.transition(id, 'complete', idempotencyKey); }
-  cancel(id: string, idempotencyKey: string, reasonId?: string): Promise<{ ok: boolean }> {
-    return this.http.request<{ ok: boolean }>('POST', `orders/${encodeURIComponent(id)}/cancel`, { idempotencyKey, body: { reasonId } }).then((r) => r.data);
+  /** PC-56 STORE-3a · B2: a BUYER's cancel needs `reasonId` (the `cancel_reason` vocabulary — `lookups.values('cancel_reason')`) and, for a
+   *  reason whose meta says textRequired (`other`), a `note` (≤ 280). Refused by name: CANCEL_REASON_REQUIRED / _UNKNOWN / CANCEL_NOTE_REQUIRED. */
+  cancel(id: string, idempotencyKey: string, reasonId?: string, note?: string): Promise<{ ok: boolean }> {
+    return this.http.request<{ ok: boolean }>('POST', `orders/${encodeURIComponent(id)}/cancel`, { idempotencyKey, body: { reasonId, ...(note ? { note } : {}) } }).then((r) => r.data);
   }
   /** Raise a dispute / report a problem with an order (free-text note; the server opens the case). */
   dispute(id: string, note: string, idempotencyKey: string): Promise<{ ok: boolean }> {

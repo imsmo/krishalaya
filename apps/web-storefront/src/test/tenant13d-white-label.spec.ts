@@ -69,7 +69,8 @@ describe('PC-56 TENANT-13d · colours, logo, mark, note', () => {
     expect(poweredByVisible('storefront', null)).toBe(true);
     // PC-56 STORE-2c · C1: the pay page moved under the organisation (`[tenantSlug]/checkout/pay`) — the platform route is a door; the trust mark
     // stays on the page that takes the money
-    for (const page of [['app', '[tenantSlug]', 'checkout', 'pay', 'page.tsx'], ['app', '(platform)', 'orders', '[id]', 'page.tsx']]) expect(readFileSync(join(SRC, ...page), 'utf8')).toMatch(/poweredByVisible\('escrow'/);
+    // PC-56 STORE-3a · C2 (founder D3): the order page moved under the organisation too (`[tenantSlug]/orders/[id]`) — the mark moved with it
+    for (const page of [['app', '[tenantSlug]', 'checkout', 'pay', 'page.tsx'], ['app', '[tenantSlug]', 'orders', '[id]', 'page.tsx']]) expect(readFileSync(join(SRC, ...page), 'utf8')).toMatch(/poweredByVisible\('escrow'/);
   });
   it('the one-time note: never on a first visit; once for someone who saw an earlier version; never twice', () => {
     expect(brandNoteDecision(undefined, 3)).toEqual({ show: false, remember: 3 });
