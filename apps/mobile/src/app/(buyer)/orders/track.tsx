@@ -59,8 +59,12 @@ export default function BuyerTrack() {
   const lastLoc = lastKnownLocation(tracking?.shipmentEvents);
 
   const messageFarmer = async () => {
-    const convo = await openDirect(order.sellerUserId, orderId).catch(() => null);
-    if (convo) router.push({ pathname: '/(buyer)/chat/[id]', params: { id: convo.id, peerId: order.sellerUserId } });
+    // PC-56 HOTFIX-5 · B3 (HOTFIX-4 D3): the buyer's order read names the organisation, never the seller's person id — with no id there is no
+    // one to open a direct thread with (buyer → organisation messaging is founder Q8; the mobile adaptation is owed). No-op, never a crash.
+    const sellerId = order.sellerUserId;
+    if (!sellerId) return;
+    const convo = await openDirect(sellerId, orderId).catch(() => null);
+    if (convo) router.push({ pathname: '/(buyer)/chat/[id]', params: { id: convo.id, peerId: sellerId } });
   };
   const callDriver = async () => {
     if (!riderId) return;

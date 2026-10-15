@@ -48,7 +48,7 @@ import {
   AuctionNotFoundError, AuctionForbiddenError, AuctionConcurrencyError, InvalidAuctionError, AuctionReasonRequiredError,
   AuctionConsentRequiredError, AuctionCancelLiveForbiddenError, AuctionActNotAllowedError, AuctionListingUnavailableError,
 } from '../domain/auctions.errors';
-import { BALANCE_DUE_MS, emdApplied, emdApplyKey, emdExcessKey, emdForfeitKey, emdReleaseKey, emdReturnKey } from '../domain/lot';
+import { BALANCE_DUE_MS, emdApplied, emdApplyKey, emdExcessKey, emdForfeitKey, emdPaidCancelReturnKey, emdReleaseKey, emdReturnKey } from '../domain/lot';
 import { cleanReason } from '../domain/display';
 import { Cursor, encodeCursor } from '../domain/cursor';
 import { AuctionRepository } from '../repositories/auction.repository';
@@ -236,6 +236,9 @@ export class AuctionService {
       if (!a || a.status !== 'settled') return 'skipped' as const;
       const s = await this.settlements.forAuctionForUpdate(tx, tenantId, auctionId);
       if (!s || s.outcome !== 'open' || s.collection !== 'online' || s.balanceDueAt.getTime() > now.getTime()) return 'skipped' as const;
+      // PC-56 HOTFIX-5 · B5 (found proving D4): an order ALREADY CANCELLED (the buyer walked away, its event not yet handled) is not "paid" —
+      // recording `paid` here would have made the forfeit impossible (0186: the outcome moves once). The cancel's own handler decides it.
+      if ((await this.auctionOrders.statusForUpdate(tx, tenantId, s.orderId)) === 'cancelled') return 'skipped' as const;
       const cancelled = await this.auctionOrders.cancelForDefaultInTx(tx, tenantId, s.orderId, auctionId);
       if (!cancelled) { await this.settlements.recordOutcome(tx, tenantId, s.id, 'paid'); return 'paid' as const; }
       listingId = a.listingId;
@@ -246,15 +249,26 @@ export class AuctionService {
     return out;
   }
 
-  /** `orders.order_cancelled` for an auction order (kv_app UoW, F-9 — never the relay's kv_relay tx): a BUYER cancel is a
-   *  walk-away → forfeit + defaulted; a seller / system cancel returns the applied EMD to the winner. Idempotent. */
-  async onOrderCancelled(tenantId: string, orderId: string, role: string, now: Date = new Date()): Promise<'defaulted' | 'returned' | 'skipped'> {
+  /** `orders.order_cancelled` for an auction order (kv_app UoW, F-9 — never the relay's kv_relay tx): a BUYER cancel of an UNPAID order is a
+   *  walk-away → forfeit + defaulted; a seller / system cancel of an unpaid order returns the applied EMD to the winner. Idempotent.
+   *  PC-56 HOTFIX-5 · B5 (founder D4, survey F-4a): a PAID order cancelled — by anyone — returns the applied EMD to the winner too
+   *  (`returnOnPaidCancelInTx`); before this the settlement's `paid` outcome made this a no-op and the deposit stayed in platform escrow, owned
+   *  by nobody, while 2c refunded only the balance. "Paid" is the ORDER's own timeline fact (`payment_pending → confirmed` happens only through
+   *  the capture), not the settlement outcome alone — the relay may deliver this cancel before `payments.payment_succeeded`. */
+  async onOrderCancelled(tenantId: string, orderId: string, role: string, now: Date = new Date()): Promise<'defaulted' | 'returned' | 'returned_paid' | 'skipped'> {
     let listingId: string | null = null;
     const out = await this.uow.run(tenantId, async (tx) => {
       const s = await this.settlements.forOrderForUpdate(tx, tenantId, orderId);
-      if (!s || s.outcome !== 'open') return 'skipped' as const;
+      if (!s || (s.outcome !== 'open' && s.outcome !== 'paid')) return 'skipped' as const;
       const a = await this.repo.getForUpdate(tx, tenantId, s.auctionId);
       if (!a || a.status !== 'settled') return 'skipped' as const;
+      if ((await this.auctionOrders.statusForUpdate(tx, tenantId, orderId)) !== 'cancelled') return 'skipped' as const;
+      if (await this.auctionOrders.paidBeforeCancelInTx(tx, tenantId, orderId)) {
+        if (!(await this.returnOnPaidCancelInTx(tx, tenantId, a, s, role, now))) return 'skipped' as const;
+        listingId = a.listingId;
+        return 'returned_paid' as const;
+      }
+      if (s.outcome !== 'open') return 'skipped' as const;                          // recorded `paid` yet unpaid by the timeline — named, not guessed
       listingId = a.listingId;
       if (role === 'buyer') {
         await this.forfeitInTx(tx, tenantId, a, s, now, 'the winner cancelled the order — the EMD was forfeited to the seller');
@@ -276,6 +290,42 @@ export class AuctionService {
     }, { userId: SYSTEM });
     if (listingId) await this.listings.invalidate(tenantId, listingId);
     return out;
+  }
+
+  /**
+   * PC-56 HOTFIX-5 · B5 (founder D4) — THE DEPOSIT GOES BACK WHEN A PAID AUCTION ORDER IS CANCELLED. In the cancel's own kv_app transaction,
+   * under the auction's and the settlement's row locks:
+   *   • ONE ledger transaction `emd_return` (0186's txn type, reused — escrow −EMD → winner Main +EMD, zero-sum), keyed `emd-return:<orderId>`,
+   *     referenced to the order — 2c's `refund:<orderId>` returns the BALANCE the winner paid; this returns the DEPOSIT applied to the same
+   *     order, so the platform escrow ends holding nothing for it;
+   *   • the settlement outcome: `open` → `returned` (with the txn); an outcome already `paid` stays `paid` — 0186's trigger lets an outcome
+   *     move once, and the CHECK has no `cancelled_paid` — the return is then recorded by the ledger txn, the auction event and the audit row;
+   *   • the lot restocked (the listing back on sale), once — `auction_events` 'paid_order_cancelled' is the once-marker (an EMD of 0 posts no
+   *     ledger txn to guard it);
+   *   • audit `auction.emd_returned` + `auctions.emd_returned` on the outbox (the winner's notice).
+   * A replayed cancel finds the marker and moves nothing. Returns whether THIS call returned it.
+   */
+  private async returnOnPaidCancelInTx(tx: TxContext, tenantId: string, a: Auction, s: SettlementRow, role: string, now: Date): Promise<boolean> {
+    if (await this.repo.hasEventTx(tx, tenantId, a.id, 'paid_order_cancelled')) return false;
+    let retTxn: string | null = null;
+    if (s.emdAppliedMinor > 0n) {
+      retTxn = (await this.wallet.post(tx, { tenantId, txnType: 'emd_return', idempotencyKey: emdPaidCancelReturnKey(s.orderId), referenceType: 'order', referenceId: s.orderId, initiatedBy: SYSTEM,
+        description: `auction ${a.toProps().auctionNo ?? a.id}: a paid order was cancelled — the winner's applied EMD returned`,
+        legs: [{ account: platform(PlatformAccount.Escrow), amountMinor: -s.emdAppliedMinor }, { account: userMain(s.winnerUserId), amountMinor: s.emdAppliedMinor }] })).txnId;
+    }
+    const outcomeBefore = s.outcome;
+    if (s.outcome === 'open') await this.settlements.recordOutcome(tx, tenantId, s.id, 'returned', { ret: retTxn });
+    await this.listings.restockInTx(tx, tenantId, a.listingId, Number(a.quantity));
+    await this.repo.recordEvent(tx, tenantId, a.id, 'paid_order_cancelled', { orderId: s.orderId, role, emdReturnedMinor: s.emdAppliedMinor.toString(), ledgerTxnId: retTxn, at: now.toISOString() });
+    await this.audit.write(tx, { tenantId, actorUserId: null, action: 'auction.emd_returned', entityType: 'auction', entityId: a.id, ip: null,
+      reason: `a PAID order was cancelled by the ${role === 'buyer' ? 'buyer' : role === 'seller' ? 'seller' : 'system'} — the winner's applied EMD went back to them (the balance is refunded to source by payments)`,
+      oldValue: { settlement: outcomeBefore }, newValue: { settlement: outcomeBefore === 'open' ? 'returned' : outcomeBefore, emdReturnedMinor: s.emdAppliedMinor.toString(), orderId: s.orderId,
+        idempotencyKey: emdPaidCancelReturnKey(s.orderId), ledgerTxnId: retTxn, listingStatus: 'published' } });
+    if (s.emdAppliedMinor > 0n) {
+      await this.outbox.write(tx, { tenantId, aggregateType: 'auction', aggregateId: a.id, eventType: AuctionEventType.EmdReturned,
+        payload: { v: 1, auctionId: a.id, orderId: s.orderId, bidderUserId: s.winnerUserId, amountMinor: s.emdAppliedMinor.toString(), paidOrderCancelled: true } });
+    }
+    return true;
   }
 
   /** `payments.payment_succeeded` for an auction order (kv_app UoW): the balance is paid — the settlement is `paid`. */
@@ -533,7 +583,7 @@ export class AuctionService {
     const l = await this.listingOf(tenantId, p.listingId);
     const orderValue = a.lotValue(win.amountMinor);
     const order = await this.auctionOrders.createInTx(tx, {
-      tenantId, auctionId: p.id, listingId: p.listingId, productId: l.productId, title: l.title, currencyCode: l.currencyCode ?? 'INR',
+      tenantId, auctionId: p.id, listingId: p.listingId, productId: l.productId, title: l.title, currencyCode: l.currencyCode,   // PC-56 HOTFIX-5 · B4: the listing's (AuctionOrderService refuses none — never 'INR')
       sellerUserId: l.sellerUserId, buyerUserId: win.bidderUserId, quantity: p.quantity, unitCode: p.unitCode,
       unitPriceMinor: win.amountMinor, expectedLotValueMinor: orderValue, now,
     });

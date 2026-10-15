@@ -12,6 +12,8 @@ import { DomainEvent } from '../domain/orders.events';
 import { OrderNotFoundError, OrderConcurrencyError, OrderForbiddenError } from '../domain/orders.errors';
 import { OrderRepository } from '../repositories/order.repository';
 import { orderPaymentState, OrderPaymentFacts } from '../domain/order-payment-state';
+import { QUALITY_WINDOW_REASON, QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT, SELLER_CONFIRM_TIMEOUT_REASON, qualityWindowDue, sellerConfirmTimeoutDue } from '../domain/order-clocks';
+import { OrderViewerRole, viewerRoleOf } from '../domain/order-event-roles';
 
 export interface OrderActor { userId: string; canModerate: boolean; }
 
@@ -33,7 +35,7 @@ export class OrderService {
         opts.preCheck?.(order);
         const from = order.status;
         mutate(order);
-        const ok = await this.repo.update(tx, order, from);
+        const ok = await this.repo.update(tx, order, from, actor.userId);   // HOTFIX-5 · B3: the hop records who made it
         if (!ok) throw new OrderConcurrencyError(id);
         await this.flush(tx, tenantId, id, order.pullEvents());
         await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: `order.${action}`, entityType: 'order', entityId: id, oldValue: { status: from }, newValue: { status: order.status }, ip: opts.auditIp ?? null });
@@ -56,12 +58,76 @@ export class OrderService {
     });
   }
 
+  /* ------------------------------------------------------------------------------------------------------------------------------ */
+  /* PC-56 HOTFIX-5 · B1 (founder D2) — THE TWO ORDER CLOCKS' ACTS. Each runs in its OWN kv_app transaction, re-locks the row, re-checks */
+  /* the clock's rule on it (domain/order-clocks.ts) and returns false when there is nothing to do — so a second tick, or a row claimed  */
+  /* by two ticks, changes nothing: the state machine and the rule refuse, the version guard catches a racing write.                    */
+  /* ------------------------------------------------------------------------------------------------------------------------------ */
+
+  /** The 24 h seller-confirm timeout: a `created` / `payment_pending` order (never an auction's) past its acceptance deadline is cancelled
+   *  by the SYSTEM. `orders.order_cancelled` carries the 2c payload (`stockReserved`, buyer, seller, total, currency, role `system`), so the
+   *  restock (orders) and the refund-to-source (payments) handlers fire exactly as they do for a buyer's cancel. Audited, no person. */
+  async timeoutCancel(tenantId: string, id: string, now: Date = new Date()): Promise<boolean> {
+    return this.uow.run(tenantId, async (tx) => {
+      const order = await this.repo.getForUpdate(tx, tenantId, id);
+      if (!order) return false;
+      const p = order.toProps();
+      if (!sellerConfirmTimeoutDue(p, now)) return false;
+      const from = order.status;
+      order.systemCancel(SELLER_CONFIRM_TIMEOUT_REASON);
+      if (!(await this.repo.update(tx, order, from))) throw new OrderConcurrencyError(id);
+      await this.flush(tx, tenantId, id, order.pullEvents(), { reason: SELLER_CONFIRM_TIMEOUT_REASON });
+      await this.audit.write(tx, { tenantId, actorUserId: null, action: 'order.auto_cancelled', entityType: 'order', entityId: id, ip: null,
+        reason: 'the seller did not confirm within the acceptance window — the order was cancelled by the system',
+        oldValue: { status: from, acceptanceDeadline: p.acceptanceDeadline }, newValue: { status: 'cancelled', stockReserved: !!p.stockReservedAt } });
+      return true;
+    }, { userId: 'system' });
+  }
+
+  /** The quality-window auto-complete: a `delivered` order past `quality_window_ends` — PAID ONLINE into escrow (QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT) —
+   *  completes as the SYSTEM. `Order.complete` emits
+   *  `orders.order_completed` with the same settlement payload a buyer's receipt or a moderator's completion emits — the payments module's
+   *  OrderCompletedHandler → OrderSettlementService.settle releases escrow under `settle:<orderId>` (one path, one key). Audited. */
+  async autoComplete(tenantId: string, id: string, now: Date = new Date()): Promise<boolean> {
+    return this.uow.run(tenantId, async (tx) => {
+      const order = await this.repo.getForUpdate(tx, tenantId, id);
+      if (!order) return false;
+      const p = order.toProps();
+      if (!qualityWindowDue(p, now)) return false;
+      // fail closed: only an order whose money reached escrow by an online capture (domain/order-clocks.ts — a pay-on-delivery order's
+      // completion would credit the seller from an escrow that never held it)
+      if (QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT && !(await this.repo.placedAwaitingPaymentTx(tx, tenantId, id))) return false;
+      const from = order.status;
+      order.complete(now);
+      if (!(await this.repo.update(tx, order, from, 'system'))) throw new OrderConcurrencyError(id);
+      await this.flush(tx, tenantId, id, order.pullEvents(), { reason: QUALITY_WINDOW_REASON });
+      await this.audit.write(tx, { tenantId, actorUserId: null, action: 'order.auto_completed', entityType: 'order', entityId: id, ip: null,
+        reason: 'the quality window closed with no dispute — the order was completed by the system and its escrow released to the seller',
+        oldValue: { status: from, qualityWindowEnds: p.qualityWindowEnds }, newValue: { status: 'completed', totalMinor: p.totalMinor.toString(), currencyCode: p.currencyCode } });
+      return true;
+    }, { userId: 'system' });
+  }
+
+  /** PC-56 HOTFIX-5 · B3 — who is reading this order, for the reads that answer differently by role (the buyer never receives a person's
+   *  id or name). 404s a stranger exactly like `getById`. */
+  async viewerOf(tenantId: string, actor: OrderActor, id: string): Promise<{ role: OrderViewerRole; createdAt: Date; buyerUserId: string; sellerUserId: string }> {
+    const order = await this.repo.getVisible(tenantId, id, actor.userId, actor.canModerate);
+    if (!order) throw new OrderNotFoundError(id);
+    const p = order.toProps();
+    return { role: viewerRoleOf(actor, p), createdAt: new Date(p.createdAt), buyerUserId: p.buyerUserId, sellerUserId: p.sellerUserId };
+  }
+
   async getById(tenantId: string, actor: OrderActor, id: string) {
     const order = await this.repo.getVisible(tenantId, id, actor.userId, actor.canModerate);
     if (!order) throw new OrderNotFoundError(id);
-    const [items, facts] = await Promise.all([this.repo.itemsOf(tenantId, id), this.repo.paymentFacts(tenantId, id)]);
     const p = order.toProps();
-    return { ...this.serialize(p, facts), items };
+    const role = viewerRoleOf(actor, p);
+    const [items, facts, organisation] = await Promise.all([this.repo.itemsOf(tenantId, id), this.repo.paymentFacts(tenantId, id), this.repo.organisationOf(tenantId)]);
+    const all = this.serialize(p, facts);
+    // PC-56 HOTFIX-5 · B3 (HOTFIX-4 D3, survey F-7): the BUYER's view names the ORGANISATION, never a person's id — the seller console and
+    // moderation keep both parties (the HOTFIX-4 owner / non-owner precedent).
+    if (role === 'buyer') { const { buyerUserId: _b, sellerUserId: _s, ...safe } = all; void _b; void _s; return { ...safe, organisation, items }; }
+    return { ...all, organisation, items };
   }
 
   /**
@@ -103,7 +169,7 @@ export class OrderService {
       checkoutGroupId: p.checkoutGroupId, createdAt: p.createdAt, completedAt: p.completedAt };
   }
 
-  private async flush(tx: TxContext, tenantId: string, orderId: string, events: DomainEvent[]) {
-    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'order', aggregateId: orderId, eventType: e.type, payload: { v: 1, ...e.payload } });
+  private async flush(tx: TxContext, tenantId: string, orderId: string, events: DomainEvent[], extra: Record<string, unknown> = {}) {
+    for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'order', aggregateId: orderId, eventType: e.type, payload: { v: 1, ...extra, ...e.payload } });
   }
 }

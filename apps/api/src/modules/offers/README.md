@@ -24,8 +24,10 @@ the `offers` feature flag (default OFF).
   `orders.order_from_offer_created`; this module's `OrderFromOfferCreatedHandler` consumes that and
   links back (`converted_order_id`, status → `converted`). Each handler is idempotent and touches only
   its own module's tables — the two steps are atomic per relay tx and decoupled via the outbox.
-- **Expiry** — the `expire-offers` worker job lapses `open|countered` offers past `expires_at`
-  (kv_relay pool, `FOR UPDATE SKIP LOCKED`, bounded, idempotent).
+- **Expiry** — the `offers-expire` clock (PC-56 HOTFIX-5: REGISTERED in `SCHEDULED_JOB_REGISTRY`; it ran
+  nowhere before) lapses `open|countered` offers past `expires_at`: tenants from `tenants` on the runner's
+  kv_relay pool (kv_relay holds no grant on `listing_offers`), the claim per tenant as kv_app (`FOR UPDATE
+  SKIP LOCKED`, bounded), each act idempotent. Offer reads carry the LISTING's `currencyCode` (no column of their own).
 
 ## Security properties (threats considered)
 - **Tenant isolation (Law 1)** — `tenant_id` in every query + RLS. `listing_offers` was added in

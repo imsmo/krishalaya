@@ -57,4 +57,6 @@ export const emdReleaseKey = (auctionId: string, bidder: string) => `emd-release
 export const emdApplyKey = (auctionId: string) => `emd-apply:${auctionId}`;
 export const emdForfeitKey = (auctionId: string) => `emd-forfeit:${auctionId}`;
 export const emdReturnKey = (auctionId: string) => `emd-return:${auctionId}`;
+/** PC-56 HOTFIX-5 · B5 (founder D4): the applied EMD returned to the winner when a PAID auction order is cancelled — keyed on the ORDER. */
+export const emdPaidCancelReturnKey = (orderId: string) => `emd-return:${orderId}`;
 export const emdExcessKey = (auctionId: string) => `emd-excess:${auctionId}`;

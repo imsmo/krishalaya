@@ -52,7 +52,6 @@ export type { GroupLotActor } from '../policies/group-lot.policies';
 const NUDGE_EVERY_MS = 24 * 3600_000;
 const NUDGE_MAX_RECIPIENTS = 5000;
 const NUDGE_CHUNK = 200;
-const INR_MINOR_UNITS = 2;
 /** A pooled-price figure is printed only from at least this many confirmed pooled sales of the product (brief B). */
 export const POOLED_MIN_SALES = 3;
 /** The audience rule the nudge uses — named on screen (A5: define "non-pledger" precisely from what the DB has). */
@@ -333,6 +332,14 @@ export class GroupLotService {
     }, { userId: actor.userId });
   }
 
+  /** PC-56 HOTFIX-5 · B4 (Rule Zero): the lot's money is in the organisation's currency (GroupLotRepository.currencyTx) — refused by name
+   *  when the organisation has none, never defaulted to 'INR'. */
+  private async currencyOf(tx: TxContext, tenantId: string): Promise<{ code: string; minorUnits: number }> {
+    const c = await this.repo.currencyTx(tx, tenantId);
+    if (!c) throw new InvalidGroupLotError('the organisation has no currency (its country carries none)', 'GROUP_LOT_CURRENCY_UNKNOWN');
+    return c;
+  }
+
   /** A2 — ready → listed: ONE listing through the listings module's public service, the coordinator's, for the pledged quantity. */
   async listLot(tenantId: string, actor: GroupLotActor, idemKey: string, id: string, dto: ListLotDto, ip: string | null = null) {
     return this.idem.remember(idemKey, actor.userId, 'group_lot.list', () =>
@@ -344,10 +351,11 @@ export class GroupLotService {
           const p = lot.toProps();
           const product = await this.repo.product(tx, tenantId, p.productId);
           if (!product) throw new InvalidGroupLotError('unknown product', 'GROUP_LOT_PRODUCT_UNKNOWN');
+          const currency = await this.currencyOf(tx, tenantId);   // PC-56 HOTFIX-5 · B4: the organisation's currency, never 'INR'
           const listing = await this.listings.createForGroupLotInTx(tx, tenantId, {
             groupLotId: id, sellerUserId: p.coordinatorUserId, productId: p.productId, categoryId: product.categoryId,
             title: `${product.name} — ${p.lotNo}`, description: null, quantity: p.pledgedQuantity, unitCode: p.unitCode,
-            pricePerUnitMinor: BigInt(dto.pricePerUnitMinor), currencyCode: 'INR', createdBy: actor.userId,
+            pricePerUnitMinor: BigInt(dto.pricePerUnitMinor), currencyCode: currency.code, createdBy: actor.userId,
           });
           lot.markListed(listing.id, new Date());
           await this.repo.update(tx, lot, actor.userId);
@@ -488,12 +496,13 @@ export class GroupLotService {
       const settled = sl.netMinor + topUp;
       const gross = lotProceeds(settled, lotLines, orderLines);
       if (gross <= 0n) return unrecorded('the order settled nothing to the seller');
+      const currency = await this.currencyOf(tx, tenantId);   // PC-56 HOTFIX-5 · B4: the legs in the organisation's currency
       let txnId: string;
       try {
         txnId = (await this.wallet.post(tx, { tenantId, txnType: GROUP_LOT_TXN.Hold, idempotencyKey: holdKey(lotId), referenceType: GROUP_LOT_REFERENCE_TYPE, referenceId: lotId,
-          initiatedBy: 'system', description: 'Group-lot sale proceeds held until the pledgers are paid', legs: holdLegs(p.coordinatorUserId, gross) })).txnId;
+          initiatedBy: 'system', description: 'Group-lot sale proceeds held until the pledgers are paid', legs: holdLegs(p.coordinatorUserId, gross, currency.code) })).txnId;
       } catch (e) {
-        if (isFundsRefusal(e)) throw new HoldShortError(gross, await this.wallet.balanceMinor(tx, userMain(p.coordinatorUserId)).catch(() => 0n));
+        if (isFundsRefusal(e)) throw new HoldShortError(gross, await this.wallet.balanceMinor(tx, userMain(p.coordinatorUserId, currency.code)).catch(() => 0n));
         throw e;
       }
       lot.markSold({ orderId, grossMinor: gross, holdTxnId: txnId, now: new Date() });
@@ -562,10 +571,11 @@ export class GroupLotService {
           if (p.status !== 'sold' || !p.holdTxnId || p.grossProceedsMinor == null || p.grossProceedsMinor !== st.grossMinor) {
             throw new SettlementStateError('GROUP_LOT_NOT_SOLD', 'the lot is not sold, or its held proceeds differ from the prepared gross');
           }
-          const held = await this.wallet.balanceMinor(tx, userHold(p.coordinatorUserId));
+          const currency = await this.currencyOf(tx, tenantId);   // PC-56 HOTFIX-5 · B4: the organisation's currency and its exponent
+          const held = await this.wallet.balanceMinor(tx, userHold(p.coordinatorUserId, currency.code));
           if (held < st.grossMinor) throw new HoldShortError(st.grossMinor, held);
           const lines = await this.settlements.lines(tenantId, st.id, tx);
-          const legs = settleLegs(p.coordinatorUserId, st.grossMinor, st.feeMinor, lines.map((l) => ({ farmerUserId: l.farmerUserId, shareMinor: l.shareMinor })));
+          const legs = settleLegs(p.coordinatorUserId, st.grossMinor, st.feeMinor, lines.map((l) => ({ farmerUserId: l.farmerUserId, shareMinor: l.shareMinor })), currency.code);
           let txnId: string;
           try {
             txnId = (await this.wallet.post(tx, { tenantId, txnType: GROUP_LOT_TXN.Settle, idempotencyKey: settleKey(id), referenceType: GROUP_LOT_REFERENCE_TYPE, referenceId: id,
@@ -590,7 +600,7 @@ export class GroupLotService {
           const product = await this.productName(tx, tenantId, p.productId);
           for (const l of lines) {
             await this.outbox.write(tx, { tenantId, aggregateType: 'group_lot', aggregateId: id, eventType: GroupLotEventType.Settled,
-              payload: { v: 1, groupLotId: id, lotNo: p.lotNo, product, share: moneyText(l.shareMinor, 'INR', INR_MINOR_UNITS), shareMinor: l.shareMinor.toString(), recipientUserIds: [l.farmerUserId] } });
+              payload: { v: 1, groupLotId: id, lotNo: p.lotNo, product, share: moneyText(l.shareMinor, currency.code, currency.minorUnits), shareMinor: l.shareMinor.toString(), recipientUserIds: [l.farmerUserId] } });
           }
           return { lot: lot.serialize(), settlementId: st.id, movedMinor: st.grossMinor.toString(), alreadyConfirmed: false, settlementTxnId: txnId };
         }, { userId: actor.userId })));

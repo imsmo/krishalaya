@@ -18,7 +18,9 @@ import { Order } from '../../domain/order.entity';
 import { OrderItem } from '../../domain/order-item.entity';
 import { OrderEventType, DomainEvent } from '../../domain/orders.events';
 
-function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.slice(0, 8).toUpperCase()}`; }
+// PC-56 HOTFIX-5 · B2: the order number is the ONE helper's (random bits); B4: the currency is the listing's (Rule Zero)
+import { orderNoFor } from '../../domain/order-no';
+import { currencyFromListing } from '../../domain/order-currency';
 
 @Injectable()
 export class OfferAcceptedHandler implements OutboxHandler {
@@ -57,8 +59,8 @@ export class OfferAcceptedHandler implements OutboxHandler {
       unitPriceMinor: BigInt(agreedPriceMinor), gstRatePct: null, hsnCode: null, batchId: null,
     });
     const order = Order.place({
-      id: orderId, tenantId, orderNo: orderNo(orderId), checkoutGroupId: null, buyerUserId,
-      sellerUserId, source: 'offer', offerId, currencyCode: l.currencyCode ?? 'INR', items: [item],
+      id: orderId, tenantId, orderNo: orderNoFor(orderId, now), checkoutGroupId: null, buyerUserId,
+      sellerUserId, source: 'offer', offerId, currencyCode: currencyFromListing(l.currencyCode, 'offer', offerId), items: [item],
       deliveryMethodId: null, deliveryAddressId: null, requiresPayment, now,
     });
     await this.repo.insertGraph(tx, order, [item]);

@@ -208,6 +208,7 @@ export type { RosterMember, RosterRole, RosterCensus, RosterQuery, MemberDetail,
 // PC-56 TENANT-2a · staff console + listing QC (W123/W126/W127)
 export { LISTING_IMPORT_COLUMNS, listingImportTemplateCsv } from './resources/bulk-imports';   // TENANT-2c
 export type { OrderWorkingView, OrderViewCounts, ConsoleOrderRow, OrderTimelineEvent, OrderMoneyBasis, OrderMoneyBox } from './types';   // TENANT-3a
+export type { OrderOrganisation, OrderActorRole } from './types';   // PC-56 HOTFIX-5 · B3
 export type { ConsoleListingRow, ConsoleCounts, QcQueueItem, QcKpis, QcRejectReason, QcQueuePayload, QcReviewPayload, PriceHistoryEntry, FairPriceGuide } from './types';
 // PC-56 TENANT-4d-1: W118's meters and W115's plan cards.
 export type { PlanUsageView, PlanMeter, PlanMeterState, PlanMeterVerdict, PlanProjection, ChoosablePlanRow } from './resources/tenancy';

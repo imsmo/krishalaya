@@ -4,6 +4,7 @@
 // so PostgreSQL prunes to ONE partition instead of scanning all of them. Writes are
 // optimistic-locked by `version`. tenant_id in every query (Law 1) + RLS is the net.
 import { Inject, Injectable } from '@nestjs/common';
+import type { Pool } from 'pg';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
@@ -16,6 +17,10 @@ const COLS = `id, tenant_id, order_no, checkout_group_id, buyer_user_id, seller_
   total_minor, status, delivery_method_id, delivery_address_id, acceptance_deadline, quality_window_ends,
   cancel_reason_id, cancelled_by, version, created_at, completed_at, charge_snapshot, commission_snapshot, delivery_zone_id, buyer_commission_minor,
   stock_reserved_at`;
+/** PC-56 HOTFIX-5 · B1: the order was placed awaiting an online payment (its placement row in order_events, pruned from below by the order's own
+ *  created_at). Used by the quality-window clock's claim — see domain/order-clocks.ts QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT. */
+const PLACED_AWAITING_PAYMENT = `EXISTS (SELECT 1 FROM order_events pe WHERE pe.tenant_id = orders.tenant_id AND pe.order_id = orders.id
+    AND pe.created_at >= orders.created_at - interval '5 seconds' AND pe.from_status IS NULL AND pe.to_status = 'payment_pending')`;
 // partition-prune window around the v7 id's embedded time (clock skew tolerant)
 const PRUNE = `created_at >= uuid_v7_time($1) - interval '5 seconds' AND created_at < uuid_v7_time($1) + interval '5 seconds'`;
 const big = (v: any) => BigInt(v);
@@ -215,8 +220,11 @@ export class OrderRepository {
          AND ($3 = true OR buyer_user_id=$4 OR seller_user_id=$4)`, [id, tenantId, canModerate, viewerUserId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
-  /** Optimistic-locked update (version). 0 rows ⇒ concurrent modification. Records the timeline event. */
-  async update(tx: TxContext, order: Order, fromStatus: OrderStatus): Promise<boolean> {
+  /** Optimistic-locked update (version). 0 rows ⇒ concurrent modification. Records the timeline event.
+   *  PC-56 HOTFIX-5 · B3: `actorUserId` — the PERSON who made this hop (the order service passes its actor), so the events read can say
+   *  `seller` / `buyer` / `moderator` / `system` (found live: only a cancel ever recorded its actor — every confirm read as NULL). Omitted →
+   *  the old rule (a cancel's person, NULL for the system). A system act stores NULL with the note 'system'. */
+  async update(tx: TxContext, order: Order, fromStatus: OrderStatus, actorUserId?: string | null): Promise<boolean> {
     const p = order.toProps();
     const r = await tx.query(
       `UPDATE orders SET status=$4, quality_window_ends=$5, cancel_reason_id=$6, cancelled_by=$7, completed_at=$8,
@@ -228,7 +236,11 @@ export class OrderRepository {
       // as NULL, and the timeline note says it was the system.
       [p.id, p.tenantId, p.createdAt, p.status, p.qualityWindowEnds, p.cancelReasonId, personOrNull(p.cancelledBy), p.completedAt, p.version]);
     if (r.rowCount === 0) return false;
-    if (fromStatus !== p.status) await this.recordEvent(tx, p.tenantId, p.id, fromStatus, p.status, personOrNull(p.cancelledBy), p.cancelledBy === 'system' ? 'system' : null);
+    if (fromStatus !== p.status) {
+      const actor = actorUserId !== undefined ? personOrNull(actorUserId) : personOrNull(p.cancelledBy);
+      const note = p.cancelledBy === 'system' || actorUserId === 'system' ? 'system' : null;
+      await this.recordEvent(tx, p.tenantId, p.id, fromStatus, p.status, actor, note);
+    }
     return true;
   }
   async recordEvent(tx: TxContext, tenantId: string, orderId: string, from: OrderStatus | null, to: OrderStatus, actor: string | null, note: string | null): Promise<void> {
@@ -254,15 +266,97 @@ export class OrderRepository {
     return r.rows.map(toDomain);
   }
   /** Worker finder: orders in `statuses` whose `deadlineCol` has passed. Bounds the scan to
-   *  recent partitions (created_at > now - 60d) and locks rows for the worker (SKIP LOCKED). */
-  async findDue(tx: TxContext, tenantId: string, statuses: string[], deadlineCol: 'acceptance_deadline' | 'quality_window_ends', now: Date, limit: number): Promise<Order[]> {
+   *  recent partitions (created_at > now - 60d) and locks rows for the worker (SKIP LOCKED).
+   *  PC-56 HOTFIX-5 · B2: `excludedSources` — the seller-confirm timeout never claims an auction order (founder D2). */
+  async findDue(tx: TxContext, tenantId: string, statuses: readonly string[], deadlineCol: 'acceptance_deadline' | 'quality_window_ends', now: Date, limit: number, excludedSources: readonly string[] = [], onlyPaidOnline = false): Promise<Order[]> {
     const r = await tx.query(
       `SELECT ${COLS} FROM orders
         WHERE tenant_id=$1 AND status = ANY($2) AND ${deadlineCol} IS NOT NULL AND ${deadlineCol} < $3
+          AND NOT (source = ANY($5::text[]))${onlyPaidOnline ? ` AND ${PLACED_AWAITING_PAYMENT}` : ''}
           AND created_at > now() - interval '60 days'
         ORDER BY created_at ASC LIMIT $4 FOR UPDATE SKIP LOCKED`,
-      [tenantId, statuses, now, limit]);
+      [tenantId, [...statuses], now, limit, [...excludedSources]]);
     return r.rows.map(toDomain);
+  }
+
+  /**
+   * PC-56 HOTFIX-5 · B1 — THE ONE CROSS-TENANT READ THE ORDER CLOCKS MAKE, on the runner's kv_relay pool (`orders` is granted to kv_relay
+   * since 0018 — the relay gate proves it): the distinct tenants holding at least one order this clock may act on. Same filter and the same
+   * 60-day partition bound as `findDue`; ids of tenants only — every claim and every act after this runs as kv_app under RLS.
+   */
+  async tenantsWithDue(pool: Pool, statuses: readonly string[], deadlineCol: 'acceptance_deadline' | 'quality_window_ends', now: Date, excludedSources: readonly string[] = [], limit = 500, onlyPaidOnline = false): Promise<string[]> {
+    const r = await pool.query<{ tenant_id: string }>(
+      `SELECT DISTINCT tenant_id FROM orders
+        WHERE status = ANY($1) AND ${deadlineCol} IS NOT NULL AND ${deadlineCol} < $2
+          AND NOT (source = ANY($3::text[]))${onlyPaidOnline ? ` AND ${PLACED_AWAITING_PAYMENT}` : ''}
+          AND created_at > now() - interval '60 days'
+        LIMIT $4`, [[...statuses], now, [...excludedSources], limit]);
+    return r.rows.map((x) => x.tenant_id);
+  }
+
+  /**
+   * PC-56 HOTFIX-5 · B3 (survey F-7) — the ORGANISATION a buyer bought from: the order's tenant (slug + display name), the 1a/2a shape
+   * (`listing-purchase.read-model.ts`). Never a person. null when the tenant row has no display name.
+   */
+  async organisationOf(tenantId: string): Promise<{ slug: string; name: string } | null> {
+    const r = await this.replica.forTenant(tenantId).query<{ slug: string | null; display_name: string | null }>(
+      `SELECT slug, display_name FROM tenants WHERE id = $1`, [tenantId]);
+    const x = r.rows[0];
+    return x?.slug && x.display_name ? { slug: x.slug, name: x.display_name } : null;
+  }
+
+  /**
+   * PC-56 HOTFIX-5 · B3 — HOTFIX-4's payment-state facts for a PAGE of orders in one bounded read (the list carries `paymentState` now):
+   * the placement row and the cancellation row of each order, pruned from below by the page's oldest order (an order's events are never
+   * older than the order). Same derivation as `paymentFacts` per order.
+   */
+  async paymentFactsFor(tenantId: string, refs: { id: string; createdAt: Date | string }[]): Promise<Map<string, { placedAwaitingPayment: boolean; cancelledFrom: OrderStatus | null; cancelledBySystem: boolean }>> {
+    const out = new Map<string, { placedAwaitingPayment: boolean; cancelledFrom: OrderStatus | null; cancelledBySystem: boolean }>();
+    if (refs.length === 0) return out;
+    for (const x of refs) out.set(x.id, { placedAwaitingPayment: false, cancelledFrom: null, cancelledBySystem: false });
+    const minCreated = refs.reduce((m, x) => { const d = new Date(x.createdAt); return d < m ? d : m; }, new Date(refs[0].createdAt));
+    const r = await this.replica.forTenant(tenantId).query<{ order_id: string; from_status: OrderStatus | null; to_status: OrderStatus; actor_user_id: string | null; note: string | null }>(
+      `SELECT order_id, from_status, to_status, actor_user_id, note FROM order_events
+        WHERE tenant_id=$1 AND order_id = ANY($2::uuid[]) AND created_at >= $3::timestamptz - interval '5 seconds'
+          AND (from_status IS NULL OR to_status = 'cancelled')
+        ORDER BY created_at, id`, [tenantId, refs.map((x) => x.id), minCreated]);
+    const seenPlacement = new Set<string>(); const seenCancel = new Set<string>();
+    for (const e of r.rows) {
+      const f = out.get(e.order_id);
+      if (!f) continue;
+      if (e.from_status === null && !seenPlacement.has(e.order_id)) { seenPlacement.add(e.order_id); f.placedAwaitingPayment = e.to_status === 'payment_pending'; }
+      if (e.to_status === 'cancelled' && !seenCancel.has(e.order_id)) {
+        seenCancel.add(e.order_id); f.cancelledFrom = e.from_status ?? null; f.cancelledBySystem = e.actor_user_id === null && e.note === 'system';
+      }
+    }
+    return out;
+  }
+
+  /**
+   * PC-56 HOTFIX-5 · B5 (founder D4) — WAS THIS CANCELLED ORDER PAID? Read from the order's OWN timeline in the caller's (kv_app)
+   * transaction — never the replica, never an event payload. `payment_pending → confirmed` is reached ONLY through `Order.markPaid` (the
+   * payments module's capture; HOTFIX-4 refuses a seller confirm of an order awaiting payment), so an order PLACED awaiting payment and
+   * CANCELLED from any later status was paid. An order placed `created` (pay-on-delivery) is never "paid" here.
+   */
+  /** PC-56 HOTFIX-5 · B1: was this order PLACED awaiting an online payment (its placement event went to `payment_pending`)? With a status past
+   *  `payment_pending` that means the capture confirmed it — the money is in escrow (HOTFIX-4's `paid`). Read in the caller's tx. */
+  async placedAwaitingPaymentTx(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
+    const r = await tx.query<{ to_status: OrderStatus }>(
+      `SELECT to_status FROM order_events WHERE tenant_id=$1 AND order_id=$2 AND created_at >= uuid_v7_time($2) - interval '5 seconds' AND from_status IS NULL
+        ORDER BY created_at, id LIMIT 1`, [tenantId, orderId]);
+    return r.rows[0]?.to_status === 'payment_pending';
+  }
+
+  async paidBeforeCancelTx(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
+    const r = await tx.query<{ from_status: OrderStatus | null; to_status: OrderStatus }>(
+      `SELECT from_status, to_status FROM order_events
+        WHERE tenant_id=$1 AND order_id=$2 AND created_at >= uuid_v7_time($2) - interval '5 seconds'
+          AND (from_status IS NULL OR to_status = 'cancelled')
+        ORDER BY created_at, id LIMIT 4`, [tenantId, orderId]);
+    const placed = r.rows.find((x) => x.from_status === null);
+    const cancel = r.rows.find((x) => x.to_status === 'cancelled');
+    if (placed?.to_status !== 'payment_pending' || !cancel) return false;
+    return cancel.from_status !== null && cancel.from_status !== 'payment_pending';
   }
 
   /** The PRIMARY line item (first by creation) + total item count for a page of orders — enriches the order-list

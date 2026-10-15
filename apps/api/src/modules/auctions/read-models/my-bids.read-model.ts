@@ -29,6 +29,7 @@ export class MyBidsReadModel {
       amountMinor: b.amountMinor,
       emdHeldMinor: emdHeldMinor(BigInt(b.firstAmountMinor), BigInt(b.emdMinor), b.emdPctBps, b.quantity).toString(),
       quantity: b.quantity, unitCode: b.unitCode,
+      currencyCode: b.currencyCode,   // PC-56 HOTFIX-5 · B4 (Rule Zero): the lot's (its listing's) currency — the minor units above are in it
       auctionStatus: b.auctionStatus,
       endsAt: b.endsAt,
       isWinning: b.winningBidId != null && b.winningBidId === b.id,

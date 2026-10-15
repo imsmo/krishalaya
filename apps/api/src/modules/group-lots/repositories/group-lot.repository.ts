@@ -156,6 +156,16 @@ export class GroupLotRepository {
     const r = await tx.query<any>(`SELECT id, default_name, category_id, default_unit FROM products WHERE id=$1 AND (tenant_id IS NULL OR tenant_id=$2) AND is_active AND deleted_at IS NULL`, [productId, tenantId]);
     return r.rows[0] ? { id: r.rows[0].id, name: r.rows[0].default_name, categoryId: r.rows[0].category_id, defaultUnit: r.rows[0].default_unit } : null;
   }
+  /** PC-56 HOTFIX-5 · B4 (Rule Zero, survey F-8): a group lot has no currency column, so its money is in the ORGANISATION's currency — the
+   *  tenant's country's (`tenants.country_code → countries.currency_code`, the rule 0204's public profile states) — with that currency's own
+   *  exponent (`currencies.minor_units`) for the members' notice. null when the tenant has no country currency (the caller refuses by name). */
+  async currencyTx(tx: TxContext, tenantId: string): Promise<{ code: string; minorUnits: number } | null> {
+    const r = await tx.query<{ code: string; minor_units: number }>(
+      `SELECT c.currency_code AS code, cur.minor_units FROM tenants t JOIN countries c ON c.code = t.country_code JOIN currencies cur ON cur.code = c.currency_code
+        WHERE t.id = $1`, [tenantId]);
+    const x = r.rows[0];
+    return x ? { code: String(x.code).trim(), minorUnits: Number(x.minor_units) } : null;
+  }
   async unitExists(tx: TxContext, code: string): Promise<boolean> {
     return ((await tx.query(`SELECT 1 FROM units WHERE code=$1`, [code])).rowCount ?? 0) > 0;
   }

@@ -78,7 +78,7 @@ export class ListingOfferService {
           await this.repo.insert(tx, offer);
           const p = offer.toProps();
           await this.flush(tx, tenantId, p.id, offer.pullEvents());
-          return this.serialize(p);
+          return this.serialize({ ...p, currencyCode: l.currencyCode ?? null });   // HOTFIX-5 · B4: the listing's currency
         }, { userId: buyerUserId });
       }));
   }
@@ -108,16 +108,17 @@ export class ListingOfferService {
     }, { userId: actor.userId });
   }
 
-  /** Worker job: lapse an expired offer. Idempotent — skips offers no longer in negotiation. */
-  async expire(tenantId: string, offerId: string): Promise<void> {
-    await this.uow.run(tenantId, async (tx) => {
+  /** The expiry clock's act (PC-56 HOTFIX-5 · B1: `offers-expire`, registered). Idempotent — skips an offer no longer in negotiation or
+   *  not yet due; returns whether THIS call expired it. `now` is the tick's instant (one instant per sweep). */
+  async expire(tenantId: string, offerId: string, now: Date = new Date()): Promise<boolean> {
+    return this.uow.run(tenantId, async (tx) => {
       const o = await this.repo.getForUpdate(tx, tenantId, offerId);
-      if (!o || !isNegotiable(o.status)) return;
-      const now = new Date();
-      if (now.getTime() < o.expiresAt.getTime()) return;
+      if (!o || !isNegotiable(o.status)) return false;
+      if (now.getTime() < o.expiresAt.getTime()) return false;
       o.expire(now);
       await this.repo.update(tx, o);
       await this.flush(tx, tenantId, offerId, o.pullEvents());
+      return true;
     }, { userId: 'system' });
   }
 
@@ -151,6 +152,7 @@ export class ListingOfferService {
       offerId: p.id, listingId: p.listingId, buyerUserId: p.buyerUserId, quantity: p.quantity,
       offeredPriceMinor: p.offeredPriceMinor.toString(), counterPriceMinor: p.counterPriceMinor?.toString() ?? null,
       round: p.round, status: p.status, expiresAt: p.expiresAt, convertedOrderId: p.convertedOrderId, createdAt: p.createdAt,
+      currencyCode: p.currencyCode ?? null,   // PC-56 HOTFIX-5 · B4 (Rule Zero): the listing's currency — the minor units above are in it
     };
   }
 

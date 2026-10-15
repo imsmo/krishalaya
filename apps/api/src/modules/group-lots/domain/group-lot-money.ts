@@ -15,7 +15,8 @@ export const GROUP_LOT_REFERENCE_TYPE = 'group_lot';
 export const holdKey = (lotId: string) => `gl-hold:${lotId}`;
 export const settleKey = (lotId: string) => `gl-settle:${lotId}`;
 
-export function holdLegs(coordinatorUserId: string, grossMinor: bigint, currency = 'INR'): LedgerLeg[] {
+// PC-56 HOTFIX-5 · B4 (Rule Zero): the currency is REQUIRED — the organisation's (GroupLotRepository.currencyTx), never a default 'INR'.
+export function holdLegs(coordinatorUserId: string, grossMinor: bigint, currency: string): LedgerLeg[] {
   return [
     { account: userMain(coordinatorUserId, currency), amountMinor: -grossMinor },
     { account: userHold(coordinatorUserId, currency), amountMinor: grossMinor },
@@ -27,7 +28,7 @@ export function holdLegs(coordinatorUserId: string, grossMinor: bigint, currency
  * one leg, so the txn names each account once; zero legs are dropped. Throws if the parts do not sum to the gross — the
  * caller's arithmetic is checked here, not trusted.
  */
-export function settleLegs(coordinatorUserId: string, grossMinor: bigint, feeMinor: bigint, shares: Array<{ farmerUserId: string; shareMinor: bigint }>, currency = 'INR'): LedgerLeg[] {
+export function settleLegs(coordinatorUserId: string, grossMinor: bigint, feeMinor: bigint, shares: Array<{ farmerUserId: string; shareMinor: bigint }>, currency: string): LedgerLeg[] {
   const credits = new Map<string, bigint>();
   for (const s of shares) credits.set(s.farmerUserId, (credits.get(s.farmerUserId) ?? 0n) + s.shareMinor);
   credits.set(coordinatorUserId, (credits.get(coordinatorUserId) ?? 0n) + feeMinor);

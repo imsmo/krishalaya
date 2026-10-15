@@ -498,9 +498,19 @@ export const INBOX_ACTS = ['read', 'readAll'] as const;
 export type InboxAct = (typeof INBOX_ACTS)[number];
 
 // --- orders (module 5) — money is bigint minor-unit STRINGS (Law 2) ---
-/** One row in the buyer/seller order timeline (CQRS read-model). `counterparty` is the other party's userId. */
+/** The ORGANISATION a buyer bought from (the order's tenant) — never a person (PC-56 HOTFIX-4 D3 / HOTFIX-5 B3). */
+export interface OrderOrganisation { slug: string; name: string }
+/** One row in the buyer/seller order timeline (CQRS read-model).
+ *  PC-56 HOTFIX-5 · B3 (survey F-7 / F-14): a BUYER's row names the `organisation` and carries no person id; `currencyCode` (Rule Zero — the
+ *  minor units are in it), `paymentState` and `acceptanceDeadline` are on every row. `counterparty` (the other party's userId) is present ONLY
+ *  on the SELLER's own list and the moderator's tenant-wide list — never on a buyer's. */
 export interface OrderListItem {
-  id: string; orderNo: string; status: string; totalMinor: string; counterparty: string | null; createdAt?: string;
+  id: string; orderNo: string; status: string; totalMinor: string;
+  // The API sends these four on EVERY row since HOTFIX-5; they are optional in the TYPE only so pre-HOTFIX-5 object literals (mobile's
+  // fixtures — the 89-error tsc baseline) still compile. Read them as present.
+  currencyCode?: string; paymentState?: OrderPaymentState; acceptanceDeadline?: string | null; organisation?: OrderOrganisation | null;
+  /** @deprecated for buyer lists — absent there (HOTFIX-5 · B3). The seller's / moderator's list still carry it. */
+  counterparty?: string | null; createdAt?: string;
   /** The order's primary (first) line item — crop title + qty for the list card (screen 56). null when no items. */
   primaryItem?: { title: string; quantity: number; unitCode: string } | null;
   /** Total number of line items on the order (drives a "+N more" hint). */
@@ -520,7 +530,11 @@ export type OrderPaymentState = 'none' | 'pending' | 'paid' | 'refunded' | 'canc
 /** Full order detail (server-serialized). Every *Minor is a bigint string (Law 2). HOTFIX-4 · A2: the rows sum to the total —
  *  subtotal + delivery + tax − discount + platformFee + buyerCommission = total. */
 export interface OrderDetail {
-  id: string; orderNo: string; status: string; paymentState: OrderPaymentState; source: string; buyerUserId: string; sellerUserId: string; currencyCode: string;
+  id: string; orderNo: string; status: string; paymentState: OrderPaymentState; source: string; currencyCode: string;
+  /** PC-56 HOTFIX-5 · B3: the seller's / moderator's view only — ABSENT from the BUYER's view (the organisation is named instead). */
+  buyerUserId?: string; sellerUserId?: string;
+  /** PC-56 HOTFIX-5 · B3: who sold it — the organisation (the order's tenant), never a person. */
+  organisation?: OrderOrganisation | null;
   subtotalMinor: string; deliveryFeeMinor: string; discountMinor: string; taxMinor: string; commissionMinor: string;
   platformFeeMinor: string; buyerCommissionMinor: string; totalMinor: string;
   checkoutGroupId?: string | null;
@@ -695,6 +709,8 @@ export interface ListingOffer {
   offerId: string; listingId: string; buyerUserId: string; quantity: string;
   offeredPriceMinor: string; counterPriceMinor: string | null; round: number; status: string;
   expiresAt?: string | null; convertedOrderId?: string | null; createdAt?: string;
+  /** PC-56 HOTFIX-5 · B4 (Rule Zero): the LISTING's currency (an offer has no currency of its own) — the minor units above are in it. */
+  currencyCode: string | null;
 }
 
 // --- messaging (communication) ---
@@ -780,6 +796,8 @@ export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor:
 export interface MyBid {
   bidId: string; auctionId: string; listingId: string; amountMinor: string; emdHeldMinor: string;
   auctionStatus: string; endsAt: string; isWinning: boolean; createdAt: string; quantity?: string; unitCode?: string;
+  /** PC-56 HOTFIX-5 · B4 (Rule Zero): the lot's (its listing's) currency — the minor units above are in it. */
+  currencyCode: string | null;
 }
 /** An auction the caller is WATCHING (follow). `status`/`endsAt` are the live auction's, `watchedAt` is when the
  * caller started watching. No money lives here. */
@@ -1892,7 +1910,11 @@ export interface ConsoleOrderRow {
   itemSummary: string | null; createdAt: string; updatedAt: string;
   acceptanceDeadline: string | null; disputeId: string | null;
 }
-export interface OrderTimelineEvent { fromStatus: string | null; toStatus: string; note: string | null; actorUserId: string | null; actorName: string | null; at: string }
+/** PC-56 HOTFIX-5 · B3: who acted on a hop, as a ROLE. */
+export type OrderActorRole = 'buyer' | 'seller' | 'system' | 'moderator';
+/** One hop of `GET orders/:id/events`. PC-56 HOTFIX-5 · B3 (survey F-7): a BUYER caller receives `{ fromStatus, toStatus, actorRole, at }` only —
+ *  `actorUserId`, `actorName` and `note` are the seller's / staff's (the console, W134) and absent from a buyer's read. */
+export interface OrderTimelineEvent { fromStatus: string | null; toStatus: string; actorRole: OrderActorRole; at: string; note?: string | null; actorUserId?: string | null; actorName?: string | null }
 export type OrderMoneyBasis = 'charged_at_order' | 'settlement_time' | 'not_applicable_at_order';
 export interface OrderMoneyBox {
   lines: Array<{ key: string; minor: string; basis: OrderMoneyBasis }>;

@@ -28,7 +28,10 @@ import { OrderItem } from '../domain/order-item.entity';
 import { OrderStatus } from '../domain/order.state';
 import { DomainError } from '../../../shared/errors/app-error';
 
-function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.slice(0, 8).toUpperCase()}`; }
+// PC-56 HOTFIX-5 · B2 (survey F-6): the order number is the ONE helper's — the v7 id's RANDOM bits. `id.slice(0, 8)` was the TIMESTAMP prefix:
+// two auctions of one organisation settled in one close sweep (one `now`) collided on `uq_orders_no` and the second never settled.
+import { orderNoFor } from '../domain/order-no';
+import { currencyFromListing } from '../domain/order-currency';
 
 export class AuctionOrderMismatchError extends DomainError {
   constructor(expected: bigint, got: bigint) { super('AUCTION_ORDER_MISMATCH', `The order line (${got}) does not equal the auction's lot value (${expected})`, 409, { expected: expected.toString(), got: got.toString() }); }
@@ -76,8 +79,8 @@ export class AuctionOrderService {
     });
     if (item.props.lineTotalMinor !== input.expectedLotValueMinor) throw new AuctionOrderMismatchError(input.expectedLotValueMinor, item.props.lineTotalMinor);
     const order = Order.place({
-      id: orderId, tenantId: input.tenantId, orderNo: orderNo(orderId), checkoutGroupId: null, buyerUserId: input.buyerUserId,
-      sellerUserId: input.sellerUserId, source: 'auction', currencyCode: input.currencyCode || 'INR', items: [item],
+      id: orderId, tenantId: input.tenantId, orderNo: orderNoFor(orderId, now), checkoutGroupId: null, buyerUserId: input.buyerUserId,
+      sellerUserId: input.sellerUserId, source: 'auction', currencyCode: currencyFromListing(input.currencyCode, 'auction', input.auctionId), items: [item],   // HOTFIX-5 · B4: never 'INR'
       deliveryMethodId: null, deliveryAddressId: null, requiresPayment, now,
     });
     await this.repo.insertGraph(tx, order, [item]);
@@ -93,6 +96,13 @@ export class AuctionOrderService {
   async statusForUpdate(tx: TxContext, tenantId: string, orderId: string): Promise<OrderStatus | null> {
     const o = await this.repo.getForUpdate(tx, tenantId, orderId);
     return o ? o.status : null;
+  }
+
+  /** PC-56 HOTFIX-5 · B5 (founder D4): was this (cancelled) auction order PAID before it was cancelled? The ORDER's own timeline, read in the
+   *  caller's kv_app tx (OrderRepository.paidBeforeCancelTx) — never the settlement's `paid` outcome alone, which a relay delivering
+   *  `orders.order_cancelled` before `payments.payment_succeeded` would not yet show. */
+  paidBeforeCancelInTx(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
+    return this.repo.paidBeforeCancelTx(tx, tenantId, orderId);
   }
 
   /** F-2 default: cancel the unpaid auction order (system), in the caller's tx. Returns false when it is no longer

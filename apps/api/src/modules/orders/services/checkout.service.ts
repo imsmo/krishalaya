@@ -41,12 +41,13 @@ import { ListingNotEditableError } from '../../listings/domain/listing.errors';
 import type { CartItemRow } from '../repositories/cart.repository';
 import { CheckoutDto, CheckoutPreviewDto } from '../dto/create-order.dto';
 import { DomainError } from '../../../shared/errors/app-error';
+import { orderNoFor as orderNo } from '../domain/order-no';
 
 const QUOTA = 'max_orders_month';
 // PC-56 HOTFIX-4 (found proving A9): the number was the id's FIRST 8 hex — a v7 uuid's millisecond TIMESTAMP — so the two orders of a
 // two-seller checkout, minted in the same millisecond, got the SAME order_no and the insert died on the (tenant, order_no, created_at)
 // unique index: every multi-seller checkout failed with a 500 whenever the machine was fast enough. The id's last 8 hex are its RANDOM bits.
-function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.replace(/-/g, '').slice(-8).toUpperCase()}`; }
+// PC-56 HOTFIX-5 · B2: that rule is now the ONE helper every order door uses (domain/order-no.ts).
 
 @Injectable()
 export class CheckoutService {

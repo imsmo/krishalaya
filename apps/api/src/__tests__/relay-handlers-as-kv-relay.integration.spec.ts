@@ -897,6 +897,38 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     expect(await count(w, `SELECT count(*) n FROM wastage_events WHERE source_id=$1 AND method_code='sweep'`, [retId])).toBe(1);
   }, 120_000);
 
+  // ── PC-56 HOTFIX-5 · B1 (founder D2): the three ORDER / OFFER CLOCKS run on the runner's kv_relay pool — the order clocks read only `orders`
+  //    there (the distinct tenants with a due order; granted since 0018), the offer clock only `tenants` (kv_relay holds nothing on
+  //    listing_offers); every claim and act is per tenant in kv_app's unit of work. Unnarrowed sweeps: the tenant list itself is read as kv_relay. ──
+  it('HF-5 · the seller-confirm timeout, the quality-window auto-complete and the offer expiry sweep on the kv_relay pool without 42501', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { SellerConfirmTimeoutJob } = require('../modules/orders/jobs/seller-confirm-timeout.job') as typeof import('../modules/orders/jobs/seller-confirm-timeout.job');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { AutoCompleteQualityWindowJob } = require('../modules/orders/jobs/auto-complete-quality-window.job') as typeof import('../modules/orders/jobs/auto-complete-quality-window.job');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ExpireOffersJob } = require('../modules/offers/jobs/expire-offers.job') as typeof import('../modules/offers/jobs/expire-offers.job');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { OrderRepository } = require('../modules/orders/repositories/order.repository') as typeof import('../modules/orders/repositories/order.repository');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ListingOfferRepository } = require('../modules/offers/repositories/listing-offer.repository') as typeof import('../modules/offers/repositories/listing-offer.repository');
+    const orderId = await makeOrder(w, 'delivered');
+    await admin.query(`UPDATE orders SET quality_window_ends = now() - interval '1 minute' WHERE id = $1`, [orderId]);
+    // placed awaiting an online payment (the clock completes only an order whose money reached escrow by a capture — order-clocks.ts)
+    await admin.query(`INSERT INTO order_events (id, tenant_id, order_id, from_status, to_status, created_at) VALUES (uuid_generate_v7(), $1, $2, NULL, 'payment_pending', uuid_v7_time($2))`, [w.tenant, orderId]);
+    // the tenant lists, AS kv_relay (the unnarrowed production read); the sweeps themselves narrowed to the gate tenant so a neighbouring spec's
+    // orders on the same database are never acted on from here
+    expect(await app.get(OrderRepository).tenantsWithDue(relayPool, ['delivered'], 'quality_window_ends', new Date(), [], 500, true)).toContain(w.tenant);
+    await app.get(OrderRepository).tenantsWithDue(relayPool, ['created', 'payment_pending'], 'acceptance_deadline', new Date(), ['auction']);
+    expect(await app.get(ListingOfferRepository).liveTenants(relayPool)).toContain(w.tenant);
+    expect(await app.get(SellerConfirmTimeoutJob).sweep(relayPool, new Date(), [w.tenant])).toMatchObject({ tenants: 1, failed: 0 });
+    expect(await app.get(AutoCompleteQualityWindowJob).sweep(relayPool, new Date(), [w.tenant])).toMatchObject({ tenants: 1, acted: 1, failed: 0 });
+    expect(await q1(w, `SELECT status::text s FROM orders WHERE id=$1`, [orderId])).toEqual({ s: 'completed' });
+    expect(await app.get(ExpireOffersJob).sweep(relayPool, new Date(), [w.tenant])).toMatchObject({ tenants: 1, failed: 0 });
+    const priv = async (t: string, p: string) => (await admin.query(`SELECT has_table_privilege('kv_relay', $1, $2) AS v`, [t, p])).rows[0].v as boolean;
+    expect(await priv('orders', 'SELECT')).toBe(true);
+    expect(await priv('listing_offers', 'SELECT')).toBe(false);
+  }, 120_000);
+
   // ── B4 · END TO END: the REAL registry (every handler of the event, in boot order), the REAL dispatcher, LOGGED IN as kv_relay ──
   it('B4 · orders.order_confirmed through the FULL registry as kv_relay: published, ONE shipment AND ONE trade invoice; a redelivery adds nothing', async () => {
     const full = app.get<OutboxHandlerRegistry>(OUTBOX_HANDLER_REGISTRY);

@@ -34,6 +34,9 @@ function mkRepo() {
   return {
     listFor: jest.fn(async () => [mkOrder('o1', 'buyerA', 'farmer1'), mkOrder('o2', 'buyerB', 'farmer2')]),
     primaryItemsFor: jest.fn(async () => new Map()),
+    // PC-56 HOTFIX-5 · B3: the list also reads the page's payment-state facts and the organisation (one row each, bounded)
+    paymentFactsFor: jest.fn(async () => new Map()),
+    organisationOf: jest.fn(async () => ({ slug: 'anand-fpo', name: 'Anand FPO' })),
   };
 }
 

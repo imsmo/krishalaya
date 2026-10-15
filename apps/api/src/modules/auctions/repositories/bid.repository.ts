@@ -96,7 +96,7 @@ export class BidRepository {
   /** The caller's OWN bids across ALL auctions ("my bids"), newest-first µs keyset (F-25). Joins the auction so the
    *  read-model can show status/ends + compute the EMD hold per bid (per LOT — the auction's quantity travels). Always
    *  filtered by the caller's bidder_user_id (owner-scoped, no IDOR). */
-  async listForBidder(tenantId: string, bidderUserId: string, opts: { cursor?: { c: string; id: string }; limit: number }): Promise<Array<{ id: string; auctionId: string; listingId: string; amountMinor: string; createdAt: Date; createdAtRaw: string; auctionStatus: string; endsAt: Date; emdMinor: string; emdPctBps: number | null; winningBidId: string | null; quantity: string; unitCode: string; firstAmountMinor: string }>> {
+  async listForBidder(tenantId: string, bidderUserId: string, opts: { cursor?: { c: string; id: string }; limit: number }): Promise<Array<{ id: string; auctionId: string; listingId: string; amountMinor: string; createdAt: Date; createdAtRaw: string; auctionStatus: string; endsAt: Date; emdMinor: string; emdPctBps: number | null; winningBidId: string | null; quantity: string; unitCode: string; firstAmountMinor: string; currencyCode: string | null }>> {
     const params: unknown[] = [tenantId, bidderUserId];
     let where = `b.tenant_id=$1 AND b.bidder_user_id=$2`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
@@ -106,12 +106,13 @@ export class BidRepository {
       `SELECT b.id, b.auction_id, b.amount_minor, b.created_at, b.created_at::text AS created_at_raw,
               a.listing_id, a.status AS auction_status, a.ends_at, a.emd_minor, a.emd_pct_bps, a.winning_bid_id, a.quantity::text AS quantity, a.unit_code,
               (SELECT f.amount_minor FROM bids f WHERE f.tenant_id=b.tenant_id AND f.auction_id=b.auction_id AND f.bidder_user_id=b.bidder_user_id
-                ORDER BY f.created_at, f.id LIMIT 1) AS first_amount
+                ORDER BY f.created_at, f.id LIMIT 1) AS first_amount,
+              (SELECT l.currency_code FROM listings l WHERE l.id = a.listing_id AND l.tenant_id = a.tenant_id) AS currency_code   -- HOTFIX-5 · B4: the lot's currency
          FROM bids b JOIN auctions a ON a.id = b.auction_id AND a.tenant_id = b.tenant_id
         WHERE ${where} ORDER BY b.created_at DESC, b.id DESC LIMIT ${lp}`, params);
     return r.rows.map((x) => ({ id: x.id, auctionId: x.auction_id, listingId: x.listing_id, amountMinor: String(x.amount_minor), createdAt: x.created_at, createdAtRaw: x.created_at_raw,
       auctionStatus: x.auction_status, endsAt: x.ends_at, emdMinor: String(x.emd_minor), emdPctBps: x.emd_pct_bps ?? null, winningBidId: x.winning_bid_id ?? null,
-      quantity: String(x.quantity), unitCode: x.unit_code, firstAmountMinor: String(x.first_amount) }));
+      quantity: String(x.quantity), unitCode: x.unit_code, firstAmountMinor: String(x.first_amount), currencyCode: x.currency_code != null ? String(x.currency_code).trim() : null }));
   }
 
   /** Bid history for an auction, µs keyset (F-25). Identities are masked by the read-model; sealed amounts too. */

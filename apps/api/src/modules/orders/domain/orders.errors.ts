@@ -70,3 +70,8 @@ export class WrongStoreError extends DomainError {
 export class MixedCurrencyError extends DomainError {
   constructor(currencies: string[]) { super('MIXED_CURRENCY', `The cart holds lots priced in different currencies (${currencies.join(', ')}) — check them out separately`, 422, { currencies }); }
 }
+/** PC-56 HOTFIX-5 · B4 (Rule Zero, survey F-8): an order is written in its LISTING's currency — a listing (or a caller) that carries none is
+ *  refused by name, never priced in an assumed 'INR' (the offer / auction / quote doors defaulted to it). */
+export class OrderCurrencyUnknownError extends DomainError {
+  constructor(source: string, ref: string) { super('ORDER_CURRENCY_UNKNOWN', `The ${source} order for ${ref} has no currency from its listing — refused rather than priced in an assumed currency`, 422, { source, ref }); }
+}

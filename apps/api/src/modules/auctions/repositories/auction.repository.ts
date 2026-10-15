@@ -98,6 +98,13 @@ export class AuctionRepository {
     await tx.query(`INSERT INTO auction_events (tenant_id, auction_id, event_code, meta) VALUES ($1,$2,$3,$4::jsonb)`, [tenantId, auctionId, eventCode, JSON.stringify(meta)]);
   }
 
+  /** PC-56 HOTFIX-5 · B5: has this auction recorded `eventCode` (read in the caller's tx, under the auction's row lock — the once-marker of an
+   *  act whose ledger key alone cannot guard every step, e.g. the restock of a paid cancel with no EMD). */
+  async hasEventTx(tx: TxContext, tenantId: string, auctionId: string, eventCode: string): Promise<boolean> {
+    const r = await tx.query(`SELECT 1 FROM auction_events WHERE tenant_id=$1 AND auction_id=$2 AND event_code=$3 LIMIT 1`, [tenantId, auctionId, eventCode]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
   /** How many times anti-snipe extended this auction (auction_events 'extended'; W138 "no extensions yet"). */
   async extensionCount(tenantId: string, auctionId: string): Promise<number> {
     const r = await this.replica.forTenant(tenantId).query<{ n: string }>(

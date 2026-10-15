@@ -3,6 +3,10 @@
 // public API, Law 11 — never the listings repository). The money/payment step is owned by the
 // payments module and gated by the `online_payments` feature flag; payment success flows back here
 // via the outbox relay → PaymentSucceededHandler (no synchronous cross-module call).
+//
+// PC-56 HOTFIX-5 · B1 (founder D2) — THE TWO ORDER CLOCKS ARE REGISTERED in SCHEDULED_JOB_REGISTRY (they were provided and exported and
+// registered nowhere): `seller-confirm-timeout` (24 h, auction orders excluded) and `quality-window-complete` (24 h → escrow released through
+// payments' OrderSettlementService). Cadences from core/jobs/clock-cadence.ts. Law 9: founder review of both before production.
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { ListingsModule } from '../listings/listings.module';
 import { PaymentsModule } from '../payments/payments.module';
@@ -10,6 +14,9 @@ import { PromotionsModule } from '../promotions/promotions.module';
 import { MembershipsModule } from '../memberships/memberships.module';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
+import { cadenceOf } from '../../core/jobs/clock-cadence';
 import { CartsController } from './controllers/v1/carts.controller';
 import { StorefrontCartGate, StorefrontCartGuard } from './storefront-cart.guard';
 import { CheckoutController } from './controllers/v1/checkout.controller';
@@ -56,7 +63,11 @@ import { OrderCancelledRestockHandler } from './events/handlers/order-cancelled-
     CartService, CartItemService, CheckoutService, CheckoutGroupService, OrderService, OrderPaymentService, OrderItemService, AuctionOrderService,
     OrderTimelineReadModel, OrderTrackingReadModel, OrderBuyerSummaryReadModel, TenantOrderStatsReadModel, OrderConsoleReadModel, OrdersPublisher,
     CartRepository, CartItemRepository, CheckoutGroupRepository, OrderRepository, OrderItemRepository, DeliveryZoneRepository,
-    SellerConfirmTimeoutJob, AutoCompleteQualityWindowJob, AbandonedCartsJob,
+    { provide: SellerConfirmTimeoutJob, inject: [UNIT_OF_WORK, OrderRepository, OrderService],
+      useFactory: (u: UnitOfWork, r: OrderRepository, s: OrderService) => new SellerConfirmTimeoutJob(cadenceOf('seller-confirm-timeout'), u, r, s) },
+    { provide: AutoCompleteQualityWindowJob, inject: [UNIT_OF_WORK, OrderRepository, OrderService],
+      useFactory: (u: UnitOfWork, r: OrderRepository, s: OrderService) => new AutoCompleteQualityWindowJob(cadenceOf('quality-window-complete'), u, r, s) },
+    AbandonedCartsJob,
     PaymentSucceededHandler, OfferAcceptedHandler, QuoteAcceptedHandler, AuctionWonHandler, ShipmentDeliveredHandler, DisputeOpenedHandler, DisputeResolvedHandler,
     // PC-56 STORE-2c · B1 (founder D1): a cancelled order's reserved stock goes back to its lots, once (orders.stock_reserved_at, 0209)
     OrderCancelledRestockHandler,
@@ -66,6 +77,9 @@ import { OrderCancelledRestockHandler } from './events/handlers/order-cancelled-
 export class OrdersModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    private readonly sellerConfirmTimeout: SellerConfirmTimeoutJob,
+    private readonly qualityWindowComplete: AutoCompleteQualityWindowJob,
     private readonly paymentSucceeded: PaymentSucceededHandler,
     private readonly offerAccepted: OfferAcceptedHandler,
     private readonly auctionWon: AuctionWonHandler,
@@ -76,5 +90,7 @@ export class OrdersModule implements OnModuleInit {
     private readonly cancelledRestock: OrderCancelledRestockHandler,
   ) {}
   onModuleInit(): void { this.registry.register(this.paymentSucceeded); this.registry.register(this.offerAccepted); this.registry.register(this.auctionWon); this.registry.register(this.quoteAccepted); this.registry.register(this.shipmentDelivered); this.registry.register(this.disputeOpened); this.registry.register(this.disputeResolved);
-    this.registry.register(this.cancelledRestock); }
+    this.registry.register(this.cancelledRestock);
+    // PC-56 HOTFIX-5 · B1: the clocks (orders/__tests__/hotfix5-job-registry.spec.ts fails if either name is missing)
+    for (const j of [this.sellerConfirmTimeout, this.qualityWindowComplete]) this.jobs.register(j); }
 }

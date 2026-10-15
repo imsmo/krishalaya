@@ -86,7 +86,8 @@ describe('HOTFIX-4 · A2 the order detail\'s rows sum to its total (every placem
     });
     o.markPaid();
     const repo = { getVisible: jest.fn().mockResolvedValue(o), itemsOf: jest.fn().mockResolvedValue([]),
-      paymentFacts: jest.fn().mockResolvedValue({ placedAwaitingPayment: true, cancelledFrom: null, cancelledBySystem: false }) };
+      paymentFacts: jest.fn().mockResolvedValue({ placedAwaitingPayment: true, cancelledFrom: null, cancelledBySystem: false }),
+      organisationOf: jest.fn().mockResolvedValue({ slug: 'anand-fpo', name: 'Anand FPO' }) };   // PC-56 HOTFIX-5 · B3: the buyer's view names the organisation
     const svc = new OrderService({} as never, {} as never, {} as never, {} as never, repo as never);
     const d = await svc.getById('T', { userId: 'B', canModerate: false }, id);
     for (const k of ['subtotalMinor', 'deliveryFeeMinor', 'discountMinor', 'platformFeeMinor', 'buyerCommissionMinor']) expect(BigInt(d[k])).toBeGreaterThan(0n);

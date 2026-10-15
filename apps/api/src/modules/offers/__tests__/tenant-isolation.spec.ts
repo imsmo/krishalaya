@@ -57,11 +57,14 @@ describe('offers tenant isolation (SQL contract)', () => {
     expect(params).toEqual(['tenantA', 'l1', 50]);
   });
 
-  it('findDueToExpire is bounded + SKIP LOCKED (worker, cross-tenant) over open|countered', async () => {
+  // PC-56 HOTFIX-5 · B1: the cross-tenant kv_relay finder (`findDueToExpire`) is gone — kv_relay holds no grant on listing_offers, so the
+  // registered `offers-expire` clock claims PER TENANT as kv_app; the contract (tenant-bound, bounded, SKIP LOCKED, open|countered) moved here.
+  it('dueToExpire is tenant-bound, bounded + SKIP LOCKED over open|countered (the offers-expire clock, per tenant as kv_app)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
-    await repo().findDueToExpire(tx as any, new Date(), 100);
-    const [sql] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/status IN \('open','countered'\) AND expires_at <= \$1/);
+    await repo().dueToExpire(tx as any, 'tenantA', new Date(), 100);
+    const [sql, params] = tx.query.mock.calls[0];
+    expect(sql).toMatch(/tenant_id=\$1 AND status IN \('open','countered'\) AND expires_at <= \$2/);
     expect(sql).toMatch(/FOR UPDATE SKIP LOCKED/);
+    expect(params[0]).toBe('tenantA');
   });
 });

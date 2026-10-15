@@ -44,6 +44,7 @@ run('offers slice (integration, real Postgres + RLS)', () => {
   let inspect: Pool;
   let offers: ListingOfferService;
   let repo: ListingOfferRepository;
+  let uow: PgUnitOfWork;
   let isSuperuser = false;
 
   const tenantA = randomUUID();
@@ -67,7 +68,7 @@ run('offers slice (integration, real Postgres + RLS)', () => {
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
     const shards = new ShardRouter(config);
-    const uow = new PgUnitOfWork(pools, shards);
+    uow = new PgUnitOfWork(pools, shards);
     const replica = new PgReadReplicaProvider(pools, shards);
     const outbox = new PgOutboxWriter();
     const quota = new PgQuotaService(pools, shards);
@@ -120,9 +121,11 @@ run('offers slice (integration, real Postgres + RLS)', () => {
   it('the expiry worker lapses an offer past expires_at → expired', async () => {
     const res = await offers.make(tenantA, buyer, `idem-${randomUUID()}`, { listingId, quantity: '3', offeredPriceMinor: '80000', expiresAt: new Date(Date.now() + 500).toISOString() } as any);
     await new Promise((r) => setTimeout(r, 700));
-    const job = new ExpireOffersJob(admin, repo, offers);
-    const out = await job.run(50);
+    // PC-56 HOTFIX-5 · B1: the job is a registered ScheduledJob now — tenants on the runner's pool, the claim + act per tenant as kv_app
+    const job = new ExpireOffersJob(60_000, uow, repo, offers);
+    const out = await job.sweep(admin, new Date(), [tenantA]);
     expect(out.expired).toBeGreaterThanOrEqual(1);
+    expect(out.failed).toBe(0);
     const row = await admin.query(`SELECT status FROM listing_offers WHERE id=$1`, [res.offerId]);
     expect(row.rows[0].status).toBe('expired');
   });

@@ -29,7 +29,9 @@ import { Order } from '../../domain/order.entity';
 import { OrderItem } from '../../domain/order-item.entity';
 import { DomainEvent } from '../../domain/orders.events';
 
-function orderNo(id: string): string { return `KV${new Date().getUTCFullYear()}-${id.slice(0, 8).toUpperCase()}`; }
+// PC-56 HOTFIX-5 · B2: the order number is the ONE helper's (random bits); B4: never an assumed 'INR' — the quote's / listing's currency
+import { orderNoFor } from '../../domain/order-no';
+import { currencyFromListing } from '../../domain/order-currency';
 
 @Injectable()
 export class QuoteAcceptedHandler implements OutboxHandler {
@@ -67,8 +69,8 @@ export class QuoteAcceptedHandler implements OutboxHandler {
         unitPriceMinor: a.unitPriceMinor, gstRatePct: null, hsnCode: null, batchId: null,
       });
       const order = Order.place({
-        id: orderId, tenantId, orderNo: orderNo(orderId), checkoutGroupId: null, buyerUserId: a.buyerUserId,
-        sellerUserId: a.sellerUserId, source: 'requirement', requirementId: a.requirementId, currencyCode: a.currencyCode || 'INR', items: [item],
+        id: orderId, tenantId, orderNo: orderNoFor(orderId, now), checkoutGroupId: null, buyerUserId: a.buyerUserId,
+        sellerUserId: a.sellerUserId, source: 'requirement', requirementId: a.requirementId, currencyCode: currencyFromListing(a.currencyCode || l.currencyCode, 'requirement', responseId), items: [item],
         deliveryMethodId: null, deliveryAddressId: null, requiresPayment, now,
       });
       await this.repo.insertGraph(tx, order, [item]);
@@ -100,8 +102,8 @@ export class QuoteAcceptedHandler implements OutboxHandler {
       unitPriceMinor: BigInt(quotedPriceMinor), gstRatePct: null, hsnCode: null, batchId: null,
     });
     const order = Order.place({
-      id: orderId, tenantId, orderNo: orderNo(orderId), checkoutGroupId: null, buyerUserId,
-      sellerUserId: l.sellerUserId, source: 'requirement', requirementId, currencyCode: l.currencyCode ?? 'INR', items: [item],
+      id: orderId, tenantId, orderNo: orderNoFor(orderId, now), checkoutGroupId: null, buyerUserId,
+      sellerUserId: l.sellerUserId, source: 'requirement', requirementId, currencyCode: currencyFromListing(l.currencyCode, 'requirement', requirementId), items: [item],
       deliveryMethodId: null, deliveryAddressId: null, requiresPayment, now,
     });
     await this.repo.insertGraph(tx, order, [item]);

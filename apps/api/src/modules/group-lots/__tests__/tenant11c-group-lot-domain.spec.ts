@@ -90,7 +90,7 @@ describe('A2 / A5 / A7 · the lifecycle guards', () => {
 describe('A2 / A3 · the money — balanced, keyed by the lot, never typed', () => {
   it('hold = coordinator Main → coordinator Hold, keyed gl-hold:<lot>', () => {
     expect(holdKey('L')).toBe('gl-hold:L');
-    const legs = holdLegs('coord', 1250000n);
+    const legs = holdLegs('coord', 1250000n, 'INR');   // PC-56 HOTFIX-5 · B4: the currency is required now (the organisation's), never a default
     expect(legs.reduce((a, l) => a + l.amountMinor, 0n)).toBe(0n);
     expect(legs.map((l) => [l.account.accountCode, l.amountMinor])).toEqual([['main', -1250000n], ['hold', 1250000n]]);
   });
@@ -99,11 +99,11 @@ describe('A2 / A3 · the money — balanced, keyed by the lot, never typed', () 
     const r = settleShares({ grossMinor: 1_000_003n, coordinationFeeBps: 50, pledges: [{ id: 'a', qtyMilli: 18000n }, { id: 'b', qtyMilli: 12000n }, { id: 'c', qtyMilli: 12000n }] });
     expect(r.coordinationFeeMinor).toBe(5000n);
     const shares = [{ farmerUserId: 'suresh', shareMinor: r.shares[0].shareMinor }, { farmerUserId: 'meera', shareMinor: r.shares[1].shareMinor }, { farmerUserId: 'coord', shareMinor: r.shares[2].shareMinor }];
-    const legs = settleLegs('coord', 1_000_003n, r.coordinationFeeMinor, shares);
+    const legs = settleLegs('coord', 1_000_003n, r.coordinationFeeMinor, shares, 'INR');
     expect(legs.reduce((a, l) => a + l.amountMinor, 0n)).toBe(0n);
     expect(legs.filter((l) => l.account.userId === 'coord' && l.account.accountCode === 'main')).toHaveLength(1);
     expect(legs.find((l) => l.account.userId === 'coord' && l.account.accountCode === 'main')!.amountMinor).toBe(r.shares[2].shareMinor + 5000n);
-    expect(() => settleLegs('coord', 1_000_004n, r.coordinationFeeMinor, shares)).toThrow(/parts .* ≠ gross/);
+    expect(() => settleLegs('coord', 1_000_004n, r.coordinationFeeMinor, shares, 'INR')).toThrow(/parts .* ≠ gross/);
   });
   it('remainder paise go largest-pledge first and the parts sum to the net exactly', () => {
     const r = settleShares({ grossMinor: 100n, coordinationFeeBps: 0, pledges: [{ id: 's', qtyMilli: 1000n }, { id: 'b', qtyMilli: 2000n }] });

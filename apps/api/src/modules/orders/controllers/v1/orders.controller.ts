@@ -1,6 +1,7 @@
 // modules/orders/controllers/v1/orders.controller.ts · order history + lifecycle.
-import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
+import { createHash } from 'node:crypto';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
@@ -23,6 +24,8 @@ import { OrderConsoleReadModel } from '../../read-models/order-console.read-mode
 import { orderMoneyView } from '../../domain/order-money';
 import { ConsoleOrdersSchema, ConsoleOrdersDto, parseOrderCursor, buildOrderCursor } from '../../dto/order-console.dto';
 import { ApiScopes } from '../../../../core/auth/api-key.port';
+import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../../core/idempotency/idempotency.service';
+import { buyerTimeline, staffTimeline } from '../../domain/order-event-roles';
 
 const ipOf = (req: Request) => req.ip || null;
 
@@ -39,6 +42,7 @@ export class OrdersController {
     private readonly groups: CheckoutGroupService,
     private readonly stats: TenantOrderStatsReadModel,
     private readonly console: OrderConsoleReadModel,          // PC-56 TENANT-3a: W133 views + W134 timeline/money
+    @Inject(IDEMPOTENCY_SERVICE) private readonly idem: IdempotencyService,   // PC-56 HOTFIX-5 · B6: the cancel honours Idempotency-Key
   ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateOrder(ctx) }; }
 
@@ -77,10 +81,13 @@ export class OrdersController {
 
   /** W134's timeline — order_events, recorded on every hop since 0005 and read by no tenant surface until now.
    *  Party-scoped: the buyer, the seller, or a moderator (the same rule the order detail read enforces). */
+  /** PC-56 HOTFIX-5 · B3 (survey F-7): a BUYER caller reads ROLE labels (`seller` / `buyer` / `system` / `moderator`) — never a person's id,
+   *  name or a free-text note; the seller and staff keep the console's row (names included) plus the role. One read model, two shapes. */
   @Get(':id/events') @ApiScopes('orders.read')
   async events(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
-    const o = await this.orders.getById(ctx.tenantId, this.actor(ctx), id);
-    return { data: await this.console.timeline(ctx.tenantId, id, new Date(o.createdAt)) };
+    const v = await this.orders.viewerOf(ctx.tenantId, this.actor(ctx), id);
+    const rows = await this.console.timeline(ctx.tenantId, id, v.createdAt);
+    return { data: v.role === 'buyer' ? buyerTimeline(rows, v) : staffTimeline(rows, v) };
   }
 
   /** W134's money box: the FROZEN figures plus, for each line, where its number comes from. Party-scoped. */
@@ -138,8 +145,17 @@ export class OrdersController {
   }
 
   // cancel/complete/dispute: any authed party; the entity + service enforce buyer/seller ownership
+  // PC-56 HOTFIX-5 · B6 (survey C-7): the cancel HONOURS Idempotency-Key (the SDK always sent it; the route ignored it). A replay with the same
+  // key returns the first answer and acts nothing — the signup / checkout pattern (`idem.remember`, scoped by caller + endpoint). The key is
+  // bound to THIS order (a sha256 of order id + key, 43 chars — `idempotency_keys.key` is varchar(120) and caller + endpoint + order id + a
+  // uuid key overflowed it: found live), so one key reused on another order never answers for it. Without a key the act runs once and a
+  // second cancel is refused by the state machine, as before.
   @Post(':id/cancel')
-  cancel(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(CancelOrderSchema) dto: CancelOrderDto) { return this.orders.cancel(ctx.tenantId, this.actor(ctx), id, dto.reasonId ?? null, ipOf(r)).then(() => ({ data: { ok: true } })); }
+  async cancel(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string | undefined, @Param('id') id: string, @ZodBody(CancelOrderSchema) dto: CancelOrderDto) {
+    const act = () => this.orders.cancel(ctx.tenantId, this.actor(ctx), id, dto.reasonId ?? null, ipOf(r)).then(() => ({ ok: true }));
+    if (!key) return { data: await act() };
+    return { data: await this.idem.remember(createHash('sha256').update(`${id}:${key}`).digest('base64url'), ctx.userId, 'orders.cancel', act) };
+  }
   @Post(':id/complete')
   complete(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.orders.complete(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then(() => ({ data: { ok: true } })); }
   @Post(':id/dispute')

@@ -21,6 +21,8 @@ export interface ListingOfferProps {
   counterPriceMinor: bigint | null;       // seller's per-unit counter (minor units)
   round: number; status: OfferStatus; expiresAt: Date;
   convertedOrderId: string | null; createdAt: Date;
+  /** PC-56 HOTFIX-5 · B4: the LISTING's currency, projected on read (listing_offers has no currency column — 0015). Never written. */
+  currencyCode?: string | null;
 }
 
 const QTY_RE = /^\d{1,11}(\.\d{1,3})?$/;

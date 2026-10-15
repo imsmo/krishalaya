@@ -40,7 +40,7 @@ export class AuctionWonHandler implements OutboxHandler {
     const unitCode = hasLot ? (p.unitCode as string) : 'lot';
     const unit = BigInt(amountMinor);
     await this.auctionOrders.createInTx(tx, {
-      tenantId, auctionId, listingId, productId: l.productId, title: l.title, currencyCode: l.currencyCode ?? 'INR',
+      tenantId, auctionId, listingId, productId: l.productId, title: l.title, currencyCode: l.currencyCode,   // PC-56 HOTFIX-5 · B4: the listing's; AuctionOrderService refuses none (never 'INR')
       sellerUserId: l.sellerUserId, buyerUserId: bidderUserId, quantity, unitCode, unitPriceMinor: unit,
       expectedLotValueMinor: (unit * milli(quantity)) / 1000n,
     });

@@ -52,9 +52,13 @@ seller actions; buyer actions scoped to the buyer).
 
 ## Jobs (resilience / SLAs)
 `seller-confirm-timeout` (auto-cancel orders the seller didn't confirm within the acceptance
-window — `systemCancel`), `auto-complete-quality-window` (auto-complete delivered orders after the
-dispute window), `abandoned-carts` (mark stale active carts abandoned). All tenant-scoped,
-`SKIP LOCKED`, partition-bounded.
+window — `systemCancel`; **auction orders excluded**, founder D2), `quality-window-complete` (auto-complete
+delivered orders **paid online** after the quality window — escrow released through payments'
+`OrderSettlementService`; a pay-on-delivery order is left to a manual completion, see
+`domain/order-clocks.ts`), `abandoned-carts` (mark stale active carts abandoned; not scheduled). PC-56 HOTFIX-5:
+the first two are REGISTERED in `SCHEDULED_JOB_REGISTRY` (they ran nowhere before) at the cadences in
+`core/jobs/clock-cadence.ts`; tenants listed on the runner's kv_relay pool (`orders`), every claim and act
+as kv_app, each act idempotent. All tenant-scoped, `SKIP LOCKED`, partition-bounded.
 
 ## Tests
 Unit (`order.service.spec.ts`): state-machine transition table + coverage, `lineTotalMinor` bigint

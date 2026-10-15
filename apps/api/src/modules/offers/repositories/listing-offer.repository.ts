@@ -5,13 +5,17 @@
 // SELECT … FOR UPDATE (the negotiation is low-contention; the row lock serializes counter/accept/
 // reject without an optimistic version). Reads go to the replica; the expiry job uses SKIP LOCKED.
 import { Inject, Injectable } from '@nestjs/common';
+import type { Pool } from 'pg';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { ListingOffer, ListingOfferProps } from '../domain/listing-offer.entity';
 import { OfferStatus } from '../domain/listing-offer.state';
 
+// PC-56 HOTFIX-5 · B4 (Rule Zero, survey F-8): `listing_offers` has NO currency column (0015) — an offer is priced in its LISTING's currency,
+// projected here (read-only, never written) so every offer read says which currency its minor units are in.
 const COLS = `id, tenant_id, listing_id, buyer_user_id, quantity, offered_price_minor,
-  counter_price_minor, round, status, expires_at, converted_order_id, created_at`;
+  counter_price_minor, round, status, expires_at, converted_order_id, created_at,
+  (SELECT l.currency_code FROM listings l WHERE l.id = listing_offers.listing_id AND l.tenant_id = listing_offers.tenant_id) AS currency_code`;
 const big = (v: any) => (v == null ? null : BigInt(v));
 function toDomain(r: any): ListingOffer {
   return ListingOffer.rehydrate({
@@ -19,6 +23,7 @@ function toDomain(r: any): ListingOffer {
     quantity: String(r.quantity), offeredPriceMinor: BigInt(r.offered_price_minor), counterPriceMinor: big(r.counter_price_minor),
     round: r.round, status: r.status as OfferStatus, expiresAt: r.expires_at,
     convertedOrderId: r.converted_order_id, createdAt: r.created_at,
+    currencyCode: r.currency_code != null ? String(r.currency_code).trim() : null,
   });
 }
 
@@ -85,11 +90,18 @@ export class ListingOfferRepository {
     return r.rows.map(toDomain);
   }
 
-  /** Worker finder (cross-tenant; runs as kv_relay). Bounded + SKIP LOCKED; matches the open/countered set. */
-  async findDueToExpire(tx: TxContext, now: Date, limit: number): Promise<ListingOffer[]> {
-    const r = await tx.query(
-      `SELECT ${COLS} FROM listing_offers WHERE status IN ('open','countered') AND expires_at <= $1
-        ORDER BY expires_at LIMIT $2 FOR UPDATE SKIP LOCKED`, [now, limit]);
-    return r.rows.map(toDomain);
+  /** PC-56 HOTFIX-5 · B1 — the expiry clock's claim, PER TENANT in the caller's kv_app tx (RLS): open / countered offers past expires_at.
+   *  Ids only, bounded, SKIP LOCKED; the act re-locks and re-checks each row. (The old cross-tenant finder ran as kv_relay, which holds no
+   *  grant on listing_offers — removed.) */
+  async dueToExpire(tx: TxContext, tenantId: string, now: Date, limit: number): Promise<string[]> {
+    const r = await tx.query<{ id: string }>(
+      `SELECT id FROM listing_offers WHERE tenant_id=$1 AND status IN ('open','countered') AND expires_at <= $2
+        ORDER BY expires_at LIMIT $3 FOR UPDATE SKIP LOCKED`, [tenantId, now, limit]);
+    return r.rows.map((x) => x.id);
+  }
+  /** The tenants the expiry clock visits, on the runner's kv_relay pool — `tenants` only (granted; kv_relay holds nothing on listing_offers). */
+  async liveTenants(pool: Pool): Promise<string[]> {
+    const r = await pool.query<{ id: string }>(`SELECT id FROM tenants WHERE deleted_at IS NULL ORDER BY id`);
+    return r.rows.map((x) => x.id);
   }
 }
