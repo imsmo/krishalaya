@@ -11,7 +11,7 @@ import * as React from 'react';
 const mock: { stats: unknown; feed: unknown; cats: unknown; lang: string } = { stats: null, feed: null, cats: [], lang: 'en' };
 const fail = (status: number) => { throw Object.assign(new Error('api'), { status }); };
 
-jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', featureAuctions: true, siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: null } }));
+jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: null } }));
 jest.mock('../lib/i18n', () => {
   const { Translator: T } = jest.requireActual('@krishalaya/i18n');
   const cat = (l: string) => jest.requireActual(`../i18n/${l}`)[l];

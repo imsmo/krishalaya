@@ -9,6 +9,9 @@
 //   • the breadcrumb back to the platform store (founder D1 allows it: "Tenant stores MAY link back to the bazaar").
 //   • PC-56 STORE-3b · C1 (survey F-11): "Offers" → THIS store's /<slug>/offers, ONLY for a signed-in buyer and ONLY when this store's `offers`
 //     flag is ON (its public flags read); OFF or unreadable → no link.
+//   • PC-56 STORE-3c · C1 (founder D4): "Auctions" → /<slug>/auctions (and "My bids" → /<slug>/auctions/bids for a signed-in buyer) ONLY when
+//     this store's `auctions` flag is ON; "Group lots" → THIS store's search with the group-lot facet ONLY when `group_lots` is ON. The flags
+//     are read once for every visitor; unreadable → no links.
 // Server component: the only client JS is the locale switcher.
 import Link from 'next/link';
 import { getTranslator, getLang } from '../lib/i18n';
@@ -33,8 +36,11 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
   const signedIn = hasSessionCookie();
   const cartCount = await getCartItemCount();
   const home = `/${slug}`;
-  let offersOn = false;
-  if (signedIn) { try { offersOn = (await publicClient(slug).storefront.flags()).offers === true; } catch { offersOn = false; } }
+  let offersOn = false; let auctionsOn = false; let groupLotsOn = false;
+  try {
+    const f = await publicClient(slug).storefront.flags();
+    offersOn = signedIn && f.offers === true; auctionsOn = f.auctions === true; groupLotsOn = f.group_lots === true;
+  } catch { offersOn = false; auctionsOn = false; groupLotsOn = false; }
   return (
     <header className="kv-header" data-kv-header="tenant">
       <div className="kv-container kv-header__bar">
@@ -55,6 +61,9 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
         <div className="kv-header__actions">
           <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
           {signedIn && offersOn && <Link href={`${home}/offers`} className="kv-header__link" data-kv-nav="offers">{t.t('nav.offers')}</Link>}
+          {auctionsOn && <Link href={`${home}/auctions`} className="kv-header__link" data-kv-nav="auctions">{t.t('nav.auctions')}</Link>}
+          {auctionsOn && signedIn && <Link href={`${home}/auctions/bids`} className="kv-header__link" data-kv-nav="my-bids">{t.t('nav.myBids')}</Link>}
+          {groupLotsOn && <Link href={`${home}/search?saleType=group_lot`} className="kv-header__link" data-kv-nav="group-lots">{t.t('nav.groupLots')}</Link>}
           {/* PC-56 STORE-2b · D3: THIS store's cart (/<slug>/cart), under this header */}
           <Link href={`${home}/cart`} className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}

@@ -175,7 +175,7 @@ describe('STORE-3a · claims guard (the orders, the order, the cancel chain, the
   it.each(Object.entries(CATS))('%s: no digit, no currency sign, no person placeholder in a STORE-3a value', (_l, cat) => {
     const keys = Object.keys(cat).filter((k) => k.startsWith('store3a.') || k.startsWith('order.cancelReason.')
       || /^order\.(status\.(created|payment_pending|picked_up|in_transit|out_for_delivery|refunded|partially_refunded|partially_fulfilled|unknown)|terminal\.(refunded|partially_refunded))$/.test(k));
-    expect(keys.length).toBe(140);
+    expect(keys.length).toBe(139);   // PC-56 STORE-3c: store3a.refusal.payBalance retired (the balance payment is built)
     for (const k of keys) {
       const v = (cat as Record<string, string>)[k];
       expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
@@ -219,6 +219,49 @@ describe('STORE-3b · claims guard (the offer list, the thread, the response cha
   it('every English STORE-3b refusal says no / not / never / cannot', () => {
     const r = Object.entries(en).filter(([k]) => k.startsWith('store3b.refusal.'));
     expect(r.length).toBe(12);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b/i.test(v)]).toEqual([k, true]);
+  });
+});
+
+// PC-56 STORE-3c · brief §E / C6 — every canon claim the auction, my-bids and group-lot pages REFUSE stays out of every catalogue as an OFFER: the
+// phrases may appear ONLY inside a refusal sentence (`*.refusal.*`, which say no, by name). And no STORE-3c value (store3c.* — the nine auction
+// statuses, the six group-lot statuses, the deposit states, the balance rows) carries a digit, a currency sign or a person placeholder.
+describe('STORE-3c · claims guard (the auction list, my bids, the group lot, the balance pay step)', () => {
+  const REFUSED = [
+    /\d+\s?% of your bid|of your bid\b/i,                                                       // founder D1: the lot-value rule is printed
+    /names? masked/i,                                                                          // no identity at all
+    /KYC-verified buyers|bidder qualification/i,                                               // no qualification check
+    /reverse\s*·\s*dutch|dutch auction/i,                                                      // the entity refuses them
+    /within 12\s?h|decision due within/i,                                                      // the per-auction deadline instead
+    /follow to hear/i,                                                                         // no relist notifier
+    /connection fingerprint|rings? get caught|caught and voided/i,                             // ip only; no ring detection
+    /by tomorrow 18:00/i,                                                                      // founder D2: the settlement's due time
+    /Register interest|first-committed|Interested buyers so far/i,                             // founder D3
+    /indicative price|full lot value|below single-lot prices/i,                                // founder D3
+    /graded separately at the centre/i,
+    /never a wallet|own verified quintals/i,                                                   // the true payout sentence instead
+    /we message you at|you pay only when the lot fills/i,
+    /verified-buyer-only/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (/\.refusal\./.test(k)) continue;
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no digit, no currency sign, no person placeholder in a STORE-3c value', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store3c.'));
+    expect(keys.length).toBe(136);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|memberNo|fullName|owner|bidder|coordinator)\}/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English STORE-3c refusal says no / not / never / cannot', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store3c.refusal.'));
+    expect(r.length).toBe(17);
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b/i.test(v)]).toEqual([k, true]);
   });
 });

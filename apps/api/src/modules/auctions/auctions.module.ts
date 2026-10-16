@@ -13,6 +13,8 @@
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { ListingsModule } from '../listings/listings.module';
 import { OrdersModule } from '../orders/orders.module';
+// PC-56 STORE-3c · B3: PaymentService (the PUBLIC service) — the my-bids read takes the deposit's state from the LEDGER by key and the live amount due
+import { PaymentsModule } from '../payments/payments.module';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
@@ -38,7 +40,7 @@ import { AuctionDefaultJob, CloseEndedAuctionsJob, OpenScheduledAuctionsJob, Rel
 const JOB_DEPS = [UNIT_OF_WORK, AuctionRepository, AuctionService];
 
 @Module({
-  imports: [ListingsModule, OrdersModule],
+  imports: [ListingsModule, OrdersModule, PaymentsModule],
   controllers: [AuctionsController, BidsController, StorefrontAuctionsController],   // PC-56 STORE-2c · B7: + the public auction read
   providers: [
     AuctionPublicReadModel,

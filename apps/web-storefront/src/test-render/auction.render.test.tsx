@@ -13,7 +13,7 @@ jest.mock('next/navigation', () => ({ redirect: (to: string) => { throw new Erro
   useRouter: () => ({ replace: () => undefined, push: () => undefined, refresh: () => undefined }) }));
 jest.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 jest.mock('react-dom', () => ({ ...jest.requireActual('react-dom'), useFormStatus: () => ({ pending: jest.requireActual('./store2c-fixtures').C.pending === true }) }));
-jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', featureAuctions: false, siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: 'rzp_test_x' } }));
+jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: 'rzp_test_x' } }));
 jest.mock('../lib/i18n', () => {
   const { Translator: Tr } = jest.requireActual('@krishalaya/i18n');
   const cat = (l: string) => jest.requireActual(`../i18n/${l}`)[l];
@@ -73,7 +73,9 @@ describe('STORE-2c · W278 the auction', () => {
     expect(h).toContain('data-kv-state="won"');
     expect(text(h)).toContain('pay its balance within 48 hours');
     expect(text(h)).not.toMatch(/tomorrow 18:00/);
-    expect(h).toContain('href="/orders/o-won"');
+    // PC-56 STORE-3c · C4 (founder D2): the won state links THIS store's pay step for the balance and the order under the organisation's chrome
+    expect(h).toContain('data-kv-pay-balance="o-won" href="/anand-fpo/checkout/pay?o=o-won"');
+    expect(h).toContain('href="/anand-fpo/orders/o-won"');
     C.auction = AUCTION_VIEW({ status: 'ended', isOpen: false });
     expect(await page()).toContain('data-kv-state="ended"');
     C.auction = AUCTION_VIEW({ status: 'scheduled' });

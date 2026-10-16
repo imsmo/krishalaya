@@ -824,8 +824,11 @@ export interface AuctionConsent { channel: AuctionConsentChannel; mediaId?: stri
 export interface AuctionSettlement {
   orderId: string; quantity: string; unitCode: string; hammerUnitMinor: string; orderValueMinor: string; emdAppliedMinor: string;
   balanceDueMinor: string; balanceDueAt: string; collection: 'online' | 'offline'; settledAt: string;
-  outcome: 'open' | 'paid' | 'defaulted' | 'returned'; outcomeAt: string | null;
+  outcome: SettlementOutcome; outcomeAt: string | null;
 }
+/** The settlement's outcome (0186; PC-56 STORE-3c 0212 + `cancelled_paid`: a PAID order later cancelled — the deposit returned, the balance
+ *  refunded). `open` = the balance still owed. */
+export type SettlementOutcome = 'open' | 'paid' | 'defaulted' | 'returned' | 'cancelled_paid';
 export interface Auction {
   auctionId: string; auctionNo?: string | null; listingId: string; kind: string; status: string;
   quantity?: string; unitCode?: string;
@@ -866,13 +869,46 @@ export interface BidHistoryItem {
 export interface BidStreamPage extends Page<BidHistoryItem> { bidders: number | null; sealedHidden: boolean | null; identitiesRevealed: boolean | null }
 /** Result of placing a bid. `extended` = the soft-close auto-extended the end time. */
 export interface PlaceBidResult { bidId: string; auctionId: string; amountMinor: string; lotValueMinor?: string; quantity?: string; unitCode?: string; extended: boolean; endsAt: string; }
-/** One of the caller's bids across auctions ("my bids"), with the EMD hold + winning flag. Money minor-unit strings. */
+/** One row of "my bids". PC-56 STORE-3c · B3: ONE ROW PER AUCTION the caller bid in (the old per-bid fields are kept, filled from the caller's
+ *  BEST bid, for the mobile app); `emdHeldMinor` is the LEDGER's held amount ('0' when no longer held) — never the rule. Money minor-unit strings. */
 export interface MyBid {
   bidId: string; auctionId: string; listingId: string; amountMinor: string; emdHeldMinor: string;
   auctionStatus: string; endsAt: string; isWinning: boolean; createdAt: string; quantity?: string; unitCode?: string;
   /** PC-56 HOTFIX-5 · B4 (Rule Zero): the lot's (its listing's) currency — the minor units above are in it. */
   currencyCode: string | null;
+  // ---- PC-56 STORE-3c · B3 (all optional for older callers) ----
+  auctionNo?: string | null; listingTitle?: string | null; organisation?: { slug: string; name: string } | null; exponent?: number | null;
+  status?: string; kind?: string; decisionDueAt?: string | null; isOpen?: boolean; sealedHidden?: boolean;
+  /** null while a sealed auction hides amounts */
+  currentBidMinor?: string | null; minNextBidMinor?: string; myBestMinor?: string; myBestAt?: string; myBidCount?: number;
+  leading?: boolean; outbid?: boolean; won?: boolean;
+  /** the deposit AS THE LEDGER HAS IT (by its idempotency keys) — state, amount and when */
+  emd?: MyBidEmd;
+  /** the deposit this auction ASKS (the rule) — shown separately from what the ledger holds */
+  emdRule?: { flatMinor: string | null; pctBps: number | null };
+  /** the winner's settlement only (null for everyone else) */
+  settlement?: MyBidSettlement | null;
 }
+export type MyBidEmdState = 'held' | 'released' | 'applied' | 'forfeited' | 'returned' | 'none';
+export interface MyBidEmd { state: MyBidEmdState; amountMinor: string; at: string | null }
+export interface MyBidSettlement {
+  orderId: string; outcome: SettlementOutcome; collection: 'online' | 'offline'; orderValueMinor: string; emdAppliedMinor: string; balanceDueMinor: string;
+  /** the settlement's own due time (48 h after it) */
+  balanceDueAt: string;
+  /** LIVE: what the order still needs paid (total − the deposit applied in escrow) — the ONE rule the pay step charges */
+  amountDueMinor: string | null; outcomeAt: string | null;
+}
+/** PC-56 STORE-3c · B10 — the auctions' refusals, BY NAME: BID_SEALED_MUST_RAISE {yourLastMinor} (founder D1: a sealed bid only raises your own)
+ *  · BID_TOO_LOW {minMinor} · ALREADY_HIGH_BIDDER · AUCTION_ENDED · AUCTION_NOT_BIDDABLE {status} · AUCTION_ENTRY_PAUSED · SELLER_CANNOT_BID ·
+ *  WALLET_INSUFFICIENT_BALANCE (the deposit) · ORDER_PAYMENT_AMOUNT_MISMATCH {expected, got} (a payment that is not the amount DUE). */
+export const AUCTION_REFUSAL_CODES = Object.freeze([
+  'BID_SEALED_MUST_RAISE', 'BID_TOO_LOW', 'ALREADY_HIGH_BIDDER', 'AUCTION_ENDED', 'AUCTION_NOT_BIDDABLE', 'AUCTION_ENTRY_PAUSED', 'SELLER_CANNOT_BID',
+  'WALLET_INSUFFICIENT_BALANCE', 'ORDER_PAYMENT_AMOUNT_MISMATCH',
+] as const);
+export type AuctionRefusalCode = (typeof AUCTION_REFUSAL_CODES)[number];
+/** The nine auction statuses (apps/api auction.state.ts) — the storefront labels every one in three languages. */
+export const AUCTION_STATUSES = Object.freeze(['scheduled', 'live', 'extended', 'ended', 'awaiting_approval', 'settled', 'cancelled', 'failed_reserve', 'defaulted'] as const);
+export type AuctionStatusCode = (typeof AUCTION_STATUSES)[number];
 /** An auction the caller is WATCHING (follow). `status`/`endsAt` are the live auction's, `watchedAt` is when the
  * caller started watching. No money lives here. */
 export interface WatchedAuction { auctionId: string; status: string; endsAt: string; watchedAt: string; }
@@ -1080,6 +1116,16 @@ export interface ReferralDeskSummary {
 // server, never a JS float); money is bigint minor STRINGS (Law 2). The settlement pays every pledger from the REAL sale, in two
 // hands (prepare → confirm by a second person).
 export type GroupLotStatus = 'pledging' | 'ready' | 'listed' | 'sold' | 'settled' | 'cancelled';
+/** The six group-lot statuses (apps/api group-lot.state.ts) — PC-56 STORE-3c: the storefront labels every one in three languages. */
+export const GROUP_LOT_STATUSES = Object.freeze(['pledging', 'ready', 'listed', 'sold', 'settled', 'cancelled'] as const);
+/** PC-56 STORE-3c · B8 — a group lot as a BUYER may see it (`GET /v1/storefront/group-lots/:id`, `group_lots` flag): a pledger COUNT, never who;
+ *  the organisation, never the coordinator; the server's progress in basis points; the listing once listed (its public read prices it). */
+export interface StorefrontGroupLot {
+  id: string; lotNo: string | null; product: { name: string | null }; targetQuantity: string; pledgedQuantity: string; unitCode: string;
+  progressBps: number; pledgerCount: number; pledgeDeadline: string; status: GroupLotStatus; coordinationFeeBps: number;
+  currencyCode: string | null; exponent: number | null; listingId: string | null; organisation: { slug: string; name: string } | null;
+  cancelReasonCode: string | null;
+}
 /** A pooled FPO lot as the list prints it. progressBps = pledged ÷ target in integer basis points. */
 export interface GroupLot {
   id: string; lotNo: string | null; coordinatorUserId: string; productId: string; targetQuantity: string; pledgedQuantity: string;
@@ -3616,6 +3662,19 @@ export interface SchemeSweepView {
   sweep: SchemeSweep; output: 'call_list_only'; autoApply: { built: false; reason: string };
   items: Array<{ id: string; userId: string; shortName: string | null; phoneMasked: string; eligible: boolean; reasons: string[]; inputs: Record<string, unknown>; alreadyApplied: boolean }>;
   nextCursor: string | null;
+}
+
+// --- PC-56 STORE-3c · B4 — one card of the PUBLIC auction list (`GET /v1/storefront/auctions?group=`) — no reserve amount, no winner, no order
+// id, no bidder identity; every figure the server's ---
+export type PublicAuctionGroup = 'live' | 'upcoming' | 'ended';
+export interface PublicAuctionCard {
+  auctionId: string; auctionNo: string | null; status: string; kind: string; isOpen: boolean;
+  lot: { title: string; unitCode: string; quantity: string; organisation: { slug: string; name: string } | null };
+  currencyCode: string | null; exponent: number | null;
+  reserveMet: boolean; hasBids: boolean; bidderCount: number; sealedHidden: boolean;
+  currentBidMinor: string | null; minNextBidMinor: string;
+  startsAt: string; endsAt: string; decisionDueAt: string | null; antiSnipe: { triggerSec: number; extendSec: number };
+  emd: { flatMinor: string | null; pctBps: number | null };
 }
 
 // --- PC-56 STORE-2c · B7 — the PUBLIC auction read (`GET /v1/storefront/auctions/:id`) — every figure the SERVER's; no bidder identity ---

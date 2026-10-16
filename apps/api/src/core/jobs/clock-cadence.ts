@@ -9,10 +9,13 @@
 //   seller-confirm-timeout    every 5 min   the 24 h acceptance window (orders.acceptance_deadline) is late by at most one tick
 //   quality-window-complete   every 15 min  the 24 h quality window (orders.quality_window_ends) — escrow release is not minute-critical
 //   offers-expire             every 5 min   an offer's expires_at (72 h default) is late by at most one tick
+//   group-lots-deadline       every 15 min  PC-56 STORE-3c · B8 (founder D3): an unfilled `pledging` group lot past its pledge_deadline is
+//                                           cancelled (`target_missed`) — no money moves; a lot closes at most one tick late
 export const CLOCK_CADENCE_MS = Object.freeze({
   'seller-confirm-timeout': 5 * 60_000,
   'quality-window-complete': 15 * 60_000,
   'offers-expire': 5 * 60_000,
+  'group-lots-deadline': 15 * 60_000,
 } as const);
 
 export type ClockName = keyof typeof CLOCK_CADENCE_MS;

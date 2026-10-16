@@ -40,6 +40,8 @@ function loadRazorpay(): Promise<boolean> {
 export type PayLabels = {
   pay: string; processing: string; unavailable: string; scriptError: string; cancelled: string;
   failed: string; pendingMsg: string; attemptLive: string; notAwaiting: string;
+  /** PC-56 STORE-3c · C4: ORDER_PAYMENT_AMOUNT_MISMATCH by name (the amount asked is not what the order still owes) — optional for older callers. */
+  amountMismatch?: string;
   /** D8: the sheet's two lines — the selling organisation's name and the localized "Order <order_no>". */
   sheetName: string; sheetDescription: string;
 };
@@ -71,7 +73,8 @@ export function PayButton(
       const intent = await createOrderAttemptAction(slug, orderId, attempt);
       if (!intent.ok) {
         setBusy(false);
-        setError(intent.refusal === 'attempt_live' ? labels.attemptLive : intent.refusal === 'not_awaiting' ? labels.notAwaiting : labels.failed);
+        setError(intent.refusal === 'attempt_live' ? labels.attemptLive : intent.refusal === 'not_awaiting' ? labels.notAwaiting
+          : intent.refusal === 'amount_mismatch' ? (labels.amountMismatch ?? labels.failed) : labels.failed);
         router.refresh();
         return;
       }

@@ -38,6 +38,16 @@ function toDomain(r: any): Auction {
 }
 
 export type GroupCounts = Record<AuctionGroup, number>;
+export interface ListingFacts { title: string; sellerUserId: string; currencyCode: string | null; exponent: number | null }
+
+/** PC-56 STORE-3c · B4 (founder D4): the PUBLIC list's three tabs and the statuses each shows (every one of the nine in exactly one). */
+export const PUBLIC_AUCTION_GROUPS = ['live', 'upcoming', 'ended'] as const;
+export type PublicAuctionGroup = (typeof PUBLIC_AUCTION_GROUPS)[number];
+export const PUBLIC_GROUP_STATUSES: Readonly<Record<PublicAuctionGroup, readonly AuctionStatus[]>> = Object.freeze({
+  live: ['live', 'extended'],
+  upcoming: ['scheduled'],
+  ended: ['ended', 'awaiting_approval', 'settled', 'failed_reserve', 'cancelled', 'defaulted'],
+});
 
 @Injectable()
 export class AuctionRepository {
@@ -123,6 +133,51 @@ export class AuctionRepository {
     const lp = p(opts.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM auctions WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
+  }
+
+  /** PC-56 STORE-3c · B4 (B31): a page's listing facts in ONE query (the list read them one `listings.getById` per row) — the title and the
+   *  seller (who decides `privileged`). Bounded by the page. */
+  async listingFactsFor(tenantId: string, listingIds: readonly string[]): Promise<Map<string, ListingFacts>> {
+    const out = new Map<string, ListingFacts>();
+    const ids = [...new Set(listingIds)];
+    if (ids.length === 0) return out;
+    const r = await this.replica.forTenant(tenantId).query<{ id: string; title: string; seller_user_id: string; currency_code: string | null; minor_units: number | null }>(
+      `SELECT l.id, l.title, l.seller_user_id, l.currency_code, c.minor_units
+         FROM listings l LEFT JOIN currencies c ON c.code = l.currency_code
+        WHERE l.tenant_id=$1 AND l.id = ANY($2::uuid[])`, [tenantId, ids]);
+    for (const x of r.rows) out.set(x.id, { title: x.title, sellerUserId: x.seller_user_id,
+      currencyCode: x.currency_code != null ? String(x.currency_code).trim() : null, exponent: x.minor_units != null ? Number(x.minor_units) : null });
+    return out;
+  }
+
+  /** PC-56 STORE-3c · B3: a page of auctions by id (replica) — the my-bids read's batch (one query, bounded by the page). */
+  async getVisibleMany(tenantId: string, ids: readonly string[]): Promise<Map<string, Auction>> {
+    const out = new Map<string, Auction>();
+    if (ids.length === 0) return out;
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM auctions WHERE tenant_id=$1 AND id = ANY($2::uuid[])`, [tenantId, [...new Set(ids)]]);
+    for (const x of r.rows) { const a = toDomain(x); out.set(a.id, a); }
+    return out;
+  }
+
+  /** PC-56 STORE-3c · B4 (founder D4) — THE PUBLIC LIST's page: one group (`live` = live + extended, `upcoming` = scheduled, `ended` = every
+   *  closed status), keyset on the column's own µs text (F-25): `live` / `upcoming` soonest-ending first `(ends_at ASC, id ASC)`, `ended` most
+   *  recently ended first `(ends_at DESC, id DESC)`. `bidderUserId` narrows it to the auctions that user bid in (`?mine=1`). Bounded. */
+  async listPublic(tenantId: string, q: { group: PublicAuctionGroup; cursor?: Cursor; limit: number; bidderUserId?: string | null }): Promise<Array<{ a: Auction; endsAtRaw: string }>> {
+    const params: unknown[] = [tenantId];
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    let where = `a.tenant_id=$1 AND a.status::text = ANY(${p([...PUBLIC_GROUP_STATUSES[q.group]])}::text[])`;
+    if (q.bidderUserId) where += ` AND EXISTS (SELECT 1 FROM bids b WHERE b.tenant_id=a.tenant_id AND b.auction_id=a.id AND b.bidder_user_id=${p(q.bidderUserId)})`;
+    const asc = q.group !== 'ended';
+    if (q.cursor) {
+      const c = p(q.cursor.c), i = p(q.cursor.id);
+      where += asc ? ` AND (a.ends_at > ${c}::timestamptz OR (a.ends_at = ${c}::timestamptz AND a.id > ${i}::uuid))`
+                   : ` AND (a.ends_at < ${c}::timestamptz OR (a.ends_at = ${c}::timestamptz AND a.id < ${i}::uuid))`;
+    }
+    const lp = p(q.limit);
+    // COLS are unqualified: `auctions a` is the only relation in this FROM (the EXISTS sub-select has its own scope)
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT ${COLS}, ends_at::text AS ends_at_raw FROM auctions a WHERE ${where} ORDER BY a.ends_at ${asc ? 'ASC' : 'DESC'}, a.id ${asc ? 'ASC' : 'DESC'} LIMIT ${lp}`, params);
+    return r.rows.map((x) => ({ a: toDomain(x), endsAtRaw: String(x.ends_at_raw) }));
   }
 
   /** W137's tab counts — one GROUP BY, mapped onto the five groups. */

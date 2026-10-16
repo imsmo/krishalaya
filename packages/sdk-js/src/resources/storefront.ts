@@ -2,7 +2,7 @@
 // page?" answered by the API from the request's own tenant context (the client's `tenantSlug` → `X-Tenant-Slug`, or a verified
 // storefront host). A 404 TENANT_NOT_FOUND means no LIVE tenant resolved — never a default one.
 import { HttpClient } from '../http';
-import { DiscoveryCard, OrganisationCard, Page, PublicAuction, StorefrontFlags, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
+import { DiscoveryCard, OrganisationCard, Page, PublicAuction, PublicAuctionCard, PublicAuctionGroup, StorefrontFlags, StorefrontGroupLot, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
 
 export class StorefrontResource {
   constructor(private readonly http: HttpClient) {}
@@ -43,6 +43,17 @@ export class StorefrontResource {
    *  `{ withSession: true }` on an authed client to receive the viewer's own facts (their best bid, leading, won + order). No bidder identity. */
   async auction(id: string, opts: { withSession?: boolean } = {}, signal?: AbortSignal): Promise<PublicAuction> {
     return (await this.http.request<PublicAuction>('GET', `storefront/auctions/${encodeURIComponent(id)}`, { anonymous: !opts.withSession, signal })).data;
+  }
+  /** PC-56 STORE-3c · B4 — the PUBLIC auction list of the context organisation, one tab (`live` · `upcoming` · `ended`), keyset Next only
+   *  (`auctions` flag OFF → 404). `mine: true` narrows it to the session's own auctions and sends the session (401 without one). */
+  async auctions(params: { group?: PublicAuctionGroup; cursor?: string; limit?: number; mine?: boolean } = {}, signal?: AbortSignal): Promise<Page<PublicAuctionCard>> {
+    const r = await this.http.request<PublicAuctionCard[]>('GET', 'storefront/auctions', {
+      anonymous: !params.mine, signal, query: { group: params.group ?? 'live', cursor: params.cursor, limit: params.limit ?? 20, mine: params.mine ? '1' : undefined } });
+    return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** PC-56 STORE-3c · B8 — the PUBLIC group lot of the context organisation (`group_lots` flag OFF → 404): a pledger count, never who. */
+  async groupLot(id: string, signal?: AbortSignal): Promise<StorefrontGroupLot> {
+    return (await this.http.request<StorefrontGroupLot>('GET', `storefront/group-lots/${encodeURIComponent(id)}`, { anonymous: true, signal })).data;
   }
   /** PC-56 STORE-1c · D2 — the PUBLIC plans of a country (`?country=XX`, two letters; the API refuses a missing one by name —
    *  400 COUNTRY_REQUIRED — rather than guess a country). Read-only. */

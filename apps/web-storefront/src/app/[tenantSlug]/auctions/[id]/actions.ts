@@ -10,13 +10,11 @@ import { SdkError } from '@krishalaya/sdk-js';
 import { publicClient, serverClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { bidMinor } from '../../../../features/store2c/auction';
+// PC-56 STORE-3c · B2 / C6 (founder D1): the refusal map lives in features/store3c/auctions.ts — + BID_SEALED_MUST_RAISE (a sealed bid only raises)
+import { BID_REFUSAL_STATUS as BID_REFUSALS } from '../../../../features/store3c/auctions';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,62}$/;
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const BID_REFUSALS: Record<string, string> = {
-  AUCTION_BID_TOO_LOW: 'too_low', BID_TOO_LOW: 'too_low', AUCTION_ENDED: 'ended', AUCTION_NOT_BIDDABLE: 'ended', ALREADY_HIGH_BIDDER: 'leading',
-  AUCTION_ALREADY_HIGH_BIDDER: 'leading', WALLET_INSUFFICIENT_BALANCE: 'emd', AUCTION_ENTRY_PAUSED: 'paused', SELLER_CANNOT_BID: 'seller',
-};
 
 export async function placeBidAction(fd: FormData): Promise<void> {
   const slug = String(fd.get('slug') ?? ''); const auctionId = String(fd.get('auctionId') ?? ''); const key = String(fd.get('idempotencyKey') ?? '');

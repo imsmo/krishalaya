@@ -6,7 +6,7 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 jest.mock('next/navigation', () => ({ ...jest.requireActual('next/navigation'), notFound: () => { throw new Error('NEXT_NOT_FOUND'); }, redirect: (to: string) => { throw new Error(`REDIRECT ${to}`); } }));
-jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', featureAuctions: true, siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: null } }));
+jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: null } }));
 jest.mock('../lib/i18n', () => {
   const { Translator: Tr } = jest.requireActual('@krishalaya/i18n');
   const cat = (l: string) => jest.requireActual(`../i18n/${l}`)[l];

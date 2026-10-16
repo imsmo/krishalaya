@@ -469,7 +469,8 @@ run('PC-56 HOTFIX-5 · the clocks, the order numbers, the names and the deposit 
         let net = 0n;
         for (const k of [`walletpay:${orderId}`, `emd-apply:${auctionId}`, `refund:${orderId}`, `emd-return:${orderId}`]) net += escrowLeg(await legsOf(k));
         expect(net).toBe(0n);
-        expect(await settlement(auctionId)).toMatchObject({ outcome: 'paid', fft: false });   // 0186: an outcome moves once — `paid` stays
+        // PC-56 STORE-3c · B6 (0212, founder D6): the ONE second move — `paid` → `cancelled_paid`, with the return txn (before 0212 `paid` stayed)
+        expect(await settlement(auctionId)).toMatchObject({ outcome: 'cancelled_paid', ret: true, fft: false });
         expect(await count(`SELECT count(*)::int n FROM auction_events WHERE auction_id = $1 AND event_code = 'paid_order_cancelled'`, [auctionId])).toBe(1);
         expect(await count(`SELECT count(*)::int n FROM audit_log WHERE action = 'auction.emd_returned' AND entity_id = $1`, [auctionId])).toBe(1);
         expect(await stock(listingId)).toEqual({ q: '200.000', s: 'published' });   // the lot is back on sale

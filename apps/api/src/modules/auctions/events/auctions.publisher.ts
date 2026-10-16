@@ -20,9 +20,10 @@ export class AuctionsPublisher {
     await this.outbox.write(tx, { tenantId, aggregateType: 'auction', aggregateId: auctionId, eventType: type, payload: { v: 1, auctionId, ...payload } });
   }
 
-  /** A higher bid arrived → notify the PREVIOUS high bidder they've been outbid. */
-  outbid(tx: TxContext, tenantId: string, auctionId: string, previousBidderUserId: string, newAmountMinor: bigint) {
-    return this.emit(tx, tenantId, auctionId, AuctionEventType.Outbid, { previousBidderUserId, newAmountMinor: newAmountMinor.toString() });
+  /** A higher bid arrived → notify the PREVIOUS high bidder they've been outbid. PC-56 STORE-3c · B9: + `lot_name` (the listing title — the
+   *  variable `bid.outbid`'s template prints; seed 0007), never the new bidder. */
+  outbid(tx: TxContext, tenantId: string, auctionId: string, previousBidderUserId: string, newAmountMinor: bigint, lotName: string | null = null) {
+    return this.emit(tx, tenantId, auctionId, AuctionEventType.Outbid, { previousBidderUserId, newAmountMinor: newAmountMinor.toString(), ...(lotName ? { lot_name: lotName } : {}) });
   }
   /** A user started watching the auction (watch-list / analytics). */
   watchStarted(tx: TxContext, tenantId: string, auctionId: string, userId: string) {

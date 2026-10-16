@@ -46,6 +46,7 @@ import {
   SettlementCheckerError, SettlementStateError,
 } from '../domain/group-lot.errors';
 import { GroupLotActor, coordinatesLot } from '../policies/group-lot.policies';
+import { GROUP_LOT_DEADLINE_REASON, deadlineCancelDue } from '../domain/deadline';
 
 export type { GroupLotActor } from '../policies/group-lot.policies';
 
@@ -443,6 +444,59 @@ export class GroupLotService {
     if (out.listingId) await this.listings.invalidate(tenantId, out.listingId);
     return out;
   }
+  /**
+   * PC-56 STORE-3c · B8 (founder D3, survey B25) — THE DEADLINE CLOCK'S ACT (jobs/deadline.job.ts). In its OWN kv_app transaction: the lot is
+   * re-locked and the rule re-checked (domain/deadline.ts — still `pledging`, deadline passed, short of the target); due → cancelled with the
+   * reason `target_missed` by the SYSTEM (`cancelled_by` NULL), every active pledge released, audited (actor NULL, the rule as the reason) and
+   * the pledgers told exactly as a coordinator's cancel tells them (`group_lot.cancelled`, the reason in their language). NO MONEY MOVES — a
+   * pledging lot holds nothing. Returns whether THIS call cancelled it; a second tick finds `cancelled` and does nothing.
+   */
+  async cancelAtDeadline(tenantId: string, id: string, now: Date = new Date()): Promise<boolean> {
+    return this.uow.run(tenantId, async (tx) => {
+      const lot = await this.repo.getForUpdate(tx, tenantId, id);
+      if (!lot) return false;
+      const before = lot.toProps();
+      if (!deadlineCancelDue(before, now)) return false;
+      const reason = await this.repo.cancelReason(tx, GROUP_LOT_DEADLINE_REASON);
+      if (!reason) throw new CancelReasonError('GROUP_LOT_CANCEL_REASON_REQUIRED');   // the 0188 vocabulary row is missing — refuse by name
+      lot.cancel({ reasonId: reason.id, reasonCode: reason.code, reasonText: null, by: null, now });
+      await this.repo.update(tx, lot, null);
+      const released = await this.repo.releaseAll(tx, tenantId, id, null);
+      const p = lot.toProps();
+      await this.audited(tx, { tenantId, actorUserId: null, action: 'group_lot.cancelled', lotId: id, ip: null,
+        reason: 'the pledge deadline passed before the lot reached its target — closed by the system; nothing was paid and nothing is owed',
+        oldValue: { status: before.status, pledgedQuantity: before.pledgedQuantity, targetQuantity: before.targetQuantity, pledgeDeadline: before.pledgeDeadline },
+        newValue: { status: 'cancelled', reasonCode: reason.code, by: 'system', pledgesReleased: released.length, movedMinor: '0' } });
+      await this.notice(tx, tenantId, id, GroupLotEventType.Cancelled, released, {
+        lotNo: p.lotNo, product: await this.productName(tx, tenantId, p.productId), reasonCode: reason.code, reason: await this.reasonWords(tx, reason.code, null) });
+      this.metrics.inc('group_lot.deadline_cancelled', { tenant: tenantId });
+      return true;
+    }, { userId: 'system' });
+  }
+
+  /**
+   * PC-56 STORE-3c · B8 (founder D3, survey B22) — THE LOT AS A BUYER MAY SEE IT, WITHOUT A SESSION (`GET /v1/storefront/group-lots/:id`).
+   * The product's name, the lot number, the target and pledged quantities with their unit, the progress in basis points (the entity's own,
+   * float-free), the pledger COUNT (never who: no name, no phone, no id), the deadline, the status, the coordination fee in bps, the
+   * organisation (slug + name — never the coordinator's id or name), the lot's currency (the organisation's country's — HOTFIX-5), the listing
+   * id once the lot is listed (the public listing read prices it), and the cancel reason's CODE (never the coordinator's free text).
+   */
+  async publicView(tenantId: string, id: string) {
+    if (!/^[0-9a-fA-F-]{36}$/.test(id)) throw new GroupLotNotFoundError(id);
+    const lot = await this.repo.getById(tenantId, id);
+    if (!lot) throw new GroupLotNotFoundError(id);
+    const f = await this.repo.publicFacts(tenantId, id);
+    if (!f) throw new GroupLotNotFoundError(id);
+    const p = lot.toProps();
+    const listed = p.status === 'listed' && !!p.listingId && f.listingStatus === 'published';
+    return {
+      id: p.id, lotNo: p.lotNo ?? null, product: { name: f.productName }, targetQuantity: p.targetQuantity, pledgedQuantity: p.pledgedQuantity, unitCode: p.unitCode,
+      progressBps: lot.pledgeProgressBps(), pledgerCount: f.pledgerCount, pledgeDeadline: new Date(p.pledgeDeadline).toISOString(), status: p.status,
+      coordinationFeeBps: p.coordinationFeeBps, currencyCode: f.currencyCode, exponent: f.exponent,
+      listingId: listed ? p.listingId : null, organisation: f.organisation, cancelReasonCode: p.status === 'cancelled' ? (p.cancelReasonCode ?? null) : null,
+    };
+  }
+
   /** The reason as each member reads it: the platform's words in their language (seed core/0022), or the coordinator's own. */
   private async reasonWords(tx: TxContext, code: string, text: string | null): Promise<LangMap | string> {
     if (code === 'other' && text) return text;

@@ -140,7 +140,8 @@ export class GroupLot {
     this.props.extendedAt = now;
   }
   markNudged(now: Date): void { this.props.lastNudgedAt = now; }
-  cancel(input: { reasonId: string; reasonCode: string; reasonText: string | null; by: string; now: Date }): void {
+  /** `by` is the acting member; null for the SYSTEM (PC-56 STORE-3c: the deadline clock — `cancelled_by` references users, so never 'system'). */
+  cancel(input: { reasonId: string; reasonCode: string; reasonText: string | null; by: string | null; now: Date }): void {
     assertTransition(this.props.status, 'cancelled');
     this.props.status = 'cancelled';
     this.props.cancelReasonId = input.reasonId;

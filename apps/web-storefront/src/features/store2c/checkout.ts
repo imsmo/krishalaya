@@ -182,7 +182,8 @@ export function effectivePay(choice: PayChoice | null, offers: readonly PaymentO
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
 /* THE NAMED MONEY REFUSALS (brief §B9 / §C4 / §C5)                                                                                     */
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
-export const MONEY_REFUSALS = ['stock', 'mixed_currency', 'attempt_live', 'wallet_short', 'charge_method', 'not_awaiting', 'failed'] as const;
+// PC-56 STORE-3c · C4 (founder D2): + `amount_mismatch` (ORDER_PAYMENT_AMOUNT_MISMATCH — a payment that is not the amount DUE), by name
+export const MONEY_REFUSALS = ['stock', 'mixed_currency', 'attempt_live', 'wallet_short', 'charge_method', 'not_awaiting', 'amount_mismatch', 'failed'] as const;
 export type MoneyRefusal = (typeof MONEY_REFUSALS)[number];
 export function moneyRefusalOf(code: string | null | undefined): MoneyRefusal | null {
   switch (code) {
@@ -192,6 +193,7 @@ export function moneyRefusalOf(code: string | null | undefined): MoneyRefusal | 
     case 'WALLET_INSUFFICIENT_BALANCE': return 'wallet_short';
     case 'CHARGE_METHOD_UNSUPPORTED': return 'charge_method';
     case 'ORDER_NOT_AWAITING_PAYMENT': return 'not_awaiting';
+    case 'ORDER_PAYMENT_AMOUNT_MISMATCH': return 'amount_mismatch';
     default: return null;
   }
 }

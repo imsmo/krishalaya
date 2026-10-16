@@ -32,7 +32,7 @@ import { DISPUTE_REASONS } from '../../../../features/orders/buyer-actions';
 import { payHref, confirmHref } from '../../../../features/store2c/checkout';
 import { orderStatusKey, orderStatusTone } from '../../../../features/store3a/order-status';
 import {
-  ordersHref, orderHref, cancelHref, showsPayLink, auctionBalanceRefused, showsReceivedAct, codDeliveredLine, canCancel, showsDeadline,
+  ordersHref, orderHref, cancelHref, showsPayLink, showsReceivedAct, codDeliveredLine, canCancel, showsDeadline,
   showsDepositRows, refundView, refundKey, cancelledBy, readOk, readCompleteOutcome, readDisputeError, canDispute, actKey, cancelReasonKey,
 } from '../../../../features/store3a/orders';
 import { poweredByVisible, PLATFORM_BRAND } from '../../../../features/branding/brand-theme';
@@ -151,7 +151,6 @@ export default async function TenantOrderPage({ params, searchParams }: { params
         {paid && <p data-kv-paid="escrow">{paidAmount ? t.t('store3a.pay.paid', { amount: money(paidAmount, attempts?.latest?.currencyCode ?? cur) }) : t.t('store3a.pay.paidNoAmount')}</p>}
         {order.paymentState === 'pending' && <p className="kv-form__error" data-kv-awaiting="payment">{t.t('store3a.row.awaitingPayment')}</p>}
         {showsPayLink(order) && <p><Link href={payHref(slug, order.id, order.checkoutGroupId ?? null)} className="kv-btn" data-kv-pay={order.id}>{t.t('checkout.payThis')}</Link></p>}
-        {auctionBalanceRefused(order) && <p className="kv-detail__muted" data-kv-refused="pay_balance">{t.t('store3a.refusal.payBalance')}</p>}
         {order.paymentState === 'none' && order.status !== 'cancelled' && <p className="kv-detail__muted" data-kv-pay="on-delivery">{t.t('store3a.pay.onDelivery')}</p>}
         {showsDeadline(order) && <p className="kv-detail__muted" data-kv-deadline={order.id}>{t.t('store3a.row.deadline', { date: when(String(order.acceptanceDeadline), lang) })}</p>}
         <ul className="kv-confirm__items">

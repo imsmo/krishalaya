@@ -65,6 +65,21 @@ export class PaymentRepository {
     return n > 0n ? n : 0n;
   }
 
+  /** PC-56 STORE-3c · B3: ledger transactions by idempotency key (this tenant's), each with when it was booked and the amount it moved (the sum
+   *  of its positive legs). At most 500 keys per call (the caller's page bounds it). */
+  async ledgerTxnsByKeys(tenantId: string, keys: readonly string[]): Promise<Map<string, { at: Date; amountMinor: bigint }>> {
+    const out = new Map<string, { at: Date; amountMinor: bigint }>();
+    const ks = [...new Set(keys)].filter((k) => typeof k === 'string' && k.length > 0 && k.length <= 120).slice(0, 500);
+    if (ks.length === 0) return out;
+    const r = await this.replica.forTenant(tenantId).query<{ k: string; at: Date; n: string }>(
+      `SELECT t.idempotency_key AS k, t.created_at AS at, COALESCE(sum(e.amount_minor) FILTER (WHERE e.amount_minor > 0), 0)::text AS n
+         FROM ledger_transactions t JOIN ledger_entries e ON e.txn_id = t.id
+        WHERE t.tenant_id = $1 AND t.idempotency_key = ANY($2::text[])
+        GROUP BY t.idempotency_key, t.created_at`, [tenantId, ks]);
+    for (const x of r.rows) out.set(String(x.k), { at: new Date(x.at), amountMinor: BigInt(x.n) });
+    return out;
+  }
+
   async insert(tx: TxContext, p: Payment): Promise<void> {
     const v = p.toProps();
     await tx.query(

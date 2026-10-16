@@ -32,6 +32,12 @@ import { DomainError } from '../../../shared/errors/app-error';
 // two auctions of one organisation settled in one close sweep (one `now`) collided on `uq_orders_no` and the second never settled.
 import { orderNoFor } from '../domain/order-no';
 import { currencyFromListing } from '../domain/order-currency';
+// PC-56 STORE-3c · B7 (founder D7): the payments module's PUBLIC service (OrdersModule imports PaymentsModule) — "paid" also means a CAPTURED
+// payment for the order, read in the cancel's transaction.
+import { PaymentService } from '../../payments/services/payment.service';
+
+/** PC-56 STORE-3c · B5 (founder D5): the system's cancel reason when an OFFLINE auction order is still unconfirmed at its balance due time. */
+export const AUCTION_SELLER_SILENT_REASON = 'seller_silent';
 
 export class AuctionOrderMismatchError extends DomainError {
   constructor(expected: bigint, got: bigint) { super('AUCTION_ORDER_MISMATCH', `The order line (${got}) does not equal the auction's lot value (${expected})`, 409, { expected: expected.toString(), got: got.toString() }); }
@@ -60,6 +66,7 @@ export class AuctionOrderService {
     private readonly flags: FlagsService,
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
     @Inject(METRICS) private readonly metrics: Metrics,
+    private readonly payments: PaymentService,
   ) {}
 
   /** Create the auction's order in the caller's tx. Returns the order id and whether it awaits online payment. */
@@ -100,9 +107,30 @@ export class AuctionOrderService {
 
   /** PC-56 HOTFIX-5 · B5 (founder D4): was this (cancelled) auction order PAID before it was cancelled? The ORDER's own timeline, read in the
    *  caller's kv_app tx (OrderRepository.paidBeforeCancelTx) — never the settlement's `paid` outcome alone, which a relay delivering
-   *  `orders.order_cancelled` before `payments.payment_succeeded` would not yet show. */
-  paidBeforeCancelInTx(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
-    return this.repo.paidBeforeCancelTx(tx, tenantId, orderId);
+   *  `orders.order_cancelled` before `payments.payment_succeeded` would not yet show.
+   *  PC-56 STORE-3c · B7 (founder D7): OR a CAPTURED payment for the order (its payment row `success` / `refund_initiated` / `refunded` /
+   *  `partially_refunded`, read in the same transaction) — the race where the capture landed but the order was still `payment_pending` when
+   *  the buyer cancelled: the deposit is RETURNED (never forfeited) and 2c's refund handler refunds the captured balance, once. */
+  async paidBeforeCancelInTx(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
+    if (await this.repo.paidBeforeCancelTx(tx, tenantId, orderId)) return true;
+    return this.payments.capturedForOrderInTx(tx, tenantId, orderId);
+  }
+
+  /** PC-56 STORE-3c · B5 (founder D5): an OFFLINE auction order the seller never confirmed — still `created` at its balance due time — is
+   *  cancelled by the SYSTEM (reason `seller_silent`), in the caller's tx, through the order's own state machine; `orders.order_cancelled`
+   *  carries the auction id so its consumers see a system cancel. Returns `'cancelled'`, or `'confirmed'` when the order moved past `created`
+   *  (the organisation took it — the caller records the settlement `paid`), or `'gone'` (no row / already cancelled: the caller skips). */
+  async cancelUnconfirmedOfflineInTx(tx: TxContext, tenantId: string, orderId: string, auctionId: string): Promise<'cancelled' | 'confirmed' | 'gone'> {
+    const o = await this.repo.getForUpdate(tx, tenantId, orderId);
+    if (!o || o.status === 'cancelled') return 'gone';
+    const from = o.status;
+    if (from !== 'created') return 'confirmed';
+    o.systemCancel(AUCTION_SELLER_SILENT_REASON);
+    if (!(await this.repo.update(tx, o, from))) return 'gone';
+    for (const e of o.pullEvents()) {
+      await this.outbox.write(tx, { tenantId, aggregateType: 'order', aggregateId: orderId, eventType: e.type, payload: { v: 1, ...e.payload, auctionId, sellerSilent: true } });
+    }
+    return 'cancelled';
   }
 
   /** F-2 default: cancel the unpaid auction order (system), in the caller's tx. Returns false when it is no longer

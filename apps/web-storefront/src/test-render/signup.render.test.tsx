@@ -28,7 +28,7 @@ jest.mock('next/navigation', () => ({
 }));
 jest.mock('../lib/env', () => ({
   env: {
-    publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', featureAuctions: true, siteUrl: '', platformTenantSlug: null,
+    publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null,
     razorpayKeyId: null, platformCountry: 'IN',
     get tenantAppUrl() { return mock.consoleUrl; },
   },

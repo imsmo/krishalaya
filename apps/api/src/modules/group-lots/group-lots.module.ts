@@ -11,7 +11,15 @@
 //     sale + hold the proceeds in kv_app's unit of work).
 // It reads the listings module only through ListingService (Law 11) and moves money only through WalletPort (Law 2).
 // Gated by the `group_lots` feature flag + the per-lot coordinator check.
+//
+// PC-56 STORE-3c · B8 (founder D3): + the PUBLIC lot read (`GET /v1/storefront/group-lots/:id`, storefront-group-lots.controller.ts) and the
+// `group-lots-deadline` clock (jobs/deadline.job.ts) in SCHEDULED_JOB_REGISTRY at the cadence table's interval (core/jobs/clock-cadence.ts).
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { UNIT_OF_WORK, UnitOfWork } from '../../core/database/unit-of-work';
+import { cadenceOf } from '../../core/jobs/clock-cadence';
+import { StorefrontGroupLotsController } from './controllers/v1/storefront-group-lots.controller';
+import { GroupLotDeadlineJob } from './jobs/deadline.job';
 import { ListingsModule } from '../listings/listings.module';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
@@ -25,18 +33,24 @@ import { GroupLotSaleSettledHandler } from './events/handlers/sale-settled.handl
 
 @Module({
   imports: [ListingsModule],
-  controllers: [GroupLotsController],
-  providers: [GroupLotService, GroupLotRepository, GroupLotSettlementRepository, UiMessageRepository, GroupLotOrderCompletedHandler, GroupLotSaleSettledHandler],
-  exports: [GroupLotService],
+  controllers: [GroupLotsController, StorefrontGroupLotsController],
+  providers: [GroupLotService, GroupLotRepository, GroupLotSettlementRepository, UiMessageRepository, GroupLotOrderCompletedHandler, GroupLotSaleSettledHandler,
+    { provide: GroupLotDeadlineJob, inject: [UNIT_OF_WORK, GroupLotRepository, GroupLotService],
+      useFactory: (u: UnitOfWork, r: GroupLotRepository, s: GroupLotService) => new GroupLotDeadlineJob(cadenceOf('group-lots-deadline'), u, r, s) },
+  ],
+  exports: [GroupLotService, GroupLotDeadlineJob],
 })
 export class GroupLotsModule implements OnModuleInit {
   constructor(
     @Inject(OUTBOX_HANDLER_REGISTRY) private readonly registry: OutboxHandlerRegistry,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
     private readonly orderCompleted: GroupLotOrderCompletedHandler,
     private readonly saleSettled: GroupLotSaleSettledHandler,
+    private readonly deadlineJob: GroupLotDeadlineJob,
   ) {}
   onModuleInit(): void {
     this.registry.register(this.orderCompleted);
     this.registry.register(this.saleSettled);
+    this.jobs.register(this.deadlineJob);   // PC-56 STORE-3c · B8
   }
 }

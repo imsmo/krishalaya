@@ -28,6 +28,8 @@ import { moneyText } from '../../../../features/discovery/money';
 import { reloadHref } from '../../../../features/home/load-result';
 import { couponNoticeKey } from '../../../../features/checkout/preview';
 import { attemptToOpen, canSendAgain, confirmHref, failureReasonKey, moneyRefusalKey, payHref, processingView, readMoneyRefusal, walletCovers } from '../../../../features/store2c/checkout';
+// PC-56 STORE-3c · C4 (founder D2): the pay step charges what is DUE — an auction order's balance (total − the deposit applied)
+import { payableMinor, showsDepositRows } from '../../../../features/store3c/auctions';
 import { PayButton, type PayLabels } from '../../../../components/PayButton';
 import { SubmitButton } from '../../../../components/SubmitButton';
 import { RefusalList } from '../../../../components/RefusalList';
@@ -76,7 +78,8 @@ export default async function TenantPayPage({ params, searchParams }: { params: 
   let flags: StorefrontFlags | null = null;
   try { flags = await publicClient(slug).storefront.flags(); } catch { flags = null; }
   const payOn = flags?.online_payments === true;
-  const amount = moneyText(order.totalMinor, order.currencyCode, lang) ?? t.t('money.unavailable');
+  const due = payableMinor(order);   // STORE-3c · C4: the order's amountDueMinor (3a's field); the total only when absent
+  const amount = moneyText(due, order.currencyCode, lang) ?? t.t('money.unavailable');
   const status = readMoneyRefusal(searchParams.status);
 
   let attempts: OrderPaymentAttempts | null = null;
@@ -88,13 +91,13 @@ export default async function TenantPayPage({ params, searchParams }: { params: 
   const viaWallet = searchParams.via === 'wallet';
   let balance: WalletBalance | null = null;
   if (payOn && viaWallet) { try { balance = await api.wallet.balance(order.currencyCode); } catch { balance = null; } }
-  const walletOk = walletCovers(balance, { totalMinor: order.totalMinor, currencyCode: order.currencyCode });
+  const walletOk = walletCovers(balance, { totalMinor: due, currencyCode: order.currencyCode });   // D2: wallet pay when the BALANCE is covered
 
   const labels: PayLabels = {
     pay: t.t(canSendAgain(view) ? 'store2c.pay.sendAgain' : view === 'live' ? 'store2c.pay.continue' : 'checkout.payNow'),
     processing: t.t('checkout.processing'), unavailable: t.t('checkout.payUnavailable'), scriptError: t.t('checkout.scriptError'),
     cancelled: t.t('checkout.payCancelled'), failed: t.t('store2c.pay.failedGeneric'), pendingMsg: t.t('store2c.pay.pending'),
-    attemptLive: t.t('store2c.pay.attemptLiveNoTime'), notAwaiting: t.t(moneyRefusalKey('not_awaiting')),
+    attemptLive: t.t('store2c.pay.attemptLiveNoTime'), notAwaiting: t.t(moneyRefusalKey('not_awaiting')), amountMismatch: t.t(moneyRefusalKey('amount_mismatch')),
     sheetName: org, sheetDescription: t.t('store2c.pay.sheetDescription', { no: order.orderNo }),
   };
   const expiresAt = timeText(attempts?.latest?.expiresAt, lang);
@@ -105,7 +108,11 @@ export default async function TenantPayPage({ params, searchParams }: { params: 
       <h1>{t.t('checkout.payTitle')}</h1>
       <p className="kv-checkout__orderno">{t.t('checkout.orderNo', { no: order.orderNo })} · {t.t('checkout.soldBy', { org })}</p>
       {couponNoticeKey(searchParams.cn) && <p className="kv-form__notice" role="status">{t.t(couponNoticeKey(searchParams.cn)!)} {t.t('coupon.notice.placedAtNormalPrice')}</p>}
-      <p className="kv-cart__subtotal"><span>{t.t('checkout.amountDue')}</span> <strong>{amount}</strong></p>
+      {showsDepositRows(order) && (
+        <p className="kv-cart__note" data-kv-deposit-rows="">{t.t('store3c.pay.depositRows', {
+          deposit: moneyText(order.depositAppliedMinor ?? null, order.currencyCode, lang) ?? t.t('money.unavailable'), balance: amount })}</p>
+      )}
+      <p className="kv-cart__subtotal" data-kv-due={due}><span>{t.t('checkout.amountDue')}</span> <strong>{amount}</strong></p>
       {status === 'attempt_live' && <p className="kv-form__error" role="alert" data-kv-refused="attempt_live">{expiresAt ? t.t('store2c.pay.attemptLive', { time: expiresAt }) : t.t('store2c.pay.attemptLiveNoTime')}</p>}
       {status && status !== 'attempt_live' && <p className="kv-form__error" role="alert" data-kv-refused={status}>{t.t(moneyRefusalKey(status))}</p>}
 

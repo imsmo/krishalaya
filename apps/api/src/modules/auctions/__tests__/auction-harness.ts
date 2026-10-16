@@ -71,15 +71,22 @@ export function buildHarness(appUrl: string): AuctionHarness {
   const watcherRepo = new AuctionWatcherRepository(replica as never);
   const settlements = new AuctionSettlementRepository(replica as never);
   const publisher = new AuctionsPublisher(outbox);
-  const auctionOrders = new AuctionOrderService(new OrderRepository(replica as never), flagsSvc, outbox, metrics);
+  // PC-56 STORE-3c: the payments module's public reads this harness's services use (the captured-payment test, the ledger by key, the amount due)
+  const payRepo = new PaymentRepository(replica as never);
+  const paymentsPublic = {
+    capturedForOrderInTx: async (tx: never, t: string, o: string) => (await payRepo.capturedForOrderTx(tx, t, o)) !== null,
+    ledgerTxnsByKeys: (t: string, k: readonly string[]) => payRepo.ledgerTxnsByKeys(t, k),
+    amountDueForOrder: async (t: string, o: string, total: bigint) => { const c = await payRepo.orderEmdCreditMinor(t, o); return { dueMinor: total - c, depositAppliedMinor: c }; },
+  } as never;
+  const auctionOrders = new AuctionOrderService(new OrderRepository(replica as never), flagsSvc, outbox, metrics, paymentsPublic);
   const auctions = new AuctionService(uow, outbox, idem, metrics, wallet, audit, listings, auctionRepo, bidRepo, watcherRepo, publisher, settlements, auctionOrders);
   const bids = new BidService(uow, outbox, idem, metrics, wallet, listings, auctionRepo, bidRepo, publisher);
   const watchers = new AuctionWatcherService(uow, metrics, auctionRepo, watcherRepo, publisher);
   const live = new AuctionLiveReadModel(metrics, replica as never, auctionRepo, bidRepo, listings);
-  const myBids = new MyBidsReadModel(metrics, bidRepo);
+  const myBids = new MyBidsReadModel(metrics, bidRepo, auctionRepo, settlements, paymentsPublic, listings);
   const cartRepo = new CartRepository(replica as never);
   const carts = new CartService(uow, metrics, listings, cartRepo, new CartItemService(uow, metrics, listings, cartRepo, new CartItemRepository(replica as never)));
-  return { pools, uow, wallet, replica, listings, auctions, bids, watchers, live, myBids, auctionRepo, settlements, payments: new PaymentRepository(replica as never), carts, flags,
+  return { pools, uow, wallet, replica, listings, auctions, bids, watchers, live, myBids, auctionRepo, settlements, payments: payRepo, carts, flags,
     close: async () => { await pools.onModuleDestroy(); } };
 }
 

@@ -993,6 +993,21 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('insights.report_ready','rows','report_runs.row_count','214',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 STORE-3c · B9 (survey B27) — **"YOU WERE OUTBID" COULD NEVER SEND.** `bid.outbid` was catalogued (line 8) with a declared variable
+-- (`lot_name`, line 94) and the bid path has emitted `auctions.bidder_outbid` → `bid.outbid` (communication/events/notification-event-map.ts)
+-- since the module was built — but no template body existed in any language, so every notice resolved to nothing. The copy lives HERE, above
+-- the version backfill below (the NOTE's reason). `lot_name` is the listing title the bid path now carries in the outbox payload; no amount and
+-- no other bidder is named (founder 2a D1: no bidder identity anywhere). The deposit sentence is TRUE: a bidder's EMD is held once per auction
+-- and released when the auction closes without them winning.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('bid.outbid','push','en',NULL,'You were outbid','A higher bid was placed on {{lot_name}}. Open My bids to see the next valid bid; your deposit stays held until the auction closes.',NULL,true),
+ ('bid.outbid','push','hi',NULL,'आपकी बोली से ऊँची बोली लगी','{{lot_name}} पर ऊँची बोली लगाई गई है। अगली मान्य बोली देखने के लिए मेरी बोलियाँ खोलें; आपकी जमा राशि नीलामी बंद होने तक रोकी रहती है।',NULL,true),
+ ('bid.outbid','push','gu',NULL,'તમારી બોલી કરતાં ઊંચી બોલી આવી','{{lot_name}} પર ઊંચી બોલી મૂકવામાં આવી છે. આગળની માન્ય બોલી જોવા મારી બોલીઓ ખોલો; તમારી ડિપોઝિટ હરાજી બંધ થાય ત્યાં સુધી રોકાયેલી રહે છે.',NULL,true),
+ ('bid.outbid','inapp','en',NULL,'You were outbid','A higher bid was placed on {{lot_name}}. Open My bids to see the next valid bid; your deposit stays held until the auction closes.',NULL,true),
+ ('bid.outbid','inapp','hi',NULL,'आपकी बोली से ऊँची बोली लगी','{{lot_name}} पर ऊँची बोली लगाई गई है। अगली मान्य बोली देखने के लिए मेरी बोलियाँ खोलें; आपकी जमा राशि नीलामी बंद होने तक रोकी रहती है।',NULL,true),
+ ('bid.outbid','inapp','gu',NULL,'તમારી બોલી કરતાં ઊંચી બોલી આવી','{{lot_name}} પર ઊંચી બોલી મૂકવામાં આવી છે. આગળની માન્ય બોલી જોવા મારી બોલીઓ ખોલો; તમારી ડિપોઝિટ હરાજી બંધ થાય ત્યાં સુધી રોકાયેલી રહે છે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

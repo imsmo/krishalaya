@@ -9,7 +9,7 @@ jest.mock('next/navigation', () => ({ redirect: (to: string) => { throw new Erro
 jest.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 jest.mock('next/headers', () => ({ cookies: () => ({ get: () => undefined, set: () => undefined, delete: () => undefined }) }));
 jest.mock('react-dom', () => ({ ...jest.requireActual('react-dom'), useFormStatus: () => ({ pending: jest.requireActual('./store3b-fixtures').C.pending === true }) }));
-jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', featureAuctions: false, siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: 'rzp_test_x' } }));
+jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: 'rzp_test_x' } }));
 jest.mock('../lib/i18n', () => {
   const { Translator: Tr } = jest.requireActual('@krishalaya/i18n');
   const cat = (l: string) => jest.requireActual(`../i18n/${l}`)[l];

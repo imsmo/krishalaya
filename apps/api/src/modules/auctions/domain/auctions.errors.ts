@@ -30,3 +30,6 @@ export class AuctionActNotAllowedError extends AppError { constructor(act: strin
 export class AuctionListingUnavailableError extends AppError { constructor(reason: string) { super('AUCTION_LISTING_UNAVAILABLE', `The listing cannot be auctioned: ${reason}`, 409, { reason }); } }
 /** A9: the bid stream needs auction.bid or auction.read. */
 export class AuctionReadForbiddenError extends AppError { constructor() { super('AUCTION_READ_FORBIDDEN', 'Reading the bid stream needs auction.read or auction.bid', 403); } }
+// ---- PC-56 STORE-3c ----
+/** B2 (founder D1): a sealed bid may only RAISE the bidder's own last one — a second sealed bid at or below it is refused (the highest still wins). */
+export class BidSealedMustRaiseError extends AppError { constructor(yourLastMinor: bigint) { super('BID_SEALED_MUST_RAISE', 'A sealed bid may only raise your own last bid', 409, { yourLastMinor: yourLastMinor.toString() }); } }

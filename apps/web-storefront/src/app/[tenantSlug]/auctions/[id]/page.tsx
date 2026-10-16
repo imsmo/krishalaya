@@ -25,6 +25,7 @@ import { loadTenantShell } from '../../../../lib/storefront-data';
 import { moneyText } from '../../../../features/discovery/money';
 import { reloadHref } from '../../../../features/home/load-result';
 import { auctionState, emdRule } from '../../../../features/store2c/auction';
+import { payHref } from '../../../../features/store2c/checkout';
 import { Countdown, type CountdownLabels } from '../../../../components/Countdown';
 import { SubmitButton } from '../../../../components/SubmitButton';
 import { RefusalList } from '../../../../components/RefusalList';
@@ -42,6 +43,7 @@ const BID_STATUS_KEYS: Record<string, string> = {
   bid: 'store2c.auction.status.bid', too_low: 'store2c.auction.status.tooLow', ended: 'store2c.auction.status.ended', leading: 'store2c.auction.status.leading',
   emd: 'store2c.auction.status.emd', paused: 'store2c.auction.status.paused', seller: 'store2c.auction.status.seller', bad_amount: 'store2c.auction.status.badAmount',
   failed: 'store2c.auction.status.failed', watched: 'auctions.watchOn', unwatched: 'auctions.watchOff', watch_err: 'auctions.watchError',
+  sealed_raise: 'store3c.bid.sealedRaise',   // PC-56 STORE-3c · B2 (founder D1)
 };
 
 export default async function TenantAuctionPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
@@ -120,7 +122,10 @@ export default async function TenantAuctionPage({ params, searchParams }: { para
       {state === 'won' && (
         <div className="kv-form__notice" role="status" data-kv-state="won">
           <p>{t.t('store2c.auction.state.won', { price: money(v.currentBidMinor), hours: String(v.balanceDueHours) })}</p>
-          {v.viewer?.orderId && <p><Link href={`/orders/${encodeURIComponent(v.viewer.orderId)}`} className="kv-link">{t.t('store2c.auction.seeOrder')}</Link></p>}
+          {/* PC-56 STORE-3c · C4 (founder D2): the balance is paid end to end — THIS store's pay step (charging the DUE) and the order under its chrome */}
+          {v.viewer?.orderId && v.status === 'settled' && <p><Link href={payHref(slug, v.viewer.orderId)} className="kv-btn" data-kv-pay-balance={v.viewer.orderId}>{t.t('store3c.won.pay')}</Link></p>}
+          {v.viewer?.orderId && <p><Link href={`/${encodeURIComponent(slug)}/orders/${encodeURIComponent(v.viewer.orderId)}`} className="kv-link">{t.t('store2c.auction.seeOrder')}</Link></p>}
+          {v.viewer?.orderId && <p><Link href={`/${encodeURIComponent(slug)}/auctions/bids`} className="kv-btn--link" data-kv-nav="my-bids">{t.t('store3c.bids.title')}</Link></p>}
         </div>
       )}
       {state === 'ended' && <p className="kv-detail__muted" data-kv-state="ended">{t.t('auctions.endedNote')}</p>}
@@ -136,6 +141,7 @@ export default async function TenantAuctionPage({ params, searchParams }: { para
           <SubmitButton idle={t.t('auctions.placeBid')} busy={t.t('store2c.auction.placing')} />
           <p className="kv-field__hint">{emd ? t.t(emd.kind === 'flat' ? 'store2c.auction.emdRuleFlat' : 'store2c.auction.emdRulePct', emd.kind === 'flat' ? { amount: money(emd.minor) } : { pct: emd.pct }) : t.t('store2c.auction.emdNone')}</p>
           <p className="kv-field__hint">{t.t('store2c.auction.commitment')}</p>
+          {v.kind === 'sealed' && <p className="kv-field__hint" data-kv-sealed-raise="">{t.t('store3c.sealed.raiseOnly')}</p>}
         </form>
       ) : (
         <p data-kv-bid="signin"><a href={`/${encodeURIComponent(slug)}/login?next=${encodeURIComponent(self)}`} className="kv-btn">{t.t('store2c.auction.signinToBid', { org })}</a></p>

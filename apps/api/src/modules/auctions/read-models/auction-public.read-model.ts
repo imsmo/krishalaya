@@ -19,10 +19,27 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { ListingService } from '../../listings/services/listing.service';
-import { AuctionRepository } from '../repositories/auction.repository';
+import { AuctionRepository, PublicAuctionGroup } from '../repositories/auction.repository';
 import { BidRepository } from '../repositories/bid.repository';
 import { AuctionNotFoundError } from '../domain/auctions.errors';
 import { BALANCE_DUE_MS } from '../domain/lot';
+import { Cursor, encodeCursor } from '../domain/cursor';
+
+/** PC-56 STORE-3c · B4 — one card of the PUBLIC list (`GET /v1/storefront/auctions`): the lot, the organisation, the state, the reserve as
+ *  met / not met, the bidder count, the current bid (null while a sealed auction hides it) and the SERVER's minimum next bid, the anti-snipe
+ *  seconds, the EMD rule, the decision deadline (an auction awaiting its organisation), the currency and its exponent. NO reserve amount, NO
+ *  winner, NO order id, NO bidder identity of any kind (founder 2a D1). */
+export interface PublicAuctionCard {
+  auctionId: string; auctionNo: string | null; status: string; kind: string; isOpen: boolean;
+  lot: { title: string; unitCode: string; quantity: string; organisation: { slug: string; name: string } | null };
+  currencyCode: string | null; exponent: number | null;
+  reserveMet: boolean; hasBids: boolean; bidderCount: number; sealedHidden: boolean;
+  currentBidMinor: string | null; minNextBidMinor: string;
+  startsAt: string; endsAt: string; decisionDueAt: string | null; antiSnipe: { triggerSec: number; extendSec: number };
+  emd: { flatMinor: string | null; pctBps: number | null };
+}
+/** The public list's page size ceiling (Law 11 — bounded). */
+export const PUBLIC_AUCTION_LIST_MAX = 50;
 
 const OPEN_STATES = ['scheduled', 'live', 'extended'];
 /** Bounded history (Law 11): the newest bids only. */
@@ -51,6 +68,47 @@ export class AuctionPublicReadModel {
     private readonly bids: BidRepository,
     private readonly listings: ListingService,
   ) {}
+
+  /**
+   * PC-56 STORE-3c · B4 (founder D4, survey B19 / C-5) — THE PUBLIC LIST of the context organisation's auctions, one tab at a time (`live` ·
+   * `upcoming` · `ended`), keyset (`live` / `upcoming` soonest-ending first on `(ends_at, id)`; `ended` newest first on `(ends_at DESC, id)`).
+   * `bidderUserId` (a session's `?mine=1`) narrows it to the auctions that user bid in. A suspended seller's lot is left out (the listing rule).
+   * Every figure is the aggregate's own (`Auction.minNextBidMinor`, `reserveMetBy`); the listing facts, the organisation and the bid stats are
+   * each ONE query for the page.
+   */
+  async list(tenantId: string, q: { group: PublicAuctionGroup; cursor?: Cursor; limit: number; bidderUserId?: string | null }): Promise<{ items: PublicAuctionCard[]; nextCursor: string | null }> {
+    const limit = Math.max(1, Math.min(PUBLIC_AUCTION_LIST_MAX, q.limit));
+    const rows = await this.auctions.listPublic(tenantId, { group: q.group, cursor: q.cursor, limit, bidderUserId: q.bidderUserId ?? null });
+    const listingIds = rows.map((r) => r.a.listingId);
+    const [lots, facts, stats] = await Promise.all([
+      this.auctions.listingFactsFor(tenantId, listingIds),
+      this.listings.purchaseFacts(tenantId, listingIds),
+      this.bids.statsFor(tenantId, rows.map((r) => r.a.id)),
+    ]);
+    const items: PublicAuctionCard[] = [];
+    for (const { a } of rows) {
+      const p = a.toProps();
+      const lot = lots.get(p.listingId);
+      const f = facts?.get(p.listingId);
+      if (!lot || f?.sellerSuspended) continue;                                    // a suspended seller's lot is not public
+      const isOpen = OPEN_STATES.includes(p.status);
+      const sealedHidden = p.kind === 'sealed' && isOpen;
+      const st = stats.get(p.id) ?? { highMinor: null, bidders: 0 };
+      const visibleHigh = sealedHidden ? null : st.highMinor;
+      items.push({
+        auctionId: p.id, auctionNo: p.auctionNo, status: p.status, kind: p.kind, isOpen,
+        lot: { title: lot.title, unitCode: p.unitCode, quantity: p.quantity, organisation: f?.organisation ?? null },
+        currencyCode: lot.currencyCode, exponent: lot.exponent,
+        reserveMet: visibleHigh !== null && a.reserveMetBy(visibleHigh) === true, hasBids: st.bidders > 0, bidderCount: st.bidders, sealedHidden,
+        currentBidMinor: visibleHigh !== null ? visibleHigh.toString() : null, minNextBidMinor: a.minNextBidMinor(visibleHigh).toString(),
+        startsAt: p.startsAt.toISOString(), endsAt: p.endsAt.toISOString(), decisionDueAt: p.decisionDueAt ? new Date(p.decisionDueAt).toISOString() : null,
+        antiSnipe: { triggerSec: p.extendTriggerSecs, extendSec: p.autoExtendSecs },
+        emd: { flatMinor: p.emdMinor > 0n ? p.emdMinor.toString() : null, pctBps: p.emdMinor > 0n ? null : (p.emdPctBps ?? null) },
+      });
+    }
+    const last = rows[rows.length - 1];
+    return { items, nextCursor: rows.length === limit && last ? encodeCursor(last.endsAtRaw, last.a.id) : null };
+  }
 
   async view(tenantId: string, auctionId: string, viewerUserId: string | null): Promise<PublicAuctionView> {
     if (!/^[0-9a-fA-F-]{36}$/.test(auctionId)) throw new AuctionNotFoundError(auctionId);

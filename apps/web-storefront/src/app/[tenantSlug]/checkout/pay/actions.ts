@@ -1,8 +1,9 @@
 'use server';
 // apps/web-storefront/src/app/[tenantSlug]/checkout/pay/actions.ts · PC-56 STORE-2c · C5 (moved from the platform's /checkout/pay — no second copy)
 // — the order-payment acts. AUTHENTICATED (requireSession + the authed serverClient — the session token never reaches the browser).
-//   • createOrderAttemptAction: ONE payment ATTEMPT for the order (B3): the amount is the ORDER's own total (read server-side, never a client
-//     figure); the key is the attempt's (`order-pay:<orderId>:<attempt>`), so a refresh of the same attempt replays it and "Send again" asks
+//   • createOrderAttemptAction: ONE payment ATTEMPT for the order (B3): the amount is the ORDER's own figure (read server-side, never a client
+//     figure) — PC-56 STORE-3c · C4 (founder D2): what is DUE (`amountDueMinor`: total − the auction deposit applied; = the total for every
+//     other order), the ONE rule the API's intent, wallet pay and capture re-check apply; ORDER_PAYMENT_AMOUNT_MISMATCH is returned by name; the key is the attempt's (`order-pay:<orderId>:<attempt>`), so a refresh of the same attempt replays it and "Send again" asks
 //     for a NEW gateway order; a second LIVE attempt is refused by the API by name (PAYMENT_ATTEMPT_LIVE, with when it lapses) and returned
 //     as such — never a generic failure;
 //   • pollOrderPayment: the ORDER's own paymentState + the newest attempt's state (W286's states come from the payment read, not a guess);
@@ -13,13 +14,14 @@ import { serverClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { paymentStateOf, showsPayStep } from '../../../../features/orders/payment-state';
 import { confirmHref, moneyRefusalOf, payHref, processingView, type ProcessingView } from '../../../../features/store2c/checkout';
+import { payableMinor } from '../../../../features/store3c/auctions';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,62}$/;
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 export type AttemptResult =
   | { ok: true; gatewayOrderId: string; paymentId: string; amountMinor: string; currencyCode: string; attempt: number; expiresAt: string | null }
-  | { ok: false; refusal: 'attempt_live' | 'not_awaiting' | 'failed'; expiresAt?: string | null };
+  | { ok: false; refusal: 'attempt_live' | 'not_awaiting' | 'amount_mismatch' | 'failed'; expiresAt?: string | null };
 
 export async function createOrderAttemptAction(slug: string, orderId: string, attempt: number): Promise<AttemptResult> {
   if (!SLUG.test(slug) || !UUID.test(orderId) || !Number.isInteger(attempt) || attempt < 1 || attempt > 50) return { ok: false, refusal: 'failed' };
@@ -28,7 +30,7 @@ export async function createOrderAttemptAction(slug: string, orderId: string, at
   try {
     const order = await api.orders.get(orderId);   // the authoritative total + ownership (RLS) enforced server-side
     if (!showsPayStep(paymentStateOf(order))) return { ok: false, refusal: 'not_awaiting' };
-    const intent = await api.payments.createOrderAttempt({ orderId, attempt, amountMinor: order.totalMinor, currencyCode: order.currencyCode });
+    const intent = await api.payments.createOrderAttempt({ orderId, attempt, amountMinor: payableMinor(order), currencyCode: order.currencyCode });
     return { ok: true, gatewayOrderId: intent.gatewayOrderId, paymentId: intent.paymentId, amountMinor: intent.amountMinor, currencyCode: order.currencyCode,
       attempt: intent.attempt ?? attempt, expiresAt: intent.expiresAt ?? null };
   } catch (e) {
@@ -36,6 +38,7 @@ export async function createOrderAttemptAction(slug: string, orderId: string, at
       const r = moneyRefusalOf(e.code);
       if (r === 'attempt_live') return { ok: false, refusal: 'attempt_live', expiresAt: typeof e.details?.expiresAt === 'string' ? e.details.expiresAt : null };
       if (r === 'not_awaiting') return { ok: false, refusal: 'not_awaiting' };
+      if (r === 'amount_mismatch') return { ok: false, refusal: 'amount_mismatch' };
     }
     return { ok: false, refusal: 'failed' };
   }

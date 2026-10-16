@@ -8,7 +8,8 @@ import { env } from '../lib/env';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = env.siteUrl; // '' when unset → relative paths
-  const paths = ['/', '/about', '/blog', '/help', '/pricing', '/press', '/for-organisations', ...(env.featureAuctions ? ['/auctions'] : [])];
+  // PC-56 STORE-3c (founder D4): /auctions is a door to a store's own list now (no build-time switch) — not a platform page to index
+  const paths = ['/', '/about', '/blog', '/help', '/pricing', '/press', '/for-organisations'];
   const now = new Date();
   return paths.map((p) => ({
     url: `${base}${p}`,

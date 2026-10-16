@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({ redirect: (to: string) => { throw new Erro
 jest.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 jest.mock('next/headers', () => ({ cookies: () => jest.requireActual('./store3a-fixtures').cookieJar() }));
 jest.mock('react-dom', () => ({ ...jest.requireActual('react-dom'), useFormStatus: () => ({ pending: jest.requireActual('./store3a-fixtures').C.pending === true }) }));
-jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', featureAuctions: false, siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: 'rzp_test_x' } }));
+jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: 'rzp_test_x' } }));
 jest.mock('../lib/i18n', () => {
   const { Translator: Tr } = jest.requireActual('@krishalaya/i18n');
   const cat = (l: string) => jest.requireActual(`../i18n/${l}`)[l];
@@ -49,11 +49,11 @@ describe('STORE-3a · W289 the money', () => {
     expect(h).toContain(`data-kv-pay="${OID.pending}" href="/${SLUG}/checkout/pay?o=${OID.pending}"`);
     expect(text(h)).toContain(en['store2c.escrow']);
   });
-  it('an AUCTION order awaiting its balance: NO Pay link — the refusal by name; the deposit and balance rows from the API', async () => {
+  it('an AUCTION order awaiting its balance: the Pay link to THIS store\'s pay step (STORE-3c, founder D2 — it charges the due); the deposit and balance rows from the API', async () => {
     C.orders[OID.auction] = DETAIL(OID.auction, { status: 'payment_pending', paymentState: 'pending', source: 'auction', totalMinor: '13100000', amountDueMinor: '12100000', depositAppliedMinor: '1000000' });
     const h = await page(OID.auction);
-    expect(h).not.toContain('data-kv-pay=');
-    expect(h).toContain('data-kv-refused="pay_balance"');
+    expect(h).toContain(`data-kv-pay="${OID.auction}" href="/${SLUG}/checkout/pay?o=${OID.auction}"`);
+    expect(h).not.toContain('data-kv-refused="pay_balance"');
     expect(h).toContain('data-kv-deposit="applied"');
     expect(text(h)).toMatch(/Deposit applied −\s?₹10,000\.00/);
     expect(text(h)).toMatch(/Balance due ₹1,21,000\.00/);

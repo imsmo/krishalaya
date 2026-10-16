@@ -2,13 +2,14 @@
 // and `auction_consents` (0186). Both tenant-bound (RLS ENABLE + FORCE, the 0175 split) and written ONLY in the caller's
 // kv_app unit of work — no kv_relay grant exists or is needed.
 //   • a settlement row is INSERTed in the same transaction as `status='settled'`, the order and the EMD apply leg; after
-//     that only its outcome moves, once (`open` → paid | defaulted | returned) — the 0186 trigger refuses anything else;
+//     that only its outcome moves, once (`open` → paid | defaulted | returned) — the 0186 trigger refuses anything else; PC-56 STORE-3c (0212,
+//     founder D6): plus ONE second move, `paid` → `cancelled_paid` (a paid order cancelled: the EMD returned, the balance refunded);
 //   • a consent row is append-only: the seller's recorded yes for ONE act staff performed on their behalf.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 
-export type SettlementOutcome = 'open' | 'paid' | 'defaulted' | 'returned';
+export type SettlementOutcome = 'open' | 'paid' | 'defaulted' | 'returned' | 'cancelled_paid';
 export interface SettlementRow {
   id: string; tenantId: string; auctionId: string; orderId: string; winnerUserId: string; sellerUserId: string;
   quantity: string; unitCode: string; hammerUnitMinor: bigint; orderValueMinor: bigint; emdAppliedMinor: bigint; emdApplyTxnId: string | null;
@@ -60,19 +61,39 @@ export class AuctionSettlementRepository {
   }
 
   /** Record the outcome, once (the trigger refuses a second). rowCount 1 = this call recorded it. */
-  async recordOutcome(tx: TxContext, tenantId: string, id: string, outcome: Exclude<SettlementOutcome, 'open'>, txn: { forfeit?: string | null; ret?: string | null } = {}): Promise<boolean> {
+  async recordOutcome(tx: TxContext, tenantId: string, id: string, outcome: Exclude<SettlementOutcome, 'open' | 'cancelled_paid'>, txn: { forfeit?: string | null; ret?: string | null } = {}): Promise<boolean> {
     const r = await tx.query(
       `UPDATE auction_settlements SET outcome=$3, outcome_at=now(), emd_forfeit_txn_id=$4, emd_return_txn_id=$5
         WHERE tenant_id=$1 AND id=$2 AND outcome='open'`, [tenantId, id, outcome, txn.forfeit ?? null, txn.ret ?? null]);
     return (r.rowCount ?? 0) > 0;
   }
 
-  /** Per-tenant claim, in the caller's kv_app tx: online-collected settlements whose balance is overdue. */
+  /** PC-56 STORE-3c · B6 (0212, founder D6): a PAID settlement whose order was then cancelled — `paid` → `cancelled_paid`, with the return
+   *  txn (`emd-return:<orderId>`; null only when no EMD was applied). The ONE second move the 0212 trigger allows. rowCount 1 = recorded now. */
+  async recordCancelledPaid(tx: TxContext, tenantId: string, id: string, retTxnId: string | null): Promise<boolean> {
+    const r = await tx.query(
+      `UPDATE auction_settlements SET outcome='cancelled_paid', outcome_at=now(), emd_return_txn_id=$3
+        WHERE tenant_id=$1 AND id=$2 AND outcome='paid'`, [tenantId, id, retTxnId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  /** Per-tenant claim, in the caller's kv_app tx: settlements whose balance is overdue. PC-56 STORE-3c · B5 (founder D5): BOTH collections —
+   *  online (unpaid at due → forfeit) and offline (the seller never confirmed → the EMD returned); the act branches on `collection`. */
   async dueForDefault(tx: TxContext, tenantId: string, now: Date, limit: number): Promise<string[]> {
     const r = await tx.query<{ auction_id: string }>(
-      `SELECT auction_id FROM auction_settlements WHERE tenant_id=$1 AND outcome='open' AND collection='online' AND balance_due_at <= $2
+      `SELECT auction_id FROM auction_settlements WHERE tenant_id=$1 AND outcome='open' AND collection IN ('online','offline') AND balance_due_at <= $2
         ORDER BY balance_due_at LIMIT $3`, [tenantId, now, limit]);
     return r.rows.map((x) => x.auction_id);
+  }
+
+  /** PC-56 STORE-3c · B3: the settlements of a page of auctions THIS user won (replica, one query, bounded by the page) — my-bids' won rows. */
+  async forWinner(tenantId: string, winnerUserId: string, auctionIds: readonly string[]): Promise<Map<string, SettlementRow>> {
+    const out = new Map<string, SettlementRow>();
+    if (auctionIds.length === 0) return out;
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM auction_settlements WHERE tenant_id=$1 AND winner_user_id=$2 AND auction_id = ANY($3::uuid[])`,
+      [tenantId, winnerUserId, [...auctionIds]]);
+    for (const x of r.rows) { const row = toRow(x); out.set(row.auctionId, row); }
+    return out;
   }
 
   // ---- consents ----

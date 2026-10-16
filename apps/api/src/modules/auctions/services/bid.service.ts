@@ -8,6 +8,11 @@
 // PC-56 TENANT-11a: bids are PER UNIT (F-12) — the EMD stays per lot (flat, or % of the LOT value of the first bid); a bid
 // at or after `ends_at` is refused AUCTION_ENDED and anti-snipe only extends inside the live window (F-15); while entry is
 // paused a user with no prior bid in this auction is refused AUCTION_ENTRY_PAUSED, existing bidders continue (A11).
+//
+// PC-56 STORE-3c · B2 (founder D1, survey B21): a SEALED bid may only RAISE the bidder's own last one — a second sealed bid at or below
+// it is refused BID_SEALED_MUST_RAISE {yourLastMinor} (409), read on the auction-lock transaction; the highest sealed bid still wins (the
+// entity's rule, unchanged) and the EMD is still held ONCE per (auction, bidder) at the first bid. B9: the outbid notice carries the lot's
+// title (`lot_name`, the variable `bid.outbid`'s template declares — seed 0007) and nothing about the other bidder.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -19,7 +24,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { ListingService } from '../../listings/services/listing.service';
 import { Bid } from '../domain/bid.entity';
 import { DomainEvent, AuctionEventType } from '../domain/auctions.events';
-import { AuctionNotFoundError, SellerCannotBidError, AlreadyHighBidderError, AuctionEntryPausedError } from '../domain/auctions.errors';
+import { AuctionNotFoundError, SellerCannotBidError, AlreadyHighBidderError, AuctionEntryPausedError, BidSealedMustRaiseError } from '../domain/auctions.errors';
 import { emdHoldKey } from '../domain/lot';
 import { AuctionRepository } from '../repositories/auction.repository';
 import { BidRepository } from '../repositories/bid.repository';
@@ -56,6 +61,10 @@ export class BidService {
           const high = await this.bids.highest(tx, tenantId, auctionId);
           if (!sealed && high && high.bidderUserId === bidderUserId) throw new AlreadyHighBidderError();
           a.assertBidAcceptable(amountMinor, sealed ? null : (high?.amountMinor ?? null), now);   // throws BidTooLow / NotBiddable / AuctionEnded
+          if (sealed) {                                                                           // STORE-3c · B2 (D1): raise-only, per bidder
+            const mine = await this.bids.highestForBidder(tx, tenantId, auctionId, bidderUserId);
+            if (mine !== null && amountMinor <= mine) throw new BidSealedMustRaiseError(mine);
+          }
           if (a.toProps().entryPaused && !(await this.bids.hasBid(tx, tenantId, auctionId, bidderUserId))) throw new AuctionEntryPausedError();
 
           // EMD: hold once per (auction, bidder); reuse the existing hold on subsequent bids
@@ -79,7 +88,7 @@ export class BidService {
           for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'auction', aggregateId: auctionId, eventType: e.type, payload: { v: 1, ...e.payload } });
           // open-auction outbid: a strictly-higher bid displaced the previous high bidder → notify them
           if (!sealed && high && high.bidderUserId !== bidderUserId && amountMinor > high.amountMinor) {
-            await this.publisher.outbid(tx, tenantId, auctionId, high.bidderUserId, amountMinor);
+            await this.publisher.outbid(tx, tenantId, auctionId, high.bidderUserId, amountMinor, l?.title ?? null);
           }
           this.metrics.inc('auctions.bid_placed', { tenant: tenantId, extended: String(extended) });
           return { bidId, auctionId, amountMinor: amountMinorStr, lotValueMinor: a.lotValue(amountMinor).toString(), quantity: a.quantity, unitCode: a.toProps().unitCode, extended, endsAt: a.endsAt };

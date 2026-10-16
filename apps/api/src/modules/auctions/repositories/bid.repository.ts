@@ -28,6 +28,12 @@ export class BidRepository {
     return r.rows[0] ? { id: r.rows[0].id, amountMinor: BigInt(r.rows[0].amount_minor), bidderUserId: r.rows[0].bidder_user_id } : null;
   }
 
+  /** PC-56 STORE-3c · B2 (founder D1): the bidder's OWN highest bid in this auction (read on the auction-lock tx) — a sealed bid must raise it. */
+  async highestForBidder(tx: TxContext, tenantId: string, auctionId: string, bidderUserId: string): Promise<bigint | null> {
+    const r = await tx.query<{ best: string | null }>(`SELECT max(amount_minor)::text AS best FROM bids WHERE tenant_id=$1 AND auction_id=$2 AND bidder_user_id=$3`, [tenantId, auctionId, bidderUserId]);
+    return r.rows[0]?.best != null ? BigInt(r.rows[0].best) : null;
+  }
+
   /** The bidder's first bid's EMD hold txn for this auction (reused on subsequent bids; null if none). */
   async existingEmdTxn(tx: TxContext, tenantId: string, auctionId: string, bidderUserId: string): Promise<string | null> {
     const r = await tx.query<{ emd_txn_id: string }>(`SELECT emd_txn_id FROM bids WHERE tenant_id=$1 AND auction_id=$2 AND bidder_user_id=$3 AND emd_txn_id IS NOT NULL ORDER BY created_at ASC LIMIT 1`, [tenantId, auctionId, bidderUserId]);
@@ -113,6 +119,26 @@ export class BidRepository {
     return r.rows.map((x) => ({ id: x.id, auctionId: x.auction_id, listingId: x.listing_id, amountMinor: String(x.amount_minor), createdAt: x.created_at, createdAtRaw: x.created_at_raw,
       auctionStatus: x.auction_status, endsAt: x.ends_at, emdMinor: String(x.emd_minor), emdPctBps: x.emd_pct_bps ?? null, winningBidId: x.winning_bid_id ?? null,
       quantity: String(x.quantity), unitCode: x.unit_code, firstAmountMinor: String(x.first_amount), currencyCode: x.currency_code != null ? String(x.currency_code).trim() : null }));
+  }
+
+  /** PC-56 STORE-3c · B3 (survey B20) — the caller's auctions ("my bids", PER AUCTION): one row per auction the caller bid in, newest
+   *  activity first — µs keyset on `(the caller's last bid at, auction id)` DESC (the column's own text, F-25) — with the caller's bid count
+   *  and their BEST bid (amount, id, time). Always filtered by the caller's bidder_user_id (owner-scoped, no IDOR). Bounded by `limit`. */
+  async auctionsForBidder(tenantId: string, bidderUserId: string, opts: { cursor?: { c: string; id: string }; limit: number }): Promise<Array<{
+    auctionId: string; lastAtRaw: string; lastAt: Date; bidCount: number; bestBidId: string; bestMinor: bigint; bestAt: Date }>> {
+    const params: unknown[] = [tenantId, bidderUserId];
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    let where = 'true';
+    if (opts.cursor) { const cc = p(opts.cursor.c), ci = p(opts.cursor.id); where = `(m.last_at < ${cc}::timestamptz OR (m.last_at = ${cc}::timestamptz AND m.auction_id < ${ci}::uuid))`; }
+    const lp = p(opts.limit);
+    const r = await this.replica.forTenant(tenantId).query(
+      `WITH m AS (SELECT auction_id, max(created_at) AS last_at, count(*)::int AS n FROM bids WHERE tenant_id=$1 AND bidder_user_id=$2 GROUP BY auction_id)
+       SELECT m.auction_id, m.last_at, m.last_at::text AS last_at_raw, m.n, best.id AS best_id, best.amount_minor::text AS best_minor, best.created_at AS best_at
+         FROM m CROSS JOIN LATERAL (SELECT x.id, x.amount_minor, x.created_at FROM bids x WHERE x.tenant_id=$1 AND x.auction_id=m.auction_id AND x.bidder_user_id=$2
+                                     ORDER BY x.amount_minor DESC, x.created_at ASC, x.id ASC LIMIT 1) best
+        WHERE ${where} ORDER BY m.last_at DESC, m.auction_id DESC LIMIT ${lp}`, params);
+    return r.rows.map((x) => ({ auctionId: x.auction_id, lastAtRaw: String(x.last_at_raw), lastAt: x.last_at, bidCount: Number(x.n), bestBidId: x.best_id,
+      bestMinor: BigInt(x.best_minor), bestAt: x.best_at }));
   }
 
   /** Bid history for an auction, µs keyset (F-25). Identities are masked by the read-model; sealed amounts too. */

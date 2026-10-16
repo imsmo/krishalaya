@@ -12,7 +12,6 @@ import Link from 'next/link';
 import type { CategoryNode } from '@krishalaya/sdk-js';
 import { getTranslator, getLang } from '../lib/i18n';
 import { LocaleSwitcher } from './LocaleSwitcher';
-import { env } from '../lib/env';
 import { hasSessionCookie } from '../lib/auth';
 import { publicClient, sessionTenantClient } from '../lib/api-client';
 import { getCartItemCount } from '../features/cart/summary';
@@ -31,10 +30,15 @@ export async function SiteHeader() {
   let cats: ReturnType<typeof flattenCategoryNav> = [];
   try { cats = flattenCategoryNav((await publicClient().lookups.categories()) as CategoryNode[]).filter((c) => c.depth === 0).slice(0, STRIP_MAX); }
   catch { cats = []; }
-  let offersOn = false;
-  if (signedIn) { try { offersOn = (await sessionTenantClient().storefront.flags()).offers === true; } catch { offersOn = false; } }
+  let offersOn = false; let auctionsOn = false;
+  if (signedIn) {
+    try { const f = await sessionTenantClient().storefront.flags(); offersOn = f.offers === true; auctionsOn = f.auctions === true; }
+    catch { offersOn = false; auctionsOn = false; }
+  }
+  // PC-56 STORE-3c · C1 (founder D4): "Auctions" only for a signed-in buyer whose session store has its `auctions` flag ON (the build-time
+  // env switch is deleted) — /auctions is the door to that store's list; anonymous or OFF → no link
   const nav = [
-    ...(env.featureAuctions ? [{ href: '/auctions', label: t.t('nav.auctions') }] : []),
+    ...(auctionsOn ? [{ href: '/auctions', label: t.t('nav.auctions') }] : []),
     { href: '/organisations', label: t.t('home.orgs.cta') },
     { href: '/help', label: t.t('nav.help') },
   ];

@@ -14,7 +14,7 @@ import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 import { ORDER_STATUS_LIST, orderStatusKey, orderStatusTone } from '../features/store3a/order-status';
 import {
-  STORE_ORDER_GROUPS, readGroup, ordersHref, orderHref, cancelHref, orderTabs, countForm, showsPayLink, auctionBalanceRefused, showsReceivedAct,
+  STORE_ORDER_GROUPS, readGroup, ordersHref, orderHref, cancelHref, orderTabs, countForm, showsPayLink, showsReceivedAct,
   codDeliveredLine, canCancel, showsDeadline, showsDepositRows, moreItems, reasonOptions, checkCancelForm, cancelOutcomeKey, readCancelOutcome,
   completeOutcomeKey, refundView, whatComesBack, auctionCancelWarning, cancelledBy, readOk, CANCEL_OUTCOMES,
 } from '../features/store3a/orders';
@@ -78,10 +78,9 @@ describe('STORE-3a · which acts an order shows', () => {
       { status: 'completed', paymentState: 'paid' }, { status: 'confirmed', paymentState: 'paid' }]) expect([o, showsReceivedAct(o)]).toEqual([o, false]);
     expect([codDeliveredLine({ status: 'delivered', paymentState: 'none' }), codDeliveredLine({ status: 'delivered', paymentState: 'paid' })]).toEqual([true, false]);
   });
-  it('the Pay link: awaiting payment and NOT an auction order (the auction balance is refused by name instead)', () => {
+  it('the Pay link: awaiting payment — an AUCTION order too since STORE-3c (founder D2: the pay step charges the balance due)', () => {
     expect(showsPayLink({ paymentState: 'pending', source: 'direct' })).toBe(true);
-    expect(showsPayLink({ paymentState: 'pending', source: 'auction' })).toBe(false);
-    expect(auctionBalanceRefused({ paymentState: 'pending', source: 'auction' })).toBe(true);
+    expect(showsPayLink({ paymentState: 'pending', source: 'auction' })).toBe(true);
     for (const ps of ['none', 'paid', 'cancelled', 'expired', undefined]) expect(showsPayLink({ paymentState: ps, source: 'direct' })).toBe(false);
   });
   it('the acceptance deadline: only before confirmation, never for an auction order; the deposit rows only when > 0', () => {

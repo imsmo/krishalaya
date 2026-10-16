@@ -209,7 +209,7 @@ describe('STORE-2c · the §E refusals, the DELTAs, the chain pages', () => {
 describe('STORE-2c · the catalogues', () => {
   const keys = Object.keys(en).filter((k) => k.startsWith('store2c.'));
   it('the STORE-2c keys: no digit, no currency sign, no person placeholder; the platform only as {platform} (these are tenant routes)', () => {
-    expect(keys.length).toBe(173);
+    expect(keys.length).toBe(174);   // PC-56 STORE-3c · C4: + store2c.refused.amount_mismatch (ORDER_PAYMENT_AMOUNT_MISMATCH by name)
     const LITS = [PLATFORM_BRAND.name, 'कृषालय', 'કૃષાલય'];
     for (const [l, cat] of Object.entries(CATS)) for (const k of keys) {
       const v = cat[k];

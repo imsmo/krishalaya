@@ -263,7 +263,11 @@ export class PaymentService {
               const op = order.toProps();
               if (op.buyerUserId !== payment.userId) throw new PaymentOrderReferenceInvalidError(payment.id, 'wrong_buyer');
               if (op.status !== 'payment_pending') throw new PaymentOrderReferenceInvalidError(payment.id, 'wrong_state');
-              if (op.totalMinor !== payment.amountMinor) throw new PaymentOrderReferenceInvalidError(payment.id, 'amount_drift');
+              // PC-56 STORE-3c · B1 (founder D2): ONE rule for the intent, the wallet pay and THIS capture — the payment must equal what is DUE
+              // (total − the auction deposit applied to the order in escrow; the deposit is 0 for every non-auction order). A capture of the
+              // TOTAL for an auction order is now the drift (it would over-fund escrow by the deposit); the balance is accepted.
+              const due = await this.amountDueForOrderInTx(tx, payment.tenantId, op.id, op.totalMinor);
+              if (due !== payment.amountMinor) throw new PaymentOrderReferenceInvalidError(payment.id, 'amount_drift');
             }
             // money arrives: external funds (platform gateway account) → platform escrow. Zero-sum.
             const txn = await this.wallet.post(tx, {
@@ -466,6 +470,20 @@ export class PaymentService {
    *  credited to it in escrow (`emd_apply`). The wallet-pay door asks this; the gateway door applies the same rule above. */
   async amountDueForOrderInTx(tx: TxContext, tenantId: string, orderId: string, totalMinor: bigint): Promise<bigint> {
     return totalMinor - (await this.repo.orderEmdCreditMinor(tenantId, orderId, tx));
+  }
+
+  /** PC-56 STORE-3c · B7 (founder D7): was a payment CAPTURED for this order (its payment row `success`, or since refunded / being refunded)?
+   *  Read in the CALLER's kv_app tx (the cancel's) — the order's timeline may not yet say `confirmed` when the capture has landed (the relay
+   *  delivers `payments.payment_succeeded` after the webhook commits), and a captured balance must never leave the deposit forfeited. */
+  async capturedForOrderInTx(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
+    return (await this.repo.capturedForOrderTx(tx, tenantId, orderId)) !== null;
+  }
+
+  /** PC-56 STORE-3c · B3 (survey C-8): the LEDGER's facts for a set of idempotency keys (replica, one query, bounded by the caller) — when each
+   *  transaction was booked and the amount it moved (the sum of its credit legs; every txn is zero-sum). The auction module reads a bidder's
+   *  deposit state from here (`emd:` / `emd-release:` / `emd-apply:` / `emd-forfeit:` / `emd-return:` keys) — never from the EMD rule. */
+  async ledgerTxnsByKeys(tenantId: string, keys: readonly string[]): Promise<Map<string, { at: Date; amountMinor: bigint }>> {
+    return this.repo.ledgerTxnsByKeys(tenantId, keys);
   }
 
   async captureOrderFromWalletInTx(tx: TxContext, input: { tenantId: string; buyerUserId: string; orderId: string; amountMinor: bigint; currencyCode: string }): Promise<{ paymentId: string; ledgerTxnId: string }> {

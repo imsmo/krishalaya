@@ -6,6 +6,8 @@ export { CART_REFUSAL_CODES } from './types';   // PC-56 STORE-2b · B6
 export { CHECKOUT_MONEY_REFUSAL_CODES, PAYMENT_FAILURE_REASONS } from './types';   // PC-56 STORE-2c · B9
 export { ORDER_GROUPS, ORDER_REFUSAL_CODES } from './types';   // PC-56 STORE-3a · B7
 export { OFFER_STATUSES, OFFER_DECLINE_REASONS, OFFER_REFUSAL_CODES } from './types';   // PC-56 STORE-3b · B9
+export { AUCTION_REFUSAL_CODES, AUCTION_STATUSES, GROUP_LOT_STATUSES } from './types';   // PC-56 STORE-3c · B10
+export type { AuctionRefusalCode, AuctionStatusCode, SettlementOutcome, MyBidEmd, MyBidEmdState, MyBidSettlement, PublicAuctionCard, PublicAuctionGroup, StorefrontGroupLot } from './types';   // PC-56 STORE-3c · B10
 export type { OfferStatus, OfferAct, OfferRound, OfferDeclineReason, OfferCounts, OfferRefusalCode } from './types';   // PC-56 STORE-3b · B9
 export type { HttpMethod, RequestOptions, Envelope } from './http';
 export type { CreateListingInput } from './resources/listings';

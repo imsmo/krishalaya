@@ -150,6 +150,44 @@ export class GroupLotRepository {
     return out;
   }
 
+  // --- PC-56 STORE-3c · B8 — the deadline clock's reads, and the PUBLIC lot -----------------------------------------------------
+  /** The tenants holding a lot past its deadline while still pledging — the clock's ONLY read on the runner's kv_relay pool (0188.8: kv_relay
+   *  keeps SELECT on `group_lots`). Everything after it — the claim, the lock, the act — runs per tenant in kv_app's unit of work. */
+  async tenantsWithDueDeadline(pool: { query: (sql: string, p?: unknown[]) => Promise<{ rows: Array<{ tenant_id: string }> }> }, now: Date, limit = 500): Promise<string[]> {
+    const r = await pool.query(`SELECT DISTINCT tenant_id FROM group_lots WHERE status = 'pledging' AND pledge_deadline < $1 AND deleted_at IS NULL LIMIT $2`, [now, limit]);
+    return r.rows.map((x) => x.tenant_id);
+  }
+  /** Per-tenant claim, in the caller's kv_app tx (RLS on): lots past their deadline, still pledging, short of the target. Ids only — the act
+   *  re-locks each row and re-checks the rule (domain/deadline.ts). Bounded; SKIP LOCKED so two ticks never wait on each other. */
+  async dueAtDeadline(tx: TxContext, tenantId: string, now: Date, limit: number): Promise<string[]> {
+    const r = await tx.query<{ id: string }>(
+      `SELECT id FROM group_lots WHERE tenant_id=$1 AND status='pledging' AND pledge_deadline < $2 AND pledged_quantity < target_quantity AND deleted_at IS NULL
+        ORDER BY pledge_deadline LIMIT $3 FOR UPDATE SKIP LOCKED`, [tenantId, now, limit]);
+    return r.rows.map((x) => x.id);
+  }
+  /** The PUBLIC facts of one lot (replica): the product's name, the ACTIVE pledger COUNT (never who), the organisation (slug + name), the
+   *  organisation's country currency (HOTFIX-5: a lot's money is in it) and its exponent, and the listing's status once listed. */
+  async publicFacts(tenantId: string, id: string): Promise<{ productName: string | null; pledgerCount: number; organisation: { slug: string; name: string } | null;
+    currencyCode: string | null; exponent: number | null; listingStatus: string | null } | null> {
+    const r = await this.replica.forTenant(tenantId).query<any>(
+      `SELECT pr.default_name AS product_name,
+              (SELECT count(*)::int FROM group_lot_pledges p WHERE p.group_lot_id = g.id AND p.tenant_id = g.tenant_id AND p.status = 'active' AND p.deleted_at IS NULL) AS pledgers,
+              t.slug, t.display_name, c.currency_code, cur.minor_units, l.status::text AS listing_status
+         FROM group_lots g
+         LEFT JOIN products pr ON pr.id = g.product_id
+         LEFT JOIN tenants t ON t.id = g.tenant_id
+         LEFT JOIN countries c ON c.code = t.country_code
+         LEFT JOIN currencies cur ON cur.code = c.currency_code
+         LEFT JOIN listings l ON l.id = g.listing_id AND l.tenant_id = g.tenant_id
+        WHERE g.tenant_id = $1 AND g.id = $2 AND g.deleted_at IS NULL`, [tenantId, id]);
+    const x = r.rows[0];
+    if (!x) return null;
+    return { productName: x.product_name ?? null, pledgerCount: Number(x.pledgers ?? 0),
+      organisation: x.slug && x.display_name ? { slug: x.slug, name: x.display_name } : null,
+      currencyCode: x.currency_code != null ? String(x.currency_code).trim() : null, exponent: x.minor_units != null ? Number(x.minor_units) : null,
+      listingStatus: x.listing_status ?? null };
+  }
+
   // --- reference reads ----------------------------------------------------------------------------------------------------
   /** A product this tenant may pool: a platform product or the tenant's own, active. */
   async product(tx: TxContext, tenantId: string, productId: string): Promise<ProductFacts | null> {
@@ -216,7 +254,7 @@ export class GroupLotRepository {
     if (r.rowCount !== 1) throw new Error(`group_lot_pledges withdraw touched ${r.rowCount} rows for ${pledgeId}`);
   }
   /** Cancel releases every active pledge. Returns the members to tell. */
-  async releaseAll(tx: TxContext, tenantId: string, groupLotId: string, by: string): Promise<string[]> {
+  async releaseAll(tx: TxContext, tenantId: string, groupLotId: string, by: string | null): Promise<string[]> {
     const r = await tx.query<{ farmer_user_id: string }>(`UPDATE group_lot_pledges SET status='released', updated_by=$3, updated_at=now()
         WHERE group_lot_id=$1 AND tenant_id=$2 AND status='active' AND deleted_at IS NULL RETURNING farmer_user_id`, [groupLotId, tenantId, by]);
     return r.rows.map((x) => x.farmer_user_id);

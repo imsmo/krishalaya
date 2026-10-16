@@ -60,14 +60,10 @@ export function countForm(c: GroupCount): { key: 'store3a.tab.count' | 'store3a.
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
 interface OrderFacts { status?: unknown; paymentState?: unknown; source?: unknown; acceptanceDeadline?: unknown }
 
-/** The Pay link (W289): ONLY an order awaiting the buyer's online payment — and never an AUCTION order, whose pay step would still send the
- *  total while the API wants total − deposit (refused by name until STORE-3c). */
+/** The Pay link (W289): ONLY an order awaiting the buyer's online payment. PC-56 STORE-3c · C4 (founder D2): an AUCTION order too — the pay
+ *  step now charges what is DUE (total − the deposit applied), the rule the API applies (until 3c the link was withheld and refused by name). */
 export function showsPayLink(o: OrderFacts): boolean {
-  return o.paymentState === 'pending' && o.source !== 'auction';
-}
-/** An auction order awaiting its balance: the Pay link is withheld and the refusal is printed instead. */
-export function auctionBalanceRefused(o: OrderFacts): boolean {
-  return o.paymentState === 'pending' && o.source === 'auction';
+  return o.paymentState === 'pending';
 }
 /** "I received it" (lead's D6, Law 9): ONLY a delivered order that was PAID INTO ESCROW. FAIL-CLOSED: any other state, an unknown payment state
  *  or a pay-on-delivery order (`none`) → false (the API refuses the act too: ORDER_COMPLETE_REQUIRES_ESCROW). */

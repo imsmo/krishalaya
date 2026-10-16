@@ -228,14 +228,27 @@ export class AuctionService {
 
   /** F-2 default: an online-collected settlement whose balance is still unpaid at balance_due_at. The order is cancelled,
    *  the applied EMD forfeited to the seller, the auction `defaulted`, the listing restocked. If the order has moved on
-   *  (paid), the settlement is recorded `paid` instead. Idempotent. */
-  async defaultIfUnpaid(tenantId: string, auctionId: string, now: Date = new Date()): Promise<'defaulted' | 'paid' | 'skipped'> {
+   *  (paid), the settlement is recorded `paid` instead. Idempotent.
+   *  PC-56 STORE-3c · B5 (founder D5): an OFFLINE-collected settlement at balance_due_at too — but there the winner was not the silent one: an
+   *  order the organisation never confirmed (still `created`) is cancelled by the SYSTEM (`seller_silent`) and the applied EMD RETURNED to
+   *  the winner under the EXISTING key `emd-return:<auctionId>` (outcome `returned`, the lot restocked); an order the organisation confirmed
+   *  (past `created`) is recorded `paid` (the offline meaning: the organisation took the order) and nothing moves. */
+  async defaultIfUnpaid(tenantId: string, auctionId: string, now: Date = new Date()): Promise<'defaulted' | 'paid' | 'returned' | 'skipped'> {
     let listingId: string | null = null;
     const out = await this.uow.run(tenantId, async (tx) => {
       const a = await this.repo.getForUpdate(tx, tenantId, auctionId);
       if (!a || a.status !== 'settled') return 'skipped' as const;
       const s = await this.settlements.forAuctionForUpdate(tx, tenantId, auctionId);
-      if (!s || s.outcome !== 'open' || s.collection !== 'online' || s.balanceDueAt.getTime() > now.getTime()) return 'skipped' as const;
+      if (!s || s.outcome !== 'open' || s.balanceDueAt.getTime() > now.getTime()) return 'skipped' as const;
+      if (s.collection === 'offline') {
+        const r = await this.auctionOrders.cancelUnconfirmedOfflineInTx(tx, tenantId, s.orderId, auctionId);
+        if (r === 'gone') return 'skipped' as const;                                 // already cancelled: its own handler decides it
+        if (r === 'confirmed') { await this.settlements.recordOutcome(tx, tenantId, s.id, 'paid'); return 'paid' as const; }
+        listingId = a.listingId;
+        await this.returnOnSellerSilentInTx(tx, tenantId, a, s, now);
+        return 'returned' as const;
+      }
+      if (s.collection !== 'online') return 'skipped' as const;
       // PC-56 HOTFIX-5 · B5 (found proving D4): an order ALREADY CANCELLED (the buyer walked away, its event not yet handled) is not "paid" —
       // recording `paid` here would have made the forfeit impossible (0186: the outcome moves once). The cancel's own handler decides it.
       if ((await this.auctionOrders.statusForUpdate(tx, tenantId, s.orderId)) === 'cancelled') return 'skipped' as const;
@@ -293,13 +306,41 @@ export class AuctionService {
   }
 
   /**
+   * PC-56 STORE-3c · B5 (founder D5) — THE OFFLINE ORDER THE ORGANISATION NEVER CONFIRMED. Inside the default sweep's own kv_app transaction,
+   * under the auction's and the settlement's row locks, after the order was cancelled by the system (`seller_silent`):
+   *   • ONE ledger transaction `emd_return` (0186's type) under the EXISTING per-auction key `emd-return:<auctionId>` (lot.ts emdReturnKey) —
+   *     platform escrow −EMD → winner Main +EMD, zero-sum, referenced to the order (no txn when no EMD was applied);
+   *   • the settlement outcome `open` → `returned` with the txn; the lot restocked once (the outcome moves once — a second sweep finds
+   *     `returned` and is skipped before this point);
+   *   • audit `auction.emd_returned` (the reason: the organisation did not confirm) + `auctions.emd_returned` on the outbox (the winner's notice).
+   */
+  private async returnOnSellerSilentInTx(tx: TxContext, tenantId: string, a: Auction, s: SettlementRow, now: Date): Promise<void> {
+    let retTxn: string | null = null;
+    if (s.emdAppliedMinor > 0n) {
+      retTxn = (await this.wallet.post(tx, { tenantId, txnType: 'emd_return', idempotencyKey: emdReturnKey(a.id), referenceType: 'order', referenceId: s.orderId, initiatedBy: SYSTEM,
+        description: `auction ${a.toProps().auctionNo ?? a.id}: the organisation did not confirm the offline order by the balance due time — the winner's applied EMD returned`,
+        legs: [{ account: platform(PlatformAccount.Escrow), amountMinor: -s.emdAppliedMinor }, { account: userMain(s.winnerUserId), amountMinor: s.emdAppliedMinor }] })).txnId;
+    }
+    await this.settlements.recordOutcome(tx, tenantId, s.id, 'returned', { ret: retTxn });
+    await this.listings.restockInTx(tx, tenantId, a.listingId, Number(a.quantity));
+    await this.repo.recordEvent(tx, tenantId, a.id, 'seller_silent', { orderId: s.orderId, emdReturnedMinor: s.emdAppliedMinor.toString(), ledgerTxnId: retTxn, at: now.toISOString() });
+    await this.audit.write(tx, { tenantId, actorUserId: null, action: 'auction.emd_returned', entityType: 'auction', entityId: a.id, ip: null,
+      reason: 'the organisation did not confirm the offline order by the balance due time — the order was cancelled by the system and the winner\'s applied EMD went back to them',
+      oldValue: { settlement: 'open', orderStatus: 'created', balanceDueAt: s.balanceDueAt },
+      newValue: { settlement: 'returned', emdReturnedMinor: s.emdAppliedMinor.toString(), orderId: s.orderId, orderStatus: 'cancelled', idempotencyKey: emdReturnKey(a.id),
+        ledgerTxnId: retTxn, listingStatus: 'published' } });
+    await this.outbox.write(tx, { tenantId, aggregateType: 'auction', aggregateId: a.id, eventType: AuctionEventType.EmdReturned,
+      payload: { v: 1, auctionId: a.id, orderId: s.orderId, bidderUserId: s.winnerUserId, amountMinor: s.emdAppliedMinor.toString(), sellerSilent: true } });
+  }
+
+  /**
    * PC-56 HOTFIX-5 · B5 (founder D4) — THE DEPOSIT GOES BACK WHEN A PAID AUCTION ORDER IS CANCELLED. In the cancel's own kv_app transaction,
    * under the auction's and the settlement's row locks:
    *   • ONE ledger transaction `emd_return` (0186's txn type, reused — escrow −EMD → winner Main +EMD, zero-sum), keyed `emd-return:<orderId>`,
    *     referenced to the order — 2c's `refund:<orderId>` returns the BALANCE the winner paid; this returns the DEPOSIT applied to the same
    *     order, so the platform escrow ends holding nothing for it;
-   *   • the settlement outcome: `open` → `returned` (with the txn); an outcome already `paid` stays `paid` — 0186's trigger lets an outcome
-   *     move once, and the CHECK has no `cancelled_paid` — the return is then recorded by the ledger txn, the auction event and the audit row;
+   *   • the settlement outcome: `open` → `returned` (with the txn); PC-56 STORE-3c · B6 (0212, founder D6): an outcome already `paid` moves
+   *     to `cancelled_paid` (with the txn) — the ONE second move 0212's trigger allows (before 0212 it stayed `paid`);
    *   • the lot restocked (the listing back on sale), once — `auction_events` 'paid_order_cancelled' is the once-marker (an EMD of 0 posts no
    *     ledger txn to guard it);
    *   • audit `auction.emd_returned` + `auctions.emd_returned` on the outbox (the winner's notice).
@@ -315,11 +356,13 @@ export class AuctionService {
     }
     const outcomeBefore = s.outcome;
     if (s.outcome === 'open') await this.settlements.recordOutcome(tx, tenantId, s.id, 'returned', { ret: retTxn });
+    else if (s.outcome === 'paid') await this.settlements.recordCancelledPaid(tx, tenantId, s.id, retTxn);   // STORE-3c · B6 (0212)
+    const outcomeAfter = outcomeBefore === 'open' ? 'returned' : outcomeBefore === 'paid' ? 'cancelled_paid' : outcomeBefore;
     await this.listings.restockInTx(tx, tenantId, a.listingId, Number(a.quantity));
     await this.repo.recordEvent(tx, tenantId, a.id, 'paid_order_cancelled', { orderId: s.orderId, role, emdReturnedMinor: s.emdAppliedMinor.toString(), ledgerTxnId: retTxn, at: now.toISOString() });
     await this.audit.write(tx, { tenantId, actorUserId: null, action: 'auction.emd_returned', entityType: 'auction', entityId: a.id, ip: null,
       reason: `a PAID order was cancelled by the ${role === 'buyer' ? 'buyer' : role === 'seller' ? 'seller' : 'system'} — the winner's applied EMD went back to them (the balance is refunded to source by payments)`,
-      oldValue: { settlement: outcomeBefore }, newValue: { settlement: outcomeBefore === 'open' ? 'returned' : outcomeBefore, emdReturnedMinor: s.emdAppliedMinor.toString(), orderId: s.orderId,
+      oldValue: { settlement: outcomeBefore }, newValue: { settlement: outcomeAfter, emdReturnedMinor: s.emdAppliedMinor.toString(), orderId: s.orderId,
         idempotencyKey: emdPaidCancelReturnKey(s.orderId), ledgerTxnId: retTxn, listingStatus: 'published' } });
     if (s.emdAppliedMinor > 0n) {
       await this.outbox.write(tx, { tenantId, aggregateType: 'auction', aggregateId: a.id, eventType: AuctionEventType.EmdReturned,
@@ -514,19 +557,25 @@ export class AuctionService {
     };
   }
 
+  /** The members' console list (W137). PC-56 STORE-3c · B4 (survey F-18 / B31): the listing facts are read in ONE batch for the page (it was
+   *  a `listings.getById` per row), and a NON-PRIVILEGED member (neither this auction's seller nor the auction desk) no longer receives
+   *  `settledOrderId`, `winningBidId` or the free-text `cancelReason` — the seller and staff keep them (the web-tenant console reads them). */
   async list(tenantId: string, q: { status?: string; group?: AuctionGroup; cursor?: Cursor; limit: number }, viewer?: AuctionViewer) {
     const rows = await this.repo.listFor(tenantId, q);
     const stats = await this.bids.statsFor(tenantId, rows.map((a) => a.id));
     const counts = await this.repo.groupCounts(tenantId);
+    const facts = await this.repo.listingFactsFor(tenantId, rows.map((a) => a.listingId));
     const items: Array<Record<string, unknown>> = [];
     for (const a of rows) {
       const p = a.toProps();
-      const l: any = await this.listings.getById(tenantId, p.listingId);
+      const l = facts.get(p.listingId);
       const privileged = !!viewer && (viewer.isStaff || l?.sellerUserId === viewer.userId);
       const st = stats.get(p.id) ?? { highMinor: null, bidders: 0 };
       const sealedHidden = p.kind === 'sealed' && (p.status === 'live' || p.status === 'extended' || p.status === 'scheduled');
       const high = sealedHidden ? null : st.highMinor;
-      items.push({ ...this.serialize(p, { reserveVisible: privileged }), listingTitle: l?.title ?? null,
+      const base: Record<string, unknown> = this.serialize(p, { reserveVisible: privileged });
+      if (!privileged) { delete base.settledOrderId; delete base.winningBidId; delete base.cancelReason; }
+      items.push({ ...base, listingTitle: l?.title ?? null,
         highBidMinor: high?.toString() ?? null, highLotValueMinor: high !== null ? a.lotValue(high).toString() : null, sealedHidden, bidderCount: st.bidders,
         reserveMet: high !== null ? a.reserveMetBy(high) : null });
     }

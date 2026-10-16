@@ -87,5 +87,6 @@ export class AuctionDefaultJob extends AuctionSweep {
   protected readonly statuses = ['settled'] as const;
   constructor(intervalMs: number, uow: UnitOfWork, repo: AuctionRepository, auctions: AuctionService, private readonly settlements: AuctionSettlementRepository) { super(intervalMs, uow, repo, auctions); }
   protected claim(tx: TxContext, t: string, now: Date) { return this.settlements.dueForDefault(tx, t, now, this.limit); }
-  protected async act(t: string, id: string, now: Date) { return (await this.auctions.defaultIfUnpaid(t, id, now)) === 'defaulted'; }
+  // PC-56 STORE-3c · B5: an act is any decision — defaulted (online, unpaid), returned (offline, never confirmed) or paid (moved on)
+  protected async act(t: string, id: string, now: Date) { return (await this.auctions.defaultIfUnpaid(t, id, now)) !== 'skipped'; }
 }

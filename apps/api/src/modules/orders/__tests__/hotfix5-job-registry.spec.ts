@@ -45,7 +45,8 @@ describe('PC-56 HOTFIX-5 · (1) the three clocks are in SCHEDULED_JOB_REGISTRY a
       expect(`${name}:${byName.has(name)}`).toBe(`${name}:true`);
       expect(`${name}:${byName.get(name)?.intervalMs}`).toBe(`${name}:${CLOCK_CADENCE_MS[name as keyof typeof CLOCK_CADENCE_MS]}`);
     }
-    expect([...CLOCK_NAMES].sort()).toEqual(['offers-expire', 'quality-window-complete', 'seller-confirm-timeout']);
+    // PC-56 STORE-3c · B8: the table also carries the group-lot deadline clock (its own registry spec: group-lots/__tests__/store3c-deadline-registry.spec.ts)
+    expect([...CLOCK_NAMES].sort()).toEqual(['group-lots-deadline', 'offers-expire', 'quality-window-complete', 'seller-confirm-timeout']);
   }, 120_000);
 });
 

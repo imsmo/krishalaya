@@ -36,8 +36,6 @@ export const STORE3A_REFUSALS: readonly Store3aRefusal[] = Object.freeze([
     key: 'store3a.refusal.escrowFreeze', why: 'not proven (disputes are STORE-5); a disputed order says "under review" only' },
   { id: 'flagged_off', canon: 'W288 / W289 / W291 "Flagged off — My Orders / Order / Cancellations disabled for this tenant/plan"', surfaces: ['orders', 'order', 'cancel'],
     key: 'store3a.refusal.flaggedOff', why: 'founder D3 (Q12): no kill-switch on a buyer\'s own order history' },
-  { id: 'pay_balance', canon: 'W289 / W296 "Pay the balance" for an auction order', surfaces: ['order'],
-    key: 'store3a.refusal.payBalance', why: 'the pay step still sends the total while the API wants total − deposit (STORE-3c builds the balance payment)' },
   { id: 'get_help', canon: 'W289 "Get help on this order"', surfaces: ['order'],
     key: 'store3a.refusal.getHelp', why: 'no buyer → organisation messaging yet (STORE-4 + B29)' },
   { id: 'cross_store', canon: 'W288 one list across Anand FPO, Unjha Kisan FPC and Kisan Sathi FPC', surfaces: ['orders'],

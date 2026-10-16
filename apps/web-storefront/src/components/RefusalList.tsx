@@ -9,8 +9,10 @@ import { STORE2A_REFUSALS, STORE2B_REFUSALS, STORE2C_REFUSALS, type Store2aSurfa
 import { STORE3A_REFUSALS, type Store3aSurface } from '../features/store3a/refusals';
 // PC-56 STORE-3b: and `STORE3B_REFUSALS` (the offer list and the offer thread).
 import { STORE3B_REFUSALS, type Store3bSurface } from '../features/store3b/refusals';
+// PC-56 STORE-3c: and `STORE3C_REFUSALS` (the auction list, my bids and the group lot).
+import { STORE3C_REFUSALS, type Store3cSurface } from '../features/store3c/refusals';
 
-export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface }) {
+export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface | Store3cSurface }) {
   const t = getTranslator();
   const rows = [
     ...STORE2A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
@@ -18,6 +20,7 @@ export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurf
     ...STORE2C_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE3A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE3B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
+    ...STORE3C_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
   ];
   return (
     <section className="kv-refused" data-kv-refused={surface} aria-labelledby={`kv-refused-${surface}`}>
