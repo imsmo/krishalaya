@@ -93,21 +93,24 @@ run('reviews slice (integration, real Postgres + RLS + outbox relay)', () => {
   it('buyer reviews seller; seller reviews buyer (target resolved server-side); non-party blocked; duplicate blocked', async () => {
     const r = await reviews.submit(tenantA, buyer, `idem-${randomUUID()}`, { orderId, stars: 5, body: 'great seller', subRatings: { quality: 5 } } as any);
     reviewId = r.id;
-    expect(r.targetType).toBe('seller'); expect(r.targetId).toBe(seller); expect(r.isVerifiedPurchase).toBe(true);
+    // PC-56 HOTFIX-7 · B5: the author's own shape carries no target uuid — the target is read from the row
+    expect(r.targetType).toBe('seller'); expect(r).not.toHaveProperty('targetId'); expect(r.isVerifiedPurchase).toBe(true);
+    expect((await admin.query(`SELECT target_id FROM reviews WHERE id=$1`, [r.id])).rows[0].target_id).toBe(seller);
 
     const r2 = await reviews.submit(tenantA, seller, `idem-${randomUUID()}`, { orderId, stars: 4 } as any);
-    expect(r2.targetType).toBe('buyer'); expect(r2.targetId).toBe(buyer);
+    expect(r2.targetType).toBe('buyer'); expect((await admin.query(`SELECT target_id FROM reviews WHERE id=$1`, [r2.id])).rows[0].target_id).toBe(buyer);
 
     await expect(reviews.submit(tenantA, stranger, `idem-${randomUUID()}`, { orderId, stars: 1 } as any)).rejects.toBeInstanceOf(NotEligibleToReviewError);
     await expect(reviews.submit(tenantA, buyer, `idem-${randomUUID()}`, { orderId, stars: 3 } as any)).rejects.toBeInstanceOf(DuplicateReviewError);
   });
 
   it('summary reflects published rating; moderation hides a review and the summary drops', async () => {
-    let sum = await reviews.summary(tenantA, 'seller', seller);
+    // PC-56 HOTFIX-7 · B5: the public aggregate is the ORGANISATION's (published seller-target reviews in the tenant; the buyer-target one is not counted)
+    let sum = await reviews.summary(tenantA, 'organisation');
     expect(sum.count).toBe(1); expect(Number(sum.avgStars)).toBe(5);
 
     await reviews.moderate(tenantA, moderator(), reviewId, { action: 'hide' }, null);
-    sum = await reviews.summary(tenantA, 'seller', seller);   // cache was invalidated on moderate
+    sum = await reviews.summary(tenantA, 'organisation');   // cache was invalidated on moderate
     expect(sum.count).toBe(0);
     const row = await admin.query(`SELECT status FROM reviews WHERE id=$1`, [reviewId]);
     expect(row.rows[0].status).toBe('hidden');

@@ -220,9 +220,13 @@ export interface SellerPublicProfile {
 export interface GalleryItem { mediaId: string; url: string; sortOrder: number; }
 
 /** Public farm-to-fork provenance (from the SECURITY DEFINER trace_scan projection — NON-PII). */
+/** PC-56 HOTFIX-7 · B10 / B25 — the PUBLIC trace (v2, `trace_scan_v2`): the ORGANISATION that recorded it (never a person), when the lot was
+ *  opened, whether it is anchored, and each journey step with its ALLOW-LISTED meta (per step; a phone, a coordinate or a free note is never
+ *  published). No uuid at all: `listingId`, `declaredInputs` and `certificateIds` are gone (5b decides a vocabulary). A lot of an organisation
+ *  that is not live answers 404 TRACE_SCAN_NOT_FOUND; an organisation that has not published traceability answers 404 TRACE_NOT_PUBLISHED. */
 export interface TraceProvenance {
-  qrToken: string; listingId: string | null; declaredInputs: unknown[]; certificateIds: unknown[];
-  anchored: boolean; createdAt: string; events: Array<{ eventCode: string; meta: Record<string, unknown>; at: string }>;
+  qrToken: string; organisation: { displayName: string }; anchored: boolean; createdAt: string;
+  events: Array<{ eventCode: string; meta: Record<string, string | number>; at: string }>;
 }
 
 export interface AuthTokens { accessToken: string; refreshToken: string; expiresInSec: number; }
@@ -284,6 +288,9 @@ export interface StorefrontFlags {
   /** PC-56 STORE-4c · B1 (founder Q12) — tenant-scoped, fail-closed: chat and calls (the headers' Messages link) only when ON (seed: OFF).
    *  A person's notifications and preferences are NOT behind it. */
   communication?: boolean;
+  /** PC-56 HOTFIX-7 · B25 — tenant-scoped, fail-closed: has this organisation published farm-to-fork traces (seed: OFF)? OFF = the trace page
+   *  says "not published" (the scan's TRACE_NOT_PUBLISHED), never "not found". */
+  traceability?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {
@@ -628,14 +635,22 @@ export interface ReviewSummary { averageStars: number; count: number; }
 /** One PUBLIC review (PII-free: no reviewer id / order id). Stars 1–5; optional body/sub-ratings/tags; the
  *  seller's public response if any. Dates are ISO strings. */
 export interface PublicReview {
-  id: string; stars: number; subRatings: Record<string, number>; body: string | null; tags: string[];
+  /** PC-56 HOTFIX-7 · B5: ABSENT on the public (organisation-keyed) list — a public row carries no uuid; present on a signed-in read. */
+  id?: string; stars: number; subRatings: Record<string, number>; body: string | null; tags: string[];
   isVerifiedPurchase: boolean; sellerResponse: string | null; sellerRespondedAt: string | null;
   helpfulCount: number; createdAt: string;
 }
 /** A review as seen by a party (the reviewed seller/buyer or its author) — includes ids for management. */
+/** PC-56 HOTFIX-7 · B5 — the API projects each read by the VIEWER: the author gets `orderId` + `status` (never `targetId` / `reviewerUserId`); the
+ *  organisation's side (the reviewed seller, an organisation role) gets `reviewerUserId` + `orderId` + `targetId`; a stranger gets the public row
+ *  (no person, no order). So every person / order field is optional. */
 export interface ReviewItem extends PublicReview {
-  orderId: string | null; reviewerUserId: string; targetType: string; targetId: string; status: string;
+  id: string; targetType?: string;
+  orderId?: string | null; reviewerUserId?: string; targetId?: string; status?: string;
 }
+/** PC-56 HOTFIX-7 · B5 — the PUBLIC review reads' key: the ORGANISATION (the tenant in context). `seller` / `buyer` (a person's uuid) are
+ *  refused by the API (422 REVIEW_PUBLIC_SELLER_REFUSED / REVIEW_PUBLIC_BUYER_REFUSED). */
+export type PublicReviewTarget = 'organisation' | 'seller' | 'buyer';
 
 // --- cart + checkout (module 3) — money is bigint minor-unit STRINGS (Law 2) ---
 /** PC-56 STORE-2b · B1 — why a cart line cannot be bought, BY NAME (never a bare boolean). */

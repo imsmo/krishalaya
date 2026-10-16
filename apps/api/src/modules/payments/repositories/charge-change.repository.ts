@@ -154,16 +154,17 @@ export class ChargeChangeRepository {
 
   /** W150's second table: the statutory rules, READ-ONLY (0141 adds no tenant write path and no tenant_id column).
    *  `legal_ref` is 0140's Authority column; NULL means the citation was not recorded, which the console SAYS. */
-  async listTaxRules(tenantId: string, countryCode = 'IN'): Promise<Array<{ taxCode: string; rateBps: number; hsnPrefix: string | null; split: Record<string, unknown>; thresholdMinor: string | null; effectiveFrom: string; legalRef: string | null; categoryId: string | null }>> {
+  //  PC-56 HOTFIX-7 · B3 (Rule Zero): the country is the ORGANISATION's (tenants.country_code), read in the same statement — never a default.
+  async listTaxRules(tenantId: string): Promise<Array<{ taxCode: string; rateBps: number; hsnPrefix: string | null; split: Record<string, unknown>; thresholdMinor: string | null; effectiveFrom: string; legalRef: string | null; categoryId: string | null }>> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT tax_code AS "taxCode", rate_bps AS "rateBps", hsn_prefix AS "hsnPrefix", split,
               threshold_minor::text AS "thresholdMinor", effective_from::text AS "effectiveFrom",
               legal_ref AS "legalRef", category_id AS "categoryId"
          FROM tax_rules
-        WHERE country_code = $1 AND is_active = true
+        WHERE country_code = (SELECT t.country_code FROM tenants t WHERE t.id = $1) AND is_active = true
           AND (effective_to IS NULL OR effective_to >= CURRENT_DATE)
         ORDER BY tax_code, effective_from DESC
-        LIMIT 100`, [countryCode]);
+        LIMIT 100`, [tenantId]);
     return r.rows;
   }
 }

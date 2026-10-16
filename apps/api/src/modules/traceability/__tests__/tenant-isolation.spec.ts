@@ -27,11 +27,12 @@ describe('trace_lots isolation', () => {
     await new TraceLotRepository(provider).listFor('tenantA', { box: 'mine', farmerUserId: 'u1', limit: 50 });
     expect(exec.query.mock.calls[0][0]).toMatch(/ORDER BY created_at DESC, id DESC/); expect(exec.query.mock.calls[0][0]).not.toMatch(/OFFSET/i);
   });
-  it('public scan goes through the SECURITY DEFINER trace_scan() function (no raw table read)', async () => {
+  // PC-56 HOTFIX-7 · B10 / B25: the public read is `trace_scan_v2` (0217 — live organisations only, allow-listed meta); 0028's trace_scan is no longer called
+  it('public scan goes through the SECURITY DEFINER trace_scan_v2() function (no raw table read)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [{ provenance: null }], rowCount: 1 }) };
     await new TraceLotRepository(fakeReplica().provider).scan(tx as any, 'QR1');
     const [sql, params] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/SELECT trace_scan\(\$1\)/); expect(sql).not.toMatch(/FROM trace_lots/); expect(params).toEqual(['QR1']);
+    expect(sql).toMatch(/SELECT trace_scan_v2\(\$1\)/); expect(sql).not.toMatch(/FROM trace_lots/); expect(params).toEqual(['QR1']);
   });
 });
 

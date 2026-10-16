@@ -14,6 +14,8 @@ export const MIN_INSPECTION_CHARS = 20;
 export interface ReturnProps {
   id: string; tenantId: string; orderId: string; disputeId: string | null;
   status: ReturnStatus; reasonId: string | null; refundTxnId: string | null; createdAt: Date;
+  /** PC-56 HOTFIX-7 · B24: `created_at` as the database printed it (µs) — the keyset cursor only, never served. */
+  createdAtUs?: string | null;
   /** W142's "Refund value" column, which had no column behind it before 0139. NULL = not recorded. */
   refundAmountMinor: bigint | null;
   /** W142's "inspect within 24h → refund", which had nowhere to write before 0139. */

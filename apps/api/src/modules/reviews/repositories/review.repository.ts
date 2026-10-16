@@ -8,16 +8,19 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { Review, ReviewProps } from '../domain/review.entity';
 import { ReviewStatus } from '../domain/review.state';
 import { ReviewTargetType } from '../domain/reviews.events';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 
 const COLS = `id, tenant_id, order_id, reviewer_user_id, target_type, target_id, stars, sub_ratings, body, tags,
-  is_verified_purchase, status, seller_response, seller_responded_at, helpful_count, created_at`;
+  is_verified_purchase, status, seller_response, seller_responded_at, helpful_count, created_at, ${US_SQL('created_at')} AS created_us`;
+/** PC-56 HOTFIX-7 · B24: the µs keyset, newest first (the cursor's instant is the database's own print, compared as timestamptz). */
+const KEYSET_DESC = (cc: string, ci: string) => ` AND (created_at, id) < (${cc}::timestamptz, ${ci}::uuid)`;
 function toDomain(r: any): Review {
   return Review.rehydrate({
     id: r.id, tenantId: r.tenant_id, orderId: r.order_id, reviewerUserId: r.reviewer_user_id,
     targetType: r.target_type as ReviewTargetType, targetId: r.target_id, stars: r.stars,
     subRatings: r.sub_ratings ?? {}, body: r.body, tags: r.tags ?? [], isVerifiedPurchase: r.is_verified_purchase,
     status: r.status as ReviewStatus, sellerResponse: r.seller_response, sellerRespondedAt: r.seller_responded_at,
-    helpfulCount: r.helpful_count, createdAt: r.created_at,
+    helpfulCount: r.helpful_count, createdAt: r.created_at, createdAtUs: r.created_us ?? null,
   });
 }
 export interface ReviewListQuery { cursor?: { c: string; id: string }; limit: number; }
@@ -93,7 +96,7 @@ export class ReviewRepository {
     const params: unknown[] = [tenantId, targetType, targetId];
     let where = `tenant_id=$1 AND target_type=$2 AND target_id=$3 AND status='published'`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) where += KEYSET_DESC(p(q.cursor.c), p(q.cursor.id));
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM reviews WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
@@ -103,10 +106,37 @@ export class ReviewRepository {
     const params: unknown[] = [tenantId, reviewerUserId];
     let where = `tenant_id=$1 AND reviewer_user_id=$2`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) where += KEYSET_DESC(p(q.cursor.c), p(q.cursor.id));
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM reviews WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
+  }
+
+  /** PC-56 HOTFIX-7 · B5: the ORGANISATION's public list — every PUBLISHED review of a seller in this tenant (tenant-keyed: no person uuid is
+   *  needed or served). Keyset (created_at µs, id) DESC over idx_reviews_target's leading columns' sibling — bounded by the caller's limit. */
+  async listForOrganisation(tenantId: string, q: ReviewListQuery): Promise<Review[]> {
+    const params: unknown[] = [tenantId];
+    let where = `tenant_id=$1 AND target_type='seller' AND status='published'`;
+    const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
+    if (q.cursor) where += KEYSET_DESC(p(q.cursor.c), p(q.cursor.id));
+    const lp = p(q.limit);
+    const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM reviews WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
+    return r.rows.map(toDomain);
+  }
+  /** PC-56 HOTFIX-7 · B5: the ORGANISATION's aggregate — published seller-target reviews in this tenant (the organisation page's own rule). */
+  async summaryForOrganisation(tenantId: string): Promise<{ count: number; avgStars: number; histogram: Record<string, number> }> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT count(*)::int AS n, COALESCE(avg(stars),0)::numeric(3,2) AS avg, stars FROM reviews
+        WHERE tenant_id=$1 AND target_type='seller' AND status='published' GROUP BY ROLLUP (stars)`, [tenantId]);
+    return rollup(r.rows);
+  }
+  /** PC-56 HOTFIX-7 · B5: does this person hold an ORGANISATION role in this tenant (an active role other than `customer`) — the HOTFIX-6 staff
+   *  test, read from the database, never from the token. A cross-module READ of identity's tables (reads may cross, repositories may not). */
+  async isOrgMember(tenantId: string, userId: string): Promise<boolean> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT 1 FROM user_tenant_roles utr JOIN roles rr ON rr.id = utr.role_id
+        WHERE utr.user_id = $2 AND utr.tenant_id = $1 AND utr.is_active AND utr.deleted_at IS NULL AND rr.code <> 'customer' LIMIT 1`, [tenantId, userId]);
+    return (r.rowCount ?? 0) > 0;
   }
 
   /** Aggregate rating rollup for a target (published only). Computed read — no per-review write amplification. */
@@ -115,11 +145,15 @@ export class ReviewRepository {
       `SELECT count(*)::int AS n, COALESCE(avg(stars),0)::numeric(3,2) AS avg, stars FROM reviews
         WHERE tenant_id=$1 AND target_type=$2 AND target_id=$3 AND status='published' GROUP BY ROLLUP (stars)`,
       [tenantId, targetType, targetId]);
-    let count = 0; let avgStars = 0; const histogram: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
-    for (const row of r.rows) {
-      if (row.stars == null) { count = row.n; avgStars = Number(row.avg); }
-      else histogram[String(row.stars)] = row.n;
-    }
-    return { count, avgStars, histogram };
+    return rollup(r.rows);
   }
+}
+
+function rollup(rows: any[]): { count: number; avgStars: number; histogram: Record<string, number> } {   // eslint-disable-line @typescript-eslint/no-explicit-any
+  let count = 0; let avgStars = 0; const histogram: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+  for (const row of rows) {
+    if (row.stars == null) { count = row.n; avgStars = Number(row.avg); }
+    else histogram[String(row.stars)] = row.n;
+  }
+  return { count, avgStars, histogram };
 }

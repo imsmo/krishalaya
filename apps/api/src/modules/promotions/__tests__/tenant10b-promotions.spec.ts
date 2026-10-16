@@ -299,7 +299,8 @@ describe('B4 / F-9 · the module registers both sweeps and the three lifecycle h
   it('the payments settlement calls the promotion top-up after the escrow leg (and on a zero-escrow order)', () => {
     // PC-56 TENANT-SW-a: the settlement body moved from the handler to OrderSettlementService (shared with the hold release, same key)
     const h = fs.readFileSync(path.join(__dirname, '../../payments/services/order-settlement.service.ts'), 'utf8');
-    expect(h.match(/this\.couponMoney\.settleOrderInTx\(tx, \{ tenantId, orderId, sellerUserId \}\)/g)).toHaveLength(2);
+    // PC-56 HOTFIX-7 · B1: + the unfunded (pay-on-delivery) branch — escrow releases nothing, the tenant's own reserved top-up still runs (3 sites)
+    expect(h.match(/this\.couponMoney\.settleOrderInTx\(tx, \{ tenantId, orderId, sellerUserId \}\)/g)).toHaveLength(3);
     expect(h.indexOf("idempotencyKey: `settle:${orderId}`")).toBeLessThan(h.lastIndexOf('this.couponMoney.settleOrderInTx'));
     const handler = fs.readFileSync(path.join(__dirname, '../../payments/events/handlers/order-completed.handler.ts'), 'utf8');
     expect(handler).toContain('this.settlement.settle(tx, event.tenantId, event.aggregateId');

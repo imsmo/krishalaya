@@ -37,6 +37,8 @@ import { DisputeService } from '../services/dispute.service';
 import { DisputeMessageService } from '../services/dispute-message.service';
 import { OrderDeliveredHandler } from '../events/handlers/order-delivered.handler';
 import { NotEligibleToDisputeError, DuplicateDisputeError } from '../domain/disputes.errors';
+import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -63,6 +65,7 @@ run('disputes slice (integration, real Postgres + RLS + outbox relay)', () => {
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
+    await admin.query(`UPDATE feature_flags SET is_enabled = true WHERE key = 'dispute_refunds'`);   // PC-56 HOTFIX-7 · D2
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, buyer); await makeUser(admin, seller); await makeUser(admin, stranger);
     // a delivered order (minimal header — the handlers only need id/status/parties)
@@ -85,20 +88,23 @@ run('disputes slice (integration, real Postgres + RLS + outbox relay)', () => {
     const msgService = new DisputeMessageService(uow, outbox, metrics, disputeRepo, msgRepo);
     // PC-56 TENANT-3b: resolving with a REFUND now consults the maker-checker plane (0139) first.
     const approvals = new RefundApprovalService(uow, audit, new RefundApprovalRepository(replica as any));
-    disputes = new DisputeService(uow, outbox, idem, metrics, audit, disputeRepo, msgRepo, msgService, approvals);
+    // PC-56 HOTFIX-7 · D2: + the flags (a refund decision needs the tenant's `dispute_refunds` money switch ON — this suite turns it on)
+    const flags = new FlagsService(pools, new InMemoryCacheService());
+    disputes = new DisputeService(uow, outbox, idem, metrics, audit, disputeRepo, msgRepo, msgService, approvals, flags);
 
     const orderRepo = new OrderRepository(replica as any);
     const registry = new OutboxHandlerRegistry();
     registry.register(new OrderDeliveredHandler(disputeRepo));            // orders.order_delivered → eligibility
     registry.register(new DisputeOpenedHandler(orderRepo, outbox));        // disputes.dispute_opened → order 'disputed'
-    registry.register(new DisputeResolvedHandler(orderRepo, outbox));      // disputes.dispute_resolved → order 'refunded'/...
+    registry.register(new DisputeResolvedHandler(orderRepo, outbox, flags, metrics));      // disputes.dispute_resolved → order 'refunded'/... (HOTFIX-7 · D2: only with dispute_refunds ON)
     dispatcher = new OutboxDispatcher(admin, registry, metrics);
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
   }, 30000);
 
-  afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
+  // PC-56 HOTFIX-7 · D2: the money switch the refund decisions here need — ON for the suite, back to its seeded OFF after (Law 10)
+  afterAll(async () => { await admin?.query(`UPDATE feature_flags SET is_enabled = false WHERE key = 'dispute_refunds'`).catch(() => undefined); await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   it('order delivered → relay records dispute eligibility (idempotent)', async () => {
     const seed = () => admin.query(`INSERT INTO outbox_events (tenant_id, aggregate_type, aggregate_id, event_type, payload) VALUES ($1,'order',$2,'orders.order_delivered',$3::jsonb)`,

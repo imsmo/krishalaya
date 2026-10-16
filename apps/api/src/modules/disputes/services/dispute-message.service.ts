@@ -17,6 +17,7 @@ import { Dispute } from '../domain/dispute.entity';
 import { DisputeRepository } from '../repositories/dispute.repository';
 import { DisputeMessageRepository } from '../repositories/dispute-message.repository';
 import { CreateDisputeMessageDto } from '../dto/create-dispute-message.dto';
+import { encodeKeyset } from '../../../shared/pagination/us-keyset';
 
 export interface MessageActor { userId: string; canModerate: boolean; }
 
@@ -48,9 +49,11 @@ export class DisputeMessageService {
     const dispute = await this.disputes.getById(tenantId, disputeId);
     if (!dispute) throw new DisputeNotFoundError(disputeId);
     this.assertParty(dispute, actor);
-    const items = await this.messages.listFor(tenantId, disputeId, q);
-    const last = items[items.length - 1];
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    const rows = await this.messages.listFor(tenantId, disputeId, q);
+    const last = rows[rows.length - 1];
+    // PC-56 HOTFIX-7 · B24: the µs keyset (the cursor carries the instant as the database printed it)
+    const nextCursor = rows.length === q.limit && last?.createdAtUs ? encodeKeyset(last.createdAtUs, last.id) : null;
+    const items = rows.map(({ createdAtUs, ...m }) => { void createdAtUs; return m; });
     return { items, nextCursor };
   }
 

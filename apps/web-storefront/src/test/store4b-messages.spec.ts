@@ -113,6 +113,6 @@ describe('STORE-4b · the refusal registry', () => {
   it('i18n parity: en / hi / gu hold the same keys (1,930 each — 1,863 at 4c + 69 − 2)', () => {
     const k = (c: Record<string, string>) => Object.keys(c).sort();
     expect(k(hi)).toEqual(k(en)); expect(k(gu)).toEqual(k(en));
-    expect(Object.keys(en).length).toBe(1930);
+    expect(Object.keys(en).length).toBe(1933);   // PC-56 HOTFIX-7: + trace.recordedBy / trace.notPublishedTitle / trace.notPublishedBody (×3) → 1,933
   });
 });

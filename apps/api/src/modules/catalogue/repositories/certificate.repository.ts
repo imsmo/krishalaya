@@ -8,17 +8,18 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { Certificate, CertSubjectType } from '../domain/certificate.entity';
 import { CertificateStatus } from '../domain/certificate.state';
 import { pgDate } from '../../../core/database/pg-date';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 // [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
 // `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
 // (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
 // `date`. `pgDate` returns the calendar day PostgreSQL holds and passes an already-formatted string through.
 
-const COLS = `id, tenant_id, owner_user_id, cert_type_id, cert_no, issuing_body, subject_type, subject_id, media_id, valid_from, valid_until, status, blockchain_anchor, verified_by, created_at`;
+const COLS = `id, tenant_id, owner_user_id, cert_type_id, cert_no, issuing_body, subject_type, subject_id, media_id, valid_from, valid_until, status, blockchain_anchor, verified_by, created_at, ${US_SQL('created_at')} AS created_us`;
 const toDomain = (r: any): Certificate => Certificate.rehydrate({
   id: r.id, tenantId: r.tenant_id, ownerUserId: r.owner_user_id ?? null, certTypeId: r.cert_type_id, certNo: r.cert_no ?? null,
   issuingBody: r.issuing_body ?? null, subjectType: r.subject_type as CertSubjectType, subjectId: r.subject_id ?? null, mediaId: r.media_id ?? null,
   validFrom: r.valid_from ? pgDate(r.valid_from) : null, validUntil: r.valid_until ? pgDate(r.valid_until) : null,
-  status: r.status as CertificateStatus, blockchainAnchor: r.blockchain_anchor ?? null, verifiedBy: r.verified_by ?? null, createdAt: r.created_at ?? null,
+  status: r.status as CertificateStatus, blockchainAnchor: r.blockchain_anchor ?? null, verifiedBy: r.verified_by ?? null, createdAt: r.created_at ?? null, createdAtUs: r.created_us ?? null,
 });
 
 export interface CertListQuery { subjectType?: string; subjectId?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
@@ -56,7 +57,7 @@ export class CertificateRepository {
     if (q.subjectType) where += ` AND subject_type=${p(q.subjectType)}`;
     if (q.subjectId) where += ` AND subject_id=${p(q.subjectId)}`;
     if (q.status) where += ` AND status=${p(q.status)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at, id) < (${cc}::timestamptz, ${ci}::uuid)`; }   // PC-56 HOTFIX-7 · B24: the µs keyset
     const lp = p(q.limit);
     const r = await ex.query(`SELECT ${COLS} FROM certificates WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);

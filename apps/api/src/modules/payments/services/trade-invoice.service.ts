@@ -26,6 +26,7 @@ import { TaxRuleRepository } from '../repositories/tax-rule.repository';
 import { TradeInvoiceRepository, TradeInvoiceRow } from '../repositories/trade-invoice.repository';
 import { DocumentPdfService } from './document-pdf.service';
 import { InvoiceNotFoundError, InvoicePdfNotReadyError } from '../domain/billing.errors';
+import { SettlementCountryUnknownError } from '../domain/payments.errors';
 
 export interface InvoiceActor { userId: string; canModerate: boolean; }
 const PDF_URL_TTL_SEC = 300; // short-lived signed GET (5 min) — re-request to refresh
@@ -55,7 +56,10 @@ export class TradeInvoiceService {
   }): Promise<void> {
     const existing = await this.invoices.findByOrder(tx, input.tenantId, input.orderId);
     if (existing) return;                                  // idempotent — one invoice per order
-    const country = input.countryCode ?? 'IN';
+    // PC-56 HOTFIX-7 · B3 (Rule Zero): the ORGANISATION's country — the event's (orders carries `tenants.country_code` since HOTFIX-7) or read here,
+    // in this kv_app transaction; neither → refused by name. A statutory document is never written in a guessed country.
+    const country = input.countryCode ?? (await tx.query<{ c: string | null }>(`SELECT btrim(country_code) AS c FROM tenants WHERE id = $1`, [input.tenantId])).rows[0]?.c ?? null;
+    if (!country) throw new SettlementCountryUnknownError(input.tenantId, 'trade_invoice');
 
     // ---- the money, as the order actually charged it -----------------------------------------------------------
     // Where the components are absent (an old event shape reaching the backstop), the whole total is treated as ONE

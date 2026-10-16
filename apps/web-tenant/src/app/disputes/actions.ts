@@ -11,7 +11,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { buildResolve, buildDisputeMessage } from '../../features/disputes/manage';
+import { buildResolve, buildDisputeMessage, moderationErrorKey } from '../../features/disputes/manage';
 import { validateReviewResponse } from '../../features/reviews/respond';
 import { SdkError } from '@krishalaya/sdk-js';
 
@@ -25,7 +25,7 @@ async function transition(formData: FormData, kind: 'review' | 'escalate'): Prom
     if (kind === 'review') await tenantClient().disputes.review(id);
     else await tenantClient().disputes.escalate(id);
   } catch (e) {
-    back(id, `error=${e instanceof SdkError && e.status === 409 ? 'illegal' : kind}`);
+    back(id, `error=${moderationErrorKey(e instanceof SdkError ? e : null, kind)}`);   // PC-56 HOTFIX-7: refusals by name
   }
   revalidatePath(`/disputes/${id}`);
   revalidatePath('/disputes');
@@ -66,7 +66,7 @@ export async function resolveDisputeAction(formData: FormData): Promise<void> {
   try {
     await tenantClient().disputes.resolve(id, built.value);
   } catch (e) {
-    back(id, `error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'resolve'}`);
+    back(id, `error=${moderationErrorKey(e instanceof SdkError ? e : null, 'resolve')}`);   // PC-56 HOTFIX-7: DISPUTE_REFUNDS_OFF / 403 by name
   }
   revalidatePath(`/disputes/${id}`);
   revalidatePath('/disputes');

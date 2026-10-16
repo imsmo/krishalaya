@@ -2,7 +2,7 @@
 // assembly. Gating mirrors the API state machine; resolve validation is the first gate before the authed action.
 import {
   canReview, canEscalate, canResolve, buildResolve,
-  canRespond, messageAuthorRole, buildDisputeMessage,
+  canRespond, messageAuthorRole, buildDisputeMessage, moderationErrorKey,
 } from '../features/disputes/manage';
 
 describe('action gating', () => {
@@ -57,5 +57,15 @@ describe('PC-22 party respond + thread helpers', () => {
     expect(buildDisputeMessage('  evidence  ')).toEqual({ ok: true, value: 'evidence' });
     expect(buildDisputeMessage('   ')).toEqual({ ok: false, error: 'message' });
     expect(buildDisputeMessage('x'.repeat(4001))).toEqual({ ok: false, error: 'message' });
+  });
+
+  // PC-56 HOTFIX-7 · D2 / D4: a moderation act's refusal is translated BY NAME — the money switch off (DISPUTE_REFUNDS_OFF), the organisation not
+  // the decider any more (403 — buyer-raised disputes are the platform support desk's), an illegal hop (409), else the act's own key
+  it('moderationErrorKey names DISPUTE_REFUNDS_OFF, a 403 and a 409; anything else is the act\'s own key', () => {
+    expect(moderationErrorKey({ code: 'DISPUTE_REFUNDS_OFF', status: 409 }, 'resolve')).toBe('refundsOff');
+    expect(moderationErrorKey({ code: 'FORBIDDEN', status: 403 }, 'resolve')).toBe('forbidden');
+    expect(moderationErrorKey({ code: 'DISPUTE_ILLEGAL_TRANSITION', status: 409 }, 'review')).toBe('illegal');
+    expect(moderationErrorKey({ code: 'X', status: 500 }, 'escalate')).toBe('escalate');
+    expect(moderationErrorKey(null, 'resolve')).toBe('resolve');
   });
 });

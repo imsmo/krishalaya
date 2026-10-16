@@ -9,6 +9,12 @@
 // thread). The respond button shows only when the CALLER is the against-party AND the transition is legal
 // (features/disputes/manage.canRespond — reflect, never grant; the API re-asserts the party on every call).
 // The thread renders with derived roles (complainant/respondent/moderator — ids only, PII-minimal contract).
+//
+// PC-56 HOTFIX-7 · D4 (founder Q18): buyer-raised disputes are decided by the PLATFORM support desk, never by the selling organisation —
+// `tenant_admin` no longer holds `dispute.resolve` nor `order.refund` (migration 0217). Without `dispute.resolve` this page is READ + RESPOND:
+// the review / escalate / resolve controls and the refund-gate card are not rendered (a notice says who decides), the evidence thread and the
+// party's respond stay. The API refuses the acts by name either way (403 DISPUTE_FORBIDDEN / a refund while the money switch is off:
+// 409 DISPUTE_REFUNDS_OFF — translated below).
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -28,7 +34,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('disputeDetail.title'), robots: { index: false, follow: false } };
 }
 
-const ERR = new Set(['review', 'escalate', 'resolve', 'type', 'amount', 'illegal', 'respond', 'message', 'notparty',
+const ERR = new Set(['review', 'escalate', 'resolve', 'type', 'amount', 'illegal', 'respond', 'message', 'notparty', 'refundsOff', 'forbidden',
   // PC-56 TENANT-3b: every refusal the refund gate can produce is translated by NAME. A generic "something went
   // wrong" on a refund is the message that makes an operator press the button again.
   'needsChecker', 'awaitingChecker', 'rejectedByChecker', 'amountChanged', 'alreadyApplied', 'checkerIsMaker',
@@ -107,7 +113,9 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
         {facts.map(([k, v]) => (<div key={k} className="kv-facts__row"><dt>{k}</dt><dd>{v}</dd></div>))}
       </dl>
 
-      {(canReview(dispute.status) || canEscalate(dispute.status)) && (
+      {!canResolvePerm && <p className="kv-notice" role="note">{t.t('disputeDetail.platformDecides')}</p>}
+
+      {canResolvePerm && (canReview(dispute.status) || canEscalate(dispute.status)) && (
         <div className="kv-actions">
           {canReview(dispute.status) && (
             <form action={reviewDisputeAction} className="kv-inline-form">
@@ -124,7 +132,7 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
         </div>
       )}
 
-      {canResolve(dispute.status) && (
+      {canResolvePerm && canResolve(dispute.status) && (
         <form action={resolveDisputeAction} className="kv-form kv-card">
           <h2 className="kv-card__title">{t.t('disputeDetail.resolve')}</h2>
           <input type="hidden" name="id" value={dispute.id} />

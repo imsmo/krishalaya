@@ -12,6 +12,8 @@ export interface DisputeProps {
   description: string | null; status: DisputeStatus; sellerRespondBy: Date | null; aiTriage: Record<string, unknown> | null;
   resolutionType: string | null; resolutionAmountMinor: bigint | null; resolutionTxnId: string | null;
   resolvedBy: string | null; resolvedAt: Date | null; slaDueAt: Date | null; createdAt: Date;
+  /** PC-56 HOTFIX-7 · B24: `created_at` as the database printed it (µs) — the keyset cursor only, never served. */
+  createdAtUs?: string | null;
   /** The SCOPE of the claim, recorded at raise time (0139). NULL means nobody wrote it down — never "everything". */
   disputedAmountMinor: bigint | null; disputedQuantity: string | null;
 }

@@ -11,3 +11,9 @@ export class DuplicateReviewError extends AppError { constructor() { super('REVI
 /** Acting on a soft-removed review. */
 export class ReviewRemovedError extends AppError { constructor() { super('REVIEW_REMOVED', 'This review has been removed', 409); } }
 export class InvalidReviewError extends DomainError { constructor(message: string) { super('REVIEW_INVALID', message, 400); } }
+/** PC-56 HOTFIX-7 · B5 (survey STORE-5 F-5, Q11): a BUYER's received ratings are never public — the seller's review of the buyer is kept for the
+ *  organisation (staff read it, signed in), and the public routes refuse `targetType=buyer` by name. */
+export class ReviewPublicBuyerRefusedError extends DomainError { constructor() { super('REVIEW_PUBLIC_BUYER_REFUSED', 'A buyer\'s ratings are not public', 422, {}); } }
+/** PC-56 HOTFIX-7 · B5: the public routes are keyed by the ORGANISATION (`targetType=organisation`, no uuid) — nothing public needs a seller's
+ *  person uuid (the organisation page reads its own aggregate; the storefront lists by organisation), so `targetType=seller` is refused too. */
+export class ReviewPublicSellerRefusedError extends DomainError { constructor() { super('REVIEW_PUBLIC_SELLER_REFUSED', 'Public reviews are read per organisation, never per person', 422, {}); } }

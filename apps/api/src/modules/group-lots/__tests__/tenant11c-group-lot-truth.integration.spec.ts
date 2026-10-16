@@ -16,7 +16,7 @@
 import { composeOrderSettlement } from '../../payments/services/order-settlement.service';
 import { randomUUID } from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
-import { makeTenant, makeUser, ensureUnitCurrency } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser, ensureUnitCurrency, makeCapturedPayment } from '../../../../test/helpers/fixtures';
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
 import { ShardRouter } from '../../../core/sharding/shard-router';
@@ -311,6 +311,8 @@ run('PC-56 TENANT-11c · group lots — settle pays farmers from the real sale, 
     // the buyer's money sits in platform escrow, as checkout + payment left it
     await uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'order_payment', idempotencyKey: `fund:${orderId}`, initiatedBy: 'system',
       legs: [{ account: platform(PlatformAccount.Escrow), amountMinor: total }, { account: platform(PlatformAccount.Gateway), amountMinor: -total }] }), { userId: 'system' });
+    // PC-56 HOTFIX-7 · D1: …and the capture that put it there is recorded (settlement releases escrow only for a FUNDED order)
+    await makeCapturedPayment(admin, { tenantId: tenantA, buyerUserId: buyer, orderId, amountMinor: total });
     const event = { id: randomUUID(), tenantId: tenantA, aggregateType: 'order', aggregateId: orderId, eventType: 'orders.order_completed',
       payload: { sellerUserId: kavita, buyerUserId: buyer, totalMinor: total.toString(), deliveryFeeMinor: '0', platformFeeMinor: '0' } } as unknown as OutboxEvent;
     // ONE relay transaction, AS kv_relay: payments settles the seller, then hop 1 enqueues the lot's sale (both commit together)

@@ -319,8 +319,13 @@ describe('TENANT-3b · the schema and the wiring say what the wave claims (comme
     const handler = strip(fs.readFileSync(path.join(root, 'apps', 'api', 'src', 'modules', 'payments', 'events', 'handlers', 'return-refunded.handler.ts'), 'utf8'));
     expect(handler).toContain("readonly eventType = 'disputes.return_refunded'");
     expect(handler).toContain("isEnabled('dispute_refunds'");            // Law 10: default OFF
-    expect(handler).toContain('return-refund:');                          // Law 3: idempotent money
-    expect(handler).toContain('RETURN_REFUND_AFTER_STATEMENT');           // refuses rather than guessing
+    // PC-56 HOTFIX-7 · D3: the money moved to ONE place shared with the dispute handler (services/resolution-money.service.ts) — the refund to
+    // source under `return-refund:<id>` (domain/resolution-refund.ts derives the key) and the `<KIND>_REFUND_AFTER_STATEMENT` refusal live there
+    expect(handler).toContain("kind: 'return'");
+    const money = strip(fs.readFileSync(path.join(root, 'apps', 'api', 'src', 'modules', 'payments', 'services', 'resolution-money.service.ts'), 'utf8'));
+    const keys = strip(fs.readFileSync(path.join(root, 'apps', 'api', 'src', 'modules', 'payments', 'domain', 'resolution-refund.ts'), 'utf8'));
+    expect(keys).toContain('-refund:${referenceId}');                     // Law 3: idempotent money (return-refund:<id>)
+    expect(money).toContain('_REFUND_AFTER_STATEMENT');                   // refuses rather than guessing
   });
   it('the resolve path requires order.refund for a refund and consults the gate before the entity', () => {
     const svc = read('services', 'dispute.service.ts');

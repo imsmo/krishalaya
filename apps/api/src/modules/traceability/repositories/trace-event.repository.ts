@@ -6,10 +6,12 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { TraceEvent } from '../domain/trace-event.entity';
 import { TraceStep } from '../domain/traceability.events';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 
-const COLS = `id, trace_lot_id, tenant_id, event_code, meta, event_hash, created_at`;
+const COLS = `id, trace_lot_id, tenant_id, event_code, meta, event_hash, created_at, ${US_SQL('created_at')} AS created_us`;
 function toDomain(r: any): TraceEvent {
-  return TraceEvent.rehydrate({ id: String(r.id), traceLotId: r.trace_lot_id, tenantId: r.tenant_id, eventCode: r.event_code as TraceStep, meta: r.meta ?? {}, eventHash: r.event_hash, createdAt: r.created_at });
+  return TraceEvent.rehydrate({ id: String(r.id), traceLotId: r.trace_lot_id, tenantId: r.tenant_id, eventCode: r.event_code as TraceStep, meta: r.meta ?? {}, eventHash: r.event_hash, createdAt: r.created_at,
+    createdAtUs: r.created_us ?? null });
 }
 export interface EventListQuery { cursor?: { c: string; id: string }; limit: number; }
 
@@ -34,7 +36,8 @@ export class TraceEventRepository {
   async listForLot(tenantId: string, traceLotId: string, q: EventListQuery): Promise<TraceEvent[]> {
     const params: unknown[] = [tenantId, traceLotId]; let where = `tenant_id=$1 AND trace_lot_id=$2`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at > ${cc} OR (created_at=${cc} AND id > ${ci}))`; }
+    // PC-56 HOTFIX-7 · F-13 / B24: (created_at µs, the bigserial id) — the cursor is built from the row's own id now, never its hash
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at, id) > (${cc}::timestamptz, ${ci}::bigint)`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM trace_events WHERE ${where} ORDER BY created_at ASC, id ASC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);

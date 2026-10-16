@@ -14,9 +14,12 @@ import { CertificateNotFoundError, InvalidCertificateError } from '../domain/cat
 import { CertificateRepository } from '../repositories/certificate.repository';
 import { CreateCertificateDto, DecideCertificateDto } from '../dto/create-certificate.dto';
 import { QueryCertificateDto } from '../dto/query-certificate.dto';
+import { decodeKeyset, encodeKeyset, UUID_RE } from '../../../shared/pagination/us-keyset';
 
-const encodeCursor = (c: string, id: string) => Buffer.from(`${c}|${id}`).toString('base64');
-const decodeCursor = (s?: string) => { if (!s) return undefined; const [c, id] = Buffer.from(s, 'base64').toString().split('|'); return c && id ? { c, id } : undefined; };
+// PC-56 HOTFIX-7 · B24: the µs keyset (shared/pagination/us-keyset.ts) — a pre-HOTFIX-7 millisecond cursor reads as page one, never a ms guess
+const decodeCursor = (s?: string) => { const k = decodeKeyset(s, UUID_RE); return k ? { c: k.ts, id: k.id } : undefined; };
+/** the answer never carries the cursor's µs instant */
+const answer = (c: Certificate) => { const { createdAtUs, ...rest } = c.toProps(); void createdAtUs; return rest; };
 
 @Injectable()
 export class CertificateService {
@@ -77,16 +80,16 @@ export class CertificateService {
   list(tenantId: string, q: QueryCertificateDto) {
     return timed(this.metrics, 'catalogue.certificate.list', { tenant: tenantId }, async () => {
       const rows = await this.repo.list(tenantId, { subjectType: q.subjectType, subjectId: q.subjectId, status: q.status, cursor: decodeCursor(q.cursor), limit: q.limit });
-      const items = rows.map((c) => c.toProps());
-      const last = items[items.length - 1] as any;
-      return { items, nextCursor: rows.length === q.limit && last ? encodeCursor(last.createdAt?.toISOString?.() ?? last.createdAt ?? '', last.id) : null };
+      const items = rows.map(answer);
+      const last = rows[rows.length - 1]?.toProps();
+      return { items, nextCursor: rows.length === q.limit && last?.createdAtUs ? encodeKeyset(last.createdAtUs, last.id) : null };
     });
   }
 
   async getById(tenantId: string, id: string) {
     const c = await this.repo.getById(tenantId, id);
     if (!c) throw new CertificateNotFoundError(id);
-    return c.toProps();
+    return answer(c);   // PC-56 HOTFIX-7 · B24: without the cursor instant
   }
 
   private async flush(tx: TxContext, tenantId: string, id: string, events: { type: string; payload: Record<string, unknown> }[]) {

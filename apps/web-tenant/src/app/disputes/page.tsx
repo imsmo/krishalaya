@@ -62,7 +62,9 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
   try { me = await tenantClient().auth.me(); } catch { me = null; }
   if (me) {
     const [sumRes, revRes] = await Promise.allSettled([
-      tenantClient().reviews.summary({ targetUserId: me.id }),
+      // PC-56 HOTFIX-7 · B5: the public aggregate is keyed by the ORGANISATION now (a person's uuid is refused by name) — this console's rating is
+      // the organisation's
+      tenantClient().reviews.summary({ targetType: 'organisation' }),
       tenantClient().reviews.list({ box: 'target', targetType: 'seller', targetId: me.id, limit: 20 }),
     ]);
     if (sumRes.status === 'fulfilled') summary = sumRes.value;
@@ -200,7 +202,7 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
 
       <h2 className="kv-section-title">{t.t('disputes.reviewsTitle')}</h2>
       <div className="kv-card">
-        <h3 className="kv-card__title">{t.t('disputes.rating')}</h3>
+        <h3 className="kv-card__title">{t.t('disputes.ratingOrganisation')}</h3>
         {summary ? (
           <p>{t.t('disputes.ratingValue', { stars: summary.averageStars.toString(), count: summary.count.toString() })}</p>
         ) : (

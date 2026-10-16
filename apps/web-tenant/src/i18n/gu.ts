@@ -359,6 +359,7 @@ export const gu: Messages = {
 
   'disputes.title': 'વિવાદ',
   'disputes.rating': 'તમારું રેટિંગ',
+  'disputes.ratingOrganisation': 'તમારા સંગઠનનું રેટિંગ',
   'disputes.ratingValue': '{stars} ★ સરેરાશ · {count} સમીક્ષાઓ',
   'disputes.ratingNone': 'હજુ કોઈ સમીક્ષા નથી.',
   'disputes.queue': 'વિવાદ કતાર',
@@ -424,6 +425,9 @@ export const gu: Messages = {
   'disputeDetail.error.type': 'કૃપા કરી એક નિર્ણય પસંદ કરો.',
   'disputeDetail.error.amount': 'કૃપા કરી માન્ય રકમ દાખલ કરો (આંશિક રિફંડ માટે જરૂરી).',
   'disputeDetail.error.illegal': 'આ વિવાદની વર્તમાન સ્થિતિ માટે તે ક્રિયા માન્ય નથી. ફરી લોડ કરો અને પ્રયાસ કરો.',
+  'disputeDetail.error.refundsOff': 'આ સંગઠન માટે રિફંડ બંધ છે, તેથી રિફંડનો નિર્ણય થઈ શકતો નથી. કંઈ બદલાયું નથી.',
+  'disputeDetail.error.forbidden': 'આ વિવાદનો નિર્ણય ફક્ત પ્લેટફોર્મ સહાય ડેસ્ક કરી શકે છે. કંઈ બદલાયું નથી.',
+  'disputeDetail.platformDecides': 'ખરીદદારોના વિવાદોનો નિર્ણય પ્લેટફોર્મ સહાય ડેસ્ક કરે છે. તમે વિવાદ વાંચી શકો છો, વેચનાર તરીકે જવાબ આપી શકો છો અને નીચે પુરાવા ઉમેરી શકો છો.',
 
   'notif.title': 'સૂચનાઓ',
   'notif.managePrefs': 'પસંદગીઓ',

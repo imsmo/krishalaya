@@ -18,6 +18,7 @@ import { buyerCommissionCharge, CommissionSnapshot, snapshotFromRule } from '../
 import { istToday } from '../domain/commission-proposal';
 import { CommissionRuleRepository } from '../repositories/commission-rule.repository';
 import { TaxRuleRepository } from '../repositories/tax-rule.repository';
+import { SettlementCountryUnknownError } from '../domain/payments.errors';
 
 export interface FrozenAtPlacement {
   snapshot: CommissionSnapshot;
@@ -37,7 +38,11 @@ export class CommissionSnapshotService {
     if (!rule || rule.chargedTo !== 'buyer' || !i.splitOn) {
       return { snapshot: snapshotFromRule(rule, onDate, { buyerCharge: null }), buyerCommissionMinor: 0n, chargeEntry: null };
     }
-    const gst = await this.tax.resolve(tx, { countryCode: 'IN', taxCode: 'gst', categoryId: i.categoryId, onDate });
+    // PC-56 HOTFIX-7 · B3 (Rule Zero): the buyer-paid commission's GST in the ORGANISATION's country (tenants.country_code, read in the placement
+    // transaction) — never a literal; unknown → refused by name (the placement rolls back, nothing is charged).
+    const country = (await tx.query<{ c: string | null }>(`SELECT btrim(country_code) AS c FROM tenants WHERE id = $1`, [i.tenantId])).rows[0]?.c ?? null;
+    if (!country) throw new SettlementCountryUnknownError(i.tenantId, 'placement_commission');
+    const gst = await this.tax.resolve(tx, { countryCode: country, taxCode: 'gst', categoryId: i.categoryId, onDate });
     const charge = buyerCommissionCharge(i.goodsMinor, rule, gst);
     const total = charge.commissionMinor + charge.gstMinor;
     const snapshot = snapshotFromRule(rule, onDate, {

@@ -6,6 +6,9 @@
 //   B) SETTLED clawback — the order completed and escrow was released to the seller; a later refund_full
 //      REVERSES the recorded settlement (seller → escrow, precise) then refunds escrow → buyer. Seller
 //      ends at 0, buyer made whole, escrow at 0.
+// PC-56 HOTFIX-7 · D3 (founder Q3): the refund goes BACK TO THE SOURCE — these payments were captured at the (sandbox) GATEWAY, so the refund
+// is escrow → platform:gateway (and the gateway's refund is asked once), NEVER the buyer's wallet. The two flows are unchanged otherwise; the
+// handler is built through ResolutionMoneyService (PaymentService.refundForResolution for the refund leg).
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 import { composeOrderSettlement } from '../services/order-settlement.service';
 import { randomUUID, createHmac } from 'node:crypto';
@@ -43,6 +46,7 @@ import { CouponRedemptionRepository } from '../../promotions/repositories/coupon
 import { DisputeResolvedHandler } from '../events/handlers/dispute-resolved.handler';
 import { DisputeRepository } from '../../disputes/repositories/dispute.repository';
 import { DisputeRefundedHandler } from '../../disputes/events/handlers/dispute-refunded.handler';
+import { ResolutionMoneyService } from '../services/resolution-money.service';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -118,7 +122,9 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any), new OrderRepository(replica as never));
     const handlers = new OutboxHandlerRegistry();
     handlers.register(new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: flags, replica, lines: lines, couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow })));                                          // settle escrow → seller
-    handlers.register(new DisputeResolvedHandler(wallet, flags, new PaymentRepository(replica as any), lines, pricing, outbox, metrics, uow));  // dispute refund / clawback
+    const settlement = composeOrderSettlement({ wallet: wallet, flags: flags, replica, lines: lines, couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow });
+    const money = new ResolutionMoneyService(wallet, flags, new PaymentRepository(replica as any), lines, pricing, settlement, payments, uow);   // HOTFIX-7 · D3
+    handlers.register(new DisputeResolvedHandler(flags, money, outbox, metrics));  // dispute refund (to source) / clawback / remainder
     handlers.register(new DisputeRefundedHandler(new DisputeRepository(replica as any)));                                 // stamp resolution_txn_id
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);
   }, 30000);
@@ -131,12 +137,15 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
     await insertDispute(disputeId, orderId);
     const escrowBefore = await bal('platform', 'escrow');
     const buyerBefore = await bal('user', 'main', buyer);
+    const gatewayBefore = await bal('platform', 'gateway');
 
     await seedResolved(disputeId, orderId);
     await dispatcher.relayBatch();
 
     expect(await bal('platform', 'escrow')).toBe(escrowBefore - BigInt(AMOUNT));   // this order's escrow drained
-    expect(await bal('user', 'main', buyer)).toBe(buyerBefore + BigInt(AMOUNT));    // buyer refunded
+    // HOTFIX-7 · D3: back to the SOURCE (the gateway it was captured from), never the buyer's wallet
+    expect(await bal('platform', 'gateway')).toBe(gatewayBefore + BigInt(AMOUNT));
+    expect(await bal('user', 'main', buyer)).toBe(buyerBefore);
     const d = await admin.query(`SELECT resolution_txn_id FROM disputes WHERE id=$1`, [disputeId]);
     expect(d.rows[0].resolution_txn_id).not.toBeNull();
   });
@@ -162,7 +171,8 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
     await dispatcher.relayBatch();
 
     expect(await bal('user', 'main', seller)).toBe(sellerBefore);                              // seller clawed back to baseline
-    expect(await bal('user', 'main', buyer)).toBe(buyerBefore + BigInt(AMOUNT));               // buyer refunded
+    expect(await bal('user', 'main', buyer)).toBe(buyerBefore);                                // HOTFIX-7 · D3: refunded to the SOURCE (gateway), not the wallet
+    expect((await admin.query(`SELECT status FROM payments WHERE reference_id=$1 AND status <> 'initiated'`, [orderId])).rows[0].status).toBe('refunded');
     expect(await bal('platform', 'escrow')).toBe(escrowAfterSettle);                           // escrow net unchanged (restored then refunded)
     expect((await admin.query(`SELECT count(*)::int c FROM settlement_lines WHERE tenant_id=$1 AND order_id=$2`, [tenantA, orderId])).rows[0].c).toBe(0);   // line reversed
     const d = await admin.query(`SELECT resolution_txn_id FROM disputes WHERE id=$1`, [disputeId]);

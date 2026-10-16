@@ -23,3 +23,13 @@ export class DuplicateReturnError extends AppError { constructor() { super('RETU
 /** Only the order's buyer may request a return (eligibility resolved server-side, anti-IDOR). */
 export class NotEligibleToReturnError extends AppError { constructor() { super('RETURN_NOT_ELIGIBLE', 'You can only return an order you bought (after delivery)', 403); } }
 export class InvalidReturnError extends DomainError { constructor(message: string) { super('RETURN_INVALID', message, 400); } }
+
+// ---- PC-56 HOTFIX-7 · D2 (founder Q2) ----
+/** No "refunded" without money: a refund decision (a dispute resolved `refund_full` / `refund_partial`, or a return refunded) is refused BY NAME
+ *  while the tenant's `dispute_refunds` money switch is OFF — the payments handlers move nothing then, so the status would be a lie. The dispute
+ *  or return stays where it was. (Ops owed: switching `disputes` ON requires `dispute_refunds` ON — admin-api's toggle, Law 11.) */
+export class DisputeRefundsOffError extends DomainError {
+  constructor(kind: 'dispute' | 'return', id: string) {
+    super('DISPUTE_REFUNDS_OFF', 'Refunds are switched off for this organisation — a refund cannot be decided until the money switch is on', 409, { kind, id });
+  }
+}

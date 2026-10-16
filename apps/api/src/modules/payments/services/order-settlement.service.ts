@@ -22,6 +22,23 @@
 //   either, split OFF          : escrow −gross · seller main +goods · platform fees +(delivery + platform fee) [+ a frozen buyer
 //                                commission still splits tc / share / G — the buyer paid it]
 // Zero-sum by construction; the wallet port refuses anything else. The settlement line mirrors the legs so a clawback reverses them.
+//
+// PC-56 HOTFIX-7 · B1 (founder D1 — HOTFIX-5's P0 closed) — A PAY-ON-DELIVERY COMPLETION SETTLES NOTHING FROM ESCROW, WHOEVER COMPLETES IT.
+//   Before: nothing here checked that escrow was ever funded. A COD order completed by a moderator (or by a dispute decided `rejected` /
+//   `replacement`) posted `escrow −gross → seller …` from an escrow nobody paid into (survey STORE-5 F-1). Now, AFTER the hold gate and BEFORE any
+//   leg, the order's funding is read as kv_app (SettlementFundingRepository — a captured `success` payment, the dispute handler's read; or
+//   ledger-booked COD cash / an applied auction deposit covering the gross). Unfunded → outcome `skipped_unfunded`: NO wallet post, NO
+//   settlement line, metric `payments.settlement_skipped_unfunded`, audit `order.settlement_skipped { reason, totalMinor }` (actor null, on the
+//   relay tx — audit_log INSERT is granted to kv_relay). The ONE place (E1), so the buyer, the clock, a moderator and a dispute's completion
+//   all fail closed alike. An online-paid order settles exactly as before (same legs, same key).
+//   THE COUPON TOP-UP STILL RUNS for an unfunded (COD) order: it is the TENANT's own money, reserved in its Hold at checkout for the discount
+//   (`promo-settle:<orderId>:<couponId>`, tenant Hold → seller Main), owed to the seller for the sale whatever way the buyer paid the
+//   discounted price — holding it back would strand the reservation and short the seller by the discount. It never touches escrow.
+//   `partial` (some cash booked, less than the gross — a shortfall written off outside the hold) releases NOTHING either (reason
+//   `partially_funded_escrow`): escrow keeps what it holds for the money desk.
+// PC-56 HOTFIX-7 · B3 (Rule Zero) — THE TAX COUNTRY IS THE ORGANISATION'S. `countryCode` comes from the completion payload (orders now carries
+//   `tenants.country_code`, read at completion) and, for an older payload, from `tenants.country_code` read here as kv_app. Neither → the named
+//   refusal SETTLEMENT_COUNTRY_UNKNOWN (InfraError — the relay retries; metric `payments.settlement_country_unknown`) before any leg. Never a literal country.
 import { Inject, Injectable } from '@nestjs/common';
 import { TxContext, UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { WALLET_SERVICE, WalletPort, LedgerLeg } from '../../../core/wallet/wallet.port';
@@ -34,8 +51,11 @@ import { SettlementHoldRepository } from '../repositories/settlement-hold.reposi
 import { CouponMoneyService } from '../../promotions/services/coupon-money.service';
 import { computeBuyerChargedSettlement } from '../domain/commission-rule.entity';
 import { FrozenSnapshotMismatchError } from '../domain/commission.errors';
+import { SettlementCountryUnknownError } from '../domain/payments.errors';
+import { AuditWriter } from '../../../core/audit/audit.writer';
+import { SettlementFundingRepository, fundingVerdict } from '../repositories/settlement-funding.repository';
 
-export type SettleOutcome = 'settled' | 'deferred' | 'skipped';
+export type SettleOutcome = 'settled' | 'deferred' | 'skipped' | 'skipped_unfunded';
 
 @Injectable()
 export class OrderSettlementService {
@@ -48,7 +68,19 @@ export class OrderSettlementService {
     private readonly couponMoney: CouponMoneyService,
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
     @Inject(METRICS) private readonly metrics: Metrics,
+    // PC-56 HOTFIX-7 · B1 / B3: the funding + country reads (kv_app) and the skipped-settlement audit (relay tx)
+    private readonly funding: SettlementFundingRepository,
+    private readonly audit: AuditWriter,
   ) {}
+
+  /** HOTFIX-7 · B3: the organisation's tax country — the payload's (orders reads `tenants.country_code` at completion), else `tenants.country_code`
+   *  read now as kv_app; neither → SETTLEMENT_COUNTRY_UNKNOWN. Shared by the dispute / return remainder pricing. Never a literal. */
+  async countryFor(tenantId: string, payload: Record<string, unknown>, where: string): Promise<string> {
+    const fromPayload = typeof payload.countryCode === 'string' && /^[A-Z]{2}$/.test(payload.countryCode) ? payload.countryCode : null;
+    const country = fromPayload ?? await this.uow.run(tenantId, (r) => this.funding.tenantCountryTx(r, tenantId), { userId: 'system' });
+    if (!country) { this.metrics.inc('payments.settlement_country_unknown', { tenant: tenantId, where }); throw new SettlementCountryUnknownError(tenantId, where); }
+    return country;
+  }
 
   /** Settle (or defer) one completed order. `tx` is the relay transaction — every LEG is posted on it; every table READ / hold row is
    *  in a kv_app unit of work (HOTFIX-2: the relay holds no grant on orders, commission_rules, settlement_holds). */
@@ -74,6 +106,22 @@ export class OrderSettlementService {
       return 'settled';
     }
 
+    // (1b) PC-56 HOTFIX-7 · B1 (founder D1) — WAS ESCROW EVER FUNDED? Read as kv_app BEFORE any leg. Unfunded (pay-on-delivery: the farmer was
+    //      paid in cash) or only partly funded → nothing is released from escrow, whoever completed the order; the tenant's coupon top-up
+    //      still runs (its own reserved money — see the header).
+    const funding = await this.uow.run(tenantId, (r) => this.funding.escrowFundingTx(r, tenantId, orderId), { userId: 'system' });
+    const verdict = fundingVerdict(funding, gross);
+    if (verdict !== 'funded') {
+      const reason = verdict === 'partial' ? 'partially_funded_escrow' : 'unfunded_escrow';
+      this.metrics.inc('payments.settlement_skipped_unfunded', { tenant: tenantId, reason });
+      await this.audit.write(tx, { tenantId, actorUserId: null, action: 'order.settlement_skipped', entityType: 'order', entityId: orderId, ip: null,
+        reason: 'escrow was never funded for this order (pay on delivery) — nothing is released from escrow; the seller was paid outside the platform',
+        newValue: { reason, totalMinor: gross.toString(), codLedgerMinor: funding.codLedgerMinor.toString(), emdMinor: funding.emdMinor.toString(),
+          currencyCode: (payload.currencyCode as string) ?? null } });
+      await this.couponMoney.settleOrderInTx(tx, { tenantId, orderId, sellerUserId });
+      return 'skipped_unfunded';
+    }
+
     // BUYER-side charges (delivery + platform fee + a buyer-charged commission) are not the seller's — excluded from the settleable gross.
     const deliveryFee = BigInt((payload.deliveryFeeMinor as string) ?? '0');
     const platformFee = BigInt((payload.platformFeeMinor as string) ?? '0');
@@ -89,7 +137,7 @@ export class OrderSettlementService {
     if (split || buyerCommissionPaid > 0n) {
       // (2) THE FROZEN RULE — read (or, pre-0196, resolved once on the placement date and recorded) as kv_app.
       const categoryId = (payload.categoryId as string) ?? null;
-      const countryCode = (payload.countryCode as string) ?? 'IN';
+      const countryCode = await this.countryFor(tenantId, payload, 'settle');   // HOTFIX-7 · B3: the organisation's, never a default
       const frozen = await this.uow.run(tenantId, (r) => this.pricing.frozenForOrder(r, tenantId, orderId, { categoryId, source: (payload.source as string) ?? null }), { userId: 'system' });
       if (frozen.buyerCommissionMinor !== buyerCommissionPaid) {
         throw new FrozenSnapshotMismatchError({ orderId, payloadBuyerCommission: buyerCommissionPaid.toString(), orderBuyerCommission: frozen.buyerCommissionMinor.toString() });
@@ -141,7 +189,7 @@ export class OrderSettlementService {
 /** Hand-wiring for the pilot relay tick and integration specs that build the settlement handler without the Nest container. The SAME
  *  classes the module provides — nothing about settlement differs between the two. */
 export function composeOrderSettlement(d: { wallet: WalletPort; flags: FlagsService; replica: unknown; uow: UnitOfWork; couponMoney: CouponMoneyService;
-  lines?: SettlementLineRepository; metrics?: Metrics }): OrderSettlementService {
+  lines?: SettlementLineRepository; metrics?: Metrics; audit?: AuditWriter }): OrderSettlementService {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { CommissionRuleRepository } = require('../repositories/commission-rule.repository') as typeof import('../repositories/commission-rule.repository');
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -151,5 +199,8 @@ export function composeOrderSettlement(d: { wallet: WalletPort; flags: FlagsServ
   const replica = d.replica as never;
   const pricing = new SettlementPricingService(new CommissionRuleRepository(replica), new TaxRuleRepository(replica), new OrderRepository(replica));
   const metrics: Metrics = d.metrics ?? ({ inc: () => undefined, observe: () => undefined } as unknown as Metrics);
-  return new OrderSettlementService(d.wallet, d.flags, pricing, d.lines ?? new SettlementLineRepository(), new SettlementHoldRepository(), d.couponMoney, d.uow, metrics);
+  // HOTFIX-7: the funding / country reads, and an audit writer whose `write(tx, …)` uses only the caller's tx (no pool is needed for it)
+  const audit = d.audit ?? new AuditWriter(undefined as never);
+  return new OrderSettlementService(d.wallet, d.flags, pricing, d.lines ?? new SettlementLineRepository(), new SettlementHoldRepository(), d.couponMoney, d.uow, metrics,
+    new SettlementFundingRepository(), audit);
 }

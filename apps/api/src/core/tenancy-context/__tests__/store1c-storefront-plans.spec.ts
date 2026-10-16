@@ -76,7 +76,8 @@ describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', ()
     // PC-56 STORE-2b · B5 (founder D2, 0208): + storefront_cart, buying's kill-switch — the THIRD platform-scoped key
     // PC-56 STORE-3a · B6 (founder D2): + `disputes` (tenant-scoped, fail-closed) — the order page's dispute door
     // PC-56 STORE-4c · B1 (founder Q12): + `communication` (tenant-scoped, fail-closed) — the headers' Messages link
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication']);
+    // PC-56 HOTFIX-7 · B25: + `traceability` (tenant-scoped) — 12 keys
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability']);
     expect([...PLATFORM_SCOPED_FLAGS]).toEqual(['org_self_signup', 'storefront_browse', 'storefront_cart']);
   });
 

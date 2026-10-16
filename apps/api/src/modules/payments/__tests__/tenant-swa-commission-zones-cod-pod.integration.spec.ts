@@ -24,7 +24,7 @@ import { randomUUID } from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
 import { NestFactory } from '@nestjs/core';
 import type { INestApplication } from '@nestjs/common';
-import { makeTenant, makeUser, ensureUnitCurrency, makePlan, activateSubscription, ListingFixture } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser, ensureUnitCurrency, makePlan, activateSubscription, ListingFixture, makeCapturedPayment } from '../../../../test/helpers/fixtures';
 import { OutboxDispatcher, OutboxHandlerRegistry, RelayOutcome } from '../../../core/outbox/outbox.dispatcher';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { WALLET_SERVICE, WalletPort } from '../../../core/wallet/wallet.port';
@@ -132,6 +132,12 @@ run('PC-56 TENANT-SW-a · commission, zones, COD, POD (integration, real Postgre
     await admin.query(`INSERT INTO dispute_eligibility (tenant_id, order_id, buyer_user_id, seller_user_id) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [tA, id, buyer, seller]);
     return id;
   }
+  /** PC-56 HOTFIX-7 · D1: an order paid ONLINE — its capture recorded (settlement releases escrow only for a FUNDED order; the COD case (C)
+   *  is funded by its ledger-booked collection instead and needs no payment row). */
+  const markPaid = async (orderId: string) => {
+    const t = (await q1(`SELECT total_minor::text t FROM orders WHERE id=$1`, [orderId])).t as string;
+    await makeCapturedPayment(admin, { tenantId: tA, buyerUserId: buyer, orderId, amountMinor: BigInt(t) });
+  };
   const payloadOf = async (orderId: string) => {
     const o = await q1(`SELECT total_minor::text t, delivery_fee_minor::text d, platform_fee_minor::text p, buyer_commission_minor::text b FROM orders WHERE id=$1`, [orderId]);
     return { v: 1, orderId, buyerUserId: buyer, sellerUserId: seller, totalMinor: o.t, deliveryFeeMinor: o.d, platformFeeMinor: o.p, buyerCommissionMinor: o.b, source: 'direct', countryCode: 'IN' };
@@ -280,6 +286,7 @@ run('PC-56 TENANT-SW-a · commission, zones, COD, POD (integration, real Postgre
     // a LATER tenant rule, in force today (time travel past the 7-day law): 9% on direct sales
     const later = (await travel(`INSERT INTO commission_rules (tenant_id, source, rate_bps, fixed_minor, platform_share_bps, charged_to, priority, effective_from, is_active)
                                  VALUES ($1,'direct',900,0,1200,'seller',50,$2::date,true) RETURNING id`, [tA, today]))[0].id;
+    await markPaid(o1);   // HOTFIX-7 · D1
     const out = await relay('orders.order_completed', o1, await payloadOf(o1));
     expect(out.status === 'failed' ? String((out as { error: unknown }).error) : out.status).toBe('published');
     const legs = await legsOf(`settle:${o1}`);
@@ -297,6 +304,7 @@ run('PC-56 TENANT-SW-a · commission, zones, COD, POD (integration, real Postgre
     // an order placed before 0196 (no snapshot): resolved ONCE on its placement date at completion, and recorded
     const legacy = await makeOrder('completed');
     expect((await q1(`SELECT commission_snapshot s FROM orders WHERE id=$1`, [legacy])).s).toBeNull();
+    await markPaid(legacy);   // HOTFIX-7 · D1
     expect((await relay('orders.order_completed', legacy, await payloadOf(legacy))).status).toBe('published');
     expect((await q1(`SELECT commission_snapshot s FROM orders WHERE id=$1`, [legacy])).s).toMatchObject({ resolvedAtCompletion: true, resolvedOn: today, rateBps: 350 });
     expect(sum(await legsOf(`settle:${legacy}`))).toBe(0n);
@@ -314,6 +322,7 @@ run('PC-56 TENANT-SW-a · commission, zones, COD, POD (integration, real Postgre
     expect(BigInt(row.t)).toBe(400000n + BigInt(row.d) + BigInt(row.p) + C + G);                // the buyer pays it, in the total
     expect(row.cs).toMatchObject({ ruleId: buyerRule, chargedTo: 'buyer', buyerCharge: { commissionMinor: C.toString(), gstMinor: G.toString() } });
     expect((row.ch.charges as Array<{ code: string }>).map((x) => x.code)).toContain('buyer_commission');
+    await markPaid(o);   // HOTFIX-7 · D1
     expect((await relay('orders.order_completed', o, await payloadOf(o))).status).toBe('published');
     const legs = await legsOf(`settle:${o}`);
     expect(sum(legs)).toBe(0n);
@@ -428,6 +437,7 @@ run('PC-56 TENANT-SW-a · commission, zones, COD, POD (integration, real Postgre
 
   it('D · POD: driver / dispatcher refused; a flagged POD holds settlement and approve releases it through the outbox (once); timer auto-clears; reject needs a checker and opens a dispute with evidence', async () => {
     const o = await makeOrder('confirmed');
+    await markPaid(o);   // HOTFIX-7 · D1: prepaid — the capture recorded
     const media = randomUUID();
     const s = await shipmentOut(o, 0n, a2);   // prepaid (no COD): the POD law is independent of cash
     await ships.markDelivered(tA, { userId: rider, canManage: false }, s.id, { otp: s.otp, podMediaId: media } as never, IP);

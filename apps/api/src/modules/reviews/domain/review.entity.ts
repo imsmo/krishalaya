@@ -12,6 +12,8 @@ export interface ReviewProps {
   targetType: ReviewTargetType; targetId: string; stars: number; subRatings: Record<string, number>;
   body: string | null; tags: string[]; isVerifiedPurchase: boolean; status: ReviewStatus;
   sellerResponse: string | null; sellerRespondedAt: Date | null; helpfulCount: number; createdAt: Date;
+  /** PC-56 HOTFIX-7 · B24: `created_at` as the database printed it (µs) — the keyset cursor only, never served. */
+  createdAtUs?: string | null;
 }
 
 const MAX_BODY = 4000;

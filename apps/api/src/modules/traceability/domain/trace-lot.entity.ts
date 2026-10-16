@@ -7,6 +7,8 @@ import { InvalidTraceLotError } from './traceability.errors';
 export interface TraceLotProps {
   id: string; tenantId: string; listingId: string | null; qrToken: string; farmerUserId: string; parcelId: string | null; cropSeasonId: string | null;
   declaredInputs: unknown[]; certificateIds: unknown[]; blockchainAnchor: string | null; createdAt?: Date;
+  /** PC-56 HOTFIX-7 · B24: `created_at` as the database printed it (µs) — the keyset cursor only, never in toJSON. */
+  createdAtUs?: string | null;
 }
 export class TraceLot {
   private readonly events: DomainEvent[] = [];

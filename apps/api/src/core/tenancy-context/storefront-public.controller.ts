@@ -35,7 +35,9 @@ import { StorefrontPublicReadModel, countryParam } from './storefront-public.rea
 // otherwise — the form that always failed (survey F-11) is gone.
 // PC-56 STORE-4c · B1 (founder Q12): + `communication` — TENANT-scoped and fail-closed like `offers`: the headers show "Messages" only when the
 // store's `communication` flag is ON (chat and calls stay behind it); a person's inbox and preferences are NOT behind it any more.
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication'] as const);
+// PC-56 HOTFIX-7 · B25: + `traceability` (12 keys) — tenant-scoped like `reviews`: the organisation's answer, so a store can say "this organisation
+// has not published farm-to-fork traces" (the scan's TRACE_NOT_PUBLISHED) instead of a broken page.
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
 /** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context).
  *  PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — a platform switch like org_self_signup. */

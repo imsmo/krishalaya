@@ -23,6 +23,12 @@ import { ResolveDisputeDto } from '../dto/update-dispute.dto';
 import { CreateDisputeMessageDto } from '../dto/create-dispute-message.dto';
 import { RefundApprovalService } from './refund-approval.service';
 import { assertRefundAllowed } from '../domain/refund-gate';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { DisputeRefundsOffError } from '../domain/disputes.errors';
+import { encodeKeyset } from '../../../shared/pagination/us-keyset';
+
+/** PC-56 HOTFIX-7 · D2: the tenant-scoped money switch a refund decision needs (the payments handlers move money behind the same flag). */
+export const DISPUTE_REFUNDS_FLAG = 'dispute_refunds';
 
 export interface DisputeActor {
   userId: string;
@@ -46,7 +52,19 @@ export class DisputeService {
     private readonly messages: DisputeMessageRepository,
     private readonly messageService: DisputeMessageService,
     private readonly approvals: RefundApprovalService,
+    private readonly flags: FlagsService,
   ) {}
+
+  /** PC-56 HOTFIX-7 · D2: refuse a refund decision BY NAME while `dispute_refunds` is OFF — audited on its own connection (the refusal rolls
+   *  nothing back because nothing was written), counted, then thrown; the dispute / return stays where it was. Shared with ReturnService. */
+  static async assertRefundsOn(flags: FlagsService, audit: AuditWriter, metrics: Metrics, tenantId: string, kind: 'dispute' | 'return', id: string,
+    actorUserId: string, ip: string | null, detail: Record<string, unknown>): Promise<void> {
+    if (await flags.isEnabled(DISPUTE_REFUNDS_FLAG, { tenantId })) return;
+    metrics.inc('disputes.refund_refused_flag_off', { tenant: tenantId, kind });
+    await audit.log({ tenantId, actorUserId, action: 'dispute.refund_refused_flag_off', entityType: kind, entityId: id, ip,
+      reason: 'the dispute_refunds money switch is OFF for this organisation — a refund decision would move no money', newValue: { refused: 'DISPUTE_REFUNDS_OFF', ...detail } });
+    throw new DisputeRefundsOffError(kind, id);
+  }
 
   /** A party to a delivered order raises a dispute against the counterparty. */
   async raise(tenantId: string, raisedBy: string, idemKey: string, dto: CreateDisputeDto) {
@@ -155,6 +173,12 @@ export class DisputeService {
       return this.mutate(tenantId, actor, id, 'resolve', { moderator: true, audit: true },
         (d) => d.resolve(actor.userId, type, dto.resolutionAmountMinor ? BigInt(dto.resolutionAmountMinor) : null), ip, dto.note ?? null);
     }
+    // PC-56 HOTFIX-7 · D2 (founder Q2): the money switch FIRST — no "refunded" without money (refused by name, the dispute unchanged)
+    return DisputeService.assertRefundsOn(this.flags, this.audit, this.metrics, tenantId, 'dispute', id, actor.userId, ip, { resolutionType: type })
+      .then(() => this.resolveRefund(tenantId, actor, id, dto, ip, type));
+  }
+
+  private resolveRefund(tenantId: string, actor: DisputeActor, id: string, dto: ResolveDisputeDto, ip: string | null, type: ResolutionType) {
     if (!actor.canRefund) throw new DisputeForbiddenError('requires order.refund');
     const note = dto.note ?? null;
     return timed(this.metrics, 'disputes.resolve', { tenant: tenantId }, () =>
@@ -220,8 +244,9 @@ export class DisputeService {
     const filter = q.box === 'raised' ? { raisedBy: actor.userId } : q.box === 'against' ? { againstUser: actor.userId } : {};
     const rows = await this.repo.listFor(tenantId, { ...filter, status: q.status, cursor: q.cursor, limit: q.limit });
     const items = rows.map((d) => this.serialize(d.toProps()));
-    const last = items[items.length - 1];
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${(last as any).createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    const lastRow = rows[rows.length - 1]?.toProps();
+    // PC-56 HOTFIX-7 · B24: the µs keyset — the cursor carries the instant as the database printed it, never a JS Date (ms)
+    const nextCursor = rows.length === q.limit && lastRow?.createdAtUs ? encodeKeyset(lastRow.createdAtUs, lastRow.id) : null;
     return { items, nextCursor };
   }
 

@@ -25,6 +25,9 @@ import { RefundApprovalService } from './services/refund-approval.service';
 import { RefundApprovalRepository } from './repositories/refund-approval.repository';
 import { DisputeConsoleReadModel } from './read-models/dispute-console.read-model';
 import { RefundApprovalsController } from './controllers/v1/refund-approvals.controller';
+import { SCHEDULED_JOB_REGISTRY, ScheduledJobRegistry } from '../../core/jobs/scheduled-job.registry';
+import { cadenceOf } from '../../core/jobs/clock-cadence';
+import { DisputeSellerResponseTimeoutClock, DisputeSlaEscalationClock } from './jobs/disputes.cadence-jobs';
 
 @Module({
   controllers: [DisputesController, ReturnsController, RefundApprovalsController],
@@ -33,6 +36,9 @@ import { RefundApprovalsController } from './controllers/v1/refund-approvals.con
     DisputeRepository, DisputeMessageRepository, ReturnRepository, RefundApprovalRepository,
     DisputeConsoleReadModel,
     OrderDeliveredHandler, DisputeRefundedHandler, ReturnRefundedStampHandler,
+    // PC-56 HOTFIX-7 · B23: the two dispute clocks, at the registry table's cadence (core/jobs/clock-cadence.ts)
+    { provide: DisputeSellerResponseTimeoutClock, useFactory: () => new DisputeSellerResponseTimeoutClock(cadenceOf('dispute-seller-response-timeout')) },
+    { provide: DisputeSlaEscalationClock, useFactory: () => new DisputeSlaEscalationClock(cadenceOf('dispute-sla-escalation')) },
   ],
   exports: [DisputeService, ReturnService, RefundApprovalService],
 })
@@ -42,6 +48,9 @@ export class DisputesModule implements OnModuleInit {
     private readonly orderDelivered: OrderDeliveredHandler,
     private readonly disputeRefunded: DisputeRefundedHandler,
     private readonly returnRefundedStamp: ReturnRefundedStampHandler,
+    @Inject(SCHEDULED_JOB_REGISTRY) private readonly jobs: ScheduledJobRegistry,
+    private readonly sellerResponseClock: DisputeSellerResponseTimeoutClock,
+    private readonly slaClock: DisputeSlaEscalationClock,
   ) {}
   // record dispute eligibility when an order is delivered (orders.order_delivered)
   onModuleInit(): void {
@@ -50,5 +59,9 @@ export class DisputesModule implements OnModuleInit {
     // payments.return_refunded → stamp returns.refund_txn_id. Registered for the first time in TENANT-3b: the
     // return money trail had neither an executor nor a stamp before it.
     this.registry.register(this.returnRefundedStamp);
+    // PC-56 HOTFIX-7 · B23 (survey C-6 / F-10): the respondent's 48 h and the 7-day SLA are acted on at last (no money, no notice — the header of
+    // jobs/disputes.cadence-jobs.ts). ReviewPromptsJob, CertificateExpiryAlertsJob and runAnchorHashes stay unregistered (5a / 5b decide them).
+    this.jobs.register(this.sellerResponseClock);
+    this.jobs.register(this.slaClock);
   }
 }

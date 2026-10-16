@@ -189,8 +189,12 @@ INSERT INTO role_permissions (role_id, permission_code)
 SELECT r.id, p.code FROM roles r CROSS JOIN permissions p
 WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','listing.publish','order.create','offer.create','requirement.post','auction.bid','wallet.view','worker.book'))
    OR (r.code='vyapari'       AND p.code IN ('order.create','offer.create','requirement.post','auction.bid','auction.create','wallet.view'))
-   OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','dispute.resolve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage','logistics.manage','promotion.manage','membership.manage'))
-   OR (r.code='support_agent' AND p.code IN ('dispute.resolve','report.view'))
+   -- [PC-56 HOTFIX-7 · D4 (Q18)] `dispute.resolve` REMOVED from tenant_admin: a buyer-raised dispute is decided by the PLATFORM support desk,
+   -- never by the selling organisation (survey STORE-5 F-1 / F-20 — with it, the farmer's own organisation decided its buyer's dispute and could
+   -- force-complete a delivered pay-on-delivery order). `support_agent` keeps it and gains the money key `order.refund` (0139 granted that key to
+   -- tenant_admin only; migration 0217 deletes that grant and both rows below for an existing database — this list is ON CONFLICT DO NOTHING).
+   OR (r.code='tenant_admin'  AND p.code IN ('listing.approve','listing.moderate','order.manage','user.approve','report.view','tenant.settings','payout.approve','wallet.adjust','booking.manage','logistics.manage','promotion.manage','membership.manage'))
+   OR (r.code='support_agent' AND p.code IN ('dispute.resolve','order.refund','report.view'))
    -- [PC-56 TENANT-9c] THE AUDITOR'S SET IS EXACTLY FIVE READS (0181); the AuditorReadOnlyGuard refuses it every non-GET.
    OR (r.code='auditor'       AND p.code IN ('ledger.read','report.view','audit.read','kyc.read','governance.read'))
    OR (r.code='tenant_admin'  AND p.code IN ('audit.read'))

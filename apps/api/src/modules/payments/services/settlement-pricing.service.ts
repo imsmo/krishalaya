@@ -24,7 +24,7 @@ export interface SettlementQuoteInput {
   categoryId?: string | null;
   sellerRoleId?: string | null;
   source?: string | null;
-  countryCode?: string;          // for tax resolution (default 'IN')
+  countryCode: string;           // for tax resolution — the organisation's (PC-56 HOTFIX-7 · B3: required, never defaulted)
   onDate?: string;
 }
 
@@ -40,7 +40,7 @@ export class SettlementPricingService {
       tenantId: input.tenantId, categoryId: input.categoryId ?? null, sellerRoleId: input.sellerRoleId ?? null, source: input.source ?? null, onDate: input.onDate,
     });
     if (!rule) throw new NoCommissionRuleError({ tenantId: input.tenantId, source: input.source ?? null });
-    const { gst, tds } = await this.taxes(tx, input.countryCode ?? 'IN', input.categoryId ?? null, input.onDate);
+    const { gst, tds } = await this.taxes(tx, input.countryCode, input.categoryId ?? null, input.onDate);
     return computeSettlement(input.grossMinor, rule, gst, tds);
   }
 
@@ -64,9 +64,9 @@ export class SettlementPricingService {
   }
 
   /** Price a settleable gross from the FROZEN rule (seller-charged model). No rule was frozen ⇒ fail closed. */
-  async quoteFrozen(tx: TxContext, input: { tenantId: string; grossMinor: bigint; snapshot: CommissionSnapshot; categoryId?: string | null; countryCode?: string }): Promise<SettlementBreakdown> {
+  async quoteFrozen(tx: TxContext, input: { tenantId: string; grossMinor: bigint; snapshot: CommissionSnapshot; categoryId?: string | null; countryCode: string }): Promise<SettlementBreakdown> {
     if (!input.snapshot.ruleId) throw new NoCommissionRuleError({ tenantId: input.tenantId, resolvedOn: input.snapshot.resolvedOn, frozen: true });
-    const { gst, tds } = await this.taxes(tx, input.countryCode ?? 'IN', input.categoryId ?? null, input.snapshot.resolvedOn);
+    const { gst, tds } = await this.taxes(tx, input.countryCode, input.categoryId ?? null, input.snapshot.resolvedOn);
     return computeSettlement(input.grossMinor, valuesFromSnapshot(input.snapshot), gst, tds);
   }
 

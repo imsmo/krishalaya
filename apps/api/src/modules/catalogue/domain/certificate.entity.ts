@@ -14,6 +14,8 @@ export interface CertificateProps {
   issuingBody: string | null; subjectType: CertSubjectType | string; subjectId: string | null; mediaId: string | null;
   validFrom: string | null; validUntil: string | null; status: CertificateStatus; blockchainAnchor: string | null;
   verifiedBy: string | null; createdAt?: Date | null;
+  /** PC-56 HOTFIX-7 · B24: `created_at` as the database printed it (µs) — the keyset cursor only, stripped from every answer. */
+  createdAtUs?: string | null;
 }
 
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));

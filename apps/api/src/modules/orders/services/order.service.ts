@@ -9,7 +9,7 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { Order } from '../domain/order.entity';
 import { DomainEvent } from '../domain/orders.events';
-import { OrderNotFoundError, OrderConcurrencyError, OrderForbiddenError, CancelReasonRequiredError, CancelReasonUnknownError, CancelNoteRequiredError, OrderCompleteRequiresEscrowError } from '../domain/orders.errors';
+import { OrderNotFoundError, OrderConcurrencyError, OrderForbiddenError, CancelReasonRequiredError, CancelReasonUnknownError, CancelNoteRequiredError } from '../domain/orders.errors';
 import { isCancellable } from '../domain/order.state';
 import { OrderRepository } from '../repositories/order.repository';
 import { orderPaymentState, OrderPaymentFacts } from '../domain/order-payment-state';
@@ -18,7 +18,7 @@ import { OrderViewerRole, viewerRoleOf } from '../domain/order-event-roles';
 
 export interface OrderActor { userId: string; canModerate: boolean; }
 /** What an in-transaction pre-check hands the act and the audit row (STORE-3a). */
-interface TransitionAudit { reason?: string; reasonCode?: string; note?: string | null; newValue?: Record<string, unknown> }
+interface TransitionAudit { reason?: string; reasonCode?: string; note?: string | null; newValue?: Record<string, unknown>; countryCode?: string | null }
 
 @Injectable()
 export class OrderService {
@@ -90,14 +90,24 @@ export class OrderService {
    * a pay-on-delivery order is refused ORDER_COMPLETE_REQUIRES_ESCROW (409) and nothing moves. One switch, one meaning
    * (`QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT`: "completion releases escrow only when escrow was funded"). A MODERATOR's completion is unchanged —
    * named in the wave report §9 as the remaining door to HOTFIX-5's P0.
+   *
+   * PC-56 HOTFIX-7 · B1 (founder D1 — HOTFIX-5 Q1 closed): COMPLETION IS ALWAYS ALLOWED; SETTLEMENT IS WHAT FAILS CLOSED. The buyer's "I received
+   * it" on a pay-on-delivery order is no longer refused (ORDER_COMPLETE_REQUIRES_ESCROW retires for this path): the order completes, and
+   * payments' `OrderSettlementService.settle` — the ONE place — finds no captured payment and releases NOTHING from escrow (`skipped_unfunded`,
+   * audited `order.settlement_skipped`), whoever completed it (the buyer, a support agent, a dispute's decision). The auto-complete CLOCK keeps
+   * its own fail-closed rule (`autoComplete` below: nobody confirmed that cash was paid). The audit records whether an online capture was
+   * placed for it (`escrowFunded`) — a fact, not a gate. The organisation's country rides in the completion event (B3).
+   * `tenant_admin` no longer holds `dispute.resolve` (0217, D4), so `canModerate` is the platform support desk's: the organisation cannot
+   * complete its buyer's order (403 ORDER_FORBIDDEN, as for any non-buyer).
    */
   complete(t: string, a: OrderActor, id: string, ip: string | null) {
-    return this.transition(t, a, id, 'completed', (o) => o.complete(), {
+    return this.transition(t, a, id, 'completed', (o, x) => o.complete(new Date(), { countryCode: x.countryCode ?? null }), {
       auditIp: ip, preCheck: (o) => { if (!a.canModerate && o.buyerUserId !== a.userId) throw new OrderForbiddenError('Only the buyer may complete the order'); },
       preCheckTx: async (tx, o) => {
         const byBuyer = !a.canModerate && o.buyerUserId === a.userId;
-        if (byBuyer && QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT && !(await this.repo.placedAwaitingPaymentTx(tx, t, id))) throw new OrderCompleteRequiresEscrowError(id);
-        return byBuyer ? { newValue: { by: 'buyer', escrowFunded: true } } : undefined;
+        const countryCode = await this.repo.tenantCountryTx(tx, t);
+        const escrowFunded = await this.repo.placedAwaitingPaymentTx(tx, t, id);
+        return { countryCode, newValue: { by: byBuyer ? 'buyer' : 'moderator', escrowFunded } };
       },
     });
   }
@@ -142,7 +152,7 @@ export class OrderService {
       // completion would credit the seller from an escrow that never held it)
       if (QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT && !(await this.repo.placedAwaitingPaymentTx(tx, tenantId, id))) return false;
       const from = order.status;
-      order.complete(now);
+      order.complete(now, { countryCode: await this.repo.tenantCountryTx(tx, tenantId) });   // PC-56 HOTFIX-7 · B3: the organisation's country rides in the event
       if (!(await this.repo.update(tx, order, from, 'system'))) throw new OrderConcurrencyError(id);
       await this.flush(tx, tenantId, id, order.pullEvents(), { reason: QUALITY_WINDOW_REASON });
       await this.audit.write(tx, { tenantId, actorUserId: null, action: 'order.auto_completed', entityType: 'order', entityId: id, ip: null,

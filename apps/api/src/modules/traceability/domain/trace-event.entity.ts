@@ -8,6 +8,8 @@ import { InvalidTraceEventError } from './traceability.errors';
 
 export interface TraceEventProps {
   id?: string; traceLotId: string; tenantId: string; eventCode: TraceStep; meta: Record<string, unknown>; eventHash: string; createdAt?: Date;
+  /** PC-56 HOTFIX-7 · B24: `created_at` as the database printed it (µs) — the keyset cursor only, never in toJSON. */
+  createdAtUs?: string | null;
 }
 /** Deterministic chain hash. prevHash seeds from the lot id for the first event. */
 export function chainHash(prevHash: string, lotId: string, eventCode: string, meta: Record<string, unknown>): string {
@@ -24,5 +26,7 @@ export class TraceEvent {
   get eventHash() { return this.props.eventHash; }
   get eventCode() { return this.props.eventCode; }
   toProps(): Readonly<TraceEventProps> { return Object.freeze({ ...this.props }); }
-  toJSON() { const v = this.props; return { eventCode: v.eventCode, meta: v.meta, eventHash: v.eventHash, at: v.createdAt }; }
+  /** PC-56 HOTFIX-7 · F-13 / B24: + `id` — the bigserial the timeline's keyset compares (the cursor used to carry `eventHash`, which the
+   *  repository compared against `id`: page 2 errored `bigint > '<hex>'`). The owner / manager read only — the public scan carries no id. */
+  toJSON() { const v = this.props; return { id: v.id ?? null, eventCode: v.eventCode, meta: v.meta, eventHash: v.eventHash, at: v.createdAt }; }
 }

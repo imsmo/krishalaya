@@ -68,8 +68,9 @@ export class ChargeConsoleReadModel {
     }));
   }
 
-  async taxRules(tenantId: string, countryCode = 'IN'): Promise<TaxRuleRow[]> {
-    const rows = await this.repo.listTaxRules(tenantId, countryCode);
+  /** PC-56 HOTFIX-7 · B3 (Rule Zero): the statutory rules of the ORGANISATION's country (tenants.country_code) — there is no default country. */
+  async taxRules(tenantId: string): Promise<TaxRuleRow[]> {
+    const rows = await this.repo.listTaxRules(tenantId);
     return rows.map((r) => ({
       taxCode: r.taxCode, rateBps: r.rateBps, hsnPrefix: r.hsnPrefix, split: r.split ?? {},
       thresholdMinor: r.thresholdMinor, effectiveFrom: r.effectiveFrom, legalRef: r.legalRef,

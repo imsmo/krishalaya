@@ -8,13 +8,14 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Return } from '../domain/return.entity';
 import { ReturnStatus } from '../domain/return.state';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 
 const COLS = `id, tenant_id, order_id, dispute_id, status, reason_id, refund_txn_id, created_at,
-  refund_amount_minor, inspected_at, inspected_by, inspection_note`;
+  refund_amount_minor, inspected_at, inspected_by, inspection_note, ${US_SQL('created_at')} AS created_us`;
 function toDomain(r: any): Return {
   return Return.rehydrate({
     id: r.id, tenantId: r.tenant_id, orderId: r.order_id, disputeId: r.dispute_id,
-    status: r.status as ReturnStatus, reasonId: r.reason_id, refundTxnId: r.refund_txn_id, createdAt: r.created_at,
+    status: r.status as ReturnStatus, reasonId: r.reason_id, refundTxnId: r.refund_txn_id, createdAt: r.created_at, createdAtUs: r.created_us ?? null,
     refundAmountMinor: r.refund_amount_minor == null ? null : BigInt(r.refund_amount_minor),
     inspectedAt: r.inspected_at, inspectedBy: r.inspected_by, inspectionNote: r.inspection_note,
   });
@@ -85,7 +86,7 @@ export class ReturnRepository {
       where += ` AND order_id = ANY(${p(ids)}::uuid[])`;
     }
     if (q.status) where += ` AND status=${p(q.status)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at, id) < (${cc}::timestamptz, ${ci}::uuid)`; }   // PC-56 HOTFIX-7 · B24: the µs keyset
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM returns WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);

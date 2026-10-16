@@ -18,7 +18,9 @@ import { PaymentRepository } from '../repositories/payment.repository';
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { SandboxGateway } from '../gateway/sandbox.gateway';
 import { CreatePaymentIntentDto, RefundPaymentDto } from '../dto/create-payment.dto';
-import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError, OrderPaymentAmountMismatchError, PaymentOrderReferenceInvalidError, WebhookContextMismatchError, LateCaptureSameAttemptError, PaymentAttemptLiveError, RefundGatewayReferenceMissingError } from '../domain/payments.errors';
+import { PaymentNotFoundError, WebhookSignatureError, PaymentAmountMismatchError, PaymentCurrencyMismatchError, InsufficientWalletBalanceError, OrderPaymentAmountMismatchError, PaymentOrderReferenceInvalidError, WebhookContextMismatchError, LateCaptureSameAttemptError, PaymentAttemptLiveError, RefundGatewayReferenceMissingError,
+  PaymentRefundInFlightError, ResolutionRefundExceedsRefundableError } from '../domain/payments.errors';
+import { ResolutionRefundKind, RESOLUTION_REFUND_TXN_TYPE, RESOLUTION_GATEWAY_ENDPOINT, resolutionRefundKey, resolutionGatewayRefundKey, resolutionRefundReason } from '../domain/resolution-refund';
 import { attemptExpiresAt, chargedNothing, failureReasonCode, isLapsedAttempt, isLiveAttempt } from '../domain/payment-attempt';
 import type { PostTxnResult } from '../../../core/wallet/wallet.port';
 import { BadRequestError, InfraError } from '../../../shared/errors/app-error';
@@ -361,12 +363,15 @@ export class PaymentService {
    * Idempotent on `idempotencyKey` (the wallet's unique key): the moderator's `refund:<paymentId>:<refundable>`, the automatic
    * `refund:<orderId>`.
    */
-  private postRefundToSource(tx: TxContext, p: { tenantId: string; payment: Payment; amountMinor: bigint; txnType: 'escrow_release' | 'order_cancel_refund'; idempotencyKey: string; initiatedBy: string }): Promise<PostTxnResult> {
+  // PC-56 HOTFIX-7 · D3: + txnType `refund` (the dispute / return refund — the type those refunds always posted under) and an optional ledger
+  // reference (a resolution refund keeps `dispute` / `return` + its id, as the handlers recorded it before). The legs are unchanged.
+  private postRefundToSource(tx: TxContext, p: { tenantId: string; payment: Payment; amountMinor: bigint; txnType: 'escrow_release' | 'order_cancel_refund' | typeof RESOLUTION_REFUND_TXN_TYPE; idempotencyKey: string; initiatedBy: string;
+    reference?: { type: string; id: string } }): Promise<PostTxnResult> {
     const fromWallet = p.payment.providerCode === 'wallet';
     const source = fromWallet ? userMain(p.payment.userId, p.payment.currencyCode) : platform(PlatformAccount.Gateway);
     const escrow = fromWallet ? platform(PlatformAccount.Escrow, p.payment.currencyCode) : platform(PlatformAccount.Escrow);
     return this.wallet.post(tx, {
-      tenantId: p.tenantId, txnType: p.txnType, idempotencyKey: p.idempotencyKey, referenceType: 'payment', referenceId: p.payment.id, initiatedBy: p.initiatedBy,
+      tenantId: p.tenantId, txnType: p.txnType, idempotencyKey: p.idempotencyKey, referenceType: p.reference?.type ?? 'payment', referenceId: p.reference?.id ?? p.payment.id, initiatedBy: p.initiatedBy,
       legs: [{ account: source, amountMinor: p.amountMinor }, { account: escrow, amountMinor: -p.amountMinor }],
     });
   }
@@ -437,6 +442,81 @@ export class PaymentService {
         }
       }, { userId: 'system' });
       return { outcome: 'refunded', paymentId: p.id, ledgerTxnId: booked.ledgerTxnId };
+    });
+  }
+
+  /**
+   * PC-56 HOTFIX-7 · D3 (founder Q3) — A DISPUTE OR RETURN REFUND GOES BACK TO THE SOURCE: one refund rule for the buyer, 2c's. Called by the two
+   * payments handlers (dispute-resolved / return-refunded) for the BUYER's leg — which used to be `userMain(buyer)` (the buyer's wallet, whatever
+   * they paid with) — mirroring refundCancelledOrder:
+   *   1. ONE kv_app transaction: the order's captured payment found and LOCKED (the order row is NOT locked: the orders handler of the same
+   *      event may hold it on the relay transaction); the ledger refund through `postRefundToSource` — escrow −amount · source +amount (the
+   *      gateway account for a card / UPI payment, the buyer's wallet for a wallet payment), txn type `refund`, key `dispute-refund:<id>` /
+   *      `return-refund:<id>`; the payment → `refund_initiated` for the amount (PARTIAL amounts supported; a further refund after an earlier
+   *      partial one is allowed — `Payment.initiateRefund(…, { further })`); a WALLET payment completes in the same transaction (`refunded` /
+   *      `partially_refunded` + `payments.payment_refunded`); audit `payment.resolution_refunded`.
+   *   2. A gateway payment: the gateway's refund OUTSIDE any transaction, asked at most once per (payment, resolution) —
+   *      `gateway-refund:<paymentId>:<referenceId>` (a second refund on the same payment has its own key). `processed` (the sandbox) → completed
+   *      now; `pending` (Razorpay) → stays `refund_initiated` until `refund.processed` arrives on the webhook, which completes it as today.
+   * IDEMPOTENT end to end: a replay finds its key booked and books nothing (a pending gateway answer is asked again under the same key). Another
+   * refund still pending at the gateway → PAYMENT_REFUND_IN_FLIGHT (the relay retries); more than is refundable → RESOLUTION_REFUND_EXCEEDS_REFUNDABLE
+   * (loud, for the money desk). No captured payment (pay-on-delivery) → `unpaid`, nothing booked.
+   */
+  async refundForResolution(tenantId: string, orderId: string, r: { referenceType: ResolutionRefundKind; referenceId: string; amountMinor: bigint }):
+    Promise<{ outcome: 'unpaid' | 'refunded' | 'pending_gateway' | 'already'; paymentId?: string; ledgerTxnId?: string; source?: string; alreadyBooked?: boolean }> {
+    const key = resolutionRefundKey(r.referenceType, r.referenceId);
+    return timed(this.metrics, 'payments.resolution_refund', { tenant: tenantId, kind: r.referenceType }, async () => {
+      const booked = await this.uow.run(tenantId, async (tx) => {
+        const found = await this.repo.capturedForOrderTx(tx, tenantId, orderId);
+        if (!found) return { outcome: 'unpaid' as const };
+        const payment = await this.repo.getForUpdate(tx, tenantId, found.id);
+        if (!payment) return { outcome: 'unpaid' as const };
+        const prior = await this.repo.ledgerTxnIdByKeyTx(tx, key);
+        if (prior) {
+          // booked already (a replay, or a relay retry after the remainder failed): a gateway refund still unanswered is asked again under its key
+          if (payment.status === 'refund_initiated' && payment.providerCode !== 'wallet') return { outcome: 'pending_gateway' as const, payment, ledgerTxnId: prior, alreadyBooked: true };
+          return { outcome: 'already' as const, paymentId: payment.id, ledgerTxnId: prior, source: payment.providerCode };
+        }
+        if (payment.status === 'refund_initiated') throw new PaymentRefundInFlightError(payment.id, r.referenceType, r.referenceId);
+        if (r.amountMinor <= 0n || r.amountMinor > payment.refundableMinor) throw new ResolutionRefundExceedsRefundableError(payment.id, r.amountMinor, payment.refundableMinor);
+        const before = payment.status;
+        const txn = await this.postRefundToSource(tx, { tenantId, payment, amountMinor: r.amountMinor, txnType: RESOLUTION_REFUND_TXN_TYPE, idempotencyKey: key,
+          initiatedBy: 'system', reference: { type: r.referenceType, id: r.referenceId } });
+        payment.initiateRefund(r.amountMinor, new Date(), { further: true });
+        const fromWallet = payment.providerCode === 'wallet';
+        if (fromWallet) payment.completeRefund(resolutionRefundReason(r.referenceType), orderId, null);   // the money is already back in the buyer's wallet
+        await this.repo.update(tx, payment);
+        await this.flush(tx, tenantId, payment.id, payment.pullEvents());
+        await this.audit.write(tx, { tenantId, actorUserId: null, action: 'payment.resolution_refunded', entityType: 'payment', entityId: payment.id,
+          oldValue: { status: before }, newValue: { status: payment.status, orderId, referenceType: r.referenceType, referenceId: r.referenceId, refundedMinor: r.amountMinor.toString(),
+            totalRefundedMinor: payment.refundedMinor.toString(), currencyCode: payment.currencyCode, ledgerTxnId: txn.txnId, idempotencyKey: key,
+            source: fromWallet ? 'wallet' : payment.providerCode }, ip: null });
+        this.metrics.inc('payments.resolution_refund_booked', { tenant: tenantId, kind: r.referenceType, source: fromWallet ? 'wallet' : 'gateway' });
+        return fromWallet
+          ? { outcome: 'refunded' as const, paymentId: payment.id, ledgerTxnId: txn.txnId, source: 'wallet' }
+          : { outcome: 'pending_gateway' as const, payment, ledgerTxnId: txn.txnId, alreadyBooked: false };
+      }, { userId: 'system' });
+      if (booked.outcome !== 'pending_gateway') return booked;
+
+      // 2. the gateway's refund — outside any transaction, asked at most once per (payment, resolution)
+      const p = booked.payment;
+      const gatewayPaymentId = p.gatewayPaymentId;
+      if (!gatewayPaymentId) throw new RefundGatewayReferenceMissingError(p.id);
+      const gateway = this.gateways.get(p.providerCode);
+      const res = await this.idem.remember(resolutionGatewayRefundKey(p.id, r.referenceId), 'system', RESOLUTION_GATEWAY_ENDPOINT, () =>
+        gateway.refund({ gatewayPaymentId, amountMinor: r.amountMinor, currencyCode: p.currencyCode, receipt: key,
+          notes: { tenant_id: tenantId, payment_id: p.id, order_id: orderId, [`${r.referenceType}_id`]: r.referenceId } }));
+      if (res.status !== 'processed') return { outcome: 'pending_gateway', paymentId: p.id, ledgerTxnId: booked.ledgerTxnId, source: p.providerCode, alreadyBooked: booked.alreadyBooked };
+      await this.uow.run(tenantId, async (tx) => {
+        const locked = await this.repo.getForUpdate(tx, tenantId, p.id);
+        if (locked && locked.completeRefund(resolutionRefundReason(r.referenceType), orderId, res.gatewayRefundId)) {
+          await this.repo.update(tx, locked);
+          await this.flush(tx, tenantId, locked.id, locked.pullEvents());
+          await this.audit.write(tx, { tenantId, actorUserId: null, action: 'payment.refund_processed', entityType: 'payment', entityId: locked.id,
+            oldValue: { status: 'refund_initiated' }, newValue: { status: locked.status, gatewayRefundId: res.gatewayRefundId, via: 'gateway_response', referenceType: r.referenceType, referenceId: r.referenceId }, ip: null });
+        }
+      }, { userId: 'system' });
+      return { outcome: 'refunded', paymentId: p.id, ledgerTxnId: booked.ledgerTxnId, source: p.providerCode, alreadyBooked: booked.alreadyBooked };
     });
   }
 

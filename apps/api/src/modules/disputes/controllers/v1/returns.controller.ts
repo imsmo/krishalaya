@@ -12,6 +12,8 @@ import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
+import { clientIpOf } from '../../../../core/http/client-ip';
+import { decodeKeyset, UUID_RE } from '../../../../shared/pagination/us-keyset';
 import { ReturnService } from '../../services/return.service';
 import { CreateReturnSchema, CreateReturnDto } from '../../dto/create-return.dto';
 import { QueryReturnsSchema, QueryReturnsDto } from '../../dto/query-return.dto';
@@ -20,8 +22,10 @@ import { InspectReturnSchema, InspectReturnDto } from '../../dto/create-return.d
 import { DisputeConsoleReadModel } from '../../read-models/dispute-console.read-model';
 import { parseDisputeCursor, buildDisputeCursor } from '../../dto/query-dispute-console.dto';
 
-const ipOf = (r: Request) => r.ip || null;
-const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+// PC-56 HOTFIX-7 (carried rule): request audits record the client's address through the one helper (core/http/client-ip.ts)
+const ipOf = (r: Request) => clientIpOf(r);
+// PC-56 HOTFIX-7 · B24: the µs keyset (shared/pagination/us-keyset.ts — a pre-HOTFIX-7 millisecond cursor reads as page one, never a ms guess)
+const decodeCursor = (c?: string) => { const k = decodeKeyset(c, UUID_RE); return k ? { c: k.ts, id: k.id } : undefined; };
 
 @Controller({ path: 'returns', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)

@@ -21,6 +21,9 @@ import {
 } from '../domain/disputes.errors';
 import { RefundApprovalService } from './refund-approval.service';
 import { assertRefundAllowed } from '../domain/refund-gate';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { DisputeService } from './dispute.service';
+import { encodeKeyset } from '../../../shared/pagination/us-keyset';
 
 export interface ReturnActor {
   userId: string;
@@ -41,6 +44,7 @@ export class ReturnService {
     private readonly repo: ReturnRepository,
     private readonly disputes: DisputeRepository,
     private readonly approvals: RefundApprovalService,
+    private readonly flags: FlagsService,
   ) {}
 
   /** The order's BUYER requests a return (after delivery). Idempotent on the caller's key. */
@@ -87,6 +91,8 @@ export class ReturnService {
   async refund(t: string, a: ReturnActor, id: string, ip: string | null) {
     if (!a.canModerate) throw new ReturnForbiddenError('requires dispute.resolve');
     if (!a.canRefund) throw new ReturnForbiddenError('requires order.refund');
+    // PC-56 HOTFIX-7 · D2 (founder Q2): no "refunded" without money — refused by name while `dispute_refunds` is OFF; the return stays where it was
+    await DisputeService.assertRefundsOn(this.flags, this.audit, this.metrics, t, 'return', id, a.userId, ip, {});
     const row = await timed(this.metrics, 'returns.refund', { tenant: t }, () =>
       this.uow.run(t, async (tx) => {
         const ret = await this.repo.getForUpdate(tx, t, id);
@@ -168,8 +174,9 @@ export class ReturnService {
 
   private async page(tenantId: string, rows: Return[], limit: number) {
     const items = await this.withReasonCodes(tenantId, rows.map((r) => this.serialize(r.toProps())));
-    const last = items[items.length - 1];
-    const nextCursor = items.length === limit && last ? Buffer.from(`${(last as any).createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    const lastRow = rows[rows.length - 1]?.toProps();
+    // PC-56 HOTFIX-7 · B24: the µs keyset — the cursor carries the instant as the database printed it, never a JS Date (ms)
+    const nextCursor = rows.length === limit && lastRow?.createdAtUs ? encodeKeyset(lastRow.createdAtUs, lastRow.id) : null;
     return { items, nextCursor };
   }
   private serialize(p: ReturnType<Return['toProps']>, reasonCode?: string | null) {

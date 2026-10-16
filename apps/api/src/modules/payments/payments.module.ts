@@ -31,6 +31,8 @@ import { CommissionRuleRepository } from './repositories/commission-rule.reposit
 import { TaxRuleRepository } from './repositories/tax-rule.repository';
 import { SettlementPricingService } from './services/settlement-pricing.service';
 import { SettlementLineRepository } from './repositories/settlement-line.repository';
+import { SettlementFundingRepository } from './repositories/settlement-funding.repository';
+import { ResolutionMoneyService } from './services/resolution-money.service';
 import { SettlementStatementRepository } from './repositories/settlement-statement.repository';
 import { TradeInvoiceRepository } from './repositories/trade-invoice.repository';
 import { SettlementStatementService } from './services/settlement-statement.service';
@@ -119,6 +121,8 @@ import { AutopayController } from './controllers/v1/autopay.controller';
     TaxRuleRepository,
     SettlementPricingService,
     SettlementLineRepository,
+    ResolutionMoneyService,        // PC-56 HOTFIX-7 · D3: the dispute / return refund's money, one place (refund to source + clawback + remainder)
+    SettlementFundingRepository,   // PC-56 HOTFIX-7 · B1 / B3: escrow funding + the organisation's country (kv_app reads before any settlement leg)
     SettlementStatementRepository,
     TradeInvoiceRepository,
     SettlementStatementService,

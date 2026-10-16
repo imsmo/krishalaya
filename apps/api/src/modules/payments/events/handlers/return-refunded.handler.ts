@@ -33,32 +33,29 @@
 // unit of work (kv_app, RLS-bound to the event's tenant). The clawback, the refund legs, their amounts and keys, the settlement
 // line and the `payments.return_refunded` outbox row are unchanged and still commit atomically with the event on the relay tx.
 // No grant was added to kv_relay.
+//
+// PC-56 HOTFIX-7 · D3 (founder Q3) — THE BUYER'S LEG GOES BACK TO THE SOURCE, and the shared code TENANT-3b promised exists: the money runs
+// through ResolutionMoneyService (with the dispute handler) — the refund via PaymentService.refundForResolution (escrow −refund · source +refund
+// under `return-refund:<id>`, its own kv_app transaction), the clawback (`return-clawback:<id>`) and the kept remainder (`return-remainder:<id>`,
+// new) on the relay tx, priced in the ORGANISATION's country (B3 — the India literal is gone). The recorded amount is still re-read from the
+// event's figure and capped at the gross; a refund event with no figure is still refused loudly.
 import { Inject, Injectable } from '@nestjs/common';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../../core/outbox/outbox.writer';
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
-import { TxContext, UNIT_OF_WORK, UnitOfWork } from '../../../../core/database/unit-of-work';
-import { WALLET_SERVICE, WalletPort, LedgerLeg } from '../../../../core/wallet/wallet.port';
-import { platform, userMain, tenantCommission, PlatformAccount } from '../../../../core/wallet/account-codes';
+import { TxContext } from '../../../../core/database/unit-of-work';
 import { FlagsService } from '../../../../core/feature-flags/flags.service';
 import { Metrics, METRICS } from '../../../../core/observability/metrics';
 import { InfraError } from '../../../../shared/errors/app-error';
-import { PaymentRepository } from '../../repositories/payment.repository';
-import { SettlementLineRepository } from '../../repositories/settlement-line.repository';
-import { SettlementPricingService } from '../../services/settlement-pricing.service';
-import { BuyerCommissionPartialRefundError } from '../../domain/commission.errors';
+import { ResolutionMoneyService } from '../../services/resolution-money.service';
 
 @Injectable()
 export class ReturnRefundedHandler implements OutboxHandler {
   readonly eventType = 'disputes.return_refunded';
   constructor(
-    @Inject(WALLET_SERVICE) private readonly wallet: WalletPort,
     private readonly flags: FlagsService,
-    private readonly repo: PaymentRepository,
-    private readonly lines: SettlementLineRepository,
-    private readonly pricing: SettlementPricingService,
+    private readonly money: ResolutionMoneyService,
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
     @Inject(METRICS) private readonly metrics: Metrics,
-    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
   ) {}
 
   async handle(event: OutboxEvent, tx: TxContext): Promise<void> {
@@ -67,69 +64,19 @@ export class ReturnRefundedHandler implements OutboxHandler {
     const returnId = (p.returnId as string | undefined) ?? event.aggregateId;
     const orderId = p.orderId as string | undefined;
     if (!tenantId || !returnId || !orderId) return;
-    if (!(await this.flags.isEnabled('dispute_refunds', { tenantId }))) return;   // kill-switch (default OFF)
+    if (!(await this.flags.isEnabled('dispute_refunds', { tenantId }))) return;   // kill-switch (default OFF; HOTFIX-7 D2 also refuses upstream)
 
-    // HOTFIX-2: `payments` is read as kv_app (kv_relay holds no privilege on it); a captured payment is committed history
-    const payment = await this.uow.run(tenantId, (readTx) => this.repo.findSuccessByOrder(readTx, tenantId, orderId), { userId: 'system' });
-    if (!payment) return;                                  // COD / no escrowed payment → nothing to reverse
-    const gross = payment.amountMinor;
-    const buyer = payment.userId;
     const recorded = BigInt((p.refundAmountMinor as string) ?? '0');
     if (recorded <= 0n) {
       // The entity refuses to reach 'refunded' without an amount, so this can only be a replayed pre-0139 event.
       // Loud, not silent: a refund event with no figure must not be treated as "refund everything".
       throw new InfraError('RETURN_REFUND_NO_AMOUNT', 'return_refunded carried no recorded amount', { returnId, orderId });
     }
-    const refund = recorded > gross ? gross : recorded;     // never refund more than was paid
-    const remainder = gross - refund;                      // the seller keeps this (partial returns)
     const seller = (p.sellerUserId as string | undefined) ?? null;
-
-    // (1) if the order ALREADY settled, reverse the release leg-for-leg → escrow restored to `gross`.
-    const line = await this.lines.findByOrder(tx, tenantId, orderId);
-    if (line) {
-      if (line.statementId) throw new InfraError('RETURN_REFUND_AFTER_STATEMENT', 'order settled into a paid statement; needs manual clawback', { orderId, returnId });
-      const reversal: LedgerLeg[] = [
-        { account: userMain(line.sellerUserId), amountMinor: -line.netMinor },
-        { account: tenantCommission(tenantId), amountMinor: -line.tenantCommissionMinor },
-        { account: platform(PlatformAccount.GstPayable), amountMinor: -(line.gstMinor + (line.buyerCommissionGstMinor ?? 0n)) },   // SW-a: + GST on a buyer-paid commission
-        { account: platform(PlatformAccount.TdsPayable), amountMinor: -line.tdsMinor },
-        { account: platform(PlatformAccount.Fees), amountMinor: -line.platformFeesMinor },
-        { account: platform(PlatformAccount.Escrow), amountMinor: gross },
-      ].filter((l) => l.amountMinor !== 0n);
-      await this.wallet.post(tx, { tenantId, txnType: 'escrow_release', idempotencyKey: `return-clawback:${returnId}`, referenceType: 'return', referenceId: returnId, initiatedBy: 'system', legs: reversal });
-      await this.lines.deleteByOrder(tx, tenantId, orderId);
-    }
-
-    // (2) escrow now holds `gross`. Refund the buyer; re-settle the kept remainder to the seller.
-    const legs: LedgerLeg[] = [
-      { account: platform(PlatformAccount.Escrow), amountMinor: -gross },
-      { account: userMain(buyer), amountMinor: refund },
-    ];
-    if (remainder > 0n) {
-      // A partial return with no nameable seller is refused rather than parked in a platform account: money with no
-      // owner is the one outcome a ledger must never record (the dispute path's identical refusal).
-      if (!seller) throw new InfraError('RETURN_REFUND_NO_SELLER', 'cannot resolve the seller for the kept remainder', { returnId, orderId });
-      const split = await this.flags.isEnabled('commission_split', { tenantId });
-      if (split) {
-        // PC-56 TENANT-SW-a · A2: the kept remainder is priced from the ORDER's FROZEN rule (placement day), never a rule resolved now.
-        const frozen = await this.uow.run(tenantId, (r) => this.pricing.frozenForOrder(r, tenantId, orderId, { categoryId: (p.categoryId as string) ?? null, source: (p.source as string) ?? null }), { userId: 'system' });
-        if (frozen.snapshot.chargedTo === 'buyer') throw new BuyerCommissionPartialRefundError({ orderId, returnId });
-        const b = await this.uow.run(tenantId, (ruleTx) => this.pricing.quoteFrozen(ruleTx, { tenantId, grossMinor: remainder, snapshot: frozen.snapshot, categoryId: (p.categoryId as string) ?? null, countryCode: 'IN' }), { userId: 'system' });
-        legs.push(
-          { account: userMain(seller), amountMinor: b.sellerNetMinor },
-          { account: tenantCommission(tenantId), amountMinor: b.tenantCommissionMinor },
-          { account: platform(PlatformAccount.GstPayable), amountMinor: b.gstOnCommissionMinor },
-          { account: platform(PlatformAccount.TdsPayable), amountMinor: b.tdsMinor },
-          { account: platform(PlatformAccount.Fees), amountMinor: b.platformShareMinor },
-        );
-        await this.lines.insert(tx, { tenantId, sellerUserId: seller, orderId, grossMinor: remainder, commissionMinor: b.commissionMinor, gstMinor: b.gstOnCommissionMinor, tdsMinor: b.tdsMinor, netMinor: b.sellerNetMinor, tenantCommissionMinor: b.tenantCommissionMinor, platformFeesMinor: b.platformShareMinor });
-      } else {
-        legs.push({ account: userMain(seller), amountMinor: remainder });
-        await this.lines.insert(tx, { tenantId, sellerUserId: seller, orderId, grossMinor: remainder, commissionMinor: 0n, gstMinor: 0n, tdsMinor: 0n, netMinor: remainder, tenantCommissionMinor: 0n, platformFeesMinor: 0n });
-      }
-    }
-    const res = await this.wallet.post(tx, { tenantId, txnType: 'refund', idempotencyKey: `return-refund:${returnId}`, referenceType: 'return', referenceId: returnId, initiatedBy: 'system', legs: legs.filter((l) => l.amountMinor !== 0n) });
-    if (!res.alreadyApplied) this.metrics.inc('payments.return_refund', { tenant: tenantId });
-    await this.outbox.write(tx, { tenantId, aggregateType: 'return', aggregateId: returnId, eventType: 'payments.return_refunded', payload: { v: 1, returnId, orderId, txnId: res.txnId, refundedMinor: refund.toString(), remainderMinor: remainder.toString() } });
+    const res = await this.money.apply(tx, { kind: 'return', referenceId: returnId, tenantId, orderId, payload: p, requested: recorded, resolveSeller: () => seller });
+    if (res.outcome === 'unpaid' || res.outcome === 'nothing') return;           // COD / no escrowed payment → nothing to reverse
+    if (res.refundBookedNow) this.metrics.inc('payments.return_refund', { tenant: tenantId });
+    await this.outbox.write(tx, { tenantId, aggregateType: 'return', aggregateId: returnId, eventType: 'payments.return_refunded',
+      payload: { v: 1, returnId, orderId, txnId: res.refundTxnId, refundedMinor: res.refundMinor.toString(), remainderMinor: res.remainderMinor.toString(), remainderTxnId: res.remainderTxnId } });
   }
 }

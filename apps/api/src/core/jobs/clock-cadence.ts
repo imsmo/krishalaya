@@ -11,11 +11,20 @@
 //   offers-expire             every 5 min   an offer's expires_at (72 h default) is late by at most one tick
 //   group-lots-deadline       every 15 min  PC-56 STORE-3c · B8 (founder D3): an unfilled `pledging` group lot past its pledge_deadline is
 //                                           cancelled (`target_missed`) — no money moves; a lot closes at most one tick late
+//   dispute-seller-response-timeout  every 15 min  PC-56 HOTFIX-7 · B23 (survey STORE-5 C-6 / F-10): a dispute still `open` past its
+//                                           `seller_respond_by` (raised + 48 h) moves to `under_review` (a moderator picks it up) and emits
+//                                           `disputes.dispute_under_review` — no money moves, no notice is sent (nothing maps the event to a
+//                                           template); the 48 h window is late by at most one tick
+//   dispute-sla-escalation    every 60 min  PC-56 HOTFIX-7 · B23: an active dispute (open / seller_responded / under_review) past its `sla_due_at`
+//                                           (raised + 7 d) moves to `escalated` and emits `disputes.dispute_escalated` (the support module opens a
+//                                           P1 ticket, idempotent per dispute) — no money moves, no notice; the 7-day SLA is late by at most an hour
 export const CLOCK_CADENCE_MS = Object.freeze({
   'seller-confirm-timeout': 5 * 60_000,
   'quality-window-complete': 15 * 60_000,
   'offers-expire': 5 * 60_000,
   'group-lots-deadline': 15 * 60_000,
+  'dispute-seller-response-timeout': 15 * 60_000,
+  'dispute-sla-escalation': 60 * 60_000,
 } as const);
 
 export type ClockName = keyof typeof CLOCK_CADENCE_MS;

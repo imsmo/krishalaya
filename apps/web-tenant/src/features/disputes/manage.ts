@@ -74,3 +74,14 @@ export function buildResolve(raw: { resolutionType?: string; amountMajor?: strin
   }
   return { ok: true, value: { resolutionType, note } };
 }
+
+/** PC-56 HOTFIX-7 · D2 / D4 — a moderation act's refusal, BY NAME, for the page's `?error=` key: the money switch is off (409
+ *  DISPUTE_REFUNDS_OFF — no "refunded" without money), the caller may not decide (403 — buyer-raised disputes are the platform support desk's,
+ *  not the organisation's), an illegal hop (any other 409), else the act's own generic key. */
+export function moderationErrorKey(e: { code?: string; status?: number } | null | undefined, fallback: string): string {
+  if (!e) return fallback;
+  if (e.code === 'DISPUTE_REFUNDS_OFF') return 'refundsOff';
+  if (e.status === 403) return 'forbidden';
+  if (e.status === 409) return 'illegal';
+  return fallback;
+}

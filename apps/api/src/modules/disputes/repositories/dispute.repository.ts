@@ -7,17 +7,18 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Dispute } from '../domain/dispute.entity';
 import { DisputeStatus } from '../domain/dispute.state';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 
 const COLS = `id, tenant_id, order_id, raised_by, against_user, reason_id, description, status, seller_respond_by,
   ai_triage, resolution_type, resolution_amount_minor, resolution_txn_id, resolved_by, resolved_at, sla_due_at, created_at,
-  disputed_amount_minor, disputed_quantity`;
+  disputed_amount_minor, disputed_quantity, ${US_SQL('created_at')} AS created_us`;
 const big = (v: any) => (v == null ? null : BigInt(v));
 function toDomain(r: any): Dispute {
   return Dispute.rehydrate({
     id: r.id, tenantId: r.tenant_id, orderId: r.order_id, raisedBy: r.raised_by, againstUser: r.against_user, reasonId: r.reason_id,
     description: r.description, status: r.status as DisputeStatus, sellerRespondBy: r.seller_respond_by, aiTriage: r.ai_triage,
     resolutionType: r.resolution_type, resolutionAmountMinor: big(r.resolution_amount_minor), resolutionTxnId: r.resolution_txn_id,
-    resolvedBy: r.resolved_by, resolvedAt: r.resolved_at, slaDueAt: r.sla_due_at, createdAt: r.created_at,
+    resolvedBy: r.resolved_by, resolvedAt: r.resolved_at, slaDueAt: r.sla_due_at, createdAt: r.created_at, createdAtUs: r.created_us ?? null,
     disputedAmountMinor: big(r.disputed_amount_minor),
     // numeric(14,3) arrives as a string from pg and STAYS one — parsing it to a float is how 2.500 qtl becomes
     // 2.4999999999999996 in a document a farmer reads.
@@ -112,7 +113,7 @@ export class DisputeRepository {
     if (q.raisedBy) where += ` AND raised_by=${p(q.raisedBy)}`;
     if (q.againstUser) where += ` AND against_user=${p(q.againstUser)}`;
     if (q.status) where += ` AND status=${p(q.status)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at, id) < (${cc}::timestamptz, ${ci}::uuid)`; }   // PC-56 HOTFIX-7 · B24: the µs keyset
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM disputes WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);

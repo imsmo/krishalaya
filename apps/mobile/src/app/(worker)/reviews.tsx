@@ -50,7 +50,7 @@ export default function WorkerReviews() {
       ) : (
         <FlatList
           data={shown}
-          keyExtractor={(r) => r.id}
+          keyExtractor={(r, i) => r.id ?? `review-${i}`}   // PC-56 HOTFIX-7 · B5: a public review row may carry no id (the organisation-keyed list)
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.primary600} />}
           ListHeaderComponent={
             <View style={{ gap: space[3] }}>

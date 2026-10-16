@@ -16,6 +16,7 @@ import { TraceLotRepository } from '../repositories/trace-lot.repository';
 import { TraceEventRepository } from '../repositories/trace-event.repository';
 import { CreateTraceLotDto } from '../dto/create-trace-lot.dto';
 import { TraceLotNotFoundError, TraceForbiddenError } from '../domain/traceability.errors';
+import { encodeKeyset } from '../../../shared/pagination/us-keyset';
 
 export interface TraceActor { userId: string; canManage: boolean; }
 const qrToken = () => randomBytes(15).toString('base64url').slice(0, 20).toUpperCase();   // unguessable, ≤40 chars
@@ -82,16 +83,18 @@ export class TraceLotService {
     await this.getById(tenantId, actor, lotId);   // ownership gate (throws 404)
     const rows = await this.eventsRepo.listForLot(tenantId, lotId, q);
     const items = rows.map((e) => e.toJSON());
-    const last = items[items.length - 1] as any;
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.at?.toISOString?.() ?? last.at}|${last.eventHash}`).toString('base64') : null;
+    // PC-56 HOTFIX-7 · F-13 / B24: the cursor is (created_at µs, the event's bigserial id) — it used to carry the event HASH, which the repository
+    // compared to the bigint id (page 2 errored)
+    const last = rows[rows.length - 1]?.toProps();
+    const nextCursor = rows.length === q.limit && last?.createdAtUs && last.id ? encodeKeyset(last.createdAtUs, last.id) : null;
     return { items, nextCursor };
   }
   async list(tenantId: string, actor: TraceActor, q: { box: 'mine' | 'all'; listingId?: string; cursor?: { c: string; id: string }; limit: number }) {
     if (q.box === 'all' && !actor.canManage) throw new TraceForbiddenError('requires trace.manage');
     const rows = await this.lots.listFor(tenantId, { box: q.box, farmerUserId: q.box === 'mine' ? actor.userId : undefined, listingId: q.listingId, cursor: q.cursor, limit: q.limit });
     const items = rows.map((l) => l.toJSON());
-    const last = items[items.length - 1] as any;
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    const last = rows[rows.length - 1]?.toProps();
+    const nextCursor = rows.length === q.limit && last?.createdAtUs ? encodeKeyset(last.createdAtUs, last.id) : null;   // PC-56 HOTFIX-7 · B24: the µs keyset
     return { items, nextCursor };
   }
   private async flush(tx: TxContext, tenantId: string, id: string, evts: DomainEvent[]): Promise<void> {

@@ -15,9 +15,13 @@ export const QueryReviewsSchema = z.object({
 }).strict();
 export type QueryReviewsDto = z.infer<typeof QueryReviewsSchema>;
 
+// PC-56 HOTFIX-7 · B5: the PUBLIC reads are keyed by the ORGANISATION (`targetType=organisation`, no id — the tenant in context). `seller` and
+// `buyer` stay in the enum only to be REFUSED BY NAME (REVIEW_PUBLIC_SELLER_REFUSED / REVIEW_PUBLIC_BUYER_REFUSED, 422) rather than as an
+// anonymous validation error; `targetId` is accepted and ignored for them (a mobile caller still sends one — named for the mobile wave).
+export const PUBLIC_REVIEW_TARGETS = ['organisation', 'seller', 'buyer'] as const;
 export const ReviewSummaryQuerySchema = z.object({
-  targetType: z.enum(['seller', 'buyer'] as [ReviewTargetType, ReviewTargetType]),
-  targetId: z.string().uuid(),
+  targetType: z.enum(PUBLIC_REVIEW_TARGETS),
+  targetId: z.string().uuid().optional(),
 }).strict();
 export type ReviewSummaryQueryDto = z.infer<typeof ReviewSummaryQuerySchema>;
 
@@ -25,8 +29,8 @@ export type ReviewSummaryQueryDto = z.infer<typeof ReviewSummaryQuerySchema>;
 // The projection carries NO buyer PII (no reviewer id) — only the rating, body, verified-purchase flag and the
 // seller's public response.
 export const PublicReviewsQuerySchema = z.object({
-  targetType: z.enum(['seller', 'buyer'] as [ReviewTargetType, ReviewTargetType]),
-  targetId: z.string().uuid(),
+  targetType: z.enum(PUBLIC_REVIEW_TARGETS),
+  targetId: z.string().uuid().optional(),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 }).strict();

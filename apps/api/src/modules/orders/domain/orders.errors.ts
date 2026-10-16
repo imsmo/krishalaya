@@ -92,7 +92,9 @@ export class CancelNoteRequiredError extends DomainError {
 /** D6 (Law 9 — HOTFIX-5 Q1 is still open): the BUYER's "I received it" completes — and so releases escrow to the organisation — ONLY an order
  *  whose money reached escrow by an online capture (placed `payment_pending`; `QUALITY_WINDOW_REQUIRES_ONLINE_PAYMENT`, the clock's one
  *  switch). A pay-on-delivery order is refused BY NAME and nothing moves: its settlement would credit the seller from an escrow that never
- *  held the money (HOTFIX-5's live probe). The organisation (or a moderator) completes such an order. */
+ *  held the money (HOTFIX-5's live probe). The organisation (or a moderator) completes such an order.
+ *  PC-56 HOTFIX-7 · D1: RETIRED FOR THE BUYER'S PATH — no route throws it any more (completion is always allowed; settlement fails closed:
+ *  `OrderSettlementService.settle` → `skipped_unfunded`). Kept so a client that still maps the code (the 3a storefront refusal) compiles. */
 export class OrderCompleteRequiresEscrowError extends DomainError {
   constructor(id: string) { super('ORDER_COMPLETE_REQUIRES_ESCROW', `Order ${id} was not paid into escrow; the organisation completes it`, 409, { orderId: id }); }
 }

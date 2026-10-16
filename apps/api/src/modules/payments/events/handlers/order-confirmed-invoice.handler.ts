@@ -48,7 +48,7 @@ export class OrderConfirmedInvoiceHandler implements OutboxHandler {
       platformFeeMinor: big(p.platformFeeMinor),
       deliveryAddressId: (p.deliveryAddressId as string) ?? null,
       categoryId: (p.categoryId as string) ?? null,
-      countryCode: (p.countryCode as string) ?? 'IN',
+      countryCode: (p.countryCode as string) ?? undefined,   // PC-56 HOTFIX-7 · B3: absent → the service reads the organisation's
     }), { userId: 'system' });
   }
 }

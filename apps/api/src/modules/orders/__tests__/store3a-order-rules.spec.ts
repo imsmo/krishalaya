@@ -58,6 +58,8 @@ function world(order: Order, placedAwaitingPayment = false) {
     update: jest.fn(async (_tx: unknown, o: Order) => { updates.push(o); return true; }),
     cancelReasonTx: jest.fn(async (_tx: unknown, _t: string, id: string) => REASONS[id] ?? null),
     placedAwaitingPaymentTx: jest.fn(async () => placedAwaitingPayment),
+    // PC-56 HOTFIX-7 · B3: the organisation's country, read in the completing transaction and carried in `orders.order_completed`
+    tenantCountryTx: jest.fn(async () => 'IN'),
   };
   const svc = new OrderService(
     { run: async (_t: string, fn: (tx: unknown) => Promise<unknown>) => fn({}) } as never,
@@ -111,18 +113,25 @@ describe('STORE-3a · B2 the buyer\'s cancel needs a reason (founder D1 / D5)', 
   });
 });
 
-describe('STORE-3a · B5 the buyer\'s "I received it" is FAIL-CLOSED on an unfunded escrow (lead\'s D6, Law 9)', () => {
+// PC-56 HOTFIX-7 · B1 (founder D1 — HOTFIX-5 Q1 closed): the pin CHANGES. Completion is ALWAYS allowed (the buyer's "I received it" on a
+// pay-on-delivery order completes); SETTLEMENT is what fails closed — payments' OrderSettlementService.settle finds no captured payment and
+// releases nothing (`skipped_unfunded`; proven in hotfix7-settlement.spec.ts and live in store5-hotfix7-money-trace). The completion event
+// carries the organisation's country (B3); the audit records whether an online capture was placed (`escrowFunded`, a fact, not a gate).
+describe('STORE-3a · B5 the buyer\'s "I received it" (HOTFIX-7: completion always allowed; settlement fails closed)', () => {
   const delivered = (requiresPayment: boolean) => {
     const o = place(requiresPayment);
     if (requiresPayment) o.markPaid(); else o.confirm(SELLER);
     o.markPacked(SELLER); o.markReady(SELLER); o.markDelivered(SELLER);
     return o;
   };
-  it('a pay-on-delivery order: ORDER_COMPLETE_REQUIRES_ESCROW, nothing written, no `orders.order_completed` (so no settlement)', async () => {
+  it('a pay-on-delivery order: the buyer completes it (HOTFIX-7) — ONE `orders.order_completed` with the country; the audit says escrow was not funded', async () => {
     const o = delivered(false); const w = world(o, false);
-    expect(await codeOf(w.svc.complete(T, buyer, 'o', null))).toBe('ORDER_COMPLETE_REQUIRES_ESCROW');
-    expect(o.status).toBe('delivered');
-    expect([w.updates.length, w.outbox.length, w.audits.length]).toEqual([0, 0, 0]);
+    expect(await codeOf(w.svc.complete(T, buyer, 'o', null))).toBe('OK');
+    expect(o.status).toBe('completed');
+    const done = w.outbox.filter((e) => e.eventType === 'orders.order_completed');
+    expect(done).toHaveLength(1);
+    expect(done[0].payload).toMatchObject({ countryCode: 'IN', totalMinor: expect.any(String) });
+    expect(w.audits[0]).toMatchObject({ action: 'order.completed', newValue: { status: 'completed', by: 'buyer', escrowFunded: false } });
   });
   it('an order paid online into escrow completes — the settlement event is emitted once', async () => {
     const o = delivered(true); const w = world(o, true);
@@ -131,10 +140,10 @@ describe('STORE-3a · B5 the buyer\'s "I received it" is FAIL-CLOSED on an unfun
     expect(w.outbox.filter((e) => e.eventType === 'orders.order_completed')).toHaveLength(1);
     expect(w.audits[0]).toMatchObject({ action: 'order.completed', newValue: { status: 'completed', by: 'buyer', escrowFunded: true } });
   });
-  it('a moderator\'s completion is not gated (named in §9 as the remaining door); the seller may not complete at all', async () => {
+  it('a moderator (the platform support desk since 0217) completes too — settlement decides the money; the seller may not complete at all', async () => {
     const o = delivered(false); const w = world(o, false);
     expect(await codeOf(w.svc.complete(T, { userId: 'mod', canModerate: true }, 'o', null))).toBe('OK');
-    expect(w.repo.placedAwaitingPaymentTx).not.toHaveBeenCalled();
+    expect(w.audits[0]).toMatchObject({ newValue: { by: 'moderator', escrowFunded: false } });
     const w2 = world(delivered(false), false);
     expect(await codeOf(w2.svc.complete(T, seller, 'o', null))).toBe('ORDER_FORBIDDEN');
   });

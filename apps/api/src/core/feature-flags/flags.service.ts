@@ -115,6 +115,14 @@ export class FlagsService {
     });
   }
 
+  /** PC-56 HOTFIX-7 · B25: is the flag OFF FOR EVERYONE (unknown, or its kill-switch `is_enabled = false`)? A tenantless read that does not
+   *  apply the rollout — the anonymous trace scan asks it BEFORE reading a row, then asks `isEnabled(key, { tenantId })` for the lot's
+   *  organisation (a per-tenant allow-list with rollout 0 would read OFF to a tenantless `isEnabled`). */
+  async isKillSwitched(key: string): Promise<boolean> {
+    const flag = await this.load(key);
+    return !flag || !flag.is_enabled;
+  }
+
   private async load(key: string): Promise<FlagRow | null> {
     try {
       const row = await this.cache.wrap(`flag:${key}`, TTL, async () => {

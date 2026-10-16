@@ -123,14 +123,16 @@ async function fundEscrow(w: World, orderId: string, total: bigint): Promise<voi
   await w.uow.run(w.tenant, (tx) => w.wallet.post(tx, { tenantId: w.tenant, txnType: 'order_payment', idempotencyKey: `gate-fund:${orderId}`, initiatedBy: 'system',
     legs: [{ account: platform(PlatformAccount.Escrow), amountMinor: total }, { account: platform(PlatformAccount.Gateway), amountMinor: -total }] }), { userId: 'system' });
 }
-/** A captured gateway payment row for an order (what a dispute/return refund reverses). */
+/** A captured gateway payment row for an order (what a dispute/return refund reverses).
+ *  PC-56 HOTFIX-7: + the gateway payment id — a dispute / return refund now goes BACK TO THE SOURCE (PaymentService.refundForResolution asks
+ *  the sandbox gateway to refund against it); and a settlement now needs the order's escrow FUNDED (a captured payment, founder D1). */
 async function makePayment(w: World, orderId: string, amount: bigint): Promise<string> {
   const id = randomUUID();
   await w.admin.query(
-    `INSERT INTO payments (id, tenant_id, user_id, purpose_id, reference_type, reference_id, amount_minor, currency_code, status, provider_code, idempotency_key)
-     SELECT $1, $2, $3, lv.id, 'order', $4, $5, 'INR', 'success', 'sandbox', $6 FROM lookup_values lv
+    `INSERT INTO payments (id, tenant_id, user_id, purpose_id, reference_type, reference_id, amount_minor, currency_code, status, provider_code, idempotency_key, gateway_payment_id)
+     SELECT $1, $2, $3, lv.id, 'order', $4, $5, 'INR', 'success', 'sandbox', $6, $7 FROM lookup_values lv
       WHERE lv.type_code='payment_purpose' AND lv.tenant_id IS NULL ORDER BY (lv.code='order') DESC, lv.id LIMIT 1`,
-    [id, w.tenant, w.buyer, orderId, amount.toString(), `gate-pay-${id}`]);
+    [id, w.tenant, w.buyer, orderId, amount.toString(), `gate-pay-${id}`, `pay_gate_${id.slice(-12)}`]);
   return id;
 }
 const orderPayload = (w: World, orderId: string, extra: Record<string, unknown> = {}) => ({
@@ -173,6 +175,7 @@ const CASES: Record<string, Case> = {
     build: async (w) => {
       const orderId = await makeOrder(w, 'completed');
       await fundEscrow(w, orderId, 452000n);
+      await makePayment(w, orderId, 452000n);   // PC-56 HOTFIX-7 · D1: the funding read (kv_app) finds a captured payment — else nothing settles
       return { aggregateType: 'order', aggregateId: orderId, payload: orderPayload(w, orderId),
         verify: async () => {
           expect(await count(w, `SELECT count(*) n FROM ledger_transactions WHERE idempotency_key=$1`, [`settle:${orderId}`])).toBe(1);
@@ -189,6 +192,7 @@ const CASES: Record<string, Case> = {
     build: async (w) => {
       const orderId = await makeOrder(w, 'completed');
       await fundEscrow(w, orderId, 452000n);
+      await makePayment(w, orderId, 452000n);   // PC-56 HOTFIX-7 · D1: funded
       // the completion met an open POD hold (deferred, nothing settled); the hold has since been released
       const holdId = randomUUID();
       await w.admin.query(`INSERT INTO settlement_holds (tenant_id, order_id, reason, source_id, released_at, release_note) VALUES ($1,$2,'pod_review',$3, now(), 'POD approved on review')`, [w.tenant, orderId, holdId]);
@@ -969,6 +973,7 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
     expect(full.handlersFor('orders.order_completed').length).toBeGreaterThanOrEqual(7);
     const orderId = await makeOrder(w, 'completed');
     await fundEscrow(w, orderId, 452000n);
+    await makePayment(w, orderId, 452000n);   // PC-56 HOTFIX-7 · D1: funded
     const b: Built = { aggregateType: 'order', aggregateId: orderId, payload: orderPayload(w, orderId) };
     const out = await relay(full, 'orders.order_completed', b);
     expect(out.status === 'failed' ? describeErr(out.error) : out.status).toBe('published');

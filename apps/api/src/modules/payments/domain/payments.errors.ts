@@ -1,5 +1,5 @@
 // modules/payments/domain/payments.errors.ts · typed errors with stable codes.
-import { AppError, DomainError, NotFoundError } from '../../../shared/errors/app-error';
+import { AppError, DomainError, InfraError, NotFoundError } from '../../../shared/errors/app-error';
 
 export class PaymentNotFoundError extends NotFoundError {
   constructor(id: string) { super('Payment not found'); (this as any).details = { id }; }
@@ -148,5 +148,26 @@ export class RefundGatewayReferenceMissingError extends DomainError {
 export class ChargeMethodUnsupportedError extends DomainError {
   constructor(chargeCode: string, method: string) {
     super('CHARGE_METHOD_UNSUPPORTED', `The charge '${chargeCode}' uses '${method}', which cannot be priced yet`, 422, { chargeCode, method, supported: ['flat', 'percent', 'slab', 'per_unit'] });
+  }
+}
+
+// ---- PC-56 HOTFIX-7 (founder D1 / D3, Rule Zero) ----
+/** B3: the organisation's tax country could not be established (the completion payload carried none and `tenants.country_code` returned no
+ *  two-letter code). Settlement and the dispute / return remainder are NEVER priced with a default country — refused loudly; the relay retries
+ *  and, failing that, quarantines the event (no leg was posted: the refusal comes before any). */
+export class SettlementCountryUnknownError extends InfraError {
+  constructor(tenantId: string, where: string) { super('SETTLEMENT_COUNTRY_UNKNOWN', 'The organisation\'s country is not recorded — nothing is priced with a guessed one', { tenantId, where }); }
+}
+/** D3: another refund on this payment is still waiting for the gateway (`refund_initiated`) — a second refund cannot be booked until it is
+ *  answered (the payment row holds one pending refund at a time). The relay retries; nothing was booked for this one. */
+export class PaymentRefundInFlightError extends InfraError {
+  constructor(paymentId: string, referenceType: string, referenceId: string) { super('PAYMENT_REFUND_IN_FLIGHT', 'Another refund on this payment is awaiting the gateway', { paymentId, referenceType, referenceId }); }
+}
+/** D3: a resolution refund larger than what is still refundable on the captured payment (another refund — the money desk's, an earlier
+ *  resolution's — already returned part of it). Refused loudly rather than capped silently: the remainder arithmetic downstream assumes the
+ *  whole gross is still in escrow, so the case is the money desk's. */
+export class ResolutionRefundExceedsRefundableError extends InfraError {
+  constructor(paymentId: string, amountMinor: bigint, refundableMinor: bigint) {
+    super('RESOLUTION_REFUND_EXCEEDS_REFUNDABLE', 'The refund is larger than what is still refundable on this payment', { paymentId, amountMinor: amountMinor.toString(), refundableMinor: refundableMinor.toString() });
   }
 }

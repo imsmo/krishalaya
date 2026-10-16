@@ -22,7 +22,7 @@
 import { composeOrderSettlement } from '../../payments/services/order-settlement.service';
 import { randomUUID } from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
-import { makeTenant, makeUser, ensureUnitCurrency } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser, ensureUnitCurrency, makeCapturedPayment } from '../../../../test/helpers/fixtures';
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
 import { ShardRouter } from '../../../core/sharding/shard-router';
@@ -208,6 +208,9 @@ run('PC-56 TENANT-10b · promotion money — the tenant wallet funds the discoun
 
   it('A2 · settlement AS kv_relay pays the seller the FULL goods value and empties the Hold; a replay moves nothing', async () => {
     const before = await userBal(seller);
+    // PC-56 HOTFIX-7 · D1: the escrow leg is released only for an order whose escrow was FUNDED — order1's online capture is recorded here
+    // (a pay-on-delivery order settles nothing from escrow; its top-up still runs — payments/__tests__/hotfix7-settlement.spec.ts)
+    await makeCapturedPayment(admin, { tenantId: tenantA, buyerUserId: (await admin.query(`SELECT buyer_user_id b FROM orders WHERE id=$1`, [order1])).rows[0].b, orderId: order1, amountMinor: 90000n });
     await asRelay(tenantA, (tx) => settle.handle(completed(order1, '90000', seller), tx));
     expect((await userBal(seller)) - before).toBe(100000n);                                   // 90000 escrow (unchanged leg) + 10000 top-up
     expect(await tenantBal(tenantA, 'hold')).toBe(0n);
@@ -288,7 +291,9 @@ run('PC-56 TENANT-10b · promotion money — the tenant wallet funds the discoun
     expect(await tenantBal(tenantA, 'main')).toBe(mainBefore);
     const sellerBefore = await userBal(seller);
     await asRelay(tenantA, (tx) => settle.handle(completed(oid, '90000', seller), tx));      // a (wrong) settlement after cancel pays no top-up
-    expect((await userBal(seller)) - sellerBefore).toBe(90000n);
+    // PC-56 HOTFIX-7 · D1: …and, the order never having been paid, releases NOTHING from escrow either (it used to pay the seller 90,000 from an
+    // escrow nobody funded — the HOTFIX-5 P0 class)
+    expect((await userBal(seller)) - sellerBefore).toBe(0n);
     expect(await tenantBal(tenantA, 'hold')).toBe(holdBefore);
     expect(await coupons.validate(tenantA, buyer4, CODE, SUBTOTAL)).toMatchObject({ applied: true });   // a released use no longer counts
   }, 60000);

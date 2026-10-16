@@ -383,6 +383,15 @@ export class OrderRepository {
    */
   /** PC-56 HOTFIX-5 · B1: was this order PLACED awaiting an online payment (its placement event went to `payment_pending`)? With a status past
    *  `payment_pending` that means the capture confirmed it — the money is in escrow (HOTFIX-4's `paid`). Read in the caller's tx. */
+  /** PC-56 HOTFIX-7 · B3 (Rule Zero): the ORGANISATION's country (`tenants.country_code`, NOT NULL since 0002), read in the completing transaction
+   *  — the request tier's kv_app or the relay's kv_relay (both hold SELECT on tenants) — and carried in `orders.order_completed` so settlement
+   *  prices tax in it. Null only when no two-letter code is found (the settlement then reads the row itself and refuses by name). */
+  async tenantCountryTx(tx: TxContext, tenantId: string): Promise<string | null> {
+    const r = await tx.query<{ c: string | null }>(`SELECT btrim(country_code) AS c FROM tenants WHERE id = $1`, [tenantId]);
+    const c = r.rows[0]?.c ?? null;
+    return c && /^[A-Z]{2}$/.test(c) ? c : null;
+  }
+
   async placedAwaitingPaymentTx(tx: TxContext, tenantId: string, orderId: string): Promise<boolean> {
     const r = await tx.query<{ to_status: OrderStatus }>(
       `SELECT to_status FROM order_events WHERE tenant_id=$1 AND order_id=$2 AND created_at >= uuid_v7_time($2) - interval '5 seconds' AND from_status IS NULL

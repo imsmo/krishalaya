@@ -187,7 +187,8 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
     // PC-56 STORE-2b: + storefront_cart (buying's kill-switch, platform-scoped)
     // PC-56 STORE-3a · B6 (founder D2): + disputes (tenant-scoped, fail-closed — the order page's dispute door)
     // PC-56 STORE-4c · B1 (founder Q12): + communication (tenant-scoped, fail-closed — the headers' Messages link)
-    expect(Object.keys(store.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'communication', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart']);
+    // PC-56 HOTFIX-7 · B25: + `traceability` (tenant-scoped, 12 keys)
+    expect(Object.keys(store.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'communication', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart', 'traceability']);
     expect(typeof store.body.data.group_lots).toBe('boolean');
     for (const b of [platform.body, store.body]) expect(JSON.stringify(b)).not.toMatch(/rollout|tenant_ids|rules|pct/);
   });

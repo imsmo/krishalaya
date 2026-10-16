@@ -360,6 +360,7 @@ export const en: Messages = {
 
   'disputes.title': 'Disputes',
   'disputes.rating': 'Your rating',
+  'disputes.ratingOrganisation': 'Your organisation\'s rating',
   'disputes.ratingValue': '{stars} ★ average · {count} reviews',
   'disputes.ratingNone': 'No reviews yet.',
   'disputes.queue': 'Dispute queue',
@@ -425,6 +426,9 @@ export const en: Messages = {
   'disputeDetail.error.type': 'Please choose a decision.',
   'disputeDetail.error.amount': 'Please enter a valid amount (required for a partial refund).',
   'disputeDetail.error.illegal': 'That action isn’t allowed for this dispute’s current status. Reload and try again.',
+  'disputeDetail.error.refundsOff': 'Refunds are switched off for this organisation, so a refund cannot be decided. Nothing changed.',
+  'disputeDetail.error.forbidden': 'Only the platform support desk can decide this dispute. Nothing changed.',
+  'disputeDetail.platformDecides': 'Buyers\' disputes are decided by the platform support desk. You can read the dispute, respond as the seller and add evidence below.',
 
   'notif.title': 'Notifications',
   'notif.managePrefs': 'Preferences',

@@ -5,11 +5,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { TraceLot } from '../domain/trace-lot.entity';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 
-const COLS = `id, tenant_id, listing_id, qr_token, farmer_user_id, parcel_id, crop_season_id, declared_inputs, certificate_ids, blockchain_anchor, created_at`;
+const COLS = `id, tenant_id, listing_id, qr_token, farmer_user_id, parcel_id, crop_season_id, declared_inputs, certificate_ids, blockchain_anchor, created_at, ${US_SQL('created_at')} AS created_us`;
 function toDomain(r: any): TraceLot {
   return TraceLot.rehydrate({ id: r.id, tenantId: r.tenant_id, listingId: r.listing_id, qrToken: r.qr_token, farmerUserId: r.farmer_user_id, parcelId: r.parcel_id,
-    cropSeasonId: r.crop_season_id, declaredInputs: (r.declared_inputs ?? []) as unknown[], certificateIds: (r.certificate_ids ?? []) as unknown[], blockchainAnchor: r.blockchain_anchor, createdAt: r.created_at });
+    cropSeasonId: r.crop_season_id, declaredInputs: (r.declared_inputs ?? []) as unknown[], certificateIds: (r.certificate_ids ?? []) as unknown[], blockchainAnchor: r.blockchain_anchor, createdAt: r.created_at, createdAtUs: r.created_us ?? null });
 }
 export interface LotListQuery { box: 'mine' | 'all'; farmerUserId?: string; listingId?: string; cursor?: { c: string; id: string }; limit: number; }
 
@@ -44,14 +45,16 @@ export class TraceLotRepository {
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.box === 'mine' && q.farmerUserId) where += ` AND farmer_user_id=${p(q.farmerUserId)}`;
     if (q.listingId) where += ` AND listing_id=${p(q.listingId)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
+    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at, id) < (${cc}::timestamptz, ${ci}::uuid)`; }   // PC-56 HOTFIX-7 · B24: the µs keyset
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM trace_lots WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
   }
-  /** PUBLIC scan — RLS-bypassing SECURITY DEFINER projection (no tenant_id / PII). qr_token is the capability. */
+  /** PUBLIC scan — PC-56 HOTFIX-7 · B10 / B25: the SECURITY DEFINER `trace_scan_v2` (migration 0217): NULL unless the lot's organisation is
+   *  publicly live; meta keys allow-listed per step; the organisation's display name; `tenantId` for the per-tenant flag (the service strips it).
+   *  0028's `trace_scan` is no longer called. qr_token is the capability. */
   async scan(tx: TxContext, qrToken: string): Promise<Record<string, unknown> | null> {
-    const r = await tx.query(`SELECT trace_scan($1) AS provenance`, [qrToken]);
+    const r = await tx.query(`SELECT trace_scan_v2($1) AS provenance`, [qrToken]);
     return r.rows[0]?.provenance ?? null;
   }
 }

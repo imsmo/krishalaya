@@ -47,6 +47,9 @@ const QUALITY_WINDOW_MS = 24 * 3600_000;
  *  types it. */
 export const QUALITY_WINDOW_HOURS = QUALITY_WINDOW_MS / 3_600_000;
 
+/** PC-56 HOTFIX-7 · B3: what the completer knows that the order row does not — the organisation's country for the settlement's tax. */
+export interface CompletionContext { countryCode?: string | null }
+
 export class Order {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: OrderProps) {}
@@ -107,8 +110,11 @@ export class Order {
 
   /** What settlement needs, travelling in the event (Law 11). PC-56 TENANT-SW-a: + the buyer-charged commission and the frozen
    *  commission snapshot (settlement re-reads the ORDER's snapshot as the source of truth; the payload copy is for consumers). */
-  private completionPayload(): Record<string, unknown> {
+  //  PC-56 HOTFIX-7 · B3 (Rule Zero): + `countryCode` — the ORGANISATION's (tenants.country_code), read by the caller at completion time so the
+  //  settlement prices tax in it (payments reads the payload first, then the tenant row; never a default). Absent when the caller had none.
+  private completionPayload(ctx: CompletionContext = {}): Record<string, unknown> {
     return { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId, totalMinor: this.props.totalMinor.toString(),
+      ...(ctx.countryCode ? { countryCode: ctx.countryCode } : {}),
       deliveryFeeMinor: this.props.deliveryFeeMinor.toString(), platformFeeMinor: this.props.platformFeeMinor.toString(),
       buyerCommissionMinor: (this.props.buyerCommissionMinor ?? 0n).toString(), currencyCode: this.props.currencyCode, source: this.props.source,
       placedAt: this.props.createdAt instanceof Date ? this.props.createdAt.toISOString() : String(this.props.createdAt),
@@ -151,10 +157,10 @@ export class Order {
     this.to('delivered', OrderEventType.Delivered, { buyerUserId: this.props.buyerUserId, sellerUserId: this.props.sellerUserId }, by);
     this.props.qualityWindowEnds = new Date(now.getTime() + QUALITY_WINDOW_MS);
   }
-  complete(now: Date = new Date()): void {
+  complete(now: Date = new Date(), ctx: CompletionContext = {}): void {
     // carry seller + amount so the payments module can settle escrow→seller without reading orders'
     // tables (cross-module data travels in the event, not via a foreign repository).
-    this.to('completed', OrderEventType.Completed, this.completionPayload());
+    this.to('completed', OrderEventType.Completed, this.completionPayload(ctx));
     this.props.completedAt = now;
   }
   /** Carrier/logistics confirmed physical delivery (the ground truth). Walks the order through the
@@ -189,12 +195,12 @@ export class Order {
   /** Apply a dispute resolution from the disputes module (the order is in 'disputed'). refund_full →
    *  refunded; refund_partial → partially_refunded; rejected/replacement → completed (release to seller,
    *  carrying the settlement payload). Idempotent: a no-op (false) unless currently 'disputed'. */
-  applyDisputeResolution(resolutionType: string, now: Date = new Date()): boolean {
+  applyDisputeResolution(resolutionType: string, now: Date = new Date(), ctx: CompletionContext = {}): boolean {
     if (this.props.status !== 'disputed') return false;
     if (resolutionType === 'refund_full') { this.to('refunded', OrderEventType.Refunded, { buyerUserId: this.props.buyerUserId, totalMinor: this.props.totalMinor.toString() }, 'system'); return true; }
     if (resolutionType === 'refund_partial') { this.to('partially_refunded', OrderEventType.PartiallyRefunded, { buyerUserId: this.props.buyerUserId }, 'system'); return true; }
     // 'rejected' (dispute denied) or 'replacement' → the order completes (escrow releases to the seller)
-    this.to('completed', OrderEventType.Completed, this.completionPayload(), 'system');
+    this.to('completed', OrderEventType.Completed, this.completionPayload(ctx), 'system');
     this.props.completedAt = now;
     return true;
   }

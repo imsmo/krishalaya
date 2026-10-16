@@ -31,7 +31,7 @@ export class TradeInvoiceHandler implements OutboxHandler {
       sellerUserId: (event.payload.sellerUserId as string) ?? null,
       totalMinor: total,
       categoryId: (event.payload.categoryId as string) ?? null,
-      countryCode: (event.payload.countryCode as string) ?? 'IN',
+      countryCode: (event.payload.countryCode as string) ?? undefined,   // PC-56 HOTFIX-7 · B3: absent → the service reads the organisation's
     }), { userId: 'system' });
   }
 }

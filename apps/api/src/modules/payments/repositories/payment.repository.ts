@@ -119,6 +119,13 @@ export class PaymentRepository {
   }
   /** The money that ARRIVED for an order and what has happened to it since (success / refund_initiated / partially_refunded / refunded), newest
    *  first — the automatic refund's subject. In the caller's tx, no lock (the caller then locks the row by id). */
+  /** PC-56 HOTFIX-7 · D3: the ledger transaction already booked under an idempotency key (in the caller's kv_app tx — kv_app holds SELECT on the
+   *  ledger, 0014), or null. The resolution refund asks it to tell "this refund is booked" from "another refund is pending". */
+  async ledgerTxnIdByKeyTx(tx: TxContext, idempotencyKey: string): Promise<string | null> {
+    const r = await tx.query<{ id: string }>(`SELECT id FROM ledger_transactions WHERE idempotency_key = $1`, [idempotencyKey]);
+    return r.rows[0]?.id ?? null;
+  }
+
   async capturedForOrderTx(tx: TxContext, tenantId: string, orderId: string): Promise<Payment | null> {
     const r = await tx.query(`SELECT ${COLS} FROM payments WHERE tenant_id=$1 AND reference_type='order' AND reference_id=$2
        AND status IN ('success','refund_initiated','partially_refunded','refunded') ORDER BY created_at DESC, id DESC LIMIT 1`, [tenantId, orderId]);

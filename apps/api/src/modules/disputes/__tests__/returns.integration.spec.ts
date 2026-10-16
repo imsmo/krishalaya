@@ -33,6 +33,8 @@ import { NotEligibleToReturnError, DuplicateReturnError, ReturnForbiddenError, R
 import { RefundApprovalRepository } from '../repositories/refund-approval.repository';
 import { RefundApprovalService } from '../services/refund-approval.service';
 import { IllegalReturnTransitionError } from '../domain/return.state';
+import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
+import { FlagsService } from '../../../core/feature-flags/flags.service';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -57,6 +59,7 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
+    await admin.query(`UPDATE feature_flags SET is_enabled = true WHERE key = 'dispute_refunds'`);   // PC-56 HOTFIX-7 · D2
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, buyer); await makeUser(admin, seller); await makeUser(admin, stranger);
     await admin.query(`INSERT INTO dispute_eligibility (tenant_id, order_id, buyer_user_id, seller_user_id) VALUES ($1,$2,$3,$4) ON CONFLICT (order_id) DO NOTHING`, [tenantA, orderId, buyer, seller]);
@@ -71,13 +74,15 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
     // PC-56 TENANT-3b: the service now consults the refund maker-checker plane (0139) before any money leg.
     const approvalRepo = new RefundApprovalRepository(replica as any);
     const approvals = new RefundApprovalService(uow, new AuditWriter(pools), approvalRepo);
-    returns = new ReturnService(uow, new PgOutboxWriter(), new PgIdempotencyService(pools), new PromMetrics(), new AuditWriter(pools), returnRepo, disputeRepo, approvals);
+    // PC-56 HOTFIX-7 · D2: + the flags (a return refund needs the tenant's `dispute_refunds` money switch ON — this suite turns it on)
+    returns = new ReturnService(uow, new PgOutboxWriter(), new PgIdempotencyService(pools), new PromMetrics(), new AuditWriter(pools), returnRepo, disputeRepo, approvals, new FlagsService(pools, new InMemoryCacheService()));
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
   }, 30000);
 
-  afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
+  // PC-56 HOTFIX-7 · D2: the money switch the refund decisions here need — ON for the suite, back to its seeded OFF after (Law 10)
+  afterAll(async () => { await admin?.query(`UPDATE feature_flags SET is_enabled = false WHERE key = 'dispute_refunds'`).catch(() => undefined); await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   it('buyer requests a return; non-buyer blocked; duplicate blocked', async () => {
     const r = await returns.request(tenantA, buyer, `idem-${randomUUID()}`, { orderId, reasonCode: 'damaged' } as any);

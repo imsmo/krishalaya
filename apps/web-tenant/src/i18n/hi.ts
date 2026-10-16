@@ -359,6 +359,7 @@ export const hi: Messages = {
 
   'disputes.title': 'विवाद',
   'disputes.rating': 'आपकी रेटिंग',
+  'disputes.ratingOrganisation': 'आपके संगठन की रेटिंग',
   'disputes.ratingValue': '{stars} ★ औसत · {count} समीक्षाएँ',
   'disputes.ratingNone': 'अभी कोई समीक्षा नहीं।',
   'disputes.queue': 'विवाद कतार',
@@ -424,6 +425,9 @@ export const hi: Messages = {
   'disputeDetail.error.type': 'कृपया एक निर्णय चुनें।',
   'disputeDetail.error.amount': 'कृपया मान्य राशि दर्ज करें (आंशिक रिफंड के लिए आवश्यक)।',
   'disputeDetail.error.illegal': 'इस विवाद की वर्तमान स्थिति के लिए वह क्रिया अनुमत नहीं है। पुनः लोड करें और प्रयास करें।',
+  'disputeDetail.error.refundsOff': 'इस संगठन के लिए रिफ़ंड बंद हैं, इसलिए रिफ़ंड का फ़ैसला नहीं हो सकता। कुछ नहीं बदला।',
+  'disputeDetail.error.forbidden': 'इस विवाद का फ़ैसला केवल प्लेटफ़ॉर्म सहायता डेस्क कर सकता है। कुछ नहीं बदला।',
+  'disputeDetail.platformDecides': 'खरीदारों के विवादों का फ़ैसला प्लेटफ़ॉर्म सहायता डेस्क करता है। आप विवाद पढ़ सकते हैं, विक्रेता के रूप में जवाब दे सकते हैं और नीचे सबूत जोड़ सकते हैं।',
 
   'notif.title': 'सूचनाएँ',
   'notif.managePrefs': 'प्राथमिकताएँ',

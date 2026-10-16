@@ -119,8 +119,23 @@ export async function makePublishedListing(
 /** PC-56 TENANT-SW-a: settlement prices an order from the ORDER's frozen commission snapshot (A2), so a settlement spec needs the order
  *  row. A completed order header with a v7 id (partition pruning); `commissionSnapshot` omitted = an order placed before 0196 (settlement
  *  resolves it once on the placement date and records it). Returns the order id. */
+/** PC-56 HOTFIX-7 · D1 (founder Q1): settlement now releases escrow ONLY for an order whose escrow was FUNDED — a captured (`success`) payment
+ *  row (PaymentRepository.findSuccessByOrder's rule), ledger-booked COD cash, or an applied deposit. A settlement spec whose escrow is funded
+ *  by a fixture ledger post records the capture it stands for with this row (provider `sandbox`, a gateway payment id). */
+export async function makeCapturedPayment(admin: Pool, o: { tenantId: string; buyerUserId: string; orderId: string; amountMinor: bigint }): Promise<string> {
+  const id = rnd();
+  await admin.query(
+    `INSERT INTO payments (id, tenant_id, user_id, purpose_id, reference_type, reference_id, amount_minor, currency_code, status, provider_code, idempotency_key, gateway_payment_id)
+     SELECT $1, $2, $3, lv.id, 'order', $4, $5, 'INR', 'success', 'sandbox', $6, $7 FROM lookup_values lv
+      WHERE lv.type_code = 'payment_purpose' AND lv.tenant_id IS NULL AND lv.code = 'direct_order'`,
+    [id, o.tenantId, o.buyerUserId, o.orderId, o.amountMinor.toString(), `fixture-pay-${id}`, `pay_fx_${String(id).slice(-12)}`]);
+  return id;
+}
+
+/** PC-56 HOTFIX-7 · D1: + `paid` (default true) — the completed order's escrow was funded by a captured payment (`makeCapturedPayment`), so the
+ *  one settlement place releases it; `paid: false` = a pay-on-delivery order (settlement skips it, `skipped_unfunded`). */
 export async function makeCompletedOrder(admin: Pool, o: { tenantId: string; buyerUserId: string; sellerUserId: string; totalMinor: bigint;
-  source?: string; commissionSnapshot?: Record<string, unknown> | null; buyerCommissionMinor?: bigint }): Promise<string> {
+  source?: string; commissionSnapshot?: Record<string, unknown> | null; buyerCommissionMinor?: bigint; paid?: boolean }): Promise<string> {
   const id = (await admin.query(`SELECT uuid_generate_v7() AS id`)).rows[0].id as string;
   await admin.query(
     `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at,
@@ -128,5 +143,6 @@ export async function makeCompletedOrder(admin: Pool, o: { tenantId: string; buy
      VALUES ($1,$2,$3,$4,$5,$6,'INR',$7,$7,'completed',1, uuid_v7_time($1), $8::jsonb, $9)`,
     [id, o.tenantId, `KV-${id.slice(0, 8)}`, o.buyerUserId, o.sellerUserId, o.source ?? 'direct', o.totalMinor.toString(),
      o.commissionSnapshot ? JSON.stringify(o.commissionSnapshot) : null, (o.buyerCommissionMinor ?? 0n).toString()]);
+  if (o.paid !== false) await makeCapturedPayment(admin, { tenantId: o.tenantId, buyerUserId: o.buyerUserId, orderId: id, amountMinor: o.totalMinor });
   return id;
 }

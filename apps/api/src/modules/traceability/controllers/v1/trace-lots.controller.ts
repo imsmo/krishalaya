@@ -9,6 +9,7 @@ import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
+import { decodeKeyset, UUID_RE, BIGINT_RE } from '../../../../shared/pagination/us-keyset';
 import { TraceLotService } from '../../services/trace-lot.service';
 import { TracePermissions, canManageTrace } from '../../policies/traceability.policies';
 import { CreateTraceLotSchema, CreateTraceLotDto } from '../../dto/create-trace-lot.dto';
@@ -17,7 +18,10 @@ import { QueryLotsSchema, QueryLotsDto } from '../../dto/query-trace-lot.dto';
 import { QueryEventsSchema, QueryEventsDto } from '../../dto/query-trace-event.dto';
 import { TraceStep } from '../../domain/traceability.events';
 
-const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+// PC-56 HOTFIX-7 · B24: µs keysets (shared/pagination/us-keyset.ts) — lots by (created_at, uuid), a lot's events by (created_at, the bigserial id).
+// A pre-HOTFIX-7 cursor (milliseconds, or the event hash) reads as page one, never a guess.
+const decodeLotCursor = (c?: string) => { const k = decodeKeyset(c, UUID_RE); return k ? { c: k.ts, id: k.id } : undefined; };
+const decodeEventCursor = (c?: string) => { const k = decodeKeyset(c, BIGINT_RE); return k ? { c: k.ts, id: k.id } : undefined; };
 
 @Controller({ path: 'traceability/lots', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -33,7 +37,7 @@ export class TraceLotsController {
   }
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryLotsSchema) q: QueryLotsDto) {
-    return this.svc.list(ctx.tenantId, this.actor(ctx), { box: q.box, listingId: q.listingId, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    return this.svc.list(ctx.tenantId, this.actor(ctx), { box: q.box, listingId: q.listingId, cursor: decodeLotCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
@@ -43,6 +47,6 @@ export class TraceLotsController {
   }
   @Get(':id/events')
   events(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodQuery(QueryEventsSchema) q: QueryEventsDto) {
-    return this.svc.listEvents(ctx.tenantId, this.actor(ctx), id, { cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    return this.svc.listEvents(ctx.tenantId, this.actor(ctx), id, { cursor: decodeEventCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 }

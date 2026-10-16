@@ -127,8 +127,13 @@ export class Payment {
    * captured payment that nothing has refunded yet (`success`, refunded 0) — anything else is not this method's to touch. The capture's ledger
    * txn id stays on the row (the refund's is in the audit row and the event).
    */
-  initiateRefund(amountMinor: bigint, at: Date = new Date()): void {
-    if (this.props.status !== 'success' || this.props.refundedMinor !== 0n) throw new RefundExceedsPaymentError();
+  /** PC-56 HOTFIX-7 · D3: `further` — a DISPUTE / RETURN refund (PaymentService.refundForResolution) may be a PARTIAL amount and may follow an
+   *  earlier partial refund (`partially_refunded` → `refund_initiated` is a legal edge of payment.state). Never while another refund is pending
+   *  (`refund_initiated`), never above what is still refundable. The automatic cancel refund keeps its rule (a fresh, untouched capture). */
+  initiateRefund(amountMinor: bigint, at: Date = new Date(), opts: { further?: boolean } = {}): void {
+    const fresh = this.props.status === 'success' && this.props.refundedMinor === 0n;
+    const further = opts.further === true && (this.props.status === 'success' || this.props.status === 'partially_refunded');
+    if (!fresh && !further) throw new RefundExceedsPaymentError();
     if (amountMinor <= 0n || amountMinor > this.refundableMinor) throw new RefundExceedsPaymentError();
     assertTransition(this.props.status, 'refund_initiated');
     this.props.status = 'refund_initiated';

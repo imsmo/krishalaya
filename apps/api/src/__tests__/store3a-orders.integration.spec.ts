@@ -14,7 +14,8 @@
 //       provider's refund reference, through the real `refund.processed` webhook (sandbox);
 //   (4) the buyer's "I received it" on an order paid ONLINE and delivered → completed, exactly ONE `settle:<id>` ledger transaction, zero-sum;
 //       a replay with the same key books nothing; on a PAY-ON-DELIVERY delivered order → 409 ORDER_COMPLETE_REQUIRES_ESCROW and ZERO ledger
-//       rows for it (Law 9 — lead's D6);
+//       rows for it (Law 9 — lead's D6); PC-56 HOTFIX-7 · D1 CHANGES THIS PIN: the buyer's "I received it" on a COD order is no longer refused —
+//       the order completes, and settlement (OrderSettlementService.settle, the one place) books ZERO ledger rows (`skipped_unfunded`, audited);
 //   (5) the detail carries `amountDueMinor` = total and `depositAppliedMinor` = '0' (an auction order: total − the deposit applied, the
 //       payments module's one rule), `cancelReasonCode` after a cancel, and no person id for the buyer;
 //   (6) `GET lookups/values?type=cancel_reason` → the seven, in order, locale-resolved (a reviewed hi label served; English otherwise);
@@ -324,16 +325,21 @@ run('PC-56 STORE-3a · your orders tell the truth (integration, real AppModule o
       await uow.run(LIVE, (tx) => app.get(OrderCompletedHandler).handle(ev, tx));
       expect(await ledgerKey(`settle:${o}`)).toBe(1);
     }, 120_000);
-    it('a PAY-ON-DELIVERY order delivered → 409 ORDER_COMPLETE_REQUIRES_ESCROW, the order stays delivered and ZERO ledger rows exist for it', async () => {
+    // PC-56 HOTFIX-7 · D1 (founder Q1 — HOTFIX-5's P0 closed): COMPLETION IS ALWAYS ALLOWED; SETTLEMENT FAILS CLOSED. The pin changed from
+    // "409 ORDER_COMPLETE_REQUIRES_ESCROW" to: completed, ONE `orders.order_completed`, and the settlement books ZERO ledger rows for it.
+    it('a PAY-ON-DELIVERY order delivered → the buyer completes it (HOTFIX-7); settlement books ZERO ledger rows for it (skipped_unfunded, audited)', async () => {
       const o = await placeOne(T.buyer, L.cod, '1');
       for (const s of ['confirm', 'packed', 'ready', 'delivered']) await step(o, s);
       const r = await complete(T.buyer, o);
-      expect(refusal(r)).toEqual([409, 'ORDER_COMPLETE_REQUIRES_ESCROW']);
-      expect((await orderRow(o)).status).toBe('delivered');
-      expect(await count(`SELECT count(*)::int n FROM outbox_events WHERE event_type = 'orders.order_completed' AND aggregate_id = $1`, [o])).toBe(0);
+      expect([r.status, r.body.data]).toEqual([201, { ok: true }]);
+      expect((await orderRow(o)).status).toBe('completed');
+      expect(await count(`SELECT count(*)::int n FROM outbox_events WHERE event_type = 'orders.order_completed' AND aggregate_id = $1`, [o])).toBe(1);
+      const ev = await outboxEvent('orders.order_completed', o);
+      await uow.run(LIVE, (tx) => app.get(OrderCompletedHandler).handle(ev, tx));
       expect(await ledgerKey(`settle:${o}`)).toBe(0);
       expect(await ledgerRowsFor(o)).toBe(0);
-      expect(await count(`SELECT count(*)::int n FROM audit_log WHERE action = 'order.completed' AND entity_id = $1`, [o])).toBe(0);
+      expect(await count(`SELECT count(*)::int n FROM audit_log WHERE action = 'order.completed' AND entity_id = $1`, [o])).toBe(1);
+      expect(await count(`SELECT count(*)::int n FROM audit_log WHERE action = 'order.settlement_skipped' AND entity_id = $1`, [o])).toBe(1);
     }, 120_000);
   });
 
