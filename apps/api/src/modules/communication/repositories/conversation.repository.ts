@@ -17,6 +17,13 @@ function toDomain(r: any): Conversation {
 // only applies whichever is present (same permissive style as the rest of this repo's query builders).
 export interface ConversationListQuery { contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number; }
 export interface ConversationSummaryQuery extends ConversationListQuery { archived: boolean; }
+/** PC-56 HOTFIX-6 · B2: the ONE organisation-role test (an active role in this tenant other than `customer`), read from the database. A
+ *  cross-module READ of identity's `user_tenant_roles` / `roles` (the trade-invoice precedent: reads may cross, repositories may not). */
+const ORG_MEMBER_SQL = (userExpr: string, tenantExpr: string) => `EXISTS (SELECT 1 FROM user_tenant_roles utr JOIN roles rr ON rr.id = utr.role_id
+   WHERE utr.user_id = ${userExpr} AND utr.tenant_id = ${tenantExpr} AND utr.is_active AND utr.deleted_at IS NULL AND rr.code <> 'customer')`;
+/** Law 8: an order point lookup prunes to one partition from its v7 id (orders.repository's PRUNE). */
+const ORDER_LABEL_SQL = `(SELECT o.order_no FROM orders o WHERE c.context_type = 'order' AND o.id = c.context_id AND o.tenant_id = c.tenant_id
+   AND o.created_at >= uuid_v7_time(c.context_id) - interval '5 seconds' AND o.created_at < uuid_v7_time(c.context_id) + interval '5 seconds' LIMIT 1)`;
 /** The enriched inbox row (contract-gap P0-1): base conversation + a preview of the last message, the caller's
  * unread count, the (single) counterparty's display name + role + raw user id, and the caller's per-participant
  * archive flag. counterpartyUserId (KV-BL-031) backs the listings/:id/inquiries `buyerUserId` field — additive,
@@ -26,6 +33,8 @@ export interface ConversationSummary {
   isArchived: boolean; unreadCount: number;
   lastMessageAt: Date | null; lastMessageBody: string | null; lastMessageHasAttachment: boolean; lastMessageHasVoice: boolean;
   counterpartyName: string | null; counterpartyRole: string | null; counterpartyUserId: string | null;
+  /** PC-56 HOTFIX-6 · B2: does the counterparty hold an organisation role here; the tenant's display name; the order number on an order thread. */
+  otherIsOrg: boolean; orgName: string | null; contextLabel: string | null;
 }
 function toSummary(r: any): ConversationSummary {
   return {
@@ -34,6 +43,7 @@ function toSummary(r: any): ConversationSummary {
     lastMessageAt: r.last_at ?? null, lastMessageBody: r.last_body ?? null,
     lastMessageHasAttachment: r.last_att != null, lastMessageHasVoice: r.last_voice != null,
     counterpartyName: r.other_name ?? null, counterpartyRole: r.other_role ?? null, counterpartyUserId: r.other_id ?? null,
+    otherIsOrg: r.other_is_org === true, orgName: r.org_name ?? null, contextLabel: r.context_label ?? null,
   };
 }
 
@@ -133,13 +143,25 @@ export class ConversationRepository {
     if (q.contextId) where += ` AND c.context_id=${p(q.contextId)}`;
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (c.created_at < ${cc} OR (c.created_at=${cc} AND c.id < ${ci}))`; }
     const lp = p(q.limit);
+    return this.summaries(tenantId, params, where, lp);
+  }
+  /** PC-56 HOTFIX-6 · B2: ONE conversation's summary for a participant (the thread page's counterparty + context label). null ⇒ not theirs. */
+  async summaryForParticipant(tenantId: string, userId: string, id: string): Promise<ConversationSummary | null> {
+    const params: unknown[] = [tenantId, userId, id];
+    const rows = await this.summaries(tenantId, params, `c.tenant_id=$1 AND cp.user_id=$2 AND c.id=$3 AND c.deleted_at IS NULL`, '1');
+    return rows[0] ?? null;
+  }
+  private async summaries(tenantId: string, params: unknown[], where: string, limit: string): Promise<ConversationSummary[]> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT c.id, c.context_type, c.context_id, c.is_locked, c.created_at, cp.is_archived,
               lm.body AS last_body, lm.attachment_media_id AS last_att, lm.voice_media_id AS last_voice, lm.created_at AS last_at,
               (SELECT count(*)::int FROM messages m
                  WHERE m.conversation_id=c.id AND m.sender_user_id IS DISTINCT FROM $2
                    AND (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)) AS unread,
-              ou.full_name AS other_name, op.role AS other_role, op.user_id AS other_id
+              ou.full_name AS other_name, op.role AS other_role, op.user_id AS other_id,
+              (op.user_id IS NOT NULL AND ${ORG_MEMBER_SQL('op.user_id', 'c.tenant_id')}) AS other_is_org,
+              (SELECT t.display_name FROM tenants t WHERE t.id = c.tenant_id) AS org_name,
+              ${ORDER_LABEL_SQL} AS context_label
        FROM conversations c
        JOIN conversation_participants cp ON cp.conversation_id=c.id AND cp.user_id=$2
        LEFT JOIN LATERAL (SELECT body, attachment_media_id, voice_media_id, created_at
@@ -147,8 +169,30 @@ export class ConversationRepository {
        LEFT JOIN LATERAL (SELECT cp2.user_id, cp2.role FROM conversation_participants cp2
               WHERE cp2.conversation_id=c.id AND cp2.user_id <> $2 ORDER BY cp2.user_id LIMIT 1) op ON true
        LEFT JOIN users ou ON ou.id = op.user_id
-       WHERE ${where} ORDER BY c.created_at DESC, c.id DESC LIMIT ${lp}`, params);
+       WHERE ${where} ORDER BY c.created_at DESC, c.id DESC LIMIT ${limit}`, params);
     return r.rows.map(toSummary);
+  }
+  /** PC-56 HOTFIX-6 · B2: which of these users hold an ORGANISATION role in this tenant (staff / the organisation's side). */
+  async orgMemberIds(tenantId: string, userIds: readonly string[], tx?: TxContext): Promise<Set<string>> {
+    if (userIds.length === 0) return new Set();
+    const sql = `SELECT u FROM unnest($2::uuid[]) AS u WHERE ${ORG_MEMBER_SQL('u', '$1')}`;
+    const r = tx ? await tx.query(sql, [tenantId, [...userIds]]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, [...userIds]]);
+    return new Set(r.rows.map((x: any) => x.u));
+  }
+  /** PC-56 HOTFIX-6 · B1: which of these users hold ANY active role in this tenant (a buyer's `customer` counts) — both ends of a call must. */
+  async tenantMemberIds(tx: TxContext, tenantId: string, userIds: readonly string[]): Promise<Set<string>> {
+    const r = await tx.query(
+      `SELECT DISTINCT utr.user_id FROM user_tenant_roles utr WHERE utr.tenant_id = $1 AND utr.user_id = ANY($2::uuid[]) AND utr.is_active AND utr.deleted_at IS NULL`,
+      [tenantId, [...userIds]]);
+    return new Set(r.rows.map((x: any) => x.user_id));
+  }
+  /** PC-56 HOTFIX-6 · B1: has either person blocked the other (a live `user_blocks` row, either direction)? Platform-scoped table (0110: a block
+   *  holds across organisations), read as kv_app (SELECT granted). */
+  async blockedEitherWay(tx: TxContext, a: string, b: string): Promise<boolean> {
+    const r = await tx.query(
+      `SELECT 1 FROM user_blocks WHERE deleted_at IS NULL AND ((blocker_user_id = $1 AND blocked_user_id = $2) OR (blocker_user_id = $2 AND blocked_user_id = $1)) LIMIT 1`,
+      [a, b]);
+    return (r.rowCount ?? 0) > 0;
   }
   /** Toggle the caller's per-participant archive flag (idempotent). Membership is re-checked by the service. */
   async setArchived(tx: TxContext, conversationId: string, userId: string, archived: boolean): Promise<void> {

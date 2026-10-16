@@ -20,7 +20,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, getOrderShipment, getOrderTracking, completeOrder } from '../../../features/orders/orders.api';
 import { orderTimeline, trackTimestamps, trackTimestampsFromEvents, lastKnownLocation, type OrderTimelineStep } from '../../../features/orders/order-status';
-import { openDirect, startMaskedCall } from '../../../features/messaging/messaging.api';
+import { openDirect } from '../../../features/messaging/messaging.api';
 
 export default function BuyerTrack() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
@@ -68,8 +68,9 @@ export default function BuyerTrack() {
   };
   const callDriver = async () => {
     if (!riderId) return;
-    const ok = await startMaskedCall(riderId, orderId).then(() => true).catch(() => false);
-    if (!ok) Alert.alert(t('track.callFailed'));
+    // PC-56 HOTFIX-6 · B1 (founder D2): a masked call is placed FROM A CONVERSATION and the server picks the callee — the app no longer sends
+    // a person id. There is no rider thread on an order yet, so the call cannot be placed: said, never attempted (the mobile adaptation is owed).
+    Alert.alert(t('track.callFailed'));
   };
   const markDelivered = () => {
     Alert.alert(t('track.confirmTitle'), t('track.confirmBody'), [

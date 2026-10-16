@@ -5,8 +5,14 @@
 //   2. Address book — addresses.list() (caller-scoped server-side) with add / remove / make-default actions.
 //      Checkout keeps working without this page; this is the buyer's standing address management.
 // All copy via i18n; noindex.
+// PC-56 HOTFIX-6 · C1 (survey STORE-4 F-5, Rule Zero / PII): the add-address form reads 2c's ONE postal rule (4–10 digits, any country —
+// features/account/form.ts), carries a `countryCode` whose default is the SESSION STORE's country (`storefront.tenant().countryCode` through
+// the session's tenant — never a literal; unreadable → empty, the buyer types it), and a key minted at render (the create is idempotent on
+// it, so a retried submit adds one address). The receiver phone is printed MASKED (features/chain/mask.ts, the five-of-ten policy).
+import { randomUUID } from 'crypto';
 import type { Metadata } from 'next';
-import { serverClient } from '../../../lib/api-client';
+import { serverClient, sessionTenantClient } from '../../../lib/api-client';
+import { maskForDisplay } from '../../../features/chain/mask';
 import { requireSession } from '../../../lib/session';
 import { getTranslator } from '../../../lib/i18n';
 import { updateProfileAction, addAddressAction, removeAddressAction, makeDefaultAddressAction } from './actions';
@@ -19,7 +25,7 @@ export function generateMetadata(): Metadata {
 }
 
 const OK = new Set(['profile', 'address', 'removed', 'default']);
-const ERR = new Set(['email', 'empty', 'profile', 'line1', 'pincode', 'phone', 'address']);
+const ERR = new Set(['email', 'empty', 'profile', 'line1', 'pincode', 'phone', 'country', 'address']);
 
 export default async function AccountPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
   await requireSession('/account');
@@ -30,6 +36,10 @@ export default async function AccountPage({ searchParams }: { searchParams: { ok
 
   let addresses: Address[] = []; let addressesFailed = false;
   try { addresses = await serverClient().addresses.list(); } catch { addressesFailed = true; }
+
+  // the form's country: the session store's (Rule Zero — from the data, never a literal); unreadable → blank, typed by the buyer
+  let storeCountry = '';
+  try { storeCountry = (await sessionTenantClient().storefront.tenant()).countryCode ?? ''; } catch { storeCountry = ''; }
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
@@ -77,7 +87,7 @@ export default async function AccountPage({ searchParams }: { searchParams: { ok
                 {a.isDefault && <span className="kv-badge">{t.t('account.default')}</span>}{' '}
                 <strong>{a.line1}</strong>{a.line2 ? `, ${a.line2}` : ''}{a.village ? `, ${a.village}` : ''}{a.pincode ? ` — ${a.pincode}` : ''}
               </p>
-              {(a.contactName || a.contactPhone) && <p className="kv-detail__muted">{[a.contactName, a.contactPhone].filter(Boolean).join(' · ')}</p>}
+              {(a.contactName || a.contactPhone) && <p className="kv-detail__muted" data-kv-receiver={a.id}>{[a.contactName, a.contactPhone ? maskForDisplay(a.contactPhone) : null].filter(Boolean).join(' · ')}</p>}
               <div className="kv-cart__actions">
                 {!a.isDefault && (
                   <form action={makeDefaultAddressAction} className="kv-inline-form">
@@ -98,6 +108,7 @@ export default async function AccountPage({ searchParams }: { searchParams: { ok
       <details className="kv-form__card">
         <summary>{t.t('account.addAddress')}</summary>
         <form action={addAddressAction} className="kv-form">
+          <input type="hidden" name="key" value={`address:${randomUUID()}`} />
           <label htmlFor="ad-l1" className="kv-form__label">{t.t('account.line1')}</label>
           <input id="ad-l1" name="line1" className="kv-field__input" required minLength={3} autoComplete="address-line1" />
           <label htmlFor="ad-l2" className="kv-form__label">{t.t('account.line2')}</label>
@@ -105,7 +116,9 @@ export default async function AccountPage({ searchParams }: { searchParams: { ok
           <label htmlFor="ad-vil" className="kv-form__label">{t.t('account.village')}</label>
           <input id="ad-vil" name="village" className="kv-field__input" autoComplete="address-level2" />
           <label htmlFor="ad-pin" className="kv-form__label">{t.t('account.pincode')}</label>
-          <input id="ad-pin" name="pincode" className="kv-field__input" inputMode="numeric" pattern="\d{6}" autoComplete="postal-code" />
+          <input id="ad-pin" name="pincode" className="kv-field__input" inputMode="numeric" pattern="\d{4,10}" autoComplete="postal-code" />
+          <label htmlFor="ad-cc" className="kv-form__label">{t.t('account.countryCode')}</label>
+          <input id="ad-cc" name="countryCode" className="kv-field__input" defaultValue={storeCountry} maxLength={2} required autoCapitalize="characters" autoComplete="country" />
           <label htmlFor="ad-cn" className="kv-form__label">{t.t('account.contactName')}</label>
           <input id="ad-cn" name="contactName" className="kv-field__input" autoComplete="name" />
           <label htmlFor="ad-cp" className="kv-form__label">{t.t('account.contactPhone')}</label>

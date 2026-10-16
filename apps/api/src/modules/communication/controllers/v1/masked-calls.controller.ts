@@ -1,7 +1,13 @@
 // modules/communication/controllers/v1/masked-calls.controller.ts · privacy-proxy calling + own call log.
 // initiate requires an Idempotency-Key (it places a real telephony bridge — Law 3). Reads are the caller's own
 // log (caller OR callee). `communication` flag.
-import { Controller, Get, Headers, Post, UseGuards } from '@nestjs/common';
+// PC-56 HOTFIX-6 · B1 (founder D2): the body names a CONVERSATION (`{ conversationId }`, `.strict()` — a `calleeUserId` is refused); the
+// service resolves the callee and checks participant, tenant membership and `user_blocks` before the provider is asked. Per-user rate limit
+// 5 / 60 s (the module had no limit of its own; the brief's default) through the global RateLimitGuard. The gate is AuthGuard + the server's
+// membership check (an active role in this tenant, read from user_tenant_roles) — no seeded permission verb fits a call (`messages.send`
+// does not exist; `message.moderate` would make calling a moderator act): named as a HOTFIX-6 deviation, `message.call` owed with Q2.
+import { Controller, Get, Headers, Ip, Post, UseGuards } from '@nestjs/common';
+import { RateLimit } from '../../../../core/http/rate-limit.guard';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -22,10 +28,12 @@ export class MaskedCallsController {
   constructor(private readonly svc: MaskedCallService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, isModerator: false }; }
 
+  @RateLimit({ limit: 5, windowSec: 60, by: 'user' })
   @Post()
-  initiate(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(InitiateMaskedCallSchema) dto: InitiateMaskedCallDto) {
+  initiate(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') header: string, @ZodBody(InitiateMaskedCallSchema) dto: InitiateMaskedCallDto, @Ip() ip: string) {
+    const key = header || dto.idempotencyKey;
     if (!key) throw new BadRequestError('Idempotency-Key header required');
-    return this.svc.initiate(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
+    return this.svc.initiateForConversation(ctx.tenantId, this.actor(ctx), key, dto, ip || null).then((data) => ({ data }));
   }
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryMaskedCallsSchema) q: QueryMaskedCallsDto) {

@@ -22,18 +22,24 @@ export function buildProfilePatch(raw: { fullName?: string; email?: string; lang
   return { ok: true, value };
 }
 
+// PC-56 HOTFIX-6 · C1 (survey STORE-4 F-5, Rule Zero): the address form reads 2c's ONE postal rule (features/store2c/checkout.ts
+// POSTAL_CODE_RE — the identity DTO's 4–10 digits, any country) instead of an Indian six-digit regex, and sends a `countryCode` (two letters —
+// the page defaults it from the SESSION STORE's country, never a literal). An address with no country is refused here (`country`), so the
+// API's 'IN' default is never reached from this form.
+import { POSTAL_CODE_RE } from '../store2c/checkout';
+
 export type AddressInput = {
-  line1: string; line2?: string; village?: string; pincode?: string;
+  line1: string; line2?: string; village?: string; pincode?: string; countryCode: string;
   contactName?: string; contactPhone?: string; isDefault?: boolean;
 };
-export type AddressResult = { ok: true; value: AddressInput } | { ok: false; error: 'line1' | 'pincode' | 'phone' };
+export type AddressResult = { ok: true; value: AddressInput } | { ok: false; error: 'line1' | 'pincode' | 'phone' | 'country' };
 
 /** What an address FORM hands in: every field optional (validation below decides what's acceptable), and
  *  `isDefault` a real boolean. NOT `Record<string, string|undefined> & { isDefault?: boolean }` — that
  *  intersection is unsatisfiable, because the index signature requires EVERY property to be a string, so a
  *  boolean `isDefault` can never conform and every caller fails to typecheck. */
 export type AddressFormInput = {
-  line1?: string; line2?: string; village?: string; pincode?: string;
+  line1?: string; line2?: string; village?: string; pincode?: string; countryCode?: string;
   contactName?: string; contactPhone?: string; isDefault?: boolean;
 };
 
@@ -41,10 +47,12 @@ export function buildAddress(raw: AddressFormInput): AddressResult {
   const line1 = (raw.line1 ?? '').trim();
   if (line1.length < 3) return { ok: false, error: 'line1' };
   const pincode = (raw.pincode ?? '').trim();
-  if (pincode && !/^\d{6}$/.test(pincode)) return { ok: false, error: 'pincode' };
+  if (pincode && !POSTAL_CODE_RE.test(pincode)) return { ok: false, error: 'pincode' };
+  const countryCode = (raw.countryCode ?? '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(countryCode)) return { ok: false, error: 'country' };
   const contactPhone = (raw.contactPhone ?? '').trim();
   if (contactPhone && !/^\+?\d{8,15}$/.test(contactPhone.replace(/[\s-]/g, ''))) return { ok: false, error: 'phone' };
-  const value: AddressInput = { line1 };
+  const value: AddressInput = { line1, countryCode };
   const line2 = (raw.line2 ?? '').trim(); if (line2) value.line2 = line2;
   const village = (raw.village ?? '').trim(); if (village) value.village = village;
   if (pincode) value.pincode = pincode;

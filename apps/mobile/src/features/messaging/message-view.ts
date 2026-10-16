@@ -11,7 +11,8 @@ export interface MessageView { id: string; mine: boolean; kind: MessageKind; bod
 export function presentMessage(m: Message, myUserId: string): MessageView {
   const kind: MessageKind = m.attachmentMediaId ? 'image' : m.voiceMediaId ? 'voice' : m.body ? 'text' : 'empty';
   return {
-    id: m.id, mine: m.senderUserId === myUserId, kind, body: m.body,
+    // PC-56 HOTFIX-6 · B2: a buyer's read carries `from` (never a sender id) — `from === 'you'` is mine; staff reads still compare the id
+    id: m.id, mine: m.from ? m.from === 'you' : m.senderUserId === myUserId, kind, body: m.body,
     mediaId: m.attachmentMediaId ?? m.voiceMediaId ?? null, flagged: m.isFlagged, createdAt: m.createdAt,
   };
 }

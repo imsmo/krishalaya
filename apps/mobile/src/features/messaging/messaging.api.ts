@@ -3,7 +3,7 @@
 // degrade-never-die. Posting a message is idempotent (Law 3); image attachments upload via core/media (compress +
 // presigned PUT) → we send the attachmentMediaId only (bytes never go through the API). A masked call bridges the
 // two real numbers SERVER-SIDE — the client only initiates and never sees a phone number.
-import type { Conversation, Message, MaskedCall } from '@krishalaya/sdk-js';
+import type { Conversation, Message, MaskedCallStarted } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -48,7 +48,9 @@ export function postAttachment(conversationId: string, attachmentMediaId: string
 export function markConversationRead(conversationId: string): Promise<{ ok: boolean }> {
   return apiClient().conversations.markRead(conversationId);
 }
-/** Place a privacy-proxy call to the other party. Throws if the bridge can't be placed (degrade in the screen). */
-export function startMaskedCall(calleeUserId: string, contextId?: string): Promise<MaskedCall> {
-  return apiClient().maskedCalls.initiate({ calleeUserId, contextType: 'direct', contextId }, newId());
+/** Place a privacy-proxy call to the other party OF A CONVERSATION. Throws if the bridge can't be placed (degrade in the screen).
+ *  PC-56 HOTFIX-6 · B1 (founder D2): the server resolves the callee from the conversation (its one other participant) — the app sends no
+ *  person id; a refusal (not a participant · no single other party · not a member · blocked) arrives as an SdkError 403/422. */
+export function startMaskedCall(conversationId: string): Promise<MaskedCallStarted> {
+  return apiClient().maskedCalls.initiate({ conversationId }, newId());
 }

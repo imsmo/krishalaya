@@ -288,7 +288,15 @@ export interface StorefrontPlan {
 }
 /** PC-56 STORE-1c · D2 — the public catalogue of one country, and the trial length the platform's signup policy states (null = not set). */
 export interface StorefrontPlans { country: string; plans: StorefrontPlan[]; trialDays: number | null }
-export interface UserProfile { id: string; displayName: string | null; roles: string[]; locale: string; }
+/** PC-56 HOTFIX-6 · B7 (survey STORE-4 C-4 / B18): `GET /v1/users/me` serves `fullName`, `languageCode`, `countryCode`, a MASKED `phone`
+ *  (`maskPhone`) and a MASKED `email` (`a***@x.in`), `status` and the role codes — NOT `displayName` / `locale` (kept for the existing callers;
+ *  the API never fills them). The new fields are optional so mobile and web-tenant compile unchanged. */
+export interface UserProfile {
+  id: string; displayName: string | null; roles: string[]; locale: string;
+  fullName?: string | null; languageCode?: string | null; countryCode?: string | null;
+  /** Masked by the server — never the full number. */ phone?: string | null; phoneVerified?: boolean;
+  /** Masked by the server (`a***@x.in`). */ email?: string | null; status?: string;
+}
 
 // --- payments (module 4) — money is bigint minor-unit STRINGS (Law 2) ---
 export type PaymentPurpose = 'wallet_recharge' | 'direct_order' | 'subscription' | 'boost' | 'emd' | 'course';
@@ -739,6 +747,19 @@ export interface Address {
   pincode?: string | null; countryCode?: string; contactName?: string | null; contactPhone?: string | null;
   lat?: number | null; lng?: number | null; labelId?: string | null; isDefault: boolean;
 }
+/** PC-56 HOTFIX-6 · B7 — the address book's inputs: `countryCode` (two letters — the form sends the session store's country, never a literal)
+ *  and the ONE postal rule (`pincode` 4–10 digits, any country — apps/api shared/utils/postal-code.ts). */
+export interface AddressCreateInput {
+  line1: string; line2?: string; village?: string; regionId?: string; pincode?: string; countryCode?: string;
+  contactName?: string; contactPhone?: string; lat?: number; lng?: number; labelId?: string; isDefault?: boolean;
+}
+export type AddressUpdateInput = Partial<AddressCreateInput>;
+/** PC-56 HOTFIX-6 · B3 — an edit's answer. COPY-ON-WRITE: an address some order / shipment / booking points at is never edited in place —
+ *  `copied: true` and `id` is the NEW address (`previousId` the retired one, which keeps its values for those deliveries). Optional fields so
+ *  the existing `Address`-typed callers keep compiling. */
+export interface AddressWriteResult { ok?: boolean; id: string; copied?: boolean; previousId?: string | null }
+/** PC-56 HOTFIX-6 · B4 — a remove's answer: the NEWEST remaining address became the default when the default was removed (`defaultId`). */
+export interface AddressRemoveResult { ok: boolean; defaultId?: string | null }
 
 // --- offers (module 3) — negotiation; money is bigint minor-unit STRINGS (Law 2) ---
 /** A listing offer. `quantity` is a decimal string (up to 3 dp); prices are bigint minor-unit strings.
@@ -799,18 +820,30 @@ export interface Conversation {
   lastMessageHasAttachment?: boolean; lastMessageHasVoice?: boolean;
   counterpartyName?: string | null; counterpartyRole?: string | null;
   /** The other participant's raw user id (KV-BL-031: backs listings.inquiries()'s buyerUserId). Present on
-   *  enriched inbox-summary reads; optional so a bare open()/get() response still satisfies the type. */
+   *  enriched inbox-summary reads; optional so a bare open()/get() response still satisfies the type.
+   *  PC-56 HOTFIX-6 · B2: STAFF ONLY — a buyer's read never carries it (nor a person's name: the buyer's `counterpartyName` is the
+   *  organisation's, and `counterpartyRole` is `organisation | platform`). */
   counterpartyUserId?: string | null;
+  /** PC-56 HOTFIX-6 · B2: the context label — the order number on an order thread (else null). */
+  contextLabel?: string | null;
 }
+/** PC-56 HOTFIX-6 · B2: who wrote a message, as a BUYER reads it (never a person). Staff reads carry `senderUserId` instead. */
+export type MessageFrom = 'you' | 'organisation' | 'platform' | 'system';
 /** A chat message. Exactly one of body/voiceMediaId/attachmentMediaId carries the content; media are referenced
  * by id only (the bytes live in S3). NO raw PII. */
 export interface Message {
-  id: string; conversationId: string; senderUserId: string; body: string | null;
+  /** STAFF ONLY since PC-56 HOTFIX-6 (B2): a buyer's read carries `from` instead. */
+  senderUserId?: string | null;
+  from?: MessageFrom;
+  id: string; conversationId: string; body: string | null;
   voiceMediaId: string | null; attachmentMediaId: string | null; isAiGenerated: boolean; isFlagged: boolean; createdAt?: string;
 }
 /** A privacy-proxy (masked) call record — the provider bridges the two real numbers SERVER-SIDE; NO phone number
  * is ever returned to the client. */
 export interface MaskedCall { id: string; callerUserId: string; calleeUserId: string; contextType: string | null; contextId: string | null; durationSecs?: number | null; createdAt?: string; }
+/** PC-56 HOTFIX-6 · B1 — `POST /v1/masked-calls` answers the call it placed from a CONVERSATION: no person id (the callee is the server's
+ *  decision — the conversation's one other participant). */
+export interface MaskedCallStarted { id: string; conversationId: string; contextType: string | null; contextId: string | null }
 
 // --- auctions (module 3) — money is bigint minor-unit STRINGS (Law 2); EMD held/applied/refunded server-side ---
 // PC-56 TENANT-11a: every price is PER UNIT of `unitCode` (founder decision F-12); the lot is `quantity` (3-place text)
@@ -1524,7 +1557,9 @@ export interface OnboardRoleResult { roleCode: string; alreadyGranted: boolean; 
  * only submits + reflects status — it never produces the export itself (the server compiles it; Law 11). */
 export interface PrivacyRequest { id: string; kind: 'export' | 'deletion'; status: string; coolingEndsAt?: string | null; requestedAt?: string; readyAt?: string; downloadUrl?: string | null; }
 /** A DPDP consent record: whether the caller has granted a given processing purpose (append-only server-side). */
-export interface ConsentRecord { purposeCode: string; granted: boolean; updatedAt?: string; }
+export interface ConsentRecord { purposeCode: string; granted: boolean; updatedAt?: string; version?: string | null; channel?: string | null; }
+/** PC-56 HOTFIX-6 · B5 — `POST /v1/consents` answers the notice version the decision was stamped with. */
+export interface ConsentGrantResult { ok: boolean; version: string }
 
 // --- land parcels (P-22 farm details) ---
 /** A land parcel the farmer owns/farms. `area` is a decimal STRING in `areaUnit` (e.g. acre) — not money. */

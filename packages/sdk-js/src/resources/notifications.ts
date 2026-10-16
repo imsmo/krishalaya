@@ -22,7 +22,8 @@ export class NotificationsResource {
   /** W204 / W431 · your in-app items with the GET-form filters (state · tier · module · channel), keyset. */
   async inboxPage(opts: InboxQuery = {}, signal?: AbortSignal): Promise<InboxPage> {
     const r = await this.http.request<NotificationItem[]>('GET', 'notifications', {
-      query: { status: opts.status, unreadOnly: opts.unreadOnly, state: opts.state, tier: opts.tier, module: opts.module, channel: opts.channel, cursor: opts.cursor, limit: opts.limit ?? 50 }, signal,
+      // PC-56 HOTFIX-6 · B6 / C3: `unreadOnly` as the strict string the API parses — 'false' now means false (the "All" tab lists read rows)
+      query: { status: opts.status, unreadOnly: opts.unreadOnly === undefined ? undefined : opts.unreadOnly ? 'true' : 'false', state: opts.state, tier: opts.tier, module: opts.module, channel: opts.channel, cursor: opts.cursor, limit: opts.limit ?? 50 }, signal,
     });
     const m = (r.meta ?? {}) as { nextCursor?: string | null; zone?: string | null; today?: string | null };
     return { items: r.data, nextCursor: m.nextCursor ?? null, zone: m.zone ?? null, today: m.today ?? null };

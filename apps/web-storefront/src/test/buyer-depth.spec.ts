@@ -22,13 +22,20 @@ describe('features/account/form (PC-24b)', () => {
     expect(buildProfilePatch({ email: 'not-an-email' })).toEqual({ ok: false, error: 'email' });
     expect(buildProfilePatch({})).toEqual({ ok: false, error: 'empty' });
   });
-  it('address requires line1, validates 6-digit pincode + phone shape', () => {
-    expect(buildAddress({ line1: 'Farm 12, NH-8' }).ok).toBe(true);
-    expect(buildAddress({ line1: 'ab' })).toEqual({ ok: false, error: 'line1' });
-    expect(buildAddress({ line1: 'Farm 12', pincode: '38800' })).toEqual({ ok: false, error: 'pincode' });
-    expect(buildAddress({ line1: 'Farm 12', contactPhone: '12' })).toEqual({ ok: false, error: 'phone' });
-    const r = buildAddress({ line1: 'Farm 12', pincode: '388001', contactPhone: '+91 90990 12340', isDefault: true });
-    expect(r).toEqual({ ok: true, value: { line1: 'Farm 12', pincode: '388001', contactPhone: '+919099012340', isDefault: true } });
+  // PC-56 HOTFIX-6 · C1 (survey STORE-4 F-5, Rule Zero): this spec PINNED the Indian six-digit regex (`38800` refused) — the form now reads
+  // 2c's ONE postal rule (4–10 digits, any country; the identity DTO's rule) and requires a two-letter `countryCode` (the page defaults it from
+  // the session store's country, never a literal). A five-digit GB code is accepted; three digits and eleven are refused; no country is refused.
+  it('address requires line1 and a country, validates the 4–10 digit postal rule + phone shape', () => {
+    expect(buildAddress({ line1: 'Farm 12, NH-8', countryCode: 'IN' }).ok).toBe(true);
+    expect(buildAddress({ line1: 'ab', countryCode: 'IN' })).toEqual({ ok: false, error: 'line1' });
+    expect(buildAddress({ line1: 'Farm 12', pincode: '38800', countryCode: 'gb' })).toEqual({ ok: true, value: { line1: 'Farm 12', pincode: '38800', countryCode: 'GB' } });
+    expect(buildAddress({ line1: 'Farm 12', pincode: '388', countryCode: 'IN' })).toEqual({ ok: false, error: 'pincode' });
+    expect(buildAddress({ line1: 'Farm 12', pincode: '38800123456', countryCode: 'IN' })).toEqual({ ok: false, error: 'pincode' });
+    expect(buildAddress({ line1: 'Farm 12', pincode: '388001' })).toEqual({ ok: false, error: 'country' });
+    expect(buildAddress({ line1: 'Farm 12', pincode: '388001', countryCode: 'IND' })).toEqual({ ok: false, error: 'country' });
+    expect(buildAddress({ line1: 'Farm 12', contactPhone: '12', countryCode: 'IN' })).toEqual({ ok: false, error: 'phone' });
+    const r = buildAddress({ line1: 'Farm 12', pincode: '388001', countryCode: 'IN', contactPhone: '+91 90990 12340', isDefault: true });
+    expect(r).toEqual({ ok: true, value: { line1: 'Farm 12', pincode: '388001', countryCode: 'IN', contactPhone: '+919099012340', isDefault: true } });
   });
 });
 

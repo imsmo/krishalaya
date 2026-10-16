@@ -44,12 +44,13 @@ export class ConsentRepository {
     const x = r.rows[0];
     return x ? { noticeText: x.notice_text, toggleLabel: x.toggle_label } : null;
   }
-  /** Latest consent decision per purpose for a user (DPDP "what am I consented to"). */
-  async latestByUser(tenantId: string, userId: string): Promise<any[]> {
+  /** Latest consent decision per purpose for a user (DPDP "what am I consented to"). PC-56 HOTFIX-6 · B5: camelCase, the SDK's ConsentRecord
+   *  (`updatedAt` = when that latest decision was recorded). Bounded by the purpose registry (one row per purpose). */
+  async latestByUser(tenantId: string, userId: string): Promise<Array<{ purposeCode: string; granted: boolean; version: string | null; channel: string | null; updatedAt: Date }>> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT DISTINCT ON (purpose_code) purpose_code, granted, version, channel, created_at
-         FROM consents WHERE user_id=$1 ORDER BY purpose_code, created_at DESC`, [userId]);
-    return r.rows;
+         FROM consents WHERE user_id=$1 ORDER BY purpose_code, created_at DESC, id DESC`, [userId]);
+    return r.rows.map((x: any) => ({ purposeCode: x.purpose_code, granted: x.granted === true, version: x.version ?? null, channel: x.channel ?? null, updatedAt: x.created_at }));
   }
   /** The user's LATEST decision for one purpose (granted + who assisted). Null if never recorded. */
   async latestForPurpose(tenantId: string, userId: string, purposeCode: string): Promise<{ granted: boolean; channel: string | null; assistedBy: string | null } | null> {

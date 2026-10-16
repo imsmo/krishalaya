@@ -4,7 +4,7 @@
 // bytes live in S3, referenced by id. A masked call bridges the two real numbers server-side; NO phone number is
 // ever sent to the client. Gated server-side by the `communication` flag.
 import { HttpClient } from '../http';
-import { Conversation, Message, MaskedCall, Page } from '../types';
+import { Conversation, Message, MaskedCall, MaskedCallStarted, Page } from '../types';
 
 export class ConversationsResource {
   constructor(private readonly http: HttpClient) {}
@@ -17,7 +17,9 @@ export class ConversationsResource {
    * counterparty name/role + per-participant archive flag). `archived=true` returns the archive instead of the
    * inbox. Keyset paginated. */
   async list(params: { contextType?: string; contextId?: string; cursor?: string; limit?: number; archived?: boolean } = {}, signal?: AbortSignal): Promise<Page<Conversation>> {
-    const r = await this.http.request<Conversation[]>('GET', 'conversations', { query: { contextType: params.contextType, contextId: params.contextId, cursor: params.cursor, limit: params.limit ?? 20, archived: params.archived }, signal });
+    // PC-56 HOTFIX-6 · B6: `archived` travels as the strict string the API parses ('true' / 'false'); omitted = the inbox
+    const archived = params.archived === undefined ? undefined : params.archived ? 'true' : 'false';
+    const r = await this.http.request<Conversation[]>('GET', 'conversations', { query: { contextType: params.contextType, contextId: params.contextId, cursor: params.cursor, limit: params.limit ?? 20, archived }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   async get(id: string, signal?: AbortSignal): Promise<Conversation> {
@@ -46,9 +48,12 @@ export class ConversationsResource {
 
 export class MaskedCallsResource {
   constructor(private readonly http: HttpClient) {}
-  /** Initiate a privacy-proxy call to a user. The server bridges the two real numbers — no number is returned. */
-  async initiate(input: { calleeUserId: string; contextType?: string; contextId?: string }, idempotencyKey: string): Promise<MaskedCall> {
-    return (await this.http.request<MaskedCall>('POST', 'masked-calls', { idempotencyKey, body: input })).data;
+  /** Initiate a privacy-proxy call FROM A CONVERSATION. PC-56 HOTFIX-6 · B1 (founder D2): the body names the conversation only — the server
+   *  resolves the callee (its one other participant), checks participant, tenant membership and blocks, rate-limits per user, and bridges the
+   *  two real numbers; no number and no person id is returned. Refusals: MASKED_CALL_NOT_PARTICIPANT · MASKED_CALL_NO_CALLEE ·
+   *  MASKED_CALL_NOT_MEMBER · MASKED_CALL_BLOCKED. */
+  async initiate(input: { conversationId: string }, idempotencyKey: string): Promise<MaskedCallStarted> {
+    return (await this.http.request<MaskedCallStarted>('POST', 'masked-calls', { idempotencyKey, body: { conversationId: input.conversationId } })).data;
   }
   async list(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<MaskedCall>> {
     const r = await this.http.request<MaskedCall[]>('GET', 'masked-calls', { query: { cursor: params.cursor, limit: params.limit ?? 20 }, signal });

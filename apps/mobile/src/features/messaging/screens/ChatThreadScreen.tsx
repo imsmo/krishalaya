@@ -152,7 +152,7 @@ export function ChatThreadScreen({ conversationId: id, peerUserId, peerDisplayNa
   const call = async () => {
     if (!peer) return;
     setCalling(true);
-    try { await startMaskedCall(peer, id); Alert.alert(t('chat.calling.title'), t('chat.calling.message')); }
+    try { await startMaskedCall(id); Alert.alert(t('chat.calling.title'), t('chat.calling.message')); }
     catch (e) { Alert.alert(e instanceof SdkError && e.isForbidden ? t('orders.action.forbidden') : t('chat.callFailed')); }
     finally { setCalling(false); }
   };

@@ -31,12 +31,15 @@ export async function addAddressAction(formData: FormData): Promise<void> {
     line2: String(formData.get('line2') ?? ''),
     village: String(formData.get('village') ?? ''),
     pincode: String(formData.get('pincode') ?? ''),
+    countryCode: String(formData.get('countryCode') ?? ''),
     contactName: String(formData.get('contactName') ?? ''),
     contactPhone: String(formData.get('contactPhone') ?? ''),
     isDefault: formData.get('isDefault') === '1',
   });
   if (!built.ok) back(`error=${built.error}`);
-  try { await serverClient().addresses.create(built.value); }
+  // PC-56 HOTFIX-6 · C1: the key minted at render (a retried submit replays the first answer — one address); bounded, never trusted as an id
+  const key = String(formData.get('key') ?? '').slice(0, 100) || undefined;
+  try { await serverClient().addresses.create(built.value, key); }
   catch { back('error=address'); }
   revalidatePath('/account');
   back('ok=address');

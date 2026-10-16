@@ -15,6 +15,7 @@ import { ConversationRepository } from '../repositories/conversation.repository'
 import { PostMessageDto } from '../dto/post-message.dto';
 import { ConversationNotFoundError, MessageNotFoundError, ConversationLockedError, MessagingForbiddenError } from '../domain/messaging.errors';
 import { MessagingActor } from './conversation.service';
+import { viewerOf, buyerMessage, staffMessage } from '../domain/conversation-roles';
 
 @Injectable()
 export class MessageService {
@@ -52,10 +53,19 @@ export class MessageService {
   async list(tenantId: string, actor: MessagingActor, conversationId: string, q: { cursor?: { c: string; id: string }; limit: number }) {
     if (!(await this.conversations.isParticipant(tenantId, conversationId, actor.userId)) && !actor.isModerator) throw new ConversationNotFoundError(conversationId);
     const rows = await this.messages.listForConversation(tenantId, conversationId, q);
-    const items = rows.map((m) => m.toJSON());
-    const last = items[items.length - 1] as any;
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
-    return { items, nextCursor };
+    const raw = rows.map((m) => m.toJSON());
+    const last = raw[raw.length - 1] as any;
+    const nextCursor = raw.length === q.limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    // PC-56 HOTFIX-6 · B2 (survey F-2): a buyer reads `from: you | organisation | platform | system` — never `senderUserId`; staff keep the id.
+    // The organisation's side is read from the database (an organisation role in this tenant), the viewer's too — never from a token claim.
+    return { items: await this.shape(tenantId, actor, raw), nextCursor };
+  }
+  /** PC-56 HOTFIX-6 · B2: the viewer's shape for a set of messages (one org-role read for the senders and the viewer). */
+  private async shape(tenantId: string, actor: MessagingActor, raw: ReturnType<Message['toJSON']>[], tx?: TxContext) {
+    const senders = [...new Set(raw.map((m) => m.senderUserId).filter((u): u is string => !!u)), actor.userId];
+    const org = await this.conversations.orgMemberIds(tenantId, senders, tx);
+    const buyer = viewerOf({ isModerator: actor.isModerator, isOrgMember: org.has(actor.userId) }) === 'buyer';
+    return raw.map((m) => (buyer ? buyerMessage(m, actor.userId, org) : staffMessage(m)));
   }
 
   /** Flag a message for moderation. A participant may report; a moderator may also act. */
@@ -67,7 +77,7 @@ export class MessageService {
       msg.flag();
       await this.messages.update(tx, msg);
       await this.flush(tx, tenantId, messageId, msg.pullEvents());
-      return msg.toJSON();
+      return (await this.shape(tenantId, actor, [msg.toJSON()], tx))[0];   // HOTFIX-6 · B2: a buyer's report never answers with the sender's uuid
     }, { userId: actor.userId });
   }
   /** Moderator-only: clear a flag after review. */

@@ -1,10 +1,13 @@
 // apps/web-storefront/src/app/(platform)/messages/[id]/page.tsx · a chat thread. PROTECTED + dynamic; notFound() on a
-// conversation the caller doesn't participate in (membership enforced server-side — no IDOR). Reads the
-// conversation + recent messages + the caller's own id (auth.me) to align bubbles and derive the COUNTERPART
-// (the other participant's user id, taken from a message they sent — the read-model lists no participants). The
-// masked-call CTA passes only that USER id; no phone number is ever fetched or shown. Posting a message + the
-// call are Server Actions. markRead is best-effort on view. Voice/attachment messages show a localized label
-// (their bytes live in S3, referenced by id).
+// conversation the caller doesn't participate in (membership enforced server-side — no IDOR). Posting a message is a Server Action;
+// markRead is best-effort on view. Voice/attachment messages show a localized label (their bytes live in S3, referenced by id).
+//
+// PC-56 HOTFIX-6 · C2 (survey STORE-4 F-1 / F-2, founder D2; HOTFIX-4 D3 "the organisation only"):
+//   • the other side is the ORGANISATION — `conversations.get` answers the buyer's shape (the organisation's name when the other party
+//     belongs to it, a party label, the order number as the context label), never a person's name;
+//   • each message is labelled by `from` (you · the organisation · platform support · system) — the page reads no sender id and derives none;
+//   • the Call button and the hidden farmer-uuid input are GONE: "Call" is refused by name (`features/store4/refusals.ts`, RefusalList
+//     surface `thread`) until the cost owner and the consent notice are decided. No person id is ever written into this page.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -14,7 +17,8 @@ import { SdkError } from '@krishalaya/sdk-js';
 import { serverClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { postMessageAction, initiateCallAction } from './actions';
+import { RefusalList } from '../../../../components/RefusalList';
+import { postMessageAction } from './actions';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
@@ -29,12 +33,9 @@ export default async function ThreadPage({ params, searchParams }: { params: { i
 
   let convo: Conversation | null = null;
   let messages: Message[] = [];
-  let myId = '';
   try {
     convo = await client.conversations.get(params.id);
-    const [msgPage, me] = await Promise.all([client.conversations.listMessages(params.id, { limit: 30 }), client.auth.me()]);
-    messages = msgPage.items.slice().reverse(); // API is newest-first → show oldest→newest
-    myId = me.id;
+    messages = (await client.conversations.listMessages(params.id, { limit: 30 })).items.slice().reverse(); // API is newest-first → oldest→newest
     client.conversations.markRead(params.id).catch(() => {}); // best-effort; never blocks render
   } catch (e) {
     if (e instanceof SdkError && e.isNotFound) notFound();
@@ -45,26 +46,28 @@ export default async function ThreadPage({ params, searchParams }: { params: { i
       <p className="kv-form__error" role="alert">{t.t('messages.loadError')}</p></section>;
   }
 
-  const counterpartId = messages.find((m) => m.senderUserId && m.senderUserId !== myId)?.senderUserId ?? null;
-  const notice =
-    searchParams.status === 'calling' ? { kind: 'ok', msg: t.t('messages.callConnecting') } :
-    searchParams.status === 'callerr' ? { kind: 'err', msg: t.t('messages.callError') } :
-    searchParams.status === 'senderr' ? { kind: 'err', msg: t.t('messages.sendError') } : null;
-
+  const org = convo.counterpartyRole === 'organisation' && convo.counterpartyName ? convo.counterpartyName : null;
+  const notice = searchParams.status === 'senderr' ? t.t('messages.sendError') : null;
   const bodyOf = (m: Message) => m.body ?? (m.voiceMediaId ? t.t('messages.voiceMessage') : m.attachmentMediaId ? t.t('messages.attachment') : '');
+  const who = (m: Message) =>
+    m.from === 'you' ? t.t('messages.you')
+      : m.from === 'organisation' ? (org ?? t.t('store4.from.organisation'))
+        : m.from === 'platform' ? t.t('store4.from.platform')
+          : t.t('store4.from.system');
 
   return (
-    <section className="kv-thread">
-      <h1>{t.t('messages.threadTitle')}</h1>
-      {notice && <p className={notice.kind === 'ok' ? 'kv-form__notice' : 'kv-form__error'} role="status">{notice.msg}</p>}
+    <section className="kv-thread" data-kv-thread={convo.id}>
+      <h1>{org ? t.t('store4.threadWith', { org }) : t.t('messages.threadTitle')}</h1>
+      {convo.contextType === 'order' && convo.contextLabel && <p className="kv-detail__muted" data-kv-context="order">{t.t('store4.context.order', { no: convo.contextLabel })}</p>}
+      {notice && <p className="kv-form__error" role="status">{notice}</p>}
 
       <ol className="kv-thread__msgs" aria-label={t.t('messages.threadTitle')}>
         {messages.length === 0 && <li className="kv-detail__muted">{t.t('messages.threadEmpty')}</li>}
         {messages.map((m) => {
-          const mine = m.senderUserId === myId;
+          const mine = m.from === 'you';
           return (
-            <li key={m.id} className={`kv-msg ${mine ? 'kv-msg--mine' : 'kv-msg--them'}`}>
-              <span className="kv-msg__who">{mine ? t.t('messages.you') : t.t('messages.them')}</span>
+            <li key={m.id} className={`kv-msg ${mine ? 'kv-msg--mine' : 'kv-msg--them'}`} data-kv-from={m.from ?? 'system'}>
+              <span className="kv-msg__who">{who(m)}</span>
               <span className="kv-msg__body">{bodyOf(m)}</span>
               {m.createdAt && <span className="kv-msg__time">{formatDate(m.createdAt, lang, { dateStyle: 'short', timeStyle: 'short' })}</span>}
             </li>
@@ -83,16 +86,7 @@ export default async function ThreadPage({ params, searchParams }: { params: { i
         </form>
       )}
 
-      {counterpartId && (
-        <form action={initiateCallAction} className="kv-thread__call">
-          <input type="hidden" name="conversationId" value={convo.id} />
-          <input type="hidden" name="calleeUserId" value={counterpartId} />
-          <input type="hidden" name="contextType" value={convo.contextType} />
-          {convo.contextId && <input type="hidden" name="contextId" value={convo.contextId} />}
-          <button type="submit" className="kv-btn--ghost kv-btn">{t.t('messages.callCta')}</button>
-          <span className="kv-field__hint">{t.t('messages.callPrivacy')}</span>
-        </form>
-      )}
+      <RefusalList surface="thread" />
 
       <p><Link href="/messages" className="kv-btn--link">{t.t('messages.back')}</Link></p>
     </section>

@@ -14,6 +14,7 @@ import { DomainEvent, ContextType, MULTI_THREAD_CONTEXT_TYPES } from '../domain/
 import { ConversationRepository } from '../repositories/conversation.repository';
 import { OpenConversationDto } from '../dto/open-conversation.dto';
 import { ConversationNotFoundError, MessagingForbiddenError } from '../domain/messaging.errors';
+import { viewerOf, buyerSummary, staffSummary, ConversationViewer } from '../domain/conversation-roles';
 
 export interface MessagingActor { userId: string; isModerator: boolean; }
 
@@ -79,10 +80,19 @@ export class ConversationService {
         }, { userId: actor.userId })));
   }
 
+  /** PC-56 HOTFIX-6 · B2: the viewer's shape on THIS tenant — staff (a moderator, or an organisation role read from the database) or a buyer. */
+  async viewer(tenantId: string, actor: MessagingActor): Promise<ConversationViewer> {
+    if (actor.isModerator) return 'staff';
+    return viewerOf({ isModerator: false, isOrgMember: (await this.repo.orgMemberIds(tenantId, [actor.userId])).has(actor.userId) });
+  }
   async getById(tenantId: string, actor: MessagingActor, id: string) {
     const c = await this.repo.getForParticipant(tenantId, actor.userId, id);
     if (!c) throw new ConversationNotFoundError(id);   // 404 for a non-participant (no IDOR)
-    return c.toJSON();
+    // PC-56 HOTFIX-6 · B2: the thread names its other side — the buyer reads the ORGANISATION (never a person), the context label (the order
+    // number); staff keep the full summary. A moderator reading a thread they are not in gets the bare conversation, as before.
+    const summary = await this.repo.summaryForParticipant(tenantId, actor.userId, id);
+    if (!summary) return c.toJSON();
+    return (await this.viewer(tenantId, actor)) === 'buyer' ? buyerSummary(summary) : staffSummary(summary);
   }
   async list(tenantId: string, actor: MessagingActor, q: { contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number }) {
     const rows = await this.repo.listForUser(tenantId, actor.userId, q);
@@ -94,11 +104,15 @@ export class ConversationService {
   /** The caller's inbox as enriched summaries (contract-gap P0-1). Keyset (created_at|id), same cursor grammar as
    * list(). `archived` splits inbox from archive. Membership is enforced by the JOIN in the read — a non-participant
    * simply never appears (no IDOR). */
-  async listSummaries(tenantId: string, actor: MessagingActor, q: { archived: boolean; contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number }) {
+  async listSummaries(tenantId: string, actor: MessagingActor, q: { archived: boolean; contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number }, opts: { asStaff?: true } = {}) {
     const rows = await this.repo.listSummariesForUser(tenantId, actor.userId, q);
     const last = rows[rows.length - 1];
     const nextCursor = rows.length === q.limit && last ? Buffer.from(`${last.createdAt.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
-    return { items: rows, nextCursor };
+    // PC-56 HOTFIX-6 · B2 (survey F-2): a buyer's inbox carries the organisation's name and a party label — never users.full_name, never a
+    // person's uuid; staff keep both (KV-BL-031's listings inquiries read `counterpartyUserId` as the seller).
+    // `asStaff` is a SERVER decision only (listings' owner-verified inquiries read, KV-BL-031) — never from a request.
+    if (opts.asStaff || (await this.viewer(tenantId, actor)) === 'staff') return { items: rows.map((r) => staffSummary(r)), nextCursor, shape: 'staff' as const };
+    return { items: rows.map((r) => buyerSummary(r)), nextCursor, shape: 'buyer' as const };
   }
   /** Archive/restore the thread FOR THE CALLER only (per-participant). Re-checks membership (anti-IDOR) then flips
    * the flag idempotently — no outbox event (this is private UI state, not a shared thread change). */

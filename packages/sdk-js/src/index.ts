@@ -113,6 +113,9 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   OnboardRoleResult, ListingInquiry, ListingTrustDocument,
   WalletStatementFile, AutopayMandate, MandateExecution, SavedInstruments, SavedMandateInstrument, SavedBankInstrument,
   BusinessType, BusinessKycStatus, EkycStartResult, EkycVerifyResult, ConsentRecord, DisputeMessage } from './types';
+// PC-56 HOTFIX-6 · B7: the consent answer, the address inputs and write answers, the buyer's message label, the call answer
+export type { ConsentGrantResult, AddressCreateInput, AddressUpdateInput, AddressWriteResult, AddressRemoveResult, MessageFrom, MaskedCallStarted } from './types';
+export { CONSENTS_PATH } from './resources/privacy';
 // [DEV-01 FIX 2026-07-23: the 13 types above (InsightBucket, WalletStatementFile…DisputeMessage) were already defined in ./types.ts
 // (and in BusinessKycStatus/EkycStartResult/EkycVerifyResult's case, already consumed internally by
 // resources/payments.ts and resources/identity.ts) but were never re-exported from this public barrel, so every

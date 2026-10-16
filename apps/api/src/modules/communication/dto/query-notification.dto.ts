@@ -3,11 +3,12 @@
 // event namespace — validated as a token, matched against the catalogue by prefix), `channel` (items that ALSO reached
 // you on that channel). `status` / `unreadOnly` stay for the storefront, partner and mobile inboxes.
 import { z } from 'zod';
+import { queryBoolean } from '../../../core/http/query-boolean';
 import { NOTIF_STATUSES } from '../domain/notification.state';
 import { NOTIF_CHANNELS, NOTIF_PRIORITIES } from '../domain/communication.events';
 export const QueryNotificationsSchema = z.object({
   status: z.enum(NOTIF_STATUSES as unknown as [string, ...string[]]).optional(),
-  unreadOnly: z.coerce.boolean().optional(),
+  unreadOnly: queryBoolean().optional(),   // PC-56 HOTFIX-6 · B6: 'false' means false (z.coerce.boolean read it as TRUE — the "All" tab listed unread only)
   state: z.enum(['unread', 'read']).optional(),
   tier: z.enum(NOTIF_PRIORITIES as unknown as [string, ...string[]]).optional(),
   module: z.string().regex(/^[a-z][a-z0-9_]{0,39}$/).optional(),

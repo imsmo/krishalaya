@@ -265,3 +265,31 @@ describe('STORE-3c · claims guard (the auction list, my bids, the group lot, th
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b/i.test(v)]).toEqual([k, true]);
   });
 });
+
+// PC-56 HOTFIX-6 · C4 (founder D2; HOTFIX-4 D3) — the conversation page OFFERS NO CALL: a call is named only inside `store4.refusal.*`
+// (which says no). The old offers ("Call (number stays private)", "We connect the call…", "Connecting your call…") are gone from every
+// catalogue, and no messaging / store4 value names a person (the other side is {org}).
+describe('HOTFIX-6 · claims guard (the conversation: no call offered, no person named)', () => {
+  const CALL = /\bcall(s|ing)?\b|कॉल|કૉલ/i;
+  it.each(Object.entries(CATS))('%s: a call appears in a messaging / store4 value only inside the refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (!k.startsWith('messages.') && !k.startsWith('store4.')) continue;
+      if (k.startsWith('store4.refusal.')) continue;
+      expect([k, CALL.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: the retired call offers are in no catalogue', (_l, cat) => {
+    for (const k of ['messages.callCta', 'messages.callPrivacy', 'messages.callConnecting', 'messages.callError']) expect([k, k in cat]).toEqual([k, false]);
+    for (const [k, v] of Object.entries(cat)) expect([k, /number stays private|connect the call without|Connecting your call/i.test(v)]).toEqual([k, false]);
+  });
+  it.each(Object.entries(CATS))('%s: no person placeholder in a store4 value — {org}, never a name', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store4.'));
+    expect(keys.length).toBe(6);
+    for (const k of keys) expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|fullName|owner|caller|callee)\}/i.test((cat as Record<string, string>)[k])]).toEqual([k, false]);
+  });
+  it('the English call refusal says no / not', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store4.refusal.'));
+    expect(r.length).toBe(1);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b/i.test(v)]).toEqual([k, true]);
+  });
+});

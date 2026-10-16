@@ -1,5 +1,6 @@
 // modules/communication/dto/query-conversation.dto.ts · zod .strict() — list the caller's conversations (keyset).
 import { z } from 'zod';
+import { queryBoolean } from '../../../core/http/query-boolean';
 import { CONTEXT_TYPES } from '../domain/messaging.events';
 export const QueryConversationsSchema = z.object({
   contextType: z.enum(CONTEXT_TYPES as unknown as [string, ...string[]]).optional(),
@@ -11,6 +12,7 @@ export const QueryConversationsSchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   // contract-gap P0-1: false ⇒ the inbox (default), true ⇒ the per-participant archive.
-  archived: z.coerce.boolean().optional().default(false),
+  // PC-56 HOTFIX-6 · B6: the strict parser — `?archived=false` is the inbox (z.coerce.boolean read it as the archive); an unknown spelling is refused.
+  archived: queryBoolean().optional().default(false),
 }).strict();
 export type QueryConversationsDto = z.infer<typeof QueryConversationsSchema>;

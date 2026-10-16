@@ -4,18 +4,23 @@
 // erases; the app NEVER deletes locally — Law 11), and a `myRequests` status read. Phone change is OTP-verified
 // server-side. All writes are idempotent (Law 3). The app never fabricates an export file or a deletion outcome.
 import { HttpClient } from '../http';
-import { PrivacyRequest, ConsentRecord } from '../types';
+import { PrivacyRequest, ConsentRecord, ConsentGrantResult } from '../types';
+
+/** PC-56 HOTFIX-6 · B5: the ONE consent route (apps/api identity `consents.controller.ts`, `@Controller({ path: 'consents', version: '1' })`). */
+export const CONSENTS_PATH = 'consents';
 
 export class PrivacyResource {
   constructor(private readonly http: HttpClient) {}
-  /** The caller's DPDP consent records (purpose → granted). Live surface (append-only grants). */
+  /** The caller's DPDP consent records — the LATEST decision per purpose (`{ purposeCode, granted, version, channel, updatedAt }`).
+   *  PC-56 HOTFIX-6 · B5 (survey STORE-4 F-4 / C-10): the route is `/v1/consents` (identity ConsentsController) — this called
+   *  `privacy/consents`, which does not exist, so mobile's privacy screen and web-partner's /consents failed on every call. */
   async listConsents(signal?: AbortSignal): Promise<ConsentRecord[]> {
-    return (await this.http.request<ConsentRecord[]>('GET', 'privacy/consents', { signal })).data;
+    return (await this.http.request<ConsentRecord[]>('GET', CONSENTS_PATH, { signal })).data;
   }
-  /** Grant or withdraw a consent purpose (server appends a new consent record; the app never mutates in place).
-   *  Idempotent (Law 3). */
-  async setConsent(purposeCode: string, granted: boolean, idempotencyKey: string): Promise<ConsentRecord> {
-    return (await this.http.request<ConsentRecord>('POST', 'privacy/consents', { idempotencyKey, body: { purposeCode, granted } })).data;
+  /** Grant or withdraw a consent purpose (the server APPENDS a record — a withdrawal is a `granted=false` row; history is never mutated).
+   *  Idempotent on the key (Law 3): a replay returns the first answer and appends nothing. */
+  async setConsent(purposeCode: string, granted: boolean, idempotencyKey: string): Promise<ConsentGrantResult> {
+    return (await this.http.request<ConsentGrantResult>('POST', CONSENTS_PATH, { idempotencyKey, body: { purposeCode, granted } })).data;
   }
   /** Request a DPDP data export (the server compiles + emails/links it). Optional `format` ('data' = CSV+JSON
    *  bundle, 'pdf' = report). Idempotent. */

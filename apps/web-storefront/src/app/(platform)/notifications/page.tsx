@@ -34,6 +34,8 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   let nextCursor: string | null = null;
   let failed = false;
   try {
+    // PC-56 HOTFIX-6 · C3 (survey STORE-4 F-10): `unreadOnly` is ALWAYS sent — the SDK serialises it as the strict 'true' / 'false' the API
+    // now parses, so the All tab ('false') lists read rows too (z.coerce.boolean read 'false' as true: All listed unread only).
     const page = await serverClient().notifications.inbox({ unreadOnly, cursor: searchParams.cursor, limit: 30 });
     items = page.items; nextCursor = page.nextCursor;
   } catch { failed = true; }

@@ -1,9 +1,9 @@
 'use server';
-// apps/web-storefront/src/app/(platform)/messages/[id]/actions.ts · post a chat message + initiate a masked (privacy-proxy)
-// call. AUTHENTICATED. Conversation membership is enforced SERVER-SIDE (a non-participant gets 404 — no IDOR).
-// Both POSTs carry an Idempotency-Key (Law 3). The masked call bridges the two real numbers on the server — NO
-// phone number is ever sent to or shown in the client; we only pass the counterpart's USER id. revalidate the
-// thread so the new message/state shows on return.
+// apps/web-storefront/src/app/(platform)/messages/[id]/actions.ts · post a chat message. AUTHENTICATED. Conversation membership is
+// enforced SERVER-SIDE (a non-participant gets 404 — no IDOR). The POST carries an Idempotency-Key (Law 3). revalidate the thread so the new
+// message shows on return.
+// PC-56 HOTFIX-6 · C2 (founder D2): the masked-call action is GONE — "Call" is refused by name on the page, and no person id is ever posted
+// from this storefront (the API now takes a conversation id only and resolves the callee itself).
 import { randomUUID } from 'crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -25,14 +25,3 @@ export async function postMessageAction(formData: FormData): Promise<void> {
   redirect(threadPath(conversationId));
 }
 
-export async function initiateCallAction(formData: FormData): Promise<void> {
-  const conversationId = String(formData.get('conversationId') ?? '');
-  const calleeUserId = String(formData.get('calleeUserId') ?? '');
-  const contextType = String(formData.get('contextType') ?? '') || undefined;
-  const contextId = String(formData.get('contextId') ?? '') || undefined;
-  if (!conversationId || !calleeUserId) redirect('/messages');
-  await requireSession(threadPath(conversationId));
-  try { await serverClient().maskedCalls.initiate({ calleeUserId, contextType, contextId }, randomUUID()); }
-  catch { redirect(`${threadPath(conversationId)}?status=callerr`); }
-  redirect(`${threadPath(conversationId)}?status=calling`);
-}

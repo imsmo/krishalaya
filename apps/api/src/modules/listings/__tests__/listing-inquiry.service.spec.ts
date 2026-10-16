@@ -47,6 +47,8 @@ describe('ListingInquiryService.list', () => {
       't1',
       { userId: 'owner-A', isModerator: false },
       { archived: false, contextType: 'listing', contextId: 'L1', cursor: { c: '2026-01-01', id: 'C0' }, limit: 20 },
+      // PC-56 HOTFIX-6 · B2: the owner's inquiries are read in the STAFF shape (the buyer shape carries no user id)
+      { asStaff: true },
     );
   });
 

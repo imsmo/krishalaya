@@ -40,15 +40,17 @@ export class ListingInquiryService {
 
     // Query AS the listing's real seller — this also covers the moderator-override read path (a moderator reads
     // through the owner's own inbox; read-only, no action is taken as the impersonated user).
+    // PC-56 HOTFIX-6 · B2: the seller's own inbox read in the STAFF shape (owner-verified above) — the buyer shape carries no user id.
     const { items, nextCursor } = await this.conversations.listSummaries(
       tenantId,
       { userId: p.sellerUserId, isModerator: false },
       { archived: false, contextType: 'listing', contextId: listingId, cursor: q.cursor, limit: q.limit },
+      { asStaff: true },
     );
     return {
       items: items.map((s) => ({
         conversationId: s.id,
-        buyerUserId: s.counterpartyUserId,
+        buyerUserId: 'counterpartyUserId' in s ? s.counterpartyUserId : null,
         lastMessagePreview: s.lastMessageBody,
         unreadCount: s.unreadCount,
       })),

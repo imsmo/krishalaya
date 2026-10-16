@@ -3,7 +3,7 @@
 // Bank accounts store a gateway-tokenised vaultRef + last-4/IFSC only — never a raw account number. Both POSTs
 // require an Idempotency-Key (Law 3). KYC is gated server-side by the `kyc` flag.
 import { HttpClient } from '../http';
-import { KycClaim, KycClaimResult, KycSkipReason, KycDeskOverview, KycDeskRow, KycDeskQueueQuery, KycDeskRecord, KycDeskCatalogue, KycSubmitInput, KycSubmitReview, KycSubmitResult, KycActPreview, KycActResult, KycDeskAct, KycDocument, KycReviewItem, KycDocType, BankAccount, Address, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
+import { KycClaim, KycClaimResult, KycSkipReason, KycDeskOverview, KycDeskRow, KycDeskQueueQuery, KycDeskRecord, KycDeskCatalogue, KycSubmitInput, KycSubmitReview, KycSubmitResult, KycActPreview, KycActResult, KycDeskAct, KycDocument, KycReviewItem, KycDocType, BankAccount, Address, AddressCreateInput, AddressUpdateInput, AddressWriteResult, AddressRemoveResult, EkycStartResult, EkycVerifyResult, EkycSessionSummary, BusinessKycStatus, BusinessType } from '../types';
 
 export class KycResource {
   constructor(private readonly http: HttpClient) {}
@@ -151,13 +151,18 @@ export class AddressesResource {
   async list(signal?: AbortSignal): Promise<Address[]> {
     return (await this.http.request<Address[]>('GET', 'addresses', { signal })).data;
   }
-  async create(input: { line1: string; line2?: string; village?: string; regionId?: string; pincode?: string; countryCode?: string; contactName?: string; contactPhone?: string; lat?: number; lng?: number; labelId?: string; isDefault?: boolean }): Promise<Address> {
-    return (await this.http.request<Address>('POST', 'addresses', { body: input })).data;
+  /** Add an address. PC-56 HOTFIX-6 · B4/B7: `countryCode` + the one postal rule (AddressCreateInput); an OPTIONAL Idempotency-Key makes a
+   *  retry return the first answer (one row). The API answers `{ id }` (the `Address` return type is kept for the existing callers). */
+  async create(input: AddressCreateInput, idempotencyKey?: string): Promise<Address> {
+    return (await this.http.request<Address>('POST', 'addresses', { body: input, ...(idempotencyKey ? { idempotencyKey } : {}) })).data;
   }
-  async update(id: string, patch: Partial<{ line1: string; line2: string; village: string; pincode: string; contactName: string; contactPhone: string; isDefault: boolean }>): Promise<Address> {
-    return (await this.http.request<Address>('PATCH', `addresses/${encodeURIComponent(id)}`, { body: patch })).data;
+  /** Edit an address. PC-56 HOTFIX-6 · B3: COPY-ON-WRITE — when an order, shipment or booking points at it, the answer's `id` is a NEW
+   *  address (`copied: true`, `previousId`) and the old one is retired with its values; `countryCode` is editable. Optional key as create. */
+  async update(id: string, patch: AddressUpdateInput, idempotencyKey?: string): Promise<Address & AddressWriteResult> {
+    return (await this.http.request<Address & AddressWriteResult>('PATCH', `addresses/${encodeURIComponent(id)}`, { body: patch, ...(idempotencyKey ? { idempotencyKey } : {}) })).data;
   }
-  async remove(id: string): Promise<{ ok: boolean }> {
-    return (await this.http.request<{ ok: boolean }>('DELETE', `addresses/${encodeURIComponent(id)}`)).data;
+  /** Remove your own address (404 for one that is not yours). Removing the default makes the NEWEST remaining one the default (`defaultId`). */
+  async remove(id: string): Promise<AddressRemoveResult> {
+    return (await this.http.request<AddressRemoveResult>('DELETE', `addresses/${encodeURIComponent(id)}`)).data;
   }
 }
