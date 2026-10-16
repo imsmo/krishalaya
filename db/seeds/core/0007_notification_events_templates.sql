@@ -1008,6 +1008,24 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
  ('bid.outbid','inapp','gu',NULL,'તમારી બોલી કરતાં ઊંચી બોલી આવી','{{lot_name}} પર ઊંચી બોલી મૂકવામાં આવી છે. આગળની માન્ય બોલી જોવા મારી બોલીઓ ખોલો; તમારી ડિપોઝિટ હરાજી બંધ થાય ત્યાં સુધી રોકાયેલી રહે છે.',NULL,true)
 ON CONFLICT DO NOTHING;
 
+-- PC-56 STORE-4c · B2 (founder D1, survey F-9 / B12) — **THE MONEY NOTICES REACH THE IN-APP INBOX.** Migration 0215 adds `inapp` to the default
+-- channels of `payment.success` (now CRITICAL and LOCKED), `order.created`, `order.delivered` and `bid.outbid` (3c's in-app outbid copy above
+-- was never selected before 0215 — survey C-12). Their in-app copy lives HERE, above the version backfill below (the NOTE's reason). The
+-- existing `payment.success` / inapp / en row (line 56) is kept; hi and gu join it. NO VARIABLES: the payloads these events carry today hold no
+-- order number (orders.order_created / order_delivered carry `orderId` only) and the payment payload's amount is minor units with no
+-- formatter in a template — so no copy names an order number or prints an amount (named in the STORE-4c report; a money figure is never
+-- computed for a notice). The organisation is never a person: no copy names anybody.
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('payment.success','inapp','hi',NULL,'भुगतान मिला','हमें आपका भुगतान मिल गया है।',NULL,true),
+ ('payment.success','inapp','gu',NULL,'ચુકવણી મળી','અમને તમારી ચુકવણી મળી ગઈ છે.',NULL,true),
+ ('order.created','inapp','en',NULL,'Order placed','Your order was placed. Open My orders to follow it.',NULL,true),
+ ('order.created','inapp','hi',NULL,'ऑर्डर दिया गया','आपका ऑर्डर दे दिया गया है। इसे देखने के लिए मेरे ऑर्डर खोलें।',NULL,true),
+ ('order.created','inapp','gu',NULL,'ઓર્ડર અપાયો','તમારો ઓર્ડર અપાઈ ગયો છે. તેને જોવા માટે મારા ઓર્ડર ખોલો.',NULL,true),
+ ('order.delivered','inapp','en',NULL,'Delivered','Your order was marked delivered. Open My orders to see it.',NULL,true),
+ ('order.delivered','inapp','hi',NULL,'डिलीवर हो गया','आपका ऑर्डर डिलीवर हुआ दर्ज किया गया है। देखने के लिए मेरे ऑर्डर खोलें।',NULL,true),
+ ('order.delivered','inapp','gu',NULL,'ડિલિવર થયો','તમારો ઓર્ડર ડિલિવર થયેલો નોંધાયો છે. જોવા માટે મારા ઓર્ડર ખોલો.',NULL,true)
+ON CONFLICT DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

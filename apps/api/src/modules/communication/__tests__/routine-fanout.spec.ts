@@ -25,9 +25,17 @@ interface HarnessOpts {
   routineFlagOn?: boolean;
   /** Per-channel dispatch outcome for the external gateway (whatsapp/sms/email/ivr) — defaults to 'accepted'. */
   dispatchByChannel?: Partial<Record<NotifChannel, 'accepted' | 'failed'>>;
+  /** PC-56 STORE-4c (founder D2): a PROMOTIONAL event is opt-in AND consent-bound. These routine-policy cases are about the collapse, not
+   *  the consent, so the recipient `u1` is given the `marketing` grant and an explicit opt-in on every default channel unless this is false
+   *  (the consent half is pinned in store4c-buyer-audience.spec.ts). */
+  promotionalConsent?: boolean;
 }
 
 function harness(opts: HarnessOpts) {
+  if (opts.event.priority === 'promotional' && opts.promotionalConsent !== false && !opts.prefs) {
+    opts = { ...opts, prefs: opts.event.toCatalog().defaultChannels.map((channel) => NotificationPreference.rehydrate({ userId: 'u1', eventCode: opts.event.code, channel, isEnabled: true })) };
+  }
+  const consents = { grantedFor: jest.fn(async (_x: unknown, ids: readonly string[]) => new Set(opts.promotionalConsent === false ? [] : ids.filter((id) => id === 'u1'))) };
   const inserted: any[] = [];
   const tx = { query: jest.fn() };
   const uow = { run: jest.fn(async (_t: string, fn: any) => fn(tx)) };
@@ -62,7 +70,7 @@ function harness(opts: HarnessOpts) {
     profilesFor: jest.fn(async (_tx: unknown, ids: readonly string[]) => new Map(ids.map((id) => [id, { languageCode: 'en', hasEmail: true, hasPhone: true }]))),
     getForUserUpdate: jest.fn(async () => null), update: jest.fn(), getByProviderRef: jest.fn() };
   const flags = { isEnabled: jest.fn(async (key: string) => (key === ROUTINE_FANOUT_FLAG ? (opts.routineFlagOn ?? false) : false)) };
-  const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, pushSender as any, devices as any, events as any, templates as any, prefs as any, quiet as any, notifications as any, flags as any);
+  const svc = new NotificationService(uow as any, outbox as any, metrics as any, gateway as any, pushSender as any, devices as any, events as any, templates as any, prefs as any, quiet as any, notifications as any, flags as any, undefined, consents as any);
   return { svc, tx, gateway, pushSender, notifications, inserted, metrics, flags };
 }
 

@@ -7,6 +7,9 @@
 //   • during quiet hours, INTRUSIVE channels (push/sms/whatsapp/ivr) are suppressed UNLESS the event is
 //     'critical' (critical bypasses quiet hours); email + in-app are never quiet-hours-suppressed (passive);
 //   • the result is deterministic and float-free.
+//   • [PC-56 STORE-4c · founder D2] a PROMOTIONAL event is OPT-IN: a channel is sent only when the person has an EXPLICIT opt-in row for it
+//     (`prefs.get(ch) === true`); no row, or an opt-out, is `opted_out`. (The `marketing` consent is the fan-out's half — `no_consent`,
+//     notification.service.ts — because it is a read of another module's record, not a preference.)
 import { NotifChannel, NotifPriority } from './communication.events';
 import { isWithinWindow } from './quiet-window';
 
@@ -37,6 +40,7 @@ export function resolveChannels(
   const suppressed: { channel: NotifChannel; reason: SuppressReason }[] = [];
   const inQuiet = quiet ? isWithinQuietHours(now, quiet) : false;
   for (const ch of event.defaultChannels) {
+    if (event.priority === 'promotional' && prefs.get(ch) !== true) { suppressed.push({ channel: ch, reason: 'opted_out' }); continue; }   // STORE-4c D2: opt-in only
     if (event.userCanOptOut && prefs.get(ch) === false) { suppressed.push({ channel: ch, reason: 'opted_out' }); continue; }
     if (inQuiet && event.priority !== 'critical' && INTRUSIVE.has(ch)) { suppressed.push({ channel: ch, reason: 'quiet_hours' }); continue; }
     channels.push(ch);

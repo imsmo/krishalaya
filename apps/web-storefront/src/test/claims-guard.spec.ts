@@ -314,3 +314,23 @@ describe('STORE-4a · claims guard (the account, the address book, the data righ
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b/i.test(v)]).toEqual([k, true]);
   });
 });
+
+// PC-56 STORE-4c · brief §E (founders D1 / D2 / D4, Q12) — the inbox's and the preferences page's refused canon claims appear ONLY inside
+// `store4c.refusal.*` (which say no): no delivery OTP, no price alert, no "+N more at launch", no "everywhere else on next open", no speaking
+// buttons, no data saver, no "Flagged off", no "N of M" counts. And no STORE-4c value carries a digit or a currency sign.
+describe('STORE-4c · claims guard (the inbox and the preferences page)', () => {
+  const REFUSED = [
+    /delivery OTP/i, /price alert/i, /more at launch/i, /everywhere else on next open/i, /speaks? when touched/i, /data saver/i, /Flagged off/i, /Showing \S+ of/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a refusal; no digit or currency sign in a STORE-4c value', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (k.startsWith('store4c.') && !k.includes('.refusal.')) for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+      if (k.startsWith('store4c.')) expect([k, /[0-9०-९૦-૯₹$£€]/.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English STORE-4c refusal says no / not / never', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store4c.refusal.'));
+    expect(r.length).toBe(16);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b/i.test(v)]).toEqual([k, true]);
+  });
+});

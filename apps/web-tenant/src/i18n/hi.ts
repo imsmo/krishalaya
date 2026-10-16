@@ -5935,6 +5935,7 @@ export const hi: Messages = {
   'notif.suppressed.opted_out': 'आपने इस इवेंट के लिए यह चैनल बंद किया',
   'notif.suppressed.routine_collapsed': 'एक चैनल काफ़ी है (तय नियम)',
   'notif.suppressed.channel_off': 'चैनल बंद',
+  'notif.suppressed.no_consent': 'नहीं भेजी — मार्केटिंग सहमति नहीं (प्रचार सूचनाओं के लिए ज़रूरी)',   // PC-56 STORE-4c (founder D2, 0215)
   'notif.suppressed.unknown': 'नहीं भेजी (कारण दर्ज नहीं)',
   'notif.failure.no_template': 'इस चैनल और भाषा के लिए स्वीकृत पाठ नहीं',
   'notif.failure.no_address': 'इस चैनल पर कोई पता नहीं',

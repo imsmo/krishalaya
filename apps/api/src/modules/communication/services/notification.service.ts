@@ -38,13 +38,19 @@ import { CommForbiddenError } from '../domain/communication.errors';
 import { fallbackChain, LAST_RESORT_LANGUAGE } from '../domain/fallback-languages';
 import { EffectiveWindow, effectiveWindow, parseWindowSetting, isWithinWindow, windowEndAfter } from '../domain/quiet-window';
 import { fallbackAction, fanoutKeyOf, releaseDecision, suppressionRows, SuppressedReason } from '../domain/delivery-log';
+// PC-56 STORE-4c · B3 (founder D2): the `marketing` consent is IDENTITY's record — read through identity's public service (the module rule:
+// never another module's repository), in ONE batched query per fan-out page.
+import { ConsentService } from '../../identity/services/consent.service';
+
+/** STORE-4c · D2: the consent purpose a PROMOTIONAL notice requires (seed 0006's `marketing`). */
+export const PROMOTIONAL_CONSENT_PURPOSE = 'marketing';
 
 /** The fan-out's clock. Injectable so a live suite can pin "now" to a known side of a quiet window — the default window
  *  is real (F-5), so a suite asserting a 22:00 push was SENT would otherwise depend on the hour it ran. */
 export const NOTIFICATION_CLOCK = Symbol('NOTIFICATION_CLOCK');
 /** 0176's kill-switch (0121 tier: ON = stop). OFF by default — the release runs. */
 export const HELD_RELEASE_KILL_SWITCH = 'notification.held_release_kill_switch';
-export type ReleaseOutcome = 'sent' | 'failed' | 'reheld' | 'opted_out';
+export type ReleaseOutcome = 'sent' | 'failed' | 'reheld' | 'opted_out' | 'no_consent';
 
 interface DeliverCtx {
   tenantId: string | null; userId: string; event: string; channel: NotifChannel; lang: string; payload: Record<string, unknown>; dedupeKey: string;
@@ -86,8 +92,18 @@ export class NotificationService {
     private readonly notifications: NotificationRepository,
     private readonly flags: FlagsService,
     @Optional() @Inject(NOTIFICATION_CLOCK) private readonly clock?: () => Date,
+    // STORE-4c · D2. Optional ONLY so the hand-built spines in older specs keep compiling; ABSENT means FAIL CLOSED — no promotional notice
+    // is sent to anybody (`no_consent`), never "consent assumed". The Nest container always injects it (CommunicationModule imports
+    // IdentityModule).
+    @Optional() private readonly consents?: ConsentService,
   ) {}
   private now(): Date { return this.clock ? this.clock() : new Date(); }
+
+  /** STORE-4c · D2 — who among `userIds` holds a `marketing` GRANT as their latest decision (one query; absent reader → nobody). */
+  private async promotionalConsent(tx: TxContext, userIds: readonly string[]): Promise<ReadonlySet<string>> {
+    if (!this.consents) { this.metrics.inc('comm.consent_reader_absent', {}); return new Set<string>(); }
+    return this.consents.grantedFor(tx, userIds, PROMOTIONAL_CONSENT_PURPOSE);
+  }
 
   /** Fan a single domain event out to its recipients' channels. Runs inside the relay tx (tenant context set). */
   async fanout(tx: TxContext, input: FanoutInput): Promise<void> {
@@ -132,6 +148,14 @@ export class NotificationService {
     // Q24/DELTA-059: per-recipient flag check (rollout can stage by tenant/user — Law 8), read once per fanout
     // call (not per-recipient-and-channel) since the flag targets tenant/event scope, not a per-channel choice.
     const routineFlagOn = await this.flags.isEnabled(ROUTINE_FANOUT_FLAG, { tenantId: input.tenantId ?? undefined });
+    // ---------------------------------------------------------------------------------------------------------
+    // [PC-56 STORE-4c · founder D2] **A PROMOTIONAL NOTICE IS CONSENT-BOUND, AND THIS IS THE ONE PLACE THAT SAYS SO.** A recipient whose
+    // LATEST `marketing` consent is not a grant is sent NOTHING on ANY channel: every default channel is written `suppressed · no_consent`
+    // (the delivery log then explains "not sent — no marketing consent"). Read once per fan-out call, batched (a broadcast page is 500
+    // people — one query, never 500). The broadcast handler calls THIS method, so it inherits the rule without a line of its own.
+    // A recipient WITH the grant still needs an explicit opt-in per channel (`resolveChannels`, promotional = opt-in → `opted_out`).
+    // ---------------------------------------------------------------------------------------------------------
+    const consented = event.priority === 'promotional' ? await this.promotionalConsent(tx, recipients) : null;
     for (const userId of recipients) {
       const profile = profiles.get(userId) ?? null;
       const lang = profile?.languageCode ?? input.languageCode ?? LAST_RESORT_LANGUAGE;
@@ -146,6 +170,10 @@ export class NotificationService {
       const decision = resolveChannels(event.toCatalog(), prefMap, window, now);
       const fanoutKey = fanoutKeyOf(input.dedupeKey, userId);
       const ctx = { tenantId: input.tenantId, userId, event: event.code, lang, payload: input.payload, dedupeKey: input.dedupeKey, profile, templateCache, inputLang: input.languageCode, tenantLangs, fanoutKey };
+      if (consented && !consented.has(userId)) {
+        for (const channel of event.toCatalog().defaultChannels) await this.recordSuppressed(tx, { ...ctx, channel }, 'no_consent', null);
+        continue;
+      }
 
       // Flag OFF (default) → old behavior, unchanged: every resolved channel is dispatched (multi-channel).
       // Flag ON → routine tiers (informational/promotional) collapse to ONE primary + passive channels
@@ -282,6 +310,10 @@ export class NotificationService {
       prefEnabled: prefs.get(p.userId)?.get(p.channel), window, now,
     });
     if (d.kind === 'opted_out') { n.dropHoldAsOptedOut(); await this.notifications.updateReleased(tx, n); return 'opted_out'; }
+    // STORE-4c · D2: a held PROMOTIONAL row is re-asked for the consent too (a withdrawal overnight stands)
+    if (event?.priority === 'promotional' && !(await this.promotionalConsent(tx, [p.userId])).has(p.userId)) {
+      n.dropHoldAsNoConsent(); await this.notifications.updateReleased(tx, n); return 'no_consent';
+    }
     if (d.kind === 'rehold') { n.rehold(d.until); await this.notifications.updateReleased(tx, n); return 'reheld'; }
     n.release(now);
     const profile = (await this.notifications.profilesFor(tx, [p.userId])).get(p.userId) ?? null;

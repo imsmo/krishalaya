@@ -104,9 +104,10 @@ export interface PreferenceReview extends ReviewResult { changes: Array<Preferen
 /** The review row for one matrix cell. */
 export const cellName = (eventCode: string, channel: string) => `${eventCode}::${channel}`;
 
-/** What is in force TODAY for a cell: your explicit override, else the catalogue's "on" (a default channel is sent). */
-export function inForce(explicit: ReadonlyMap<string, boolean>, eventCode: string, channel: string): boolean {
-  return explicit.get(cellName(eventCode, channel)) ?? true;
+/** What is in force TODAY for a cell: your explicit override, else the catalogue's "on" (a default channel is sent) — except a PROMOTIONAL
+ *  event, which is "off" until you opt in (PC-56 STORE-4c, founder D2). */
+export function inForce(explicit: ReadonlyMap<string, boolean>, eventCode: string, channel: string, promotional = false): boolean {
+  return explicit.get(cellName(eventCode, channel)) ?? !promotional;
 }
 
 export function reviewPreferences(i: { changes: readonly PreferenceChange[]; catalog: ReadonlyMap<string, CatalogFacts>; explicit: ReadonlyMap<string, boolean> }): PreferenceReview {
@@ -120,7 +121,7 @@ export function reviewPreferences(i: { changes: readonly PreferenceChange[]; cat
     if (seen.has(name)) continue;
     seen.add(name);
     const ev = i.catalog.get(c.eventCode) ?? null;
-    const before = inForce(i.explicit, c.eventCode, c.channel);
+    const before = inForce(i.explicit, c.eventCode, c.channel, ev?.priority === 'promotional');
     const locked = ev !== null && !ev.userCanOptOut;
     fields.push(field(name, c.isEnabled ? 'on' : 'off', c.isEnabled ? 'on' : 'off'));
     if (!ev) { refusals.push({ field: name, code: 'EVENT_UNKNOWN' }); continue; }

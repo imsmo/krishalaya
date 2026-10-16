@@ -18,7 +18,7 @@
 //     writes emitted an outbox event and wrote no audit row; quiet hours wrote neither), and an outbox event.
 //   • F-6 / F-22 · the zone: blank → the cooperative's (`countries.timezone`), never `'Asia/Kolkata'`; an unknown zone is
 //     refused by the review AND by 0176's trigger, which this service turns into the review's sentence (a 422), not a 500.
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { AUDIT_WRITER, AuditWriter } from '../../../core/audit/audit.writer';
@@ -37,11 +37,17 @@ import {
 } from '../domain/inbox-review';
 import { ROUTINE_FANOUT_FLAG } from './notification.service';
 import { SetQuietHoursWriterSchema } from '../dto/set-quiet-hours.dto';
+// PC-56 STORE-4c · B3 / B4: the buyer audience filter and the promotional row's consent half (identity's record, read through its service).
+import { MatrixAudience, inAudience } from '../domain/buyer-audience';
+import { ConsentService } from '../../identity/services/consent.service';
+import { PROMOTIONAL_CONSENT_PURPOSE } from './notification.service';
 
 export interface PrefInput { eventCode: string; channel: string; isEnabled: boolean; }
 
 export interface MatrixCell { channel: string; sentOn: boolean; enabled: boolean | null; explicit: boolean }
-export interface MatrixEvent { code: string; defaultName: string; priority: string; locked: boolean; cells: MatrixCell[] }
+/** `consent` is present on a PROMOTIONAL event only (STORE-4c D2): the purpose it needs and whether the person's latest decision is a grant —
+ *  the page prints both halves (the opt-in AND the consent). */
+export interface MatrixEvent { code: string; defaultName: string; priority: string; locked: boolean; cells: MatrixCell[]; consent?: { purpose: string; granted: boolean } }
 export interface MatrixView {
   channels: readonly string[];
   tiers: Array<{ tier: string; events: MatrixEvent[] }>;
@@ -66,6 +72,8 @@ export class PreferenceService {
     @Inject(IDEMPOTENCY_SERVICE) private readonly idem: IdempotencyService,
     private readonly templates: NotificationTemplateRepository,
     private readonly flags: FlagsService,
+    // STORE-4c · B3. Optional only so hand-built services in older specs compile; ABSENT reads as "not granted" (fail closed).
+    @Optional() private readonly consents?: ConsentService,
   ) {}
 
   async list(userId: string) { return (await this.prefs.listForUser(userId)).map((p) => p.toJSON()); }
@@ -78,37 +86,56 @@ export class PreferenceService {
   /* W433 · THE MATRIX                                                                                          */
   /* ---------------------------------------------------------------------------------------------------------- */
 
-  async matrix(tenantId: string, userId: string): Promise<MatrixView> {
-    const [events, explicitRows, own, qctx, active, tenantLangs, current, routineOn] = await Promise.all([
+  /**
+   * W433 / W302 · the person's own matrix. `audience = 'buyer'` (STORE-4c B4) lists only the events a buyer can ever receive
+   * (`domain/buyer-audience.ts`); no audience → every catalogued event (web-tenant's W433, unchanged).
+   * STORE-4c D2: a PROMOTIONAL event is OFF unless an explicit opt-in row exists (`explicit ?? false`), and carries its consent half.
+   */
+  async matrix(tenantId: string, userId: string, audience?: MatrixAudience): Promise<MatrixView> {
+    const [allEvents, explicitRows, own, qctx, active, tenantLangs, current, routineOn] = await Promise.all([
       this.events.list(), this.prefs.listForUser(userId), this.quiet.getForUser(userId), this.quiet.tenantContext(tenantId),
       this.templates.activeLanguages(), this.templates.tenantLanguageOrder(tenantId), this.prefs.languageOf(userId),
       this.flags.isEnabled(ROUTINE_FANOUT_FLAG, { tenantId }).catch(() => false),
     ]);
+    const events = allEvents.filter((e) => inAudience(e.code, audience));
+    const hasPromotional = events.some((e) => e.priority === 'promotional');
+    const marketingGranted = hasPromotional ? await this.marketingGranted(tenantId, userId) : false;
     const explicit = new Map(explicitRows.map((p) => { const j = p.toJSON(); return [cellName(j.eventCode, j.channel), j.isEnabled] as const; }));
     const tiers = NOTIF_PRIORITIES.map((tier) => ({
       tier,
       events: events.filter((e) => e.priority === tier).map((e) => {
         const j = e.toJSON();
-        return {
+        const promotional = j.priority === 'promotional';
+        const ev: MatrixEvent = {
           code: j.code, defaultName: j.defaultName, priority: j.priority, locked: !j.userCanOptOut,
           cells: NOTIF_CHANNELS.map((ch) => {
             const sentOn = j.defaultChannels.includes(ch);
             const key = cellName(j.code, ch);
-            // A locked event's channels are ON whatever a row says — the fan-out ignores opt-outs for it.
-            return { channel: ch, sentOn, enabled: sentOn ? (!j.userCanOptOut ? true : explicit.get(key) ?? true) : null, explicit: sentOn && explicit.has(key) };
+            // A locked event's channels are ON whatever a row says — the fan-out ignores opt-outs for it. A PROMOTIONAL event's channels are OFF
+            // until the person opts in (STORE-4c D2 — `resolveChannels` sends a promotional channel only on an explicit opt-in row).
+            return { channel: ch, sentOn, enabled: sentOn ? (!j.userCanOptOut ? true : explicit.get(key) ?? (promotional ? false : true)) : null, explicit: sentOn && explicit.has(key) };
           }),
         };
+        if (promotional) ev.consent = { purpose: PROMOTIONAL_CONSENT_PURPOSE, granted: marketingGranted };
+        return ev;
       }),
     }));
     const tenantDefault = parseWindowSetting(qctx.defaultWindow);
+    const shownExplicit = [...explicit.keys()].filter((k) => events.some((e) => k.startsWith(`${e.code}::`))).length;
     return {
       channels: NOTIF_CHANNELS,
       tiers,
-      counts: { events: events.length, locked: events.filter((e) => !e.userCanOptOut).length, critical: events.filter((e) => e.priority === 'critical').length, explicit: explicit.size },
+      counts: { events: events.length, locked: events.filter((e) => !e.userCanOptOut).length, critical: events.filter((e) => e.priority === 'critical').length, explicit: audience ? shownExplicit : explicit.size },
       routineRule: { decided: true, on: routineOn, flag: ROUTINE_FANOUT_FLAG },
       quietHours: { effective: effectiveWindow(own, tenantDefault, qctx.zone), own, tenantDefault, tenantZone: qctx.zone, held: HELD_CHANNELS, neverHeld: NEVER_HELD_CHANNELS },
       language: { current, active, tenantLanguages: tenantLangs },
     };
+  }
+
+  /** STORE-4c · B3 — the person's latest `marketing` decision is a grant (absent reader → false: fail closed). */
+  private async marketingGranted(tenantId: string, userId: string): Promise<boolean> {
+    if (!this.consents) return false;
+    return this.consents.latestGranted(tenantId, userId, PROMOTIONAL_CONSENT_PURPOSE).catch(() => false);
   }
 
   /* ---------------------------------------------------------------------------------------------------------- */

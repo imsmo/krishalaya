@@ -12,6 +12,9 @@
 //   • PC-56 STORE-3c · C1 (founder D4): "Auctions" → /<slug>/auctions (and "My bids" → /<slug>/auctions/bids for a signed-in buyer) ONLY when
 //     this store's `auctions` flag is ON; "Group lots" → THIS store's search with the group-lot facet ONLY when `group_lots` is ON. The flags
 //     are read once for every visitor; unreadable → no links.
+//   • PC-56 STORE-4c · C1 (survey F-8): a signed-in buyer is never stranded under the organisation's mark — "Orders" (/<slug>/orders),
+//     "Notifications" (/<slug>/notifications — the organisation's inbox, never switched off, founder Q12), "Messages" ONLY when this store's
+//     `communication` flag is ON (chat stays behind it; the platform /messages page — 4b rebuilds it), and "Sign out" (the existing logout action).
 // Server component: the only client JS is the locale switcher.
 import Link from 'next/link';
 import { getTranslator, getLang } from '../lib/i18n';
@@ -20,6 +23,7 @@ import { LocaleSwitcher } from './LocaleSwitcher';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
 import { getCartItemCount } from '../features/cart/summary';
 import { publicClient } from '../lib/api-client';
+import { logoutAction } from '../app/(platform)/login/actions';
 
 export interface TenantHeaderProps {
   slug: string;
@@ -36,11 +40,12 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
   const signedIn = hasSessionCookie();
   const cartCount = await getCartItemCount();
   const home = `/${slug}`;
-  let offersOn = false; let auctionsOn = false; let groupLotsOn = false;
+  let offersOn = false; let auctionsOn = false; let groupLotsOn = false; let messagesOn = false;
   try {
     const f = await publicClient(slug).storefront.flags();
     offersOn = signedIn && f.offers === true; auctionsOn = f.auctions === true; groupLotsOn = f.group_lots === true;
-  } catch { offersOn = false; auctionsOn = false; groupLotsOn = false; }
+    messagesOn = signedIn && f.communication === true;   // STORE-4c: tenant-scoped, fail-closed (unreadable → no link)
+  } catch { offersOn = false; auctionsOn = false; groupLotsOn = false; messagesOn = false; }
   return (
     <header className="kv-header" data-kv-header="tenant">
       <div className="kv-container kv-header__bar">
@@ -68,9 +73,19 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
           <Link href={`${home}/cart`} className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}
           </Link>
+          {/* PC-56 STORE-4c · C1 (survey F-8): Orders · Messages (flag ON only) · Notifications — signed in only */}
+          {signedIn && <Link href={`${home}/orders`} className="kv-header__link" data-kv-nav="orders">{t.t('nav.orders')}</Link>}
+          {messagesOn && <Link href="/messages" className="kv-header__link" data-kv-nav="messages">{t.t('nav.messages')}</Link>}
+          {signedIn && <Link href={`${home}/notifications`} className="kv-header__link" data-kv-nav="notifications">{t.t('nav.notifications')}</Link>}
           {/* PC-56 STORE-4a · C1 (founder Q13): the person's account under THIS organisation's chrome — signed in only */}
           {signedIn && <Link href={`${home}/account`} className="kv-header__link" data-kv-nav="account">{t.t('nav.account')}</Link>}
-          {!signedIn && <Link href={`${home}/login`} className="kv-header__login">{t.t('nav.login')}</Link>}
+          {signedIn ? (
+            <form action={logoutAction} data-kv-nav="logout">
+              <button type="submit" className="kv-header__login kv-btn--link">{t.t('nav.logout')}</button>
+            </form>
+          ) : (
+            <Link href={`${home}/login`} className="kv-header__login">{t.t('nav.login')}</Link>
+          )}
         </div>
       </div>
       <nav className="kv-container" aria-label={t.t('tenant.crumbLabel')}>

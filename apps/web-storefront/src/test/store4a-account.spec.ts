@@ -35,7 +35,8 @@ describe('STORE-4a · the chrome (founder Q13 — both real, one path builder)',
     expect(accountHref(PLATFORM_CHROME, { edit: 'nope' })).toBe('/account/addresses');
     expect(downloadHref(t, U, 'abcdefghijklmnopqrstuvwxyz.sig')).toBe(`/anand-fpo/account/data/${U}/download?token=abcdefghijklmnopqrstuvwxyz.sig`);
     expect(downloadHref(t, U, 'x y')).toBe('/anand-fpo/account/data');
-    expect(shortcutHrefs(t)).toEqual({ orders: '/anand-fpo/orders', offers: '/anand-fpo/offers', bids: '/anand-fpo/auctions/bids', preferences: '/notifications/preferences' });
+    // PC-56 STORE-4c · C1: Preferences is /account/preferences under the chrome (was the /notifications/preferences door)
+    expect(shortcutHrefs(t)).toEqual({ orders: '/anand-fpo/orders', offers: '/anand-fpo/offers', bids: '/anand-fpo/auctions/bids', preferences: '/anand-fpo/account/preferences' });
   });
   it('the hidden chrome field round-trips; anything malformed is the platform (never a path a form typed)', () => {
     expect(chromeOf(chromeField(tenantChrome('anand-fpo')))).toEqual({ kind: 'tenant', slug: 'anand-fpo' });

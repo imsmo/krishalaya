@@ -5935,6 +5935,7 @@ export const gu: Messages = {
   'notif.suppressed.opted_out': 'તમે આ ઇવેન્ટ માટે આ ચેનલ બંધ કરી',
   'notif.suppressed.routine_collapsed': 'એક ચેનલ પૂરતી છે (નક્કી નિયમ)',
   'notif.suppressed.channel_off': 'ચેનલ બંધ',
+  'notif.suppressed.no_consent': 'ન મોકલાઈ — માર્કેટિંગ સંમતિ નથી (પ્રચાર સૂચનાઓ માટે જરૂરી)',   // PC-56 STORE-4c (founder D2, 0215)
   'notif.suppressed.unknown': 'ન મોકલાઈ (કારણ નોંધાયું નથી)',
   'notif.failure.no_template': 'આ ચેનલ અને ભાષા માટે મંજૂર લખાણ નથી',
   'notif.failure.no_address': 'આ ચેનલ પર કોઈ સરનામું નથી',

@@ -19,8 +19,10 @@ import { EffectiveWindow, windowEndAfter, isWithinWindow } from './quiet-window'
 /* THE VOCABULARIES                                                                                           */
 /* ---------------------------------------------------------------------------------------------------------- */
 
-/** 0176's `ck_notif_suppressed_reason`. `channel_off` is reserved for W433's master switch (refused by name). */
-export const SUPPRESSED_REASONS = ['quiet_hours', 'channel_off', 'routine_collapsed', 'opted_out'] as const;
+/** 0176's `ck_notif_suppressed_reason` (widened by 0215). `channel_off` is reserved for W433's master switch (refused by name).
+ *  PC-56 STORE-4c (founder D2): + `no_consent` — a PROMOTIONAL notice to a person whose latest `marketing` consent is not a grant is never
+ *  sent on any channel; `NotificationService.fanout` writes one row per channel with this reason (the broadcast handler inherits it). */
+export const SUPPRESSED_REASONS = ['quiet_hours', 'channel_off', 'routine_collapsed', 'opted_out', 'no_consent'] as const;
 export type SuppressedReason = (typeof SUPPRESSED_REASONS)[number];
 
 /** 0176's `notification_failure_reason` platform rows, mirrored so a write can be normalised before the trigger sees it. */

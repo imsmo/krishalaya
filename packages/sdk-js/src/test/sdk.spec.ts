@@ -2332,3 +2332,14 @@ describe('esg (TENANT-9d)', () => {
     expect(JSON.parse(String(calls[3].init.body))).toEqual({ lang: 'gu' });
   });
 });
+
+// PC-56 STORE-4c · B4 / C2 / D2 — the buyer's matrix, the rendered words and the consent half (types), the strict audience
+describe('STORE-4c · the buyer matrix', () => {
+  it('matrix({ audience: "buyer" }) asks the server for the buyer\'s events only; no argument is unchanged (W433)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { channels: [], tiers: [] } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.notifications.matrix({ audience: 'buyer' });
+    await c.notifications.matrix();
+    expect(calls.map((x) => x.url)).toEqual(['https://api.test/v1/notifications/matrix?audience=buyer', 'https://api.test/v1/notifications/matrix']);
+  });
+});

@@ -281,6 +281,9 @@ export interface StorefrontFlags {
   storefront_cart?: boolean;
   /** PC-56 STORE-3a · B6 (founder D2) — tenant-scoped, fail-closed: the order page's dispute door shows only when ON (seed: OFF). */
   disputes?: boolean;
+  /** PC-56 STORE-4c · B1 (founder Q12) — tenant-scoped, fail-closed: chat and calls (the headers' Messages link) only when ON (seed: OFF).
+   *  A person's notifications and preferences are NOT behind it. */
+  communication?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {
@@ -456,6 +459,9 @@ export interface NotificationItem {
   tier?: NotificationTier | null; module?: string; localDay?: string | null; localTime?: string | null; fanoutKey?: string | null;
   /** The other channels of this delivery instance, each with what its own row says. */
   alsoOn?: NotificationAlsoOn[];
+  /** PC-56 STORE-4c · C2 — the words this item was SENT with (its recorded template version rendered with its own payload, in the version's
+   *  language). Null when the row names no version. Absent from older servers. */
+  rendered?: { title: string | null; body: string } | null;
 }
 export interface NotificationPreference { eventCode: string; channel: string; isEnabled: boolean; }
 /** `timezone` blank → the cooperative's zone (F-22: never an `Asia/Kolkata` literal); the database refuses an unknown one. */
@@ -467,7 +473,8 @@ export interface QuietHoursInput { starts: string; ends: string; timezone?: stri
 /* ================================================================================================================= */
 export type NotificationTier = 'critical' | 'important' | 'informational' | 'promotional';
 export type NotificationOutcome = 'queued' | 'held' | 'released' | 'suppressed' | 'sent' | 'delivered' | 'failed' | 'read';
-export type SuppressedReason = 'quiet_hours' | 'channel_off' | 'routine_collapsed' | 'opted_out';
+/** PC-56 STORE-4c (founder D2, 0215): + `no_consent` — a promotional notice to a person without a `marketing` grant (never sent). */
+export type SuppressedReason = 'quiet_hours' | 'channel_off' | 'routine_collapsed' | 'opted_out' | 'no_consent';
 export interface NotificationAlsoOn { channel: string; status: string; outcome: NotificationOutcome; suppressedReason: SuppressedReason | null; failureReason: string | null }
 export interface InboxPage { items: NotificationItem[]; nextCursor: string | null; zone: string | null; today: string | null }
 export interface InboxFilters { tiers: NotificationTier[]; modules: string[] }
@@ -494,7 +501,11 @@ export interface DeliveryHealth {
   suppressedByReason: Record<string, number>; failedByReason: Record<string, number>;
 }
 export interface MatrixCell { channel: string; sentOn: boolean; enabled: boolean | null; explicit: boolean }
-export interface MatrixEvent { code: string; defaultName: string; priority: NotificationTier; locked: boolean; cells: MatrixCell[] }
+/** `consent` — PC-56 STORE-4c (founder D2): on a PROMOTIONAL event only — the purpose it needs (`marketing`) and whether the person's latest
+ *  decision is a grant. A promotional cell is OFF until the person opts in. Optional: web-tenant's W433 compiles unchanged. */
+export interface MatrixEvent { code: string; defaultName: string; priority: NotificationTier; locked: boolean; cells: MatrixCell[]; consent?: { purpose: string; granted: boolean } }
+/** PC-56 STORE-4c · B4 — `matrix({ audience: 'buyer' })` lists only the events a buyer can receive; no audience → every catalogued event. */
+export type MatrixAudience = 'buyer';
 export interface EffectiveQuietWindow { starts: string; ends: string; timezone: string; source: 'own' | 'tenant_default'; sanitised: boolean; requestedZone: string | null }
 export interface NotificationMatrix {
   channels: string[];

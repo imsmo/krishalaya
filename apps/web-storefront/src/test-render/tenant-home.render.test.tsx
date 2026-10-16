@@ -22,6 +22,8 @@ jest.mock('../lib/i18n', () => {
   return { getLang: () => mock.lang, getTranslator: () => new T(mock.lang).register('en', cat('en')).register('hi', cat('hi')).register('gu', cat('gu')) };
 });
 jest.mock('../lib/auth', () => ({ hasSessionCookie: () => false }));
+// PC-56 STORE-4c · C1 (F-8): TenantHeader now carries the Sign out form (the existing logout action, whose module is server-only) — as SiteHeader
+jest.mock('server-only', () => ({}), { virtual: true });
 jest.mock('../features/cart/summary', () => ({ getCartItemCount: async () => 0 }));
 jest.mock('../lib/storefront-data', () => ({
   loadTenantShell: async () => mock.shell,

@@ -50,6 +50,26 @@ export class NotificationTemplateRepository {
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
 
+  /**
+   * PC-56 STORE-4c · C2 — the WORDS of delivered rows: the immutable versions (0122) the rows recorded (`notifications.template_version_id`),
+   * by id, in ONE read. An in-app row stores the event's VARIABLES (its payload), never rendered text — so the inbox renders the version the
+   * row names with the row's own payload: exactly what was sent, in the language it was sent in, even after the template is edited. RLS
+   * (`tenant_reads_own_template_versions`) admits the platform's rows and this tenant's own.
+   */
+  async versionsByIds(tenantId: string, ids: readonly string[]): Promise<Map<string, NotificationTemplate>> {
+    const out = new Map<string, NotificationTemplate>();
+    const uniq = [...new Set(ids.filter(Boolean))];
+    if (uniq.length === 0) return out;
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT v.id AS version_id, v.version_no, v.template_id, v.event_code, v.channel, v.language_code, v.tenant_id, v.subject, v.body
+         FROM notification_template_versions v WHERE v.id = ANY($1::uuid[])`, [uniq]);
+    for (const x of r.rows as any[]) {
+      out.set(String(x.version_id), NotificationTemplate.rehydrate({ id: x.template_id, eventCode: x.event_code, channel: x.channel as NotifChannel, languageCode: x.language_code,
+        tenantId: x.tenant_id, subject: x.subject, body: x.body, providerTemplateRef: null, isActive: true, versionId: x.version_id, versionNo: x.version_no }));
+    }
+    return out;
+  }
+
   /* ============================================================================================================ */
   /* PC-56 TENANT-8a · THE OVERRIDE                                                                               */
   /* ============================================================================================================ */

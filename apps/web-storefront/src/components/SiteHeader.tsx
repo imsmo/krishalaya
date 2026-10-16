@@ -30,10 +30,11 @@ export async function SiteHeader() {
   let cats: ReturnType<typeof flattenCategoryNav> = [];
   try { cats = flattenCategoryNav((await publicClient().lookups.categories()) as CategoryNode[]).filter((c) => c.depth === 0).slice(0, STRIP_MAX); }
   catch { cats = []; }
-  let offersOn = false; let auctionsOn = false;
+  let offersOn = false; let auctionsOn = false; let messagesOn = false;
   if (signedIn) {
-    try { const f = await sessionTenantClient().storefront.flags(); offersOn = f.offers === true; auctionsOn = f.auctions === true; }
-    catch { offersOn = false; auctionsOn = false; }
+    // PC-56 STORE-4c · C1 (founder Q12): "Messages" only when the session store's `communication` flag is ON (chat stays behind it; fail-closed)
+    try { const f = await sessionTenantClient().storefront.flags(); offersOn = f.offers === true; auctionsOn = f.auctions === true; messagesOn = f.communication === true; }
+    catch { offersOn = false; auctionsOn = false; messagesOn = false; }
   }
   // PC-56 STORE-3c · C1 (founder D4): "Auctions" only for a signed-in buyer whose session store has its `auctions` flag ON (the build-time
   // env switch is deleted) — /auctions is the door to that store's list; anonymous or OFF → no link
@@ -63,8 +64,9 @@ export async function SiteHeader() {
         <div className="kv-header__actions">
           <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
           {signedIn && offersOn && <Link href="/offers" className="kv-header__link" data-kv-nav="offers">{t.t('nav.offers')}</Link>}
-          {signedIn && <Link href="/messages" className="kv-header__link">{t.t('nav.messages')}</Link>}
-          {signedIn && <Link href="/notifications" className="kv-header__link">{t.t('nav.notifications')}</Link>}
+          {signedIn && messagesOn && <Link href="/messages" className="kv-header__link" data-kv-nav="messages">{t.t('nav.messages')}</Link>}
+          {/* the inbox is never switched off (founder Q12): /notifications is the door to the session store's inbox */}
+          {signedIn && <Link href="/notifications" className="kv-header__link" data-kv-nav="notifications">{t.t('nav.notifications')}</Link>}
           {signedIn && <Link href="/account" className="kv-header__link">{t.t('nav.account')}</Link>}
           {/* PC-56 STORE-1a (survey F-19): the count is IN the accessible name ("Cart, 3 items"), not a hidden badge only sighted people see. */}
           <Link href="/cart" className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>

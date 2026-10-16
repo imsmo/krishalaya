@@ -24,7 +24,8 @@ export function chromeOf(raw: unknown): AccountChrome {
   const s = typeof raw === 'string' ? raw : '';
   return s && s !== 'platform' && SLUG.test(s) ? { kind: 'tenant', slug: s } : PLATFORM_CHROME;
 }
-export type AccountPage = '' | 'addresses' | 'addresses/new' | 'data' | 'delete' | { edit: string } | { download: string };
+// PC-56 STORE-4c · C1: + 'preferences' (W302 — /account/preferences under both chromes; /notifications/preferences is a door to it).
+export type AccountPage = '' | 'addresses' | 'addresses/new' | 'data' | 'delete' | 'preferences' | { edit: string } | { download: string };
 /** The account's paths under a chrome, with a bounded query of plain words (never a value the buyer typed). */
 export function accountHref(c: AccountChrome, page: AccountPage = '', q: Record<string, string | null | undefined> = {}): string {
   const base = c.kind === 'tenant' ? `/${encodeURIComponent(c.slug)}/account` : '/account';
@@ -42,10 +43,11 @@ export function downloadHref(c: AccountChrome, jobId: string, token: string): st
   if (!UUID.test(jobId) || !/^[A-Za-z0-9._~-]{16,2048}$/.test(token)) return accountHref(c, 'data');
   return `${accountHref(c, { download: jobId })}?token=${encodeURIComponent(token)}`;
 }
-/** The shortcuts' doors under each chrome (W300 "My orders · offers · bids", "Notification preferences"). */
+/** The shortcuts' doors under each chrome (W300 "My orders · offers · bids", "Notification preferences" — STORE-4c: the real page). */
 export function shortcutHrefs(c: AccountChrome): { orders: string; offers: string; bids: string; preferences: string } {
   const pre = c.kind === 'tenant' ? `/${encodeURIComponent(c.slug)}` : '';
-  return { orders: `${pre}/orders`, offers: `${pre}/offers`, bids: `${pre}/auctions/bids`, preferences: '/notifications/preferences' };
+  // PC-56 STORE-4c · C1: the Preferences shortcut is the person's page under THIS chrome (it was the /notifications/preferences door)
+  return { orders: `${pre}/orders`, offers: `${pre}/offers`, bids: `${pre}/auctions/bids`, preferences: accountHref(c, 'preferences') };
 }
 
 /* ---------------------------------------------------------------------------------------------------------------------------------- */

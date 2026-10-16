@@ -199,8 +199,11 @@ describe('the act verdicts (W2845–W2847)', () => {
 
 describe('the audience and the quiet-hours estimate', () => {
   const event = { code: 'tenant.broadcast', priority: 'promotional' as const, defaultChannels: ['push', 'inapp'] as NotifChannel[], userCanOptOut: true };
+  // PC-56 STORE-4c (founder D2): `tenant.broadcast` is PROMOTIONAL — opt-in only (`resolveChannels`). The estimate's members below have OPTED IN
+  // on both channels (the maths under test is the window's); a member with no opt-in row is pinned as opted out in its own case.
+  const OPTED_IN = () => new Map<NotifChannel, boolean>([['push', true], ['inapp', true]]);
   const m = (o: Partial<{ userId: string; own: { starts: string; ends: string; timezone: string } | null; prefs: Map<NotifChannel, boolean>; hasPushDevice: boolean }> = {}) =>
-    ({ userId: 'u', own: null, prefs: new Map<NotifChannel, boolean>(), hasPushDevice: true, ...o });
+    ({ userId: 'u', own: null, prefs: OPTED_IN(), hasPushDevice: true, ...o });
   const DEFAULT = { starts: '21:00', ends: '06:00' };
   it('the role code: normalised, never guessed; shape-checked before a query', () => {
     expect(normaliseRoleCode('  Farmer ')).toBe('farmer'); expect(normaliseRoleCode('')).toBeNull(); expect(normaliseRoleCode(undefined)).toBeNull();
@@ -219,10 +222,14 @@ describe('the audience and the quiet-hours estimate', () => {
     expect(r.windows).toEqual({ own: 0, tenantDefault: 2, none: 0 }); expect(r.cut).toBe(false); expect(r.examined).toBe(2);
   });
   it('at noon: push now for a member with a device, no_device for one without; switched-off push is opted out', () => {
-    const r = quietImpact({ event, members: [m(), m({ hasPushDevice: false }), m({ prefs: new Map([['push', false]]) })], audience: 3, tenantDefault: DEFAULT, tenantZone: ZONE, at: NOW });
+    const r = quietImpact({ event, members: [m(), m({ hasPushDevice: false }), m({ prefs: new Map([['push', false], ['inapp', true]]) })], audience: 3, tenantDefault: DEFAULT, tenantZone: ZONE, at: NOW });
     expect(r.channels[0]).toEqual({ channel: 'push', now: 1, held: 0, optedOut: 1, noDevice: 1 });
     expect(r.channels[1]).toEqual({ channel: 'inapp', now: 3, held: 0, optedOut: 0, noDevice: 0 });
     expect(r.heldUntil).toBeNull();
+  });
+  it('STORE-4c D2: a member who never opted in is OPTED OUT of a promotional broadcast on every channel (opt-in only)', () => {
+    const r = quietImpact({ event, members: [m({ prefs: new Map() })], audience: 1, tenantDefault: DEFAULT, tenantZone: ZONE, at: NOW });
+    expect(r.channels).toEqual([{ channel: 'push', now: 0, held: 0, optedOut: 1, noDevice: 0 }, { channel: 'inapp', now: 0, held: 0, optedOut: 1, noDevice: 0 }]);
   });
   it('a member\'s own window wins over the cooperative\'s, and the latest release is reported; no default and no zone = none', () => {
     const own = { starts: '11:00', ends: '13:30', timezone: ZONE };
@@ -369,7 +376,8 @@ describe('the edges the mutation pass found unpinned', () => {
   });
   it('the estimate: the latest release wins whatever the member order; examined is the members seen, not the audience', () => {
     const event = { code: 'tenant.broadcast', priority: 'promotional' as const, defaultChannels: ['push', 'inapp'] as NotifChannel[], userCanOptOut: true };
-    const m = (own: { starts: string; ends: string; timezone: string }) => ({ userId: 'u', own, prefs: new Map<NotifChannel, boolean>(), hasPushDevice: true });
+    // PC-56 STORE-4c (D2): opted in — the promotional broadcast is opt-in only
+    const m = (own: { starts: string; ends: string; timezone: string }) => ({ userId: 'u', own, prefs: new Map<NotifChannel, boolean>([['push', true], ['inapp', true]]), hasPushDevice: true });
     const r = quietImpact({ event, members: [m({ starts: '11:30', ends: '12:30', timezone: ZONE }), m({ starts: '11:00', ends: '14:00', timezone: ZONE })], audience: 9, tenantDefault: null, tenantZone: ZONE, at: NOW });
     expect(r.heldUntil!.toISOString()).toBe('2026-10-01T08:30:00.000Z');
     expect([r.examined, r.audience, r.cut]).toEqual([2, 9, true]);

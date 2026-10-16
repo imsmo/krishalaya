@@ -164,7 +164,8 @@ describe('delivery log · F-4 — every channel NOT sent is a row with its reaso
     expect(fallbackAction({ fallback: 'email', priority: 'informational', inQuiet: true, resolved: none })).toBe('send');   // email is never held
   });
   it('the vocabularies match 0176\'s CHECK and lookup rows', () => {
-    expect([...SUPPRESSED_REASONS]).toEqual(['quiet_hours', 'channel_off', 'routine_collapsed', 'opted_out']);
+    // PC-56 STORE-4c (founder D2, migration 0215): + `no_consent` — a promotional notice to a person without a `marketing` grant
+    expect([...SUPPRESSED_REASONS]).toEqual(['quiet_hours', 'channel_off', 'routine_collapsed', 'opted_out', 'no_consent']);
     expect(FAILURE_REASONS).toHaveLength(15);
     expect(FAILURE_REASONS).toContain('unrecorded');
   });

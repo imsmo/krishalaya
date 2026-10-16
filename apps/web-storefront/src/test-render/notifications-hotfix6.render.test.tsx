@@ -22,11 +22,13 @@ jest.mock('../lib/api-client', () => {
 });
 jest.mock('server-only', () => ({}), { virtual: true });
 
-import NotificationsPage from '../app/(platform)/notifications/page';
+// PC-56 STORE-4c · C1 (founder Q13): the inbox moved under the organisation's chrome (/<slug>/notifications — the platform /notifications is a
+// door now), so this pin is RETARGETED to that page; the rule it pins (the strict All / Unread boolean) is unchanged.
+import NotificationsPage from '../app/[tenantSlug]/notifications/page';
 import { text } from './store1b-harness';
 import { C, reset } from './hotfix6-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await NotificationsPage({ searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await NotificationsPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
 beforeEach(() => { reset(); });
 
 describe('HOTFIX-6 · C3 the inbox\'s All tab lists read rows', () => {

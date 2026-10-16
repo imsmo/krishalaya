@@ -14,7 +14,7 @@
 //   • THE TENANT-WIDE HEALTH TILES (W204 "Member delivery health (24h)") need `notification.manage` — the permission whose
 //     own description is "read tenant delivery log" and which no route honoured. Refused with a sentence, never a bare 403.
 //   • EVERY READ IS PRUNED on `created_at` (Law 8; notification ids are derived, so `uuid_v7_time` cannot prune).
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { AUDIT_WRITER, AuditWriter } from '../../../core/audit/audit.writer';
@@ -23,6 +23,8 @@ import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { looksLikeId } from '../../../shared/form-review';
 import { InboxQuery, InboxRow, NotificationRepository, SiblingRow } from '../repositories/notification.repository';
 import { NotificationEventRepository } from '../repositories/notification-event.repository';
+import { NotificationTemplateRepository } from '../repositories/notification-template.repository';
+import { NotificationTemplate } from '../domain/notification-template.entity';
 import { NotificationService } from './notification.service';
 import { CommEventType, NOTIF_PRIORITIES } from '../domain/communication.events';
 import { statusesThatCanBecome } from '../domain/notification.state';
@@ -40,6 +42,9 @@ export interface InboxItem {
   tier: string | null; module: string; localDay: string | null; localTime: string | null; fanoutKey: string | null;
   /** The OTHER channels of this delivery instance (push / SMS / WhatsApp / email / IVR), each with what its row says. */
   alsoOn: AlsoOn[];
+  /** PC-56 STORE-4c · C2 — the words this item was SENT with: the row's own template version rendered with the row's own payload (its
+   *  language is the version's). Null when the row names no version (no approved copy existed at send time — said, never invented). */
+  rendered: { title: string | null; body: string } | null;
 }
 export interface InboxPage { items: InboxItem[]; nextCursor: string | null; zone: string | null; today: string | null }
 export interface BellView { unread: number; latest: InboxItem[]; held: number; nextRelease: Date | null; releaseStopped: boolean; zone: string | null; today: string | null }
@@ -72,16 +77,23 @@ export class InboxService {
     private readonly notifications: NotificationRepository,
     private readonly events: NotificationEventRepository,
     private readonly spine: NotificationService,
+    // STORE-4c · C2. Optional only so hand-built services in older specs compile; absent → `rendered: null` (the page then prints the
+    // payload's own title/body or the event's name — never invented words).
+    @Optional() private readonly templates?: NotificationTemplateRepository,
   ) {}
 
-  private item(r: InboxRow, siblings: readonly SiblingRow[]): InboxItem {
+  private item(r: InboxRow, siblings: readonly SiblingRow[], versions: ReadonlyMap<string, NotificationTemplate> = new Map()): InboxItem {
     const j = r.n.toJSON();
+    const vid = r.n.toProps().templateVersionId ?? null;
+    const v = vid ? versions.get(vid) : undefined;
+    const rendered = v ? (() => { const x = v.render(j.payload ?? {}); return { title: x.subject, body: x.body }; })() : null;
     const others = byChannelOrder(siblings.filter((s) => s.fanoutKey === j.fanoutKey && s.id !== j.id && s.channel !== 'inapp'));
     return {
       id: j.id, eventCode: j.eventCode, channel: j.channel, status: j.status, languageCode: j.languageCode, payload: j.payload,
       createdAt: j.createdAt, sentAt: j.sentAt, readAt: j.readAt, at: r.at, tier: r.tier, module: moduleOf(j.eventCode),
       localDay: r.localDay, localTime: r.localTime, fanoutKey: j.fanoutKey,
       alsoOn: others.map((s) => ({ channel: s.channel, status: s.status, outcome: ladderOutcome(s), suppressedReason: s.suppressedReason, failureReason: s.failureReason })),
+      rendered,
     };
   }
 
@@ -93,7 +105,9 @@ export class InboxService {
       const times = keyed.map((r) => r.at).sort();
       sibs = await this.notifications.siblings(tenantId, userId, keyed.map((r) => r.n.toProps().fanoutKey as string), times[0], times[times.length - 1]);
     }
-    return rows.map((r) => this.item(r, sibs));
+    const versionIds = rows.map((r) => r.n.toProps().templateVersionId).filter((x): x is string => typeof x === 'string');
+    const versions = this.templates && versionIds.length > 0 ? await this.templates.versionsByIds(tenantId, versionIds).catch(() => new Map<string, NotificationTemplate>()) : new Map<string, NotificationTemplate>();
+    return rows.map((r) => this.item(r, sibs, versions));
   }
 
   /** W204 / W431 · the member's own in-app items, keyset, with GET-form filters. */

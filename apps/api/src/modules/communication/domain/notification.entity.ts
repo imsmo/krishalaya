@@ -106,6 +106,11 @@ export class Notification {
     if (this.props.status !== 'suppressed' || this.props.suppressedReason !== 'quiet_hours') throw new IllegalNotificationTransitionError(this.props.status, 'suppressed(opted_out)');
     this.props.suppressedReason = 'opted_out'; this.props.heldUntil = null;
   }
+  /** [PC-56 STORE-4c · D2] A held PROMOTIONAL row whose recipient no longer holds a `marketing` grant at release: never sent. */
+  dropHoldAsNoConsent(): void {
+    if (this.props.status !== 'suppressed' || this.props.suppressedReason !== 'quiet_hours') throw new IllegalNotificationTransitionError(this.props.status, 'suppressed(no_consent)');
+    this.props.suppressedReason = 'no_consent'; this.props.heldUntil = null;
+  }
   /** The template a RELEASED row resolved at release (the reader's language, as it stands in the morning). Queued only. */
   attachTemplate(templateId: string | null, templateVersionId: string | null, languageCode: string | null): void {
     if (this.props.status !== 'queued') throw new IllegalNotificationTransitionError(this.props.status, 'queued(attachTemplate)');

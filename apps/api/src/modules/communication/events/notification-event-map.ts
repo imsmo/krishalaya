@@ -3,16 +3,29 @@
 // domain event = one row here + a catalog row (+ templates) — no code in the emitting module. recipientKeys are
 // tried in order; every present (string) value becomes a recipient (deduped downstream). Keep this in sync with
 // the seeded notification_events catalog (db/seeds). Only events with a catalog row + templates actually send.
-export interface NotificationMapEntry { outboxType: string; eventCode: string; recipientKeys: string[]; }
+export interface NotificationMapEntry {
+  outboxType: string; eventCode: string; recipientKeys: string[];
+  /** PC-56 STORE-4c · B2 — a payload key whose value, WHEN PRESENT, must be one of these for this row to notify (absent → notify). One outbox
+   *  type can carry several things (`payments.payment_succeeded` is every capture: an order, a membership fee, a SaaS invoice, a premium);
+   *  this row is the ORDER payment's notice, and the others already have their own (`memberships.payment_confirmed`, `saas.invoice_paid`). */
+  onlyWhen?: { key: string; values: readonly string[] };
+}
 
 export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
+  // PC-56 STORE-4c · B2 (founder D1): the buyer hears the order was PLACED — `orders.order_created` carries `buyerUserId` (order.entity.ts);
+  // the catalogue row had existed since seed 0007 with no map row, so it never sent. In-app copy ×3 in seed core/0007 (0215 adds `inapp`).
+  // A map row registers ONE more `DomainEventFanoutHandler` instance (the relay gate counts registry entries; the class-wide case covers it).
+  { outboxType: 'orders.order_created',         eventCode: 'order.created',       recipientKeys: ['buyerUserId', 'userId'] },
   { outboxType: 'orders.order_confirmed',       eventCode: 'order.confirmed',     recipientKeys: ['buyerUserId', 'userId'] },
   { outboxType: 'orders.order_delivered',       eventCode: 'order.delivered',     recipientKeys: ['buyerUserId', 'userId'] },
   { outboxType: 'orders.order_completed',       eventCode: 'order.completed',     recipientKeys: ['sellerUserId', 'buyerUserId'] },
   { outboxType: 'offers.offer_accepted',        eventCode: 'offer.accepted',      recipientKeys: ['sellerUserId', 'buyerUserId', 'userId'] },
   { outboxType: 'requirements.quote_accepted',  eventCode: 'quote.accepted',      recipientKeys: ['sellerUserId', 'userId'] },
   { outboxType: 'logistics.shipment_delivered', eventCode: 'shipment.delivered',  recipientKeys: ['buyerUserId', 'userId'] },
-  { outboxType: 'payments.payment_succeeded',   eventCode: 'payment.success',   recipientKeys: ['buyerUserId', 'userId'] },
+  // PC-56 STORE-4c · B2 (founder D1, the gap 2c found): the capture's payload (payment.entity.ts `markCaptured`) carries `payerUserId` — never
+  // `buyerUserId` or `userId` — so this row had never found a recipient and NO payment notice was ever sent. The payer is now a recipient key,
+  // and the row notifies for an ORDER payment only (`referenceType = 'order'`; a payload without the key still notifies).
+  { outboxType: 'payments.payment_succeeded',   eventCode: 'payment.success',   recipientKeys: ['buyerUserId', 'userId', 'payerUserId'], onlyWhen: { key: 'referenceType', values: ['order'] } },
   { outboxType: 'payments.dispute_refunded',    eventCode: 'dispute.refunded',    recipientKeys: ['buyerUserId', 'userId'] },
   { outboxType: 'disputes.dispute_opened',      eventCode: 'dispute.opened',      recipientKeys: ['sellerUserId', 'buyerUserId', 'userId'] },
   { outboxType: 'disputes.dispute_resolved',    eventCode: 'dispute.resolved',    recipientKeys: ['sellerUserId', 'buyerUserId', 'userId'] },

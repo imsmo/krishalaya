@@ -5939,6 +5939,7 @@ export const en: Messages = {
   'notif.suppressed.opted_out': 'you switched this channel off for this event',
   'notif.suppressed.routine_collapsed': 'one channel is enough (decided rule)',
   'notif.suppressed.channel_off': 'channel switched off',
+  'notif.suppressed.no_consent': 'not sent — no marketing consent (promotional notices need it)',   // PC-56 STORE-4c (founder D2, 0215)
   'notif.suppressed.unknown': 'not sent (reason not recorded)',
   'notif.failure.no_template': 'no approved wording for this channel and language',
   'notif.failure.no_address': 'no address on this channel',

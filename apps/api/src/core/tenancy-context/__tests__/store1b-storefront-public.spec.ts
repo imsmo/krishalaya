@@ -136,9 +136,10 @@ describe('STORE-1b · B2 — the public reads', () => {
     // PC-56 STORE-2a · B4: + storefront_browse (platform-scoped, the catalogue's kill-switch)
     // PC-56 STORE-2b · B5: + storefront_cart (platform-scoped, buying's kill-switch)
     // PC-56 STORE-3a · B6 (founder D2): + `disputes` (tenant-scoped, fail-closed) — the order page's dispute door
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes']);
-    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false, storefront_browse: false, storefront_cart: false, disputes: false } });
-    expect(isEnabled).toHaveBeenCalledTimes(10);   // one per allow-listed key (HOTFIX-4: 2 → 7; STORE-2a: 8; STORE-2b: 9; STORE-3a: 10)
+    // PC-56 STORE-4c · B1 (founder Q12): + `communication` (tenant-scoped, fail-closed) — the headers' Messages link
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication']);
+    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false, storefront_browse: false, storefront_cart: false, disputes: false, communication: false } });
+    expect(isEnabled).toHaveBeenCalledTimes(11);   // one per allow-listed key (HOTFIX-4: 2 → 7; STORE-2a: 8; STORE-2b: 9; STORE-3a: 10; STORE-4c: 11)
     expect((await ctl.publicFlags({ tenantId: '' } as RequestContext)).data).not.toHaveProperty('group_lots');
     await expect(ctl.profile({ tenantId: '' } as RequestContext)).rejects.toMatchObject({ code: 'TENANT_NOT_FOUND' });
   });

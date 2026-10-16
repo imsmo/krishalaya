@@ -1,6 +1,10 @@
 // modules/communication/controllers/v1/notifications.controller.ts · the caller's OWN notification inbox — PC-56
 // TENANT-8b · THE INBOX. Every route acts on ctx.userId only (ownership is server-side; a non-owner read returns 404 — no
-// IDOR). `communication` flag. validate → authorize → delegate only. Static segments are declared BEFORE `:id`.
+// IDOR). validate → authorize → delegate only. Static segments are declared BEFORE `:id`.
+// [PC-56 STORE-4c · founder Q12 / HOTFIX-6 D3] A PERSON'S OWN NOTICES ARE NEVER SWITCHED OFF: the `communication` flag guard is GONE from this
+// controller (the inbox, filters, bell, delivery-health, read-all, the ladder, mark-read). The fan-out never consulted the flag, so a buyer's
+// notices existed and could not be read while the seed kept the flag OFF (survey F-7). Chat (`conversations`), calls (`masked-calls`) and push
+// devices (`notifications/devices`, devices.controller.ts) KEEP the guard. F-22: audit IPs through 1a's `clientIpOf`, not raw `req.ip`.
 //
 //   GET  /notifications                    W204 / W431 — your IN-APP items (F-9), keyset, GET-form filters
 //   GET  /notifications/filters            the tier / module vocabularies (from the catalogue)
@@ -15,7 +19,7 @@ import { Body, Controller, Get, Headers, Param, Post, Query, Req, UseGuards } fr
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
-import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
+import { clientIpOf } from '../../../../core/http/client-ip';
 import { ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
@@ -24,11 +28,10 @@ import { InboxService, decodeInboxCursor } from '../../services/inbox.service';
 import { QueryNotificationsSchema, QueryNotificationsDto, MarkReadSchema } from '../../dto/query-notification.dto';
 import { canManageComms } from '../../policies/communication.policies';
 
-const ipOf = (r: Request) => r.ip || null;
+const ipOf = (r: Request) => clientIpOf(r);
 
 @Controller({ path: 'notifications', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
-@FeatureFlag('communication')
+@UseGuards(AuthGuard, PermissionsGuard)
 export class NotificationsController {
   constructor(private readonly svc: InboxService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageComms(ctx) }; }

@@ -1,10 +1,11 @@
 // @krishalaya/sdk-js · notifications resource (communication module). The caller's OWN inbox + preferences +
 // quiet hours (server enforces ownership — a non-owner read is 404, no IDOR). Inbox is keyset-paginated. mark-read
-// is idempotent server-side. Gated server-side by the `communication` flag.
+// is idempotent server-side. PC-56 STORE-4c (founder Q12): the inbox, preferences and quiet hours are NOT behind the `communication` flag any
+// more (a person's own notices are never switched off); push devices still are.
 import { HttpClient } from '../http';
 import {
   NotificationItem, NotificationPreference, QuietHours, QuietHoursInput, Page, InboxPage, InboxFilters, InboxQuery, NotificationBell, NotificationLadder, DeliveryHealth,
-  NotificationMatrix, QuietWindowReview, PreferenceReview, LanguageReview, TemplateActs, TemplateCatalogueEvent, TemplateIndex, TemplateLanguage, TemplateOverrideAct,
+  NotificationMatrix, MatrixAudience, QuietWindowReview, PreferenceReview, LanguageReview, TemplateActs, TemplateCatalogueEvent, TemplateIndex, TemplateLanguage, TemplateOverrideAct,
   TemplateOverrideFormInput, TemplateOverrideReview, TemplateSummary, TemplateView, TemplateSlot,
   BroadcastAct, BroadcastActs, BroadcastFormInput, BroadcastPage, BroadcastPreview, BroadcastRole, BroadcastView, ExportJob, TenantBroadcast,
   WhatsAppHub, WhatsAppOptinInput, WhatsAppOptinReview, WhatsAppOptinView,
@@ -61,8 +62,9 @@ export class NotificationsResource {
 
   /** W433 · YOUR matrix (authentication only — F-13): every event, its tier and channels, locks, your overrides, the
    *  window that applies to you, your language, the routine rule as decided. */
-  async matrix(signal?: AbortSignal): Promise<NotificationMatrix> {
-    return (await this.http.request<NotificationMatrix>('GET', 'notifications/matrix', { signal })).data;
+  // PC-56 STORE-4c · B4: `{ audience: 'buyer' }` → only the buyer's events (the storefront's preferences page); omitted → every event (W433).
+  async matrix(opts: { audience?: MatrixAudience } = {}, signal?: AbortSignal): Promise<NotificationMatrix> {
+    return (await this.http.request<NotificationMatrix>('GET', 'notifications/matrix', { query: { audience: opts.audience }, signal })).data;
   }
   async getPreferences(signal?: AbortSignal): Promise<NotificationPreference[]> {
     return (await this.http.request<NotificationPreference[]>('GET', 'notifications/preferences', { signal })).data;

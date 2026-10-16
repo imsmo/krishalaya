@@ -1,5 +1,8 @@
 // modules/communication/controllers/v1/preferences.controller.ts · the caller's notification preferences + quiet
-// hours (own userId only). Disabling a mandatory event throws (service, Law 6). `communication` flag.
+// hours (own userId only). Disabling a mandatory event throws (service, Law 6).
+// [PC-56 STORE-4c · founder Q12] NO `communication` flag guard: a person's preferences and quiet hours are never switched off (the guard
+// stays on chat, calls and push devices). F-22: audit IPs through `clientIpOf`. `GET matrix?audience=buyer` (B4) lists only the events a
+// buyer can receive (`domain/buyer-audience.ts`); no audience → every event (web-tenant's W433, unchanged).
 // [PC-56 TENANT-8b] W433 + the notification FORM chain (W2683–W2686):
 //   GET  /notifications/matrix                   W433 — the member's OWN catalogue read (F-13: NOT notification.manage)
 //   POST /notifications/quiet-hours/preview      the Change-window review (zone registry, window maths, diff) — no key
@@ -11,24 +14,24 @@ import { Body, Controller, Get, Headers, Post, Put, Req, UseGuards } from '@nest
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard } from '../../../../core/auth/permissions.guard';
-import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
-import { ZodBody } from '../../../../core/http/zod.pipe';
+import { clientIpOf } from '../../../../core/http/client-ip';
+import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { PreferenceService } from '../../services/preference.service';
 import { SetPreferencesSchema, SetPreferencesDto } from '../../dto/set-notification-preference.dto';
 import { SetQuietHoursSchema, SetQuietHoursDto, PreviewQuietHoursSchema, PreviewQuietHoursDto, PreviewLanguageSchema } from '../../dto/set-quiet-hours.dto';
+import { MatrixQuerySchema, MatrixQueryDto } from '../../dto/matrix-query.dto';
 
-const ipOf = (r: Request) => r.ip || null;
+const ipOf = (r: Request) => clientIpOf(r);
 
 @Controller({ path: 'notifications', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
-@FeatureFlag('communication')
+@UseGuards(AuthGuard, PermissionsGuard)
 export class PreferencesController {
   constructor(private readonly svc: PreferenceService) {}
 
   @Get('matrix')
-  matrix(@CurrentContext() ctx: RequestContext) { return this.svc.matrix(ctx.tenantId, ctx.userId).then((data) => ({ data })); }
+  matrix(@CurrentContext() ctx: RequestContext, @ZodQuery(MatrixQuerySchema) q: MatrixQueryDto) { return this.svc.matrix(ctx.tenantId, ctx.userId, q.audience).then((data) => ({ data })); }
 
   @Get('preferences')
   list(@CurrentContext() ctx: RequestContext) { return this.svc.list(ctx.userId).then((data) => ({ data })); }

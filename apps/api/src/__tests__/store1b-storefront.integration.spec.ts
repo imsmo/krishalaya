@@ -283,7 +283,8 @@ run('PC-56 STORE-1b · storefront home & tenant home (integration, real AppModul
       // PC-56 STORE-2a: + storefront_browse (platform-scoped, 0207)
       // PC-56 STORE-2b: + storefront_cart (platform-scoped, 0208)
       // PC-56 STORE-3a · B6 (founder D2): + disputes (tenant-scoped, fail-closed — the order page's dispute door)
-      expect(Object.keys(r.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart']);
+      // PC-56 STORE-4c · B1 (founder Q12): + communication (tenant-scoped, fail-closed — the headers' Messages link)
+      expect(Object.keys(r.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'communication', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart']);
       expect(typeof r.body.data.group_lots).toBe('boolean');
       expect(JSON.stringify(r.body)).not.toMatch(/rollout|tenant_ids|rules|pct/);
       const platform = await request(http).get('/v1/storefront/flags');

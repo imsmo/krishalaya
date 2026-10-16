@@ -14,6 +14,9 @@ export class DomainEventFanoutHandler implements OutboxHandler {
     this.eventType = entry.outboxType;
   }
   async handle(event: OutboxEvent, tx: TxContext): Promise<void> {
+    // PC-56 STORE-4c · B2: a row scoped to one kind of payload (the ORDER payment) stays silent for the others — when the key is present
+    const only = this.entry.onlyWhen;
+    if (only) { const v = event.payload[only.key]; if (typeof v === 'string' && !only.values.includes(v)) return; }
     const recipients: string[] = [];
     for (const key of this.entry.recipientKeys) {
       const v = event.payload[key];

@@ -1,6 +1,6 @@
 // modules/identity/services/consent.service.ts · DPDP consent capture (append-only).
 import { Inject, Injectable } from '@nestjs/common';
-import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
+import { UNIT_OF_WORK, UnitOfWork, SqlExecutor } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Consent } from '../domain/consent.entity';
@@ -33,6 +33,15 @@ export class ConsentService {
   }
   list(tenantId: string, userId: string) { return this.repo.latestByUser(tenantId, userId); }
 
+  /** PC-56 STORE-4c · B3 — the batched form of `isGranted` for the notification fan-out (communication reads identity's record THROUGH this
+   *  service, never the repository): of `userIds`, who holds a grant as their latest decision. `x` is the caller's transaction. */
+  grantedFor(x: SqlExecutor, userIds: readonly string[], purposeCode: string): Promise<Set<string>> { return this.repo.grantedFor(x, userIds, purposeCode); }
+  /** PC-56 STORE-4c · B3 — one person's latest decision for `purposeCode` is a grant (the preference matrix's consent half), read on the
+   *  replica under the person's own tenant context. */
+  async latestGranted(tenantId: string, userId: string, purposeCode: string): Promise<boolean> {
+    const latest = await this.repo.latestForPurpose(tenantId, userId, purposeCode);
+    return latest?.granted === true;
+  }
   /** Is the user's LATEST decision for `purposeCode` a grant? Optionally require it was assisted by a specific
    *  user (on-behalf consent: the farmer granted it with this ambassador as assistedBy). DPDP authority check. */
   async isGranted(tenantId: string, userId: string, purposeCode: string, assistedBy?: string): Promise<boolean> {

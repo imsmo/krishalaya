@@ -19,8 +19,9 @@ export class PrivacyResource {
   }
   /** Grant or withdraw a consent purpose (the server APPENDS a record — a withdrawal is a `granted=false` row; history is never mutated).
    *  Idempotent on the key (Law 3): a replay returns the first answer and appends nothing. */
-  async setConsent(purposeCode: string, granted: boolean, idempotencyKey: string): Promise<ConsentGrantResult> {
-    return (await this.http.request<ConsentGrantResult>('POST', CONSENTS_PATH, { idempotencyKey, body: { purposeCode, granted } })).data;
+  /** PC-56 STORE-4c: `channel` — where the person decided (`web` from the storefront's preferences page); omitted → the server's default (`app`). */
+  async setConsent(purposeCode: string, granted: boolean, idempotencyKey: string, channel?: 'app' | 'web'): Promise<ConsentGrantResult> {
+    return (await this.http.request<ConsentGrantResult>('POST', CONSENTS_PATH, { idempotencyKey, body: channel ? { purposeCode, granted, channel } : { purposeCode, granted } })).data;
   }
   /** Request a DPDP data export. PC-56 STORE-4a (founder D2): the server COMPILES it on the export plane (one CSV of everything held about you,
    *  across every organisation, with an audit receipt) — the answer's `export` is the live job (position + ETA while queued). A second request

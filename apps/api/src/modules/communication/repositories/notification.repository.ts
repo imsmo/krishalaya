@@ -281,7 +281,10 @@ export class NotificationRepository {
     const since = await this.inboxSince(run);
     const params: unknown[] = [userId, since, tenantId];
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
-    let where = `n.user_id = $1 AND n.channel = 'inapp' AND n.created_at >= $2 AND n.created_at < ${NOT_FUTURE}`;
+    // [PC-56 STORE-4c] A SUPPRESSED in-app row never reached anybody (opted out; and, since founder D2, a promotional notice without the opt-in or
+    // the `marketing` consent — `no_consent`): it is the delivery log's record of a notice NOT sent, never an item in the person's inbox.
+    // (In-app is never held for quiet hours, so no in-app row is suppressed-then-released.) The bell and the read-all count follow it.
+    let where = `n.user_id = $1 AND n.channel = 'inapp' AND n.created_at >= $2 AND n.created_at < ${NOT_FUTURE} AND n.status <> 'suppressed'`;
     if (q.state === 'unread' || q.unreadOnly) where += ` AND n.read_at IS NULL`;
     if (q.state === 'read') where += ` AND n.read_at IS NOT NULL`;
     if (q.status) where += ` AND n.status = ${p(q.status)}::notif_status`;
@@ -332,7 +335,7 @@ export class NotificationRepository {
     const since = await this.inboxSince(run);
     const c = await run.query<{ n: number }>(
       `SELECT count(*)::int AS n FROM (SELECT 1 FROM notifications
-          WHERE user_id = $1 AND channel = 'inapp' AND read_at IS NULL AND created_at >= $2 AND created_at < ${NOT_FUTURE} LIMIT ${BELL_COUNT_CAP}) u`, [userId, since]);
+          WHERE user_id = $1 AND channel = 'inapp' AND status <> 'suppressed' AND read_at IS NULL AND created_at >= $2 AND created_at < ${NOT_FUTURE} LIMIT ${BELL_COUNT_CAP}) u`, [userId, since]);
     const h = await run.query<{ n: number; next: Date | null }>(
       `SELECT count(*)::int AS n, min(held_until) AS next FROM notifications
         WHERE user_id = $1 AND status = 'suppressed' AND suppressed_reason = 'quiet_hours'
@@ -346,7 +349,7 @@ export class NotificationRepository {
     const run = this.replica.forTenant(tenantId);
     const since = await this.inboxSince(run);
     const r = await run.query<{ n: number }>(
-      `SELECT count(*)::int AS n FROM notifications WHERE user_id = $1 AND channel = 'inapp' AND read_at IS NULL AND created_at >= $2 AND created_at < ${NOT_FUTURE}`, [userId, since]);
+      `SELECT count(*)::int AS n FROM notifications WHERE user_id = $1 AND channel = 'inapp' AND status <> 'suppressed' AND read_at IS NULL AND created_at >= $2 AND created_at < ${NOT_FUTURE}`, [userId, since]);
     return Number(r.rows[0]?.n ?? 0);
   }
 

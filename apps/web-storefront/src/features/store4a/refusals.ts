@@ -4,7 +4,7 @@
 // refusal that disappears from its page — or the refused copy coming back into a catalogue (test/claims-guard.spec.ts) — turns a test red.
 import type { Store4Refusal, Store4Surface } from '../store4/refusals';
 
-export type Store4aSurface = Exclude<Store4Surface, 'thread'>;
+export type Store4aSurface = Exclude<Store4Surface, 'thread' | 'inbox' | 'preferences'>;
 
 export const STORE4A_REFUSALS: readonly Store4Refusal[] = Object.freeze([
   { id: 'reveal', canon: 'W300 "Phone +91 98••• ••742 · Reveal (reveal is logged)" · the Reveal (step-up) state', surfaces: ['account'],

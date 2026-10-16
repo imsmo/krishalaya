@@ -21,6 +21,8 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
+import { ConsentService } from '../../identity/services/consent.service';
+import { ConsentRepository } from '../../identity/repositories/consent.repository';
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
 import { ShardRouter } from '../../../core/sharding/shard-router';
@@ -116,6 +118,13 @@ run('TENANT-8e · the broadcast plane (integration, real Postgres + RLS as kv_ap
     await role(memberB, 'farmer', tenantB);
     for (const u of [withDevice, pushOff, ownQuiet]) await admin.query(`INSERT INTO push_devices (user_id, platform, token, is_active) VALUES ($1,'android',$2,true)`, [u, `tok-${randomUUID()}`]);
     await admin.query(`INSERT INTO notification_preferences (user_id, event_code, channel, is_enabled) VALUES ($1,'tenant.broadcast','push',false)`, [pushOff]);
+    // PC-56 STORE-4c (founder D2): a PROMOTIONAL notice (`tenant.broadcast`) is OPT-IN and CONSENT-BOUND. This suite's subject is the broadcast
+    // plane's maths, so tenant A's four members hold the `marketing` grant and have OPTED IN on every channel — except pushOff's push, still the
+    // switched-off channel the counts keep apart. (The consent-less path — `suppressed · no_consent` — is store4c-notifications-prefs' (5).)
+    for (const u of [withDevice, noDevice, pushOff, ownQuiet]) {
+      await admin.query(`INSERT INTO consents (user_id, purpose_code, version, granted, channel) VALUES ($1,'marketing','v1',true,'app')`, [u]);
+      for (const ch of u === pushOff ? ['inapp'] : ['push', 'inapp']) await admin.query(`INSERT INTO notification_preferences (user_id, event_code, channel, is_enabled) VALUES ($1,'tenant.broadcast',$2,true)`, [u, ch]);
+    }
     await admin.query(`INSERT INTO user_quiet_hours (user_id, starts, ends, timezone) VALUES ($1,'11:00','13:00','Asia/Kolkata')`, [ownQuiet]);
     adminPerms = await permsOf('tenant_admin'); agentPerms = await permsOf('support_agent');
 
@@ -129,7 +138,8 @@ run('TENANT-8e · the broadcast plane (integration, real Postgres + RLS as kv_ap
     const quiet = new QuietHoursRepository(replica as any); const repo = new BroadcastRepository(replica as any);
     push = new CapturingPush();
     const spine = new NotificationService(uow, outbox, metrics, new NoopNotificationGateway(config), push, new PushDeviceRepository(replica as any),
-      events, templates, new NotificationPreferenceRepository(replica as any), quiet, new NotificationRepository(replica as any), new FlagsService(pools, new InMemoryCacheService()), () => NOON);
+      events, templates, new NotificationPreferenceRepository(replica as any), quiet, new NotificationRepository(replica as any), new FlagsService(pools, new InMemoryCacheService()), () => NOON,
+      new ConsentService(uow, outbox, new ConsentRepository(replica as any)));   // STORE-4c D2: the fan-out reads the `marketing` consent (absent → fail closed)
     svc = new BroadcastService(uow, outbox, audit, idem, metrics, repo, events, quiet);
     wa = new WhatsAppService(uow, outbox, audit, idem, new WhatsAppRepository(replica as any), repo);
     handler = new BroadcastRequestedHandler(repo, spine, outbox, audit);

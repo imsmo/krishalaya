@@ -124,7 +124,9 @@ describe('STORE-4a · W300 shortcuts, data rights, what organisations see — bo
     expect(t).toContain('data-kv-chrome="anand-fpo"');
     expect(t).toMatch(/href="\/anand-fpo\/account\/addresses"/); expect(t).toMatch(/href="\/anand-fpo\/orders"/); expect(t).toMatch(/href="\/anand-fpo\/account\/data"/);
     expect(t).toMatch(/<input type="hidden" name="chrome" value="anand-fpo"/);
-    expect(t).toMatch(/href="\/notifications\/preferences"/);
+    // PC-56 STORE-4c · C1: the Preferences shortcut is the person's page under THIS chrome (it was the /notifications/preferences door)
+    expect(t).toMatch(/data-kv-shortcut="preferences" href="\/anand-fpo\/account\/preferences"/);
+    expect(p).toMatch(/data-kv-shortcut="preferences" href="\/account\/preferences"/);
   });
   it('at the API\'s cap the count prints "50+" (never a guessed total)', async () => {
     C.addresses = Array.from({ length: 50 }, (_, i) => ({ ...C.addresses[0], id: `0214d000-0000-7000-8000-${String(i).padStart(12, '0')}` }));

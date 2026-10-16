@@ -65,8 +65,12 @@ import { PushDeviceRepository } from './repositories/push-device.repository';
 import { notificationGatewayProvider, maskingProviderProvider, pushSenderProvider } from './gateway/gateway.provider';
 import { DomainEventFanoutHandler } from './events/handlers/domain-event-fanout.handler';
 import { NOTIFICATION_EVENT_MAP } from './events/notification-event-map';
+// PC-56 STORE-4c · B3 (founder D2): the fan-out and the preference matrix read the `marketing` consent THROUGH identity's ConsentService
+// (exported by IdentityModule; identity does not import this module — no cycle).
+import { IdentityModule } from '../identity/identity.module';
 
 @Module({
+  imports: [IdentityModule],
   controllers: [NotificationsController, PreferencesController, TemplatesController, DeliveryWebhookController, ConversationsController, MaskedCallsController, MaskedCallWebhookController, DevicesController, BroadcastsController, WhatsAppController],
   providers: [
     NotificationService, PreferenceService, InboxService, HeldReleaseCadenceJob, TemplateOverrideService, ConversationService, MessageService, MaskedCallService, DeviceService, BroadcastService,
