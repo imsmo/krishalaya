@@ -64,3 +64,11 @@ INSERT INTO ui_messages (key, language_code, text) VALUES
   ('exports.dataset.logistics.cold_chain_breaches', 'hi', 'कोल्ड-चेन उल्लंघन (बिना हस्ताक्षर)'),
   ('exports.dataset.logistics.cold_chain_breaches', 'gu', 'કોલ્ડ-ચેઇન ભંગ (સહી વગર)')
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 STORE-4a · founder D2] "Download my data" — the PERSONAL dataset `identity.dpdp_person` (everything the platform holds about the
+-- requester, across every organisation; one CSV with a section column). Its `exports.export_ready` notice reaches the requester only.
+INSERT INTO ui_messages (key, language_code, text) VALUES
+  ('exports.dataset.identity.dpdp_person', 'en', 'your data (everything we hold about you)'),
+  ('exports.dataset.identity.dpdp_person', 'hi', 'आपका डेटा (आपके बारे में हमारे पास जो कुछ है)'),
+  ('exports.dataset.identity.dpdp_person', 'gu', 'તમારો ડેટા (તમારા વિશે અમારી પાસે જે કંઈ છે)')
+ON CONFLICT DO NOTHING;

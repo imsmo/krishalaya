@@ -143,7 +143,8 @@ run('PC-56 TENANT-10b · promotion money — the tenant wallet funds the discoun
     app = new Pool({ connectionString: APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     for (const u of [mgrUser, seller, sellerB, buyer1, buyer2, buyer3, buyer4, buyerB]) await makeUser(admin, u);
-    await admin.query(`INSERT INTO addresses (user_id, line1, village, is_default) VALUES ($1, 'Plot 4', 'Rajkot', true)`, [buyer1]);
+    // PC-56 STORE-4a: the address names its country (0214 dropped the 'IN' default — Rule Zero)
+    await admin.query(`INSERT INTO addresses (user_id, line1, village, is_default, country_code) VALUES ($1, 'Plot 4', 'Rajkot', true, 'IN')`, [buyer1]);
     listingA = await makeListing(tenantA, seller, 'Groundnut');
     listingB = await makeListing(tenantB, sellerB, 'Cumin');
     await admin.query(`UPDATE feature_flags SET is_enabled=true WHERE key='promotions'`);

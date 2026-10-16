@@ -8,8 +8,14 @@ export async function listAddresses(): Promise<Address[]> {
   try { return await apiClient().addresses.list(); } catch { return []; }
 }
 
-export function createAddress(input: { line1: string; line2?: string; village?: string; pincode?: string; contactName?: string; contactPhone?: string; isDefault?: boolean }): Promise<Address> {
-  return apiClient().addresses.create(input);
+/** PC-56 STORE-4a · B6 (Rule Zero): the API no longer defaults an address's country to 'IN' (migration 0214) — the create sends the PERSON's
+ *  own country from their profile (`users.me().countryCode`, from the data, never a literal). A profile that names no country refuses the
+ *  create (the form shows its save failure) rather than guessing one. */
+export async function createAddress(input: { line1: string; line2?: string; village?: string; pincode?: string; contactName?: string; contactPhone?: string; isDefault?: boolean }): Promise<Address> {
+  const me = await apiClient().users.me();
+  const countryCode = typeof me?.countryCode === 'string' && /^[A-Za-z]{2}$/.test(me.countryCode) ? me.countryCode.toUpperCase() : null;
+  if (!countryCode) throw new Error('ADDRESS_COUNTRY_UNKNOWN');
+  return apiClient().addresses.create({ ...input, countryCode });
 }
 
 export function updateAddress(id: string, patch: Partial<{ line1: string; line2: string; village: string; pincode: string; contactName: string; contactPhone: string; isDefault: boolean }>): Promise<Address> {

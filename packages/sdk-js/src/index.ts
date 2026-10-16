@@ -9,6 +9,8 @@ export { OFFER_STATUSES, OFFER_DECLINE_REASONS, OFFER_REFUSAL_CODES } from './ty
 export { AUCTION_REFUSAL_CODES, AUCTION_STATUSES, GROUP_LOT_STATUSES } from './types';   // PC-56 STORE-3c · B10
 export type { AuctionRefusalCode, AuctionStatusCode, SettlementOutcome, MyBidEmd, MyBidEmdState, MyBidSettlement, PublicAuctionCard, PublicAuctionGroup, StorefrontGroupLot } from './types';   // PC-56 STORE-3c · B10
 export type { OfferStatus, OfferAct, OfferRound, OfferDeclineReason, OfferCounts, OfferRefusalCode } from './types';   // PC-56 STORE-3b · B9
+export { PRIVACY_REFUSAL_CODES, ADDRESS_REFUSAL_CODES, ADDRESS_LABEL_CODES, ADDRESS_DELIVERY_NOTE_MAX } from './types';   // PC-56 STORE-4a · B6
+export type { PrivacyCommitments, PrivacyExportState, PrivacyRefusalCode, AddressRefusalCode } from './types';   // PC-56 STORE-4a · B6
 export type { HttpMethod, RequestOptions, Envelope } from './http';
 export type { CreateListingInput } from './resources/listings';
 export type { OrderRole } from './resources/orders';

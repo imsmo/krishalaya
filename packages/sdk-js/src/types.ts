@@ -746,12 +746,27 @@ export interface Address {
   id: string; line1: string; line2?: string | null; village?: string | null; regionId?: string | null;
   pincode?: string | null; countryCode?: string; contactName?: string | null; contactPhone?: string | null;
   lat?: number | null; lng?: number | null; labelId?: string | null; isDefault: boolean;
+  /** PC-56 STORE-4a · B3: the `address_label` value's CODE (`home` / `farm` / `shop` / `warehouse` / `delivery`, or an organisation's own) —
+   *  the storefront words it by code in three languages; null when the address has no label. */
+  labelCode?: string | null;
+  /** PC-56 STORE-4a · B3 (0214): the note whoever delivers reads (≤ 280); copy-on-write carries it. */
+  deliveryNote?: string | null;
 }
+/** PC-56 STORE-4a · B3: the note's bound (0214 `addresses.delivery_note varchar(280)`). */
+export const ADDRESS_DELIVERY_NOTE_MAX = 280;
+/** PC-56 STORE-4a · B3 — the five platform `address_label` codes (0214; an organisation may add its own). */
+export const ADDRESS_LABEL_CODES = Object.freeze(['home', 'farm', 'shop', 'warehouse', 'delivery'] as const);
+/** PC-56 STORE-4a · B6 — the address book's named refusals. */
+export const ADDRESS_REFUSAL_CODES = Object.freeze(['ADDRESS_LABEL_UNKNOWN', 'ADDRESS_NOT_FOUND', 'ADDRESS_INVALID', 'VALIDATION_FAILED'] as const);
+export type AddressRefusalCode = (typeof ADDRESS_REFUSAL_CODES)[number];
 /** PC-56 HOTFIX-6 · B7 — the address book's inputs: `countryCode` (two letters — the form sends the session store's country, never a literal)
  *  and the ONE postal rule (`pincode` 4–10 digits, any country — apps/api shared/utils/postal-code.ts). */
+/** PC-56 STORE-4a · B3 (Rule Zero): `countryCode` is REQUIRED — the API's and the database's 'IN' default are gone (0214); a caller sends the
+ *  person's or the session store's country, never a literal. `labelId` an `address_label` value (`ADDRESS_LABEL_UNKNOWN` otherwise);
+ *  `deliveryNote` ≤ 280 (null / '' clears it on an edit). */
 export interface AddressCreateInput {
-  line1: string; line2?: string; village?: string; regionId?: string; pincode?: string; countryCode?: string;
-  contactName?: string; contactPhone?: string; lat?: number; lng?: number; labelId?: string; isDefault?: boolean;
+  line1: string; line2?: string; village?: string; regionId?: string; pincode?: string; countryCode: string;
+  contactName?: string; contactPhone?: string; lat?: number; lng?: number; labelId?: string | null; deliveryNote?: string | null; isDefault?: boolean;
 }
 export type AddressUpdateInput = Partial<AddressCreateInput>;
 /** PC-56 HOTFIX-6 · B3 — an edit's answer. COPY-ON-WRITE: an address some order / shipment / booking points at is never edited in place —
@@ -1555,7 +1570,31 @@ export interface OnboardRoleResult { roleCode: string; alreadyGranted: boolean; 
 // --- DPDP privacy (P-23 data-download / account-delete / change-phone) — ASSUMED contracts (endpoints not live) ---
 /** A data-subject request (export or erasure). `status` is server-driven (pending→processing→ready/done). The app
  * only submits + reflects status — it never produces the export itself (the server compiles it; Law 11). */
-export interface PrivacyRequest { id: string; kind: 'export' | 'deletion'; status: string; coolingEndsAt?: string | null; requestedAt?: string; readyAt?: string; downloadUrl?: string | null; }
+/** A data-subject request as its person reads it. PC-56 STORE-4a (founder D2): an EXPORT request carries `export` — the export plane's live job
+ *  (dataset `identity.dpdp_person`, readable by its requester only): `queued` with `standing` (position + an honest ETA), `ready` with the
+ *  `receipt` (file, rows, sha256, generated-at, requester) and `download.kind = 'available'` (mint a 15-minute link with `exportsPlane.mintLink`,
+ *  fetch through `exportsPlane.openDownload` — every fetch logged), `expired` after the retention, `failed` with its code. A DELETION request
+ *  carries `coolingEndsAt` (90 days, founder D3). `readyAt` / `downloadUrl` were never served (survey C-9) and are kept optional only for old
+ *  callers. */
+export interface PrivacyRequest {
+  id: string; kind: 'export' | 'deletion'; status: string; coolingEndsAt?: string | null; requestedAt?: string | null;
+  export?: PrivacyExportState | null;
+  /** @deprecated never served (survey C-9) — read `export`. */ readyAt?: string; /** @deprecated never served — read `export`. */ downloadUrl?: string | null;
+}
+export interface PrivacyExportState {
+  jobId: string; status: ExportJobStatus; standing: ExportStanding | null; receipt: ExportReceipt | null; download: ExportDownloadState;
+  failure: { code: ExportFailureCode | string; detail: string | null } | null; expiresAt: string | null; generatedAt: string | null;
+}
+/** PC-56 STORE-4a · B1 (founder D1) — `GET /v1/privacy/commitments`: what stands between the caller and a deletion request, across every
+ *  organisation (money as bigint minor-unit STRINGS in `currencyCode` — null when nothing is held anywhere; `multiCurrency` when more than one
+ *  currency holds money — the figures then describe the largest). `retentionYears` is the platform setting (null → print no number). */
+export interface PrivacyCommitments {
+  openOrders: number; escrowMinor: string; walletMinor: string; currencyCode: string | null; multiCurrency: boolean;
+  invoiceCount: number; blocked: boolean; retentionYears: number | null; coolingDays: number;
+}
+/** PC-56 STORE-4a · B6 — the privacy acts' named refusals (`DSR_BLOCKED` 409 carries the same figures in `details`). */
+export const PRIVACY_REFUSAL_CODES = Object.freeze(['DSR_BLOCKED'] as const);
+export type PrivacyRefusalCode = (typeof PRIVACY_REFUSAL_CODES)[number];
 /** A DPDP consent record: whether the caller has granted a given processing purpose (append-only server-side). */
 export interface ConsentRecord { purposeCode: string; granted: boolean; updatedAt?: string; version?: string | null; channel?: string | null; }
 /** PC-56 HOTFIX-6 · B5 — `POST /v1/consents` answers the notice version the decision was stamped with. */

@@ -68,6 +68,15 @@ export class ExportJobRepository {
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
 
+  /** [PC-56 STORE-4a · founder D2] The organisation the caller's OWN personal export job (`identity.dpdp_person`) lives in — migration 0214's
+   *  SECURITY DEFINER `kv_personal_export_job_tenant`, because the job is tenant-scoped under RLS while the person and their DSR are not. One
+   *  uuid, or null for anybody else's job / any other dataset. `tenantId` only routes the query to its shard. */
+  async personalJobTenant(tenantId: string, id: string, userId: string): Promise<string | null> {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) return null;
+    const r = await this.replica.forTenant(tenantId).query<{ t: string | null }>(`SELECT kv_personal_export_job_tenant($1, $2) AS t`, [id, userId]);
+    return r.rows[0]?.t ?? null;
+  }
+
   /** Locked read in the writer's tx. `SKIP LOCKED` when claiming, so two workers racing the same head of queue do not
    *  wait on each other — the loser sees no row and moves on. */
   async getForUpdate(tx: TxContext, tenantId: string, id: string, opts: { skipLocked?: boolean } = {}): Promise<ExportJob | null> {

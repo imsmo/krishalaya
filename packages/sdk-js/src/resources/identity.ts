@@ -151,6 +151,10 @@ export class AddressesResource {
   async list(signal?: AbortSignal): Promise<Address[]> {
     return (await this.http.request<Address[]>('GET', 'addresses', { signal })).data;
   }
+  /** PC-56 STORE-4a · B3: ONE of your live addresses (with `labelCode` and `deliveryNote`) — 404 `ADDRESS_NOT_FOUND` for anybody else's. */
+  async get(id: string, signal?: AbortSignal): Promise<Address> {
+    return (await this.http.request<Address>('GET', `addresses/${encodeURIComponent(id)}`, { signal })).data;
+  }
   /** Add an address. PC-56 HOTFIX-6 · B4/B7: `countryCode` + the one postal rule (AddressCreateInput); an OPTIONAL Idempotency-Key makes a
    *  retry return the first answer (one row). The API answers `{ id }` (the `Address` return type is kept for the existing callers). */
   async create(input: AddressCreateInput, idempotencyKey?: string): Promise<Address> {

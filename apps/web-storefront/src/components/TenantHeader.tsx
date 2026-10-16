@@ -68,6 +68,8 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
           <Link href={`${home}/cart`} className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}
           </Link>
+          {/* PC-56 STORE-4a · C1 (founder Q13): the person's account under THIS organisation's chrome — signed in only */}
+          {signedIn && <Link href={`${home}/account`} className="kv-header__link" data-kv-nav="account">{t.t('nav.account')}</Link>}
           {!signedIn && <Link href={`${home}/login`} className="kv-header__login">{t.t('nav.login')}</Link>}
         </div>
       </div>

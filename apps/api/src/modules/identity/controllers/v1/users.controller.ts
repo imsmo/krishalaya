@@ -30,8 +30,9 @@ export class UsersController {
   me(@CurrentContext() ctx: RequestContext) { return this.users.getMe(ctx.tenantId, ctx.userId).then((data) => ({ data })); } // S6-prep: enriched with active role codes
 
   @Patch('me')
-  async updateMe(@CurrentContext() ctx: RequestContext, @ZodBody(UpdateUserSchema) dto: UpdateUserDto) {
-    return { data: await this.users.updateProfile(ctx.tenantId, ctx.userId, dto) };
+  async updateMe(@CurrentContext() ctx: RequestContext, @Req() req: Request, @ZodBody(UpdateUserSchema) dto: UpdateUserDto) {
+    // PC-56 STORE-4a · B4: audited (`user.profile_updated` — field names + masked values), with the caller's address
+    return { data: await this.users.updateProfile(ctx.tenantId, ctx.userId, dto, ipOf(req)) };
   }
 
   @Get(':id')

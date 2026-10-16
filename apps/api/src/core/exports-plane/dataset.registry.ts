@@ -39,6 +39,15 @@ export interface DatasetProducer<P = Record<string, unknown>> {
   /** The permission that reads the job, its receipt and its file — the same one that gates the SCREEN the export is of.
    *  `*` (god mode) passes as it does everywhere. */
   readonly permission: string;
+  /**
+   * [PC-56 STORE-4a · founder D2] A PERSONAL dataset — a file ABOUT its requester (the DPDP "download my data", `identity.dpdp_person`), not an
+   * organisation's operational file. The plane's ONE change for it (`ExportPlaneService.resolveJob`): its job, receipt, link and download are
+   * readable by the job's REQUESTER and by nobody else (anybody else → 404 — never 403, a person enumerates nothing by asking), WITHOUT the
+   * tenant `permission` above and WITHOUT the `tenant_exports` flag (DPDP is a statutory right; the privacy routes carry no flag), from
+   * whichever organisation the requester's session is in. A personal dataset is enqueued only by its owner module's own act
+   * (`enqueueInTx`), never by the generic `enqueue`. Absent / false = the tenant rules, unchanged.
+   */
+  readonly personal?: boolean;
   /** Strict zod schema for `params`; the enqueue validates and STORES the parsed value, so a job's params are canonical. */
   readonly params: ZodTypeAny & { _output: P };
   /** The dataset's name in every language the notice can be sent in (seed 0017 → `ui_messages`). Read at ready time. */

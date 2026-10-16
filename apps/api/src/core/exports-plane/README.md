@@ -47,6 +47,15 @@ that refuses a figure MUST say so in `notes` — a refused figure is never a row
 somebody to compute it from the wrong ones). `datasetName()` reads `ui_messages` (`exports.dataset.<code>`, seed 0017)
 so the notice never carries a platform code inside vernacular copy.
 
+### Personal datasets (PC-56 STORE-4a · founder D2)
+
+A producer may declare `personal: true` — a file ABOUT its requester (the DPDP "Download my data", `identity.dpdp_person`,
+`modules/identity/exports/dpdp-person.producer.ts`). The plane's one change for it lives in `ExportPlaneService.resolveJob`: the job, its
+receipt, its link and its download are readable by the job's **requester only** (anybody else — even `*` — gets 404), with **no tenant
+permission** and **no `tenant_exports` flag** (a statutory right has no switch), from whichever organisation the requester's session is in
+(migration 0214's `kv_personal_export_job_tenant` answers the job's organisation for the requester's own job only). `enqueueInTx` skips the
+flag for it; the generic `enqueue` refuses it (a personal file is born of its owner module's own act). Every other dataset reads as before.
+
 ## Threats considered (§4)
 
 - **Tenant isolation / RLS** — both tables ENABLED + FORCED; `tenant_id` in every tenant query; the worker's tenant

@@ -14,13 +14,21 @@
 //     a repeat of the caller's own remove → ok (idempotent). Removing the DEFAULT makes the NEWEST remaining address the default (none
 //     left → no default) — said in the answer (`defaultId`).
 //   • the list is BOUNDED: a hard cap of 50 (ADDRESS_LIST_CAP), the default first, then newest; retired copies are never listed.
+//
+// PC-56 STORE-4a · B3 (founder D4 · Rule Zero):
+//   • `countryCode` is required on create (the DTO; the DB default is dropped by 0214) — never 'IN' by default;
+//   • `labelId` must be an ACTIVE `address_label` value visible to the caller's organisation, read IN the write's transaction →
+//     422 ADDRESS_LABEL_UNKNOWN otherwise (the 3a `cancel_reason` shape);
+//   • `deliveryNote` (≤ 280) is stored, edited, and CARRIED by copy-on-write with every other value (a note change on an address in use makes
+//     a copy — the note an order's delivery was given stays with that order's address);
+//   • the list and the detail answer each address's `labelCode` (the storefront words it in three languages by code).
 import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Address } from '../domain/address.entity';
-import { AddressRepository } from '../repositories/address.repository';
+import { AddressRepository, AddressView } from '../repositories/address.repository';
 import { CreateAddressDto, UpdateAddressDto } from '../dto/create-address.dto';
 import { DomainError } from '../../../shared/errors/app-error';
 
@@ -28,6 +36,8 @@ export interface AddressWriteResult { ok: true; id: string; copied: boolean; pre
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const notFound = () => new DomainError('ADDRESS_NOT_FOUND', 'Address not found', 404);
+/** PC-56 STORE-4a · B3: a label that is not an active `address_label` value this organisation can see. 422. */
+export class AddressLabelUnknownError extends DomainError { constructor(labelId: string) { super('ADDRESS_LABEL_UNKNOWN', 'That address label is not one this platform offers', 422, { labelId }); } }
 /** Every value of an address but its default flag (and its id), in a stable order — what copy-on-write protects. */
 const valuesOf = (a: Address) => { const { id: _id, isDefault: _d, ...v } = a.toProps(); void _id; void _d; return JSON.stringify(Object.keys(v).sort().map((k) => [k, (v as Record<string, unknown>)[k]])); };
 const keyOf = (scope: string, userId: string, key: string) => createHash('sha256').update(`${scope}:${userId}:${key}`).digest('base64url');
@@ -43,8 +53,9 @@ export class AddressService {
   async create(tenantId: string, userId: string, dto: CreateAddressDto, idemKey?: string) {
     const act = async () => {
       const id = await this.uow.run(tenantId, async (tx) => {
+        if (dto.labelId && !(await this.repo.labelCodeTx(tx, tenantId, dto.labelId))) throw new AddressLabelUnknownError(dto.labelId);
         if (dto.isDefault) await this.repo.unsetDefaults(tx, userId);
-        const a = Address.create({ id: uuidv7(), userId, tenantId: null, labelId: dto.labelId ?? null, line1: dto.line1, line2: dto.line2 ?? null, village: dto.village ?? null, regionId: dto.regionId ?? null, pincode: dto.pincode ?? null, countryCode: dto.countryCode, lat: dto.lat ?? null, lng: dto.lng ?? null, contactName: dto.contactName ?? null, contactPhone: dto.contactPhone ?? null, isDefault: dto.isDefault });
+        const a = Address.create({ id: uuidv7(), userId, tenantId: null, labelId: dto.labelId ?? null, line1: dto.line1, line2: dto.line2 ?? null, village: dto.village ?? null, regionId: dto.regionId ?? null, pincode: dto.pincode ?? null, countryCode: dto.countryCode, lat: dto.lat ?? null, lng: dto.lng ?? null, contactName: dto.contactName ?? null, contactPhone: dto.contactPhone ?? null, isDefault: dto.isDefault, deliveryNote: dto.deliveryNote ?? null });
         await this.repo.insert(tx, a);
         return a.id;
       }, { userId });
@@ -58,6 +69,7 @@ export class AddressService {
     const act = () => this.uow.run(tenantId, async (tx): Promise<AddressWriteResult> => {
       const a = await this.repo.getForUpdate(tx, id, userId);
       if (!a) throw new DomainError('ADDRESS_NOT_FOUND', 'Address not found', 404);
+      if (dto.labelId && !(await this.repo.labelCodeTx(tx, tenantId, dto.labelId))) throw new AddressLabelUnknownError(dto.labelId);
       if (dto.isDefault) await this.repo.unsetDefaults(tx, userId);
       const { isDefault, ...fields } = dto;
       const before = valuesOf(a);
@@ -82,7 +94,16 @@ export class AddressService {
     return idemKey ? this.idem.remember(keyOf(`address.update:${id}`, userId, idemKey), userId, 'identity.address.update', act) : act();
   }
 
-  list(tenantId: string, userId: string) { return this.repo.listByUser(tenantId, userId).then((rows) => rows.map((a) => a.toProps())); }
+  /** PC-56 STORE-4a: each row with its label's code (`labelCode`) and its delivery note. */
+  list(tenantId: string, userId: string): Promise<AddressView[]> { return this.repo.listViewByUser(tenantId, userId); }
+
+  /** PC-56 STORE-4a · B3: ONE of the caller's live addresses (the edit form, the review's diff against current values); anybody else's → 404. */
+  async get(tenantId: string, userId: string, id: string): Promise<AddressView> {
+    if (!UUID.test(id)) throw notFound();
+    const a = await this.repo.getViewForUser(tenantId, id, userId);
+    if (!a) throw notFound();
+    return a;
+  }
 
   async remove(tenantId: string, userId: string, id: string): Promise<{ ok: true; defaultId: string | null }> {
     if (!UUID.test(id)) throw notFound();

@@ -9,8 +9,8 @@
 // NO MONEY ARITHMETIC. Every amount on these pages is the API's (the preview's per-seller slices, the order's total, the wallet's balance), printed
 // through `moneyText` in the data's own currency. The ONE comparison here (`walletCovers`) is a BigInt comparison that decides whether a
 // method is OFFERED — it prints nothing (test/store2c-checkout.spec.ts greps this file for `*` / `+` on a minor).
-import { maskForDisplay } from '../chain/mask';
 
+import type { AddressValues, AddressFieldRefusal } from '../address/form';
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
 /* STEPS                                                                                                                               */
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
@@ -31,8 +31,7 @@ export interface CheckoutState {
   draft: AddressDraft | null;
 }
 export interface AddressDraft { values: AddressValues; errors: Partial<Record<keyof AddressValues, AddressFieldRefusal>>; failure: string | null }
-export interface AddressValues { line1: string; line2: string; village: string; pincode: string; countryCode: string; contactName: string; contactPhone: string; labelId: string }
-export type AddressFieldRefusal = 'required' | 'too_short' | 'too_long' | 'postal' | 'phone' | 'label' | 'country';
+export type { AddressValues, AddressFieldRefusal } from '../address/form';
 
 export const EMPTY_STATE = (slug: string): CheckoutState => ({ v: 1, slug, addressId: null, methodId: null, pay: null, coupon: null, draft: null });
 
@@ -109,50 +108,10 @@ export function decodeState(raw: string | null | undefined, slug: string): Check
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
 /* THE ADD-ADDRESS CHAIN (W3048–W3051) — the identity DTO's rule, field by field, values kept                                         */
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
-/** The address book's postal rule (apps/api shared/utils/postal-code.ts — 4–10 digits, any country): the SAME rule, so the form never refuses
- *  what the API accepts nor sends what it refuses. */
-export const POSTAL_CODE_RE = /^\d{4,10}$/;
-const PHONE_RE = /^\+?[0-9 ]{6,20}$/;
-
-/** Read a submitted form into values (trimmed, bounded) — these are what the form re-renders on a refusal. */
-export function addressValues(get: (k: string) => unknown): AddressValues {
-  const v = (k: keyof AddressValues, max: number) => String(get(k) ?? '').trim().slice(0, max);
-  return { line1: v('line1', 250), line2: v('line2', 250), village: v('village', 150), pincode: v('pincode', 12), countryCode: v('countryCode', 2).toUpperCase(),
-    contactName: v('contactName', 150), contactPhone: v('contactPhone', 20), labelId: v('labelId', 36) };
-}
-/** Per-field refusals before the API is asked (it re-validates): line 1 required (3–250), a postal code by the one rule, a phone shape. */
-export function checkAddress(v: AddressValues): AddressDraft['errors'] {
-  const e: AddressDraft['errors'] = {};
-  if (!v.line1) e.line1 = 'required'; else if (v.line1.length < 3) e.line1 = 'too_short';
-  if (!v.pincode) e.pincode = 'required'; else if (!POSTAL_CODE_RE.test(v.pincode)) e.pincode = 'postal';
-  if (v.contactPhone && !PHONE_RE.test(v.contactPhone)) e.contactPhone = 'phone';
-  if (v.labelId && !UUID.test(v.labelId)) e.labelId = 'label';
-  if (!/^[A-Z]{2}$/.test(v.countryCode)) e.countryCode = 'country';
-  return e;
-}
-/** The API body for `addresses.create` (empty optionals omitted). The country is the buyer's (two letters — the address book stores it; the
- *  postal rule is the same for every country, as the API's is). */
-export function addressBody(v: AddressValues): Record<string, unknown> {
-  const b: Record<string, unknown> = { line1: v.line1, pincode: v.pincode, countryCode: v.countryCode };
-  if (v.line2) b.line2 = v.line2;
-  if (v.village) b.village = v.village;
-  if (v.contactName) b.contactName = v.contactName;
-  if (v.contactPhone) b.contactPhone = v.contactPhone;
-  if (v.labelId) b.labelId = v.labelId;
-  return b;
-}
-export function addressFieldKey(r: AddressFieldRefusal): string { return `store2c.address.err.${r}`; }
-
-/** An address card (W283): its label (from the `address_label` vocabulary, when the address has one), the lines, and who receives it — the
- *  phone MASKED (features/chain/mask.ts, the five-of-ten policy). */
-export interface AddressCard { id: string; label: string | null; lines: string; receiver: string | null; phoneMasked: string | null; isDefault: boolean }
-export function addressCard(a: { id: string; line1: string; line2?: string | null; village?: string | null; pincode?: string | null; labelId?: string | null; contactName?: string | null; contactPhone?: string | null; isDefault: boolean }, labels: ReadonlyMap<string, string>): AddressCard {
-  return {
-    id: a.id, label: a.labelId ? labels.get(a.labelId) ?? null : null,
-    lines: [a.line1, a.line2, a.village, a.pincode].filter((x) => typeof x === 'string' && x.trim() !== '').join(', '),
-    receiver: a.contactName?.trim() || null, phoneMasked: a.contactPhone ? maskForDisplay(a.contactPhone) : null, isDefault: a.isDefault,
-  };
-}
+// PC-56 STORE-4a · C6: the chain's helpers (the postal rule, the values, the per-field refusals, the body, the card) MOVED to
+// features/address/form.ts — ONE copy, read by the account's address pages too; re-exported here so checkout keeps its names.
+export { POSTAL_CODE_RE, addressValues, checkAddress, addressBody, addressFieldKey, addressCard } from '../address/form';
+export type { AddressCard } from '../address/form';
 
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
 /* PAYMENT METHODS (W284, founder D6 / HOTFIX-4 D2)                                                                                    */

@@ -13,6 +13,8 @@ import { STORE3B_REFUSALS, type Store3bSurface } from '../features/store3b/refus
 import { STORE3C_REFUSALS, type Store3cSurface } from '../features/store3c/refusals';
 // PC-56 HOTFIX-6: and `STORE4_HOTFIX6_REFUSALS` (the conversation page — "Call" refused by name, founder D2); STORE-4a/4b/4c extend it.
 import { STORE4_HOTFIX6_REFUSALS, type Store4Surface } from '../features/store4/refusals';
+// PC-56 STORE-4a: and `STORE4A_REFUSALS` (the account, the address book and its form, the data download, the deletion request).
+import { STORE4A_REFUSALS } from '../features/store4a/refusals';
 
 export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface | Store3cSurface | Store4Surface }) {
   const t = getTranslator();
@@ -24,6 +26,7 @@ export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurf
     ...STORE3B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE3C_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE4_HOTFIX6_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
+    ...STORE4A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
   ];
   return (
     <section className="kv-refused" data-kv-refused={surface} aria-labelledby={`kv-refused-${surface}`}>

@@ -293,3 +293,24 @@ describe('HOTFIX-6 · claims guard (the conversation: no call offered, no person
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b/i.test(v)]).toEqual([k, true]);
   });
 });
+
+// PC-56 STORE-4a · brief §E (founders D1 / D3 / D4 / D6 / D7) — the account's refused canon claims appear ONLY inside `store4a.refusal.*`
+// (which say no): no "Reveal" offer, no KYC-unlocks-auctions, no licence step, no buying history, no "within 30 days", no saved card, no
+// unserviceable-pincode verdict, no "Flagged off", no on-call paging. No STORE-4a value names a person.
+describe('STORE-4a · claims guard (the account, the address book, the data rights)', () => {
+  const REFUSED = [
+    /\bReveal\b/, /unlocks? auctions|bidder qualification/i, /Pesticide licence/i, /buying history/i, /within 30 days|erases within/i,
+    /card ••••|card \*\*\*\*/i, /doesn.t reach this pincode|Unserviceable/i, /Flagged off/i, /page the on-call|pages? the on-call/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (/\.refusal\./.test(k)) continue;
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English STORE-4a refusal says no / not / never / cannot', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store4a.refusal.'));
+    expect(r.length).toBe(12);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b/i.test(v)]).toEqual([k, true]);
+  });
+});

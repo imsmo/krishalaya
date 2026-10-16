@@ -4,6 +4,7 @@ import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
+import { pgDateOrNull } from '../../../core/database/pg-date';
 import { UserNotFoundError } from '../domain/identity.errors';
 import { User } from '../domain/user.entity';
 import { UserStatus } from '../domain/user.state';
@@ -13,6 +14,31 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
 import { InvalidPhoneError } from '../domain/identity.errors';
+
+/** The editable profile fields, as the audit may compare them: the raw values for change detection, the email ALSO masked for the row. */
+interface ProfileAuditView { fullName: unknown; gender: unknown; dob: unknown; languageCode: unknown; email: unknown; emailMasked: unknown; photoMediaId: unknown }
+const PROFILE_AUDIT_FIELDS = ['fullName', 'gender', 'dob', 'languageCode', 'email', 'photoMediaId'] as const;
+/** A date column may arrive as a Date or an ISO string (pg's type parser) — compared as the calendar day (core/database/pg-date's one rule). */
+const dayOf = (v: unknown): string | null => pgDateOrNull(v);
+/** Only these values are WRITTEN to the row (masked where personal); every other changed field is named, never valued. */
+function auditView(u: User): ProfileAuditView {
+  const p = u.toProps(); const pub = u.toPublic();
+  return { fullName: p.fullName, gender: p.gender, dob: dayOf(p.dob as unknown), languageCode: p.languageCode, email: p.email, emailMasked: pub.email, photoMediaId: p.photoMediaId };
+}
+/** PC-56 STORE-4a · B4 — PURE: what a self-edit's audit row says. The NAMES of the fields that changed; a value only where it is not personal
+ *  (`languageCode`) or only MASKED (`email` as `toPublic()` masks it, `a***@x.in`). A name, a gender, a date of birth and a photo id are never
+ *  written — the row says they changed, not to what. */
+export function profileAuditValues(before: ProfileAuditView, after: ProfileAuditView): { fields: string[]; oldValue: Record<string, unknown>; newValue: Record<string, unknown> } {
+  const fields: string[] = [];
+  const oldValue: Record<string, unknown> = {}; const newValue: Record<string, unknown> = {};
+  for (const f of PROFILE_AUDIT_FIELDS) {
+    if ((before[f] ?? null) === (after[f] ?? null)) continue;
+    fields.push(f);
+    if (f === 'languageCode') { oldValue[f] = before[f] ?? null; newValue[f] = after[f] ?? null; }
+    if (f === 'email') { oldValue[f] = before.emailMasked ?? null; newValue[f] = after.emailMasked ?? null; }
+  }
+  return { fields, oldValue: { fields, ...oldValue }, newValue: { fields, ...newValue } };
+}
 
 @Injectable()
 export class UserService {
@@ -38,7 +64,9 @@ export class UserService {
     const base = await this.getById(tenantId, userId);
     const rows = await this.utr.list(tenantId, { userId, pendingOnly: false });
     const roles = rows.filter((r: any) => r.is_active).map((r: any) => r.role_code as string);
-    return { ...base, roles };
+    // PC-56 STORE-4a · B4 (survey C-4): the SDK's `UserProfile` promises `displayName` and `locale`, which this read never carried — every
+    // client printed "—" for a person whose name the platform holds. They are the person's own `fullName` and `languageCode`, said twice.
+    return { ...base, displayName: base.fullName ?? null, locale: base.languageCode ?? null, roles };
   }
 
   /** Admin read of another user — SCOPED to the caller's tenant. A non-member returns
@@ -51,12 +79,19 @@ export class UserService {
     return this.getById(tenantId, targetId);
   }
 
-  async updateProfile(tenantId: string, userId: string, dto: UpdateUserDto) {
+  /** PC-56 STORE-4a · B4 (survey F-18): the self-edit is AUDITED (`user.profile_updated`) in its transaction — the NAMES of the fields that
+   *  changed, and their values MASKED where they are personal (`profileAuditValues`): no name, no raw email ever lands in the audit log. */
+  async updateProfile(tenantId: string, userId: string, dto: UpdateUserDto, ip: string | null = null) {
     await this.uow.run(tenantId, async (tx) => {
       const u = await this.users.getForUpdate(tx, userId);
       if (!u) throw new UserNotFoundError(userId);
+      const before = auditView(u);
       u.updateProfile(dto);
       await this.users.update(tx, u);
+      const audit = profileAuditValues(before, auditView(u));
+      if (audit.fields.length) {
+        await this.audit.write(tx, { tenantId, actorUserId: userId, action: 'user.profile_updated', entityType: 'user', entityId: userId, oldValue: audit.oldValue, newValue: audit.newValue, ip });
+      }
     }, { userId });
     return this.getById(tenantId, userId);
   }

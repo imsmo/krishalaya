@@ -16,6 +16,8 @@ import { CreateAddressSchema, CreateAddressDto, UpdateAddressSchema, UpdateAddre
 export class AddressesController {
   constructor(private readonly addresses: AddressService) {}
   @Get() list(@CurrentContext() ctx: RequestContext) { return this.addresses.list(ctx.tenantId, ctx.userId).then((data) => ({ data })); }
+  // PC-56 STORE-4a · B3: one of the caller's addresses (the edit form's current values) — anybody else's → 404
+  @Get(':id') get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.addresses.get(ctx.tenantId, ctx.userId, id).then((data) => ({ data })); }
   @Post() create(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string | undefined, @ZodBody(CreateAddressSchema) dto: CreateAddressDto) { return this.addresses.create(ctx.tenantId, ctx.userId, dto, key || undefined).then((data) => ({ data })); }
   @Patch(':id') update(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string | undefined, @ZodBody(UpdateAddressSchema) dto: UpdateAddressDto) { return this.addresses.update(ctx.tenantId, ctx.userId, id, dto, key || undefined).then((data) => ({ data })); }
   @Delete(':id') remove(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.addresses.remove(ctx.tenantId, ctx.userId, id).then((data) => ({ data })); }

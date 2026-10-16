@@ -3,7 +3,9 @@
 // claim is listed ONCE with where the canon makes it and the surfaces it is PRINTED on (a refusal sentence — never an offer); the render test
 // reads this map, so a refusal that disappears from its page — or the refused offer coming back into a catalogue (test/claims-guard.spec.ts)
 // — turns a test red.
-export type Store4Surface = 'thread';
+// PC-56 STORE-4a: + the person's pages — the account (W300), the address book (W301), the address form chain (W3034–W3037), the data download
+// (W3029–W3030) and the deletion request (the W3031–W3033 shape) — their refusals live in features/store4a/refusals.ts.
+export type Store4Surface = 'thread' | 'account' | 'addresses' | 'address_form' | 'data' | 'delete';
 export interface Store4Refusal { id: string; canon: string; surfaces: readonly Store4Surface[]; key: string; why: string }
 
 export const STORE4_HOTFIX6_REFUSALS: readonly Store4Refusal[] = Object.freeze([

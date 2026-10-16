@@ -115,6 +115,8 @@ export class ExportPlaneService {
     await this.assertPlaneOn(tenantId);
     const producer = this.registry.get(input.datasetCode);
     if (!producer) throw new UnknownDatasetError(input.datasetCode);
+    // [PC-56 STORE-4a] a PERSONAL dataset is born only of its owner module's own act (`enqueueInTx` — the DPDP request), never of this route
+    if (producer.personal) throw new ForbiddenError('A personal export is requested by its owner\'s own route');
     if (!this.can(actor, producer.permission)) throw new ForbiddenError('Permission denied for this export');
     const parsed = producer.params.safeParse(input.params ?? {});
     if (!parsed.success) throw new ExportParamsInvalidError(parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; '));
@@ -145,8 +147,11 @@ export class ExportPlaneService {
    * the tenant, so the caller can record that as a fact ("exports plane is off for this cooperative") instead of failing its act.
    */
   async enqueueInTx(tx: TxContext, tenantId: string, requestedBy: string, input: { datasetCode: string; params: unknown }, ip: string | null = null): Promise<{ kind: 'queued'; jobId: string } | { kind: 'off' }> {
-    const on = await this.flags.isEnabled(EXPORT_PLANE_FLAG, { tenantId }).catch(() => false);
-    if (!on) return { kind: 'off' };
+    // [PC-56 STORE-4a · founder D2] a PERSONAL dataset (the DPDP export) is NOT behind `tenant_exports`: a statutory right has no switch
+    if (this.registry.get(input.datasetCode)?.personal !== true) {
+      const on = await this.flags.isEnabled(EXPORT_PLANE_FLAG, { tenantId }).catch(() => false);
+      if (!on) return { kind: 'off' };
+    }
     const producer = this.registry.get(input.datasetCode);
     if (!producer) throw new UnknownDatasetError(input.datasetCode);
     const parsed = producer.params.safeParse(input.params ?? {});
@@ -164,17 +169,30 @@ export class ExportPlaneService {
 
   /** W2553 / W2554: one read, the state decides which page it is. */
   async view(tenantId: string, actor: ExportActor, id: string): Promise<ExportJobView> {
-    await this.assertPlaneOn(tenantId);
-    const job = await this.mustSee(tenantId, actor, id);
-    const [standing, fetches] = await Promise.all([this.standingFor(tenantId, job), this.fetchesFor(tenantId, job)]);
+    const job = await this.resolveJob(tenantId, actor, id);
+    const [standing, fetches] = await Promise.all([this.standingFor(job.tenantId, job), this.fetchesFor(job.tenantId, job)]);
     return this.project(job, standing, fetches);
+  }
+
+  /** [PC-56 STORE-4a · founder D2] The caller's OWN personal job (the DSR list's join), or null when it is not theirs / not there — never a
+   *  throw for "not yours" (the list simply has nothing to join). */
+  async viewPersonal(tenantId: string, userId: string, id: string): Promise<ExportJobView | null> {
+    try {
+      const job = await this.resolveJob(tenantId, { userId, permissions: new Set<string>() }, id);
+      if (this.registry.get(job.datasetCode)?.personal !== true) return null;
+      const [standing, fetches] = await Promise.all([this.standingFor(job.tenantId, job), this.fetchesFor(job.tenantId, job)]);
+      return this.project(job, standing, fetches);
+    } catch (e) {
+      if (e instanceof ExportJobNotFoundError || e instanceof ExportPlaneDisabledError || e instanceof ForbiddenError) return null;
+      throw e;
+    }
   }
 
   /** *"Download (link valid 15 min)"* — mints the signed link and AUDITS the mint with its jti, so a leaked link can be
    *  traced to the click that made it. Refused for anything but a served file, with the reason as the code. */
-  async mintLink(tenantId: string, actor: ExportActor, id: string, ip: string | null, now = new Date()): Promise<MintedLink> {
-    await this.assertPlaneOn(tenantId);
-    const job = await this.mustSee(tenantId, actor, id);
+  async mintLink(ctxTenantId: string, actor: ExportActor, id: string, ip: string | null, now = new Date()): Promise<MintedLink> {
+    const job = await this.resolveJob(ctxTenantId, actor, id);
+    const tenantId = job.tenantId;   // [STORE-4a] a personal job lives in the organisation it was requested from — the link binds THAT tenant
     if (job.status === 'expired') throw new ExportFileExpiredError(job.toProps().expiredAt);
     if (!isDownloadable(job.status, job.expiresAt, now)) {
       if (job.status === 'ready') throw new ExportFileExpiredError(job.expiresAt);
@@ -197,9 +215,9 @@ export class ExportPlaneService {
    * written after the bytes because that is when its facts exist (bytes served, digest matched). A crash between the two
    * loses that row and is named in the wave's report.
    */
-  async openDownload(tenantId: string, actor: ExportActor, id: string, token: string | null | undefined, meta: { ip: string | null; userAgent: string | null }, now = new Date()): Promise<OpenDownload> {
-    await this.assertPlaneOn(tenantId);
-    const job = await this.mustSee(tenantId, actor, id);
+  async openDownload(ctxTenantId: string, actor: ExportActor, id: string, token: string | null | undefined, meta: { ip: string | null; userAgent: string | null }, now = new Date()): Promise<OpenDownload> {
+    const job = await this.resolveJob(ctxTenantId, actor, id);
+    const tenantId = job.tenantId;   // [STORE-4a] verify the link against, and log the fetch in, the job's own tenant
     const nowSec = Math.floor(now.getTime() / 1000);
     const verdict = verifyExportLink(this.linkKey, token, { jobId: job.id, tenantId, nowSec });
 
@@ -249,13 +267,29 @@ export class ExportPlaneService {
 
   /* ------------------------------------------------------------------------------------------------------------ */
 
-  /** The job, or 404 — and 403 for a member without the DATASET's permission (W2554's restricted state has words; a
-   *  member of the tenant is not enumerating anything by asking). A non-member never reaches the permission check:
-   *  RLS returns no row, and no row is 404. */
-  private async mustSee(tenantId: string, actor: ExportActor, id: string): Promise<ExportJob> {
-    const job = await this.jobs.getById(tenantId, id);
-    if (!job) throw new ExportJobNotFoundError(id);
-    const producer = this.registry.get(job.datasetCode);
+  /**
+   * The job, or 404 — and 403 for a member without the DATASET's permission (W2554's restricted state has words; a member of the tenant is
+   * not enumerating anything by asking). A non-member never reaches the permission check: RLS returns no row, and no row is 404.
+   *
+   * [PC-56 STORE-4a · founder D2] THE PLANE'S ONE CHANGE FOR A PERSONAL DATASET (`DatasetProducer.personal`): the job is readable by its
+   * REQUESTER and by nobody else (anybody else → 404, the same answer as no row), with no tenant permission and no `tenant_exports` flag; and
+   * a requester whose session is in ANOTHER organisation still reaches their own job — migration 0214's `kv_personal_export_job_tenant`
+   * answers the job's organisation for the requester's own personal job only (one uuid; NULL for anybody else's). Every other dataset reads
+   * exactly as before: the plane flag (fail closed), then the row under RLS, then the dataset's permission.
+   */
+  private async resolveJob(tenantId: string, actor: ExportActor, id: string): Promise<ExportJob> {
+    let job = await this.jobs.getById(tenantId, id);
+    if (!job) {
+      const home = await this.jobs.personalJobTenant(tenantId, id, actor.userId);
+      if (home && home !== tenantId) job = await this.jobs.getById(home, id);
+    }
+    const producer = job ? this.registry.get(job.datasetCode) : undefined;
+    if (job && producer?.personal === true) {
+      if (job.requestedBy !== actor.userId) throw new ExportJobNotFoundError(id);
+      return job;
+    }
+    await this.assertPlaneOn(tenantId);
+    if (!job || job.tenantId !== tenantId) throw new ExportJobNotFoundError(id);
     // A job for a dataset nothing registers any more is still the tenant's job: readable by whoever may read exports at
     // all. Its permission is the strictest one we know — `*` only — because the declaration that would have said
     // otherwise is gone. It will already be `failed(unknown_dataset)` unless it predates the removal.

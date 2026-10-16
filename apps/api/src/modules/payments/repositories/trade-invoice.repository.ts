@@ -67,8 +67,10 @@ export class TradeInvoiceRepository {
   }> {
     const r = await tx.query(
       `SELECT t.gstin AS seller_gstin,
+              -- PC-56 STORE-4a · B5 (founder D5, survey F-19): ONLY a VERIFIED business-KYC profile puts the buyer's GSTIN on a tax invoice —
+              -- a pending, rejected or expired profile yields NULL (the invoice then carries no buyer GSTIN, never an unverified one).
               (SELECT b.gstin_masked FROM business_kyc_profiles b
-                WHERE b.tenant_id = $1 AND b.user_id = $2 AND b.deleted_at IS NULL
+                WHERE b.tenant_id = $1 AND b.user_id = $2 AND b.deleted_at IS NULL AND b.status = 'verified'
                 ORDER BY b.created_at DESC LIMIT 1) AS buyer_gstin,
               -- The address's STATE is its level-1 ltree ancestor (in.gj contains in.gj.junagadh.vadal), which is why
               -- 0140 put the GST code on level 1 and nowhere else. An address with no region resolves to NULL, and

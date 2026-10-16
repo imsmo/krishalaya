@@ -26,7 +26,7 @@ export function buildProfilePatch(raw: { fullName?: string; email?: string; lang
 // POSTAL_CODE_RE — the identity DTO's 4–10 digits, any country) instead of an Indian six-digit regex, and sends a `countryCode` (two letters —
 // the page defaults it from the SESSION STORE's country, never a literal). An address with no country is refused here (`country`), so the
 // API's 'IN' default is never reached from this form.
-import { POSTAL_CODE_RE } from '../store2c/checkout';
+import { POSTAL_CODE_RE } from '../address/form';   // PC-56 STORE-4a: the rule's one copy (moved from store2c/checkout.ts)
 
 export type AddressInput = {
   line1: string; line2?: string; village?: string; pincode?: string; countryCode: string;

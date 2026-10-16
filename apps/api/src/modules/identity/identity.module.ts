@@ -100,6 +100,9 @@ import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { SMS_SENDER, SmsSender } from '../../core/auth/otp.service';
 import { resolveKek } from '../../core/secrets/secret-envelope';
+// PC-56 STORE-4a · B2 (founder D2): the PERSONAL dataset `identity.dpdp_person` on the export plane — "Download my data".
+import { DpdpPersonDataset } from './exports/dpdp-person.producer';
+import { DATASET_REGISTRY, DatasetRegistry } from '../../core/exports-plane/dataset.registry';
 
 @Module({
   // PC-56 TENANT-4d-1: UserTenantRoleService asks tenancy's PUBLIC PlanUsageService whether a seat is free
@@ -127,6 +130,7 @@ import { resolveKek } from '../../core/secrets/secret-envelope';
     KycDeskService, KycDeskReadModel, UiMessageRepository, KycDocumentExpiryJob,
     DeskService, DeskRepository,
     VerificationTeamRepository, KycQueueService, ConflictService, TeamService, TwoFactorService,
+    DpdpPersonDataset,
     { provide: KycClaimsExpiryJob, inject: [KycQueueService], useFactory: (q: KycQueueService) => new KycClaimsExpiryJob(60_000, q) },
     { provide: DeskProposalsExpiryJob, inject: [UNIT_OF_WORK, DeskRepository, DeskService],
       useFactory: (u: UnitOfWork, r: DeskRepository, s: DeskService) => new DeskProposalsExpiryJob(60 * 60_000, u, r, s) },
@@ -170,6 +174,8 @@ export class IdentityModule implements OnModuleInit {
     private readonly teamRepo: VerificationTeamRepository,
     private readonly ui: UiMessageRepository,
     @Inject(SMS_SENDER) private readonly sms: SmsSender,
+    @Inject(DATASET_REGISTRY) private readonly datasets: DatasetRegistry,
+    private readonly dpdpPersonDataset: DpdpPersonDataset,
   ) {}
   onModuleInit(): void {
     // per-job env gate (KYC_EXPIRY_JOB_ENABLED), independent of the runner-wide JOBS_ENABLED kill-switch
@@ -185,6 +191,8 @@ export class IdentityModule implements OnModuleInit {
     // PC-56 TENANT-SW-c (A2): a take-next claim left past its 15 minutes goes back to the queue (registered unconditionally, every minute).
     this.jobRegistry.register(this.claimsExpiry);
     // PC-56 TENANT-SW-c (B2): the staff-invite SMS (tenancy.staff_invited) — its table work in a kv_app UoW (HOTFIX-2 gate case).
+    // PC-56 STORE-4a · B2 (founder D2): the DPDP export's personal dataset — readable by its requester only, not behind `tenant_exports`.
+    this.datasets.register(this.dpdpPersonDataset);
     this.outboxHandlers.register(new StaffInvitedHandler(this.uow, this.teamRepo, this.ui, this.sms,
       resolveKek(this.config.webhookSigningKek, this.config.isProd), this.config.tenantConsoleBaseUrl));
   }
