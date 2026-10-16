@@ -26,7 +26,9 @@ import { MaskedCall } from '../domain/masked-call.entity';
 import { DomainEvent, ContextType } from '../domain/messaging.events';
 import { MaskedCallRepository } from '../repositories/masked-call.repository';
 import { ConversationRepository } from '../repositories/conversation.repository';
-import { resolveCallee } from '../domain/conversation-roles';
+import { resolveCallee, viewerOf } from '../domain/conversation-roles';
+import { buyerMaskedCall } from '../domain/organisation-thread';
+import { encodeKeyset } from '../../../shared/pagination/us-keyset';
 import { MaskedCallRefusedError } from '../domain/messaging.errors';
 import { InitiateMaskedCallDto } from '../dto/initiate-masked-call.dto';
 import { MessagingActor } from './conversation.service';
@@ -117,11 +119,17 @@ export class MaskedCallService {
     });
   }
 
+  /** The caller's own call log. PC-56 STORE-4b · D3 (survey: the leak HOTFIX-6 left): a caller with no organisation role here (a buyer) reads
+   *  `{ id, contextType, contextId, direction, durationSecs, createdAt }` — never `callerUserId` / `calleeUserId`; staff (an organisation role,
+   *  read from the database, or a moderator) keep the row. No conversation reader (a module-internal construction) → the buyer's shape
+   *  (fail closed). The cursor is µs (B4). */
   async list(tenantId: string, actor: MessagingActor, q: { cursor?: { c: string; id: string }; limit: number }) {
     const rows = await this.repo.listForUser(tenantId, actor.userId, q);
-    const items = rows.map((c) => c.toJSON());
-    const last = items[items.length - 1] as any;
-    const nextCursor = items.length === q.limit && last ? Buffer.from(`${last.createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;
+    const last = rows[rows.length - 1]?.toProps();
+    const nextCursor = rows.length === q.limit && last?.createdAtUs ? encodeKeyset(last.createdAtUs, last.id) : null;
+    const isOrgMember = this.conversations ? (await this.conversations.orgMemberIds(tenantId, [actor.userId])).has(actor.userId) : false;
+    const staff = viewerOf({ isModerator: actor.isModerator, isOrgMember }) === 'staff';
+    const items = rows.map((c) => (staff ? c.toJSON() : buyerMaskedCall(c.toJSON() as Parameters<typeof buyerMaskedCall>[0], actor.userId)));
     return { items, nextCursor };
   }
   private async flush(tx: TxContext, tenantId: string | null, id: string, evts: DomainEvent[]): Promise<void> {

@@ -173,6 +173,19 @@ describe('STORE-3a · W289 states and the door', () => {
     for (const k of store3aRefusalKeys('order')) expect(text(h)).toContain(en[k]);
     expect(h).toContain('data-kv-mark="platform"');
   });
+  // PC-56 STORE-4b · C4 (founder D1): "Message the organisation about this order" replaces 3a's `get_help` refusal — only with `communication` ON
+  it('STORE-4b · communication ON → "Message the organisation about this order" (the order\'s id, keyed at render); OFF → none; `get_help` is no longer refused', async () => {
+    C.orders[OID.cod] = DETAIL(OID.cod);
+    let h = await page(OID.cod);
+    expect(h).not.toContain('data-kv-form="message-org"');
+    expect(h).not.toContain('data-kv-refusal="get_help"');
+    C.flags = { ...C.flags, communication: true };
+    h = await page(OID.cod);
+    expect(h).toContain('data-kv-form="message-org" data-kv-context="order"');
+    expect(h).toContain(`name="contextId" value="${OID.cod}"`);
+    expect(h).toMatch(/name="key" value="openorg:[0-9a-f-]{36}"/);
+    expect(text(h)).toContain(en['store4b.entry.order']);
+  });
   it('the platform /orders/[id] → /<slug>/orders/[id], carrying ok / error / status', async () => {
     await expect(PlatformOrderDoor({ params: { id: OID.cod }, searchParams: { status: 'reviewed' } })).rejects.toThrow(`REDIRECT /${SLUG}/orders/${OID.cod}?status=reviewed`);
   });

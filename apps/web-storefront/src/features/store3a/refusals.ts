@@ -36,8 +36,8 @@ export const STORE3A_REFUSALS: readonly Store3aRefusal[] = Object.freeze([
     key: 'store3a.refusal.escrowFreeze', why: 'not proven (disputes are STORE-5); a disputed order says "under review" only' },
   { id: 'flagged_off', canon: 'W288 / W289 / W291 "Flagged off — My Orders / Order / Cancellations disabled for this tenant/plan"', surfaces: ['orders', 'order', 'cancel'],
     key: 'store3a.refusal.flaggedOff', why: 'founder D3 (Q12): no kill-switch on a buyer\'s own order history' },
-  { id: 'get_help', canon: 'W289 "Get help on this order"', surfaces: ['order'],
-    key: 'store3a.refusal.getHelp', why: 'no buyer → organisation messaging yet (STORE-4 + B29)' },
+  // PC-56 STORE-4b · C4: `get_help` ("Get help on this order") is REMOVED — the order page now offers "Message the organisation about this
+  // order" (founder D1: the buyer's ONE thread with the organisation), so the refusal would be false.
   { id: 'cross_store', canon: 'W288 one list across Anand FPO, Unjha Kisan FPC and Kisan Sathi FPC', surfaces: ['orders'],
     key: 'store3a.refusal.crossStore', why: 'one store per session (2b D3): this organisation\'s orders only (B30, a later wave)' },
   { id: 'saved_on_phone', canon: 'W288 error/offline "as of 20 minutes ago (saved on this phone)"', surfaces: ['orders'],

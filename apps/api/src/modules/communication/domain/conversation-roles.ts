@@ -36,6 +36,10 @@ export interface RawConversationSummary {
   lastMessageAt: Date | null; lastMessageBody: string | null; lastMessageHasAttachment: boolean; lastMessageHasVoice: boolean;
   counterpartyName: string | null; counterpartyRole: string | null; counterpartyUserId: string | null;
   otherIsOrg: boolean; orgName: string | null; contextLabel: string | null;
+  /** PC-56 STORE-4b · B2: the lock's kind; did the CALLER write the last message ("You: "); was the last message reported (its preview is
+   *  blanked in the read — `lastMessageBody` is null — and the page says "hidden pending review"); `created_at` as the database printed it
+   *  (the µs keyset cursor — internal, never served). Optional so a pre-4b fixture still type-checks. */
+  lockKind?: string | null; lastMessageFromYou?: boolean; lastMessageHidden?: boolean; createdAtUs?: string | null;
 }
 
 /** The buyer's summary: the organisation's name (only when the other party belongs to it), a party label, the context label — no person. */
@@ -48,24 +52,28 @@ export function buyerSummary(r: RawConversationSummary) {
     counterpartyName: party === 'organisation' ? r.orgName : null,
     counterpartyRole: party,
     contextLabel: r.contextLabel,
+    lockKind: r.lockKind ?? null, lastMessageFromYou: r.lastMessageFromYou === true, lastMessageHidden: r.lastMessageHidden === true,
   };
 }
 
 /** The staff summary: unchanged (the name, the role in the thread and the id they had), plus the context label. */
 export function staffSummary(r: RawConversationSummary) {
-  const { otherIsOrg, orgName, ...rest } = r;
-  void otherIsOrg; void orgName;
-  return rest;
+  const { otherIsOrg, orgName, createdAtUs, ...rest } = r;
+  void otherIsOrg; void orgName; void createdAtUs;
+  return { ...rest, lockKind: r.lockKind ?? null, lastMessageFromYou: r.lastMessageFromYou === true, lastMessageHidden: r.lastMessageHidden === true };
 }
 
 export interface RawMessage {
   id: string; conversationId: string; senderUserId: string | null; body: string | null; voiceMediaId: string | null; attachmentMediaId: string | null;
   isAiGenerated: boolean; isFlagged: boolean; createdAt?: Date;
+  /** PC-56 STORE-4b · D2b: the report (moderator-only fields — `hideFlagged` strips them for everyone else). */
+  flagReason?: string | null; flaggedBy?: string | null; flaggedAt?: Date | null;
 }
 /** The buyer's message: `from`, never `senderUserId`. */
 export function buyerMessage(m: RawMessage, viewerUserId: string, orgMembers: ReadonlySet<string>) {
   return { id: m.id, conversationId: m.conversationId, from: fromOf(m.senderUserId, viewerUserId, orgMembers), body: m.body, voiceMediaId: m.voiceMediaId,
-    attachmentMediaId: m.attachmentMediaId, isAiGenerated: m.isAiGenerated, isFlagged: m.isFlagged, createdAt: m.createdAt };
+    attachmentMediaId: m.attachmentMediaId, isAiGenerated: m.isAiGenerated, isFlagged: m.isFlagged, createdAt: m.createdAt,
+    flagReason: m.flagReason ?? null, flaggedBy: m.flaggedBy ?? null, flaggedAt: m.flaggedAt ?? null };   // STORE-4b: hideFlagged decides who keeps these
 }
 /** The staff message: the row they had (the sender id) — `from` is the BUYER's vocabulary and is not added (a buyer would read as
  *  `platform` from the organisation's side, which is not what they are). */

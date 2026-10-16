@@ -1291,6 +1291,7 @@ export const hi: Messages = {
   'inbox.threadTitle': 'वार्तालाप',
   'inbox.threadEmpty': 'अभी कोई संदेश नहीं।',
   'inbox.mediaMessage': '📎 अटैचमेंट / वॉइस संदेश',
+  'inbox.hidden': 'समीक्षा तक छिपा हुआ',   // PC-56 STORE-4b · D2b: a reported message is served without its body
   'inbox.reply': 'आपका उत्तर',
   'inbox.send': 'भेजें',
   'inbox.locked': 'यह वार्तालाप लॉक है (जैसे मॉडरेशन में) — उत्तर बंद हैं।',

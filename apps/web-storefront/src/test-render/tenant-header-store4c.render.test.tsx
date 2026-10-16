@@ -46,7 +46,7 @@ describe('STORE-4c · F-8 the tenant header for a signed-in buyer', () => {
   });
   it('Messages appears when the store\'s `communication` flag is ON — and disappears when the flags cannot be read (fail closed)', async () => {
     C.flags = { ...C.flags, communication: true };
-    expect(await tenant()).toContain('data-kv-nav="messages" href="/messages"');
+    expect(await tenant()).toContain('data-kv-nav="messages" href="/anand-fpo/messages"');   // PC-56 STORE-4b · C5: THIS store's list
     C.fail.flags = new SdkError('UNAVAILABLE', 503, 'x');
     const h = await tenant();
     expect(h).not.toContain('data-kv-nav="messages"');
@@ -66,6 +66,6 @@ describe('STORE-4c · the platform header', () => {
     expect(h).not.toContain('data-kv-nav="messages"'); expect(h).toContain('data-kv-nav="notifications" href="/notifications"');
     C.sessionFlags = { communication: true };
     h = await site();
-    expect(h).toContain('data-kv-nav="messages" href="/messages"');
+    expect(h).toContain('data-kv-nav="messages" href="/anand-fpo/messages"');   // PC-56 STORE-4b · C5: the session store's list
   });
 });

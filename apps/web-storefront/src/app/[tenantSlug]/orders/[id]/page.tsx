@@ -14,6 +14,8 @@
 //   • a load error is not a 404: said, with a Retry (a reload) and Back to the list; the refusals by name; the platform's trust mark.
 //   • PC-56 STORE-3b · C4: an OFFER order links back to its thread ("from your offer") and prints the offer regime (founder D2: collection or
 //     delivery arranged with the organisation; no delivery charge in this order). Nothing else changes here.
+//   • PC-56 STORE-4b · C4 (founder D1): "Message the organisation about this order" (signed in — this page requires it — AND this store's
+//     `communication` flag ON) → the buyer's ONE order thread with the organisation (keyed at render); 3a's `get_help` refusal is removed.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -39,6 +41,8 @@ import { poweredByVisible, PLATFORM_BRAND } from '../../../../features/branding/
 import { BillRowsView } from '../../../../components/BillRowsView';
 import { OrderTimeline, when } from '../../../../components/OrderTimeline';
 import { RefusalList } from '../../../../components/RefusalList';
+import { MessageOrgButton } from '../../../../components/MessageOrgButton';
+import { showsMessageOrg } from '../../../../features/store4b/messages';
 import { SubmitButton } from '../../../../components/SubmitButton';
 import { PoweredByMark } from '../../../../components/PoweredByMark';
 import { completeOrderAction, raiseDisputeAction } from './actions';
@@ -202,6 +206,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
       <div className="kv-cart__actions">
         {order.status === 'completed' && <Link href={`/orders/${encodeURIComponent(order.id)}/review`} className="kv-btn" data-kv-review="w290">{t.t('review.writeCta')}</Link>}
         {canCancel(order.status) && <Link href={cancelHref(slug, order.id)} className="kv-btn kv-btn--muted" data-kv-cancel-door={order.id}>{t.t('store3a.detail.needCancel')}</Link>}
+        {showsMessageOrg(true, flags) && <MessageOrgButton slug={slug} contextType="order" contextId={order.id} labelKey="store4b.entry.order" />}
         <Link href={ordersHref(slug)} className="kv-btn--link">{t.t('order.backToList')}</Link>
       </div>
 

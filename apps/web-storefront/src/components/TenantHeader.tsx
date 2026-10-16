@@ -15,6 +15,8 @@
 //   • PC-56 STORE-4c · C1 (survey F-8): a signed-in buyer is never stranded under the organisation's mark — "Orders" (/<slug>/orders),
 //     "Notifications" (/<slug>/notifications — the organisation's inbox, never switched off, founder Q12), "Messages" ONLY when this store's
 //     `communication` flag is ON (chat stays behind it; the platform /messages page — 4b rebuilds it), and "Sign out" (the existing logout action).
+//   • PC-56 STORE-4b · C5: "Messages" → THIS store's /<slug>/messages (W297, the organisation's threads). No "n unread" beside it: there is no
+//     bounded unread-count endpoint (a list of one is not a count) — refused by name on the messages page (`store4b.refusal.unreadBadge`).
 // Server component: the only client JS is the locale switcher.
 import Link from 'next/link';
 import { getTranslator, getLang } from '../lib/i18n';
@@ -75,7 +77,7 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
           </Link>
           {/* PC-56 STORE-4c · C1 (survey F-8): Orders · Messages (flag ON only) · Notifications — signed in only */}
           {signedIn && <Link href={`${home}/orders`} className="kv-header__link" data-kv-nav="orders">{t.t('nav.orders')}</Link>}
-          {messagesOn && <Link href="/messages" className="kv-header__link" data-kv-nav="messages">{t.t('nav.messages')}</Link>}
+          {messagesOn && <Link href={`${home}/messages`} className="kv-header__link" data-kv-nav="messages">{t.t('nav.messages')}</Link>}
           {signedIn && <Link href={`${home}/notifications`} className="kv-header__link" data-kv-nav="notifications">{t.t('nav.notifications')}</Link>}
           {/* PC-56 STORE-4a · C1 (founder Q13): the person's account under THIS organisation's chrome — signed in only */}
           {signedIn && <Link href={`${home}/account`} className="kv-header__link" data-kv-nav="account">{t.t('nav.account')}</Link>}

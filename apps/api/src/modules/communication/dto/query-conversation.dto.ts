@@ -14,5 +14,8 @@ export const QueryConversationsSchema = z.object({
   // contract-gap P0-1: false ⇒ the inbox (default), true ⇒ the per-participant archive.
   // PC-56 HOTFIX-6 · B6: the strict parser — `?archived=false` is the inbox (z.coerce.boolean read it as the archive); an unknown spelling is refused.
   archived: queryBoolean().optional().default(false),
+  // PC-56 STORE-4b · B5 (founder D1): `organisation` = the threads with the organisation (order · listing) only — never platform support in a
+  // store. A strict enum (`?scope=maybe` → 422); omitted = unfiltered (web-tenant's inbox is untouched).
+  scope: z.enum(['organisation']).optional(),
 }).strict();
 export type QueryConversationsDto = z.infer<typeof QueryConversationsSchema>;

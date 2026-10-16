@@ -8,6 +8,8 @@
 //     failure hides the strip (degrade), it never invents categories.
 //   • PC-56 STORE-3b · C1 (survey F-11): "Offers" shows ONLY for a signed-in buyer whose session store has its `offers` flag ON (the store's
 //     public flags read, as the session's store — one store per session); OFF or unreadable → no link (the pages say the honest OFF state).
+//   • PC-56 STORE-4b · C5 (the 2b door rule): "Messages" → the SESSION store's /<slug>/messages (the slug read with its flags); a slug that
+//     cannot be read → the platform /messages door (which says so, with a Retry). No unread badge (no count endpoint — refused by name).
 import Link from 'next/link';
 import type { CategoryNode } from '@krishalaya/sdk-js';
 import { getTranslator, getLang } from '../lib/i18n';
@@ -30,11 +32,15 @@ export async function SiteHeader() {
   let cats: ReturnType<typeof flattenCategoryNav> = [];
   try { cats = flattenCategoryNav((await publicClient().lookups.categories()) as CategoryNode[]).filter((c) => c.depth === 0).slice(0, STRIP_MAX); }
   catch { cats = []; }
-  let offersOn = false; let auctionsOn = false; let messagesOn = false;
+  let offersOn = false; let auctionsOn = false; let messagesOn = false; let messagesHref = '/messages';
   if (signedIn) {
     // PC-56 STORE-4c · C1 (founder Q12): "Messages" only when the session store's `communication` flag is ON (chat stays behind it; fail-closed)
     try { const f = await sessionTenantClient().storefront.flags(); offersOn = f.offers === true; auctionsOn = f.auctions === true; messagesOn = f.communication === true; }
     catch { offersOn = false; auctionsOn = false; messagesOn = false; }
+    if (messagesOn) {
+      try { const slug = (await sessionTenantClient().storefront.tenant()).slug; if (slug) messagesHref = `/${encodeURIComponent(slug)}/messages`; }
+      catch { messagesHref = '/messages'; }
+    }
   }
   // PC-56 STORE-3c · C1 (founder D4): "Auctions" only for a signed-in buyer whose session store has its `auctions` flag ON (the build-time
   // env switch is deleted) — /auctions is the door to that store's list; anonymous or OFF → no link
@@ -64,7 +70,7 @@ export async function SiteHeader() {
         <div className="kv-header__actions">
           <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
           {signedIn && offersOn && <Link href="/offers" className="kv-header__link" data-kv-nav="offers">{t.t('nav.offers')}</Link>}
-          {signedIn && messagesOn && <Link href="/messages" className="kv-header__link" data-kv-nav="messages">{t.t('nav.messages')}</Link>}
+          {signedIn && messagesOn && <Link href={messagesHref} className="kv-header__link" data-kv-nav="messages">{t.t('nav.messages')}</Link>}
           {/* the inbox is never switched off (founder Q12): /notifications is the door to the session store's inbox */}
           {signedIn && <Link href="/notifications" className="kv-header__link" data-kv-nav="notifications">{t.t('nav.notifications')}</Link>}
           {signedIn && <Link href="/account" className="kv-header__link">{t.t('nav.account')}</Link>}

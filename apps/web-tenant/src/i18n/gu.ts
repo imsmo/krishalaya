@@ -1291,6 +1291,7 @@ export const gu: Messages = {
   'inbox.threadTitle': 'વાતચીત',
   'inbox.threadEmpty': 'હજુ કોઈ સંદેશ નથી.',
   'inbox.mediaMessage': '📎 જોડાણ / વૉઇસ સંદેશ',
+  'inbox.hidden': 'સમીક્ષા સુધી છુપાયેલું',   // PC-56 STORE-4b · D2b: a reported message is served without its body
   'inbox.reply': 'તમારો જવાબ',
   'inbox.send': 'મોકલો',
   'inbox.locked': 'આ વાતચીત લૉક છે (જેમ કે મોડરેશનમાં) — જવાબ બંધ છે.',

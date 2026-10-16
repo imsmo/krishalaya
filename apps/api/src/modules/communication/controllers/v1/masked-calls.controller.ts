@@ -19,7 +19,10 @@ import { MaskedCallService } from '../../services/masked-call.service';
 import { InitiateMaskedCallSchema, InitiateMaskedCallDto } from '../../dto/initiate-masked-call.dto';
 import { QueryMaskedCallsSchema, QueryMaskedCallsDto } from '../../dto/query-masked-call.dto';
 
-const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
+import { decodeKeyset, UUID_RE } from '../../../../shared/pagination/us-keyset';
+
+// PC-56 STORE-4b · B4: the µs keyset (a pre-4b millisecond cursor reads as page one); D3: the list's buyer shape names no person (the service).
+const decodeCursor = (c?: string) => { const k = decodeKeyset(c, UUID_RE); return k ? { c: k.ts, id: k.id } : undefined; };
 
 @Controller({ path: 'masked-calls', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)

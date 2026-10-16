@@ -16,8 +16,8 @@ export const STORE3B_REFUSALS: readonly Store3bRefusal[] = Object.freeze([
     key: 'store3b.refusal.buyingHistory', why: 'founder D5 (Q7): no buyer summary is shown to the organisation on an offer; the buyer pages show the buyer\'s side only' },
   { id: 'notes', canon: 'W294 a note per round ("Lifting within 2 days, own transport.") · "rejected with reason — delivered to you verbatim"', surfaces: ['offer'],
     key: 'store3b.refusal.notes', why: 'founder D3: no free text travels with a round; a decline carries a reason from six, never words' },
-  { id: 'message_seller', canon: '(code) "Message seller" on the thread', surfaces: ['offer'],
-    key: 'store3b.refusal.messageSeller', why: 'founder D6 (Q8): removed — messaging the organisation is STORE-4 (B29); the old action is deleted' },
+  // PC-56 STORE-4b · C4: `message_seller` is REMOVED — the offer page now offers "Message the organisation" about the offer's LISTING (founder
+  // D1: never a person — the organisation answers as a unit), so the refusal would be false.
   { id: 'checkout_from_offer', canon: 'W294 "checkout, escrow and the quality promise all apply exactly as if you\'d bought at list price" · converted "checkout picks up from the address step"', surfaces: ['offer'],
     key: 'store3b.refusal.checkoutFromOffer', why: 'founder D2: the offer order has no address step and no delivery quote — the regime sentence is printed instead (owed: checkout-from-offer)' },
   { id: 'no_reserve', canon: 'W294 "Offers don\'t reserve stock; 18 qtl stays live for direct buyers"', surfaces: ['offer'],

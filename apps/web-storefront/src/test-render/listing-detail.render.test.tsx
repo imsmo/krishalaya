@@ -37,6 +37,19 @@ const lot = async (sp: Record<string, string> = {}) => renderResolved(await List
 const tomb = (status: string) => ({ id: L1, tombstone: true, status, title: 'GG-20 Groundnut — 40 qtl lot', organisation: { slug: 'anand-fpo', name: 'Anand FPO' }, category: { id: '0207c000-0000-7000-8000-000000000003', name: 'Groundnut' } });
 beforeEach(reset);
 
+// PC-56 STORE-4b · C4 (founder D1): the lot's "Message the organisation" — signed out here (hasSessionCookie mocked false) → the sign-in door
+// with `next`, ONLY when this store's `communication` flag is ON; OFF → nothing.
+describe('STORE-4b · message the organisation from the lot', () => {
+  it('communication OFF → no entry; ON and signed out → "Sign in to message the organisation" (→ this store\'s sign-in with next)', async () => {
+    expect(await lot()).not.toContain('data-kv-signin="message-org"');
+    S.flags = { ...S.flags, communication: true };
+    const h = await lot();
+    expect(h).toContain(`href="/anand-fpo/login?next=${encodeURIComponent(`/anand-fpo/listings/${L1}`)}" class="kv-link" data-kv-signin="message-org"`);
+    expect(h).not.toContain('data-kv-form="message-org"');   // a signed-out visitor gets the door, never the act
+    expect(text(h)).toContain(en['store4b.entry.signin']);
+  });
+});
+
 describe('STORE-2a · W277 the lot — what is printed', () => {
   it('the CONFIRMED grade with its source; no AI value, no confidence, no AI banner', async () => {
     const html = await lot();

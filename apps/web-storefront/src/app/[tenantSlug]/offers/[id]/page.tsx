@@ -38,6 +38,10 @@ import { when } from '../../../../components/OrderTimeline';
 import { RefusalList } from '../../../../components/RefusalList';
 import { SubmitButton } from '../../../../components/SubmitButton';
 import { acceptOfferAction, counterOfferAction, declineOfferAction } from './actions';
+// PC-56 STORE-4b · C4 (founder D1): "Message the organisation" about the offer's LISTING (an offer has no thread of its own) — signed in (this
+// page requires it) AND this store's `communication` flag ON; 3b's `message_seller` refusal is removed.
+import { MessageOrgButton } from '../../../../components/MessageOrgButton';
+import { showsMessageOrg } from '../../../../features/store4b/messages';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -283,6 +287,7 @@ export default async function TenantOfferThread({ params, searchParams }: { para
 
       {!conv && isNegotiable(offer.status) && regime}
       <p className="kv-detail__muted" data-kv-one-key="per-act">{t.t('store3b.thread.oneKey')}</p>
+      {showsMessageOrg(true, flags) && <MessageOrgButton slug={slug} contextType="listing" contextId={offer.listingId} labelKey="store4b.entry.listing" />}
       <p><Link href={offersHref(slug)} className="kv-btn--link">{t.t('offers.back')}</Link></p>
       <RefusalList surface="offer" />
     </section>

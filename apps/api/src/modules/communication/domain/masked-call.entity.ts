@@ -7,6 +7,8 @@ import { ContextType, DomainEvent, MessagingEventType } from './messaging.events
 export interface MaskedCallProps {
   id: string; tenantId: string; callerUserId: string; calleeUserId: string; contextType: ContextType | null; contextId: string | null;
   providerCallRef: string | null; durationSecs: number | null; recordingMediaId: string | null; createdAt?: Date;
+  /** PC-56 STORE-4b · B4: `created_at` as the database printed it (µs) — the cursor and the point update bind it. */
+  createdAtUs?: string | null;
 }
 export class MaskedCall {
   private readonly events: DomainEvent[] = [];

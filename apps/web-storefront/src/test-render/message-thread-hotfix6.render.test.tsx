@@ -5,6 +5,9 @@
 //   • every message labelled by `from` (You · the organisation's name · System) — never "Them", never a sender id;
 //   • "Call" refused BY NAME through the store4 registry (RefusalList surface `thread`);
 //   • a page that is not the buyer's → notFound; the thread's actions export no call act.
+// PC-56 STORE-4b · C2: the thread now lives under the organisation's chrome (/<slug>/messages/[id]; the platform route is a door) — these
+// HOTFIX-6 guarantees are re-asserted against THAT page and its actions. Its DOM now also carries the order's id (the "Open order" link) and the
+// composer's key nonce (minted at render) — neither is a person; the person-uuid guarantee is unchanged.
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -25,15 +28,15 @@ jest.mock('../lib/api-client', () => {
 });
 jest.mock('server-only', () => ({}), { virtual: true });
 
-import ThreadPage from '../app/(platform)/messages/[id]/page';
-import * as threadActions from '../app/(platform)/messages/[id]/actions';
+import ThreadPage from '../app/[tenantSlug]/messages/[id]/page';
+import * as threadActions from '../app/[tenantSlug]/messages/[id]/actions';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { text } from './store1b-harness';
 import { C, reset, CONVO, FARMER_UUID } from './hotfix6-fixtures';
 import { STORE4_HOTFIX6_REFUSALS, store4RefusalKeys } from '../features/store4/refusals';
 
-const page = async (id = CONVO, sp: Record<string, string> = {}) => renderToStaticMarkup(await ThreadPage({ params: { id }, searchParams: sp }));
+const page = async (id = CONVO, sp: Record<string, string> = {}) => renderToStaticMarkup(await ThreadPage({ params: { tenantSlug: 'anand-fpo', id }, searchParams: sp }));
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 beforeEach(() => { reset(); });
 
@@ -44,7 +47,8 @@ describe('HOTFIX-6 · C2 the conversation names the organisation, never a person
     const h = await page();
     expect(h).not.toContain(FARMER_UUID);
     expect(h).not.toContain('calleeUserId');
-    expect(new Set((h.match(UUID_RE) ?? []).map((u) => u.toLowerCase()))).toEqual(new Set([CONVO]));
+    const nonce = ((h.match(/name="key" value="send:([0-9a-f-]{36})"/) ?? [])[1] ?? '').toLowerCase();
+    expect(new Set((h.match(UUID_RE) ?? []).map((u) => u.toLowerCase()))).toEqual(new Set([CONVO, C.convo.contextId, nonce]));   // STORE-4b: + the order link, the key
   });
   it('no Call button and no call form; the thread actions export no call act and the SDK is never asked to call', async () => {
     const h = await page();

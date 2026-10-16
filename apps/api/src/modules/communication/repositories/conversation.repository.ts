@@ -5,17 +5,27 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { US_SQL } from '../../../shared/pagination/us-keyset';
 import { Conversation } from '../domain/conversation.entity';
 import { ContextType, ParticipantRole } from '../domain/messaging.events';
+import { isLockKind, LISTING_THREAD_STATUSES, ResponderCandidate } from '../domain/organisation-thread';
 
-const COLS = `id, tenant_id, context_type, context_id, is_locked, created_at`;
+// PC-56 STORE-4b · B2/B4: + the lock's kind and instant (0216); + `created_at` as the database printed it (µs — the keyset cursor, F-21).
+const COLS = `id, tenant_id, context_type, context_id, is_locked, lock_kind, locked_at, created_at`;
+const C_COLS = `${COLS.split(', ').map((c) => 'c.' + c).join(', ')}, ${US_SQL('c.created_at')} AS created_us`;
 function toDomain(r: any): Conversation {
-  return Conversation.rehydrate({ id: r.id, tenantId: r.tenant_id, contextType: r.context_type as ContextType, contextId: r.context_id, isLocked: r.is_locked, createdAt: r.created_at });
+  return Conversation.rehydrate({ id: r.id, tenantId: r.tenant_id, contextType: r.context_type as ContextType, contextId: r.context_id, isLocked: r.is_locked,
+    lockKind: isLockKind(r.lock_kind) ? r.lock_kind : null, lockedAt: r.locked_at ?? null, createdAt: r.created_at });
 }
+/** PC-56 STORE-4b · B4: the keyset predicate on (created_at, id) DESC — the cursor's instant is the µs text the database printed, compared AS
+ *  timestamptz (never a JS Date). */
+const KEYSET = (ts: string, id: string) => `(c.created_at, c.id) < (${ts}::timestamptz, ${id}::uuid)`;
+/** PC-56 STORE-4b · D1: `scope=organisation` — the threads a buyer has WITH THE ORGANISATION (an order or a listing), never platform support. */
+export const ORGANISATION_SCOPE_TYPES = ['order', 'listing'] as const;
 // KV-BL-031: contextId narrows a list to ONE context row (e.g. one listing's inquiry threads). Optional and
 // orthogonal to contextType — the caller is expected to pass both together for a meaningful filter, but the SQL
 // only applies whichever is present (same permissive style as the rest of this repo's query builders).
-export interface ConversationListQuery { contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number; }
+export interface ConversationListQuery { contextType?: string; contextId?: string; cursor?: { c: string; id: string }; limit: number; scope?: 'organisation'; }
 export interface ConversationSummaryQuery extends ConversationListQuery { archived: boolean; }
 /** PC-56 HOTFIX-6 · B2: the ONE organisation-role test (an active role in this tenant other than `customer`), read from the database. A
  *  cross-module READ of identity's `user_tenant_roles` / `roles` (the trade-invoice precedent: reads may cross, repositories may not). */
@@ -24,6 +34,10 @@ const ORG_MEMBER_SQL = (userExpr: string, tenantExpr: string) => `EXISTS (SELECT
 /** Law 8: an order point lookup prunes to one partition from its v7 id (orders.repository's PRUNE). */
 const ORDER_LABEL_SQL = `(SELECT o.order_no FROM orders o WHERE c.context_type = 'order' AND o.id = c.context_id AND o.tenant_id = c.tenant_id
    AND o.created_at >= uuid_v7_time(c.context_id) - interval '5 seconds' AND o.created_at < uuid_v7_time(c.context_id) + interval '5 seconds' LIMIT 1)`;
+/** PC-56 STORE-4b · B2: the context label — the order number on an order thread, the listing's title on a listing thread (a cross-module READ,
+ *  the ORDER_LABEL_SQL precedent), else null. */
+const CONTEXT_LABEL_SQL = `CASE c.context_type WHEN 'order' THEN ${ORDER_LABEL_SQL}
+   WHEN 'listing' THEN (SELECT l.title FROM listings l WHERE l.id = c.context_id AND l.tenant_id = c.tenant_id LIMIT 1) ELSE NULL END`;
 /** The enriched inbox row (contract-gap P0-1): base conversation + a preview of the last message, the caller's
  * unread count, the (single) counterparty's display name + role + raw user id, and the caller's per-participant
  * archive flag. counterpartyUserId (KV-BL-031) backs the listings/:id/inquiries `buyerUserId` field — additive,
@@ -35,6 +49,8 @@ export interface ConversationSummary {
   counterpartyName: string | null; counterpartyRole: string | null; counterpartyUserId: string | null;
   /** PC-56 HOTFIX-6 · B2: does the counterparty hold an organisation role here; the tenant's display name; the order number on an order thread. */
   otherIsOrg: boolean; orgName: string | null; contextLabel: string | null;
+  /** PC-56 STORE-4b · B2: the lock's kind; the caller wrote the last message; the last message is reported (its preview blanked); µs created_at. */
+  lockKind: string | null; lastMessageFromYou: boolean; lastMessageHidden: boolean; createdAtUs: string | null;
 }
 function toSummary(r: any): ConversationSummary {
   return {
@@ -44,6 +60,7 @@ function toSummary(r: any): ConversationSummary {
     lastMessageHasAttachment: r.last_att != null, lastMessageHasVoice: r.last_voice != null,
     counterpartyName: r.other_name ?? null, counterpartyRole: r.other_role ?? null, counterpartyUserId: r.other_id ?? null,
     otherIsOrg: r.other_is_org === true, orgName: r.org_name ?? null, contextLabel: r.context_label ?? null,
+    lockKind: r.lock_kind ?? null, lastMessageFromYou: r.last_from_you === true, lastMessageHidden: r.last_hidden === true, createdAtUs: r.created_us ?? null,
   };
 }
 
@@ -75,7 +92,7 @@ export class ConversationRepository {
   /** A conversation visible to the user (participant only). null ⇒ the service 404s (anti-IDOR). */
   async getForParticipant(tenantId: string, userId: string, id: string): Promise<Conversation | null> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT ${COLS.split(', ').map((c) => 'c.' + c).join(', ')} FROM conversations c JOIN conversation_participants cp ON cp.conversation_id=c.id
+      `SELECT ${C_COLS} FROM conversations c JOIN conversation_participants cp ON cp.conversation_id=c.id
        WHERE c.id=$1 AND c.tenant_id=$2 AND cp.user_id=$3 AND c.deleted_at IS NULL`, [id, tenantId, userId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
@@ -92,7 +109,7 @@ export class ConversationRepository {
    *  caller's own thread), instead of the single-row-per-context lookup above which would hand back a DIFFERENT
    *  buyer's conversation. */
   async findByContextForActor(tenantId: string, contextType: string, contextId: string, actorUserId: string, tx?: TxContext): Promise<Conversation | null> {
-    const sql = `SELECT ${COLS.split(', ').map((c) => 'c.' + c).join(', ')} FROM conversations c
+    const sql = `SELECT ${C_COLS} FROM conversations c
                  JOIN conversation_participants cp ON cp.conversation_id=c.id
                  WHERE c.tenant_id=$1 AND c.context_type=$2 AND c.context_id=$3 AND cp.user_id=$4 AND c.deleted_at IS NULL
                  ORDER BY c.created_at LIMIT 1`;
@@ -116,20 +133,22 @@ export class ConversationRepository {
   }
   async update(tx: TxContext, c: Conversation): Promise<void> {
     const p = c.toProps();
-    await tx.query(`UPDATE conversations SET is_locked=$3, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [p.id, p.tenantId, p.isLocked]);
+    // PC-56 STORE-4b · D2c: the lock and its kind move together (0216's ck_conversations_lock_shape refuses one without the other)
+    await tx.query(`UPDATE conversations SET is_locked=$3, lock_kind=$4, locked_at=$5, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+      [p.id, p.tenantId, p.isLocked, p.isLocked ? (p.lockKind ?? 'owner') : null, p.isLocked ? (p.lockedAt ?? new Date()) : null]);
   }
   /** The caller's conversations (participant), keyset (never OFFSET). */
-  async listForUser(tenantId: string, userId: string, q: ConversationListQuery): Promise<Conversation[]> {
+  async listForUser(tenantId: string, userId: string, q: ConversationListQuery): Promise<Array<{ convo: Conversation; createdAtUs: string | null }>> {
     const params: unknown[] = [tenantId, userId]; let where = `c.tenant_id=$1 AND cp.user_id=$2 AND c.deleted_at IS NULL`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.contextType) where += ` AND c.context_type=${p(q.contextType)}`;
     if (q.contextId) where += ` AND c.context_id=${p(q.contextId)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (c.created_at < ${cc} OR (c.created_at=${cc} AND c.id < ${ci}))`; }
+    if (q.cursor) where += ` AND ${KEYSET(p(q.cursor.c), p(q.cursor.id))}`;
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT ${COLS.split(', ').map((c) => 'c.' + c).join(', ')} FROM conversations c JOIN conversation_participants cp ON cp.conversation_id=c.id
+      `SELECT ${C_COLS} FROM conversations c JOIN conversation_participants cp ON cp.conversation_id=c.id
        WHERE ${where} ORDER BY c.created_at DESC, c.id DESC LIMIT ${lp}`, params);
-    return r.rows.map(toDomain);
+    return r.rows.map((x: any) => ({ convo: toDomain(x), createdAtUs: (x.created_us ?? null) as string | null }));
   }
   /** The caller's inbox as enriched summaries (contract-gap P0-1). One bounded query per page: last-message preview
    * via a LATERAL over the (conversation_id, created_at DESC)-indexed messages, a correlated unread count keyed off
@@ -141,7 +160,9 @@ export class ConversationRepository {
     let where = `c.tenant_id=$1 AND cp.user_id=$2 AND c.deleted_at IS NULL AND cp.is_archived=$3`;
     if (q.contextType) where += ` AND c.context_type=${p(q.contextType)}`;
     if (q.contextId) where += ` AND c.context_id=${p(q.contextId)}`;
-    if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (c.created_at < ${cc} OR (c.created_at=${cc} AND c.id < ${ci}))`; }
+    // PC-56 STORE-4b · D1: the organisation's threads only (order · listing) — platform support never lists in a store
+    if (q.scope === 'organisation') where += ` AND c.context_type = ANY(${p([...ORGANISATION_SCOPE_TYPES])}::text[])`;
+    if (q.cursor) where += ` AND ${KEYSET(p(q.cursor.c), p(q.cursor.id))}`;
     const lp = p(q.limit);
     return this.summaries(tenantId, params, where, lp);
   }
@@ -153,18 +174,22 @@ export class ConversationRepository {
   }
   private async summaries(tenantId: string, params: unknown[], where: string, limit: string): Promise<ConversationSummary[]> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT c.id, c.context_type, c.context_id, c.is_locked, c.created_at, cp.is_archived,
+      `SELECT c.id, c.context_type, c.context_id, c.is_locked, c.lock_kind, c.created_at, ${US_SQL('c.created_at')} AS created_us, cp.is_archived,
               lm.body AS last_body, lm.attachment_media_id AS last_att, lm.voice_media_id AS last_voice, lm.created_at AS last_at,
+              (lm.sender_user_id IS NOT NULL AND lm.sender_user_id = $2) AS last_from_you, COALESCE(lm.is_flagged, false) AS last_hidden,
               (SELECT count(*)::int FROM messages m
                  WHERE m.conversation_id=c.id AND m.sender_user_id IS DISTINCT FROM $2
                    AND (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)) AS unread,
               ou.full_name AS other_name, op.role AS other_role, op.user_id AS other_id,
               (op.user_id IS NOT NULL AND ${ORG_MEMBER_SQL('op.user_id', 'c.tenant_id')}) AS other_is_org,
               (SELECT t.display_name FROM tenants t WHERE t.id = c.tenant_id) AS org_name,
-              ${ORDER_LABEL_SQL} AS context_label
+              ${CONTEXT_LABEL_SQL} AS context_label
        FROM conversations c
        JOIN conversation_participants cp ON cp.conversation_id=c.id AND cp.user_id=$2
-       LEFT JOIN LATERAL (SELECT body, attachment_media_id, voice_media_id, created_at
+       LEFT JOIN LATERAL (SELECT CASE WHEN m.is_flagged THEN NULL ELSE m.body END AS body,
+                     CASE WHEN m.is_flagged THEN NULL ELSE m.attachment_media_id END AS attachment_media_id,
+                     CASE WHEN m.is_flagged THEN NULL ELSE m.voice_media_id END AS voice_media_id,
+                     m.created_at, m.sender_user_id, m.is_flagged
               FROM messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) lm ON true
        LEFT JOIN LATERAL (SELECT cp2.user_id, cp2.role FROM conversation_participants cp2
               WHERE cp2.conversation_id=c.id AND cp2.user_id <> $2 ORDER BY cp2.user_id LIMIT 1) op ON true
@@ -194,6 +219,40 @@ export class ConversationRepository {
       [a, b]);
     return (r.rowCount ?? 0) > 0;
   }
+  // ── PC-56 STORE-4b · D1 — the organisation thread's reads (cross-module READS, the ORG_MEMBER_SQL / ORDER_LABEL_SQL precedent) ─────────────
+  /** The order's buyer, in THIS tenant, one partition (Law 8 — `uuid_v7_time` prunes as ORDER_LABEL_SQL does). null ⇒ no such order here. */
+  async orderBuyerOf(tx: TxContext, tenantId: string, orderId: string): Promise<{ exists: boolean; buyerUserId: string | null }> {
+    const r = await tx.query(
+      `SELECT o.buyer_user_id FROM orders o WHERE o.id = $1 AND o.tenant_id = $2
+          AND o.created_at >= uuid_v7_time($1) - interval '5 seconds' AND o.created_at < uuid_v7_time($1) + interval '5 seconds' LIMIT 1`, [orderId, tenantId]);
+    return r.rows[0] ? { exists: true, buyerUserId: r.rows[0].buyer_user_id ?? null } : { exists: false, buyerUserId: null };
+  }
+  /** Is this listing live in THIS tenant (LISTING_THREAD_STATUSES, not deleted)? */
+  async listingLive(tx: TxContext, tenantId: string, listingId: string): Promise<boolean> {
+    const r = await tx.query(
+      `SELECT 1 FROM listings l WHERE l.id = $1 AND l.tenant_id = $2 AND l.deleted_at IS NULL AND l.status::text = ANY($3::text[]) LIMIT 1`,
+      [listingId, tenantId, [...LISTING_THREAD_STATUSES]]);
+    return (r.rowCount ?? 0) > 0;
+  }
+  /** The organisation's side: every ACTIVE member whose role grants `order.manage`, one row per person with their OLDEST such membership,
+   *  oldest first, at most `cap` (the pure `respondersOf` re-applies order + cap + "never the caller"). */
+  async orderManagersOf(tx: TxContext, tenantId: string, cap: number): Promise<ResponderCandidate[]> {
+    const r = await tx.query(
+      `SELECT utr.user_id, min(utr.created_at) AS granted_at
+         FROM user_tenant_roles utr
+         JOIN roles ro ON ro.id = utr.role_id AND ro.deleted_at IS NULL AND ro.is_active
+         JOIN role_permissions rp ON rp.role_id = utr.role_id AND rp.permission_code = 'order.manage'
+        WHERE utr.tenant_id = $1 AND utr.is_active AND utr.deleted_at IS NULL AND utr.revoked_at IS NULL
+        GROUP BY utr.user_id ORDER BY min(utr.created_at), utr.user_id LIMIT $2`, [tenantId, cap + 1]);
+    return r.rows.map((x: any) => ({ userId: x.user_id, grantedAt: x.granted_at }));
+  }
+  /** Every live conversation in this tenant on one context, FOR UPDATE (the dispute handler locks them on the relay transaction). */
+  async lockableByContext(tx: TxContext, tenantId: string, contextType: string, contextId: string): Promise<Conversation[]> {
+    const r = await tx.query(`SELECT ${COLS} FROM conversations WHERE tenant_id=$1 AND context_type=$2 AND context_id=$3 AND deleted_at IS NULL ORDER BY created_at, id FOR UPDATE`,
+      [tenantId, contextType, contextId]);
+    return r.rows.map(toDomain);
+  }
+
   /** Toggle the caller's per-participant archive flag (idempotent). Membership is re-checked by the service. */
   async setArchived(tx: TxContext, conversationId: string, userId: string, archived: boolean): Promise<void> {
     await tx.query(`UPDATE conversation_participants SET is_archived=$3, archived_at=CASE WHEN $3 THEN now() ELSE NULL END

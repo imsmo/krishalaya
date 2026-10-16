@@ -44,6 +44,8 @@ import { NotificationService } from './services/notification.service';
 import { BroadcastService } from './services/broadcast.service';
 import { BroadcastRepository } from './repositories/broadcast.repository';
 import { BroadcastRequestedHandler } from './events/handlers/broadcast-requested.handler';
+// PC-56 STORE-4b · D2d: a dispute decision locks the trade's thread (kind `dispute`) on the relay transaction
+import { DisputeResolvedLockHandler } from './events/handlers/dispute-resolved-lock.handler';
 import { PreferenceService } from './services/preference.service';
 import { InboxService } from './services/inbox.service';
 import { HeldReleaseCadenceJob } from './jobs/held-release.cadence-job';
@@ -93,12 +95,15 @@ export class CommunicationModule implements OnModuleInit {
     @Inject(DATASET_REGISTRY) private readonly datasets: DatasetRegistry,
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
     @Inject(AUDIT_WRITER) private readonly audit: AuditWriter,
+    private readonly conversations: ConversationRepository,
   ) {}
   // Register one fanout consumer per mapped domain-event type (the registry keys by a single eventType).
   onModuleInit(): void {
     for (const entry of NOTIFICATION_EVENT_MAP) this.registry.register(new DomainEventFanoutHandler(entry, this.notifications));
     // The tenant-broadcast fan-out (communication.broadcast_requested → notification spine, batched).
     this.registry.register(new BroadcastRequestedHandler(this.broadcasts, this.notifications, this.outbox, this.audit));
+    // PC-56 STORE-4b · D2d: `disputes.dispute_resolved` → every order / dispute thread of the trade locked `dispute` (idempotent; relay gate case).
+    this.registry.register(new DisputeResolvedLockHandler(this.conversations, this.outbox, this.audit));
     // PC-56 TENANT-8e (F-21): `scheduled_at` is honoured — a due scheduled broadcast is queued by this REGISTERED job.
     this.jobs.register(this.broadcastSchedule);
     // PC-56 TENANT-8e · W2839/W2840: the broadcast history on the export plane. No WhatsApp dataset exists (the receipt says so).

@@ -14,10 +14,11 @@ describe('Conversation', () => {
   it('lock/unlock toggles + emits; lock is idempotent', () => {
     const c = Conversation.open({ id: 'c1', tenantId: 't1', contextType: 'order', contextId: 'o1' });
     c.pullEvents();
-    c.lock(); expect(c.isLocked).toBe(true);
+    // PC-56 STORE-4b · D2c: a lock carries its kind; the opener's own lock is `owner`, which the owner may lift
+    c.lock('owner'); expect(c.isLocked).toBe(true);
     const evts = c.pullEvents(); expect(evts).toHaveLength(1);
-    c.lock(); expect(c.pullEvents()).toHaveLength(0);   // idempotent — no second event
-    c.unlock(); expect(c.isLocked).toBe(false);
+    c.lock('owner'); expect(c.pullEvents()).toHaveLength(0);   // idempotent — no second event
+    c.unlock('owner'); expect(c.isLocked).toBe(false);
   });
 });
 
@@ -31,8 +32,10 @@ describe('Message', () => {
   });
   it('flag is idempotent', () => {
     const m = Message.post({ id: 'm1', conversationId: 'c1', tenantId: 't1', senderUserId: 'u1', body: 'hi', voiceMediaId: null, attachmentMediaId: null, isAiGenerated: false });
-    m.pullEvents(); m.flag(); expect(m.isFlagged).toBe(true);
-    expect(m.pullEvents()).toHaveLength(1); m.flag(); expect(m.pullEvents()).toHaveLength(0);
+    // PC-56 STORE-4b · D2a: a report has a reporter and a reason; a second report answers the same with no event
+    const r = { by: 'u2', reasonId: 'lv-spam', reasonCode: 'spam' };
+    m.pullEvents(); m.flag(r); expect(m.isFlagged).toBe(true);
+    expect(m.pullEvents()).toHaveLength(1); m.flag({ ...r, by: 'u3' }); expect(m.pullEvents()).toHaveLength(0);
   });
 });
 

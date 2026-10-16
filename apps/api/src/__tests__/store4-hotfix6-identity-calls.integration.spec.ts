@@ -23,6 +23,10 @@
 //   (7) `GET notifications?unreadOnly=false` → read AND unread rows; `=true` → unread only; `=maybe` → 422;
 //   (8) an address with a 5-digit postal code and country `GB` is stored as such; an edit changes the country.
 //   (9) the relay gate is run as its own spec (group B) — no handler added.
+// PC-56 STORE-4b (founder D1): the generic `POST /v1/conversations` is now the ORGANISATION's tool — a buyer gets 403 and every participant must
+// hold a role here. So the buyer's order thread is opened through `POST /v1/conversations/organisation` (participants = the buyer + the
+// organisation's order.manage members = the farmer), and the direct threads below are opened BY THE FARMER (staff) naming the buyers; the
+// not-a-member case gives the outsider a role, opens, then ends the role (a member who left) — the call refusals under test are unchanged.
 import 'reflect-metadata';
 import request from 'supertest';
 import { randomUUID } from 'node:crypto';
@@ -147,7 +151,9 @@ run('PC-56 HOTFIX-6 · the calls, the names, the addresses and the consents (int
       A.ref = await createAddress(T.buyer, { line1: 'Plot 14, GIDC Vadal', village: 'Vadal', regionId: JUNAGADH, pincode: '362001', countryCode: 'IN', contactName: 'Nilesh', contactPhone: '+919898012742', isDefault: true });
       ({ id: orderId, orderNo } = await placeOrderTo(A.ref));
       await admin.query(`INSERT INTO shipments (id, tenant_id, order_id, status, drop_address_id, delivery_attempts, created_at) VALUES (uuid_generate_v7(), $1, $2, 'in_transit', $3, 0, now())`, [LIVE, orderId, A.ref]);
-      CV.order = await open(T.buyer, 'order', orderId, [farmer]);
+      const org = await request(http).post('/v1/conversations/organisation').set({ ...H(T.buyer), 'idempotency-key': randomUUID() }).send({ contextType: 'order', contextId: orderId });
+      expect([org.status, org.body.error?.code]).toEqual([201, undefined]);
+      CV.order = org.body.data.id as string;   // STORE-4b: the buyer's thread WITH THE ORGANISATION (the farmer is its one order.manage member)
       await post(T.buyer, CV.order, 'When can I collect?');
       await post(T.farmer, CV.order, 'Ready on Thursday');
       expect(orderNo).toMatch(/^KV\d{4}-/);
@@ -186,16 +192,19 @@ run('PC-56 HOTFIX-6 · the calls, the names, the addresses and the consents (int
       expect(await count(`SELECT count(*)::int n FROM masked_calls WHERE caller_user_id = $1`, [buyer])).toBe(1);
     });
     it('a thread of three → 422 MASKED_CALL_NO_CALLEE (the organisation-contact rule does not exist yet — never guessed)', async () => {
-      const trio = await open(T.third, 'direct', null, [farmer, stranger]);
+      const trio = await open(T.farmer, 'direct', null, [third, stranger]);   // STORE-4b: staff open it; the buyer calls from it
       expect(refusal(await call(T.third, { conversationId: trio }))).toEqual([422, 'MASKED_CALL_NO_CALLEE']);
     });
     it('a party with no role in this organisation → 403 MASKED_CALL_NOT_MEMBER', async () => {
+      // STORE-4b: a participant must be a member when the thread opens — the outsider joins, the thread opens, then the role ends (a member who left)
+      await role(outsider, LIVE, 'customer');
       const t = await open(T.farmer, 'direct', null, [outsider]);
+      await admin.query(`UPDATE user_tenant_roles SET is_active = false WHERE user_id = $1 AND tenant_id = $2`, [outsider, LIVE]);
       expect(refusal(await call(T.farmer, { conversationId: t }))).toEqual([403, 'MASKED_CALL_NOT_MEMBER']);
       expect(refusal(await call(T.outsider, { conversationId: t }))).toEqual([403, 'MASKED_CALL_NOT_MEMBER']);
     });
     it('(2) a block in EITHER direction → 403 MASKED_CALL_BLOCKED; nothing bridged; a lifted block (soft-deleted) no longer refuses', async () => {
-      CV.blocked = await open(T.blockedBuyer, 'direct', null, [farmer]);
+      CV.blocked = await open(T.farmer, 'direct', null, [blockedBuyer]);   // STORE-4b: staff open it
       await admin.query(`INSERT INTO user_blocks (blocker_user_id, blocked_user_id) VALUES ($1, $2)`, [farmer, blockedBuyer]);
       expect(refusal(await call(T.blockedBuyer, { conversationId: CV.blocked }))).toEqual([403, 'MASKED_CALL_BLOCKED']);
       expect(refusal(await call(T.farmer, { conversationId: CV.blocked }))).toEqual([403, 'MASKED_CALL_BLOCKED']);
@@ -207,7 +216,7 @@ run('PC-56 HOTFIX-6 · the calls, the names, the addresses and the consents (int
       expect((await call(T.blockedBuyer, { conversationId: CV.blocked })).status).toBe(201);
     });
     it('the sixth call in a minute from one user → 429 (RateLimit 5 / 60 s by user)', async () => {
-      const t = await open(T.caller6, 'direct', null, [farmer]);
+      const t = await open(T.farmer, 'direct', null, [caller6]);   // STORE-4b: staff open it; the buyer calls from it
       const statuses: number[] = [];
       for (let i = 0; i < 6; i++) statuses.push((await call(T.caller6, { conversationId: t })).status);
       expect(statuses).toEqual([201, 201, 201, 201, 201, 429]);

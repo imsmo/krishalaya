@@ -52,7 +52,8 @@ export default async function InboxThreadPage({ params, searchParams }: { params
         <ul className="kv-thread">
           {messages.map((m) => (
             <li key={m.id} className="kv-thread__item">
-              <p className="kv-thread__body">{m.body ?? t.t('inbox.mediaMessage')}</p>
+              {/* PC-56 STORE-4b · D2b: a reported message comes without its body (`hidden`) — "hidden pending review", never the media label */}
+              <p className="kv-thread__body" data-kv-hidden={m.hidden ? 'true' : undefined}>{m.hidden ? t.t('inbox.hidden') : (m.body ?? t.t('inbox.mediaMessage'))}</p>
               <span className="kv-muted">{m.createdAt ? formatDate(m.createdAt, lang) : ''}</span>
             </li>
           ))}

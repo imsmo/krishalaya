@@ -59,6 +59,8 @@ export function serverClient(): any {
       postMessage: async (id: string, input: any, key: string) => { C.calls.push(['conversations.postMessage', id, input, key]); return {}; },
     },
     maskedCalls: { initiate: async (input: any, key: string) => { C.calls.push(['maskedCalls.initiate', input, key]); return { id: 'call' }; } },
+    // PC-56 STORE-4b: the thread page (now under the slug) asks the store's public flags first — `communication` ON for these HOTFIX-6 cases
+    storefront: { flags: async () => ({ communication: true }) },
     notifications: {
       // the API's HOTFIX-6 reading: `unreadOnly: false` (the All tab) answers read AND unread; `true` answers unread only
       inbox: async (q: any) => { C.calls.push(['notifications.inbox', q]); return { items: q.unreadOnly === true ? C.inbox.filter((n) => !n.readAt) : C.inbox, nextCursor: null }; },

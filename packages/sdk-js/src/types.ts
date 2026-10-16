@@ -850,9 +850,17 @@ export interface Conversation {
    *  PC-56 HOTFIX-6 · B2: STAFF ONLY — a buyer's read never carries it (nor a person's name: the buyer's `counterpartyName` is the
    *  organisation's, and `counterpartyRole` is `organisation | platform`). */
   counterpartyUserId?: string | null;
-  /** PC-56 HOTFIX-6 · B2: the context label — the order number on an order thread (else null). */
+  /** PC-56 HOTFIX-6 · B2: the context label — the order number on an order thread (else null). PC-56 STORE-4b: the listing's title on a listing thread. */
   contextLabel?: string | null;
+  /** PC-56 STORE-4b · D2c: who locked the thread — `owner` (the opener may lift it) · `moderator` · `dispute` (only a moderator lifts these). */
+  lockKind?: ConversationLockKind | null;
+  /** PC-56 STORE-4b · B2: the caller wrote the last message (the list prints "You: "). */
+  lastMessageFromYou?: boolean;
+  /** PC-56 STORE-4b · D2b: the last message was reported — its preview is blank (hidden pending review). */
+  lastMessageHidden?: boolean;
 }
+/** PC-56 STORE-4b · D2c. */
+export type ConversationLockKind = 'owner' | 'moderator' | 'dispute';
 /** PC-56 HOTFIX-6 · B2: who wrote a message, as a BUYER reads it (never a person). Staff reads carry `senderUserId` instead. */
 export type MessageFrom = 'you' | 'organisation' | 'platform' | 'system';
 /** A chat message. Exactly one of body/voiceMediaId/attachmentMediaId carries the content; media are referenced
@@ -863,10 +871,21 @@ export interface Message {
   from?: MessageFrom;
   id: string; conversationId: string; body: string | null;
   voiceMediaId: string | null; attachmentMediaId: string | null; isAiGenerated: boolean; isFlagged: boolean; createdAt?: string;
+  /** PC-56 STORE-4b · D2b: a reported message, HIDDEN pending review for this reader (body and media are null). */
+  hidden?: boolean;
+  /** PC-56 STORE-4b · D2b: MODERATOR ONLY — the `report_reason` code and the reporter. Never present on anyone else's read. */
+  flagReason?: string | null;
+  flaggedBy?: string | null;
 }
 /** A privacy-proxy (masked) call record — the provider bridges the two real numbers SERVER-SIDE; NO phone number
  * is ever returned to the client. */
-export interface MaskedCall { id: string; callerUserId: string; calleeUserId: string; contextType: string | null; contextId: string | null; durationSecs?: number | null; createdAt?: string; }
+export interface MaskedCall {
+  id: string; contextType: string | null; contextId: string | null; durationSecs?: number | null; createdAt?: string;
+  /** STAFF ONLY since PC-56 STORE-4b (D3): a buyer's log carries `direction` instead — never a person id. */
+  callerUserId?: string; calleeUserId?: string;
+  /** PC-56 STORE-4b · D3: the buyer's shape — which way the call went. */
+  direction?: 'outgoing' | 'incoming';
+}
 /** PC-56 HOTFIX-6 · B1 — `POST /v1/masked-calls` answers the call it placed from a CONVERSATION: no person id (the callee is the server's
  *  decision — the conversation's one other participant). */
 export interface MaskedCallStarted { id: string; conversationId: string; contextType: string | null; contextId: string | null }

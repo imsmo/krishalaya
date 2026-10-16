@@ -78,7 +78,9 @@ describe('STORE-3b · the refusals, the reasons, the chips', () => {
     for (const r of STORE3B_REFUSALS) expect([r.key, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnobody\b|\bcannot\b/i.test(en[r.key])]).toEqual([r.key, true]);
     expect(STORE3B_CHAIN_PAGES.map((p) => p.file.slice(0, 5))).toEqual(['W293-', 'W294-', 'W3121', 'W3122', 'W3123', 'W3124', 'W3125', 'W3126']);
     expect(STORE3B_DELTAS.map((d) => d.id)).toEqual(expect.arrayContaining(['offer_again', 'lapse_copy', 'offers_route', 'keyset_pages']));
-    expect(store3bRefusalKeys('offer')).toEqual(expect.arrayContaining(['store3b.refusal.mandi', 'store3b.refusal.aiHint', 'store3b.refusal.messageSeller', 'store3b.refusal.notes']));
+    // PC-56 STORE-4b · C4: `messageSeller` is no longer refused — the offer page offers "Message the organisation" about the offer's listing
+    expect(store3bRefusalKeys('offer')).toEqual(expect.arrayContaining(['store3b.refusal.mandi', 'store3b.refusal.aiHint', 'store3b.refusal.notes']));
+    expect(store3bRefusalKeys('offer')).not.toContain('store3b.refusal.messageSeller');
     expect(store3bRefusalKeys('offers')).toEqual(expect.arrayContaining(['store3b.refusal.buyingHistory', 'store3b.refusal.farmerName']));
   });
   it('the six decline reasons (founder D3) ×3; anything else is no reason', () => {

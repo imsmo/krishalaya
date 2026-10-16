@@ -47,6 +47,10 @@ import { BuyerActions } from '../../../../components/BuyerActions';
 import { readOfferPrefill } from '../../../../features/store3b/offers';   // PC-56 STORE-3b · C2: "Offer again" pre-fills the offer form
 import { ListingGallery } from '../../../../components/ListingGallery';
 import { RefusalList, BrowseOff } from '../../../../components/RefusalList';
+// PC-56 STORE-4b · C4 (founder D1): "Message the organisation" about this lot — signed in AND this store's `communication` flag ON; signed out
+// (flag ON) → the sign-in door with `next`; flag OFF or unreadable → nothing.
+import { MessageOrgButton } from '../../../../components/MessageOrgButton';
+import { showsMessageOrg } from '../../../../features/store4b/messages';
 
 export const dynamic = 'force-dynamic';
 
@@ -236,6 +240,10 @@ export default async function ListingDetail(
           ? <p>{t.t('listing.soldByOrg', { org: l.organisation.name })} · <a href={`/${slug}/sellers`} className="kv-link">{t.t('sellers.link')}</a></p>
           : <p className="kv-detail__muted">{t.t('listing.sellerUnknown')}</p>}
         {facts.district && <p data-kv-grew="district">{t.t('lot.whereGrew', { district: facts.district })}</p>}
+        {showsMessageOrg(hasSessionCookie(), flags.ok ? flags.data : null) && <MessageOrgButton slug={slug} contextType="listing" contextId={l.id} labelKey="store4b.entry.listing" />}
+        {!hasSessionCookie() && showsMessageOrg(true, flags.ok ? flags.data : null) && (
+          <p><a href={`/${encodeURIComponent(slug)}/login?next=${encodeURIComponent(self)}`} className="kv-link" data-kv-signin="message-org">{t.t('store4b.entry.signin')}</a></p>
+        )}
       </section>
 
       <section className="kv-detail__section" aria-labelledby="trace-h">

@@ -1293,6 +1293,7 @@ export const en: Messages = {
   'inbox.threadTitle': 'Conversation',
   'inbox.threadEmpty': 'No messages yet.',
   'inbox.mediaMessage': '📎 Attachment / voice message',
+  'inbox.hidden': 'Hidden pending review',   // PC-56 STORE-4b · D2b: a reported message is served without its body
   'inbox.reply': 'Your reply',
   'inbox.send': 'Send',
   'inbox.locked': 'This conversation is locked (e.g. under moderation) — replies are disabled.',

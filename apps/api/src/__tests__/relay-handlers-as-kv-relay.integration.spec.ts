@@ -603,6 +603,21 @@ const CASES: Record<string, Case> = {
     },
   },
 
+  // ── communication (PC-56 STORE-4b · D2d) ── a dispute decision locks the trade's thread: the ORDER thread exists → locked `dispute` on the
+  //    relay transaction (kv_relay: table-level SELECT/UPDATE on conversations, INSERT on outbox_events + audit_log — no grant added).
+  'disputes.dispute_resolved → modules/communication/events/handlers/dispute-resolved-lock.handler#DisputeResolvedLockHandler': {
+    depth: 'write',
+    build: async (w) => {
+      const orderId = await makeOrder(w, 'disputed');
+      const convo = (await w.admin.query(`INSERT INTO conversations (tenant_id, context_type, context_id) VALUES ($1, 'order', $2) RETURNING id`, [w.tenant, orderId])).rows[0].id as string;
+      await w.admin.query(`INSERT INTO conversation_participants (conversation_id, user_id, role) VALUES ($1,$2,'owner'), ($1,$3,'member')`, [convo, w.buyer, w.seller]);
+      const disputeId = randomUUID();
+      return { aggregateType: 'dispute', aggregateId: disputeId,
+        payload: { v: 1, disputeId, orderId, resolutionType: 'rejected', resolutionAmountMinor: null, raisedBy: w.buyer, againstUser: w.seller },
+        verify: async () => expect(await q1(w, `SELECT is_locked, lock_kind FROM conversations WHERE id=$1`, [convo])).toEqual({ is_locked: true, lock_kind: 'dispute' }) };
+    },
+  },
+
   // ── tenant webhooks ──
   '* → modules/tenant-webhooks/events/handlers/webhook-fanout.handler#WebhookFanoutHandler': {
     depth: 'write',   // the world's endpoint subscribes to every public name: one delivery per name, enqueued on the relay tx

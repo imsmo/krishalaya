@@ -171,6 +171,18 @@ describe('STORE-3b · W294 the thread, the numbers, the clock, the refusals', ()
     for (const k of store3bRefusalKeys('offer')) expect(text(h)).toContain(en[k]);
     expect(text(h)).toContain(en['store3b.thread.oneKey']);
   });
+  // PC-56 STORE-4b · C4 (founder D1): "Message the organisation" about the offer's LISTING replaces 3b's `message_seller` refusal
+  it('STORE-4b · communication ON → "Message the organisation" about the offer\'s LISTING (keyed at render); OFF → none', async () => {
+    let h = await thread(OFF.countered);
+    expect(h).not.toContain('data-kv-form="message-org"');
+    expect(h).not.toContain('data-kv-refusal="message_seller"');
+    C.flags = { ...C.flags, communication: true };
+    h = await thread(OFF.countered);
+    expect(h).toContain('data-kv-form="message-org" data-kv-context="listing"');
+    expect(h).toContain(`name="contextId" value="${C.offers[OFF.countered].listingId}"`);
+    expect(h).toMatch(/name="key" value="openorg:[0-9a-f-]{36}"/);
+    expect(text(h)).not.toMatch(/Message the seller/i);
+  });
   it('the `offers` flag OFF → the honest state and no offer read', async () => {
     C.flags = { ...C.flags, offers: false };
     const h = await thread(OFF.countered);
