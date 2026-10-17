@@ -236,12 +236,13 @@ export class AuthService {
   async openSessionIn(
     tx: TxContext,
     userId: string,
-    ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; method: 'otp' | 'signup' },
+    ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; method: 'otp' | 'signup'; partnerId?: string },
   ): Promise<{ sessionId: string; refreshToken: string }> {
     const deviceId = ctx.device ? await this.devices.upsert(tx, userId, ctx.device) : null;
     const sessionId = uuidv7();
     const r = this.refresh.issue();
-    const session = Session.create({ id: sessionId, userId, deviceId, refreshTokenHash: r.hash, ip: ctx.ip, expiresAt: r.expiresAt });
+    // PC-56 PARTNER-0: `partnerId` makes it a PARTNER-realm session (sessions.realm = 'partner', 0225's CHECK) — the same one place mints both.
+    const session = Session.create({ id: sessionId, userId, deviceId, refreshTokenHash: r.hash, ip: ctx.ip, expiresAt: r.expiresAt, partnerId: ctx.partnerId ?? null });
     await this.sessions.insert(tx, session);
     // A signup is a login too, and it belongs in the same ledger: an operator investigating an account takeover must see
     // the first session as well as every one after it.
@@ -265,7 +266,7 @@ export class AuthService {
    * PC-56 TENANT-SW-c: open a session for a person who has just proven their phone by another route (an accepted staff invite), inside
    * the caller's transaction — PENDING when they have confirmed TOTP, exactly like the OTP sign-in. Call `finishSignIn` after commit.
    */
-  async openProvenSessionIn(tx: TxContext, userId: string, ctx: { ip: string | null; device?: DeviceInput; phone?: string | null }): Promise<{ sessionId: string; refreshToken: string; pending: boolean }> {
+  async openProvenSessionIn(tx: TxContext, userId: string, ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; partnerId?: string }): Promise<{ sessionId: string; refreshToken: string; pending: boolean }> {
     const { sessionId, refreshToken } = await this.openSessionIn(tx, userId, { ...ctx, method: 'otp' });
     const pending = await this.team.hasConfirmedTotpTx(tx, userId);
     if (pending) await this.team.markSessionPendingTx(tx, sessionId);
@@ -275,6 +276,45 @@ export class AuthService {
   async finishSignIn(user: User, tenantId: string, s: { sessionId: string; refreshToken: string; pending: boolean }): Promise<AuthTokens> {
     if (s.pending) throw new TwoFactorPendingError(s.refreshToken);
     return this.mint(user, tenantId, s.sessionId, s.refreshToken);
+  }
+
+  // ═════════════════════════════════════ PC-56 PARTNER-0 · the PARTNER realm's session acts (the same one place that mints credentials)
+  /** A failed partner sign-in attempt, in the ledger every login is in. */
+  async recordFailedLoginIn(tx: TxContext, e: { phone: string | null; method: 'otp' | 'refresh' | 'totp'; ip: string | null; deviceFingerprint?: string | null }): Promise<void> {
+    await this.loginEvents.record(tx, { userId: null, phone: e.phone, succeeded: false, method: e.method, ip: e.ip, deviceFingerprint: e.deviceFingerprint ?? null });
+  }
+  /** Rotate a PARTNER session's refresh token (theft-resistant rotation). Null when unknown, revoked, expired, pending, or not a partner session. */
+  async rotatePartnerSessionIn(tx: TxContext, refreshToken: string, ip: string | null): Promise<{ userId: string; sessionId: string; partnerId: string; refreshToken: string } | null> {
+    const session = await this.sessions.getByRefreshHashForUpdate(tx, this.tokens.hashRefreshToken(refreshToken), 'partner');
+    if (!session || !session.isValid() || !session.partnerId) return null;
+    const posture = await this.team.sessionByRefreshHashForUpdate(tx, this.tokens.hashRefreshToken(refreshToken), 'partner');
+    if (!posture || posture.pending) return null;
+    const r = this.refresh.issue();
+    session.rotate(r.hash, r.expiresAt);
+    await this.sessions.rotate(tx, session);
+    await this.loginEvents.record(tx, { userId: session.userId, phone: null, succeeded: true, method: 'refresh', ip, deviceFingerprint: null });
+    return { userId: session.userId, sessionId: session.id, partnerId: session.partnerId, refreshToken: r.token };
+  }
+  /** The second factor for a PENDING partner session (challenge = its refresh token): the same checks as `verifyTwoFactor`, partner realm only. */
+  async completePartnerTwoFactorIn(tx: TxContext, challengeToken: string, input: { code?: string | null; recoveryCode?: string | null }, ip: string | null): Promise<{ userId: string; sessionId: string; partnerId: string; refreshToken: string }> {
+    const s = await this.team.sessionByRefreshHashForUpdate(tx, this.tokens.hashRefreshToken(challengeToken), 'partner');
+    if (!s || !s.pending || s.revoked || s.expired || s.ageSec > TWO_FACTOR_CHALLENGE_SECONDS || !s.partnerId) throw swcRefused('TWO_FACTOR_CHALLENGE_INVALID');
+    const user = await this.users.getForUpdate(tx, s.userId);
+    if (!user || !user.isLoginable) throw swcRefused('TWO_FACTOR_CHALLENGE_INVALID');
+    const via = await this.twoFactor.verifyInTx(tx, user.id, { code: input.code ?? null, recoveryCode: input.recoveryCode ?? null });
+    const r = this.refresh.issue();
+    await this.team.completeTwoFactorTx(tx, s.id, r.hash, r.expiresAt);
+    await this.loginEvents.record(tx, { userId: user.id, phone: null, succeeded: true, method: via === 'recovery' ? 'recovery_code' : 'totp', ip, deviceFingerprint: null });
+    return { userId: user.id, sessionId: s.id, partnerId: s.partnerId, refreshToken: r.token };
+  }
+  /** End one session of this person (a partner sign-out). */
+  async revokeSessionIn(tx: TxContext, sessionId: string, userId: string): Promise<void> { await this.sessions.revoke(tx, sessionId, userId); }
+  /** End every partner session of a person for one partner (removed from that partner's team). */
+  async revokePartnerSessionsIn(tx: TxContext, userId: string, partnerId: string): Promise<number> { return this.sessions.revokePartnerSessions(tx, userId, partnerId); }
+  /** Mint the PARTNER token pair: `{ sub, pid, sid, roles, perms, realm: 'partner' }` — never a `tid`. Roles/perms are DB-resolved by the caller. */
+  mintPartner(user: User, partnerId: string, sessionId: string, refreshToken: string, access: { roles: string[]; permissions: string[] }): AuthTokens {
+    const accessToken = this.tokens.mintPartnerAccessToken({ sub: user.id, pid: partnerId, sid: sessionId, roles: access.roles, perms: access.permissions });
+    return { accessToken, refreshToken, expiresInSec: this.config.auth.accessTtlSec, user: user.toPublic() };
   }
 
   private async mint(user: User, tenantId: string, sessionId: string, refreshToken: string): Promise<AuthTokens> {

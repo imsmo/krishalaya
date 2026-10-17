@@ -1,37 +1,37 @@
-// apps/web-partner/src/app/login/page.tsx · phone-OTP sign-in (two steps). The strong-auth flow lives in the API;
-// this page only collects the phone + OTP and posts to the login Server Actions, which store the returned tokens in
-// httpOnly cookies. Errors surface as a query flag, never leaking whether the phone exists. All copy via i18n; no
-// inline styles; noindex.
+// apps/web-partner/src/app/login/page.tsx · PC-56 PARTNER-0 · founder D8 — sign-in TO THE PARTNER. The steps and their markup live in
+// components/LoginSteps.tsx (render-tested); this page reads the step from the query, the MASKED pending phone and the chooser's partners from
+// their httpOnly cookies (set by ./actions.ts — never the URL, F-9), and the platform switch `partner_console` from GET /v1/config/flags: OFF
+// prints the switched-off sentence instead of a form that would 404. All copy via i18n; no inline styles; noindex.
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { getTranslator } from '../../lib/i18n';
-import { requestOtpAction, verifyOtpAction } from './actions';
+import { partnerConsoleSwitch } from '../../lib/console-flag';
+import { LoginSteps, type LoginStep } from '../../components/LoginSteps';
+import { maskPhone } from '../../features/partner/mask';
+import { requestOtpAction, verifyOtpAction, chooseAction, twoFactorAction, startOverAction } from './actions';
+
+export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('login.title'), robots: { index: false, follow: false } };
 }
 
-export default function LoginPage({ searchParams }: { searchParams: { step?: string; phone?: string; error?: string } }) {
+const STEPS: readonly LoginStep[] = ['phone', 'verify', 'choose', '2fa'];
+
+export default async function LoginPage({ searchParams }: { searchParams: { step?: string; error?: string } }) {
   const t = getTranslator();
-  const verifying = searchParams.step === 'verify';
+  const off = (await partnerConsoleSwitch()) === 'off';
+  const asked = (STEPS as readonly string[]).includes(searchParams.step ?? '') ? (searchParams.step as LoginStep) : 'phone';
+  let choices: Array<{ id: string; name: string }> = [];
+  try { choices = (JSON.parse(cookies().get('kvp_choice')?.value ?? '{}') as { partners?: Array<{ id: string; name: string }> }).partners ?? []; } catch { choices = []; }
   return (
-    <section className="kv-login">
-      <h1>{t.t('login.title')}</h1>
-      <p className="kv-muted">{t.t('login.lead')}</p>
-      {searchParams.error && <p className="kv-error" role="alert">{t.t('login.failed')}</p>}
-      {!verifying ? (
-        <form action={requestOtpAction} className="kv-form">
-          <label htmlFor="phone" className="kv-field__label">{t.t('login.phoneLabel')}</label>
-          <input id="phone" className="kv-input" name="phone" inputMode="tel" placeholder={t.t('login.phoneHint')} required />
-          <button className="kv-btn" type="submit">{t.t('login.sendOtp')}</button>
-        </form>
-      ) : (
-        <form action={verifyOtpAction} className="kv-form">
-          <input type="hidden" name="phone" value={searchParams.phone ?? ''} />
-          <label htmlFor="code" className="kv-field__label">{t.t('login.codeLabel', { phone: searchParams.phone ?? '' })}</label>
-          <input id="code" className="kv-input" name="code" inputMode="numeric" autoComplete="one-time-code" required />
-          <button className="kv-btn" type="submit">{t.t('login.verify')}</button>
-        </form>
-      )}
-    </section>
+    <LoginSteps
+      t={t}
+      step={off ? 'off' : asked}
+      phoneMasked={maskPhone(cookies().get('kvp_pending_phone')?.value)}
+      choices={choices}
+      error={searchParams.error ?? null}
+      actions={{ requestOtp: requestOtpAction, verifyOtp: verifyOtpAction, choose: chooseAction, twoFactor: twoFactorAction, startOver: startOverAction }}
+    />
   );
 }

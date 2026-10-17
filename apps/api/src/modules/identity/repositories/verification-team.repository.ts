@@ -512,8 +512,8 @@ export class VerificationTeamRepository {
     const x = r.rows[0];
     return x ? { secretEnc: x.secret_enc, confirmedAt: x.confirmed_at ?? null, lastUsedStep: x.last_used_step === null ? null : Number(x.last_used_step), disabledAt: x.disabled_at ?? null } : null;
   }
-  async totpState(tenantId: string, userId: string): Promise<{ enrolled: boolean; confirmed: boolean; confirmedAt: string | null; recoveryLeft: number }> {
-    const r = await this.db(tenantId).query<any>(`SELECT t.confirmed_at IS NOT NULL AND t.disabled_at IS NULL AS confirmed, t.user_id IS NOT NULL AND t.disabled_at IS NULL AS enrolled,
+  async totpState(tenantId: string, userId: string, tx?: TxContext): Promise<{ enrolled: boolean; confirmed: boolean; confirmedAt: string | null; recoveryLeft: number }> {
+    const r = await (tx ?? this.db(tenantId)).query<any>(`SELECT t.confirmed_at IS NOT NULL AND t.disabled_at IS NULL AS confirmed, t.user_id IS NOT NULL AND t.disabled_at IS NULL AS enrolled,
         ${iso('t.confirmed_at')} AS confirmed_at,
         (SELECT count(*)::int FROM user_recovery_codes c WHERE c.user_id = $1 AND c.used_at IS NULL AND c.retired_at IS NULL) AS left
       FROM (SELECT $1::uuid AS uid) q LEFT JOIN user_totp t ON t.user_id = q.uid`, [userId]);
@@ -555,11 +555,12 @@ export class VerificationTeamRepository {
   }
 
   // ═══════════════════════════════════════════════ sessions (PERSON table)
-  async sessionByRefreshHashForUpdate(tx: TxContext, hash: string): Promise<{ id: string; userId: string; pending: boolean; ageSec: number; revoked: boolean; expired: boolean } | null> {
-    const r = await tx.query<any>(`SELECT id, user_id, two_factor_pending, extract(epoch FROM (now() - created_at))::int AS age, revoked_at IS NOT NULL AS revoked, expires_at <= now() AS expired
-      FROM sessions WHERE refresh_token_hash = $1 FOR UPDATE`, [hash]);
+  // PC-56 PARTNER-0: the challenge (a pending session's refresh token) is answered only inside its own realm.
+  async sessionByRefreshHashForUpdate(tx: TxContext, hash: string, realm: 'tenant' | 'partner' = 'tenant'): Promise<{ id: string; userId: string; pending: boolean; ageSec: number; revoked: boolean; expired: boolean; partnerId: string | null } | null> {
+    const r = await tx.query<any>(`SELECT id, user_id, two_factor_pending, extract(epoch FROM (now() - created_at))::int AS age, revoked_at IS NOT NULL AS revoked, expires_at <= now() AS expired, partner_id
+      FROM sessions WHERE refresh_token_hash = $1 AND realm = $2 FOR UPDATE`, [hash, realm]);
     const x = r.rows[0];
-    return x ? { id: x.id, userId: x.user_id, pending: Boolean(x.two_factor_pending), ageSec: Number(x.age), revoked: Boolean(x.revoked), expired: Boolean(x.expired) } : null;
+    return x ? { id: x.id, userId: x.user_id, pending: Boolean(x.two_factor_pending), ageSec: Number(x.age), revoked: Boolean(x.revoked), expired: Boolean(x.expired), partnerId: x.partner_id ?? null } : null;
   }
   async markSessionPendingTx(tx: TxContext, sessionId: string): Promise<void> {
     await tx.query(`UPDATE sessions SET two_factor_pending = true WHERE id = $1`, [sessionId]);

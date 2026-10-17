@@ -555,6 +555,30 @@ const CASES: Record<string, Case> = {
     },
   },
 
+  // ── partner console (PC-56 PARTNER-0) ──
+  'partner.member_invited → modules/partner-console/events/handlers/partner-member-invited.handler#PartnerMemberInvitedHandler': {
+    depth: 'write',   // a pending partner invite with a KEK-sealed token: the SMS leaves (noop sender), the invite is marked sent, the sealed copy cleared
+    build: async (w) => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { sealEnvelope, resolveKek } = require('../core/secrets/secret-envelope') as typeof import('../core/secrets/secret-envelope');
+      const id = randomUUID(); const partnerId = randomUUID(); const token = randomUUID().replace(/-/g, '') + 'abcdefghijk';
+      const c = await w.admin.connect();
+      try {
+        // the partner and the invite as PartnerTeamService writes it (fixture: triggers off for this one transaction — the inviter-session
+        // rule is not this gate's subject)
+        await c.query('BEGIN'); await c.query('SET LOCAL session_replication_role = replica');
+        await c.query(`INSERT INTO financial_partners (id, code, default_name, partner_kind) VALUES ($1, $2, 'Relay Gate Partner', 'bank')`, [partnerId, `gate_${id.slice(0, 8)}`]);
+        await c.query(
+          `INSERT INTO partner_invites (id, partner_id, phone, role_id, invited_by, language_code, token_hash, token_sealed, expires_at)
+           SELECT $1, $2, '+919812345679', r.id, $3, 'gu', encode(sha256(convert_to($4, 'UTF8')), 'hex'), $5, now() + interval '7 days' FROM roles r WHERE r.code = 'partner_viewer'`,
+          [id, partnerId, w.seller, token, sealEnvelope(resolveKek('', false), token, `partner_invite:${id}`)]);
+        await c.query('COMMIT');
+      } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
+      return { aggregateType: 'partner_invite', aggregateId: id, payload: { v: 1, inviteId: id, partnerId },
+        verify: async () => expect(await q1(w, `SELECT sent_at IS NOT NULL AS sent, token_sealed IS NULL AS cleared FROM partner_invites WHERE id=$1`, [id])).toEqual({ sent: true, cleared: true }) };
+    },
+  },
+
   // ── tenancy (PC-56 TENANT-SW-d) ──
   'tenancy.setup_call_requested → modules/tenancy/events/handlers/setup-call-requested.handler#SetupCallRequestedHandler': {
     depth: 'write',   // a requested setup call: the admin realm's in-app notice is written (kv_app UoW) and the request stamped notified
@@ -794,7 +818,9 @@ run('PC-56 HOTFIX-2 · every registered outbox handler runs as kv_relay through 
       'cold_chain_ingest_nonces', 'cold_chain_breaches', 'cold_chain_device_silences',
       // PC-56 TENANT-SW-f (0202): wastage events, the report store (definitions opened to tenants, runs, frozen results, schedules), the
       // learner capture — kv_app only (the wastage handlers and both insights jobs work in kv_app's unit of work)
-      'wastage_events', 'saved_report_definitions', 'report_runs', 'report_run_results', 'report_schedules', 'quiz_answers', 'watch_events']) {
+      'wastage_events', 'saved_report_definitions', 'report_runs', 'report_run_results', 'report_schedules', 'quiz_answers', 'watch_events',
+      // PC-56 PARTNER-0 (0225): the partner team's two tables — the invite SMS handler works in a partner-realm kv_app unit of work
+      'partner_memberships', 'partner_invites']) {
       for (const p of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) expect(`${t}:${p}:${await priv(t, p)}`).toBe(`${t}:${p}:false`);
     }
     expect(await priv('insurance_policies', 'UPDATE')).toBe(false);

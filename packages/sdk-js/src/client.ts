@@ -53,6 +53,7 @@ import { LivestockResource } from './resources/livestock';
 import { ReturnsResource } from './resources/returns';
 import { FintechResource, InsuranceAuthoringResource } from './resources/fintech';
 import { PartnerApiResource } from './resources/partner-api';
+import { PartnerResource } from './resources/partner';   // PC-56 PARTNER-0
 import { EquipmentResource } from './resources/equipment';
 import { MarketResource, WeatherResource } from './resources/market';
 import { AssistantResource } from './resources/assistant';
@@ -141,6 +142,8 @@ export class KrishalayaClient {
   readonly fintech: FintechResource;
   /** PC-55 A10 — the partner (bank/NBFC/insurer) machine-to-machine realm; API-key authenticated, read-only. */
   readonly partnerApi: PartnerApiResource;
+  /** PC-56 PARTNER-0 — the partner CONSOLE realm (`/v1/partner/*`): sign-in to a partner organisation, its team, the consent-gated applications. */
+  readonly partner: PartnerResource;
   readonly insuranceAuthoring: InsuranceAuthoringResource;
   readonly equipment: EquipmentResource;
   readonly tenancy: TenancyResource;
@@ -268,6 +271,7 @@ export class KrishalayaClient {
     this.returns = new ReturnsResource(this.http);
     this.fintech = new FintechResource(this.http);
     this.partnerApi = new PartnerApiResource(this.http);
+    this.partner = new PartnerResource(this.http);
     this.insuranceAuthoring = new InsuranceAuthoringResource(this.http);
     this.equipment = new EquipmentResource(this.http);
     this.tenancy = new TenancyResource(this.http);

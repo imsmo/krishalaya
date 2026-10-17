@@ -17,8 +17,11 @@ export interface PartnerNavItem {
   live: boolean;
 }
 
-/** Permission strings that unlock each persona group (mirrors apps/api policies). `*` is the platform wildcard. */
-export const LENDING_PERM = 'loan.manage';
+/** Permission strings that unlock each persona group (mirrors apps/api policies). `*` is the platform wildcard.
+ *  PC-56 PARTNER-0: a session here is a PARTNER session — its token carries the partner realm's permissions (0225), never a tenant's
+ *  `loan.manage`; the lending group opens on `partner.applications.read`. The fleet / insurance groups stay keyed to tenant permissions a
+ *  partner token never carries (their pages print "not yet available in the partner console" — features/partner/not-yet.ts). */
+export const LENDING_PERM = 'partner.applications.read';
 export const FLEET_PERM = 'logistics.manage';
 /** Mirrors apps/api's InsurancePermissions.Manage (modules/insurance/policies/insurance.policies.ts) — the
  *  insurer-side console permission (request-documents/schedule-survey/record-survey/decide/settle/close +

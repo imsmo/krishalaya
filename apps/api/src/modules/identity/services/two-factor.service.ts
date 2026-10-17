@@ -8,17 +8,27 @@
 //              earlier step — `[TOTP_REPLAY]`), or one unused recovery code (single use, trigger).
 //   disable  → needs a code (or a recovery code); retires the recovery codes; audited.
 // The posture cache (SessionPostureService) is told on every change, so `require_staff_2fa` sees the new state on the next request.
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { AppConfig } from '../../../core/config/app-config';
 import { openEnvelope, resolveKek, sealEnvelope } from '../../../core/secrets/secret-envelope';
 import { SessionPostureService } from '../../../core/auth/session-posture.guard';
+import { PartnerRealmUnitOfWork } from '../../../core/database/partner-realm-uow';
 import { VerificationTeamRepository } from '../repositories/verification-team.repository';
 import { hashRecoveryCode, looksLikeRecoveryCode, matchedStep, newRecoveryCodes, newTotpSecret, otpauthUri } from '../domain/totp';
 import { namedSwcRefusal, swcRefused } from '../domain/swc.errors';
 
-export interface TwoFactorActor { userId: string; tenantId: string; ip: string | null; requestId: string | null }
+/**
+ * PC-56 PARTNER-0 — HOW A PARTNER PERSON REUSES THIS SERVICE. TOTP is per PERSON (user_totp, user_recovery_codes: no tenant), so the secret,
+ * the replay guard and the recovery codes are the same rows whichever realm the person signs in to. What is realm-specific is only WHERE the
+ * transaction runs and WHO the audit row belongs to:
+ *   • a tenant actor (`partnerId` absent): `tenantId` routes the unit of work, the audit row is that tenant's — unchanged;
+ *   • a partner actor (`partnerId` set): `tenantId` is '' and is NOT used — the act runs in the PARTNER-REALM unit of work
+ *     (core/database/partner-realm-uow: shard 0, app.tenant_id '', app.partner_id = the token's partner) and the audit row has NO tenant
+ *     and names the partner (`newValue.partnerId`), which is exactly what 0225's `al_insert_partner_realm` policy admits.
+ */
+export interface TwoFactorActor { userId: string; tenantId: string; ip: string | null; requestId: string | null; partnerId?: string }
 const aad = (userId: string) => `user_totp:${userId}`;
 
 @Injectable()
@@ -30,26 +40,43 @@ export class TwoFactorService {
     private readonly config: AppConfig,
     private readonly repo: VerificationTeamRepository,
     private readonly posture: SessionPostureService,
+    // Optional only so a hand-built tenant service (the SW-c spec) needs no partner plumbing; Nest always injects it (DatabaseModule, @Global).
+    @Optional() private readonly partnerUow?: PartnerRealmUnitOfWork,
   ) {
     // the platform's one KEK (13a / 13c): production without it refuses to boot already; dev uses the documented dev key
     this.kek = resolveKek(config.webhookSigningKek, config.isProd);
   }
 
-  state(a: TwoFactorActor) { return this.repo.totpState(a.tenantId, a.userId); }
+  /** The realm's unit of work (see the header): the tenant's, or the partner realm's for a partner actor. */
+  private run<T>(a: TwoFactorActor, fn: (tx: TxContext) => Promise<T>): Promise<T> {
+    return a.partnerId ? this.partner().run(a.partnerId, fn, { userId: a.userId }) : this.uow.run(a.tenantId, fn, { userId: a.userId });
+  }
+  private partner(): PartnerRealmUnitOfWork {
+    if (!this.partnerUow) throw new Error('TwoFactorService: the partner-realm unit of work is not wired');
+    return this.partnerUow;
+  }
+  /** The audit row's owner: the tenant, or (partner realm) no tenant + the partner named in the row. */
+  private trail(a: TwoFactorActor, value: Record<string, unknown>): { tenantId: string | null; newValue: Record<string, unknown> } {
+    return a.partnerId ? { tenantId: null, newValue: { ...value, partnerId: a.partnerId } } : { tenantId: a.tenantId, newValue: value };
+  }
+
+  state(a: TwoFactorActor) {
+    return a.partnerId ? this.partner().run(a.partnerId, (tx) => this.repo.totpState('', a.userId, tx), { userId: a.userId }) : this.repo.totpState(a.tenantId, a.userId);
+  }
 
   async enrol(a: TwoFactorActor): Promise<{ secret: string; otpauthUri: string; shownOnce: true }> {
     const secret = newTotpSecret();
     const sealed = sealEnvelope(this.kek, secret, aad(a.userId));
     let label = 'staff';
     try {
-      await this.uow.run(a.tenantId, async (tx) => {
+      await this.run(a, async (tx) => {
         const cur = await this.repo.totpForUpdate(tx, a.userId);
         if (cur && cur.confirmedAt && !cur.disabledAt) throw swcRefused('TOTP_ALREADY_CONFIRMED');
         if (cur) await this.repo.reEnrolTotpTx(tx, a.userId, sealed); else await this.repo.insertTotpTx(tx, a.userId, sealed);
         label = (await this.repo.userName(tx, a.userId)) ?? 'staff';
-        await this.audit.write(tx, { tenantId: a.tenantId, actorUserId: a.userId, action: 'two_factor.enrolment_started', entityType: 'user', entityId: a.userId,
-          newValue: { method: 'totp' }, ip: a.ip, requestId: a.requestId });
-      }, { userId: a.userId });
+        await this.audit.write(tx, { ...this.trail(a, { method: 'totp' }), actorUserId: a.userId, action: 'two_factor.enrolment_started', entityType: 'user', entityId: a.userId,
+          ip: a.ip, requestId: a.requestId });
+      });
     } catch (e) { throw namedSwcRefusal(e); }
     await this.posture.forgetTotp(a.userId);
     return { secret, otpauthUri: otpauthUri(secret, label), shownOnce: true };
@@ -58,7 +85,7 @@ export class TwoFactorService {
   async confirm(a: TwoFactorActor, code: string, now = Date.now()): Promise<{ confirmed: true; recoveryCodes: string[] }> {
     const codes = newRecoveryCodes();
     try {
-      await this.uow.run(a.tenantId, async (tx) => {
+      await this.run(a, async (tx) => {
         const cur = await this.repo.totpForUpdate(tx, a.userId);
         if (!cur || cur.disabledAt) throw swcRefused('TOTP_NOT_ENROLLED');
         if (cur.confirmedAt) throw swcRefused('TOTP_ALREADY_CONFIRMED');
@@ -66,9 +93,9 @@ export class TwoFactorService {
         if (step === null) throw swcRefused('TOTP_INVALID');
         await this.repo.confirmTotpTx(tx, a.userId, step);
         await this.repo.replaceRecoveryCodesTx(tx, a.userId, codes.map((c) => hashRecoveryCode(this.config.auth.hashPepper, c)));
-        await this.audit.write(tx, { tenantId: a.tenantId, actorUserId: a.userId, action: 'two_factor.enabled', entityType: 'user', entityId: a.userId,
-          newValue: { method: 'totp', recoveryCodes: codes.length }, ip: a.ip, requestId: a.requestId });
-      }, { userId: a.userId });
+        await this.audit.write(tx, { ...this.trail(a, { method: 'totp', recoveryCodes: codes.length }), actorUserId: a.userId, action: 'two_factor.enabled', entityType: 'user', entityId: a.userId,
+          ip: a.ip, requestId: a.requestId });
+      });
     } catch (e) { throw namedSwcRefusal(e); }
     await this.posture.forgetTotp(a.userId);
     return { confirmed: true, recoveryCodes: codes };
@@ -97,12 +124,12 @@ export class TwoFactorService {
 
   async disable(a: TwoFactorActor, input: { code?: string | null; recoveryCode?: string | null; reason?: string | null }, now = Date.now()): Promise<{ disabled: true }> {
     try {
-      await this.uow.run(a.tenantId, async (tx) => {
+      await this.run(a, async (tx) => {
         const via = await this.verifyInTx(tx, a.userId, input, now);
         await this.repo.disableTotpTx(tx, a.userId, 'by_user');
-        await this.audit.write(tx, { tenantId: a.tenantId, actorUserId: a.userId, action: 'two_factor.disabled', entityType: 'user', entityId: a.userId,
-          newValue: { method: 'totp', via }, reason: (input.reason ?? '').trim() || null, ip: a.ip, requestId: a.requestId });
-      }, { userId: a.userId });
+        await this.audit.write(tx, { ...this.trail(a, { method: 'totp', via }), actorUserId: a.userId, action: 'two_factor.disabled', entityType: 'user', entityId: a.userId,
+          reason: (input.reason ?? '').trim() || null, ip: a.ip, requestId: a.requestId });
+      });
     } catch (e) { throw namedSwcRefusal(e); }
     await this.posture.forgetTotp(a.userId);
     return { disabled: true };

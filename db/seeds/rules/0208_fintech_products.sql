@@ -11,9 +11,12 @@
 -- 0208 · sample lending partner + loan product (GLOBAL reference data, no tenant_id) · [P3]
 -- Authored on the platform/partner surface (Law 11). Seeds one NBFC + a crop-loan product so the lending
 -- flow is usable out of the box. product_kind_id → 'loan_kind' lookup; partner_id → financial_partners.
+-- [PC-56 PARTNER-0 · founder D7] a NEUTRAL fixture name and NO regulator number (the row used to carry a real-sounding NBFC name and an
+-- invented RBI licence; migration 0225 renames an existing database's row by its fixed id). A real partner row is authored only after a
+-- signed agreement, in the admin realm.
 INSERT INTO financial_partners (id, code, default_name, partner_kind, regulator_ref, is_active) VALUES
- ('22222222-0000-7000-8000-000000000001','samunnati','Samunnati Financial','nbfc','RBI-NBFC-0001',true)
-ON CONFLICT (code) DO NOTHING;
+ ('22222222-0000-7000-8000-000000000001','fixture_nbfc','Fixture Lending Partner','nbfc',NULL,true)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO loan_products (id, partner_id, product_kind_id, default_name, currency_code, min_amount_minor, max_amount_minor, interest_apr_bps, tenure_months_min, tenure_months_max, collateral_kind, repayment_style, is_active)
 SELECT '22222222-0000-7000-8000-000000000101', '22222222-0000-7000-8000-000000000001',

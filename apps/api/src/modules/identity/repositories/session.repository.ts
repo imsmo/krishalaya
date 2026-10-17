@@ -4,8 +4,8 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { Session } from '../domain/session.entity';
 
-const COLS = `id, user_id, device_id, refresh_token_hash, host(ip) AS ip, expires_at, revoked_at, last_seen_at`;
-const toDomain = (r: any): Session => Session.rehydrate({ id: r.id, userId: r.user_id, deviceId: r.device_id, refreshTokenHash: r.refresh_token_hash, ip: r.ip, expiresAt: r.expires_at, revokedAt: r.revoked_at, lastSeenAt: r.last_seen_at });
+const COLS = `id, user_id, device_id, refresh_token_hash, host(ip) AS ip, expires_at, revoked_at, last_seen_at, partner_id`;
+const toDomain = (r: any): Session => Session.rehydrate({ id: r.id, userId: r.user_id, deviceId: r.device_id, refreshTokenHash: r.refresh_token_hash, ip: r.ip, expiresAt: r.expires_at, revokedAt: r.revoked_at, lastSeenAt: r.last_seen_at, partnerId: r.partner_id ?? null });
 
 @Injectable()
 export class SessionRepository {
@@ -13,13 +13,19 @@ export class SessionRepository {
   async insert(tx: TxContext, s: Session): Promise<void> {
     const p = s.toProps();
     await tx.query(
-      `INSERT INTO sessions (id, user_id, device_id, refresh_token_hash, ip, expires_at, last_seen_at)
-       VALUES ($1,$2,$3,$4,$5::inet,$6, now())`,
-      [p.id, p.userId, p.deviceId, p.refreshTokenHash, p.ip, p.expiresAt]);
+      `INSERT INTO sessions (id, user_id, device_id, refresh_token_hash, ip, expires_at, last_seen_at, realm, partner_id)
+       VALUES ($1,$2,$3,$4,$5::inet,$6, now(), $7, $8)`,
+      [p.id, p.userId, p.deviceId, p.refreshTokenHash, p.ip, p.expiresAt, p.partnerId ? 'partner' : 'tenant', p.partnerId ?? null]);
   }
-  async getByRefreshHashForUpdate(tx: TxContext, hash: string): Promise<Session | null> {
-    const r = await tx.query(`SELECT ${COLS} FROM sessions WHERE refresh_token_hash=$1 FOR UPDATE`, [hash]);
+  /** PC-56 PARTNER-0: a refresh token rotates only inside ITS realm — a partner session's token is never a tenant refresh (and vice versa). */
+  async getByRefreshHashForUpdate(tx: TxContext, hash: string, realm: 'tenant' | 'partner' = 'tenant'): Promise<Session | null> {
+    const r = await tx.query(`SELECT ${COLS} FROM sessions WHERE refresh_token_hash=$1 AND realm=$2 FOR UPDATE`, [hash, realm]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+  /** PC-56 PARTNER-0: end every live PARTNER session of one person for one partner (a removal from that partner's team). */
+  async revokePartnerSessions(tx: TxContext, userId: string, partnerId: string): Promise<number> {
+    const r = await tx.query(`UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND partner_id=$2 AND realm='partner' AND revoked_at IS NULL`, [userId, partnerId]);
+    return r.rowCount;
   }
   async rotate(tx: TxContext, s: Session): Promise<void> {
     const p = s.toProps();

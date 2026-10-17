@@ -24,6 +24,11 @@ export interface AccessTokenClaims {
   iat?: number;
 }
 
+/** PC-56 PARTNER-0: the partner realm's access-token claims — `pid` (the financial partner) and `realm`, never `tid`. */
+export interface PartnerAccessTokenClaims {
+  sub: string; pid: string; sid: string; roles: string[]; perms: string[]; realm: 'partner'; typ: 'partner_access'; iat?: number;
+}
+
 @Injectable()
 export class TokenService {
   constructor(private readonly config: AppConfig) {}
@@ -42,11 +47,45 @@ export class TokenService {
       const a = this.config.auth;
       const c = jwt.verify(token, a.accessSecret, { issuer: a.issuer, audience: a.audience, algorithms: ['HS256'] }) as jwt.JwtPayload;
       if (c.typ !== 'access') return null;
+      // PC-56 PARTNER-0: a PARTNER token is never a tenant token — its `typ` already differs; a `realm`/`pid` claim refuses it here too.
+      if ((c as any).realm !== undefined || (c as any).pid !== undefined) return null;
       return {
         sub: String(c.sub ?? ''), tid: String((c as any).tid ?? ''), sid: String((c as any).sid ?? ''),
         roles: Array.isArray((c as any).roles) ? (c as any).roles : [],
         perms: Array.isArray((c as any).perms) ? (c as any).perms : [],
         typ: 'access',
+        ...(typeof c.iat === 'number' ? { iat: c.iat } : {}),
+      };
+    } catch { return null; }
+  }
+
+  /**
+   * PC-56 PARTNER-0 · THE PARTNER REALM'S ACCESS TOKEN (founder D1): `{ sub, pid, sid, roles, perms, realm: 'partner' }` and NO `tid`, under
+   * its own `typ` ('partner_access') so every tenant verifier (`verifyAccessToken`, the WebSocket gateway, the act-as peek) refuses it by
+   * construction — a partner token can never be read as a tenant token, and a tenant token never as a partner one.
+   */
+  mintPartnerAccessToken(input: Omit<PartnerAccessTokenClaims, 'typ' | 'realm' | 'iat'>): string {
+    const a = this.config.auth;
+    return jwt.sign(
+      { pid: input.pid, sid: input.sid, roles: input.roles, perms: input.perms, realm: 'partner', typ: 'partner_access' },
+      a.accessSecret,
+      { subject: input.sub, issuer: a.issuer, audience: a.audience, expiresIn: a.accessTtlSec, algorithm: 'HS256' },
+    );
+  }
+
+  /** A partner access token, or null — the `typ`, the `realm` and the `pid` must ALL be present (a token missing any one is refused). */
+  verifyPartnerAccessToken(token: string): PartnerAccessTokenClaims | null {
+    try {
+      const a = this.config.auth;
+      const c = jwt.verify(token, a.accessSecret, { issuer: a.issuer, audience: a.audience, algorithms: ['HS256'] }) as jwt.JwtPayload;
+      if (c.typ !== 'partner_access') return null;
+      if ((c as any).realm !== 'partner') return null;
+      if (typeof (c as any).pid !== 'string' || !(c as any).pid || (c as any).tid !== undefined) return null;
+      return {
+        sub: String(c.sub ?? ''), pid: String((c as any).pid), sid: String((c as any).sid ?? ''),
+        roles: Array.isArray((c as any).roles) ? (c as any).roles : [],
+        perms: Array.isArray((c as any).perms) ? (c as any).perms : [],
+        realm: 'partner', typ: 'partner_access',
         ...(typeof c.iat === 'number' ? { iat: c.iat } : {}),
       };
     } catch { return null; }

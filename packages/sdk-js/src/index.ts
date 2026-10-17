@@ -169,6 +169,7 @@ export type { OrgWalletOverview, OrgAccountRow, OrgBalanceVerdict, OrgMovementRo
 
 export * from './resources/fintech';
 export * from './resources/partner-api';
+export * from './resources/partner';   // PC-56 PARTNER-0 · the partner console realm
 export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4
 export type { EquipmentAsset, EquipmentRate, EquipmentRental } from './resources/equipment'; // PC-50 W10-6
 export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7

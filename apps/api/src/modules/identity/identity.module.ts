@@ -154,6 +154,8 @@ import { DATASET_REGISTRY, DatasetRegistry } from '../../core/exports-plane/data
     // PC-56 TENANT-1d-3a: TenancyModule's self-serve signup opens the first session through AuthService rather than
     // minting tokens a second way.
     AuthService, UserRepository,
+    // PC-56 PARTNER-0: the partner console's people enrol / confirm TOTP through the SAME per-person service (partner-realm unit of work).
+    TwoFactorService,
     UserService, ConsentService, UserTenantRoleService, RoleService, PermissionService, KycDocumentService,
     OrderCompletedHandler, DisputeResolvedHandler,
     KycExpiryRemindersJob, DpdpErasureCoolingJob, RiskScoreRecomputeJob,

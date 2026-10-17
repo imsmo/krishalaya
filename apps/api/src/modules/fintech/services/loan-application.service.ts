@@ -23,11 +23,18 @@ import { LoanApplicationRepository } from '../repositories/loan-application.repo
 import { LoanRepository } from '../repositories/loan.repository';
 import { LoanProductRepository } from '../repositories/loan-product.repository';
 import { ApplyLoanDto, ApproveLoanDto, RejectLoanDto } from '../dto/create-loan-application.dto';
-import { LoanApplicationNotFoundError, LoanProductNotFoundError, AmountOutOfRangeError, FintechForbiddenError } from '../domain/fintech.errors';
+import { LoanApplicationNotFoundError, LoanProductNotFoundError, AmountOutOfRangeError, FintechForbiddenError, LoanDecidedByPartnerError } from '../domain/fintech.errors';
+import { decisionVerdict } from '../domain/loan-decision.rules';
 
 const QUOTA_METRIC = 'loan_applications';
 const tenantMain = (tenantId: string): AccountRef => ({ kind: 'tenant', tenantId, accountCode: TenantAccount.Main, currencyCode: 'INR' });
-export interface FintechActor { userId: string; canBorrow: boolean; canManage: boolean; }
+/**
+ * `partnerId` set ⇔ the actor is a PARTNER-console person (PC-56 PARTNER-0): the service decides inside the APPLICATION's tenant (derived from
+ * the row by the caller, never from a token), the product-owner rule (domain/loan-decision.rules) admits only that partner's products, and the
+ * audit row records the partner person as the actor (`actorRole` = `partner:<partnerId>:<roles>`).
+ */
+export interface FintechActor { userId: string; canBorrow: boolean; canManage: boolean; partnerId?: string; roles?: string[] }
+export type PartnerDecision = 'review' | 'approve' | 'reject';
 
 @Injectable()
 export class LoanApplicationService {
@@ -63,7 +70,22 @@ export class LoanApplicationService {
       }));
   }
 
-  async review(tenantId: string, actor: FintechActor, id: string) { return this.lenderMutate(tenantId, actor, id, (a) => a.startReview(), null); }
+  async review(tenantId: string, actor: FintechActor, id: string) {
+    return this.lenderMutate(tenantId, actor, id, (a) => a.startReview(), actor.partnerId ? { action: 'fintech.loan.review_started', ip: null, value: {} } : null);
+  }
+
+  /**
+   * PC-56 PARTNER-0 · D3 — a PARTNER person's decision (review / approve / reject), idempotent on the caller's key. `tenantId` is the
+   * application's own tenant, read by the partner-console service through the consent-gated axis; the state machine, the cooling-off and
+   * amount ≤ requested are the SAME rules (lenderMutate). There is deliberately no partner path to `disburse` (Law 2).
+   */
+  async partnerDecide(tenantId: string, actor: FintechActor & { partnerId: string }, id: string, kind: PartnerDecision, body: { amountApprovedMinor?: string; coolingOffHours?: number; note?: string | null }, idemKey: string, ip: string | null) {
+    return this.idem.remember(idemKey, actor.userId, `partner.loan.${kind}`, () => {
+      if (kind === 'review') return this.review(tenantId, actor, id);
+      if (kind === 'approve') return this.approve(tenantId, actor, id, { amountApprovedMinor: String(body.amountApprovedMinor ?? ''), coolingOffHours: Number(body.coolingOffHours ?? 24) } as ApproveLoanDto, ip);
+      return this.reject(tenantId, actor, id, { note: body.note ?? undefined } as RejectLoanDto, ip);
+    });
+  }
   async approve(tenantId: string, actor: FintechActor, id: string, dto: ApproveLoanDto, ip: string | null) {
     return this.lenderMutate(tenantId, actor, id, (a) => a.approve(BigInt(dto.amountApprovedMinor), new Date(Date.now() + dto.coolingOffHours * 3600_000), new Date()), { action: 'fintech.loan.approved', ip, value: { amountApprovedMinor: dto.amountApprovedMinor, coolingOffHours: dto.coolingOffHours } });
   }
@@ -129,9 +151,17 @@ export class LoanApplicationService {
     return this.uow.run(tenantId, async (tx) => {
       const app = await this.repo.getForUpdate(tx, tenantId, id);
       if (!app) throw new LoanApplicationNotFoundError(id);
+      // PC-56 PARTNER-0 · D3 — THE PRODUCT-OWNER RULE (domain/loan-decision.rules.ts): a partner decides only its own products; tenant staff
+      // only products whose partner has no console members.
+      const verdict = decisionVerdict({ actorPartnerId: actor.partnerId ?? null, productPartnerId: app.partnerId,
+        partnerHasConsole: actor.partnerId ? false : await this.repo.partnerHasConsoleMembers(tx, app.partnerId) });
+      if (verdict === 'not_found') throw new LoanApplicationNotFoundError(id);
+      if (verdict === 'decided_by_partner') throw new LoanDecidedByPartnerError(app.partnerId);
       fn(app);
       await this.repo.update(tx, app);
-      if (audit) await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: audit.action, entityType: 'loan_application', entityId: app.id, newValue: audit.value, ip: audit.ip });
+      if (audit) await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: audit.action, entityType: 'loan_application', entityId: app.id,
+        newValue: actor.partnerId ? { ...audit.value, realm: 'partner', partnerId: actor.partnerId } : audit.value, ip: audit.ip,
+        ...(actor.partnerId ? { actorRole: `partner:${actor.partnerId}:${[...(actor.roles ?? [])].sort().join('+') || 'no_role'}` } : {}) });
       await this.flush(tx, tenantId, app.id, app.pullEvents());
       return app.toJSON();
     }, { userId: actor.userId });

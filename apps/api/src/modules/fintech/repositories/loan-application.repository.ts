@@ -33,6 +33,12 @@ export class LoanApplicationRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT a.*, lp.partner_id AS _partner_id FROM loan_applications a JOIN loan_products lp ON lp.id = a.product_id WHERE a.id=$1 AND a.tenant_id=$2 AND a.deleted_at IS NULL`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0], r.rows[0]._partner_id) : null;
   }
+  /** PC-56 PARTNER-0 (founder D3): does this financial partner decide its own applications (≥ 1 active partner-console member)? A DEFINER
+   *  oracle (0225) — the tenant transaction holds no read on partner_memberships, so a plain SELECT would answer "no" and fail OPEN. */
+  async partnerHasConsoleMembers(tx: TxContext, partnerId: string): Promise<boolean> {
+    const r = await tx.query<{ v: boolean }>(`SELECT partner_has_console_members($1::uuid) AS v`, [partnerId]);
+    return r.rows[0]?.v === true;
+  }
   async update(tx: TxContext, a: LoanApplication): Promise<void> {
     const p = a.toProps();
     await tx.query(`UPDATE loan_applications SET status=$3, decision_at=$4, decision_note=$5, amount_approved_minor=$6, cooling_off_until=$7, updated_at=now() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,

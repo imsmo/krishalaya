@@ -324,3 +324,37 @@ BEGIN
     EXECUTE $u$UPDATE roles SET is_staff = true WHERE code IN ('tenant_admin','tenant_staff','support_agent','auditor','fpo_coordinator') AND NOT is_staff$u$;
   END IF;
 END $$;
+
+-- [PC-56 PARTNER-0] THE PARTNER REALM'S ROLES AS DATA (founder D1; migration 0225 inserts the same rows where missing). Four roles of scope
+-- 'partner', eight permissions, the matrix: partner_admin = every partner.* permission · partner_checker = applications.read + .decide ·
+-- partner_maker = applications.read + .review · partner_viewer = applications.read. GUARDED on 0225 having run: migrate.js runs THIS seed as a
+-- pre-apply fixup before 0125, when `roles.scope` admits only 'tenant' / 'platform' — the partner rows would violate that CHECK there.
+DO $$
+BEGIN
+  IF to_regclass('public.partner_memberships') IS NOT NULL THEN
+    INSERT INTO roles (code, default_name, scope, requires_kyc, requires_approval, module_code) VALUES
+      ('partner_admin',   'Partner administrator', 'partner', false, false, 'M19'),
+      ('partner_checker', 'Partner checker (decides applications)', 'partner', false, false, 'M19'),
+      ('partner_maker',   'Partner maker (starts reviews)', 'partner', false, false, 'M19'),
+      ('partner_viewer',  'Partner viewer (reads applications)', 'partner', false, false, 'M19')
+    ON CONFLICT (code) DO NOTHING;
+    INSERT INTO permissions (code, default_name, module_code) VALUES
+      ('partner.applications.read',   'Partner console: read the consented loan applications on this partner''s products', 'M19'),
+      ('partner.applications.review', 'Partner console: start the review of a consented application (maker)', 'M19'),
+      ('partner.applications.decide', 'Partner console: approve or reject a consented application under review (checker) — never disburse', 'M19'),
+      ('partner.team.manage',         'Partner console: invite, revoke an invite, remove a member (with a reason)', 'M19'),
+      ('partner.keys.read',           'Partner console: read this partner''s API keys (prefix, scopes — never a secret)', 'M19'),
+      ('partner.keys.revoke',         'Partner console: revoke one of this partner''s API keys (not built in PARTNER-0)', 'M19'),
+      ('partner.webhooks.read',       'Partner console: read this partner''s webhook endpoints and deliveries (not built in PARTNER-0)', 'M19'),
+      ('partner.settings.read',       'Partner console: read this partner''s organisation settings', 'M19')
+    ON CONFLICT (code) DO NOTHING;
+    INSERT INTO role_permissions (role_id, permission_code)
+    SELECT r.id, p.code FROM roles r JOIN permissions p ON
+           (r.code = 'partner_admin'   AND p.code LIKE 'partner.%')
+        OR (r.code = 'partner_checker' AND p.code IN ('partner.applications.read', 'partner.applications.decide'))
+        OR (r.code = 'partner_maker'   AND p.code IN ('partner.applications.read', 'partner.applications.review'))
+        OR (r.code = 'partner_viewer'  AND p.code IN ('partner.applications.read'))
+     WHERE r.scope = 'partner'
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
