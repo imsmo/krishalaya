@@ -4,11 +4,14 @@
 // exactly as its button reads without signal ("Pay — needs signal: …"). Then the truth about everything else (it needs signal too — nothing is
 // saved on the phone to send later; the person's own unsent words are STORE-6b's: "coming"), and the canon's queue drawer refused BY NAME —
 // there is no queue, so no "queued / sending… / confirmed / failed — needs you", no "3 waiting to sync", no Undo / Fix, no auto-replay.
+// PC-56 STORE-6b · C3: the "coming" line is now TRUE — the person's unsent words (a message, a review) stay on this phone and leave only when they
+// press Send — and links "On this phone" (`/sync`, `/<slug>/sync`).
 import { getTranslator } from '../../lib/i18n';
 import { RefusalList } from '../RefusalList';
 import type { AccountChrome } from '../../features/store4a/account';
 import { actsOf, type ActEntry } from '../../features/store6/acts';
 import { store6Href } from '../../features/store6/paths';
+import { syncHref } from '../../features/store6b/paths';
 
 export function QueuedActionsScreen({ chrome }: { chrome: AccountChrome }) {
   const t = getTranslator();
@@ -33,7 +36,7 @@ export function QueuedActionsScreen({ chrome }: { chrome: AccountChrome }) {
       <section data-kv-queued-section="content" aria-labelledby="kv-q-content">
         <h2 id="kv-q-content">{t.t('store6.queued.content.title')}</h2>
         <p>{t.t('store6.queued.content.body')}</p>
-        <p data-kv-coming="drafts"><em>{t.t('store6.queued.coming')}</em></p>
+        <p data-kv-drafts="kept">{t.t('store6.queued.coming')} <a href={syncHref(chrome)} className="kv-btn--link" data-kv-link="sync">{t.t('store6b.sync.title')}</a></p>
       </section>
       <p><a href={store6Href(chrome, 'offline')} className="kv-btn--link" data-kv-link="offline">{t.t('store6.queued.back')}</a></p>
       <RefusalList surface="queued" />

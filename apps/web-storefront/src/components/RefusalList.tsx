@@ -25,8 +25,10 @@ import { STORE5A_REFUSALS, type Store5Surface } from '../features/store5a/refusa
 import { STORE5B_REFUSALS } from '../features/store5b/refusals';
 // PC-56 STORE-6a: and `STORE6A_REFUSALS` (the offline page, the queued-actions list, the install page, the offline form chain) — `Store6Surface`.
 import { STORE6A_REFUSALS, type Store6Surface } from '../features/store6/refusals';
+// PC-56 STORE-6b: and `STORE6B_REFUSALS` ("On this phone" and its discard chain; the install invitation on `/app`) — `Store6bSurface`.
+import { STORE6B_REFUSALS, type Store6bSurface } from '../features/store6b/refusals';
 
-export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface | Store3cSurface | Store4Surface | Store5Surface | Store6Surface }) {
+export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface | Store3cSurface | Store4Surface | Store5Surface | Store6Surface | Store6bSurface }) {
   const t = getTranslator();
   const rows = [
     ...STORE2A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
@@ -42,6 +44,7 @@ export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurf
     ...STORE5A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE5B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE6A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
+    ...STORE6B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
   ];
   return (
     <section className="kv-refused" data-kv-refused={surface} aria-labelledby={`kv-refused-${surface}`}>

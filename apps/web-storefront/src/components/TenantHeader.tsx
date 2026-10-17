@@ -17,7 +17,9 @@
 //     `communication` flag is ON (chat stays behind it; the platform /messages page — 4b rebuilds it), and "Sign out" (the existing logout action).
 //   • PC-56 STORE-4b · C5: "Messages" → THIS store's /<slug>/messages (W297, the organisation's threads). No "n unread" beside it: there is no
 //     bounded unread-count endpoint (a list of one is not a count) — refused by name on the messages page (`store4b.refusal.unreadBadge`).
-// Server component: the only client JS is the locale switcher.
+// PC-56 STORE-6b · B8: "N on this phone" beside the cart (components/drafts/DraftsChip.tsx) — THIS organisation's unsent drafts on this phone
+//   (never another's), → /<slug>/sync; a client island, nothing in the server's HTML, nothing at 0. (Never in TenantShellHeader.)
+// Server component: the client JS is the locale switcher and the drafts chip.
 import Link from 'next/link';
 import { getTranslator, getLang } from '../lib/i18n';
 import { hasSessionCookie } from '../lib/auth';
@@ -26,6 +28,8 @@ import { PLATFORM_BRAND } from '../features/branding/brand-theme';
 import { getCartItemCount } from '../features/cart/summary';
 import { publicClient } from '../lib/api-client';
 import { logoutAction } from '../app/(platform)/login/actions';
+import { DraftsChip } from './drafts/DraftsChip';
+import { chipLabels } from '../lib/drafts-labels';
 
 export interface TenantHeaderProps {
   slug: string;
@@ -71,6 +75,8 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
           {auctionsOn && <Link href={`${home}/auctions`} className="kv-header__link" data-kv-nav="auctions">{t.t('nav.auctions')}</Link>}
           {auctionsOn && signedIn && <Link href={`${home}/auctions/bids`} className="kv-header__link" data-kv-nav="my-bids">{t.t('nav.myBids')}</Link>}
           {groupLotsOn && <Link href={`${home}/search?saleType=group_lot`} className="kv-header__link" data-kv-nav="group-lots">{t.t('nav.groupLots')}</Link>}
+          {/* PC-56 STORE-6b · B8: THIS organisation's unsent drafts on this phone — read by the phone, never by the server */}
+          <DraftsChip slug={slug} href={`${home}/sync`} labels={chipLabels()} lang={lang} />
           {/* PC-56 STORE-2b · D3: THIS store's cart (/<slug>/cart), under this header */}
           <Link href={`${home}/cart`} className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}

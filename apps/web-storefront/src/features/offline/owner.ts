@@ -13,11 +13,16 @@
 //     digest the browser's scripts never see and that cannot be reversed to a user id. `ownerChanged` compares the previous pair with the
 //     new session's user (the access token's `sub`): no previous marker, a malformed one, a missing tag or a tag for someone else → CHANGED
 //     (fail closed — a needless clear costs a re-download of the shell; a missed clear could show one person's traces to another).
+//   • PC-56 STORE-6b · D2 — THE WIPE MARKER: the same armed pass also sets `kvs_wipe=1`, a JavaScript-READABLE one-shot cookie. The storefront's
+//     draft sweep (components/drafts/*, features/store6b/drafts.ts) sees it at the next load, deletes every draft this phone holds and drops
+//     it — so a browser that ignores `Clear-Site-Data` (older Safari) still forgets a person's unsent words at sign-out, before anyone else
+//     opens "On this phone". It carries no value but `1`; a link from elsewhere cannot set it (only the armed pass does).
 //   • THE ONE-SHOT ARM: a Server Action cannot set an arbitrary response header (Next 14), so the action sets the httpOnly one-shot cookie
 //     `kvs_csd` and redirects THROUGH the route handler `/api/session/clear?next=…`, which sends the header on its 303 (only when armed —
 //     a link from elsewhere clears nothing) and drops the arm.
 import { createHash, randomBytes } from 'node:crypto';
 import { safeNext } from '../auth/redirect';
+import { DRAFTS_WIPE_COOKIE } from '../store6b/drafts';
 
 /** The JS-readable, random, non-secret owner marker (E1). */
 export const OWNER_COOKIE = 'kvs_owner';
@@ -25,6 +30,9 @@ export const OWNER_COOKIE = 'kvs_owner';
 export const OWNER_TAG_COOKIE = 'kvs_owner_tag';
 /** httpOnly one-shot: "the next pass through the clear route sends Clear-Site-Data". */
 export const CLEAR_SITE_COOKIE = 'kvs_csd';
+/** JS-readable one-shot (STORE-6b): "wipe the drafts on this phone at the next load" — set by the armed clear pass, dropped by the client
+ *  (the name lives in features/store6b/drafts.ts, which the browser islands import; re-exported here). */
+export { DRAFTS_WIPE_COOKIE };
 /** The route handler that sends the header (under /api/: the service worker never touches it; the middleware skips it). */
 export const CLEAR_SITE_PATH = '/api/session/clear';
 /** A marker lives a year (it is not a session: it outlives sign-out on purpose, so the NEXT sign-in can tell whether the person changed). */
@@ -89,6 +97,9 @@ export function clearRouteAnswer(input: { next: string | null; cookie: string | 
   if (cookieFrom(input.cookie, CLEAR_SITE_COOKIE) === '1') {
     headers.push(['Clear-Site-Data', clearSiteDataHeader()]);
     headers.push(['Set-Cookie', `${CLEAR_SITE_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`]);
+    // STORE-6b · D2: the drafts are wiped by the client at the next load even where the header is ignored (JS-readable on purpose; kept
+    // until a page drops it — a year at most, like the owner marker)
+    headers.push(['Set-Cookie', `${DRAFTS_WIPE_COOKIE}=1; Path=/; Max-Age=${OWNER_MAX_AGE_SEC}; SameSite=Lax`]);
   }
   return { status: 303, headers };
 }

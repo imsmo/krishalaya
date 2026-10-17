@@ -15,6 +15,7 @@
 //                                     PC-56 STORE-2b (founder D2) adds `storefront_cart` — platform-scoped, fail-open, buying's kill-switch.
 //                                     PC-56 STORE-6a (founder D4/D2) adds `storefront_pwa` — platform-scoped, fail-open, the worker's kill-switch —
 //                                     and `storefront_offline_reads` — tenant-scoped, fail-closed (15 keys).
+//                                     PC-56 STORE-6b (founder D3/Q8) adds `storefront_install_prompt` — tenant-scoped, fail-closed (16 keys).
 //   GET /v1/storefront/plans?country=XX  STORE-1c · D2 — the PUBLIC plan catalogue of a country (a platform table, no RLS — read model header)
 //
 // No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts), or — for
@@ -45,7 +46,10 @@ import { StorefrontPublicReadModel, countryParam } from './storefront-public.rea
 // (one worker per origin serves every path store, so it is answered with no tenant, the org_self_signup precedent) and FAIL-OPEN (a flag-store
 // outage must never make `/sw.js` serve the self-unregistering worker to every phone — the storefront_browse precedent); + `storefront_offline_reads`
 // — TENANT-scoped and fail-closed like `traceability`: the HOST's organisation decides whether its public pages may be kept on a phone.
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads'] as const);
+// PC-56 STORE-6b (founder D3 / Q8, migration 0222): + `storefront_install_prompt` (16 keys) — TENANT-scoped and fail-closed like
+// `storefront_offline_reads`: the organisation decides whether its store shows the install invitation (the second-visit bottom sheet). With no
+// organisation in context (the platform host) it is absent, and the storefront reads it OFF.
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads', 'storefront_install_prompt'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
 /** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context).
  *  PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — a platform switch like org_self_signup. */

@@ -10,6 +10,8 @@
 //     public flags read, as the session's store — one store per session); OFF or unreadable → no link (the pages say the honest OFF state).
 //   • PC-56 STORE-4b · C5 (the 2b door rule): "Messages" → the SESSION store's /<slug>/messages (the slug read with its flags); a slug that
 //     cannot be read → the platform /messages door (which says so, with a Retry). No unread badge (no count endpoint — refused by name).
+//   • PC-56 STORE-6b · B8: "N on this phone" beside the cart (components/drafts/DraftsChip.tsx — a client island read from THIS phone, every
+//     store's drafts on this host → /sync; nothing in the server's HTML, nothing at 0).
 import Link from 'next/link';
 import type { CategoryNode } from '@krishalaya/sdk-js';
 import { getTranslator, getLang } from '../lib/i18n';
@@ -20,6 +22,8 @@ import { getCartItemCount } from '../features/cart/summary';
 import { flattenCategoryNav } from '../features/discovery/categories';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
 import { logoutAction } from '../app/(platform)/login/actions';
+import { DraftsChip } from './drafts/DraftsChip';
+import { chipLabels } from '../lib/drafts-labels';
 
 /** At most this many top-level categories in the strip (the rest are one click away in /discover). */
 const STRIP_MAX = 8;
@@ -74,6 +78,8 @@ export async function SiteHeader() {
           {/* the inbox is never switched off (founder Q12): /notifications is the door to the session store's inbox */}
           {signedIn && <Link href="/notifications" className="kv-header__link" data-kv-nav="notifications">{t.t('nav.notifications')}</Link>}
           {signedIn && <Link href="/account" className="kv-header__link">{t.t('nav.account')}</Link>}
+          {/* PC-56 STORE-6b · B8: the unsent drafts on this phone (all stores on this host) — read by the phone, never by the server */}
+          <DraftsChip slug={null} href="/sync" labels={chipLabels()} lang={lang} />
           {/* PC-56 STORE-1a (survey F-19): the count is IN the accessible name ("Cart, 3 items"), not a hidden badge only sighted people see. */}
           <Link href="/cart" className="kv-header__cart" aria-label={cartCount > 0 ? t.t('nav.cartCount', { count: cartCount }) : t.t('nav.cart')}>
             {t.t('nav.cart')}{cartCount > 0 && <span className="kv-header__badge" aria-hidden="true">{cartCount}</span>}

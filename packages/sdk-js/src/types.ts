@@ -340,6 +340,9 @@ export interface StorefrontFlags {
   /** PC-56 STORE-6a (founder D2, 0221) — tenant-scoped, fail-closed: may the public pages a person opened on this organisation's store be kept on
    *  their phone (20 pages / 7 days, never signed in, no photos) and shown offline with an "as of" band (seed: OFF)? Absent with no tenant. */
   storefront_offline_reads?: boolean;
+  /** PC-56 STORE-6b (founder D3 / Q8, 0222) — tenant-scoped, fail-closed: does this organisation's store show the install invitation (a bottom
+   *  sheet on the second visit of a device, "Not now" honoured 30 days per device; seed: OFF)? Absent with no tenant (the platform host: OFF). */
+  storefront_install_prompt?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {

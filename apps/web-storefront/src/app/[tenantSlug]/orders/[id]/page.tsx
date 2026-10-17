@@ -50,6 +50,7 @@ import { SubmitButton } from '../../../../components/SubmitButton';
 import { PoweredByMark } from '../../../../components/PoweredByMark';
 import { completeOrderAction, raiseDisputeAction } from './actions';
 import { reviewHref } from '../../../../features/store5a/review';
+import { DraftDone } from '../../../../components/drafts/DraftDone';   // PC-56 STORE-6b · D4
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -131,6 +132,8 @@ export default async function TenantOrderPage({ params, searchParams }: { params
 
       {ok && <p className="kv-form__notice" role="status" data-kv-ok={ok}>{t.t(`store3a.ok.${ok}`)}</p>}
       {reviewed && <p className="kv-form__notice" role="status" data-kv-ok="reviewed">{t.t('store5a.published', { org: order.organisation?.name ?? t.t('store5a.theOrganisation') })}</p>}
+      {/* PC-56 STORE-6b · D4: the review was published (W3146) — the draft kept on this phone for it goes */}
+      {reviewed && <DraftDone kind="review" slug={slug} refId={order.id} renderedAt={new Date().toISOString()} />}
       {received && <p className="kv-form__error" role="alert" data-kv-received-error={received}>{t.t(`store3a.received.err.${received}`)}</p>}
       {disputeError && <p className="kv-form__error" role="alert">{t.t(`order.error.${disputeError}`)}</p>}
 

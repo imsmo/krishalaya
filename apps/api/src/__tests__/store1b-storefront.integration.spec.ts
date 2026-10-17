@@ -287,7 +287,8 @@ run('PC-56 STORE-1b · storefront home & tenant home (integration, real AppModul
       // PC-56 HOTFIX-7 · B25: + `traceability` (tenant-scoped, 12 keys)
       // PC-56 STORE-5b · B5 (founder Q7): + `certificates_public` (tenant-scoped, seeded OFF — 13 keys)
       // PC-56 STORE-6a (0221): + `storefront_pwa` (platform-scoped, ON) + `storefront_offline_reads` (tenant-scoped, seeded OFF) — 15 keys
-      expect(Object.keys(r.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'certificates_public', 'communication', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart', 'storefront_offline_reads', 'storefront_pwa', 'traceability']);
+      // PC-56 STORE-6b (0222): + `storefront_install_prompt` (tenant-scoped, seeded OFF) — 16 keys
+      expect(Object.keys(r.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'certificates_public', 'communication', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart', 'storefront_install_prompt', 'storefront_offline_reads', 'storefront_pwa', 'traceability']);
       expect(typeof r.body.data.group_lots).toBe('boolean');
       expect(JSON.stringify(r.body)).not.toMatch(/rollout|tenant_ids|rules|pct/);
       const platform = await request(http).get('/v1/storefront/flags');

@@ -125,5 +125,7 @@ export function hostRewritePath(slug: string, pathname: string): string | null {
   // PC-56 STORE-6a · D6 / C3: the offline page (W313 — the worker's fallback on a store host), the queued-actions list (W314) and the install
   // page (W319) are the ORGANISATION's on its own host — and the offline page's form states (`/offline?form=…`, the query is kept by the rewrite)
   if (pathname === '/offline' || pathname === '/queued' || pathname === '/app') return `/${slug}${pathname}`;
+  // PC-56 STORE-6b · C3: "On this phone" (W315 rebuilt, and its discard chain `?discard=` / `?done=` — the query is kept by the rewrite)
+  if (pathname === '/sync') return `/${slug}/sync`;
   return null;
 }

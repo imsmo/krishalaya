@@ -10,6 +10,10 @@
 //   • W3110 success (?status=reported) — "Reported — hidden from you pending review"; the refusals by name (surface `thread`: call (HOTFIX-6),
 //     block, translation, transcript, voice playback, waveform, mic, AI, KYC, read receipts, offline queue, safety desk, flagged off);
 //   • `markRead` best effort; no person's id anywhere in the page (the thread's, the messages', the context's and the keys' ids only).
+// PC-56 STORE-6b · D4: the composer keeps the person's words ON THIS PHONE as they type (components/drafts/DraftKeeper.tsx — field `body` only,
+//   ref = this conversation; never the hidden slug / conversationId / key) and fills them back on the next visit ("Restored from this phone");
+//   nothing is sent by itself — Send here, under the key minted at THIS render. The success render (`?status=sent`) mounts `DraftDone`, which
+//   deletes the draft that was sent.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -25,6 +29,10 @@ import { lockKey, messagesHref } from '../../../../features/store4b/messages';
 import { bodyView, canReport, contextLink, readThreadQuery, reportHref, threadHref, whoKey } from '../../../../features/store4b/thread';
 import { RefusalList } from '../../../../components/RefusalList';
 import { postMessageAction } from './actions';
+import { DraftKeeper } from '../../../../components/drafts/DraftKeeper';
+import { DraftDone } from '../../../../components/drafts/DraftDone';
+import { keeperLabels } from '../../../../lib/drafts-labels';
+import { tenantChrome } from '../../../../features/store4a/account';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -102,6 +110,7 @@ export default async function TenantThreadPage({ params, searchParams }: { param
         </p>
       )}
       {banner && <p className={banner.cls} role={banner.role} data-kv-status={status}>{t.t(banner.key)}</p>}
+      {status === 'sent' && <DraftDone kind="message" slug={slug} refId={convo.id} renderedAt={new Date().toISOString()} />}
 
       <ol className="kv-thread__msgs" aria-label={t.t('messages.threadTitle')}>
         {messages.length === 0 && <li className="kv-detail__muted" data-kv-state="no-messages">{t.t('messages.threadEmpty')}</li>}
@@ -141,6 +150,7 @@ export default async function TenantThreadPage({ params, searchParams }: { param
           <input id="msg-body" name="body" type="text" maxLength={4000} className="kv-field__input" placeholder={t.t('messages.composePlaceholder')} required />
           <button type="submit" className="kv-btn">{t.t('messages.send')}</button>
           <p className="kv-detail__muted" data-kv-once>{t.t('store4b.thread.sendOnce')}</p>
+          <DraftKeeper kind="message" slug={slug} refId={convo.id} labels={keeperLabels(tenantChrome(slug))} />
         </form>
       )}
 

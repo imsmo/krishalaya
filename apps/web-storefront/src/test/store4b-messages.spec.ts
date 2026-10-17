@@ -118,6 +118,7 @@ describe('STORE-4b · the refusal registry', () => {
     // PC-56 STORE-5b: + 163 (store5b.* 144, trace.step.* 9, trace.meta.* 8, the self_declared chip ×2) − 5 retired v2 trace.* keys → 2,197
     // PC-56 HOTFIX-8: + 1 (offline.shell.home — the session-free shell's header label) → 2,198
     // PC-56 STORE-6a: + 157 store6.* (the offline page, money never queues, app & install, the chain, reasons, band, update) − offline.hint → 2,354
-    expect(Object.keys(en).length).toBe(2354);
+    // PC-56 STORE-6b: + 83 store6b.* (On this phone and its discard chain, the keeper, the chip, the install invitation, /app states) → 2,437
+    expect(Object.keys(en).length).toBe(2437);
   });
 });

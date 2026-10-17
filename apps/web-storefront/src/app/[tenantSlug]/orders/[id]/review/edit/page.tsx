@@ -9,6 +9,9 @@
 //     (W3144): the failure BY NAME (locked / removed / invalid / unknown dimension / switched off / server) with Retry carrying the SAME key;
 //   • success → the review page `?ok=updated` (W3143: "Updated — locks on <date>"). Every link returns to the review page or the order (the
 //     canon's W273 links are a defect — DELTA `chain_links`).
+// PC-56 STORE-6b · D4: the edit form keeps the person's new stars, dimension stars and words ON THIS PHONE as they type (DraftKeeper, kind
+//   `review`, ref = this order, `edit` — its "Send now" returns here); nothing is sent by itself. Its success (`?ok=updated` on the review page)
+//   mounts `DraftDone` there.
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
@@ -30,6 +33,9 @@ import { RefusalList } from '../../../../../../components/RefusalList';
 import { ReviewFields } from '../../../../../../components/ReviewFields';
 import { SubmitButton } from '../../../../../../components/SubmitButton';
 import { editReviewAction, saveReviewEditAction } from '../actions';
+import { DraftKeeper } from '../../../../../../components/drafts/DraftKeeper';
+import { keeperLabels } from '../../../../../../lib/drafts-labels';
+import { tenantChrome } from '../../../../../../features/store4a/account';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -130,6 +136,7 @@ export default async function ReviewEditPage({ params, searchParams }: { params:
           <button type="submit" className="kv-btn" data-kv-act="review-edit">{t.t('store5a.edit.continue')}</button>{' '}
           {toReview}
         </div>
+        <DraftKeeper kind="review" slug={slug} refId={id} edit labels={keeperLabels(tenantChrome(slug))} />
       </form>
     </>
   ));

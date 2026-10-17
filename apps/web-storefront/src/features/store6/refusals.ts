@@ -32,7 +32,7 @@ export const STORE6A_REFUSALS: readonly Store6Refusal[] = Object.freeze([
   { id: 'replay', canon: 'W314 "sends once, never twice (one idempotency key per action)" · "Replay in the order taken"', surfaces: ['queued'],
     key: 'store6.refusal.replay', why: 'no auto-replay: the person presses again on a live page, which mints its key at that render (keyed-at-render kept)' },
   { id: 'expire_ask', canon: 'W314 "Never expire a queue silently; after 7 days offline, ask before discarding" · W319 "After 7 days offline we ask"', surfaces: ['queued', 'install'],
-    key: 'store6.refusal.expireAsk', why: 'nothing is kept to expire in 6a; the drafts rule (ask at 7 days) is STORE-6b\'s, over the person\'s own unsent words' },
+    key: 'store6.refusal.expireAsk', why: 'no queue is kept to expire; PC-56 STORE-6b: the only "after 7 days we ask" is over the person\'s own unsent drafts, on "On this phone" (features/store6b/drafts.ts)' },
   { id: 'cart_queue', canon: 'W314 "Content actions — cart edits, messages, reviews … queue freely"', surfaces: ['queued'],
     key: 'store6.refusal.cartQueue', why: 'founder D8 (Q5): cart edits never queue — a later add would silently re-baseline the agreed price (survey F-8)' },
   { id: 'listing_drafts', canon: 'W314 "listing drafts, photos" · W319 "Write drafts: … listing drafts (queue)"', surfaces: ['queued', 'install'],

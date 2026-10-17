@@ -27,7 +27,7 @@ export const STORE4B_REFUSALS: readonly Store4Refusal[] = Object.freeze([
   { id: 'read_receipts', canon: 'W297 "✓✓" · W298 "You 18:10 · ✓✓ read"', surfaces: ['messages', 'thread'],
     key: 'store4b.refusal.readReceipts', why: 'founder D4: `last_read_at` is per participant, not served per message — no "read" tick is claimed' },
   { id: 'offline_queue', canon: 'W297 "Offline — messages written offline queue… \\"sending…\\"" · W298 "Sending… (offline queue) — it will never send twice"', surfaces: ['messages', 'thread'],
-    key: 'store4b.refusal.offlineQueue', why: 'no offline queue exists (STORE-6); the composer\'s key is minted at render, so a retry after a timeout posts once — said, not a queue' },
+    key: 'store4b.refusal.offlineQueue', why: 'PC-56 STORE-6b (founder D1 / D4) reworded: the canon\'s "saved on this phone" half is TRUE now — the composer keeps the words on this phone as they are typed — and the "sends when signal returns" half stays REFUSED: nothing is queued or sent by itself; the person presses Send, under the key this page minted at its render (a retry after a timeout posts once)' },
   { id: 'safety_desk', canon: 'W298 "harassment cases jump straight to the safety desk"', surfaces: ['thread', 'report'],
     key: 'store4b.refusal.safetyDesk', why: 'a report hides the message for review; nothing routes it to a desk' },
   { id: 'counts', canon: 'W297 "Showing 4 of 31 conversations"', surfaces: ['messages'],

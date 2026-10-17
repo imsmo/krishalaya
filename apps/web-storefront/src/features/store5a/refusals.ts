@@ -17,7 +17,7 @@ export const STORE5A_REFUSALS: readonly Store5Refusal[] = Object.freeze([
   { id: 'photos', canon: 'W290 "Add photos" (chain-form:review → W3141)', surfaces: ['review', 'review_edit'],
     key: 'store5a.refusal.photos', why: 'founder D7 (Q12): photos are refused in Phase 1 — media moderation is not built; `reviews` has no media column' },
   { id: 'offline', canon: 'W290 state Error "your words are saved on this phone and will send when signal returns"', surfaces: ['review', 'review_edit'],
-    key: 'store5a.refusal.offline', why: 'nothing is saved on the phone (STORE-6); a failure says so by name, and Retry re-sends under the same key' },
+    key: 'store5a.refusal.offline', why: 'PC-56 STORE-6b (founder D1 / D4) reworded: "your words are saved on this phone" is TRUE now — the form keeps the stars and words on this phone as they are typed — and "will send when signal returns" stays REFUSED: nothing is sent by itself; the person presses Submit (and confirms the server\'s preview)' },
   { id: 'tonight', canon: 'W290 "Your stars update the seller\'s profile tonight"', surfaces: ['review'],
     key: 'store5a.refusal.tonight', why: 'there is no nightly job: the organisation\'s rating is a cached read (120 s) — the success sentence says "within a couple of minutes"' },
   { id: 'masked_name', canon: 'W290 "Your review shows as \\"Buyer N••• S, Ahmedabad · order-verified\\""', surfaces: ['review'],

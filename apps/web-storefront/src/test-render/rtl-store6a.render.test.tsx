@@ -32,7 +32,7 @@ const STATES: Array<[string, () => Promise<React.ReactNode> | React.ReactNode]> 
   ['W3130 failure', () => ShellOffline({ searchParams: { form: 'failure' } })],
   ['W314 platform', () => PlatformQueued()],
   ['W314 organisation', () => TenantQueued({ params: { tenantSlug: SLUG } })],
-  ['W319 platform', () => PlatformApp()],
+  ['W319 platform', () => PlatformApp({})],
   ['W319 organisation', () => TenantApp({ params: { tenantSlug: SLUG } })],
   ['the kept-page band (full)', () => <CachedBandView at="2026-10-17T04:30:00.000Z" tier="full" online={false} labels={L} />],
   ['the update notice', () => <UpdateNoticeView show labels={{ ready: 'r', refresh: 'f', later: 'l' }} />],

@@ -35,7 +35,7 @@ describe('STORE-6a · W319 · app & install', () => {
     expect(C.api).toContainEqual(['flags', SLUG]);
   });
   it('no number of size or phone price, and no install button (the invitation is STORE-6b\'s)', async () => {
-    for (const h of [await tenant(), renderToStaticMarkup(PlatformApp())]) {
+    for (const h of [await tenant(), renderToStaticMarkup(PlatformApp({}))]) {
       const words = text(h);
       expect(words).not.toMatch(/\d+(\.\d+)?\s?MB|6,?000|small download|smaller than three photos|speaks when asked/i);
       expect(h).not.toMatch(/<button|<form/);
@@ -53,7 +53,7 @@ describe('STORE-6a · W319 · app & install', () => {
     expect(text(h)).toContain(en['store6.offline.keep.off'].replace('{org}', ORG));
   });
   it('the platform\'s page installs as the platform store; its links are the platform\'s', () => {
-    const h = renderToStaticMarkup(PlatformApp());
+    const h = renderToStaticMarkup(PlatformApp({}));
     expect(text(h)).toContain(en['store6.install.title'].replace('{name}', PLATFORM_BRAND.platformStoreName));
     expect(h).toContain('href="/queued"'); expect(h).toContain('href="/offline"');
   });

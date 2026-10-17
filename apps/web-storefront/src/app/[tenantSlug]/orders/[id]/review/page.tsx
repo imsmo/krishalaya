@@ -11,6 +11,9 @@
 //     "Verified buyer", "you can edit it until <editLocksAt>" — Proceed under the form's key; `&failure=` (W3147): the failure BY NAME with
 //     Retry carrying the SAME key (a submit that did land is answered, never doubled — even when the preview now says "already reviewed");
 //   • the refusals by name (surface `review`): voice, photos, the offline queue, "tonight", the masked name + city, the grading desk, …
+// PC-56 STORE-6b · D4: the form keeps the person's stars, dimension stars and words ON THIS PHONE as they type (components/drafts/DraftKeeper.tsx,
+//   kind `review`, ref = this order — never the hidden slug / id / key) — NOT the server-carried step draft (`kvs_review_draft`, the confirm's);
+//   nothing is sent by itself. The edit's success render here (`?ok=updated`, W3143) mounts `DraftDone` (the submit's is on the order page, W3146).
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
@@ -33,6 +36,10 @@ import { RefusalList } from '../../../../../components/RefusalList';
 import { ReviewFields } from '../../../../../components/ReviewFields';
 import { SubmitButton } from '../../../../../components/SubmitButton';
 import { previewReviewAction, submitReviewAction } from './actions';
+import { DraftKeeper } from '../../../../../components/drafts/DraftKeeper';
+import { DraftDone } from '../../../../../components/drafts/DraftDone';
+import { keeperLabels } from '../../../../../lib/drafts-labels';
+import { tenantChrome } from '../../../../../features/store4a/account';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -119,6 +126,7 @@ export default async function ReviewPage({ params, searchParams }: { params: { t
       <>
         {head}
         {okUpdated && mine && <p className="kv-form__notice" role="status" data-kv-ok="updated">{t.t('store5a.edit.updated', { date: date(mine.editLocksAt) })}</p>}
+        {okUpdated && <DraftDone kind="review" slug={slug} refId={id} renderedAt={new Date().toISOString()} />}
         <div className="kv-state" role="status" data-kv-state={state}>
           <p><strong>{t.t('store5a.state.reviewedTitle')}</strong></p>
           {mine && <p data-kv-mine-stars={mine.stars}>{t.t('store5a.state.youRated', { stars: String(mine.stars), date: date(mine.createdAt) })}</p>}
@@ -194,6 +202,7 @@ export default async function ReviewPage({ params, searchParams }: { params: { t
           <button type="submit" className="kv-btn" data-kv-act="submit-review">{t.t('store5a.form.submit')}</button>{' '}
           {back}
         </div>
+        <DraftKeeper kind="review" slug={slug} refId={id} labels={keeperLabels(tenantChrome(slug))} />
       </form>
       <ul className="kv-detail__muted" data-kv-facts="review">
         <li data-kv-fact="label">{t.t('store5a.fact.label')}</li>

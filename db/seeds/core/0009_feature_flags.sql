@@ -80,5 +80,7 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   -- PC-56 STORE-6a (0221 also inserts them — ON CONFLICT DO NOTHING). `storefront_pwa` is seeded ON: a named Law 10 exception (the worker has
   -- been live since PC-24c — the org_self_signup precedent); `storefront_offline_reads` OFF, per organisation (founder D2)
   ('storefront_pwa', 'PC-56 STORE-6a (founder D4, Law 10 exception — ON since PC-24c): the storefront service worker (/sw.js). Platform-scoped, fail-open. OFF = /sw.js serves a self-unregistering worker that deletes every kv-* cache', true, 100, '{}'),
-  ('storefront_offline_reads', 'PC-56 STORE-6a (founder D2): the public pages a person opened (listing, organisation, trace, verify, certificate, browse) may be kept on their phone — 20 pages / 7 days, never signed in, never prefetched, no photos — and shown offline with an as-of band. Per organisation, fail-closed', false, 100, '{}')
+  ('storefront_offline_reads', 'PC-56 STORE-6a (founder D2): the public pages a person opened (listing, organisation, trace, verify, certificate, browse) may be kept on their phone — 20 pages / 7 days, never signed in, never prefetched, no photos — and shown offline with an as-of band. Per organisation, fail-closed', false, 100, '{}'),
+  -- PC-56 STORE-6b (0222 also inserts it — ON CONFLICT DO NOTHING): the install invitation, per organisation, OFF (founder D3 / Q8; Law 10)
+  ('storefront_install_prompt', 'PC-56 STORE-6b (founder Q8): the install invitation — a bottom sheet on the second visit of a device naming the organisation, "Not now" honoured 30 days per device; a device act, no API call, no audit row. Per organisation, fail-closed', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

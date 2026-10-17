@@ -32,6 +32,8 @@ export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'app', 'queued',
   // PC-56 STORE-6a · D6: the host-root manifest is a ROUTE now (`(platform)/manifest.webmanifest`, reserved as a tenant slug in migration 0204)
   'manifest.webmanifest',
+  // PC-56 STORE-6b · C3: canon W315's "On this phone" (`/sync` — reserved as a tenant slug in migration 0204:150)
+  'sync',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

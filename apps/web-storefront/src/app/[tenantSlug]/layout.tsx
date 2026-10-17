@@ -28,6 +28,10 @@
 //     token (the platform token's green only as the colour of an organisation that has published none);
 //   • the offline page (`x-kv-shell: offline`, set by the middleware for `/<slug>/offline`) renders the SESSION-FREE chrome
 //     (components/offline/TenantShellHeader.tsx): no session read, no cart, no flags, no forms — HOTFIX-8's law on the store's own fallback.
+// PC-56 STORE-6b · D3: the install invitation (components/install/InstallInvite.tsx) mounted ONCE here with the organisation's name and icon EXACTLY
+// as its manifest has them (brand-theme.ts `tenantManifest`: the published display name, else the tenant's, else the slug; the logo, else the
+// monogram) and THIS organisation's `storefront_install_prompt` (the public flags read — fail closed: unreadable → OFF). Not in the offline
+// shell (no flags are read there).
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -37,6 +41,11 @@ import { getTranslator } from '../../lib/i18n';
 import { loadTenantShell } from '../../lib/storefront-data';
 import { TENANT_SLUG_HEADER } from '../../lib/host-routing';
 import { brandCss, brandColours, logoSrc, brandingForMark, poweredByVisible } from '../../features/branding/brand-theme';
+import { publicClient } from '../../lib/api-client';
+import { InstallInvite } from '../../components/install/InstallInvite';
+import { inviteLabels } from '../../lib/drafts-labels';
+import { tenantChrome } from '../../features/store4a/account';
+import { appHref } from '../../features/store6b/paths';
 import { monogramHref, tenantAppleIcon } from '../../features/store6/manifest';
 import { CACHEABLE_HEADER, SHELL_HEADER } from '../../features/store6/sw-rules';
 import { BrandChangeNote } from '../../components/BrandChangeNote';
@@ -101,6 +110,11 @@ export default async function TenantLayout({ children, params }: { children: Rea
   }
   const signal = signalLabels(`/${params.tenantSlug}/offline`);
   const renderedAt = cacheable() ? new Date().toISOString() : null;
+  // STORE-6b · D3: the invitation names the organisation and its icon as its manifest does; this organisation's switch (fail closed)
+  let installOn = false;
+  try { installOn = (await publicClient(params.tenantSlug).storefront.flags()).storefront_install_prompt === true; } catch { installOn = false; }
+  const manifestName = (b?.brand?.displayName || b?.displayName || params.tenantSlug).trim();
+  const manifestIcon = logoSrc(env.publicApiUrl, b?.brand) ?? monogramHref(params.tenantSlug);
   return (
     <>
       {css && <style data-kv-tenant-brand={String(b!.brand!.version)} dangerouslySetInnerHTML={{ __html: css }} />}
@@ -114,6 +128,7 @@ export default async function TenantLayout({ children, params }: { children: Rea
         {b?.brand && <BrandChangeNote tenantSlug={params.tenantSlug} version={b.brand.version}
           title={t.t('brand.note.title')} body={t.t('brand.note.body', { name })} dismiss={t.t('brand.note.dismiss')} />}
         {children}
+        <InstallInvite name={manifestName} iconHref={manifestIcon} flagOn={installOn} appHref={appHref(tenantChrome(params.tenantSlug))} labels={inviteLabels()} />
       </main>
       <TenantFooter name={name} showPoweredBy={powered} />
     </>

@@ -472,3 +472,42 @@ describe('STORE-6a · claims guard (the offline page, money never queues, app & 
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnone\b/i.test(v)]).toEqual([k, true]);
   });
 });
+
+// PC-56 STORE-6b · brief C4 / §E (founders D1–D4) — "On this phone", the drafts keeper and the install invitation claim no sync engine: "sync",
+// "synced", "syncing" and "Wi-Fi" (and their Hindi / Gujarati forms) appear ONLY inside a refusal, in every catalogue; "Merge by hand", "Keep
+// phone version", "Last full sync" and "will send when signal returns" likewise; no size figure and no first-visit prompt. Every STORE-6b refusal
+// says no; no store6b value carries a currency sign, a person placeholder or a baked number (the 7 / 30 days and every count are interpolated).
+describe('STORE-6b · claims guard (On this phone, the keeper, the install invitation)', () => {
+  const REFUSED_ONLY = [
+    /\bsync(ed|ing|s)?\b|सिंक|સિંક/i, /wi-?fi/i, /merge by hand|keep (phone|computer) version/i, /last full sync/i,
+    /will send when signal returns|sends? (itself )?when signal returns/i, /sync now/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the sync engine\'s words only inside a refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      if (/\.refusal\./.test(k) || k.startsWith('signup.refused.') || k.startsWith('auth.refused.')) continue;
+      for (const re of REFUSED_ONLY) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no currency sign, no person placeholder, no baked number in a store6b value (83 keys)', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store6b.'));
+    expect(keys.length).toBe(83);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(seller|sellerName|farmer|farmerName|member|fullName|owner|buyer|person)\}/i.test(v)]).toEqual([k, false]);
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
+      expect([k, /\bMB\b|under \d/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English STORE-6b refusal says no / not / never / nothing (14 keys)', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store6b.refusal.'));
+    expect(r.length).toBe(14);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnone\b/i.test(v)]).toEqual([k, true]);
+  });
+  it('the reworded 4b / 5a refusals: "kept on this phone" is TRUE now, and the auto-send half stays refused', () => {
+    for (const k of ['store4b.refusal.offlineQueue', 'store5a.refusal.offline']) {
+      expect([k, /kept on this phone/i.test(en[k])]).toEqual([k, true]);
+      expect([k, /only when you press/i.test(en[k])]).toEqual([k, true]);
+    }
+  });
+});
