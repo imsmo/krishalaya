@@ -41,3 +41,11 @@ export function sessionTenantClient(): KrishalayaClient {
     userAgent: 'kv-web-storefront', timeoutMs: 8000,
   });
 }
+
+/** PC-56 STORE-5b · C4: an ANONYMOUS client that names the page's LANGUAGE (`x-lang`) — the API's vocabulary reads (`lookups.values`) answer
+ *  each value's name in that language from the `translations` rows (the certificate types, migration 0219). The other factories send no
+ *  language, so a vocabulary read through them answers the English default names (named in the STORE-5b report). */
+export function publicClientIn(lang: string, tenantSlug?: string): KrishalayaClient {
+  const l = /^[a-z]{2}(-[A-Z]{2})?$/.test(lang) ? lang : 'en';
+  return createClient({ baseUrl: env.serverApiUrl, tenantSlug, getHeaders: () => ({ ...callerHeaders(), 'x-lang': l }), userAgent: 'kv-web-storefront', timeoutMs: 8000 });
+}

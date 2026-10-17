@@ -106,6 +106,9 @@ export function brandSeenCookie(tenantSlug: string): string { return `kv_brand_s
 export function hostRewritePath(slug: string, pathname: string): string | null {
   if (pathname === '/' || pathname === '') return `/${slug}`;
   if (pathname.startsWith('/listings/')) return `/${slug}${pathname}`;
+  // PC-56 STORE-5b (founder D7 / Q15): the QR on a pack names the HOST's own /trace/<token> — on a store host it is served under the store's
+  // chrome (another organisation's lot is sent on to the platform's page by the screen); the certificate page likewise
+  if (pathname.startsWith('/trace/') || pathname === '/certificates' || pathname.startsWith('/certificates/')) return `/${slug}${pathname}`;
   if (pathname === '/manifest.webmanifest') return `/${slug}/manifest.webmanifest`;
   return null;
 }

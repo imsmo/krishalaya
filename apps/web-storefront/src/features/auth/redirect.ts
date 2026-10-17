@@ -24,6 +24,8 @@ export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'search',
   // PC-56 STORE-3c: the platform door to a group lot (`/g/[id]`, canon W279 — reserved as a tenant slug in migration 0212)
   'g',
+  // PC-56 STORE-5b: canon W305's platform certificate page (`/certificates`, `/certificates/[id]` — reserved as a tenant slug in migration 0219)
+  'certificates',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

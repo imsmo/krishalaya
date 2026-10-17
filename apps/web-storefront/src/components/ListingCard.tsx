@@ -12,7 +12,8 @@ import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { PublicListingCard } from '@krishalaya/sdk-js';
 
 // PC-56 STORE-1b (founder D4): `soldBy` names the ORGANISATION on the card ("Sold by Anand FPO") — never a farmer or a member number.
-export type ListingCardLabels = { organic: string; available: string; soldBy?: string; certified?: string; natural?: string; licence?: string };
+// PC-56 STORE-5b · C6 (founder D1): + `selfDeclared` — "organic (self-declared)" for a certified claim no verified certificate covers
+export type ListingCardLabels = { organic: string; available: string; soldBy?: string; certified?: string; selfDeclared?: string; natural?: string; licence?: string };
 
 /** The card's row: the public feed's (STORE-2a). Older fixtures without the new keys still render (each new key is optional at runtime). */
 export type ListingCardRow = Pick<PublicListingCard, 'id' | 'title' | 'priceMinor' | 'currencyCode' | 'unitCode' | 'quantityAvailable' | 'organicClaim'>
@@ -22,7 +23,7 @@ export function ListingCard(
   { listing, tenantSlug, lang = 'en', labels }:
   { listing: ListingCardRow; tenantSlug: string; lang?: string; labels: ListingCardLabels },
 ) {
-  const kind = listing.organic === 'certified' ? labels.certified : listing.organic === 'natural' ? labels.natural : undefined;
+  const kind = listing.organic === 'certified' ? labels.certified : listing.organic === 'self_declared' ? labels.selfDeclared : listing.organic === 'natural' ? labels.natural : undefined;
   return (
     <Link href={`/${tenantSlug}/listings/${listing.id}`} className="kv-card" aria-label={listing.title}>
       <h3 className="kv-card__title">{listing.title}</h3>

@@ -8,25 +8,32 @@ import { TraceEvent } from '../domain/trace-event.entity';
 import { TraceStep } from '../domain/traceability.events';
 import { US_SQL } from '../../../shared/pagination/us-keyset';
 
-const COLS = `id, trace_lot_id, tenant_id, event_code, meta, event_hash, created_at, ${US_SQL('created_at')} AS created_us`;
+const COLS = `id, trace_lot_id, tenant_id, event_code, meta, event_hash, hash_version, created_at, ${US_SQL('created_at')} AS created_us`;
 function toDomain(r: any): TraceEvent {
   return TraceEvent.rehydrate({ id: String(r.id), traceLotId: r.trace_lot_id, tenantId: r.tenant_id, eventCode: r.event_code as TraceStep, meta: r.meta ?? {}, eventHash: r.event_hash, createdAt: r.created_at,
-    createdAtUs: r.created_us ?? null });
+    createdAtUs: r.created_us ?? null, hashVersion: Number(r.hash_version ?? 1) });
 }
 export interface EventListQuery { cursor?: { c: string; id: string }; limit: number; }
 
 @Injectable()
 export class TraceEventRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
+  /** PC-56 STORE-5b · B11: the INSERT carries `created_at` (the instant the v2 hash covers — the 5a review precedent) and `hash_version`. */
   async insert(tx: TxContext, e: TraceEvent): Promise<void> {
     const p = e.toProps();
-    await tx.query(`INSERT INTO trace_events (trace_lot_id, tenant_id, event_code, meta, event_hash) VALUES ($1,$2,$3,$4::jsonb,$5)`,
-      [p.traceLotId, p.tenantId, p.eventCode, JSON.stringify(p.meta), p.eventHash]);
+    await tx.query(`INSERT INTO trace_events (trace_lot_id, tenant_id, event_code, meta, event_hash, hash_version, created_at) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7::timestamptz)`,
+      [p.traceLotId, p.tenantId, p.eventCode, JSON.stringify(p.meta), p.eventHash, p.hashVersion ?? 1, (p.createdAt ?? new Date()).toISOString()]);
   }
   /** Latest event hash for a lot (the chain head). null if no events yet. Read in-tx for a consistent chain. */
   async lastHash(tx: TxContext, tenantId: string, traceLotId: string): Promise<string | null> {
-    const r = await tx.query(`SELECT event_hash FROM trace_events WHERE tenant_id=$1 AND trace_lot_id=$2 ORDER BY created_at DESC, id DESC LIMIT 1`, [tenantId, traceLotId]);
-    return r.rows[0]?.event_hash ?? null;
+    return (await this.lastHead(tx, tenantId, traceLotId))?.hash ?? null;
+  }
+  /** PC-56 STORE-5b: the chain head's hash AND its instant (ms) — the next event is never stamped before it (clock skew between pods would
+   *  otherwise re-order the chain the verify read walks by `created_at`). */
+  async lastHead(tx: TxContext, tenantId: string, traceLotId: string): Promise<{ hash: string; atMs: number } | null> {
+    const r = await tx.query(`SELECT event_hash, created_at FROM trace_events WHERE tenant_id=$1 AND trace_lot_id=$2 ORDER BY created_at DESC, id DESC LIMIT 1`, [tenantId, traceLotId]);
+    const row = r.rows[0];
+    return row ? { hash: row.event_hash, atMs: new Date(row.created_at).getTime() } : null;
   }
   /** Has a given event_code already been recorded for this lot? (idempotency guard for auto-fanout). */
   async hasCode(tx: TxContext, tenantId: string, traceLotId: string, eventCode: string): Promise<boolean> {

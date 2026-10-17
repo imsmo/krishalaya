@@ -187,7 +187,9 @@ run('PC-56 STORE-2a · what an anonymous buyer sees is true and private (integra
     expect(await ids(`grade=${GRADE_A}`)).toEqual([L.confirmedA, L.confirmedA2].sort());
     expect(await ids(`grade=${PREMIUM}`)).toEqual([]);                                   // the premium on the AI lot was never confirmed
     expect(await ids('grade=none')).toEqual([L.aiOnly, L.plain].sort());
-    expect(await ids('organic=certified')).toEqual([L.confirmedA]);
+    // PC-56 STORE-5b · B18 (founder Q7): a listing CLAIMING `certified` with no verified organic certificate covering it is `self_declared` —
+    // it is no longer in `organic=certified` (the read-time rule `CERTIFIED_SQL`); the fixture carries no certificate, so the list is empty.
+    expect(await ids('organic=certified')).toEqual([]);
     expect(await ids('organic=natural')).toEqual([L.confirmedA2, L.aiOnly].sort());
     expect(await ids('organic=false')).toEqual([L.confirmedA, L.confirmedA2, L.aiOnly, L.plain].sort());
     expect((await get(`/v1/listings?organic=maybe`)).status).toBe(422);   // refused by the schema (the house validation status), never guessed
@@ -197,7 +199,9 @@ run('PC-56 STORE-2a · what an anonymous buyer sees is true and private (integra
     const f = (await get(`/v1/listings?category=${catFacets}`)).body.meta.facets;
     expect(f.grade).toEqual([{ id: GRADE_A, name: 'Grade A', count: 2 }]);
     expect(f.ungraded).toBe(2);
-    expect(f.organic).toEqual({ certified: 1, natural: 2, none: 1 });
+    // PC-56 STORE-5b · B18 (founder Q7): the facet counts `certified` only when a verified organic certificate covers the lot; the bare claim
+    // counts under the new `selfDeclared` key.
+    expect(f.organic).toEqual({ certified: 0, selfDeclared: 1, natural: 2, none: 1 });
     expect(f.district.map((d: { name: string; count: number }) => [d.name, d.count]).sort()).toEqual([['Junagadh', 2], ['Rajkot', 2]]);
     expect(f.saleType).toEqual([{ id: 'direct', count: 4 }]);
     const district = await get(`/v1/listings?category=${catFacets}&district=${JUNAGADH}`);

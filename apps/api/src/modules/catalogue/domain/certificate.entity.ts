@@ -14,6 +14,10 @@ export interface CertificateProps {
   issuingBody: string | null; subjectType: CertSubjectType | string; subjectId: string | null; mediaId: string | null;
   validFrom: string | null; validUntil: string | null; status: CertificateStatus; blockchainAnchor: string | null;
   verifiedBy: string | null; createdAt?: Date | null;
+  /** PC-56 STORE-5b · D1 (0219): when the organisation's staff verified it (stamped by `verify`); NULL before 0219. */
+  verifiedAt?: Date | null;
+  /** PC-56 STORE-5b · D1 (0219): why it was rejected (stamped by `reject`) — "a rejection is part of the record". */
+  rejectionReason?: string | null;
   /** PC-56 HOTFIX-7 · B24: `created_at` as the database printed it (µs) — the keyset cursor only, stripped from every answer. */
   createdAtUs?: string | null;
 }
@@ -24,7 +28,7 @@ export class Certificate {
   private readonly events: DomainEvent[] = [];
   private constructor(private props: CertificateProps) {}
 
-  static create(input: Omit<CertificateProps, 'status' | 'verifiedBy'>): Certificate {
+  static create(input: Omit<CertificateProps, 'status' | 'verifiedBy' | 'verifiedAt' | 'rejectionReason'>): Certificate {
     if (!(CERT_SUBJECT_TYPES as readonly string[]).includes(input.subjectType)) throw new InvalidCertificateError(`subject_type must be one of ${CERT_SUBJECT_TYPES.join('|')}`);
     if (input.subjectId == null) throw new InvalidCertificateError('subject_id is required');
     if (input.certNo != null && input.certNo.length > 100) throw new InvalidCertificateError('cert_no exceeds 100 chars');
@@ -32,7 +36,7 @@ export class Certificate {
     if (input.validFrom != null && !isDate(input.validFrom)) throw new InvalidCertificateError('valid_from must be YYYY-MM-DD');
     if (input.validUntil != null && !isDate(input.validUntil)) throw new InvalidCertificateError('valid_until must be YYYY-MM-DD');
     if (input.validFrom != null && input.validUntil != null && input.validUntil < input.validFrom) throw new InvalidCertificateError('valid_until before valid_from');
-    const c = new Certificate({ ...input, status: 'pending', verifiedBy: null });
+    const c = new Certificate({ ...input, status: 'pending', verifiedBy: null, verifiedAt: null, rejectionReason: null });
     c.events.push({ type: 'catalogue.certificate_submitted', payload: { certId: c.props.id, tenantId: input.tenantId, subjectType: input.subjectType, subjectId: input.subjectId } });
     return c;
   }
@@ -53,12 +57,15 @@ export class Certificate {
     if (from != null && until != null && until < from) throw new InvalidCertificateError('valid_until before valid_from');
     if (until != null && new Date(until) < asOf) throw new InvalidCertificateError('cannot verify an already-expired certificate');
     this.props.status = 'verified'; this.props.verifiedBy = verifierUserId; this.props.validFrom = from; this.props.validUntil = until;
+    this.props.verifiedAt = asOf;   // STORE-5b · D1: "checked by <organisation> on <date>" prints this instant
     this.events.push({ type: 'catalogue.certificate_verified', payload: { certId: this.props.id, subjectType: this.props.subjectType, subjectId: this.props.subjectId, validUntil: until } });
   }
 
   reject(deciderUserId: string, reason: string): void {
     assertTransition(this.props.status, 'rejected');
+    if (reason != null && reason.length > 500) throw new InvalidCertificateError('reason exceeds 500 chars');
     this.props.status = 'rejected'; this.props.verifiedBy = deciderUserId;
+    this.props.rejectionReason = reason;   // STORE-5b · D1: the rejection is part of the record (served on the public page)
     this.events.push({ type: 'catalogue.certificate_rejected', payload: { certId: this.props.id, reason } });
   }
 

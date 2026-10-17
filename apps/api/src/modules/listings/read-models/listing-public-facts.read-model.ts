@@ -16,6 +16,7 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { sellerNotSuspendedSql, sellerSuspendedExpr } from '../../../shared/sql/member-suspension.sql';
 import { NO_PUBLIC_FACTS, PublicListingFacts, PublicLotAttribute } from '../domain/listing-public.view';
 import { confirmedGradeIdSql, districtNameSql } from './public-listing.sql';
+import { CERTIFIED_SQL } from './certified.sql';
 
 /** A lot carries at most this many attributes on a buyer's page (bounded read — Law 11; a category binds a handful). */
 export const MAX_PUBLIC_ATTRIBUTES = 50;
@@ -26,9 +27,10 @@ export class ListingPublicFactsReadModel {
 
   async forListing(tenantId: string, listingId: string): Promise<PublicListingFacts> {
     try {
-      const r = await this.replica.forTenant(tenantId).query<{ slug: string | null; display_name: string | null; district: string | null; grade: string | null }>(
+      const r = await this.replica.forTenant(tenantId).query<{ slug: string | null; display_name: string | null; district: string | null; grade: string | null; organic_covered: boolean | null }>(
         `SELECT t.slug, t.display_name,
                 ${districtNameSql('l')} AS district,
+                ${CERTIFIED_SQL('l')} AS organic_covered,
                 (SELECT g.default_name FROM attribute_options g WHERE g.id = ${confirmedGradeIdSql('l')}) AS grade
            FROM listings l
            JOIN tenants t ON t.id = l.tenant_id
@@ -39,6 +41,7 @@ export class ListingPublicFactsReadModel {
         organisation: x.slug && x.display_name ? { slug: x.slug, name: x.display_name } : null,
         district: x.district ?? null,
         grade: x.grade ?? null,
+        organicCovered: x.organic_covered === true,   // STORE-5b · B18: the badge rule (a failed read degrades to "no facts" → not covered)
         attributes: await this.attributes(tenantId, listingId).catch(() => []),
       };
     } catch {

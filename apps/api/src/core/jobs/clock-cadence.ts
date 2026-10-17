@@ -22,6 +22,14 @@
 //                                           order or booking completed within the last 7 days, its window still open) and ONE `review.reminder`
 //                                           `reviews.reminder_after_days` after the invite while the window is open and nobody has reviewed the
 //                                           order — no money moves; an invite is late by at most an hour
+//   trace-anchor              every 24 h    PC-56 STORE-5b · D3 (founder Q14, survey C-3 / F-9): the DAILY PLATFORM SEAL — every lot whose chain
+//                                           head is not what its seal stamps (never sealed, or events added since) is re-sealed (`blockchain_anchor`,
+//                                           `anchored_at`, `anchored_event_count`), per organisation with `traceability` ON; audited per lot
+//                                           (`trace.lot_sealed`) — no money moves; a new event waits at most a day ("not yet sealed")
+//   certificate-expiry        every 24 h    PC-56 STORE-5b · D1 (survey C-5): a VERIFIED certificate past its `valid_until` flips to `expired`
+//                                           (`catalogue.certificate_expired` — no consumer needed: the badge rule reads the certificate at read
+//                                           time); flag-independent (expiry is a fact) — no money moves; the public read already says "expired"
+//                                           the day validity passes, before this clock runs
 export const CLOCK_CADENCE_MS = Object.freeze({
   'seller-confirm-timeout': 5 * 60_000,
   'quality-window-complete': 15 * 60_000,
@@ -30,6 +38,8 @@ export const CLOCK_CADENCE_MS = Object.freeze({
   'dispute-seller-response-timeout': 15 * 60_000,
   'dispute-sla-escalation': 60 * 60_000,
   'review-prompts': 60 * 60_000,
+  'trace-anchor': 24 * 60 * 60_000,
+  'certificate-expiry': 24 * 60 * 60_000,
 } as const);
 
 export type ClockName = keyof typeof CLOCK_CADENCE_MS;

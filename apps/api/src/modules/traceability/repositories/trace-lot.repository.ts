@@ -50,11 +50,53 @@ export class TraceLotRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM trace_lots WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
   }
-  /** PUBLIC scan — PC-56 HOTFIX-7 · B10 / B25: the SECURITY DEFINER `trace_scan_v2` (migration 0217): NULL unless the lot's organisation is
-   *  publicly live; meta keys allow-listed per step; the organisation's display name; `tenantId` for the per-tenant flag (the service strips it).
-   *  0028's `trace_scan` is no longer called. qr_token is the capability. */
+  /** PUBLIC scan — PC-56 STORE-5b · B10 / D8: the SECURITY DEFINER `trace_scan_v3` (migration 0219; 0217's `trace_scan_v2` is no longer
+   *  called): NULL for an unknown token; `{live:false, wasLive}` for a lot whose organisation is not live; otherwise the organisation, product,
+   *  place, events (hashes, versions, allow-listed meta), the seal and the lot's certificates, with `lotId` / `tenantId` for the service (it
+   *  strips both). qr_token is the capability. */
   async scan(tx: TxContext, qrToken: string): Promise<Record<string, unknown> | null> {
-    const r = await tx.query(`SELECT trace_scan_v2($1) AS provenance`, [qrToken]);
+    const r = await tx.query(`SELECT trace_scan_v3($1) AS provenance`, [qrToken]);
     return r.rows[0]?.provenance ?? null;
+  }
+
+  /** PC-56 STORE-5b · D1 / B19: the lot's certificates — the ONE link (trace_lot_certificates). Only a certificate of THIS organisation is
+   *  linked (the JOIN refuses a foreign or unknown id — it is dropped, never an error that names another organisation's id). */
+  async linkCertificates(tx: TxContext, tenantId: string, lotId: string, certificateIds: readonly string[]): Promise<number> {
+    if (!certificateIds.length) return 0;
+    const r = await tx.query(
+      `INSERT INTO trace_lot_certificates (tenant_id, trace_lot_id, certificate_id)
+       SELECT $1, $2, c.id FROM certificates c WHERE c.tenant_id = $1 AND c.deleted_at IS NULL AND c.id = ANY($3::uuid[])
+       ON CONFLICT (trace_lot_id, certificate_id) DO NOTHING`, [tenantId, lotId, [...new Set(certificateIds)]]);
+    return r.rowCount ?? 0;
+  }
+
+  /** PC-56 STORE-5b · D3 — THE SEAL CLOCK'S CANDIDATES (the runner's kv_relay pool, read only): organisations with at least one lot whose chain
+   *  head is not what its seal stamps (never sealed, or events added since). Bounded. */
+  async tenantsDueForSeal(relay: { query: TxContext['query'] }, limit: number): Promise<string[]> {
+    const r = await relay.query(
+      `SELECT DISTINCT l.tenant_id FROM trace_lots l
+         CROSS JOIN LATERAL (SELECT e.event_hash FROM trace_events e WHERE e.trace_lot_id = l.id AND e.tenant_id = l.tenant_id ORDER BY e.created_at DESC, e.id DESC LIMIT 1) h
+        WHERE l.deleted_at IS NULL AND (l.anchored_at IS NULL OR l.blockchain_anchor IS DISTINCT FROM h.event_hash)
+        LIMIT $1`, [limit]);
+    return r.rows.map((x: { tenant_id: string }) => x.tenant_id);
+  }
+
+  /** PC-56 STORE-5b · D3 — SEAL one organisation's lots (as kv_app, the tenant's own transaction): every lot whose chain head differs from its
+   *  seal (or that was never sealed) is stamped with the head, the instant and the number of events it covers. Bounded per run; a lot whose
+   *  head moves after this tick is re-sealed by the next one. Returns what was sealed (for the audit). */
+  async sealDue(tx: TxContext, tenantId: string, limit: number): Promise<Array<{ id: string; anchor: string; eventCount: number }>> {
+    const r = await tx.query(
+      `WITH cand AS (
+         SELECT l.id, h.event_hash, (SELECT count(*)::int FROM trace_events e2 WHERE e2.trace_lot_id = l.id AND e2.tenant_id = l.tenant_id) AS n
+           FROM trace_lots l
+           CROSS JOIN LATERAL (SELECT e.event_hash FROM trace_events e WHERE e.trace_lot_id = l.id AND e.tenant_id = l.tenant_id ORDER BY e.created_at DESC, e.id DESC LIMIT 1) h
+          WHERE l.tenant_id = $1 AND l.deleted_at IS NULL AND h.event_hash IS NOT NULL
+            AND (l.anchored_at IS NULL OR l.blockchain_anchor IS DISTINCT FROM h.event_hash)
+          ORDER BY l.created_at, l.id
+          LIMIT $2)
+       UPDATE trace_lots l SET blockchain_anchor = cand.event_hash, anchored_at = now(), anchored_event_count = cand.n, updated_at = now()
+         FROM cand WHERE l.id = cand.id AND l.tenant_id = $1
+       RETURNING l.id, l.blockchain_anchor, l.anchored_event_count`, [tenantId, limit]);
+    return r.rows.map((x: { id: string; blockchain_anchor: string; anchored_event_count: number }) => ({ id: x.id, anchor: x.blockchain_anchor, eventCount: Number(x.anchored_event_count) }));
   }
 }

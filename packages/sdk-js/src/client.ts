@@ -6,6 +6,7 @@ import { ListingsResource } from './resources/listings';
 import { CatalogueResource } from './resources/catalogue';
 import { LookupsResource } from './resources/lookups';
 import { TraceabilityResource } from './resources/traceability';
+import { CertificatesResource } from './resources/certificates';
 import { AuthResource } from './resources/auth';
 import { MediaResource } from './resources/media';
 import { PaymentsResource, PayoutsResource, WalletResource, OrgWalletResource, PayoutConsoleResource, SettlementsResource, AutopayResource } from './resources/payments';
@@ -73,6 +74,8 @@ export class KrishalayaClient {
   readonly catalogue: CatalogueResource;
   readonly lookups: LookupsResource;
   readonly traceability: TraceabilityResource;
+  /** PC-56 STORE-5b · D1: the public certificate page's reads */
+  readonly certificates: CertificatesResource;
   readonly auth: AuthResource;
   readonly media: MediaResource;
   readonly payments: PaymentsResource;
@@ -212,6 +215,7 @@ export class KrishalayaClient {
     this.catalogue = new CatalogueResource(this.http);
     this.lookups = new LookupsResource(this.http);
     this.traceability = new TraceabilityResource(this.http);
+    this.certificates = new CertificatesResource(this.http);
     this.auth = new AuthResource(this.http);
     this.media = new MediaResource(this.http);
     this.payments = new PaymentsResource(this.http);

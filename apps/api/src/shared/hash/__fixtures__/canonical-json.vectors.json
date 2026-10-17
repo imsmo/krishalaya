@@ -1,0 +1,143 @@
+{
+  "_comment": "PC-56 STORE-5b · B11 — the canonical-JSON and chain-hash v2 vectors, written by an independent implementation; read by apps/api shared/hash and traceability specs AND by apps/web-storefront test/store5b-trace.spec.ts. Do not regenerate to make a failing implementation pass.",
+  "canonical": [
+    {
+      "name": "empty object",
+      "value": {},
+      "canonical": "{}"
+    },
+    {
+      "name": "key order does not matter",
+      "value": {
+        "variety": "GG-20",
+        "unit": "quintal",
+        "quantity": 25
+      },
+      "canonical": "{\"quantity\":25,\"unit\":\"quintal\",\"variety\":\"GG-20\"}"
+    },
+    {
+      "name": "the same, another order",
+      "value": {
+        "quantity": 25,
+        "variety": "GG-20",
+        "unit": "quintal"
+      },
+      "canonical": "{\"quantity\":25,\"unit\":\"quintal\",\"variety\":\"GG-20\"}"
+    },
+    {
+      "name": "nested objects sort at every depth",
+      "value": {
+        "b": {
+          "y": 1,
+          "x": [
+            {
+              "d": 2,
+              "c": 1
+            }
+          ]
+        },
+        "a": true
+      },
+      "canonical": "{\"a\":true,\"b\":{\"x\":[{\"c\":1,\"d\":2}],\"y\":1}}"
+    },
+    {
+      "name": "numbers as JSON prints them",
+      "value": {
+        "a": 2.5,
+        "b": -0.125,
+        "c": 1e+21,
+        "d": 100
+      },
+      "canonical": "{\"a\":2.5,\"b\":-0.125,\"c\":1e+21,\"d\":100}"
+    },
+    {
+      "name": "strings escaped as JSON",
+      "value": {
+        "s": "quote \" back \\\\ tab \t newline \n",
+        "g": "ગુજરાતી हिंदी"
+      },
+      "canonical": "{\"g\":\"ગુજરાતી हिंदी\",\"s\":\"quote \\\" back \\\\\\\\ tab \\t newline \\n\"}"
+    },
+    {
+      "name": "null and booleans",
+      "value": {
+        "n": null,
+        "t": true,
+        "f": false
+      },
+      "canonical": "{\"f\":false,\"n\":null,\"t\":true}"
+    },
+    {
+      "name": "arrays keep their order",
+      "value": [
+        3,
+        1,
+        2,
+        {
+          "z": 0,
+          "a": 0
+        }
+      ],
+      "canonical": "[3,1,2,{\"a\":0,\"z\":0}]"
+    },
+    {
+      "name": "upper case sorts before lower case (UTF-16)",
+      "value": {
+        "b": 1,
+        "B": 2,
+        "a": 3,
+        "A": 4
+      },
+      "canonical": "{\"A\":4,\"B\":2,\"a\":3,\"b\":1}"
+    }
+  ],
+  "chainV2": [
+    {
+      "prev": "0219e000-0000-7000-8000-00000000c0de",
+      "lotId": "0219e000-0000-7000-8000-00000000c0de",
+      "eventCode": "harvested",
+      "meta": {
+        "variety": "GG-20",
+        "quantity": 25,
+        "unit": "quintal"
+      },
+      "at": "2026-10-16T18:30:00.123000Z",
+      "input": "0219e000-0000-7000-8000-00000000c0de|0219e000-0000-7000-8000-00000000c0de|harvested|{\"quantity\":25,\"unit\":\"quintal\",\"variety\":\"GG-20\"}|2026-10-16T18:30:00.123000Z",
+      "hash": "7a23d2e7a65578e7a752d9b2026bb754d10aa1250d38d0da34c7cfc442792a9c"
+    },
+    {
+      "prev": "7a23d2e7a65578e7a752d9b2026bb754d10aa1250d38d0da34c7cfc442792a9c",
+      "lotId": "0219e000-0000-7000-8000-00000000c0de",
+      "eventCode": "packed",
+      "meta": {
+        "packCount": 50,
+        "packType": "jute bag"
+      },
+      "at": "2026-10-17T04:05:06.789000Z",
+      "input": "7a23d2e7a65578e7a752d9b2026bb754d10aa1250d38d0da34c7cfc442792a9c|0219e000-0000-7000-8000-00000000c0de|packed|{\"packCount\":50,\"packType\":\"jute bag\"}|2026-10-17T04:05:06.789000Z",
+      "hash": "16f6dab05012b76ac2f90e00c12a0078eaeee33d07a4bf084f2626e2cf25c055"
+    },
+    {
+      "prev": "16f6dab05012b76ac2f90e00c12a0078eaeee33d07a4bf084f2626e2cf25c055",
+      "lotId": "0219e000-0000-7000-8000-00000000c0de",
+      "eventCode": "in_transit",
+      "meta": {
+        "mode": "road"
+      },
+      "at": "2026-10-17T05:00:00.000000Z",
+      "input": "16f6dab05012b76ac2f90e00c12a0078eaeee33d07a4bf084f2626e2cf25c055|0219e000-0000-7000-8000-00000000c0de|in_transit|{\"mode\":\"road\"}|2026-10-17T05:00:00.000000Z",
+      "hash": "0875e7914dcccb5bce66870f42b16a40d2ab18a109d6787664398364bd1eae07"
+    }
+  ],
+  "v1": {
+    "prev": "0219e000-0000-7000-8000-00000000c0de",
+    "lotId": "0219e000-0000-7000-8000-00000000c0de",
+    "eventCode": "harvested",
+    "meta": {
+      "variety": "GG-20",
+      "quantity": 25,
+      "unit": "quintal"
+    },
+    "hash": "a4eb1367d63f20e707deb8d0d4395070e2b940a57218d4db585a3de09c5953e2"
+  }
+}

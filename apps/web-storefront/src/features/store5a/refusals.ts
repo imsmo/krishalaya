@@ -6,7 +6,8 @@
 //
 // THE SURFACE TYPE: a NEW union, `Store5Surface` (the brief's choice "extend the existing registry type or add Store5Surface" — added, so the
 // 4-series union stays the 4-series'); components/RefusalList.tsx accepts it beside the others.
-export type Store5Surface = 'review' | 'review_edit' | 'accessibility';
+// PC-56 STORE-5b · C7: + the trace pages' five surfaces (features/store5b/refusals.ts `STORE5B_REFUSALS`).
+export type Store5Surface = 'review' | 'review_edit' | 'accessibility' | 'trace' | 'trace_verify' | 'trace_export' | 'certificate' | 'dairy_trace';
 export interface Store5Refusal { id: string; canon: string; surfaces: readonly Store5Surface[]; key: string; why: string }
 
 export const STORE5A_REFUSALS: readonly Store5Refusal[] = Object.freeze([

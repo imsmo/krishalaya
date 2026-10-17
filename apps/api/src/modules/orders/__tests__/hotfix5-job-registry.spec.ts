@@ -48,7 +48,8 @@ describe('PC-56 HOTFIX-5 · (1) the three clocks are in SCHEDULED_JOB_REGISTRY a
     // PC-56 STORE-3c · B8: the table also carries the group-lot deadline clock (its own registry spec: group-lots/__tests__/store3c-deadline-registry.spec.ts)
     // PC-56 HOTFIX-7 · B23: + the two dispute clocks (their registry case: the hotfix7 live spec, group (9))
     // PC-56 STORE-5a · B3: + the review-prompts clock (one invite, one reminder; its registry case: the store5a live spec, group (9))
-    expect([...CLOCK_NAMES].sort()).toEqual(['dispute-seller-response-timeout', 'dispute-sla-escalation', 'group-lots-deadline', 'offers-expire', 'quality-window-complete', 'review-prompts', 'seller-confirm-timeout']);
+    // PC-56 STORE-5b · D1 / D3: + certificate-expiry and trace-anchor (daily; their registry case: the store5b live spec)
+    expect([...CLOCK_NAMES].sort()).toEqual(['certificate-expiry', 'dispute-seller-response-timeout', 'dispute-sla-escalation', 'group-lots-deadline', 'offers-expire', 'quality-window-complete', 'review-prompts', 'seller-confirm-timeout', 'trace-anchor']);
   }, 120_000);
 });
 

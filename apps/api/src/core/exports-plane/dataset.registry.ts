@@ -48,12 +48,24 @@ export interface DatasetProducer<P = Record<string, unknown>> {
    * (`enqueueInTx`), never by the generic `enqueue`. Absent / false = the tenant rules, unchanged.
    */
   readonly personal?: boolean;
+  /**
+   * [PC-56 STORE-5b · founder D2] REQUESTER-ONLY — the generalisation of `personal` (which stays, an alias, so `identity.dpdp_person` is
+   * untouched): a file made FOR the person who asked (the trace record, `traceability.lot_record` — a lot that may belong to another
+   * organisation), readable by its requester only, from whichever organisation their session is in, not behind `tenant_exports`, enqueued only
+   * by its owner module's own act. The plane's ONE check (`isRequesterOnly`) reads either flag.
+   */
+  readonly requesterOnly?: boolean;
   /** Strict zod schema for `params`; the enqueue validates and STORES the parsed value, so a job's params are canonical. */
   readonly params: ZodTypeAny & { _output: P };
   /** The dataset's name in every language the notice can be sent in (seed 0017 → `ui_messages`). Read at ready time. */
   datasetName(): Promise<LangMap>;
   /** Make the file. MUST NOT write anything; it is a read that happens to be long. */
   produce(ctx: ProduceContext, params: P): Promise<ProduceOutcome>;
+}
+
+/** [PC-56 STORE-5b] The plane's one rule for a file made for its requester: `requesterOnly`, or its alias `personal` (STORE-4a). */
+export function isRequesterOnly(p: Pick<DatasetProducer<unknown>, 'personal' | 'requesterOnly'> | null | undefined): boolean {
+  return p?.requesterOnly === true || p?.personal === true;
 }
 
 export class DatasetRegistry {

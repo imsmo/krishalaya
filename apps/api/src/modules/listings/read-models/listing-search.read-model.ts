@@ -30,6 +30,9 @@ import { QueryListingDto, ListingSort } from '../dto/query-listing.dto';
 import { DomainError } from '../../../shared/errors/app-error';
 import { US_SQL, UUID_RE } from '../../../shared/pagination/us-keyset';
 import { confirmedGradeIdSql, districtIdSql, districtNameSql, licenceRequiredSql } from './public-listing.sql';
+// PC-56 STORE-5b · D1 / B18: the badge rule, written once (a listing is `certified` only while a verified organic certificate covers it)
+import { CERTIFIED_SQL } from './certified.sql';
+import { organicWire } from '../domain/organic-claim';
 
 // Browse/search is tenant-scoped (a storefront belongs to a tenant). A blank/invalid tenant is a CLIENT error,
 // not a server fault: reject it with a clean 400 before it reaches the DB (where binding '' as a uuid would 500).
@@ -57,7 +60,9 @@ export interface PublicListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string; quantityAvailable: number;
   /** legacy boolean (either claim) — kept for existing readers; `organic` is the split */
   organicClaim: boolean;
-  organic: 'certified' | 'natural' | null;
+  /** PC-56 STORE-5b · D1 / B18: `certified` only while a verified organic certificate covers the lot; a `certified` claim without one is
+   *  `self_declared` ("organic (self-declared)"); `natural` is the seller's practice; null = no claim. */
+  organic: 'certified' | 'self_declared' | 'natural' | null;
   saleType: string; status: string; boosted: boolean;
   grade: string | null; district: string | null;
   organisation: { slug: string; name: string } | null;
@@ -68,7 +73,8 @@ export interface PublicListingCard {
 export interface FacetValue { id: string; name: string; count: number }
 export interface ListingFacets {
   grade: FacetValue[]; ungraded: number;
-  organic: { certified: number; natural: number; none: number };
+  /** STORE-5b: `certified` counts COVERED lots only; `selfDeclared` the certified claims without a covering certificate */
+  organic: { certified: number; selfDeclared: number; natural: number; none: number };
   district: FacetValue[];
   /** the sale types present under the filters (`id` = the sale type; the storefront names it) */
   saleType: Array<{ id: string; count: number }>;
@@ -186,6 +192,9 @@ export class ListingSearchReadModel {
       else if (q.grade) where.push(`${confirmedGradeIdSql('l')} = ${p(q.grade)}::uuid`);
       if (q.saleType) where.push(`l.sale_type = ${p(q.saleType)}`);
       if (q.organic === 'any') where.push(`l.organic_claim IN ('certified','natural')`);
+      // PC-56 STORE-5b · B18: `certified` = the claim AND a covering certificate (the filter's name is unchanged; a self-declared claim no longer
+      // answers it — the owner view keeps its own rows whatever they claim)
+      else if (q.organic === 'certified') where.push(owner ? `l.organic_claim = 'certified'` : CERTIFIED_SQL('l'));
       else if (q.organic) where.push(`l.organic_claim = ${p(q.organic)}`);
       if (q.priceMinMinor) where.push(`l.price_minor >= ${p(q.priceMinMinor)}`);
       if (q.priceMaxMinor) where.push(`l.price_minor <= ${p(q.priceMaxMinor)}`);
@@ -202,7 +211,8 @@ export class ListingSearchReadModel {
                t.slug AS org_slug, t.display_name AS org_name,
                (SELECT kvo.default_name FROM attribute_options kvo WHERE kvo.id = ${confirmedGradeIdSql('l')}) AS grade_name,
                ${districtNameSql('l')} AS district_name,
-               ${licenceRequiredSql('l', 'CURRENT_DATE')} AS licence_required`;
+               ${licenceRequiredSql('l', 'CURRENT_DATE')} AS licence_required,
+               ${CERTIFIED_SQL('l')} AS organic_covered`;
       const sql = `
         SELECT l.id, l.title, l.price_minor, l.currency_code, l.unit_code, l.quantity_available,
                l.organic_claim, l.sale_type, l.region_id, l.seller_user_id, ${US_SQL('l.created_at')} AS created_us, l.status${publicCols}
@@ -243,7 +253,7 @@ export class ListingSearchReadModel {
         return {
           id: String(row.id), title: row.title, priceMinor: String(row.price_minor), currencyCode: String(row.currency_code).trim(),
           unitCode: row.unit_code, quantityAvailable: Number(row.quantity_available),
-          organicClaim: claim !== null, organic: claim, saleType: row.sale_type, status: row.status, boosted: false,
+          organicClaim: claim !== null, organic: organicWire(claim, row.organic_covered === true), saleType: row.sale_type, status: row.status, boosted: false,
           grade: row.grade_name ?? null, district: row.district_name ?? null,
           organisation: row.org_slug && row.org_name ? { slug: row.org_slug, name: row.org_name } : null,
           licenceRequired: row.licence_required === true,
@@ -263,7 +273,7 @@ export class ListingSearchReadModel {
     const capParam = `$${cp.push(PUBLIC_LISTING_COUNT_CAP)}`;
     const sql = `
       WITH f AS MATERIALIZED (
-        SELECT ${confirmedGradeIdSql('l')} AS g, l.organic_claim AS o, ${districtIdSql('l')} AS d, l.sale_type::text AS s
+        SELECT ${confirmedGradeIdSql('l')} AS g, l.organic_claim AS o, ${CERTIFIED_SQL('l')} AS oc, ${districtIdSql('l')} AS d, l.sale_type::text AS s
           FROM listings l
          WHERE ${where.join(' AND ')}
          LIMIT ${capParam}::int + 1),
@@ -275,7 +285,7 @@ export class ListingSearchReadModel {
                  FROM (SELECT g, count(*)::int AS c FROM f WHERE g IS NOT NULL GROUP BY g) x JOIN attribute_options ao ON ao.id = x.g) END AS grades,
              CASE WHEN n.total <= ${capParam}::int THEN (SELECT count(*)::int FROM f WHERE g IS NULL) END AS ungraded,
              CASE WHEN n.total <= ${capParam}::int THEN (
-               SELECT json_build_object('certified', count(*) FILTER (WHERE o = 'certified'), 'natural', count(*) FILTER (WHERE o = 'natural'),
+               SELECT json_build_object('certified', count(*) FILTER (WHERE oc), 'selfDeclared', count(*) FILTER (WHERE o = 'certified' AND NOT oc), 'natural', count(*) FILTER (WHERE o = 'natural'),
                                         'none', count(*) FILTER (WHERE o IS NULL OR o NOT IN ('certified','natural'))) FROM f) END AS organic,
              CASE WHEN n.total <= ${capParam}::int THEN (
                SELECT COALESCE(json_agg(json_build_object('id', x.d, 'name', ar.default_name, 'count', x.c) ORDER BY x.c DESC, ar.default_name), '[]'::json)
@@ -291,7 +301,7 @@ export class ListingSearchReadModel {
     const facetList = (v: unknown): FacetValue[] => (Array.isArray(v) ? v : []).map((x: Row) => ({ id: String(x.id), name: String(x.name), count: Number(x.count) }));
     const facets: ListingFacets | null = c.grades === null || c.grades === undefined ? null : {
       grade: facetList(c.grades), ungraded: Number(c.ungraded ?? 0),
-      organic: { certified: Number(c.organic?.certified ?? 0), natural: Number(c.organic?.natural ?? 0), none: Number(c.organic?.none ?? 0) },
+      organic: { certified: Number(c.organic?.certified ?? 0), selfDeclared: Number(c.organic?.selfDeclared ?? 0), natural: Number(c.organic?.natural ?? 0), none: Number(c.organic?.none ?? 0) },
       district: facetList(c.districts),
       saleType: (Array.isArray(c.sale_types) ? c.sale_types : []).map((x: Row) => ({ id: String(x.id), count: Number(x.count) })),
     };

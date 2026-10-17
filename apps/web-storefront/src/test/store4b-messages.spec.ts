@@ -115,6 +115,7 @@ describe('STORE-4b · the refusal registry', () => {
     expect(k(hi)).toEqual(k(en)); expect(k(gu)).toEqual(k(en));
     // PC-56 HOTFIX-7: + trace.recordedBy / trace.notPublishedTitle / trace.notPublishedBody (×3) → 1,933
     // PC-56 STORE-5a: + 113 store5a.* + store3a.received.confirmCod; − store3a.received.codLine and the seven retired platform-form review.* keys → 2,039
-    expect(Object.keys(en).length).toBe(2039);
+    // PC-56 STORE-5b: + 163 (store5b.* 144, trace.step.* 9, trace.meta.* 8, the self_declared chip ×2) − 5 retired v2 trace.* keys → 2,197
+    expect(Object.keys(en).length).toBe(2197);
   });
 });

@@ -22,6 +22,6 @@ export const DecideCertificateSchema = z.object({
   decision: z.enum(['verify', 'reject']),
   validFrom: Day.optional(),     // verify: optionally (re)set the validity window
   validUntil: Day.optional(),
-  reason: z.string().trim().min(3).max(1000).optional(),   // required-ish for reject; enforced in the service
+  reason: z.string().trim().min(3).max(500).optional(),   // required-ish for reject; enforced in the service. STORE-5b: ≤ 500 — it is stored on the row (0219)
 }).strict().refine((d) => d.decision !== 'reject' || (d.reason && d.reason.length >= 3), { message: 'reason is required to reject' });
 export type DecideCertificateDto = z.infer<typeof DecideCertificateSchema>;

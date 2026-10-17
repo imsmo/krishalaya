@@ -19,6 +19,7 @@
 // And the TOMBSTONE (B16): what a buyer may know about a lot that is no longer on sale — `toListingTombstone` below, with NO price and NO
 // quantity.
 import type { ListingProps } from './listing.entity';
+import { organicWire } from './organic-claim';
 
 /** One measured attribute of THIS lot, as master data names it. `value` is the DB's own text of the value (numbers trimmed of trailing
  *  zeros, dates YYYY-MM-DD, an option's display name); `kind` lets a page localise a yes/no. */
@@ -35,6 +36,9 @@ export interface PublicListingFacts {
   sellerSuspended?: boolean;
   /** STORE-2a (B30): the lot's measured attributes. */
   attributes?: PublicLotAttribute[];
+  /** PC-56 STORE-5b · D1 / B18: does a verified, organic, valid-today certificate cover the lot (read-models/certified.sql.ts)? Absent / a
+   *  failed read = false — a `certified` claim then reads `self_declared` (fail closed: never the badge on a read that could not check). */
+  organicCovered?: boolean;
 }
 export const NO_PUBLIC_FACTS: PublicListingFacts = Object.freeze({ organisation: null, district: null, grade: null, sellerSuspended: false, attributes: [] });
 
@@ -43,6 +47,8 @@ export interface PublicListing {
   id: string; title: string; description: string | null; categoryId: string; productId: string;
   grade: string | null; unitCode: string; priceMinor: string; currencyCode: string;
   quantityAvailable: number; quantityTotal: number; minOrderQty: number; harvestDate: string | null;
+  /** PC-56 STORE-5b · D1 / B18: the PUBLIC claim — `certified` only while a certificate covers it, `self_declared` for a certified claim
+   *  without one, `natural`, or `none` (it used to be the seller's raw word) */
   organicClaim: string | null; organic: boolean; saleType: string; status: string;
   district: string | null; organisation: { slug: string; name: string } | null;
   publishedAt: string | null;
@@ -67,7 +73,8 @@ export function toPublicListing(p: Readonly<ListingProps>, facts: PublicListingF
     grade: facts.grade, unitCode: p.unitCode, priceMinor: String(p.priceMinor), currencyCode: p.currencyCode,
     quantityAvailable: Number(p.quantityAvailable), quantityTotal: Number(p.quantityTotal), minOrderQty: Number(p.minOrderQty),
     harvestDate: p.harvestDate ?? null,
-    organicClaim: claim, organic: claim !== null && claim !== 'none', saleType: p.saleType, status: p.status,
+    organicClaim: claim === null ? null : claim === 'certified' || claim === 'natural' ? organicWire(claim, facts.organicCovered === true) : claim,
+    organic: claim !== null && claim !== 'none', saleType: p.saleType, status: p.status,
     district: facts.district, organisation: org,
     publishedAt: iso(p.publishedAt),
     gradeConfirmed: facts.grade ? { name: facts.grade, gradedBy: org ? org.name : null } : null,

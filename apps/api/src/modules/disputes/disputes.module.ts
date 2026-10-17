@@ -60,8 +60,9 @@ export class DisputesModule implements OnModuleInit {
     // return money trail had neither an executor nor a stamp before it.
     this.registry.register(this.returnRefundedStamp);
     // PC-56 HOTFIX-7 · B23 (survey C-6 / F-10): the respondent's 48 h and the 7-day SLA are acted on at last (no money, no notice — the header of
-    // jobs/disputes.cadence-jobs.ts). CertificateExpiryAlertsJob and runAnchorHashes stay unregistered (5b decides them); ReviewPromptsJob is
-    // registered by reviews.module.ts since STORE-5a (the `review-prompts` clock).
+    // jobs/disputes.cadence-jobs.ts). ReviewPromptsJob is registered by reviews.module.ts since
+    // STORE-5a (the `review-prompts` clock); since STORE-5b catalogue.module.ts registers `certificate-expiry` and traceability.module.ts
+    // `trace-anchor` (the daily seal — runAnchorHashes is gone).
     this.jobs.register(this.sellerResponseClock);
     this.jobs.register(this.slaClock);
   }

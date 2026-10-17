@@ -21,6 +21,8 @@ import { STORE4C_REFUSALS } from '../features/store4c/refusals';
 import { STORE4B_REFUSALS } from '../features/store4b/refusals';
 // PC-56 STORE-5a: and `STORE5A_REFUSALS` (the review page and its chains, the accessibility page) — surfaces of the new `Store5Surface` union.
 import { STORE5A_REFUSALS, type Store5Surface } from '../features/store5a/refusals';
+// PC-56 STORE-5b: and `STORE5B_REFUSALS` (the trace, verify, export, certificate and dairy-trace pages — the same `Store5Surface` union).
+import { STORE5B_REFUSALS } from '../features/store5b/refusals';
 
 export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface | Store3cSurface | Store4Surface | Store5Surface }) {
   const t = getTranslator();
@@ -36,6 +38,7 @@ export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurf
     ...STORE4C_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE4B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE5A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
+    ...STORE5B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
   ];
   return (
     <section className="kv-refused" data-kv-refused={surface} aria-labelledby={`kv-refused-${surface}`}>

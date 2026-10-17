@@ -75,6 +75,28 @@ describe('STORE-1a · brand guard', () => {
     for (const k of keys) for (const lit of PLATFORM_LITERALS) expect([k, (cat as Record<string, string>)[k].includes(lit)]).toEqual([k, false]);
   });
 
+  // PC-56 STORE-5b · C7 (founder D7 / Q15): the trace, verify, export, certificate and dairy pages live under the HOST's chrome (an organisation's
+  // store shows its own mark) — none of their sentences names the platform or carries a brand-domain literal; the screens and the pure helpers
+  // carry no `krishalaya.in` either (the QR's URL is the host's own /trace/<token>)
+  it.each(Object.entries(CATS))('%s: no STORE-5b value carries the platform\'s name or a brand domain', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store5b.') || k.startsWith('trace.step.') || k.startsWith('trace.meta.'));
+    expect(keys.length).toBeGreaterThan(150);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      for (const lit of PLATFORM_LITERALS) expect([k, v.includes(lit)]).toEqual([k, false]);
+      expect([k, /krishalaya\.in|\.in\/c\//i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('STORE-5b: no brand-domain literal in the trace screens, routes or helpers', () => {
+    const { readdirSync, readFileSync, statSync } = jest.requireActual('node:fs') as typeof import('node:fs');
+    const { join } = jest.requireActual('node:path') as typeof import('node:path');
+    const files: string[] = [];
+    const walk = (d: string) => { for (const e of readdirSync(d)) { const p = join(d, e); if (statSync(p).isDirectory()) walk(p); else if (/\.tsx?$/.test(e)) files.push(p); } };
+    for (const d of ['components/trace', 'features/store5b', 'app/(platform)/trace', 'app/(platform)/certificates', 'app/[tenantSlug]/trace', 'app/[tenantSlug]/certificates']) walk(join(__dirname, '..', d));
+    expect(files.length).toBeGreaterThan(20);
+    for (const f of files) expect([f, /krishalaya\.in/i.test(readFileSync(f, 'utf8'))]).toEqual([f, false]);
+  });
+
   it('the one brand entry: the token name in English, the decided vernacular spellings in hi / gu', () => {
     expect(en['brand.platform']).toBe(PLATFORM_BRAND.name);
     expect(hi['brand.platform']).toBe('कृषालय');

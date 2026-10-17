@@ -16,7 +16,8 @@ import type { PublicListingView } from '../listing/public-view';
 
 export interface LotFacts {
   grade: { name: string; gradedBy: string | null } | null;
-  organic: 'certified' | 'natural' | null;
+  /** PC-56 STORE-5b · C6: + `self_declared` (a certified claim no verified certificate covers — the API's badge rule) */
+  organic: 'certified' | 'self_declared' | 'natural' | null;
   harvestDay: string | null;           // YYYY-MM-DD
   traceable: boolean;
   available: number; total: number; minOrder: number; unit: string;
@@ -27,7 +28,7 @@ export interface LotFacts {
 export function lotFacts(v: PublicListingView): LotFacts {
   return {
     grade: v.gradeConfirmed ? { name: v.gradeConfirmed.name, gradedBy: v.gradeConfirmed.gradedBy } : null,
-    organic: v.organicClaim === 'certified' || v.organicClaim === 'natural' ? v.organicClaim : null,
+    organic: v.organicClaim === 'certified' || v.organicClaim === 'self_declared' || v.organicClaim === 'natural' ? v.organicClaim : null,
     harvestDay: v.harvestDate && /^\d{4}-\d{2}-\d{2}/.test(v.harvestDate) ? v.harvestDate.slice(0, 10) : null,
     traceable: Boolean(v.qrToken),
     available: v.quantityAvailable, total: v.quantityTotal, minOrder: v.minOrderQty, unit: v.unitCode,

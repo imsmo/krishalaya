@@ -101,7 +101,7 @@ export default async function TenantSearch({ params, searchParams }: { params: {
               <div className="kv-grid">
                 {res.data.items.map((l) => (
                   <ListingCard key={l.id} listing={l} tenantSlug={slug} lang={lang} labels={{
-                    organic: t.t('card.organic'), available: t.t('card.available'), certified: t.t('browse.organic.certified'), natural: t.t('browse.organic.natural'),
+                    organic: t.t('card.organic'), available: t.t('card.available'), certified: t.t('browse.organic.certified'), selfDeclared: t.t('browse.organic.self_declared'), natural: t.t('browse.organic.natural'),
                     licence: t.t('lot.licenceRequired'),
                     soldBy: l.district ? t.t('browse.card.soldByIn', { org: l.organisation?.name ?? org, district: l.district }) : t.t('card.soldBy', { org: l.organisation?.name ?? org }),
                   }} />

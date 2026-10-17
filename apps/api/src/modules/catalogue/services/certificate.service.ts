@@ -10,7 +10,7 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { Certificate } from '../domain/certificate.entity';
-import { CertificateNotFoundError, InvalidCertificateError } from '../domain/catalogue.errors';
+import { CertificateNotFoundError, CertificateTypeUnknownError, InvalidCertificateError } from '../domain/catalogue.errors';
 import { CertificateRepository } from '../repositories/certificate.repository';
 import { CreateCertificateDto, DecideCertificateDto } from '../dto/create-certificate.dto';
 import { QueryCertificateDto } from '../dto/query-certificate.dto';
@@ -42,6 +42,8 @@ export class CertificateService {
           validFrom: dto.validFrom ?? null, validUntil: dto.validUntil ?? null, blockchainAnchor: null,
         });
         await this.uow.run(tenantId, async (tx) => {
+          // PC-56 STORE-5b · B17 (survey C-9): the type must be a `cert_type` value (0219 seeds the seven platform types) — it was any uuid
+          if (!(await this.repo.isCertType(tx, tenantId, dto.certTypeId))) throw new CertificateTypeUnknownError();
           await this.repo.insert(tx, cert);
           await this.flush(tx, tenantId, id, cert.pullEvents());
         }, { userId: actorUserId });

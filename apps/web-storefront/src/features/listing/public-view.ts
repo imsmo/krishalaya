@@ -12,7 +12,8 @@ export interface PublicListingView {
   id: string; title: string; description: string | null; categoryId: string | null;
   priceMinor: string; currencyCode: string; unitCode: string;
   quantityAvailable: number; quantityTotal: number; minOrderQty: number; harvestDate: string | null;
-  organic: boolean; organicClaim: 'certified' | 'natural' | null; grade: string | null; saleType: string;
+  /** PC-56 STORE-5b · C6: the API's PUBLIC claim — `certified` only while a certificate covers it, `self_declared` otherwise */
+  organic: boolean; organicClaim: 'certified' | 'self_declared' | 'natural' | null; grade: string | null; saleType: string;
   gradeConfirmed: { name: string; gradedBy: string | null } | null;
   attributes: PublicLotAttribute[];
   district: string | null;
@@ -21,7 +22,7 @@ export interface PublicListingView {
 }
 
 export function publicListingView(l: PublicListingDetail): PublicListingView {
-  const claim = l.organicClaim === 'certified' || l.organicClaim === 'natural' ? l.organicClaim : null;
+  const claim = l.organicClaim === 'certified' || l.organicClaim === 'self_declared' || l.organicClaim === 'natural' ? l.organicClaim : null;
   return {
     id: l.id, title: l.title, description: l.description ?? null, categoryId: l.categoryId ?? null,
     priceMinor: l.priceMinor, currencyCode: l.currencyCode, unitCode: l.unitCode,

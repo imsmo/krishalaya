@@ -87,6 +87,11 @@ describe('PC-56 TENANT-13d · Host routing (storefront)', () => {
     expect(hostRewritePath('anand', '/listings/x')).toBe('/anand/listings/x');
     expect(hostRewritePath('anand', '/manifest.webmanifest')).toBe('/anand/manifest.webmanifest');
     expect(hostRewritePath('anand', '/cart')).toBeNull();
+    // PC-56 STORE-5b (founder D7): the trace and certificate pages are served under the store's chrome on its host
+    expect(hostRewritePath('anand', '/trace/KVTR9J4K2M')).toBe('/anand/trace/KVTR9J4K2M');
+    expect(hostRewritePath('anand', '/trace/KVTR9J4K2M/verify')).toBe('/anand/trace/KVTR9J4K2M/verify');
+    expect(hostRewritePath('anand', '/certificates')).toBe('/anand/certificates');
+    expect(hostRewritePath('anand', '/trace')).toBeNull();   // the code-entry page is the platform's
   });
   it('the storefront\'s own hosts are never sent to the API', () => {
     expect(isOwnHost('localhost:3001', '')).toBe(true); expect(isOwnHost('127.0.0.1', '')).toBe(true);

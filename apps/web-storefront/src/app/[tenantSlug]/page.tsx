@@ -100,7 +100,7 @@ export default async function TenantStorefront(
   const membersOnly = listings.ok ? listings.data.membersOnlyCount ?? null : null;
   const n = (x: number) => formatNumber(x, lang);
   const cardLabels = (o: { organisation?: { name: string } | null; district?: string | null }) => ({
-    organic: t.t('card.organic'), available: t.t('card.available'), certified: t.t('browse.organic.certified'), natural: t.t('browse.organic.natural'),
+    organic: t.t('card.organic'), available: t.t('card.available'), certified: t.t('browse.organic.certified'), selfDeclared: t.t('browse.organic.self_declared'), natural: t.t('browse.organic.natural'),
     licence: t.t('lot.licenceRequired'),
     soldBy: o.district ? t.t('browse.card.soldByIn', { org: o.organisation?.name ?? org, district: o.district }) : t.t('card.soldBy', { org: o.organisation?.name ?? org }),
   });

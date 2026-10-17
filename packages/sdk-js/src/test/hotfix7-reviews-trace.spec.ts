@@ -40,6 +40,7 @@ describe('PC-56 HOTFIX-7 · SDK public reviews keyed by the organisation (B5)', 
 
 describe('PC-56 HOTFIX-7 · SDK public trace v2 (B10 / B25)', () => {
   it('scan returns the organisation-named, uuid-free shape; TRACE_NOT_PUBLISHED is its own code', async () => {
+    // PC-56 STORE-5b: `anchored` is deprecated (optional) — the v3 answer carries `anchor` / `sealed`; the v2 shape still compiles
     const v2: TraceProvenance = { qrToken: 'QR', organisation: { displayName: 'Anand FPO' }, createdAt: '2026-10-17T00:00:00.000Z', anchored: false, events: [{ eventCode: 'harvested', at: '2026-10-17T00:00:00.000Z', meta: { variety: 'GG-20' } }] };
     const ok = fakeFetch(() => ({ body: { data: v2 } }));
     expect(await client(ok.fn).traceability.scan('QR')).toEqual(v2);

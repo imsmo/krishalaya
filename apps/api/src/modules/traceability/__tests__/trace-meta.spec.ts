@@ -4,17 +4,19 @@
 //   (2) no step allow-lists a person / phone / coordinate / address / note / uuid key;
 //   (3) the author's door: a key outside the step's list → refused; a phone-shaped value → refused; a well-formed meta → accepted;
 //   (4) the public answer: `publicMeta` keeps the step's keys whose VALUE passes, drops the rest; `toPublic` strips the tenant id.
+// PC-56 STORE-5b: the parity now reads BOTH migrations — 0217's `trace_scan_v2` (kept, no longer called) and 0219's `trace_meta_allow` (which
+// `trace_scan_v3` uses twice: to keep allow-listed keys and to flag `metaHidden`); `toPublic` became `publicLot` (domain/trace-public.ts).
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { TRACE_META_ALLOW, TRACE_META_NEVER, publicMeta } from '../domain/trace-meta';
 import { TRACE_STEPS } from '../domain/traceability.events';
 import { AppendEventSchema } from '../dto/create-trace-event.dto';
-import { toPublic } from '../services/public-scan.service';
+import { publicLot } from '../domain/trace-public';
 
-const SQL = fs.readFileSync(path.join(__dirname, '../../../../../../db/migrations/0217_hotfix7_trust_money_doors.sql'), 'utf8');
+const SQLS = ['0217_hotfix7_trust_money_doors.sql', '0219_store5b_trace_certificates.sql'].map((f) => [f, fs.readFileSync(path.join(__dirname, '../../../../../../db/migrations', f), 'utf8')] as const);
 
 describe('PC-56 HOTFIX-7 · trace-meta', () => {
-  it('(1) PARITY — the SQL arrays in 0217 equal the TypeScript allow-list, step by step', () => {
+  it.each(SQLS)('(1) PARITY — the SQL arrays in %s equal the TypeScript allow-list, step by step', (_f, SQL) => {
     const sql: Record<string, string[]> = {};
     for (const m of SQL.matchAll(/WHEN '([a-z_]+)'\s+THEN ARRAY\[([^\]]*)\]::text\[\]/g)) sql[m[1]] = [...m[2].matchAll(/'([^']+)'/g)].map((x) => x[1]);
     expect(Object.keys(sql).sort()).toEqual([...TRACE_STEPS].sort());
@@ -38,9 +40,9 @@ describe('PC-56 HOTFIX-7 · trace-meta', () => {
     expect(publicMeta('harvested', { variety: 'call 9898012742' })).toEqual({});
     expect(publicMeta('unknown_step', { variety: 'x' })).toEqual({});
     expect(publicMeta('sold', ['not', 'an', 'object'])).toEqual({});
-    const p = toPublic({ qrToken: 'QR', tenantId: '0217f000-0000-7000-8000-000000000001', organisation: { displayName: 'Anand FPO' }, createdAt: '2026-10-17T00:00:00Z', anchored: false,
+    const p = publicLot({ live: true, qrToken: 'QR', tenantId: '0217f000-0000-7000-8000-000000000001', lotId: '0217f000-0000-7000-8000-000000000002', organisation: { displayName: 'Anand FPO' }, createdAt: '2026-10-17T00:00:00Z',
       events: [{ eventCode: 'harvested', at: '2026-10-17T00:00:00Z', meta: { variety: 'GG-20', farmerName: 'Ramesh' } }] });
-    expect(p).not.toHaveProperty('tenantId');
+    expect(p).not.toHaveProperty('tenantId'); expect(p).not.toHaveProperty('lotId');
     expect(p.organisation.displayName).toBe('Anand FPO');
     expect(p.events[0].meta).toEqual({ variety: 'GG-20' });
     expect(JSON.stringify(p)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);

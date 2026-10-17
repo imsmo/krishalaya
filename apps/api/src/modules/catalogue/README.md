@@ -66,3 +66,14 @@ own fixtures (`test/helpers/fixtures.ts`).
 Global taxonomy CRUD (admin-api), certificates (organic/GI — overlaps KYC, organic phase),
 regulated-product-rule enforcement at listing time (Phase 2 hook), attribute templates & brands
 write, OpenSearch relevance search (Phase 2; current search is replica `search_tsv` + ILIKE).
+
+
+## PC-56 STORE-5b (2026-10-17) — supersedes the claims above where they disagree
+- **`certificate-expiry` is registered** (`CertificateExpiryClock`, daily, flag-independent) — it was never registered (survey C-5). Nothing needs
+  to consume `catalogue.certificate_expired`: the listing badge is read from the certificate at READ time (`listings/read-models/certified.sql.ts`).
+- **The `cert_type` vocabulary exists** (0219: npop · pgs_india · usda_organic · gi_tag · lab_report · gap · halal, hi/gu; `meta.organic` marks the
+  organic schemes); `certTypeId` outside it → 422 `CERTIFICATE_TYPE_UNKNOWN`.
+- `verify` stamps `verified_at`; `reject` stores `rejection_reason` (≤ 500).
+- **The public certificate** `GET /v1/certificates/public/:id` and `GET /v1/certificates/public?no=` (the request's organisation) — SECURITY DEFINER
+  `public_certificate*`, NULL unless the organisation is live; behind `certificates_public` (seeded OFF) → `CERTIFICATE_NOT_PUBLISHED`. "Checked
+  by <organisation> (<the verifier's role>)" — the organisation's check, never the person, never "platform-verified".

@@ -14,3 +14,8 @@ export class AttributeTemplateInvalidError extends DomainError { constructor(cod
 export class CertificateNotFoundError extends DomainError { constructor(id: string) { super('CERTIFICATE_NOT_FOUND', `Certificate ${id} not found`, 404); } }
 export class InvalidCertificateError extends DomainError { constructor(reason: string) { super('CERTIFICATE_INVALID', reason, 422); } }
 export class IllegalCertificateTransitionError extends DomainError { constructor(from: string, to: string) { super('CERTIFICATE_ILLEGAL_TRANSITION', `Certificate cannot move ${from} → ${to}`, 409, { from, to }); } }
+/** PC-56 STORE-5b · B17 (survey C-9): `certTypeId` must be an active value of the `cert_type` vocabulary (0219 seeds the seven platform types). */
+export class CertificateTypeUnknownError extends DomainError { constructor() { super('CERTIFICATE_TYPE_UNKNOWN', 'certTypeId is not a certificate type', 422); } }
+/** PC-56 STORE-5b · D1: the organisation has not published its certificates (`certificates_public` OFF — platform-wide or for it). A NAMED reason,
+ *  distinct from CERTIFICATE_NOT_FOUND: OFF is not "not found". */
+export class CertificateNotPublishedError extends DomainError { constructor() { super('CERTIFICATE_NOT_PUBLISHED', 'This organisation has not published its certificates', 404); } }

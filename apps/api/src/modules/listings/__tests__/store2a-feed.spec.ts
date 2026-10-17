@@ -85,7 +85,8 @@ describe('STORE-2a · B1 — the query grammar', () => {
     await rm.query(T, parse({ grade: G, organic: 'certified', category: G, district: G }));
     const sql = query.mock.calls[0][0] as string;
     expect(sql).toContain(`${confirmedGradeIdSql('l')} = $`);
-    expect(sql).toMatch(/l\.organic_claim = \$\d+/);
+    // PC-56 STORE-5b · B18: `organic=certified` is the BADGE RULE now (the claim AND a covering certificate — read-models/certified.sql.ts)
+    expect(sql).toContain(`(l.organic_claim = 'certified' AND EXISTS (SELECT 1 FROM certificates kvcert`);
     expect(sql).toMatch(/kvc\.path <@ \(SELECT kvp\.path FROM categories kvp/);
     expect(sql).toMatch(/kvr\.path <@ \(SELECT kvp\.path FROM admin_regions kvp/);
     const { rm: rm2, query: q2 } = build();
@@ -118,7 +119,8 @@ describe('STORE-2a · B1 — the public row and the count', () => {
     const within = build([], { total: 3, members_only: 0, grades: [{ id: 'g1', name: 'Grade A', count: 2 }], ungraded: 1, organic: { certified: 1, natural: 1, none: 1 }, districts: [{ id: 'd1', name: 'Junagadh', count: 3 }], sale_types: [{ id: 'direct', count: 3 }] });
     const a = await within.rm.query(T, parse({ q: 'groundnut' }));
     expect(a.total).toBe(3);
-    expect(a.facets).toEqual({ grade: [{ id: 'g1', name: 'Grade A', count: 2 }], ungraded: 1, organic: { certified: 1, natural: 1, none: 1 }, district: [{ id: 'd1', name: 'Junagadh', count: 3 }], saleType: [{ id: 'direct', count: 3 }] });
+    // PC-56 STORE-5b · B18: + `selfDeclared` (certified claims without a covering certificate; `certified` counts covered lots only)
+    expect(a.facets).toEqual({ grade: [{ id: 'g1', name: 'Grade A', count: 2 }], ungraded: 1, organic: { certified: 1, selfDeclared: 0, natural: 1, none: 1 }, district: [{ id: 'd1', name: 'Junagadh', count: 3 }], saleType: [{ id: 'direct', count: 3 }] });
     const above = build([], { total: PUBLIC_LISTING_COUNT_CAP + 1, members_only: 0, grades: null, ungraded: null, organic: null, districts: null });
     const b = await above.rm.query(T, parse({}));
     expect([b.total, b.totalCap, b.facets]).toEqual([1001, 1000, null]);

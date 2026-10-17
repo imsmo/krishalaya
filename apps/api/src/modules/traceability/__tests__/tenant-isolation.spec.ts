@@ -28,18 +28,19 @@ describe('trace_lots isolation', () => {
     expect(exec.query.mock.calls[0][0]).toMatch(/ORDER BY created_at DESC, id DESC/); expect(exec.query.mock.calls[0][0]).not.toMatch(/OFFSET/i);
   });
   // PC-56 HOTFIX-7 · B10 / B25: the public read is `trace_scan_v2` (0217 — live organisations only, allow-listed meta); 0028's trace_scan is no longer called
-  it('public scan goes through the SECURITY DEFINER trace_scan_v2() function (no raw table read)', async () => {
+  // PC-56 STORE-5b · B10: … and now `trace_scan_v3` (0219 — + product, place, hashes, the seal, the certificates; `{live:false}` for a dark organisation)
+  it('public scan goes through the SECURITY DEFINER trace_scan_v3() function (no raw table read)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [{ provenance: null }], rowCount: 1 }) };
     await new TraceLotRepository(fakeReplica().provider).scan(tx as any, 'QR1');
     const [sql, params] = tx.query.mock.calls[0];
-    expect(sql).toMatch(/SELECT trace_scan_v2\(\$1\)/); expect(sql).not.toMatch(/FROM trace_lots/); expect(params).toEqual(['QR1']);
+    expect(sql).toMatch(/SELECT trace_scan_v3\(\$1\)/); expect(sql).not.toMatch(/FROM trace_lots/); expect(params).toEqual(['QR1']);
   });
 });
 
 describe('trace_events isolation', () => {
   it('insert binds tenant_id; lastHash + timeline bind tenant_id + lot; timeline ASC keyset (no OFFSET)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
-    const e = TraceEvent.append({ traceLotId: 'l1', tenantId: 'tenantA', eventCode: 'listed', meta: {}, prevHash: 'l1' });
+    const e = TraceEvent.append({ traceLotId: 'l1', tenantId: 'tenantA', eventCode: 'listed', meta: {}, prevHash: 'l1', createdAt: new Date('2026-10-17T00:00:00.000Z') });   // STORE-5b: v2 carries its instant
     await new TraceEventRepository(fakeReplica().provider).insert(tx as any, e);
     expect(tx.query.mock.calls[0][0]).toMatch(/INSERT INTO trace_events/); expect(tx.query.mock.calls[0][1]).toContain('tenantA');
     const tx2 = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };

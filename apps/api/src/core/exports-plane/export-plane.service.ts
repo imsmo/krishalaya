@@ -24,7 +24,7 @@ import {
   ExportDownloadRefusedError, ExportFileExpiredError, ExportJobNotFoundError, ExportNotReadyError, ExportParamsInvalidError,
   ExportPlaneDisabledError, TooManyOpenExportsError, UnknownDatasetError,
 } from './domain/export-plane.errors';
-import { DATASET_REGISTRY, DatasetRegistry } from './dataset.registry';
+import { DATASET_REGISTRY, DatasetRegistry, isRequesterOnly } from './dataset.registry';
 import { ExportJobRepository } from './export-job.repository';
 import { DownloadOutcome, ExportDownloadRepository, FetchCounts } from './export-download.repository';
 
@@ -116,7 +116,8 @@ export class ExportPlaneService {
     const producer = this.registry.get(input.datasetCode);
     if (!producer) throw new UnknownDatasetError(input.datasetCode);
     // [PC-56 STORE-4a] a PERSONAL dataset is born only of its owner module's own act (`enqueueInTx` — the DPDP request), never of this route
-    if (producer.personal) throw new ForbiddenError('A personal export is requested by its owner\'s own route');
+    // [PC-56 STORE-5b] … and so is every REQUESTER-ONLY dataset (the trace record — `POST /v1/traceability/scan/:qrToken/export`)
+    if (isRequesterOnly(producer)) throw new ForbiddenError('A personal export is requested by its owner\'s own route');
     if (!this.can(actor, producer.permission)) throw new ForbiddenError('Permission denied for this export');
     const parsed = producer.params.safeParse(input.params ?? {});
     if (!parsed.success) throw new ExportParamsInvalidError(parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; '));
@@ -148,7 +149,8 @@ export class ExportPlaneService {
    */
   async enqueueInTx(tx: TxContext, tenantId: string, requestedBy: string, input: { datasetCode: string; params: unknown }, ip: string | null = null): Promise<{ kind: 'queued'; jobId: string } | { kind: 'off' }> {
     // [PC-56 STORE-4a · founder D2] a PERSONAL dataset (the DPDP export) is NOT behind `tenant_exports`: a statutory right has no switch
-    if (this.registry.get(input.datasetCode)?.personal !== true) {
+    // [PC-56 STORE-5b] … nor is any requester-only dataset (the trace record is a file made for the person who asked)
+    if (!isRequesterOnly(this.registry.get(input.datasetCode))) {
       const on = await this.flags.isEnabled(EXPORT_PLANE_FLAG, { tenantId }).catch(() => false);
       if (!on) return { kind: 'off' };
     }
@@ -179,7 +181,7 @@ export class ExportPlaneService {
   async viewPersonal(tenantId: string, userId: string, id: string): Promise<ExportJobView | null> {
     try {
       const job = await this.resolveJob(tenantId, { userId, permissions: new Set<string>() }, id);
-      if (this.registry.get(job.datasetCode)?.personal !== true) return null;
+      if (!isRequesterOnly(this.registry.get(job.datasetCode))) return null;
       const [standing, fetches] = await Promise.all([this.standingFor(job.tenantId, job), this.fetchesFor(job.tenantId, job)]);
       return this.project(job, standing, fetches);
     } catch (e) {
@@ -284,7 +286,8 @@ export class ExportPlaneService {
       if (home && home !== tenantId) job = await this.jobs.getById(home, id);
     }
     const producer = job ? this.registry.get(job.datasetCode) : undefined;
-    if (job && producer?.personal === true) {
+    // [PC-56 STORE-5b] the rule reads `requesterOnly` or its alias `personal` (the trace record and the DPDP export alike)
+    if (job && isRequesterOnly(producer)) {
       if (job.requestedBy !== actor.userId) throw new ExportJobNotFoundError(id);
       return job;
     }

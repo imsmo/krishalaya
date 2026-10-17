@@ -56,3 +56,18 @@ anchor is wired); recall/withdrawal workflow.
 `tenant-isolation.spec.ts` (CI gate: tenant binding, FOR UPDATE, keyset, public scan routes through
 `trace_scan()` not a raw read), `traceability.integration.spec.ts` (real Postgres + 0028: create → chained
 journey → public scan returns no PII → unknown-token 404 → cross-tenant RLS denial; runs when `DATABASE_URL` is set).
+
+
+## PC-56 STORE-5b (2026-10-17) — supersedes the claims above where they disagree
+- **The public read is `trace_scan_v3`** (migration 0219): the organisation (display name + slug), the product line, the village + district of
+  the parcel's region (never a coordinate), every event's hash and hash VERSION, allow-listed meta, the seal, the lot's certificates. A lot whose
+  organisation is not live answers `{live:false, wasLive}` → `TRACE_NO_LONGER_PUBLISHED` (was live) or `TRACE_SCAN_NOT_FOUND` (never live).
+- **Hash version 2** (`domain/trace-chain.ts`): sha256(prev|lot|code|canonical(meta)|createdAt µs UTC); the INSERT carries `created_at`. v1 rows
+  keep the old formula and verify as `unverifiable_v1`. `GET /v1/traceability/scan/:qrToken/verify` recomputes forward (a break breaks every
+  hash after it).
+- **The anchor job never ran (survey C-3).** It is now `TraceAnchorClock` (`jobs/anchor-hashes.job.ts`, cadence `trace-anchor`, daily): a DAILY
+  PLATFORM SEAL per organisation with `traceability` ON — re-sealed whenever the head moves (`anchored_at`, `anchored_event_count`), audited
+  `trace.lot_sealed`. No public ledger, no on-chain anchoring (refused by name).
+- **The record export** `POST /v1/traceability/scan/:qrToken/export` (signed in, keyed) → `traceability.lot_record` on the export plane
+  (requester-only, CSV, the plane's receipt — not signed).
+- **Certificates of a lot** live in `trace_lot_certificates` (0219); `trace_lots.certificate_ids` is kept and no longer read.

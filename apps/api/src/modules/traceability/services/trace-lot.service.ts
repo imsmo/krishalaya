@@ -40,6 +40,9 @@ export class TraceLotService {
           const lot = TraceLot.create({ id: uuidv7(), tenantId, listingId: dto.listingId ?? null, qrToken: qrToken(), farmerUserId: actor.userId,
             parcelId: dto.parcelId ?? null, cropSeasonId: dto.cropSeasonId ?? null, declaredInputs: dto.declaredInputs, certificateIds: dto.certificateIds });
           await this.lots.insert(tx, lot);
+          // PC-56 STORE-5b · D1 / B19: the lot's certificates are the ONE link table (this organisation's certificates only; the jsonb
+          // column is still written for the record and no longer read)
+          await this.lots.linkCertificates(tx, tenantId, lot.id, dto.certificateIds);
           await this.flush(tx, tenantId, lot.id, lot.pullEvents());
           // seed the chain with a 'harvested'/'listed' genesis event (chains off the lot id)
           await this.appendInTx(tx, tenantId, lot.id, dto.listingId ? 'listed' : 'harvested', {});
@@ -58,9 +61,13 @@ export class TraceLotService {
   }
 
   /** Append one chained event in the caller's tx (used by create, manual append, and the fanout handlers). */
-  async appendInTx(tx: TxContext, tenantId: string, lotId: string, eventCode: TraceStep, meta: Record<string, unknown>): Promise<TraceEvent> {
-    const prev = (await this.eventsRepo.lastHash(tx, tenantId, lotId)) ?? lotId;   // genesis chains off the lot id
-    const ev = TraceEvent.append({ traceLotId: lotId, tenantId, eventCode, meta, prevHash: prev });
+  async appendInTx(tx: TxContext, tenantId: string, lotId: string, eventCode: TraceStep, meta: Record<string, unknown>, now: Date = new Date()): Promise<TraceEvent> {
+    const head = await this.eventsRepo.lastHead(tx, tenantId, lotId);
+    const prev = head?.hash ?? lotId;   // genesis chains off the lot id
+    // PC-56 STORE-5b · B11: hash VERSION 2 over the instant the row is stored with — never before the head (a pod's clock behind the last
+    // event's would otherwise put the new event first in the chain the verify read walks)
+    const createdAt = head && head.atMs >= now.getTime() ? new Date(head.atMs + 1) : now;
+    const ev = TraceEvent.append({ traceLotId: lotId, tenantId, eventCode, meta, prevHash: prev, createdAt });
     await this.eventsRepo.insert(tx, ev);
     await this.outbox.write(tx, { tenantId, aggregateType: 'trace_lot', aggregateId: lotId, eventType: TraceEventType.EventAppended, payload: { v: 1, lotId, eventCode, eventHash: ev.eventHash } });
     return ev;

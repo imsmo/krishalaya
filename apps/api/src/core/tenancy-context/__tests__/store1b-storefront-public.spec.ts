@@ -138,9 +138,10 @@ describe('STORE-1b · B2 — the public reads', () => {
     // PC-56 STORE-3a · B6 (founder D2): + `disputes` (tenant-scoped, fail-closed) — the order page's dispute door
     // PC-56 STORE-4c · B1 (founder Q12): + `communication` (tenant-scoped, fail-closed) — the headers' Messages link
     // PC-56 HOTFIX-7 · B25: + `traceability` (tenant-scoped) — 12 keys
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability']);
-    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false, storefront_browse: false, storefront_cart: false, disputes: false, communication: false, traceability: false } });
-    expect(isEnabled).toHaveBeenCalledTimes(12);   // HOTFIX-7 · B25: + traceability   // one per allow-listed key (HOTFIX-4: 2 → 7; STORE-2a: 8; STORE-2b: 9; STORE-3a: 10; STORE-4c: 11)
+    // PC-56 STORE-5b · B5 (founder D1): + `certificates_public` (tenant-scoped, fail-closed) — 13 keys
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public']);
+    expect(await ctl.publicFlags({ tenantId: LIVE } as RequestContext)).toEqual({ data: { group_lots: true, org_self_signup: false, online_payments: false, buyer_charges: false, offers: false, auctions: false, reviews: false, storefront_browse: false, storefront_cart: false, disputes: false, communication: false, traceability: false, certificates_public: false } });
+    expect(isEnabled).toHaveBeenCalledTimes(13);   // STORE-5b · B5: + certificates_public · HOTFIX-7 · B25: + traceability   // one per allow-listed key (HOTFIX-4: 2 → 7; STORE-2a: 8; STORE-2b: 9; STORE-3a: 10; STORE-4c: 11)
     expect((await ctl.publicFlags({ tenantId: '' } as RequestContext)).data).not.toHaveProperty('group_lots');
     await expect(ctl.profile({ tenantId: '' } as RequestContext)).rejects.toMatchObject({ code: 'TENANT_NOT_FOUND' });
   });

@@ -90,7 +90,9 @@ export interface PublicListingDetail {
   quantityAvailable: number; minOrderQty: number; harvestDate: string | null;
   /** PC-56 STORE-2a: the lot's size ("Available 34 of 40") */
   quantityTotal: number;
-  organicClaim: 'none' | 'natural' | 'certified' | null; organic: boolean;
+  /** PC-56 STORE-5b · D1 (founder Q7): the PUBLIC claim — `certified` only while a verified organic certificate covers the lot,
+   *  `self_declared` for a certified claim without one ("organic (self-declared)"), `natural`, or `none` */
+  organicClaim: 'none' | 'natural' | 'certified' | 'self_declared' | null; organic: boolean;
   saleType: string; status: string;
   district: string | null;
   organisation: { slug: string; name: string } | null;
@@ -108,8 +110,9 @@ export interface PublicLotAttribute { code: string; name: string; kind: 'text' |
  *  CONFIRMED one, the lock says whether a licence is required to buy. No seller user id, no region uuid, no coordinates. */
 export interface PublicListingCard {
   id: string; title: string; priceMinor: string; currencyCode: string; unitCode: string; quantityAvailable: number;
-  /** either organic claim (legacy boolean) — `organic` is the split */
-  organicClaim: boolean; organic: 'certified' | 'natural' | null;
+  /** either organic claim (legacy boolean) — `organic` is the split. PC-56 STORE-5b · D1: `certified` only while a certificate covers the lot;
+   *  `self_declared` = a certified claim without one */
+  organicClaim: boolean; organic: 'certified' | 'self_declared' | 'natural' | null;
   saleType: string; status: string; boosted: boolean;
   grade: string | null; district: string | null;
   organisation: { slug: string; name: string } | null;
@@ -119,7 +122,8 @@ export interface PublicListingCard {
 export interface FacetValue { id: string; name: string; count: number }
 export interface ListingFacets {
   grade: FacetValue[]; ungraded: number;
-  organic: { certified: number; natural: number; none: number };
+  /** PC-56 STORE-5b: `certified` counts COVERED lots; `selfDeclared` the certified claims without a covering certificate */
+  organic: { certified: number; selfDeclared?: number; natural: number; none: number };
   district: FacetValue[];
   /** the sale types present under the filters (`id` = the sale type) */
   saleType: Array<{ id: string; count: number }>;
@@ -225,8 +229,44 @@ export interface GalleryItem { mediaId: string; url: string; sortOrder: number; 
  *  published). No uuid at all: `listingId`, `declaredInputs` and `certificateIds` are gone (5b decides a vocabulary). A lot of an organisation
  *  that is not live answers 404 TRACE_SCAN_NOT_FOUND; an organisation that has not published traceability answers 404 TRACE_NOT_PUBLISHED. */
 export interface TraceProvenance {
-  qrToken: string; organisation: { displayName: string }; anchored: boolean; createdAt: string;
-  events: Array<{ eventCode: string; meta: Record<string, string | number>; at: string }>;
+  qrToken: string;
+  /** PC-56 STORE-5b: + `slug` (a store's chrome checks the lot is its own organisation's) */
+  organisation: { displayName: string; slug?: string };
+  createdAt: string;
+  /** PC-56 STORE-5b · D4: the product line ("<title> · <quantity> <unit> lot") and the place (village + district NAMES) — null when not recorded */
+  product?: { title: string; quantity: number | null; unit: string | null } | null;
+  place?: { village: string | null; district: string | null } | null;
+  /** PC-56 STORE-5b · B11: every event's number, hash and hash version (1 = before 0219, not recomputable; 2 = canonical) */
+  events: Array<{ no?: number; eventCode: string; meta: Record<string, string | number>; at: string; eventHash?: string | null; hashVersion?: number }>;
+  /** PC-56 STORE-5b · D1: the lot's certificates (the EFFECTIVE status) — the certificate page reads one by id */
+  certificates?: Array<{ id: string; typeCode: string; status: CertificateStatus; validUntil: string | null }>;
+  /** PC-56 STORE-5b · D3: the platform's daily SEAL of the chain head — `matchesHead` = it stamps the head as it stands (a platform seal, never
+   *  a public ledger) */
+  anchor?: { value: string | null; anchoredAt: string | null; anchoredEventCount: number | null; matchesHead: boolean };
+  sealed?: boolean;
+  /** @deprecated HOTFIX-7's boolean — STORE-5b answers `anchor` / `sealed` instead (absent from v3 answers) */
+  anchored?: boolean;
+}
+/** PC-56 STORE-5b · B11 — W304: the server's recompute of the chain. */
+export interface TraceVerification {
+  qrToken: string; organisation: { displayName: string; slug: string };
+  events: Array<{ no: number; eventCode: string; at: string; hashVersion: number; eventHash: string | null; prevHash: string | null; recomputed: 'ok' | 'mismatch' | 'unverifiable_v1' }>;
+  chain: 'ok' | 'broken_at'; brokenAt: number | null; v1Count: number;
+  anchor: { value: string | null; anchoredAt: string | null; anchoredEventCount: number | null; matchesHead: boolean };
+  formula: 'v2';
+}
+/** PC-56 STORE-5b · D1 — a certificate's status as a reader should believe it (a verified certificate past validity reads `expired`). */
+export type CertificateStatus = 'pending' | 'verified' | 'rejected' | 'expired';
+/** PC-56 STORE-5b · D1 (founder Q7) — W305: the public certificate. "checked by <organisation> (<role>)" — the organisation's check, the
+ *  verifier's ROLE code, never the person; never "platform-verified". */
+export interface PublicCertificate {
+  id: string; organisation: { displayName: string; slug: string };
+  typeCode: string; certNo: string | null; issuingBody: string | null; validFrom: string | null; validUntil: string | null;
+  status: CertificateStatus;
+  subjectType: 'product' | 'farm' | 'tenant' | 'listing' | null;
+  coversListing: string | null;
+  checkedBy: { organisation: string; role: string | null; at: string | null } | null;
+  rejectionReason: string | null;
 }
 
 export interface AuthTokens { accessToken: string; refreshToken: string; expiresInSec: number; }
@@ -291,6 +331,9 @@ export interface StorefrontFlags {
   /** PC-56 HOTFIX-7 · B25 — tenant-scoped, fail-closed: has this organisation published farm-to-fork traces (seed: OFF)? OFF = the trace page
    *  says "not published" (the scan's TRACE_NOT_PUBLISHED), never "not found". */
   traceability?: boolean;
+  /** PC-56 STORE-5b · B5 (founder D1) — tenant-scoped, fail-closed: does this organisation publish its certificates (seed: OFF)? OFF = the
+   *  certificate page says "not published" (CERTIFICATE_NOT_PUBLISHED), never "not found". */
+  certificates_public?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {

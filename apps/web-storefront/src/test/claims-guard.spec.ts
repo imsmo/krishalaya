@@ -99,7 +99,7 @@ describe('STORE-2a · claims guard (browse, search, the lot, the organisation, i
   });
   it.each(Object.entries(CATS))('%s: no digit and no person placeholder in a STORE-2a value (figures are interpolated; the seller is {org})', (_l, cat) => {
     const keys = Object.keys(cat).filter((k) => /^(browse|search|lot|sellers|inputs|store2a)\./.test(k));
-    expect(keys.length).toBe(112);
+    expect(keys.length).toBe(114);   // PC-56 STORE-5b · C6: + browse.organic.self_declared, lot.organic.self_declared (the badge rule's public value)
     for (const k of keys) {
       const v = (cat as Record<string, string>)[k];
       expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
@@ -402,5 +402,40 @@ describe('STORE-5a · claims guard (the review pages, the accessibility page)', 
     const r = Object.entries(en).filter(([k]) => k.startsWith('store5a.refusal.'));
     expect(r.length).toBe(17);
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b|\bnothing\b/i.test(v)]).toEqual([k, true]);
+  });
+});
+
+// PC-56 STORE-5b · brief §E / C7 (founders D1–D7) — the trace, verify, export, certificate and dairy pages' refused canon claims stay out of every
+// catalogue as an OFFER: a brand-domain literal (`krishalaya.in`) and the retired "tamper-anchored ✓" appear NOWHERE (not even in a refusal);
+// "polygon", "platform-verified" / "verified by platform", "signed record", "where the money went", "Gir cows", "bilona", "shared with his
+// consent" and "flagged platform-wide" appear ONLY inside a refusal (`*.refusal.*`, which say no). No STORE-5b value carries a currency sign or a
+// person placeholder — the organisation is {org}, every figure, date and hash is interpolated.
+describe('STORE-5b · claims guard (the trace, verify, export, certificate and dairy pages)', () => {
+  const REFUSED = [
+    /polygon|block 74|written to a public ledger/i, /platform-verified|verified by platform|platform verification against/i, /signed record/i,
+    /where the money went|was paid\b.*ledger|94\.7/i, /Gir cows|bilona|member's can number/i, /shared with his consent|Hear a greeting/i,
+    /flagged platform-wide/i, /lost the badge the same day/i,
+  ];
+  it.each(Object.entries(CATS))('%s: krishalaya.in and "tamper-anchored" nowhere; the refused claims only inside a refusal', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      expect([k, /krishalaya\.in|tamper-anchored|Anchored ✓/i.test(v)]).toEqual([k, false]);
+      if (/\.refusal\./.test(k) || k.startsWith('signup.refused.') || k.startsWith('auth.refused.')) continue;
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no currency sign and no person placeholder in a STORE-5b value (163 keys); the five v2 trace keys retired', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store5b.') || k.startsWith('trace.step.') || k.startsWith('trace.meta.') || k.endsWith('.organic.self_declared'));
+    expect(keys.length).toBe(163);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|fullName|owner|buyer|verifier|person)\}/i.test(v)]).toEqual([k, false]);
+    }
+    for (const k of ['trace.heading', 'trace.lead', 'trace.leadAnchored', 'trace.noEvents', 'trace.recordedBy']) expect([k, k in cat]).toEqual([k, false]);   // retired with the v2 page
+  });
+  it('every English STORE-5b refusal says no / not / never / nothing (20 keys)', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store5b.refusal.'));
+    expect(r.length).toBe(20);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b/i.test(v)]).toEqual([k, true]);
   });
 });

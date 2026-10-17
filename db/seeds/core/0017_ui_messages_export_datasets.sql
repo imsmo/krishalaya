@@ -72,3 +72,11 @@ INSERT INTO ui_messages (key, language_code, text) VALUES
   ('exports.dataset.identity.dpdp_person', 'hi', 'आपका डेटा (आपके बारे में हमारे पास जो कुछ है)'),
   ('exports.dataset.identity.dpdp_person', 'gu', 'તમારો ડેટા (તમારા વિશે અમારી પાસે જે કંઈ છે)')
 ON CONFLICT DO NOTHING;
+
+-- [PC-56 STORE-5b · founder D2] "Download the record" — the REQUESTER-ONLY dataset `traceability.lot_record` (one trace lot's journey events, their
+-- hashes, the recompute verdict and the seal, as CSV; NOT signed — the receipt's sha256 is the integrity). Its notice reaches the requester only.
+INSERT INTO ui_messages (key, language_code, text) VALUES
+  ('exports.dataset.traceability.lot_record', 'en', 'trace record (events, hashes and the seal — unsigned)'),
+  ('exports.dataset.traceability.lot_record', 'hi', 'ट्रेस रिकॉर्ड (घटनाएँ, हैश और मुहर — बिना हस्ताक्षर)'),
+  ('exports.dataset.traceability.lot_record', 'gu', 'ટ્રેસ રેકોર્ડ (ઘટનાઓ, હૅશ અને મહોર — સહી વગર)')
+ON CONFLICT DO NOTHING;

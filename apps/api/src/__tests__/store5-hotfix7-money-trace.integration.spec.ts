@@ -484,8 +484,10 @@ run('PC-56 HOTFIX-7 · the completion door, the refund that isn\'t, the names on
       const r = await scan(qr);
       expect([r.status, r.body.error?.code]).toEqual([200, undefined]);
       const p = r.body.data;
-      expect(Object.keys(p).sort()).toEqual(['anchored', 'createdAt', 'events', 'organisation', 'qrToken']);
-      expect(p.organisation).toEqual({ displayName: liveName });
+      // PC-56 STORE-5b: the scan is `trace_scan_v3` now — + product / place / the seal (`anchor`, `sealed` — `anchored` retired) / certificates,
+      // the organisation's slug (a store chrome checks the lot is its own); still no listingId, declaredInputs or person
+      expect(Object.keys(p).sort()).toEqual(['anchor', 'certificates', 'createdAt', 'events', 'organisation', 'place', 'product', 'qrToken', 'sealed']);
+      expect(p.organisation).toEqual({ displayName: liveName, slug: expect.any(String) });
       expect(p.events.map((e: { eventCode: string }) => e.eventCode)).toEqual(['harvested', 'packed']);
       expect(p.events[0].meta).toEqual({ variety: 'GG-20', quantity: 25, unit: 'quintal' });   // `season` kept by the SQL, dropped for its value (a phone run)
       expect(p.events[1].meta).toEqual({ packType: 'jute bag', packCount: 50 });
